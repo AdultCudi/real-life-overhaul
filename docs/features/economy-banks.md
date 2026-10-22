@@ -1,8 +1,8 @@
-# Economy: bank apps and your own bank
+# Economy: the Banks app and your own bank
 
 ## In a sentence
 
-One phone app for each of the city's three largest banks, each showing that bank's slice of the player's money, and late in a game a bank of the player's own, run from the headquarters.
+One Banks app on the phone for the city's three largest banks, each bank's page showing that bank's slice of the player's money, and late in a game a bank of the player's own, run from the headquarters, with branches of its own in shop units.
 
 ## Where the code is
 
@@ -11,13 +11,13 @@ One phone app for each of the city's three largest banks, each showing that bank
 
 ## How it talks to other features
 
-- The bank apps read the game's own banks (`Banking/Loans/BankTerms.Lenders`) and keep no save data.
+- The Banks app reads the game's own banks (`Banking/Loans/BankTerms.Lenders`) and keep no save data.
 - `Wiring/OwnBankLinks.cs` gives your own bank Standing's integrity, the council's levers, the courts for a lender's claims and the Stocks app's quotes.
 
 `Scripts/Economy/Banking/BankApps/`.
-One app on the game's phone for each of the city's three largest banks, under the game's own name for the bank, each that bank's slice of the player's money.
+One app on the game's phone for the city's three largest banks, the bank picked under each page's title with the game's own selector, under the game's own name for the bank; each bank's page is that bank's slice of the player's money. (Until the phone had folders each bank had an app of its own: three buttons that were one app in all but the bank. They are one app now, in the Money folder, as a phone's banking app holds every account; see [the phone](phone.md).)
 The Finance app stays the one page for every lender at once.
-Option: Money > Bank apps (`economy_banks`, on by default).
+Option: Money > Banks app (`economy_banks`, on by default).
 No save data.
 
 ## Which banks, and how they differ
@@ -27,7 +27,7 @@ Branches with the same name are one bank.
 `BankRules.Rank` orders them by the most each lends on its own terms (`BankSettings.maxTotalLoanAmount` as first read, before the rating writes it), the largest first, by name among equals; `BankTerms.Banks` holds one branch of each in that order.
 
 The first is `BankTerms.House`, the bank the mod's accounts have always been held with.
-The game's New York has two banks (Vantander Bank, own cap 2,000,000 at 12%; Jensen Capital, 40,000 at 20%), so it has two bank apps; the log says so once per city ("Banks: 2 bank(s) in the city, 2 bank app(s) on the phone (the city has fewer than 3 banks)").
+The game's New York has two banks (Vantander Bank, own cap 2,000,000 at 12%; Jensen Capital, 40,000 at 20%), so its Banks app holds two; the log says so once per city ("Banks: 2 bank(s) in the city, 2 in the Banks app (the city has fewer than 3 banks)").
 
 | Rank | Rates | Card, overdraft, car finance, mortgage, business loan | Fee of a loan by phone |
 |---|---|---|---|
@@ -37,10 +37,13 @@ The game's New York has two banks (Vantander Bank, own cap 2,000,000 at 12%; Jen
 | 3 and on | as rank 0 | as rank 0 | as rank 0 |
 
 The rule moves only the mod's own terms, and only inside the one desk that decides them: `CreditDesk.Offer(kind, bank)`, `Business(shop, bank, ...)`, `BusinessQuote`, `AgreedAt`, `LimitAt` and `PhoneLending.Quote` (the fee).
-The Finance app asks the same desk, so its offers from a bank are that bank's in its app too; rank 0 keeps every figure exactly as before (checked for every rating).
+The Finance app asks the same desk, so its offers from a bank are that bank's on its page of the Banks app too.
+For a new overdraft or card, the bank's share applies to the rating-based ceiling first, then `ProductTerms.IncomeLimit` caps it at 30 or 60 days of the game's average daily income (`PlayerHelper.CalculateDailyIncome`), rounded down to 50, with starter minimums of 200 or 300.
+A bank that gives a quarter more still stops at the income cap. The Rating tab and next-rating preview use the same capped terms.
+An open account retains its agreed limit, so changes in income or rating do not create an over-limit balance or fees; see [credit products](economy-credit-products.md).
 
 The game's own loan at the bank counter keeps the game's terms by the rating alone (`BankTerms.Apply`): the banks already differ there by their own settings.
-Under the lending threshold (580) every limit is 0 at every bank whatever its share, and the rating's gate (`CreditDesk.Gate`, `CreditLedger.CanBorrow`) is asked again at the moment anything is done: every app refuses in the bank's own words and shows no button that could lend.
+Under the lending threshold (580) every limit is 0 at every bank whatever its share, and the rating's gate (`CreditDesk.Gate`, `CreditLedger.CanBorrow`) is asked again at the moment anything is done: every page refuses in the bank's own words and shows no button that could lend.
 
 One overdraft and one card are held in all, as before, with the bank that opened them (the address on the account, `CreditAccount.Street` and `Number`, which every account has always carried: an older save's accounts are at the house bank already, so nothing is converted).
 A car or home approval records its bank (`Relief.ApprovedStreet`), and the account it becomes is held there.
@@ -48,7 +51,7 @@ A game loan belongs to the bank at its own `Loan.bankAddress`.
 
 ## The tabs
 
-- **Accounts**: the current account (the cash, held with the house bank; another bank's app says where it is), an overdraft held here with pay, pay off and close, and the statement: every transaction of the game's history (`CashFlow`) that is this bank's, over a day, a week or a month.
+- **Accounts**: the current account (the cash, held with the house bank; another bank's page says where it is), an overdraft held here with pay, pay off and close, and the statement: every transaction of the game's history (`CashFlow`) that is this bank's, over a day, a week or a month.
 
   The house bank's statement is every movement of cash; another bank's is what names it (`businessName` on the game's loan transactions and the fees) or names an account it holds (`name` on the accounts' transactions).
 
@@ -69,19 +72,20 @@ A game loan belongs to the bank at its own `Loan.bankAddress`.
 ## The game's parts
 
 The panel is `GameUi.AppShell` (copied from MyEmployees) like the Finance app's.
-Tables are `GameUi.DataTable` (a cell's tone is a type of its own, `GameUi.CellTone`, so that a figure passed to `TableRow.Set` is always what the column is ordered and summed by, never taken for a colour) with one set of `TableSpec`s per app (`BankTables`), so an order or a filter is that app's.
+Tables are `GameUi.DataTable` (a cell's tone is a type of its own, `GameUi.CellTone`, so that a figure passed to `TableRow.Set` is always what the column is ordered and summed by, never taken for a colour) with one set of `TableSpec`s for the app (`BankTables`), so an order or a filter is the app's.
 
-The app's name on its button and in the menu's top bar is one text key, `reallife_bank_app` ("{bank}"), filled through the game's own `TextLocalizationComponent.Arguments` (`PhoneAppDef.TitleArguments`, [game-ui.md](../../RealLifeOverhaul.Build/docs/game-ui.md) section 33): it still follows a change of language.
-The icon is the game's app icon painted in one of three plain colours by rank; no bank's real name, logo or colours are used.
+The app's name on its button and in the menu's top bar is one text key, `reallife_banks_app` ("Banks").
+The bank is picked under each page's title with the game's own previous and next selector (`InfoBox.Selector`, `BankApp.Which`), its words the game's own name for each bank; with one bank in the city its name alone stands there. The bank picked stays picked by its name when the city's banks are read again (`BankApp.Offer`), and another bank picked starts that bank's page of the tab from its start.
+The icon is the game's app icon painted in a plain banking blue; no bank's real name, logo or colours are used.
 
 ## Cost
 
 No Update.
-Once a second (the credit side's timer) `BanksDirector` compares the banks wanted with the apps on the phone: a few comparisons while nothing changes, and at most one app put on a second (each copies a few hundred of the game's objects, so they never land in one frame together).
+Once a second (the credit side's timer) `BanksDirector` compares the banks wanted with the banks the app shows: a few comparisons while nothing changes. The app is put on once (it copies a few hundred of the game's objects when it is first opened).
 
-The badges (debts behind or with a call waiting) are counted after the credit side's hour and day: one pass over the file's accounts and loans per bank.
+The badge (debts behind or with a call waiting, at every bank the app shows, added up) is counted after the credit side's hour and day: one pass over the file's accounts and loans per bank.
 A page costs one pass over the accounts and loans; the statement one pass over the game's transaction history (at most about a thousand).
-Nothing runs while an app is closed.
+Nothing runs while the app is closed.
 
 ## Checks
 
@@ -91,9 +95,9 @@ Under the threshold every bank's every limit is 0 and at or over it every bank l
 Limits never fall and rates never rise as the rating rises, at every bank; no rate under the floor; the fees.
 The ranking of branches and banks; its cost.
 
-In the game: Options > Tests > "Check the bank apps against Finance" writes `Bank check (figures)`: what every bank's Loans tab adds up with what no bank holds, against the Finance app's total, and that every bank refuses under the threshold.
-"Open the first bank's app" opens it on Apply.
-With diagnostics on, every page writes `Banks: <bank>, tab N written` with its height against the white box (`InfoBox.Fit`), and a game loan paid from an app writes `Bank check (loan payment)`.
+In the game: Options > Tests > "Check the Banks app against Finance" writes `Bank check (figures)`: what every bank's Loans tab adds up with what no bank holds, against the Finance app's total, and that every bank refuses under the threshold.
+"Open the Banks app on the first bank" opens it on the largest bank's Apply tab.
+With diagnostics on, every page writes `Banks: <bank>, tab N written` with its height against the white box (`InfoBox.Fit`), and a game loan paid from the app writes `Bank check (loan payment)`.
 
 ## Not verified (the game could not be run)
 
@@ -107,7 +111,7 @@ The statement's matching by name relies on the data keys of the game's loan tran
 ## Your own bank
 
 `Scripts/Economy/OwnBank/`.
-A bank of the player's own, late in a game, run from the headquarters, in its own app (Your bank; the Company app's first page has a button to it).
+A bank of the player's own, founded in the middle of a game as a community bank and grown a level at a time to a national one (see [Bank levels and the owner's pay](#bank-levels-and-the-owners-pay)), run from the headquarters, in its own app (Your bank; the Company app's first page has a button to it).
 Option: Business > Your own bank (`economy_bank`, on; it needs the credit rating).
 Save line `reallife:economy_ownbank` (`OwnBankStore`, v1), and `reallife:economy_ownbank_test` while a test has run.
 
@@ -177,3 +181,75 @@ That the City Ledger prints the pieces on the morning after (they are queued for
 That the headquarters' statement shows the bank's rows (the same path as the broadband company's network row).
 
 And the game's own text box for a name and an amount (as the bank apps use it).
+
+## Bank levels and the owner's pay
+
+`Scripts/Economy/OwnBank/Tiers/`.
+The bank's level (its tier in the code: `BankTiers`, `OwnBankRules.Tiers`) and the owner's pay are part of the bank: no option of their own, and their fields appended to the end of the bank's head record (`OwnBankStore`, still v1), so an older RLO reads its own fields and leaves them.
+
+- **Three levels.** A Community Bank, a Regional Bank and a National Bank; the National Bank is the bank as it was before levels, every figure of `OwnBankCatalogue` and no limit but the ratio. Each has a licence and a least capital, before the end game's scale and at it (mixed by the share as the bank's other figures are), a count of branches, a most of loans (performing and in arrears) and of savings, the record of months a move up to it asks, and its running costs (the banking hall before the scale; its systems and its least compliance crew at it).
+
+  | Level | Licence | Least capital | Branches | Loans | Savings | Record to reach it |
+  |---|---|---|---|---|---|---|
+  | Community Bank | $150,000 ($500,000 at scale) | $300,000 ($1,000,000) | 2 | $2.5m ($15m) | $4m ($25m) | founded |
+  | Regional Bank | $800,000 ($5,000,000) | $700,000 ($4,000,000) | 6 | $12m ($70m) | $20m ($100m) | 6 months |
+  | National Bank | $3,000,000 ($60,000,000) | $5,000,000 ($150,000,000) | 16 | no limit | no limit | 12 months |
+
+- **Founding** is always a Community Bank (`OwnBankDirector.FoundLicence`, `FoundCapital`): $450,000 in all without the scale, $1,500,000 with it, where a bank cost $8,000,000 and $210,000,000 before levels. A closure before still asks half as much capital again for each.
+- **Where the limits bind** (`OwnBankRules.Caps`, at today's prices and the scale the bank runs at): the day shares the savers' new money within the room its level's savings leave (`OwnBankRules.Day`, `DepositRoom`) and lends within the room its book leaves (`Lend`, `LoanRoom`); a counter turns away a deposit past the room (`VisitResult.Full`) and makes no loan past it (`CounterLends`); the director takes a branch in only while the level's count has room (`OwnBankRules.BranchRoom`, `ReadBranches`), and a branch past it takes no customers and has no counter until the bank moves up. Interest is still credited to savers, and savers and borrowers still leave and repay: a bank at or over a limit keeps all it holds and takes no more.
+- **Moving up** (`OwnBankRules.MoveUpWhy`, `MoveUp`; `OwnBankDirector.MoveUp`): the bank must be clear of the regulator (not watched, not in breach) with no run, have held its level for the next level's record without a breach (a breach day begins the record again: `TierFrom`), and hold the next level's least capital at the price of what is bought now. It costs the next level's licence less the one it holds, so a bank climbed to the top has paid exactly a national licence. Moved up, its record begins again and it keeps the new level's least capital (`FoundedLeast`). The player is told once a level when every condition but the licence is met (`TierTold`), and at a month's turn when a level's savings or loans are full.
+- **An older save's bank** (`OwnBankRules.FitTier`, as the director reads the line): a line with no level is fitted on the terms the bank was founded on (its `FoundedLeast` gives the end game's share and its closures). A bank whose capital still meets that least is a National Bank, as it paid for; one whose capital has fallen is put at the highest level its capital meets and keeps that level's least from then. Either way it keeps every saver, loan and branch, even past that level's limits (they only stop it taking more), and its record counts from its founding.
+- **The owner's pay** (`OwnBankRules.OwnerPay`, at the end of the day after the regulator): a share of the day's profit in steps of 5% (the game's own slider, copied from its settings menu as the Mod settings app's rows are: `GameUi/InfoBox.Slider`), or a fixed sum a day never more than the profit. Nothing on a day without profit, in a breach or a run, or for a test's bank, and never past what the bank can spare (its cash over the reserve, its capital over its least and its lending line: `Keep`, as for a dividend). The pay leaves the capital and the reserves together, so the books balance; the rest of the profit stays in the capital. It is booked into the player's cash as a dividend is (`PayKey`, among the Finance app's investments); `PaidMonth`, `PaidLast` and `PaidAll` keep what was paid. With no pay chosen (the default, and every older bank) the bank keeps all of its profit, as before.
+- **The app**: the Bank tab's list has two rows more, its level (what it may hold) and the owner's pay (this month's); each opens a page in the box: the level's meters against its limits, the next level's conditions ticked as met, the licence and a button to move up (with the game's question); the pay's way of paying, its slider or its sum, and what was paid.
+- **Tests**: "make it ready to move up a level" (the record made long enough; a test's bank also gets the next level's least capital, paid by nobody, and moves up for nothing).
+
+What the levels come to, in the offline check (a quiet city of the game's year, a bank founded a Community Bank, a year at each level, its capital put up to the next level's least where its profit has not brought it there, nothing paid out): before the scale a Community Bank makes about $3,500 a day and pays its licence back in ten months, and its kept profit brings it a Regional Bank's capital in two years; a Regional Bank makes about $13,000 a day six months on and pays its move up back in fourteen months; a National Bank about $45,000, its move up back in sixteen. At the scale: about $16,000 to $22,000 a day, the licence back in nine months, a Regional Bank's capital in thirty-one; a Regional Bank about $63,000 to $90,000, its move up back in eighteen months; a National Bank about $276,000 six months on, its $55,000,000 move up back in fifty months, about what a bank's licence took before levels.
+
+Going Public: the bank is the player's own (the headquarters and the branches are Going Public's `Mine`); a level and a pay are the bank's own figures in its own line; nothing new is sent.
+Cost: nothing per frame; a few sums more in the bank's day and in a branch's hour.
+
+### Checks
+
+EconomyCheck (`BankTierChecks.cs`): the table (every figure, rising, the top the bank of before, a climb paying exactly a national licence, founding at most a tenth of before); each limit binding in the day before the scale and at it, with the city wanting far more, and a bank over its limits keeping what it holds; the counter's deposits and loans; the branch count and the director's reading; moving up and each condition alone, the record begun again by a breach, the save's own months; an older save's bank fitted at each level, on the scale's terms and after closures, its loans, savers and ten branches kept and nothing more taken; the save's new fields after every field an older version reads; the pay at 0%, 5%, 35% and 100% split to the cent every day of two years, a fixed sum, nothing in a breach, a run or for a test's bank, never past the bank's room, the same on every run, a month's pay rolled; the balance figures above against their aims; the texts and the slider; a day of a bank at its limits timed and allocation-free.
+
+### Not verified (the game could not be run)
+
+That the game's slider, copied into the Bank tab's white box, shows its track, fill and knob in the box's colours and drags in steps.
+That the level's and the pay's pages fit the box with their rows, ticks and buttons (`InfoBox.Fit` with diagnostics on).
+That a branch opened past the level's count waits as told, and is taken in when the bank moves up.
+
+## Bank branches
+
+`Scripts/Economy/OwnBank/Branch/`.
+Branches of the player's own bank: a business type of the mod's own (`BranchType`, `reallife_bankbranch`, "Bank Branch") opened in a shop unit with BizMan while the bank runs, its customers booked in the bank's own books.
+Option: Business > Bank branches (`economy_bank_branch`, on; it needs Your own bank).
+Its figures are part of the bank's save line (`OwnBankStore` parts `k` and `b`); there is no line of its own.
+
+- **The business** is the game's own: rent, the fit-out (ready-made designs, see [Ready-made designs](designs.md)), opening hours, the rota and staff hired the game's way. Tellers are staff with customer service as their main skill, each on a shift at a till. The type sends no game shoppers (`spawnCustomers` off, no simulator); it is dressed as the city's banks (their icon and uniforms) once the game's types are there, and "prepare this save for removing the mod" makes each branch a gift shop (`BranchType.Strip`).
+- **An hour** (`OwnBankDirector.Branches`, `EconomyDirector.AfterHour`, at most three hours caught up): each branch's customers are the game's own count for a shop of its building (`CustomerEntriesCalculator.GetInitialCustomers`, by promotion as the game counts it) times the branch's share (180 thousandths), the hour's weight and its satisfaction; the counter sees to six an hour a teller on shift (70% to 130% by skill) and six for the player while they work it; the rest leave.
+- **A visit** (`BranchRules.Hour`, `OwnBankRules.Visit`) is drawn from the bank's seed, the hour, the branch and the visit: an account opened (about $400 paid in), a deposit ($350), a withdrawal ($300, never more than the people hold or the bank's cash), a loan of about $6,000 to a poorly, fairly or well rated person (only to those the bank lends to, outside a run or a breach, and within its cash over the reserve and its lending line), or a question. Each moves the bank's people's deposits, its loans and its reserves as its day does, so `OwnBankRules.Balanced` holds after every visit. In a run those who came to pay in take out. Fees: $25 an account, $1.50 cash at the counter, 1.5% of a loan (at least $50), at today's prices; they wait outside the balance sheet (`OwnBank.CounterFees`) and are the next day's takings (`BankDay.Counter`), booked at the headquarters with the rest.
+- **The reach** (`BranchRules.Reach`): the visits all branches saw to in the last seven days raise the bank's hold of the city's people (`BankCity.Reach`, read by `SaversWanted` and `LoansWanted`) towards 300 thousandths more, half of it at 2,000 visits a week; businesses get 400 thousandths of it. Each branch more adds less.
+- **The counter**: inside one of the player's branches a free till is clickable (`Careers/DeskGame`'s second target), the player walks to it and the game's own work panel (`Jobs/ShiftSkip`) offers a stint of up to four hours; while it runs the player stands at the till as the game's own WorkActivity puts them there and counts as a teller.
+- **The floor** (`BranchFloor`): while the player is in a branch, up to eight of the hour's customers come in at the door, queue across a staffed till from its teller, are seen to and leave, or wait and leave unseen; at most three at once, from the mod's people (`People/ActorPool`). It shows what the hour booked and changes nothing.
+- **The app**: a Branches tab in Your bank, a row a branch (this month's customers, seen to, left, accounts, loans, fees, rent and wages a day from the game's `RentPerDay` and the staff's shifts), and the reach with what it brings (`BranchRules.Worth`: the deposits and loans wanted with and without it, and their margin a day before staff).
+- **Off**: no hour is worked and none is owed later, the reach is nothing, the counter cannot be clicked and the floor is empty; the bank holds what it would without branches. The type stays registered, so a save that holds a branch still loads.
+- **The bank's level** sets how many branches it runs (two, six, sixteen: see [Bank levels and the owner's pay](#bank-levels-and-the-owners-pay)); a branch past that count is not taken in, sees nobody and has no counter until the bank moves up, and the player is told once a day.
+
+What a branch comes to, in the offline check (a quiet city, a bank a year old, a mid-sized shop unit with two tellers, open 9 to 18): 553 customers seen to a week, a reach of 64 thousandths, $376 a day in fees and $2,921 a day of margin on $1.48 million more deposits and $1.84 million more loans, against $802 a day of rent and wages: $2,496 a day net, a $90,000 fit-out paid back in eight months of five days. A tenth such branch brings less than its rent and wages.
+
+Going Public: branches are the player's own registrations (`GoingPublic.Mine`); visits are drawn from the bank's own seed, so the same everywhere; the floor and the counter are local; nothing new is sent.
+Cost: nothing per frame; once a game hour one pass over the save's buildings and staff and a few dozen sums a branch (sixteen branches' hour in well under a millisecond offline, nothing allocated); once a second, inside a branch, a look at its tills; the floor four times a second over at most three people, only inside a branch.
+With "Developer diagnostics" on each hour writes `Bank branch check (hour N of day D)`: the branches, customers, seen to, loans, fees, the reach, the time and whether the books balance; walking in writes `Bank branch check (floor, ...)`.
+
+Tests: "An hour at my branch now" (a lunchtime hour of the branch the player is in, or the first, with a teller at least, booked now; "Put my bank back" undoes it) and "Customers at my branch now" (the floor of a busy hour, nothing booked).
+
+### Checks
+
+EconomyCheck (`BranchChecks.cs`): the catalogue; an hour's customers by hour, promotion and satisfaction, carried parts, a closed hour; the counter by tellers, skill and the player; each kind of visit in the books, balanced, with its fee, a withdrawal capped, no loan in a run, a breach, to those not lent to or past the line; the fees as the next day's takings and nothing else different; an hour's visits against the bank's moves; determinism; the month and the week; the reach bounded and diminishing, more of people than of businesses; a year with none, one, three and eight branches balanced every day; a branch that pays (the figures above) and a tenth that does not; the save with branches, without, short and capped; the option off; the floor's plan; the texts; an hour of sixteen branches timed and allocation-free.
+
+### Not verified (the game could not be run)
+
+That the game lists Bank Branch in BizMan's start screen for a shop unit and dresses it with the bank's icon and uniforms.
+That the till is clickable with the business's own call to action asked after the mod's, and that the player stands at it as at a job's till.
+That a teller hired for the branch stands at the till on their shift, and that customers queue across it on the floor.
+That five tabs and eight columns fit the bank app.

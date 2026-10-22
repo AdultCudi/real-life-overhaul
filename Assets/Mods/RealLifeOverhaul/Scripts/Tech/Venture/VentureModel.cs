@@ -58,6 +58,11 @@ namespace RealLifeOverhaul.Tech
         public TermSheet Ask;            // what the founders ask of the player; null if they have not come to the player
         public bool Diligence;           // a report bought on it
         public int Revealed;             // what a meeting found out: 1 the revenue, 2 the founders, 4 the market
+        // the player's pro rata follow-on of the last round (the end of the save's line; a line without them offers none)
+        public int RoundDay = -1;        // the day the last round closed; -1 none known
+        public long BeforeMine;          // the player's shares just before that round
+        public long BeforeTotal;         // all the shares just before that round; 0 none known
+        public bool Followed;            // the player has taken their follow-on of that round
 
         public StartupState S => (StartupState)State;
         public RoundStage R => (RoundStage)Stage;

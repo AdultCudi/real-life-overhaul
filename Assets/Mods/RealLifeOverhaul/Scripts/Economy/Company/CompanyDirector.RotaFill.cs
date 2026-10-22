@@ -134,8 +134,9 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // In one frame, on a sheet just found true. The week as it was is kept first: the oldest, if filled twice. False
-        // with nothing written: never a rota with people in it who are not there.
+        // In one frame, on a sheet just found true. The week as it was is kept first: the oldest, if filled twice, but for
+        // a manager's week the one just before it (their decision undoes that week). False with nothing written: never a
+        // rota with people in it who are not there.
         private bool RotaWrite(RotaJob job, RotaPlace at, RotaSheet sheet, RotaPlan plan, RotaRung rung)
         {
             bool useHours = rung != null;
@@ -145,13 +146,19 @@ namespace RealLifeOverhaul.Economy
             }
             string place = job.Place, name = at.Name;   // the places are read again below, and their entries with them
             int kept = RotaUndoAt(place);
+            bool keep = job.Test || job.Kind == JobManager;   // a manager's week to put back stays when the app closes
+            if (kept >= 0 && job.Kind == JobManager)
+            {
+                _rotaUndo.RemoveAt(kept);
+                kept = -1;
+            }
             if (kept < 0)
             {
-                _rotaUndo.Add(RotaGame.Keep(at, job.Test));
+                _rotaUndo.Add(RotaGame.Keep(at, keep));
             }
             else
             {
-                _rotaUndo[kept].Kept |= job.Test;
+                _rotaUndo[kept].Kept |= keep;
             }
             double before = _rotaClock.Elapsed.TotalMilliseconds;
             _rotaWriting = place;
@@ -174,7 +181,11 @@ namespace RealLifeOverhaul.Economy
                          + _rotaSpent.ToString("0.0", CultureInfo.InvariantCulture) + " ms over " + (_rotaFrames + 1)
                          + " frame(s), the longest share of a frame " + _rotaLongest.ToString("0.0", CultureInfo.InvariantCulture) + " ms; written in "
                          + wrote.ToString("0.0", CultureInfo.InvariantCulture) + " ms.");
-            if (!job.Test)
+            if (job.Kind == JobManager)
+            {
+                ManagerRotaWritten(place, shifts, plan);   // in the manager's log; the day's notice tells it
+            }
+            else if (!job.Test)
             {
                 Notify(plan.Full ? NotificationType.Success : NotificationType.Info, plan.Full ? "reallife_rota_note_filled" : "reallife_rota_note_partly",
                     new Dictionary<string, string>

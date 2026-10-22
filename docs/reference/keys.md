@@ -114,6 +114,7 @@ Each feature keeps its state in the save's `modData` under keys that start `real
 | `reallife:sick_until` | `Core/ModState.cs`, `Meta/FeatureList.cs` |
 | `reallife:social` | `Meta/FeatureList.cs`, `Social/SocialState.cs` |
 | `reallife:social_filler` | `Social/News.cs` |
+| `reallife:social_more` | `Social/SocialState.cs` |
 | `reallife:social_news` | `Social/News.cs` |
 | `reallife:social_offer` | `Social/SocialState.cs` |
 | `reallife:social_paper` | `Social/News.cs` |

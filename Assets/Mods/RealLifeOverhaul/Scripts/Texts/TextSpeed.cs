@@ -45,6 +45,9 @@ namespace RealLifeOverhaul.Texts
     ///   too slow   a reply estimated at more than <see cref="FullSlow"/> s on the full pack: a notice, once, suggesting
     ///              the Lite pack. Any pack past <see cref="AheadSlow"/> s writes only what is asked well ahead
     ///              (<see cref="AheadSeconds"/> or more), never a spoken line or what the player is waiting for
+    ///   Large      RLO Texts Large runs only on a graphics card with the memory for it (<see cref="LargeFits"/>), and only
+    ///              while its speed test says it keeps up there (<see cref="LargeTooSlow"/>: the next pack otherwise); it
+    ///              is offered, once, where the full pack is fast on such a card (<see cref="OfferLarge"/>)
     ///
     /// Game-free (EconomyCheck, TextsChecks.cs). COST: arithmetic.
     /// </summary>
@@ -98,8 +101,8 @@ namespace RealLifeOverhaul.Texts
             return CardTokens * promptMsPerToken / 1000.0 + ReplyTokens / tokensPerSecond;
         }
 
-        /// <summary>True when the Lite pack should be suggested: the full pack (rank 2 and up) is too slow here.</summary>
-        public static bool SuggestLite(int rank, double estimate) => rank >= 2 && estimate > FullSlow;
+        /// <summary>True when the Lite pack should be suggested: Medium or the full pack (tiers 2 and 3) is too slow here (Large, too slow, gives way by itself).</summary>
+        public static bool SuggestLite(int rank, double estimate) => rank >= 2 && rank <= TextPacks.FullTier && estimate > FullSlow;
 
         /// <summary>True when only what is asked ahead may be written (spoken lines and what the player waits for take the written line).</summary>
         public static bool AheadOnly(double estimate) => estimate > AheadSlow;
@@ -109,6 +112,25 @@ namespace RealLifeOverhaul.Texts
         {
             return !aheadOnly || (priority != TextPriority.Now && !guess && seconds >= AheadSeconds);
         }
+
+        // ---------------------------------------------------------------- RLO Texts Large
+
+        public const double LargeSlow = 1.2;       // seconds a reply of RLO Texts Large may take on its graphics card: past this, the next pack runs instead
+        public const double LargeOffer = 0.45;     // ...a reply of the full pack this fast on a graphics card with the memory for Large: Large is offered (once it is published)
+        public const long LargeBytes = 2708804096L;   // bytes of the Large pack's model as the offer reckons it before it is installed: its published file
+                                                      // (Qwen 3.5 4B at Q4_K_M, 2.52 GiB), so the offer asks the free memory Pick asks once it is there
+
+        /// <summary>True when a graphics card (never graphics built into the processor) has the free memory for a model of this size beside the game.</summary>
+        public static bool LargeFits(TextDevice card, long modelBytes) => !TextPacks.BuiltIn(card.Label) && TextPacks.Ample(card.FreeMiB, modelBytes);
+
+        /// <summary>True when RLO Texts Large, measured on its graphics card, is too slow there: the next pack is run instead, and Large is not tried on that card again.</summary>
+        public static bool LargeTooSlow(double estimate) => !(estimate <= LargeSlow);
+
+        /// <summary>
+        /// True when RLO Texts Large should be offered: the full pack (tier 3) runs on a graphics card that has the memory for
+        /// Large and replies fast enough that Large would keep up there, and Large is published (its Workshop id is set).
+        /// </summary>
+        public static bool OfferLarge(int rank, double estimate, bool cardFits, bool published) => published && rank == TextPacks.FullTier && cardFits && estimate <= LargeOffer;
     }
 
     /// <summary>

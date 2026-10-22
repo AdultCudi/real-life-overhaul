@@ -69,6 +69,7 @@ namespace RealLifeOverhaul.Economy
             }
 
             int added, dropped;
+            SoldBack(false);
             EstateGame.ReadHoldings(s, out added, out dropped);
             EstateGame.ReadAgency(s.Agency);
             for (int i = s.Holdings.Count - 1; i >= 0; i--)
@@ -298,6 +299,7 @@ namespace RealLifeOverhaul.Economy
                 h.SaleDay = day + 1;   // the player stands inside it, which the game's own sale does not allow either
                 return false;
             }
+            EstateGame.SoldByAgency(_state, h, day);
             int fee = EstateRules.AgentFee(price, _climate.Index), tax = EstateRules.GainsTax(price, fee, h.Paid, h.Spent, _climate.TaxPercent);
             Cost(fee, EstateGame.FeeKey, h.Name, null, "the agent's fee on a sale for " + price, true);
             Cost(tax, EstateGame.GainsKey, h.Name, null, "tax on the gain over " + h.Paid + " paid and " + h.Spent + " spent", true, false);

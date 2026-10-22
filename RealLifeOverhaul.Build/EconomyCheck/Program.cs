@@ -61,6 +61,12 @@ internal static partial class Program
 
     private static int Main(string[] args)
     {
+        if (args.Length == 1 && args[0] == "--stocker")
+        {
+            StockerFixes();
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--client-hours")
         {
             ClientHours();
@@ -74,6 +80,43 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--derivatives")
+        {
+            Derivatives();   // (the raw materials exchange, futures and options alone, while working on them: DerivChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--branch")
+        {
+            Branches();   // (the bank branches' checks alone, while working on them: BranchChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--bank-levels")
+        {
+            BankLevels();   // (the bank's levels and the owner's pay alone, while working on them: BankTierChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--texts-history")
+        {
+            CallBack();       // (a call back's and RLO Texts' shared history's checks alone, while working on them: CallBackChecks.cs, TextsHistoryChecks.cs)
+            TextsHistory();
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--more-people")
+        {
+            MorePeople();   // (more people to meet alone, while working on it: MorePeopleChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--designs")
+        {
+            Designs();   // (the ready-made designs' checks alone, while working on them: DesignChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--probe-start")
         {
             return 0;   // (TextsStartChecks: can this checker be started as a program on this PC)
@@ -81,6 +124,10 @@ internal static partial class Program
         if (args.Length > 1 && args[0] == "-m")
         {
             return PretendLlama(args);   // (started by TextServer as a pretend llama-server: TextsStartChecks.cs)
+        }
+        if (args.Length == 2 && args[0] == "--texts-spec")
+        {
+            return WriteTextsSpec(args[1]);   // (RLO Texts' contract of data v6 and its fixtures, written from the mod: TextsSpecWriter.cs)
         }
         Catalogue();
         Start();
@@ -98,6 +145,7 @@ internal static partial class Program
         Identity();
         DailyRun();
         Products();
+        CreditIncomeLimits();
         Interest();
         Instalments();
         OverdraftCover();
@@ -114,6 +162,7 @@ internal static partial class Program
         Ventures();
         Company();
         Rota();
+        Managers();   // the managers of the player's places: their decisions inside the limits, mistakes, undo and the save (ManagerChecks.cs)
         Estate();
         Online();
         Services();
@@ -147,18 +196,29 @@ internal static partial class Program
         Flare();
         FlareLive();   // Flare as a living network: the feed, the City Office, the reactions, the filter, pictures, Going Public, the save, the texts (FlareLiveChecks.cs)
         FlareReview();   // the review round of Flare as a living network (FlareReviewChecks.cs)
+        FlareClosedReviews();   // the city's reviews come of visits: none of a business the game has closed then, asked again at the hour, a review that went up kept (FlareClosedReviewChecks.cs)
         Faults();   // the city's real faults: weighting, limits, reports, escalation, the city's people, the save, Going Public, the source of chance, texts (FaultChecks.cs)
         Texts();    // RLO Texts: the card byte for byte with the training's, the map, the checker, the queue, the budget, speed, the hub, the save, Going Public, packs, the real runner (TextsChecks.cs)
         TextsService();   // Your own AI: the services, each request and answer, faults and rests, the runner, the hub's fallback, Going Public, Sign in with ChatGPT end to end, the web client, the sealed keys, no secret in a log or a save (TextsServiceChecks.cs)
         TextsSpoken();    // a spoken line with your own AI: the wait for it, the pack in the end of the wait, a guess waited for, the first words, the stream read to its last word, the log naming the source (TextsSpokenChecks.cs)
+        TextsSix();   // RLO Texts' contract of data v6: the fixtures are the mod's cards now, built by the mod and rendered from the spec alone, its shape, seven languages, older packs untouched (TextsSixChecks.cs)
+        TextsLanguagesSix();   // RLO Texts in every language of the mod: the seven, a pack's languages, the length and tokens by script, the checker in each, the hub, Going Public's shared text (TextsLanguageChecks.cs)
+        TextsDecodingSix();    // RLO Texts' requests of data v6: the grammars read and tried, the tokens, the name kept out, the bodies, the hub's job (TextsDecodingChecks.cs)
+        TextsShownSix();       // what RLO Texts showed: the model's words against the written lines and why, by pack and intent, the hourly line, the hub counting every way (TextsShownChecks.cs)
+        TextsMemorySix();      // what people remember: the lines, a card's choice the same in any order, whose keys, the save, caps and pruning, the topics (TextsMemoryChecks.cs)
+        TextsCitySix();        // the city's new talk: the staff, life events, who texts, gossip, reviews, every written line, the save, RLO Texts Large, the sources (TextsCityChecks.cs)
+        TextsServiceSix();     // your own AI beside data v6: the card finished as a pack's in the game's language, the pack's own card after a miss; each of the seven languages asked, checked and fallen back in; Dutch and Turkish keep their written lines (TextsServiceSixChecks.cs, TextsServiceLanguageChecks.cs)
         FlareDmTexts();   // a message's answer worded by RLO Texts: its speaker by the account's key, asked again after the model restarts (FlareDmTextsChecks.cs)
         ComposerChecks();   // a call's composer: the two answers without a pack, typed words worth the warm answer a day as before, the model's words read by no rule, cleaned (ComposerChecks.cs)
         TypedReadingChecks();   // what an answer typed on a call says, in every language, and what it gets back: never a sorry to good news (TypedReadingChecks.cs)
+        CallBack();     // a call back opens on what the person just texted about: every feature's texts, the day and the next, once, the save, the flow, the table, the texts (CallBackChecks.cs)
+        TextsHistory(); // RLO Texts' shared history: memories and the last text on the card in the packs' own shape, the budget, the day after an outing, the player's news without a pack (TextsHistoryChecks.cs)
         TextsStart();   // RLO Texts' start ends by its limits for certain: each stage timed, a watchdog, against a pretend server that never answers (TextsStartChecks.cs)
         TextsHang();   // RLO Texts' server that stops answering: a probe tells a hang from a slow machine, a hung or stopped server started again three times a session at most (TextsHangChecks.cs)
         TextsSpeedFix();   // RLO Texts on a GPU at normal priority with two threads, on the processor below normal; the start's lines say what each reply took (TextsSpeedChecks.cs)
         TextsCacheFix();   // RLO Texts' server without Steam's shader cache variables, so the GPU driver keeps its shaders; the first reply's limit and the cache's state (TextsCacheChecks.cs)
         FlareNoLimit();  // posting on Flare without a limit: all made and shown, what moves bounded, Going Public queued and none dropped, the save, the texts (FlareNoLimitChecks.cs)
+        FlareSawPost();   // a city person's "saw your post" only after a real post of the player's, within three days; a hello that claims none for the tests (FlareSawPostChecks.cs)
         FlareInvites();   // invitations in Flare messages: reading, the decision, timing, booked once, the answer's words and card, three languages, sources (FlareInviteChecks.cs)
         StreetTalk();   // talking to anybody in the street: who, whether they stop, the choices, numbers and invitations, word of mouth, the words read, the lines, timing, sources (StreetTalkChecks.cs)
         StreetOffers();   // who in the street is offered a talk: reach, angle, the nearest in front, the time in front without reset, the grace, the kinds of people, give-back, the check lines (StreetOfferChecks.cs)
@@ -182,6 +242,7 @@ internal static partial class Program
         Firms();
         Competitors();
         LetGo();        // a building let go: the utilities' accounts and bills, business pressure's closures, an underground car park never supplied (LetGoChecks.cs)
+        SoldBack();     // a building sold and put back as the player's for nothing goes back to its buyer, a purchase since stays the player's (SoldBackChecks.cs)
         Hiring();
         Tech();
         Careers();
@@ -190,6 +251,7 @@ internal static partial class Program
         Apps();         // the apps' clicks: a table written as it scrolls, the Ledger's pages kept, a photo's small copy made a row at a time (AppsChecks.cs)
         CartQueue();
         VendorCartFixes();   // the drinks cart off crossings, its pitch checked after the cut, a customer who cannot reach it replaced (VendorCartFixChecks.cs)
+        StockerFixes();      // the shelf to stock shown as soon as a box is carried in, its marker cleared on the way out (StockerFixChecks.cs)
         Work();
         Desks();
         SetOff();       // a class's desk, the work desk and the computer at home: set off as the game's activities, stood up whatever fails, the keys (SetOffChecks.cs)
@@ -200,8 +262,11 @@ internal static partial class Program
         FamilyStudy();
         Districts();
         Interiors();
+        Designs();      // the ready-made designs: the firms' folders, the names, the showroom's lot, and the plan from the game's own design files (DesignChecks.cs)
         BusRide();
         PlayerBank();
+        Branches();     // the bank branches: an hour's customers, visits in the bank's books, the reach over many branches, a branch that pays, the save, the option off (BranchChecks.cs)
+        BankLevels();   // the bank's levels and the owner's pay: each level's limits binding, moving up, an older save's bank fitted, the pay's split, the balance figures (BankTierChecks.cs)
         Office();
         CivicFixes();   // the player's own canvasser's leaflet, the bridges to Standing and the court, the donation cap (CivicFixChecks.cs)
         SaveLinesKept();
@@ -215,6 +280,7 @@ internal static partial class Program
         Photos();       // the Camera and the Gallery: names, the cap, deleted saves, the order from a folder, the photo and its small copy to Flare, the camera's rules, the restore, the sources, the texts (PhotoChecks.cs)
         Gallery();      // the Gallery: the photo that would not open, one tap, albums, days, rows in view, before and after, favourites, texts (GalleryChecks.cs)
         GuideMarks();   // the mod's marks on the game's destination guider: whose a marker is, Hide whatever was believed, the watch by time, owner and scene, unloading, the accident's own end (GuideMarkChecks.cs)
+        TextBoxes();    // issue 22: a call's or a talk's text box closed however it ends (the phone shut, Esc, hung up, left, a door, a load, its own time), the panel's handle back after a call, the holds' own values (TextBoxChecks.cs)
         BugBooks();     // "Report a bug" with the staff and the money: each wage against the game's own with its hours, a day of each rota, yesterday's and today's money by kind and place (BugBooksChecks.cs)
         CardFix();      // the credit card: paid off by hand inside a debt arrangement and the arrangement ended once, one miss a statement, the overdue minimum carried (CardFixChecks.cs)
         EconomyFixes(); // brands, services, the dealership and property: money paid short or twice, figures stale or a day out, state never put back (EconomyFixChecks.cs)
@@ -224,12 +290,14 @@ internal static partial class Program
         BankingFixes(); // the player's banking: the student loan kept, an approval's interest once and on what is financed, a card paid early, a quest loan, loans priced again, the lender's fee (BankingFixChecks.cs)
         SocialFixes();  // the social life: a loan's few more days, a report placed indoors, a missed call's favour, one trainer a cast, an outing put forward kept (SocialFixChecks.cs)
         PeopleAge();    // the People page: each person's age, a year more at each birthday, in every language; the Guide names People as a contact (PeopleAgeChecks.cs)
+        MorePeople();   // more people to meet: the first eight kept, every place bringing somebody new up to 400, the later people's own record, the circle (MorePeopleChecks.cs)
         CinemaFixes();  // a film with a friend: rested as in the game's own cinema seat, given back on every way out (CinemaFixChecks.cs)
         PartnerTalk();    // the partner: Social's calls, texts and outings count as talking for family life (PartnerTalkChecks.cs)
         MealFixes();    // a completed meal fills once by the game's food and records bought food through the bridge
         ClientHours();  // cleaning and stocking: a client open for the walk and the work, one closing calls the job off, the clock paid up to closing (ClientHoursChecks.cs)
         TechFixes();    // the tech sector: a board that cannot hire, a pitch whose meeting never opened, the utilities asked safely, an interview cut short (TechFixChecks.cs)
         TechMoves();    // a tech firm moved by the moving company: its data follows whole, a save left behind is put back, nothing followed with a doubt (TechMoveChecks.cs)
+        BizManLink();   // the Company app's Open in BizMan: on every business's page, the game's BizMan.Open for the player's own business, the notice, the texts (BizManLinkChecks.cs)
         MarketFixes();  // the stock market: a guest's trade lines culture-free, the index steady as companies join over the cap, the tape swapped safely, the chart's guard (MarketFixChecks.cs)
         CareersFixes(); // education and careers: stood down once the guard has switched it off, no sitting on a disabled host, a lost course never read back (CareersFixChecks.cs)
         ClassCounts();  // a class, homework or exam being sat is never lost: settled once by its own record, the hourly pass asks the book, the clock's minutes, the school desk's keys (ClassCountChecks.cs)
@@ -243,6 +311,10 @@ internal static partial class Program
         FamilyExpect(); // the partner expects a bigger home and more evenings out as the player gets richer (FamilyExpectChecks.cs)
         FamilyWork();   // the partner cuts back to half days once the player is well off (FamilyWorkChecks.cs)
         FamilyFixes();  // family life: a refused passage done at once, the player's own missed appointment booked again, counselling's threshold (FamilyFixChecks.cs)
+        FamilyHomeFixes();  // the partner at home: night texts kept for the morning, cooking and watching together, moving about, the chat face to face (FamilyHomeChecks.cs)
+        FamilyChores();  // household chores asked when really so and counted when really done (FamilyChoreChecks.cs)
+        FamilyHeldTexts();  // the family texts kept for the morning, kept in the save too (FamilyHeldTextChecks.cs)
+        VentureFollowOns();  // a startup's follow-on once a round, back to the share before it and no more, kept in the save, older saves as they were (VentureFollowOnChecks.cs)
         MetaFixes();    // the options page and Report a bug: Import without its backup, a report never left busy, the pages' search and dispatcher lines (MetaFixChecks.cs)
         MoodBuffs();    // the mod's moods: a cap from each catalogue entry, a load puts saved moods back as saved (never through Going Public's scaled add), a save past the cap trimmed once (MoodBuffChecks.cs)
         LaterLanguages(); // Dutch and Turkish: listed wherever the other languages are, as complete as the other translations, What's new numbered and marked (LaterLanguageChecks.cs)
@@ -250,6 +322,7 @@ internal static partial class Program
         StaffLeaving(); // an employee the mod lets go leaves once, with one wage and one notice; one rival's offer to an employee at a time (StaffLeaveChecks.cs)
         HardTimesTriggers(); // a difficult moment at home comes of what is going on: each one's causes, nothing when all is well, a cause gone, the options, the save, the same state (HardTimesChecks.cs)
         MorningNotices(); // the morning line only from a sleep the game ended, with its hours; the city's news of the night packed into it; four notices' switches (MorningNewsChecks.cs)
+        CalendarApp();  // the Calendar: the months of every year length, the grid, each schedule's days against its feature's own rule, an empty month, the sources, the texts (CalendarAppChecks.cs)
         Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
         return _failed == 0 ? 0 : 1;
     }

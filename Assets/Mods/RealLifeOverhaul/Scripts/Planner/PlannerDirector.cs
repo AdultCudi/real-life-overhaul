@@ -298,6 +298,39 @@ namespace RealLifeOverhaul.Planner
             PlannerLogic.Arrange(List, Now(), wantText ? PlannerRules.DrivePerMinute : 0);
         }
 
+        /// <summary>
+        /// For another app (the Calendar, through Scripts/Wiring): the sources <paramref name="wanted"/> says yes to by their
+        /// id, asked for the days fromDay..toDay into a list of the caller's own, with their texts. The Planner's own list,
+        /// the categories the player hid in it and its reminders are not touched; a source that throws is left out for the
+        /// session, as on the Planner's own look.
+        /// </summary>
+        public void LookFor(PlannerList into, int fromDay, int toDay, Func<string, bool> wanted)
+        {
+            into.Begin(fromDay, toDay, true);
+            for (int s = 0; s < _sources.Length; s++)
+            {
+                if (_failed[s] || (wanted != null && !wanted(_sources[s].Id)))
+                {
+                    continue;
+                }
+                int before = into.Items.Count;
+                try
+                {
+                    if (_sources[s].Available)
+                    {
+                        _sources[s].Collect(fromDay, toDay, into);
+                    }
+                }
+                catch (Exception e)
+                {
+                    _failed[s] = true;
+                    Logger?.Error(e);
+                    Logger?.Warn("Planner: the source '" + _sources[s].Id + "' failed and is left out for this session.");
+                    into.Items.RemoveRange(before, into.Items.Count - before);
+                }
+            }
+        }
+
         // An entry's place in the city: the point it was given, or its address's door (a lookup in the game's table each).
         private void Places()
         {

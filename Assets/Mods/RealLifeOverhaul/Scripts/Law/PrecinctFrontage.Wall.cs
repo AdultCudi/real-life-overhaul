@@ -160,6 +160,10 @@ namespace RealLifeOverhaul.Law
             PlaceKerb();
             _nightKnown = false;
             Light();
+            if (_cull == null)
+            {
+                _cull = ModCulling.Add(CullRules.Kind.StationFront, _root, _dressed.Door, CullRadius);
+            }
             _logger?.Info("Law: frontage: " + Report() + ".");
         }
 

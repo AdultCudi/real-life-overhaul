@@ -336,16 +336,27 @@ namespace RealLifeOverhaul.Flare
             }
             else if (roll < 200 && (facts.Shops.Count > 0 || facts.Mine.Count > 0))
             {
+                // A review is of a visit at its hour (FlareLiveRules.Reviews): only of a business the game has open then.
                 bool mine = facts.Mine.Count > 0 && FlareRules.Roll(seed, day * 41 + k, 503) < 450;
                 List<FlareBiz> from = mine ? facts.Mine : facts.Shops.Count > 0 ? facts.Shops : facts.Mine;
-                FlareBiz b = from[FlareRules.Roll(seed, day * 43 + k, 504) % from.Count];
-                FlarePost r = New(f, day, seed, k, 9, 22, FlareAuthor.Citizen, c.Index, FlareSource.Review);
-                r.Arg = Stars(b.Stars, FlareRules.Roll(seed, day * 47 + k, 505));
-                r.Place = b.Place;
-                r.Name = b.Name;
-                r.District = b.District;
-                r.Topic = NicheTag(b.Niche);
-                return r;
+                int hour = ReviewHour(seed, day, k), pick = FlareRules.Roll(seed, day * 43 + k, 504);
+                int at = OpenPick(from, hour, pick);
+                if (at < 0)
+                {
+                    from = from == facts.Mine ? facts.Shops : facts.Mine;   // none of these open then: one of the others, if any is
+                    at = OpenPick(from, hour, pick);
+                }
+                if (at >= 0)
+                {
+                    FlareBiz b = from[at];
+                    FlarePost r = New(f, day, seed, k, ReviewFrom, ReviewTo, FlareAuthor.Citizen, c.Index, FlareSource.Review);
+                    r.Arg = Stars(b.Stars, FlareRules.Roll(seed, day * 47 + k, 505));
+                    r.Place = b.Place;
+                    r.Name = b.Name;
+                    r.District = b.District;
+                    r.Topic = NicheTag(b.Niche);
+                    return r;
+                }
             }
             FlareTalk topic = TopicOf(c.Persona, facts, FlareRules.Roll(seed, day * 53 + k, 506));
             FlarePost p = New(f, day, seed, k, 7, 23, FlareAuthor.Citizen, c.Index, FlareSource.CityTalk);

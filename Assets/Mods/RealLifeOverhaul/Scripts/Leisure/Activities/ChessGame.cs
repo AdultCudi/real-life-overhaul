@@ -22,6 +22,7 @@ namespace RealLifeOverhaul.Leisure
         private Transform _table;
         private float _nextTry;
         private float _cheerEnds;                  // while the onlooker cheers, when it ends; 0 otherwise
+        private bool _turnLogged;                  // the opponent found turned off the board has been written to the log, once a table
 
         public bool Out => _table != null;
         public Vector3 Table { get; private set; }
@@ -55,6 +56,7 @@ namespace RealLifeOverhaul.Leisure
                           && TimeHelper.CurrentHour >= FromHour && TimeHelper.CurrentHour < ToHour;
             if (Out)
             {
+                KeepFacing();
                 if (_cheerEnds > 0f && Time.time >= _cheerEnds)
                 {
                     _cheerEnds = 0f;
@@ -148,14 +150,38 @@ namespace RealLifeOverhaul.Leisure
                 why = TestRefusal.PoolBusy;
                 return false;
             }
+            person.AtTable(table);   // facing the board's centre from their stool, and kept so (CityPerson.AtTable)
             _table = prop;
             _opponent = person;
+            _turnLogged = false;
             Watch(city, table, along);
             Table = table;
             Stool = mine;
             LeisureDirector.Logger?.Info("Leisure: a chess player set up at " + table.ToString("F0") + ", " + Mathf.RoundToInt(Mathf.Sqrt(CitySpots.Flat(table - player)))
                                          + " m away.");
+            float off = person.KeepAtTable(false);
+            LeisureDirector.Logger?.Info("Chess check (facing): the opponent on the far stool faces the board's centre " + off.ToString("F0") + " degrees off (wanted "
+                                         + TableSeat.FacedWithin.ToString("F0") + " or less): " + (TableSeat.Faces(off) ? "PASS" : "FAIL") + ".");
             return true;
+        }
+
+        // Once a second while the table is out, a game on or not: the opponent faces the board's centre, turned back to it if
+        // anything turned them; the first time that was needed goes in the log.
+        private void KeepFacing()
+        {
+            if (!OpponentThere)
+            {
+                return;
+            }
+            bool seen = CitySpots.InView(_opponent.Position);
+            float off = _opponent.KeepAtTable(seen);
+            if (!TableSeat.Faces(off) && !_turnLogged)
+            {
+                _turnLogged = true;
+                LeisureDirector.Logger?.Info("Chess check (facing): the opponent was found " + off.ToString("F0") + " degrees off the board's centre (wanted "
+                                             + TableSeat.FacedWithin.ToString("F0") + " or less), " + (seen ? "in view" : "out of view")
+                                             + ": turned back to it (said once a table): FAIL.");
+            }
         }
 
         // An onlooker at one side of the table, if the pool can spare a third and the pavement there is clear.

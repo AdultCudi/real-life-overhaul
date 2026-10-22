@@ -28,9 +28,10 @@ internal static partial class Program
     private static void StreetV5Tiers()
     {
         Check(TextPacks.Tier(1, 0, true, false) == 1 && TextPacks.Tier(2, 0, true, false) == 3 && TextPacks.Tier(2, 2, true, true) == 2 && TextPacks.Tier(2, 3, true, true) == 3
-              && TextPacks.Tier(1, 1, true, true) == 1 && TextPacks.Tier(0, 2, false, true) == 2 && TextPacks.Tier(3, 3, true, true) == 0 && TextPacks.Tier(2, 4, true, true) == 0
+              && TextPacks.Tier(1, 1, true, true) == 1 && TextPacks.Tier(0, 2, false, true) == 2 && TextPacks.Tier(3, 3, true, true) == 0 && TextPacks.Tier(2, 4, true, true) == 4
+              && TextPacks.Tier(2, 5, true, true) == 0
               && TextPacks.Tier(0, 0, false, false) == 0 && TextPacks.Tier(2, 0, true, true) == 0,
-            "texts, packs: a pack's tier is its tier line (Lite 1, Medium 2, RLO Texts 3), else the first packs' rank (1 Lite, 2 the full pack); a rank above 2 or a tier above 3 is no pack");
+            "texts, packs: a pack's tier is its tier line (Lite 1, Medium 2, RLO Texts 3, RLO Texts Large 4), else the first packs' rank (1 Lite, 2 the full pack, never Large); a rank above 2 or a tier above 4 is no pack");
         string root = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "rlo-texts-tiers-" + System.Diagnostics.Process.GetCurrentProcess().Id);
         try
         {
@@ -242,9 +243,9 @@ internal static partial class Program
         int v4 = 0, v5 = 0, moment = 0;
         foreach (TextIntent t in TextIntents.All)
         {
-            if (!t.Key.StartsWith("street.", StringComparison.Ordinal))
+            if (!t.Key.StartsWith("street.", StringComparison.Ordinal) || t.Data > TextIntents.DataV5)
             {
-                continue;
+                continue;   // (data v6's street cards are the contract's: TextsSixChecks.cs)
             }
             v4 += t.Data == TextIntents.DataV4 ? 1 : 0;
             v5 += t.Data == TextIntents.DataV5 ? 1 : 0;
@@ -435,6 +436,9 @@ internal static partial class Program
 
     // ---------------------------------------------------------------- the packs
 
+    // The packs as they are built for release (not-in-repo/textpacks, beside the worktrees): each of the three trained on
+    // the newest data the mod's cards have (TextsHub.Newest: data 6 since 0.42.0), with its model and its languages, English
+    // among them; their licences; and the order an RLO before 0.29.1 gives them.
     private static void StreetV5Packs()
     {
         string up = System.IO.Path.GetFullPath(System.IO.Path.Combine(TextsBuildFolder(), "..", ".."));
@@ -449,14 +453,20 @@ internal static partial class Program
         }
         if (packs == null)
         {
-            Console.WriteLine("SKIPPED: street talk, data v5, the packs: no textpacks folder beside the worktree; the packs' files are checked where they are built.");
+            Console.WriteLine("SKIPPED: RLO Texts, the packs: no textpacks folder beside the worktree; the packs' files are checked where they are built.");
             return;
         }
         string full = System.IO.Path.Combine(packs, "RLO Texts"), lite = System.IO.Path.Combine(packs, "RLO Texts Lite");
-        TextPack a = TextPacks.Read(full), b = TextPacks.Read(lite);
-        Check(a != null && b != null && a.Data == TextIntents.DataV5 && b.Data == TextIntents.DataV5 && File.Exists(a.Model) && File.Exists(b.Model)
-              && a.Model.EndsWith("qwen2_v5e1.IQ4_XS.gguf", StringComparison.Ordinal) && b.Model.EndsWith("lfm350_v5e1.Q4_K_M.gguf", StringComparison.Ordinal) && a.Rank == 3 && b.Rank == 1,
-            "street talk, data v5, the packs: both are data 5 with their v5 models (" + (a != null ? a.Model + " data " + a.Data : "no RLO Texts") + "; " + (b != null ? b.Model + " data " + b.Data : "no Lite") + ")");
+        string medium = System.IO.Path.Combine(packs, "RLO Texts Medium");
+        TextPack a = TextPacks.Read(full), b = TextPacks.Read(lite), c = TextPacks.Read(medium);
+        bool newest = a != null && b != null && c != null && a.Data == TextsHub.Newest && b.Data == TextsHub.Newest && c.Data == TextsHub.Newest;
+        bool english = a != null && b != null && c != null && TextLanguages.Has(a.Languages, TextLanguages.English) && TextLanguages.Has(b.Languages, TextLanguages.English)
+                       && TextLanguages.Has(c.Languages, TextLanguages.English);
+        Check(newest && english && File.Exists(a.Model) && File.Exists(b.Model) && File.Exists(c.Model) && a.Rank == 3 && c.Rank == 2 && b.Rank == 1,
+            "RLO Texts, the packs: the three are trained on the newest data, data v" + TextsHub.Newest + ", each with its model and its languages, English among them ("
+            + (a != null ? System.IO.Path.GetFileName(a.Model) + " data " + a.Data + " " + string.Join(",", a.Languages) : "no RLO Texts") + "; "
+            + (c != null ? System.IO.Path.GetFileName(c.Model) + " data " + c.Data + " " + string.Join(",", c.Languages) : "no Medium") + "; "
+            + (b != null ? System.IO.Path.GetFileName(b.Model) + " data " + b.Data + " " + string.Join(",", b.Languages) : "no Lite") + ")");
         string Read(string folder, string file)
         {
             string p = System.IO.Path.Combine(folder, "licences", file);
@@ -466,18 +476,18 @@ internal static partial class Program
         Check(lfm.Contains("LFM Open License v1.0") && lfm.Contains("Liquid AI") && Read(lite, "LICENSE-Apache-2.0.txt").Length == 0
               && liteNotice.Contains("LFM2.5-350M") && liteNotice.Contains("Liquid AI") && liteNotice.Contains("modified by Real Life Overhaul") && !liteNotice.Contains("SmolLM2")
               && Read(lite, "LICENSE-llama.cpp.txt").Contains("MIT License"),
-            "street talk, data v5, the packs: the Lite pack carries the LFM Open License v1.0, a notice that its model is LFM2.5-350M by Liquid AI modified by Real Life Overhaul, and llama.cpp's MIT licence; no SmolLM2 Apache notice");
+            "RLO Texts, the packs: the Lite pack carries the LFM Open License v1.0, a notice that its model is LFM2.5-350M by Liquid AI modified by Real Life Overhaul, and llama.cpp's MIT licence; no SmolLM2 Apache notice");
         Check(Read(full, "LICENSE-Apache-2.0.txt").Contains("Apache License") && fullNotice.Contains("Qwen") && !fullNotice.Contains("LFM") && Read(full, "LICENSE-llama.cpp.txt").Contains("MIT License")
               && Read(full, "LICENSE-LFM-Open-License-v1.0.txt").Length == 0,
-            "street talk, data v5, the packs: RLO Texts carries Apache 2.0 with Qwen's notice and llama.cpp's MIT licence, and no LFM licence");
-        string medium = System.IO.Path.Combine(packs, "RLO Texts Medium"), mediumNotice = Read(medium, "NOTICE.txt");
+            "RLO Texts, the packs: RLO Texts carries Apache 2.0 with Qwen's notice and llama.cpp's MIT licence, and no LFM licence");
+        string mediumNotice = Read(medium, "NOTICE.txt");
         string mediumTxt = File.Exists(System.IO.Path.Combine(medium, TextPacks.File)) ? File.ReadAllText(System.IO.Path.Combine(medium, TextPacks.File)) : string.Empty;
-        Check(mediumTxt.Contains("rank=2") && mediumTxt.Contains("tier=2") && mediumTxt.Contains("data=5") && Read(medium, "LICENSE-Apache-2.0.txt").Contains("Apache License")
+        Check(mediumTxt.Contains("rank=2") && mediumTxt.Contains("tier=2") && mediumTxt.Contains("data=" + TextsHub.Newest) && Read(medium, "LICENSE-Apache-2.0.txt").Contains("Apache License")
               && mediumNotice.Contains("Qwen 3.5 0.8B") && !mediumNotice.Contains("LFM") && Read(medium, "LICENSE-llama.cpp.txt").Contains("MIT License")
               && File.Exists(System.IO.Path.Combine(medium, "README.txt")) && File.Exists(System.IO.Path.Combine(medium, "thumbnail.jpg")),
-            "street talk, data v5, the packs: RLO Texts Medium is ready but for its model: pack.txt (rank 2 for older RLO, tier 2, data 5), Qwen's Apache 2.0 and notice, llama.cpp's MIT licence, its README and thumbnail");
+            "RLO Texts, the packs: RLO Texts Medium has pack.txt (rank 2 for older RLO, tier 2, data " + TextsHub.Newest + "), Qwen's Apache 2.0 and notice, llama.cpp's MIT licence, its README and thumbnail");
         List<string> order = OldRloOrder(packs);
         Check(order.IndexOf("RLO Texts") == 0 && order.IndexOf("RLO Texts Lite") == order.Count - 1,
-            "street talk, data v5, the packs: the packs' own pack.txt files order the same for RLO before 0.29.1 (" + string.Join(", ", order) + ")");
+            "RLO Texts, the packs: the packs' own pack.txt files order the same for RLO before 0.29.1 (" + string.Join(", ", order) + ")");
     }
 }

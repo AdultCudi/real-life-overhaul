@@ -47,11 +47,13 @@ namespace RealLifeOverhaul.Meta
                 .Fact("econ_od_low", () => Guide.Percent(Economy.ProductCatalogue.OverdraftShareAtThreshold))
                 .Fact("econ_od_high", () => Guide.Percent(Economy.ProductCatalogue.OverdraftShareAtBest))
                 .Fact("econ_od_least", () => Guide.Money(Economy.ProductCatalogue.OverdraftLeast))
+                .Fact("econ_od_income", () => Whole(Economy.ProductCatalogue.OverdraftIncomeDays))
                 .Fact("econ_od_points", () => Whole(Economy.ProductCatalogue.OverdraftRatePoints))
                 .Fact("econ_od_float", () => Guide.Money(Economy.ProductCatalogue.OverdraftFloat))
                 .Fact("econ_card_low", () => Guide.Percent(Economy.ProductCatalogue.CardShareAtThreshold))
                 .Fact("econ_card_high", () => Guide.Percent(Economy.ProductCatalogue.CardShareAtBest))
                 .Fact("econ_card_least", () => Guide.Money(Economy.ProductCatalogue.CardLeast))
+                .Fact("econ_card_income", () => Whole(Economy.ProductCatalogue.CardIncomeDays))
                 .Fact("econ_card_points", () => Whole(Economy.ProductCatalogue.CardRatePoints))
                 .Fact("econ_card_fee", () => Guide.Percent(Economy.ProductCatalogue.CardCashFeeShare))
                 .Fact("econ_card_fee_least", () => Guide.Money(Economy.ProductCatalogue.CardCashFeeLeast))
@@ -259,6 +261,7 @@ namespace RealLifeOverhaul.Meta
                 .ResetData(() => Markets.MarketDirector.Instance?.Forget());   // the director opens a new market from the (now empty) save on its next second
             Markets.ListingGuide.Register();
             Markets.TradingGuide.Register();
+            Markets.DerivGuide.Register();
 
             Features.Add("economy_banks", "reallife_meta_title_economy_banks")
                 .About("reallife_guide_economy_banks_about").Help("reallife_guide_economy_banks")
@@ -282,6 +285,13 @@ namespace RealLifeOverhaul.Meta
                 .Owns(Settings.EconomyRotaId)
                 .Data(Economy.RotaStore.Key)
                 .Test("reallife_rota_test_open", "reallife_rota_test_plans", "reallife_rota_test_fill", "reallife_rota_test_back"));
+
+            // Its rows stand under the company's header too.
+            Economy.ManagerGuide.AddFacts(Features.Add("economy_managers", "reallife_meta_title_economy_managers")
+                .About("reallife_guide_economy_managers_about").Help("reallife_guide_economy_managers")
+                .Owns(Settings.EconomyManagersId)
+                .Data(Economy.ManagerStore.Key)
+                .Test("reallife_mgr_test_appoint", "reallife_mgr_test_decide", "reallife_mgr_test_undo"));
 
             Economy.EstateGuide.AddFacts(Features.Add("economy_estate", "reallife_meta_title_economy_estate")
                 .Group("reallife_estate_header")

@@ -9,7 +9,8 @@ namespace RealLifeOverhaul
     /// Two people at a chess table on a wide piece of pavement: the table and its two stools are
     /// one prop the mod stands there, so the seat height the clip sits at (0.45 m) and the reach
     /// to the board are known. Each plays the same loop from a different moment, so one thinks
-    /// while the other moves. Two are seated or neither is.
+    /// while the other moves. Two are seated or neither is, each facing the board's centre from
+    /// their stool and kept so once a second (CityPerson.AtTable).
     /// </summary>
     public sealed class ChessActivity : CityActivity
     {
@@ -65,11 +66,20 @@ namespace RealLifeOverhaul
                 End();
                 return false;
             }
+            Cast[0].AtTable(_table);
+            Cast[1].AtTable(_table);
             return true;
         }
 
         public override bool Tick(float now)
         {
+            for (int i = 0; i < Cast.Count; i++)
+            {
+                if (!Cast[i].Lost)
+                {
+                    Cast[i].KeepAtTable(CitySpots.InView(Cast[i].Position));
+                }
+            }
             return Lasting();
         }
     }

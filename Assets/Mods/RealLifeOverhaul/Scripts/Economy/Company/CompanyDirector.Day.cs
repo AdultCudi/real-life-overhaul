@@ -132,6 +132,7 @@ namespace RealLifeOverhaul.Economy
                         PartFault(CompanyPart.Staff, "the hour", e);
                     }
                 }
+                ManagerHour(day, Save.Hour);   // after the company's own hour: a manager answers what the parts have asked
             }
             catch (Exception e)
             {
@@ -179,6 +180,7 @@ namespace RealLifeOverhaul.Economy
                         PartFault(part, "the day", e);
                     }
                 }
+                ManagerDay(day);   // the allowances are yesterday's costs: in the books read next
                 Books(day, next);
                 float ruled = Time.realtimeSinceStartup;
                 int written = WriteAll(day, true, true);
@@ -244,6 +246,7 @@ namespace RealLifeOverhaul.Economy
             }
             save.modData[CompanyStore.Key] = CompanyStore.Write(_state);
             RotaSave(save);
+            ManagerSave(save);
             if (_beforeTests != null)
             {
                 save.modData[CompanyStore.TestKey] = _beforeTests;

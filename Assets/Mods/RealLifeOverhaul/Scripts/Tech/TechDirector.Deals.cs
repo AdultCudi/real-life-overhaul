@@ -99,19 +99,18 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        /// <summary>A follow-on taken: the player keeps their share of the last round, as an angel or from the fund.</summary>
+        /// <summary>
+        /// A follow-on taken, as an angel or from the fund: once a round, within its days, back to the share the player held before
+        /// it (VentureRules.FollowOnOpen). A second press of the round is refused.
+        /// </summary>
         internal bool FollowOn(int id, bool fund)
         {
             Startup s = _ventureOn ? _venture.StartupOf(id) : null;
-            if (s == null || !s.Alive)
+            if (s == null || Save == null || !VentureRules.FollowOnOpen(s, Save.Day))
             {
                 return false;
             }
             long amount = VentureRules.FollowOnAmount(s);
-            if (amount <= 0)
-            {
-                return false;
-            }
             if (fund)
             {
                 if (_venture.Fund.Cash < amount)
@@ -127,7 +126,7 @@ namespace RealLifeOverhaul.Tech
                 Notifications.ShowInsufficientMoney();
                 return false;
             }
-            VentureRules.TakeFollowOn(s, fund ? (int)HolderKind.Fund : (int)HolderKind.Angel, amount);
+            VentureRules.TakeFollowOn(s, fund ? (int)HolderKind.Fund : (int)HolderKind.Angel, amount);   // cannot refuse: the amount is its own
             ChangedTech();
             return true;
         }

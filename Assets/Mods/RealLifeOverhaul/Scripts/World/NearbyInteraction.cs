@@ -10,6 +10,7 @@ namespace RealLifeOverhaul
     /// GTA-style entry: press the interact key (F unless rebound; or the second one, E, when the game isn't
     /// already offering an interaction) near an entrance door to go inside, or near one of your vehicles to get in. Both use the
     /// game's own entry methods, so opening hours, entrance fees and cargo rules still apply.
+    /// The cost a frame: the option and the two keys; only on a press are the features asked whether the key is theirs.
     /// </summary>
     public class NearbyInteraction : MonoBehaviour
     {
@@ -47,8 +48,7 @@ namespace RealLifeOverhaul
 
         private void OnUpdate()
         {
-            // A job's key prompt is on screen, or the job has the key for the whole shift (flyers on foot): the key is its.
-            if (!Settings.EnterWithKey || JobDirector.TakesInteractKey || TransitDirector.TakesInteractKey || CarOwnership.TakesInteractKey || HomeDirector.TakesInteractKey || GarageDirector.TakesInteractKey || Leisure.LeisureDirector.TakesInteractKey || SocialDirector.TakesInteractKey || TravelDirector.TakesInteractKey || Justice.TakesInteractKey || LicenceDirector.TakesInteractKey || CivicDirector.TakesInteractKey || Family.FamilyDirector.TakesInteractKey || Law.LawDirector.TakesInteractKey || Roommates.RoommateDirector.TakesInteractKey || Ledger.LedgerDirector.TakesInteractKey || Careers.CareersDirector.TakesInteractKey || Tech.TechSites.TakesInteractKey || Street.StreetDirector.TakesInteractKey)
+            if (!Settings.EnterWithKey)
             {
                 return;
             }
@@ -57,6 +57,17 @@ namespace RealLifeOverhaul
             bool pressed = Keys.Down(KeyAction.Interact)
                            || (Keys.Down(KeyAction.InteractAlt) && !OverlayUI.IsVisible);
             if (!pressed)
+            {
+                return;
+            }
+
+            // A job's key prompt is on screen, or the job has the key for the whole shift (flyers on foot): the key is its.
+            // Asked only on a press: the answer is the same, and eighteen flags a frame are not read for nothing.
+            if (JobDirector.TakesInteractKey || TransitDirector.TakesInteractKey || CarOwnership.TakesInteractKey || HomeDirector.TakesInteractKey
+                || GarageDirector.TakesInteractKey || Leisure.LeisureDirector.TakesInteractKey || SocialDirector.TakesInteractKey || TravelDirector.TakesInteractKey
+                || Justice.TakesInteractKey || LicenceDirector.TakesInteractKey || CivicDirector.TakesInteractKey || Family.FamilyDirector.TakesInteractKey
+                || Law.LawDirector.TakesInteractKey || Roommates.RoommateDirector.TakesInteractKey || Ledger.LedgerDirector.TakesInteractKey
+                || Careers.CareersDirector.TakesInteractKey || Tech.TechSites.TakesInteractKey || Street.StreetDirector.TakesInteractKey)
             {
                 return;
             }

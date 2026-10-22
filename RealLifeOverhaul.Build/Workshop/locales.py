@@ -85,7 +85,7 @@ ENGLISH_OK = {
     'reallife_online_row_orders', 'reallife_online_ord_goods', 'reallife_svc_trend_level', 'reallife_svc_buyer_investor_0',
     'reallife_svc_buyer_investor_1', 'reallife_svc_buyer_investor_2', 'reallife_svc_buyer_chain_0', 'reallife_svc_buyer_chain_1',
     'reallife_svc_buyer_chain_2', 'reallife_svc_confirm_sell_text', 'reallife_brand_chain_0', 'reallife_brand_chain_1',
-    'reallife_brand_chain_2', 'reallife_changes_002_2_title', 'reallife_opt_text', 'reallife_changes_002_3_title', 'reallife_bank_app',
+    'reallife_brand_chain_2', 'reallife_changes_002_2_title', 'reallife_opt_text', 'reallife_changes_002_3_title',
     'reallife_changes_002_4_title', 'reallife_util_toast', 'reallife_util_provider_water', 'reallife_net_mbps',
     'reallife_net_provider_aerowave', 'reallife_net_provider_brightvein', 'reallife_net_provider_copperhill',
     'reallife_net_provider_kestrel', 'reallife_bb_percent', 'reallife_bb_share_item', 'reallife_net_provider_sold',

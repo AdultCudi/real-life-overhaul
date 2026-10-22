@@ -16,11 +16,13 @@ namespace RealLifeOverhaul
         private const float Reach = 1.7f;           // metres from the attend spot
         private const float ReachAtDoor = 2.4f;     // ...when that spot is the door
         private const int WaitForProps = 25;        // ticks (seconds) to wait for the prop bundle before the plain sign is built
+        private const float SignCullRadius = 2f;    // metres round the sign's foot: all of it (Performance/ModCulling)
 
         private static readonly float[] Aside = { 4.6f, -4.6f, 6.2f, -6.2f };   // metres along the wall from the door, clear of the help-wanted board's 2.4
 
         private readonly IModLogger _logger;
         private GameObject _sign;
+        private CullEntry _cull;                  // the sign, not drawn beyond the game's far band (Performance/ModCulling)
         private int _waited;
         private int _look;
         private bool _failed;
@@ -138,6 +140,8 @@ namespace RealLifeOverhaul
 
         public void Dispose()
         {
+            ModCulling.Remove(_cull);
+            _cull = null;
             if (_sign != null)
             {
                 UnityEngine.Object.Destroy(_sign);
@@ -228,6 +232,8 @@ namespace RealLifeOverhaul
                 {
                     return false;
                 }
+                ModCulling.Remove(_cull);
+                _cull = ModCulling.Add(CullRules.Kind.BuildingSign, _sign.transform, at, SignCullRadius);
                 Front = reader;
                 Usable = true;
                 return true;

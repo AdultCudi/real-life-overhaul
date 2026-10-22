@@ -286,16 +286,14 @@ internal static partial class Program
             ranks &= PagerRules.ModRank(names[i]) == i * 100 && (i == 0 || PagerRules.ModRank(names[i]) > PagerRules.ModRank(names[i - 1]));
         }
         Check(ranks, "each app's place is its place in the table");
-        int bank = Array.IndexOf(names, PagerRules.BankPrefix) * 100;
-        Check(PagerRules.ModRank("RealLifeBank1") == bank + 1 && PagerRules.ModRank("RealLifeBank12") == bank + 12 && PagerRules.ModRank("RealLifeBank") == bank
-              && PagerRules.ModRank("RealLifeBank1x") == -1 && PagerRules.ModRank("RealLifeBank123") == -1
-              && PagerRules.ModRank("RealLifeBank1") < PagerRules.ModRank("RealLifeOwnBank") && PagerRules.ModRank("RealLifeFinance") < PagerRules.ModRank("RealLifeBank2"),
-            "the bank apps stand together in the banks' order, between Finance and the player's own bank");
+        Check(PagerRules.ModRank("RealLifeBanks") > PagerRules.ModRank("RealLifeFinance") && PagerRules.ModRank("RealLifeBanks") < PagerRules.ModRank("RealLifeOwnBank")
+              && PagerRules.ModRank("RealLifeBank1") == -1 && PagerRules.ModRank("RealLifeBank") == -1 && PagerRules.IndexOf("RealLifeBanks") == Array.IndexOf(names, "RealLifeBanks"),
+            "the one Banks app stands between Finance and the player's own bank; the old app of each bank has no place any more");
         Check(PagerRules.ModRank("Persona") == -1 && PagerRules.ModRank("GoingPublicHub") == -1 && PagerRules.ModRank(null) == -1 && PagerRules.ModRank(string.Empty) == -1,
             "the game's names and other mods' have no place among the mod's");
         // Every order the same apps could be put on in comes out the same.
         var random = new Random(20102026);
-        string[] mixed = { "BizMan", "Persona", "RealLifeSettings", "RealLifeBank2", "OtherModHub", "RealLifePlanner", "RealLifeBank1", "RealLifeStocks", "OtherModChat", "RealLifeFlare", "RealLifeGuide" };
+        string[] mixed = { "BizMan", "Persona", "RealLifeSettings", "RealLifeOwnBank", "OtherModHub", "RealLifePlanner", "RealLifeBanks", "RealLifeStocks", "OtherModChat", "RealLifeFlare", "RealLifeGuide" };
         bool[] gameOf = mixed.Select(n => n == "BizMan" || n == "Persona").ToArray();
         string want = null;
         int faults = 0;
@@ -314,8 +312,8 @@ internal static partial class Program
             faults += got == want && order.Distinct().Count() == order.Length && games == 2
                       && order.Skip(games).Select(o => mixed[standing[o]]).SkipWhile(n => n.StartsWith("RealLife", StringComparison.Ordinal)).All(n => n.StartsWith("OtherMod", StringComparison.Ordinal)) ? 0 : 1;
         }
-        Check(faults == 0 && want == "BizMan,Persona|RealLifePlanner,RealLifeFlare,RealLifeBank1,RealLifeBank2,RealLifeStocks,RealLifeGuide,RealLifeSettings",
-            "400 orders of putting on: the game's first, the mod's always Planner, Flare, the banks in order, Stocks, Guide, options, other mods' last (" + want + "; " + faults + " wrong)");
+        Check(faults == 0 && want == "BizMan,Persona|RealLifePlanner,RealLifeFlare,RealLifeBanks,RealLifeOwnBank,RealLifeStocks,RealLifeGuide,RealLifeSettings",
+            "400 orders of putting on: the game's first, the mod's always Planner, Flare, the banks, your bank, Stocks, Guide, options, other mods' last (" + want + "; " + faults + " wrong)");
         var two = new int[3];
         Check(PagerRules.Arrange(new[] { false, false, false }, new[] { 300, 300, -1 }, 3, two) == 0 && two.SequenceEqual(new[] { 0, 1, 2 }), "equal places keep the order they stand in");
         Check(PagerRules.Arrange(new[] { true, false }, null, 2, two) == 1, "with no places it is the game's first, the rest as they stand");
@@ -547,7 +545,7 @@ internal static partial class Program
         Check(pages != null && Regex.IsMatch(pages, @"if \(PagerRules\.Remeasure\(barWidth, _measuredFor\) && strip\.gameObject\.activeInHierarchy\)\s*\{[^}]*_room = DataLeft\(strip\) - rowStart;\s*_tiles = PagerRules\.StripTiles\(_room, pitch, layout\.spacing, _gameApps\);\s*_measuredFor = barWidth;")
               && pages.Contains("_pagesLeft = PagerRules.PageStart(rowStart, _room, Tiles, pitch, layout.spacing);")
               && pages.Contains("float barWidth = strip.parent is RectTransform bar ? bar.rect.width : 0f;")
-              && pages.Contains("Pages = PagerRules.Pages(count, Tiles)") && !pages.Contains("RightLimit(") && !pages.Contains("_rightData"),
+              && pages.Contains("Pages = PagerRules.Pages(count, ItemTiles)") && !pages.Contains("RightLimit(") && !pages.Contains("_rightData"),
             "the full menu's row works out its tiles from the money's box only when the bar's width has changed, never from the money or the date");
         string box = Body(pager, "private float DataLeft(RectTransform strip)");
         Check(box != null && box.Contains("_rightData.GetWorldCorners(Corners)") && !box.Contains("GetChild") && !box.Contains("InChildren") && !box.Contains("ForceRebuild"),
@@ -563,7 +561,7 @@ internal static partial class Program
         var ids = new List<string>();
         foreach (string file in Directory.GetFiles(scripts, "*.cs", SearchOption.AllDirectories))
         {
-            foreach (Match m in Regex.Matches(File.ReadAllText(file), "const string \\w*AppId(?:Prefix)? = \"(RealLife\\w+)\""))
+            foreach (Match m in Regex.Matches(File.ReadAllText(file), "const string \\w*AppId = \"(RealLife\\w+)\""))
             {
                 ids.Add(m.Groups[1].Value);
             }
@@ -577,15 +575,15 @@ internal static partial class Program
         Check(collect != null && collect.Contains("Ignored(placed)") && collect.Contains("child == _template") && !collect.Contains("AppButton"),
             "every child the layout places is one of the page's items, other mods' buttons too (Going Public's Business, Chat and Hub): none is laid out under the button");
         Check(pager.Contains("Guard.Listener<AppName>(BadgeChanged)") && pager.Contains("SmartphoneUI.OnUpdatedBadgeCount.AddListener(_onBadge)")
-              && pager.Contains("SmartphoneUI.OnUpdatedBadgeCount.RemoveListener(_onBadge)") && Body(pager, "private void Paint()")?.Contains("BadgeUp(_apps[i])") == true
+              && pager.Contains("SmartphoneUI.OnUpdatedBadgeCount.RemoveListener(_onBadge)") && Body(pager, "private void Paint()")?.Contains("BadgeUp(_items[i])") == true
               && Body(pager, "private void Paint()")?.Contains("waiting == _badgeShown") == true,
             "the button's badge counts every badge up on the pages not showing, the game's own too, hears the game's word once and is written only when it changes");
         Check(Body(pager, "private bool MakeMore()")?.Contains("rect.anchorMin = row.anchorMin;") == true && Body(pager, "private void More()")?.Contains("SetSizeWithCurrentAnchors") == true,
             "the button is anchored as the row or grid is, so it moves with them");
         Check(Body(pager, "private bool SomeoneElse()")?.Contains("GetName()") == false && pager.Contains("KnownScripts[type] = known;"), "each kind of script on the grid is looked at once");
         string refresh = Body(pager, "public void Refresh()");
-        Check(refresh != null && refresh.Contains("Pages = PagerRules.Pages(_apps.Count, Tiles)") && Body(pager, "private int PageOf(int index)")?.Contains("PagerRules.PageOf(index, _apps.Count, Tiles)") == true,
-            "the HUD phone's pages and every app's page come from the rules");
+        Check(refresh != null && refresh.Contains("Pages = PagerRules.Pages(_items.Count, ItemTiles)") && Body(pager, "private int PageOf(int index)")?.Contains("PagerRules.PageOf(index, _items.Count, ItemTiles)") == true,
+            "the HUD phone's pages and every item's page come from the rules (the view's items: every app without folders)");
         string place = Body(pager, "private void PlaceStripPage()");
         Check(place != null && place.Contains("float begin = _pagesLeft;") && !place.Contains("PageSize("), "a short page of the row stands where a full one does: same left edge");
         string grid = Body(pager, "private void PlaceGridPage()");
@@ -593,7 +591,8 @@ internal static partial class Program
 
         // The button: on the last tile, shown with pages, turning on and round, its words from the texts.
         string more = Body(pager, "private void More()");
-        Check(more != null && more.Contains("PagerRules.ButtonShown(Pages)") && more.Contains("Tile(PagerRules.ButtonTile(Tiles)"), "the More apps button stands on the page's last tile and only while there are pages");
+        Check(more != null && more.Contains("PagerRules.ButtonShown(Pages)") && more.Contains("Tile(MoreTile,") && pager.Contains(": PagerRules.ButtonTile(Tiles);"),
+            "the More apps button stands on the page's last tile (the last above the dock, on folders' pages the last after the Back tile) and only while there are pages");
         Check(Body(pager, "private void NextPage()")?.Contains("PagerRules.Next(_page, Pages)") == true && pager.Contains("UiClone.Rewire(copy.transform, NextPage)"),
             "the button goes to the next page and round, through the mod's guarded click");
         string make = Body(pager, "private bool MakeMore()");

@@ -185,6 +185,7 @@ namespace RealLifeOverhaul.Markets
             OwnSecond();
             BotsSecond();
             InvestSecond();   // worked orders, dividends put back and rollovers
+            DerivsSecond();   // the raw materials exchange and the player's futures and options
             SendTrades();
             InstallApp();
         }
@@ -270,6 +271,7 @@ namespace RealLifeOverhaul.Markets
         // The tape's new lines go to disk at once, the furthest moment played at least once a second.
         private void Flush()
         {
+            DeliverDue();   // a future's goods its day's close asked for, after the frame's market work
             MarketTape tape = _engine.Tape;
             if (Time.realtimeSinceStartup >= _frontierAt && tape.Frontier > _frontierWritten)
             {
@@ -348,6 +350,7 @@ namespace RealLifeOverhaul.Markets
             _engine.BotTold = _botTold;
             HookBonds();
             HookInvest();
+            HookDerivs();
             _engine.HoldAfterLoad();
             OwnStarted(save);   // who the player is, and their company back if a save as a guest set it aside
             _frontierWritten = tape.Frontier;
@@ -412,7 +415,16 @@ namespace RealLifeOverhaul.Markets
             _checks.Clear();
             _shared.Length = 0;
             _guestTrades.Clear();   // a guest's unsent trades never reach another host
+            _deliveries.Clear();
             RemoveApp();
+            try
+            {
+                MarketBridges.MaterialsFixed?.Invoke();   // the importers' prices are their kinds' again
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
         }
 
         // The tape's lines on their way with the furthest moment played, so a load holds orders back exactly as far as it went.

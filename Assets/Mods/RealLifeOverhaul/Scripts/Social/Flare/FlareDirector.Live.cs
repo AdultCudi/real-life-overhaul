@@ -15,6 +15,7 @@ namespace RealLifeOverhaul.Flare
         private readonly List<FlareCitizen> _citizens = new List<FlareCitizen>(FlareLiveRules.Citizens);
         private readonly FlareCityFacts _facts = new FlareCityFacts();
         private readonly List<FlarePost> _made = new List<FlarePost>(32);
+        private readonly List<FlarePost> _reviewsDue = new List<FlarePost>(8);
         private readonly List<FlareCase> _due = new List<FlareCase>(8);
         private readonly List<string> _staff = new List<string>(8);
         private readonly List<string> _tycoons = new List<string>(4);              // names, for the accounts called on
@@ -27,6 +28,7 @@ namespace RealLifeOverhaul.Flare
         private int _unread;
         private int _caseNoteDay = -1, _caseNotes;
         private int _hiringDay = -100;
+        private long _reviewsTo = long.MaxValue;   // the city's reviews are asked about up to this hour (day * 24 + hour); not saved
 
         public const int NoticesMost = 60;
         private const int CaseNotesPerDay = 3;     // notifications of an answer to the player's report, a day at most
@@ -69,6 +71,7 @@ namespace RealLifeOverhaul.Flare
 
         private void LiveStart(FlareFile file)
         {
+            _reviewsTo = (long)Save.Day * 24 + Save.Hour;   // the hours before the save's were asked about as they came
             if (file.Net.CitySeed == 0)
             {
                 file.Net.CitySeed = file.CastSeed != 0 ? file.CastSeed : file.Seed;
@@ -190,9 +193,49 @@ namespace RealLifeOverhaul.Flare
             {
                 FileCase(p, "c" + p.Who, 0f, 0f);
             }
-            else if (p.Source == FlareSource.Review)
+            else if (p.Source == FlareSource.Review && (long)p.Day * 24 + p.Hour <= _reviewsTo)
+            {
+                ReviewUp(p);   // its hour has come already (the feed's first day): asked now; otherwise as the hour comes
+            }
+        }
+
+        // The game's hour: the city's reviews of the visits of the hours since the last are asked about, each once. A guest
+        // that follows the host's feed has the host's, asked on the host's machine.
+        private void ReviewsAt(int day, int hour)
+        {
+            long now = (long)day * 24 + hour;
+            if (now <= _reviewsTo)
+            {
+                return;
+            }
+            if (!Following)
+            {
+                FlareLiveRules.ReviewsDue(_file, _reviewsTo, now, _reviewsDue);
+                for (int i = 0; i < _reviewsDue.Count; i++)
+                {
+                    ReviewUp(_reviewsDue[i]);
+                }
+            }
+            _reviewsTo = now;
+        }
+
+        // A city review as its visit comes: with the game's business open at that hour it goes up and moves the business's
+        // customers (and tells the owner of a poor one); with it closed then (temporarily, or outside its opening hours)
+        // nobody visited, and the review is taken back before it shows. The guests' copies go with the next whole feed.
+        private void ReviewUp(FlarePost p)
+        {
+            if (FlareLiveGame.OpenAt(p.Place, p.Hour, Save != null && Save.Day == p.Day))
             {
                 BusinessEffect(p, false);
+                return;
+            }
+            if (FlareLiveRules.TakeBack(_file, p.Id))
+            {
+                Logger?.Info("Flare: a city review of " + p.Name + " for a visit at " + p.Hour + ":00 on day " + p.Day + " is taken back: the game has it closed then, so nobody visited.");
+                if (GoingPublic.IsHost)
+                {
+                    SharedCity.Changed(FlareNetShare.Part);
+                }
             }
         }
 
@@ -247,32 +290,46 @@ namespace RealLifeOverhaul.Flare
         {
             bool hiring = day - _hiringDay <= 7 || FlareBridges.Ask(FlareBridges.Hiring, false);
             string with, what;
-            if (!FlareLiveRules.CityDm(_file, day, hiring, out with, out what))
+            long at;
+            if (!FlareLiveRules.CityDm(_file, day, hiring, out with, out what, out at))
             {
                 return;
             }
-            long at = FlareLiveRules.Now(day, 10 + FlareRules.Roll(_file.Seed, day, 842) % 10, FlareRules.Roll(_file.Seed, day, 843) % 60);
             string name = AccountName(with);
             FlareLiveRules.Dm(_file.Net, with, name, at, false, null, FlareText.DmKey(what), null);
             Logger?.Info("Flare: " + name + " writes to the player (" + what + ") on day " + day + ".");
         }
 
-        private void LiveHour(int day, int hour)
+        // The hour's live steps (FlareHourSteps), one a frame: the City Office's cases due this hour and the works done; the
+        // invitations starting and the patrols watched; the unread count; the words of the hour's answers and replies.
+        private void LiveHour(int day, int hour, int step)
         {
-            long now = FlareLiveRules.Now(day, hour, 0);
-            if (!Following)
+            if (step == FlareHourSteps.Cases)
             {
-                FlareLiveRules.Due(_file.Net, now + 59, _due);   // the cases of this hour: the answer is dated at its own minute
-                for (int i = 0; i < _due.Count; i++)
+                long now = FlareLiveRules.Now(day, hour, 0);
+                if (!Following)
                 {
-                    Answer(_due[i], day);
+                    FlareLiveRules.Due(_file.Net, now + 59, _due);   // the cases of this hour: the answer is dated at its own minute
+                    for (int i = 0; i < _due.Count; i++)
+                    {
+                        Answer(_due[i], day);
+                    }
+                    Works(day);
                 }
-                Works(day);
             }
-            Invitations(day, hour);
-            Watched(day);
-            Recount();
-            TextsAhead();   // the hour's answers and replies: their words asked now
+            else if (step == FlareHourSteps.Out)
+            {
+                Invitations(day, hour);
+                Watched(day);
+            }
+            else if (step == FlareHourSteps.Unread)
+            {
+                Recount();
+            }
+            else if (step == FlareHourSteps.Words)
+            {
+                TextsAhead();   // the hour's answers and replies: their words asked now
+            }
         }
 
         private void Watched(int day)

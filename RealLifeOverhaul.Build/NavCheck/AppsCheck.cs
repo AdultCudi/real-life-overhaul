@@ -59,19 +59,19 @@ internal static partial class Program
         Check(add.Contains("parent == null && Kept(template)") && add.Contains("Reuse(template)") && Body(box, "public void Clear()").Contains("Park(part, _liveFrom[i])"),
             "apps: a part is taken back only into the box, and the box's parts are laid aside when it is cleared");
         string kept = Body(keep, "private bool Kept(");
-        string[] kinds = { "_bodyT", "_subT", "_noteT", "_headerT", "_headingT", "_pairT", "_meterT", "_checkT", "_footT", "_switch", "_selector", "_buttons" };
+        string[] kinds = { "_bodyT", "_subT", "_noteT", "_headerT", "_headingT", "_pairT", "_meterT", "_checkT", "_footT", "_switch", "_toggleT", "_selector", "_buttons" };
         bool listed = true;
         foreach (string kind in kinds)
         {
             listed &= kept.Contains("template == " + kind);
         }
         Check(listed && !kept.Contains("_chipsT") && !kept.Contains("_chipT") && !kept.Contains("_title") && !kept.Contains("_line ") && !kept.Contains("_headline"),
-            "apps: the box keeps its own kinds of part (rows, lines, notes, headers, sections, pairs, meters, ticks, the foot, switches, selectors, buttons), and no chip");
+            "apps: the box keeps its own kinds of part (rows, lines, notes, headers, sections, pairs, meters, ticks, the foot, switches, settings switches, selectors, buttons), and no chip");
         string restore = Body(keep, "private void Restore(");
         string[] setBack =
         {
             "color = _lineColour", "margin = _headerMargin", "Find(\"Chips\")", "color = _checkColour", "mark.sprite = _checkMarkSprite", "mark.color = _checkMarkColour",
-            "sizeDelta = _checkMarkSize", "anchoredPosition = _checkMarkAt", "SetIsOnWithoutNotify(_switchOn)", "template == _pairT || template == _selector || template == _buttons"
+            "sizeDelta = _checkMarkSize", "anchoredPosition = _checkMarkAt", "SetIsOnWithoutNotify(_switchOn)", "SetIsOnWithoutNotify(_toggleOn)", "template == _pairT || template == _selector || template == _buttons"
         };
         bool all = true;
         foreach (string piece in setBack)

@@ -89,6 +89,31 @@ namespace RealLifeOverhaul.Economy
         public readonly int[] Crew = new int[OwnBankCatalogue.CrewKinds];
         public long FoundedLeast;               // the least capital when it was founded, cents at the start's prices (0: the least before the scale)
 
+        public long CounterFees;                // what the branches' counters charged since the last day was run: into the books with the next day
+        public int CounterHour = int.MinValue;  // the last hour the branches were worked (day x 24 + hour); int.MinValue: never
+        public readonly List<BankBranch> Branches = new List<BankBranch>(4);   // each branch's figures (Economy/OwnBank/Branch)
+
+        // Its level and the owner's pay (Economy/OwnBank/Tiers).
+        public int Tier;                        // BankTiers: a community bank when founded; BankTiers.Unknown for a line written before levels, until fitted
+        public int TierFrom;                    // the day its record at its level counts from: founded, moved up, or last in breach
+        public int TierTold = BankTiers.Unknown;   // the level the player was last told the bank is ready to move up to
+        public int PayMode;                     // BankTiers.PayShareMode or PayFixedMode
+        public int PayShare;                    // thousandths of each day's profit paid to the owner
+        public long PayFixed;                   // cents a day paid to the owner, never more than the day's profit
+        public long PaidMonth, PaidLast, PaidAll;   // what the owner was paid this month, last month and in all
+
+        public BankBranch Branch(string place)
+        {
+            for (int i = 0; i < Branches.Count; i++)
+            {
+                if (Branches[i].Place == place)
+                {
+                    return Branches[i];
+                }
+            }
+            return null;
+        }
+
         public bool Running => State == OwnBankState.Running;
         public bool Exists => State != OwnBankState.None;
 
@@ -188,6 +213,7 @@ namespace RealLifeOverhaul.Economy
         public int Tax, Grants, Wages, Rent;   // the council's levers: -1, 0 or 1
         public bool Courts;             // the justice system takes a lender's claims
         public int Scale;               // the end game's share (Core/EndScale): 0 as before, 1000 at scale
+        public int Reach;               // thousandths more of the city's people the bank's branches bring it (Economy/OwnBank/Branch): 0 with none
 
         /// <summary>A quiet city at the start's prices: the bank rate as it begins, a steady cycle, the council as it came.</summary>
         public static BankCity Quiet(int yearDays)
@@ -201,19 +227,24 @@ namespace RealLifeOverhaul.Economy
         }
     }
 
-    /// <summary>What a day did, in cents, as booked at the headquarters and told to the player. Its profit is kept in the bank's capital.</summary>
+    /// <summary>
+    /// What a day did, in cents, as booked at the headquarters and told to the player. Its profit is kept in the bank's
+    /// capital, but for the owner's pay (<see cref="Pay"/>), which is taken out of it.
+    /// </summary>
     public sealed class BankDay
     {
         public long Interest, Reserve, Dividends, Recovered, Gains;    // in: takings
         public long Savers, Staff, Lost, Court, FundLost, Fees, Fine;  // out
         public long Systems;                    // out, at the end game's scale: its systems, compliance and deposit insurance
+        public long Counter;                    // in: what the branches' counters charged their customers (OwnBankRules.Visit)
+        public long Pay;                        // the owner's pay out of the day's profit (OwnBankRules.OwnerPay): neither takings nor a cost
         public long Withdrawn, Deposited, Lent, Repaid, Defaulted, Cured, WrittenOff;
         public long Bought, Sold, FireSold;
         public bool RunStarted, RunEnded, Breached, Cured2, Fined, Watched, Closed;
         public ClosedWhy Why;
         public long WoundUp;                    // what winding it up left for the player
 
-        public long Income => Interest + Reserve + Dividends + Recovered + Gains;
+        public long Income => Interest + Reserve + Dividends + Recovered + Gains + Counter;
         public long Costs => Savers + Staff + Lost + Court + FundLost + Fees + Fine + Systems;
         public long Profit => Income - Costs;
 
@@ -221,6 +252,7 @@ namespace RealLifeOverhaul.Economy
         {
             Interest = Reserve = Dividends = Recovered = Gains = 0;
             Savers = Staff = Lost = Court = FundLost = Fees = Fine = Systems = 0;
+            Counter = Pay = 0;
             Withdrawn = Deposited = Lent = Repaid = Defaulted = Cured = WrittenOff = 0;
             Bought = Sold = FireSold = 0;
             RunStarted = RunEnded = Breached = Cured2 = Fined = Watched = Closed = false;

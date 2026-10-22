@@ -369,13 +369,20 @@ namespace RealLifeOverhaul.Careers
         /// <summary>What the player can click to work, set by the director: the station or the desk's pointer.</summary>
         public static EntityController Target;
 
+        /// <summary>
+        /// A second thing the player can click to work, owned by a feature other than the careers' (the bank branch's counter,
+        /// Economy/OwnBank/Branch), with what a click on it does. Set and cleared by its owner; asked about only while it is set.
+        /// </summary>
+        public static EntityController OtherTarget;
+        public static Action<EntityController> OtherClicked;
+
         private static bool Offers(EntityController e)
         {
             if (e is EducationDoorController door)
             {
                 return CareersDirector.Instance != null && CareersDirector.Instance.TakesRoomClick(door);   // a university classroom in a session
             }
-            if (e == null || !ReferenceEquals(e, Target))
+            if (e == null || (!ReferenceEquals(e, Target) && !ReferenceEquals(e, OtherTarget)))
             {
                 return false;
             }
@@ -448,6 +455,11 @@ namespace RealLifeOverhaul.Careers
                 if (e is EducationDoorController door)
                 {
                     CareersDirector.Instance?.RoomDoorClicked(door);
+                    return;
+                }
+                if (e != null && ReferenceEquals(e, OtherTarget) && !ReferenceEquals(e, Target))
+                {
+                    OtherClicked?.Invoke(e);
                     return;
                 }
                 CareersDirector.Instance?.DeskClicked(e);

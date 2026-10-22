@@ -188,24 +188,26 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        /// <summary>A standing place at one of the shop's shelves, and the shelf to face: as <see cref="FloorSpot"/>, less the room round it.</summary>
-        public static bool ShelfSpot(Vector3 from, Vector3[] taken, int count, float apart, out Vector3 spot, out Vector3 shelf)
+        /// <summary>A standing place at a named shelf to face: as <see cref="FloorSpot"/>, less the room round it.</summary>
+        public static bool ShelfSpot(Vector3 from, Vector3[] taken, int count, float apart, out Vector3 spot, out Vector3 shelf, out string itemName)
         {
             spot = default;
             shelf = default;
+            itemName = null;
             if (!BuildingManager.IsInsideBuilding)
             {
                 return false;
             }
             for (int i = 0; i < Attempts; i++)
             {
-                if (!ShopFloor.RandomShelf(out Vector3 standAt, out Vector3 at, out _, out _) || Mathf.Abs(standAt.y - from.y) > 1.5f
+                if (!ShopFloor.RandomShelf(out Vector3 standAt, out Vector3 at, out _, out string name) || Mathf.Abs(standAt.y - from.y) > 1.5f
                     || !Apart(standAt, taken, count, apart) || !Reachable(from, standAt))
                 {
                     continue;
                 }
                 spot = standAt;
                 shelf = at;
+                itemName = name;
                 return true;
             }
             return false;

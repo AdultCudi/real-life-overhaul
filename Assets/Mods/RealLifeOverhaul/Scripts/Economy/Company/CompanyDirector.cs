@@ -141,6 +141,7 @@ namespace RealLifeOverhaul.Economy
             }
             mask |= Settings.EconomyCompanyHide ? 1 << (int)CompanyPart.Count : 0;   // cash off the books: no part of its own
             mask |= RotaOn ? 1 << ((int)CompanyPart.Count + 1) : 0;                  // the rota planner: no part either
+            mask |= ManagersOn ? 1 << ((int)CompanyPart.Count + 2) : 0;              // nor the managers
             return mask;
         }
 
@@ -162,6 +163,11 @@ namespace RealLifeOverhaul.Economy
         partial void RotaLoad(GameInstance save);
         partial void RotaSave(GameInstance save);
         partial void RotaAlerts(int day);
+        partial void ManagerLoad(GameInstance save);
+        partial void ManagerSave(GameInstance save);
+        partial void ManagerStop();
+        partial void ManagerHour(int day, int hour);
+        partial void ManagerDay(int day);
 
         private void PartDay(CompanyPart part, int day)
         {
@@ -242,6 +248,7 @@ namespace RealLifeOverhaul.Economy
             TaxLevel();
             WriteAll(Save.Day, true, false);
             RotaRead();
+            ManagerRead();
             Changed();
             if (Verbose)
             {
@@ -294,6 +301,7 @@ namespace RealLifeOverhaul.Economy
             WriteAll(today, true, false);
             RotaLoad(save);
             RotaRead();
+            ManagerLoad(save);
             BuildAlerts(today);
             Logger?.Info("Company: " + (fresh ? "opened for this save" : "state loaded (version " + version + ")") + " on day " + today + ". "
                          + _shops.Count + " business(es)"
@@ -338,6 +346,7 @@ namespace RealLifeOverhaul.Economy
             _read++;
             _alerts.Clear();
             RotaStop();
+            ManagerStop();
             if (!unloading)
             {
                 RemoveApp();
@@ -479,6 +488,7 @@ namespace RealLifeOverhaul.Economy
                     GiveWayAll(Save.Day);
                 }
                 RotaRead();
+                ManagerRead();
                 Badge();
                 return true;
             }
@@ -635,6 +645,7 @@ namespace RealLifeOverhaul.Economy
             }
             _state = null;
             _beforeTests = null;
+            ManagerForget();
         }
     }
 }
