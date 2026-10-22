@@ -95,7 +95,6 @@ namespace RealLifeOverhaul
         private static readonly HashSet<string> PlayedLogged = new HashSet<string>();
         private static State _state = State.NotStarted;
 
-        /// <summary>True once the bundle has loaded; false while loading or after a failure.</summary>
         public static bool Ready => _state == State.Ready;
 
         public static int Count => Clips.Count;

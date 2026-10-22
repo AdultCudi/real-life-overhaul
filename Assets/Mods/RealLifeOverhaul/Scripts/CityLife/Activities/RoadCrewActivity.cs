@@ -3,11 +3,7 @@ using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// Street works on about seven metres of pavement: a crew of three in hi-vis, one digging, one on a jackhammer, one with
-    /// a stop/slow paddle, with cones and a toolbox, each on pavement tested for room. Never in the carriageway: closing a
-    /// lane is Traffic/SceneCordon's.
-    /// </summary>
+    /// <summary>Street works on about seven metres of pavement, a crew of three with cones and a toolbox; never the carriageway (Traffic/SceneCordon's).</summary>
     public sealed class RoadCrewActivity : CityActivity
     {
         private const float DigAhead = 0.85f;      // metres: the digger stands this far short of the hole

@@ -2,10 +2,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// How a tool sits in a hand as its clip was made: the hand bone, the tool's place and turn on it, and for a two-handed
-    /// tool where the other wrist goes. Written by the animation pipeline into the clip catalogue.
-    /// </summary>
+    /// <summary>How a tool sits in a hand as its clip was made, and for a two-handed tool where the other wrist goes; from the clip catalogue.</summary>
     public struct ToolGrip
     {
         public HumanBodyBones Hand;
@@ -16,11 +13,7 @@ namespace RealLifeOverhaul
         public Vector3 WristOnTool;    // where the other wrist is, in the tool's own space
     }
 
-    /// <summary>
-    /// A tool parented to the hand bone at the clip's grip. For a two-handed grip, <see cref="ActivityAnimators"/> keeps the
-    /// other hand on it with <see cref="TwoBoneReach"/> after each frame's animation, because a retargeted arm ends a few
-    /// centimetres from where the clip put it. No cost of its own for a one-handed tool.
-    /// </summary>
+    /// <summary>A tool on the hand bone at the clip's grip; a second hand is kept on it after each frame's animation, as retargeted arms end a little off.</summary>
     public sealed class HeldTool
     {
         private Animator _animator;

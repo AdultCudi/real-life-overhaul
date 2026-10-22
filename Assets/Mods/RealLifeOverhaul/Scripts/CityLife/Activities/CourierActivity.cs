@@ -2,11 +2,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// A delivery: the courier walks in behind a sack truck, stands it on the pavement, sets the parcel down by a shopfront
-    /// and walks off with the truck, every place measured with the clips' own numbers (CityAssets/scripts/clips_life.py). The
-    /// parcel rides on the truck as its child, is in the courier's hands, or is dressing.
-    /// </summary>
+    /// <summary>A delivery by sack truck to a shopfront, every place measured with the clips' numbers (CityAssets/scripts/clips_life.py).</summary>
     public sealed class CourierActivity : CityActivity
     {
         private const float AxleAhead = 1.09f;      // metres from whoever pushes to the axle (hand_truck_push)

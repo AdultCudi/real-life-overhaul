@@ -3,10 +3,7 @@ using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// Two people stopped to talk a pace apart, one talking with their hands while the other listens, then the other way
-    /// round. Two are placed or neither is.
-    /// </summary>
+    /// <summary>Two people stopped to talk a pace apart, one talking with their hands while the other listens; two are placed or neither is.</summary>
     public sealed class ChatActivity : CityActivity
     {
         private const float Apart = 1.05f;   // metres

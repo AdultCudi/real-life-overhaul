@@ -4,11 +4,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Events
 {
-    /// <summary>
-    /// The fire crew's turnout gear, made as <see cref="CityOutfits"/> makes work clothes: the game's garments by name,
-    /// recoloured through the colour entry it reads when building the look (black with yellow trim, black boots; the helmet
-    /// is a prop). The person's pool puts the colours back before dressing them as anyone else.
-    /// </summary>
+    /// <summary>The fire crew's turnout gear, made as <see cref="CityOutfits"/> makes work clothes (black with yellow trim; the helmet is a prop).</summary>
     internal static class FireOutfit
     {
         private static readonly Color Turnout = new Color(0.055f, 0.06f, 0.075f);

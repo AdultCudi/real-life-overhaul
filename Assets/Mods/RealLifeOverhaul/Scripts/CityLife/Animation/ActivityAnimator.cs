@@ -9,10 +9,7 @@ namespace RealLifeOverhaul
     /// <summary>What happens when a clip that does not loop reaches its end.</summary>
     public enum ClipEnd { Return, Hold }
 
-    /// <summary>
-    /// The part of the body a clip played with <see cref="ActivityAnimator.PlayOver"/> takes: Upper is trunk, head and arms
-    /// (a gesture made standing); the arm masks take arms and fingers only, for somebody walking.
-    /// </summary>
+    /// <summary>The part of the body a masked clip takes: Upper is trunk, head and arms; the arm masks take arms and fingers only, for walking.</summary>
     public enum BodyMask { Full, Upper, Arms, LeftArm, RightArm }
 
     /// <summary>
@@ -129,7 +126,6 @@ namespace RealLifeOverhaul
         /// <summary>How much of the pose is this player's right now, 0 to 1 (read by CityAssets' CrossFadeProbe).</summary>
         public float Weight => _body.Weight;
 
-        /// <summary>The clip on the masked layer; null when there is none.</summary>
         public AnimationClip Over => _over.Current >= 0 && _over.WeightGoal > 0f ? _over.Clips[_over.Current] : null;
 
         /// <summary>How much of the masked part of the pose is the masked layer's right now, 0 to 1.</summary>

@@ -27,10 +27,7 @@ namespace RealLifeOverhaul
         }
     }
 
-    /// <summary>
-    /// What one person alone on the pavement does: where they stand, what they wear, the clip they work to (which brings its
-    /// tool) and how they vary it. Data only, one per catalogue entry.
-    /// </summary>
+    /// <summary>What one person alone does: where they stand, what they wear, the clip they work to and how they vary it; one per catalogue entry.</summary>
     public sealed class SoloSpec
     {
         public CityLook Look = CityLook.Civilian;
@@ -58,11 +55,7 @@ namespace RealLifeOverhaul
         public SoloProp[] Props;
     }
 
-    /// <summary>
-    /// One person, one spot, a loop with variation: sweeping and leaning on the broom, wiping a window, offering leaflets to
-    /// passers-by, a cigarette by the wall. Everything that differs is in the <see cref="SoloSpec"/>, so a new one is only
-    /// a catalogue entry.
-    /// </summary>
+    /// <summary>One person, one spot, a loop with variation (a sweeper, a window cleaner, a leafleter); all that differs is in the <see cref="SoloSpec"/>.</summary>
     public sealed class SoloActivity : CityActivity
     {
         private enum Doing { Working, Resting, Once }

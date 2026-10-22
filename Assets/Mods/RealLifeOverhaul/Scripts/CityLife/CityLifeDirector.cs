@@ -194,7 +194,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>One of the living city's people was knocked down: their site is told.</summary>
         public static void Disturb(CityPerson person)
         {
             CityLifeDirector director = Instance;

@@ -2,10 +2,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// Puts a hand on a point after the animation has posed the arm: the elbow opens or closes to the right length, then the
-    /// arm swings onto the target; the hand keeps its own turn. A dozen vector operations, no allocation.
-    /// </summary>
+    /// <summary>Puts a hand on a point after the animation, opening the elbow then swinging the arm; a dozen vector operations, no allocation.</summary>
     public static class TwoBoneReach
     {
         private const float Epsilon = 0.0005f;   // metres

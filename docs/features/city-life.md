@@ -12,12 +12,12 @@ People at work and about their day on the pavements near the player: sweepers, w
 
 | File | What it is |
 | --- | --- |
-| `CityLifeDirector` | what is out and where: three sites and eight people at most, set up and taken away only out of view; the test buttons and why each refused |
+| `CityLifeDirector` | what is out and where: three sites and eight people at most, set up and taken away only out of view; the test buttons and why each refused (CityLifeDirector.Tests) |
 | `CityCatalogue` | every activity: who, when, how often, in the rain or not, the activity that plays it (one entry each) |
 | `CityActivity` | ICityActivity (find room, begin, tick, end) and the base every activity shares: people who walk in (Arrive) and walk off (Depart) |
 | `Activities/` | SoloActivity (one person, data only: sweeper, window cleaner, painter on a ladder, tai chi, newspaper, doorman...), RoadCrewActivity, ChatActivity, BuskerAudienceActivity, JoggerActivity, StallActivity (coffee and hot-dog carts with a queue that walks up, is served and walks off), CourierActivity (sack truck, parcel to a shopfront), StrollActivity (pushchair; a traveller with a suitcase; umbrellas in the rain), MailActivity (the mail round), ChessActivity (chess table), CarLeanActivity (a driver leaning on a parked car), DoorQueueActivity (a door with a queue), TreeCareActivity (a gardener at a street tree) |
-| `CityPeople` | the pool of eight (not the accident pool's six): made a person at a time, hidden when out of view, knocked down by the player's car |
-| `CityPerson` | one of them: stand, walk, play a clip with its tool, drop it when hit |
+| `CityPeople` | the pool of eight (not the accident pool's six): made a person at a time, hidden when out of view, knocked down by the player's car; who is handed out for a look, and looks made ready between outings (CityPeople.Shelf) |
+| `CityPerson` | one of them: stand, walk, sit, play a clip with its tool (CityPerson.Hands), drop it when hit |
 | `CityOutfits` | work clothes from the game's own garments by name, in hi-vis and council colours |
 | `CitySpots` | where people may stand: pavement at street level, clear, away from doors; a shopfront at a measured distance |
 | `CityProps` | the prop objects, made once and reused |

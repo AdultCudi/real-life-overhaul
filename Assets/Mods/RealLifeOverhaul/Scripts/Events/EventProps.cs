@@ -3,11 +3,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Events
 {
-    /// <summary>
-    /// The props of fires and street events by id: the modelled one when the prop bundle has it, else a stand-in of plain
-    /// shapes to the size and pivot of the wish-list in docs/features/city-events.md, so a modelled prop drops in by id.
-    /// Made when first wanted and kept on a <see cref="CityProps"/> shelf of its own; nothing is built or destroyed per scene.
-    /// </summary>
+    /// <summary>The props of fires and street events by id: the modelled one, else a stand-in of plain shapes to the wish-list's size and pivot.</summary>
     internal sealed class EventProps
     {
         public const string Helmet = "fire_helmet";

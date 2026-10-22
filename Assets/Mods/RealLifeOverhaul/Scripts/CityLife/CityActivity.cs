@@ -91,10 +91,7 @@ namespace RealLifeOverhaul
         void Moment(int what, CityPerson who, float now);
     }
 
-    /// <summary>
-    /// What every activity shares: its people, its props on the ground, giving it all back, and the small questions most
-    /// ask. An activity fills in Find, Begin and Tick and has no other duties.
-    /// </summary>
+    /// <summary>What every activity shares: its people and props, giving them back, and the small questions most ask; an activity fills in Find, Begin and Tick.</summary>
     public abstract class CityActivity : ICityActivity
     {
         protected readonly List<CityPerson> Cast = new List<CityPerson>(4);
@@ -259,7 +256,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Remembers the pool and the shelf; every Begin starts with it.</summary>
         protected void Start(CitySite site)
         {
             People = site.People;
@@ -278,7 +274,6 @@ namespace RealLifeOverhaul
             return person;
         }
 
-        /// <summary>Stands a prop on the ground; false if the prop library cannot supply it.</summary>
         protected bool Put(string id, Vector3 position, float heading)
         {
             Transform prop = Props.Stand(id, position, heading);

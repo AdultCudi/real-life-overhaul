@@ -3,10 +3,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// A driver between fares, leaning with folded arms on a car the game has parked, on its pavement side. Their back must
-    /// measure the clip's 0.14 m from the bodywork, or they are not put there.
-    /// </summary>
+    /// <summary>A driver leaning on the pavement side of a car the game has parked, only where their back measures the clip's 0.14 m from the bodywork.</summary>
     public sealed class CarLeanActivity : CityActivity
     {
         private const float Gap = 0.14f;        // metres from the car's side to the heels (lean_wait)

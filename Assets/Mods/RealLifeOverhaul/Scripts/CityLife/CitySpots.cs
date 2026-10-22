@@ -115,7 +115,6 @@ namespace RealLifeOverhaul
             return clear;
         }
 
-        /// <summary>Whether somebody on foot can walk the whole way from one point of pavement to another.</summary>
         public static bool Reachable(Vector3 from, Vector3 to)
         {
             Setup();
@@ -128,10 +127,7 @@ namespace RealLifeOverhaul
 
         private static readonly Vector3[] Corners = new Vector3[32];   // a route's corners, read into this one buffer
 
-        /// <summary>
-        /// The same, and the walk's length in metres along the route's corners (-1 with no whole route). One path asked, never
-        /// per frame; a route of more corners than the buffer holds is measured straight on from its last corner read.
-        /// </summary>
+        /// <summary>The same, with the walk's length in metres (-1 with no whole route); a route of more corners than the buffer is measured straight on.</summary>
         public static bool Reachable(Vector3 from, Vector3 to, out float length)
         {
             length = -1f;
@@ -235,11 +231,7 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        /// <summary>
-        /// A shopfront to work at: an upright building wall seen from a point of pavement (twelve rays), with pavement a given
-        /// distance in front of it, then measured square on from there: flat from waist to head and across a person's width (a
-        /// plinth below the waist may stand a little proud). Gives where to stand and the wall's outward normal.
-        /// </summary>
+        /// <summary>A shopfront to work at: an upright wall seen from the pavement with pavement a given distance in front, flat from waist to head and a person wide.</summary>
         public static bool Shopfront(Vector3 near, float distance, float room, out Vector3 stand, out Vector3 outward)
         {
             Setup();

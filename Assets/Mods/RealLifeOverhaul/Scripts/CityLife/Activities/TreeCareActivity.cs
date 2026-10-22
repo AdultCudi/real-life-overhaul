@@ -3,10 +3,7 @@ using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// A gardener watering or raking at the foot of one of the game's own street trees, from a tested piece of pavement a
-    /// step from the trunk, facing it.
-    /// </summary>
+    /// <summary>A gardener watering or raking at one of the game's street trees, from tested pavement a step from the trunk.</summary>
     public sealed class TreeCareActivity : CityActivity
     {
         private const float Reach = 16f;   // metres

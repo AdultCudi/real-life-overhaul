@@ -2,11 +2,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Events
 {
-    /// <summary>
-    /// The hose from the engine to the nozzle: sixteen round segments on the ground along a gentle S, the last rising to the
-    /// firefighter's hands. Made once, reused, laid on an event and never moved per frame. The curve is tried bending one
-    /// way, the other, then straight; if every run passes through a vehicle or street furniture no hose is laid.
-    /// </summary>
+    /// <summary>The hose from engine to nozzle, sixteen segments along the ground made once and laid on an event; no hose if every curve meets something.</summary>
     internal sealed class Hose
     {
         private const int Segments = 16;

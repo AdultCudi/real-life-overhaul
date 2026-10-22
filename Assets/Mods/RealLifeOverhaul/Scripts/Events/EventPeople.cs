@@ -50,7 +50,6 @@ namespace RealLifeOverhaul.Events
         public int Free => _pool.Free;
         public EventProps Props => _props;
 
-        /// <summary>Makes one more character if the pool is not full. True while there is more to make.</summary>
         public bool Warm(Vector3 near)
         {
             return _pool.Warm(near + Vector3.down * 40f);

@@ -2,10 +2,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// A mail carrier with a satchel walks in from out of view, posts a letter at each of two or three measured shopfronts
-    /// along the block, and walks away out of view.
-    /// </summary>
+    /// <summary>A mail carrier who walks in out of view, posts at two or three measured shopfronts along the block, and walks away.</summary>
     public sealed class MailActivity : CityActivity
     {
         private const int MaxStops = 3;

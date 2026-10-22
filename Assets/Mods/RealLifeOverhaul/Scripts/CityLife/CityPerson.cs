@@ -66,7 +66,6 @@ namespace RealLifeOverhaul
         /// <summary>The mod clip being played, or null while the game's own animation has them.</summary>
         public string Playing { get; private set; }
 
-        /// <summary>The clip on the masked layer, or null.</summary>
         public string PlayingOver
         {
             get => _player != null && _player.Over != null ? _over : null;
@@ -251,7 +250,6 @@ namespace RealLifeOverhaul
             return off;
         }
 
-        // Off the stool: their agent avoids and turns as it did before.
         private void LeaveTable()
         {
             if (!_atTable)

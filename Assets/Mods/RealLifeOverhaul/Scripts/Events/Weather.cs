@@ -420,7 +420,7 @@ namespace RealLifeOverhaul.Events
             director.Bulletin(key, null);
         }
 
-        // A fair day's line: one for the season on the first fair morning of three, a general one otherwise.
+        // A fair day's line: the season's on every third day, a general one otherwise.
         private static string SeasonLine(Season season, int day)
         {
             int pick = day % 3;

@@ -4,11 +4,7 @@ using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// Two people at a chess table the mod stands on a wide piece of pavement, so the clip's seat height (0.45 m) and reach
-    /// to the board are known. Both play the same loop from different moments, so one thinks while the other moves. Two are
-    /// seated or neither is, each kept facing the board's centre (<see cref="CityPerson.AtTable"/>).
-    /// </summary>
+    /// <summary>Two people at a chess table the mod stands on the pavement (seat 0.45 m up), on one loop from different moments, kept facing the board.</summary>
     public sealed class ChessActivity : CityActivity
     {
         private const float StoolOut = 0.62f;   // metres from the table's centre to a stool's (chess_sit)

@@ -2,10 +2,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// A door at night: somebody on it with folded arms and a queue of two or three along the wall waiting to be let in,
-    /// each in a measured place.
-    /// </summary>
+    /// <summary>A door at night: somebody on it with folded arms and a queue of two or three along the wall, each in a measured place.</summary>
     public sealed class DoorQueueActivity : CityActivity
     {
         private const int QueueMost = 3;

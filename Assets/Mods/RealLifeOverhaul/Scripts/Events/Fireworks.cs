@@ -96,7 +96,6 @@ namespace RealLifeOverhaul.Events
             return true;
         }
 
-        /// <summary>One burst in the sky at a place, in the next colour.</summary>
         public void Burst(Vector3 at)
         {
             if (!_built)

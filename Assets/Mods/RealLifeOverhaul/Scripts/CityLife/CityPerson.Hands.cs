@@ -145,7 +145,6 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>Back to the game's own animation, its idle or walking.</summary>
         public void Idle(float fade = 0.35f)
         {
             _player?.Stop(fade);

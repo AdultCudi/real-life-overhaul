@@ -10,11 +10,7 @@ namespace RealLifeOverhaul
     /// <summary>Which cart a stall is.</summary>
     public enum StallKind { Coffee, HotDogs }
 
-    /// <summary>
-    /// A coffee or hot-dog cart on the pavement with a real queue walking up, served at the counter and walking off, every place
-    /// tested for room. The player can buy a coffee at the counter through the game's own calls; nothing is stored, and with
-    /// player interactions off it is scenery.
-    /// </summary>
+    /// <summary>A coffee or hot-dog cart with a queue that walks up and is served; the player can buy a coffee there through the game's own calls.</summary>
     public sealed class StallActivity : CityActivity
     {
         public static int Price => Prices.At(4);
@@ -365,7 +361,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The player pressed the key at the counter.</summary>
         public void Buy(float now)
         {
             if (!PlayerAtCounter || Cast.Count == 0 || Cast[0].Lost)

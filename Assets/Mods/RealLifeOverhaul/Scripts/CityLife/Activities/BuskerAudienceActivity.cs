@@ -4,11 +4,7 @@ using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// Two or three people in an arc in front of one of the game's own street performers, moving to the music and now and
-    /// then clapping. The performer is found among the interactive things near the player, never assumed; when it packs up
-    /// (rain, the hour), the audience ends once nobody is looking.
-    /// </summary>
+    /// <summary>Two or three people in an arc before one of the game's street performers, found near the player; when it packs up they go once unseen.</summary>
     public sealed class BuskerAudienceActivity : CityActivity
     {
         private const float SearchRadius = 70f;   // metres

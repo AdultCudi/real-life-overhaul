@@ -3,11 +3,7 @@ using UnityEngine.AI;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// Two friends talking on a bench the mod stands with its back to a wall: <c>sit_chat_a</c> turned to the other,
-    /// <c>sit_chat_b</c> listening. The bench (<c>precinct_bench</c>: seat 0.46 m up, the sitter facing its +Z) fixes the
-    /// clips' seat height and the 0.55 m between the two. Both are seated or neither is.
-    /// </summary>
+    /// <summary>Two friends talking on a bench stood with its back to a wall (precinct_bench: seat 0.46 m up, 0.55 m between them); both seated or neither.</summary>
     public sealed class BenchChatActivity : CityActivity
     {
         private const string Bench = "precinct_bench";

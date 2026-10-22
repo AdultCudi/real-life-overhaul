@@ -3,11 +3,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// The living city's props (brooms, cones, the coffee cart): made on first use from <see cref="PropLibrary"/>'s shared
-    /// mesh and material, then shelved switched off, so nothing is built or destroyed as sites come and go. There are no
-    /// stand-in shapes: without the modelled prop, Take returns null and the activity does not start.
-    /// </summary>
+    /// <summary>The living city's props, made on first use from <see cref="PropLibrary"/> and shelved switched off; without the modelled prop Take returns null.</summary>
     public sealed class CityProps
     {
         private readonly Dictionary<string, Stack<Transform>> _shelf = new Dictionary<string, Stack<Transform>>(16);

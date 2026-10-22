@@ -235,7 +235,6 @@ namespace RealLifeOverhaul
             }
         };
 
-        /// <summary>True if the options page has this family switched on.</summary>
         public static bool Enabled(CityFamily family)
         {
             return family == CityFamily.Everyday || family == CityFamily.Leisure ? Settings.CityEveryday : Settings.CityWorkers;   // the stalls and the deliveries are people at work too

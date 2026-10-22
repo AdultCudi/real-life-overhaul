@@ -6,11 +6,7 @@ using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul.Events
 {
-    /// <summary>
-    /// The fire engine: a pooled truck dressed as one (<see cref="EngineLivery"/>), with lights and a siren, driven by the
-    /// emergency driver the ambulance uses. It stops in its lane short of the fire, is cut out of the navigation mesh while
-    /// it stands, and always leaves: driving on along the road ahead, or handed back to traffic.
-    /// </summary>
+    /// <summary>The fire engine, a pooled truck dressed as one (<see cref="EngineLivery"/>) that stops short of the fire and always leaves.</summary>
     internal sealed class FireEngine
     {
         private readonly ResponseUnit _unit;
