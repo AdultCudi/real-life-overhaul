@@ -20992,5 +20992,7 @@
   "reallife_law_released_desk_shared": "已在{precinct}前台签字离开。在 Going Public 会话中，牢房里时间不会流逝：你的刑期视为已服完。已付罚款和赔偿：{amount}。已记入你的记录。",
   "reallife_law_court_released_shared": "已从 {precinct} 释放。在 Going Public 会话中，牢房里时间不会流逝：法庭命令的羁押视为已执行完毕。",
   "reallife_law_court_released_desk_shared": "已在 {precinct} 前台签字离开。在 Going Public 会话中，牢房里时间不会流逝：法庭命令的羁押视为已执行完毕。",
-  "reallife_justice_custody_released_shared": "已获释。在 Going Public 会话中，牢房里时间不会流逝：你的羁押视为已执行完毕。"
+  "reallife_justice_custody_released_shared": "已获释。在 Going Public 会话中，牢房里时间不会流逝：你的羁押视为已执行完毕。",
+  "reallife_interior_wear_off": "磨损已在选项中关闭，装修不会老化，也无需翻新。",
+  "reallife_interior_refresh_unknown": "暂时无法翻新{business}的装修：其室内尚未评估。请一小时后再试。"
 }

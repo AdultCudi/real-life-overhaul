@@ -245,6 +245,23 @@ namespace RealLifeOverhaul
             return fee < 0f ? 0 : (int)fee;
         }
 
+        /// <summary>
+        /// The footfall an issue applies, per cent, as it starts (or, for a feature, as it is taken); 0 for a kind that applies
+        /// none at its start. The one figure both the test for room (BusinessIssues.Why) and the start use, so they agree.
+        /// </summary>
+        public static int IssueFootfall(string kind)
+        {
+            switch (kind)
+            {
+                case Undercut: return UndercutDip;
+                case Smear: return SmearDip;
+                case Complaint: return ComplaintDip;
+                case Praise: return PraiseBoost;
+                case Feature: return FeatureBoost;
+                default: return 0;
+            }
+        }
+
         public static int ClampFootfall(int percent)
         {
             return percent < MostDip ? MostDip : percent > MostBoost ? MostBoost : percent;

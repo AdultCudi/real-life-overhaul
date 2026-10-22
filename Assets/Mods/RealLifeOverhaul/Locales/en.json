@@ -20992,5 +20992,7 @@
   "reallife_law_released_desk_shared": "Signed out at the {precinct} front desk. In a Going Public session no time passes in a cell: your sentence counts as served. Fines and damages paid: {amount}. On your record.",
   "reallife_law_court_released_shared": "Released from the {precinct}. In a Going Public session no time passes in a cell: the court's order counts as served.",
   "reallife_law_court_released_desk_shared": "Signed out at the front desk of the {precinct}. In a Going Public session no time passes in a cell: the court's order counts as served.",
-  "reallife_justice_custody_released_shared": "Released from custody. In a Going Public session no time passes in a cell: your custody counts as served."
+  "reallife_justice_custody_released_shared": "Released from custody. In a Going Public session no time passes in a cell: your custody counts as served.",
+  "reallife_interior_wear_off": "Wear is switched off in the options, so the finishes do not age and need no refresh.",
+  "reallife_interior_refresh_unknown": "The finishes at {business} cannot be refreshed: its interior has not been looked over yet. Try again in an hour."
 }

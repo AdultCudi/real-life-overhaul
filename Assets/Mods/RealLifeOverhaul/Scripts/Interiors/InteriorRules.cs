@@ -316,6 +316,19 @@ namespace RealLifeOverhaul.Interiors
             return before >= 0 && now - before >= RedecorateRise ? wear * RedecorateShare / 1000 : wear;
         }
 
+        /// <summary>
+        /// Why a refresh of the finishes cannot be done, as the notice's locale key, or null when it can: wear off in the options
+        /// first (nothing wears), then a business Interiors keeps no record of (not read yet, or its file list full).
+        /// </summary>
+        public static string RefreshRefused(int wearScale, bool known, bool filed)
+        {
+            if (wearScale <= 0)
+            {
+                return "reallife_interior_wear_off";
+            }
+            return known && filed ? null : "reallife_interior_refresh_unknown";
+        }
+
         /// <summary>What a refresh of the finishes costs, whole dollars, by floor area, before the price level.</summary>
         public static int RefreshCost(int sqm)
         {

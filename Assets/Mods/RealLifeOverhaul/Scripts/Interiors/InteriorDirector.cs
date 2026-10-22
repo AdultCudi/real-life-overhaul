@@ -271,12 +271,8 @@ namespace RealLifeOverhaul.Interiors
                     if (age && p.WearScale > 0)
                     {
                         int days = f.LastDay > 0 ? InteriorRules.Clamp(day - f.LastDay, 0, 30) : 0;
-                        bool cleaned = InteriorBridges.Cleaned != null && Ask(() => InteriorBridges.Cleaned(s.Place));
                         f.Wear = InteriorRules.Redecorated(f.Wear, f.LastInterior, s.Interior);
-                        for (int d = 0; d < days; d++)
-                        {
-                            f.Wear = InteriorRules.Age(f.Wear, s.Clean, cleaned, p.WearScale);
-                        }
+                        AgeFinishes(f, s, days, p.WearScale);
                     }
                     if (age)
                     {
@@ -578,13 +574,37 @@ namespace RealLifeOverhaul.Interiors
             return d != null && d.Running && Settings.InteriorsStaff ? InteriorRules.OfficeEsteem(d._bestOffice) : 0;
         }
 
-        /// <summary>Refreshes a business's finishes at today's prices, its wear back to nothing; true if done.</summary>
+        /// <summary>
+        /// The finishes a number of days older at the wear option's strength, a business with the cleaning service wearing less:
+        /// the one way they age, in play and in the test (TestWear).
+        /// </summary>
+        private void AgeFinishes(InteriorFile f, InteriorShop s, int days, int wearScale)
+        {
+            if (days <= 0 || wearScale <= 0)
+            {
+                return;
+            }
+            bool cleaned = InteriorBridges.Cleaned != null && Ask(() => InteriorBridges.Cleaned(s.Place));
+            for (int d = 0; d < days; d++)
+            {
+                f.Wear = InteriorRules.Age(f.Wear, s.Clean, cleaned, wearScale);
+            }
+        }
+
+        /// <summary>
+        /// Refreshes a business's finishes at today's prices, its wear back to nothing; true if done. Either way the player is told
+        /// in a notice: done, the money short, or why it cannot be done (<see cref="InteriorRules.RefreshRefused"/>).
+        /// </summary>
         public bool Refresh(BuildingRegistration reg)
         {
             InteriorShop s = At(reg);
             InteriorFile f = s != null ? _store.File(s.Place, true) : null;
-            if (f == null || Parts.WearScale <= 0)
+            string refused = InteriorRules.RefreshRefused(Parts.WearScale, s != null, f != null);
+            if (refused != null)
             {
+                var why = new Dictionary<string, string>(1) { { "business", s != null ? s.Name : BusinessGame.Name(reg) } };
+                Notifications.Show(NotificationType.Warning, refused, why, 8f);
+                Logger?.Info("Interiors: the finishes at " + why["business"] + " were not refreshed (" + refused + ").");
                 return false;
             }
             int cost = InteriorGame.RefreshCost(s.Sqm);

@@ -20992,5 +20992,7 @@
   "reallife_law_released_desk_shared": "Saída registrada no balcão de {precinct}. Em uma sessão do Going Public o tempo não passa na cela: a sua pena conta como cumprida. Multas e danos pagos: {amount}. Na sua ficha.",
   "reallife_law_court_released_shared": "Liberado de {precinct}. Em uma sessão do Going Public o tempo não passa na cela: a ordem do tribunal conta como cumprida.",
   "reallife_law_court_released_desk_shared": "Saída registrada na recepção de {precinct}. Em uma sessão do Going Public o tempo não passa na cela: a ordem do tribunal conta como cumprida.",
-  "reallife_justice_custody_released_shared": "Liberado da detenção. Em uma sessão do Going Public o tempo não passa na cela: a sua detenção conta como cumprida."
+  "reallife_justice_custody_released_shared": "Liberado da detenção. Em uma sessão do Going Public o tempo não passa na cela: a sua detenção conta como cumprida.",
+  "reallife_interior_wear_off": "O desgaste está desligado nas opções, então o acabamento não envelhece e não precisa ser renovado.",
+  "reallife_interior_refresh_unknown": "O acabamento de {business} não pode ser renovado: o interior ainda não foi avaliado. Tente de novo daqui a uma hora."
 }

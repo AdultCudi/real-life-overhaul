@@ -22,7 +22,7 @@ namespace RealLifeOverhaul
                 {
                     RivalData rival = BusinessGame.AnyRival(reg);
                     issue.Ref = rival != null ? rival.rivalName : null;
-                    issue.A = BusinessCatalogue.UndercutDip;
+                    issue.A = BusinessCatalogue.IssueFootfall(issue.Kind);
                     Director.Effect(reg, issue.A, BusinessCatalogue.UndercutDays);
                     break;
                 }
@@ -38,7 +38,7 @@ namespace RealLifeOverhaul
                     break;
                 }
                 case BusinessCatalogue.Smear:
-                    issue.A = BusinessCatalogue.SmearDip;
+                    issue.A = BusinessCatalogue.IssueFootfall(issue.Kind);
                     Director.Effect(reg, issue.A, BusinessCatalogue.SmearDays);
                     break;
 
@@ -112,12 +112,12 @@ namespace RealLifeOverhaul
                 }
                 case BusinessCatalogue.Complaint:
                     issue.B = Shabby(reg) ? 4 : BusinessGame.Weakest(reg);
-                    issue.A = BusinessCatalogue.ComplaintDip;
+                    issue.A = BusinessCatalogue.IssueFootfall(issue.Kind);
                     Director.Effect(reg, issue.A, BusinessCatalogue.ComplaintDays);
                     break;
 
                 case BusinessCatalogue.Praise:
-                    issue.A = BusinessCatalogue.PraiseBoost;
+                    issue.A = BusinessCatalogue.IssueFootfall(issue.Kind);
                     Director.Effect(reg, issue.A, BusinessCatalogue.PraiseDays);
                     break;
 

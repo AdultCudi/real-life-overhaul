@@ -56,7 +56,7 @@ namespace RealLifeOverhaul.Interiors
             Notifications.Show(NotificationType.Info, "reallife_interior_test_report", InteriorText.Report(s), 12f);
         }
 
-        /// <summary>Test: the finishes of the business the player is in (or the first) a hundred days older.</summary>
+        /// <summary>Test: the finishes of the business the player is in (or the first) a hundred days older, aged as play ages them.</summary>
         public void TestWear()
         {
             if (Refused("Interiors wear"))
@@ -71,11 +71,13 @@ namespace RealLifeOverhaul.Interiors
                 TestRefusals.TellKey(Logger, "Interiors wear", "reallife_interior_test_none");
                 return;
             }
-            string name = s.Name;
-            for (int d = 0; d < 100; d++)
+            if (Parts.WearScale <= 0)
             {
-                f.Wear = InteriorRules.Age(f.Wear, s.Clean, false);
+                TestRefusals.TellKey(Logger, "Interiors wear", "reallife_interior_wear_off");   // play ages nothing with wear off: nor does the test
+                return;
             }
+            string name = s.Name;
+            AgeFinishes(f, s, 100, Parts.WearScale);   // as play ages them: the wear option's strength, the cleaning service
             Rework(TimeHelper.CurrentDay, false);
             Logger?.Info("Interiors wear test: " + name + "'s finishes a hundred days older: wear " + f.Wear / 10 + "%.");
             Notifications.Show(NotificationType.Info, "reallife_interior_test_worn", new Dictionary<string, string>(2) { { "business", name }, { "wear", (f.Wear / 10).ToString() } }, 9f);
