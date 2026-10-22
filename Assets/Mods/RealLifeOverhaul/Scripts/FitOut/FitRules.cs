@@ -214,7 +214,6 @@ namespace RealLifeOverhaul.FitOut
             }
         }
 
-        /// <summary>The seats kept for a use.</summary>
         public int Seats(FitUse use)
         {
             int n = 0;

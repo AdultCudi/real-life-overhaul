@@ -33,10 +33,7 @@ namespace RealLifeOverhaul
 
         private static BusinessDirector Director => BusinessDirector.Instance;
 
-        /// <summary>
-        /// Why this kind cannot start at this business, as a locale key; null if it can. A test waives how the business is
-        /// doing, never what the story needs (staff, a delivery, a food business).
-        /// </summary>
+        /// <summary>Why the kind cannot start here, as a locale key, or null; a test waives how the business does, not what the story needs.</summary>
         public static string Why(IssueDef def, BuildingRegistration reg, bool test)
         {
             switch (def.Id)
@@ -561,10 +558,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// Once a game hour for each open issue that ends by what the game does: the poaching, lost by the rule that takes
-        /// the offer's buttons (so the notice and the buttons agree), or kept once the offer was matched.
-        /// </summary>
+        /// <summary>Hourly: the poaching ends lost by the rule that takes the offer's buttons, so the two agree, or kept once matched.</summary>
         public static void Watch(BusinessIssue issue, BuildingRegistration reg)
         {
             if (issue.Kind != BusinessCatalogue.Poach)

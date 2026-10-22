@@ -243,10 +243,7 @@ namespace RealLifeOverhaul.Interiors
             }
         }
 
-        /// <summary>
-        /// After the game made its list of tabs again: the tab at its end (so the game's first tab stays its own) and its
-        /// button shown where it belongs; at a business it does not apply to, out, and its page left.
-        /// </summary>
+        /// <summary>After the game made its list of tabs again: the tab added at its end and its button placed, or taken out.</summary>
         internal static void Fix()
         {
             Dirty = false;

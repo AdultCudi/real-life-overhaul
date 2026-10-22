@@ -36,10 +36,7 @@ namespace RealLifeOverhaul
         /// <summary>True while the utilities run: once false, every business they closed opens again. Unset, their closures end on their hour.</summary>
         public static Func<bool> UtilitiesOn;
 
-        /// <summary>
-        /// What an official asks to wave an inspection or licence through (Wiring/StandingLinks), from the kind, the place,
-        /// the catalogue's fee and the issue's seed, so the same issue always gets the same answer. 0, or unset: nobody asks.
-        /// </summary>
+        /// <summary>The bribe an official asks for a kind, place, fee and the issue's seed (so always the same answer); 0: nobody asks.</summary>
         public static Func<string, string, int, int, int> BribeAsk;
 
         /// <summary>A bribe was paid: the kind, the place and the amount.</summary>
@@ -51,10 +48,7 @@ namespace RealLifeOverhaul
         /// <summary>The cleanliness a health inspector judges, from the game's figure (a worn place looks dirtier); the figure while unset.</summary>
         public static Func<BuildingRegistration, int, int> Inspected;
 
-        /// <summary>
-        /// True while the company or the tech sector has an offer or a departure in hand for an employee (by the game's
-        /// id), so business pressure's poaching goes to somebody else. Unset: nobody.
-        /// </summary>
+        /// <summary>True while another feature has an offer or a departure in hand for an employee, so the poaching goes elsewhere.</summary>
         public static Func<string, bool> Held;
 
         /// <summary><see cref="Held"/> asked: false with no answer, or if the other feature faults.</summary>
@@ -502,9 +496,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// For another feature: writes a business's promotion figure again as it should stand now, whether or not business
-        /// pressure is on. A redraw is left to this feature on a new day when a change of its own runs there. False where the
-        /// game keeps no figure; otherwise the business's own figure and the one written.
+        /// For another feature: a business's promotion figure written again as it should stand now, on or off; false where
+        /// the game keeps none. On a new day with a change of its own there, this feature redraws itself.
         /// </summary>
         public static bool Footfall(BuildingRegistration reg, bool redraw, bool newDay, out int own, out int written)
         {
@@ -562,9 +555,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Keeps a business closed with the game's switch for at least so many hours, for one maker; a closure asked for
-        /// again only ever lasts longer, so it holds while its cause does. False if someone else closed it (the player's
-        /// switch), before the save's closures are read, or after a fault: nothing would reopen it then.
+        /// Keeps a business closed by the game's switch for at least so many hours, for one maker, never shorter if asked again.
+        /// False if someone else closed it, before the save is read, or after a fault: nothing would reopen it.
         /// </summary>
         internal bool CloseFor(BuildingRegistration reg, int hours, ClosureSource source = ClosureSource.Issue)
         {

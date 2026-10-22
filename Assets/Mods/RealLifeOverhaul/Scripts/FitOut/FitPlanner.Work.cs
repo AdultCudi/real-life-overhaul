@@ -158,10 +158,7 @@ namespace RealLifeOverhaul.FitOut
                 return false;
             }
 
-            /// <summary>
-            /// The largest rectangle of bare floor with no side under <paramref name="least"/>, by the histogram method, so a
-            /// long strip a room cannot use never beats a smaller square it can; false if none.
-            /// </summary>
+            /// <summary>The largest bare rectangle with no side under <paramref name="least"/> (histogram method); false if none.</summary>
             public bool Largest(float least, out float x0, out float z0, out float x1, out float z1)
             {
                 x0 = z0 = x1 = z1 = 0f;
@@ -378,10 +375,7 @@ namespace RealLifeOverhaul.FitOut
                 }
             }
 
-            /// <summary>
-            /// A piece at (u, v) in a box, its front turned to (fu, fv), placed by its middle (centred) or its pivot. Its index,
-            /// or -1 at a door or, being tall, in the street wall's windows.
-            /// </summary>
+            /// <summary>A piece at (u, v) facing (fu, fv), by its middle or pivot; its index, or -1 at a door or, tall, in the windows.</summary>
             public int Put(Box b, string prefab, FitRole role, FitUse use, float u, float v, float fu, float fv, int anchor, int zone, bool centred)
             {
                 FitSize s = Site.Size(prefab);

@@ -225,10 +225,7 @@ namespace RealLifeOverhaul.Interiors
             return (int)(v >= 0 ? (v + 500) / 1000 : (v - 500) / 1000);
         }
 
-        /// <summary>
-        /// The parts that apply, from the four sliders (per cent) and the other authors' mods: Meaningful Interiors takes the
-        /// district standard and the basket, Meaningful Ambience the customers decor brings.
-        /// </summary>
+        /// <summary>The parts that apply, from the four sliders and the other authors' mods, which take over their parts.</summary>
         public static InteriorParts Parts(int standard, int decor, int prices, int wear, bool basket, bool standing, bool staff, bool interiorsMod, bool ambienceMod)
         {
             var p = new InteriorParts

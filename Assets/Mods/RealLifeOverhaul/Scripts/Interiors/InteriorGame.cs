@@ -340,10 +340,7 @@ namespace RealLifeOverhaul.Interiors
             return (int)c | extra;
         }
 
-        /// <summary>
-        /// Today's customers of a business for the tab's page of where they came from: the day's list, the feature's
-        /// bookings, Meaningful Ambience's over the game's hourly draw, and the promotion figure's parts. False with no list.
-        /// </summary>
+        /// <summary>Today's customers of a business for the tab, with the promotion figure's parts; false where the game keeps no list.</summary>
         public static bool Count(BuildingRegistration reg, Func<CustomerEntry, bool> ours, out CustomerCount c)
         {
             c = new CustomerCount();
@@ -441,10 +438,7 @@ namespace RealLifeOverhaul.Interiors
             }
         }
 
-        /// <summary>
-        /// Why a business that takes money sells nothing now, from the game's own figures: its switch and today's opening,
-        /// what it has to sell, its "missing employee" test and its last completed orders. None if it takes none or cannot tell.
-        /// </summary>
+        /// <summary>Why a business that takes money sells nothing now, from the game's own figures; None if it takes none or cannot tell.</summary>
         public static SaleStop Stop(BuildingRegistration reg)
         {
             try

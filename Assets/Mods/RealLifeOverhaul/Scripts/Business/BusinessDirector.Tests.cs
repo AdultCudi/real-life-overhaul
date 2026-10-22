@@ -6,10 +6,7 @@ namespace RealLifeOverhaul
     /// <summary>Business pressure's test buttons on the options page.</summary>
     public sealed partial class BusinessDirector
     {
-        /// <summary>
-        /// Test: starts the next kind of a group's issues at the business the player is in, or their first. Grace, rests,
-        /// odds and the open limit are waived; what the story needs is not, and the notice says which.
-        /// </summary>
+        /// <summary>Test: the next kind of a group's issues at the business the player is in; only what the story needs is not waived.</summary>
         public void Test(PressureGroup group)
         {
             TestRefusal why = _broken || !BusinessState.Loaded ? TestRefusal.NotLoaded : !Settings.Business ? TestRefusal.FeatureOff : TestRefusal.None;

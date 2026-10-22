@@ -36,7 +36,6 @@ namespace RealLifeOverhaul.FitOut
         /// <summary>The place key of the building where a floor keeping the player's desk is going up, or null.</summary>
         public static string Building { get; private set; }
 
-        /// <summary>The seed of the player's desk in a building, or -1.</summary>
         internal static int Ask(string place)
         {
             try

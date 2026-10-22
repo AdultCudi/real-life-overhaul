@@ -73,7 +73,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>True while any of the game's dialogue panels is open.</summary>
         public static bool DialogOpen
         {
             get

@@ -40,10 +40,7 @@ namespace RealLifeOverhaul.Interiors
             return Clamp(standardPart + decorPart, FootfallLeast, FootfallMost);
         }
 
-        /// <summary>
-        /// The shortfall's part beside a dip of business pressure's own at the shop, per cent: the two together never take
-        /// more than the bound (if the dip alone does, the shortfall takes nothing). A part that gains is left as it is.
-        /// </summary>
+        /// <summary>The shortfall's part beside business pressure's dip, per cent: the two together never take more than the bound.</summary>
         public static int GiveWay(int standardPart, int issuePercent, int bound)
         {
             if (standardPart >= 0)
@@ -54,10 +51,7 @@ namespace RealLifeOverhaul.Interiors
             return Math.Max(standardPart, room);
         }
 
-        /// <summary>
-        /// Thousandths of the effects on customers and takings that apply on a day, phasing in from <paramref name="from"/>:
-        /// a seventh more each day, in full on the seventh; in full with no such day.
-        /// </summary>
+        /// <summary>Thousandths of the effects that apply on a day, a seventh more each day from <paramref name="from"/>; in full with none.</summary>
         public static int Ramp(int from, int day)
         {
             if (from == InteriorFile.Unset || from == InteriorFile.LongAgo)
@@ -124,10 +118,7 @@ namespace RealLifeOverhaul.Interiors
             return Scale(span <= 0 ? most : most * Math.Min(gap, span) / span, scale);
         }
 
-        /// <summary>
-        /// The products one customer takes more: their order's products (never an entrance fee) times the share, the whole
-        /// part for certain and one more by chance (draw 0 to 999); an office's client one at most.
-        /// </summary>
+        /// <summary>Products one customer takes more: their order's times the share, the rest by chance (draw 0 to 999); an office's one.</summary>
         public static int BasketExtra(int products, int share, int draw, bool office)
         {
             long total = (long)Math.Max(0, products) * Clamp(share, 0, 1000);
@@ -210,10 +201,7 @@ namespace RealLifeOverhaul.Interiors
             return firstDay != InteriorFile.Unset && day - firstDay < GraceDays;
         }
 
-        /// <summary>
-        /// Why a business sells nothing now, the first that holds: closed, nothing to sell, nobody on shift, or all its last
-        /// <see cref="RecentOrders"/> customers (and no fewer) turning its prices down. None when it can sell.
-        /// </summary>
+        /// <summary>Why a business sells nothing now, the first that holds; None when it can sell.</summary>
         public static SaleStop Stop(bool closed, bool stocked, bool staffed, int recent, int refused)
         {
             if (closed)
@@ -280,10 +268,7 @@ namespace RealLifeOverhaul.Interiors
             return Clamp(Clamp(overall, 0, 100) * Clamp(decorMille, 0, OfficeBoostMost) / 100, 0, OfficeBoostMost);
         }
 
-        /// <summary>
-        /// Clients more an office is booked for the coming hour: its boost on the game's bookings, the fraction carried to the
-        /// next hour, never more than its free staffed workstations (and then nothing carried).
-        /// </summary>
+        /// <summary>Clients more for the coming hour, the fraction carried on, never more than the free staffed stations.</summary>
         public static int OfficeClients(int gameClients, int free, int boostMille, ref int carryMille)
         {
             long total = (long)Math.Max(0, gameClients) * Clamp(boostMille, 0, OfficeBoostMost) + Clamp(carryMille, 0, 999);
@@ -297,11 +282,7 @@ namespace RealLifeOverhaul.Interiors
             return n;
         }
 
-        /// <summary>
-        /// Every figure of a business from what was read, its wear and the parts that are on. An office gets no customers'
-        /// parts, a place of neither kind nothing; the effects are phased in (<see cref="InteriorShop.Ramp"/>) and the
-        /// shortfall gives way to business pressure's dip (<see cref="InteriorShop.IssueDip"/>).
-        /// </summary>
+        /// <summary>Every figure of a business from what was read, its wear and the parts on; an office gets no customers' parts.</summary>
         public static void Work(InteriorShop s, int wear, InteriorParts p)
         {
             s.Wear = Clamp(wear, 0, WearMost);

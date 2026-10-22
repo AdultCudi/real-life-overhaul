@@ -13,9 +13,8 @@ namespace RealLifeOverhaul.Interiors
     internal static partial class InteriorGame
     {
         /// <summary>
-        /// Books an office more clients for the coming hour by the game's own office calculator, kept in <paramref name="ours"/>:
-        /// only an open office the simulator serves that takes money and meets its requirements, and never more than its
-        /// staffed stations less those booked. Returns how many.
+        /// Books an open office more clients for the coming hour by the game's own calculator, never more than its free staffed
+        /// stations; they go into <paramref name="ours"/>. Returns how many.
         /// </summary>
         public static int BookOffice(BuildingRegistration reg, int boostMille, ref int carryMille, HashSet<CustomerEntry> ours)
         {
@@ -102,10 +101,7 @@ namespace RealLifeOverhaul.Interiors
 
         public const float BasketLead = 2f;   // game minutes: a customer of the basket's hour due within them of its turn is left as drawn
 
-        /// <summary>
-        /// Adds products to the customers still to come at a retail shop this hour (after <paramref name="soonest"/>) and the
-        /// next, each customer once, by InteriorRules.BasketExtra, different products while there are enough. Returns how many.
-        /// </summary>
+        /// <summary>Adds products to a retail shop's customers to come this hour and the next, each once; returns how many.</summary>
         public static int Basket(BuildingRegistration reg, int share, bool office, int hour, float soonest)
         {
             if (share <= 0 || reg == null || reg.temporarilyClosed || !Retail(reg))

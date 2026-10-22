@@ -245,7 +245,6 @@ namespace RealLifeOverhaul
             return fee < 0f ? 0 : (int)fee;
         }
 
-        /// <summary>A footfall change kept inside what any pressure may do.</summary>
         public static int ClampFootfall(int percent)
         {
             return percent < MostDip ? MostDip : percent > MostBoost ? MostBoost : percent;
@@ -257,22 +256,17 @@ namespace RealLifeOverhaul
             return PromotionFor(own, percent, 0, baseMultiplier);
         }
 
-        /// <summary>What the city's economy asks for, kept inside what it may do.</summary>
         public static int ClampAmbient(int percent)
         {
             return percent < AmbientMostDip ? AmbientMostDip : percent > AmbientMostBoost ? AmbientMostBoost : percent;
         }
 
-        /// <summary>What a business's interior asks for, kept inside what it may do.</summary>
         public static int ClampInterior(int percent)
         {
             return percent < InteriorMostDip ? InteriorMostDip : percent > InteriorMostBoost ? InteriorMostBoost : percent;
         }
 
-        /// <summary>
-        /// The promotion figure the mod writes: the business's own where nothing changes it. Behind every write and the rota
-        /// planner's forecast alike, so the two cannot drift apart.
-        /// </summary>
+        /// <summary>The promotion figure the mod writes, for every write and the rota's forecast alike so they cannot drift apart.</summary>
         public static int Written(int own, int percent, int ambient, float baseMultiplier)
         {
             return Written(own, percent, ambient, 0, baseMultiplier);

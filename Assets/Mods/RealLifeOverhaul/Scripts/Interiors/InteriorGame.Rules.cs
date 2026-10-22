@@ -13,10 +13,7 @@ namespace RealLifeOverhaul.Interiors
     /// <summary>The game's own rules for a business's type, read for the Interior tab.</summary>
     internal static partial class InteriorGame
     {
-        /// <summary>
-        /// The game's own rules for the business's type for the tab: its customers' wants and what it needs to open, each
-        /// met or not by the game's own answer, with the placed items that meet it or a few of the game's that would.
-        /// </summary>
+        /// <summary>The game's rules for the business's type, wants and needs, each met or not, with the items that meet it or would.</summary>
         public static void Rules(BuildingRegistration reg, List<GameRule> into)
         {
             into.Clear();

@@ -18,10 +18,7 @@ namespace RealLifeOverhaul.FitOut
         public const float SeatRadius = 0.6f;    // metres the floor by a seat may be from it (the chair is not cut out; its desk is)
         public const float BesideMost = 1.6f;    // metres walked at most from a place to the seat's floor: further, something stands between
 
-        /// <summary>
-        /// The <paramref name="n"/>th place to stand by a seat, away from its desk's middle; false past the last. With no desk
-        /// (or one right over the seat) away is behind the seat, against its facing.
-        /// </summary>
+        /// <summary>The <paramref name="n"/>th place to stand by a seat, away from its desk (or behind it with none); false past the last.</summary>
         public static bool Spot(int n, float seatX, float seatZ, float deskX, float deskZ, float faceX, float faceZ, out float x, out float z)
         {
             Away(seatX, seatZ, deskX, deskZ, faceX, faceZ, out float ax, out float az);
@@ -65,10 +62,7 @@ namespace RealLifeOverhaul.FitOut
             az /= length;
         }
 
-        /// <summary>
-        /// The seed's <paramref name="pick"/> if it can be walked to, else the next one round that can; -1 if none. A fixed
-        /// order, so the same floor gives the same desk every visit and on every machine.
-        /// </summary>
+        /// <summary>The seed's pick if it can be walked to, else the next round that can, or -1: the same desk every visit and machine.</summary>
         public static int First(int pick, int count, Func<int, bool> reachable)
         {
             if (count <= 0 || pick < 0 || reachable == null)

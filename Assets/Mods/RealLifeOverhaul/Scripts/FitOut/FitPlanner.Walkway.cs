@@ -8,10 +8,7 @@ namespace RealLifeOverhaul.FitOut
     {
         private sealed partial class Work
         {
-            /// <summary>
-            /// Leaves out the kept design piece whose going opens a closed place again: of those touching it, the first that
-            /// does, partitions last and the smallest first; else the nearest. Its index, or -1.
-            /// </summary>
+            /// <summary>Leaves out the design piece whose going opens a closed place, partitions last and the smallest first; its index or -1.</summary>
             public int Opener(float px, float pz, int first)
             {
                 List<FitPiece> pieces = Into.Pieces;

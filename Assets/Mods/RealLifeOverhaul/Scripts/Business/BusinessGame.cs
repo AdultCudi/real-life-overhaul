@@ -76,7 +76,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>How many revenue businesses the player runs. Asked when a job starts, never per frame.</summary>
         public static int RevenueBusinesses()
         {
             int count = 0;
@@ -129,10 +128,7 @@ namespace RealLifeOverhaul
             return IsBusiness(reg) ? reg : null;
         }
 
-        /// <summary>
-        /// The player's building at a remembered place whatever is in it, or null. Closures use this, not <see cref="Find"/>:
-        /// the utilities close a headquarters or warehouse too, and it has to be found again to be opened.
-        /// </summary>
+        /// <summary>The player's building at a place whatever is in it, or null: closures use it, as the utilities close a headquarters too.</summary>
         public static BuildingRegistration Held(string place)
         {
             BuildingRegistration reg = At(place);
@@ -189,10 +185,7 @@ namespace RealLifeOverhaul
             return Promoted(reg) && !reg.temporarilyClosed && BusinessState.EffectAt(Place(reg)) < 0;
         }
 
-        /// <summary>
-        /// True if the game recomputes this business's promotion figure and its customers follow it. An Empire Motors
-        /// dealership makes up its own customers, so a change there would do nothing.
-        /// </summary>
+        /// <summary>True if the game recomputes the business's promotion figure and its customers follow it (not an Empire Motors dealership).</summary>
         public static bool Promoted(BuildingRegistration reg)
         {
             try
@@ -464,9 +457,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Clears the switch the mod set on a building the player has let go, so the closure does not pass to the next
-        /// tenant; only while nobody rents it (another player's building is rented on this machine). The field is set
-        /// directly, as a sale does: TemporarilyClose would charge licensing fees. True if it was cleared.
+        /// Clears the mod's switch on a building let go while nobody rents it (another player's is rented here), set directly
+        /// as a sale does: TemporarilyClose would charge licensing fees. True if cleared.
         /// </summary>
         public static bool Freed(string place)
         {
@@ -488,10 +480,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// True if the game gives the business a "temporarily closed" switch the player may have used (BizManBusiness's own
-        /// test: a revenue type or a factory). A headquarters or warehouse has none.
-        /// </summary>
+        /// <summary>True if the game gives the business a "temporarily closed" switch: a revenue type or a factory, as BizMan tests.</summary>
         public static bool HasSwitch(BuildingRegistration reg)
         {
             try
@@ -604,7 +593,6 @@ namespace RealLifeOverhaul
             return RivalOfferGuard.Standing(e, name);
         }
 
-        /// <summary>True where one of the game's own special rivals is already active.</summary>
         public static bool GameRivalActive(BuildingRegistration reg)
         {
             try

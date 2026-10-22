@@ -532,10 +532,7 @@ namespace RealLifeOverhaul.Interiors
             return d != null && d.Running && !string.IsNullOrEmpty(place) && d._byPlace.TryGetValue(place, out s) ? s : null;
         }
 
-        /// <summary>
-        /// The interior's part of a business's footfall, per cent, asked as business pressure writes the figure, so the
-        /// shortfall gives way at once to a dip that has just started or ended there.
-        /// </summary>
+        /// <summary>The interior's part of a business's footfall, per cent, given way at once to a dip just started or ended there.</summary>
         public static int FootfallOf(BuildingRegistration reg)
         {
             InteriorShop s = At(reg);
