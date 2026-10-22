@@ -2,7 +2,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using BAModAPI;
-using Extensions;
 using Localizor;
 using Streets;
 using UnityEngine;
@@ -10,47 +9,18 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Every feature's places on the city map. The features know nothing of this class: it reads where their
-    /// places are through members they already have (or a read-only accessor added for it) and hands them to
-    /// <see cref="MapPlaces"/>, which gives each kind a row in the map's filter list, a marker with a name for
-    /// every place, and "set destination".
+    /// Every feature's places on the city map. The features know nothing of this class: it reads where their places are
+    /// through members they already have and hands them to <see cref="MapPlaces"/>, which gives each kind a row in the map's
+    /// filters, a named marker for every place, and "set destination". The kinds are declared in <see cref="Declare"/>;
+    /// police stations are Law's own. Every building the mod claims (Core/SpecialBuildings) has a row of its own with its
+    /// own icon, and its place is that building, so the row's tick lights it on the open map as the game lights its own
+    /// (MapRowCheck holds this).
     ///
-    ///   kind (row)                   places                                                    ticked   in street
-    ///   Bus stops                    every place of the bus network (TransitMap.Places)        by count no
-    ///   Hotels                       the eight hotels (Hotels.Sites)                           yes      yes
-    ///   Courthouse                   the courthouse (Courthouse.Front)                         yes      yes
-    ///   Hudson City University       the university (CareersDirector.University), its own row  yes      yes
-    ///   Places to study              the game's school and the hospitals' wards                yes      yes
-    ///   Tech companies               the city's tech companies' headquarters (Tech/Sites)      yes      yes
-    ///   Your cloud                   the player's data centres: the cloud's regions            yes      no
-    ///   Driving schools              the learner-plate boards (LicenceDesks)                   yes      yes
-    ///   Bike hire and two-wheelers   docks, bicycle racks, motorbike stands (BikePlaces.All)   yes      no
-    ///   Custom shops                 the repair stations whose bays the custom shop works at   yes      no
-    ///   Help wanted and employers    the help-wanted boards, named after their employer        yes      no
-    ///   Newspaper kiosks             the City Ledger's kiosks near the home (LedgerDirector)   yes      yes
-    ///   Polling places               one per district, during an election campaign             yes      no
-    ///   Construction sites           the sites in progress (CivicWorks)                        yes      no
-    ///   Sights and fishing spots     the landmarks; "seen" and "fishing nearby" in the name    yes      no
-    ///   What's on                    a street event, a rally, the chess table, a plan's venue  yes      no
-    ///
-    /// (Police stations are Law's own category.) "By count": bus stops are ticked by default only in a city with
-    /// forty or fewer; the bus network usually has over a hundred.
-    ///
-    /// Every building the mod claims as its own (Core/SpecialBuildings: the university, City Utilities, the courthouse, the
-    /// tech companies' towers, the hotels, the police stations) has a row of its own with its own icon, as the game's
-    /// special buildings have theirs (its school, its hospital), and its place is that building, so the row's tick lights
-    /// the building on the open map as the game lights its own. The university was once only one of the "Places to study",
-    /// under a star shared with the sights, so the map's filters had no row by its name and its arrow flew to the nearest
-    /// school or hospital instead (NavCheck/MapRowCheck.cs checks every claimed building has its row).
-    ///
-    /// How it keeps up: one look every three seconds (real time: the map pauses the game). Each kind has a stamp,
-    /// a few integer operations over what the feature already holds (a count, the ids of the sites, where the
-    /// street event is); only when a stamp has changed are that kind's places read again and its markers replaced.
-    /// Markers are made six at a time, a fifth of a second apart, so the hundred-odd bus stops do not arrive in
-    /// one frame. A kind's row is made the first time it has a place and is offered only while it has one and
-    /// its feature's option is on; with the option off its markers are taken away, not merely hidden. A kind
-    /// whose places cannot be read is left off the map with one line in the log and the others carry on.
-    /// Nothing per frame. Everything goes with the city (MapPlaces.Shutdown).
+    /// One look every three seconds, real time (the map pauses the game): each kind has a stamp, a few integer operations
+    /// over what the feature already holds, and only a changed stamp reads its places again. Markers are made six at a
+    /// time, a fifth of a second apart, so the hundred-odd bus stops do not arrive in one frame. A kind's row is made the
+    /// first time it has a place and offered only while it has one and its option is on; a kind whose places cannot be
+    /// read is left off with one log line. Nothing per frame; everything goes with the city (MapPlaces.Shutdown).
     /// </summary>
     public sealed class MapLinks : MonoBehaviour
     {
@@ -218,15 +188,13 @@ namespace RealLifeOverhaul
             }
             catch (Exception)
             {
-                // (the map itself is not as expected: MapPlaces has said so)
+                // the map itself is not as expected: MapPlaces has said so
             }
         }
 
-        // ---------------------------------------------------------------- the kinds
-
         private void Declare()
         {
-            // Transport: every stop of the network, not only the three that are dressed near the player.
+            // Transport: every stop of the network, not only the three dressed near the player; ticked only in a city of 40 or fewer.
             _links.Add(new Link
             {
                 Id = "bus_stops", TitleKey = "reallife_map_row_bus_stops", Colour = TransitDirector.StopColour, Icon = MapIcon.Bus,
@@ -235,7 +203,7 @@ namespace RealLifeOverhaul
                 Stamp = () => TransitMap.Ready ? 1 + TransitMap.Places.Count : 0,
                 Fill = BusStops
             });
-            // Travel: the hotels (which used to add markers of their own).
+            // Travel: the hotels.
             _links.Add(new Link
             {
                 Id = "hotels", TitleKey = "reallife_map_row_hotels", Colour = new Color(0.70f, 0.55f, 0.12f), Icon = MapIcon.Bed, InStreet = true,
@@ -243,7 +211,7 @@ namespace RealLifeOverhaul
                 Stamp = () =>
                 {
                     TravelDirector travel = TravelDirector.Instance;
-                    return travel != null && travel.Hotels != null ? 1 + travel.Hotels.Sites.Count + travel.Hotels.Moves * 64L : 0;   // (read again when one moves)
+                    return travel != null && travel.Hotels != null ? 1 + travel.Hotels.Sites.Count + travel.Hotels.Moves * 64L : 0;   // read again when one moves
                 },
                 Fill = HotelSites
             });
@@ -255,7 +223,7 @@ namespace RealLifeOverhaul
                 Stamp = () =>
                 {
                     JusticeDirector justice = JusticeDirector.Instance;
-                    return justice != null && justice.Court != null && justice.Court.Usable ? 2 + justice.Court.Moves * 4L : 0;   // (read again when it moves)
+                    return justice != null && justice.Court != null && justice.Court.Usable ? 2 + justice.Court.Moves * 4L : 0;   // read again when it moves
                 },
                 Fill = places =>
                 {
@@ -275,12 +243,13 @@ namespace RealLifeOverhaul
                 Stamp = () =>
                 {
                     Utilities.UtilitiesDirector utilities = Utilities.UtilitiesDirector.Instance;
-                    return utilities != null && utilities.Office != null && utilities.Office.Usable ? (SpecialBuildings.Active ? 3 : 2) + utilities.Office.Moves * 4L : 0;   // (read again when it moves)
+                    return utilities != null && utilities.Office != null && utilities.Office.Usable
+                        ? (SpecialBuildings.Active ? 3 : 2) + utilities.Office.Moves * 4L : 0;   // read again when it moves
                 },
                 Fill = places =>
                 {
                     Utilities.UtilitiesOffice office = Utilities.UtilitiesDirector.Instance.Office;
-                    string what = SpecialBuildings.NameFor(office.Building) ?? T("reallife_map_row_utilities");   // (its own name, while special buildings carry theirs)
+                    string what = SpecialBuildings.NameFor(office.Building) ?? T("reallife_map_row_utilities");   // its own name, while special buildings carry theirs
                     places.Add(new MapPlace(office.Front, At(what, office.Name), office.Building)
                     {
                         CardTypeKey = "reallife_util_card_type",
@@ -288,8 +257,8 @@ namespace RealLifeOverhaul
                     });
                 }
             });
-            // Careers: Hudson City University, a building the mod has made its own, with its own card: a row of its own under its
-            // name and icon, there while the university's part is on (CareersDirector.UniversityOpen) and gone with it.
+            // Careers: Hudson City University, a building the mod has made its own, with its own card and row, there while
+            // the university's part is on.
             _links.Add(new Link
             {
                 Id = "university", TitleKey = "reallife_map_row_university", Colour = new Color(0.30f, 0.24f, 0.66f), Icon = MapIcon.Mortarboard, InStreet = true,
@@ -297,8 +266,8 @@ namespace RealLifeOverhaul
                 Stamp = UniversityStamp,
                 Fill = UniversityPlace
             });
-            // Careers: the other places to study. The game's school (Manhattan Business School, which keeps its own card) and the
-            // hospitals and clinics whose wards teach nursing.
+            // Careers: the other places to study: the game's school, which keeps its own card, and the hospitals and clinics
+            // whose wards teach nursing.
             _links.Add(new Link
             {
                 Id = "study", TitleKey = "reallife_map_row_study", Colour = new Color(0.55f, 0.16f, 0.22f), Icon = MapIcon.Star, InStreet = true,
@@ -306,7 +275,7 @@ namespace RealLifeOverhaul
                 Stamp = StudyStamp,
                 Fill = StudyPlaces
             });
-            // Tech: the city's tech companies' towers, a floor each (Tech/Sites/Headquarters), where their jobs are.
+            // Tech: the city's tech companies' towers, a floor each, where their jobs are.
             _links.Add(new Link
             {
                 Id = "tech_hq", TitleKey = "reallife_map_row_tech_hq", Colour = new Color(0.18f, 0.42f, 0.82f), Icon = MapIcon.Tower, InStreet = true,
@@ -374,7 +343,7 @@ namespace RealLifeOverhaul
                     CityManager city = InstanceBehavior<CityManager>.Instance;
                     if (garage == null || garage.Shop == null || city == null || city.cityBuildingControllers == null || city.cityBuildingControllers.Length == 0)
                     {
-                        return 0;   // (the bays are looked for once, and only when the city is there to look in)
+                        return 0;   // the bays are looked for once, and only when the city is there to look in
                     }
                     return 1 + garage.Shop.Bays.Count;
                 },
@@ -414,7 +383,7 @@ namespace RealLifeOverhaul
                     }
                 }
             });
-            // Jobs and careers: each employer's office (its help-wanted board), by the employer's name; where reviews are held and shifts clocked on to.
+            // Jobs and careers: each employer's office (its help-wanted board), by the employer's name.
             _links.Add(new Link
             {
                 Id = "job_offices", TitleKey = "reallife_map_row_job_offices", Colour = new Color(0.20f, 0.62f, 0.95f), Icon = MapIcon.Briefcase,
@@ -530,11 +499,11 @@ namespace RealLifeOverhaul
                         }
                         catch (Exception)
                         {
-                            what = T("reallife_map_row_construction");   // (a site from a save with a project this catalogue does not have)
+                            what = T("reallife_map_row_construction");   // a site from a save with a project this catalogue does not have
                         }
                         places.Add(new MapPlace(new Vector3(site.X, site.Y, site.Z), At(what, CivicCity.AddressText(site.Street, site.Number)))
                         {
-                            Lit = CivicCity.Find(site.Street, site.Number)   // (the building being worked on; null for a plot with none)
+                            Lit = CivicCity.Find(site.Street, site.Number)   // the building being worked on; null for a plot with none
                         });
                     }
                 }
@@ -552,7 +521,7 @@ namespace RealLifeOverhaul
             _links.Add(new Link
             {
                 Id = "whats_on", TitleKey = "reallife_map_row_whats_on", Colour = new Color(0.80f, 0.22f, 0.58f), Icon = MapIcon.Flag,
-                Enabled = () => true,   // (each part asks its own feature's option)
+                Enabled = () => true,   // each part asks its own feature's option
                 Stamp = () => WhatsOn(null),
                 Fill = places => WhatsOn(places)
             });
@@ -565,7 +534,7 @@ namespace RealLifeOverhaul
             Careers.CampusBuilding uni = careers != null ? careers.University : null;
             if (uni == null || !Careers.CampusRules.OnMap(uni.Usable, uni.Building != null, uni.Place))
             {
-                return 0;   // (still being chosen, none to be had, or its part is off: no row; at its permanent building or a place meanwhile it has one)
+                return 0;   // still being chosen, none to be had, or its part is off
             }
             unchecked
             {
@@ -574,8 +543,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The university's one place: its door, under its own name, and its building, which the row lights on the open map
-        // and whose card on the map carries the name (Core/MapPlaces).
+        // The university's one place: its door, under its own name, and its building, which the row lights on the open map.
         private static void UniversityPlace(List<MapPlace> places)
         {
             Careers.CampusBuilding uni = Careers.CareersDirector.Instance.University;
@@ -747,7 +715,7 @@ namespace RealLifeOverhaul
                 places?.Add(new MapPlace(at, T("reallife_map_chess")));
             }
             SocialPlan plan = SocialState.Plan;
-            // (Once the outing itself has begun the game's own destination guider is at the place, on the map too: ours stands down.)
+            // Once the outing itself has begun the game's own destination guider is at the place, on the map too: this stands down.
             if (Settings.Social && SocialState.Loaded && plan != null && plan.Active && (plan.X != 0f || plan.Z != 0f) && !SocialDirector.Guiding)
             {
                 at = new Vector3(plan.X, plan.Y, plan.Z);
@@ -767,8 +735,6 @@ namespace RealLifeOverhaul
         {
             return (stamp * 31 + what) * 1000003L + Mathf.RoundToInt(at.x) * 4099L + Mathf.RoundToInt(at.z);
         }
-
-        // ---------------------------------------------------------------- words
 
         private static string T(string key)
         {
