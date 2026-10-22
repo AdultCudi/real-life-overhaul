@@ -80,9 +80,9 @@ internal static partial class Program
               && buttons.Contains("director.ComputerWork(out canWork, out _workLate)") && buttons.Contains("public static bool Failed => _failed || FrameGuard.Off;")
               && MethodText(director, "internal string DeskFallbackWhy(Job j)").Contains("ComputerButtons.Failed"),
             "home computer: no click of the job's over it any more; a day from home begun from its own button, else from the Career app (the buttons not there or stood down)");
-        Check(computer.Contains("_work = sitting.Kind == SittingKind.Work || sitting.Kind == SittingKind.Overtime;") && computer.Contains("public bool RequiresEnergy() => !_work;")
+        Check(computer.Contains("_work = sitting.Kind == SittingKind.Work || sitting.Kind == SittingKind.Overtime || sitting.Kind == SittingKind.Interview;") && computer.Contains("public bool RequiresEnergy() => !_work;")
               && desk.Contains("public bool RequiresEnergy() => false;"),
-            "home computer: a working day there is not ended by the player's energy running out, as at the desk; a class or homework is, as the game's studying");
+            "home computer: a working day or a video interview there is not ended by the player's energy running out, as at the desk; a class or homework is, as the game's studying");
 
         // ---------------------------------------------------------------- What's new
         var langs = LanguageWords(out string[] codes);

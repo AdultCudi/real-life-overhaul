@@ -12,7 +12,7 @@ using UnityEngine;
 namespace RealLifeOverhaul.Careers
 {
     /// <summary>
-    /// An online class, homework or a working day at the computer at home, as the game's computer passes the time: one press
+    /// An online class, homework, a working day or a video interview at the computer at home, as the game's computer passes the time: one press
     /// walks the player there and sits them; the minutes count once (<see cref="ClassTally"/>). Nothing per frame of its own.
     /// </summary>
     internal sealed class ComputerSitting : IPlayerActivity
@@ -25,7 +25,7 @@ namespace RealLifeOverhaul.Careers
         private readonly ClassTally _tally;
         private readonly LabelInfo _title;
         private readonly string _typing;          // the computer's own using animation, as the game's computer has its user type
-        private readonly bool _work;              // a working day or overtime (else a class or homework)
+        private readonly bool _work;              // a working day, overtime or a video interview (else a class or homework)
         private Sitting _sitting;
         private LabelInfo[] _labels;
         private ButtonInfo[] _stop;
@@ -41,7 +41,7 @@ namespace RealLifeOverhaul.Careers
             _sitting = sitting;
             _tally = new ClassTally(sitting.SkipMinutes);
             _title = DeskGame.Label(sitting.SkipTitle, 0);
-            _work = sitting.Kind == SittingKind.Work || sitting.Kind == SittingKind.Overtime;
+            _work = sitting.Kind == SittingKind.Work || sitting.Kind == SittingKind.Overtime || sitting.Kind == SittingKind.Interview;
             _chair = computer.FindChair();
             AnimationType typing = AnimationType.UsingDesktopComputer;
             try
@@ -223,7 +223,7 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        // A class or homework ends when the energy runs out, as the game's studying does; a working day does not, as at the desk.
+        // A class or homework ends when the energy runs out, as the game's studying does; a working day or an interview does not, as at the desk.
         public bool RequiresEnergy() => !_work;
 
         public bool BlocksAutoSave() => true;
