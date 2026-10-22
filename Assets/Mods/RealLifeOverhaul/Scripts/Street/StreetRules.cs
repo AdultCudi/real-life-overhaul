@@ -135,6 +135,52 @@ namespace RealLifeOverhaul.Street
             return s;
         }
 
+        /// <summary>
+        /// One more business for "what's good around here", kept among the two nearest of different names, nearest first: two
+        /// branches of a chain are one name, the nearer of them standing for both. Squared distances; null for none yet.
+        /// </summary>
+        public static void NearestTwo(string name, float sqr, ref string first, ref float firstSqr, ref string second, ref float secondSqr)
+        {
+            if (string.IsNullOrEmpty(name))
+            {
+                return;
+            }
+            if (name == first)
+            {
+                firstSqr = Math.Min(firstSqr, sqr);   // a nearer branch of the nearest name
+                return;
+            }
+            if (name == second)
+            {
+                if (sqr >= secondSqr)
+                {
+                    return;
+                }
+                secondSqr = sqr;   // a nearer branch of the second name: it may now be the nearest
+                if (secondSqr < firstSqr)
+                {
+                    second = first;
+                    first = name;
+                    float swap = firstSqr;
+                    firstSqr = secondSqr;
+                    secondSqr = swap;
+                }
+                return;
+            }
+            if (sqr < firstSqr)
+            {
+                second = first;
+                secondSqr = firstSqr;
+                first = name;
+                firstSqr = sqr;
+            }
+            else if (sqr < secondSqr)
+            {
+                second = name;
+                secondSqr = sqr;
+            }
+        }
+
         public static bool Night(int hour) => hour >= 23 || hour < 6;
 
         public static bool RushHour(int hour, bool weekend) => !weekend && ((hour >= 7 && hour < 10) || (hour >= 17 && hour < 19));

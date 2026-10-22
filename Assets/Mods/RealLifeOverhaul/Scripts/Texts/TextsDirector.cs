@@ -40,7 +40,10 @@ namespace RealLifeOverhaul.Texts
         private static string _device, _deviceLabel, _serverFor;
         private static int _threads, _cores;
         private static volatile bool _finding;
-        private static bool _found, _quitHooked, _speedTold, _refusedTold;
+        // Written last by Find's worker, after the packs, cores, devices and verdicts it found; read first by the game's thread:
+        // a volatile write and read, so whatever the worker wrote before is seen once this says it is done. A field read a frame.
+        private static volatile bool _found;
+        private static bool _quitHooked, _speedTold, _refusedTold;
         private static Action _onQuit;
         private static List<TextPack> _packs;
         private static TextPack _verified, _refused;       // the best pack whose runtime is llama.cpp's own; the first that was not

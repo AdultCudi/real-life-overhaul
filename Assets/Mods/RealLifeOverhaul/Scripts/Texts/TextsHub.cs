@@ -40,6 +40,13 @@ namespace RealLifeOverhaul.Texts
         private readonly TextBudget _budget = new TextBudget();
         private readonly List<Waiting> _waiting = new List<Waiting>(16);
         private readonly List<TextJob> _missed = new List<TextJob>(8);
+
+        // While a pass over _waiting runs (the look, a request giving way, a flush, a clear), each ended request's Done waits
+        // until the pass is over: a Done may ask again at once (the street's next button asked ahead, Wiring/StreetTexts), and
+        // an ask gives way to its key, ending others in the list the pass is walking. Kept, never made anew.
+        private readonly List<TextRequest> _held = new List<TextRequest>(8);
+        private readonly List<string> _heldWords = new List<string>(8);
+        private int _passes;
         private readonly Dictionary<string, List<string>> _recent = new Dictionary<string, List<string>>(32, StringComparer.Ordinal);
         private readonly int[] _verdicts = new int[Enum.GetValues(typeof(TextVerdict)).Length];
         private TextShownWhy _whyNot;
@@ -378,13 +385,51 @@ namespace RealLifeOverhaul.Texts
         // Asked again under the same key: the older request gives way (the written line), its job taken out of its queue.
         private void GiveWay(string key)
         {
-            for (int i = _waiting.Count - 1; key != null && i >= 0; i--)
+            Pass();
+            try
             {
-                if (_waiting[i].Request.Key != null && _waiting[i].Request.Key == key)
+                for (int i = _waiting.Count - 1; key != null && i >= 0; i--)
                 {
-                    QueueOf(_waiting[i]).Drop(_waiting[i].Job);
-                    End(i, null, false, TextShownWhy.Unwanted);
+                    if (_waiting[i].Request.Key != null && _waiting[i].Request.Key == key)
+                    {
+                        QueueOf(_waiting[i]).Drop(_waiting[i].Job);
+                        End(i, null, false, TextShownWhy.Unwanted);
+                    }
                 }
+            }
+            finally
+            {
+                Passed();
+            }
+        }
+
+        // A pass over _waiting begins: Done is held until it ends (_held).
+        private void Pass()
+        {
+            _passes++;
+        }
+
+        // A pass over _waiting ends; the outermost calls the held Dones in the order their requests ended. One that asks again
+        // meanwhile is a pass of its own inside this one, so what it ends joins the list being called, never a list walked.
+        private void Passed()
+        {
+            if (_passes > 1)
+            {
+                _passes--;
+                return;
+            }
+            try
+            {
+                for (int i = 0; i < _held.Count; i++)
+                {
+                    _held[i].Done(_heldWords[i]);
+                }
+            }
+            finally
+            {
+                _held.Clear();
+                _heldWords.Clear();
+                _passes = 0;
             }
         }
 

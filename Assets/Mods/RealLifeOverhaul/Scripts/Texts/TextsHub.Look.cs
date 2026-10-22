@@ -9,6 +9,19 @@ namespace RealLifeOverhaul.Texts
         /// <summary>The look: words that came back checked and handed over, deadlines past handed over as the written line; how many.</summary>
         public int Look(double now)
         {
+            Pass();
+            try
+            {
+                return Walk(now);
+            }
+            finally
+            {
+                Passed();   // the Dones of what came back, after the walk: one may ask again at once
+            }
+        }
+
+        private int Walk(double now)
+        {
             _missed.Clear();
             _queue.TakeMissed(_missed);   // their state says so already, read below with the rest
             _serviceQueue?.TakeMissed(_missed);
@@ -150,14 +163,22 @@ namespace RealLifeOverhaul.Texts
         public int FlushForSave()
         {
             int n = 0;
-            for (int i = _waiting.Count - 1; i >= 0; i--)
+            Pass();
+            try
             {
-                if (_waiting[i].Request.Flush)
+                for (int i = _waiting.Count - 1; i >= 0; i--)
                 {
-                    QueueOf(_waiting[i]).Drop(_waiting[i].Job);
-                    End(i, null, false, TextShownWhy.Busy);
-                    n++;
+                    if (_waiting[i].Request.Flush)
+                    {
+                        QueueOf(_waiting[i]).Drop(_waiting[i].Job);
+                        End(i, null, false, TextShownWhy.Busy);
+                        n++;
+                    }
                 }
+            }
+            finally
+            {
+                Passed();
             }
             return n;
         }
@@ -165,13 +186,21 @@ namespace RealLifeOverhaul.Texts
         /// <summary>Hands over everything waiting as the written line.</summary>
         public void Clear()
         {
-            for (int i = _waiting.Count - 1; i >= 0; i--)
+            Pass();
+            try
             {
-                QueueOf(_waiting[i]).Drop(_waiting[i].Job);
-                End(i, null, false, TextShownWhy.Off);
+                for (int i = _waiting.Count - 1; i >= 0; i--)
+                {
+                    QueueOf(_waiting[i]).Drop(_waiting[i].Job);
+                    End(i, null, false, TextShownWhy.Off);
+                }
+                _queue.Clear();
+                _serviceQueue?.Clear();
             }
-            _queue.Clear();
-            _serviceQueue?.Clear();
+            finally
+            {
+                Passed();
+            }
         }
 
         /// <summary>How many speakers' recent words are remembered, at most <see cref="SpeakersMost"/>.</summary>
@@ -301,8 +330,8 @@ namespace RealLifeOverhaul.Texts
             return words;
         }
 
-        // A request handed over, counted, kept and remembered when there are words; Done is called last. A guess never shown
-        // counts only in the session's figures.
+        // A request handed over, counted, kept and remembered when there are words; Done is called last, or after the pass over
+        // the list when one is running. A guess never shown counts only in the session's figures.
         private void End(int i, string words, bool counted, TextShownWhy why, bool unseen = false)
         {
             Waiting w = _waiting[i];
@@ -338,6 +367,12 @@ namespace RealLifeOverhaul.Texts
                         SharedKept?.Invoke(k);
                     }
                 }
+            }
+            if (_passes > 0)
+            {
+                _held.Add(r);   // called once the pass over the list is over (Passed)
+                _heldWords.Add(words);
+                return;
             }
             r.Done(words);
         }

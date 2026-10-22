@@ -391,7 +391,7 @@ namespace RealLifeOverhaul.Street
             return true;
         }
 
-        /// <summary>The names of the two nearest businesses of the city (not the player's own), for "what's good around here".</summary>
+        /// <summary>The names of the two nearest businesses of the city of different names (not the player's own), for "what's good around here".</summary>
         public static int Around(Vector3 from, string[] into)
         {
             CityManager city = InstanceBehavior<CityManager>.Instance;
@@ -406,19 +406,7 @@ namespace RealLifeOverhaul.Street
                     continue;
                 }
                 Vector3 offset = b.transform.position - from;
-                float sqr = offset.x * offset.x + offset.z * offset.z;
-                if (sqr < first)
-                {
-                    second = first;
-                    into[1] = into[0];
-                    first = sqr;
-                    into[0] = reg.BusinessName;
-                }
-                else if (sqr < second && reg.BusinessName != into[0])
-                {
-                    second = sqr;
-                    into[1] = reg.BusinessName;
-                }
+                StreetRules.NearestTwo(reg.BusinessName, offset.x * offset.x + offset.z * offset.z, ref into[0], ref first, ref into[1], ref second);   // never "X and X"
             }
             return into[1] != null ? 2 : into[0] != null ? 1 : 0;
         }
