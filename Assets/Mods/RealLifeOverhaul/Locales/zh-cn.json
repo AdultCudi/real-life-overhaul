@@ -21064,7 +21064,7 @@
   "reallife_mgr_since": "任职自",
   "reallife_mgr_standing_in": "今天代理",
   "reallife_mgr_standing_skill": "代理时技能",
-  "reallife_mgr_test_fill": "让公司配满经理：每个有员工的地点一位经理，每个街区一位区域经理",
+  "reallife_mgr_test_fill": "让公司配满各类经理",
   "reallife_mgr_test_filled": "已任命{places}位经理和{regions}位区域经理。经理标签页会按分组显示他们。",
   "reallife_mgr_vacant_nobody": "这里还没有员工",
   "reallife_mgr_vacant_none": "每个地点都有经理。",
