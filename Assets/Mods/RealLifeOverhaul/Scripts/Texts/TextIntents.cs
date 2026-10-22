@@ -24,6 +24,12 @@ namespace RealLifeOverhaul.Texts
 
         public int Count => _count;
 
+        /// <summary>The name of the slot at this place (0 to Count - 1), in the order the slots were set.</summary>
+        public string NameAt(int i) => _names[i];
+
+        /// <summary>The value of the slot at this place.</summary>
+        public string ValueAt(int i) => _values[i];
+
         public TextSlots Set(string name, string value)
         {
             for (int i = 0; i < _count; i++)
@@ -73,7 +79,7 @@ namespace RealLifeOverhaul.Texts
     /// what the player wrote and the comments under every kind of post): a pack is asked only the intents of its own
     /// data version or older (TextPack.Data, TextsHub.Data). Optional facts (data v5's weather, moment, today's event and
     /// whether the speaker knows the player's name) follow the facts, each left out when its slot has no value, as the
-    /// generator leaves them out. Game-free.
+    /// generator leaves them out. Data v6's add what the contract says of each (TextIntents.Six.cs). Game-free.
     /// </summary>
     public sealed class TextIntent
     {
@@ -102,8 +108,23 @@ namespace RealLifeOverhaul.Texts
             Must = must ?? Array.Empty<string>();
         }
 
-        /// <summary>True for the voices whose training lines use an exclamation mark now and then (Mom, the partner).</summary>
-        public bool Exclaims => Voice == "mom" || Voice == "partner";
+        /// <summary>True for the voices whose training lines use an exclamation mark now and then (Mom, the partner); never from data v6.</summary>
+        public bool Exclaims => Data < TextIntents.DataV6 && (Voice == "mom" || Voice == "partner");
+
+        /// <summary>Data v6: the kind of message in the contract's words (spoken, text, dm, post, comment, review, paper); null before.</summary>
+        public string Shape { get; internal set; }
+
+        /// <summary>Data v6: the memory lines a card may carry (none for what everybody reads: a post, a comment, the paper).</summary>
+        public int MemoryMost { get; internal set; }
+
+        /// <summary>Data v6: which kinds of memory the speaker may have of the player.</summary>
+        public TextMemoryKinds MemoryKinds { get; internal set; }
+
+        /// <summary>
+        /// Data v6: the speaker may not know the player's name (a stranger in the street). Its card says whether they do
+        /// ("you know their name: yes" or "no"), and when they do not the name is kept out of the reply.
+        /// </summary>
+        public bool UntoldName { get; internal set; }
     }
 
     /// <summary>
@@ -222,6 +243,7 @@ namespace RealLifeOverhaul.Texts
                     return false;
                 }
                 sheet.Must.Add(m);
+                sheet.MustKinds.Add(TextSlotKinds.OfMust(intent.Must[i]));
             }
             sheet.Lang = "en";
             return true;
@@ -539,6 +561,7 @@ namespace RealLifeOverhaul.Texts
             V3();
             V4();   // street talk (TextIntents.Street.cs)
             V5();   // ...and its answers to what was said, with the moment and the name (TextIntents.Street.cs)
+            V6();   // every intent again, in every language, with what the speaker remembers, and the city's new talk (TextIntents.Six.cs)
         }
 
         // ---------------------------------------------------------------- data v3 (defs_v3.INTENTS): answers to what the player wrote, comments

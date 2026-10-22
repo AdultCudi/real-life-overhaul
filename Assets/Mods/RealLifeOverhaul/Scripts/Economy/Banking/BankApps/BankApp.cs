@@ -11,9 +11,10 @@ using UnityEngine;
 namespace RealLifeOverhaul.Economy
 {
     /// <summary>
-    /// One bank's app: that bank's slice of the player's money in the game's frame, five tabs (Accounts, Loans, Card, Apply,
-    /// Rating). It keeps nothing: figures come from the credit file and the game's loans, actions go to the credit desk.
-    /// Cost: nothing while closed; a page is written when it opens, a tab is picked or something is done.
+    /// The Banks app: one bank's slice of the player's money at a time in the game's frame, the bank picked at the head of
+    /// the box with the game's own selector over the city's three largest banks, and five tabs (Accounts, Loans, Card,
+    /// Apply, Rating). It keeps nothing: figures come from the credit file and the game's loans, actions go to the credit
+    /// desk. Cost: nothing while closed; a page is written when it opens, a tab or a bank is picked or something is done.
     /// </summary>
     public sealed partial class BankApp
     {
@@ -50,8 +51,11 @@ namespace RealLifeOverhaul.Economy
         private int _period = CashFlow.Week;
         private bool _ready;
 
-        /// <summary>The bank this app is for (one branch of it), set by the director.</summary>
+        /// <summary>The bank whose page shows (one branch of it): one of <see cref="Offer"/>'s.</summary>
         public Lender Bank;
+
+        private readonly List<Lender> _banks = new List<Lender>(BankRules.AppsMost);   // the banks the app shows, largest first (BanksDirector)
+        private int _at;   // the one picked among them
 
         public BankApp(EconomyDirector director, string id)
         {
@@ -103,6 +107,69 @@ namespace RealLifeOverhaul.Economy
             {
                 Opened();
             }
+        }
+
+        /// <summary>A tab of one of the banks (from 0, the largest), for the next opening.</summary>
+        public void Want(int tab, int bank)
+        {
+            if (bank >= 0 && bank < _banks.Count && bank != _at)
+            {
+                Pick(bank);
+            }
+            Want(tab);
+        }
+
+        /// <summary>
+        /// The banks the app shows (the director's, largest first). The bank picked stays picked while it is one of them,
+        /// found by its name (a bank read again is a new branch object); else the largest is.
+        /// </summary>
+        public void Offer(List<Lender> banks)
+        {
+            string picked = Bank != null ? Bank.Name : null;
+            _banks.Clear();
+            for (int i = 0; i < banks.Count; i++)
+            {
+                _banks.Add(banks[i]);
+            }
+            _at = 0;
+            for (int i = 0; i < _banks.Count; i++)
+            {
+                if (picked != null && string.Equals(_banks[i].Name, picked, StringComparison.Ordinal))
+                {
+                    _at = i;
+                }
+            }
+            Bank = _banks.Count > 0 ? _banks[_at] : null;
+            After();
+        }
+
+        // Another bank picked: its page of the tab that shows, from the tab's start.
+        private void Pick(int at)
+        {
+            _at = at;
+            Bank = _banks[at];
+            _picked = null;
+            _product = -1;
+            _amount = 0;
+            _deposit = 0;
+            _term = 0;
+        }
+
+        // The bank picked, under the page's title: the game's own selector over the banks' names, or the name alone for one bank.
+        private void Which(InfoBox box)
+        {
+            if (_banks.Count > 1 && box.HasSelector && box.Selector(_banks.Count, _at, i => _banks[i].Name, i =>
+                {
+                    if (i != _at && i >= 0 && i < _banks.Count)
+                    {
+                        Pick(i);
+                        Refresh();
+                    }
+                }))
+            {
+                return;
+            }
+            box.Subtitle(Bank.Name);
         }
 
         public void Opened()
@@ -282,7 +349,7 @@ namespace RealLifeOverhaul.Economy
             {
                 return;
             }
-            InfoBox.Button(row, InfoBox.Additional, buttonKey, () => uis.textInputUi.Show(placeholderKey, "common_confirm", text => UiClone.Safe(() =>
+            InfoBox.Button(row, InfoBox.Additional, buttonKey, () => GameUi.TextBox.Ask(placeholderKey, "common_confirm", text => UiClone.Safe(() =>
             {
                 int amount;
                 if (!FinanceApp.Whole(text, out amount) || amount <= 0)
@@ -347,7 +414,7 @@ namespace RealLifeOverhaul.Economy
         {
             GameInstance save = SaveGameManager.Current;
             box.Title(FinanceText.T("reallife_bank_current"));
-            box.Subtitle(Bank.Name);
+            Which(box);
             if (IsHouse)
             {
                 box.Section("reallife_ibox_sec_now");
@@ -514,7 +581,7 @@ namespace RealLifeOverhaul.Economy
             RatingRow("yours", score.Value, BankTables.Yours);
 
             box.Title(FinanceText.T("reallife_econ_rating_value", "score", score.Value.ToString(), "grade", FinanceText.Grade(score.Grade)));
-            box.Subtitle(Bank.Name);
+            Which(box);
             box.Chip(FinanceText.Grade(score.Grade), FinanceApp.Tone(score.Grade));
             box.Line(FinanceText.T(score.Lends ? "reallife_bank_rating_lends" : "reallife_bank_rating_refuses", "bank", Bank.Name, "threshold", threshold.ToString()),
                 score.Lends ? CellTone.Green : CellTone.Red);

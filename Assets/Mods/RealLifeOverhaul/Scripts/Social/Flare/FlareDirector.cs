@@ -12,7 +12,8 @@ namespace RealLifeOverhaul.Flare
     /// <summary>
     /// Flare, the city's social media app: an account, posts only about what really happened, friends who follow and
     /// answer. Cost: nothing per frame, open or closed: a one-second real-time timer holds it, the work runs on the game's
-    /// hour, day and save, on Wiring/FlareLinks and on clicks. A fault switches Flare off for the session.
+    /// hour (a step a frame, FlareHourSteps), day and save, on Wiring/FlareLinks and on clicks. A fault switches Flare off
+    /// for the session.
     /// </summary>
     public sealed partial class FlareDirector : MonoBehaviour
     {
@@ -24,6 +25,8 @@ namespace RealLifeOverhaul.Flare
         public static FlareDirector Instance { get; private set; }
 
         private readonly List<FlarePerson> _people = new List<FlarePerson>(12);
+        private readonly FlareHourSteps _hourSteps = new FlareHourSteps();
+        private bool _stepping;   // the hour's steps' coroutine is running
         private FlareFile _file;
         private FlareApp _view;
         private PhoneApp _app;
@@ -184,8 +187,10 @@ namespace RealLifeOverhaul.Flare
         {
             if (keep && _running && Save != null && _file != null)
             {
+                FinishHours();
                 FlareStore.Save(Save.modData, _file);
             }
+            _hourSteps.Clear();
             ShareStop();
             PhotosStop();
             FlareBridges.Watched?.Invoke(false, false);   // no patrols or cleaners of Flare's once it stops (Crime/CityWatch back to 1)
@@ -284,7 +289,7 @@ namespace RealLifeOverhaul.Flare
         }
 
         private static readonly int HotOnHour = HotSpots.Slot("Social: FlareDirector.OnHour");
-        // A promotion, a ballot or an endorsement since the last hour becomes a draft.
+        // The game's hour: its work queued, done a step a frame from the next frame on (HourSteps).
         private void OnHour()
         {
             using var hotSpot = HotSpots.Time(HotOnHour);
@@ -294,7 +299,16 @@ namespace RealLifeOverhaul.Flare
             }
             try
             {
-                Look(Save.Day, Save.Hour);
+                if (!_hourSteps.Add(Save.Day, Save.Hour))
+                {
+                    FinishOldest();   // a skip faster than the steps: the oldest hour is finished now, in order
+                    _hourSteps.Add(Save.Day, Save.Hour);
+                }
+                if (!_stepping)
+                {
+                    _stepping = true;
+                    StartCoroutine(Guard.Routine(HourSteps()));
+                }
             }
             catch (Exception e)
             {
@@ -302,10 +316,81 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        private void Look(int day, int hour)
+        private static readonly string[] StepNames =
         {
-            CityHour(day, hour);
-            LiveHour(day, hour);
+            "flare: the hour's city posts", "flare: the hour's City Office cases", "flare: the hour's invitations and patrols",
+            "flare: the hour's unread count", "flare: the hour's words asked ahead", "flare: the hour's milestones"
+        };
+
+        private static readonly int HotHourStep = HotSpots.Slot("Social: FlareDirector.HourSteps");
+
+        // The hour's work a step a frame, from the frame after the game's hour (when every other listener of it runs).
+        private IEnumerator HourSteps()
+        {
+            while (_hourSteps.Busy)
+            {
+                yield return null;
+                if (!Running || Save == null || _file == null)
+                {
+                    _hourSteps.Clear();
+                    break;
+                }
+                using var hotSpot = HotSpots.Time(HotHourStep);
+                try
+                {
+                    if (_hourSteps.Next(out int day, out int hour, out int step))
+                    {
+                        using var piece = SessionWatch.Piece(StepNames[step]);
+                        HourStep(day, hour, step);
+                    }
+                }
+                catch (Exception e)
+                {
+                    _hourSteps.Clear();
+                    Fault("the hour", e);
+                }
+            }
+            _stepping = false;
+        }
+
+        // What is left of the hours waiting, at once: the save, the day and standing down need the hours done first.
+        private void FinishHours()
+        {
+            while (_file != null && _hourSteps.Next(out int day, out int hour, out int step))
+            {
+                HourStep(day, hour, step);
+            }
+        }
+
+        private void FinishOldest()
+        {
+            int waiting = _hourSteps.Waiting;
+            while (_file != null && _hourSteps.Waiting == waiting && _hourSteps.Next(out int day, out int hour, out int step))
+            {
+                HourStep(day, hour, step);
+            }
+        }
+
+        // One step of an hour (FlareHourSteps): together, in their order, what the hour did in one frame.
+        private void HourStep(int day, int hour, int step)
+        {
+            switch (step)
+            {
+                case FlareHourSteps.City:
+                    CityHour(day, hour);
+                    break;
+                case FlareHourSteps.Milestones:
+                    Milestones(day, hour);
+                    break;
+                default:
+                    LiveHour(day, hour, step);   // the cases, the invitations, the unread count, the words (FlareDirector.Live)
+                    break;
+            }
+        }
+
+        // A promotion, a degree, a vote or an endorsement since the last hour becomes a draft.
+        private void Milestones(int day, int hour)
+        {
             if (FlareBridges.Career != null)
             {
                 string employer;
@@ -349,6 +434,7 @@ namespace RealLifeOverhaul.Flare
             }
             try
             {
+                FinishHours();   // the day's run follows the hour's, as it did
                 int day = Save.Day;
                 if (day != _file.SettledDay)
                 {
@@ -513,6 +599,7 @@ namespace RealLifeOverhaul.Flare
             {
                 if (_running && Save != null && _file != null)
                 {
+                    FinishHours();   // the save holds every hour that has begun, done
                     FlareStore.Save(Save.modData, _file);
                 }
             }

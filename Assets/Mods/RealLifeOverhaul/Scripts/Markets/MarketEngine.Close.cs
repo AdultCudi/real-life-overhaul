@@ -38,6 +38,7 @@ namespace RealLifeOverhaul.Markets
             Dividends(day);
             Income(day);   // the player's bonds (MarketEngine.Bonds.cs)
             Corporate(day);
+            Derivatives(day);   // the raw materials' prices, the futures and options (MarketEngine.Derivatives.cs)
             Variance();
             Interest(day);
             Margin(day, MarketCatalogue.PhaseClose);
@@ -423,6 +424,7 @@ namespace RealLifeOverhaul.Markets
                 _world.Paid(TradeKind.Payout, s, held > 0 ? money : -money);
             }
             BotsLeave(s, day);
+            OptionsLeave(s);   // its options settle at what each share is paid out
             for (int i = 0; i < State.Orders.Count; i++)
             {
                 Order o = State.Orders[i];

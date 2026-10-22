@@ -18,7 +18,7 @@ namespace RealLifeOverhaul.Economy
     /// </summary>
     public static class BankRules
     {
-        public const int AppsMost = 3;   // bank apps on the phone: one for each of the three largest banks
+        public const int AppsMost = 3;   // banks in the Banks app on the phone: the three largest
 
         private static readonly BankProfile[] Profiles =
         {

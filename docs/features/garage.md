@@ -13,6 +13,7 @@ A custom shop for cars in the game's repair bays (paint, finishes, fitted parts 
 | --- | --- |
 | `GarageDirector` | the one component that ticks: builds onto spawned cars, underglow after dark, the timers of the lists and panels, the test buttons; GarageSummary ("My vehicles", in the game's list) |
 | `GarageBay` | the game's own panel in a repair bay with one more line and a "Garage" button (RepairBayOverlay); the workshop's list; GarageList (the one list window the Garage's screens share) |
+| `GarageWash`, `WashRules` | the game's car wash in a bay kept from holding a car for good: stand-ins for a car's missing spray and wash sound, and a watch that ends a wash that has stopped (WashRules, WashWatch game-free) |
 | `GarageCatalogue` | paint chart, finishes, performance parts with effects and trade-offs, every price; GarageBuild (one car's build, one line of text) (game-free) |
 | `GarageState` | the save's part: builds by vehicle id, which scooters are two-wheelers; GarageBridges (what other features may set or ask) |
 | `GarageFit` | every car body as measured (roof, boot deck, nose) and which fitted part goes on which car |
@@ -71,6 +72,14 @@ Every choice is on the car at once; the lines under the headline show the money,
 A colour of one's own is mixed in the game's own colour picker (`UIs.customColorPicker`, the one its interior designer uses: the car is repainted as the colour moves; its button keeps the colour, and also adds it to the game's list of the player's colours, which is what that picker does; closed any other way, the paint is as it was).
 
 **Pay** keeps the build; **Cancel** (the list's yellow button or the game's cancel key, or getting out, or walking away) puts the car back as it came in; **All stock** takes everything off.
+
+Every way out goes through `GarageShop.Close`: the pedals given back, the car's hold let go, the game's camera given the view, the drag plate taken off, the list and the colour picker closed. The shop closes itself when the driver leaves the seat, the city loads, the pause menu, the map or the phone's menu comes up, or the option is switched off. When the feature is switched off, on the options page or by the guard after its faults, its clean-up (`GarageDirector.LetGo`, in `Meta/FeatureList`) closes the shop and the lists at once: after the guard's switch the director's timer never runs again to do it. With the feature off after its faults, the bay's panel has the game's own buttons again (repair, wash, fuel), not none.
+
+### The car wash in a bay
+
+The game's wash (`CarController.WashCoroutine`, from "Wash" on the bay's panel) holds the car and the player first (the vehicle navigation blocker `WashingVehicle`, `SetFreeze`), then plays its sound and shows its spray, and lets both go only at its end, 3 to 4 seconds later. A car built without a spray or a wash sound of its own (another mod's; a player's report of 20 Oct 2026, a Porsche of another mod) makes the coroutine fail at its first line after the hold: nothing lets go, the car does not drive, the player cannot get out, and only loading the game again helps.
+
+So, as the bay's panel lists its buttons for a car, a car that lacks either is given a stand-in (an empty object kept switched off, a silent sound source; `GarageWash.Ready`, once a car, read and written through the contract's optional `WashSpray` and `WashSound`), and the game's own wash runs to its end on it. Whatever else stops a wash (the car's object switched off mid-way), the bay's quarter-second look watches the player's washing car (`WashWatch`): a wash still under way 4 seconds past the longest wash, in game time, has stopped, and is ended as the game's end does: not washing, the spray off, the sound stopped, the car's hold and the player's blocker let go (the custom shop's own hold left to the shop while it is open), the car clean. One `Garage:` line says so. A second wash pressed at once is known by its dirt starting at the top again, and timed from its own start.
 
 Work is instant: the game has no notion of a car that is away being worked on, and a car hidden or taken out of the save's vehicle list for a few hours would be a save the base game cannot account for.
 
@@ -315,7 +324,7 @@ A button that cannot do it says why (`Core/TestRefusal`: not loaded, option off,
 
 The shop and "My vehicles" asked for on the options page open when the menus are closed (the game's list stands on the HUD, which is not shown under a menu), and a notification says so.
 
-With "Developer diagnostics" on: `Garage check (custom shop list)` when the shop's list opens, on each page and when it closes (with why); `(choice)` for every choice with the bill; `(place panel)` when the game's panel comes up or goes at a dock, rack or stand; `(stand list)`, `(my vehicles)` and `(marker)` likewise.
+With "Developer diagnostics" on: `Garage check (wash)` when a car is given stand-ins for the wash; `Garage check (custom shop list)` when the shop's list opens, on each page and when it closes (with why); `(choice)` for every choice with the bill; `(place panel)` when the game's panel comes up or goes at a dock, rack or stand; `(stand list)`, `(my vehicles)` and `(marker)` likewise.
 Not verified in the game: how the list reads at 1,100 wide with entries of three lines.
 
 That a name written in a dark colour is readable (a colour darker than 22 % grey is lightened for the name only).

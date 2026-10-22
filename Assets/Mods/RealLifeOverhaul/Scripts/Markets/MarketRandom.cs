@@ -13,7 +13,8 @@ namespace RealLifeOverhaul.Markets
             Revenue = 10, Margin = 11, Growth = 12, Crash = 13, CrashSize = 14, Mania = 15, Takeover = 17, TakeoverTerms = 18, Failure = 19,
             Listing = 20, ListingPick = 21, ResultsShock = 22, OpenShock = 23, OpenTail = 24, Start = 25, Recovery = 26, Bidder = 28,
             Mood = 29, OpenMood = 30, Crisis = 31, CrisisTerms = 32,
-            Meeting = 33, Activist = 34, OwnBid = 35, Book = 36;   // a player's company: its meetings, investors, a bid, its book
+            Meeting = 33, Activist = 34, OwnBid = 35, Book = 36,   // a player's company: its meetings, investors, a bid, its book
+            MaterialGroupShock = 37, MaterialShock = 38, MaterialStart = 39;   // the raw materials exchange: a group's and a material's close, a first price
 
         // The mood's draws are keyed by step and 0 for the market, MoodSector + sector, or MoodOwn + company id.
         public const int MoodSector = 1000, MoodOwn = 2000;

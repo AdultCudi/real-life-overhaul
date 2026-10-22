@@ -1,0 +1,557 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Text;
+using RealLifeOverhaul.Economy.Dealership;
+
+namespace RealLifeOverhaul.Designs
+{
+    /// <summary>One piece of furniture of a design as the rules see it: the game's item, where it stands, what stands on it.</summary>
+    public sealed class DesignItem
+    {
+        public string Id;
+        public string Name;                  // the game's item name, with its "ba:itemname_"
+        public int X, Y, Z;                  // centimetres, in the room's own place in the world
+        public string Parent;                // the item it stands on, or empty
+        public readonly List<string> Children = new List<string>(0);   // the items that stand on it
+    }
+
+    /// <summary>A rectangle of floor, in centimetres; empty while nothing is in it.</summary>
+    public struct FloorBox
+    {
+        public int MinX, MaxX, MinZ, MaxZ;
+        public bool Any;                     // something has been taken in (a box made with its four sides set has it too)
+
+        public static FloorBox None => default;
+
+        public bool Empty => !Any || MinX > MaxX || MinZ > MaxZ;
+        public int Width => Empty ? 0 : MaxX - MinX;
+        public int Depth => Empty ? 0 : MaxZ - MinZ;
+
+        public bool Holds(int x, int z)
+        {
+            return !Empty && x >= MinX && x <= MaxX && z >= MinZ && z <= MaxZ;
+        }
+
+        public void Take(int x, int z)
+        {
+            if (!Any)
+            {
+                MinX = MaxX = x;
+                MinZ = MaxZ = z;
+                Any = true;
+                return;
+            }
+            MinX = Math.Min(MinX, x);
+            MaxX = Math.Max(MaxX, x);
+            MinZ = Math.Min(MinZ, z);
+            MaxZ = Math.Max(MaxZ, z);
+        }
+    }
+
+    /// <summary>One design file of the game's that a business type's design may be made from.</summary>
+    public sealed class DesignSource
+    {
+        public int Kind;                     // its place in DesignCatalogue.Kinds
+        public int Donor;                    // its place in that kind's donors
+        public DonorRoot Root;
+        public string Size;                  // the game's folder of the building size and version ("C1")
+        public string Name;                  // the design's name as the firm offers it, which is its file's name
+        public string Path;                  // under StreamingAssets, with '/'
+        public long Length;
+        public long Ticks;                   // when the file was last written (UTC ticks): only to see that it changed
+    }
+
+    /// <summary>What a Car Showroom keeps of one design, and what that comes to.</summary>
+    public sealed class ShowroomCut
+    {
+        public readonly HashSet<string> Kept = new HashSet<string>(StringComparer.Ordinal);
+        public bool[] Keep = new bool[0];    // by the item's place in the design: kept (an id a design gives twice is kept once, the first)
+        public int Furniture;                // kept pieces that are not ceiling lamps
+        public int Tills;                    // kept points of sale, standing on kept counters
+        public int Toilets;
+        public int InLot;                    // pieces left out because they stood where the cars go
+        public int Seats;                    // kept seats to wait on (DesignCatalogue.BranchSeats)
+
+        public bool Valid => Furniture >= DesignCatalogue.ShowroomLeast && Toilets > 0;
+
+        /// <summary>A bank branch's design: valid, and a till on a counter for its teller.</summary>
+        public bool ValidBranch => Valid && Tills > 0;
+    }
+
+    /// <summary>
+    /// The rules of the ready-made designs, game-free: the folders the installation firm reads (the game's own naming), which
+    /// of the game's designs a type is offered under which name, what a Car Showroom keeps of one so that its lot stays clear
+    /// (the lot as Economy/Dealer lays it out, on the room the game's own designs fill), and the list of what the mod put in the
+    /// game's folder. Every answer depends only on what it is given: two machines with the same game files make the same
+    /// designs. Nothing runs per frame; the work is done once, on a worker thread, when the files change.
+    /// </summary>
+    public static class DesignRules
+    {
+        private static readonly HashSet<string> Keeps = Build(DesignCatalogue.ShowroomKeeps);
+        private static readonly HashSet<string> BranchKeeps = Build(DesignCatalogue.ShowroomKeeps, DesignCatalogue.BranchExtras);
+        private static readonly HashSet<string> Seats = Build(DesignCatalogue.BranchSeats);
+
+        private static HashSet<string> Build(params string[][] lists)
+        {
+            var set = new HashSet<string>(StringComparer.Ordinal);
+            for (int l = 0; l < lists.Length; l++)
+            {
+                for (int i = 0; i < lists[l].Length; i++)
+                {
+                    set.Add(DesignCatalogue.ItemPrefix + lists[l][i]);
+                }
+            }
+            return set;
+        }
+
+        /// <summary>The game's folder name of an id ("ba:buildingtype_office" is "office"): its second piece between '_' (StringIdExtensions.GetIdWithoutType).</summary>
+        public static string FolderOf(string id)
+        {
+            if (string.IsNullOrWhiteSpace(id) || id.IndexOf('_') < 0)
+            {
+                return string.Empty;
+            }
+            return id.Split('_')[1];
+        }
+
+        /// <summary>True for a folder the game names a building size and version by ("C1", "K1", "T16").</summary>
+        public static bool IsSize(string folder)
+        {
+            if (string.IsNullOrEmpty(folder) || folder.Length < 2 || folder[0] < 'A' || folder[0] > 'Z')
+            {
+                return false;
+            }
+            int digits = 0;
+            for (int i = folder.Length - 1; i >= 1 && folder[i] >= '0' && folder[i] <= '9'; i--)
+            {
+                digits++;
+            }
+            for (int i = 1; i < folder.Length - digits; i++)
+            {
+                if (folder[i] < 'a' || folder[i] > 'z')
+                {
+                    return false;
+                }
+            }
+            return digits > 0;
+        }
+
+        /// <summary>The game's size id and version of a size folder ("C1": "ba:buildingsize_c", 1), the reverse of BuildingSizeInfo.ToString.</summary>
+        public static string SizeId(string folder, out int version)
+        {
+            version = 0;
+            if (!IsSize(folder))
+            {
+                return null;
+            }
+            int cut = folder.Length;
+            while (cut > 1 && folder[cut - 1] >= '0' && folder[cut - 1] <= '9')
+            {
+                cut--;
+            }
+            version = int.Parse(folder.Substring(cut), CultureInfo.InvariantCulture);
+            return "ba:buildingsize_" + folder.Substring(0, cut).ToLowerInvariant();
+        }
+
+        /// <summary>
+        /// The name a design of the game's is offered under: an installer design's file name; for one of the game's own
+        /// businesses' layouts, the style its name ends in (DesignCatalogue.DealerStyles), or null for one that is not offered.
+        /// </summary>
+        public static string NameOf(DonorRoot root, string fileName)
+        {
+            if (string.IsNullOrEmpty(fileName) || !fileName.EndsWith(DesignCatalogue.Extension, StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+            string name = fileName.Substring(0, fileName.Length - DesignCatalogue.Extension.Length);
+            if (root == DonorRoot.Installer)
+            {
+                return name.Length > 0 && name.IndexOf('|') < 0 ? name : null;
+            }
+            for (int i = 0; i < DesignCatalogue.DealerStyles.Length; i++)
+            {
+                string style = DesignCatalogue.DealerStyles[i];
+                if (name.Length > style.Length && name.EndsWith(style, StringComparison.Ordinal))
+                {
+                    return style;
+                }
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// The order the sources of a kind and size are tried in: its donors in the catalogue's order, each donor's files by
+        /// name (as the game lists them, without regard to case). Sorts <paramref name="sources"/> in place.
+        /// </summary>
+        public static void Order(List<DesignSource> sources)
+        {
+            sources.Sort((a, b) =>
+            {
+                int c = a.Kind.CompareTo(b.Kind);
+                if (c == 0)
+                {
+                    c = string.CompareOrdinal(a.Size, b.Size);
+                }
+                if (c == 0)
+                {
+                    c = a.Donor.CompareTo(b.Donor);
+                }
+                if (c == 0)
+                {
+                    c = string.Compare(a.Path, b.Path, StringComparison.OrdinalIgnoreCase);
+                }
+                return c != 0 ? c : string.CompareOrdinal(a.Path, b.Path);
+            });
+        }
+
+        /// <summary>
+        /// The designs a kind that is offered the game's own whole (DesignWay.Copy) gets for one size: of the sources given (one
+        /// kind, one size, in <see cref="Order"/>), the first of each name, the name's case aside.
+        /// </summary>
+        public static void Copies(List<DesignSource> sources, List<DesignSource> into)
+        {
+            into.Clear();
+            for (int i = 0; i < sources.Count; i++)
+            {
+                if (!Named(into, sources[i].Name))
+                {
+                    into.Add(sources[i]);
+                }
+            }
+        }
+
+        private static bool Named(List<DesignSource> chosen, string name)
+        {
+            for (int i = 0; i < chosen.Count; i++)
+            {
+                if (string.Equals(chosen[i].Name, name, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>The room a size's designs fill: everything they place, but strays at the world's origin.</summary>
+        public static FloorBox Room(List<List<DesignItem>> designs)
+        {
+            FloorBox room = FloorBox.None;
+            for (int d = 0; designs != null && d < designs.Count; d++)
+            {
+                List<DesignItem> items = designs[d];
+                for (int i = 0; items != null && i < items.Count; i++)
+                {
+                    DesignItem item = items[i];
+                    if (!Stray(item))
+                    {
+                        room.Take(item.X, item.Z);
+                    }
+                }
+            }
+            return room;
+        }
+
+        /// <summary>True for an item a design left at the world's origin, outside every room.</summary>
+        public static bool Stray(DesignItem item)
+        {
+            return Math.Abs(item.X) < DesignCatalogue.Origin && Math.Abs(item.Z) < DesignCatalogue.Origin;
+        }
+
+        /// <summary>
+        /// The floor a Car Showroom's lot may take in this room: every car's place as Economy/Dealer lays the lot out on the
+        /// game's floor (DealerRules.Layout, centred, along the longer side), for a floor up to <see cref="DesignCatalogue.Slack"/>
+        /// wider, narrower or further along either way than the designs reach, each place with <see cref="DesignCatalogue.Clear"/>
+        /// round it. Fills <paramref name="into"/>.
+        /// </summary>
+        public static void Lot(FloorBox room, List<FloorBox> into)
+        {
+            into.Clear();
+            if (room.Empty)
+            {
+                return;
+            }
+            var offsets = new List<int>(2 * DealerCatalogue.SpotsMost);
+            int slack = DesignCatalogue.Slack, half = slack / 2;
+            for (int dw = -slack; dw <= slack; dw += slack)
+            {
+                for (int dd = -slack; dd <= slack; dd += slack)
+                {
+                    int count = DealerRules.Layout(room.Width + dw, room.Depth + dd, offsets, out bool across);
+                    int hx = (across ? DealerCatalogue.SpotDepth : DealerCatalogue.SpotWidth) / 2 + DesignCatalogue.Clear;
+                    int hz = (across ? DealerCatalogue.SpotWidth : DealerCatalogue.SpotDepth) / 2 + DesignCatalogue.Clear;
+                    for (int s = 0; s < count; s++)
+                    {
+                        int x = (room.MinX + room.MaxX) / 2 + offsets[2 * s], z = (room.MinZ + room.MaxZ) / 2 + offsets[2 * s + 1];
+                        into.Add(new FloorBox { MinX = x - hx - half, MaxX = x + hx + half, MinZ = z - hz - half, MaxZ = z + hz + half, Any = true });
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// What a Car Showroom keeps of a design: the furniture of <see cref="DesignCatalogue.ShowroomKeeps"/> that stands
+        /// clear of the lot (anything hung higher than <see cref="DesignCatalogue.FloorTop"/> is above the cars), and of that
+        /// only what stands on something kept, or on the floor.
+        /// </summary>
+        public static ShowroomCut Cut(List<DesignItem> items, List<FloorBox> lot)
+        {
+            return Cut(items, lot, Keeps);
+        }
+
+        /// <summary>
+        /// What a bank branch keeps of a design: the showroom's furniture and <see cref="DesignCatalogue.BranchExtras"/>, with
+        /// no lot to keep clear, and of that only what stands on something kept, or on the floor.
+        /// </summary>
+        public static ShowroomCut BranchCut(List<DesignItem> items)
+        {
+            return Cut(items, NoLot, BranchKeeps);
+        }
+
+        private static readonly List<FloorBox> NoLot = new List<FloorBox>(0);
+
+        private static ShowroomCut Cut(List<DesignItem> items, List<FloorBox> lot, HashSet<string> keeps)
+        {
+            var cut = new ShowroomCut();
+            var byId = new Dictionary<string, DesignItem>(items.Count, StringComparer.Ordinal);
+            for (int i = 0; i < items.Count; i++)
+            {
+                if (!string.IsNullOrEmpty(items[i].Id) && !byId.ContainsKey(items[i].Id))
+                {
+                    byId.Add(items[i].Id, items[i]);
+                }
+            }
+            for (int i = 0; i < items.Count; i++)
+            {
+                DesignItem item = items[i];
+                if (string.IsNullOrEmpty(item.Id) || byId[item.Id] != item || !keeps.Contains(item.Name ?? string.Empty) || Stray(item))
+                {
+                    continue;
+                }
+                if (item.Y < DesignCatalogue.FloorTop && InLot(lot, item.X, item.Z))
+                {
+                    cut.InLot++;
+                    continue;
+                }
+                cut.Kept.Add(item.Id);
+            }
+            // Whatever stands on something left out goes with it, however deep the stack.
+            bool changed = true;
+            while (changed)
+            {
+                changed = false;
+                for (int i = 0; i < items.Count; i++)
+                {
+                    DesignItem item = items[i];
+                    if (item.Id != null && !string.IsNullOrEmpty(item.Parent) && cut.Kept.Contains(item.Id) && !cut.Kept.Contains(item.Parent))
+                    {
+                        cut.Kept.Remove(item.Id);
+                        changed = true;
+                    }
+                }
+            }
+            cut.Keep = new bool[items.Count];
+            for (int i = 0; i < items.Count; i++)
+            {
+                DesignItem item = items[i];
+                if (item.Id == null || !cut.Kept.Contains(item.Id) || byId[item.Id] != item)
+                {
+                    continue;
+                }
+                cut.Keep[i] = true;
+                string bare = item.Name.Substring(DesignCatalogue.ItemPrefix.Length);
+                cut.Furniture += bare.IndexOf(DesignCatalogue.LampMark, StringComparison.Ordinal) < 0 ? 1 : 0;
+                cut.Tills += bare == DesignCatalogue.Till ? 1 : 0;
+                cut.Toilets += bare == DesignCatalogue.Toilet ? 1 : 0;
+                cut.Seats += Seats.Contains(item.Name) ? 1 : 0;
+            }
+            return cut;
+        }
+
+        private static bool InLot(List<FloorBox> lot, int x, int z)
+        {
+            for (int i = 0; i < lot.Count; i++)
+            {
+                if (lot[i].Holds(x, z))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// The designs a Car Showroom is offered for one size, by their places in <paramref name="sources"/> (in
+        /// <see cref="Order"/>, each with its cut): the game's own dealerships first, then those with a sales counter, then the
+        /// rest, every one valid, one of each name, at most <see cref="DesignCatalogue.ShowroomMost"/>.
+        /// </summary>
+        public static void Showrooms(List<DesignSource> sources, List<ShowroomCut> cuts, List<int> into)
+        {
+            into.Clear();
+            var named = new List<DesignSource>(DesignCatalogue.ShowroomMost);
+            for (int pass = 0; pass < 3; pass++)
+            {
+                for (int i = 0; i < sources.Count && into.Count < DesignCatalogue.ShowroomMost; i++)
+                {
+                    ShowroomCut cut = cuts[i];
+                    bool dealer = sources[i].Root == DonorRoot.Layouts;
+                    bool fits = pass == 0 ? dealer : !dealer && (pass == 1 ? cut != null && cut.Tills > 0 : cut != null && cut.Tills == 0);
+                    if (!fits || cut == null || !cut.Valid || Named(named, sources[i].Name))
+                    {
+                        continue;
+                    }
+                    named.Add(sources[i]);
+                    into.Add(i);
+                }
+            }
+        }
+
+        /// <summary>
+        /// The designs a bank branch is offered for one size, by their places in <paramref name="sources"/> (in
+        /// <see cref="Order"/>, each with its cut): those with seats to wait on first, then the rest, every one with a till for
+        /// its teller, one of each name, at most <see cref="DesignCatalogue.BranchMost"/>.
+        /// </summary>
+        public static void Branches(List<DesignSource> sources, List<ShowroomCut> cuts, List<int> into)
+        {
+            into.Clear();
+            var named = new List<DesignSource>(DesignCatalogue.BranchMost);
+            for (int pass = 0; pass < 2; pass++)
+            {
+                for (int i = 0; i < sources.Count && into.Count < DesignCatalogue.BranchMost; i++)
+                {
+                    ShowroomCut cut = cuts[i];
+                    if (cut == null || !cut.ValidBranch || (pass == 0) != (cut.Seats > 0) || Named(named, sources[i].Name))
+                    {
+                        continue;
+                    }
+                    named.Add(sources[i]);
+                    into.Add(i);
+                }
+            }
+        }
+
+        /// <summary>
+        /// The stamp of the game's files the designs are made from, and of these rules: while it is the same, what the mod
+        /// put in the game's folder is still what it would make. FNV-1a over each source's path, length and time, in order.
+        /// </summary>
+        public static string Stamp(List<DesignSource> sources)
+        {
+            ulong h = 14695981039346656037UL;
+            h = Mix(h, "rules=" + DesignCatalogue.RulesVersion.ToString(CultureInfo.InvariantCulture));
+            for (int i = 0; i < sources.Count; i++)
+            {
+                DesignSource s = sources[i];
+                h = Mix(h, s.Path + "|" + s.Length.ToString(CultureInfo.InvariantCulture) + "|" + s.Ticks.ToString(CultureInfo.InvariantCulture));
+            }
+            return h.ToString("x16", CultureInfo.InvariantCulture);
+        }
+
+        private static ulong Mix(ulong h, string text)
+        {
+            for (int i = 0; i < text.Length; i++)
+            {
+                h ^= text[i];
+                h *= 1099511628211UL;
+            }
+            h ^= '\n';
+            h *= 1099511628211UL;
+            return h;
+        }
+
+        /// <summary>
+        /// The folder a design of a kind for a size is put in, under the installers' folder ("Office/C1/gamestudio"):
+        /// the building's folder as the game's is named on disk, the size, the type's own folder.
+        /// </summary>
+        public static string Folder(string buildingFolder, string size, DesignKind kind)
+        {
+            return buildingFolder + "/" + size + "/" + FolderOf(kind.Type);
+        }
+
+        /// <summary>
+        /// True for a path the mod may have put in the installers' folder and so may take away: building/size/type/name.json,
+        /// with the type one of the mod's own, and nothing that climbs out of the folder.
+        /// </summary>
+        public static bool Ours(string path)
+        {
+            if (string.IsNullOrEmpty(path) || path.IndexOf("..", StringComparison.Ordinal) >= 0 || path.IndexOf('\\') >= 0 || path.IndexOf(':') >= 0
+                || !path.EndsWith(DesignCatalogue.Extension, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+            string[] parts = path.Split('/');
+            if (parts.Length != 4 || !IsSize(parts[1]) || parts[3].Length <= DesignCatalogue.Extension.Length)
+            {
+                return false;
+            }
+            for (int k = 0; k < DesignCatalogue.Kinds.Length; k++)
+            {
+                DesignKind kind = DesignCatalogue.Kinds[k];
+                if (parts[2] == FolderOf(kind.Type) && string.Equals(parts[0], FolderOf(kind.Building), StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// The list of what the mod put in the game's installers' folder (DesignCatalogue.Manifest), read and written game-free:
+    /// "v=1", "stamp=...", then a line "path|length" a file, sorted. Only a file on this list is ever replaced or taken away; a
+    /// file of that name the list does not hold is somebody else's and is left as it is. A list that cannot be read holds nothing.
+    /// </summary>
+    public sealed class DesignManifest
+    {
+        public const int Version = 1;
+
+        public string Stamp = string.Empty;
+        public readonly SortedDictionary<string, long> Files = new SortedDictionary<string, long>(StringComparer.Ordinal);
+
+        public bool Holds(string path)
+        {
+            return path != null && Files.ContainsKey(path);
+        }
+
+        public string Write()
+        {
+            var text = new StringBuilder(64 + 64 * Files.Count);
+            text.Append("v=").Append(Version.ToString(CultureInfo.InvariantCulture)).Append('\n');
+            text.Append("stamp=").Append(Stamp ?? string.Empty).Append('\n');
+            foreach (KeyValuePair<string, long> file in Files)
+            {
+                text.Append(file.Key).Append('|').Append(file.Value.ToString(CultureInfo.InvariantCulture)).Append('\n');
+            }
+            return text.ToString();
+        }
+
+        /// <summary>The list in this text; an empty one for no text, a damaged one or another version's. Paths not the mod's are dropped.</summary>
+        public static DesignManifest Read(string text)
+        {
+            var list = new DesignManifest();
+            if (string.IsNullOrEmpty(text))
+            {
+                return list;
+            }
+            string[] lines = text.Replace("\r", string.Empty).Split('\n');
+            if (lines.Length < 2 || lines[0] != "v=" + Version.ToString(CultureInfo.InvariantCulture) || !lines[1].StartsWith("stamp=", StringComparison.Ordinal))
+            {
+                return list;
+            }
+            list.Stamp = lines[1].Substring("stamp=".Length);
+            for (int i = 2; i < lines.Length; i++)
+            {
+                int bar = lines[i].LastIndexOf('|');
+                if (bar <= 0)
+                {
+                    continue;
+                }
+                string path = lines[i].Substring(0, bar);
+                if (DesignRules.Ours(path) && long.TryParse(lines[i].Substring(bar + 1), NumberStyles.Integer, CultureInfo.InvariantCulture, out long length) && length >= 0)
+                {
+                    list.Files[path] = length;
+                }
+            }
+            return list;
+        }
+    }
+}

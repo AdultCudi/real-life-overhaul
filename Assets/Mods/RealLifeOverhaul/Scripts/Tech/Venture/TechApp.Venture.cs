@@ -112,7 +112,7 @@ namespace RealLifeOverhaul.Tech
                     TechText.T(s.Quality >= 700 ? "reallife_vc_quality_strong" : s.Quality >= 400 ? "reallife_vc_quality_fair" : "reallife_vc_quality_weak"),
                     "claim", TechText.Bp(s.ClaimBp), "runway", VentureRules.Runway(s.Cash, s.Burn, s.Mrr) == int.MaxValue ? "-" : VentureRules.Runway(s.Cash, s.Burn, s.Mrr).ToString())
                 : TechText.T("reallife_vc_startup_no_diligence", "fee", TechText.Cents(_director.Level(VentureCatalogue.DiligenceFee))));
-            bool followOn = put > 0 && s.Alive && day - s.LastRound <= VentureCatalogue.ProRataDays && VentureRules.FollowOnAmount(s) > 0;
+            bool followOn = put > 0 && VentureRules.FollowOnOpen(s, day);   // once a round: gone when taken
             if (followOn)
             {
                 box.Line(TechText.T("reallife_vc_startup_follow_on", "amount", TechText.Cents(_director.Level(VentureRules.FollowOnAmount(s)))));

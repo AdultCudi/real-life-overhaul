@@ -364,10 +364,12 @@ namespace RealLifeOverhaul.Economy
             {
                 if (!s.Holdings[i].Seen)
                 {
+                    int sold = SoldOn(s, s.Holdings[i]);
                     if (Meta.Dev.Verbose)
                     {
                         EstateDirector.Logger?.Info("Estate check (a building let go): " + s.Holdings[i].Name + " (" + s.Holdings[i].Place
-                                                    + ") is no longer among the game's buildings of the player's: dropped from the books: PASS");
+                                                    + ") is no longer among the game's buildings of the player's: dropped from the books"
+                                                    + (sold > 0 ? "; sold on day " + sold + " in the game's books, remembered so the same ownership cannot come back" : string.Empty) + ": PASS");
                     }
                     s.Holdings.RemoveAt(i);
                     dropped++;
@@ -448,12 +450,23 @@ namespace RealLifeOverhaul.Economy
             {
                 return false;
             }
+            GameManager.ChangeMoneySafe(price, AtAddress(SoldKey, address), null, null, true);
+            Release(save, e, null);
+            return true;
+        }
+
+        /// <summary>
+        /// A building is no longer the player's, as the game's own sale leaves it: a rival owner (<paramref name="rival"/>, or
+        /// one the game picks), the market rent on a unit the player still uses, out of the player's list and off the market.
+        /// </summary>
+        private static void Release(GameInstance save, RealEstate e, string rival)
+        {
+            Address address = e.address;
             BuildingRegistration reg = BuildingHelper.GetBuildingRegistration(address);
             Building building = BuildingHelper.GetBuilding(address);
-            GameManager.ChangeMoneySafe(price, AtAddress(SoldKey, address), null, null, true);
             if (reg != null)
             {
-                reg.buildingOwnerRivalId = RivalsHelper.GetRandomRivalForBuilding(reg.Neighborhood);
+                reg.buildingOwnerRivalId = !string.IsNullOrEmpty(rival) ? rival : RivalsHelper.GetRandomRivalForBuilding(reg.Neighborhood);
                 if (reg.RentedByPlayer && building != null)
                 {
                     reg.RentPerDay = building.GetBuildingDailyMarketRent();
@@ -479,7 +492,6 @@ namespace RealLifeOverhaul.Economy
                 MapPlaces.Refilter(ui.mapFilters);
             }
             RealEstateHelper.AddNoHomeModifierIfNeeded();
-            return true;
         }
 
         /// <summary>The office buildings the player holds, for the agency to be run from.</summary>

@@ -17,7 +17,7 @@ namespace RealLifeOverhaul
     internal sealed class SchoolDesk
     {
         private const int RowCard = -1, RowBack = -2;
-        private const NavigationBlocker Blocker = (NavigationBlocker)7302;   // our own value, so nobody else's is ever lifted
+        private const NavigationBlocker Blocker = (NavigationBlocker)7305;   // our own value, so nobody else's is ever lifted (each hold of the mod's has a value no other uses: TextBoxChecks)
         private const string ButtonDo = "reallife_lic_list_do";
         private const string ButtonOpen = "reallife_lic_list_open";
 

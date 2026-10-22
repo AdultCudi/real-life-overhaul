@@ -164,7 +164,7 @@ namespace RealLifeOverhaul.Planner
             {
                 Transform type = box.ButtonRow();
                 InfoBox.Button(type, InfoBox.Additional, "reallife_planner_note_type", () =>
-                    uis.textInputUi.Show("reallife_planner_note_placeholder", "common_confirm", text => UiClone.Safe(() =>
+                    GameUi.TextBox.Ask("reallife_planner_note_placeholder", "common_confirm", text => UiClone.Safe(() =>
                     {
                         string clean = PlannerStore.Clean(text);
                         if (clean.Length > 0)

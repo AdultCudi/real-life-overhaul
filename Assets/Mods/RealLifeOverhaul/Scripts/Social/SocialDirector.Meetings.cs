@@ -100,11 +100,20 @@ namespace RealLifeOverhaul
             return Inside.Other;
         }
 
-        // Whoever of that origin is not met yet comes over once the player is on foot in the street. delay: real seconds.
+        // Whoever of that origin is not met yet, or somebody new from there, comes over once the player is on foot in the
+        // street. delay: real seconds.
         private void Pend(SocialOrigin origin, float chance, float real, float delay)
         {
-            SocialPerson person = SocialState.ByOrigin(origin);
-            if (!Settings.SocialMeetings || person == null || person.Met || _pendingMeet != null || SocialLife.Day - SocialState.LastMeetDay < 2 || Random.value > chance)
+            if (!Settings.SocialMeetings || _pendingMeet != null || SocialLife.Day - SocialState.LastMeetDay < SocialRules.MeetGapDays || Random.value > chance)
+            {
+                return;
+            }
+            SocialPerson person = SocialState.Unmet(origin);
+            if (person == null || Expected(person))
+            {
+                person = Newcomer(origin, -1);
+            }
+            if (person == null)
             {
                 return;
             }
@@ -141,9 +150,13 @@ namespace RealLifeOverhaul
             return Instance != null && person != null && (person == Instance._pendingMeet || person == Instance._introStranger);
         }
 
+        /// <summary>
+        /// Somebody to meet anywhere: the first of the cast not met yet, or somebody new while there is room; null once
+        /// everybody a save can know is met. May add a person to the cast; whoever meets them says where.
+        /// </summary>
         public static SocialPerson NextStranger()
         {
-            for (int i = 0; i < SocialRules.CastSize; i++)
+            for (int i = 0; i < SocialState.Count; i++)
             {
                 SocialPerson p = SocialState.Get(i);
                 if (p != null && !p.Met)
@@ -151,7 +164,47 @@ namespace RealLifeOverhaul
                     return p;
                 }
             }
-            return null;
+            return Newcomer(SocialOrigin.Street, -1);
+        }
+
+        /// <summary>Whether anybody is left to meet, without making anybody. One pass over the cast.</summary>
+        public static bool AnyStranger()
+        {
+            if (SocialState.Count < SocialRules.MaxCast)
+            {
+                return SocialState.Loaded;
+            }
+            for (int i = 0; i < SocialState.Count; i++)
+            {
+                SocialPerson p = SocialState.Get(i);
+                if (p != null && !p.Met)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Somebody new joins the cast, to be met at <paramref name="origin"/>: a woman (<paramref name="sex"/> 1), a man (0)
+        /// or either (-1). Null before the cast is loaded or once <see cref="SocialRules.MaxCast"/> are known. Their contact
+        /// picture is made with them.
+        /// </summary>
+        internal static SocialPerson Newcomer(SocialOrigin origin, int sex)
+        {
+            if (!SocialState.Loaded || SocialState.Count >= SocialRules.MaxCast)
+            {
+                return null;
+            }
+            SocialPerson p = SocialCatalogue.MakeNew(SocialState.Count, origin, sex, SocialState.CastSeed, SocialLife.Day, SocialPlaces.DaysPerYear, SocialPlaces.Districts,
+                SocialState.People, SocialState.Count);
+            if (!SocialState.Add(p))
+            {
+                return null;
+            }
+            SocialPhone.Picture(p);
+            Logger?.Info("Social: somebody new to meet, " + p.Name + " (" + origin + "), person " + (p.Index + 1) + " of at most " + SocialRules.MaxCast + ".");
+            return p;
         }
 
         /// <summary>The next time the player is on foot in the street. False if one is waiting already.</summary>
@@ -173,10 +226,11 @@ namespace RealLifeOverhaul
             SocialPerson best = null;
             int hour = SocialLife.Hour;
             int day = SocialLife.Day;
-            int from = Random.Range(0, SocialRules.CastSize);
-            for (int i = 0; i < SocialRules.CastSize; i++)
+            int count = SocialState.Count;
+            int from = Random.Range(0, count);
+            for (int i = 0; i < count; i++)
             {
-                SocialPerson p = SocialState.Get((from + i) % SocialRules.CastSize);
+                SocialPerson p = SocialState.Get((from + i) % count);
                 if (p != null && p.Met && !p.Drifted && p.Stage >= SocialStage.Friend && !p.Asleep(hour) && p.LastOutingDay != day
                     && p.FreeAt(hour, SocialLife.Weekend(day)) && (best == null || p.Closeness > best.Closeness + 10))
                 {

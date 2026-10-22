@@ -56,7 +56,7 @@ internal static partial class Program
             Check(OwnBankRules.MostOut(b, c.Level) == 0 && b.FoundedLeast == OwnBankRules.LeastAt(0) * (1000 + closures * OwnBankCatalogue.AgainCapital) / 1000,
                 "own bank fix: on the day a bank is founded after " + closures + " closure(s) no dividend can be taken (" + OwnBankRules.MostOut(b, c.Level) + ")");
         }
-        Check(MemberText(EconomySource(@"OwnBank\OwnBankDirector.cs"), "public bool Found(").Contains("_bank.FoundedLeast = OwnBankRules.LeastAt(share, _bank.Closures)"),
+        Check(MemberText(EconomySource(@"OwnBank\OwnBankDirector.cs"), "public bool Found(").Contains("_bank.FoundedLeast = OwnBankRules.TierLeastAt(BankTiers.Community, share, _bank.Closures)"),
             "own bank fix: the bank keeps the capital it was founded with, closures and all");
     }
 
@@ -113,7 +113,7 @@ internal static partial class Program
         string[] fields = line.Substring(head + 3, end - head - 3).Split('|');
         string older = line.Substring(0, head + 3) + string.Join("|", fields, 0, 33) + line.Substring(end);
         OwnBank old = OwnBankStore.Read(older, out _);
-        Check(fields.Length == 35 && old != null && old.WatchTold == int.MinValue && !old.Still, "own bank fix: a line written before both fields reads as never told and not stood still");
+        Check(fields.Length >= 35 && old != null && old.WatchTold == int.MinValue && !old.Still, "own bank fix: a line written before both fields reads as never told and not stood still");
         Check(EconomySource(@"OwnBank\OwnBankDirector.cs").IndexOf("_watchTold", System.StringComparison.Ordinal) < 0, "own bank fix: the director keeps no watch day of its own");
 
         OwnBank t = NewBank(c, 3);

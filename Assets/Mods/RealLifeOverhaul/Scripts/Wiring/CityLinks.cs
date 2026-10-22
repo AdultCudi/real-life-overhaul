@@ -24,6 +24,8 @@ namespace RealLifeOverhaul
         ///   WeightOf      rivals undercut more often in a slowdown or a recession
         ///   the paper     up to two pieces a day in the City Ledger (News.Extra)
         ///   the Planner   rows in the Finance source (<see cref="Rows"/>, called by EconomyLinks' source)
+        ///   MaterialFactor a raw material's price from the stock market's raw materials exchange (Markets/Derivatives), which
+        ///                 the city writes as the importers' in place of its kind's factor and the price index
         ///
         /// Nothing per district is public in the mod's other features (crime, council building sites and street events
         /// are kept by place or by day, not by neighbourhood), so nothing of theirs pushes a district's income.
@@ -37,6 +39,7 @@ namespace RealLifeOverhaul
                 CityBridges.Day = Day;
                 CityBridges.Footfall = BusinessDirector.Footfall;
                 CityBridges.Copycat = Copycat;
+                CityBridges.MaterialFactor = MaterialFactor;
                 BusinessGame.Ambient = CityEconomyDirector.FootfallOf;
                 BusinessDirector.RollScale = CityEconomyDirector.TroubleScale;
                 BusinessDirector.WeightOf = Weight;
@@ -55,6 +58,12 @@ namespace RealLifeOverhaul
                 CityGame.RestoreWholesale();
                 LendingTerms.BasePoints = 0f;
                 AccountRules.BaseBp = 0;
+            }
+
+            private static double MaterialFactor(string itemName)
+            {
+                Markets.MarketDirector market = Markets.MarketDirector.Instance;
+                return market != null ? market.MaterialFactor(itemName) : double.NaN;
             }
 
             private static CityDay Day(int day)

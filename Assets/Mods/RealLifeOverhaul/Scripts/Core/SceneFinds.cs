@@ -31,11 +31,69 @@ namespace RealLifeOverhaul
         public static bool Hidden => Looks.Hidden || UI.UiFader.isFading || ScenePrewarm.InLate;
 
         /// <summary>
-        /// True while the screen is dark: the loading screen, or the game's own black screen (a door, sleep, fast travel).
-        /// Not a plain pause: its menu stays on the screen, and a search of some 80 ms there is a hitch the player sees in
-        /// the menu. Work that comes back again and again (a search after every door) waits for this, never <see cref="Hidden"/>.
+        /// True while the screen is dark: the loading screen, or the game's own black screen (a door, sleep, fast travel),
+        /// its fades out and back in included. Not a plain pause: its menu stays on the screen, and a search of some 80 ms
+        /// there is a hitch the player sees in the menu. Work that comes back again and again (a search after every door)
+        /// keeps its stretch by this, never <see cref="Hidden"/>, and is made only on a frame that is <see cref="Black"/>.
         /// </summary>
         public static bool Dark => UI.Load.LoadScene.isLoading || UI.UiFader.isFading;
+
+        /// <summary>
+        /// True while the screen shows black: the loading screen, or the game's own black screen drawn at full strength
+        /// (<see cref="Covered"/>). <see cref="Dark"/> is true through the game's fades as well, and at a door they take
+        /// 0.2 s each way (BuildingManager: UiFader.Fade(0.2f), UnFade(0.2f)) with the picture showing through: a long frame
+        /// there stops the picture, and the player sees it. Heavy work that waits for the dark makes itself on this.
+        /// </summary>
+        public static bool Black => UI.Load.LoadScene.isLoading || Covered;
+
+        /// <summary>
+        /// True while the game's black screen (UI.UiFader, its overlay UIs.blackOverlay) is drawn at full strength: from the
+        /// end of its fade out to the first step of its fade back in. Read only while it fades (one flag otherwise): the
+        /// overlay's own alpha, which the game's fade moves from 0 to 1 and back (DOFade). A build in which the overlay
+        /// cannot be read has no fully black screen here, with one line, and the work that waits for one waits for the
+        /// loading screen.
+        /// </summary>
+        public static bool Covered
+        {
+            get
+            {
+                if (!UI.UiFader.isFading || _overlayUnread)
+                {
+                    return false;
+                }
+                try
+                {
+                    return OverlayAlpha() >= Opaque;
+                }
+                catch (Exception e)
+                {
+                    _overlayUnread = true;
+                    SessionWatch.Logger?.Warn("Scene searches: the game's black screen cannot be read in this build (" + e.GetType().Name
+                                              + "); the searches that wait for it wait for the loading screen.");
+                    return false;
+                }
+            }
+        }
+
+        private const float Opaque = 0.99f;   // the overlay's alpha from which nothing shows through it (the game's fade ends at exactly 1)
+        private static UnityEngine.UI.Image _overlay;   // the game's black overlay, taken from its register of singletons (no search), again only once it is gone
+        private static bool _overlayUnread;
+
+        // In a method of its own: a build without the overlay fails here alone (Mono compiles a method whole).
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static float OverlayAlpha()
+        {
+            if (_overlay == null)
+            {
+                UI.UIs uis = InstanceBehavior<UI.UIs>.IsInitialized ? InstanceBehavior<UI.UIs>.Instance : null;
+                _overlay = uis != null ? uis.blackOverlay : null;
+                if (_overlay == null)
+                {
+                    return 0f;
+                }
+            }
+            return _overlay.color.a;
+        }
 
         /// <summary>Every object of a kind in the loaded scenes, in no particular order. <paramref name="what"/> is a constant text.</summary>
         public static T[] All<T>(string what, FindObjectsInactive inactive = FindObjectsInactive.Exclude) where T : UnityEngine.Object
@@ -70,7 +128,9 @@ namespace RealLifeOverhaul
         private static void Said(string what, int mark, long began, int found)
         {
             SessionWatch.Done(mark);
-            bool hidden = Hidden;
+            // The game's black screen counts only drawn at full strength: through its fade the picture shows, and stops.
+            bool hidden = Looks.Hidden || ScenePrewarm.InLate || Covered;
+            bool fading = !hidden && UI.UiFader.isFading;
             Made++;
             InPlay += hidden ? 0 : 1;
             if (Meta.Dev.Verbose)
@@ -78,6 +138,8 @@ namespace RealLifeOverhaul
                 double ms = (Stopwatch.GetTimestamp() - began) * 1000.0 / Stopwatch.Frequency;
                 SessionWatch.Logger?.Info("Scene search check (" + what + "): " + found + " found in " + ms.ToString("F1", CultureInfo.InvariantCulture) + " ms, "
                                           + (hidden ? "behind the loading screen, a pause or the game's black screen: PASS."
+                                              : fading ? "during the game's fade, with the picture showing through: FAIL (a stutter the player sees; "
+                                                         + "it belongs behind the black screen at full strength)."
                                               : "while the game was being played: FAIL (a stutter of that length; it belongs behind the loading screen)."));
             }
         }
@@ -279,6 +341,10 @@ namespace RealLifeOverhaul
             {
                 _tried = false;   // (a plain pause is not the walk out of a door: its menu would show the work as a hitch)
                 return;
+            }
+            if (!SceneFinds.Black)
+            {
+                return;   // the game's fade, with the street showing through it: the work waits for the screen fully black
             }
             if (!_tried)
             {

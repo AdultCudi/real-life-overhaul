@@ -94,6 +94,24 @@ namespace RealLifeOverhaul.Economy
 
         public static Action OpenListing;
 
+        /// <summary>Writes a shop's price of a product as the game's price cell does (place, product, price, district); false if it did not change.</summary>
+        public static Func<BuildingRegistration, string, float, string, bool> WritePrice;
+
+        /// <summary>True where a chain or a brand keeps a shop's prices (by its place): a manager leaves them alone.</summary>
+        public static Func<string, bool> PricesKept;
+
+        internal static bool PricesKeptAt(string place)
+        {
+            try
+            {
+                return PricesKept != null && !string.IsNullOrEmpty(place) && PricesKept(place);
+            }
+            catch (Exception)
+            {
+                return true;   // cannot tell: left alone
+            }
+        }
+
         internal static int EsteemNow()
         {
             try
@@ -127,6 +145,8 @@ namespace RealLifeOverhaul.Economy
             Esteem = null;
             ListingLine = null;
             OpenListing = null;
+            WritePrice = null;
+            PricesKept = null;
         }
     }
 
@@ -172,6 +192,7 @@ namespace RealLifeOverhaul.Economy
         public const string BackTaxKey = "reallife_transaction_co_backtax";
         public const string LicenceKey = "reallife_transaction_co_licence";
         public const string LicenceFineKey = "reallife_transaction_co_licence_fine";
+        public const string ManagerKey = "reallife_transaction_co_manager";
 
         // The game's business types by what they sell, as the end of their names ("ba:businesstype_...").
         private static readonly string[] FoodTypes = { "fastfoodrestaurant", "coffeeshop", "supermarket", "fruitandvegetablestore" };
@@ -653,6 +674,31 @@ namespace RealLifeOverhaul.Economy
             if (amount > 0 && Save != null)
             {
                 GameManager.ChangeMoneySafe(amount, Info(key, name), day, shop != null ? shop.Address : null, true);
+            }
+        }
+
+        /// <summary>
+        /// Opens the game's BizMan on a business's own page, as the game's own buttons do (MyEmployees.ManageSchedule,
+        /// UniformLockerController: BizMan.Open with the business's address, BizMan picking its first tab). Only a business of
+        /// the player's own (GoingPublic.Mine); nothing is sent or written. False, with nothing opened, if it cannot be.
+        /// Runs on a click only.
+        /// </summary>
+        public static bool OpenBizMan(BuildingRegistration reg)
+        {
+            try
+            {
+                global::UI.UIs ui = InstanceBehavior<global::UI.UIs>.Instance;
+                if (reg == null || !reg.RentedByPlayer || reg.Address == null || ui == null || ui.fullMenu == null || ui.fullMenu.bizMan == null || !GoingPublic.Mine(reg))
+                {
+                    return false;
+                }
+                ui.fullMenu.bizMan.Open(reg.Address);
+                return true;
+            }
+            catch (Exception e)
+            {
+                CompanyApp.Logger?.Error(e);
+                return false;
             }
         }
 

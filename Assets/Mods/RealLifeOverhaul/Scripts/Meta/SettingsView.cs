@@ -3,119 +3,142 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using Localizor;
 using RealLifeOverhaul.GameUi;
+using TMPro;
 using UI.Smartphone;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace RealLifeOverhaul.Meta
 {
     /// <summary>
-    /// The Settings app's page in the game's frame (GameUi.AppShell): a tab per group of the options page, its sections as
-    /// headings ("4 of 6 on") over their rows, the box for what is picked, and a search over every group. Every value goes
-    /// through OptionsLayout's rows (OptionsLayout.Book.cs). Written when the app opens and on a click; nothing per frame.
+    /// The Settings app's page: the game's help screen (F1) in the mod's dark colours (GameUi.HelpFrame). The groups of the
+    /// options page are the categories of its list on the left and their sections its pages; a page shows each option's
+    /// name, a short description under it and, at the right, the game's own control of its kind (GameUi.OptionRows): a
+    /// switch, a slider with its number, the game's drop-down, a button for what is done rather than set, the key itself
+    /// for a key. Every value goes through OptionsLayout's rows (OptionsLayout.Book.cs), saved under the key the Mods tab
+    /// saves it under. Built when the app is first opened, a page written when it is shown, a row when it changes; nothing per frame.
     /// </summary>
     public sealed partial class SettingsView
     {
-        private const int ModeTab = 0, ModeFound = 1, ModeDiffer = 2;
-        private const int SearchLength = 40;   // characters the game's text entry takes for a search
-        private const string TabPrefix = "reallife" + "_set_tab_";   // and the group's id (apart, so that the locale check does not take the prefix for a key)
-        private const string GuideTitle = "reallife_guide_start_title";   // the Guide's page the app's own pages point to: "Getting started" has its section
+        private const int ModePage = 0, ModeFound = 1, ModeDiffer = 2;
+        private const int MostHistory = 40;     // pages the back button remembers
+        private const float ScrollMargin = 24f; // above a row scrolled to, so that it does not stand on the page's edge
 
-        private static readonly TableSpec Found = new TableSpec("Settings", "Found")
-            .Column("reallife_set_col_option", 760f, TableSort.None, flexible: true)
-            .Column("reallife_set_col_value", 300f)
-            .Column("reallife_set_col_where", 620f, right: true)
-            .Empty("reallife_set_empty_found");
+        /// <summary>The pictures the app's pages ask for, named before the one look through the game's sprites (GameSprites).</summary>
+        internal static readonly string[] Glyphs =
+        {
+            "Icon-Info", "Icon-PersonManage", "Icon-Building", "Icon-Route", "Icon-OpeningHours", "Icon-Coin", "Icon-Shop", "Icon-Edit", "Icon-Condition", "Icon-Security",
+            "Icon-Notifications"
+        };
 
-        private static readonly TableSpec Differ = new TableSpec("Settings", "Differ")
-            .Column("reallife_set_col_option", 760f, TableSort.None, flexible: true)
-            .Column("reallife_set_col_value", 300f)
-            .Column("reallife_set_col_preset", 300f)
-            .Column("reallife_set_col_where", 460f, right: true)
-            .Empty("reallife_set_empty_differ");
-
-        private readonly List<TableRow> _rows = new List<TableRow>(128);
-        private readonly List<TableRow> _pool = new List<TableRow>(128);
-        private readonly List<SettingsLine> _all = new List<SettingsLine>(800);   // every line of every tab: a table row's Index is its place here
-        private readonly List<string> _ids = new List<string>(800);              // the table's id of each line
-        private readonly List<string> _words = new List<string>(4);
-        private readonly List<int> _found = new List<int>(64);
-        private TableSpec[] _specs;             // one per tab, so that each keeps the section it shows
-        private int[] _starts;                  // where each tab's lines begin in _all
-        private AppShell _shell;
-        private DataTable _table;
-        private SettingsLine _pick;
-        private int _tab;
+        private HelpFrame _frame;
+        private OptionRows _kit;
+        private List<SettingsPage> _pages;
+        private HelpGroup[] _groups;            // one per category: the groups, then the test tools
+        private bool[] _open;                   // which categories the player has open
+        private int[] _perCategory;             // pages of each category the list shows now
+        private HelpLink[] _links;              // one per page
+        private int _page = -1;                 // the page chosen in the list
+        private int _chosen = -1;               // the link drawn as chosen
         private int _mode;
-        private string _query = string.Empty;
+        private readonly List<int> _history = new List<int>(MostHistory);
+        private int _at = -1;
         private string _want;
         private bool _ready, _writing, _wrote;
+        private Action<KeyAction, bool> _keyShown;
 
-        /// <summary>The app's panel, asleep; null if the game's parts are not as expected.</summary>
+        /// <summary>The app's panel, asleep: the help screen's copy centred in it, with the list built. Null if the game's parts are not as expected.</summary>
         public GameObject Build(FullMenu menu, Transform dormant)
         {
             SettingsTab[] tabs = OptionsLayout.AppTabs;
-            if (tabs == null)
+            _pages = OptionsLayout.AppPages;
+            if (tabs == null || _pages == null)
             {
                 return null;
             }
-            _shell = AppShell.Make(menu, dormant, SettingsApp.AppId);
-            _table = DataTable.On(_shell, "Settings");
-            _specs = new TableSpec[tabs.Length];
-            for (int t = 0; t < tabs.Length; t++)
+            var root = new GameObject(SettingsApp.AppId, typeof(RectTransform));
+            root.transform.SetParent(dormant, false);
+            var rect = (RectTransform)root.transform;
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.sizeDelta = Vector2.zero;
+            Transform templates = UiClone.Dormant(root.transform, "Templates");
+            _frame = HelpFrame.Make(templates, "Settings Window");
+            _kit = _frame != null ? OptionRows.Take(templates) : null;
+            if (_frame == null || _kit == null)
             {
-                _specs[t] = new TableSpec("Settings", tabs[t].Group.Id)
-                    .Column("reallife_set_col_option", 900f, TableSort.None, flexible: true)
-                    .Column("reallife_set_col_value", 320f)
-                    .Column("reallife_set_col_note", 560f, right: true)
-                    .Filter("reallife_set_all_sections")
-                    .Empty("reallife_set_empty");
-            }
-            if (_table == null || !_shell.SetTabCount(tabs.Length) || !_shell.SetColumns(_specs[0]))
-            {
+                UnityEngine.Object.DestroyImmediate(root);
+                _frame = null;
                 return null;
             }
-            _table.SelectionLost = Back;
-            _table.onRowSelected.AddListener(row => UiClone.Safe(() => RowClicked(row)));
-            for (int i = 0; i < tabs.Length; i++)
-            {
-                int tab = i;
-                UiClone.Key(_shell.TabLabels[i], TabKey(tabs[i].Group));
-                UiClone.Rewire(_shell.Tabs[i], () => UiClone.Safe(() => ShowTab(tab)));
-            }
-            _all.Clear();
-            _ids.Clear();
-            _starts = new int[tabs.Length];
-            for (int t = 0; t < tabs.Length; t++)
-            {
-                _starts[t] = _all.Count;
-                foreach (SettingsLine line in tabs[t].Lines)
-                {
-                    _ids.Add("l" + _all.Count);
-                    _all.Add(line);
-                }
-            }
-            return _shell.Root;
+            _frame.Root.transform.SetParent(root.transform, false);   // the window keeps the help's size, at the middle of the menu
+            UiClone.Key(_frame.Headline, "reallife_set_app_title");
+            UiClone.Words(_frame.Status, string.Empty);
+            UiClone.Rewire(_frame.Close, () => menu.CloseFullMenu());
+            UiClone.Rewire(_frame.Back, () => Step(-1));
+            UiClone.Rewire(_frame.Forward, () => Step(1));
+            TakeSearch();
+            BuildList(tabs);
+            _keyShown = (action, waiting) => UiClone.Safe(() => KeyShown(action, waiting));
+            return root;
         }
 
-        /// <summary>A tab's label: a short word for its group (reallife_set_tab_you).</summary>
-        private static string TabKey(TreeGroup group)
+        // The list on the left: a category per group and one for the test tools, a link per page, all made once.
+        private void BuildList(SettingsTab[] tabs)
         {
-            return TabPrefix + group.Id;
+            int categories = SettingsRules.TestsCategory(tabs) + 1;
+            _groups = new HelpGroup[categories];
+            _open = new bool[categories];
+            _perCategory = new int[categories];
+            for (int c = 0; c < categories; c++)
+            {
+                bool tests = c == categories - 1;
+                HelpGroup group = _frame.AddGroup(tests ? "Tests" : tabs[c].Group.Id);
+                UiClone.Key(group.Name, tests ? "reallife_meta_title_tests" : tabs[c].Group.TitleKey);
+                int category = c;
+                UiClone.Rewire(group.Button, () => Fold(category));
+                _groups[c] = group;
+            }
+            _links = new HelpLink[_pages.Count];
+            for (int i = 0; i < _pages.Count; i++)
+            {
+                SettingsPage page = _pages[i];
+                HelpLink link = _groups[page.Category].Add("Page " + i);
+                if (page.IsTests || page.Heading.Section == null)
+                {
+                    UiClone.Words(link.Name, OptionsLayout.AppLabel(page.Heading));
+                }
+                else
+                {
+                    UiClone.Key(link.Name, page.Heading.Section.TitleKey);
+                }
+                int index = i;
+                UiClone.Rewire(link.Button, () => Pick(index));
+                _links[i] = link;
+            }
         }
 
-        private bool Showing => _shell != null && _shell.Root != null && _shell.Root.activeInHierarchy;
+        private bool Showing => _frame != null && _frame.Root != null && _frame.Root.activeInHierarchy;
 
         public void Opened()
         {
-            if (_shell == null || _table == null)
+            if (_frame == null)
             {
                 return;
             }
             _ready = true;
+            _textsMade = false;   // the language or the rows shown may have changed while it was closed
+            Keys.RowShown = _keyShown;
             if (_want != null)
             {
                 GoTo(_want);
                 _want = null;
+                return;
+            }
+            if (_page < 0)
+            {
+                Pick(FirstShown(), true);
+                return;
             }
             Refresh();
         }
@@ -123,6 +146,12 @@ namespace RealLifeOverhaul.Meta
         public void Closed()
         {
             _ready = false;
+            if (Keys.RowShown == _keyShown)
+            {
+                Keys.RowShown = null;
+            }
+            CloseChoices();
+            SearchClosed();
             if (_wrote)
             {
                 _wrote = false;
@@ -138,93 +167,189 @@ namespace RealLifeOverhaul.Meta
             {
                 GoTo(target);
                 _want = null;
-                Refresh();
             }
         }
 
-        /// <summary>The options were read again (a preset, an import, a reset): the page is written again if it is showing.</summary>
+        /// <summary>The options were read again (a preset, an import, a reset): every row shown is written again if the page is showing.</summary>
         public void Changed()
         {
             if (Showing && _ready && !_writing)
             {
-                Refresh();
+                RefillAll();
             }
         }
 
-        // A section or an option asked for from elsewhere: its tab, the line picked, every section shown, and the table scrolled to it.
+        // A section or an option asked for from elsewhere: its page, scrolled to the option.
         private void GoTo(string target)
         {
-            SettingsLine line = target.StartsWith("s:", StringComparison.Ordinal) ? OptionsLayout.AppHeading(target.Substring(2)) : OptionsLayout.AppFind(target);
-            if (line == null)
+            bool section = target.StartsWith("s:", StringComparison.Ordinal);
+            SettingsLine line = section ? OptionsLayout.AppHeading(target.Substring(2)) : OptionsLayout.AppFind(target);
+            int page = line != null ? PageOf(line) : -1;
+            if (page < 0)
             {
                 MetaLog.Warn("the Settings app was asked to open on '" + target + "', which the options page does not have.");
+                if (_page < 0)
+                {
+                    Pick(FirstShown(), true);
+                }
+                else
+                {
+                    Refresh();
+                }
                 return;
             }
-            Open(line);
-        }
-
-        private void Open(SettingsLine line)
-        {
-            _mode = ModeTab;
-            _tab = line.Tab;
-            _pick = line;
-            TableFilter filter = _specs[_tab].Filters[0];
-            if (filter.Chosen >= 0 && filter.Chosen != line.Filter)
+            ClearSearch();
+            Pick(page, true);
+            if (!section)
             {
-                filter.Chosen = -1;
-                filter.ChosenName = null;
-            }
-            _table.RevealNext();
-        }
-
-        private void ShowTab(int tab)
-        {
-            if (tab != _tab || _pick != null || _mode != ModeTab)
-            {
-                _tab = tab;
-                _pick = null;
-                _mode = ModeTab;
-                Refresh();
+                ScrollTo(line);
             }
         }
 
-        private void RowClicked(TableRow row)
+        private int PageOf(SettingsLine line)
         {
-            SettingsLine line = row != null && row.Pick && row.Index >= 0 && row.Index < _all.Count ? _all[row.Index] : null;
-            if (line == null)
+            for (int i = 0; i < _pages.Count; i++)
             {
-                _table.ClearSelection();
+                SettingsPage page = _pages[i];
+                if (page.Heading == line || page.Lines.Contains(line))
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        private int FirstShown()
+        {
+            for (int i = 0; i < _pages.Count; i++)
+            {
+                if (PageShown(_pages[i]))
+                {
+                    return i;
+                }
+            }
+            return 0;
+        }
+
+        // A link clicked: its page, remembered for the back button. While a search is on, the search is left first.
+        private void Pick(int index)
+        {
+            ClearSearch();
+            Pick(index, true);
+        }
+
+        private void Pick(int index, bool remember)
+        {
+            if (index < 0 || index >= _pages.Count)
+            {
                 return;
             }
-            if (_mode != ModeTab)
+            _page = index;
+            _mode = ModePage;
+            _open[_pages[index].Category] = true;
+            if (remember)
             {
-                Open(line);   // a match or a difference: its own tab, on its row
-                Refresh();
-                return;
+                Remember(index);
             }
-            if (line == _pick)
-            {
-                return;
-            }
-            _pick = line;
             Refresh();
         }
 
-        private void Back()
+        private void Remember(int index)
         {
-            if (_pick == null && _mode == ModeTab)
+            if (_at >= 0 && _at < _history.Count && _history[_at] == index)
             {
                 return;
             }
-            _pick = null;
-            _mode = ModeTab;
-            _table.ClearSelection();
-            Refresh();
+            if (_at < _history.Count - 1)
+            {
+                _history.RemoveRange(_at + 1, _history.Count - _at - 1);
+            }
+            if (_history.Count == MostHistory)
+            {
+                _history.RemoveAt(0);
+            }
+            _history.Add(index);
+            _at = _history.Count - 1;
         }
 
+        // The round buttons at the top left: back and forward through the pages shown, as the help's own (HistoryBack, HistoryForward).
+        private void Step(int by)
+        {
+            if (_mode == ModeFound)
+            {
+                ClearSearch();
+                Refresh();
+                return;
+            }
+            int to = _mode == ModeDiffer && by < 0 ? _at : _at + by;   // the differences are no page of the list: back goes to the page they came from
+            if (to < 0 || to >= _history.Count)
+            {
+                return;
+            }
+            _at = to;
+            Pick(_history[to], false);
+        }
+
+        // A category's button: it opens and closes as the help's does.
+        private void Fold(int category)
+        {
+            _open[category] = !_open[category];
+            _groups[category].SetOpen(_open[category] || _mode == ModeFound);
+        }
+
+        // Which categories and pages the list shows: a page with no row shown is left out, the test tools only while asked for, and during a search only pages with a match.
+        private void ShowList()
+        {
+            Array.Clear(_perCategory, 0, _perCategory.Length);
+            for (int i = 0; i < _pages.Count; i++)
+            {
+                SettingsPage page = _pages[i];
+                bool shown = PageShown(page) && (_mode != ModeFound || _hits[i]);
+                _links[i].Show(shown);
+                _perCategory[page.Category] += shown ? 1 : 0;
+            }
+            for (int c = 0; c < _groups.Length; c++)
+            {
+                _groups[c].Show(_perCategory[c] > 0);
+                _groups[c].SetOpen(_mode == ModeFound || _open[c]);
+            }
+            int chosen = _mode == ModePage ? _page : -1;
+            if (chosen != _chosen)
+            {
+                if (_chosen >= 0 && _chosen < _links.Length)
+                {
+                    _links[_chosen].SetChosen(false);
+                }
+                if (chosen >= 0)
+                {
+                    _links[chosen].SetChosen(true);
+                }
+                _chosen = chosen;
+            }
+            _frame.Back.interactable = _mode != ModePage || _at > 0;
+            _frame.Forward.interactable = _mode == ModePage && _at < _history.Count - 1;
+        }
+
+        private static bool PageShown(SettingsPage page)
+        {
+            if (page.IsTests && !Settings.ShowTestTools)
+            {
+                return false;
+            }
+            for (int i = 0; i < page.Lines.Count; i++)
+            {
+                if (OptionsLayout.AppShown(page.Lines[i]))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // The whole of what shows: the list, the top bar's status and the page in its mode.
         private void Refresh()
         {
-            if (_shell == null || _table == null || _writing)
+            if (_frame == null || !_ready || _writing)
             {
                 return;
             }
@@ -232,40 +357,29 @@ namespace RealLifeOverhaul.Meta
             long started = Stopwatch.GetTimestamp();
             try
             {
-                for (int i = 0; i < _rows.Count; i++)
-                {
-                    _pool.Add(_rows[i]);
-                }
-                _rows.Clear();
-                _shell.ShowTab(_tab);
-                InfoBox box = _shell.Box;
-                box.Clear();
+                ClearPage();
                 Compare();
-                string selected = null;
-                TableSpec spec;
+                WriteStatus();
+                ShowList();
                 if (_mode == ModeFound)
                 {
-                    spec = Found;
-                    WriteFound(box);
+                    WriteFound();
                 }
                 else if (_mode == ModeDiffer)
                 {
-                    spec = Differ;
-                    WriteDiffer(box);
+                    WriteDiffer();
                 }
                 else
                 {
-                    spec = _specs[_tab];
-                    WriteTab(box, ref selected);
+                    WritePage(_pages[_page]);
                 }
-                box.Done();
-                _table.Show(spec, _rows, selected);
+                ScrollTop();
                 if (Dev.Verbose)
                 {
                     double ms = (Stopwatch.GetTimestamp() - started) * 1000.0 / Stopwatch.Frequency;
-                    MetaLog.Info("Meta check (settings app): " + (_mode == ModeFound ? "search '" + _query + "'" : _mode == ModeDiffer ? "differences" : "tab " + OptionsLayout.AppTabs[_tab].Group.Id)
-                                 + ", " + _rows.Count + " rows, " + (_pick != null ? "'" + OptionsLayout.AppLabel(_pick) + "' picked" : "nothing picked") + ", written in "
-                                 + ms.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + " ms (wanted under 20): " + (ms < 20.0 ? "PASS" : "SLOW") + ".");
+                    string what = _mode == ModeFound ? "search '" + _query + "'" : _mode == ModeDiffer ? "differences" : "page '" + OptionsLayout.AppLabel(_pages[_page].Heading) + "'";
+                    MetaLog.Info("Meta check (settings app): " + what + ", " + CountShown() + ", written in " + ms.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)
+                                 + " ms (wanted under 20): " + (ms < 20.0 ? "PASS" : "SLOW") + ".");
                 }
             }
             finally
@@ -274,259 +388,68 @@ namespace RealLifeOverhaul.Meta
             }
         }
 
-        // The tab's lines: a heading over each section's rows, the value now, and what keeps a row from doing anything.
-        private void WriteTab(InfoBox box, ref string selected)
+        // The header over a page: the group's picture in the game's blue square, its name in small capitals, the page's name and a note at the right.
+        private void Topic(int category, string group, string name, string note)
         {
-            SettingsTab tab = OptionsLayout.AppTabs[_tab];
-            TableFilter filter = _specs[_tab].Filters[0];
-            filter.Names.Clear();
-            foreach (SettingsKind kind in tab.Kinds)
+            if (_frame.TopicGlyph != null)
             {
-                filter.Names.Add(KindName(kind));
-            }
-            int headingRow = -1, headingOn = 0, headingAll = 0, tests = 0;
-            bool found = false;
-            int first = _starts[_tab];
-            for (int i = 0; i < tab.Lines.Count; i++)
-            {
-                SettingsLine line = tab.Lines[i];
-                if (!OptionsLayout.AppShown(line) || OptionsLayout.AppLabelKey(line) == OptionsLayout.SettingsButtonKey)
+                Sprite glyph = GameSprites.Get(GlyphOf(category));
+                if (glyph != null)
                 {
-                    continue;   // a row that is off the page for now; and the button that opens this very app
-                }
-                if (line.IsHeading)
-                {
-                    CloseHeading(headingRow, headingOn, headingAll, tests);
-                    headingOn = headingAll = tests = 0;
-                }
-                TableRow row = Row(first + i);
-                row.Kind = line.Filter;
-                if (line == _pick)
-                {
-                    selected = row.Id;
-                    found = true;
-                }
-                switch (line.Kind)
-                {
-                    case LineKind.Heading:
-                    case LineKind.TestHeading:
-                        headingRow = _rows.Count - 1;
-                        row.Set(0, "<b>" + OptionsLayout.AppLabel(line) + "</b>");
-                        break;
-                    case LineKind.Option:
-                        WriteOptionRow(row, line, ref headingOn, ref headingAll);
-                        break;
-                    case LineKind.Button:
-                        row.Set(0, OptionsLayout.AppLabel(line));
-                        row.Set(1, OptionsLayout.AppCaptionKey(line).GetLocalization());
-                        int preset = PresetOf(line);
-                        if (preset >= 0 && _covers[preset] > 0)
-                        {
-                            row.Set(2, _counts[preset] == 0 ? T("reallife_set_in_use") : T("reallife_set_differ_count", "count", _counts[preset].ToString()),
-                                _counts[preset] == 0 ? TableRow.Green : TableRow.Plain);
-                        }
-                        break;
-                    case LineKind.Key:
-                        row.Set(0, OptionsLayout.AppLabel(line));
-                        int action = OptionsLayout.AppKeyAction(line);
-                        row.Set(1, action >= 0 ? Keys.Label((KeyAction)action) : string.Empty);
-                        break;
-                    case LineKind.Test:
-                        tests++;
-                        row.Set(0, OptionsLayout.AppLabel(line));
-                        row.Set(1, T("reallife_opt_caption_run"));
-                        break;
+                    _frame.TopicGlyph.sprite = glyph;
                 }
             }
-            CloseHeading(headingRow, headingOn, headingAll, tests);
-            CountTab(tab, out int on, out int all);
-            string group = tab.Group.TitleKey.GetLocalization();
-            if (tab.Group.Id == OptionsTree.StartId)
-            {
-                UiClone.Words(_shell.Header, _closest < 0 ? T("reallife_set_app_title")
-                    : _exact ? T("reallife_set_headline_in_use", "preset", PresetName(_closest))
-                    : T("reallife_set_headline_differ", "preset", PresetName(_closest), "count", _counts[_closest].ToString()));
-            }
-            else
-            {
-                UiClone.Words(_shell.Header, all > 0 ? T("reallife_set_headline", "group", group, "on", on.ToString(), "total", all.ToString()) : group);
-            }
-            if (!found)
-            {
-                _pick = null;
-            }
-            if (_pick == null)
-            {
-                WriteOverview(box, tab, on, all);
-                return;
-            }
-            WritePicked(box, _pick);
+            SetText(_frame.TopicCategory, group);
+            SetText(_frame.TopicName, name);
+            SetText(_frame.TopicNote, note ?? string.Empty);
         }
 
-        private void WriteOptionRow(TableRow row, SettingsLine line, ref int on, ref int all)
+        // A category's picture: the groups in the tree's order, then the test tools; one the game is sure to have in memory (docs/game-ui.md, Pictures).
+        private static string GlyphOf(int category)
         {
-            int value = OptionsLayout.AppValue(line);
-            OptionType type = OptionsLayout.AppType(line);
-            row.Set(0, OptionsLayout.AppLabel(line));
-            row.Set(1, OptionsLayout.AppValueText(line, value), type == OptionType.Toggle && value != 0 ? TableRow.Green : TableRow.Plain);
-            string aside = OptionsLayout.AppAside(line);
-            string blocker = aside == null ? OptionsLayout.AppBlocker(line) : null;
-            if (aside != null)
+            SettingsTab[] tabs = OptionsLayout.AppTabs;
+            if (category < 0 || tabs == null || category >= tabs.Length)
             {
-                row.Set(2, T("reallife_set_aside"), TableRow.Yellow);
+                return "Icon-Notifications";
             }
-            else if (blocker != null)
+            switch (tabs[category].Group.Id)
             {
-                row.Set(2, T("reallife_set_needs", "option", OptionsLayout.AppLabelOf(blocker)), TableRow.Yellow);
-            }
-            if (type == OptionType.Toggle)
-            {
-                all++;
-                on += value != 0 ? 1 : 0;
+                case OptionsTree.StartId: return "Icon-Info";
+                case "you": return "Icon-PersonManage";
+                case "city": return "Icon-Building";
+                case "around": return "Icon-Route";
+                case "work": return "Icon-OpeningHours";
+                case "money": return "Icon-Coin";
+                case "business": return "Icon-Shop";
+                case "controls": return "Icon-Edit";
+                case "performance": return "Icon-Condition";
+                default: return "Icon-Security";
             }
         }
 
-        // A heading's count, once its rows are written: "4 of 6 on", or the number of test tools under it.
-        private void CloseHeading(int row, int on, int all, int tests)
+        private void ScrollTop()
         {
-            if (row < 0 || row >= _rows.Count)
+            RectTransform content = _frame.Page;
+            content.anchoredPosition = new Vector2(content.anchoredPosition.x, 0f);
+            _frame.PageScroll.velocity = Vector2.zero;
+        }
+
+        // The page laid out at once, then moved so that the option's row stands at the top (or as near as the page allows).
+        private void ScrollTo(SettingsLine line)
+        {
+            Slot slot = SlotOf(line);
+            if (slot == null)
             {
                 return;
             }
-            if (tests > 0)
-            {
-                _rows[row].Set(1, T("reallife_set_tools", "count", tests.ToString()));
-            }
-            else if (all > 0)
-            {
-                _rows[row].Set(1, T("reallife_set_count", "on", on.ToString(), "total", all.ToString()));
-            }
-        }
-
-        // The switches of a tab and how many are on, whatever the drop-down shows.
-        private static void CountTab(SettingsTab tab, out int on, out int all)
-        {
-            on = all = 0;
-            foreach (SettingsLine line in tab.Lines)
-            {
-                if (line.Kind == LineKind.Option && OptionsLayout.AppType(line) == OptionType.Toggle && OptionsLayout.AppShown(line))
-                {
-                    all++;
-                    on += OptionsLayout.AppValue(line) != 0 ? 1 : 0;
-                }
-            }
-        }
-
-        // The section's own switches: "4 of 6 on" in its box.
-        private static void CountSection(SettingsLine heading, out int on, out int all)
-        {
-            on = all = 0;
-            foreach (SettingsLine line in OptionsLayout.AppTabs[heading.Tab].Lines)
-            {
-                if (line.Kind == LineKind.Option && line.Section == heading.Section && OptionsLayout.AppType(line) == OptionType.Toggle && OptionsLayout.AppShown(line))
-                {
-                    all++;
-                    on += OptionsLayout.AppValue(line) != 0 ? 1 : 0;
-                }
-            }
-        }
-
-        private static string KindName(SettingsKind kind)
-        {
-            if (kind.IsTests)
-            {
-                string group = kind.TestGroup >= 0 ? OptionsTree.Groups[kind.TestGroup].TitleKey.GetLocalization() : "reallife_meta_title_other".GetLocalization();
-                return T("reallife_set_tests_of", "group", group);
-            }
-            return (kind.Section != null ? kind.Section.TitleKey : "reallife_meta_title_other").GetLocalization();
-        }
-
-        // Where a line stands on the Mods tab: "Your character and home, Needs and wellbeing".
-        private static string Where(SettingsLine line)
-        {
-            string group = OptionsTree.Groups[line.Tab].TitleKey.GetLocalization();
-            if (line.Kind == LineKind.Test || line.Kind == LineKind.TestHeading)
-            {
-                return group + ", " + "reallife_meta_title_tests".GetLocalization();
-            }
-            return line.Section != null ? group + ", " + line.Section.TitleKey.GetLocalization() : group;
-        }
-
-        private void AskSearch()
-        {
-            UI.UIs uis = InstanceBehavior<UI.UIs>.Instance;
-            if (uis == null || uis.textInputUi == null)
-            {
-                return;
-            }
-            uis.textInputUi.Show("reallife_set_search_hint", "reallife_set_search", text => UiClone.Safe(() => Searched(text)), null, _query, false, SearchLength);
-        }
-
-        private void Searched(string typed)
-        {
-            _query = (typed ?? string.Empty).Trim();
-            OptionsFind.Split(_query, _words);
-            _mode = ModeFound;
-            _pick = null;
-            Refresh();
-        }
-
-        // The matches of every tab, in the order of the page; a heading is found through its rows.
-        private void WriteFound(InfoBox box)
-        {
-            var texts = new List<string>(_all.Count);
-            var sections = new List<string>(_all.Count);
-            var groups = new List<string>(_all.Count);
-            string testWords = "reallife_meta_title_tests".GetLocalization().ToLowerInvariant();
-            for (int i = 0; i < _all.Count; i++)
-            {
-                SettingsLine line = _all[i];
-                bool shown = OptionsLayout.AppShown(line) && OptionsLayout.AppLabelKey(line) != OptionsLayout.SettingsButtonKey;
-                texts.Add(shown ? OptionsLayout.AppSearchText(line) : string.Empty);
-                string section = line.Section != null ? line.Section.TitleKey.GetLocalization().ToLowerInvariant() + " " + line.Section.Words : string.Empty;
-                sections.Add(shown ? (line.Kind == LineKind.Test ? section + " " + testWords : section) : string.Empty);
-                groups.Add(shown ? OptionsTree.Groups[line.Tab].TitleKey.GetLocalization().ToLowerInvariant() : string.Empty);
-            }
-            int count = SettingsRules.Search(_words, _all, texts, sections, groups, _found);
-            for (int f = 0; f < _found.Count; f++)
-            {
-                SettingsLine line = _all[_found[f]];
-                TableRow row = Row(_found[f]);
-                row.Set(0, OptionsLayout.AppLabel(line));
-                if (line.Kind == LineKind.Option)
-                {
-                    row.Set(1, OptionsLayout.AppValueText(line, OptionsLayout.AppValue(line)));
-                }
-                row.Set(2, Where(line));
-            }
-            UiClone.Words(_shell.Header, _words.Count == 0 ? T("reallife_set_search_short") : T("reallife_set_headline_found", "count", count.ToString(), "query", _query));
-            box.Title(T("reallife_set_search"));
-            box.Section("reallife_ibox_sec_now");
-            box.Row("reallife_set_box_query", _query.Length > 0 ? _query : "-");
-            box.Row("reallife_set_box_found", count.ToString());
-            box.Line(_words.Count == 0 ? T("reallife_set_search_short") : count == 0 ? T("reallife_set_box_found_none") : T("reallife_set_box_found_pick"));
-            Transform buttons = box.ButtonRow();
-            InfoBox.Button(buttons, InfoBox.Positive, "reallife_set_search_again", () => UiClone.Safe(AskSearch));
-            InfoBox.Button(buttons, InfoBox.Additional, "reallife_set_back", Back);
-            Guide.Point(box, GuideTitle);
-        }
-
-        private TableRow Row(int index)
-        {
-            TableRow row;
-            if (_pool.Count > 0)
-            {
-                row = _pool[_pool.Count - 1];
-                _pool.RemoveAt(_pool.Count - 1);
-            }
-            else
-            {
-                row = new TableRow();
-            }
-            _rows.Add(row.Reset(_ids[index]));
-            row.Index = index;
-            row.Pick = true;
-            return row;
+            RectTransform content = _frame.Page;
+            LayoutRebuilder.ForceRebuildLayoutImmediate(content);
+            var row = (RectTransform)slot.Row.Root.transform;
+            float top = -(row.anchoredPosition.y + row.rect.height * (1f - row.pivot.y)) - ScrollMargin;
+            RectTransform view = _frame.PageScroll.viewport != null ? _frame.PageScroll.viewport : (RectTransform)_frame.PageScroll.transform;
+            float most = Mathf.Max(0f, content.rect.height - view.rect.height);
+            content.anchoredPosition = new Vector2(content.anchoredPosition.x, Mathf.Clamp(top, 0f, most));
+            _frame.PageScroll.velocity = Vector2.zero;
         }
 
         /// <summary>A text with its names filled: T("reallife_set_count", "on", "4", "total", "6").</summary>
@@ -538,6 +461,16 @@ namespace RealLifeOverhaul.Meta
                 text = text.Replace("{" + pairs[i] + "}", pairs[i + 1]);
             }
             return text;
+        }
+
+        // A text written only when its words change: TextMeshPro builds its mesh again on every write.
+        private static void SetText(TMP_Text text, string words)
+        {
+            words = words ?? string.Empty;
+            if (text != null && !string.Equals(text.text, words, StringComparison.Ordinal))
+            {
+                UiClone.Words(text, words);
+            }
         }
     }
 }

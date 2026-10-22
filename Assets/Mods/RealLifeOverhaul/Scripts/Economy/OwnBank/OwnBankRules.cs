@@ -139,7 +139,8 @@ namespace RealLifeOverhaul.Economy
                 return 0;
             }
             double points = (SaverBp(c, b, kind) - RivalSaverBp(c, b, kind)) / 100.0;
-            double w = OwnBankCatalogue.OwnSaverHold[kind] * Clamp(trust, 0, 1000) / 1000.0 * Math.Exp(OwnBankCatalogue.SaverPull[kind] / 1000.0 * points);
+            double w = Held(OwnBankCatalogue.OwnSaverHold[kind], c.Reach, kind == OwnBankCatalogue.People) * Clamp(trust, 0, 1000) / 1000.0
+                       * Math.Exp(OwnBankCatalogue.SaverPull[kind] / 1000.0 * points);
             return (long)(SavingsPool(c, kind) * (w / (w + OwnBankCatalogue.HoldRivals)));
         }
 
@@ -151,7 +152,7 @@ namespace RealLifeOverhaul.Economy
                 return 0;
             }
             double points = (LoanBp(c, b, segment) - RivalLoanBp(c, b, segment)) / 100.0;
-            double w = OwnBankCatalogue.OwnLoanHold[segment] * Math.Exp(-OwnBankCatalogue.LoanPull[segment] / 1000.0 * points);
+            double w = Held(OwnBankCatalogue.OwnLoanHold[segment], c.Reach, !OwnBankCatalogue.IsBusiness(segment)) * Math.Exp(-OwnBankCatalogue.LoanPull[segment] / 1000.0 * points);
             return (long)(DemandPool(c, segment) * (w / (w + OwnBankCatalogue.HoldRivals)));
         }
 
@@ -275,9 +276,25 @@ namespace RealLifeOverhaul.Economy
             return (int)(Clamp(confidence, 0, 1000) * Math.Max(0L, Math.Min(1000L, age)) / 1000);
         }
 
-        /// <summary>The bank founded with its capital paid in: no savers or loans yet, the rivals' rates, lending to all but the poorly rated.</summary>
+        /// <summary>A national bank founded, as every bank was before there were levels (the offline checks' bank of the full size).</summary>
         public static void Found(OwnBank b, int day, int seed, long capital, string name)
         {
+            Found(b, day, seed, capital, name, BankTiers.National);
+        }
+
+        /// <summary>
+        /// The bank founded at a level with its capital paid in: no savers or loans yet, the rivals' rates, lending to all but
+        /// the poorly rated, its record at the level from today, and the owner paid nothing until they choose a pay.
+        /// </summary>
+        public static void Found(OwnBank b, int day, int seed, long capital, string name, int tier)
+        {
+            b.Tier = Clamp(tier, BankTiers.Community, BankTiers.National);
+            b.TierFrom = day;
+            b.TierTold = BankTiers.Unknown;
+            b.PayMode = BankTiers.PayShareMode;
+            b.PayShare = 0;
+            b.PayFixed = 0;
+            b.PaidMonth = b.PaidLast = b.PaidAll = 0;
             b.State = OwnBankState.Running;
             b.Name = name ?? string.Empty;
             b.Seed = seed;
@@ -308,6 +325,7 @@ namespace RealLifeOverhaul.Economy
             b.Rebalance = false;
             b.Holdings.Clear();
             Array.Clear(b.Crew, 0, b.Crew.Length);
+            b.CounterFees = 0;
             b.Scare = 0;
             b.Run = false;
             b.RunFrom = 0;
@@ -342,8 +360,7 @@ namespace RealLifeOverhaul.Economy
                 return 0;
             }
             long cash = b.Reserves - ReserveNeed(b);
-            long keep = Math.Max(At(b.FoundedLeast > 0 ? b.FoundedLeast : OwnBankCatalogue.CapitalLeastCents, level), RiskWeighted(b) * OwnBankCatalogue.LendRatio / 1000);
-            long capital = CapitalNow(b) - keep;
+            long capital = CapitalNow(b) - Keep(b, level);
             return ToStep(Math.Min(cash, capital));
         }
 
@@ -395,7 +412,7 @@ namespace RealLifeOverhaul.Economy
         /// </summary>
         public static long WindUp(OwnBank b, int day, ClosedWhy why)
         {
-            long assets = b.Reserves + b.Lent * OwnBankCatalogue.WindPerforming / 1000 + b.InArrears * OwnBankCatalogue.WindArrears / 1000
+            long assets = b.Reserves + Math.Max(0, b.CounterFees) + b.Lent * OwnBankCatalogue.WindPerforming / 1000 + b.InArrears * OwnBankCatalogue.WindArrears / 1000
                           + b.FundValue * OwnBankCatalogue.WindFund / 1000;
             long left = b.Test ? 0 : Math.Max(0, assets - b.Savings) * (1000 - OwnBankCatalogue.WindFee) / 1000;
             End(b, OwnBankState.Closed, day, left, why);
@@ -419,10 +436,11 @@ namespace RealLifeOverhaul.Economy
             Array.Clear(b.Arrears, 0, b.Arrears.Length);
             Array.Clear(b.Recovering, 0, b.Recovering.Length);
             b.Holdings.Clear();
+            b.CounterFees = 0;   // charged at a counter on its last day: in what a winding up sold
             b.Run = false;
             b.Stage = Regulator.Clear;
             b.Deadline = b.Strikes = 0;
-            b.MonthIncome = b.MonthCosts = 0;
+            b.MonthIncome = b.MonthCosts = b.PaidMonth = 0;
         }
 
         internal static int Cycle(BankCity c)

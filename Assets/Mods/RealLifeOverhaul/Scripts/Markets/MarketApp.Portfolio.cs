@@ -304,6 +304,7 @@ namespace RealLifeOverhaul.Markets
                 });
             }
             BondsLine(box, s);
+            DerivsLine(box, s);   // MarketApp.Derivatives.cs
         }
     }
 }

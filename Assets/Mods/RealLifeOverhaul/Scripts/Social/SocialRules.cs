@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 
 namespace RealLifeOverhaul
 {
@@ -8,7 +9,11 @@ namespace RealLifeOverhaul
     /// <summary>The relationship model's rules: what each thing is worth in points of 0 to 100, when a stage is reached and lost, neglect.</summary>
     public static class SocialRules
     {
-        public const int CastSize = 8;
+        public const int BaseCast = 8;                // people a save starts with: Mom, Alex and one for each of six places
+        public const int MaxCast = 400;               // people a save can ever know; past it nobody new comes
+        public const int MeetGapDays = 1;             // game days at least between two new faces
+        public const int CircleSize = 12;             // the closest people who get in touch of their own accord
+        public const int CircleNewDays = 14;          // game days somebody new stays keen, however many are closer
 
         public const float CallFamiliarity = 3f, CallAffection = 2f, CallTrust = 0.5f;
         public const float WarmReply = 1.5f, BluntReply = -2f;
@@ -369,6 +374,65 @@ namespace RealLifeOverhaul
         /// Their own invitation always stands.
         /// </summary>
         public static bool MoodSaysNo(int mood, bool theirIdea, float roll) => !theirIdea && mood <= -2 && roll < PlanMoodNo;
+
+        /// <summary>
+        /// The closeness a person needs to be among the <see cref="CircleSize"/> closest people met; 0 while no more than that
+        /// many are met, so everybody is. <paramref name="scratch"/> holds at least CircleSize. One pass; nothing allocated.
+        /// </summary>
+        public static int CircleBar(SocialPerson[] people, int count, int[] scratch)
+        {
+            int held = 0;
+            for (int i = 0; i < count; i++)
+            {
+                SocialPerson p = people[i];
+                if (p == null || !p.Met)
+                {
+                    continue;
+                }
+                int closeness = p.Closeness;
+                if (held == CircleSize && closeness <= scratch[CircleSize - 1])
+                {
+                    continue;
+                }
+                int at = held < CircleSize ? held++ : CircleSize - 1;   // a new place, or the least close one's
+                while (at > 0 && scratch[at - 1] < closeness)
+                {
+                    scratch[at] = scratch[at - 1];
+                    at--;
+                }
+                scratch[at] = closeness;
+            }
+            return held < CircleSize ? 0 : scratch[CircleSize - 1];
+        }
+
+        /// <summary>
+        /// Whether somebody met gets in touch of their own accord: family, a partner, anyone met in the last
+        /// <see cref="CircleNewDays"/> days, and the closest (<see cref="CircleBar"/>). With a big cast the rest stay quiet
+        /// until the player calls them.
+        /// </summary>
+        public static bool InCircle(SocialPerson person, int day, int bar)
+        {
+            return person.Met && (person.IsFamily || person.Together || day - person.MetDay <= CircleNewDays || person.Closeness >= bar);
+        }
+
+        /// <summary>The chance an hour that one of the circle texts or asks something: as many as <see cref="CircleSize"/> count.</summary>
+        public static float TextChance(int circle) => 0.09f + 0.02f * Math.Max(0, Math.Min(circle, CircleSize));
+
+        /// <summary>The name of the call dialog type of the person in slot <paramref name="index"/>, as the game's hash is made from.</summary>
+        public static string DialogTypeName(int index) => "reallife_socialp" + index.ToString(CultureInfo.InvariantCulture) + "_calldialogtype";
+
+        /// <summary>The seed of everything rolled for the person in slot <paramref name="index"/> past the first eight: theirs alone.</summary>
+        public static int SlotSeed(int castSeed, int index)
+        {
+            unchecked
+            {
+                uint h = (uint)castSeed * 2654435761u ^ (uint)index * 2246822519u;
+                h ^= h >> 15;
+                h *= 2246822519u;
+                h ^= h >> 13;
+                return (int)(h & 0x7FFFFFFF) | 1;
+            }
+        }
     }
 
     /// <summary>What something done together is worth, in points of 0 to 100 (<see cref="SocialRules.Chat"/>).</summary>

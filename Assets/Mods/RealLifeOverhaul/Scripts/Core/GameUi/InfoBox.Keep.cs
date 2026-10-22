@@ -17,7 +17,7 @@ namespace RealLifeOverhaul.GameUi
     /// What each part's writer sets, and so needs no setting back: a row's, a line's and a note's words and margin; a
     /// subtitle's words and margin; a header's words and bar; a section's heading (by key or in words); a pair's two
     /// halves and its indent; a meter's words, indent, bar and colour; a tick's words, indent and mark; a switch's label,
-    /// its click and whether it is on; a selector's arrows, clicks and words; a row of buttons' buttons, each shown with
+    /// its click and whether it is on (a settings switch's line under it too, and whether that shows); a selector's arrows, clicks and words; a row of buttons' buttons, each shown with
     /// its word and click by InfoBox.Button. What Restore sets back: a line's colour (a tone); a header's margin (its
     /// chips) and the chips themselves; a tick's colour and its mark's picture, colour, size and place; a switch's state,
     /// so that it wakes from the template's as a new copy does; and for the parts made of others (a pair, a switch, a
@@ -64,7 +64,7 @@ namespace RealLifeOverhaul.GameUi
         {
             return template != null && _parked != null
                    && (template == _bodyT || template == _subT || template == _noteT || template == _headerT || template == _headingT || template == _pairT
-                       || template == _meterT || template == _checkT || template == _footT || template == _switch || template == _selector || template == _buttons);
+                       || template == _meterT || template == _checkT || template == _footT || template == _switch || template == _toggleT || template == _selector || template == _buttons);
         }
 
         // A part of the template's kind laid aside, back in the box at the end and as a new copy would be; null if none is.
@@ -137,12 +137,16 @@ namespace RealLifeOverhaul.GameUi
                 rect.sizeDelta = _checkMarkSize;
                 rect.anchoredPosition = _checkMarkAt;
             }
-            else if (template == _switch)
+            else if (template == _switch || template == _toggleT)
             {
                 Toggle toggle = part.GetComponentInChildren<Toggle>(true);
-                if (toggle != null)
+                if (toggle != null && template == _switch)
                 {
                     toggle.SetIsOnWithoutNotify(_switchOn);
+                }
+                else if (toggle != null)
+                {
+                    toggle.SetIsOnWithoutNotify(_toggleOn);   // a settings switch (InfoBox.Toggle.cs)
                 }
                 Prune(part.transform, template.transform);
             }

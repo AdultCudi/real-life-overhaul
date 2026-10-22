@@ -156,6 +156,7 @@ namespace RealLifeOverhaul
             {
                 return false;
             }
+            LeaveTable();
             Idle(0.15f);
             ClearPose();
             StopOver(0.15f);
@@ -165,6 +166,36 @@ namespace RealLifeOverhaul
             _stoodFacing = Character.transform.rotation;
             _seat = seat;
             Character.SitOnChair(seat);
+            return true;
+        }
+
+        /// <summary>
+        /// Lays them on a bed as the game lays the player down to sleep (<c>ThirdPersonCharacter.LayOnBed</c>: the game's lying
+        /// pose, the body put on the place given, the navigation agent off). <see cref="Rise"/> stands them up again where they
+        /// stood. The bed is not marked taken, so the player can still lie down in it. False, and nothing changed, if they cannot.
+        /// </summary>
+        public bool Lie(EntityController bed, Transform at)
+        {
+            if (Lost || bed == null || at == null || _seat != null || !Character.animator.HasParameter(PermanentAnimationType.Laying.ToString()))
+            {
+                return false;
+            }
+            LeaveTable();
+            Idle(0.15f);
+            ClearPose();
+            StopOver(0.15f);
+            CityLifeDirector.StopFacing(this);
+            Stand();
+            _stoodAt = Character.transform.position;
+            _stoodFacing = Character.transform.rotation;
+            _seat = at;
+            NavMeshAgent agent = Character.navmeshAgent;
+            if (agent.enabled && agent.isOnNavMesh)
+            {
+                agent.ResetPath();
+            }
+            agent.enabled = false;   // on the bed, off the mesh: as the game's SitOnChair does for a seat
+            Character.LayOnBed(bed, at);
             return true;
         }
 
@@ -196,6 +227,97 @@ namespace RealLifeOverhaul
             Stand();
         }
 
+        // ---------------------------------------------------------------- at a table (chess_sit)
+
+        private bool _atTable;
+        private Vector3 _tableCentre;
+        private ObstacleAvoidanceType _ownAvoidance;
+        private bool _ownTurning;
+
+        // Why it is needed: the table stands a navigation obstacle (people walk round it) whose edge is closer to the stool than
+        // their agent's radius, and a stopped agent still steers away from an obstacle it overlaps; the game turns one of its
+        // people the way their agent's velocity points (ThirdPersonCharacter.HandleNpcMovement calls Move with it, which rotates
+        // the body), so the street chess player was turned off the board. Undone on every way off the stool: Reset, WalkTo, Sit,
+        // Lie and Surrender.
+        /// <summary>
+        /// Keeps them on their spot facing a table's centre while they play a clip made sitting at it (chess_sit): their own
+        /// avoidance off (everybody else still goes round them), no turning by the agent, turned to the board now;
+        /// <see cref="KeepAtTable"/> mends any turn since. Nothing per frame.
+        /// </summary>
+        public void AtTable(Vector3 centre)
+        {
+            if (Lost)
+            {
+                return;
+            }
+            NavMeshAgent agent = Character.navmeshAgent;
+            if (!_atTable)
+            {
+                _ownAvoidance = agent.obstacleAvoidanceType;
+                _ownTurning = agent.updateRotation;
+            }
+            if (agent.enabled && agent.isOnNavMesh)
+            {
+                agent.ResetPath();
+                agent.isStopped = true;
+                agent.velocity = Vector3.zero;
+            }
+            agent.obstacleAvoidanceType = ObstacleAvoidanceType.NoObstacleAvoidance;
+            agent.updateRotation = false;
+            CityLifeDirector.StopFacing(this);
+            _atTable = true;
+            _tableCentre = centre;
+            Turn(centre);
+        }
+
+        /// <summary>True while they are kept at a table (<see cref="AtTable"/>).</summary>
+        public bool KeptAtTable => _atTable;
+
+        /// <summary>
+        /// Once a second while they sit at a table: the degrees they face off its centre as they were found (TableSeat.Off),
+        /// and, if that is more than TableSeat.FacedWithin, turned back to it: smoothly in view, at once out of it. 0 when they
+        /// are not at a table. A square root, an arc cosine and a comparison.
+        /// </summary>
+        public float KeepAtTable(bool inView)
+        {
+            if (!_atTable || Lost)
+            {
+                return 0f;
+            }
+            Transform body = Character.transform;
+            Vector3 forward = body.forward;
+            Vector3 at = body.position;
+            float off = TableSeat.Off(forward.x, forward.z, at.x, at.z, _tableCentre.x, _tableCentre.z);
+            if (!TableSeat.Faces(off))
+            {
+                if (inView)
+                {
+                    Face(_tableCentre);
+                }
+                else
+                {
+                    Turn(_tableCentre);
+                }
+            }
+            return off;
+        }
+
+        // Off the stool: their agent avoids and turns as it did before.
+        private void LeaveTable()
+        {
+            if (!_atTable)
+            {
+                return;
+            }
+            _atTable = false;
+            if (Valid)
+            {
+                NavMeshAgent agent = Character.navmeshAgent;
+                agent.obstacleAvoidanceType = _ownAvoidance;
+                agent.updateRotation = _ownTurning;
+            }
+        }
+
         /// <summary>Walks or jogs to a point on the navigation mesh. Any clip is ended first: nobody slides in a working pose.</summary>
         public bool WalkTo(Vector3 destination, bool jog = false)
         {
@@ -203,6 +325,7 @@ namespace RealLifeOverhaul
             {
                 return false;
             }
+            LeaveTable();
             Rise();
             Idle(0.2f);
             NavMeshAgent agent = Character.navmeshAgent;
@@ -544,6 +667,7 @@ namespace RealLifeOverhaul
         /// </summary>
         internal void Surrender(List<Transform> dropped)
         {
+            LeaveTable();
             Rise();
             if (_player != null)
             {
@@ -639,8 +763,10 @@ namespace RealLifeOverhaul
             if (!Valid)
             {
                 _seat = null;
+                _atTable = false;
                 return;
             }
+            LeaveTable();
             Rise();
             if (_player != null)
             {

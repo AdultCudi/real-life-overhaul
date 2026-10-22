@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using BAModAPI;
+using Localizor;
 using Localizor.LanguageChangeEvent;
 using UI;
 using UI.InGameUI;
@@ -60,10 +61,16 @@ namespace RealLifeOverhaul.GameUi
     /// Timing: opening (Open, Shown, Hidden) and the build are timed under names of their own ("Apps: (id) opened",
     /// "Apps: (id) built", Core/HotSpots); every click of a button the kit rewires is timed by UiClone.Safe. Per frame:
     /// nothing.
+    ///
+    /// Every app on the phone is known by its id while it is there (OpenById, TitleOf), so that another app can open it
+    /// as its button does (the Calendar's link from a day's entry to the app that deals with it).
     /// </summary>
     public sealed class PhoneApp
     {
         public static IModLogger Logger;
+
+        // The apps on the phone now, by id: put in when an app is installed, taken out when it is removed.
+        private static readonly Dictionary<string, PhoneApp> ById = new Dictionary<string, PhoneApp>(32, StringComparer.Ordinal);
 
         private readonly PhoneAppDef _def;
         private SmartphoneUI _phone;
@@ -142,6 +149,7 @@ namespace RealLifeOverhaul.GameUi
                     {
                         Logger?.Info("Game UI: app '" + def.Id + "' is among the phone's apps without a button: the mod opens it itself; its panel is built when it is first opened.");
                     }
+                    ById[def.Id] = app;
                     return app;
                 }
 
@@ -196,6 +204,7 @@ namespace RealLifeOverhaul.GameUi
                                  + "; full menu row " + (app._strip == null ? "not paged" : app._strip.SteppedAside ? "paged by another mod" : app._strip.Pages + " page(s)")
                                  + "; icon " + (icon == null ? "the template's" : icon.name) + "; its panel is built when it is first opened.");
                 }
+                ById[def.Id] = app;
                 return app;
             }
             catch (Exception e)
@@ -329,6 +338,36 @@ namespace RealLifeOverhaul.GameUi
             {
                 UiClone.Fallback("an app button without a Button: '" + button.name + "' cannot be clicked");
             }
+        }
+
+        /// <summary>
+        /// Opens the mod's app of that id as its own button opens it (Open). False, with nothing done, when no app of that
+        /// id is on the phone now (its option is off, its feature has stopped, or the phone was not built as expected).
+        /// </summary>
+        public static bool OpenById(string id)
+        {
+            if (string.IsNullOrEmpty(id) || !ById.TryGetValue(id, out PhoneApp app) || app == null || !app.Installed)
+            {
+                return false;
+            }
+            app.Open();
+            return true;
+        }
+
+        /// <summary>The name of the mod's app of that id as its button on the phone shows it, in the game's language; null when it is not on the phone.</summary>
+        public static string TitleOf(string id)
+        {
+            if (string.IsNullOrEmpty(id) || !ById.TryGetValue(id, out PhoneApp app) || app == null || !app.Installed || app._def == null)
+            {
+                return null;
+            }
+            Transform named = app._hudButton != null ? app._hudButton.transform.Find("Title") : null;   // (the button's own title, as the game's template names it)
+            TMPro.TMP_Text title = named != null ? named.GetComponent<TMPro.TMP_Text>() : null;
+            if (title != null && !string.IsNullOrEmpty(title.text))
+            {
+                return title.text;
+            }
+            return string.IsNullOrEmpty(app._def.TitleKey) ? null : app._def.TitleKey.GetLocalization();
         }
 
         /// <summary>The number on the HUD button, as Contacts shows its unread messages; 0 takes it away.</summary>
@@ -642,6 +681,10 @@ namespace RealLifeOverhaul.GameUi
         /// </summary>
         public void Remove()
         {
+            if (_def != null && _def.Id != null && ById.TryGetValue(_def.Id, out PhoneApp known) && known == this)
+            {
+                ById.Remove(_def.Id);
+            }
             Retire(_hudButton != null ? _hudButton.gameObject : null);
             Retire(_menuButton != null ? _menuButton.gameObject : null);
             Retire(Root);

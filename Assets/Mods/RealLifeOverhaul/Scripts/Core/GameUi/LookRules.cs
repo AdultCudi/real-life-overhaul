@@ -277,7 +277,7 @@ namespace RealLifeOverhaul.GameUi
         /// <summary>
         /// Each app's accent, as 0xRRGGBB: the deeper of the two colours its icon is painted in (each Director's
         /// AppIconPainter.Paint), so that the thin bar over a box's title is the colour of the icon that opened it.
-        /// Matched by the start of the app's id (the banks are "RealLifeBank1" and on); an app not listed has the
+        /// Matched by the start of the app's id ("RealLifeBank" is the Banks app's, RealLifeBanks); an app not listed has the
         /// game's own slate.
         /// </summary>
         public static readonly string[] AccentIds =

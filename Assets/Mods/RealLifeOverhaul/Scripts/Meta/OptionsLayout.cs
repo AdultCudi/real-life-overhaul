@@ -162,6 +162,7 @@ namespace RealLifeOverhaul.Meta
                 MetaLog.Error(e);
                 MetaLog.Warn("the options page could not be put in order and is shown as it was built.");
                 _tabs = null;
+                _pages = null;
                 _plain = null;
                 _withTests = null;
                 return AsBuilt(original);
@@ -386,6 +387,7 @@ namespace RealLifeOverhaul.Meta
 
             _testRows = trouble != null ? AddTests(trouble) : 0;
             _tabs = SettingsRules.Tabs(_plan, rows, TestPlaces);
+            _pages = SettingsRules.Pages(_tabs, rows);
             _lineOf = null;
             foreach (Section top in Top)
             {

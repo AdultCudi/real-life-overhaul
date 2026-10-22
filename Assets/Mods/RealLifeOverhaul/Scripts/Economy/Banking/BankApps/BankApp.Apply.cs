@@ -21,6 +21,7 @@ namespace RealLifeOverhaul.Economy
             {
                 _product = -1;
                 box.Title(FinanceText.T("reallife_bank_refused_title", "bank", Bank.Name));
+                Which(box);
                 box.Chip(FinanceText.Grade(score.Grade), FinanceApp.Tone(score.Grade));
                 box.Line(FinanceText.T("reallife_bank_refused", "bank", Bank.Name, "score", score.Value.ToString(), "threshold", CreditCatalogue.LendingThreshold.ToString()), CellTone.Red);
                 int tips = CreditScoring.Tips(score, _tips);
@@ -59,6 +60,7 @@ namespace RealLifeOverhaul.Economy
             {
                 _product = -1;
                 box.Title(FinanceText.T("reallife_bank_tab_apply"));
+                Which(box);
                 if (gate != ProductAnswer.Yes)
                 {
                     box.Line(Why(gate), CellTone.Red);
@@ -70,7 +72,7 @@ namespace RealLifeOverhaul.Economy
                 return null;
             }
             box.Title(FinanceText.T(BankTables.OfferKinds[_product]));
-            box.Subtitle(Bank.Name);
+            Which(box);
             switch (_product)
             {
                 case BankTables.Loan: WriteLoanOffer(box, score); break;
