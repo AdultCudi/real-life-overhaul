@@ -46,7 +46,6 @@ namespace RealLifeOverhaul
         private float _stillSince;
         private Vector3 _lastPosition;
 
-        /// <summary>True from Begin to End.</summary>
         public bool Active { get; private set; }
 
         /// <summary>True once the body has come to rest and been frozen.</summary>
@@ -105,10 +104,7 @@ namespace RealLifeOverhaul
             return !(character is ThirdPersonCharacter full) || (full.navmeshAgent != null && full.capsuleCollider != null);
         }
 
-        /// <summary>
-        /// Throws the character down at <paramref name="velocity"/> (m/s) on <paramref name="layer"/>, which must collide
-        /// with the ground. False, with the character as it was, if this skeleton cannot be made a ragdoll.
-        /// </summary>
+        /// <summary>False, with the character as it was, if this skeleton cannot be made a ragdoll. Velocity in m/s; layer collides with the ground.</summary>
         /// <param name="blocksTraffic">Traffic brakes for that layer, so the frozen body keeps its colliders.</param>
         internal bool Begin(BaseHuman character, Vector3 velocity, int layer, bool blocksTraffic, float now)
         {
@@ -291,10 +287,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// A body at rest gives up everything added to its bones and stays as it lies; what Begin changed on the character
-        /// stays changed until End.
-        /// </summary>
+        /// <summary>A body at rest gives up everything added to its bones and stays as it lies until End.</summary>
         internal void Settle()
         {
             if (!Active || !Resting || Still)

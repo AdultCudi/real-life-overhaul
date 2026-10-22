@@ -22,10 +22,7 @@ namespace RealLifeOverhaul
         public static IModLogger Logger;
         public static RagdollSystem Instance { get; private set; }
 
-        /// <summary>
-        /// Asked to take one lying body away (PedestrianIncidents answers): true if one went, out of view if possible,
-        /// and only out of view when the argument is true.
-        /// </summary>
+        /// <summary>Takes one lying body away, true if one went: out of view if it can, and only so when the argument is true.</summary>
         public static Func<bool, bool> MakeRoom;
 
         private bool _stillLogged;
@@ -35,7 +32,6 @@ namespace RealLifeOverhaul
         private bool _failed;       // off for the session after a fault
         private int _refusals;      // characters in a row that could not be made a ragdoll
 
-        /// <summary>False once ragdolls have been given up for this session.</summary>
         public bool Working => !_failed;
 
         private void Awake()
@@ -128,10 +124,7 @@ namespace RealLifeOverhaul
             return distance < SeenWithin && (distance < 6f || Vector3.Dot(offset, eye.forward) > distance * 0.45f);
         }
 
-        /// <summary>
-        /// Throws a character down with the given velocity. Null, with the character as it was, if it cannot be done:
-        /// no room, a skeleton it does not know, or no ground to land on.
-        /// </summary>
+        /// <summary>Throws a character down; null, with it as it was, if there is no room, no known skeleton or no ground.</summary>
         public Ragdoll Begin(BaseHuman character, Vector3 velocity)
         {
             if (_failed || !Settings.Ragdolls || !Ragdoll.CanTake(character) || Find(character) != null)
