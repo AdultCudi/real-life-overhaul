@@ -198,7 +198,7 @@ namespace RealLifeOverhaul.Tech
 
         private static bool CanEverBe(CityBuildingController b)
         {
-            return b.building.BuildingType == Office && !GameMembers.Fenced(b.building) && (int)b.building.requiredDLC == 0 && !b.building.IsHamptonsHouse()
+            return b.building.BuildingType == Office && !GameMembers.Fenced(b.building) && !GameDlc.Gated(b) && !b.building.IsHamptonsHouse()
                    && b.entranceDoors != null && b.entranceDoors.Length > 0 && b.building.totalSqm > 0;
         }
 
@@ -206,7 +206,7 @@ namespace RealLifeOverhaul.Tech
         private void Pick()
         {
             CityManager city = InstanceBehavior<CityManager>.Instance;
-            CityBuildingController[] buildings = city != null ? city.cityBuildingControllers : null;
+            CityBuildingController[] buildings = GameDlc.Open(city);
             if (buildings == null || buildings.Length == 0)
             {
                 return;

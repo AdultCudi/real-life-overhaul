@@ -423,7 +423,7 @@ namespace RealLifeOverhaul.Nav
         private void Doors()
         {
             CityManager city = InstanceBehavior<CityManager>.Instance;
-            CityBuildingController[] buildings = city != null ? city.cityBuildingControllers : null;
+            CityBuildingController[] buildings = GameDlc.Open(city);
             int count = buildings != null ? buildings.Length : 0;
             var x = new List<float>(count);
             var y = new List<float>(count);

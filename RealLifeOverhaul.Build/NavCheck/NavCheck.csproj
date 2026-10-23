@@ -75,6 +75,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Offices\ConversionRules.cs" Link="Mod\ConversionRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Offices\ConversionStore.cs" Link="Mod\ConversionStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\SpecialNameBook.cs" Link="Mod\SpecialNameBook.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\HeldUnitsRules.cs" Link="Mod\HeldUnitsRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\CityReserves.cs" Link="Mod\CityReserves.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\FrontSignRules.cs" Link="Mod\FrontSignRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Diagnostics\FrameRules.cs" Link="Mod\FrameRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Diagnostics\ObjectKinds.cs" Link="Mod\ObjectKinds.cs" />

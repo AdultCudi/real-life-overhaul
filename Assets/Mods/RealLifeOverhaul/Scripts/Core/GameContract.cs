@@ -88,6 +88,7 @@ namespace RealLifeOverhaul
         public static readonly GamePart PersonaCourses = ContractBook.Part("persona_courses", "careers_study", "the mod's courses in the Persona app's education box");
         public static readonly GamePart FrontSignsPart = ContractBook.Part("front_signs", null, "the signs on the mod's buildings");
         public static readonly GamePart ClaimedRows = ContractBook.Part("claimed_rows", null, "the mod's buildings left out of the city map's rows of units to let");
+        public static readonly GamePart HeldPass = ContractBook.Part("held_pass", null, "the test of the mod's buildings against the game's own choice of empty units to let");
         public static readonly GamePart StartCompetitors = ContractBook.Part("start_competitors", "tech_sector", "the competitors in the city on BizMan's start screen, for the mod's own kinds of business");
         public static readonly GamePart ChatFilter = ContractBook.Part("chat_filter", "flare", "Steam's own filter of what other players of a Going Public session type on Flare (the mod's own word list without it)");
         public static readonly GamePart PhotoHolds = ContractBook.Part("photo_holds", "photos", "the Camera telling its own hold on the player from the game's, and putting the world's clicks back as they were (the mop's floor)");
@@ -360,6 +361,8 @@ namespace RealLifeOverhaul
 
         // Core/ClaimedMap: the step of the city map's look at its buildings, as the game declares it (read on the closed type)
         public static readonly GameMember MapLookStep = Field(ClaimedRows, Game, "Helpers.DistributedWork`1", "_updateAction", "Action<T>");
+        public static readonly GameMember EmptyUnits = Optional(StaticMethod(HeldPass, Game, "Helpers.CompetitionHelper", "GetEmptyBuildings",
+            "List<Building>", "List<Building>"));   // else the test says it cannot run
 
         // Character/HairTests: a lit street lamp's brightness (else the test lamp keeps its own)
         public static readonly GameMember LampMaxValue = Optional(Field(HairLampTest, Game, "StreetLamp", "maxValue", "Single"));

@@ -259,7 +259,7 @@ namespace RealLifeOverhaul.Permadeath
             {
                 Vector3 where = PlayerHelper.GetPosition();
                 CityManager city = InstanceBehavior<CityManager>.Instance;
-                CityBuildingController[] buildings = city != null ? city.cityBuildingControllers : null;
+                CityBuildingController[] buildings = GameDlc.Open(city);
                 CityBuildingController best = null;
                 float bestSqr = float.MaxValue;
                 for (int i = 0; buildings != null && i < buildings.Length; i++)
