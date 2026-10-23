@@ -97,6 +97,8 @@ namespace RealLifeOverhaul
         public static readonly GamePart CarWash = ContractBook.Part("car_wash", "garage",
             "stand-ins for the spray and the sound of a car that has none, so the game's car wash in a repair bay ends on it");
         public static readonly GamePart TrafficMend = ContractBook.Part("traffic_mend", "traffic", "putting the city's traffic right when it stops adding cars for good");
+        public static readonly GamePart SiteWrapFade = ContractBook.Part("site_wrap_fade", "civic",
+            "the game's scaffolding round a building fading with it for the camera, and leaving the city map with it");
         public static readonly GamePart OwnBuildings = ContractBook.Part("own_buildings", "newbuildings", "the mod's own buildings, made at each load from the game's designs");
 
         // The pieces, each group under the code that reads it.
@@ -400,6 +402,9 @@ namespace RealLifeOverhaul
         public static readonly GameMember WashSpray = Optional(Field(CarWash, Game, "CarController", "washVfx", "GameObject"));
         public static readonly GameMember WashSound = Optional(Field(CarWash, Game, "CarController", "washAudioSource", "AudioSource"));
 
+        // Civic/SiteWrap: the building a wrap's pieces fade with when the camera's ray meets them, and the renderers the city map swaps for the building's box
+        public static readonly GameMember WrapFadeOwner = Optional(Field(SiteWrapFade, Game, "ViewBlockingEntityExtension", "viewBlockingEntity", "ViewBlockingEntity"));
+        public static readonly GameMember WrapMapRenderers = Optional(Field(SiteWrapFade, Game, "CityBuildingController", "_lodRenderers", "HashSet<Renderer>"));
         // NewBuildings/MadeGame: the game's private lookups of a building and of its registration by address (BuildingHelper.cs 50, 52;
         // GetBuilding and GetBuildingRegistration read them first) and of its streets (AddressHelper.cs 13): a made building and its
         // street go in at every load. Optional: the closest-building job's length (a self-check), and the food deliveries' addresses left

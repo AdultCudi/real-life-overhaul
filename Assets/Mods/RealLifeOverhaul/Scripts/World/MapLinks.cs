@@ -492,7 +492,7 @@ namespace RealLifeOverhaul
                         {
                             what = T("reallife_map_row_construction");   // a site from a save with a project this catalogue does not have
                         }
-                        places.Add(new MapPlace(new Vector3(site.X, site.Y, site.Z), At(what, CivicCity.AddressText(site.Street, site.Number)))
+                        places.Add(new MapPlace(new Vector3(site.X, site.Y, site.Z), At(what, CivicWorks.PlaceText(site)))
                         {
                             Lit = CivicCity.Find(site.Street, site.Number)   // the building being worked on; null for a plot with none
                         });

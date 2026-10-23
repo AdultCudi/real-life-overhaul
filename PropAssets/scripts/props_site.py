@@ -791,6 +791,13 @@ def tower_crane():
     p = Prop("tower_crane", "lit",
              note="not asked for by code (Civic's README: no empty lot to build on). Static tower crane: lattice mast 2 x 2 m to the slewing ring 40 m up, cab at "
                   "+X, 30 m jib along +Y at 41.6 to 42.9 m, 10 m counter-jib along -Y with its weights, tower top to 47.5 m, trolley 18 m out, hook block 26 m up")
+    crane_mast(p)
+    crane_slew(p)
+    return p
+
+
+def crane_mast(p):
+    """The tower crane's base and lattice mast to the slewing ring 40 m up (also the second bundle's tower_crane_mast)."""
     yellow = "paint_yellow"
     # The base: pad, a square of beams, ballast either side, knee braces to the mast.
     p.add(box(6.0, 6.0, 0.5, bevel=0.08), "concrete", at=(0, 0, 0.25))
@@ -817,6 +824,12 @@ def tower_crane():
             for a, b in (((1, -1), (1, 1)), ((-1, 1), (1, 1))):
                 bar(p, (*a, z), (*b, z + step), 0.055, yellow)
                 bar(p, (*b, z), (*a, z + step), 0.055, yellow)
+
+
+def crane_slew(p):
+    """What turns on the ring: the ring, the deck and cab, the jib, the counter-jib, the tower top, the trolley and hook, as
+    the whole crane has them (the second bundle's tower_crane_jib is these, let down by the ring's 40 m)."""
+    yellow = "paint_yellow"
     # The slewing ring, the machinery deck and the cab hung beside it.
     p.add(lathe([(1.15, 40.0), (1.40, 40.2), (1.40, 40.65), (1.15, 40.85)], 8, cap_top=True, cap_bottom=True), flat("steel_dark"), sharp=40)
     p.add(box(2.2, 2.6, 0.55), flat(yellow), at=(0, 0, 41.125))
@@ -872,7 +885,6 @@ def tower_crane():
         bar(p, (x, out, low - 0.4), (x, out, 27.2), 0.03, "steel_dark")
     p.add(box(0.9, 0.34, 1.1, bevel=0.10), flat("paint_red"), at=(0, out, 26.7))
     p.add(tube([(0, out, 26.2), (0, out, 25.75), (0.22, out, 25.42), (0.46, out, 25.62), (0.44, out, 25.90)], [0.08, 0.08, 0.08, 0.07, 0.03], 5), flat("steel_dark"), sharp=70)
-    return p
 
 
 def gavel():
