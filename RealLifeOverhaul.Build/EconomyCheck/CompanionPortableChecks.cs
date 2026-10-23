@@ -9,6 +9,20 @@ internal static partial class Program
 {
     private static void CompanionPortableVectors(string output)
     {
+        var licenceGrants = new List<object>();
+        for (int kind = 0; kind < CompanyCatalogue.LicenceTerm.Length; kind++)
+        {
+            foreach (int until in new[] { 0, 49, 57, 58, 90 })
+            {
+                const int day = 58;
+                var licence = new Licence { Until = until };
+                bool valid = LicenceRules.Valid(licence, day);
+                LicenceRules.Grant(licence, kind, day);
+                licenceGrants.Add(CompanionSnapshot.Row("kind", kind, "day", day, "untilDay", until,
+                    "validBefore", valid, "termDays", CompanyCatalogue.LicenceTerm[kind],
+                    "expectedUntilDay", licence.Until));
+            }
+        }
         var registeredPrices = new List<object>();
         foreach (float multiplier in new[] { 1f, 1.3f })
         {
@@ -136,7 +150,7 @@ internal static partial class Program
                         "basket", InteriorRules.BasketShare(overall, standard, 750))));
             }
         }
-        string json = CompanionSnapshot.Json(CompanionSnapshot.Row("registeredPrices", registeredPrices, "officeSequence", officeSequence, "officeClients", officeClients, "basketExtra", basketExtra, "priceToleranceTerms", CityCompanion.PriceTerms(), "promotionTerms", BusinessCompanion.Terms(), "promotions", promotions, "adjustmentQuiet", MacroCatalogue.AdjustQuiet, "cityAdjust", adjustments, "interiorTerms", InteriorCompanion.Terms(new InteriorParts { StandardScale = 1500, DecorMille = 150, PriceScale = 750, Basket = true }), "companyShare", share, "priceTolerance", prices, "interiors", interiors));
+        string json = CompanionSnapshot.Json(CompanionSnapshot.Row("licenceGrants", licenceGrants, "registeredPrices", registeredPrices, "officeSequence", officeSequence, "officeClients", officeClients, "basketExtra", basketExtra, "priceToleranceTerms", CityCompanion.PriceTerms(), "promotionTerms", BusinessCompanion.Terms(), "promotions", promotions, "adjustmentQuiet", MacroCatalogue.AdjustQuiet, "cityAdjust", adjustments, "interiorTerms", InteriorCompanion.Terms(new InteriorParts { StandardScale = 1500, DecorMille = 150, PriceScale = 750, Basket = true }), "companyShare", share, "priceTolerance", prices, "interiors", interiors));
         string directory = output ?? System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, "../../../../../contracts/companion/v1"));
         string path = System.IO.Path.Combine(directory, "planning-vectors.json");
         if (output != null)
