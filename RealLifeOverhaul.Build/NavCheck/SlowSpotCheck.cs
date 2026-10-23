@@ -13,7 +13,8 @@ internal static partial class Program
     {
         "JobDirector", "TransitDirector", "CarOwnership", "HomeDirector", "GarageDirector", "Leisure.LeisureDirector", "SocialDirector",
         "TravelDirector", "Justice", "LicenceDirector", "CivicDirector", "Family.FamilyDirector", "Law.LawDirector", "Roommates.RoommateDirector",
-        "Ledger.LedgerDirector", "Careers.CareersDirector", "Tech.TechSites", "Street.StreetDirector"
+        "Ledger.LedgerDirector", "Careers.CareersDirector", "Tech.TechSites", "Street.StreetDirector",
+        "Construction.ConstructionDirector"
     };
 
     private static void SlowSpots()

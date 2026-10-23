@@ -94,9 +94,9 @@ namespace RealLifeOverhaul.Construction
             OpenedDay(day);
             if (Verbose)
             {
+                double ms = (System.Diagnostics.Stopwatch.GetTimestamp() - began) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
                 Logger?.Info("Construction check (day " + day + "): " + _state.Projects.Count + " project(s), " + _state.Crews.Count + " crew(s), " + _state.Tenders.Count + " tender(s), "
-                             + _state.Developments.Count + " development(s) known; "
-                             + ((System.Diagnostics.Stopwatch.GetTimestamp() - began) * 1000.0 / System.Diagnostics.Stopwatch.Frequency).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + " ms: PASS.");
+                             + _state.Developments.Count + " development(s) known; " + ms.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + " ms: PASS.");
             }
         }
 

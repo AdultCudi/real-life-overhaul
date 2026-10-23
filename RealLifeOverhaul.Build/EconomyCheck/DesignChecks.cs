@@ -687,9 +687,13 @@ internal static partial class Program
 
             Directory.Delete(System.IO.Path.Combine(root, "InteriorDesigns", "Office", "C1", "GraphicDesigner"), true);
             DesignsReport fewer = DesignFiles.Put(root, SandboxRead, SandboxCut);
-            Check(fewer.Removed == 1 && !File.Exists(System.IO.Path.Combine(installer, "Office", "C1", "gamestudio", "Rustic.json"))
-                  && File.Exists(System.IO.Path.Combine(installer, "Office", "C1", "gamestudio", "Modern.json")),
-                "designs job: a design the game no longer has is taken away (" + fewer.Removed + ")");
+            // A construction company's Modern and Rustic were the graphic designer's alone; its Competitive is the law firm's then.
+            string builders = System.IO.Path.Combine(installer, "Office", "C1", "construction");
+            Check(fewer.Removed == 3 && !File.Exists(System.IO.Path.Combine(installer, "Office", "C1", "gamestudio", "Rustic.json"))
+                  && File.Exists(System.IO.Path.Combine(installer, "Office", "C1", "gamestudio", "Modern.json"))
+                  && !File.Exists(System.IO.Path.Combine(builders, "Modern.json")) && !File.Exists(System.IO.Path.Combine(builders, "Rustic.json"))
+                  && File.Exists(System.IO.Path.Combine(builders, "Competitive.json")),
+                "designs job: a design the game no longer has is taken away, a game studio's one and a construction company's two (" + fewer.Removed + ")");
 
             DesignsReport off = DesignFiles.Take(root);
             Check(off.Removed == fewer.Designs && off.Skipped == 0 && !File.Exists(System.IO.Path.Combine(installer, DesignCatalogue.Manifest)),

@@ -468,9 +468,10 @@ namespace RealLifeOverhaul.Construction
                 p.Ribbon = false;
                 _testOpening = true;
                 bool place = OpeningPlace(p, out Vector3 at);
-                Logger?.Info("Construction check (opening test): project " + p.Id + " opens today; its ribbon " + (place ? "at " + at.x.ToString("F0", System.Globalization.CultureInfo.InvariantCulture)
-                    + ", " + at.z.ToString("F0", System.Globalization.CultureInfo.InvariantCulture) : "has no place") + ": "
-                             + (place ? "PASS" : "FAIL") + ".");
+                string spot = place
+                    ? "at " + at.x.ToString("F0", System.Globalization.CultureInfo.InvariantCulture) + ", " + at.z.ToString("F0", System.Globalization.CultureInfo.InvariantCulture)
+                    : "has no place";
+                Logger?.Info("Construction check (opening test): project " + p.Id + " opens today; its ribbon " + spot + ": " + (place ? "PASS" : "FAIL") + ".");
                 Tell(NotificationType.Info, "reallife_bld_notice_opening", ProjectName(p), null, TabProjects, p.Id);
                 TestDone("project " + p.Id + "'s opening is today", TabProjects, p.Id);
             });
