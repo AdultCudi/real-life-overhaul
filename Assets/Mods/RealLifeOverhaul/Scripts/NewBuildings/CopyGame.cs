@@ -55,6 +55,13 @@ namespace RealLifeOverhaul.NewBuildings
 
         public static IList<DesignEntry> Catalogue => Designs;
 
+        /// <summary>The floor area of the city's own building a design was measured on; 0 for one not known.</summary>
+        public static int SourceSqm(int source)
+        {
+            CityBuildingController c = source >= 0 && source < Sources.Count ? Sources[source] : null;
+            return c != null && c.building != null ? c.building.totalSqm : 0;
+        }
+
         /// <summary>The copies stand under <paramref name="root"/>, the templates sleep under a holder of it switched off; both go with the city.</summary>
         public static void Begin(Transform root)
         {

@@ -62,6 +62,19 @@ namespace RealLifeOverhaul.NewBuildings
         public CityBuildingController Building => Over;
     }
 
+    /// <summary>A design that fits some ground, as <see cref="BuildingCopies.Fitting"/> lists it.</summary>
+    public struct DesignFit
+    {
+        public string Name;      // the design's name (DesignEntry.Name)
+        public string Size;      // the game's size of the building it is measured on
+        public int Version;
+        public string Type;      // that building's type
+        public float Height;     // m
+        public float Width;      // m across its door's side
+        public float Depth;      // m back from it
+        public int TotalSqm;     // the floor area of the city's own building it is measured on
+    }
+
     /// <summary>
     /// Decorative copies of the game's own buildings for other features, a construction site's finished look first of all
     /// (docs/features/new-buildings.md, "Decorative copies"):
@@ -88,8 +101,93 @@ namespace RealLifeOverhaul.NewBuildings
         /// <summary>True while copies can be asked for: the option is on and a city is loaded.</summary>
         public static bool Available => Settings.NewBuildings && NewBuildingsDirector.Instance != null;
 
-        /// <summary>True while a change waits: a copy to stand or to go, a look to hide or show.</summary>
-        internal static bool Pending => Waiting.Count + Leaving.Count + ToHide.Count + ToShow.Count > 0;
+        /// <summary>True while a change waits: a copy to stand or to go, a look to hide or show, the city's designs wanted.</summary>
+        internal static bool Pending => Waiting.Count + Leaving.Count + ToHide.Count + ToShow.Count > 0 || (MeasureWanted && !CopyGame.Ready);
+
+        /// <summary>A feature asked which designs fit before any copy did: the city's designs are measured in play, a millisecond a frame.</summary>
+        internal static bool MeasureWanted;
+
+        private static readonly List<int> Fits = new List<int>(32);
+
+        /// <summary>
+        /// The designs that fit ground of a width and depth (a frame's footprint) and were measured on buildings of a type of
+        /// the game's (null for any), those covering most of it first, at most <paramref name="most"/>, into the caller's list
+        /// (cleared): never one drawn in a static batch, of a DLC or of a kind never copied. False while the city's designs are
+        /// not known yet: asking starts their measuring in play, so ask again in a moment. The same list on every machine.
+        /// </summary>
+        public static bool Fitting(float width, float depth, string type, int most, List<DesignFit> into)
+        {
+            into.Clear();
+            if (!Available)
+            {
+                return false;
+            }
+            if (!CopyGame.Ready)
+            {
+                MeasureWanted = true;
+                NewBuildingsDirector.Instance.Wake();
+                return false;
+            }
+            IList<DesignEntry> designs = CopyGame.Catalogue;
+            Fits.Clear();
+            for (int i = 0; i < designs.Count; i++)
+            {
+                DesignEntry d = designs[i];
+                if (d != null && !d.Batched && (type == null || string.Equals(d.Type, type, System.StringComparison.Ordinal)) && NewBuildingsRules.Fits(d, width, depth))
+                {
+                    Fits.Add(i);
+                }
+            }
+            // The best covering first, the catalogue's own order between equals: an insertion sort, a few dozen at most.
+            for (int i = 1; i < Fits.Count; i++)
+            {
+                int k = Fits[i];
+                float covers = Covers(designs[k]);
+                int j = i - 1;
+                while (j >= 0 && Covers(designs[Fits[j]]) < covers)
+                {
+                    Fits[j + 1] = Fits[j];
+                    j--;
+                }
+                Fits[j + 1] = k;
+            }
+            for (int i = 0; i < Fits.Count && into.Count < most; i++)
+            {
+                DesignEntry d = designs[Fits[i]];
+                NewBuildingsRules.DoorFrame(d, out float uMin, out float uMax, out float vMin, out float vMax);
+                into.Add(new DesignFit
+                {
+                    Name = d.Name, Size = d.Size, Version = d.Version, Type = d.Type, Height = d.Height, Width = uMax - uMin, Depth = vMax - vMin,
+                    TotalSqm = CopyGame.SourceSqm(d.Source)
+                });
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// One of the game's buildings' footprint as a new look over it may take it (<see cref="PlaceOver"/>): across its
+        /// door's side and back from it, with the room a bigger look is given round it. False if it cannot be measured.
+        /// Measured now: asked on a page, never per frame.
+        /// </summary>
+        public static bool Footprint(CityBuildingController building, out float width, out float depth)
+        {
+            width = depth = 0f;
+            DesignEntry own = Available && building != null ? CopyGame.DescribeOne(building, out _) : null;
+            if (own == null)
+            {
+                return false;
+            }
+            NewBuildingsRules.DoorFrame(own, out float uMin, out float uMax, out float vMin, out float vMax);
+            width = uMax - uMin + NewBuildingsRules.Gap * 2f;
+            depth = vMax - vMin + NewBuildingsRules.Gap * 2f;
+            return width > 0f && depth > 0f;
+        }
+
+        private static float Covers(DesignEntry d)
+        {
+            NewBuildingsRules.DoorFrame(d, out float uMin, out float uMax, out float vMin, out float vMax);
+            return (uMax - uMin) * (vMax - vMin);
+        }
 
         /// <summary>A copy of a design (by name, and size where one name stands for several) to stand at a place; null while not available.</summary>
         public static CopyHandle Place(string design, string size, Vector3 at, float yaw, string owner)
