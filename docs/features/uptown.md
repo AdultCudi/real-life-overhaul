@@ -135,10 +135,10 @@ The director is disabled while no test runs: no frame cost. The load: two search
 
 ## Self-check lines
 
-With Developer diagnostics on, in Player.log:
+In Player.log, the first two always, the rest with Developer diagnostics on:
 
-- `Uptown: laid behind the loading screen in N ms: N lane points in N roads ..., the player's walking ground grown in N ms, the pedestrians' in N ms; N pieces of the backdrop put away, 9 of the game's walls opened, 14 walls and colliders built, 26 road modules copied; 83 lots open.` (always, one line), or `Uptown: not laid at this load: why.`
-- `Uptown: once the game was loaded, 25 parking lanes along its kerbs and 17 pedestrians' zones.` (always)
+- `Uptown: laid behind the loading screen in N ms: N lane points (N in junctions, N where cars may start) on N road(s), 8 junction(s) (8 with lights), N join(s) to the game's lanes, 8 stop point(s) and 8 exit(s) given to the game's junctions; the player's walking ground grown in N ms, the pedestrians' in N ms; N pieces of the backdrop put away, 9 of the game's walls opened, 14 walls and colliders built, 26 road modules copied; 83 lots open.`, or `Uptown: not laid at this load: why.`
+- `Uptown: once the game was loaded, 25 parking lanes along its kerbs and 17 pedestrians' zones.`
 - `Uptown check (streets): Roads check (append): traffic started with ... marked by their junctions: PASS`, in the game's late call.
 - `Uptown check (census): ...: PASS`, `Uptown check (path, Player): ... COMPLETE: PASS`, `Uptown check (path, NPC): ...`, `Uptown check (traffic): cars that drove its streets: N in 2 game minutes (...): PASS`, from the tests.
 
