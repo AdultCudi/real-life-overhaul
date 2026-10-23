@@ -575,6 +575,12 @@ internal static partial class Program
         Match ground = Regex.Match(work, @"public static string Ground\([^)]*\)\s*\{(?<b>(?:[^{}]|\{(?<d>)|\}(?<-d>))*)\}");
         Check(ground.Success && Regex.IsMatch(ground.Groups["b"].Value, @"WalkGame\.Built\([^;]*;[\s\S]*if \(found > plan\.ExpectColliders\)[\s\S]*Grow\("),
             "new ground sources: a district's ground counts the game's colliders on it against the plan's before it grows anything");
+        Match grow = Regex.Match(work, @"private static string Grow\([^)]*\)\s*\{(?<b>(?:[^{}]|\{(?<d>)|\}(?<-d>))*)\}");
+        Check(grow.Success && Regex.IsMatch(grow.Groups["b"].Value, @"GroundPass\.Join\);[\s\S]*GroundBuilder\.RoundAlike\(job\)[\s\S]*GroundBuilder\.Now\(job, GroundPass\.Back\);"),
+            "new ground sources: a district's ground compares the tiles round about after it grows, and gives its tiles back when anything failed");
+        Match now = Regex.Match(code["GroundBuilder.cs"], @"public static void Now\([^)]*\)\s*\{(?<b>(?:[^{}]|\{(?<d>)|\}(?<-d>))*)\}");
+        Check(now.Success && Regex.IsMatch(now.Groups["b"].Value, @"if \(pass != GroundPass\.Back\)\s*\{\s*job\.Pending\.Clear\(\);"),
+            "new ground sources: a pass laid now builds nothing more once the builder refuses a tile, and giving back carries on");
         Check(!Regex.IsMatch(work, @"\bconst\s+float\s+\w*(Corner|Cell|Origin|Side|Bounds)\w*\s*="), "new ground sources: the grid, the tiles and the map are read from the game, never kept in the code");
 
         // The buses: lines run between the game's subway stations, then termini of the mod's own (a district has no station).

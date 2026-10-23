@@ -336,6 +336,10 @@ namespace RealLifeOverhaul.NewGround
                 if (!WalkGame.UpdateNow(job.Mesh.Data, Settings(job), Sources(job), Bounds(job, tile)))
                 {
                     job.Problem = "Unity's builder would not update the " + job.Mesh.Label + " mesh's tile (" + TileGrid.KeyX(tile) + ", " + TileGrid.KeyZ(tile) + ")";
+                    if (pass != GroundPass.Back)
+                    {
+                        job.Pending.Clear();   // nothing more is built on a builder that refused; giving back carries on, to put back all it can
+                    }
                 }
                 job.Ms += (Stopwatch.GetTimestamp() - began) * 1000.0 / Stopwatch.Frequency;
             }

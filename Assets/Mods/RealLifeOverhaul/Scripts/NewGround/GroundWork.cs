@@ -47,8 +47,9 @@ namespace RealLifeOverhaul.NewGround
 
         /// <summary>
         /// The plan's ground laid into both city walking meshes now: the game's colliders on it counted against the plan's,
-        /// Unity's builder proved once a load on data of the mod's own, then each mesh grown tile by tile. Null when done;
-        /// else why it stood down (a mesh already grown stays so until the next load, as the city's data is reloaded then).
+        /// Unity's builder proved once a load on data of the mod's own, then each mesh grown tile by tile and the tiles
+        /// round about compared with how they were. Null when done; else why it stood down. A mesh that fails is given its
+        /// tiles back as they were; the player's, grown before the pedestrians' failed, stays so until the next load.
         /// </summary>
         public static string Ground(GroundPlan plan)
         {
@@ -100,7 +101,21 @@ namespace RealLifeOverhaul.NewGround
                 {
                     GroundBuilder.Now(job, GroundPass.Join);
                 }
-                return job.Problem;
+                int samples = job.RoundBefore.Length / 3;
+                int alike = job.Problem == null ? GroundBuilder.RoundAlike(job) : samples;
+                if (alike != samples)
+                {
+                    job.Problem = "the " + mesh.Label + " mesh changed beyond the new ground's tiles (" + (samples - alike) + " of " + samples + " samples moved)";
+                }
+                if (job.Problem == null)
+                {
+                    return null;
+                }
+                // Standing down leaves no island of new ground unjoined, nor an old tile half rebuilt.
+                string why = job.Problem;
+                job.Problem = null;
+                GroundBuilder.Now(job, GroundPass.Back);
+                return why + (job.Problem == null ? "; its tiles given back" : "; giving its tiles back failed too (" + job.Problem + ")");
             }
             finally
             {
