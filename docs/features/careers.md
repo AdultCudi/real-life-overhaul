@@ -13,7 +13,7 @@ What `Scripts/Careers` holds: education and careers: the city's courses and the 
 
 | File | What it is |
 | --- | --- |
-| `Study/StudyCatalogue` | every course (short, diploma, degree, after a degree, certificate), the timetable, exams, grades, fees, grants, the student loan, learning and fading (game-free: EconomyCheck runs it) |
+| `Study/StudyCatalogue` | every course (short, diploma, degree, after a degree, certificate), the timetable, exams, grades, fees, grants, the student loan, learning and fading (game-free: EconomyCheck runs it); the building trades' four are the last: the bricklaying diploma, the crane operator's ticket, construction management and the architect's licence (a certificate of the player's alone, no profession's staff sit it), and the skill masonry |
 | `Study/StudyRules` (and .Learning, .Fees) | the rules of studying: classes joined and missed, homework, the exam's mark, retakes, fees, the loan, skills, a child's degree, tutoring, an academy's students (game-free) |
 | `Work/ProCatalogue` | twenty-five professions, each a ladder of ranks on the professions' roles and the player's skills (game-free) |
 | `Work/ProRules` | what a rank asks, an employer's score, the interview, the offer and haggling, the working day, notice, references, the city's vacancies (game-free) |
@@ -63,9 +63,11 @@ At an office board the game's panel over a place offers "Speak to the office" on
 
 The game has no taxi business type (taxis are transport the player buys), so the cab ladder ends at owner-operator and has no hook into a business.
 
+Three more employers are the building trades' ([Building trades](trades.md#courses-and-careers)): Hudson Brick and Build (labourer, mason, foreman, site manager), City Building Control (building inspector, senior, chief) and Vale and Hudson Architects (draughtsperson, junior architect, architect, partner). They have no help-wanted board (`Premises` empty): they are reached by the Work contact, at a works site's notice (a rota shift due is clocked on there) and at the practice's desk, and their shifts are worked at the nearest works site or the practice (`CareerLinks.Workplace`, `ICareerWorkplace.Depot`). A rank may name its own trade (`CareerRank.JobId`: the builder's mason) and what it asks (`CareerRank.Needs`, a role of the trades'): it is refused at signing on and a review that would promote to it holds the promotion back and says what is missing (`reallife_career_review_held`; a raise is still given). The labourer's shifts teach masonry, so the mason's rank comes with the work: an apprenticeship.
+
 The game's one employer job (the cashier) is left exactly as it is: an hour worked at it is counted, read-only, once an hour (`JobHelper.IsPlayerWorking` outside the player's own shops), shown on the CV, and every eight such hours count as one shift of experience when signing on with the retail chain.
 
-- **Signing on** is face to face at the office or by phone (Work contact, "Apply for a job": the six employers in turn, the same page as the boss at the office, so the same checks and sign-on).
+- **Signing on** is face to face at the office or by phone (Work contact, "Apply for a job": the nine employers in turn, the building trades' three among them, the same page as the boss at the office, so the same checks and sign-on).
   The boss says what the work is in their own manner, then offers the three rotas in turn (Mon/Wed/Fri 08:00, Tue/Thu/Sat 13:00, Sat/Sun 10:00).
 
   References are counted as: +1 for the Gig Line's reference letter, +1 for each employer left on good terms, -1 for each left with a marked-down reference.
@@ -144,7 +146,7 @@ Calls made well are the units paid and counted.
 State: one line, `reallife:career`, in modData (`CareerState`).
 A shift in progress is carried by the jobs' own line (`reallife:job_live`, see [A shift across a save](jobs.md#a-shift-across-a-save-jobsave-payslip)): a load pays the basic wage for the hours clocked and counts the shift.
 
-Test buttons (options, Jobs): sign on with the next employer (cycles all six, on a rota that works tomorrow); work a shift at my current rank now; my review is due now (opens the review face to face); promote me one rank; start a dispatcher shift; start a shift in charge; book a set near here.
+Test buttons (options, Jobs): sign on with the next employer (cycles all nine, on a rota that works tomorrow); work a shift at my current rank now; my review is due now (opens the review face to face); promote me one rank; start a dispatcher shift; start a shift in charge; book a set near here.
 Test shifts go on no record.
 
 Wish-list for the asset pipelines.

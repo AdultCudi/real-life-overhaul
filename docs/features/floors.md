@@ -22,7 +22,7 @@ The mod's places on floors of the buildings it already holds, so a new place (Ci
 ## How it talks to other features
 
 - **Holders** hand their buildings over and take them back: the university (`Careers/CampusInterior`: its building, four floors of classrooms) and the tech companies' towers (`Tech/Sites/TowerFloors`: a building a tower, a company a floor). Their door's and lift's words, their hours, their default floor and their furniture are theirs, through `FloorHost` and `FloorPlace`.
-- **Places** that need a floor ask for one (`FloorsDirector.Ask`); none does yet but the test.
+- **Places** that need a floor ask for one (`FloorsDirector.Ask`): the architects' practice of the building trades (`BuildTrades/TradeOffice`, [Building trades](trades.md)) and the test.
 - **FitOut** furnishes a place's floor (`FitOut/FitView`), told the structure on show when the floor borrows one, so the game's designs are that structure's.
 - **Core/SpecialBuildings** takes a building for places that found no spare floor (`Set` and `Remove`, its existing API); the book of special buildings tells `Core/HeldUnits` of it, which keeps the game's letting off it. The floors never touch the ignore list.
 - **Core/MapPlaces** shows a building taken for places under a row of its own ("City Offices").
