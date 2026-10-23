@@ -17,7 +17,10 @@ using UnityEngine.Rendering;
 /// </summary>
 public static class PropBundleBuilder
 {
-    public const string BundleName = "reallife_props";
+    public const string FirstBundle = "reallife_props";
+
+    // -bundleName names the bundle built and checked: the first, or the second (README, "The second bundle").
+    private static string BundleName => Argument("-bundleName", FirstBundle);
     public const string CatalogueAsset = "catalogue";
 
     private const string Generated = "Assets/Generated";

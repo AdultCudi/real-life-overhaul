@@ -311,6 +311,7 @@ internal static partial class Program
         BankLevels();   // the bank's levels and the owner's pay: each level's limits binding, moving up, an older save's bank fitted, the pay's split, the balance figures (BankTierChecks.cs)
         Office();
         CivicFixes();   // the player's own canvasser's leaflet, the bridges to Standing and the court, the donation cap (CivicFixChecks.cs)
+        Construction();   // the rebuild and plot kinds in the save, in the host's line and in the texts (ConstructionChecks.cs)
         SaveLinesKept();
         Morning();
         EndScale();     // the end game at scale: each venture's costs, upkeep, staff and income by size, the payback, old saves phased in, the option off (EndScaleChecks.cs)

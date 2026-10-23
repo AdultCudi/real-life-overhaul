@@ -270,7 +270,9 @@ namespace RealLifeOverhaul
             "reallife_civic_project_road_1", "reallife_civic_project_road_2", "reallife_civic_project_road_3",
             "reallife_civic_project_scaffold_1", "reallife_civic_project_scaffold_2", "reallife_civic_project_scaffold_3",
             "reallife_civic_project_refit_1", "reallife_civic_project_refit_2", "reallife_civic_project_refit_3",
-            "reallife_civic_project_utility_1", "reallife_civic_project_utility_2", "reallife_civic_project_utility_3"
+            "reallife_civic_project_utility_1", "reallife_civic_project_utility_2", "reallife_civic_project_utility_3",
+            "reallife_construction_project_rebuild_1", "reallife_construction_project_rebuild_2", "reallife_construction_project_rebuild_3",
+            "reallife_construction_project_plot_1", "reallife_construction_project_plot_2", "reallife_construction_project_plot_3"
         };
 
         /// <summary>The phases of each kind of site, five each (in the order of <see cref="SiteKind"/>).</summary>
@@ -279,7 +281,11 @@ namespace RealLifeOverhaul
             "reallife_civic_phase_road_1", "reallife_civic_phase_road_2", "reallife_civic_phase_road_3", "reallife_civic_phase_road_4", "reallife_civic_phase_road_5",
             "reallife_civic_phase_scaffold_1", "reallife_civic_phase_scaffold_2", "reallife_civic_phase_scaffold_3", "reallife_civic_phase_scaffold_4", "reallife_civic_phase_scaffold_5",
             "reallife_civic_phase_refit_1", "reallife_civic_phase_refit_2", "reallife_civic_phase_refit_3", "reallife_civic_phase_refit_4", "reallife_civic_phase_refit_5",
-            "reallife_civic_phase_utility_1", "reallife_civic_phase_utility_2", "reallife_civic_phase_utility_3", "reallife_civic_phase_utility_4", "reallife_civic_phase_utility_5"
+            "reallife_civic_phase_utility_1", "reallife_civic_phase_utility_2", "reallife_civic_phase_utility_3", "reallife_civic_phase_utility_4", "reallife_civic_phase_utility_5",
+            "reallife_construction_phase_rebuild_1", "reallife_construction_phase_rebuild_2", "reallife_construction_phase_rebuild_3",
+            "reallife_construction_phase_rebuild_4", "reallife_construction_phase_rebuild_5",
+            "reallife_construction_phase_plot_1", "reallife_construction_phase_plot_2", "reallife_construction_phase_plot_3",
+            "reallife_construction_phase_plot_4", "reallife_construction_phase_plot_5"
         };
 
         public const int PhasesPerKind = 5;
@@ -287,15 +293,21 @@ namespace RealLifeOverhaul
         public const int LocalSites = 2;            // of those, started within a walk of where the player was that day
 
         /// <summary>Working hours a site of each kind needs (ten a weekday as the city came: 40 is four working days).</summary>
-        public static readonly int[] SiteHours = { 50, 120, 90, 30 };
+        public static readonly int[] SiteHours = { 50, 120, 90, 30, 160, 320 };
+
+        /// <summary>Rebuild sites in the programme at once, at most: a whole building wrapped is a sight, not the street's every day.</summary>
+        public const int MostRebuilds = 1;
 
         /// <summary>The three bids for refitting the player's own shopfront: price and working hours.</summary>
         public static readonly int[] RefitPrice = { 1800, 2600, 3600 };
         public static readonly int[] RefitHours = { 80, 50, 30 };
     }
 
-    /// <summary>The kinds of building site. Saved as a number.</summary>
-    public enum SiteKind { Roadworks, Scaffold, Refit, Utility }
+    /// <summary>
+    /// The kinds of building site. Saved as a number: an older version reads a number it does not know as the last it has
+    /// (a utility site), so a save with a rebuild or a plot still loads there.
+    /// </summary>
+    public enum SiteKind { Roadworks, Scaffold, Refit, Utility, Rebuild, Plot }
 
     /// <summary>A small repeatable random source (xorshift): what is drawn from a save's seed is the same every time it is asked for.</summary>
     public struct CivicRandom

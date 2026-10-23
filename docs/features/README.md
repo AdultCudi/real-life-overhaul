@@ -13,6 +13,7 @@ Every feature runs in the New York the mod knows, a New York with districts a fr
 - [The living city](city-life.md): people at work and about their day on the pavements.
 - [City events](city-events.md): fires, weather that matters and street events.
 - [Civic life](civic.md): the city's government, elections, standing for office, construction sites.
+- [Construction](construction.md): buildings going up, wrapped in the game's own scaffolding, and new buildings on given ground.
 
 ## The player's life
 
