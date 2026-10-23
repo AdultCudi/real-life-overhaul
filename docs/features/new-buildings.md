@@ -14,7 +14,7 @@ A player sees nothing of it yet: no feature declares a building today. The test 
 ```
 NewBuildingsRules        game-free: a design's name and the building it is measured on, the pick, where a design stands on its
                          lot, the ground's sums, the lot taken when the one asked for is not, what refuses a declaration
-NewBuildingsTestPlot     the test building and its six lots north of the airport
+NewBuildingsTestPlot     the test building and its ground: round the developer, then six lots on the airport grass
 MadeBuildings            declare a building of the mod's own, find it after the load, list them and their addresses
 BuildingCopies           decorative copies for other features (CopyHandle), and a building's own look hidden and shown
 CopyGame                 the copy engine's Game file: the catalogue, the templates asleep, working and decorative copies
@@ -202,7 +202,7 @@ Idle: one time comparison a frame and a look once a second. A load with building
 
 The six entries are on the options page with the test tools shown. The test building is made only with Developer diagnostics on (under Troubleshooting), so the entries that use it need that too; the two copy tests do not. Each says why not in a notice when it cannot run, and writes its check lines in Player.log.
 
-1. **Make the test building at the next load.** Load a save: `Made buildings check (test building, 1 Proving Lane): in the game's building lookup YES, in the city's list YES, in the save's registrations NO, the closest-building job sized to the list: PASS`.
+1. **Make the test building at the next load.** Press it anywhere in the city: at the next load the building stands on the first free lot of 24 round where you stood (ahead first, nearest first), else on one of six lots of open grass round the airport, found free with a copy of the ground check over the build's scene data. Nobody looks for a spot, and the walk-in test takes you to it wherever it stands. Load a save: `Made buildings check (test building, 1 Proving Lane): in the game's building lookup YES, in the city's list YES, in the save's registrations NO, the closest-building job sized to the list: PASS`.
 2. **Walk into the test building and out.** `Made buildings check (way in): entered on structure C1 (...), exit zone found: PASS`, then `Made buildings check (way out): the player is at its door: PASS`.
 3. **Save inside the test building and read the file back.** A recovery save is written and read back by the game's own reader: `Save check: the written save names no made address (registrations 0, current address empty, mission none ...): PASS`, and with Developer diagnostics on the district save's own lines, `District save check: the written save names none of the mod's ... (... 1 stand-in(s) ...): PASS` and `District save: put back after the write (the game's line that the file is written): ... PASS`. Loading that save with the mod switched off puts the player outside, at the door, and so does loading it with the mod.
 4. **Copy the nearest building.** A copy of it stands 40 m ahead until the next load: `Construction check (copy): <design>, 0 in a static batch, fade linked: PASS`. A building drawn in a static batch is refused with its reason.

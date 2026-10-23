@@ -578,7 +578,7 @@ namespace RealLifeOverhaul
 
             Text.Length = 0;
             string level = "reallife_career_cv_level".GetLocalization();
-            JobDef[] jobs = JobCatalogue.All;
+            JobDef[] jobs = JobCatalogue.Recorded;   // the gigs and the building trades worked
             for (int i = 0; i < jobs.Length; i++)
             {
                 if (JobState.Of(jobs[i]).Units > 0)

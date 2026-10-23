@@ -6,6 +6,10 @@
     rake_asphalt   ASKED FOR BY CODE (the slab stage's concrete gang): the first bundle's leaf rake (RAKE_LOW, RAKE_TOP)
                    pushed out and drawn back flat along the ground from 0.82 to 0.50 m ahead, levelling; the body
                    behind it
+    brick_lay      ASKED FOR BY CODE (Scripts/BuildTrades, the mason's working pose at a works site): standing at a wall
+                   course 0.95 m up and 0.42 m ahead, both hands take a brick off a stack on a pallet by the left thigh
+                   (0.22 m left, 0.34 m ahead, 0.74 m up), carry it over and set it on the course, then the right palm
+                   taps it level twice while the left steadies it. No tool: the hands' "plate" hold is the brick's shape
 
 Where things are (x right, y ahead, z up, from the character's feet) is in each clip's note.
 """
@@ -61,9 +65,41 @@ def rake_asphalt(t):
     return p
 
 
+BRICK_STACK = np.array([-0.22, 0.34, 0.74])   # the top of a stack of bricks on a pallet by the left thigh
+BRICK_COURSE = np.array([0.02, 0.42, 0.95])   # where a brick is set on the wall's course
+BRICK_HALF = 0.10                             # half a brick's length: each hand at its end
+
+
+def brick_lay(t):
+    # A loop of 3.2 s from the brick just tapped level on the course: the hands go down to the stack and take the next
+    # brick (0 to 0.28), carry it round and up to the course (0.28 to 0.55), set it (0.55 to 0.62), then the right palm
+    # taps its top twice (0.62 to 0.92) while the left steadies it.
+    reach = keys(t, (0.0, 0.0), (0.18, 1.0), (0.28, 1.0), (0.55, 0.0), (1.0, 0.0))     # 1 at the stack, 0 at the course
+    tap = 0.0
+    if 0.62 <= t < 0.92:
+        beat = (t - 0.62) / 0.15 % 1.0                                                  # two taps
+        tap = keys(beat, (0.0, 0.0), (0.45, 1.0), (0.70, 0.0), (1.0, 0.0))
+    held = BRICK_COURSE + (BRICK_STACK - BRICK_COURSE) * reach
+    p = Pose()
+    stand(p, height=0.90, width=0.20, yaw=-10 * reach, lean=12 + 22 * reach, sway=-0.5 * reach, shift=(0.0, 0.03 * (1 - reach)),
+          left=(0.0, 0.08), right=(0.02, -0.06), toe_out=10)
+    p.chest(pitch=4 + 6 * reach, yaw=-12 * reach, roll=-2 * reach)
+    side = np.array([BRICK_HALF, 0.0, 0.0])
+    left = held - side + (0.0, -0.02, 0.0)
+    right = held + side + (0.0, -0.02, 0.0)
+    if tap > 0.0:
+        right = BRICK_COURSE + (0.03, -0.02, 0.04 + 0.07 * tap)                          # the palm lifts off the brick and comes down on it
+    p.hand("L", left, fingers=(0.2, 0.6, -0.8), palm=(1.0, 0.1, -0.2), elbow=(-0.8, -0.4, -0.3), curl="plate")
+    p.hand("R", right, fingers=(-0.2, 0.6, -0.8) if tap <= 0.0 else (0.0, 0.9, -0.4), palm=(-1.0, 0.1, -0.2) if tap <= 0.0 else (0.0, 0.1, -1.0),
+           elbow=(0.8, -0.4, -0.3), curl="plate" if tap <= 0.0 else "flat")
+    p.look_at(held + (0.0, 0.10, 0.02), down=24)
+    return p
+
+
 CLIPS = [
     Clip("hammer_nail", 1.6, hammer_nail, tool="hammer", grips=(HAMMER_GRIP,), tool_length=0.33,
          note="on one knee, two blows a loop at a nail 0.50 m ahead and 0.30 m up, the left hand holding it"),
+    Clip("brick_lay", 3.2, brick_lay, note="a brick from a stack by the left thigh set on a course 0.95 m up and 0.42 m ahead, tapped level twice; no tool"),
     Clip("rake_asphalt", 2.6, rake_asphalt, tool="rake", grips=(RAKE_LOW, RAKE_TOP), tool_length=1.55,
          note="levelling: the rake pushed out to 0.82 m ahead and drawn back to 0.50 m, flat on the ground"),
 ]

@@ -77,6 +77,7 @@ namespace RealLifeOverhaul
             Step("standing", StandingLinks.Connect);   // last: what it wraps of the others' is theirs already
             Step("companion reporting", CompanionLinks.Connect);   // wraps nothing: it only reads what the others own
             Step("the mod's own buildings on the minimap", NewBuildingsLinks.Connect);   // wraps nothing
+            Step("the building trades", TradesLinks.Connect);   // wraps nothing
             Logger?.Info("Wiring: the features are connected.");
         }
 
@@ -87,6 +88,7 @@ namespace RealLifeOverhaul
                 return;
             }
             Connected = false;
+            Step("the building trades", TradesLinks.Disconnect);
             Step("the mod's own buildings on the minimap", NewBuildingsLinks.Disconnect);
             Step("companion reporting", CompanionLinks.Disconnect);
             Step("standing", StandingLinks.Disconnect);   // first: what it wrapped goes back before the others take theirs off

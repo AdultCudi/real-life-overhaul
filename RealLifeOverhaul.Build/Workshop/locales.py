@@ -97,7 +97,8 @@ ENGLISH_OK = {
     'reallife_fame_talk_line', 'reallife_fame_percent', 'reallife_changes_004_1_title', 'reallife_changes_004_2_title',
     'reallife_changes_004_3_title', 'reallife_changes_004_4_title', 'reallife_changes_004_5_title', 'reallife_changes_004_6_title',
     'reallife_changes_004_7_title', 'reallife_career_food_name', 'reallife_util_provider_power', 'reallife_campus_why_closed',
-    'reallife_newbuildings_street_provinglane'
+    'reallife_newbuildings_street_provinglane',
+    'reallife_career_builders_name', 'reallife_career_builders_boss', 'reallife_career_builders_mate_1', 'reallife_career_builders_mate_2', 'reallife_career_inspection_boss', 'reallife_career_inspection_mate_1', 'reallife_career_inspection_mate_2', 'reallife_career_architects_name', 'reallife_career_architects_boss', 'reallife_career_architects_mate_1', 'reallife_career_architects_mate_2', 'reallife_trades_tender_rate'   # the building trades' names: proper names, never translated
 }
 
 TAG = re.compile(r'</?[a-zA-Z][^<>]*>')

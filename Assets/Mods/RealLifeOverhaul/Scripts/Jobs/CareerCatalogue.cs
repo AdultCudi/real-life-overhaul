@@ -31,9 +31,11 @@ namespace RealLifeOverhaul
         public readonly float TipFactor;    // factor on tips
         public readonly int ExtraUnits;     // units added to a shift (a bigger round)
         public readonly CareerPerk Perks;
+        public readonly string JobId;       // a gig rank's own job (JobCatalogue id) where it is not the employer's (a mason at a builder's); null for the employer's
+        public readonly string Needs;       // what the player must hold to sign on at or be promoted to it (a building trade's, Scripts/BuildTrades); null for nothing
 
         public CareerRank(string titleKey, CareerWork work, float hourly, float piece = 1f, float tipFactor = 1f, int extraUnits = 0,
-            CareerPerk perks = CareerPerk.None)
+            CareerPerk perks = CareerPerk.None, string job = null, string needs = null)
         {
             TitleKey = titleKey;
             Work = work;
@@ -42,6 +44,8 @@ namespace RealLifeOverhaul
             TipFactor = tipFactor;
             ExtraUnits = extraUnits;
             Perks = perks;
+            JobId = job;
+            Needs = needs;
         }
 
         public bool Has(CareerPerk perk) => (Perks & perk) != 0;
@@ -125,6 +129,9 @@ namespace RealLifeOverhaul
         public const string Retail = "retail";
         public const string Food = "food";
         public const string Promo = "promo";
+        public const string Builders = "builders";        // the building trades' three (Scripts/BuildTrades): a builder on the city's works sites,
+        public const string Inspection = "inspection";    // ...the city's building control,
+        public const string Architects = "architects";    // ...and an architects' practice on a floor
 
         public const int ShiftHours = 4;            // the most hours of basic wage one shift pays
         public const int EarlyHours = 2;            // a shift may be clocked on to this long before its hour
@@ -220,7 +227,39 @@ namespace RealLifeOverhaul
                 }, JobCatalogue.Taxi, JobCatalogue.Courier, 2, 4606, false, null, new[] { "cardealership", "gasstation", "truckgarage" },
                 new CareerRank("reallife_career_cab_rank_1", CareerWork.Gig, 14f, 1f, 1f, 0, CareerPerk.Shorter),
                 new CareerRank("reallife_career_cab_rank_2", CareerWork.Gig, 22f, 1.25f, 2f, 0, CareerPerk.Shorter | CareerPerk.Premium),
-                new CareerRank("reallife_career_cab_rank_3", CareerWork.Gig, 0f, 1.6f, 2f, 0, CareerPerk.Shorter | CareerPerk.Premium))
+                new CareerRank("reallife_career_cab_rank_3", CareerWork.Gig, 0f, 1.6f, 2f, 0, CareerPerk.Shorter | CareerPerk.Premium)),
+            // The building trades': no help-wanted board (their shifts are worked at a works site or the practice's floor,
+            // Scripts/BuildTrades), so they are reached by the Work contact and at their places. A labourer learns the mason's
+            // skill on the job: an apprenticeship up the builder's ladder; the ranks above ask what a builder would.
+            new Employer(Builders, new[]
+                {
+                    "reallife_career_builders_name", "reallife_career_builders_boss", "reallife_career_builders_mate_1", "reallife_career_builders_mate_2",
+                    "reallife_career_builders_pitch", "reallife_career_builders_welcome", "reallife_career_builders_review", "reallife_career_builders_notice",
+                    "reallife_career_builders_walkout"
+                }, JobCatalogue.Labourer, JobCatalogue.Mason, 0, 4707, false, Hr, new string[0],
+                new CareerRank("reallife_career_builders_rank_1", CareerWork.Gig, 11f),
+                new CareerRank("reallife_career_builders_rank_2", CareerWork.Gig, 14f, job: JobCatalogue.Mason, needs: "mason_rank"),
+                new CareerRank("reallife_career_builders_rank_3", CareerWork.Lead, 36f, needs: "foreman"),
+                new CareerRank("reallife_career_builders_rank_4", CareerWork.Lead, 52f, 1.2f, needs: "site_manager")),
+            new Employer(Inspection, new[]
+                {
+                    "reallife_career_inspection_name", "reallife_career_inspection_boss", "reallife_career_inspection_mate_1", "reallife_career_inspection_mate_2",
+                    "reallife_career_inspection_pitch", "reallife_career_inspection_welcome", "reallife_career_inspection_review", "reallife_career_inspection_notice",
+                    "reallife_career_inspection_walkout"
+                }, JobCatalogue.Inspector, JobCatalogue.Surveyor, 1, 4808, true, Hr, new string[0],
+                new CareerRank("reallife_career_inspection_rank_1", CareerWork.Gig, 18f, needs: "inspector"),
+                new CareerRank("reallife_career_inspection_rank_2", CareerWork.Gig, 28f, 1.2f, needs: "inspector"),
+                new CareerRank("reallife_career_inspection_rank_3", CareerWork.Lead, 60f, 1.2f, needs: "inspector")),
+            new Employer(Architects, new[]
+                {
+                    "reallife_career_architects_name", "reallife_career_architects_boss", "reallife_career_architects_mate_1", "reallife_career_architects_mate_2",
+                    "reallife_career_architects_pitch", "reallife_career_architects_welcome", "reallife_career_architects_review", "reallife_career_architects_notice",
+                    "reallife_career_architects_walkout"
+                }, JobCatalogue.Draughting, JobCatalogue.Architect, 0, 4909, true, null, new string[0],
+                new CareerRank("reallife_career_architects_rank_1", CareerWork.Gig, 11f),
+                new CareerRank("reallife_career_architects_rank_2", CareerWork.Gig, 20f, job: JobCatalogue.Architect, needs: "architect"),
+                new CareerRank("reallife_career_architects_rank_3", CareerWork.Gig, 30f, 1.25f, job: JobCatalogue.Architect, needs: "licensed_architect"),
+                new CareerRank("reallife_career_architects_rank_4", CareerWork.Gig, 45f, 1.5f, job: JobCatalogue.Architect, needs: "licensed_architect"))
         };
 
         public static Employer Find(string id)
