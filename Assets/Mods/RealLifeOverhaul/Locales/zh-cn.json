@@ -21224,5 +21224,6 @@
   "reallife_test_district_save_session": "测试未开始：在 Going Public 会话中，测试用的企业会传给其他玩家。请在你自己的游戏中尝试。",
   "reallife_test_district_save_busy": "测试未开始：正在写入存档。请过几秒钟再试。",
   "reallife_meta_report_district": "本模组自身区域的记录保存在存档中本模组的部分：{count}。没有本模组时它们根本不存在；有本模组时它们会回来。",
-  "reallife_transaction_district_save_test": "区域存档测试"
+  "reallife_transaction_district_save_test": "区域存档测试",
+  "reallife_test_refused_paused": "测试未开始：游戏已暂停，因此模组的这一部分尚未启动。让游戏运行几秒钟，然后再试一次。"
 }
