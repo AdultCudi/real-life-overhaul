@@ -143,7 +143,7 @@ namespace RealLifeOverhaul.NewGround
     /// <summary>
     /// The walking side of new ground, game-free: tiles under a box, the boxes the tests lay (a patch beside the player,
     /// a strip from the pavement into an empty tile), the points sampled to say what walking mesh is where and that none
-    /// changed elsewhere, and the self-check lines. Checked offline (NavCheck, NewGroundWalkCheck.cs). Nothing per frame.
+    /// changed elsewhere, and the self-check lines. Checked offline (NavCheck, NewGroundCheck.cs). Nothing per frame.
     /// </summary>
     public static class GroundRules
     {

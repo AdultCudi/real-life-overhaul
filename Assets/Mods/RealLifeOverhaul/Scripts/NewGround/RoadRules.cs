@@ -14,7 +14,7 @@ namespace RealLifeOverhaul.NewGround
     /// the game's own (indices it has are never changed), with road ids above the game's, inside the road grid as the game
     /// has it at this load. Every build is checked (<see cref="Check"/>) before the game's side appends it, and refused if
     /// the game has put a road of its own there since (<see cref="Clear"/>). No Unity or game types: checked offline
-    /// (NavCheck, NewGroundRoadCheck.cs). Runs once at a load; nothing per frame.
+    /// (NavCheck, NewGroundCheck.cs). Runs once at a load; nothing per frame.
     /// </summary>
     public static class RoadRules
     {

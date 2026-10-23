@@ -68,15 +68,17 @@ namespace RealLifeOverhaul.NewGround
             return way.sqrMagnitude > 0.0001f ? way.normalized : Vector3.forward;
         }
 
-        /// <summary>True when the ground a copy shifted by <paramref name="shift"/> would stand on is free of buildings, props, vehicles and other lanes, and is ground.</summary>
-        public static bool Room(ParkingLaneGenerator lane, Vector3 shift, out string why)
+        /// <summary>
+        /// True when the ground a copy of <paramref name="lane"/> would stand on, its origin at <paramref name="at"/> and
+        /// turned <paramref name="turn"/>, is free of buildings, props, vehicles and other lanes, and is ground.
+        /// </summary>
+        public static bool Room(ParkingLaneGenerator lane, Vector3 at, Quaternion turn, out string why)
         {
             why = null;
             var box = lane.GetComponent<BoxCollider>();
-            Vector3 centre = lane.transform.TransformPoint(box.center) + shift;
             Vector3 scale = lane.transform.lossyScale;
+            Vector3 centre = at + turn * Vector3.Scale(box.center, scale);
             var half = new Vector3(box.size.x * Mathf.Abs(scale.x) * 0.5f, 1f, box.size.z * Mathf.Abs(scale.z) * 0.5f);
-            Quaternion turn = lane.transform.rotation;
             if (_solidMask == 0)
             {
                 _solidMask = LayerMask.GetMask("Buildings", "BuildingsOutlined", "BuildingWalls", "StreetProps", "InteractiveItems", "Vehicles", "AiVehicles",
@@ -107,10 +109,12 @@ namespace RealLifeOverhaul.NewGround
         }
 
         /// <summary>
-        /// A copy of a lane of the game's, shifted along the street: no building of its own, no delivery van's spot, none
-        /// of the template's cars or spots; it parks its own once awake. Null with why where it cannot be made.
+        /// A copy of a lane of the game's, its origin at <paramref name="at"/> and turned <paramref name="turn"/> (along a
+        /// kerb of new ground, or the test's stretch further along the street), the template's size in the world: no
+        /// building of its own, no delivery van's spot, none of the template's cars or spots; it wakes where it stands and
+        /// parks its own. Null with why where it cannot be made.
         /// </summary>
-        public static ParkingLaneGenerator Copy(ParkingLaneGenerator template, Vector3 shift, out string why)
+        public static ParkingLaneGenerator Copy(ParkingLaneGenerator template, Vector3 at, Quaternion turn, out string why)
         {
             why = null;
             if (template == null)
@@ -145,8 +149,11 @@ namespace RealLifeOverhaul.NewGround
                 }
             }
             Children.Clear();
+            // Placed and sized while asleep (the holder stands at the origin unturned), so it first looks at the street
+            // from where it stands, as large as the lane Room measured.
+            copy.transform.SetPositionAndRotation(at, turn);
+            copy.transform.localScale = template.transform.lossyScale;
             copy.transform.SetParent(null, true);
-            copy.transform.SetPositionAndRotation(template.transform.position + shift, template.transform.rotation);
             return lane;
         }
 

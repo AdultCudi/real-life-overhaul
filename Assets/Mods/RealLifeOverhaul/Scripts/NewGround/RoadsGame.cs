@@ -224,13 +224,40 @@ namespace RealLifeOverhaul.NewGround
             {
                 _lamps = new GameObject(LampsName);
             }
-            var lamp = new GameObject(junction.Name + " road " + way + " " + colour);
+            var lamp = new GameObject(LampName(junction, way, colour));
             lamp.transform.SetParent(_lamps.transform, false);
             lamp.SetActive(false);
             return new List<GameObject>(1) { lamp };
         }
 
+        private static string LampName(BuiltJunction junction, int way, string colour)
+        {
+            return junction.Name + " road " + way + " " + colour;
+        }
+
         private static GameObject _lamps;
+
+        /// <summary>
+        /// The red lamp of one road into a new junction with lights (<paramref name="way"/>, as the junction's ways run),
+        /// for a crossing over that road (<see cref="PeopleGame.Crossing"/>); null for a priority junction, or before the
+        /// build is appended. Looked up by name among the holder's lamps, once a crossing at a load.
+        /// </summary>
+        public static GameObject RedLamp(BuiltJunction junction, int way)
+        {
+            if (_lamps == null || junction == null || !junction.Lights)
+            {
+                return null;
+            }
+            string name = LampName(junction, way, "red");
+            foreach (Transform lamp in _lamps.transform)
+            {
+                if (lamp.name == name)
+                {
+                    return lamp.gameObject;
+                }
+            }
+            return null;
+        }
 
         /// <summary>The city is going: the lamps of its new junctions go with it.</summary>
         public static void Forget()

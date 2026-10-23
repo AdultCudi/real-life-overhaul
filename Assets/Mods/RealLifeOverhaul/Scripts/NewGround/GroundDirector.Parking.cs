@@ -37,16 +37,17 @@ namespace RealLifeOverhaul.NewGround
             Vector3 way = ParkingGame.Along(template, out float length);
             float metres = Mathf.Max(LaneShift, length + 2f);
             Vector3 shift = way * metres;
-            if (!ParkingGame.Room(template, shift, out string why))
+            Quaternion turn = template.transform.rotation;
+            if (!ParkingGame.Room(template, template.transform.position + shift, turn, out string why))
             {
                 shift = -shift;
-                if (!ParkingGame.Room(template, shift, out string other))
+                if (!ParkingGame.Room(template, template.transform.position + shift, turn, out string other))
                 {
                     TestRefusals.TellKey(Logger, "Parking: copy a lane", NewGroundText.NoLane, "ahead: " + why + "; behind: " + other);
                     return;
                 }
             }
-            _lane = ParkingGame.Copy(template, shift, out string refused);
+            _lane = ParkingGame.Copy(template, template.transform.position + shift, turn, out string refused);
             if (_lane == null)
             {
                 TestRefusals.TellKey(Logger, "Parking: copy a lane", NewGroundText.NoLane, refused);
