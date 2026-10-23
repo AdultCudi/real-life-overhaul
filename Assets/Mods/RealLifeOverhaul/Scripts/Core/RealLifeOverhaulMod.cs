@@ -1095,6 +1095,11 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_civic_test_office_seat", () => CivicDirector.Instance?.TestOffice(OfficeRace.Council))
                 .AddButton("reallife_civic_test_office_mayoralty", () => CivicDirector.Instance?.TestOffice(OfficeRace.Mayor))
                 .AddButton("reallife_civic_test_office_scene", () => CivicDirector.Instance?.TestScene())
+                .AddButton("reallife_construction_test_wrap", () => CivicDirector.Instance?.TestWrap())
+                .AddButton("reallife_construction_test_rebuild", () => CivicDirector.Instance?.TestRebuild())
+                .AddButton("reallife_construction_test_stage", () => CivicDirector.Instance?.TestStage())
+                .AddButton("reallife_construction_test_storey", () => CivicDirector.Instance?.TestStorey())
+                .AddButton("reallife_construction_test_crane", () => CivicDirector.Instance?.TestCrane())
                 .AddSplitter()
                 .AddHeader("reallife_util_header")
                 .AddToggle(Settings.UtilitiesId, "reallife_util_enabled", Settings.Utilities,

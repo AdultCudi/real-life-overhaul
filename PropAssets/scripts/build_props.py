@@ -24,6 +24,13 @@ TEXTURES = [
     {"name": "decal_bus_stop", "file": "textures/decal_bus_stop.png", "type": "decal", "maxSize": 1024},   # decals.py: road paint
     {"name": "decal_dash", "file": "textures/decal_dash.png", "type": "decal", "maxSize": 256},
 ]
+if os.environ.get("PROPS_SET") == "second":
+    # The second bundle (README, "The second bundle"): its own small atlas, no road paint, a budget of its own.
+    TOTAL_BUDGET = 12000
+    TEXTURES = [
+        {"name": "props_base", "file": "textures/props_base.png", "type": "color", "maxSize": 1024},
+        {"name": "props_mask", "file": "textures/props_mask.png", "type": "mask", "maxSize": 512},
+    ]
 
 
 def preview(prop):
