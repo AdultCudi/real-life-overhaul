@@ -66,6 +66,7 @@ namespace RealLifeOverhaul
             Guard.Step("Uptown's places for the district save", () => Uptown.LifeDirector.Register(context.Logger));   // before any save is read: its early step runs then
             // After Uptown's: the lift is asked as the district's buildings are declared.
             Guard.Step("the landmarks' places and their lift of Uptown's traffic", () => Landmarks.LandmarksDirector.Register(context.Logger));
+            Guard.Step("the city expansion's test run, if one waits for its load", () => TestRun.RunDirector.Begin(context.Logger));   // before any save is read: it hears the load's own lines
 
             var options = new ModOptions()
                 .AddHeader("reallife_camera_header")

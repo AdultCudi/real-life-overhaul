@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using BigAmbitions.Mods;
+using RealLifeOverhaul.TestRun;
 
 namespace RealLifeOverhaul.Meta
 {
@@ -63,6 +64,7 @@ namespace RealLifeOverhaul.Meta
         public readonly List<string> ContactIds = new List<string>();    // phone contacts it adds
         public readonly List<string> ObjectNames = new List<string>();   // GameObjects of its own that are not under the mod's root
         public readonly List<TestAction> Tests = new List<TestAction>();
+        public readonly List<RunCheck> Checks = new List<RunCheck>();     // its tests that the city expansion's test run runs by itself
         public readonly List<ModOption> ExtraRows = new List<ModOption>(); // rows it adds to the page itself
         public readonly List<KeyAction> DiagnosticKeys = new List<KeyAction>();
         public readonly Dictionary<string, Func<string>> Facts = new Dictionary<string, Func<string>>();
@@ -178,6 +180,37 @@ namespace RealLifeOverhaul.Meta
         public Feature Test(string labelKey, Action run)
         {
             AddTest(labelKey, run);
+            return this;
+        }
+
+        /// <summary>A test button placed first among the feature's (the one a developer is most often sent to).</summary>
+        public Feature TestFirst(string labelKey, Action run)
+        {
+            AddTest(labelKey, run);
+            for (int i = 1; i < Tests.Count; i++)
+            {
+                if (Tests[i].LabelKey == labelKey)
+                {
+                    TestAction test = Tests[i];
+                    Tests.RemoveAt(i);
+                    Tests.Insert(0, test);
+                    break;
+                }
+            }
+            return this;
+        }
+
+        /// <summary>
+        /// A test the city expansion's test run (Scripts/TestRun) runs by itself, and its button: <paramref name="run"/> works
+        /// without any input and writes one line beginning <paramref name="line"/> ("Landmarks check (tower)"), which says
+        /// PASS or FAIL; the run puts the player at <paramref name="place"/> first and waits <paramref name="seconds"/> s of
+        /// the game running for the line. One line in a feature's guide:
+        /// <c>.Check(LandmarksText.TestTower, LandmarksDirector.TestTower, "Landmarks check (tower)", RunPlace.UptownLot)</c>, its label key first
+        /// </summary>
+        public Feature Check(string labelKey, Action run, string line, RunPlace place = RunPlace.Here, RunPhase phase = RunPhase.BeforeLoad, float seconds = RunRules.DefaultSeconds)
+        {
+            AddTest(labelKey, run);
+            Checks.Add(new RunCheck(labelKey, Id, line, place, phase, seconds) { Run = run });
             return this;
         }
 

@@ -51,6 +51,7 @@ The front door's list links every folder's feature page. These folders have no f
 - `Life`: random life events (catalogue, no-repeat deck, runner), sickness, hospital.
 - `Phone`: callable contacts and their conversations.
 - `Diagnostics` and `Performance`: on [Performance](performance.md#the-measuring-folders).
+- `TestRun`: the city expansion's test run, one button that runs every automatic check of it: on [The test run](test-run.md).
 - `Tech`, `Ledger`, `Fame`, `Photos`, `Rivals`, `Street`, `Texts`, `Faults`, `FitOut`, `Offices`, `EndScale`, and in `Economy` the folders `Banking`, `Brands`, `Dealer`, `Estate`, `Online` and `Services`.
 
 ## Outside the mod's folder
