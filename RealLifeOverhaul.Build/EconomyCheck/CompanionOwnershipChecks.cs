@@ -6,6 +6,7 @@ using RealLifeOverhaul;
 public sealed class GameInstance
 {
     public System.Collections.Generic.List<Transaction> Transactions = new System.Collections.Generic.List<Transaction>();
+    public System.Collections.Generic.List<BuildingRegistration> BuildingRegistrations = new System.Collections.Generic.List<BuildingRegistration>();
     public bool Available = true;
     public int Money = 123;
     public string ModData = "unchanged";

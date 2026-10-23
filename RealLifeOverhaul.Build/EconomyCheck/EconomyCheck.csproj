@@ -64,6 +64,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\EducationCompanion.cs" Link="Mod\EducationCompanion.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\CompanionValues.cs" Link="Mod\CompanionValues.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Utilities\UtilitiesCompanion.cs" Link="Mod\UtilitiesCompanion.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Utilities\UtilitiesDirector.Companion.cs" Link="Mod\UtilitiesDirector.Companion.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\CompanyCompanion.cs" Link="Mod\CompanyCompanion.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Banking\Accounts\CreditCompanion.cs" Link="Mod\CreditCompanion.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Family\ChoreRules.cs" Link="Mod\ChoreRules.cs" />

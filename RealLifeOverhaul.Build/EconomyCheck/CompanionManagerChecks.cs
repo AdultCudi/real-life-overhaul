@@ -5,6 +5,9 @@ using RealLifeOverhaul.Economy;
 public sealed class BuildingRegistration
 {
     public string Place = "synthetic";
+    public bool HasValidAddress = true;
+    public string StreetName = "ba:street_test";
+    public int StreetNumber = 1;
 }
 
 namespace RealLifeOverhaul.Economy

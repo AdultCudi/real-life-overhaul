@@ -9,7 +9,7 @@ namespace RealLifeOverhaul.Utilities
         /// <summary>Current account books and portable forecast terms, without syncing places or accruing a day.</summary>
         public CompanionModule CompanionUtilities()
         {
-            if (_failed || _gaveUp)
+            if (_failed)
             {
                 return new CompanionModule("failed");
             }
