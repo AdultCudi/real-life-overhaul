@@ -117,7 +117,7 @@ namespace RealLifeOverhaul.TestRun
         public static readonly string[] NothingKeys =
         {
             "reallife_bld_test_nothing_back", "reallife_bld_test_nothing", "reallife_bld_test_no_office", "reallife_bld_answer_no_company",
-            "reallife_bld_test_no_client", "reallife_bld_test_no_bribe"
+            "reallife_bld_test_no_client", "reallife_bld_test_no_bribe", "reallife_bld_test_no_business", "reallife_bld_test_no_block"
         };
 
         /// <summary>Refusals that pass by themselves (the copy engine still measuring the city's designs): the test is pressed again.</summary>

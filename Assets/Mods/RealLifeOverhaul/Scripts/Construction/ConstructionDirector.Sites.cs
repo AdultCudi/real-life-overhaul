@@ -26,6 +26,10 @@ namespace RealLifeOverhaul.Construction
             ProjectFile p = _state.OnSite(siteId);
             if (p != null)
             {
+                if (p.Contractor >= 0)
+                {
+                    return Running ? hours : 0f;   // a contractor's refit goes at the city's own pace, its crews and materials the contractor's
+                }
                 return Running ? Work(p, done, needed, hours) : 0f;
             }
             DevFile dev = DevOnSite(siteId);
@@ -65,9 +69,14 @@ namespace RealLifeOverhaul.Construction
         /// <summary>The name a site's notice board gives: the player's company for its own works; null for the city's contractor.</summary>
         public string NoticeName(int siteId)
         {
-            if (!Ready() || _state.OnSite(siteId) == null)
+            ProjectFile p = Ready() ? _state.OnSite(siteId) : null;
+            if (p == null)
             {
                 return null;
+            }
+            if (p.Contractor >= 0)
+            {
+                return ConstructionText.T(BuildCatalogue.RivalKeys[BuildCatalogue.Clamp(p.Contractor, 0, BuildCatalogue.RivalCount - 1)]);
             }
             return Office(out PlaceView office) ? office.Name : ConstructionText.T("reallife_bld_company_unnamed");
         }

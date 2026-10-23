@@ -23,6 +23,7 @@ namespace RealLifeOverhaul.Construction
             if (!GoingPublic.IsGuest)
             {
                 ClientTenders(day);
+                RefitTenders(day);
             }
             if (!GoingPublic.InSession)
             {
@@ -305,6 +306,8 @@ namespace RealLifeOverhaul.Construction
                     return ConstructionText.T("reallife_bld_tender_client", "client", ConstructionText.T(BuildCatalogue.ClientKeys[t.Client % BuildCatalogue.ClientKeys.Length]), "address", where);
                 case TenderSource.Public:
                     return ConstructionText.T("reallife_bld_tender_public", "building", ConstructionText.T(BuildCatalogue.PublicKeys[t.Client % BuildCatalogue.PublicKeys.Length]), "address", where);
+                case TenderSource.Refit:
+                    return ConstructionText.T("reallife_bld_tender_refit", "client", ConstructionText.T(BuildCatalogue.ClientKeys[t.Client % BuildCatalogue.ClientKeys.Length]), "address", where);
                 default:
                     return ConstructionText.T("reallife_bld_tender_works", "works", ConstructionText.T(WorksKey(t.CivicKind)), "address", where);
             }
@@ -426,6 +429,9 @@ namespace RealLifeOverhaul.Construction
                     break;
                 case TenderSource.Client:
                     StartWorksSite(t.Street, t.Number, 1, false, won.Bidder, Math.Max(20, t.Hours / 2), out _);
+                    break;
+                case TenderSource.Refit:
+                    StartWorksSite(t.Street, t.Number, RefitRules.Works, false, won.Bidder, t.Hours, out _);   // the hoarding goes up at the business's front
                     break;
                 case TenderSource.Public:
                     if (Lot(t.Lot, out LotView lot) && SiteCount() < BuildCatalogue.SitesMost)

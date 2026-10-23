@@ -35,7 +35,7 @@ namespace RealLifeOverhaul.Construction
         {
             var t = new StringBuilder(1024 + s.Projects.Count * 640);
             t.Append("v=").Append(Version).Append("^h:");
-            Join(t, s.Seed, s.FirstDay, s.LastDay, s.NextId, s.NextClientDay, s.NextPublicDay, s.OffersWeek);
+            Join(t, s.Seed, s.FirstDay, s.LastDay, s.NextId, s.NextClientDay, s.NextPublicDay, s.OffersWeek, s.NextRefitDay);
             FirmFile f = s.Firm;
             t.Append("^f:");
             Join(t, f.Founded, (int)f.Licence, f.LicenceDay, f.LicenceUntil, f.LicenceReminded ? 1 : 0, f.Reputation, (int)f.Speciality, f.SpecialSince, (int)f.Cover,
@@ -141,7 +141,9 @@ namespace RealLifeOverhaul.Construction
             }
             t.Append('|').Append(Esc(p.Lot)).Append('|').Append(Esc(p.Street)).Append('|').Append(Esc(p.District)).Append('|').Append(Esc(p.Design)).Append('|')
                 .Append(Esc(p.Size)).Append('|').Append(Esc(p.ArchitectId)).Append('|');
-            Join(t, p.CostPermille, p.Units);
+            Join(t, p.CostPermille, p.Units, p.Contractor, p.Grade, p.WithRefit ? 1 : 0, p.ShowSince, p.ShowAgent ? 1 : 0, p.ShowInterior, p.ShowDecor, p.ShowStandard,
+                p.ShowViewings, p.ShowSold, p.ShowShown);
+            t.Append('|').Append(p.ContractorPrice.ToString(Inv)).Append('|').Append(p.ShowSpent.ToString(Inv)).Append('|').Append(Esc(p.ShowDesign));
         }
 
         /// <summary>Reads a line; null for one that is not this feature's.</summary>
@@ -181,6 +183,7 @@ namespace RealLifeOverhaul.Construction
                             s.NextClientDay = Math.Max(0, r.I(0));
                             s.NextPublicDay = Math.Max(0, r.I(0));
                             s.OffersWeek = r.I(-1);
+                            s.NextRefitDay = Math.Max(0, r.I(0));
                             header = true;
                             break;
                         }
@@ -290,7 +293,7 @@ namespace RealLifeOverhaul.Construction
                                 var r = new Fields(rec);
                                 var d = new TenderFile
                                 {
-                                    Id = r.I(0), Source = (TenderSource)BuildCatalogue.Clamp(r.I(0), 0, 2), SiteId = r.I(0), CivicKind = BuildCatalogue.Clamp(r.I(0), 0, 5), Number = r.I(0),
+                                    Id = r.I(0), Source = (TenderSource)BuildCatalogue.Clamp(r.I(0), 0, 3), SiteId = r.I(0), CivicKind = BuildCatalogue.Clamp(r.I(0), 0, 5), Number = r.I(0),
                                     Use = (BuildUse)BuildCatalogue.Clamp(r.I(0), 0, (int)BuildUse.Count - 1), Area = Math.Max(0, r.I(0)), Hours = Math.Max(1, r.I(1)), Opened = r.I(0),
                                     Closes = r.I(0), BidPermille = Math.Max(0, r.I(0)), Fast = r.I(0) == 1, State = (TenderState)BuildCatalogue.Clamp(r.I(0), 0, 3),
                                     Winner = BuildCatalogue.Clamp(r.I(-2), -2, BuildCatalogue.RivalCount - 1), WinningDays = Math.Max(0, r.I(0)), Client = Math.Max(0, r.I(0)),
@@ -396,7 +399,7 @@ namespace RealLifeOverhaul.Construction
         {
             var p = new ProjectFile
             {
-                Id = r.I(0), Kind = (ProjectKind)BuildCatalogue.Clamp(r.I(0), 0, 2), Stage = (ProjectStage)BuildCatalogue.Clamp(r.I(0), 0, 5), Created = r.I(0), Number = r.I(0),
+                Id = r.I(0), Kind = (ProjectKind)BuildCatalogue.Clamp(r.I(0), 0, 3), Stage = (ProjectStage)BuildCatalogue.Clamp(r.I(0), 0, 5), Created = r.I(0), Number = r.I(0),
                 Use = (BuildUse)BuildCatalogue.Clamp(r.I(0), 0, (int)BuildUse.Count - 1), Version = r.I(1), Area = Math.Max(0, r.I(0)), Storeys = BuildCatalogue.Clamp(r.I(1), 1, 60),
                 Width = Math.Max(0, r.I(0)), Depth = Math.Max(0, r.I(0)), Height = Math.Max(0, r.I(0)), Architect = (ArchitectKind)BuildCatalogue.Clamp(r.I(0), 0, 2),
                 Firm = BuildCatalogue.Clamp(r.I(0), 0, BuildCatalogue.FirmCount - 1), PlansDay = r.I(0), PlansDone = r.I(0) == 1, Quality = BuildCatalogue.Clamp(r.I(0), 0, 100),
@@ -411,7 +414,7 @@ namespace RealLifeOverhaul.Construction
                 Investor = BuildCatalogue.Clamp(r.I(-1), -1, BuildCatalogue.InvestorCount - 1), InvestorDue = r.I(0), Flats = Math.Max(0, r.I(0)), FlatsSold = Math.Max(0, r.I(0)),
                 FlatsOffPlan = Math.Max(0, r.I(0)), Handed = r.I(0), Opening = r.I(0), Ribbon = r.I(0) == 1, Opened = r.I(0) == 1,
                 After = (AfterUse)BuildCatalogue.Clamp(r.I(0), 0, 1), Ask = BuildCatalogue.Clamp(r.I(1), 0, BuildCatalogue.AskPermille.Length - 1), DefectDay = r.I(0),
-                Source = (TenderSource)BuildCatalogue.Clamp(r.I(0), 0, 2), CivicKind = BuildCatalogue.Clamp(r.I(-1), -1, 5), Client = Math.Max(0, r.I(0)),
+                Source = (TenderSource)BuildCatalogue.Clamp(r.I(0), 0, 3), CivicKind = BuildCatalogue.Clamp(r.I(-1), -1, 5), Client = Math.Max(0, r.I(0)),
                 RainHours = Math.Max(0, r.I(0)), WaitHours = Math.Max(0, r.I(0)), StrikeDays = Math.Max(0, r.I(0)), Fails = Math.Max(0, r.I(0)), InDistrict = r.I(0) == 1,
                 Tender = Math.Max(0, r.I(0))
             };
@@ -453,6 +456,24 @@ namespace RealLifeOverhaul.Construction
             p.ArchitectId = r.S();
             p.CostPermille = BuildCatalogue.Clamp(r.I(1000), BuildCatalogue.DesignCostLeast, BuildCatalogue.DesignCostMost);
             p.Units = BuildCatalogue.Clamp(r.I(0), 0, 2000);
+            p.Contractor = BuildCatalogue.Clamp(r.I(-1), -1, BuildCatalogue.RivalCount - 1);
+            p.Grade = BuildCatalogue.Clamp(r.I(-1), -1, BuildCatalogue.RefitGradeFrom.Length - 1);
+            p.WithRefit = r.I(0) == 1;
+            p.ShowSince = Math.Max(0, r.I(0));
+            p.ShowAgent = r.I(0) == 1;
+            p.ShowInterior = BuildCatalogue.Clamp(r.I(0), 0, 100);
+            p.ShowDecor = BuildCatalogue.Clamp(r.I(0), 0, 100);
+            p.ShowStandard = BuildCatalogue.Clamp(r.I(0), 0, 100);
+            p.ShowViewings = Math.Max(0, r.I(0));
+            p.ShowSold = Math.Max(0, r.I(0));
+            p.ShowShown = Math.Max(0, r.I(0));
+            p.ContractorPrice = Math.Max(0L, r.L(0L));
+            p.ShowSpent = Math.Max(0L, r.L(0L));
+            p.ShowDesign = r.S();
+            if (p.ShowDesign.Length == 0)
+            {
+                p.ShowSince = 0;   // no design, no show flat
+            }
             if (p.FlatsSold > p.Flats)
             {
                 p.FlatsSold = p.Flats;

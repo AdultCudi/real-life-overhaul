@@ -136,6 +136,7 @@ namespace RealLifeOverhaul.Construction
             Clock();
             AppSecond();
             SitesSecond();
+            ShowSecond();
         }
 
         // ------------------------------------------------------------------ the state
@@ -155,6 +156,10 @@ namespace RealLifeOverhaul.Construction
                 state = new BuildState { Seed = BuildRandom.Mix(save.Day * 7919, Environment.TickCount) | 1, FirstDay = save.Day, LastDay = save.Day - 1 };
                 state.NextClientDay = save.Day + TenderRules.NextIn(state.Seed, save.Day, TenderSource.Client);
                 state.NextPublicDay = save.Day + TenderRules.NextIn(state.Seed, save.Day, TenderSource.Public);
+            }
+            if (state.NextRefitDay <= 0)
+            {
+                state.NextRefitDay = save.Day + TenderRules.NextIn(state.Seed, save.Day, TenderSource.Refit);   // a line from before the refits' tenders too
             }
             _beforeTests = save.modData.TryGetValue(BuildStore.TestKey, out string before) && !string.IsNullOrEmpty(before) ? before : null;
             _testLots.Clear();
@@ -196,6 +201,7 @@ namespace RealLifeOverhaul.Construction
             _testLots.Clear();
             _testOpening = false;
             HidePanels();
+            DropShowPlace("the save's state is forgotten");
         }
 
         private void OnSave()
@@ -252,6 +258,7 @@ namespace RealLifeOverhaul.Construction
             _running = false;
             RemoveApp();
             HidePanels();
+            DropShowPlace("the construction game stood down");
             if (was)
             {
                 Logger?.Info("Construction: stood down, " + why + ". Its sites in the city's programme wait, put away, until it is on again.");

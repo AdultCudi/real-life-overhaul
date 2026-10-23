@@ -82,7 +82,7 @@ Each of the game's steps goes through `FloorLoan`, which says what to give back;
 
 A place where something is worked or studied has the furniture for it, the game's own first:
 
-- **The game's layout** (`FloorPlace.Layout`): a business type's layout for the floor's structure, laid in the way the game lays one, a quarter a frame over the four frames the game keeps the screen dark (the university's school, its classroom doors last).
+- **The game's layout** (`FloorPlace.Layout`): a business type's layout for the floor's structure, laid in the way the game lays one, a quarter a frame over the four frames the game keeps the screen dark (the university's school, its classroom doors last). Or one of the installation firms' designs (`FloorLayout.Design`, read by the firm's own helper), cut to the pieces a keep says, none left standing on a piece taken out: the construction game's show flat, on the design's apartment structure.
 - **FitOut's fit-out** (`FloorPlace.Fit`, `Designs`): a kind of place (`FitKind`: a city office, a tech office...) round the door, the game's designs of those kinds for the structure on show first.
 - **The place's own** (its hooks): a tech company's lobby and the rest of its floor (`Tech/Sites`).
 

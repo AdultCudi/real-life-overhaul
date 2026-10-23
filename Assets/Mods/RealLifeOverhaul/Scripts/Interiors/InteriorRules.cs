@@ -80,6 +80,7 @@ namespace RealLifeOverhaul.Interiors
         public int Interior;                    // the game's own interior design score, 0 to 100 (walls and floors)
         public int Sqm;                         // floor area, square metres
         public int Clean = 100;                 // the game's own cleanliness, 0 to 100
+        public int Refit;                       // decor points a refit's new fittings gave it (the file's), before wear
         public int Income = InteriorRules.IncomeMiddle;   // the district's income level, 60 to 140 (100 is the city's middle)
         public int GameMinimum;                 // the game's own minimum interior score for the district (Midtown asks for one)
         public readonly int[] Points = new int[InteriorRules.Categories];   // tenths of a point, before each category's cap
@@ -95,6 +96,7 @@ namespace RealLifeOverhaul.Interiors
         public int Target;                      // the points a place of this size needs for full marks, tenths
         public readonly int[] Capped = new int[InteriorRules.Categories];   // each category's points after its cap, tenths
         public int DecorRaw, Decor, InteriorNow, Overall, Standard;
+        public int RefitNow;                    // decor points the refit still gives at today's wear
         public int Wear;                        // thousandths, 0 fresh to 1000 worn out (the file's)
         public int StandardFootfall, DecorFootfall, Footfall, Bears, Basket, BrandPoints, StandingPoints, Comfort, OfficeEsteem, OfficeBid;
         public int OfficeBoost;                 // thousandths more clients an office is booked, an hour ahead
@@ -118,6 +120,8 @@ namespace RealLifeOverhaul.Interiors
         public int StoryDay = -1000;   // the last day it was in the City Ledger or a Flare draft
         public int RefreshDay = -1;    // the last day its finishes were refreshed
         public int FirstDay = Unset;   // the first day it was read (its fitting-out days count from it)
+        public int Refit;              // decor points a refit's new fittings gave it; 0 for none (a line of its own in the save)
+        public int RefitDay;           // the day of that refit; 0 for none
 
         public const int Unset = int.MinValue;
         public const int LongAgo = -1000;   // a business already trading when the feature first read it
@@ -160,6 +164,8 @@ namespace RealLifeOverhaul.Interiors
         public const int WornFrom = 600;              // thousandths of wear an inspector notices
         public const int WornInspection = 5;          // points off the cleanliness they judge
         public const int InteriorShare = 600;         // thousandths of the overall figure that is the interior score
+        public static readonly int[] RefitGrades = { 6, 10, 14 };   // decor points new fittings add, by the refit's grade (plain, good, fine)
+        public const int RefitMost = 14;              // decor points a refit gives at most
 
         // The district's standard
         public const int IncomeLeast = 60, IncomeMiddle = 100, IncomeMost = 140;
@@ -285,6 +291,32 @@ namespace RealLifeOverhaul.Interiors
             return Clamp(score + (sum > 0 ? Variety(kinds) : 0), 0, 100);
         }
 
+        /// <summary>
+        /// The decor score of a room that has not been placed in a business (a show flat's design), fresh and clean: each kind of
+        /// item's category (-1 for one not counted) and its copies, the room's floor area. The same arithmetic as a business's.
+        /// </summary>
+        public static int DecorOf(IList<int> categories, IList<int> copies, int sqm)
+        {
+            var points = new int[Categories];
+            int kinds = 0;
+            for (int i = 0; categories != null && copies != null && i < categories.Count && i < copies.Count; i++)
+            {
+                int c = categories[i];
+                if (c < 0 || c >= Categories || copies[i] <= 0)
+                {
+                    continue;
+                }
+                points[c] += KindPoints((DecorCategory)c, copies[i]);
+                kinds += c < (int)DecorCategory.Furniture ? 1 : 0;
+            }
+            int target = Target(sqm);
+            for (int c = 0; c < Categories; c++)
+            {
+                points[c] = Capped((DecorCategory)c, points[c], target);
+            }
+            return DecorScore(points, target, kinds);
+        }
+
         /// <summary>Thousandths of wear a day adds: the finishes' age, more on a dirty floor, half while the cleaning service looks after it.</summary>
         public static int WearToday(int clean, bool cleaned)
         {
@@ -327,6 +359,22 @@ namespace RealLifeOverhaul.Interiors
                 return "reallife_interior_wear_off";
             }
             return known && filed ? null : "reallife_interior_refresh_unknown";
+        }
+
+        /// <summary>The decor points a refit of a grade gives (0 plain, 1 good, 2 fine), kept inside the table.</summary>
+        public static int RefitPoints(int grade)
+        {
+            return RefitGrades[Clamp(grade, 0, RefitGrades.Length - 1)];
+        }
+
+        /// <summary>
+        /// What a refit's new fittings still add to the decor score at a wear: all of it fresh, nothing once worn out, so the lift
+        /// fades as the finishes age and a refit is needed again.
+        /// </summary>
+        public static int RefitLift(int points, int wear)
+        {
+            int p = Clamp(points, 0, RefitMost);
+            return (int)(((long)p * (WearMost - Clamp(wear, 0, WearMost)) + WearMost / 2) / WearMost);
         }
 
         /// <summary>What a refresh of the finishes costs, whole dollars, by floor area, before the price level.</summary>

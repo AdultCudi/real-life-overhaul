@@ -24,7 +24,7 @@ namespace RealLifeOverhaul.Interiors
                 .Owns(Settings.InteriorsId, Settings.InteriorsPricesStrengthId, Settings.InteriorsWearStrengthId, Settings.InteriorsStandingId, Settings.InteriorsStaffId)
                 .Preset(Settings.InteriorsPricesStrengthId, 125, 100, 75)   // per cent: Relaxed a quarter more, Realistic the default, Hardcore three quarters
                 .Preset(Settings.InteriorsWearStrengthId, 50, 100, 150)     // Relaxed half as fast, Realistic the default, Hardcore half as fast again
-                .Data(InteriorStore.Key)
+                .Data(InteriorStore.Key, InteriorStore.RefitKey)
                 .Test("reallife_interior_test_report_button", "reallife_interior_test_wear_button", "reallife_interior_test_news_button")
                 .Fact("in_repeat", () => Share(InteriorRules.RepeatShare))
                 .Fact("in_repeat_most", () => N(InteriorRules.RepeatMost))

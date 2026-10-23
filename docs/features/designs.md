@@ -38,6 +38,16 @@ At the game's start (and when the option is switched) a job on a worker thread p
 
 Every file goes on a list in the folder (`InteriorDesigns/reallife_designs.txt`) with a stamp of the game's files and these rules. While the stamp and every file are as they were, a job only lists the folders. Only a file on the list is ever written over or taken away: a file of that name the list does not hold (the game's, another mod's) is left and its design not offered. The option off takes every design on the list away, and so does "prepare this save for removing the mod". An order for a design taken away is cancelled by the firm on its day ("the design you chose ... is no longer available"), as the game does.
 
+## The show flats' designs
+
+For the construction game's show flats ([Construction](construction.md#show-flats)), made the same way from the game's own: `ShowFlatDesigns.cs` (game-free) and `DesignsDirector.ShowFlats.cs`, read in `DesignsGame.ShowDesigns`.
+
+- **From** the firms' residential designs of every apartment structure the game lists (`InteriorDesigns/Residential/<structure>`; never a Hamptons house or the car park), by the firm's own helpers.
+- **Two finishes each:** fully dressed (the game's design whole) and plain (only `PlainKeeps`: the beds, seats, tables, kitchen, storage and ceiling lamps), offered when the cut keeps six pieces or more and fewer than the whole.
+- **At the game's prices:** the pieces kept at their market price and the firm's installation fee for the structure; the game's interior score of the design's walls and floors.
+- **Not written anywhere:** they are laid on the show flat's floor by the floors core and offered by no firm. Read once a session on the first ask, the game's files not changing while it runs.
+- EconomyCheck `ShowFlatsChecks.cs` holds them to the installed game's files: every apartment structure has a design, every plain cut is worth offering, every name it keeps is one of the game's pieces there.
+
 ## Going Public
 
 Deterministic: the designs depend only on the game's files and these rules, so every machine on the same game build makes the same. Nothing new is sent: an order and an installation are the game's own, which Going Public carries as before. Nothing of another player's is touched; the files are on the player's own disk.

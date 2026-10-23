@@ -31,6 +31,23 @@ namespace RealLifeOverhaul.Construction
         public bool Known;      // the site is in the programme
     }
 
+    /// <summary>A show flat's design as the construction game reads it (Scripts/Designs, scored by Scripts/Interiors).</summary>
+    public struct ShowDesignView
+    {
+        public string Id;          // Designs' id for it, kept in the project's line
+        public string Name;        // in the player's language: the game's design and its finish
+        public string Size;        // the game's size id of the apartment structure it stands on
+        public int Version;
+        public int Sqm;            // that structure's floor area
+        public string Design;      // the game's design's file name, laid by the floors core
+        public int Interior;       // the game's interior score of its walls and floors
+        public int Decor;          // Interiors' decor score of its pieces
+        public long Furniture;     // its pieces at the game's market prices
+        public long Fee;           // the installation firm's fee
+        public int Pieces;
+        public Func<string, bool> Keeps;   // the pieces of the game's design it keeps, by their id
+    }
+
     /// <summary>
     /// What the construction game asks of the rest of the mod, each with a default so it works alone; Wiring/Wiring.ConstructionLinks
     /// fills them in. The district's lots and buildings (Scripts/Uptown), the city's sites (Scripts/Civic), the copy engine's
@@ -207,6 +224,41 @@ namespace RealLifeOverhaul.Construction
 
         public delegate bool DesignAnswer(string projectId, out int total, out int costPermille, out int storeys, out int units);
 
+        // ------------------------------------------------------------------ show flats and refits: designs, interiors, the businesses
+
+        /// <summary>The show flat designs for flats of a floor area (Scripts/Designs, scored by Interiors), into the caller's list (cleared); false for none. Default: none.</summary>
+        public static ShowList ShowDesigns;
+
+        public delegate bool ShowList(int flatArea, List<ShowDesignView> into);
+
+        /// <summary>A show flat's design by its id; false for one the game's files no longer give. Default: none.</summary>
+        public static ShowFind ShowDesign;
+
+        public delegate bool ShowFind(string id, out ShowDesignView design);
+
+        /// <summary>The standard a district of the game's expects of an interior (Interiors), 0 to 100; -1 for not known. Default: not known.</summary>
+        public static Func<string, int> Standard;
+
+        /// <summary>A refit done at a business of the player's (street, number, the new fittings' grade): Interiors' wear and decor. False when not recorded. Default: no.</summary>
+        public static Func<string, int, int, bool> Refitted;
+
+        /// <summary>A business of the player's kept closed for its refit so many hours more (business pressure's closure). False when it cannot be. Default: no.</summary>
+        public static Func<string, int, int, bool> CloseShop;
+
+        /// <summary>A refit's closure of a business ended (it opens unless something else of the mod's keeps it closed). Default: nothing.</summary>
+        public static Action<string, int> OpenShop;
+
+        /// <summary>A business's decor score, the points a refit still gives it and its wear now (Interiors). Default: not known.</summary>
+        public static InteriorRead Interior;
+
+        public delegate bool InteriorRead(string street, int number, out int decor, out int refit, out int wear);
+
+        /// <summary>Test: a business's interior record kept as it is now, to be put back. Default: nothing.</summary>
+        public static Action<string, int> KeepInterior;
+
+        /// <summary>Test: every interior record kept put back as it was; how many. Default: none.</summary>
+        public static Func<int> InteriorsBack;
+
         public static void Reset()
         {
             Lots = null;
@@ -254,6 +306,15 @@ namespace RealLifeOverhaul.Construction
             Qualified = null;
             Commission = null;
             DesignOf = null;
+            ShowDesigns = null;
+            ShowDesign = null;
+            Standard = null;
+            Refitted = null;
+            CloseShop = null;
+            OpenShop = null;
+            Interior = null;
+            KeepInterior = null;
+            InteriorsBack = null;
         }
     }
 }

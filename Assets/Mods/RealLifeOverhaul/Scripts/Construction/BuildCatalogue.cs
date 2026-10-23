@@ -17,7 +17,8 @@ namespace RealLifeOverhaul.Construction
     {
         Plot = 0,       // a new building on an Uptown lot the player owns
         Rebuild = 1,    // an old building of the player's, rebuilt behind the game's scaffolding
-        Contract = 2    // works won in a tender: the city's, a business's or a public building
+        Contract = 2,   // works won in a tender: the city's, a business's or a public building
+        Refit = 3       // the interior of a business of the player's refitted, by their crews or a contractor of the city's
     }
 
     /// <summary>Where a project stands, from the plans to the keys. Saved as a number.</summary>
@@ -154,7 +155,8 @@ namespace RealLifeOverhaul.Construction
     {
         CityWorks = 0,   // one of the city's construction programme's sites
         Client = 1,      // a business of the city's that wants its building rebuilt
-        Public = 2       // a public building on an Uptown lot
+        Public = 2,      // a public building on an Uptown lot
+        Refit = 3        // a business of the city's that wants its interior refitted
     }
 
     /// <summary>A tender. Saved as a number.</summary>
@@ -492,6 +494,33 @@ namespace RealLifeOverhaul.Construction
         public static readonly int[] AskPermille = { 900, 1000, 1100 };            // the asking price, of a flat's value
         public static readonly int[] AskChancePermille = { 650, 450, 250 };        // a day, a buyer at that price
         public const int QualityPricePermille = 1;              // of the price a point of quality over 60 (and less under)
+
+        // ------------------------------------------------------------------ show flats
+
+        public const int ShowUpkeepDay = 240;                   // money a day the sales suite costs while open: its rent, power and cleaning
+        public const int AgentDay = 210;                        // money a day for a sales agent from the estate agency
+        public static readonly int[] ViewingHours = { 11, 14, 17 };   // the hours buyers come to see the show flat, in order
+        public const int ViewingsLeast = 1;                     // viewings a day with the show flat open
+        public const int ViewingOver = 10, ViewingWellOver = 25;   // points over the district's standard: a viewing more for each
+        public const int ShowBuyerBase = 170;                   // per mille a viewing brings a buyer, a show flat at the district's standard
+        public const int ShowBuyerPerPoint = 6;                 // per mille more for each point over the standard, less under
+        public const int ShowBuyerRepPerPoint = 2;              // per mille more for each point of the company's reputation over 50
+        public const int ShowBuyerLeast = 30, ShowBuyerMost = 560;
+        public const int ShowShownPermille = 150;               // per mille more when the player shows the buyers round
+        public const int ShowAgentPermille = 90;                // per mille more when the agent does
+        public const int ShowAloneShare = 450;                  // thousandths of the chance with nobody there to show them round
+        public const int ShowPricePerPoint = 3;                 // thousandths of the off plan price more for each point over the standard, less under
+        public const int ShowPriceLeast = 900, ShowPriceMost = 1120;   // thousandths of the off plan price a show flat's buyer pays
+
+        // ------------------------------------------------------------------ refits
+
+        public const int RefitHoursBase = 16;                   // working hours a refit takes, and one more for each so many m2
+        public const int RefitSqmPerHour = 6;
+        public const int RefitHoursLeast = 24, RefitHoursMost = 160;
+        public const int RefitHold = 3;                         // hours a refit's closure is held at a time, held again each hour
+        public static readonly int[] RefitGradeFrom = { 0, 60, 80 };   // the work's quality from which a refit is plain, good or fine
+        public const int ContractorGrade = 1;                   // a contractor's refit: good
+        public const int RefitEveryLeast = 5, RefitEveryMost = 9;      // days between two businesses' refit tenders
 
         public const int LandTaxPermille = 12;                  // of the land's price a year
         public const int VacantTaxPermille = 25;                // more a year, on land kept empty

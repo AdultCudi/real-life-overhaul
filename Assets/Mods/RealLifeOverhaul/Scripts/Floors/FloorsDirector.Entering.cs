@@ -521,11 +521,12 @@ namespace RealLifeOverhaul.Floors
             if (set == null || set.Items == null)
             {
                 v.Laying = false;
-                Logger?.Warn("Floors: " + place.Said + " has no layout of the game's for structure " + v.Structure + " (" + place.Layout.BusinessType + ", " + place.Layout.Name
+                string of = place.Layout.BusinessType ?? place.Layout.DesignBuilding;   // a business's layout, or a firm's design for a building type
+                Logger?.Warn("Floors: " + place.Said + " has no layout of the game's for structure " + v.Structure + " (" + of + ", " + place.Layout.Name
                              + "); its floor stands bare.");
                 yield break;
             }
-            List<LayoutItem> order = FloorsGame.LayOrder(set, place.LayLast);
+            List<LayoutItem> order = FloorsGame.LayOrder(set, place.LayLast, place.Layout.Keeps);
             var made = new Dictionary<string, KeyValuePair<ItemController, List<AttachableChild>>>(order.Count);
             try
             {

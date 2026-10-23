@@ -9,16 +9,19 @@ namespace RealLifeOverhaul.Interiors
     /// What the feature keeps in the save: a file for each business seen, at most <see cref="Most"/>, in one line
     /// ("2|place,wear,interior,day,story,refresh,first|..."; a version 1 line, without the first day, reads as businesses
     /// trading already), and a line of its own for the day the rules first read the save ("1,day"), so an older version
-    /// of the mod keeps the files. A line this version cannot read is kept as read (Core/SaveLines). Game-free.
+    /// of the mod keeps the files. A refit's new fittings have a third line ("1|place,points,day|..."), apart for the same reason:
+    /// the files' line keeps its count of fields. A line this version cannot read is kept as read (Core/SaveLines). Game-free.
     /// </summary>
     public sealed class InteriorStore
     {
         public const string Key = "reallife:interiors";
         public const string RulesKey = "reallife:interiors_rules";
+        public const string RefitKey = "reallife:interiors_refits";
         public const int Most = 200;
         private const string Version = "2";
         private const string VersionOne = "1";   // no first day: read as businesses that were trading already
         private const string RulesVersion = "1";
+        private const string RefitVersion = "1";
 
         public readonly List<InteriorFile> Files = new List<InteriorFile>(16);
 
@@ -109,14 +112,62 @@ namespace RealLifeOverhaul.Interiors
             return w.ToString();
         }
 
-        /// <summary>Both lines of a save read, either may be missing; one this version cannot read gives an empty store or unset rules.</summary>
+        /// <summary>The refits' line: the files with a refit's fittings, or null while none has.</summary>
+        public string WriteRefits()
+        {
+            StringBuilder w = null;
+            for (int i = 0; i < Files.Count; i++)
+            {
+                InteriorFile f = Files[i];
+                if (f.Refit <= 0)
+                {
+                    continue;
+                }
+                w = w ?? new StringBuilder(8 + Files.Count * 24).Append(RefitVersion);
+                w.Append('|').Append(f.Place).Append(',').Append(f.Refit.ToString(CultureInfo.InvariantCulture)).Append(',').Append(f.RefitDay.ToString(CultureInfo.InvariantCulture));
+            }
+            return w?.ToString();
+        }
+
+        /// <summary>The refits' line read into the files (made where missing); false for a line this version cannot read.</summary>
+        public bool ReadRefits(string line)
+        {
+            if (string.IsNullOrEmpty(line))
+            {
+                return true;
+            }
+            string[] parts = line.Split('|');
+            if (parts[0] != RefitVersion)
+            {
+                return false;
+            }
+            for (int i = 1; i < parts.Length; i++)
+            {
+                string[] f = parts[i].Split(',');
+                int points, day;
+                if (f.Length < 3 || f[0].Length == 0 || !Int(f[1], out points) || !Int(f[2], out day))
+                {
+                    continue;
+                }
+                InteriorFile file = File(f[0], true);
+                if (file != null)
+                {
+                    file.Refit = InteriorRules.Clamp(points, 0, InteriorRules.RefitMost);
+                    file.RefitDay = day;
+                }
+            }
+            return true;
+        }
+
+        /// <summary>The lines of a save read, any may be missing; one this version cannot read gives an empty store, unset rules or no refits.</summary>
         public static InteriorStore Load(Dictionary<string, string> data)
         {
-            string line = null, rules = null;
+            string line = null, rules = null, refits = null;
             if (data != null)
             {
                 data.TryGetValue(Key, out line);
                 data.TryGetValue(RulesKey, out rules);
+                data.TryGetValue(RefitKey, out refits);
             }
             InteriorStore store = Read(line);
             if (!Readable(line))
@@ -127,6 +178,10 @@ namespace RealLifeOverhaul.Interiors
             if (!string.IsNullOrEmpty(rules) && store.RulesFrom == InteriorFile.Unset)
             {
                 SaveLines.Unreadable(data, RulesKey, "it could not be read");
+            }
+            if (!store.ReadRefits(refits))
+            {
+                SaveLines.Unreadable(data, RefitKey, "its version is not one this version of the mod reads");
             }
             return store;
         }
