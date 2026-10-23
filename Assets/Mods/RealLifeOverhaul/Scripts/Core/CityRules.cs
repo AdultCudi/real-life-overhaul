@@ -68,6 +68,7 @@ namespace RealLifeOverhaul
         public CitySource Source;
         public int KnownDistricts;                           // of the seven, how many the city has
         public readonly List<string> NewDistricts = new List<string>(4);    // districts of the city's buildings the mod does not know, ordinal order
+        public readonly List<string> ModDistricts = new List<string>(1);    // districts of the mod's own among the city's buildings (Uptown): New York's, never new
         public readonly List<string> NewYorkScenes = new List<string>(4);   // the scenes of New York's own that are loaded
         public readonly List<string> OtherScenes = new List<string>(4);     // the scenes loaded that are no city's the mod knows
         public readonly List<string> Elsewhere = new List<string>(4);       // districts of the game's data with no building in this city
@@ -110,6 +111,7 @@ namespace RealLifeOverhaul
             into.Source = CitySource.Nothing;
             into.KnownDistricts = 0;
             into.NewDistricts.Clear();
+            into.ModDistricts.Clear();
             into.NewYorkScenes.Clear();
             into.OtherScenes.Clear();
             into.Elsewhere.Clear();
@@ -137,9 +139,9 @@ namespace RealLifeOverhaul
             for (int i = 0; i < census.GameDistricts.Count; i++)
             {
                 string id = census.GameDistricts[i];
-                if (census.HasBuildings && !string.IsNullOrEmpty(id) && id != CityDistricts.Global && !census.ByDistrict.ContainsKey(id))
+                if (census.HasBuildings && !string.IsNullOrEmpty(id) && id != CityDistricts.Global && !census.ByDistrict.ContainsKey(id) && !CityDistricts.Mine(id))
                 {
-                    AddOnce(into.Elsewhere, id);
+                    AddOnce(into.Elsewhere, id);   // (a district of the mod's own with no building standing is not another city's)
                 }
             }
             into.Elsewhere.Sort(StringComparer.Ordinal);
@@ -152,12 +154,17 @@ namespace RealLifeOverhaul
                     {
                         into.KnownDistricts++;
                     }
+                    else if (CityDistricts.Mine(district.Key))
+                    {
+                        into.ModDistricts.Add(district.Key);   // the mod's own, standing on New York's ground: not a free update's
+                    }
                     else if (district.Key != CityDistricts.Global)
                     {
                         into.NewDistricts.Add(district.Key);
                     }
                 }
                 into.NewDistricts.Sort(StringComparer.Ordinal);
+                into.ModDistricts.Sort(StringComparer.Ordinal);
                 into.Kind = into.KnownDistricts == 0 ? CityKind.Other : into.NewDistricts.Count > 0 ? CityKind.NewYorkGrown : CityKind.NewYork;
                 return into;
             }
@@ -210,6 +217,16 @@ namespace RealLifeOverhaul
                     {
                         census.ByDistrict.TryGetValue(verdict.NewDistricts[i], out int count);
                         text.Append(i > 0 ? ", " : string.Empty).Append(verdict.NewDistricts[i]).Append(" (")
+                            .Append(count.ToString(CultureInfo.InvariantCulture)).Append(')');
+                    }
+                }
+                if (verdict.ModDistricts.Count > 0)
+                {
+                    text.Append("; the mod's own: ");
+                    for (int i = 0; i < verdict.ModDistricts.Count; i++)
+                    {
+                        census.ByDistrict.TryGetValue(verdict.ModDistricts[i], out int count);
+                        text.Append(i > 0 ? ", " : string.Empty).Append(verdict.ModDistricts[i]).Append(" (")
                             .Append(count.ToString(CultureInfo.InvariantCulture)).Append(')');
                     }
                 }
