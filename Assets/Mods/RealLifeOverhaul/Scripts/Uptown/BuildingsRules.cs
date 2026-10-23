@@ -46,6 +46,15 @@ namespace RealLifeOverhaul.Uptown
         Player   // the player's own: a deed of the game's, as BizMan's purchase writes it
     }
 
+    /// <summary>What the registration on a leased office's own lot is to its lease (<see cref="BuildingsRules.LeaseOf"/>).</summary>
+    public enum LeaseVerdict
+    {
+        Refused,   // someone else's, or no office: the why says whose
+        Theirs,    // the lease's business, its name and description the lease's
+        Renamed,   // the lease's business, its name or description to be put back to the lease's (a text changed since it moved in)
+        MoveIn     // new at this load, or empty to let and nobody's: the lease's business moves in
+    }
+
     /// <summary>
     /// The rules of the district's buildings, game-free (EconomyCheck's UptownLifeChecks): which of the band's lots stand
     /// from the first day and which stay open for the construction game, the office lots leased to other features'
@@ -142,6 +151,7 @@ namespace RealLifeOverhaul.Uptown
         public const int OpenLeast = 1;                   // lots left open on every block not kept open: land for sale on every block
         public const int LeasedOffices = 8;               // office lots built for the businesses other features lease there: the construction game's eight rival builders
         public const string OfficeType = "ba:buildingtype_office";   // the game's building type a leased office is built with
+        public const string EmptyBusinessType = "ba:businesstype_empty";   // the game's business type of a unit with no business in it
 
         /// <summary>How many of a block's lots are left open: its share, halves up, at least <see cref="OpenLeast"/>, never more than it has.</summary>
         public static int OpenCount(int blockLots, bool firstBlock)
@@ -269,6 +279,51 @@ namespace RealLifeOverhaul.Uptown
             }
             into.Sort((a, b) => string.CompareOrdinal(lots[a].Id, lots[b].Id));
             return into;
+        }
+
+        /// <summary>
+        /// What the registration on a leased office's own lot is to its lease (LifeGame.Lease). Refused, with why, where it is
+        /// another player's in a Going Public session, the player's (rented or owned), on a building not built as an office, or
+        /// another business's. Of the lease's business type it is the lease's own whatever its name and description say: the
+        /// lot is the lease's (fixed data), the game starts no business of that type itself, and a name is text in the player's
+        /// language, never who runs it; Renamed when either differs from the lease's. Else new at this load (<paramref name="fresh"/>)
+        /// or empty to let and nobody's: MoveIn.
+        /// </summary>
+        public static LeaseVerdict LeaseOf(bool foreign, bool players, string buildingType, string type, string name, string description, bool fresh, bool toLet,
+                                           string leaseType, string leaseName, string leaseDescription, out string why)
+        {
+            why = null;
+            if (foreign)
+            {
+                why = "it is another player's in this session";
+                return LeaseVerdict.Refused;
+            }
+            if (players)
+            {
+                why = "the player rents or owns it";
+                return LeaseVerdict.Refused;
+            }
+            if (buildingType != OfficeType)
+            {
+                why = "it was built as " + buildingType + ", not an office";
+                return LeaseVerdict.Refused;
+            }
+            if (!string.IsNullOrEmpty(leaseType) && type == leaseType)
+            {
+                return name == leaseName && description == leaseDescription ? LeaseVerdict.Theirs : LeaseVerdict.Renamed;
+            }
+            if (fresh || (toLet && (string.IsNullOrEmpty(type) || type == EmptyBusinessType)))
+            {
+                return LeaseVerdict.MoveIn;
+            }
+            why = "a business of " + type + " is in it";
+            return LeaseVerdict.Refused;
+        }
+
+        /// <summary>True when a registration is a lease's business standing: of the lease's type, not to let and not the player's to rent; its name is never asked.</summary>
+        public static bool LeasedBy(string type, bool toLet, bool rentedByPlayer, string leaseType)
+        {
+            return !string.IsNullOrEmpty(leaseType) && type == leaseType && !toLet && !rentedByPlayer;
         }
 
         /// <summary>The structure a leased office is built with: of the options, those of the game's office type, the one its id's hash picks; -1 when the game has none.</summary>

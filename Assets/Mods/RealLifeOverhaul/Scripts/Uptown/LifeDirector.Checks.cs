@@ -22,7 +22,7 @@ namespace RealLifeOverhaul.Uptown
         // ---------------------------------------------------------------- the city's builders' offices
 
         /// <summary>
-        /// "Uptown: the city's builders' offices": each leased office's business there (its type, its name, not to let), laid
+        /// "Uptown: the city's builders' offices": each leased office's business there (its type, not to let), laid
         /// out, staffed and valued as the game's own office businesses are, on the map's row of its type and held off the
         /// market; the nearest made the game's destination.
         /// </summary>

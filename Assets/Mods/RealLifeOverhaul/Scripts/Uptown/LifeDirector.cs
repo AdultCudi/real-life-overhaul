@@ -441,12 +441,13 @@ namespace RealLifeOverhaul.Uptown
             {
                 WriteState();
             }
-            int leased = Leases(save);
+            int leased = Leases(save, out int renamed);
             Logger?.Info("Uptown: " + (fresh ? (_cityWasNew ? "set up with the rest of a new city by the game's own generator" : "set up for the first time in this save by the game's own generator")
                                              : "lives on in this save" + (populated > 0 ? ", the game's own generator for its " + populated + " building(s) new to it" : string.Empty))
                          + (stats ? ", its stats made" : string.Empty)
                          + (settled + failed > 0 ? "; " + settled + " finished building(s) at their first load" + (failed > 0 ? ", " + failed + " not yet" : string.Empty) : string.Empty)
-                         + "; " + leased + " of " + BuildingsRules.LeasedOffices + " leased offices with their businesses.");
+                         + "; " + leased + " of " + BuildingsRules.LeasedOffices + " leased offices with their businesses"
+                         + (renamed > 0 ? ", " + renamed + " of them given their lessees' names again" : string.Empty) + ".");
             Census("the load");
             return true;
         }

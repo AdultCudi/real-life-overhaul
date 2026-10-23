@@ -80,10 +80,12 @@ namespace RealLifeOverhaul.Uptown
             LifeGame.Unclaim();
         }
 
-        // At the game's late "game loaded" call: each lease's business in its building, held off the market; how many stand.
-        private static int Leases(GameInstance save)
+        // At the game's late "game loaded" call: each lease's business in its building, held off the market; how many stand,
+        // and how many of them took the lease's name again.
+        private static int Leases(GameInstance save, out int renamed)
         {
             int up = 0;
+            renamed = 0;
             for (int i = 0; i < LeasedUp.Length; i++)
             {
                 LeasedUp[i] = null;
@@ -99,7 +101,7 @@ namespace RealLifeOverhaul.Uptown
                     Logger?.Info("Uptown: " + lease.Name + " has no office at this load: its lot " + (lot ?? "(none)") + " has no building standing (Player.log says why).");
                     continue;
                 }
-                string why = LifeGame.Lease(made, lease, i, save, out bool movedIn);
+                string why = LifeGame.Lease(made, lease, i, save, out bool movedIn, out bool named);
                 if (why != null)
                 {
                     Logger?.Info("Uptown: " + lease.Name + " has no office at this load: the leased office at " + made.Address + " cannot be theirs (" + why + ").");
@@ -107,6 +109,7 @@ namespace RealLifeOverhaul.Uptown
                 }
                 LeasedUp[i] = made;
                 up++;
+                renamed += named ? 1 : 0;
                 if (movedIn)
                 {
                     Logger?.Info("Uptown: " + lease.Name + " moved into its office at " + made.Address + " (lot " + lot + "), a business of the game's of the type " + lease.BusinessType + ".");
