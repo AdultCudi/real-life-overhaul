@@ -259,7 +259,8 @@ namespace RealLifeOverhaul
                 Logger?.Warn("Props: the game's lit shader was not found; plain shapes are used.");
                 return null;
             }
-            made = new Material(shader) { name = (glows ? "RealLifeOverhaul Props (glow)" : "RealLifeOverhaul Props") + (set == 1 ? " (sites)" : ""), renderQueue = Shapes.TakesDecalsQueue };   // Tinted's copies keep it
+            string name = (glows ? "RealLifeOverhaul Props (glow)" : "RealLifeOverhaul Props") + (set == 1 ? " (sites)" : "");
+            made = new Material(shader) { name = name, renderQueue = Shapes.TakesDecalsQueue };   // Tinted's copies keep it
             Texture2D atlas = set == 1 ? _secondBase : _base, mask = set == 1 ? _secondMask : _mask;
             made.SetColor(BaseColorId, Color.white);
             made.SetTexture(BaseColorMapId, atlas);
@@ -369,7 +370,8 @@ namespace RealLifeOverhaul
                     triangles += (int)mesh.GetIndexCount(0) / 3;
                     added++;
                 }
-                Logger?.Info("Props: " + added + " of the building sites loaded from their own bundle (" + triangles + " triangles, one " + _secondBase.width + " x " + _secondBase.height + " atlas).");
+                Logger?.Info("Props: " + added + " of the building sites loaded from their own bundle (" + triangles + " triangles, one " + _secondBase.width + " x "
+                             + _secondBase.height + " atlas).");
             }
             catch (Exception e)
             {
