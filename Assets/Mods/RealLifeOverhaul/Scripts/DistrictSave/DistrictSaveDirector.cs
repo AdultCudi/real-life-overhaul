@@ -63,10 +63,13 @@ namespace RealLifeOverhaul.DistrictSave
         /// </summary>
         public static bool Present { get; private set; }
 
-        /// <summary>True for a key of the district's records: the save tools leave it, as it holds the player's own things.</summary>
+        /// <summary>
+        /// True for a key of the district's records, or of a feature's line that says which of its places stand
+        /// (<see cref="KeepsAlso"/>): the save tools leave it, as it holds the player's own things.
+        /// </summary>
         public static bool Keeps(string key)
         {
-            return key == DistrictSaveStore.Key || key == DistrictSaveStore.UnreadKey;
+            return key == DistrictSaveStore.Key || key == DistrictSaveStore.UnreadKey || (key != null && AlsoKept.Contains(key));
         }
 
         // ---------------------------------------------------------------- the save
@@ -515,10 +518,16 @@ namespace RealLifeOverhaul.DistrictSave
         /// The registration the mod's section keeps for an address and has not put back yet (it goes back into the save's
         /// list where it stood at the city step, this same object; one a feature put there itself counts as back): for a
         /// feature that makes a building of the mod's with a registration of its own, which must take this one instead of a
-        /// new empty one. Null when none is kept for that address.
+        /// new empty one. Null when none is kept for that address. Asked in a load that did not pass the main menu (a
+        /// funeral's backup), the save's section is read first, so what is kept is this save's and never the one before's.
         /// </summary>
         public static BuildingRegistration KeptRegistration(string street, int number)
         {
+            GameInstance save = SaveGameManager.Current;
+            if (save != null && !ReferenceEquals(save, _restoredFor))
+            {
+                Start(save);   // the city step then finds it read and puts back what is still kept
+            }
             for (int i = 0; i < KeptRecords.Count && i < KeptItems.Count; i++)
             {
                 if (KeptRecords[i].Kind == SaveKind.Registration && KeptItems[i] is BuildingRegistration reg && reg.StreetNumber == number

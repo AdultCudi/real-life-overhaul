@@ -23,7 +23,8 @@ namespace RealLifeOverhaul.DistrictSave
         Campaign, AiEmployee, Poached, BusinessStatement, HomeStatement, EstateStatement, Demand, StorePrice, Destination,
         ImportProduct, Replacement, HrMember, Defended, Message, Shift,
         Player, Guider, Mission, Vehicle, DriverVehicle, ContactAddress, EmployeeSource, EmployeeHrPlan, DriverSlot,
-        HeadhunterHrPlan
+        HeadhunterHrPlan,
+        MapFilter   // a ticked row of the city map's filters that is a district of the mod's: leaves the save's list (added after the rest, so no code moves)
     }
 
     /// <summary>One record taken out of a list, with the place it stood at in that list.</summary>
@@ -66,7 +67,8 @@ namespace RealLifeOverhaul.DistrictSave
             "camp", "ai", "poach", "stmtb", "stmth", "stmte", "dem", "store", "dest",
             "prod", "repl", "hrid", "def", "msg", "shift",
             "player", "guide", "mission", "veh", "pdv", "contact", "esrc", "ehr", "slot",
-            "headhr"
+            "headhr",
+            "filter"
         };
 
         /// <summary>True when a save has nothing of the mod's to keep out: no feature names a place and the load kept nothing. The save is then left as the game has it.</summary>
@@ -134,6 +136,10 @@ namespace RealLifeOverhaul.DistrictSave
         /// <summary>What a kind does: a business's records leave with it; the player and the player's cars are never lost.</summary>
         public static SaveWay Way(SaveKind kind)
         {
+            if (kind == SaveKind.MapFilter)
+            {
+                return SaveWay.Leaves;   // an item of the save's own top-level list, put back at its place (it came after the stand-ins)
+            }
             if (kind >= SaveKind.Player)
             {
                 return SaveWay.StandsIn;

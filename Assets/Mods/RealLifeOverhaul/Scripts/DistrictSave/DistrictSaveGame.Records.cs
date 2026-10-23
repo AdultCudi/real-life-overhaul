@@ -233,6 +233,10 @@ namespace RealLifeOverhaul.DistrictSave
             // save path: GameInstance.realEstate[].address
             Leave(s, save.realEstate, SaveKind.Deed, d => d != null && Names(places, d.address), (record, d) => Mark(record, places, d.address));
 
+            // The city map's ticked rows: a district's row is named by the district's id (CityMapFilters.CreateNeighborhoodsCategory).
+            // save path: GameInstance.SelectedCitymapFilters
+            Leave(s, save.SelectedCitymapFilters, SaveKind.MapFilter, f => places.NamesDistrict(f), (record, f) => MarkDistrict(record, places, f));
+
             // save path: GameInstance.interiorInstallationFirmContracts[].interiorInstallationFirmAddress
             // save path: GameInstance.interiorInstallationFirmContracts[].addressToDoTheInstallation
             Leave(s, save.interiorInstallationFirmContracts, SaveKind.Installation,

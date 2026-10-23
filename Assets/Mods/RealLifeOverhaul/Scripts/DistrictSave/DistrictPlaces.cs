@@ -129,6 +129,33 @@ namespace RealLifeOverhaul.DistrictSave
         /// <summary>The fills that threw at the last build, each as "owner: what", for the log.</summary>
         public static IList<string> LastFaults => Faults;
 
+        /// <summary>
+        /// One feature's places alone, for a take-out of that feature's records in play (DistrictSaveDirector.KeepOut): its
+        /// fill run into a scoped set, which names only what the fill names, not every id with the mod's prefix, so another
+        /// feature's buildings are never swept in with it. Null when no feature registered under that name or its fill
+        /// throws (said in <see cref="LastFaults"/>). A scoped set is never <see cref="Current"/> and never taken into another.
+        /// </summary>
+        internal static PlaceSet Of(string owner)
+        {
+            int at = string.IsNullOrEmpty(owner) ? -1 : Owners.IndexOf(owner);
+            if (at < 0)
+            {
+                Faults.Add((owner ?? "(none)") + " (scoped): no feature registered its places under that name");
+                return null;
+            }
+            PlaceSet own = PlaceSet.Scoped();
+            try
+            {
+                Fills[at](own);
+            }
+            catch (Exception e)
+            {
+                Faults.Add(owner + " (scoped): " + e.GetType().Name + ": " + e.Message);
+                return null;
+            }
+            return own;
+        }
+
         /// <summary>Forgets every registration and the set (the checks' fresh start).</summary>
         public static void Reset()
         {
@@ -216,6 +243,25 @@ namespace RealLifeOverhaul.DistrictSave
         private readonly List<PlaceGround> _ground = new List<PlaceGround>(2);
         private readonly List<PlaceExit> _exits = new List<PlaceExit>(2);
         private readonly Dictionary<PlaceKey, PlaceExit> _doors = new Dictionary<PlaceKey, PlaceExit>();
+        private readonly bool _scoped;   // one feature's places alone (DistrictPlaces.Of): the mod's prefix alone names nothing
+
+        public PlaceSet()
+        {
+        }
+
+        private PlaceSet(bool scoped)
+        {
+            _scoped = scoped;
+        }
+
+        /// <summary>A set that names only what is added to it: one feature's places, for a take-out of its records in play.</summary>
+        internal static PlaceSet Scoped()
+        {
+            return new PlaceSet(true);
+        }
+
+        /// <summary>True for one feature's places alone (<see cref="DistrictPlaces.Of"/>).</summary>
+        public bool IsScoped => _scoped;
 
         /// <summary>Every number on a street of the mod's own (its id is the mod's).</summary>
         public PlaceSet Street(string id)
@@ -290,20 +336,23 @@ namespace RealLifeOverhaul.DistrictSave
             }
         }
 
-        /// <summary>True for an address the save must never name: on a street whose id is the mod's, or one a feature named.</summary>
+        /// <summary>
+        /// True for an address the save must never name: on a street whose id is the mod's, or one a feature named. A scoped
+        /// set (one feature's) names only what that feature named.
+        /// </summary>
         public bool Names(string street, int number)
         {
             if (string.IsNullOrEmpty(street))
             {
                 return false;
             }
-            return DistrictSaveRules.IsModId(street) || _streets.Contains(street) || _addresses.Contains(new PlaceKey(street, number));
+            return (!_scoped && DistrictSaveRules.IsModId(street)) || _streets.Contains(street) || _addresses.Contains(new PlaceKey(street, number));
         }
 
-        /// <summary>True for a district the save must never name: its id is the mod's, or a feature named it.</summary>
+        /// <summary>True for a district the save must never name: its id is the mod's, or a feature named it (a scoped set: only that).</summary>
         public bool NamesDistrict(string id)
         {
-            return !string.IsNullOrEmpty(id) && (DistrictSaveRules.IsModId(id) || _districts.Contains(id));
+            return !string.IsNullOrEmpty(id) && ((!_scoped && DistrictSaveRules.IsModId(id)) || _districts.Contains(id));
         }
 
         /// <summary>True for an address a feature makes this session: a record kept for it may go back.</summary>

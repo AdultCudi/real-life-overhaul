@@ -144,3 +144,4 @@ GameInstance.privateDriverVehicleInstances[].streetNumber | number | pdv
 GameInstance.privateDriverVehicleInstances[].parkingNeighbourhood | district | pdv
 GameInstance.disabledLicensingFees[].address | address | feeoff
 GameInstance.paidLicensingFeesToday[].Item1 | address | feepaid
+GameInstance.SelectedCitymapFilters | district | filter
