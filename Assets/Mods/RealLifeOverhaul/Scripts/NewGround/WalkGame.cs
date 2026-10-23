@@ -249,16 +249,19 @@ namespace RealLifeOverhaul.NewGround
         }
 
         /// <summary>
-        /// How many of the game's colliders stand on a box's top (from a little above it to 4 m): buildings, walls, props,
-        /// parking and the street's own pieces, never the ground it lies on nor the mod's own. A plan's count is kept with
-        /// it; more at a later load means the game has built there since.
+        /// How many of the game's colliders stand on a box's top (from a little above it to 4 m): buildings, walls, parking
+        /// and the street's own pieces, never the ground it lies on nor the mod's own, nor a small prop at the edge (a
+        /// lamp or a tree, GroundRules.IsProp). A plan's count is kept with it; more at a later load means the game has
+        /// built there since. Each one counted is named into <paramref name="seen"/>, a few at most, for the line that
+        /// stands the plan down.
         /// </summary>
-        public static int Built(GroundBox box)
+        public static int Built(GroundBox box, List<string> seen)
         {
             if (_builtMask == 0)
             {
                 _builtMask = LayerMask.GetMask("Buildings", "BuildingsOutlined", "BuildingWalls", "StreetProps", "InteractiveItems", "InteractiveItemsOutlined",
                     "ParkingArea", "Sidewalk", "Crosswalk", "Roads");
+                _propMask = LayerMask.GetMask("StreetProps", "InteractiveItems", "InteractiveItemsOutlined");
             }
             var centre = new Vector3(box.X, box.Top + 2.2f, box.Z);
             var half = new Vector3(box.HalfX, 1.8f, box.HalfZ);
@@ -266,16 +269,31 @@ namespace RealLifeOverhaul.NewGround
             int built = 0;
             for (int i = 0; i < count; i++)
             {
-                if (Standing[i] != null && !Standing[i].transform.root.name.StartsWith("RealLifeOverhaul", StringComparison.Ordinal))
+                Collider c = Standing[i];
+                if (c == null || c.transform.root.name.StartsWith("RealLifeOverhaul", StringComparison.Ordinal))
                 {
-                    built++;
+                    continue;
+                }
+                Bounds b = c.bounds;
+                if (GroundRules.IsProp((_propMask & (1 << c.gameObject.layer)) != 0, b.size.x, b.size.z))
+                {
+                    continue;
+                }
+                built++;
+                if (seen != null && seen.Count < SeenMost)
+                {
+                    seen.Add("'" + c.name + "' under '" + c.transform.root.name + "' (" + LayerMask.LayerToName(c.gameObject.layer) + ", at "
+                             + b.center.x.ToString("F0", System.Globalization.CultureInfo.InvariantCulture) + ", " + b.center.z.ToString("F0", System.Globalization.CultureInfo.InvariantCulture)
+                             + ", " + b.size.x.ToString("F1", System.Globalization.CultureInfo.InvariantCulture) + " x "
+                             + b.size.z.ToString("F1", System.Globalization.CultureInfo.InvariantCulture) + " m)");
                 }
             }
             return built;
         }
 
+        private const int SeenMost = 3;   // colliders named in a stand-down's line
         private static readonly Collider[] Standing = new Collider[64];
-        private static int _builtMask;
+        private static int _builtMask, _propMask;
 
         /// <summary>The box as a build source: a solid of the builder's own, so no mesh of the game's need be readable.</summary>
         public static NavMeshBuildSource Box(GroundBox box, int area)

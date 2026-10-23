@@ -157,6 +157,17 @@ namespace RealLifeOverhaul.NewGround
         public const float LinkWidth = 2f;          // m: the fallback's link
         public const float StripWidth = 3f;         // m: the strip grown from the pavement into an empty tile
         public const float StripInto = 6f;          // m the strip reaches into the empty tile
+        public const float PropMost = 2f;           // m across at most for a prop at a plan's edge that its count leaves out (see IsProp)
+
+        /// <summary>
+        /// A collider a plan's count leaves out: a prop no wider than <see cref="PropMost"/> either way (a lamp, a tree,
+        /// a bin or a bench at the edge of a pavement). The offline scans hold no round colliders, so a plan cannot have
+        /// counted them, and a game update builds walls, roads and buildings, never a lone lamp.
+        /// </summary>
+        public static bool IsProp(bool propLayer, float sizeX, float sizeZ)
+        {
+            return propLayer && sizeX <= PropMost && sizeZ <= PropMost;
+        }
         public const float JoinOverlap = 0.5f;      // m new ground reaches back onto old ground, past where the old mesh stops short of the kerb
         public const float OldMargin = 0.5f;        // m of the old mesh kept round rebuilt tiles, so their borders build as before
         public const float LongestStrip = 40f;      // m: a strip from further than this to the tile's border is not laid

@@ -17,6 +17,7 @@ namespace RealLifeOverhaul.NewGround
     public static class GroundWork
     {
         private static readonly Dictionary<CityMesh, float> Proved = new Dictionary<CityMesh, float>(2);   // the dry run's margin, once a load each
+        private static readonly List<string> Seen = new List<string>(3);   // the game's colliders found on a plan's ground, for its line
 
         /// <summary>
         /// The plan's streets appended to the traffic's data, its joins found again among the game's lanes and its ends
@@ -65,13 +66,15 @@ namespace RealLifeOverhaul.NewGround
         public static string Ground(GroundPlan plan)
         {
             int found = 0;
+            Seen.Clear();
             for (int b = 0; b < plan.Boxes.Count; b++)
             {
-                found += WalkGame.Built(plan.Boxes[b]);
+                found += WalkGame.Built(plan.Boxes[b], Seen);
             }
             if (found > plan.ExpectColliders)
             {
-                return "the game has " + found + " colliders of its own on the plan's ground, " + plan.ExpectColliders + " when it was made (a game update has built there)";
+                return "the game has " + found + " colliders of its own on the plan's ground, " + plan.ExpectColliders + " when it was made (a game update has built there): "
+                       + string.Join("; ", Seen);
             }
             string why = Grow(WalkGame.Player, plan, plan.Player);
             return why ?? Grow(WalkGame.Npc, plan, plan.Npc);
