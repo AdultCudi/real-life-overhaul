@@ -6,14 +6,18 @@ namespace RealLifeOverhaul
 {
     public static partial class Wiring
     {
-        /// <summary>Reporting bridges. Feature owners supply facts; the companion layer never reads their save formats.</summary>
+        /// <summary>
+        /// The companion report's capabilities (Core/CompanionBridges), each read from the feature that owns it; the report
+        /// never reads a feature's save line. Called only during a capture, on a save or a reader's call: nothing per frame.
+        /// A fault is said once (<see cref="Fault"/>) and only that capability reads "failed".
+        /// </summary>
         private static class CompanionLinks
         {
             internal static void Connect()
             {
                 CompanionGame.Reset();
                 CompanionBridges.Readers["features"] = Features;
-                CompanionBridges.Readers["businesses"] = CompanionGame.Businesses;
+                CompanionBridges.Readers["businesses"] = Businesses;
                 CompanionBridges.Readers["employment"] = Employment;
                 CompanionBridges.Readers["credit"] = Credit;
                 CompanionBridges.Readers["accounting"] = Accounting;
@@ -37,51 +41,94 @@ namespace RealLifeOverhaul
 
             private static CompanionModule Features()
             {
-                CompanyDirector company = CompanyDirector.Instance;
-                EconomyDirector economy = EconomyDirector.Instance;
-                return new CompanionModule("ready", new object[]
+                try
                 {
-                    Feature("economy", Settings.Economy, economy != null && economy.Running),
-                    Feature("city", CityEnabled, CityEconomy.Running),
-                    Feature("company", CompanyEnabled, company != null && company.Running),
-                    Feature("staff", StaffEnabled,
-                        company != null && company.On(CompanyPart.Staff)),
-                    Feature("managers", ManagersEnabled,
-                        company != null && company.ManagersOn)
-                });
+                    CompanyDirector company = CompanyDirector.Instance;
+                    EconomyDirector economy = EconomyDirector.Instance;
+                    return new CompanionModule("ready", new object[]
+                    {
+                        Feature("economy", Settings.Economy, economy != null && economy.Running),
+                        Feature("city", CityEnabled, CityEconomy.Running),
+                        Feature("company", CompanyEnabled, company != null && company.Running),
+                        Feature("staff", StaffEnabled, company != null && company.On(CompanyPart.Staff)),
+                        Feature("managers", ManagersEnabled, company != null && company.ManagersOn)
+                    });
+                }
+                catch (Exception e)
+                {
+                    Fault("CompanionLinks.Features", e);
+                    return new CompanionModule("failed");
+                }
+            }
+
+            private static CompanionModule Businesses()
+            {
+                try
+                {
+                    return CompanionGame.Businesses();
+                }
+                catch (Exception e)
+                {
+                    Fault("CompanionLinks.Businesses", e);
+                    return new CompanionModule("failed");
+                }
             }
 
             private static CompanionModule Employment()
             {
-                CompanyDirector company = CompanyDirector.Instance;
-                if ((CityEnabled && !CityEconomy.Running)
-                    || (StaffEnabled && (company == null || !company.On(CompanyPart.Staff))))
+                try
                 {
-                    return new CompanionModule("unavailable");
+                    CompanyDirector company = CompanyDirector.Instance;
+                    if ((CityEnabled && !CityEconomy.Running)
+                        || (StaffEnabled && (company == null || !company.On(CompanyPart.Staff))))
+                    {
+                        return new CompanionModule("unavailable");
+                    }
+                    return CompanyGame.CompanionEmployment(StaffEnabled ? company : null, CityEnabled ? Prices.Level : 1000);
                 }
-                return CompanyGame.CompanionEmployment(StaffEnabled ? company : null, CityEnabled ? Prices.Level : 1000);
+                catch (Exception e)
+                {
+                    Fault("CompanionLinks.Employment", e);
+                    return new CompanionModule("failed");
+                }
             }
 
             private static CompanionModule Credit()
             {
-                if (!Settings.Economy)
+                try
                 {
-                    return new CompanionModule("disabled");
+                    if (!Settings.Economy)
+                    {
+                        return new CompanionModule("disabled");
+                    }
+                    EconomyDirector economy = EconomyDirector.Instance;
+                    if (economy == null || !economy.Running || economy.Desk == null || !economy.Desk.Running)
+                    {
+                        return new CompanionModule("unavailable");
+                    }
+                    return economy.Desk.CompanionCredit();
                 }
-                EconomyDirector economy = EconomyDirector.Instance;
-                if (economy == null || !economy.Running || economy.Desk == null || !economy.Desk.Running)
+                catch (Exception e)
                 {
-                    return new CompanionModule("unavailable");
+                    Fault("CompanionLinks.Credit", e);
+                    return new CompanionModule("failed");
                 }
-                return economy.Desk.CompanionCredit();
             }
 
             private static CompanionModule Accounting()
             {
-                // GameBooks already rebuilds the game's statements. This declares their provenance, not full coverage
-                // of every RLO activity; account principal and hourly wage observations are never added to profit.
-                return new CompanionModule("ready", CompanionSnapshot.Row("source", "game.financialSummaries",
-                    "coverage", "statement-backed-only", "adjustment", "none"));
+                try
+                {
+                    // GameBooks already rebuilds the game's statements. This declares their provenance, not full coverage
+                    // of every RLO activity; account principal and hourly wage observations are never added to profit.
+                    return new CompanionModule("ready", CompanionSnapshot.Row("source", "game.financialSummaries",
+                        "coverage", "statement-backed-only", "adjustment", "none"));
+                }
+                catch (Exception e)
+                {
+                    Fault("CompanionLinks.Accounting", e);
+                    return new CompanionModule("failed");
+                }
             }
         }
     }
