@@ -7,7 +7,7 @@ Buildings of the mod's own, copied at every load from the city's own building de
 - `NewBuildingsRules.cs`: a design's name, the pick, where a design stands on its lot, the ground's sums, the lot taken, what refuses a declaration (game-free).
 - `MadeBuildings.cs`: declaring a building of the mod's own, and finding it after the load.
 - `BuildingCopies.cs`: decorative copies for other features, and a building's own look hidden and shown.
-- `NewBuildingsDirector.cs`: the load step by step, the save guard's timing; `NewBuildingsDirector.Copies.cs` the copies, `NewBuildingsDirector.Tests.cs` the six test entries.
+- `NewBuildingsDirector.cs`: the load step by step, the places named to the district save, the save guard's timing; `NewBuildingsDirector.Copies.cs` the copies, `NewBuildingsDirector.Tests.cs` the six test entries.
 - `MadeGame.cs`, `MadeGame.Save.cs` and `CopyGame.cs`, `CopyGame.Ground.cs`: the only files that touch the game.
 
 ## Documentation

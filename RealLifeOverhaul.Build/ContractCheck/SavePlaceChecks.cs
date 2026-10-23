@@ -713,6 +713,7 @@ internal static partial class Program
         Check(city.Contains("DistrictSave.DistrictSaveDirector.City(_root)"), "the city load no longer runs the district save's step");
         string entry = File.ReadAllText(Path.Combine(folder, "DistrictSaveEntry.cs"));
         Check(entry.Contains("[ModEntryMainMenu]") && entry.Contains("DistrictSaveDirector.Early"), "the main menu's entry no longer puts the district's records back at its unload");
+        OneOwner(scripts, folder);
 
         // Nothing of the mod's writes a save but the game's own SaveGameManager.Save, whose save event the district save is the last step of.
         var writers = new List<string>();
@@ -729,5 +730,49 @@ internal static partial class Program
         }
         Check(writers.Count == 0, "a save is written past the game's SaveGameManager.Save (and so past the district save) in " + string.Join(", ", writers));
         Console.WriteLine("   " + commented.Count + " paths handled in Scripts/DistrictSave; every save goes through its step: " + (writers.Count == 0 ? "yes" : "no"));
+    }
+
+    // One owner of every record that names the mod's places: new buildings' own save guard steps aside while the district
+    // save is present (true only once its city step is done), and the save tools' removal takes the places out of the
+    // save in memory for good through the district save, after the features stop and before its save, another player's
+    // things left where they are. The district save arms its put back the moment it has taken anything out.
+    private static void OneOwner(string scripts, string folder)
+    {
+        string Text(string path) => File.Exists(path) ? File.ReadAllText(path).Replace("\r\n", "\n") : string.Empty;
+        string director = Text(Path.Combine(folder, "DistrictSaveDirector.cs"));
+        string city = Body(director, "public static void City(GameObject root)") ?? string.Empty, early = Body(director, "public static void Early()") ?? string.Empty;
+        int present = city.LastIndexOf("Present = true;", StringComparison.Ordinal);
+        Check(present > city.IndexOf("Guard.Add<DistrictSaveWatch>(root);", StringComparison.Ordinal) && present > city.IndexOf("RegisterOnGameLoadedLateCallback(Join);", StringComparison.Ordinal)
+              && city.IndexOf("Guard.Add<DistrictSaveWatch>(root);", StringComparison.Ordinal) > 0 && early.IndexOf("Present = false;", StringComparison.Ordinal) is int gone && gone > 0
+              && gone < early.IndexOf("Start(save);", StringComparison.Ordinal) && Regex.Matches(director, @"\bPresent = ").Count == 2,
+            "the district save is no longer present only once its city step is done (DistrictSaveDirector.Present): a feature's own save guard would step aside too soon or never");
+        string write = Body(director, "public static void BeforeWrite()") ?? string.Empty;
+        int taken = write.IndexOf("DistrictSaveGame.Strip s = DistrictSaveGame.TakeOut(save, places);", StringComparison.Ordinal);
+        Check(taken > 0 && write.IndexOf("_pending = s;", StringComparison.Ordinal) is int pending && pending > taken && pending < write.IndexOf("Write(save, s,", StringComparison.Ordinal)
+              && write.IndexOf("Arm();", StringComparison.Ordinal) > pending && write.IndexOf("Arm();", StringComparison.Ordinal) < write.IndexOf("Write(save, s,", StringComparison.Ordinal),
+            "the district save no longer arms its put back the moment it has taken records out (before its section is written and the check runs)");
+
+        string nb = Text(Path.Combine(scripts, "NewBuildings", "NewBuildingsDirector.cs"));
+        string onSave = Body(nb, "private void OnSave()") ?? string.Empty, keep = Body(nb, "private void KeepOutOfSaves()") ?? string.Empty;
+        int aside = onSave.IndexOf("if (DistrictSave.DistrictSaveDirector.Present)", StringComparison.Ordinal);
+        Check(aside > 0 && onSave.IndexOf("return;", aside, StringComparison.Ordinal) is int back && back > aside && back < onSave.IndexOf("MadeGame.Strip(", StringComparison.Ordinal)
+              && back < onSave.IndexOf("PutBackNow(", StringComparison.Ordinal),
+            "new buildings' save guard no longer steps aside while the district save is present (NewBuildingsDirector.OnSave): two owners would take the same records");
+        Check(keep.IndexOf("bool district = DistrictSave.DistrictSaveDirector.Present;", StringComparison.Ordinal) is int asked && asked > 0
+              && keep.IndexOf("if (!district)", StringComparison.Ordinal) is int only && only > asked && only < keep.IndexOf("MadeGame.Strip(", StringComparison.Ordinal),
+            "new buildings' stop for the save tools no longer leaves the save to the district save while it is present (NewBuildingsDirector.KeepOutOfSaves)");
+        Check(nb.Contains("DistrictSave.DistrictPlaces.Add(PlacesOwner, MadeGame.NamePlaces);"),
+            "new buildings no longer names its buildings and their doors to the district save (DistrictPlaces.Add in NewBuildingsDirector.Awake)");
+
+        string tools = Text(Path.Combine(scripts, "Meta", "SaveTools.cs"));
+        string prepare = Body(tools, "private static IEnumerator Prepare()") ?? string.Empty;
+        int stopped = prepare.IndexOf("Dormant = true;", StringComparison.Ordinal), forGood = prepare.IndexOf("DistrictSave.DistrictSaveDirector.KeepOutForGood();", StringComparison.Ordinal);
+        Check(stopped > 0 && forGood > stopped && prepare.IndexOf("SaveGameManager.Save(SaveGameManager.SaveType.Default", StringComparison.Ordinal) > forGood,
+            "the save tools' removal no longer takes the mod's places out of the save in memory for good through the district save, after the features stop and before its save");
+        string keptOut = Body(director, "public static int KeepOutForGood()") ?? string.Empty;
+        string game = Text(Path.Combine(folder, "DistrictSaveGame.cs"));
+        Check(keptOut.Contains("DistrictSaveGame.TakeOut(save, DistrictPlaces.Current, true);") && keptOut.IndexOf("DistrictSaveGame.PutBack(s, null);", StringComparison.Ordinal) is int undo
+              && undo > 0 && undo < keptOut.IndexOf("s.PutBacks.Clear();", StringComparison.Ordinal) && game.Contains("s.ForGood && foreign != null ? x => mine(x) && !foreign(x) : mine"),
+            "the district save's removal no longer keeps every record it takes out for good, puts them back when its section cannot be written, or leaves another player's things");
     }
 }

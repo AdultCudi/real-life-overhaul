@@ -58,17 +58,35 @@ namespace RealLifeOverhaul.NewBuildings
     }
 
     /// <summary>
-    /// The save guard, small on purpose: a made building is never saved, so only what names a made address while a save is
-    /// written needs care. The game serialises right after its save event, so what is taken out is put back a frame later.
-    /// A save made inside a made building is written with no current address and the player at its door outside, so it
-    /// loads with or without the mod with the player there (the game puts a player with no address at the saved position).
-    /// Every address on a street of the mod's own is a made one, standing or not, so the test is the street alone. The
-    /// district's own framework (another part) takes out the rest of what names the mod's addresses; each takes out only
-    /// what is still there and puts back only what it took, so the two can run in either order.
+    /// What names a made address in a save is the district save's (Scripts/DistrictSave), one owner of every record: it is
+    /// told every made building standing with the spot outside its door (<see cref="NamePlaces"/>), and at every save it
+    /// takes out and puts back whatever names one, a save made inside one written with no current address and the player
+    /// outside its door, facing out, so it loads with or without the mod with the player there. The save guard below
+    /// steps aside while the district save is present (DistrictSaveDirector.Present); it does its own only in a city
+    /// whose district save step failed. Every address on a street of the mod's own is a made one, standing or not, so its
+    /// test is the street alone. Each of the two takes out only what is still there and puts back only what it took.
     /// </summary>
     internal static partial class MadeGame
     {
         private const float OutsideDoor = 1.2f;   // m in front of a door: where a save made inside puts the player
+
+        /// <summary>
+        /// The made buildings for the district save: each one standing in this city, shown or hidden, with the spot outside
+        /// its door where a save made inside puts the player, facing out, and the game's district it stands in. Read at
+        /// every load once the buildings are made; the district save keeps the set as the city had it until the next load.
+        /// </summary>
+        public static void NamePlaces(DistrictSave.PlaceSet set)
+        {
+            var all = new List<MadeBuilding>(MadeBuildings.Count);
+            MadeBuildings.All(all);
+            for (int i = 0; i < all.Count; i++)
+            {
+                MadeBuilding made = all[i];
+                float turn = made.DoorFacing * Mathf.Deg2Rad;   // the door's outward way, as Quaternion.Euler(0, facing, 0) turns forward
+                set.Door(made.Spec.Street, made.Spec.Number, made.DoorX + Mathf.Sin(turn) * OutsideDoor, made.DoorY, made.DoorZ + Mathf.Cos(turn) * OutsideDoor,
+                    made.DoorFacing, made.Spec.District);
+            }
+        }
 
         /// <summary>Takes out of the save about to be written whatever names an address of the mod's own; how many things.</summary>
         public static int Strip(SaveTaken taken)

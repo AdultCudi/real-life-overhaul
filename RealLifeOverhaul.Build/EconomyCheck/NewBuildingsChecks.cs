@@ -611,8 +611,11 @@ internal static partial class Program
         string down = MemberText(director, "private void OnDestroy()"), outOf = MemberText(director, "private void KeepOutOfSaves()");
         Check(down.Contains("bool stays = Meta.SaveTools.Dormant;") && down.Contains("KeepOutOfSaves();") && down.Contains("MadeGame.Unload(!stays);")
               && outOf.IndexOf("MadeGame.Strip(_taken);", StringComparison.Ordinal) is int stripped && stripped > 0 && outOf.IndexOf("_taken.Clear();", StringComparison.Ordinal) > stripped
+              && outOf.IndexOf("bool district = DistrictSave.DistrictSaveDirector.Present;", StringComparison.Ordinal) is int asked && asked > 0
+              && outOf.IndexOf("if (!district)", StringComparison.Ordinal) is int aside && aside > asked && aside < stripped
               && outOf.Contains("CopyGame.Show(made.Controller, false);"),
-            "new buildings: when the save tools stop the mod in a city that stays, the made buildings stay hidden and the save in memory names none of their addresses for good");
+            "new buildings: when the save tools stop the mod in a city that stays, the made buildings stay hidden, and the save in memory names none of their addresses for good "
+            + "(the district save takes them out, which the tools ask before their save; this guard only where it is not present)");
         int immediate = Occurs(all, "DestroyImmediate(");
         Check(immediate == 3 && Occurs(MemberText(copy, "private static void StripWorking("), "DestroyImmediate(") == 1 && Occurs(MemberText(copy, "private static void StripLook("), "DestroyImmediate(") == 2,
             "new buildings: what is taken off at once is taken off a template asleep under a switched-off holder (its Awake never ran)");
@@ -647,6 +650,15 @@ internal static partial class Program
               && destroy.Contains("SaveHook.Drop(_onSave);") && destroy.Contains("PutBackNow(") && MemberText(director, "private void OnDisable()").Contains("PutBackNow(")
               && onSave.Contains("finally") && onSave.Contains("StartCoroutine(Guard.Routine(PutBackAfter()))"),
             "new buildings: the save guard runs whatever is switched off, puts back a frame later (after a fault too), and at once if the city goes first");
+        // One owner of each record: the district save, told of every made building with its door; the guard steps aside.
+        string names = MemberText(save, "public static void NamePlaces(DistrictSave.PlaceSet set)");
+        Check(onSave.IndexOf("if (DistrictSave.DistrictSaveDirector.Present)", StringComparison.Ordinal) is int present && present >= 0
+              && present < onSave.IndexOf("MadeGame.Strip(_taken)", StringComparison.Ordinal) && present < onSave.IndexOf("PutBackNow(", StringComparison.Ordinal)
+              && awake.Contains("DistrictSave.DistrictPlaces.Add(PlacesOwner, MadeGame.NamePlaces);")
+              && names.Contains("MadeBuildings.All(all);") && names.Contains("set.Door(made.Spec.Street, made.Spec.Number,") && names.Contains("* OutsideDoor")
+              && names.Contains("made.Spec.District") && !names.Contains("SaveGameManager"),
+            "new buildings: the district save is the one owner of what names a made address (told of every made building standing, with the spot outside its door), "
+            + "and the save guard takes nothing while it is present");
         string strip = MemberText(save, "public static int Strip(SaveTaken taken)"), back = MemberText(save, "public static bool PutBack(SaveTaken taken)");
         Check(strip.Contains("MadeStreets.IsMine(save.CurrentStreetName)") && strip.Contains("save.CurrentStreetName = string.Empty;") && strip.Contains("save.LastPlayerPosition = ")
               && strip.Contains("MadeStreets.IsMine(regs[i].StreetName)") && back.Contains("save.CurrentStreetName = taken.Street;") && back.Contains("save.LastPlayerPosition = taken.Position;"),
