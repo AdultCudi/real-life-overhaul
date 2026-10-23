@@ -11,12 +11,13 @@ using RealLifeOverhaul.Uptown;
 
 // Uptown's band filled (the owner, 23 Oct 2026: "All 54 blocks", "Mostly built"), on the real plan of its 422 lots: the lots
 // built from the first day and the open ones (the first block's old quarter kept, the landmarks' own blocks open, a share
-// open on every other block, the same in any order and on every machine), the eight offices leased to the city's rival
-// builders (office lots outside the first block, one a block, as many as the rivals), the landmarks' sites and the
-// developers' lots on the filled plan, the lanes' squares and the boxes' reach for the made buildings' ground check against
-// a whole pass, the other structures a building takes where no design of its own size fits its lot, and the sources: the load's declarations,
-// the generator for new buildings alone, the leases by the game's own start of a business, the map's row placed, the look
-// check, the tests in the run, the wiring; and the texts.
+// open on every other block, the lot a tree of the game's leans over kept empty, the same in any order and on every
+// machine), the eight offices leased to the city's rival builders (office lots outside the first block, one a block, as
+// many as the rivals), the landmarks' sites and the developers' lots on the filled plan, the lanes' squares and the boxes'
+// reach for the made buildings' ground check against a whole pass, the other structures a building takes where no design
+// of its own size fits its lot, the fill's load work timed, and the sources: the load's declarations, the generator for new
+// buildings alone, the leases by the game's own start of a business, the map's row placed, the look check, the tests in
+// the run, the wiring; and the texts.
 internal static partial class Program
 {
     private static void UptownFillChecks()
@@ -28,6 +29,7 @@ internal static partial class Program
         UptownFillLanes();
         UptownFillBoxes();
         UptownFillOthers(plan);
+        UptownFillLoad(plan);
         UptownFillSources();
         UptownFillTexts();
     }
@@ -74,9 +76,17 @@ internal static partial class Program
             first += lot.First ? 1 : 0;
             firstBuilt += lot.First && builtIds.Contains(lot.Id) ? 1 : 0;
         }
-        Check(plan.Count == 422 && built.Count == 352 && legacy.Count == 21 && first == 83 && firstBuilt == 44,
-            "uptown fill: of the band's 422 lots, 352 are built from the first day and 70 left open; 44 of the first block's 83 (" + plan.Count + ", " + built.Count + ", "
-            + legacy.Count + ", " + firstBuilt + " of " + first + ")");
+        int notClear = 0;
+        foreach (BuildingsLot lot in plan)
+        {
+            notClear += BuildingsRules.Clear(lot.Id) ? 0 : 1;
+        }
+        Check(plan.Count == 422 && built.Count == 351 && legacy.Count == 21 && first == 83 && firstBuilt == 44 && notClear == 1,
+            "uptown fill: of the band's 422 lots, 351 are built from the first day, 70 left open and one kept empty; 44 of the first block's 83 (" + plan.Count + ", "
+            + built.Count + ", " + legacy.Count + ", " + firstBuilt + " of " + first + ", " + notClear + " not clear)");
+        bool treeLot = plan.Exists(l => l.Id == "uptown_1_14_04") && !BuildingsRules.Clear("uptown_1_14_04") && !builtIds.Contains("uptown_1_14_04")
+                       && !leased.Contains("uptown_1_14_04") && BuildingsRules.Clear("uptown_1_14_05") && !BuildingsRules.Clear(null) && !BuildingsRules.Clear(string.Empty);
+        Check(treeLot, "uptown fill: the lot a tree of the game's leans over (uptown_1_14_04, the ground's scan) is neither built nor leased, and its neighbours are clear");
         bool keepsOld = legacy.IsSubsetOf(builtIds) && leased.IsSubsetOf(builtIds);
         Check(keepsOld, "uptown fill: the first block's quarter built before the band was filled stays built (saves hold their records), and every leased office is built");
 
@@ -98,8 +108,8 @@ internal static partial class Program
             bool firstBlock = false;
             foreach (BuildingsLot lot in block.Value)
             {
-                open += builtIds.Contains(lot.Id) ? 0 : 1;
-                fixedOnes += legacy.Contains(lot.Id) || leased.Contains(lot.Id) ? 1 : 0;
+                open += builtIds.Contains(lot.Id) || !BuildingsRules.Clear(lot.Id) ? 0 : 1;
+                fixedOnes += legacy.Contains(lot.Id) || leased.Contains(lot.Id) || !BuildingsRules.Clear(lot.Id) ? 1 : 0;
                 firstBlock |= lot.First;
             }
             if (LandmarkRules.OwnBlock(block.Key))
@@ -488,6 +498,88 @@ internal static partial class Program
         return new BuildingsStructure { Size = "ba:buildingsize_" + size, Version = version, Type = "ba:buildingtype_" + type };
     }
 
+    // The fill's own work at a load that runs no game code, timed on the real plan as the load does it: which lots are built
+    // and leased, each built lot's structures, its pick and its others; the lanes' points sorted into squares; and each
+    // building's look at the lanes near it and its pass over the game's boxes. Behind the loading screen, never a frame.
+    private static void UptownFillLoad(List<BuildingsLot> plan)
+    {
+        const int LanePoints = 20176, Boxes = 2934;
+        var xs = new float[LanePoints];
+        var zs = new float[LanePoints];
+        var present = new bool[LanePoints];
+        var box = new float[Boxes * 4];
+        uint seed = 2166136261u;
+        for (int i = 0; i < LanePoints; i++)
+        {
+            seed = unchecked(seed * 1664525u + 1013904223u);
+            xs[i] = -3000f + (seed % 600000u) / 100f;
+            seed = unchecked(seed * 1664525u + 1013904223u);
+            zs[i] = -1500f + (seed % 250000u) / 100f;
+            present[i] = true;
+        }
+        for (int i = 0; i < Boxes; i++)
+        {
+            seed = unchecked(seed * 1664525u + 1013904223u);
+            float x = -4000f + seed % 560000u / 100f;
+            seed = unchecked(seed * 1664525u + 1013904223u);
+            float z = -2500f + seed % 350000u / 100f;
+            box[i * 4] = x;
+            box[i * 4 + 1] = z;
+            box[i * 4 + 2] = x + 20f;
+            box[i * 4 + 3] = z + 25f;
+        }
+        double rulesMs = double.MaxValue, lanesMs = double.MaxValue, groundMs = double.MaxValue;
+        int built = 0, others = 0, hits = 0;
+        for (int run = 0; run < 3; run++)
+        {
+            long a = Stopwatch.GetTimestamp();
+            List<int> lots = BuildingsRules.Built(plan, LandmarkRules.OwnBlock, 0f, 1f, new List<int>());
+            HashSet<string> leased = UptownIds(plan, BuildingsRules.Leased(plan, new List<int>()));
+            var into = new List<BuildingsStructure>();
+            others = 0;
+            foreach (int i in lots)
+            {
+                List<BuildingsStructure> options = UptownOptions(plan[i]);
+                bool lease = leased.Contains(plan[i].Id);
+                int pick = lease ? BuildingsRules.PickOffice(plan[i].Id, options) : BuildingsRules.PickStructure(plan[i].Id, options);
+                others += BuildingsRules.Others(options, pick, lease, into).Count;
+            }
+            long b = Stopwatch.GetTimestamp();
+            var grid = new LaneGrid();
+            grid.Fill(xs, zs, present, LanePoints);
+            long c = Stopwatch.GetTimestamp();
+            hits = 0;
+            foreach (int i in lots)
+            {
+                BuildingsLot lot = plan[i];
+                float hw = lot.Width * 0.5f - 1f, hd = lot.Depth * 0.5f - 1f;
+                hits += grid.Inside(lot.X, lot.Z, lot.Facing, hw, hd, NewBuildingsRules.RoadClear) >= 0 ? 1 : 0;
+                hits += grid.Nearest(lot.X, lot.Z, NewBuildingsRules.StreetReach + Math.Max(hw, hd), out _) >= 0 ? 1 : 0;
+                NewBuildingsRules.Reach(lot.Facing, hw, hd, NewBuildingsRules.Gap, out float reachX, out float reachZ);
+                for (int k = 0; k < Boxes; k++)
+                {
+                    int q = k * 4;
+                    if (!NewBuildingsRules.Apart(box[q], box[q + 1], box[q + 2], box[q + 3], lot.X, lot.Z, reachX, reachZ)
+                        && NewBuildingsRules.Overlaps(box[q], box[q + 1], box[q + 2], box[q + 3], lot.X, lot.Z, lot.Facing, hw, hd, NewBuildingsRules.Gap))
+                    {
+                        hits++;
+                        break;
+                    }
+                }
+            }
+            long d = Stopwatch.GetTimestamp();
+            built = lots.Count;
+            rulesMs = Math.Min(rulesMs, (b - a) * 1000.0 / Stopwatch.Frequency);
+            lanesMs = Math.Min(lanesMs, (c - b) * 1000.0 / Stopwatch.Frequency);
+            groundMs = Math.Min(groundMs, (d - c) * 1000.0 / Stopwatch.Frequency);
+        }
+        double all = rulesMs + lanesMs + groundMs;
+        Check(built == 351 && others > 0 && hits > 0 && all < 30.0,
+            "uptown fill: the fill's own load work without the game's code, on the real plan: the built and leased lots and each one's structures and others in "
+            + rulesMs.ToString("F2") + " ms, " + LanePoints + " lane points into squares in " + lanesMs.ToString("F2") + " ms, " + built + " buildings' lane and box checks in "
+            + groundMs.ToString("F2") + " ms; " + all.ToString("F2") + " ms in all (wanted under 30 ms)");
+    }
+
     private static void UptownFillOthers(List<BuildingsLot> plan)
     {
         var warehouses = new List<BuildingsStructure>();
@@ -660,6 +752,11 @@ internal static partial class Program
         Check(tries > 0 && make.Contains("noDesign &= pick < 0;") && make.Contains("NewBuildingsRules.OtherTakes(spec, spec.Others[s], MadeGame.StructureTakes, MadeGame.HomesLeftOut())")
               && takes > tries && record > takes && make.Contains("spec.Version = other.Version;") && make.Contains("spec.Type = other.Type;"),
             "new buildings: where no design of its size fits any lot, a building tries its other structures in order (never for a lot its ground refused), its record made with the one taken");
+        Check(declare.IndexOf("if (!BuildingsRules.Clear(lot.Id))", StringComparison.Ordinal) >= 0
+              && declare.IndexOf("if (!BuildingsRules.Clear(lot.Id))", StringComparison.Ordinal) < declare.IndexOf("FinishedBuilding f = _state.On(lot.Id);", StringComparison.Ordinal)
+              && MemberText(lots, "public static bool Taken(string lotId)").Contains("!BuildingsRules.Clear(lotId) ||")
+              && MemberText(Read("Uptown/LifeDirector.Tests.cs"), "private static bool Census(string when, bool asked = false)").Contains("BuildingsRules.Clear(Plan[i].Id)"),
+            "uptown fill: a lot not clear is declared nothing at a load, taken for the construction game and the landmarks, and never counted open");
         Check(declare.Contains("BuildingsRules.Others(Options, pick, lease, Others);") && declare.Contains("LifeGame.Spec(GroundOf(lot, f), structure, Others,")
               && declare.IndexOf("Others.Clear();", StringComparison.Ordinal) >= 0
               && declare.IndexOf("Others.Clear();", StringComparison.Ordinal) < declare.IndexOf("if (f != null)", StringComparison.Ordinal)

@@ -19,14 +19,17 @@ namespace RealLifeOverhaul.Uptown
         private static Func<int, bool> _firstDayFor;   // the kept-open blocks FirstDayLots were worked out with
         private static bool _liftFaulted;
 
-        /// <summary>True when the lot holds a district building at this load, or one finished there (or over it) waits for the next load.</summary>
+        /// <summary>
+        /// True when the lot holds a district building at this load, or one finished there (or over it) waits for the next
+        /// load; and always for a lot something of the game's stands into (BuildingsRules.Clear), which stays empty.
+        /// </summary>
         public static bool Taken(string lotId)
         {
             if (string.IsNullOrEmpty(lotId))
             {
                 return false;
             }
-            return _state.Covering(lotId) != null || BuiltLots.Contains(lotId) || StandsOn(lotId);
+            return !BuildingsRules.Clear(lotId) || _state.Covering(lotId) != null || BuiltLots.Contains(lotId) || StandsOn(lotId);
         }
 
         /// <summary>True when a district building stands on the lot at this load, its own lot or one it stands over.</summary>

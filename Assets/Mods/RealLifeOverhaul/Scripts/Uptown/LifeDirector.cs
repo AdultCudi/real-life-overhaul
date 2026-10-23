@@ -201,6 +201,10 @@ namespace RealLifeOverhaul.Uptown
             for (int i = 0; i < Plan.Count; i++)
             {
                 BuildingsLot lot = Plan[i];
+                if (!BuildingsRules.Clear(lot.Id))
+                {
+                    continue;   // taken from the start for every feature, so no save holds a building there
+                }
                 FinishedBuilding f = _state.On(lot.Id);
                 if (f == null && !BuiltLots.Contains(lot.Id))
                 {
@@ -240,14 +244,17 @@ namespace RealLifeOverhaul.Uptown
                 MadeBuildings.Declare(spec);
                 Declared.Add(spec);
             }
-            int open = 0;
+            int open = 0, notClear = 0;
             for (int i = 0; i < Plan.Count; i++)
             {
-                open += !BuiltLots.Contains(Plan[i].Id) && _state.Covering(Plan[i].Id) == null ? 1 : 0;
+                bool clear = BuildingsRules.Clear(Plan[i].Id);
+                open += clear && !BuiltLots.Contains(Plan[i].Id) && _state.Covering(Plan[i].Id) == null ? 1 : 0;
+                notClear += clear ? 0 : 1;
             }
             Logger?.Info("Uptown: " + Declared.Count + " building(s) declared for this load (" + Built.Count + " of the band's lots from the first day, " + leased
                          + " of them offices leased to the city's builders; " + KeptLots.Count + " kept from an earlier load; " + finished + " finished by the construction game"
-                         + (refused > 0 ? "; " + refused + " left empty" : string.Empty) + ") of " + Plan.Count + " lots, " + open + " open for the construction game.");
+                         + (refused > 0 ? "; " + refused + " left empty" : string.Empty) + ") of " + Plan.Count + " lots, " + open + " open for the construction game"
+                         + (notClear > 0 ? ", " + notClear + " kept empty as something of the game's stands into it" : string.Empty) + ".");
         }
 
         /// <summary>

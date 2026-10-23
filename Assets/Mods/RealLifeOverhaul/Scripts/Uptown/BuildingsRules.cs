@@ -71,6 +71,20 @@ namespace RealLifeOverhaul.Uptown
         public const string SpecialType = NewBuildingsRules.SpecialType;
         public const string HomeType = NewBuildingsRules.HomeType;
 
+        // Lots something of the game's own stands into, from the ground's scan of the game's scene (navlab/facts/band_clear.py):
+        // a building there would meet it, as the copy engine stands a design on the lot's front line. uptown_1_14_04: the crown
+        // of a tree on 1st Street's east pavement leans some 2 m over the lot's front from 3.5 m up.
+        private static readonly string[] NotClear = { "uptown_1_14_04" };
+
+        /// <summary>
+        /// False for a lot something of the game's stands into: never built from the first day, leased, counted among a
+        /// block's open lots, sold or developed (it is taken for the construction game and the landmarks), so it stays empty.
+        /// </summary>
+        public static bool Clear(string lotId)
+        {
+            return !string.IsNullOrEmpty(lotId) && Array.IndexOf(NotClear, lotId) < 0;
+        }
+
         /// <summary>How many of the first block's lots stand from the first day: a quarter, halves up, at least one when there are any.</summary>
         public static int DayOneCount(int firstBlockLots)
         {
@@ -156,7 +170,7 @@ namespace RealLifeOverhaul.Uptown
             var offices = new List<int>(64);
             for (int i = 0; i < lots.Count; i++)
             {
-                if (lots[i].Class == BuildingsClass.Office && !lots[i].First && !string.IsNullOrEmpty(lots[i].Id))
+                if (lots[i].Class == BuildingsClass.Office && !lots[i].First && Clear(lots[i].Id))
                 {
                     offices.Add(i);
                 }
@@ -186,8 +200,8 @@ namespace RealLifeOverhaul.Uptown
         /// the order of their ids: every lot but those left open. Left open: every lot of a block kept open
         /// (<paramref name="keptOpen"/>: a landmark's block) but the first block's quarter built before the band was filled
         /// (<see cref="DayOne"/>, whose records saves hold); and on every other block its <see cref="OpenCount"/>, picked by
-        /// their ids' hashes among its lots that are neither that quarter nor leased (<see cref="Leased"/>). The same on every
-        /// machine with the same mod.
+        /// their ids' hashes among its lots that are neither that quarter nor leased (<see cref="Leased"/>). A lot not
+        /// <see cref="Clear"/> is neither built nor one of a block's open lots. The same on every machine with the same mod.
         /// </summary>
         public static List<int> Built(IList<BuildingsLot> lots, Func<int, bool> keptOpen, float awayX, float awayZ, List<int> into)
         {
@@ -230,7 +244,7 @@ namespace RealLifeOverhaul.Uptown
                     }
                     count++;
                     first |= lots[i].First;
-                    if (!stays[i])
+                    if (!stays[i] && Clear(lots[i].Id))
                     {
                         candidates.Add(i);
                     }
@@ -248,7 +262,7 @@ namespace RealLifeOverhaul.Uptown
             }
             for (int i = 0; i < lots.Count; i++)
             {
-                if (!open[i] && !string.IsNullOrEmpty(lots[i].Id))
+                if (!open[i] && Clear(lots[i].Id))
                 {
                     into.Add(i);
                 }

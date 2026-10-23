@@ -82,7 +82,7 @@ namespace RealLifeOverhaul.Uptown
             int open = 0;
             for (int i = 0; i < Plan.Count; i++)
             {
-                open += !StandsOn(Plan[i].Id) && _state.Covering(Plan[i].Id) == null ? 1 : 0;
+                open += !StandsOn(Plan[i].Id) && _state.Covering(Plan[i].Id) == null && BuildingsRules.Clear(Plan[i].Id) ? 1 : 0;
             }
             int leases = 0, leased = 0;
             for (int i = 0; i < LeasedUp.Length; i++)
