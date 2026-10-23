@@ -168,6 +168,42 @@ internal static partial class Program
         Check(NewBuildingsRules.Pick(designs, "ba:buildingsize_z", Office, null, 30f, 34f, "x") == -1 && NewBuildingsRules.Pick(null, C, Office, null, 30f, 34f, "x") == -1
               && NewBuildingsRules.Pick(designs, C, Office, null, 10f, 10f, "x") == -1,
             "new buildings: no design of its size, no catalogue or a lot too small for any: no design, and the building stands down");
+
+        // A plot's building, or a building's new look, when no design is named: one that fills the ground, picked by a key.
+        var ground = new List<DesignEntry>
+        {
+            Entry("G_Big", C, Office, 20f, 18f),          // 360 m2: the best fit of 22 by 20
+            Entry("G_Batched", C, Office, 21f, 19f, batched: true),
+            Entry("G_Close", C, Retail, 19f, 18f),        // 342 m2: within the share of the best
+            Entry("G_Small", K, Office, 10f, 10f),        // 100 m2: too small beside them
+            Entry("G_Wide", C, Office, 30f, 10f),         // too wide for the ground
+            Entry("G_Turned", C, Office, 18f, 19f, 90f),  // 342 m2, its door on its side
+        };
+        ground.Sort(NewBuildingsRules.CompareDesigns);
+        int big = ground.FindIndex(e => e.Name == "G_Big"), close = ground.FindIndex(e => e.Name == "G_Close"), turned = ground.FindIndex(e => e.Name == "G_Turned");
+        bool fills = true, spreadBig = false, spreadClose = false, spreadTurned = false, same = true;
+        for (int i = 0; i < 60; i++)
+        {
+            string key = "plot:" + i + ":-40:090";
+            int pick = NewBuildingsRules.PickFor(ground, 22f, 20f, null, key);
+            fills &= pick == big || pick == close || pick == turned;
+            spreadBig |= pick == big;
+            spreadClose |= pick == close;
+            spreadTurned |= pick == turned;
+            same &= NewBuildingsRules.PickFor(ground, 22f, 20f, null, key) == pick;
+        }
+        Check(fills && spreadBig && spreadClose && spreadTurned && same,
+            "new buildings: a plot is given a design that fills its ground (never one in a static batch, too big or far smaller than the best), the same one for the same key");
+        bool notOwn = true;
+        for (int i = 0; i < 30; i++)
+        {
+            int pick = NewBuildingsRules.PickFor(ground, 22f, 20f, "G_Big", "ba:street_fifthavenue#" + i);
+            notOwn &= pick >= 0 && pick != big;
+        }
+        Check(notOwn, "new buildings: a building's new look is never the design it wears already");
+        Check(NewBuildingsRules.PickFor(ground, 8f, 8f, null, "k") == -1 && NewBuildingsRules.PickFor(null, 22f, 20f, null, "k") == -1
+              && NewBuildingsRules.PickFor(ground, 11f, 11f, null, "k") == ground.FindIndex(e => e.Name == "G_Small"),
+            "new buildings: ground too small for any design gets none; ground only a small design fits gets that one");
     }
 
     // ---------------------------------------------------------------- where a design stands
@@ -209,6 +245,21 @@ internal static partial class Program
         NewBuildingsRules.Place(offset, lot, out x, out z, out yaw);
         NewBuildingsRules.Footprint(offset, lot, out cx, out cz, out hw, out hd);
         Check(Near(x, 96f) && Near(z, 212f) && Near(cx, 100f) && Near(cz, 207f), "new buildings: a design whose root is not its middle is stood with its middle in the lot's middle");
+
+        // A copy over one of the game's buildings: its door where the building's own is, as far as its footprint may move.
+        DesignEntry align = Entry("SM_Align", "ba:buildingsize_c", width: 12f, depth: 20f);
+        var place = new MadeLot(100f, 200f, 0f, 20f, 24f);
+        float missed = NewBuildingsRules.AlignDoor(align, place, 3f, NewBuildingsRules.Gap, out x, out z, out yaw);
+        NewBuildingsRules.DoorAt(align, x, z, yaw, out doorX, out doorZ);
+        Check(Near(missed, 0f) && Near(doorX, 103f) && Near(doorZ, 212f) && Near(yaw, 0f),
+            "new buildings: a copy over a building has its door where the building's door is, on the building's front line (" + doorX + ", " + doorZ + ")");
+        missed = NewBuildingsRules.AlignDoor(align, place, 9f, NewBuildingsRules.Gap, out x, out z, out yaw);
+        NewBuildingsRules.DoorAt(align, x, z, yaw, out doorX, out doorZ);
+        Check(Near(missed, 3.5f) && Near(doorX, 105.5f), "new buildings: its footprint never moves past the building's place and the gap kept; the door is then short by what is left (" + missed + " m)");
+        place = new MadeLot(100f, 200f, 90f, 20f, 24f);
+        missed = NewBuildingsRules.AlignDoor(align, place, 3f, NewBuildingsRules.Gap, out x, out z, out yaw);
+        NewBuildingsRules.DoorAt(align, x, z, yaw, out doorX, out doorZ);
+        Check(Near(missed, 0f) && Near(doorX, 112f, 0.01f) && Near(doorZ, 197f, 0.01f), "new buildings: on a place facing east, right of the middle is south");
 
         // Every turn of the lot and of the door: the door on the lot's front, the footprint inside the lot.
         bool doorOnFront = true, inside = true;
@@ -616,6 +667,24 @@ internal static partial class Program
             "new buildings: a decorative copy fades as the game's buildings do, follows the map, stands on the buildings' layer and takes its one handler off when it goes");
         Check(wiring.Contains("Step(\"the mod's own buildings on the minimap\", NewBuildingsLinks.Connect);") && wiring.Contains("Step(\"the mod's own buildings on the minimap\", NewBuildingsLinks.Disconnect);"),
             "new buildings: the minimap is told about the mod's own buildings through the wiring, and let go of them");
+
+        // The decorative copies for the construction sites: every change out of view, the swap in one frame, undone the same way.
+        string copies = Read(@"NewBuildings\NewBuildingsDirector.Copies.cs"), api = Read(@"NewBuildings\BuildingCopies.cs");
+        string change = MemberText(copies, "private bool Change(bool outOfViewOnly)"), stand = MemberText(copies, "private void Stand(CopyHandle h, string when)");
+        Check(Occurs(change, "!outOfViewOnly || ") == 4 && Occurs(change, "CopyGame.InView(") == 4 && MemberText(copies, "private bool Copies()").Contains("Change(true);")
+              && MemberText(copies, "private void CopiesNow()").Contains("while (Change(false))") && MemberText(director, "private bool Listed()").Contains("CopiesNow();"),
+            "new buildings: in play a copy stands or goes and a look is hidden or shown only out of the camera's view; behind the loading screen, all at once");
+        int stood = stand.IndexOf("CopyGame.MakeLook(", StringComparison.Ordinal), hid = stand.IndexOf("CopyGame.HideLook(h.Over)", StringComparison.Ordinal);
+        Check(stood > 0 && hid > stood && stand.Contains("CopyGame.Lend(look, h.Over);") && MemberText(api, "public static void Remove(CopyHandle handle)").Contains("CopyGame.ShowLook(handle.Over);")
+              && MemberText(api, "internal static int RemoveAll(string why)").Contains("CopyGame.ShowAllLooks();"),
+            "new buildings: a building's new look stands and its own look is hidden in the same frame, its hovers and clicks the building's; taken away, the own look comes back with it");
+        string hideLook = MemberText(copy, "public static bool HideLook(CityBuildingController c)"), showLook = MemberText(copy, "public static bool ShowLook(CityBuildingController c)");
+        Check(hideLook.Contains("list.Add(c.lodVersion);") && hideLook.Contains("forceRenderingOff = true;") && hideLook.Contains("lights[i].enabled = false;")
+              && showLook.Contains("lights[i].enabled = true;") && MemberText(look, "internal void Lend(ViewBlockingEntity owner)").Contains("cityBuildingController = owner != null ? owner : this;"),
+            "new buildings: a building's own look hidden is every renderer under it, its box (its shadow and its city map look) and its signs' lights, all given back as they were");
+        Check(MemberText(api, "public static CopyHandle PlaceOnPlot(").Contains("NewBuildingsRules.Turn(yaw + 180f)") && Read(@"Civic\PlotRules.cs").Contains("its front is -Z")
+              && Read(@"Civic\CivicWorks.cs").Contains("public SiteState StartPlot(Vector3 middle, int yaw, int width, int depth,"),
+            "new buildings: a plot's building takes the plot as the construction sites give it (CivicWorks.StartPlot), its front where theirs is (PlotRules: -Z)");
 
         // The tests: each needs Developer diagnostics, and each writes its check line.
         Check(MemberText(tests, "public static void TestMake()").Contains("Meta.Dev.Verbose") && director.Contains("if (TestAsked && Meta.Dev.Verbose")

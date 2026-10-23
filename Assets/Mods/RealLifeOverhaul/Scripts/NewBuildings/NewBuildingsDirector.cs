@@ -311,7 +311,8 @@ namespace RealLifeOverhaul.NewBuildings
         }
 
         // In the game's late call after its own start of the city: every made building is in the city's list (the game
-        // listed it as one of its own), and the session and the option are applied.
+        // listed it as one of its own), the session and the option are applied, and the copies asked for during the load
+        // stand, the loading screen still up.
         private bool Listed()
         {
             for (int i = 0; i < _made.Count; i++)
@@ -322,6 +323,7 @@ namespace RealLifeOverhaul.NewBuildings
                 }
             }
             Apply("the city has loaded");
+            CopiesNow();
             return true;
         }
 

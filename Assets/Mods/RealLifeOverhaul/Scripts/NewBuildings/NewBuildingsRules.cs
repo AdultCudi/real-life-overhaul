@@ -142,6 +142,7 @@ namespace RealLifeOverhaul.NewBuildings
         public const float CostWindow = 4f;         // s of real time each side of the frame cost test is measured over
         public const float MostAddedMs = 0.5f;      // ms: what ten copies in view may add to the frame
         public const float DoorNear = 3f;           // m: the player stands at a made building's door after leaving it when this near
+        public const float FillShare = 0.7f;        // of the ground the best fitting design covers: the designs a plot or a building's place is given among
 
         public const string SpecialType = "ba:buildingtype_special";   // the game's type that needs a special service
         public const string HomeType = "ba:buildingtype_residential";  // the game's type its food deliveries are brought to
@@ -306,6 +307,55 @@ namespace RealLifeOverhaul.NewBuildings
         }
 
         /// <summary>
+        /// A design for ground of that width and depth when none is named (a plot's, or a building's own place for another
+        /// look): of the designs that can be copied, fit and are not named <paramref name="other"/> (the look replaced), those
+        /// covering at least <see cref="FillShare"/> of what the best fitting one covers, one picked by <paramref name="key"/>.
+        /// -1 when none fits. <paramref name="designs"/> is in <see cref="CompareDesigns"/> order.
+        /// </summary>
+        public static int PickFor(IList<DesignEntry> designs, float width, float depth, string other, string key)
+        {
+            if (designs == null)
+            {
+                return -1;
+            }
+            float best = 0f;
+            for (int i = 0; i < designs.Count; i++)
+            {
+                best = Fitting(designs[i], width, depth, other) ? Math.Max(best, Covers(designs[i])) : best;
+            }
+            if (best <= 0f)
+            {
+                return -1;
+            }
+            int pool = 0;
+            for (int i = 0; i < designs.Count; i++)
+            {
+                pool += Fitting(designs[i], width, depth, other) && Covers(designs[i]) >= best * FillShare ? 1 : 0;
+            }
+            int wanted = (int)(Hash(key) % (uint)pool);
+            for (int i = 0; i < designs.Count; i++)
+            {
+                if (Fitting(designs[i], width, depth, other) && Covers(designs[i]) >= best * FillShare && wanted-- == 0)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        private static bool Fitting(DesignEntry d, float width, float depth, string other)
+        {
+            return d != null && !d.Batched && Fits(d, width, depth) && !string.Equals(d.Name, other, StringComparison.Ordinal);
+        }
+
+        // m2: the ground a design takes, measured from its door.
+        private static float Covers(DesignEntry d)
+        {
+            DoorFrame(d, out float uMin, out float uMax, out float vMin, out float vMax);
+            return (uMax - uMin) * (vMax - vMin);
+        }
+
+        /// <summary>
         /// Where a design's root stands on a lot and its turn (degrees): its door to the street, its front on the lot's front
         /// line, in the middle of the lot's width.
         /// </summary>
@@ -319,6 +369,27 @@ namespace RealLifeOverhaul.NewBuildings
             float across = (uMin + uMax) * 0.5f, toFront = lot.Depth * 0.5f - vMax;
             x = lot.X + toFront * fx - across * rx;
             z = lot.Z + toFront * fz - across * rz;
+        }
+
+        /// <summary>
+        /// As <see cref="Place"/>, then moved along the lot's front until the design's door is <paramref name="doorAcross"/> m
+        /// right of the lot's middle (looking out from it): a copy over one of the game's buildings has its door where the
+        /// building's own is, as far as its footprint may move and stay within <paramref name="slack"/> of the lot. Returns the
+        /// metres the door is still short by.
+        /// </summary>
+        public static float AlignDoor(DesignEntry d, MadeLot lot, float doorAcross, float slack, out float x, out float z, out float yaw)
+        {
+            Place(d, lot, out x, out z, out yaw);
+            DoorAt(d, x, z, yaw, out float doorX, out float doorZ);
+            float f = lot.Facing * Deg;
+            float rx = (float)Math.Cos(f), rz = -(float)Math.Sin(f);
+            float across = (doorX - lot.X) * rx + (doorZ - lot.Z) * rz;
+            DoorFrame(d, out float uMin, out float uMax, out _, out _);
+            float room = Math.Max(0f, lot.Width * 0.5f + slack - (uMax - uMin) * 0.5f);
+            float shift = Math.Max(-room, Math.Min(room, doorAcross - across));
+            x += shift * rx;
+            z += shift * rz;
+            return Math.Abs(doorAcross - across - shift);
         }
 
         /// <summary>The ground a design takes on a lot, as a turned rectangle: its middle and its half width and half depth (m), turned as the lot.</summary>

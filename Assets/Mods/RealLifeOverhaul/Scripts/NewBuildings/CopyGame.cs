@@ -534,11 +534,15 @@ namespace RealLifeOverhaul.NewBuildings
         // ---------------------------------------------------------------- a building's own look hidden
 
         private static readonly Dictionary<CityBuildingController, List<Renderer>> Hidden = new Dictionary<CityBuildingController, List<Renderer>>(8);
+        private static readonly Dictionary<CityBuildingController, List<Light>> HiddenLights = new Dictionary<CityBuildingController, List<Light>>(8);
 
         /// <summary>
-        /// Hides one of the game's buildings' look (every renderer under it, its box too), its controller, colliders and door
-        /// left working: what a construction site's finished look stands over. Kept from the far districts' saving, which
-        /// would otherwise draw it again when it gives its square back. False if already hidden or no building.
+        /// Hides one of the game's buildings' look: every renderer under it and its box (the shadow in the street, the whole
+        /// building on the city map) kept from drawing, and the lights of its signs off; its controller, colliders, door and
+        /// card left working: what a construction site's finished look stands over. The game's own switches (the map's,
+        /// the fade's, the signs' and the hourly lights') leave a renderer kept from drawing as it is, and switch a sign's
+        /// light by its object, not by the light itself. Kept from the far districts' saving, which would otherwise draw it
+        /// again when it gives its square back. False if already hidden or no building.
         /// </summary>
         public static bool HideLook(CityBuildingController c)
         {
@@ -548,12 +552,30 @@ namespace RealLifeOverhaul.NewBuildings
             }
             var list = new List<Renderer>(32);
             c.GetComponentsInChildren(true, list);
+            if (c.lodVersion != null && !list.Contains(c.lodVersion))
+            {
+                list.Add(c.lodVersion);
+            }
             for (int i = 0; i < list.Count; i++)
             {
                 FarDistricts.LeaveAlone(list[i], true);
                 list[i].forceRenderingOff = true;
             }
             Hidden[c] = list;
+            var lights = new List<Light>(4);
+            c.GetComponentsInChildren(true, lights);
+            for (int i = lights.Count - 1; i >= 0; i--)
+            {
+                if (lights[i].enabled)
+                {
+                    lights[i].enabled = false;
+                }
+                else
+                {
+                    lights.RemoveAt(i);   // off already: not the mod's to switch on again
+                }
+            }
+            HiddenLights[c] = lights;
             return true;
         }
 
@@ -570,6 +592,17 @@ namespace RealLifeOverhaul.NewBuildings
                 if (list[i] != null)
                 {
                     list[i].forceRenderingOff = FarDistricts.LeaveAlone(list[i], false);
+                }
+            }
+            if (HiddenLights.TryGetValue(c, out List<Light> lights))
+            {
+                HiddenLights.Remove(c);
+                for (int i = 0; i < lights.Count; i++)
+                {
+                    if (lights[i] != null)
+                    {
+                        lights[i].enabled = true;
+                    }
                 }
             }
             return true;
@@ -596,7 +629,72 @@ namespace RealLifeOverhaul.NewBuildings
                     Hidden.Remove(first);
                 }
             }
+            HiddenLights.Clear();
             return shown;
+        }
+
+        // ---------------------------------------------------------------- out of view
+
+        private static readonly Plane[] Frustum = new Plane[6];
+        private static int _frustumFrame = -1;
+
+        /// <summary>
+        /// True when any of the box is in the main camera's view, or the city map is open (it shows the whole city): a look
+        /// changes only out of view, as the construction sites' scaffold does. The camera's planes are made once a frame.
+        /// </summary>
+        public static bool InView(Bounds box)
+        {
+            if (CityMap.IsOpen)
+            {
+                return true;
+            }
+            Camera main = GameManager.GetMainCamera();
+            if (main == null)
+            {
+                return false;
+            }
+            if (_frustumFrame != Time.frameCount)
+            {
+                GeometryUtility.CalculateFrustumPlanes(main, Frustum);
+                _frustumFrame = Time.frameCount;
+            }
+            return GeometryUtility.TestPlanesAABB(Frustum, box);
+        }
+
+        /// <summary>The box round a lot grown by the gap kept, from a metre under its ground to <paramref name="height"/> above it.</summary>
+        public static Bounds BoxOf(MadeLot lot, float ground, float height)
+        {
+            float f = lot.Facing * Mathf.Deg2Rad;
+            float hw = lot.Width * 0.5f + NewBuildingsRules.Gap, hd = lot.Depth * 0.5f + NewBuildingsRules.Gap;
+            float reachX = Mathf.Abs(Mathf.Cos(f)) * hw + Mathf.Abs(Mathf.Sin(f)) * hd;
+            float reachZ = Mathf.Abs(Mathf.Sin(f)) * hw + Mathf.Abs(Mathf.Cos(f)) * hd;
+            float top = Mathf.Max(2f, height) + 2f;
+            return new Bounds(new Vector3(lot.X, ground + (top - 1f) * 0.5f, lot.Z), new Vector3(reachX * 2f, top + 1f, reachZ * 2f));
+        }
+
+        /// <summary>The box round one of the game's buildings, from its own box (the game's shadow and map look), grown by the gap kept.</summary>
+        public static Bounds BoxOf(CityBuildingController c)
+        {
+            if (c == null)
+            {
+                return default;
+            }
+            Bounds b = c.lodVersion != null ? c.lodVersion.bounds : default;
+            if (b.size.sqrMagnitude < 1f)
+            {
+                b = new Bounds(c.transform.position, new Vector3(40f, 40f, 40f));   // no box to read: a block's worth round its root
+            }
+            b.Expand(NewBuildingsRules.Gap * 2f);
+            return b;
+        }
+
+        /// <summary>A copy's hovers and clicks handed to the building whose look it wears, or given back with null.</summary>
+        public static void Lend(CopyLook look, CityBuildingController building)
+        {
+            if (look != null)
+            {
+                look.Lend(building);
+            }
         }
 
         /// <summary>True while that building's look is hidden.</summary>

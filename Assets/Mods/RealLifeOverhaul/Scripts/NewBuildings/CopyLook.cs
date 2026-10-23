@@ -13,8 +13,10 @@ namespace RealLifeOverhaul.NewBuildings
     /// The building's own controller is taken off in the sleeping template: its Start puts handlers on the game's hourly,
     /// map and registration events that its OnDestroy never takes off, and the game empties those only at the next load,
     /// so a copy with it could never be taken away again. This one takes its own handler off when it goes. It is not
-    /// hovered or clicked: the game's pointer finds it and does nothing. Cost: nothing a frame; the game's fade runs it
-    /// only while it stands between the camera and the player; the map's opening and closing switch its renderers once.
+    /// hovered or clicked: the game's pointer finds it and does nothing, unless it wears the look of one of the game's
+    /// buildings (<see cref="Lend"/>): then a hover or a click on it is one on that building. Cost: nothing a frame; the
+    /// game's fade runs it only while it stands between the camera and the player; the map's opening and closing switch
+    /// its renderers once.
     /// </summary>
     public sealed class CopyLook : ViewBlockingEntity
     {
@@ -23,6 +25,7 @@ namespace RealLifeOverhaul.NewBuildings
 
         private int _layer;
         private Action<bool> _onMap;
+        private ViewBlockingEntity _lentTo;   // the building whose look it wears, which takes its hovers and clicks; null for none
 
         protected override int DefaultLayer => _layer;
 
@@ -120,6 +123,23 @@ namespace RealLifeOverhaul.NewBuildings
             }
         }
 
+        /// <summary>
+        /// Hovers and clicks on the copy go to <paramref name="owner"/>, the building whose look it wears (its own colliders
+        /// still fade the copy itself, as the game's fade finds the hit's parent); null gives them back to the copy, which
+        /// takes none.
+        /// </summary>
+        internal void Lend(ViewBlockingEntity owner)
+        {
+            _lentTo = owner;
+            for (int i = 0; i < cityBuildingParts.Count; i++)
+            {
+                if (cityBuildingParts[i] != null)
+                {
+                    cityBuildingParts[i].cityBuildingController = owner != null ? owner : this;
+                }
+            }
+        }
+
         /// <summary>True when the game's fade finds this copy from each of its parts' colliders, as its manager looks (the hit or its parent), and has something to fade.</summary>
         internal bool FadeLinked(out int parts)
         {
@@ -133,7 +153,7 @@ namespace RealLifeOverhaul.NewBuildings
                 }
                 Transform hit = part.transform;
                 bool found = hit.GetComponent<ViewBlockingEntity>() == this || (hit.parent != null && hit.parent.GetComponent<ViewBlockingEntity>() == this);
-                if (!found || part.cityBuildingController != this)
+                if (!found || (part.cityBuildingController != this && (_lentTo == null || part.cityBuildingController != _lentTo)))
                 {
                     return false;
                 }
