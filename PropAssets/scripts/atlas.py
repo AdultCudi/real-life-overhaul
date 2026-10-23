@@ -24,6 +24,11 @@ import numpy as np  # noqa: E402
 from PIL import Image, ImageDraw, ImageFilter, ImageFont  # noqa: E402
 
 WIDTH, HEIGHT = 4096, 2048        # powers of two, both: Unity leaves any other size uncompressed (RGBA32, four times the memory)
+# PROPS_SET=second: the second bundle's atlas (README, "The second bundle"): the shared swatches and its own modules only.
+SECOND_SET = os.environ.get("PROPS_SET") == "second"
+SECOND = ["build"]                 # the second bundle's modules, painted in this order
+if SECOND_SET:
+    WIDTH, HEIGHT = 1024, 512
 MASK_DIVISOR = 2          # the mask map is half the size of the colour
 PAD = 8                   # gutter round every region, filled with the region's own edge
 SS = 2                    # regions are painted at twice their size and reduced: smooth edges without a rasteriser
@@ -1045,7 +1050,7 @@ def extra_modules():
     """The painting modules to use. PROPS_DEV=name[,name] limits them to those (working on one module without the
     others having to be whole); a module whose file is not there is skipped."""
     only = os.environ.get("PROPS_DEV")
-    names = [n.strip() for n in only.split(",") if n.strip()] if only else EXTRA
+    names = SECOND if SECOND_SET else [n.strip() for n in only.split(",") if n.strip()] if only else EXTRA
     return [__import__("paint_" + name) for name in names if os.path.exists(os.path.join(HERE, "paint_" + name + ".py"))]
 
 
@@ -1053,11 +1058,15 @@ EXTRA.append("tech")       # the tech sector's buildings (paint_tech.py): a modu
 
 
 def build():
-    layers = {"tape": paint_tape()}
-    layers.update({name: paint() for name, paint in DECALS.items()})
-    layers.update({name: paint_swatch(name) for name in SWATCHES if name not in LIFE_SWATCHES})
-    layers.update({name: paint() for name, paint in LIFE_DECALS.items()})          # after the above: see LIFE_SWATCHES
-    layers.update({name: paint_swatch(name) for name in LIFE_SWATCHES})
+    if SECOND_SET:
+        # Only the finishes every prop may name, then the second bundle's own regions: no lettering of the first's.
+        layers = {name: paint_swatch(name) for name in SWATCHES}
+    else:
+        layers = {"tape": paint_tape()}
+        layers.update({name: paint() for name, paint in DECALS.items()})
+        layers.update({name: paint_swatch(name) for name in SWATCHES if name not in LIFE_SWATCHES})
+        layers.update({name: paint() for name, paint in LIFE_DECALS.items()})          # after the above: see LIFE_SWATCHES
+        layers.update({name: paint_swatch(name) for name in LIFE_SWATCHES})
     for module in extra_modules():
         swatches, decals = module.register(sys.modules[__name__])
         clash = [n for n in list(swatches) + list(decals) if n in layers or n in SWATCHES]
@@ -1071,8 +1080,8 @@ def build():
 
     # The tape is a row of its own with no gutter at its ends. The rest go, largest first, into the free
     # rectangle each fits most tightly, which is then cut in two.
-    places = {"tape": (0, PAD)}
-    top = PAD + layers["tape"].height + PAD
+    places = {"tape": (0, PAD)} if "tape" in layers else {}
+    top = PAD + layers["tape"].height + PAD if "tape" in layers else 0
     free = [(0, top, WIDTH, HEIGHT - top)]
     for name in sorted((n for n in layers if n != "tape"), key=lambda n: (-layers[n].height * layers[n].width, n)):
         w, h = layers[name].width + 2 * PAD, layers[name].height + 2 * PAD

@@ -404,7 +404,7 @@ namespace RealLifeOverhaul
         {
             Vector3 player = PlayerHelper.PlayerController != null ? PlayerHelper.GetCityPosition() : Vector3.zero;
             string text = CivicText.T("reallife_civic_site_page")
-                .Replace("{project}", CivicWorks.ProjectName(site)).Replace("{address}", CivicCity.AddressText(site.Street, site.Number))
+                .Replace("{project}", CivicWorks.ProjectName(site)).Replace("{address}", CivicWorks.PlaceText(site))
                 .Replace("{contractor}", CivicWorks.ContractorName(site)).Replace("{phase}", (site.Phase + 1).ToString()).Replace("{phases}", CivicCatalogue.PhasesPerKind.ToString())
                 .Replace("{doing}", CivicWorks.PhaseName(site)).Replace("{days}", works.DaysLeft(site, Day, Hour).ToString())
                 .Replace("{opens}", CivicCatalogue.SiteOpens(works.Permits).ToString()).Replace("{shuts}", CivicCatalogue.SiteShuts(works.Permits).ToString());

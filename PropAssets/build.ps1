@@ -57,4 +57,18 @@ if (-not $SkipPreviews) {
 if (-not $SkipBundle) {
     Step 'Unity bundle' { & (Join-Path $root 'build_bundle.ps1') }
 }
+# 4. The second bundle (README, "The second bundle"): the building sites' props on an atlas of their own, built from
+#    build_second\ into Bundles\reallife_props_site. The first bundle is not touched by it.
+$env:PROPS_SET = 'second'
+$env:PROPS_BUILD = Join-Path $root 'build_second'
+try {
+    Step 'Atlas (second bundle)' { & $python (Join-Path $scripts 'atlas.py') }
+    Step 'Props (second bundle)' { & $Blender -b -P (Join-Path $scripts 'build_props.py') @extra | Select-String -Pattern '^mesh |^catalogue|OVER BUDGET|Traceback|Error' }
+    if (-not $SkipBundle) {
+        Step 'Unity bundle (second)' { & (Join-Path $root 'build_bundle.ps1') -BuildFolder $env:PROPS_BUILD -BundleName 'reallife_props_site' }
+    }
+} finally {
+    Remove-Item Env:PROPS_SET -ErrorAction SilentlyContinue
+    Remove-Item Env:PROPS_BUILD -ErrorAction SilentlyContinue
+}
 Write-Host 'Done. Look at the renders in previews\ before committing.'

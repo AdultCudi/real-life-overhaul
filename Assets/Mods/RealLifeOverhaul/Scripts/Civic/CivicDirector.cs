@@ -11,7 +11,8 @@ namespace RealLifeOverhaul
     /// Civic life: owns the clock, the save, the street prompts and the test buttons of the city's government
     /// (<see cref="CivicGovernment"/>) and construction programme (<see cref="CivicWorks"/>), shared in a Going Public session.
     /// A street fault clears the street for the session; a data fault reverts every policy and switches civic life off.
-    /// Cost: two comparisons a frame and a one-second tick that works only when the hour has changed.
+    /// Cost: three comparisons a frame (one for a wrap or a plot of the sites' in the street) and a one-second tick that works
+    /// only when the hour has changed; while a wrap goes up or comes down, a few of its pieces a frame.
     /// </summary>
     public sealed partial class CivicDirector : MonoBehaviour
     {
@@ -73,7 +74,8 @@ namespace RealLifeOverhaul
             _effects = new CivicEffects();
             _props = new CivicProps(transform);
             _cast = new CivicCast(gameObject);
-            _sites = new SiteDresser(_props, Works, _cast);
+            _sites = new SiteDresser(_props, Works, _cast, transform);
+            ScenePrewarm.AddLate("construction: the game's own scaffolding, concrete, metal and fence wire being found", () => SiteKit.Prewarm(transform));
             _campaign = new CampaignWorld(_props, Government, City, _cast);
             _hud = new CivicScreen(Logger, PromptPressed);
             Volunteer = new VolunteerShift(Government, this);
@@ -127,6 +129,8 @@ namespace RealLifeOverhaul
                 CivicPolicy.Publish(null);
                 _hud.Dispose();
                 _props.Dispose();
+                SiteKit.Forget();
+                CraneSlew.Dispose();
                 _scenes.Destroy();
             }
             catch (Exception e)
@@ -167,6 +171,10 @@ namespace RealLifeOverhaul
             float now = Time.time;
             try
             {
+                if (_sites.Framed)
+                {
+                    _sites.Frame(now);   // a wrap going up or coming down, a plot out: only then
+                }
                 if (Volunteer.Active)
                 {
                     if (now >= _nextFast)

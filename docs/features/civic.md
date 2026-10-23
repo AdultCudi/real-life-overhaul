@@ -16,7 +16,7 @@ A city government with a mayor, a council, elections and policies, the player st
 
 `Scripts/Civic/`: a city government with elections, and a construction programme.
 Everything is data that moves once per in-game hour; the street only shows what is near the player.
-Options group "Civic life": a master switch, "Elections and the mayor", "Standing for office" (needs the elections) and "Construction sites", and sixteen test buttons.
+Options group "Civic life": a master switch, "Elections and the mayor", "Standing for office" (needs the elections) and "Construction sites", and twenty-one test buttons (five of them construction's: [Construction](construction.md)).
 
 ```
 CivicDirector     the clock, the save (two lines in modData), the toggles, faults, key prompts, the test buttons
@@ -27,7 +27,11 @@ CivicEffects      what policies do: multipliers the mod owns, labelled transacti
 CivicBridges      CivicPolicy (what other features read) and CivicBridges (what civic life asks of features outside this folder)
 CivicCity         districts (the game's neighbourhoods), electorates, polling places, the player's buildings
 CivicWorks        the construction programme as data: six sites, working hours, rain, complaints, inspections, handover
-SiteDresser       the three sites nearest the player as props, a closed lane, one crew
+SiteDresser       the three sites nearest the player as props, a closed lane, one crew; a rebuild's wrap, a plot's stages (.Rebuild, .Plot, .Wraps)
+SiteWrap          a building wrapped in the game's own scaffolding, a few pieces a frame out of view, linked to its fade (WrapRules: the layout, game-free)
+BuildingShell     a building's solid boxes read from its colliders, in its own axes: the walls scaffold, hoarding and wrap stand against
+SiteKit           the game's scaffold pieces, concrete, metal and fence wire, found once a city behind the loading screen
+PlotRules         a new building on given ground, game-free: its record, its stages, its frame; PlotMeshes, CraneSlew
 RoadClosure       one lane closed for roadworks through the traffic system's switch (a small copy of SceneCordon's part)
 CampaignWorld     posters, boards, the canvasser, rallies, the polling place's sign; VolunteerShift (the player canvassing)
 CivicCast         civic life's own five people (a second instance of CityPeople), CivicCrew (walk in, work, walk off); CivicScreen: the game's panel and job panel for its prompts and shift figures
@@ -174,14 +178,16 @@ While the option is off nothing new begins and nothing is offered; papers alread
 ## Construction sites
 
 Six sites in progress at once, two started within 60 to 320 m of wherever the player was that day.
-Working hours needed: roadworks 50, scaffolding 120, refit 90, utility 30 (x0.8 to 1.3); ten a weekday, 07:00 to 17:00, as the city came.
+Working hours needed: roadworks 50, scaffolding 120, refit 90, utility 30, rebuild 160, a new plot 320 (x0.8 to 1.3); ten a weekday, 07:00 to 17:00, as the city came.
+A rebuild wraps a whole building in the game's own scaffolding to its roof (one at a time in the city); a plot is a new building on ground given to it, started only by whoever has the ground (`CivicWorks.StartPlot`). Both are described in [Construction](construction.md).
 Five stages each.
 Rain stops outdoor work for the hour.
 
 Thirty in a hundred are left unsafe for a stretch (missing cones or netting, a barrier flat in the road): reported, they stop for a day.
-The game's city has no empty lots and nothing is ever built or demolished, so there is no new building: the refit of an empty retail unit (hoarding, "opening soon", hoarding down) takes its place.
+The game's city has no empty lots: a new building's stages stand on ground given to them (the mod's own district, once the owner has chosen where it is), and the test button "raise a frame storey here" gives the ground in front of the player.
 
 Placement and budgets are at the top of `SiteDresser`.
+A scaffold's or hoarding's wall is the building's own box nearest its door (`BuildingShell`), never looked for between the pavement and the door: a door marker can stand on the walkable mesh (36 5th Avenue's is 0.30 m out), which left that line no length.
 Nothing is cut out of the navigation mesh.
 A lane is closed only by `RoadClosure`, only for a stretch with no junction, and only if every way into it can be shut where traffic has another way to go; it is opened on every path out.
 
@@ -235,7 +241,7 @@ A model added to the prop bundle under the same id is used with no code change.
 | clips | `speech_gesture` (a speaker to a crowd, standing), `hammer_nail` and `carry_plank_hold` (scaffolders), `rake_asphalt` | `speech_gesture` is **delivered and played** by the rally's speaker once somebody is listening (`CampaignWorld.SpeechClip`; `talk_a` without it), on `soapbox`: the stage is the one the clip is made for (feet within 0.36 x 0.26 m on a box 0.30 m high, listeners 2.3 m ahead and 1.15 m apart). The others today: `kneel_work`, `shovel_dig`. `podium_speak` (delivered) is not wired: it rests its hands on a lectern 1.10 m high that nobody has made |
 | vehicle | a works van or flatbed that can be parked at the kerb | none is placed: nothing in the traffic or vehicle code is touched |
 
-`tower_crane`, `structure_floor` and `structure_cladding` are not wanted: the city has no empty lot to build on.
+`tower_crane` is in the second props bundle split at its slewing ring (`tower_crane_mast`, `tower_crane_jib`). The frame storeys and cladding are boxes in the game's own concrete and metal (`PlotRules`, `PlotMeshes`), not props. The building sites' props are listed in [Construction](construction.md).
 
 ## Civic life in the street
 
