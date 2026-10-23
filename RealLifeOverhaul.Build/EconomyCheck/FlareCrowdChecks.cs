@@ -625,7 +625,7 @@ internal static partial class Program
 
     private static void CrowdFixedLooks()
     {
-        var people = new SocialPerson[SocialRules.CastSize];
+        var people = new SocialPerson[SocialRules.BaseCast];
         bool fixedAll = true, others = false;
         int firstOther = 0;
         for (int seed = 1; seed <= 2000; seed += 3)

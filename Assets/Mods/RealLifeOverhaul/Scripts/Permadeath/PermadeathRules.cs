@@ -2,7 +2,7 @@ using System;
 
 namespace RealLifeOverhaul.Permadeath
 {
-    /// <summary>What ended a life, or nearly did. Saved as a number (in the record and as a bit of what was warned of): a new cause goes at the end.</summary>
+    /// <summary>What ended a life, or nearly did. Saved as a number and as a bit of what was warned of: new causes go at the end.</summary>
     public enum DeathCause
     {
         None = 0,
@@ -19,89 +19,83 @@ namespace RealLifeOverhaul.Permadeath
     public enum Verdict
     {
         None,        // as without Permadeath: an injury at most
-        NearMiss,    // the first time of its kind: the injury and a notice that says the next one could be fatal
-        Death        // the character's life ends here
+        NearMiss,    // the first of its kind: the injury, and a notice that the next could be fatal
+        Death
     }
 
-    /// <summary>The moment as the rules need it, read by whoever asks (Permadeath/PermadeathGame): five flags.</summary>
+    /// <summary>The moment as the rules need it, read by PermadeathGame.</summary>
     public struct Moment
     {
         public bool Armed;              // Permadeath is on in this save
         public bool Dead;               // the character has died already
         public bool InSession;          // a Going Public session is on, hosted or joined
         public bool MissionOrTutorial;  // the game's tutorial, a side quest or one of its missions is running
-        public bool Busy;               // the game is elsewhere: loading, a hospital stay, its own funeral, a time skip, a death under way
+        public bool Busy;               // loading, a hospital stay, its own funeral, a time skip, a death under way
     }
 
     /// <summary>
-    /// The rules of Permadeath, in plain numbers: when a dangerous moment can end a life, the odds, the warnings that come
-    /// first, the illness's course, and whom an option switched in the main menu applies to. No Unity or game types: the
-    /// checks (EconomyCheck) run this file as it ships, so the Guide's figures are these figures.
-    ///
-    /// The shape of every danger is the same: below its threshold it is what it always was (an injury at most); at or
-    /// above it the first time is a near miss, which hurts as before and says plainly that the next time could be fatal;
-    /// only after that near miss can it kill, and then with odds that rise with how bad the moment was and stop well short
-    /// of certainty. Nothing that the player cannot see coming is here: life events, crimes watched from the pavement,
-    /// fires and other people's accidents never come to this file.
+    /// The rules of Permadeath in plain numbers: when a dangerous moment can end a life, the odds, the warnings, the
+    /// illness's course and the switch. Game-free; EconomyCheck runs this file as it ships, so the Guide's figures are these.
+    /// Every danger has one shape: below its threshold it hurts as it always did; above it the first time is a near miss
+    /// that says the next could be fatal, and only after that can it kill, with odds that rise and stop well short of
+    /// certainty. Nothing the player cannot see coming is here.
     /// </summary>
     public static class PermadeathRules
     {
-        // ---- a crash in the player's own car: the relative speed of the impact, m/s (the game's collision)
-        public const float CrashFrom = 25f;          // 90 km/h: below it a crash hurts, never kills (the hospital is from 61 km/h)
-        public const float CrashWorst = 40f;         // 144 km/h: the odds stop rising here
+        // A crash in the player's own car: the relative speed of the impact (the game's collision).
+        public const float CrashFrom = 25f;          // m/s, 90 km/h: below it a crash hurts, never kills (the hospital is from 61 km/h)
+        public const float CrashWorst = 40f;         // m/s, 144 km/h: the odds stop rising here
         public const float CrashLeast = 0.05f;       // at CrashFrom, once warned
         public const float CrashMost = 0.35f;        // from CrashWorst
 
-        // ---- on foot, hit by a vehicle: the vehicle's speed, m/s
-        public const float StruckFrom = 55f / 3.6f;  // 55 km/h (the hospital is from 35 km/h)
-        public const float StruckWorst = 90f / 3.6f; // 90 km/h
+        // On foot, hit by a vehicle: the vehicle's speed.
+        public const float StruckFrom = 55f / 3.6f;  // m/s, 55 km/h (the hospital is from 35 km/h)
+        public const float StruckWorst = 90f / 3.6f; // m/s, 90 km/h
         public const float StruckLeast = 0.05f;
         public const float StruckMost = 0.30f;
 
-        // ---- a mugger refused: of the refusals that end with the player hurt (half of them)
-        public const float MuggingOdds = 0.10f;      // one hurt in ten, once warned
+        public const float MuggingOdds = 0.10f;      // of refusals that end with the player hurt (half of them), once warned
+        public const float AssaultOdds = 0.08f;      // of the private lender's beatings, once warned
 
-        // ---- the private lender's men: of their beatings
-        public const float AssaultOdds = 0.08f;      // about one in twelve, once warned
-
-        // ---- a flu left untreated: hours since it began with no medicine, doctor or hospital
-        public const int IllWarnFirst = 48;          // two days: it gets worse, and no longer clears up by itself
-        public const int IllWarnSecond = 72;         // three days
-        public const int IllWarnLast = 96;           // four days
-        public const int IllFatalFrom = 120;         // five days: from here each further hour may be the last
+        // A flu left untreated: hours since it began with no medicine, doctor or hospital.
+        public const int IllWarnFirst = 48;          // hours: it gets worse, and no longer clears up by itself
+        public const int IllWarnSecond = 72;         // hours
+        public const int IllWarnLast = 96;           // hours
+        public const int IllFatalFrom = 120;         // hours: from here each further hour may be the last
         public const float IllPerDay = 0.25f;        // the chance over a whole further day untreated
-        public const int IllHoldMinutes = 24 * 60;   // how far ahead the illness is held each hour once it no longer clears: past a night's sleep and the hours rest takes off (Home/HomeBalance.RestCure), so that sleeping is no cure
+        // Game minutes the illness is held ahead each hour once it no longer clears: past a night's sleep and what rest
+        // takes off (Home/HomeBalance.RestCure), so sleeping is no cure.
+        public const int IllHoldMinutes = 24 * 60;
 
         public const int IllStages = 4;              // 0 nothing yet, 1 to 3 the warnings had, 4 the fatal stretch
 
-        // ---- going without food: hours with the game's hunger bar at its very bottom. The bar falls with every point of
-        // energy spent (EnergyHelper.SpentEnergyOnce, 1.5 hunger a point): about 3.6 an hour just living, so a full
-        // stomach is empty in a day at most, sooner on the move. At its bottom the game already burns energy half as fast
-        // again (EnergySettings.maxEnergyBurnIncreaseAtZeroHunger) and walks the player as a zombie once energy is gone too.
+        // Going without food: hours with the game's hunger bar at its bottom. The bar falls about 3.6 an hour just living
+        // (1.5 per energy point, EnergyHelper.SpentEnergyOnce), so a full stomach is empty within a day; at its bottom the
+        // game already burns energy faster and walks the player as a zombie once energy is gone too.
         public const float HungerEmpty = 5f;          // under this the bar is at its worst (the game's own "too low" face)
-        public const float HungerAte = 0.5f;          // a rise of this much in a second is something eaten: the danger is over
-        public const int StarveWarnFirst = 24;        // a day on an empty stomach: weak with hunger (a low mood)
-        public const int StarveWarnSecond = 48;       // two days: faint, and tiring faster
-        public const int StarveWarnLast = 72;         // three days: starving
-        public const int StarveFatalFrom = 96;        // four days: from here each further hour may be the last
+        public const float HungerAte = 0.5f;          // a rise of this much in a second is something eaten
+        public const int StarveWarnFirst = 24;        // hours: weak with hunger (a low mood)
+        public const int StarveWarnSecond = 48;       // hours: faint, and tiring faster
+        public const int StarveWarnLast = 72;         // hours: starving
+        public const int StarveFatalFrom = 96;        // hours: from here each further hour may be the last
         public const float StarvePerDay = 0.20f;      // the chance over a whole further day without food
-        public const float StarveDrainFaint = 0.02f;  // energy a game minute it costs from the second warning (just living is 0.04)
+        public const float StarveDrainFaint = 0.02f;  // energy a game minute from the second warning (just living is 0.04)
         public const float StarveDrainWorst = 0.04f;  // from the third
-        public const int StarveMood = -10;            // the happiness of being weak with hunger, from the first warning
+        public const int StarveMood = -10;            // happiness while weak with hunger, from the first warning
 
-        /// <summary>The chance in one game hour of starvation's fatal stretch, so that a whole day comes to <see cref="StarvePerDay"/>.</summary>
+        /// <summary>The chance in one game hour of starvation's fatal stretch, so that a day comes to <see cref="StarvePerDay"/>.</summary>
         public static float StarvePerHour => (float)(1.0 - Math.Pow(1.0 - StarvePerDay, 1.0 / 24.0));
 
-        /// <summary>The chance in one game hour of the fatal stretch, so that a whole day comes to <see cref="IllPerDay"/>.</summary>
+        /// <summary>The chance in one game hour of the illness's fatal stretch, so that a day comes to <see cref="IllPerDay"/>.</summary>
         public static float IllPerHour => (float)(1.0 - Math.Pow(1.0 - IllPerDay, 1.0 / 24.0));
 
-        /// <summary>True while a dangerous moment may end a life at all: on in this save, alive, alone, the game's own story not running, nothing else under way.</summary>
+        /// <summary>True while a moment may end a life at all: on in this save, alive, alone, no mission, nothing under way.</summary>
         public static bool Allowed(Moment m)
         {
             return m.Armed && !m.Dead && !m.InSession && !m.MissionOrTutorial && !m.Busy;
         }
 
-        /// <summary>True when a moment of this kind is bad enough to be fatal: <paramref name="measure"/> is a speed for the two collisions, ignored for the others.</summary>
+        /// <summary>True when a moment of this kind is bad enough to be fatal; <paramref name="measure"/> is the speed of a collision.</summary>
         public static bool Fatal(DeathCause cause, float measure)
         {
             switch (cause)
@@ -110,11 +104,11 @@ namespace RealLifeOverhaul.Permadeath
                 case DeathCause.Struck: return measure >= StruckFrom;
                 case DeathCause.Mugging:
                 case DeathCause.Assault: return true;
-                default: return false;   // the illness and going without food have their own course (IllStage, StarveStage); a test kills nobody
+                default: return false;   // the illness and hunger have their own course; a test kills nobody
             }
         }
 
-        /// <summary>The chance that a moment this bad ends a life, once its near miss has been had. Zero below the threshold; never above 0.35.</summary>
+        /// <summary>The chance that a moment this bad ends a life once its near miss has been had: zero below the threshold.</summary>
         public static float Odds(DeathCause cause, float measure)
         {
             if (!Fatal(cause, measure))
@@ -132,9 +126,8 @@ namespace RealLifeOverhaul.Permadeath
         }
 
         /// <summary>
-        /// One dangerous moment: nothing unless it is allowed and bad enough; the first of its kind a near miss; after that a
-        /// death if <paramref name="roll"/> (0 to 1) falls under the odds. <paramref name="warned"/> is whether this save has
-        /// had the near miss of this kind.
+        /// One dangerous moment: nothing unless allowed and bad enough, a near miss unless <paramref name="warned"/>, then a
+        /// death if <paramref name="roll"/> (0 to 1) falls under the odds.
         /// </summary>
         public static Verdict Judge(DeathCause cause, float measure, bool warned, Moment m, float roll)
         {
@@ -149,15 +142,25 @@ namespace RealLifeOverhaul.Permadeath
             return roll < Odds(cause, measure) ? Verdict.Death : Verdict.None;
         }
 
-        // ---------------------------------------------------------------- the illness
-
         /// <summary>How far a flu has gone after so many hours untreated: 0 nothing yet, 1 to 3 a warning each, 4 the fatal stretch.</summary>
         public static int IllStage(float hoursUntreated)
         {
-            if (hoursUntreated >= IllFatalFrom) return 4;
-            if (hoursUntreated >= IllWarnLast) return 3;
-            if (hoursUntreated >= IllWarnSecond) return 2;
-            if (hoursUntreated >= IllWarnFirst) return 1;
+            if (hoursUntreated >= IllFatalFrom)
+            {
+                return 4;
+            }
+            if (hoursUntreated >= IllWarnLast)
+            {
+                return 3;
+            }
+            if (hoursUntreated >= IllWarnSecond)
+            {
+                return 2;
+            }
+            if (hoursUntreated >= IllWarnFirst)
+            {
+                return 1;
+            }
             return 0;
         }
 
@@ -168,10 +171,9 @@ namespace RealLifeOverhaul.Permadeath
         }
 
         /// <summary>
-        /// One hour of a flu: the next warning due, if the one shown last is behind the course (<paramref name="told"/>, 0 to
-        /// 3), or 0; and whether this hour is the last. Only one warning a call, so that a long sleep that jumped two stages
-        /// still says each in turn, an hour apart, before the fatal stretch can begin; and never death before the third
-        /// warning has been shown.
+        /// One hour of a flu: <paramref name="warn"/> is the next warning due after the <paramref name="told"/> shown, or 0,
+        /// and the verdict says whether this hour is the last. One warning a call, so a long sleep still shows each in turn,
+        /// and never death before the third.
         /// </summary>
         public static Verdict IllHour(float hoursUntreated, int told, Moment m, float roll, out int warn)
         {
@@ -183,7 +185,7 @@ namespace RealLifeOverhaul.Permadeath
             int stage = IllStage(hoursUntreated);
             if (told < stage && told < IllStages - 1)
             {
-                warn = told + 1;   // the next warning, in order
+                warn = told + 1;
                 return Verdict.NearMiss;
             }
             if (stage >= IllStages && told >= IllStages - 1 && roll < IllPerHour)
@@ -193,41 +195,48 @@ namespace RealLifeOverhaul.Permadeath
             return Verdict.None;
         }
 
-        // ---------------------------------------------------------------- going without food
-
-        /// <summary>How far going without food has gone after so many hours with the bar at its bottom: 0 nothing yet, 1 to 3 a warning each, 4 the fatal stretch.</summary>
+        /// <summary>How far going without food has gone after so many hours at the bar's bottom, staged as <see cref="IllStage"/>.</summary>
         public static int StarveStage(float hoursEmpty)
         {
-            if (hoursEmpty >= StarveFatalFrom) return 4;
-            if (hoursEmpty >= StarveWarnLast) return 3;
-            if (hoursEmpty >= StarveWarnSecond) return 2;
-            if (hoursEmpty >= StarveWarnFirst) return 1;
+            if (hoursEmpty >= StarveFatalFrom)
+            {
+                return 4;
+            }
+            if (hoursEmpty >= StarveWarnLast)
+            {
+                return 3;
+            }
+            if (hoursEmpty >= StarveWarnSecond)
+            {
+                return 2;
+            }
+            if (hoursEmpty >= StarveWarnFirst)
+            {
+                return 1;
+            }
             return 0;
         }
 
-        /// <summary>True while the bar counts as at its bottom.</summary>
         public static bool Empty(float hunger)
         {
             return hunger < HungerEmpty;
         }
 
-        /// <summary>True when the bar rose from one look to the next by enough to be something eaten (only food and the hospital raise it).</summary>
+        /// <summary>True when the bar rose enough from one look to the next to be something eaten (only food and the hospital raise it).</summary>
         public static bool Ate(float before, float now)
         {
             return now - before >= HungerAte;
         }
 
-        /// <summary>The extra energy a game minute the weakness costs at a warning shown (0 to 3).</summary>
+        /// <summary>The extra energy a game minute the weakness costs after <paramref name="told"/> warnings (0 to 3).</summary>
         public static float StarveDrain(int told)
         {
             return told >= 3 ? StarveDrainWorst : told >= 2 ? StarveDrainFaint : 0f;
         }
 
         /// <summary>
-        /// One hour on an empty stomach, as <see cref="IllHour"/> is for a flu: the next warning due (one a call, in order),
-        /// and whether this hour is the last, never before the third warning has been shown. <paramref name="safe"/> is the
-        /// moment the game can take a death in (awake, no dialog, ride or activity, not in hospital): an hour that is not
-        /// safe warns but never kills.
+        /// One hour on an empty stomach, as <see cref="IllHour"/> is for a flu. An hour that is not <paramref name="safe"/>
+        /// for a death (asleep, a dialog, a ride or activity, in hospital) warns but never kills.
         /// </summary>
         public static Verdict StarveHour(float hoursEmpty, int told, Moment m, bool safe, float roll, out int warn)
         {
@@ -249,11 +258,9 @@ namespace RealLifeOverhaul.Permadeath
             return Verdict.None;
         }
 
-        // ---------------------------------------------------------------- the switch
-
         /// <summary>
-        /// What a save starts with the first time it is read with this feature: only a game just begun, and only when the
-        /// switch was moved on in the main menu of this run; any save that was already going starts with it off.
+        /// Whether a save read for the first time with this feature starts on: only a game just begun, with the switch moved
+        /// on in this run's main menu.
         /// </summary>
         public static bool FirstArmed(bool fresh, bool newGame, bool armNext)
         {
@@ -261,8 +268,8 @@ namespace RealLifeOverhaul.Permadeath
         }
 
         /// <summary>
-        /// What the switch, moved to <paramref name="on"/>, does to the save: true if it changes it. A death is never undone
-        /// and nothing is switched on in a session; switching off is always allowed while the character lives.
+        /// True if moving the switch to <paramref name="on"/> changes the save: a death is never undone, nothing is switched
+        /// on in a session, and switching off is always allowed while the character lives.
         /// </summary>
         public static bool Switches(bool on, bool armed, bool dead, bool inSession)
         {
@@ -273,10 +280,52 @@ namespace RealLifeOverhaul.Permadeath
             return !on || !inSession;
         }
 
-        /// <summary>True when a save is read as ended: its own record says so, or it is an older save of a character who died since, from a time it was on.</summary>
+        /// <summary>True when a save is read as ended: its record says so, or it is an older save, from a time it was on, of a character who died since.</summary>
         public static bool Ended(bool dead, bool armed, bool diedElsewhere)
         {
             return dead || (armed && diedElsewhere);
+        }
+
+        /// <summary>
+        /// A character's id as the memorial's list holds it: the list is comma-separated, so a comma in the id is a space. Every
+        /// look-up goes through this too (<see cref="MemorialHas"/>), so an id is found as it was stored.
+        /// </summary>
+        public static string MemorialEntry(string id) => id == null ? string.Empty : id.Replace(',', ' ');
+
+        /// <summary>The list with this character on it: unchanged if they are there already.</summary>
+        public static string MemorialAdd(string list, string id)
+        {
+            if (MemorialHas(list, id))
+            {
+                return list ?? string.Empty;
+            }
+            string entry = MemorialEntry(id);
+            return string.IsNullOrEmpty(list) ? entry : list + "," + entry;
+        }
+
+        /// <summary>Whether the memorial's comma-separated list holds this character, by the entry <see cref="MemorialEntry"/> writes.</summary>
+        public static bool MemorialHas(string list, string id)
+        {
+            if (string.IsNullOrEmpty(list) || string.IsNullOrEmpty(id))
+            {
+                return false;
+            }
+            string entry = MemorialEntry(id);
+            int from = 0;
+            while (from <= list.Length)
+            {
+                int end = list.IndexOf(',', from);
+                if (end < 0)
+                {
+                    end = list.Length;
+                }
+                if (end - from == entry.Length && string.CompareOrdinal(list, from, entry, 0, entry.Length) == 0)
+                {
+                    return true;
+                }
+                from = end + 1;
+            }
+            return false;
         }
 
         private static float Between(float from, float to, float value)

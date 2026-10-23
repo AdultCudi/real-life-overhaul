@@ -10,24 +10,13 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// RLO Texts' city talk of data v6 (Texts/TextsDirector.City) with the features it reads, through TextsBridges; none
-        /// of them is changed, and each answer is what the feature already keeps in public:
-        ///
-        ///   Staff       running a business's staff files (Economy/Company: pay, the going rate, a raise asked for or agreed),
-        ///               the player's own businesses only; the game's own facts of each are TextsGame's
-        ///   Life        family life (children, the wedding, the partner), education (a graduation today), the court (the
-        ///               newest case closed and its outcome), the stock market (the player's company listed), the books
-        ///               (the newest business, and the net worth once a day at <see cref="WorthHour"/>)
-        ///   People      the social life's people, as gossip and the life's texts read them
-        ///   PersonSay   a text through the social life's own (SocialLife.SendText: its switch, daily cap and quiet hours,
-        ///               one a person a day), worded through the phone's hold like every other (Wiring/TextsPhone)
-        ///   BigFloor    the least move of the net worth that counts as a big win or loss, at today's prices
-        ///
-        /// COST: nothing per frame; a pass over the staff, the people and the businesses once a game hour.
+        /// RLO Texts' city talk (TextsBridges) with the staff's files, family life, a graduation, the court, the stock
+        /// market, the books and the social life's people; a person's text goes through the social life's own, with its
+        /// switch, daily cap and quiet hours. Read only. A pass over the staff, people and businesses once a game hour.
         /// </summary>
         public static class TextsCity
         {
-            public const int WorthHour = 6;          // the game hour the net worth is read for a day's big win or loss
+            private const int WorthHour = 6;          // the game hour the net worth is read for a day's big win or loss
             public const int BigFloor = 25000;       // the least such move at the start's prices
             public const int KnownFrom = 60;         // the city's recognition of the player (0 to 100) from which people know of them
             public const int LikedFrom = 50;         // ...and the public's view (0 to 100) from which they are well known rather than infamous
@@ -95,7 +84,7 @@ namespace RealLifeOverhaul
                         JusticeCase c = JusticeState.Cases[i];
                         if (c != null && c.Stage == CaseStage.Closed && c.Outcome != CaseOutcome.None && c.Number > v.CourtClosed)
                         {
-                            v.CourtClosed = c.Number;   // (the newest case closed: its number only grows)
+                            v.CourtClosed = c.Number;   // case numbers only grow
                             v.CourtGuilty = c.WasConviction;
                         }
                     }
@@ -169,15 +158,15 @@ namespace RealLifeOverhaul
                         return;
                     }
                     int hour = SocialLife.Hour;
-                    for (int i = 0; i < SocialState.People.Length; i++)
+                    for (int i = 0; i < SocialState.Count; i++)
                     {
                         SocialPerson p = SocialState.People[i];
                         if (p == null || string.IsNullOrEmpty(p.Name))
                         {
                             continue;
                         }
-                        // The day they last texted, whichever feature sent it (Mom's news from the family is not the social life's own
-                        // text): so one who has texted today is not the one who texts again about the same news.
+                        // The day they last texted, whichever feature sent it, so one who texted today does not text again
+                        // about the same news.
                         int lastText = p.Met ? Math.Max(p.LastTextDay, SocialPhone.LastTextDay(p)) : p.LastTextDay;
                         into.Add(new TextPerson
                         {

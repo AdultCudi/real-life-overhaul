@@ -4,7 +4,6 @@ using BigAmbitions.DayNightCycle;
 using Entities;
 using Extensions;
 using Helpers;
-using Localizor;
 using Localizor.LanguageChangeEvent;
 using Parking.UndergroundParking;
 using UI.Notification;
@@ -13,19 +12,14 @@ using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// The game-facing half of the life event catalogue: reads the conditions events can ask
-    /// for and carries out what a picked event says should happen.
-    /// </summary>
+    /// <summary>The game's side of the life events: reads the conditions events ask for and carries out a picked event.</summary>
     internal static class LifeEventRunner
     {
         private const string EmptyBusinessType = "ba:businesstype_empty";
 
-        // Energy losses stop here, well clear of the game's fainting and hospital thresholds.
-        private const float EnergyFloor = 15f;
-        // The game multiplies energy spent by up to 1.25 (unhappy) x 1.5 (starving).
-        private const float WorstEnergyMultiplier = 1.9f;
-        private const float HungerFloor = 5f;
+        private const float EnergyFloor = 15f;              // points: losses stop well clear of fainting and the hospital
+        private const float WorstEnergyMultiplier = 1.9f;   // the game's most on energy spent: 1.25 unhappy times 1.5 starving
+        private const float HungerFloor = 5f;               // points
 
         public static LifeContext ReadContext()
         {
@@ -39,40 +33,42 @@ namespace RealLifeOverhaul
 
             Need flags = Need.None;
             flags |= driving ? Need.Driving : Need.NotDriving;
-            if (!driving && inside) flags |= Need.Indoors;
-            if (!driving && !inside && !UndergroundParkingManager.IsInsideParking) flags |= Need.OnFoot;
-            if (RainHelper.AreRainDropsFalling) flags |= Need.Rain;
-            if (!RainHelper.isRaining) flags |= Need.Dry;
+            flags |= If(!driving && inside, Need.Indoors);
+            flags |= If(!driving && !inside && !UndergroundParkingManager.IsInsideParking, Need.OnFoot);
+            flags |= If(RainHelper.AreRainDropsFalling, Need.Rain);
+            flags |= If(!RainHelper.isRaining, Need.Dry);
             flags |= weekend ? Need.Weekend : Need.Weekday;
-            if (day == DayOfWeekOrdered.Monday) flags |= Need.Monday;
-            if (day == DayOfWeekOrdered.Friday) flags |= Need.Friday;
-            if (day == DayOfWeekOrdered.Saturday) flags |= Need.Saturday;
-            if (day == DayOfWeekOrdered.Sunday) flags |= Need.Sunday;
+            flags |= If(day == DayOfWeekOrdered.Monday, Need.Monday);
+            flags |= If(day == DayOfWeekOrdered.Friday, Need.Friday);
+            flags |= If(day == DayOfWeekOrdered.Saturday, Need.Saturday);
+            flags |= If(day == DayOfWeekOrdered.Sunday, Need.Sunday);
             flags |= sick ? Need.Sick : Need.Healthy;
-            if (save.Energy < 35f) flags |= Need.Tired;
-            if (save.Energy >= 60f) flags |= Need.Rested;
-            if (save.Energy >= 30f) flags |= Need.EnergyReserve;
-            if (save.Hunger < 35f) flags |= Need.Hungry;
-            if (save.Hunger >= 60f) flags |= Need.Fed;
-            if (save.Happiness >= 60f) flags |= Need.Happy;
-            if (save.Happiness < 35f) flags |= Need.Unhappy;
+            flags |= If(save.Energy < 35f, Need.Tired);
+            flags |= If(save.Energy >= 60f, Need.Rested);
+            flags |= If(save.Energy >= 30f, Need.EnergyReserve);
+            flags |= If(save.Hunger < 35f, Need.Hungry);
+            flags |= If(save.Hunger >= 60f, Need.Fed);
+            flags |= If(save.Happiness >= 60f, Need.Happy);
+            flags |= If(save.Happiness < 35f, Need.Unhappy);
             flags |= hasVehicle ? Need.HasVehicle : Need.NoVehicle;
-            if (OwnsBusiness(save)) flags |= Need.HasBusiness;
+            flags |= If(OwnsBusiness(save), Need.HasBusiness);
             if (LifeAccounts.HasHome())
             {
                 flags |= Need.HasHome;
             }
-            if (TimeHelper.CurrentDay - ModState.LastMomGiftDay >= 7) flags |= Need.MomGiftDue;
-            if (PhoneContacts.Friend != null) flags |= Need.Friend;
-            if (PhoneContacts.Mom != null) flags |= Need.Mom;
-            if (!HudConfirm.isOpen) flags |= Need.CanPrompt;
-            if (TimeHelper.CurrentDay <= 7) flags |= Need.Newcomer;
-            if (TimeHelper.CurrentDay >= 15) flags |= Need.Veteran;
+            flags |= If(TimeHelper.CurrentDay - ModState.LastMomGiftDay >= 7, Need.MomGiftDue);
+            flags |= If(PhoneContacts.Friend != null, Need.Friend);
+            flags |= If(PhoneContacts.Mom != null, Need.Mom);
+            flags |= If(!HudConfirm.isOpen, Need.CanPrompt);
+            flags |= If(TimeHelper.CurrentDay <= 7, Need.Newcomer);
+            flags |= If(TimeHelper.CurrentDay >= 15, Need.Veteran);
 
             return new LifeContext { Flags = flags, Hour = TimeHelper.CurrentHour, Money = save.Money };
         }
 
-        // Same test the game uses when it counts the player's businesses.
+        private static Need If(bool holds, Need need) => holds ? need : Need.None;
+
+        // The test the game uses when it counts the player's businesses.
         private static bool OwnsBusiness(GameInstance save)
         {
             if (save.BuildingRegistrations == null)
@@ -98,8 +94,7 @@ namespace RealLifeOverhaul
                 return;
             }
 
-            // The price and the sum the prompt's body quotes, at today's prices, as charged (the answers name no figure:
-            // the game's box takes a plain key for them).
+            // The price and the sum the body quotes, at today's prices as charged; the answers take plain keys.
             int cost = lifeEvent.CostNow;
             var figures = new { cost = ((float)cost).ToCurrencyFormat(), sum = ((float)lifeEvent.QuoteNow).ToCurrencyFormat() };
             GameConfirm.Show(new LanguageChangeEventDataHolder { Key = lifeEvent.HeaderKey },
@@ -117,8 +112,7 @@ namespace RealLifeOverhaul
                 lifeEvent.ConfirmKey, lifeEvent.CancelKey, allowConfirmationSkip: false);
         }
 
-        // Prompt answers arrive later, from the game's UI: the save may be gone by then, and an
-        // exception must not escape into the game's button handler.
+        // Answers arrive later from the game's UI: the save may be gone, and nothing may escape into its button handler.
         private static void Guarded(Action action)
         {
             if (LifeEvents.Instance == null || !ModState.Loaded || SaveGameManager.Current == null)
@@ -186,7 +180,7 @@ namespace RealLifeOverhaul
                 EnergyHelper.SpentEnergyOnce(SafeEnergyLoss(-outcome.Energy));
             }
 
-            // Set after the energy change: spending energy also takes a little hunger with it.
+            // After the energy change: spending energy also takes a little hunger.
             if (outcome.Hunger != 0f && !save.gameVariables.disableEnergy)
             {
                 float hunger = Mathf.Clamp(save.Hunger + outcome.Hunger, Mathf.Min(save.Hunger, HungerFloor), 100f);
@@ -203,7 +197,7 @@ namespace RealLifeOverhaul
                 host.Cure(null);
             }
 
-            // What the outcome's own {amount} was, or else what the player just paid for the choice.
+            // The outcome's own {amount}, or else what the player just paid for the choice.
             int shown = amount != 0 ? Mathf.Abs(amount) : lifeEvent.CostNow;
             var data = new Dictionary<string, string> { { "amount", ((float)shown).ToCurrencyFormat() } };
             string key = lifeEvent.TextKey(outcome);
@@ -235,7 +229,7 @@ namespace RealLifeOverhaul
                 return 0;
             }
             int amount;
-            // (The catalogue's figures are at the start's prices: what comes is at today's, Core/Prices.)
+            // The catalogue's figures are at the start's prices; what comes is at today's.
             if (outcome.MoneyPct != 0f)
             {
                 float share = Mathf.Clamp(Mathf.Max(money, 0f) * Mathf.Abs(outcome.MoneyPct), Prices.At((float)outcome.MoneyMin), Prices.At((float)outcome.MoneyMax));
@@ -249,7 +243,7 @@ namespace RealLifeOverhaul
             {
                 amount = Prices.At(Mathf.RoundToInt(Random.Range(outcome.MoneyMin, outcome.MoneyMax + 1) / 5f) * 5);
             }
-            // Never into debt, whatever happened to the player's money since the event was picked.
+            // Never into debt, whatever happened to the money since the event was picked.
             return amount < 0 ? -Mathf.Min(-amount, Mathf.FloorToInt(Mathf.Max(money, 0f))) : amount;
         }
 

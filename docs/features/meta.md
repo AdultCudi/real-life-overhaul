@@ -215,4 +215,4 @@ There is no "all saves" variant.
   `Player.log` must have no "Meta: the search box" line.
 
 - Save tools: the three buttons on a save you do not need; `Player.log` lines start `Meta:`; the report is also in `<persistentDataPath>/RealLifeOverhaul/`.
-- Diagnostics: switch "Developer diagnostics" off: F8/F9 do nothing and only warnings and errors of the features reach the log.
+- Diagnostics: switch "Developer diagnostics" off: F7 and F9 do nothing and only warnings and errors of the features reach the log.

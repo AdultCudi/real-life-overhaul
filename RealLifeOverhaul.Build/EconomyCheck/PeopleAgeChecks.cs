@@ -93,9 +93,9 @@ internal static partial class Program
         var data = new Dictionary<string, string>();
         SocialState.Load(data, 500, AgeYear, 9, 5150);
         bool rolled = true;
-        var ages = new int[SocialRules.CastSize];
-        var birthdays = new int[SocialRules.CastSize];
-        for (int i = 0; i < SocialRules.CastSize; i++)
+        var ages = new int[SocialRules.BaseCast];
+        var birthdays = new int[SocialRules.BaseCast];
+        for (int i = 0; i < SocialRules.BaseCast; i++)
         {
             SocialPerson p = SocialState.Get(i);
             rolled &= p != null && p.AgeDay == 500 && SocialRules.AgeOn(p.Age, p.AgeDay, p.Birthday, 500, AgeYear) == p.Age;
@@ -109,7 +109,7 @@ internal static partial class Program
         string saved = data["reallife:social_people"];
         SocialState.Load(data, 900, AgeYear, 9, 1);
         bool kept = true;
-        for (int i = 0; i < SocialRules.CastSize; i++)
+        for (int i = 0; i < SocialRules.BaseCast; i++)
         {
             SocialPerson p = SocialState.Get(i);
             int birthdaysSince = 0;
@@ -124,11 +124,11 @@ internal static partial class Program
         // The record: field 41 is still the look and the anchor comes after it, so a version that reads 41 or 42 fields reads all
         // it did (a call back's fields come after the anchor: CallBackChecks.cs).
         string[] records = saved.Split('\n');
-        bool shape = records.Length == SocialRules.CastSize;
+        bool shape = records.Length == SocialRules.BaseCast;
         foreach (string record in records)
         {
             string[] f = record.Split('|');
-            shape &= f.Length >= 43 && f[42] == "500" && int.TryParse(f[0], out int index) && index >= 0 && index < SocialRules.CastSize
+            shape &= f.Length >= 43 && f[42] == "500" && int.TryParse(f[0], out int index) && index >= 0 && index < SocialRules.BaseCast
                      && f[41] == (SocialState.Get(index)?.Look ?? string.Empty);
         }
         Check(shape, "people's age: the day is saved after the look in each person's record (field 42), so an older version still reads the look and the rest");
@@ -143,7 +143,7 @@ internal static partial class Program
         data["reallife:social_people"] = string.Join("\n", trimmed);
         SocialState.Load(data, 300, AgeYear, 9, 2);
         bool older = true;
-        for (int i = 0; i < SocialRules.CastSize; i++)
+        for (int i = 0; i < SocialRules.BaseCast; i++)
         {
             SocialPerson p = SocialState.Get(i);
             int next = 301;

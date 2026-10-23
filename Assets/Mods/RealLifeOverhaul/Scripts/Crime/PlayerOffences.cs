@@ -1,31 +1,28 @@
-using Helpers;
 using UnityEngine;
 using UnityEngine.AI;
 
 namespace RealLifeOverhaul
 {
-    internal enum Offence { None, RedLight, Speeding, Reckless, WrongSide, Jaywalk, CrossOnRed, DrunkDriving }   // (DrunkDriving is never seen from the road data: PoliceAttention.Report and the stop itself)
+    /// <summary>A kind of offence by the player. DrunkDriving is not in the road data: it is found at a stop or reported by Leisure.</summary>
+    internal enum Offence { None, RedLight, Speeding, Reckless, WrongSide, Jaywalk, CrossOnRed, DrunkDriving }
 
     /// <summary>
-    /// Notices what the player does wrong on the road. Only the player's own car (or the player
-    /// on foot) is ever looked at, on timers: the stop line ahead ten times a second while
-    /// driving at more than walking pace, speed and position twice a second, and on foot only
-    /// while one of the mod's officers is close enough to see. Each look is a few subtractions
-    /// against RoadMap's grid; the one physics query (is this a pedestrian crossing?) runs only
-    /// with an officer near. Whether anyone saw, and what follows, is PoliceAttention's business.
+    /// Notices what the player does wrong on the road: the stop line ten times a second, speed and position twice a second,
+    /// on foot only with an officer near. Each look is a few subtractions against RoadMap; the one physics query (a
+    /// crossing?) runs only with an officer near.
     /// </summary>
     internal sealed class PlayerOffences
     {
-        private const float LineInterval = 0.1f;
-        private const float SlowInterval = 0.5f;
+        private const float LineInterval = 0.1f;      // seconds
+        private const float SlowInterval = 0.5f;      // seconds
         private const float MinSpeed = 4f;            // m/s: below this nobody is speeding or driving recklessly
-        private const float CrawlSpeed = 1.5f;        // m/s: a car creeping over a stop line slower than this is not running the light
+        private const float CrawlSpeed = 1.5f;        // m/s: creeping over a stop line slower is not running the light
         private const float RedFor = 1f;              // seconds the light must have been red before the car crosses
         private const float PastLine = 1f;            // metres the car's middle must be past the stop line
-        private const float PavementSeconds = 2.5f;
-        private const float WrongSideSeconds = 3f;
-        private const float OnRoadSeconds = 1.2f;
-        private const float OfficerSight = 30f;
+        private const float PavementSeconds = 2.5f;   // seconds on the pavement at speed
+        private const float WrongSideSeconds = 3f;    // seconds against the traffic
+        private const float OnRoadSeconds = 1.2f;     // seconds walking in the road
+        private const float OfficerSight = 30f;       // metres
 
         private static readonly Collider[] Hits = new Collider[12];
 
@@ -56,7 +53,7 @@ namespace RealLifeOverhaul
             Witness = null;
         }
 
-        /// <summary>Looks at the player's car. Returns an offence the moment one is complete, else None.</summary>
+        /// <summary>Looks at the player's car: an offence the moment one is complete, else None.</summary>
         public Offence Driving(Rigidbody body, float now)
         {
             Vector3 velocity = body.velocity;
@@ -72,7 +69,7 @@ namespace RealLifeOverhaul
             if (now >= _nextLine)
             {
                 _nextLine = now + LineInterval;
-                // The stop line is watched at any speed, so that pulling away from a standstill through a red light counts too.
+                // Watched at any speed, so pulling away through a red light counts too.
                 Vector3 heading = slow ? Flatten(body.rotation * Vector3.forward) : velocity / Mathf.Sqrt(sqrSpeed);
                 if (RedLight(body.position, heading, now) && sqrSpeed > CrawlSpeed * CrawlSpeed)
                 {
@@ -87,7 +84,6 @@ namespace RealLifeOverhaul
             return offence;
         }
 
-        // The stop line ahead in the player's own lane: crossing it after the light has been red for a second.
         private bool RedLight(Vector3 position, Vector3 heading, float now)
         {
             if (!RoadMap.LineAt(position, heading, out int line, out float along))
@@ -126,7 +122,7 @@ namespace RealLifeOverhaul
                 return Offence.None;
             }
 
-            // Well over the limit for a few seconds; booked once until they slow down again.
+            // Well over the limit for a few seconds; once until they slow down again.
             if (speed * 3.6f > limit + CrimeLaw.SpeedingMarginKmh && distance < 8f)
             {
                 if (_speedingSince < 0f)
@@ -145,7 +141,7 @@ namespace RealLifeOverhaul
                 _speedingBooked = false;
             }
 
-            // On the pavement at speed: where people walk, well away from any lane.
+            // On the pavement at speed, well away from any lane.
             if (speed > 8f && distance > 5f && NavMesh.SamplePosition(position, out NavMeshHit hit, 0.6f, StreetSpots.Pavement)
                 && Flat(hit.position - position) < 0.5f * 0.5f)
             {
@@ -164,7 +160,7 @@ namespace RealLifeOverhaul
                 _pavementSince = -1f;
             }
 
-            // Against the traffic: in a lane, fast, facing the wrong way along it.
+            // In a lane, fast, the wrong way along it.
             if (speed > 10f && distance < 1.8f && Vector3.Dot(runs, velocity) < -0.85f * speed)
             {
                 if (_wrongSince < 0f)
@@ -195,10 +191,7 @@ namespace RealLifeOverhaul
             return offset.x * offset.x + offset.z * offset.z;
         }
 
-        /// <summary>
-        /// Looks at the player on foot, and only if an officer is close enough to see them.
-        /// Crossing against the lights at a crossing, or walking in the road away from one.
-        /// </summary>
+        /// <summary>Looks at the player on foot with an officer close enough to see: against the lights, or in the road.</summary>
         public Offence OnFoot(Vector3 position, float now)
         {
             if (now < _nextSlow)
@@ -207,7 +200,7 @@ namespace RealLifeOverhaul
             }
             _nextSlow = now + SlowInterval;
             Witness = OfficerNear(position, OfficerSight);
-            // Only somebody walking counts: waiting at the kerb for the lights, or standing at a car door, is no offence.
+            // Waiting at the kerb or standing at a car door is no offence.
             bool walking = Flat(position - _lastFoot) > 0.3f * 0.3f;
             _lastFoot = position;
             if (Witness == null || !walking || !RoadMap.Ensure())
@@ -251,7 +244,7 @@ namespace RealLifeOverhaul
                 return Offence.None;
             }
 
-            // In the carriageway: off the pavement, with a traffic lane close by.
+            // Off the pavement, with a lane close by.
             bool onRoad = !NavMesh.SamplePosition(position, out _, 0.4f, StreetSpots.Pavement)
                           && RoadMap.Usable && RoadMap.NearestLane(position, out float distance, out _, out _) && distance < 5f;
             if (!onRoad)

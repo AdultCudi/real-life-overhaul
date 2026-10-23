@@ -756,8 +756,8 @@ internal static partial class Program
     private static void TextsSources()
     {
         string scripts = System.IO.Path.GetFullPath(System.IO.Path.Combine(LocalesFolder(), "..", "Scripts", "Texts"));
-        var gameFree = new[] { "TextCard.cs", "TextFaces.cs", "TextIntents.cs", "TextWords.cs", "TextCheck.cs", "TextQueue.cs", "TextJson.cs", "TextServer.cs", "TextPacks.cs",
-            "TextSpeed.cs", "TextsStore.cs", "TextsShare.cs", "TextsHub.cs", "TextsMapRules.cs", "TextHang.cs" };
+        var gameFree = new[] { "TextCard.cs", "TextFaces.cs", "TextIntents.cs", "TextIntents.Three.cs", "TextWords.cs", "TextCheck.cs", "TextQueue.cs", "TextJson.cs", "TextServer.cs", "TextServer.Start.cs", "TextServer.Process.cs", "TextCores.cs", "TextPacks.cs",
+            "TextSpeed.cs", "TextsStore.cs", "TextsShare.cs", "TextsHub.cs", "TextsHub.Look.cs", "TextRequest.cs", "TextsMapRules.cs", "TextHang.cs" };
         var problems = new List<string>();
         foreach (string file in gameFree)
         {
@@ -789,7 +789,8 @@ internal static partial class Program
         Check(social.Contains("SocialLinks.HoldText == null || !SocialLinks.HoldText(person, key, data, (k, d) => Deliver(person, contact, k, d, must))")
               && phone.Contains("Flush = true") && director.Contains("int flushed = Hub.FlushForSave();"),
             "texts, the phone: a text is held for its words only through RLO Texts' bridge, and goes out with its written line when the game saves meanwhile");
-        string server = File.ReadAllText(System.IO.Path.Combine(scripts, "TextServer.cs"));
+        string server = File.ReadAllText(System.IO.Path.Combine(scripts, "TextServer.cs")) + File.ReadAllText(System.IO.Path.Combine(scripts, "TextServer.Start.cs"))
+                        + File.ReadAllText(System.IO.Path.Combine(scripts, "TextServer.Process.cs"));
         string onCpu = TextServer.Arguments(new TextServerStart { Model = "m.gguf", Threads = 4 }, 5000, "key");
         string onGpu = TextServer.Arguments(new TextServerStart { Model = "m.gguf", Threads = 2, Device = "Vulkan0" }, 5001, "key");
         Check(onCpu.Contains(" --host 127.0.0.1 --port 5000 --api-key key ") && onGpu.Contains(" --host 127.0.0.1 --port 5001 --api-key key ")
@@ -865,7 +866,7 @@ internal static partial class Program
             }
         }
         Check(TextRuntime.Files.Length == 46 && TextRuntime.Files[0] == "llama-server.exe" && TextRuntime.Files[1].Length == 64, "texts, safety: llama.cpp " + TextRuntime.Release + "'s 23 runtime files are pinned by SHA-256");
-        string director = TextsSource("Texts/TextsDirector.cs");
+        string director = TextsSource("Texts/TextsDirector.cs") + TextsSource("Texts/TextsDirector.Status.cs");
         int verify = director.IndexOf("TextPacks.Verify(_packs[i], TextRuntime.Files)", StringComparison.Ordinal), devices = director.IndexOf("TextPacks.ListDevices(", StringComparison.Ordinal);
         Check(verify > 0 && devices > verify && director.Contains("_pack = TextPacks.Pick(verified, ") && System.Text.RegularExpressions.Regex.IsMatch(director, @"if \(why == null\)\s*\{\s*verified\.Add\(_packs\[i\]\);")
               && director.Contains("\"pack files changed: \""),
@@ -899,7 +900,7 @@ internal static partial class Program
         TextServer.Offline(info);
         Check(!info.EnvironmentVariables.ContainsKey("LLAMA_ARG_HOST") && !info.EnvironmentVariables.ContainsKey("HF_ENDPOINT") && info.EnvironmentVariables.ContainsKey("RLO_KEEP"),
             "texts, offline: no LLAMA_ARG_ or HF_ variable reaches llama.cpp");
-        string server = TextsSource("Texts/TextServer.cs"), packs = TextsSource("Texts/TextPacks.cs");
+        string server = TextsSource("Texts/TextServer.cs") + TextsSource("Texts/TextServer.Start.cs") + TextsSource("Texts/TextServer.Process.cs"), packs = TextsSource("Texts/TextPacks.cs");
         Check(server.Contains("--offline") && Regex.Matches(server, @"Offline\(info\);").Count == 1 && packs.Contains("TextServer.Offline(info);"),
             "texts, offline: both of llama.cpp's starts are offline (--offline, and the variables taken out)");
         Check(server.Contains("Interlocked.Exchange(ref _process, null)") && server.Contains("Interlocked.Exchange(ref _job, IntPtr.Zero)") && server.Contains("Interlocked.Exchange(ref _headFile, null)")
@@ -929,7 +930,7 @@ internal static partial class Program
         // 10, 12, 13, 14, 15, 16 and the main menu.
         Check(director.Contains("ThreadPool.QueueUserWorkItem(_ => server.Dispose());") && Regex.IsMatch(director, @"if \(_server != null && _runDevice == Settings\.TextsDevice && _runThreads == Settings\.TextsThreads\)\s*\{\s*return;"),
             "texts, the game's thread: the server is ended on the thread pool, and an idle look builds nothing");
-        Check(Regex.IsMatch(director, @"if \(!_loaded\)\s*\{\s*return;   // \(the main menu"), "texts: the model is started only once a save is loaded, never in the main menu");
+        Check(Regex.IsMatch(director, @"if \(!_loaded\)\s*\{\s*return;[^\n]*\s*\}\s*Run\(\);"), "texts: the model is started only once a save is loaded, never in the main menu");
         Dictionary<string, string>[] words = LanguageWords(out string[] codes);
         int longest = 0;
         foreach (string key in new[] { "reallife_texts_status_failed", "reallife_texts_status_none", "reallife_texts_status_ready", "reallife_texts_note_lite" })
@@ -987,7 +988,7 @@ internal static partial class Program
         var keys = new SortedSet<string>(StringComparer.Ordinal);
         var key = new Regex("\"(reallife_(?:texts|meta_title_texts|guide_texts|opt_sec_texts)[a-z0-9_]*)\"");
         string scripts = System.IO.Path.GetFullPath(System.IO.Path.Combine(LocalesFolder(), "..", "Scripts"));
-        foreach (string file in new[] { "Texts/TextsGuide.cs", "Texts/TextsDirector.cs", "Texts/TextsText.cs" })
+        foreach (string file in new[] { "Texts/TextsGuide.cs", "Texts/TextsDirector.cs", "Texts/TextsDirector.Status.cs", "Texts/TextsText.cs" })
         {
             foreach (Match m in key.Matches(File.ReadAllText(System.IO.Path.Combine(scripts, file))))
             {

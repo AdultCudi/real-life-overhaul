@@ -30,6 +30,29 @@ internal static partial class Program
         PhotoWaysOut();
         PhotoWholeLoads();
         PhotoFullWords();
+        PhotoNameFree(System.IO.Path.Combine(scratch, "free"));
+    }
+
+    // ---------------------------------------------------------------- a new photo's name is never a file that is there
+
+    private static void PhotoNameFree(string folder)
+    {
+        if (Directory.Exists(folder))
+        {
+            Directory.Delete(folder, true);
+        }
+        Directory.CreateDirectory(folder);
+        var at = new DateTime(2026, 10, 15, 9, 0, 0);
+        for (int number = 1; number < 2000; number++)
+        {
+            File.WriteAllBytes(System.IO.Path.Combine(folder, PhotoStoreRules.NameFor(at, false, 5, 9, number)), Array.Empty<byte>());
+        }
+        string path = PhotoStore.NewPath(folder, "free+id==", at, false, 5, 9);
+        Check(path != null && !File.Exists(path) && System.IO.Path.GetFileName(path) == "Photo_20261015_090000_D5_09_2000.jpg",
+            "photos name free: past a thousand photos in one second the next free number is taken, never a file that is there (" + (path == null ? "none" : System.IO.Path.GetFileName(path)) + ")");
+        Check(PhotoStore.MostSameSecond >= 10000 && Regex.IsMatch(Between(Read(@"Photos\PhotoStore.cs"), "public static string NewPath(", "public static bool MarkSave("), @"number <= MostSameSecond[\s\S]*return null;")
+              && !Read(@"Photos\PhotoStore.cs").Contains("Environment.TickCount"),
+            "photos name free: the numbers tried are bounded, the clock picks none, and with every one taken nothing is written over");
     }
 
     // ---------------------------------------------------------------- the whole photo's loads
@@ -37,7 +60,7 @@ internal static partial class Program
     private static void PhotoWholeLoads()
     {
         string gallery = Read(@"Photos\GalleryApp.Viewer.cs");
-        string came = Between(gallery, "private void Came(", "// The photo (or its stand-in) as large");
+        string came = Between(gallery, "private void Came(", "private void PlaceWhole()");
         string drop = Between(gallery, "private void DropWhole()", "\n        }");
         Check(Regex.IsMatch(gallery, @"load = \+\+_wholeLoad;\s*_director\.StartCoroutine\(Guard\.Routine\(PhotosGame\.Load\([^;]*Came\(t, name, opening, load\)")
               && Regex.IsMatch(came, @"if \(load != _wholeLoad \|\|[^)]*\)\s*\{\s*PhotosGame\.Destroy\(texture\);\s*return;")
@@ -205,7 +228,7 @@ internal static partial class Program
             "photos folders: the earlier folder of the save is moved to its name now, its photos found there");
         Check(!PhotoStore.Adopt(photos, "A B") && !PhotoStore.Adopt(photos, "AB") && !PhotoStore.Adopt(photos, null), "photos folders: moved once; an id whose name did not change has nothing to move");
         string director = Read(@"Photos\PhotosDirector.cs");
-        Check(Regex.IsMatch(Between(director, "private IEnumerator List(", "// ---------------------------------------------------------------- standing down"), @"Task\.Run\(\(\) =>\s*\{\s*adopted = PhotoStore\.Adopt\(root, id\);"),
+        Check(Regex.IsMatch(Between(director, "private IEnumerator List(", "private void StandDown()"), @"Task\.Run\(\(\) =>\s*\{\s*adopted = PhotoStore\.Adopt\(root, id\);"),
             "photos folders: the earlier folder is moved on the worker that lists the save's photos, before it lists them");
     }
 
@@ -238,7 +261,7 @@ internal static partial class Program
         File.WriteAllBytes(empty, Array.Empty<byte>());
         Check(PhotoStore.ReadPhoto(empty) == null, "photos odd folders: an empty file is no photo");
         string game = Read(@"Photos\PhotosGame.cs"), all2 = PhotoCode();
-        string load = Between(game, "public static IEnumerator Load(", "// ---------------------------------------------------------------- notifications");
+        string load = Between(game, "public static IEnumerator Load(", "public static void Tell(");
         Check(!Regex.IsMatch(all2, @"UnityWebRequest|new Uri\(|file://|AbsoluteUri") && Regex.IsMatch(load, @"Task\.Run\(\(\) => PhotoStore\.ReadPhoto\(path\)\)"),
             "photos odd folders: a whole photo is read on a worker by its path on disk, never through a file URL");
         Check(Regex.Matches(all2, @"\.LoadImage\(").Count == 1 && load.Contains("texture.LoadImage(bytes, true)") && load.Contains("HotSpots.Time(HotLoaded)"),
@@ -292,7 +315,7 @@ internal static partial class Program
         Check(exact, "photos world: the game's mask of the world's clicks (32 bits, the highest too) and the hover cursor are held and given back exactly");
         Check(CameraHold.WorldBack(0, 0) && !CameraHold.WorldBack(1 << 9, 0), "photos world: the mask is put back while it is still the camera's own, and a mask the game set meanwhile stands");
         string game = Read(@"Photos\PhotosGame.cs"), mode = Read(@"Photos\CameraMode.cs"), contract = Read(@"Core\GameContract.cs");
-        string give = Between(game, "public static void GiveWorld(", "// ---------------------------------------------------------------- keys");
+        string give = Between(game, "public static void GiveWorld(", "public static bool TakeConfirm()");
         Check(give.Contains("WorldMaskField.SetValue(null, layers)") && give.Contains("MouseController.cursorOnHover = (CursorType)cursor") && give.Contains("CameraHold.WorldBack(now, cameras)")
               && give.IndexOf("MouseController.Reset()", StringComparison.Ordinal) > give.IndexOf("return;", StringComparison.Ordinal)
               && give.Contains("PlayerHelper.IsHoldingAMop") && give.Contains("SetRestrictedObjectTypes(InteractiveObjectType.Ground)"),
@@ -324,7 +347,7 @@ internal static partial class Program
         s.Busy = true;
         Check(CameraRules.Refuse(s) == CameraRefusal.Busy && CameraRules.MustClose(ok) == CameraRefusal.None, "camera holds: busy, it does not open; nothing holding the player, it stays open");
         string game = Read(@"Photos\PhotosGame.cs");
-        string situation = Between(game, "public static CameraSituation Situation(", "// ---------------------------------------------------------------- the phone");
+        string situation = Between(game, "public static CameraSituation Situation(", "public static bool MenuOpen");
         Check(situation.Contains("s.Busy = GameManager.IsAnyMiniGameActive() || PoliceAttention.IsBusy;") && situation.Contains("s.WalkHeld = player.NavigationDisabled;")
               && situation.Contains("blockers.Count == 1 && blockers.Contains(Blocker)") && situation.Contains("GameContract.NavBlockers.Field"),
             "camera holds: the game's side reads the minigames and the police apart from the walk, and the camera's own blocker from the game's list");
@@ -363,14 +386,14 @@ internal static partial class Program
         string fin = shot.Substring(Math.Max(0, shot.LastIndexOf("finally", StringComparison.Ordinal)));
         Check(Regex.IsMatch(fin, @"if \(_view != null\)\s*\{\s*_view\.Busy\(false\);[^\n]*\n\s*_view\.ForShot\(false, _grid\);") && !fin.Contains("&& Active"),
             "camera ways out: the controls come back after a shot whether or not the camera is still open (shut in the shutter's frame, the next opening has them)");
-        string open = Between(mode, "public CameraRefusal Open(bool selfie, bool fromFlare)", "// Everything changed is written first");
+        string open = Between(mode, "public CameraRefusal Open(bool selfie, bool fromFlare)", "private void Hold()");
         int active = open.IndexOf("Active = true;", StringComparison.Ordinal);
         string after = active < 0 ? string.Empty : open.Substring(active);
         Check(Regex.IsMatch(after, @"try\s*\{[\s\S]*_view\.Show\(true\);[\s\S]*_view\.ForShot\(false, _grid\);[\s\S]*Write\(\);\s*\}\s*catch \(Exception e\)\s*\{\s*Logger\?\.Error\(e\);\s*Close\(""a fault""\);"),
             "camera ways out: a fault partway through opening shuts the camera at once, everything given back; the opening puts the controls back");
-        string hud = Between(game, "public static void Hud(bool shown)", "// ---------------------------------------------------------------- the cameras");
+        string hud = Between(game, "public static void Hud(bool shown)", "public static Camera MainCamera");
         Check(Regex.IsMatch(hud, @"else\s*\{\s*ScreenshotController\.uiIsVisible = shown;"), "camera ways out: with no interface to toggle, the game's own flag of the HUD is set back");
-        string free = Between(mode, "private void FreeShot()", "// ---------------------------------------------------------------- opening");
+        string free = Between(mode, "private void FreeShot()", "public CameraRefusal Open(");
         Check(Regex.IsMatch(Between(mode, "private void OnDestroy()", "private void FreeShot()"), @"FreeShot\(\);[\s\S]*if \(!gameObject\.activeInHierarchy\)\s*\{\s*FreeShot\(\);")
               && free.Contains("work.ContinueWith(_ => PhotosGame.Drop(left))") && free.Contains("PhotosGame.Drop(left);") && mode.Contains("_pendingShot = shot;") && mode.Contains("_pendingWork = work;"),
             "camera ways out: a shot cut off with the component (destroyed, or its object switched off) has the screen's copy let go, by its worker's end if a worker has it");

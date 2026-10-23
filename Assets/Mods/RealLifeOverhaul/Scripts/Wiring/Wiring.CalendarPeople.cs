@@ -7,15 +7,8 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// The calendar's days of the people in the player's life, read from what they keep and changed in nothing:
-        ///
-        ///   people     the birthday of each person the player has met (SocialPerson.Birthday, a day of the year as the
-        ///              calendar counts it), with the age they turn (SocialRules.AgeOn)
-        ///   children   each child's next birthday, as the family's own year grows them (Children.Grow: a year of
-        ///              Children.DaysPerYear days), and the day each week of what they cost is paid (FamilySave.LastWeekDay,
-        ///              Children.WeekCharges)
-        ///
-        /// Asked only when the calendar is shown.
+        /// The calendar's birthdays of the people the player has met and of their children (in the family's own year), and
+        /// the day each week the children cost. Read only; asked when the calendar is shown.
         /// </summary>
         internal static class CalendarPeople
         {
@@ -28,7 +21,6 @@ namespace RealLifeOverhaul
             private static readonly PeopleBirthdays Birthdays = new PeopleBirthdays();
             private static readonly ChildrenDays Kids = new ChildrenDays();
 
-            /// <summary>The birthdays of the people the player has met (Social).</summary>
             private sealed class PeopleBirthdays : ICalendarSource
             {
                 public string Id => "people";
@@ -38,7 +30,7 @@ namespace RealLifeOverhaul
                 public void Collect(int fromDay, int toDay, CalendarList into)
                 {
                     int year = SocialPlaces.DaysPerYear;
-                    for (int i = 0; i < SocialState.People.Length; i++)
+                    for (int i = 0; i < SocialState.Count; i++)
                     {
                         SocialPerson p = SocialState.People[i];
                         if (p == null || !p.Met || string.IsNullOrEmpty(p.Name))
@@ -58,7 +50,6 @@ namespace RealLifeOverhaul
                 }
             }
 
-            /// <summary>The children's birthdays and the week they cost (Family: Children).</summary>
             private sealed class ChildrenDays : ICalendarSource
             {
                 public string Id => "children";

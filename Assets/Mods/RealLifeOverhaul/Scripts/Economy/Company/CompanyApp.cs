@@ -122,7 +122,8 @@ namespace RealLifeOverhaul.Economy
                 _table.ClearSelection();
                 return;
             }
-            _pick = row.Id;
+            int mark = row.Id.IndexOf('#');   // a row that shares its page with another of the list (the managers' Needs you) carries a mark after it
+            _pick = mark > 0 ? row.Id.Substring(0, mark) : row.Id;
             Refresh();
         }
 

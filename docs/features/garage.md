@@ -236,7 +236,7 @@ The bike itself stays upright (the game's scooter physics): the stopped clips le
 
 | model | at | price | goes |
 |---|---|---|---|
-| City bicycle | bike-share docks (hire 15, back to any dock by the end of the next day, else collected with a 25 late fee); racks outside supermarkets | 350 | about 38 km/h, 0.06 energy a second of pedalling |
+| City bicycle | bike-share docks (hire 15, back to any dock by the end of the next day, else collected with a 25 late fee, always charged, as a tow is); racks outside supermarkets | 350 | about 38 km/h, 0.06 energy a second of pedalling |
 | Road bicycle | racks outside supermarkets | 900 | about 50 km/h, 0.08 energy a second |
 | Motorbike | stands outside car dealerships (at repair garages if the city has no dealership open) | 7 500 | 0-100 in 6.0 s, 150 km/h |
 | Sport motorbike | the same stands | 18 000 | 0-100 in 4.5 s, 190 km/h |

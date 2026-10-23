@@ -12,7 +12,7 @@ namespace RealLifeOverhaul.Street
         Election, Economy, Business, Rude, Threat, Day
     }
 
-    /// <summary>The reading of what the player typed: its kind, and for a question of the way the kind of place or the name asked for.</summary>
+    /// <summary>The reading of what the player typed.</summary>
     public struct StreetSaid
     {
         public StreetSayKind Kind;
@@ -23,13 +23,8 @@ namespace RealLifeOverhaul.Street
     }
 
     /// <summary>
-    /// The player's own words, typed in the game's text box during a conversation, read with fixed rules (as Flare reads an
-    /// invitation: FlareInviteRules.Read, which this uses for invitations): a threat or an insult (the mod's word list
-    /// besides a few of its own), an invitation, a number asked for, the way to a kind of place or to a business by name,
-    /// the election, prices, the player's own business by its name, the area, their name, a flirt, a compliment, a joke,
-    /// a question about them, how their day is going, goodbye, thanks, a greeting, the weather. Anything else is just talk: answered in character,
-    /// it changes nothing. The words never change the game but through what they are read as. Game-free.
-    /// COST: one pass over a line of at most <see cref="Most"/> characters, when the player sends it.
+    /// The player's own words in a conversation, read with fixed rules: they change the game only through what they are read
+    /// as. Game-free. COST: one pass over a line of at most <see cref="Most"/> characters, when sent.
     /// </summary>
     public static class StreetSay
     {
@@ -51,12 +46,18 @@ namespace RealLifeOverhaul.Street
             "where is", "where's", "wheres", "where are", "how do i get to", "how to get to", "how do i find", "nearest", "looking for", "is there a",
             "is there any", "know a", "know any", "directions", "the way to", "find a", "find the", "get to the", "near here", "around here somewhere"
         };
-        private static readonly string[] AreaWords = { "around here", "nearby", "this area", "what's good", "whats good", "neighbourhood", "neighborhood", "to do here", "what's on", "whats on", "local" };
+        private static readonly string[] AreaWords =
+        {
+            "around here", "nearby", "this area", "what's good", "whats good", "neighbourhood", "neighborhood", "to do here", "what's on", "whats on", "local"
+        };
         private static readonly string[] ElectionWords = { "election", "vote", "voting", "mayor", "candidate", "council", "politic" };
         private static readonly string[] EconomyWords = { "prices", "price", "economy", "inflation", "rent", "expensive", "bank rate", "interest rate", "cost of living", "money these days" };
         private static readonly string[] OwnWords = { "my shop", "my business", "my store", "my company", "my place", "my restaurant", "my cafe", "my bar" };
         private static readonly string[] NameWords = { "your name", "who are you", "my name is", "i'm called", "call me ", "name?" };
-        private static readonly string[] FlirtWords = { "cute", "gorgeous", "beautiful", "handsome", "single", "sexy", "pretty", "your smile", "your eyes", "a date", "go out with me", "attractive", "fancy you" };
+        private static readonly string[] FlirtWords =
+        {
+            "cute", "gorgeous", "beautiful", "handsome", "single", "sexy", "pretty", "your smile", "your eyes", "a date", "go out with me", "attractive", "fancy you"
+        };
         private static readonly string[] ComplimentWords = { "nice", "love your", "like your", "great", "cool", "you look", "lovely", "smart", "good taste", "well dressed", "style" };
         private static readonly string[] JokeWords = { "joke", "knock knock", "why did", "haha", "lol", "funny" };
         private static readonly string[] AboutWords = { "what do you do", "your job", "do you work", "work as", "where do you live", "you from", "about you" };
@@ -64,7 +65,10 @@ namespace RealLifeOverhaul.Street
         private static readonly string[] ByeWords = { "bye", "see you", "see ya", "take care", "later", "have a good", "gotta go", "got to go", "i'm off", "im off", "farewell" };
         private static readonly string[] ThanksWords = { "thanks", "thank you", "cheers", "appreciate" };
         private static readonly string[] HelloWords = { "hi", "hello", "hey", "good morning", "good afternoon", "good evening", "howdy", "yo", "hiya", "excuse me" };
-        private static readonly string[] SmallWords = { "weather", "raining", "rainy", "sunny", "nice day", "lovely day", "cold out", "hot out", "freezing", "traffic", "busy today", "quiet today", "quiet tonight" };
+        private static readonly string[] SmallWords =
+        {
+            "weather", "raining", "rainy", "sunny", "nice day", "lovely day", "cold out", "hot out", "freezing", "traffic", "busy today", "quiet today", "quiet tonight"
+        };
 
         private static readonly string[][] PlaceWords =
         {
@@ -83,7 +87,7 @@ namespace RealLifeOverhaul.Street
 
         private static readonly StringBuilder Plain = new StringBuilder(Most + 8);
 
-        /// <summary>Reads the player's words. Their own businesses (by name) are given so that a mention of one is known.</summary>
+        /// <summary>Reads the player's words; <paramref name="shops"/> are the player's businesses, so a mention of one is known.</summary>
         public static StreetSaid Read(string text, IReadOnlyList<string> shops)
         {
             var said = new StreetSaid { Kind = StreetSayKind.Other, Place = StreetPlace.Count, Shop = -1 };
@@ -159,7 +163,7 @@ namespace RealLifeOverhaul.Street
             return said;
         }
 
-        /// <summary>The choice a reading counts as, for the rules (StreetRules.Answer and the rest); Count for words the rules have no question for.</summary>
+        /// <summary>The choice a reading counts as for the rules; Count for words they have no question for.</summary>
         public static StreetAsk AskOf(StreetSayKind kind)
         {
             switch (kind)
@@ -184,7 +188,6 @@ namespace RealLifeOverhaul.Street
             }
         }
 
-        /// <summary>The kind of place named in the words, or Count.</summary>
         public static StreetPlace PlaceOf(string lower)
         {
             for (int p = 0; p < PlaceWords.Length; p++)
@@ -197,7 +200,7 @@ namespace RealLifeOverhaul.Street
             return StreetPlace.Count;
         }
 
-        /// <summary>The name asked for after "where is" and the like, without "the", "a" and the question mark; null if nothing is left.</summary>
+        /// <summary>The name asked for after "where is" and the like, without an article; null if nothing is left.</summary>
         public static string Target(string lower)
         {
             for (int i = 0; i < Lead.Length; i++)
@@ -221,10 +224,7 @@ namespace RealLifeOverhaul.Street
             return null;
         }
 
-        /// <summary>
-        /// True if a name asked for is this business's: the same letters and figures, or one inside the other when the shorter
-        /// has four or more ("bean there" for "Bean There Cafe").
-        /// </summary>
+        /// <summary>True if a name asked for is this business's: the same letters and figures, or one inside the other of four or more.</summary>
         public static bool Names(string asked, string business)
         {
             string a = Squash(asked), b = Squash(business);
@@ -239,7 +239,6 @@ namespace RealLifeOverhaul.Street
             return (a.Length >= 4 && b.Contains(a)) || (b.Length >= 4 && a.Contains(b));
         }
 
-        // One of the player's businesses named in the words (four letters or more of its name), or -1.
         private static int ShopNamed(string lower, IReadOnlyList<string> shops)
         {
             if (shops == null)
@@ -258,7 +257,6 @@ namespace RealLifeOverhaul.Street
             return -1;
         }
 
-        // Letters and figures only, lower case.
         private static string Squash(string text)
         {
             if (string.IsNullOrEmpty(text))
@@ -277,7 +275,7 @@ namespace RealLifeOverhaul.Street
             return t.ToString();
         }
 
-        // The words in lower case, one space between, the typographer's apostrophe made plain, at most Most characters.
+        // Lower case, one space between words, the typographer's apostrophe made plain, at most Most characters.
         private static string Lower(string text)
         {
             Plain.Length = 0;
@@ -328,7 +326,7 @@ namespace RealLifeOverhaul.Street
             return false;
         }
 
-        // A part found as a whole word (not inside another: "hi" is not in "this").
+        // A part found as a whole word: "hi" is not in "this".
         private static bool Word(string t, string[] parts)
         {
             for (int i = 0; i < parts.Length; i++)

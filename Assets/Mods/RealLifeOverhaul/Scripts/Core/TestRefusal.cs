@@ -45,9 +45,8 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// What every test button does when it cannot do what was asked: one line in the log with the
-    /// reason and whatever was measured, one toast that names the reason. Called on a button
-    /// press only.
+    /// What every test button does when it cannot do what was asked: one log line with the reason and what was measured,
+    /// one toast that names it. On a button press only.
     /// </summary>
     public static class TestRefusals
     {
@@ -65,23 +64,21 @@ namespace RealLifeOverhaul
             return TrafficTools.Ready ? TestRefusal.None : TestRefusal.TrafficOff;
         }
 
-        /// <summary>Says why a test did not start. <paramref name="metres"/> fills {metres} in the two sentences that have it.</summary>
+        /// <summary>Says why a test did not start; <paramref name="metres"/> fills {metres} in the sentences that have it.</summary>
         public static void Tell(IModLogger logger, string test, TestRefusal why, int metres = 0, string detail = null)
         {
             logger?.Info(test + " test: not started (" + why + (metres > 0 ? ", " + metres + " m" : string.Empty)
                          + (detail != null ? "; " + detail : string.Empty) + ").");
             Dictionary<string, string> data = null;
-            if (why == TestRefusal.NoMovingCar || why == TestRefusal.NobodyNear || why == TestRefusal.NoBusStop || why == TestRefusal.NoRoad || why == TestRefusal.NoBin || why == TestRefusal.NoVenue || why == TestRefusal.NoCar || why == TestRefusal.NoCarNear)
+            if (why == TestRefusal.NoMovingCar || why == TestRefusal.NobodyNear || why == TestRefusal.NoBusStop || why == TestRefusal.NoRoad
+                || why == TestRefusal.NoBin || why == TestRefusal.NoVenue || why == TestRefusal.NoCar || why == TestRefusal.NoCarNear)
             {
                 data = new Dictionary<string, string>(1) { { "metres", metres.ToString() } };   // the game keeps the toast's data
             }
             Notifications.Show(NotificationType.Warning, Key(why), data, 8f);
         }
 
-        /// <summary>
-        /// The same for a reason that belongs to one feature and has its own sentence (a locale key), such as "no water
-        /// in front of you" or "no bar within reach". One log line, one toast, one sentence per cause.
-        /// </summary>
+        /// <summary>The same for a reason of one feature with its own sentence (a locale key), such as "no bar within reach".</summary>
         public static void TellKey(IModLogger logger, string test, string sentenceKey, string detail = null)
         {
             logger?.Info(test + " test: not started (" + sentenceKey + (detail != null ? "; " + detail : string.Empty) + ").");

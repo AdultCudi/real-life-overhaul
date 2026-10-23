@@ -599,9 +599,9 @@ internal static partial class Program
 
     private static void StreetSources()
     {
-        string director = TextsSource(@"Street\StreetDirector.cs"), talk = TextsSource(@"Street\StreetDirector.Talk.cs"), game = TextsSource(@"Street\StreetGame.cs");
+        string director = TextsSource(@"Street\StreetDirector.cs"), talk = TextsSource(@"Street\StreetDirector.Talk.cs") + TextsSource(@"Street\StreetDirector.Outcomes.cs"), game = TextsSource(@"Street\StreetGame.cs") + TextsSource(@"Street\StreetHold.cs");
         string links = TextsSource(@"Wiring\StreetLinks.cs");
-        string all = director + talk + game + links + TextsSource(@"Street\StreetRules.cs") + TextsSource(@"Street\StreetSay.cs") + TextsSource(@"Street\StreetModel.cs") + TextsSource(@"Street\StreetStore.cs")
+        string all = director + talk + game + links + TextsSource(@"Street\StreetRules.cs") + TextsSource(@"Street\StreetRules.Choices.cs") + TextsSource(@"Street\StreetMemory.cs") + TextsSource(@"Street\StreetSay.cs") + TextsSource(@"Street\StreetModel.cs") + TextsSource(@"Street\StreetStore.cs")
                      + TextsSource(@"Street\StreetDirector.Tests.cs") + TextsSource(@"Street\StreetGuide.cs") + TextsSource(@"Street\StreetLines.cs") + TextsSource(@"Street\StreetBridges.cs");
         int update = director.IndexOf("private void OnUpdate()", StringComparison.Ordinal);
         string body = update >= 0 ? director.Substring(update, Math.Min(900, director.Length - update)) : string.Empty;

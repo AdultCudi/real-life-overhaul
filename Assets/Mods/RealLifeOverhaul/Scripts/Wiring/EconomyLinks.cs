@@ -8,28 +8,10 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// The economy with the rest of the mod (Economy/EconomyBridges). Economy calls no other feature and none
-        /// calls it: what they have to do with each other is here.
-        ///
-        ///   Legal        the record the credit rating reads: convictions that still count (<see cref="Standing"/>),
-        ///                civil judgments being paid off, fines and court debts owed and the days running on which one
-        ///                could not be taken (Justice's debts), a fine waiting at the police desk (ModState), and the
-        ///                lines on the police record of the last 30 days (Law)
-        ///   LegalReady   Justice has read this save (its record is part of the rating's starting estimate)
-        ///   OtherDebts   the same fines and court debts as lines for the Finance app's "what you owe"
-        ///   the Planner  a source of its own (<see cref="FinanceSource"/>): tomorrow's payments by account, a missed
-        ///                payment, a change of grade, a card's statement, the private lender's due day
-        ///   Prices       the level every price of the mod's is at (Core/Prices): what the city adjusts the game's own
-        ///                costs by
-        ///   GivenBack    the mod's refunds of a game charge (a ride the day pass covered, a lent vehicle's ticket), which
-        ///                the city's cost of living line counts against the game's charges of the day
-        ///   Takings      the broadband company's bills (Scripts/Utilities), and its network's cost; the player's bank's
-        ///   CostRow      takings, what its savers are paid and its losses (Economy/OwnBank): in their headquarters'
-        ///                statement among the takings and the goods, so the game's tax and bank count them
-        ///   LifeAccounts a card of the mod's banks and an accountant, for the life events that need one
-        ///   on unload    the banks' own terms are put back at once (Economy's own object goes at the end of the frame)
-        ///
-        /// Everything is read from what those features already keep in public; nothing of theirs is changed.
+        /// The economy (EconomyBridges) with the record the credit rating reads (Standing, Justice's debts, a fine at the
+        /// police desk, Law's last 30 days), the debts in the Finance app's "what you owe", the Planner's Finance rows, the
+        /// city's price level, the takings and cost rows of the broadband company, the player's bank and the tech firms
+        /// in their headquarters' statement, and the life events' card and accountant.
         /// </summary>
         public static class EconomyLinks
         {
@@ -40,10 +22,11 @@ namespace RealLifeOverhaul
             {
                 Prices.Factor = () => Economy.CityEconomy.CostFactor;   // every price of the mod's follows the city's
                 EconomyBridges.GivenBack = GivenBack;
-                // the broadband company bills from its headquarters, the player's bank earns there, and a tech firm's takings are its
-                // products', contracts' and cloud's (Tech/Firms, Tech/Infra)
+                // a tech firm's takings are its products', contracts' and cloud's
                 EconomyBridges.Takings = type => type == Utilities.BroadbandCatalogue.TakingsKey || OwnBankCatalogue.IsTakings(type) || Tech.FirmsGame.IsTakings(type);
-                EconomyBridges.CostRow = type => type == Utilities.BroadbandCatalogue.NetworkKey || type == Utilities.BroadbandCatalogue.InstallsKey ? Utilities.BroadbandCatalogue.NetworkRow : OwnBankCatalogue.CostRow(type) ?? Tech.FirmsGame.RowOf(type);
+                EconomyBridges.CostRow = type => type == Utilities.BroadbandCatalogue.NetworkKey || type == Utilities.BroadbandCatalogue.InstallsKey
+                    ? Utilities.BroadbandCatalogue.NetworkRow
+                    : OwnBankCatalogue.CostRow(type) ?? Tech.FirmsGame.RowOf(type);
                 LifeAccounts.Card = HasCard;
                 LifeAccounts.Accountant = () => Economy.CompanyDirector.Instance != null && Economy.CompanyDirector.Instance.HasAccountant;
                 EconomyBridges.Legal = ReadLegal;
@@ -54,19 +37,32 @@ namespace RealLifeOverhaul
 
             private static bool GivenBack(string type) => type == CivicBridges.FareGivenBack || type == LentVehicle.RefundKey;
 
-            // A credit card of the mod's banks, open and not one of the test buttons'.
+            /// <summary>What the private lender wants on its due day: what is owed now, with the days still to run on it.</summary>
+            internal static int SharkOwed(SharkDebt shark, int today) =>
+                SharkRules.OwedOnDueDay(shark.Borrowed) > shark.Owed && today < shark.DueDay
+                    ? shark.Owed + SharkRules.ADay(shark.Borrowed) * (shark.DueDay - today) : shark.Owed;
+
+            // An open credit card of the mod's banks, not one of the test buttons'.
             private static bool HasCard()
             {
-                Economy.CreditFile file = Economy.CreditLedger.File;
-                for (int i = 0; file != null && i < file.Accounts.Count; i++)
+                try
                 {
-                    Economy.CreditAccount a = file.Accounts[i];
-                    if (a != null && a.Kind == Economy.ProductKind.CreditCard && !a.Closed && !a.Test)
+                    Economy.CreditFile file = Economy.CreditLedger.File;
+                    for (int i = 0; file != null && i < file.Accounts.Count; i++)
                     {
-                        return true;
+                        Economy.CreditAccount a = file.Accounts[i];
+                        if (a != null && a.Kind == Economy.ProductKind.CreditCard && !a.Closed && !a.Test)
+                        {
+                            return true;
+                        }
                     }
+                    return false;
                 }
-                return false;
+                catch (Exception e)
+                {
+                    Fault("EconomyLinks.HasCard", e);
+                    return false;
+                }
             }
 
             internal static void Disconnect()
@@ -74,10 +70,8 @@ namespace RealLifeOverhaul
                 Prices.Factor = null;
                 LifeAccounts.Card = null;
                 LifeAccounts.Accountant = null;
-                EconomyBridges.Reset();   // (the bridges of DebtLinks too) the Planner's director goes with the city, and its sources with it
-                // The city is unloading or the mod is being switched off: the banks have their own terms again now, not
-                // only when the economy's own object is destroyed at the end of the frame.
-                BankTerms.Restore();
+                EconomyBridges.Reset();   // DebtLinks' bridges too; the Planner's director goes with the city, and its sources with it
+                BankTerms.Restore();   // now, not only once the economy's director is destroyed
             }
 
             private static LegalStanding ReadLegal()
@@ -135,7 +129,7 @@ namespace RealLifeOverhaul
                     {
                         into.Add(new DebtLine { NameKey = "reallife_econ_debt_pending", Owed = ModState.PendingFine });
                     }
-                    UtilityLinks.AddDebts(into);   // power and water bills owed (Scripts/Utilities)
+                    UtilityLinks.AddDebts(into);
                 }
                 catch (Exception e)
                 {
@@ -144,13 +138,9 @@ namespace RealLifeOverhaul
             }
 
             /// <summary>
-            /// The Finance rows of the Planner: what the game's loans take tomorrow (one row with the total), a row on
-            /// the day after a payment was missed, a row on the day the grade changed; and, for the mod's own accounts,
-            /// each payment that leaves tomorrow by account, a card's statement day and the day its minimum is taken,
-            /// the day the private lender wants its money and the last day of an approval for finance. (A hearing for
-            /// a debt claim is Justice's own row.) It reads the credit file and the accounts and changes nothing.
-            /// Ids: 1, 2 and 3 with the day; 10 to 13 with the account's number; 14 and 15 with nothing; 20 with the day
-            /// and 21 with the kind of goods are the city's economy's (<see cref="CityLinks.Rows"/>).
+            /// The Finance rows of the Planner: the game's loans tomorrow, a missed payment, a change of grade, the mod's
+            /// accounts, the private lender and an approval running out. Read only. Ids: 1 to 3 with the day; 10 to 13 with
+            /// the account's number; 14 and 15 with nothing; 20 and 21 are the city's economy's (<see cref="CityLinks.Rows"/>).
             /// </summary>
             private sealed class FinanceSource : IPlannerSource
             {
@@ -166,10 +156,10 @@ namespace RealLifeOverhaul
                     IReadOnlyList<ICreditAccount> accounts = CreditLedger.Accounts;
                     for (int i = 0; i < accounts.Count; i++)
                     {
-                        due += accounts[i].Key == GameLoans.AccountKey ? Math.Max(0f, accounts[i].PaymentDue) : 0f;   // (the mod's accounts have a row each, below)
+                        due += accounts[i].Key == GameLoans.AccountKey ? Math.Max(0f, accounts[i].PaymentDue) : 0f;   // the mod's accounts have a row each
                     }
                     Accounts(file, today, into);
-                    CityLinks.Rows(Id, today, into);   // the city's economy: tomorrow's rate decision, a shortage or a glut from tomorrow
+                    CityLinks.Rows(Id, today, into);
                     if (due > 0f)
                     {
                         PlannerEntry e = into.Add(Id, 1, today + 1, PlannerCategory.Money, today + 1);
@@ -197,8 +187,7 @@ namespace RealLifeOverhaul
                         {
                             e.Title = PlannerText.T("reallife_econ_plan_lender_title");
                             e.What = PlannerText.T("reallife_econ_plan_lender_what", "day", file.Shark.DueDay.ToString());
-                            float owed = SharkRules.OwedOnDueDay(file.Shark.Borrowed) > file.Shark.Owed && today < file.Shark.DueDay
-                                ? file.Shark.Owed + SharkRules.ADay(file.Shark.Borrowed) * (file.Shark.DueDay - today) : file.Shark.Owed;
+                            float owed = SharkOwed(file.Shark, today);
                             PlannerText.Costs(e, owed, FinanceText.Money(owed));
                             e.IfMissed = PlannerText.T("reallife_econ_plan_lender_missed");
                         }
@@ -223,7 +212,7 @@ namespace RealLifeOverhaul
                     }
                 }
 
-                // The mod's own accounts: what each takes tomorrow, and a card's two days.
+                // What each of the mod's accounts takes tomorrow, and a card's two days.
                 private void Accounts(CreditFile file, int today, PlannerList into)
                 {
                     for (int i = 0; i < file.Accounts.Count; i++)

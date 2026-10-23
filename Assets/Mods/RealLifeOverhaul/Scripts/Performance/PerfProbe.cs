@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
 using System.Text;
 using BAModAPI;
 using Unity.Profiling;
@@ -12,18 +11,13 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The measurement behind every performance decision: F7 (or the options button) watches ten seconds of
-    /// ordinary play and writes RealLifeOverhaul_perf_HHmmss.txt next to the player log, with a screenshot in
-    /// RealLifeOverhaul_shots. The report has the frame times, where the frame goes (main thread, render
-    /// thread, GPU), the engine's own counters, and a census of everything in the scene that costs time.
-    /// Nothing here runs, and nothing is allocated, unless a capture has been asked for; the census (which
-    /// walks every object) runs once, after the measuring has stopped.
+    /// The ten-second capture (F7): frame times, the thread split, the engine's counters and a census of the scene, written
+    /// to RealLifeOverhaul_perf_HHmmss.txt with a screenshot. Nothing runs unless a capture is asked for.
     /// </summary>
     public sealed class PerfProbe
     {
-        private const float Seconds = 10f;
+        private const float Seconds = 10f;   // seconds measured
 
-        // Counters the engine keeps in every build.
         private static readonly string[] Counters =
         {
             "Main Thread", "CPU Total Frame Time", "CPU Main Thread Frame Time", "CPU Render Thread Frame Time", "GPU Frame Time",
@@ -34,9 +28,8 @@ namespace RealLifeOverhaul
             "Render Textures Count", "Render Textures Bytes", "Used Textures Bytes", "Video Memory Bytes",
         };
 
-        // Timed sections of the frame on the main thread. A build without profiling answers for few of them; the
-        // report lists the ones it did answer for, and the full list of what this build offers is written once
-        // to RealLifeOverhaul_perf_markers.txt so that the next version can ask for exactly those.
+        // Timed sections of the main thread; a build without profiling answers for few. What this build offers is written
+        // once to RealLifeOverhaul_perf_markers.txt.
         private static readonly string[] MainThreadMarkers =
         {
             "PlayerLoop", "Initialization.PlayerUpdateTime", "EarlyUpdate.UpdatePreloading", "EarlyUpdate.UpdateMainGameViewRect",
@@ -62,7 +55,6 @@ namespace RealLifeOverhaul
             "Loading.UpdatePreloading", "Application.Integrate Assets in Background", "AsyncUploadManager.ScheduleAsyncRead", "Audio.Update",
         };
 
-        // The same idea for the threads that draw.
         private static readonly string[] AnyThreadMarkers =
         {
             "Gfx.PresentFrame", "Gfx.WaitForGfxCommandsFromMainThread", "Gfx.ProcessCommands", "GfxDeviceD3D11Base.DrawBuffers", "Gfx.UploadTexture",
@@ -76,7 +68,7 @@ namespace RealLifeOverhaul
         private PerfSampler.Stat[] _stats;
         private bool _markersWritten;
 
-        // What the UI rebuilds while the window is open, read just before the UI system clears its own queues.
+        // what the UI rebuilds while the window is open, read just before the UI system clears its queues
         private readonly Dictionary<ICanvasElement, int> _layoutRebuilds = new Dictionary<ICanvasElement, int>(256);
         private readonly Dictionary<ICanvasElement, int> _graphicRebuilds = new Dictionary<ICanvasElement, int>(256);
         private IList<ICanvasElement> _layoutQueue;
@@ -128,7 +120,7 @@ namespace RealLifeOverhaul
             PerfDirector.Notify("reallife_perf_probe_started", 5f);
         }
 
-        /// <summary>Called every frame by the director while a capture runs, and not otherwise.</summary>
+        /// <summary>Called each frame by the director while a capture runs.</summary>
         public void Step()
         {
             if (_sampler.Elapsed < Seconds)
@@ -138,7 +130,7 @@ namespace RealLifeOverhaul
             Finish();
         }
 
-        /// <summary>Stops without a report (the scene is going).</summary>
+        /// <summary>Stops without a report: the scene is going.</summary>
         public void Cancel()
         {
             if (Running)
@@ -188,15 +180,19 @@ namespace RealLifeOverhaul
         {
             var text = new StringBuilder(64 * 1024);
             Camera camera = GameManager.GetMainCamera();
-            text.AppendLine("Real Life Overhaul performance probe  " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "  mod " + typeof(PerfProbe).Assembly.GetName().Version + "  Unity " + Application.unityVersion);
-            text.AppendLine("where: " + PerfGame.Where() + (camera != null ? "  camera '" + camera.name + "' at " + camera.transform.position.ToString("F1") + " looking " + camera.transform.forward.ToString("F2") : "  no main camera"));
+            text.AppendLine("Real Life Overhaul performance probe  " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "  mod " + typeof(PerfProbe).Assembly.GetName().Version
+                            + "  Unity " + Application.unityVersion);
+            text.AppendLine("where: " + PerfGame.Where()
+                            + (camera != null
+                                ? "  camera '" + camera.name + "' at " + camera.transform.position.ToString("F1") + " looking " + camera.transform.forward.ToString("F2")
+                                : "  no main camera"));
             text.AppendLine("screen: " + Screen.width + "x" + Screen.height + "  quality level " + QualitySettings.GetQualityLevel());
 
             text.AppendLine();
             text.AppendLine("===== FRAME TIMES over " + PerfText.F1(window.Seconds) + " s, " + window.Frames + " frames =====");
             text.AppendLine("  average " + PerfText.F2(window.AverageMs) + " ms = " + PerfText.F1(window.Fps) + " fps    median " + PerfText.F2(window.MedianMs) + " ms");
-            text.AppendLine("  1% low  " + PerfText.F2(window.Low1Ms) + " ms = " + PerfText.F1(window.Low1Fps) + " fps    0.1% low " + PerfText.F2(window.Low01Ms) + " ms = " + PerfText.F1(window.Low01Fps)
-                            + " fps    worst frame " + PerfText.F2(window.WorstMs) + " ms   (a 'low' is the mean of the slowest 1% / 0.1% of frames)");
+            text.AppendLine("  1% low  " + PerfText.F2(window.Low1Ms) + " ms = " + PerfText.F1(window.Low1Fps) + " fps    0.1% low " + PerfText.F2(window.Low01Ms) + " ms = "
+                            + PerfText.F1(window.Low01Fps) + " fps    worst frame " + PerfText.F2(window.WorstMs) + " ms   (a 'low' is the mean of the slowest 1% / 0.1% of frames)");
             var spread = new PerfText.Ranges(4f, 6f, 8f, 10f, 12f, 16f, 25f, 50f, 100f);
             int hitches = 0;
             for (int i = 0; i < _sampler.FrameCount; i++)
@@ -209,19 +205,20 @@ namespace RealLifeOverhaul
                 }
             }
             text.AppendLine("  frames by duration (ms): " + spread);
-            text.AppendLine("  hitches (frames over 2.5x the median): " + hitches + "    physics steps " + window.FixedSteps + " = " + PerfText.F2(window.Frames > 0 ? (float)window.FixedSteps / window.Frames : 0f)
-                            + " per frame    garbage collections in the window: " + window.Collections);
+            text.AppendLine("  hitches (frames over 2.5x the median): " + hitches + "    physics steps " + window.FixedSteps + " = "
+                            + PerfText.F2(window.Frames > 0 ? (float)window.FixedSteps / window.Frames : 0f) + " per frame    garbage collections in the window: " + window.Collections);
 
             text.AppendLine();
             text.AppendLine("===== WHERE THE FRAME GOES (engine frame timing, " + window.TimedFrames + " frames answered) =====");
             if (window.TimedFrames == 0)
             {
-                text.AppendLine("  The engine's frame timing reported nothing in this build (feature enabled: " + FrameTimingManager.IsFeatureEnabled() + "). Use the counters below: 'Main Thread' and the Gfx.* waits.");
+                text.AppendLine("  The engine's frame timing reported nothing in this build (feature enabled: " + FrameTimingManager.IsFeatureEnabled()
+                                + "). Use the counters below: 'Main Thread' and the Gfx.* waits.");
             }
             else
             {
-                text.AppendLine("  main thread " + PerfText.Ms(window.MainMs) + " ms    render thread " + PerfText.Ms(window.RenderMs) + " ms    GPU " + PerfText.Ms(window.GpuMs) + " ms    main thread waiting for the display "
-                                + PerfText.Ms(window.PresentWaitMs) + " ms");
+                text.AppendLine("  main thread " + PerfText.Ms(window.MainMs) + " ms    render thread " + PerfText.Ms(window.RenderMs) + " ms    GPU " + PerfText.Ms(window.GpuMs)
+                                + " ms    main thread waiting for the display " + PerfText.Ms(window.PresentWaitMs) + " ms");
                 text.AppendLine("  reading: " + Reading(window));
             }
 
@@ -247,7 +244,8 @@ namespace RealLifeOverhaul
                 text.AppendLine(stat.AllThreads ? "   (all threads)" : string.Empty);
             }
             text.AppendLine("  (" + silent + " of " + _stats.Length + " statistics asked for are not offered by this build; RealLifeOverhaul_perf_markers.txt lists what is.");
-            text.AppendLine("   The draw call, batch and triangle counters exist but stay at zero in a release build, and the render pipeline's own timers are compiled out of it: the step table above is what replaces them.)");
+            text.AppendLine("   The draw call, batch and triangle counters exist but stay at zero in a release build, and the render pipeline's own timers are compiled out of it:"
+                            + " the step table above is what replaces them.)");
 
             text.AppendLine();
             text.AppendLine("===== UI REBUILDS during the window =====");
@@ -261,15 +259,15 @@ namespace RealLifeOverhaul
                 {
                     continue;
                 }
-                text.AppendLine("  " + tweak.Id.PadRight(22) + (tweak.Active ? "ON " : "off") + (tweak.Faulted ? " FAULTED" : string.Empty) + (tweak.Wanted != tweak.Active && !tweak.Faulted ? " (option " + (tweak.Wanted ? "on" : "off") + ")" : string.Empty)
-                                + "  " + tweak.Describe());
+                text.AppendLine("  " + tweak.Id.PadRight(22) + (tweak.Active ? "ON " : "off") + (tweak.Faulted ? " FAULTED" : string.Empty)
+                                + (tweak.Wanted != tweak.Active && !tweak.Faulted ? " (option " + (tweak.Wanted ? "on" : "off") + ")" : string.Empty) + "  " + tweak.Describe());
             }
 
             PerfCensus.Write(text, camera);
             return text.ToString();
         }
 
-        // What the split says, in words. Deliberately cautious: it only names what the numbers show.
+        // cautious: it names only what the numbers show
         private static string Reading(PerfWindow w)
         {
             if (w.PresentWaitMs > w.AverageMs * 0.25f)
@@ -316,7 +314,7 @@ namespace RealLifeOverhaul
                 if (_layoutQueue == null)
                 {
                     CanvasUpdateRegistry registry = CanvasUpdateRegistry.instance;
-                    _layoutQueue = GameContract.LayoutQueue.Field?.GetValue(registry) as IList<ICanvasElement>;   // (resolved once: Core/GameContract)
+                    _layoutQueue = GameContract.LayoutQueue.Field?.GetValue(registry) as IList<ICanvasElement>;
                     _graphicQueue = GameContract.GraphicQueue.Field?.GetValue(registry) as IList<ICanvasElement>;
                 }
                 if (_layoutQueue == null || _graphicQueue == null)
@@ -324,7 +322,7 @@ namespace RealLifeOverhaul
                     _uiNote = "the UI system's rebuild queues could not be reached in this version";
                     return;
                 }
-                _countUi = _countUi ?? new Canvas.WillRenderCanvases(Guard.Wrap(CountUi));   // (made once, through the guard: Core/Guard)
+                _countUi = _countUi ?? new Canvas.WillRenderCanvases(Guard.Wrap(CountUi));   // made once, through the guard
                 Canvas.preWillRenderCanvases += _countUi;
                 _uiHooked = true;
             }
@@ -343,7 +341,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Runs once per frame while a capture is open, before the UI system rebuilds and empties its queues.
+        // once a frame while a capture is open, before the UI system rebuilds and empties its queues
         private void CountUi()
         {
             _uiFrames++;
@@ -379,8 +377,8 @@ namespace RealLifeOverhaul
                 text.AppendLine("  no UI frame was seen");
                 return;
             }
-            text.AppendLine("  per frame on average: layout rebuilds " + PerfText.F2((float)_layoutTotal / _uiFrames) + "  graphic rebuilds (text, images re-meshed) " + PerfText.F2((float)_graphicTotal / _uiFrames)
-                            + "   over " + _uiFrames + " frames. Any rebuild also re-batches the whole canvas it sits on.");
+            text.AppendLine("  per frame on average: layout rebuilds " + PerfText.F2((float)_layoutTotal / _uiFrames) + "  graphic rebuilds (text, images re-meshed) "
+                            + PerfText.F2((float)_graphicTotal / _uiFrames) + "   over " + _uiFrames + " frames. Any rebuild also re-batches the whole canvas it sits on.");
             WriteRebuilds(text, "elements rebuilding their graphic most often", _graphicRebuilds);
             WriteRebuilds(text, "elements rebuilding their layout most often", _layoutRebuilds);
         }
@@ -396,7 +394,8 @@ namespace RealLifeOverhaul
                 if (rows[i].Key is Component component && component != null)
                 {
                     Canvas canvas = component.GetComponentInParent<Canvas>();
-                    who = component.GetType().Name + " '" + component.name + "' under '" + PerfText.Above(component.transform, 3) + "' on canvas '" + (canvas != null ? canvas.rootCanvas.name : "none") + "'";
+                    who = component.GetType().Name + " '" + component.name + "' under '" + PerfText.Above(component.transform, 3) + "' on canvas '"
+                          + (canvas != null ? canvas.rootCanvas.name : "none") + "'";
                     if (component is TMPro.TMP_Text label)
                     {
                         string shown = label.text ?? string.Empty;
@@ -407,7 +406,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Every statistic this build of the engine can be asked for: written once per session.
+        // every statistic this build of the engine can be asked for: written once a session
         private static string DescribeAvailable()
         {
             var handles = new List<ProfilerRecorderHandle>(4096);

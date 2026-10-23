@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using Buildings;
-using Buildings.BuildingTypes.Special.FurnitureStore;
 using Entities;
 using Helpers;
 using Localizor;
@@ -11,15 +10,7 @@ using Vehicles;
 
 namespace RealLifeOverhaul.Calendar
 {
-    /// <summary>
-    /// The only part of the calendar that touches the game: its clock and year, and the game's own days read from the
-    /// save as the game keeps them. The tax year closes on each day the game's TaxHelper.RunTaxPeriodBoundary runs it
-    /// (a day that is a whole number of years); the player's birthday is the day PlayerHelper.IncreasePlayerAge makes
-    /// their age in days a whole number of years; deliveries come on the day and hour of the game's own contracts
-    /// (FurnitureDeliveryHelper, which takes the price on delivery, and VehicleDeliveryHelper); the rent the player's
-    /// buildings bring in is what RealEstateHelper pays each night (RealEstate.DailyIncome). Everything is read, nothing
-    /// written; asked only when the calendar is shown.
-    /// </summary>
+    /// <summary>The only part of the calendar that touches the game: its clock and the save's own dated things, read only.</summary>
     public static class CalendarGame
     {
         public const string SourceId = "game";
@@ -27,15 +18,12 @@ namespace RealLifeOverhaul.Calendar
 
         public static int Today => SaveGameManager.Current != null ? SaveGameManager.Current.Day : 0;
 
-        public static int Hour => SaveGameManager.Current != null ? SaveGameManager.Current.Hour : 0;
-
-        /// <summary>True while there is no city to read: no save, a load under way, or the mod's state not read yet.</summary>
+        /// <summary>No city to read: no save, a load under way, or the mod's state not read yet.</summary>
         public static bool Loading()
         {
             return SaveGameManager.Current == null || LoadScene.isLoading || !ModState.Loaded;
         }
 
-        /// <summary>The game's own days, as one of the calendar's sources.</summary>
         public static readonly ICalendarSource Source = new GameSource();
 
         private sealed class GameSource : ICalendarSource
@@ -53,7 +41,7 @@ namespace RealLifeOverhaul.Calendar
             }
         }
 
-        // The game works out the year's tax on each day that is a whole number of its years (TaxHelper.RunTaxPeriodBoundary).
+        // The game closes the tax year on each day that is a whole number of years (TaxHelper.RunTaxPeriodBoundary).
         private static void TaxYear(int fromDay, int toDay, CalendarList into)
         {
             int year = GameCalendar.DaysPerYear;
@@ -94,7 +82,7 @@ namespace RealLifeOverhaul.Calendar
             }
         }
 
-        // A delivery's price, read once: the game sums its items with a query of its own.
+        // The game sums the items with a query of its own.
         private static float Price(FurnitureDeliveryContract d)
         {
             try
@@ -130,14 +118,13 @@ namespace RealLifeOverhaul.Calendar
             }
         }
 
-        // A delivery for a building the player has here: never another player's in a shared city.
+        // Never another player's building in a shared city.
         private static bool Mine(Address address)
         {
             BuildingRegistration reg = BuildingHelper.GetBuildingRegistration(address);
             return reg != null && GoingPublic.Mine(reg);
         }
 
-        // The player's age in days goes up each night; a whole number of years is a birthday (PlayerHelper.IncreasePlayerAge).
         private static void Birthday(int fromDay, int toDay, CalendarList into)
         {
             GameInstance save = SaveGameManager.Current;
@@ -151,7 +138,7 @@ namespace RealLifeOverhaul.Calendar
             {
                 return;
             }
-            int first = MonthViewRules.OwnBirthdayFrom(today, data.ageInDays, year);   // today's age in days is the save's; a night later it is one more
+            int first = MonthViewRules.OwnBirthdayFrom(today, data.ageInDays, year);
             for (int day = MonthViewRules.FirstFrom(first, year, fromDay); day <= toDay; day += year)
             {
                 CalendarEntry e = into.Add(SourceId, RowBirthday, day, CalendarGroup.Time, day);
@@ -177,7 +164,7 @@ namespace RealLifeOverhaul.Calendar
             }
         }
 
-        // The rent the player's let buildings bring in each night (RealEstateHelper.UpdatePlayerRealEstate).
+        // What RealEstateHelper.UpdatePlayerRealEstate pays each night.
         private static void BuildingRent(CalendarList into)
         {
             List<RealEstate> estate = SaveGameManager.Current.realEstate;

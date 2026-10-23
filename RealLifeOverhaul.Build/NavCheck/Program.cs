@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -58,6 +58,7 @@ internal static partial class Program
         Tow();
         TechSites();
         OfficeConversions();
+        DrivingOfficeFixes();   // the car tuning on the player's own car only, the rivals' list changed only where the mod added to it (DrivingFixCheck.cs)
         FrontSigns();
         Fits();
         FitPresets();
@@ -91,6 +92,7 @@ internal static partial class Program
         RenderLevels();   // the performance section's picture settings: the game's own until moved, their limits, the trials (RenderLevelCheck.cs)
         FlareHours();     // Flare's hour a step a frame, in its order, finished first by the save and the day (FlareHourCheck.cs)
         SlowSpots();      // the interact key's flags only on a press, the bus zones' parking laid out a lane a tick (SlowSpotCheck.cs)
+        HotSpotsFull();   // last of all: the session record's names once all are given, "others" a slot of its own (HotSpotsFullCheck.cs)
         if (Array.IndexOf(args, "--sites") >= 0)
         {
             DrawSites();

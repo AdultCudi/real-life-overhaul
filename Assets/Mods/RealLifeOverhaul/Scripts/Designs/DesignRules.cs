@@ -6,21 +6,21 @@ using RealLifeOverhaul.Economy.Dealership;
 
 namespace RealLifeOverhaul.Designs
 {
-    /// <summary>One piece of furniture of a design as the rules see it: the game's item, where it stands, what stands on it.</summary>
+    /// <summary>One piece of furniture of a design as the rules see it.</summary>
     public sealed class DesignItem
     {
         public string Id;
         public string Name;                  // the game's item name, with its "ba:itemname_"
         public int X, Y, Z;                  // centimetres, in the room's own place in the world
         public string Parent;                // the item it stands on, or empty
-        public readonly List<string> Children = new List<string>(0);   // the items that stand on it
+        public readonly List<string> Children = new List<string>(0);   // the items on it; reading them turns away a stack WriteCut could not write
     }
 
     /// <summary>A rectangle of floor, in centimetres; empty while nothing is in it.</summary>
     public struct FloorBox
     {
         public int MinX, MaxX, MinZ, MaxZ;
-        public bool Any;                     // something has been taken in (a box made with its four sides set has it too)
+        public bool Any;                     // something was taken in, or the four sides were set
 
         public static FloorBox None => default;
 
@@ -56,17 +56,17 @@ namespace RealLifeOverhaul.Designs
         public int Donor;                    // its place in that kind's donors
         public DonorRoot Root;
         public string Size;                  // the game's folder of the building size and version ("C1")
-        public string Name;                  // the design's name as the firm offers it, which is its file's name
+        public string Name;                  // as the firm offers it: the file's name
         public string Path;                  // under StreamingAssets, with '/'
         public long Length;
-        public long Ticks;                   // when the file was last written (UTC ticks): only to see that it changed
+        public long Ticks;                   // last written, UTC: only to see that it changed
     }
 
     /// <summary>What a Car Showroom keeps of one design, and what that comes to.</summary>
     public sealed class ShowroomCut
     {
         public readonly HashSet<string> Kept = new HashSet<string>(StringComparer.Ordinal);
-        public bool[] Keep = new bool[0];    // by the item's place in the design: kept (an id a design gives twice is kept once, the first)
+        public bool[] Keep = new bool[0];    // by the item's place in the design; an id given twice is kept once, the first
         public int Furniture;                // kept pieces that are not ceiling lamps
         public int Tills;                    // kept points of sale, standing on kept counters
         public int Toilets;
@@ -80,11 +80,9 @@ namespace RealLifeOverhaul.Designs
     }
 
     /// <summary>
-    /// The rules of the ready-made designs, game-free: the folders the installation firm reads (the game's own naming), which
-    /// of the game's designs a type is offered under which name, what a Car Showroom keeps of one so that its lot stays clear
-    /// (the lot as Economy/Dealer lays it out, on the room the game's own designs fill), and the list of what the mod put in the
-    /// game's folder. Every answer depends only on what it is given: two machines with the same game files make the same
-    /// designs. Nothing runs per frame; the work is done once, on a worker thread, when the files change.
+    /// The rules of the ready-made designs, game-free: the game's folder naming, which designs a type is offered under
+    /// which name, and what a Car Showroom or bank branch keeps of one. Every answer depends only on its input, so the
+    /// same game files make the same designs on every machine. Run on a worker thread when the files change.
     /// </summary>
     public static class DesignRules
     {
@@ -105,7 +103,7 @@ namespace RealLifeOverhaul.Designs
             return set;
         }
 
-        /// <summary>The game's folder name of an id ("ba:buildingtype_office" is "office"): its second piece between '_' (StringIdExtensions.GetIdWithoutType).</summary>
+        /// <summary>The game's folder name of an id ("ba:buildingtype_office" is "office"), as StringIdExtensions.GetIdWithoutType.</summary>
         public static string FolderOf(string id)
         {
             if (string.IsNullOrWhiteSpace(id) || id.IndexOf('_') < 0)
@@ -154,10 +152,7 @@ namespace RealLifeOverhaul.Designs
             return "ba:buildingsize_" + folder.Substring(0, cut).ToLowerInvariant();
         }
 
-        /// <summary>
-        /// The name a design of the game's is offered under: an installer design's file name; for one of the game's own
-        /// businesses' layouts, the style its name ends in (DesignCatalogue.DealerStyles), or null for one that is not offered.
-        /// </summary>
+        /// <summary>An installer design's file name, or a layout's style (DesignCatalogue.DealerStyles); null for one not offered.</summary>
         public static string NameOf(DonorRoot root, string fileName)
         {
             if (string.IsNullOrEmpty(fileName) || !fileName.EndsWith(DesignCatalogue.Extension, StringComparison.OrdinalIgnoreCase))
@@ -180,10 +175,7 @@ namespace RealLifeOverhaul.Designs
             return null;
         }
 
-        /// <summary>
-        /// The order the sources of a kind and size are tried in: its donors in the catalogue's order, each donor's files by
-        /// name (as the game lists them, without regard to case). Sorts <paramref name="sources"/> in place.
-        /// </summary>
+        /// <summary>Sorts the sources in place: by kind, size, donor, then path as the game lists them (case aside).</summary>
         public static void Order(List<DesignSource> sources)
         {
             sources.Sort((a, b) =>
@@ -205,10 +197,7 @@ namespace RealLifeOverhaul.Designs
             });
         }
 
-        /// <summary>
-        /// The designs a kind that is offered the game's own whole (DesignWay.Copy) gets for one size: of the sources given (one
-        /// kind, one size, in <see cref="Order"/>), the first of each name, the name's case aside.
-        /// </summary>
+        /// <summary>For DesignWay.Copy: of one kind and size's sources, in <see cref="Order"/>, the first of each name (case aside).</summary>
         public static void Copies(List<DesignSource> sources, List<DesignSource> into)
         {
             into.Clear();
@@ -252,17 +241,16 @@ namespace RealLifeOverhaul.Designs
             return room;
         }
 
-        /// <summary>True for an item a design left at the world's origin, outside every room.</summary>
+        /// <summary>An item a design left at the world's origin, outside every room.</summary>
         public static bool Stray(DesignItem item)
         {
             return Math.Abs(item.X) < DesignCatalogue.Origin && Math.Abs(item.Z) < DesignCatalogue.Origin;
         }
 
         /// <summary>
-        /// The floor a Car Showroom's lot may take in this room: every car's place as Economy/Dealer lays the lot out on the
-        /// game's floor (DealerRules.Layout, centred, along the longer side), for a floor up to <see cref="DesignCatalogue.Slack"/>
-        /// wider, narrower or further along either way than the designs reach, each place with <see cref="DesignCatalogue.Clear"/>
-        /// round it. Fills <paramref name="into"/>.
+        /// The floor a Car Showroom's lot may take in this room: every car's place as DealerRules.Layout puts it, for a floor
+        /// up to <see cref="DesignCatalogue.Slack"/> off the designs' reach either way, with <see cref="DesignCatalogue.Clear"/>
+        /// round each.
         /// </summary>
         public static void Lot(FloorBox room, List<FloorBox> into)
         {
@@ -289,20 +277,13 @@ namespace RealLifeOverhaul.Designs
             }
         }
 
-        /// <summary>
-        /// What a Car Showroom keeps of a design: the furniture of <see cref="DesignCatalogue.ShowroomKeeps"/> that stands
-        /// clear of the lot (anything hung higher than <see cref="DesignCatalogue.FloorTop"/> is above the cars), and of that
-        /// only what stands on something kept, or on the floor.
-        /// </summary>
+        /// <summary>What a Car Showroom keeps: <see cref="DesignCatalogue.ShowroomKeeps"/> clear of the lot or above <see cref="DesignCatalogue.FloorTop"/>.</summary>
         public static ShowroomCut Cut(List<DesignItem> items, List<FloorBox> lot)
         {
             return Cut(items, lot, Keeps);
         }
 
-        /// <summary>
-        /// What a bank branch keeps of a design: the showroom's furniture and <see cref="DesignCatalogue.BranchExtras"/>, with
-        /// no lot to keep clear, and of that only what stands on something kept, or on the floor.
-        /// </summary>
+        /// <summary>What a bank branch keeps: the showroom's furniture and <see cref="DesignCatalogue.BranchExtras"/>, with no lot.</summary>
         public static ShowroomCut BranchCut(List<DesignItem> items)
         {
             return Cut(items, NoLot, BranchKeeps);
@@ -381,9 +362,8 @@ namespace RealLifeOverhaul.Designs
         }
 
         /// <summary>
-        /// The designs a Car Showroom is offered for one size, by their places in <paramref name="sources"/> (in
-        /// <see cref="Order"/>, each with its cut): the game's own dealerships first, then those with a sales counter, then the
-        /// rest, every one valid, one of each name, at most <see cref="DesignCatalogue.ShowroomMost"/>.
+        /// A Car Showroom's designs for one size, as places in <paramref name="sources"/>: the game's dealerships first,
+        /// then those with a till, then the rest; valid, one of each name, at most <see cref="DesignCatalogue.ShowroomMost"/>.
         /// </summary>
         public static void Showrooms(List<DesignSource> sources, List<ShowroomCut> cuts, List<int> into)
         {
@@ -407,9 +387,8 @@ namespace RealLifeOverhaul.Designs
         }
 
         /// <summary>
-        /// The designs a bank branch is offered for one size, by their places in <paramref name="sources"/> (in
-        /// <see cref="Order"/>, each with its cut): those with seats to wait on first, then the rest, every one with a till for
-        /// its teller, one of each name, at most <see cref="DesignCatalogue.BranchMost"/>.
+        /// A bank branch's designs for one size, as places in <paramref name="sources"/>: those with seats first; each with a
+        /// till, one of each name, at most <see cref="DesignCatalogue.BranchMost"/>.
         /// </summary>
         public static void Branches(List<DesignSource> sources, List<ShowroomCut> cuts, List<int> into)
         {
@@ -430,10 +409,7 @@ namespace RealLifeOverhaul.Designs
             }
         }
 
-        /// <summary>
-        /// The stamp of the game's files the designs are made from, and of these rules: while it is the same, what the mod
-        /// put in the game's folder is still what it would make. FNV-1a over each source's path, length and time, in order.
-        /// </summary>
+        /// <summary>FNV-1a over the rules' version and each source's path, length and time: the same stamp, the same designs.</summary>
         public static string Stamp(List<DesignSource> sources)
         {
             ulong h = 14695981039346656037UL;
@@ -458,19 +434,13 @@ namespace RealLifeOverhaul.Designs
             return h;
         }
 
-        /// <summary>
-        /// The folder a design of a kind for a size is put in, under the installers' folder ("Office/C1/gamestudio"):
-        /// the building's folder as the game's is named on disk, the size, the type's own folder.
-        /// </summary>
+        /// <summary>The folder under the installers' folder a kind's design for a size goes in ("Office/C1/gamestudio").</summary>
         public static string Folder(string buildingFolder, string size, DesignKind kind)
         {
             return buildingFolder + "/" + size + "/" + FolderOf(kind.Type);
         }
 
-        /// <summary>
-        /// True for a path the mod may have put in the installers' folder and so may take away: building/size/type/name.json,
-        /// with the type one of the mod's own, and nothing that climbs out of the folder.
-        /// </summary>
+        /// <summary>A path the mod may have written and so may delete: building/size/type/name.json of its own types, never climbing out.</summary>
         public static bool Ours(string path)
         {
             if (string.IsNullOrEmpty(path) || path.IndexOf("..", StringComparison.Ordinal) >= 0 || path.IndexOf('\\') >= 0 || path.IndexOf(':') >= 0
@@ -496,9 +466,8 @@ namespace RealLifeOverhaul.Designs
     }
 
     /// <summary>
-    /// The list of what the mod put in the game's installers' folder (DesignCatalogue.Manifest), read and written game-free:
-    /// "v=1", "stamp=...", then a line "path|length" a file, sorted. Only a file on this list is ever replaced or taken away; a
-    /// file of that name the list does not hold is somebody else's and is left as it is. A list that cannot be read holds nothing.
+    /// The list of the files the mod put in the installers' folder: "v=1", "stamp=...", then "path|length" a line, sorted.
+    /// Only a file on it is ever replaced or deleted; any other is somebody else's. An unreadable list holds nothing.
     /// </summary>
     public sealed class DesignManifest
     {
@@ -524,7 +493,7 @@ namespace RealLifeOverhaul.Designs
             return text.ToString();
         }
 
-        /// <summary>The list in this text; an empty one for no text, a damaged one or another version's. Paths not the mod's are dropped.</summary>
+        /// <summary>Empty for no text, a damaged one or another version's; paths not the mod's are dropped.</summary>
         public static DesignManifest Read(string text)
         {
             var list = new DesignManifest();

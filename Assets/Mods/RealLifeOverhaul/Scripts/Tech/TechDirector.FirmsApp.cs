@@ -17,8 +17,11 @@ namespace RealLifeOverhaul.Tech
 
         private void InstallTech()
         {
+            if (!PhoneApp.PhoneUp)
+            {
+                return;   // the game's phone is not built yet: asked again next time, nothing made for it
+            }
             var view = new TechApp(this);
-            GameSprites.Want(TechGlyphs);
             _techApp = PhoneApp.Install(new PhoneAppDef
             {
                 Id = TechAppId,

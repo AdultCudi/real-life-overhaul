@@ -2,10 +2,9 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Calendar
 {
-    // Everything in this file is free of the game and of the engine: RealLifeOverhaul.Build/EconomyCheck compiles it as it
-    // is and runs it outside the game.
+    // Game-free: EconomyCheck compiles this file as it is.
 
-    /// <summary>What a day of the calendar holds: money that moves, the player's own time, or something on in the city.</summary>
+    /// <summary>What a calendar entry is about: money that moves, the player's own time, or something on in the city.</summary>
     public enum CalendarGroup
     {
         Money = 0,
@@ -13,10 +12,7 @@ namespace RealLifeOverhaul.Calendar
         City = 2
     }
 
-    /// <summary>
-    /// One thing on one day of the calendar. Entries are taken from a pool (CalendarList.Add) and filled by a source;
-    /// every source writes its words with them, since the calendar asks only when it is shown.
-    /// </summary>
+    /// <summary>One thing on one day, from the list's pool (CalendarList.Add), filled with its words by its source.</summary>
     public sealed class CalendarEntry
     {
         public string Source;
@@ -40,10 +36,7 @@ namespace RealLifeOverhaul.Calendar
         }
     }
 
-    /// <summary>
-    /// What moves every night whatever the day: the game's rent, wages and loans, the rent the player's buildings bring
-    /// in. These are said once for the month, not marked on each of its days.
-    /// </summary>
+    /// <summary>Money that moves every night (rent, wages, loans): said once for the month, not on each day.</summary>
     public sealed class NightLine
     {
         public string Source;
@@ -52,14 +45,10 @@ namespace RealLifeOverhaul.Calendar
         public float Amount;         // whole money a night
     }
 
-    /// <summary>
-    /// The entries of one look at the calendar's sources, for the days FromDay to ToDay, and the lines of what moves every
-    /// night. Its entries are kept and used again from look to look.
-    /// </summary>
+    /// <summary>The entries of one look at the sources for FromDay to ToDay, and the nightly lines; both pooled between looks.</summary>
     public sealed class CalendarList
     {
-        /// <summary>A look never holds more than this: a source gone wrong cannot fill the month.</summary>
-        public const int MostEntries = 600;
+        public const int MostEntries = 600;   // so a source gone wrong cannot flood the month
         public const int MostNights = 16;
 
         private readonly List<CalendarEntry> _pool = new List<CalendarEntry>(64);
@@ -83,6 +72,24 @@ namespace RealLifeOverhaul.Calendar
             Nights.Clear();
             FromDay = fromDay;
             ToDay = toDay;
+        }
+
+        /// <summary>
+        /// Takes off everything added since the list held so many entries and nightly lines, back to their pools: what a source
+        /// that failed part way through left behind (CalendarDirector.Look). Counts past what the list holds change nothing.
+        /// </summary>
+        public void Cut(int items, int nights)
+        {
+            for (int i = Items.Count - 1; i >= items && i >= 0; i--)
+            {
+                _pool.Add(Items[i]);
+                Items.RemoveAt(i);
+            }
+            for (int i = Nights.Count - 1; i >= nights && i >= 0; i--)
+            {
+                _nightPool.Add(Nights[i]);
+                Nights.RemoveAt(i);
+            }
         }
 
         /// <summary>A blank entry on that day, already in the list; null for a day outside the look, or a full list.</summary>
@@ -112,7 +119,7 @@ namespace RealLifeOverhaul.Calendar
             return entry;
         }
 
-        /// <summary>Money that moves every night, in or out; nothing for an amount of nought or a full list.</summary>
+        /// <summary>A nightly line; nothing for an amount of nought or a full list.</summary>
         public void Night(string source, string title, int sign, float amount)
         {
             if (amount <= 0f || Nights.Count >= MostNights)
@@ -137,17 +144,13 @@ namespace RealLifeOverhaul.Calendar
         }
     }
 
-    /// <summary>
-    /// One source of the calendar's days. A source reads a feature's (or the game's) own state, from its real schedule,
-    /// and never changes it. It is asked only when the calendar is shown: when the app opens, a month is turned or a day
-    /// begins while it is open. "Available" is false while its feature is off or not loaded, and then it costs nothing.
-    /// </summary>
+    /// <summary>One source of the calendar's days: reads a feature's own schedule, never changes it, and is asked only when a month is shown.</summary>
     public interface ICalendarSource
     {
         /// <summary>Short and never changed ("bills", "game").</summary>
         string Id { get; }
-        bool Available { get; }
-        /// <summary>Adds what falls on the days fromDay..toDay (into.Add gives a blank entry, or null for a day outside them), and what moves every night (into.Night).</summary>
+        bool Available { get; }   // false while its feature is off or not loaded
+        /// <summary>Adds what falls on fromDay..toDay (into.Add) and what moves every night (into.Night).</summary>
         void Collect(int fromDay, int toDay, CalendarList into);
     }
 }

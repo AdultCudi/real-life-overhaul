@@ -11,19 +11,9 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// The calendar's days of the player's own bills, each read from the feature's own schedule and changed in nothing:
-        ///
-        ///   power and water   the day the month's bills are sent (Utilities: a month of the calendar's length from the
-        ///                     utilities' own first day, UtilitiesState.MonthStart), each due some days later; a bill
-        ///                     already sent has its due day from the Planner's source
-        ///   cards and loans   a card's statement every so many days from its next one (CreditAccount.NextDay) and the
-        ///                     day its minimum is taken (DueDay); the day the private lender wants its money
-        ///   cars              the day each car's insurance renews (CarRecord.InsuredUntil, a month of cover at a time)
-        ///                     and the day its registration runs out (a year from RegisteredDay)
-        ///   web shops         the day each shop's hosting is taken (WebShop.HostDue, then every month)
-        ///   the paper         the morning each week of the City Ledger delivered is paid (LedgerState.PaidUntil)
-        ///
-        /// Asked only when the calendar is shown.
+        /// The calendar's days of the player's own bills: power and water, cards and the private lender, car insurance and
+        /// registration, web hosting and the paper delivered, each from its feature's own schedule. Read only; asked when
+        /// the calendar is shown.
         /// </summary>
         internal static class CalendarMoney
         {
@@ -42,7 +32,7 @@ namespace RealLifeOverhaul
             private static readonly WebHosting Hosting = new WebHosting();
             private static readonly PaperDays Paper = new PaperDays();
 
-            /// <summary>The day each month's power, water and internet bills are sent (UtilitiesDirector.Day: a month from the last).</summary>
+            /// <summary>The day each month's power, water and internet bills are sent; a bill already sent is the Planner's.</summary>
             private sealed class UtilityBills : ICalendarSource
             {
                 public string Id => "bills";
@@ -77,7 +67,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            /// <summary>A card's statements and the day its minimum is taken; the private lender's due day (Economy: AccountRules, SharkRules).</summary>
+            /// <summary>A card's statements and the day its minimum is taken; the private lender's due day.</summary>
             private sealed class CardDays : ICalendarSource
             {
                 public string Id => "credit";
@@ -126,8 +116,7 @@ namespace RealLifeOverhaul
                         if (e != null)
                         {
                             e.Sign = -1;
-                            e.Amount = SharkRules.OwedOnDueDay(shark.Borrowed) > shark.Owed && today < shark.DueDay
-                                ? shark.Owed + SharkRules.ADay(shark.Borrowed) * (shark.DueDay - today) : shark.Owed;
+                            e.Amount = EconomyLinks.SharkOwed(shark, today);
                             e.Title = CalendarText.T("reallife_calendar_lender_title");
                             e.App = EconomyDirector.AppId;
                         }
@@ -135,7 +124,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            /// <summary>Each car's insurance renewal and the day its registration runs out (Transport: CarOwnership's day, CarRules).</summary>
+            /// <summary>Each car's insurance renewal and the day its registration runs out.</summary>
             private sealed class CarDays : ICalendarSource
             {
                 public string Id => "cars";
@@ -153,7 +142,7 @@ namespace RealLifeOverhaul
                         {
                             continue;   // as CarOwnership's day reads them: a car of the player's with a record of its own
                         }
-                        CarRecord record = CarGarage.For(car.id, today);   // (it has one: nothing is made)
+                        CarRecord record = CarGarage.For(car.id, today);   // it has one, so nothing is made
                         string name = car.vehicleTypeName.GetLocalization();
                         if (record.InsuredUntil > 0 && policy > 0)
                         {
@@ -184,7 +173,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            /// <summary>The day each web shop's hosting is taken, a month at a time (Economy/Online: WebShop.HostDue).</summary>
+            /// <summary>The day each web shop's hosting is taken, a month at a time.</summary>
             private sealed class WebHosting : ICalendarSource
             {
                 public string Id => "hosting";
@@ -215,7 +204,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            /// <summary>The morning each week of the City Ledger delivered is paid, and the last morning of one cancelled (Ledger: LedgerRules.Morning).</summary>
+            /// <summary>The morning each week of the City Ledger delivered is paid, and the last morning of one cancelled.</summary>
             private sealed class PaperDays : ICalendarSource
             {
                 public string Id => "paper";

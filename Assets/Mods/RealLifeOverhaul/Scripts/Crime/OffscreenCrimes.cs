@@ -12,18 +12,9 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The crimes against the player that nobody sees happen: a break-in at one of their shops
-    /// overnight, their parked car broken into, a scam call. Rolled at most once a day each
-    /// from the director's hourly look (nothing here runs otherwise), all behind the "crimes
-    /// against you" option, each with days of rest after it has happened, and each bounded:
-    ///   break-in    stock goes from the shelves exactly the way the game's own theft takes it
-    ///               (the amount comes off the shelf, its cost is added to the shop's stolen
-    ///               value and shows as Theft in the books), scaled down by the shop's security
-    ///               level and capped; a repair bill never larger than the cash in hand; the
-    ///               alarm at night and a police report in the morning.
-    ///   car         a little damage on one parked car, worth a capped repair at the game's own
-    ///               repair price. The car is never moved, emptied or removed.
-    ///   scam call   a prompt; only saying yes can cost anything, and that is capped too.
+    /// Crimes against the player out of sight, behind the crimes against you option: a break-in at a shop overnight (stock
+    /// taken as the game's own theft takes it), a parked car broken into (a little damage), a scam call (only a yes costs).
+    /// Each is rolled at most once a day from the director's hourly look, capped, and rests for days after.
     /// </summary>
     internal sealed class OffscreenCrimes
     {
@@ -33,9 +24,9 @@ namespace RealLifeOverhaul
         private static float BreakInValueCap => Prices.At(2500f);
         private const float BreakInStockShare = 0.25f; // of what is on the shelves, at most
         private const float CarChance = 0.03f;         // per night
-        private const int CarRestDays = 7;
-        internal const float CarRepairCap = 250f;
-        internal const int RepairLeast = 60, RepairMost = 350;     // a break-in's repair bill, at the start's prices (Crime.Rob takes them at today's)
+        private const int CarRestDays = 7;             // in-game days
+        internal const float CarRepairCap = 250f;      // dollars
+        internal const int RepairLeast = 60, RepairMost = 350;     // a break-in's repair, dollars at the start's prices
         internal const int ScamLossLeast = 30, ScamLossMost = 400;
         private static float ScamLeast => Prices.At(100f);   // a scam call needs this much on the player
         private const float CarDamageMost = 0.6f;      // never anywhere near broken down
@@ -58,7 +49,7 @@ namespace RealLifeOverhaul
         private int _lastScam = -1;
         private int _testNext;
 
-        // The morning after a break-in.
+        // For the police report the morning after a break-in.
         private string _reportShop;
         private float _reportValue;
 
@@ -76,7 +67,6 @@ namespace RealLifeOverhaul
                 return;
             }
 
-            // Once a night, in the small hours.
             if (hour >= 1 && hour <= 5 && _nightRolled != day)
             {
                 _nightRolled = day;
@@ -90,7 +80,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // Once a day, in office hours, and only when the player can take a call.
+            // Once a day, in office hours, when the player can take a call.
             if (hour >= 10 && hour <= 18 && _dayRolled != day && LifeEvents.IsSafeForEvent() && !HudConfirm.isOpen
                 && !PlayerHelper.IsUsingVehicle)
             {
@@ -111,15 +101,13 @@ namespace RealLifeOverhaul
             {
                 Notifications.Show(NotificationType.Warning,
                     which == 0 ? "reallife_crime_none_breakin" : which == 1 ? "reallife_crime_none_car" : "reallife_crime_none_scam",
-                    new System.Collections.Generic.Dictionary<string, string>(1) { { "least", ScamLeast.ToCurrencyFormat() } }, 7f);
+                    new Dictionary<string, string>(1) { { "least", ScamLeast.ToCurrencyFormat() } }, 7f);
             }
             else if (which == 0)
             {
-                MorningReport();   // the tester should not have to wait for eight o'clock
+                MorningReport();   // not waiting for eight o'clock
             }
         }
-
-        // ---------------------------------------------------------------- break-in
 
         private bool BreakIn(bool forced)
         {
@@ -150,7 +138,7 @@ namespace RealLifeOverhaul
             BuildingRegistration target = _shops[Random.Range(0, _shops.Count)];
             _shops.Clear();
 
-            // Good security keeps most burglars out, and limits what the rest get away with.
+            // Good security keeps most burglars out and limits what the rest take.
             float exposure = 1f - Mathf.Clamp01(target.securityLevelPercentage / 100f);
             if (!forced && Random.value > Mathf.Max(exposure, 0.08f))
             {
@@ -159,7 +147,7 @@ namespace RealLifeOverhaul
             float taken = TakeStock(target, Mathf.Lerp(0.25f, 1f, exposure));
             int repair = Crime.Rob(0.02f, RepairLeast, RepairMost, "reallife_transaction_repair");
             _breakInDay = TimeHelper.CurrentDay;
-            Law.Bridges.NoteIncident(Law.Bridges.BreakIn);   // a police report can be asked for at a front desk
+            Law.Bridges.NoteIncident(Law.Bridges.BreakIn);   // a report can be asked for at a front desk
             _reportShop = target.BusinessName;
             _reportValue = taken;
             ModState.AddModifier(ModState.Robbed);
@@ -169,13 +157,13 @@ namespace RealLifeOverhaul
             };
             Notifications.Show(NotificationType.Error, repair > 0 ? "reallife_crime_breakin_alarm" : "reallife_crime_breakin_alarm_free", data, 12f);
             News.Report(NewsKind.BreakIn, Vector3.zero, target.BusinessName, repair);
-            CivicBridges.NoteCrime();   // out of sight, so city hall cannot have counted it itself (Scripts/Civic)
-            BreakIns.Raise(target, Mathf.RoundToInt(taken), repair);   // (for whoever insures it: Crime/BreakIns.cs)
+            CivicBridges.NoteCrime();   // out of sight, so city hall cannot have counted it itself
+            BreakIns.Raise(target, Mathf.RoundToInt(taken), repair);
             Crime.Logger?.Info($"Crime: break-in at {target.BusinessName}, security {target.securityLevelPercentage:F0}%, stock {taken:F0}, repair {repair}.");
             return true;
         }
 
-        // Takes stock from the shelves the way the game's own theft does, up to a cap. Returns its cost.
+        // Stock off the shelves the way the game's own theft takes it, up to a cap. Returns its cost.
         private float TakeStock(BuildingRegistration shop, float scale)
         {
             _shelves.Clear();
@@ -203,7 +191,7 @@ namespace RealLifeOverhaul
                 int units = Mathf.Max(1, Mathf.FloorToInt(stock.amount * Random.Range(0.15f, 0.5f)));
                 if (stock.pricePerUnit > 0f && (cap - taken) < stock.pricePerUnit)
                 {
-                    continue;   // not even one of these fits under what is left of the cap
+                    continue;   // not even one fits under what is left of the cap
                 }
                 if (stock.pricePerUnit > 0f)
                 {
@@ -242,8 +230,6 @@ namespace RealLifeOverhaul
             _reportShop = null;
         }
 
-        // ---------------------------------------------------------------- parked car
-
         private bool CarBreakIn()
         {
             GameInstance save = SaveGameManager.Current;
@@ -256,7 +242,7 @@ namespace RealLifeOverhaul
             int seen = 0;
             foreach (VehicleInstance vehicle in save.VehicleInstances)
             {
-                // Parked on the street (not in a garage), not the one being driven, a real car, and not right beside the player.
+                // On the street, not the one being driven, a real car, and not right beside the player.
                 if (vehicle == null || !string.IsNullOrEmpty(vehicle.streetName) || vehicle.id == save.ActiveVehicleId
                     || vehicle.VehicleType == null || vehicle.VehicleType.spawnInPlayerObject || !vehicle.VehicleType.IsMotorVehicle
                     || vehicle.VehicleType.price <= 0f || vehicle.damage >= CarDamageMost)
@@ -278,7 +264,7 @@ namespace RealLifeOverhaul
                 return false;
             }
 
-            // The game prices a repair at damage x half the car's price: work back from the cap.
+            // The game prices a repair at damage times half the car's price: worked back from the cap.
             float perUnit = target.VehicleType.price * 0.5f;
             float added = Mathf.Min(0.06f, CarRepairCap / perUnit, CarDamageMost - target.damage);
             if (added <= 0.001f)
@@ -307,8 +293,6 @@ namespace RealLifeOverhaul
             Crime.Logger?.Info(FormattableString.Invariant($"Crime: parked {target.vehicleTypeName} broken into, damage +{added:F3}."));
             return true;
         }
-
-        // ---------------------------------------------------------------- scam call
 
         private bool ScamCall()
         {

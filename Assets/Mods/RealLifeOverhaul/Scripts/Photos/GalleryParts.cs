@@ -5,10 +5,8 @@ using UnityEngine.EventSystems;
 namespace RealLifeOverhaul.Photos
 {
     /// <summary>
-    /// The Gallery's colours: a light and a dark look for the grid (dark from 19:00 to 07:00 of the game's clock, as the
-    /// phone's own: GalleryRules.Dark), and the viewer's, always dark as a photo is best seen. Its own palette, not Flare's:
-    /// neutral greys that leave the photos the only colour, and the warm amber of the app's icon as its accent.
-    /// COST: none; colours read when a screen is painted.
+    /// The Gallery's colours: a light and a night look for the grid, by the game's clock, and the viewer's, always dark.
+    /// Neutral greys leave the photos the only colour, with the icon's amber as the accent. No cost: read when painting.
     /// </summary>
     internal sealed class GalleryLook
     {
@@ -29,7 +27,6 @@ namespace RealLifeOverhaul.Photos
             Heart = C(255, 69, 100), Danger = C(255, 88, 92), Shade = new Color(0f, 0f, 0f, 0.42f), Dark = true
         };
 
-        // The viewer's, whatever the hour.
         public static readonly Color ViewerBack = C(6, 6, 8);
         public static readonly Color ViewerText = C(244, 244, 247);
         public static readonly Color ViewerMuted = C(166, 168, 176);
@@ -37,7 +34,6 @@ namespace RealLifeOverhaul.Photos
         public static readonly Color ViewerLine = new Color(1f, 1f, 1f, 0.08f);
         public static readonly Color Clear = new Color(1f, 1f, 1f, 0f);
 
-        /// <summary>The grid's look at a game hour.</summary>
         public static GalleryLook Now(int hour)
         {
             return GalleryRules.Dark(hour) ? Night : Light;
@@ -50,14 +46,13 @@ namespace RealLifeOverhaul.Photos
     }
 
     /// <summary>
-    /// The keys of the photo shown whole: the left and right arrows for the photo before and after, the game's cancel key
-    /// back to the grid (taken before the game's own handling, which would put the phone away). On only while a photo is
-    /// shown whole (GalleryApp switches it); otherwise switched off. COST while on: three key reads a frame; off: nothing.
+    /// The keys of the photo shown whole: the arrows to step, the cancel key back to the grid, taken before the game's own
+    /// handling would put the phone away. On only while a photo is shown whole: three key reads a frame; off, nothing.
     /// </summary>
     [DefaultExecutionOrder(-31000)]
     internal sealed class GalleryKeys : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("photos", "GalleryKeys", typeof(GalleryKeys));   // its Update (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("photos", "GalleryKeys", typeof(GalleryKeys));
 
         internal GalleryApp Owner;
 
@@ -67,7 +62,7 @@ namespace RealLifeOverhaul.Photos
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;
                 return;
             }
             try
@@ -90,14 +85,14 @@ namespace RealLifeOverhaul.Photos
     }
 
     /// <summary>
-    /// The mouse wheel over the photo shown whole: a notch up for the photo before, down for the one after, one photo for
-    /// each turn however many notches it gives at once. No Update: it answers the wheel only.
+    /// The mouse wheel over the photo shown whole: one photo before or after for each turn, however many notches it gives.
+    /// No Update, so no cost a frame: it answers the wheel only.
     /// </summary>
     internal sealed class GalleryWheel : MonoBehaviour, IScrollHandler
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("photos", "GalleryWheel", typeof(GalleryWheel));   // the engine's calls of it (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("photos", "GalleryWheel", typeof(GalleryWheel));
 
-        private const float Rest = 0.14f;   // real seconds after a step in which the wheel's further notches are let go
+        private const float Rest = 0.14f;   // real seconds after a step in which further notches are let go
 
         internal Action<int> Step;
         private float _next;

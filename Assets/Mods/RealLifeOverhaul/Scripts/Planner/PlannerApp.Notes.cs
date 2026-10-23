@@ -1,5 +1,3 @@
-using Extensions;
-using Helpers;
 using RealLifeOverhaul.GameUi;
 using Streets;
 using UI;
@@ -8,15 +6,10 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Planner
 {
-    /// <summary>
-    /// The player's own entries in the white box: the page one is written on (a title from a list or typed into the
-    /// game's text box, a day, an hour, how often it comes back, the building the player is in, a reminder), marking a
-    /// time of one done, deleting one, and the settings page. Written in sections of the box's own parts, as
-    /// PlannerApp.Box.cs. Everything is kept in the Planner's own store (PlannerStore), in the player's save.
-    /// </summary>
+    /// <summary>The Planner's notes part: writing, ticking off and deleting the player's own entries, and the settings page.</summary>
     public sealed partial class PlannerApp
     {
-        private const int NoteDaysAhead = 60;
+        private const int NoteDaysAhead = 60;   // days a note can be written for
 
         private static readonly string[] Presets =
         {
@@ -24,8 +17,7 @@ namespace RealLifeOverhaul.Planner
             "reallife_planner_preset_gym", "reallife_planner_preset_collect", "reallife_planner_preset_clean", "reallife_planner_preset_rest"
         };
 
-        // The reminders an entry of the player's own can be written with: those of PlannerText.Leads but "when to leave",
-        // which is worked out from where the player is and is set in the entry's box for one time.
+        // PlannerText.Leads but "when to leave", which is set in the entry's box for one time
         private static readonly ReminderLead[] NoteLeads =
         {
             ReminderLead.None, ReminderLead.QuarterBefore, ReminderLead.HalfHourBefore, ReminderLead.HourBefore, ReminderLead.AtTheTime, ReminderLead.EveningBefore
@@ -33,7 +25,7 @@ namespace RealLifeOverhaul.Planner
 
         private static readonly string[] RepeatKeys = { "reallife_planner_repeat_once", "reallife_planner_repeat_daily", "reallife_planner_repeat_weekly" };
 
-        // The switches on the settings page: what each one shows and hides.
+        // what each switch of the settings page shows and hides
         private static readonly PlannerCategory[][] Groups =
         {
             new[] { PlannerCategory.Work },
@@ -59,8 +51,6 @@ namespace RealLifeOverhaul.Planner
         private ReminderLead _draftLead;
         private PlannerRepeat _draftRepeat;
 
-        // ================================================================ marking done, deleting
-
         private void ToggleDone(int noteId, int day)
         {
             PlannerNote note = PlannerStore.Note(noteId);
@@ -68,31 +58,27 @@ namespace RealLifeOverhaul.Planner
             {
                 return;
             }
-            bool done;
-            PlannerStore.Falls(note, day, out done);
+            PlannerStore.Falls(note, day, out bool done);
             PlannerStore.SetDone(note, day, !done);
             if (done)
             {
-                PlannerStore.Arm(note, PlannerDirector.Now());   // not done after all: its time's reminder again, if it is still to come
+                PlannerStore.Arm(note, PlannerDirector.Now());   // not done after all: its reminder again
             }
             Refresh();
         }
 
         private void DeleteNote(int noteId)
         {
-            // The game's own question box, with its red "negative" look.
             GameConfirm.Show("reallife_planner_delete_title", "reallife_planner_delete_body", () => UiClone.Safe(() =>
             {
-                PlannerStore.RemoveNote(noteId);   // with every reminder for it
+                PlannerStore.RemoveNote(noteId);
                 _selected = default(EntryId);
                 _page = Page.Glance;
                 Refresh();
             }), null, "filebrowser_delete", "common_cancel", true, true);
         }
 
-        // ================================================================ writing one
-
-        // A new one on a day, or one that is there (a time of one that repeats opens the whole of it, on that time's day).
+        // a new note on a day, or one there; a time of a repeating note opens the whole of it on that day
         private void EditNote(PlannerNote note, int day)
         {
             int today = TimeHelper.CurrentDay;
@@ -119,7 +105,7 @@ namespace RealLifeOverhaul.Planner
                 : note.Repeat == PlannerRepeat.Once ? PlannerStore.LeadOf(PlannerStore.NoteEntry(note, note.Day)) : note.Lead;
             if (System.Array.IndexOf(NoteLeads, _draftLead) < 0)
             {
-                _draftLead = ReminderLead.None;   // (when to leave: set in the entry's box, for one time)
+                _draftLead = ReminderLead.None;   // when to leave is set in the entry's box
             }
             Show(Page.Note);
         }
@@ -148,7 +134,7 @@ namespace RealLifeOverhaul.Planner
             InfoBox.Button(row, InfoBox.Additional, "common_cancel", () => Show(Page.Glance));
         }
 
-        // The title: one of the ready ones, or the player's own words typed into the game's text box.
+        // a ready title, or the player's own typed into the game's text box
         private void NoteTitle(InfoBox box)
         {
             box.Row("reallife_planner_note_title", _draftTitle);
@@ -180,7 +166,6 @@ namespace RealLifeOverhaul.Planner
             }
         }
 
-        // The day, the hour (or all day), and how often it comes back.
         private void NoteWhen(InfoBox box)
         {
             int today = TimeHelper.CurrentDay;
@@ -198,7 +183,6 @@ namespace RealLifeOverhaul.Planner
             box.Selector(RepeatKeys.Length, (int)_draftRepeat, i => PlannerText.T(RepeatKeys[i], "day", PlannerText.Weekday(_draftDay)), i => _draftRepeat = (PlannerRepeat)i);
         }
 
-        // The building the player is in, or none.
         private void NoteWhere(InfoBox box)
         {
             box.Headline("reallife_planner_note_where");
@@ -227,7 +211,7 @@ namespace RealLifeOverhaul.Planner
             box.Selector(NoteLeads.Length, at, i => PlannerText.T(PlannerText.LeadKey(NoteLeads[i])), i => _draftLead = NoteLeads[i]);
         }
 
-        // "Here" is the building the player is in (the game knows its address); in the street there is no address to keep.
+        // the building the player is in; the street has no address to keep
         private void UseThisPlace()
         {
             BuildingRegistration here = BuildingManager.IsInsideBuilding && InstanceBehavior<BuildingManager>.Instance != null
@@ -253,7 +237,7 @@ namespace RealLifeOverhaul.Planner
                 return;
             }
             int now = PlannerDirector.Now();
-            PlannerStore.DropReminders(NoteSource.SourceId, note.Id);   // what it had is set again below, for its new day, hour and way of coming back
+            PlannerStore.DropReminders(NoteSource.SourceId, note.Id);   // set again below for its new time
             if (note.Repeat != _draftRepeat)
             {
                 note.Done = false;
@@ -290,8 +274,6 @@ namespace RealLifeOverhaul.Planner
             _director.Seen();
         }
 
-        // ================================================================ settings
-
         private void WriteSettings(InfoBox box)
         {
             box.Title(PlannerText.T("bizman_menu_settings"));
@@ -313,7 +295,7 @@ namespace RealLifeOverhaul.Planner
             }
             if (Settings.PlannerReminders && box.HasSelector)
             {
-                // The reminder a new entry starts with: any but none (NoteLeads from its second).
+                // a new entry's reminder: any of NoteLeads but none
                 box.Headline("reallife_planner_settings_lead");
                 int at = Mathf.Max(1, System.Array.IndexOf(NoteLeads, PlannerStore.DefaultLead)) - 1;
                 box.Selector(NoteLeads.Length - 1, at, i => PlannerText.T(PlannerText.LeadKey(NoteLeads[i + 1])), i => PlannerStore.DefaultLead = NoteLeads[i + 1]);

@@ -12,30 +12,9 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// "Interiors and decor matter" (Scripts/Interiors) with the rest of the mod. The feature calls no other feature
-        /// and none calls it; what they have to do with each other is here, one line each.
-        ///
-        /// What it reads:
-        ///   Footfall      business pressure's writer of a business's footfall (BusinessDirector.Footfall)
-        ///   Cleaned       the cleaning service looks after a business (CleaningService.Covers): its wear builds half as fast
-        ///   Income        a district's income level from the city's economy (CityEconomy.DistrictIncome), for its standard
-        ///
-        /// What it does elsewhere:
-        ///   Interior      its part of a business's customers (-12% to +24% at the strongest choices) is business
-        ///                 pressure's interior part (<see cref="BusinessGame.Interior"/>), beside the city's, the company's,
-        ///                 the brands', Flare's and Standing's ambient sum, each inside its own bounds
-        ///   Bears         the city's economy judges a business's prices against what its district bears with its
-        ///                 interior's part on it (CityBridges.Bears: up to 3% more, 2% less)
-        ///   Complain      a business short of its standard may get a customer's complaint, business pressure's own issue
-        ///                 (BusinessDirector.StartIssue, and BusinessDirector.Shabby so that its rules let it start)
-        ///   Inspected     a worn place looks dirtier to the health inspector (BusinessDirector.Inspected)
-        ///   Interior      the brands' standards (BrandsBridges.Interior) and Standing's customers (FameBridges.Interior)
-        ///   Comfort       the company's staff (CompanyBridges.Comfort) and the professionals' morale (TechBridges.Comfort)
-        ///   Office        the jobs board's esteem (TechBridges.Office) and a firm's bids (TechBridges.OfficeBid)
-        ///   Story         a striking or a shabby interior in the City Ledger (Paper.Print); a striking one a Flare draft
-        ///                 (FlareSource.Interior)
-        ///
-        /// COST: nothing per frame; every answer is a lookup in what the feature worked out this morning.
+        /// Interiors and decor with business pressure (footfall, complaints, inspections), the city's prices, the cleaning
+        /// service, brands, Standing, the staff, the tech sector, Flare and the paper. Nothing per frame: every answer is a
+        /// lookup in what the feature worked out this morning.
         /// </summary>
         public static class InteriorLinks
         {

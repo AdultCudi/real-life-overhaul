@@ -3,18 +3,9 @@ using System;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Where a two-wheeler place (a bike-share dock, a bicycle rack, a motorbike stand: <see cref="BikePlaces"/>) may stand,
-    /// in plain numbers, so that NavCheck (BikeSpotCheck.cs) checks the very rules it is put down by.
-    ///
-    /// The pedestrians' navigation mesh, which says where pavement is, runs on over the road wherever people cross it: a
-    /// marked crossing is as walkable as the pavement. So the nearest walkable point to a place along a shopfront can be a
-    /// crossing at the corner, and one sampled point says nothing of the rest of the rack: half of it can hang over the
-    /// kerb into the road, standing at the walkable mesh's height above the asphalt (a player's screenshot, 20 Oct 2026:
-    /// a rack and its two bicycles on a crossing, partly in the air). Now the whole footprint, with a margin, is sampled:
-    /// every point must be pavement exactly there, the ground under them level to within a kerb's fraction (nothing of it
-    /// over a kerb), and no marked crossing under it; the place then stands on the ground at its middle.
-    ///
-    /// A switch and a few multiplications, asked once a city load for each place tried. Nothing is allocated.
+    /// Where a two-wheeler place (<see cref="BikePlaces"/>) may stand, in plain numbers so that NavCheck checks them. The
+    /// walkers' mesh runs on over crossings, so the whole footprint is sampled: all pavement, level, no crossing under
+    /// it. A few multiplications a place tried, once a city load.
     /// </summary>
     public static class BikeSpotRules
     {
@@ -27,10 +18,7 @@ namespace RealLifeOverhaul
         /// <summary>Why a place was refused, or None.</summary>
         public enum Refusal { None, OffPavement, OverKerb, Crossing }
 
-        /// <summary>
-        /// The i-th point sampled, in the place's own frame (metres across and along from its middle), for a footprint of
-        /// these half sizes with the margin round it: the middle first, then the corners, then the sides. The same every time.
-        /// </summary>
+        /// <summary>The i-th sample in the place's frame (metres from its middle): the middle, the corners, then the sides.</summary>
         public static void Sample(int i, float halfAcross, float halfAlong, out float across, out float along)
         {
             if (i < 0 || i >= Samples)
@@ -52,10 +40,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// The verdict on a place from what was found at its samples: how many were not pavement exactly there, the lowest and
-        /// the highest ground under them, and whether a marked crossing lies under the footprint or its margin.
-        /// </summary>
+        /// <summary>The verdict from the samples: how many were off the pavement, the lowest and highest ground, any crossing under it.</summary>
         public static Refusal Judge(int offPavement, float lowest, float highest, bool crossing)
         {
             if (crossing)
@@ -69,7 +54,7 @@ namespace RealLifeOverhaul
             return highest - lowest > LevelMost ? Refusal.OverKerb : Refusal.None;
         }
 
-        /// <summary>Whether a sample is pavement: the walkable mesh found within <see cref="OnMesh"/> of it on the flat (the square of the flat distance given).</summary>
+        /// <summary>Whether a sample is pavement: the walkable mesh within <see cref="OnMesh"/> of it on the flat (given squared).</summary>
         public static bool OnPavement(bool meshFound, float flatSquare)
         {
             return meshFound && flatSquare <= OnMesh * OnMesh;

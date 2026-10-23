@@ -5,47 +5,33 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The mod's ragdolls: six with physics on their bones at most, reused. Anyone who wants a
-    /// character thrown down asks here. When all six are taken, the one that has lain at rest
-    /// longest is made a still body: its bodies, joints and colliders come off and it stays
-    /// exactly as it lies, so nobody vanishes in front of the player to make room. Still bodies
-    /// are meant to number eight at most: beyond that, twice a second, whoever owns the lying
-    /// bodies (PedestrianIncidents) is asked to take away its oldest one that is out of view.
-    /// Only with every place taken (fourteen people down) is one removed in view.
-    /// While a ragdoll is active this checks it once a frame (has it come to rest, has
-    /// the game taken the character back); a body at rest is frozen and no longer simulated.
-    /// With no ragdoll active the component is switched off and nothing runs.
-    /// Ending a ragdoll always goes through here too, so a character can never be left with
-    /// bodies on its bones: scene unloaded, character recycled, error, all end the same way.
+    /// The mod's ragdolls: at most six with physics on their bones, reused, and up to eight more lying still with their
+    /// physics taken off, so nobody vanishes in view to make room. Every ragdoll ends through here, whatever the cause.
+    /// Cost: while anyone is down, a few flags per body each frame; with nobody down the component is off.
     /// </summary>
     public class RagdollSystem : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("ragdoll", "RagdollSystem", typeof(RagdollSystem));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("ragdoll", "RagdollSystem", typeof(RagdollSystem));
 
-        public const int MaxActive = 6;   // a ragdoll is 11 bodies and 10 joints while it falls (a second or two) and nothing simulated once at rest: six falling at once is 66 bodies for that moment
-        public const int MaxStill = 8;    // bodies lying with nothing on their bones: each is one drawn character with its animator off
+        public const int MaxActive = 6;   // falling bodies at once: 11 rigidbodies and 10 joints each, for a second or two
+        public const int MaxStill = 8;    // bodies lying with nothing on their bones, each one drawn character
         public const int MaxBodies = MaxActive + MaxStill;
 
-        private const float SeenWithin = 150f;   // metres: a body further off than this, or behind the camera, is not being looked at
+        private const float SeenWithin = 150f;   // metres: further off, or behind the camera, a body is not being looked at
 
         public static IModLogger Logger;
         public static RagdollSystem Instance { get; private set; }
 
-        /// <summary>
-        /// Asked to take one lying body away. Whoever keeps bodies lying about (PedestrianIncidents)
-        /// removes its oldest one at rest and returns true: out of view if it has one there, and only
-        /// such a one if the argument is true.
-        /// </summary>
+        /// <summary>Takes one lying body away, true if one went: out of view if it can, and only so when the argument is true.</summary>
         public static Func<bool, bool> MakeRoom;
 
         private bool _stillLogged;
 
         private readonly Ragdoll[] _ragdolls = new Ragdoll[MaxBodies];
-        private float _nextYield;   // when bodies at rest are next asked whether a vehicle has ended up on top of them
-        private bool _failed;   // something went wrong once: no more ragdolls this session
-        private int _refusals;  // characters in a row that could not be made a ragdoll
+        private float _nextYield;   // when bodies at rest are next asked whether a vehicle is on top of them
+        private bool _failed;       // off for the session after a fault
+        private int _refusals;      // characters in a row that could not be made a ragdoll
 
-        /// <summary>False once ragdolls have been given up for this session.</summary>
         public bool Working => !_failed;
 
         private void Awake()
@@ -55,7 +41,7 @@ namespace RealLifeOverhaul
             {
                 _ragdolls[i] = new Ragdoll();
             }
-            enabled = false;   // nobody is down
+            enabled = false;
         }
 
         private void OnDestroy()
@@ -68,10 +54,13 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>True if a ragdoll could be started on this character right now. Changes nothing.</summary>
-        public bool CanBegin(BaseHuman character)
+        /// <summary>
+        /// True if a ragdoll could be started on this character now. Changes nothing. <paramref name="animatorHeldOff"/>: its
+        /// animator is off only for a pose set by hand, which the caller clears first (<see cref="Ragdoll.CanTake"/>).
+        /// </summary>
+        public bool CanBegin(BaseHuman character, bool animatorHeldOff = false)
         {
-            if (_failed || !Settings.Ragdolls || !Ragdoll.CanTake(character) || Find(character) != null)
+            if (_failed || !Settings.Ragdolls || !Ragdoll.CanTake(character, animatorHeldOff) || Find(character) != null)
             {
                 return false;
             }
@@ -79,7 +68,7 @@ namespace RealLifeOverhaul
             {
                 if (_ragdolls[i].Active && _ragdolls[i].Resting && !_ragdolls[i].Still)
                 {
-                    return true;   // one at rest can be made still, which gives up its physics
+                    return true;   // one at rest can give up its physics
                 }
             }
             return Count(still: false) < MaxActive;
@@ -118,12 +107,13 @@ namespace RealLifeOverhaul
             if (!_stillLogged)
             {
                 _stillLogged = true;
-                Logger?.Info($"Ragdoll: all {MaxActive} are in use; the body that has lain longest keeps its pose without physics (up to {MaxStill} such, the oldest taken away out of view). (Logged once.)");
+                Logger?.Info($"Ragdoll: all {MaxActive} are in use; the body that has lain longest keeps its pose without physics "
+                             + $"(up to {MaxStill} such, the oldest taken away out of view). (Logged once.)");
             }
             return true;
         }
 
-        /// <summary>True if the camera could be looking at this place: in front of it and not far off. For deciding who may be taken away.</summary>
+        /// <summary>True if the camera could be looking at this place: in front of it and not far off.</summary>
         public static bool InView(Vector3 position)
         {
             Camera camera = GameManager.GetMainCamera();
@@ -134,14 +124,11 @@ namespace RealLifeOverhaul
             Transform eye = camera.transform;
             Vector3 offset = position - eye.position;
             float distance = offset.magnitude;
-            // In front, within the picture's widest half angle and a little over (bodies are two metres long).
+            // Within the picture's widest half angle and a little over: bodies are two metres long.
             return distance < SeenWithin && (distance < 6f || Vector3.Dot(offset, eye.forward) > distance * 0.45f);
         }
 
-        /// <summary>
-        /// Throws a character down with the given velocity. Returns null, with the character as
-        /// it was, if it cannot be done: budget full, not a skeleton we know, no ground to land on.
-        /// </summary>
+        /// <summary>Throws a character down; null, with it as it was, if there is no room, no known skeleton or no ground.</summary>
         public Ragdoll Begin(BaseHuman character, Vector3 velocity)
         {
             if (_failed || !Settings.Ragdolls || !Ragdoll.CanTake(character) || Find(character) != null)
@@ -150,7 +137,6 @@ namespace RealLifeOverhaul
             }
             try
             {
-                // Physics for six: a seventh takes it from the one that has lain longest, who stays as they lie.
                 if (Count(still: false) >= MaxActive && !SettleOldest())
                 {
                     return null;   // all six are still falling
@@ -158,7 +144,7 @@ namespace RealLifeOverhaul
                 Ragdoll free = FindFree();
                 if (free == null && MakeRoom != null && MakeRoom(false))
                 {
-                    free = FindFree();   // every place was taken: someone had to go, out of view if anyone was
+                    free = FindFree();
                 }
                 if (free == null)
                 {
@@ -167,13 +153,12 @@ namespace RealLifeOverhaul
                 int layer = RagdollLayers.Choose(character.transform.position, out bool blocksTraffic);
                 if (layer < 0)
                 {
-                    return null;   // nothing to land on just here; elsewhere may be fine
+                    return null;   // nothing to land on just here
                 }
                 if (!free.Begin(character, velocity, layer, blocksTraffic, Time.time))
                 {
-                    // Not the skeleton this was written for. Three in a row and it is given up,
-                    // rather than have everyone who is hit fail the same way.
-                    // (Only full characters count: a plain standing figure that will not do is its caller's to give up on.)
+                    // Three full characters in a row with unexpected bones: give up rather than fail on everyone hit.
+                    // A plain standing figure that will not do is its caller's to give up on.
                     if (character is ThirdPersonCharacter && ++_refusals >= 3)
                     {
                         _failed = true;
@@ -195,33 +180,27 @@ namespace RealLifeOverhaul
         /// <summary>Ends a ragdoll; see <see cref="Ragdoll.End"/>. Does nothing if it has already ended.</summary>
         public void End(Ragdoll ragdoll, bool stand, Vector3 place, bool restoreMovement)
         {
-            if (ragdoll != null)
-            {
-                ragdoll.End(stand, place, restoreMovement);
-            }
+            ragdoll?.End(stand, place, restoreMovement);
         }
 
-        /// <summary>True while this character is a ragdoll: physics has the body, and nothing else may move or animate it.</summary>
+        /// <summary>True while physics has this character's body: nothing else may move or animate it.</summary>
         public static bool Holds(BaseHuman character)
         {
             return Instance != null && Instance.Find(character) != null;
         }
 
-        /// <summary>Puts a character back on its feet where it was hit, if it is a ragdoll. For whoever is about to reuse it.</summary>
+        /// <summary>Puts a character back on its feet where it was hit, if it is a ragdoll, for whoever is about to reuse it.</summary>
         public static void Release(BaseHuman character)
         {
             Ragdoll ragdoll = Instance != null ? Instance.Find(character) : null;
-            if (ragdoll != null)
-            {
-                ragdoll.End(false, default, true);
-            }
+            ragdoll?.End(false, default, true);
         }
 
         private Ragdoll Find(BaseHuman character)
         {
             if (character == null)
             {
-                return null;   // (a destroyed character would otherwise "equal" another destroyed one)
+                return null;   // a destroyed character would otherwise equal another destroyed one
             }
             for (int i = 0; i < MaxBodies; i++)
             {
@@ -255,20 +234,20 @@ namespace RealLifeOverhaul
         }
 
         private static readonly int HotUpdate = HotSpots.Slot("Ragdoll: RagdollSystem.Update");
-        // Runs only while somebody is down. Per ragdoll: a handful of flags, and until it is frozen the rest check.
+
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;
                 return;
             }
             try
             {
                 OnUpdate();
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 Guard.Fail(FrameGuard, e, this);
             }
@@ -312,7 +291,7 @@ namespace RealLifeOverhaul
                 }
                 else if (yield && MakeRoom != null && Count(still: true) > MaxStill)
                 {
-                    MakeRoom(true);   // more lying about than there should be: the oldest nobody is looking at goes
+                    MakeRoom(true);
                 }
             }
             catch (Exception e)
@@ -321,7 +300,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Ragdolls are an extra. If one faults, everybody gets up and there are no more until the next load.
+        // Ragdolls are an extra: after a fault everybody gets up and there are no more until the next load.
         private void Fail(Exception e)
         {
             _failed = true;
@@ -344,13 +323,9 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// Which physics layer a ragdoll's parts go on. They must land on the ground, and ideally
-    /// traffic should brake for a body in the road as it does for anyone on foot, which means
-    /// the game's Human layer. Whether that layer collides with the ground is a project setting
-    /// this mod cannot read from code alone, so it is asked of the engine: the ground under the
-    /// character is found with a ray, and the first of Human, Default or any other layer that
-    /// collides with it (and with the game's road and ground layers) is used. Worked out once
-    /// per kind of ground and remembered.
+    /// Which physics layer a ragdoll's parts go on: one that collides with the ground, and the game's Human layer if it
+    /// can, so traffic brakes for a body as for anyone on foot. The project's collision matrix is asked once per kind
+    /// of ground and the answer kept.
     /// </summary>
     internal static class RagdollLayers
     {
@@ -364,8 +339,7 @@ namespace RealLifeOverhaul
         private static int _anythingMask;
         private static bool _warned;
 
-        /// <summary>The layer for a ragdoll at this place, or -1 if nothing would stop it falling for ever.</summary>
-        /// <param name="blocksTraffic">True if it is the layer traffic brakes for.</param>
+        /// <summary>The layer for a ragdoll here, or -1 if nothing would stop it falling; blocksTraffic if traffic brakes for it.</summary>
         public static int Choose(Vector3 feet, out bool blocksTraffic)
         {
             if (_human == -2)
@@ -408,8 +382,8 @@ namespace RealLifeOverhaul
             return layer;
         }
 
-        // Human, then Default, then anything else. First a layer that lands on road and pavement alike (a body
-        // thrown off the kerb crosses from one to the other); failing that, one that lands on what is underfoot.
+        // Human, then Default, then any other layer. First one that lands on road and pavement alike (a body thrown
+        // off the kerb crosses from one to the other); failing that, one that lands on what is underfoot.
         private static int Pick(int ground)
         {
             for (int pass = 0; pass < 2; pass++)

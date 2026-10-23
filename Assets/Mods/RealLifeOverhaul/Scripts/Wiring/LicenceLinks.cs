@@ -5,14 +5,9 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// Driving licences with the law and the courts:
-        ///
-        ///   Licences.Law            an arrest made by Licences is served through the courts' custody when they are on
-        ///                           (counted as time served) and the old roadside time skip when they are not;
-        ///   Justice.Bridges.Licences a sentence that suspends the licence suspends the real one, and "suspended" is one
-        ///                           answer whether twelve points or a court did it;
-        ///   Licences.Driving.TwoWheelerOf, OwnsMotorbike, GarageBridges.HasMotorcycleLicence   the Garage's motorbikes are the motorcycle class
-        ///   SuspendedAtStop, DrunkDrivingBooked   what a stop found that is the courts' business too: credited, never owed twice.
+        /// Driving licences with the law and the courts: an arrest by Licences is served in the courts' custody when they
+        /// are on, a court's suspension is the licence's own, the Garage's motorbikes are the motorcycle class, and what a
+        /// stop fined is credited to the courts' case, never owed twice.
         /// </summary>
         public static class LicenceLinks
         {
@@ -24,9 +19,9 @@ namespace RealLifeOverhaul
                 Court.Forget();
                 Licences.Law = Law;
                 Justice.Bridges.Licences = Court;
-                Licences.Driving.TwoWheelerOf = GarageBridges.TwoWheelerKind;       // a motorbike is the motorcycle class; a bicycle needs no licence
+                Licences.Driving.TwoWheelerOf = GarageBridges.TwoWheelerKind;       // a bicycle needs no licence
                 Licences.Driving.OwnsMotorbike = GarageBridges.OwnsMotorbike;       // a save that already owns one is given the class once
-                GarageBridges.HasMotorcycleLicence = () => Licences.Driving.Has(LicenceClass.Motorcycle);   // the dealer says so at the sale; riding is policed like driving
+                GarageBridges.HasMotorcycleLicence = () => Licences.Driving.Has(LicenceClass.Motorcycle);
             }
 
             internal static void Disconnect()
@@ -40,8 +35,8 @@ namespace RealLifeOverhaul
             }
 
             /// <summary>
-            /// Stopped at the wheel with the licence suspended, and fined for it at the window: the courts charge the same
-            /// thing (Justice.PoliceContact), so what was just paid is credited to that case and not owed twice.
+            /// Fined at a stop for driving while suspended: the courts charge the same (Justice.PoliceContact), so the fine
+            /// is credited to that case.
             /// </summary>
             public static void SuspendedAtStop(int finedAtScene)
             {
@@ -59,9 +54,8 @@ namespace RealLifeOverhaul
             }
 
             /// <summary>
-            /// Drink at the wheel was booked at a stop (fined there, points added). The second time inside the weeks points
-            /// count for, it is a case as well: dangerous driving, with the roadside fine credited. Not when they were caught
-            /// after running: that arrest is already before the court on the same charge.
+            /// Drink driving booked at a stop: the second time while the points count it is also a case of dangerous
+            /// driving, the fine credited. Not after running away: that arrest is already before the court.
             /// </summary>
             internal static void DrunkDrivingBooked(bool fled)
             {
@@ -91,14 +85,13 @@ namespace RealLifeOverhaul
                 }
             }
 
-            /// <summary>Licences asks the law.</summary>
             private sealed class LawForLicences : ILicenceLawBridge
             {
                 private readonly DefaultLaw _own = new DefaultLaw();   // the old roadside time skip, for when the courts are off
 
                 public void Record(string offenceId, bool arrested)
                 {
-                    // Law's record has no line for a licence offence (it is the police's own, of tickets and cells): nothing to add here.
+                    // Law's record has no line for a licence offence: it holds only tickets and cells.
                 }
 
                 public bool Custody(int hours)
@@ -127,7 +120,7 @@ namespace RealLifeOverhaul
 
                 private static bool Kept => LicenceState.Loaded && Settings.DrivingLicence;
 
-                // A suspension the court handed down before the two were connected (or in a save from before) is brought across once.
+                // A court's suspension from before the two were connected is brought across once.
                 private void Sync()
                 {
                     if (_court >= 0)
@@ -145,7 +138,7 @@ namespace RealLifeOverhaul
                 {
                     if (!Kept)
                     {
-                        return false;   // licences are off: the courts keep their own date, as before
+                        return false;   // licences are off: the courts keep their own date
                     }
                     Sync();
                     if (untilDay > 0)

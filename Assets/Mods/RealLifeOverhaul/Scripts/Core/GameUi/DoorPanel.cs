@@ -5,24 +5,15 @@ using UnityEngine;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// A <see cref="WorldPanel"/> that stands over a door or a desk while the player is near it, with the few things
-    /// every such place needs: the panel is put over the place (or over the player's head while the place is behind
-    /// the camera), asked for from the owner's timer, taken down again, and the key that pressed one of its buttons
-    /// is known to have been used this frame so that the mod's own interact key does nothing else with it
-    /// (<see cref="TakesKey"/>, read by <c>NearbyInteraction</c> through the feature's static
-    /// <c>TakesInteractKey</c>). One line goes to the log when the game accepts or refuses the panel and when it goes.
-    /// Like every <see cref="WorldPanel"/> it steps aside for the game's building box (WorldPanel.Beside.cs), and has
-    /// the game's one box by the rule between places (<see cref="PanelPickRules"/>): it is measured from its place, not
-    /// from where the box stands.
-    ///
-    /// The cost: nothing per frame. The owner calls <see cref="Show"/> from its once-a-second timer and builds the
-    /// texts only when what they say has changed.
+    /// A <see cref="WorldPanel"/> over a door or a desk while the player is near, shown from the owner's timer, with the frame
+    /// a button's key ran known (<see cref="TakesKey"/>) so the mod's own interact key does nothing else with it, and a log
+    /// line when the game takes or refuses it. Costs nothing a frame.
     /// </summary>
     public sealed class DoorPanel
     {
         private readonly IModLogger _logger;
         private readonly string _check;
-        private int _state;          // 0 not up, 1 up, 2 refused by the game's own panel, 3 waiting for the game's building box to leave it room
+        private int _state;          // 0 not up, 1 up, 2 refused by the game's own panel, 3 waiting for the building box to leave it room
         private int _keyFrame = -1;
 
         /// <param name="logger">The feature's logger.</param>
@@ -34,7 +25,7 @@ namespace RealLifeOverhaul.GameUi
             Panel.Name = NameOf(check);
         }
 
-        // "Social check (prompt panel)" is the "Social prompt panel" in the log's line about who has the box.
+        // "Social check (prompt panel)" is the "Social prompt panel" in the line about who has the box.
         private static string NameOf(string check)
         {
             int at = check != null ? check.IndexOf(" check (", StringComparison.Ordinal) : -1;
@@ -50,7 +41,7 @@ namespace RealLifeOverhaul.GameUi
         /// <summary>True from the first <see cref="Show"/> the game accepted until <see cref="Hide"/>.</summary>
         public bool Up => _state == 1;
 
-        /// <summary>A button's action made so that it marks the frame its key was used in. Make it once and keep it.</summary>
+        /// <summary>A button's action that marks the frame its key was used in. Make it once and keep it.</summary>
         public Action Press(Action action)
         {
             return () =>
@@ -60,10 +51,7 @@ namespace RealLifeOverhaul.GameUi
             };
         }
 
-        /// <summary>
-        /// Puts the panel over a place (a metre or two above it), or over the player when the place is behind the
-        /// camera. <paramref name="what"/> is for the log line, built only when the state changes (pass a delegate).
-        /// </summary>
+        /// <summary>The panel <paramref name="up"/> metres over a place, or over the player when it is behind the camera; <paramref name="what"/> builds the log line.</summary>
         public bool Show(Vector3 place, Vector3 player, float up, Func<string> what)
         {
             Panel.For(place);

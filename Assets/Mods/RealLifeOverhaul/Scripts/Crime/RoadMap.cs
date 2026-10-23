@@ -7,13 +7,9 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The traffic system's road data arranged so that questions about the player's own car are
-    /// cheap: the stop line of every lane at every traffic light (with the light's red lamp, so
-    /// red can be told from amber), and every lane point, both in a coarse grid. It is built
-    /// once, the first time the player drives after a city load: one pass over the road data.
-    /// After that a question looks at the handful of entries in the grid squares around the car.
-    /// If the road data is not what this expects, it reports itself unusable and the offences
-    /// that depend on it are simply never detected.
+    /// The traffic system's lane points and stop lines (with each light's red lamp, to tell red from amber) in a coarse grid,
+    /// built in one pass the first time it is asked after a city load; a question looks only at the cells around the car.
+    /// Road data it cannot read leaves it unusable, and the offences that need it go undetected.
     /// </summary>
     internal static class RoadMap
     {
@@ -21,22 +17,20 @@ namespace RealLifeOverhaul
         {
             public Vector3 Position;
             public Vector3 Forward;      // the way the lane runs across the line
-            public Waypoint Point;       // its "stop" flag is true while the light is not green
-            public GameObject Red;       // the red lamp of that light
+            public Waypoint Point;       // its stop flag is true while the light is not green
+            public GameObject Red;       // the light's red lamp
         }
 
-        private const float CellSize = 40f;
+        private const float CellSize = 40f;   // metres
 
         private static readonly Dictionary<long, List<int>> LineCells = new Dictionary<long, List<int>>();
         private static readonly Dictionary<long, List<int>> LaneCells = new Dictionary<long, List<int>>();
         private static readonly List<StopLine> Lines = new List<StopLine>();
         private static Waypoint[] _lanes;
         private static bool _built;
-        private static bool _usable;
 
         /// <summary>True once the map is built and has something in it.</summary>
-        public static bool Usable => _usable;
-        public static int LineCount => Lines.Count;
+        public static bool Usable { get; private set; }
 
         public static void Reset()
         {
@@ -45,7 +39,7 @@ namespace RealLifeOverhaul
             Lines.Clear();
             _lanes = null;
             _built = false;
-            _usable = false;
+            Usable = false;
         }
 
         /// <summary>Builds the map if it has not been tried yet. Call only while the traffic system is running.</summary>
@@ -53,7 +47,7 @@ namespace RealLifeOverhaul
         {
             if (_built)
             {
-                return _usable;
+                return Usable;
             }
             _built = true;
             try
@@ -63,17 +57,17 @@ namespace RealLifeOverhaul
             catch (Exception e)
             {
                 Crime.Fault(e);
-                _usable = false;
+                Usable = false;
             }
-            Crime.Logger?.Info(_usable
+            Crime.Logger?.Info(Usable
                 ? $"Crime: road map built, {Lines.Count} stop lines at traffic lights, {(_lanes != null ? _lanes.Length : 0)} lane points."
                 : "Crime: the traffic system's road data could not be read; red lights and speed limits are not policed.");
-            return _usable;
+            return Usable;
         }
 
         private static void Build()
         {
-            CurrentSceneData data = RoadData.Scene;   // kept from the city's one search, behind the loading screen (Core/RoadData)
+            CurrentSceneData data = RoadData.Scene;   // kept from the city's one search, behind the loading screen
             if (data == null || data.allWaypoints == null || data.allWaypoints.Length == 0)
             {
                 return;
@@ -98,7 +92,7 @@ namespace RealLifeOverhaul
                     GameObject red = FirstLamp(road != null ? road.redLightObjects : null);
                     if (red == null || road.roadWaypoints == null)
                     {
-                        continue;   // without the lamp, red cannot be told from amber: this light is not policed
+                        continue;   // red cannot be told from amber: not policed
                     }
                     for (int w = 0; w < road.roadWaypoints.Count; w++)
                     {
@@ -124,7 +118,7 @@ namespace RealLifeOverhaul
                     }
                 }
             }
-            _usable = _lanes.Length > 0;
+            Usable = _lanes.Length > 0;
         }
 
         private static GameObject FirstLamp(List<GameObject> lamps)
@@ -164,9 +158,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// The stop line the car is about to cross or has just crossed: in its own lane (within
-        /// a lane's width sideways), running its way, no more than 30 m ahead or 8 m behind.
-        /// Returns its index and how far the car's middle is past it (negative while short of it).
+        /// The stop line in the car's lane, its way, 30 m ahead to 8 m behind: its index and how far past it the car's middle
+        /// is (negative while short of it).
         /// </summary>
         public static bool LineAt(Vector3 position, Vector3 heading, out int index, out float along)
         {
@@ -213,22 +206,19 @@ namespace RealLifeOverhaul
             return Lines[index];
         }
 
-        /// <summary>
-        /// The lane point nearest a position (not one inside a junction), within 30 m or so.
-        /// Gives the distance to it, the way its lane runs and its speed limit in km/h.
-        /// </summary>
+        /// <summary>The lane point nearest a position within about 30 m, outside junctions: how far, its way and its limit in km/h.</summary>
         public static bool NearestLane(Vector3 position, out float distance, out Vector3 runs, out float limitKmh)
         {
             return NearestLane(position, out distance, out runs, out limitKmh, out _);
         }
 
-        /// <summary>The same, with where that lane point is: which side of somebody on the pavement the road lies.</summary>
+        /// <summary>The same, with where that lane point is.</summary>
         public static bool NearestLane(Vector3 position, out float distance, out Vector3 runs, out float limitKmh, out Vector3 at)
         {
             return NearestLane(position, out distance, out runs, out limitKmh, out at, out _);
         }
 
-        /// <summary>The same, with the lane point itself (the city's faults slow traffic at a pothole through its limit).</summary>
+        /// <summary>The same, with the lane point itself.</summary>
         public static bool NearestLane(Vector3 position, out float distance, out Vector3 runs, out float limitKmh, out Vector3 at, out Waypoint point)
         {
             point = null;

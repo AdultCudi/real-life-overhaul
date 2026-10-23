@@ -6,26 +6,14 @@ using Localizor.LanguageChangeEvent;
 using TMPro;
 using UI;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// A list of places to travel to, in the window the game lists its subway stations in
-    /// (Canvases/CityMap/SubwayStations, class CityMapSubwayStations): the headline bar, a scrolling list of entries
-    /// that each have a name and a blue button, and the yellow Cancel button with its key. The window is copied
-    /// asleep once per city, the scripts that make it the subway's are taken off, and it is put on the HUD's canvas
-    /// (the game's own stands on the map's, which is only drawn while the map is open). Where the game has its search
-    /// field this window has two lines of text, in a copy of an entry's own label.
-    ///
-    /// An entry is the game's entry: its label carries the name (in capitals, as the game writes a station's) and, on
-    /// a second smaller line, the details; its button carries a word of the game's ("Travel"). Entries are made when
-    /// first needed and used again on every opening, so opening the list a second time makes nothing.
-    ///
-    /// The cost: nothing while the window is closed (its object is switched off, and so is the one script of the
-    /// mod's on it). While it is open that script tests the game's cancel key once a frame, which is how the game's
-    /// own windows are closed.
+    /// A list of places to travel to, in a copy of the game's subway station window put on the HUD's canvas, with two lines of
+    /// text where the game has its search field; entries are made once and reused. Costs nothing while closed; while open,
+    /// one look at the cancel key a frame.
     /// </summary>
     public sealed class TravelList
     {
@@ -34,7 +22,7 @@ namespace RealLifeOverhaul.GameUi
         private static readonly string[] Harmless = { "ButtonEffects", "ScrollBarDraggingComponent", "ScrollBarHandleSizeLimiter" };
         private static int _open;
 
-        /// <summary>True while any such window is on screen: the mod's camera frees the mouse for it (Camera/ThirdPersonCamera.IsUiOpen).</summary>
+        /// <summary>True while any such window is on screen: the mod's camera frees the mouse for it.</summary>
         public static bool AnyOpen => _open > 0;
 
         private sealed class Row
@@ -64,11 +52,7 @@ namespace RealLifeOverhaul.GameUi
 
         public bool IsOpen { get; private set; }
 
-        /// <summary>
-        /// True while the window may not be left by the player: the Cancel button is out of sight and the game's cancel
-        /// key is left to the game (its own menu still opens). The owner can still <see cref="Close"/> it. Put back to
-        /// false by every closing, so a window handed to the next owner is an ordinary one.
-        /// </summary>
+        /// <summary>The player may not leave: Cancel hidden, the cancel key left to the game. The owner can still close it; every closing clears it.</summary>
         public bool Locked
         {
             get { return _locked; }
@@ -82,17 +66,13 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>How many entries have been made so far (for the log).</summary>
+        /// <summary>Entries made so far, for the log.</summary>
         public int Made => _rows.Count;
 
-        /// <summary>The window's own rectangle on the HUD's canvas, for an owner that stands it somewhere else than the middle or makes it wider. Null once the interface has gone.</summary>
+        /// <summary>The window's rectangle on the HUD's canvas, for an owner that moves or widens it; null once the interface has gone.</summary>
         public RectTransform Window => _root != null ? (RectTransform)_root.transform : null;
 
-        /// <summary>
-        /// For a list whose entries say more than a name and one line: how high an entry is, and whether the lines
-        /// under the name may run on to the next line. Call it before the first <see cref="Add"/>: entries already
-        /// made keep the shape they were made with.
-        /// </summary>
+        /// <summary>An entry's height, and whether the lines under the name wrap: before the first Add.</summary>
         public void EntryShape(float height, bool wrap)
         {
             if (_template == null)
@@ -136,7 +116,7 @@ namespace RealLifeOverhaul.GameUi
                 Transform entry = content != null ? content.Find("Entry") : null;
                 if (entry == null && content != null)
                 {
-                    // The template by what it is made of, should the game have renamed it: the first entry with a label and a button.
+                    // Should the game rename it: the first entry with a label and a button.
                     for (int i = 0; i < content.childCount && entry == null; i++)
                     {
                         Transform child = content.GetChild(i);
@@ -153,31 +133,7 @@ namespace RealLifeOverhaul.GameUi
                     return null;
                 }
 
-                // The entries the game made for its stations go; its template stays, as this list's.
-                for (int i = content.childCount - 1; i >= 0; i--)
-                {
-                    Transform child = content.GetChild(i);
-                    if (child != entry)
-                    {
-                        UnityEngine.Object.DestroyImmediate(child.gameObject);
-                    }
-                }
-                entry.name = "Entry";
-                if (!entry.CompareTag("Untagged"))
-                {
-                    entry.tag = "Untagged";
-                }
-                var entryRect = (RectTransform)entry;
-                entryRect.sizeDelta = new Vector2(entryRect.sizeDelta.x, 104f);   // the game's 88.8 holds one line; this holds a name and a smaller line under it
-                var text = label.GetComponent<TMP_Text>();
-                if (text != null)
-                {
-                    text.richText = true;
-                    text.fontStyle &= ~FontStyles.UpperCase;   // the name keeps the game's capitals by a tag of its own (Add); the line under it reads as a sentence
-                    text.textWrappingMode = TextWrappingModes.NoWrap;
-                    text.overflowMode = TextOverflowModes.Ellipsis;
-                }
-                entry.gameObject.SetActive(false);
+                UiClone.EntryTemplate(entry, label);
                 list._template = entry.gameObject;
 
                 // Where the game has its search field: two lines of text in a copy of an entry's label.
@@ -207,14 +163,8 @@ namespace RealLifeOverhaul.GameUi
                 list._cancel = cancel.GetComponentInChildren<TextLocalizationComponent>(true);
                 list._cancelButton = cancel.gameObject;
 
-                var group = root.GetComponent<CanvasGroup>();
-                if (group != null)
-                {
-                    group.alpha = 1f;
-                    group.interactable = true;
-                    group.blocksRaycasts = true;
-                }
-                // The middle of the screen, where the game puts what it asks the player: on the HUD nothing stands there.
+                UiClone.Visible(root.GetComponent<CanvasGroup>());
+                // The middle of the screen, where the game asks the player things: nothing of the HUD stands there.
                 root.SetActive(false);
                 var rect = (RectTransform)root.transform;
                 rect.SetParent(canvas, false);
@@ -243,10 +193,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>
-        /// Stands the window on another canvas (the game's time skip hides the HUD but keeps a screen of its own), or back on the
-        /// HUD's with null. It stays the last thing drawn there. Does nothing if it is already there.
-        /// </summary>
+        /// <summary>Stands the window on another canvas (the time skip's own screen), or back on the HUD's with null.</summary>
         public void MoveTo(Transform canvas)
         {
             Transform target = canvas != null ? canvas : _home;
@@ -258,7 +205,7 @@ namespace RealLifeOverhaul.GameUi
             _root.transform.SetAsLastSibling();
         }
 
-        /// <summary>Back to the top of the entries: for an owner that fills the window again with another page while it is open.</summary>
+        /// <summary>Back to the top of the entries, for an owner that fills the open window with another page.</summary>
         public void ScrollToTop()
         {
             if (_root != null && _scroll != null)
@@ -271,10 +218,10 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>True while the window's objects are there (the game's interface is rebuilt with the city).</summary>
+        /// <summary>True while the window's objects are there: the game's interface is rebuilt with the city.</summary>
         public bool Alive => _root != null;
 
-        /// <summary>Starts a filling: the headline and the lines under it, as final words. Entries follow with <see cref="Add"/>, then <see cref="Open"/>.</summary>
+        /// <summary>Starts a filling: the headline and the lines under it. Entries follow with Add, then <see cref="Open"/>.</summary>
         public void Begin(string title, string info)
         {
             _used = 0;
@@ -288,25 +235,25 @@ namespace RealLifeOverhaul.GameUi
             UiClone.Words(_info, words);
         }
 
-        /// <summary>One entry: a name, a smaller line under it, and the button's word (a locale key, written by the game's component).</summary>
+        /// <summary>One entry: a name, a smaller line under it, and the button's locale key.</summary>
         public void Add(int id, string name, string detail, string buttonKey, bool enabled)
         {
             Entry(id, name, detail, buttonKey, enabled, 0f, false);
         }
 
-        /// <summary>An entry taller than the list's others, for a detail line that runs to several lines (see <see cref="HeightFor"/>).</summary>
+        /// <summary>An entry taller than the others, for a detail of several lines (see <see cref="HeightFor"/>).</summary>
         public void Add(int id, string name, string detail, string buttonKey, bool enabled, float height)
         {
             Entry(id, name, detail, buttonKey, enabled, height, false);
         }
 
-        /// <summary>A line of text in the list's own lettering with no button: something to read before the choices.</summary>
+        /// <summary>A line of text with no button: something to read before the choices.</summary>
         public void AddNote(string name, string detail, float height)
         {
             Entry(0, name, detail, null, false, height, true);
         }
 
-        /// <summary>A height, in the list's units, for an entry whose detail line is this long: a name line, then the lines of the detail at about this window's width.</summary>
+        /// <summary>An entry's height for a detail line this long: a name line, then the detail's lines at this window's width.</summary>
         public float HeightFor(int characters, bool button)
         {
             RectTransform window = Window;
@@ -340,7 +287,7 @@ namespace RealLifeOverhaul.GameUi
             }
             _used++;
             row.Id = id;
-            // (An entry with no name is the detail alone, in the list's own lettering: a page of plain text.)
+            // An entry with no name is the detail alone, in the list's own lettering.
             UiClone.Words(row.Label, string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(detail) ? detail
                 : string.IsNullOrEmpty(detail) ? "<uppercase>" + name + "</uppercase>"
                 : "<uppercase>" + name + "</uppercase>\n<size=80%><color=#C9CED3>" + detail + "</color></size>");
@@ -354,7 +301,7 @@ namespace RealLifeOverhaul.GameUi
                 row.Button.interactable = enabled;
                 if (row.Button.gameObject.activeSelf == note)
                 {
-                    row.Button.gameObject.SetActive(!note);   // (a note has none; an entry made from a note's has it back)
+                    row.Button.gameObject.SetActive(!note);   // a note has none; an entry reused from a note's has it back
                 }
             }
             row.Note = note;
@@ -370,7 +317,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>Shows what was filled in. A click on an entry's button calls <paramref name="onPick"/> with its id; the window stays open until <see cref="Close"/>.</summary>
+        /// <summary>Shows what was filled in. A click calls <paramref name="onPick"/> with the entry's id; it stays open until <see cref="Close"/>.</summary>
         public void Open(Action<int> onPick, Action onClosed)
         {
             for (int i = _used; i < _rows.Count; i++)
@@ -398,11 +345,11 @@ namespace RealLifeOverhaul.GameUi
             _scroll.StopMovement();
             if (_scroll.content != null)
             {
-                _scroll.content.anchoredPosition = Vector2.zero;   // from the top: the content hangs from the top of the view
+                _scroll.content.anchoredPosition = Vector2.zero;   // the content hangs from the top of the view
             }
         }
 
-        /// <summary>Closes the window (the Cancel button, the cancel key, or the caller). The closed callback runs once.</summary>
+        /// <summary>Closes the window (Cancel, the cancel key, or the owner). The closed callback runs once.</summary>
         public void Close()
         {
             if (!IsOpen)
@@ -425,7 +372,6 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>The window and everything made for it, gone.</summary>
         public void Destroy()
         {
             if (IsOpen)
@@ -448,19 +394,13 @@ namespace RealLifeOverhaul.GameUi
             Action<int> pick = _onPick;
             if (IsOpen && pick != null)
             {
-                // The clicked button is not left selected: the entries are used again for other places, and the
-                // interface's confirm key presses whatever is selected.
-                EventSystem events = EventSystem.current;
-                if (events != null && events.currentSelectedGameObject != null && events.currentSelectedGameObject.transform.IsChildOf(_root.transform))
-                {
-                    events.SetSelectedGameObject(null);
-                }
+                UiClone.Deselect(_root.transform);
                 int id = row.Id;
                 UiClone.Safe(() => pick(id));
             }
         }
 
-        /// <summary>The window's object went with the game's interface while it was open: the count is put right.</summary>
+        /// <summary>The window's object went with the game's interface while open: the count is put right.</summary>
         internal void Lost()
         {
             if (IsOpen)
@@ -473,14 +413,13 @@ namespace RealLifeOverhaul.GameUi
     }
 
     /// <summary>
-    /// On the window's own object, so it runs only while the window is open: the game's cancel key closes the window,
-    /// and the press is taken so that it does not open the game's menu as well (the game takes its presses the same
-    /// way: PlayerAction.Reset). It runs before the game's own key handling.
+    /// On the window's own object, so it runs a frame only while the window is open: the cancel key closes it, the press
+    /// taken so it does not open the game's menu too (PlayerAction.Reset). Runs before the game's own key handling.
     /// </summary>
     [DefaultExecutionOrder(-31000)]
     public sealed class TravelListKeys : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For(null, "TravelListKeys", typeof(TravelListKeys));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For(null, "TravelListKeys", typeof(TravelListKeys));   // its Update
 
         public TravelList Owner;
 
@@ -490,7 +429,7 @@ namespace RealLifeOverhaul.GameUi
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;   // its feature was switched off after its faults
                 return;
             }
             try

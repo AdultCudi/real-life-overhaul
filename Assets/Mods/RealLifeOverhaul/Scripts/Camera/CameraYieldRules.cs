@@ -3,14 +3,12 @@ using System;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Which of the game's own cameras is the one it has asked for: the one of its list (CameraHelper.Init, GameManager's
-    /// start-up) at priority 1, the only priority the game gives the camera it wants (CameraHelper.CameraTransition).
-    /// Only the cameras of ordinary play are named; every other camera of the game's, and any it adds in a later update,
-    /// is a <see cref="Moment"/>, so a new moment of the game's is stood aside for without anyone adding it to a list.
+    /// Which of the game's cameras it has asked for (the one at priority 1). Only those of ordinary play are named; any
+    /// other, including one a later update adds, is a <see cref="Moment"/>.
     /// </summary>
     public enum GameView : byte
     {
-        Moment = 0,     // anything else: placement, the interior designer, a building's preview, the subway, the minigames, the free camera, the casino boat, a car's preview, a camera off the game's list (no camera of the list at priority 1)
+        Moment = 0,     // anything else: placement, the designer, previews, the subway, the minigames, the free camera, the casino boat
         OnFoot = 1,     // GameManager.pedestrianCamera
         Indoor = 2,     // GameManager.indoorCamera
         Driving = 3,    // GameManager.vehicleCamera: the one the chase camera stands in for
@@ -23,19 +21,19 @@ namespace RealLifeOverhaul
     {
         public GameView View;    // the game's own camera mode
         public bool Screen;      // a screen that needs the pointer is up (ThirdPersonCamera.IsUiOpen)
-        public bool Talk;        // the game holds the player in a conversation (any of its dialogs), whose answers are clicked
-        public bool Dead;        // the player is dead: the pointer is the game's; the funeral's own camera is a moment like any other
+        public bool Talk;        // the game holds the player in a conversation, whose answers are clicked
+        public bool Dead;        // the pointer is the game's; the funeral's camera is a moment like any other
         public bool OtherMod;    // another author's mod drives the camera (CameraYield's stand-down)
-        public bool InCar;       // the player drives a car the chase camera follows (not a scooter or a hand truck)
+        public bool InCar;       // a car the chase camera follows (not a scooter or a hand truck)
         public bool CameraOn;    // the option: the third-person camera
         public bool Indoors;     // the option: the third-person camera indoors too
         public bool CarCamera;   // the option: the chase camera
         public bool MouseLook;   // the option: mouse look
-        public bool CursorFreed; // the player freed the pointer (Left Alt unless rebound)
+        public bool CursorFreed; // Left Alt unless rebound
         public bool Focused;     // the game's window has the focus
         public bool CarMouse;    // the game's own setting: the car is steered with the mouse
-        public bool OnBridge;    // the player, or the car the player drives, is on a bridge's road (BridgeHold, asked four times a second)
-        public bool CloseInPicture;   // this mod's close camera (the chase camera, or the on-foot camera with its figures) is still live, in a blend out too
+        public bool OnBridge;    // the player, or the car they drive, is on a bridge's road (BridgeHold)
+        public bool CloseInPicture;   // the chase camera, or the on-foot camera with this mod's figures, is still live, in a blend out too
     }
 
     /// <summary>What this mod's camera does in the frame. Plain values.</summary>
@@ -44,19 +42,15 @@ namespace RealLifeOverhaul
         public bool OutdoorFigures;   // the game's on-foot camera carries this mod's figures (offset, distance, lens, aim)
         public bool IndoorFigures;    // the game's indoor camera likewise
         public bool Chase;            // the chase camera is the one looked through
-        public bool Look;             // mouse look on foot (pointer locked, the mouse orbits)
+        public bool Look;             // mouse look on foot: the pointer locked, the mouse orbits
         public bool ChaseLook;        // mouse look in the car
-        public bool HoldBridges;      // the bridge the player is on is kept out of the game's camera-block hiding (BridgeHold)
-        public bool Moment;           // standing aside for a moment of the game's: its camera is not one of ordinary play
-        public bool OutdoorLinger;    // the on-foot camera's figures are given back only once it has left the picture (not live, nor in a blend)
+        public bool HoldBridges;      // the bridge under the player is kept out of the game's camera-block hiding
+        public bool Moment;           // standing aside: the game's camera is not one of ordinary play
+        public bool OutdoorLinger;    // the on-foot camera's figures are given back only once it has left the picture
         public bool IndoorLinger;     // the indoor camera's likewise
     }
 
-    /// <summary>
-    /// A game camera's figures as plain numbers: its offset's three parts, its nearest and furthest distance, its
-    /// distance and the speed it eases to it, and its lens. What this mod takes from the game's on-foot cameras and gives
-    /// back.
-    /// </summary>
+    /// <summary>A game camera's figures as plain numbers: what this mod takes from the game's on-foot cameras and gives back.</summary>
     public struct CameraFigures
     {
         public float OffsetX, OffsetY, OffsetZ;
@@ -65,7 +59,6 @@ namespace RealLifeOverhaul
         public float Speed;
         public float Fov;
 
-        /// <summary>True if every figure is the same as the other's.</summary>
         public bool Same(in CameraFigures other)
         {
             return OffsetX == other.OffsetX && OffsetY == other.OffsetY && OffsetZ == other.OffsetZ && Near == other.Near && Far == other.Far
@@ -74,24 +67,20 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// THE HANDOVER OF A GAME CAMERA'S FIGURES, AS A RULE. The figures are written down as the game has them at the moment
-    /// this mod takes the camera (<see cref="Take"/>), once: taking a camera already taken keeps the first figures, so that
-    /// nothing of this mod's is ever written down as the game's. Giving it back (<see cref="Give"/>) answers the figures
-    /// taken, once. The next take writes down the figures the game has then, so whatever the game or the player changed
-    /// while the camera was the game's (a zoom of its own, a distance the game copied in) is what is given back after it.
-    /// Two flags and eight numbers; nothing allocated.
+    /// The handover of a game camera's figures: written down once when this mod takes the camera (<see cref="Take"/>),
+    /// handed back once by <see cref="Give"/>, so nothing of this mod's is ever taken for the game's.
     /// </summary>
     public struct FigureHandover
     {
         private CameraFigures _game;
 
-        /// <summary>True while the camera is taken (it carries this mod's figures).</summary>
+        /// <summary>True while the camera carries this mod's figures.</summary>
         public bool Taken { get; private set; }
 
         /// <summary>The game's figures as they were taken (meaningful while <see cref="Taken"/>).</summary>
         public CameraFigures Game => _game;
 
-        /// <summary>The camera taken: true, and the game's figures written down, if it was the game's; false (nothing written) if it was taken already.</summary>
+        /// <summary>True, with the game's figures written down, if the camera was the game's; false if it was taken already.</summary>
         public bool Take(in CameraFigures now)
         {
             if (Taken)
@@ -103,7 +92,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>The camera given back: true once, with the figures it was taken with; false if it was not taken.</summary>
+        /// <summary>True once, with the figures it was taken with; false if it was not taken.</summary>
         public bool Give(out CameraFigures back)
         {
             back = _game;
@@ -117,35 +106,11 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// When this mod's camera stands aside for the game's own camera moments, and what it gives back: THE ONE RULE every
-    /// camera path of this mod goes through (<see cref="CameraYield"/> reads the signals once a frame and keeps the
-    /// orders; ThirdPersonCamera, ChaseCamera and BridgeHold only follow them).
-    ///
-    /// The signals are the game's own: which of its cameras it has asked for (<see cref="GameView"/>), whether a screen
-    /// that needs the pointer is up, whether it holds the player in a conversation, and whether the player is dead.
-    /// A moment the game adds later is caught by the same signals: a camera that is not one of ordinary play, a screen,
-    /// or a blocker on the player's walk.
-    ///
-    ///   the figures on the game's on-foot and indoor cameras    kept while the game's camera is one of ordinary play
-    ///                                                           (on foot, indoors, a car, the map); given back exactly
-    ///                                                           as taken for any other camera of the game's, once the
-    ///                                                           camera carrying them has left the picture (so the
-    ///                                                           game's blend starts where its camera was); at once when
-    ///                                                           an option is switched off or another mod takes the
-    ///                                                           camera. The player's death changes nothing by itself:
-    ///                                                           the funeral's camera is a moment, held through to its cut
-    ///   the chase camera                                        only while the game asks for its vehicleCamera
-    ///   mouse look on foot                                      only while the camera looked through is the one carrying
-    ///                                                           the figures, no screen is up and the game does not hold
-    ///                                                           the player in a conversation (the mod's own seats, bus
-    ///                                                           rides and activities block the walk too, and keep it);
-    ///                                                           none while the player is dead
-    ///   the bridge held                                         the one under the player (or the car), while this mod's
-    ///                                                           close camera is looked through out of doors (the chase
-    ///                                                           camera, or the on-foot camera) and through the blend out
-    ///                                                           of it; never a bridge overhead, which the game hides
-    ///
-    /// No Unity or game type: checked offline as it ships (NavCheck, CameraYieldCheck.cs).
+    /// The one rule every camera path goes through: when this mod's camera stands aside for the game's own moments, and
+    /// what it gives back. <see cref="CameraYield"/> reads the signals once a frame; ThirdPersonCamera, ChaseCamera and
+    /// BridgeHold follow the orders. The figures are given back once their camera has left the picture for a moment, at
+    /// once for an option or another mod; the chase camera runs only while the game asks for its vehicleCamera; mouse look
+    /// needs no screen, no conversation and a living player. No Unity or game type: checked offline as it ships.
     /// </summary>
     public static class CameraYieldRules
     {
@@ -170,8 +135,7 @@ namespace RealLifeOverhaul
             bool pointer = s.MouseLook && !s.CursorFreed && s.Focused && !s.Screen && !s.Dead;
             o.Look = carried && pointer && !s.Talk;
             o.ChaseLook = o.Chase && pointer && !s.CarMouse;
-            // Only the bridge under the player, only under this mod's close camera, and on through the blend out of it (the
-            // game's look-back camera takes a second to swing away from the deck).
+            // The look-back camera takes a second to swing away from the deck: the hold lasts through the blend out.
             o.HoldBridges = s.OnBridge && (o.Chase || (s.View == GameView.OnFoot && o.OutdoorFigures) || (mine && s.CloseInPicture));
             o.Moment = mine && !play;
             o.OutdoorLinger = o.Moment;
@@ -180,11 +144,9 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// The distance the player wants from the on-foot camera after a frame. <paramref name="fresh"/>: the camera has just
-        /// been taken (first, or back from a moment of the game's): whatever the game wrote while it had the camera (the
-        /// interior designer copies its own distance in) is the game's, not the player's, so the distance wanted before is
-        /// kept, or the option's if there was none or the option changed. Otherwise the change since this mod's last write
-        /// is the player's own zoom with the game's scroll wheel. Always within <paramref name="min"/> and <paramref name="max"/>.
+        /// The distance the player wants from the on-foot camera, within min and max: when <paramref name="fresh"/>, what the
+        /// game wrote is not the player's and the wanted distance stands; otherwise the change since this mod's last write
+        /// is the player's zoom.
         /// </summary>
         public static float Wanted(bool fresh, bool known, bool optionChanged, float option, float desired, float gameNow, float lastWritten, float min, float max)
         {
@@ -199,21 +161,13 @@ namespace RealLifeOverhaul
             return Clamp(desired + (gameNow - lastWritten), min, max);
         }
 
-        /// <summary>
-        /// What a camera of the game's that took over should have in place of a distance it copied from the on-foot camera
-        /// (the placement camera of the interior designer and of placing an item copies the indoor camera's distance as it
-        /// opens): the game's own distance if what it copied is this mod's last write, else what it has (it was not ours).
-        /// </summary>
+        /// <summary>A placement camera's distance: the game's own if what it copied is this mod's last write, else what it has.</summary>
         public static float Uncopied(float copied, float lastWritten, float gameOwn)
         {
             return Math.Abs(copied - lastWritten) <= Copied ? gameOwn : copied;
         }
 
-        /// <summary>
-        /// Whether the on-foot camera's distance is taken afresh this frame (<see cref="Wanted"/>): when the camera has just been
-        /// taken, and in the first frame after a moment of the game's ended while the camera never left the picture (the
-        /// interior designer shut within its blend: the game wrote its own distance back meanwhile, which is not a zoom).
-        /// </summary>
+        /// <summary>Taken afresh: just taken, or a moment ended while the camera never left the picture (the game wrote its distance back).</summary>
         public static bool Fresh(bool taken, bool momentEnded)
         {
             return taken || momentEnded;

@@ -433,7 +433,7 @@ Its driving keys beyond these (throttle, brake, gears, handbrake) are in an NWH 
 | V, G | nothing | `CameraToggle`, `GentleThrottle` | free |
 | Left Alt | snap in placement and the interior designer | `FreeCursor` | different screens |
 | Right mouse | right click | `LookBehind` (driving) | the mod feeds the game's own right-button state, as before |
-| F7, F8 | hide the interface / free camera, in the game's debug builds or with `-console` only | `PerfProbe`, `PerfBench` (Shift), `PhoneDump` | no clash in a normal game |
+| F7, F8 | hide the interface / free camera, in the game's debug builds or with `-console` only | `PerfProbe`, `PerfBench` (Shift) on F7; nothing of the mod's on F8 | no clash in a normal game |
 | F9, F10 | nothing | `CharacterReport`, `PhotoMode` | free |
 | 1, 2, 3 | tools in the interior designer | a row of three choices (leisure, transit, the theory paper, the cell, the courts' panel); photo mode | one at a time: a choice row is on screen only while its owner has the player, and none of them with the designer open |
 | Space, Enter, Tab, Esc, N, M, T, P, O, I, Q, C, H, [ ], F1, F2, F5, F12, Backspace, Left Shift | the game's | nothing of the mod's outside photo mode (paused) | free of the mod |

@@ -11,41 +11,22 @@ using UnityEngine;
 namespace RealLifeOverhaul.Permadeath
 {
     /// <summary>
-    /// The one place Permadeath touches the game. Read from the decompiled game:
-    ///
-    ///   the game's own death    FuneralHelper.PlayerDead (Helpers/FuneralHelper.cs): while it is true GameManager.Update
-    ///                           returns at once (GameManager.cs 412: no ticks, no keys, no autosave, CheckAutoSave 539),
-    ///                           the mouse does nothing in the world (MouseController.Run), energy never sends the player to
-    ///                           hospital (EnergyHelper.GoToHospitalIsEnabled), and every feature of this mod that asks
-    ///                           LifeEvents.IsSafeForEvent stands down. PlayerController's start sets it false again on the
-    ///                           next city (PlayerController.cs 170), so nothing of it outlives the session.
-    ///   the fade                UiFader.Fade / UnFade (UI/UiFader.cs): the game's own black overlay, with a line on it
-    ///   the save                SaveGameManager.Save(Default, the save's own name) (SaveGameManager.cs 154): the save event
-    ///                           runs first (the mod's state goes in), the file is written on its own thread, and
-    ///                           SavingGameInProgress is true until it is on disk
-    ///   the main menu           LoadScene.LoadMainMenuFromCity (UI.Load/LoadScene.cs 27), as the game's own funeral screen
-    ///                           leaves (UI/FuneralUI.BackToMainMenu), run on the GameManager so that it outlives the city
-    ///   the tutorial            TutorialHelper.currentQuest with an objective not yet done (Helpers/TutorialHelper.cs)
-    ///   a mission               GameInstance.currentPlayerMission ongoing (Player.PlayerMissions/PlayerMission.cs), or a
-    ///                           side quest's entry active (GameInstance.activeSideQuestEntries)
-    ///   the age                 TimeHelper.GetYearsByDays(CharacterData.ageInDays)
-    ///   what they were worth    PlayerHelper.GetPersonalWealth().CurrentWealth, the figure the Persona app shows
-    ///   the staff               GameInstance.EmployeeInstances: the player's own employees (candidates are a list of their own)
-    ///   hunger                  GameInstance.Hunger, 0 to 100: falls 1.5 for each point of energy spent
-    ///                           (EnergyHelper.SpentEnergyOnce), rises only by eating (ItemHelper.TryToConsume) or a stay in
-    ///                           hospital (GameManager.HospitalRespawn sets it to 100); at 0 energy burns half as fast again
-    ///                           (EnergySettings.GetEnergyWasteMultiplier) and with energy gone too the player walks as a zombie
-    ///                           (ThirdPersonCharacter.ShouldEnableZombieWalking). Nothing in the game can kill.
-    ///   a safe moment           LifeEvents.IsSafeForEvent (awake, no activity panel such as sleep, no dialog, ride or time
-    ///                           skip) and not in a hospital or clinic (the building's special service)
-    ///
-    /// Everything here is called on an event (a death, a load, a button), never per frame, except <see cref="CancelPressed"/>,
-    /// which is asked once a frame only while the obituary is up.
+    /// The one place Permadeath touches the game. What it relies on there:
+    ///   the game's own death   FuneralHelper.PlayerDead: GameManager.Update returns at once (no ticks, keys or autosave),
+    ///                          energy never sends the player to hospital, and the mod's features stand down; the next
+    ///                          city's PlayerController sets it false again, so nothing of it outlives the session
+    ///   the save               SaveGameManager.Save runs the save event first and writes on its own thread;
+    ///                          SavingGameInProgress is true until the file is on disk
+    ///   the main menu          LoadScene.LoadMainMenuFromCity, run on the GameManager so it outlives the city, as the
+    ///                          game's own funeral screen leaves
+    ///   hunger                 GameInstance.Hunger, 0 to 100, raised only by eating or a hospital stay; nothing in the
+    ///                          game itself kills
+    /// Called on events, never per frame, except <see cref="CancelPressed"/> while the obituary is up.
     /// </summary>
     public static class PermadeathGame
     {
-        // The game blocks walking with named blockers kept in a set: one of the mod's own, outside the game's list.
-        private const NavigationBlocker Blocker = (NavigationBlocker)7313;   // a value of our own: no other hold of the mod's uses it (TextBoxChecks)
+        // Outside the game's own blockers, and used by no other hold of the mod's (TextBoxChecks).
+        private const NavigationBlocker Blocker = (NavigationBlocker)7313;
 
         private static bool _blocked;
 
@@ -59,7 +40,7 @@ namespace RealLifeOverhaul.Permadeath
 
         public static string CharacterId => SaveGameManager.Current != null ? SaveGameManager.Current.characterId ?? string.Empty : string.Empty;
 
-        /// <summary>The moment as the rules need it. <paramref name="dying"/>: a death is already under way.</summary>
+        /// <summary>The moment as the rules need it; <paramref name="dying"/> if a death is already under way.</summary>
         public static Moment Now(bool dying)
         {
             return new Moment
@@ -105,7 +86,7 @@ namespace RealLifeOverhaul.Permadeath
                     {
                         if (quest.entries[i] != null && !save.CompletedQuestEntries.Contains(quest.entries[i].Id))
                         {
-                            return true;   // an objective of the quest that is on is not done yet: the tutorial runs
+                            return true;   // an objective of the quest that is on is not done: the tutorial runs
                         }
                     }
                 }
@@ -120,16 +101,16 @@ namespace RealLifeOverhaul.Permadeath
         /// <summary>The game's hunger bar, 0 to 100; 100 when no save is loaded.</summary>
         public static float Hunger => SaveGameManager.Current != null ? SaveGameManager.Current.Hunger : 100f;
 
-        /// <summary>True when the game's energy is switched off in this save (its hunger never falls then).</summary>
+        /// <summary>True when the game's energy is off in this save, so hunger never falls.</summary>
         public static bool NoEnergy => SaveGameManager.Current == null || SaveGameManager.Current.gameVariables == null || SaveGameManager.Current.gameVariables.disableEnergy;
 
-        /// <summary>True in a moment the game can take a death in: nothing is demanding the player (Life/LifeEvents), and not in a hospital or clinic.</summary>
+        /// <summary>True in a moment the game can take a death in: nothing demands the player, and not in a hospital or clinic.</summary>
         public static bool SafeToDie()
         {
             return LifeEvents.IsSafeForEvent() && !InHospital();
         }
 
-        /// <summary>True in a hospital or a clinic, as the game's own building says.</summary>
+        /// <summary>True in a hospital or a clinic, by the building's special service.</summary>
         public static bool InHospital()
         {
             if (!BuildingManager.IsInsideBuilding)
@@ -141,15 +122,12 @@ namespace RealLifeOverhaul.Permadeath
             return service == "ba:businesstype_hospital" || service == "ba:businesstype_clinic";
         }
 
-        // ---------------------------------------------------------------- weak with hunger
-
         private const string StarveDrainId = "rlo-pd-starve";
         private static float _starveDrain;
 
         /// <summary>
-        /// What going without food does at the warnings shown (0 to 3): from the first a low mood (the mod's own modifier,
-        /// kept on while it lasts), from the second energy that drains faster (the game's own energy spenders). 0 takes both
-        /// off. Called on the hour and when it ends; cheap when nothing changes.
+        /// What going without food does after <paramref name="told"/> warnings: from the first a low mood, from the second
+        /// a faster energy drain (a game energy spender); 0 takes both off. Cheap when nothing changes.
         /// </summary>
         public static void Weak(int told)
         {
@@ -178,7 +156,7 @@ namespace RealLifeOverhaul.Permadeath
             }
         }
 
-        // The modifier kept on while its cause lasts and taken off when it goes (as Home's needs keep theirs).
+        // The modifier kept on while its cause lasts and taken off when it goes, as Home's needs keep theirs.
         private static void HoldStarving(bool on)
         {
             List<HappinessModifierData> list = SaveGameManager.Current.happinessModifiers;
@@ -208,7 +186,7 @@ namespace RealLifeOverhaul.Permadeath
             }
         }
 
-        /// <summary>A load or the feature going: the drain is taken off, whatever this side remembers of it (the game's list of spenders outlives a save).</summary>
+        /// <summary>A load or the feature going: the drain is taken off whatever is remembered, as the game's spenders outlive a save.</summary>
         public static void ClearWeak()
         {
             try
@@ -237,9 +215,7 @@ namespace RealLifeOverhaul.Permadeath
         /// <summary>A game begun today: what a switch moved in the main menu applies to.</summary>
         public static bool NewGame => Day <= 1;
 
-        // ---------------------------------------------------------------- the story, as far as the game knows it
-
-        /// <summary>The game's own part of a life: the name, the age, the day, the estate, the staff, the properties, the businesses at most at once.</summary>
+        /// <summary>The game's own part of a life: name, age, day, worth (as the Persona app shows it), staff, properties, most businesses at once.</summary>
         public static void Fill(LifeStory s)
         {
             GameInstance save = SaveGameManager.Current;
@@ -276,7 +252,7 @@ namespace RealLifeOverhaul.Permadeath
             s.Founded = Mathf.Max(s.Founded, most);
         }
 
-        /// <summary>The street the player is in, as the game writes it: the nearest building's. A walk over the city's buildings, once, at a death.</summary>
+        /// <summary>The street the player is in: the nearest building's. One walk over the city's buildings, at a death.</summary>
         public static string Street()
         {
             try
@@ -310,11 +286,9 @@ namespace RealLifeOverhaul.Permadeath
             }
         }
 
-        // ---------------------------------------------------------------- the moment of death
-
         /// <summary>
-        /// The world stops for the player: the game's own "the player is dead" (its ticks, keys, autosave and the hospital
-        /// stop with it) and walking blocked. <paramref name="dead"/> false is the rehearsal's hold: walking only.
+        /// The world stops for the player: the game's own death and walking blocked. <paramref name="dead"/> false is the
+        /// rehearsal's hold, walking only.
         /// </summary>
         public static void Hold(bool on, bool dead)
         {
@@ -389,7 +363,7 @@ namespace RealLifeOverhaul.Permadeath
 
         public static bool Saving => SaveGameManager.SavingGameInProgress;
 
-        /// <summary>Out of a vehicle, behind the black screen, so that the paper is read on foot: the car stopped first, as the hospital trip does it.</summary>
+        /// <summary>Out of a vehicle behind the black screen, so the paper is read on foot: stopped first, as the hospital trip does.</summary>
         public static IEnumerator OutOfVehicle()
         {
             GameManager gm = InstanceBehavior<GameManager>.Instance;
@@ -417,7 +391,7 @@ namespace RealLifeOverhaul.Permadeath
             }
         }
 
-        /// <summary>Back to the main menu, as the game's own funeral screen goes: the save's files are left as they are.</summary>
+        /// <summary>Back to the main menu, as the game's funeral screen goes; the save's files are left as they are.</summary>
         public static void MainMenu()
         {
             GameManager gm = InstanceBehavior<GameManager>.Instance;
@@ -427,7 +401,7 @@ namespace RealLifeOverhaul.Permadeath
             }
         }
 
-        /// <summary>The cancel key (Esc by default): the game no longer reads its keys while the player is dead, so the obituary does. Once a frame while it is up.</summary>
+        /// <summary>The cancel key: the game reads no keys while the player is dead, so the obituary does, once a frame while it is up.</summary>
         public static bool CancelPressed()
         {
             try
@@ -440,7 +414,7 @@ namespace RealLifeOverhaul.Permadeath
             }
         }
 
-        /// <summary>True while the game's full menu is open (the obituary is read in it).</summary>
+        /// <summary>True while the game's full menu, which holds the obituary, is open.</summary>
         public static bool MenuOpen => UI.Smartphone.FullMenu.IsOpen;
 
         /// <summary>The full menu put down, as its own close button does.</summary>
@@ -460,16 +434,13 @@ namespace RealLifeOverhaul.Permadeath
             }
         }
 
-        // ---------------------------------------------------------------- the memorial
-
         /// <summary>
-        /// The characters who have died with Permadeath on this machine, kept in the game's preferences (not in any save),
-        /// with the record of each: an older save of a character who has since died, from a time it was on, is read as
-        /// ended too (Permadeath/PermadeathRules.Ended), and prints the same page. Written once, at a death.
+        /// The characters who have died with Permadeath on this machine, with their records, in the game's preferences
+        /// rather than any save: an older save of one is read as ended too. Written once, at a death.
         /// </summary>
         public static class Memorial
         {
-            private const string ListKey = "reallife.permadeath.dead";       // (not a locale key: a dot, not an underscore)
+            private const string ListKey = "reallife.permadeath.dead";       // not a locale key: a dot, not an underscore
             private const string RecordPrefix = "reallife.permadeath.life.";
 
             public static void Keep(string characterId, LifeStory story)
@@ -481,10 +452,9 @@ namespace RealLifeOverhaul.Permadeath
                 try
                 {
                     string list = UnityEngine.PlayerPrefs.GetString(ListKey, string.Empty);
-                    if (!Has(list, characterId))
+                    if (!PermadeathRules.MemorialHas(list, characterId))
                     {
-                        list = list.Length > 0 ? list + "," + characterId.Replace(",", " ") : characterId.Replace(",", " ");
-                        UnityEngine.PlayerPrefs.SetString(ListKey, list);
+                        UnityEngine.PlayerPrefs.SetString(ListKey, PermadeathRules.MemorialAdd(list, characterId));
                     }
                     UnityEngine.PlayerPrefs.SetString(RecordPrefix + characterId, story.Write());
                     UnityEngine.PlayerPrefs.Save();
@@ -504,7 +474,7 @@ namespace RealLifeOverhaul.Permadeath
                 }
                 try
                 {
-                    if (!Has(UnityEngine.PlayerPrefs.GetString(ListKey, string.Empty), characterId))
+                    if (!PermadeathRules.MemorialHas(UnityEngine.PlayerPrefs.GetString(ListKey, string.Empty), characterId))
                     {
                         return false;
                     }
@@ -515,23 +485,6 @@ namespace RealLifeOverhaul.Permadeath
                 {
                     return false;
                 }
-            }
-
-            private static bool Has(string list, string id)
-            {
-                if (string.IsNullOrEmpty(list))
-                {
-                    return false;
-                }
-                string[] ids = list.Split(',');
-                for (int i = 0; i < ids.Length; i++)
-                {
-                    if (ids[i] == id)
-                    {
-                        return true;
-                    }
-                }
-                return false;
             }
         }
     }

@@ -10,31 +10,22 @@ using NwhVehicle = NWH.VehiclePhysics2.VehicleController;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// One of the player's cars wearing its build: paint and finish, lamp tint, underglow, the fitted
-    /// parts, and the parts that change how it stops, grips and rides. Sits on the car's own object, so it
-    /// goes when the car does. Everything is done once when the build changes (never per frame), through
-    /// the renderers' property blocks the game itself paints cars with, and everything it touches is
-    /// recorded first: <see cref="Clear"/> leaves the car exactly as the game made it.
-    ///
-    /// How the game paints a car: every car is one body mesh on one material of the shader
-    /// "Shader Graphs/SH_Vehicle" (paint, glass, lamps and trim share one texture; a mask in it says where
-    /// the paint is). <c>CarFeatures.SetColor</c> writes three properties into a MaterialPropertyBlock on
-    /// each of <c>CarFeatures.bodyMeshes</c>: Tint, FresnelColor (the colour the paint turns at a glancing
-    /// angle) and FresnelPower. The shader has no metallic or clear-coat property; what it does have is
-    /// SmoothnessBoost, which with the two fresnel values is what a finish is made of here.
+    /// One of the player's cars wearing its build, on the car's own object. Nothing per frame: all is done once as the
+    /// build changes, through the property blocks the game paints cars with, everything touched recorded first so that
+    /// <see cref="Clear"/> leaves the car as the game made it.
     /// </summary>
-    public sealed class GarageCar : MonoBehaviour
+    public sealed partial class GarageCar : MonoBehaviour
     {
-        // The vehicle shader's own property names (a shader graph keeps the generated ones).
+        // The vehicle shader's generated property names.
         private static readonly int TintId = Shader.PropertyToID("Color_3d0f0cdbe6b74be28a1a5be5bab71dea");
         private static readonly int FresnelColourId = Shader.PropertyToID("Color_f78fac473bac467092fb27521e9f71ea");
         private static readonly int FresnelPowerId = Shader.PropertyToID("Vector1_481fa2a8a5e94165a039319bfd512b76");
         private static readonly int GlossId = Shader.PropertyToID("Vector1_41991b689ccf4932ad504975ac34399a");
         private static readonly int LampColourId = Shader.PropertyToID("_EmissionColor");
 
-        private const float WheelPropRadius = 0.34f;   // the size the wheel props are modelled at
-        private const float WheelPropWidth = 0.22f;
-        private const float GlowLumens = 900f;
+        private const float WheelPropRadius = 0.34f;   // metres: the size the wheel props are modelled at
+        private const float WheelPropWidth = 0.22f;    // metres
+        private const float GlowLumens = 900f;         // lumen
 
         public static IModLogger Logger;
 
@@ -80,7 +71,7 @@ namespace RealLifeOverhaul
         private float _pitch, _volume;
         private float[] _antiRoll;
         private readonly List<WheelStock> _wheels = new List<WheelStock>(6);
-        private bool _lifted;                  // the handling parts are off for a moment (LiftHandling), to go back on with LayHandling
+        private bool _lifted;                  // the handling parts are off for a moment, between LiftHandling and LayHandling
         private GarageModifiers _liftedParts;
         private bool _liftedWet;
 
@@ -178,306 +169,9 @@ namespace RealLifeOverhaul
 
         private void OnDestroy()
         {
-            // The car is going: its renderers, lights and physics go with it. Only what could outlive it matters,
-            // and nothing here does (the pieces are its children, the meshes and materials are shared).
+            // Nothing outlives the car: the pieces are its children, the meshes and materials shared.
             _parts = null;
         }
-
-        // ---------------------------------------------------------------- paint
-
-        private void Paint(int colour, PaintFinish finish)
-        {
-            Renderer[] bodies = _features != null ? _features.bodyMeshes : null;
-            if (bodies == null || bodies.Length == 0)
-            {
-                return;
-            }
-            if (colour < 0 && finish == PaintFinish.Gloss)
-            {
-                Unpaint(bodies);
-                return;
-            }
-            if (_block == null)
-            {
-                _block = new MaterialPropertyBlock();
-            }
-            for (int i = 0; i < bodies.Length; i++)
-            {
-                Renderer body = bodies[i];
-                Material material = body != null ? body.sharedMaterial : null;
-                if (material == null || !material.HasProperty(TintId))
-                {
-                    continue;   // not the vehicle shader (a car from another mod): left alone
-                }
-                Color tint = colour >= 0 ? FromRgb(colour) : StockTint(material);
-                float gloss = material.HasProperty(GlossId) ? material.GetFloat(GlossId) : 1f;
-                Color edge;
-                float power;
-                switch (finish)
-                {
-                    case PaintFinish.Satin:
-                        edge = Color.Lerp(tint, Color.white, 0.15f);
-                        power = 1.5f;
-                        gloss *= 0.72f;
-                        break;
-                    case PaintFinish.Matte:
-                        edge = tint;
-                        power = 1f;
-                        gloss *= 0.45f;
-                        break;
-                    case PaintFinish.Metallic:
-                        edge = Color.Lerp(tint, Color.white, 0.6f);
-                        power = 2.2f;
-                        gloss *= 1.15f;
-                        break;
-                    case PaintFinish.Pearl:
-                        Color.RGBToHSV(tint, out float h, out float s, out float v);
-                        edge = Color.HSVToRGB(Mathf.Repeat(h + 0.11f, 1f), Mathf.Clamp01(s * 0.8f + 0.15f), Mathf.Clamp01(v * 0.7f + 0.3f));
-                        power = 0.7f;
-                        gloss *= 1.1f;
-                        break;
-                    default:
-                        edge = Color.Lerp(tint, Color.white, 0.35f);
-                        power = 1f;
-                        break;
-                }
-                body.GetPropertyBlock(_block);
-                _block.SetColor(TintId, tint);
-                _block.SetColor(FresnelColourId, edge);
-                _block.SetFloat(FresnelPowerId, power);
-                if (material.HasProperty(GlossId))
-                {
-                    _block.SetFloat(GlossId, gloss);
-                }
-                body.SetPropertyBlock(_block);
-            }
-            _painted = true;
-        }
-
-        // The colour the car was bought in, the way the game put it on.
-        private void Unpaint(Renderer[] bodies)
-        {
-            if (!_painted)
-            {
-                return;
-            }
-            _painted = false;
-            if (_block == null)
-            {
-                _block = new MaterialPropertyBlock();
-            }
-            Data.VehicleColors.VehicleColor stock = _features.VehicleColor;
-            for (int i = 0; i < bodies.Length; i++)
-            {
-                Renderer body = bodies[i];
-                Material material = body != null ? body.sharedMaterial : null;
-                if (material == null || !material.HasProperty(TintId))
-                {
-                    continue;
-                }
-                body.GetPropertyBlock(_block);
-                if (stock != null)
-                {
-                    _block.SetColor(TintId, stock.tint);
-                    _block.SetColor(FresnelColourId, stock.fresnelColor);
-                    _block.SetFloat(FresnelPowerId, stock.fresnelPower);
-                }
-                else
-                {
-                    _block.SetColor(TintId, material.GetColor(TintId));
-                    _block.SetColor(FresnelColourId, material.GetColor(FresnelColourId));
-                    _block.SetFloat(FresnelPowerId, material.GetFloat(FresnelPowerId));
-                }
-                if (material.HasProperty(GlossId))
-                {
-                    _block.SetFloat(GlossId, material.GetFloat(GlossId));
-                }
-                body.SetPropertyBlock(_block);
-            }
-        }
-
-        private Color StockTint(Material material)
-        {
-            Data.VehicleColors.VehicleColor stock = _features.VehicleColor;
-            Color tint = stock != null ? (Color)stock.tint : material.GetColor(TintId);
-            tint.a = 1f;
-            return tint;
-        }
-
-        /// <summary>The colour this car was bought in, for the shop's swatch. Grey if it cannot be told.</summary>
-        public Color StockColour()
-        {
-            Renderer[] bodies = _features != null ? _features.bodyMeshes : null;
-            Material material = bodies != null && bodies.Length > 0 && bodies[0] != null ? bodies[0].sharedMaterial : null;
-            return material != null && material.HasProperty(TintId) ? StockTint(material) : Color.grey;
-        }
-
-        /// <summary>False for a vehicle the game's paint does not reach (no body renderers on the vehicle shader).</summary>
-        public bool Paintable
-        {
-            get
-            {
-                Renderer[] bodies = _features != null ? _features.bodyMeshes : null;
-                Material material = bodies != null && bodies.Length > 0 && bodies[0] != null ? bodies[0].sharedMaterial : null;
-                return material != null && material.HasProperty(TintId);
-            }
-        }
-
-        public static Color FromRgb(int colour)
-        {
-            return new Color(((colour >> 16) & 0xFF) / 255f, ((colour >> 8) & 0xFF) / 255f, (colour & 0xFF) / 255f, 1f);
-        }
-
-        public static int ToRgb(Color colour)
-        {
-            Color32 c = colour;
-            return c.r << 16 | c.g << 8 | c.b;
-        }
-
-        // ---------------------------------------------------------------- lamps
-
-        private void Lamps(LampTint tint)
-        {
-            Renderer[] bodies = _features != null ? _features.bodyMeshes : null;
-            if (tint == LampTint.Stock)
-            {
-                Unlamp(bodies);
-                return;
-            }
-            Color colour = tint == LampTint.Warm ? new Color(1f, 0.82f, 0.58f)
-                : tint == LampTint.Ice ? new Color(0.72f, 0.86f, 1f)
-                : new Color(1f, 0.85f, 0.25f);
-            if (_lamps == null)
-            {
-                // The car's own headlamp lights, found once. Ours (the underglow) is never one of them.
-                LightScratch.Clear();
-                _vehicle.GetComponentsInChildren(true, LightScratch);
-                if (_glow != null)
-                {
-                    LightScratch.Remove(_glow);
-                }
-                _lamps = LightScratch.ToArray();
-                _lampColours = new Color[_lamps.Length];
-                for (int i = 0; i < _lamps.Length; i++)
-                {
-                    _lampColours[i] = _lamps[i].color;
-                }
-                LightScratch.Clear();
-            }
-            for (int i = 0; i < _lamps.Length; i++)
-            {
-                if (_lamps[i] != null)
-                {
-                    _lamps[i].color = _lampColours[i] * colour;
-                }
-            }
-            if (bodies != null)
-            {
-                if (_block == null)
-                {
-                    _block = new MaterialPropertyBlock();
-                }
-                for (int i = 0; i < bodies.Length; i++)
-                {
-                    Material material = bodies[i] != null ? bodies[i].sharedMaterial : null;
-                    if (material == null || !material.HasProperty(TintId) || !material.HasProperty(LampColourId))
-                    {
-                        continue;
-                    }
-                    bodies[i].GetPropertyBlock(_block);
-                    _block.SetColor(LampColourId, material.GetColor(LampColourId) * colour);
-                    bodies[i].SetPropertyBlock(_block);
-                }
-            }
-            _lampsTinted = true;
-        }
-
-        private void Unlamp(Renderer[] bodies)
-        {
-            if (!_lampsTinted)
-            {
-                return;
-            }
-            _lampsTinted = false;
-            if (_lamps != null)
-            {
-                for (int i = 0; i < _lamps.Length; i++)
-                {
-                    if (_lamps[i] != null)
-                    {
-                        _lamps[i].color = _lampColours[i];
-                    }
-                }
-            }
-            if (bodies == null)
-            {
-                return;
-            }
-            if (_block == null)
-            {
-                _block = new MaterialPropertyBlock();
-            }
-            for (int i = 0; i < bodies.Length; i++)
-            {
-                Material material = bodies[i] != null ? bodies[i].sharedMaterial : null;
-                if (material == null || !material.HasProperty(TintId) || !material.HasProperty(LampColourId))
-                {
-                    continue;
-                }
-                bodies[i].GetPropertyBlock(_block);
-                _block.SetColor(LampColourId, material.GetColor(LampColourId));
-                bodies[i].SetPropertyBlock(_block);
-            }
-        }
-
-        // ---------------------------------------------------------------- underglow
-
-        private void Glow(int colour)
-        {
-            if (colour < 0)
-            {
-                if (_glow != null)
-                {
-                    Destroy(_glow.gameObject);
-                    _glow = null;
-                    _glowData = null;
-                }
-                return;
-            }
-            if (_glow == null)
-            {
-                float reach = 3.5f;
-                if (GarageFit.TryGet(TypeName, out CarFit fit))
-                {
-                    reach = Mathf.Max(3.5f, (fit.Front - fit.Rear) * 0.5f + 1.2f);
-                }
-                var go = new GameObject("RealLifeOverhaul Underglow");
-                go.transform.SetParent(_vehicle.transform, false);
-                go.transform.localPosition = new Vector3(0f, 0.14f, 0f);
-                _glow = go.AddComponent<Light>();
-                _glow.type = LightType.Point;
-                _glow.range = reach;
-                _glow.shadows = LightShadows.None;
-                _glowData = go.AddComponent<HDAdditionalLightData>();
-                _glowData.SetIntensity(GlowLumens, LightUnit.Lumen);
-                _glowData.range = reach;
-                go.SetActive(false);   // the director lights it after dark
-            }
-            _glow.color = FromRgb(colour);
-        }
-
-        /// <summary>Night, the option and the shop decide; called from the director's slow tick, and only does anything on a change.</summary>
-        public void LightGlow(bool on)
-        {
-            if (_glow != null && _glow.gameObject.activeSelf != on)
-            {
-                _glow.gameObject.SetActive(on);
-            }
-        }
-
-        public bool HasGlow => _glow != null;
-
-        // ---------------------------------------------------------------- fitted parts
 
         private string TypeName => _vehicle.vehicleType != null ? _vehicle.vehicleType.vehicleTypeName : null;
 
@@ -509,7 +203,7 @@ namespace RealLifeOverhaul
                 if (!Modelled("car_spoiler", root, new Vector3(0f, fit.DeckPostHeight, z), new Vector3(half / 0.70f, 1f, 1f)))
                 {
                     float post = fit.DeckHalfWidth * 0.55f;
-                    float foot = fit.DeckPostHeight - 0.015f;   // sunk a little into the deck, so no gap shows under a foot
+                    float foot = fit.DeckPostHeight - 0.015f;   // sunk a little into the deck: no gap under a foot
                     Shapes.Piece("Wing", root, Shapes.Cube, black, new Vector3(0f, wing, z), new Vector3(half * 2f, 0.025f, 0.24f));
                     Shapes.Piece("Post L", root, Shapes.Cube, black, new Vector3(-post, (wing + foot) * 0.5f, z), new Vector3(0.03f, wing - foot, 0.10f));
                     Shapes.Piece("Post R", root, Shapes.Cube, black, new Vector3(post, (wing + foot) * 0.5f, z), new Vector3(0.03f, wing - foot, 0.10f));
@@ -557,7 +251,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // A modelled part from the prop bundle, when it has one (see the wish-list in docs/features/garage.md).
         private static bool Modelled(string id, Transform root, Vector3 at, Vector3 scale)
         {
             if (!PropLibrary.TryGet(id, out Mesh mesh, out Material material) || mesh == null || material == null)
@@ -574,8 +267,6 @@ namespace RealLifeOverhaul
             Transform tube = Shapes.Piece(name, root, Shapes.Drum, paint, from, new Vector3(thickness, length, thickness));
             tube.localRotation = along;
         }
-
-        // ---------------------------------------------------------------- wheels
 
         private void Wheels(string id)
         {
@@ -594,7 +285,7 @@ namespace RealLifeOverhaul
             _wheelsShown = id ?? string.Empty;
             if (_wheelsShown.Length == 0 || !PropLibrary.TryGet(_wheelsShown, out Mesh mesh, out Material material) || mesh == null || material == null)
             {
-                return;   // no such wheel in the bundle (yet): the car keeps its own, and nothing stands in for a wheel
+                return;   // not in the bundle: the car keeps its own
             }
             NwhVehicle nwh = Nwh();
             if (nwh == null || nwh.powertrain == null || nwh.powertrain.wheels == null)
@@ -610,7 +301,7 @@ namespace RealLifeOverhaul
                 {
                     continue;
                 }
-                // Sized to the wheel the car has: its radius from the physics, its width from its own mesh.
+                // Sized to the car's wheel: the radius from the physics, the width from its mesh.
                 float width = own is MeshRenderer && visual.TryGetComponent(out MeshFilter filter) && filter.sharedMesh != null
                     ? filter.sharedMesh.bounds.size.x * Mathf.Abs(visual.transform.lossyScale.x)
                     : wheel.Width;
@@ -648,8 +339,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- handling: brakes, tyres, springs, weight, the engine's note
-
         private NwhVehicle Nwh()
         {
             if (_nwh == null)
@@ -683,7 +372,7 @@ namespace RealLifeOverhaul
             float grip = wet ? m.WetGrip : m.Grip;
             float stiffness = m.Stiffness > 0.1f ? m.Stiffness : 1f;
             float weight = m.Mass > 0.1f ? m.Mass : 1f;
-            float damping = Mathf.Sqrt(stiffness * weight);   // dampers matched to the springs and the weight: the car keeps its damping ratio
+            float damping = Mathf.Sqrt(stiffness * weight);   // the car keeps its damping ratio
             foreach (WheelComponent component in nwh.powertrain.wheels)
             {
                 WheelUAPI wheel = component != null ? component.wheelUAPI : null;
@@ -701,11 +390,8 @@ namespace RealLifeOverhaul
                 wheel.LateralFrictionGrip *= grip;
                 if (wheel.SpringMaxLength > 0.05f && wheel.SpringMaxForce > 1f)
                 {
-                    // Stiffer by the part and standing as much higher or lower at rest as it says, on whatever spring the car
-                    // has (the game's own or the driven car's handling) and on that spring's own curve; a lighter car's springs
-                    // carry it at the same height and frequency; never lowered into the travel a kerb needs: the rule NavCheck
-                    // runs with every build on every car (Driving/HandlingModel.FitSpring). The roll centre moves with the body.
-                    float load = WheelLoad(nwh, wheel, body);   // before the weight part, which the fit carries
+                    // On the car's own spring and curve, never into the travel a kerb needs; the roll centre moves with it.
+                    float load = WheelLoad(nwh, wheel, body);   // before the weight part, which the fit takes in
                     HandlingModel.FitSpring(CurveOf(wheel), wheel.SpringMaxForce, wheel.SpringMaxLength, load, weight, stiffness, m.Ride, GarageCatalogue.MaxLower,
                         GarageCatalogue.MaxRaise, out float force, out float length, out float change);
                     float rollCentre = wheel.ForceApplicationPointDistance * wheel.SpringMaxLength + change;
@@ -808,10 +494,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// For Driving (the driven car's handling, through Wiring.DrivingLinks): the parts' handling taken off this car for a
-        /// moment, so that what lies under them can change. True if it had any on; <see cref="LayHandling"/> puts them back.
-        /// </summary>
+        /// <summary>For the driven car's handling: the parts' handling off for a moment. True if any was on.</summary>
         public bool LiftHandling()
         {
             if (!_handling)
@@ -836,8 +519,7 @@ namespace RealLifeOverhaul
             Handling(_liftedParts, _liftedWet);
         }
 
-        // The load on one wheel at rest: the car's weight shared between its axles by where the centre of mass stands, and
-        // evenly between the wheels of an axle. A car whose wheels do not stand both sides of it shares it evenly.
+        // The load on a wheel at rest, shared between the axles by the centre of mass (evenly if all stand one side).
         private static float WheelLoad(NwhVehicle nwh, WheelUAPI wheel, Rigidbody body)
         {
             List<WheelComponent> wheels = nwh.powertrain.wheels;

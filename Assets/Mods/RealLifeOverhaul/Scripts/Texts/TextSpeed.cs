@@ -10,10 +10,10 @@ namespace RealLifeOverhaul.Texts
         public string For;                   // pack name and version, device and threads: a change asks for a new test
         public double PromptMsPerToken;      // reading the card, a token
         public double TokensPerSecond;       // writing the reply
-        public double HeadMs;                // reading the fixed head once (what the prompt cache saves on every request)
+        public double HeadMs;                // reading the fixed head once: what the prompt cache saves on every request
         public bool Capped;                  // the test ran past its time cap: the machine is slow
 
-        /// <summary>Seconds an ordinary reply is expected to take (a card of <see cref="TextSpeed.CardTokens"/> tokens after the cached head, a reply of <see cref="TextSpeed.ReplyTokens"/>).</summary>
+        /// <summary>Seconds an ordinary reply is expected to take.</summary>
         public double Estimate => TextSpeed.Estimate(PromptMsPerToken, TokensPerSecond);
 
         public string Line()
@@ -35,22 +35,7 @@ namespace RealLifeOverhaul.Texts
         }
     }
 
-    /// <summary>
-    /// How fast this machine is, and what follows from it (so that weaker processors are served too):
-    ///
-    ///   threads    2 on four cores or fewer, 3 on six, 4 on eight or more (real cores: logical ones halved where a core
-    ///              runs two); the option overrides it; never so many that the game keeps fewer than <see cref="GameKeeps"/>.
-    ///              On a GPU at most <see cref="GpuThreads"/>: the model's work is the GPU's, the processor only hands it over
-    ///              and picks each word (measured on an RTX 5070 Ti beside sixteen busy threads: 1, 2 and 4 threads alike)
-    ///   too slow   a reply estimated at more than <see cref="FullSlow"/> s on the full pack: a notice, once, suggesting
-    ///              the Lite pack. Any pack past <see cref="AheadSlow"/> s writes only what is asked well ahead
-    ///              (<see cref="AheadSeconds"/> or more), never a spoken line or what the player is waiting for
-    ///   Large      RLO Texts Large runs only on a graphics card with the memory for it (<see cref="LargeFits"/>), and only
-    ///              while its speed test says it keeps up there (<see cref="LargeTooSlow"/>: the next pack otherwise); it
-    ///              is offered, once, where the full pack is fast on such a card (<see cref="OfferLarge"/>)
-    ///
-    /// Game-free (EconomyCheck, TextsChecks.cs). COST: arithmetic.
-    /// </summary>
+    /// <summary>How fast this machine is, and what follows: the threads, the Lite pack suggested, RLO Texts Large run or offered. Game-free.</summary>
     public static class TextSpeed
     {
         public const int GameKeeps = 2;          // real cores always left to the game
@@ -60,26 +45,23 @@ namespace RealLifeOverhaul.Texts
         public const int CardTokens = 90;        // tokens of an ordinary card after the cached head
         public const int ReplyTokens = 25;       // tokens of an ordinary reply
         public const double TestSeconds = 3.0;   // the speed test's time cap
-        public const int GpuThreads = 2;         // threads at most on a GPU: more only wait for it
+        public const int GpuThreads = 2;         // threads at most on a GPU: the processor only hands the work over, and 1, 2 and 4 ran alike
 
-        /// <summary>Threads to run on: the option (2 to 4) or, with the option at 0, by the real cores; capped to leave the game its cores; at least one.</summary>
+        /// <summary>Threads to run on: the option (2 to 4), or by the real cores with it at 0; the game keeps its cores; at least one.</summary>
         public static int Threads(int realCores, int option)
         {
             int wanted = option >= 2 ? Math.Min(option, 4) : realCores >= 8 ? 4 : realCores >= 6 ? 3 : 2;
             return Math.Max(1, Math.Min(wanted, realCores - GameKeeps));
         }
 
-        /// <summary>Threads to run on for a device: as <see cref="Threads"/> on the processor, at most <see cref="GpuThreads"/> on a GPU.</summary>
+        /// <summary>Threads to run on for a device: as <see cref="Threads(int, int)"/> on the processor, at most <see cref="GpuThreads"/> on a GPU.</summary>
         public static int Threads(int realCores, int option, bool gpu)
         {
             int threads = Threads(realCores, option);
             return gpu ? Math.Min(threads, GpuThreads) : threads;
         }
 
-        /// <summary>
-        /// What a speed measured is for: the pack, the device and the threads, and on a GPU its priority (normal since the
-        /// speed fix: a speed measured below normal priority, while the game starved the server, is never used again).
-        /// </summary>
+        /// <summary>What a speed measured is for; on a GPU "normal", so a speed measured below normal priority is never used.</summary>
         public static string For(string pack, string device, int threads)
         {
             return pack + ";" + (device ?? "cpu") + ";" + threads + (device != null ? ";normal" : string.Empty);
@@ -91,7 +73,7 @@ namespace RealLifeOverhaul.Texts
             return Math.Max(1, twoPerCore ? logical / 2 : logical);
         }
 
-        /// <summary>Seconds an ordinary reply takes at these speeds.</summary>
+        /// <summary>Seconds an ordinary reply takes at these speeds: a card of <see cref="CardTokens"/> and a reply of <see cref="ReplyTokens"/>.</summary>
         public static double Estimate(double promptMsPerToken, double tokensPerSecond)
         {
             if (double.IsNaN(promptMsPerToken) || double.IsNaN(tokensPerSecond) || tokensPerSecond <= 0.0)
@@ -101,10 +83,9 @@ namespace RealLifeOverhaul.Texts
             return CardTokens * promptMsPerToken / 1000.0 + ReplyTokens / tokensPerSecond;
         }
 
-        /// <summary>True when the Lite pack should be suggested: Medium or the full pack (tiers 2 and 3) is too slow here (Large, too slow, gives way by itself).</summary>
+        /// <summary>True when the Lite pack should be suggested: Medium or the full pack is too slow here.</summary>
         public static bool SuggestLite(int rank, double estimate) => rank >= 2 && rank <= TextPacks.FullTier && estimate > FullSlow;
 
-        /// <summary>True when only what is asked ahead may be written (spoken lines and what the player waits for take the written line).</summary>
         public static bool AheadOnly(double estimate) => estimate > AheadSlow;
 
         /// <summary>Whether a request may go to the model at this machine's speed.</summary>
@@ -113,38 +94,21 @@ namespace RealLifeOverhaul.Texts
             return !aheadOnly || (priority != TextPriority.Now && !guess && seconds >= AheadSeconds);
         }
 
-        // ---------------------------------------------------------------- RLO Texts Large
-
         public const double LargeSlow = 1.2;       // seconds a reply of RLO Texts Large may take on its graphics card: past this, the next pack runs instead
-        public const double LargeOffer = 0.45;     // ...a reply of the full pack this fast on a graphics card with the memory for Large: Large is offered (once it is published)
-        public const long LargeBytes = 2708804096L;   // bytes of the Large pack's model as the offer reckons it before it is installed: its published file
-                                                      // (Qwen 3.5 4B at Q4_K_M, 2.52 GiB), so the offer asks the free memory Pick asks once it is there
+        public const double LargeOffer = 0.45;     // seconds: a reply of the full pack this fast on a card with the memory for Large offers Large
+        public const long LargeBytes = 2708804096L;   // bytes of the Large pack's published model, so the offer asks the free memory Pick will ask
 
-        /// <summary>True when a graphics card (never graphics built into the processor) has the free memory for a model of this size beside the game.</summary>
+        /// <summary>True when a graphics card, never built into the processor, has the free memory for a model of this size beside the game.</summary>
         public static bool LargeFits(TextDevice card, long modelBytes) => !TextPacks.BuiltIn(card.Label) && TextPacks.Ample(card.FreeMiB, modelBytes);
 
-        /// <summary>True when RLO Texts Large, measured on its graphics card, is too slow there: the next pack is run instead, and Large is not tried on that card again.</summary>
+        /// <summary>True when RLO Texts Large is too slow on its graphics card: the next pack runs instead, and Large is not tried there again.</summary>
         public static bool LargeTooSlow(double estimate) => !(estimate <= LargeSlow);
 
-        /// <summary>
-        /// True when RLO Texts Large should be offered: the full pack (tier 3) runs on a graphics card that has the memory for
-        /// Large and replies fast enough that Large would keep up there, and Large is published (its Workshop id is set).
-        /// </summary>
+        /// <summary>True when RLO Texts Large should be offered: published, and the full pack fast enough on a card with the memory for it.</summary>
         public static bool OfferLarge(int rank, double estimate, bool cardFits, bool published) => published && rank == TextPacks.FullTier && cardFits && estimate <= LargeOffer;
     }
 
-    /// <summary>
-    /// The budget that adapts: the share of requests that missed their deadline over the last <see cref="Window"/> is
-    /// watched; past <see cref="MissUp"/> per cent the budget goes down a step (fewer requests a minute, and the least
-    /// urgent kind left out), and after a window under <see cref="MissDown"/> per cent it comes back up a step.
-    ///
-    ///   step 0   12 a minute, 6 of them the background's, every priority
-    ///   step 1   8 a minute, 3 the background's
-    ///   step 2   5 a minute, no background
-    ///   step 3   3 a minute, only what the player is looking at
-    ///
-    /// Game-free (EconomyCheck, TextsChecks.cs). COST: a few comparisons a request.
-    /// </summary>
+    /// <summary>The budget that adapts: down a step when too many requests miss, back up after a good window. Game-free.</summary>
     public sealed class TextBudget
     {
         public const int Window = 20;            // requests looked back over
@@ -162,13 +126,12 @@ namespace RealLifeOverhaul.Texts
 
         public int Count => _last.Count;
 
-        /// <summary>Per cent of the window that missed.</summary>
         public int MissPercent => _last.Count == 0 ? 0 : _missed * 100 / _last.Count;
 
         /// <summary>Per cent that made it: the status row's hit rate.</summary>
         public int HitPercent => _last.Count == 0 ? 100 : 100 - MissPercent;
 
-        /// <summary>A request ended: in time (words, checked or not) or missed (its deadline, a time-out). True if the step changed.</summary>
+        /// <summary>Counts a request ended in time or missed; true if the step changed.</summary>
         public bool Ended(bool missed)
         {
             _last.Enqueue(missed);
@@ -192,7 +155,6 @@ namespace RealLifeOverhaul.Texts
             return false;
         }
 
-        /// <summary>Applies the step to the queue.</summary>
         public void Apply(TextQueue queue)
         {
             queue.SetBudget(PerMinute[Step], Background[Step]);

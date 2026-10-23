@@ -1,30 +1,11 @@
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// How an employee this mod lets go leaves (Core/StaffLeave does it): once, the game's own way, with one wage and one
-    /// notice.
-    ///
-    /// THE GAME'S OWN WAY. A complaint left unanswered ends in EmployeeInstance.ComplaintResign: no satisfaction left, the
-    /// headhunter's replacement where their plan takes it, otherwise Resign (their shifts let go, their tasks done, the
-    /// hours on their count paid, the business's security looked at again, their name put on the list of the hour's
-    /// notices). Resign leaves them on the save's list of employees: the game calls it inside its employees' hour
-    /// (EmployeeHelper.RunHourly), which takes them off the list right after and then shows the hour's notices. Called from
-    /// anywhere else, as this mod used to, they stay on the list at no satisfaction, and at their next hour the game's own
-    /// check (LowSatisfactionComplaint: under 10) has them resign again: a second message in their chat, a second wage, a
-    /// second notice, and a complaint counted against the week's two. Should a satisfaction update the game still has
-    /// queued for them (EmployeeInstance.UpdateSatisfactionWork) land first and lift them off nothing, they are never taken
-    /// off at all. So the mod takes ComplaintResign's steps and then takes them off the list as that hour does.
-    ///
-    /// THE WAGE. Resign pays the hours on the game's count (workedHoursToday). The game pays every employee's count in its
-    /// new day just before it raises the day event (GameManager.NewDay: PayDailyWages, then onNewDay) and clears it in its
-    /// employees' day just after (EmployeeHelper.RunDaily). The company's and the tech sector's departures are made in that
-    /// day event, where the count still holds the day that has ended, paid already: it is cleared first, as the employees'
-    /// day clears it (Core/DayRollGuard clears it the same way after a night that stopped short). A count of today is
-    /// owed, and paid. Which day a count is of is the game's own lastWorkedDay (EmployeeInstance.AddWorkedDay sets it as it
-    /// counts an hour); without it (a newer game) a count at the first hour of a day is taken for the day before. No part
-    /// of this mod lets anybody go in the hour event that opens a day, which comes before the wages.
-    ///
-    /// Game-free (no Unity or game types): checked offline (EconomyCheck, StaffLeaveChecks.cs). Cost: a few comparisons.
+    /// How an employee the mod lets go leaves: once, the game's own way, with one wage and one notice. Resign leaves them
+    /// on the save's list (the game calls it inside RunHourly, which takes them off right after); called from anywhere
+    /// else they would resign again at their next hour, so they are taken off the list too. The wage: the game pays the
+    /// count (workedHoursToday) just before the day event and clears it just after, so a count of a day already paid
+    /// (by lastWorkedDay, or at hour 0 without it) is cleared first. Game-free; a few comparisons.
     /// </summary>
     public static class StaffLeaveRules
     {
@@ -40,9 +21,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// True when the hours on an employee's count are of a day the game has paid already (the turn of a day, between its
-        /// wages and its employees' day): they are cleared before the resignation, which would pay them again. A count of
-        /// nothing has nothing to pay.
+        /// True when an employee's count is of a day the game has paid already, so it is cleared before the resignation
+        /// would pay it again.
         /// </summary>
         public static bool CountPaid(int counted, int lastWorkedDay, bool dayKnown, int today, int hour)
         {
@@ -81,7 +61,7 @@ namespace RealLifeOverhaul
             return foreign ? Refusal.Foreign : Refusal.None;
         }
 
-        /// <summary>Why an employee was not let go, for Player.log.</summary>
+        /// <summary>Why an employee was not let go, for the log.</summary>
         public static string Words(Refusal why)
         {
             switch (why)

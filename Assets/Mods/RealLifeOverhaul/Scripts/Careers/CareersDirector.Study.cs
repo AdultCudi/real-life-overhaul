@@ -391,8 +391,11 @@ namespace RealLifeOverhaul.Careers
 
         private void InstallCampus()
         {
+            if (!PhoneApp.PhoneUp)
+            {
+                return;   // the game's phone is not built yet: asked again next time, nothing made for it
+            }
             var view = new CampusApp(this);
-            GameSprites.Want(CampusGlyphs);
             bool tryAgain;
             _campusApp = PhoneApp.Install(new PhoneAppDef
             {

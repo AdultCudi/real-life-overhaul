@@ -11,43 +11,22 @@ namespace RealLifeOverhaul.Texts
     }
 
     /// <summary>
-    /// The mod's seven languages as RLO Texts writes them from data v6 (a pack of data 5 or lower writes English only, as
-    /// it was trained): the code a card's lang line carries (the game's own code for the language, the name of the mod's
-    /// Locales file), its script, how long a line of it may be and how many tokens a reply may take.
-    ///
-    ///   language   the game's language when it is one of the seven; a language the mod has texts of its own in that RLO
-    ///              Texts does not write (<see cref="Unwritten"/>: Dutch, Turkish) is kept as itself, which no pack
-    ///              writes, so its written lines are used; any other language reads the mod in English (the game's
-    ///              fallback for a key a language lacks), so its cards are English too (<see cref="Of"/>)
-    ///   length     counted in units: a character is one, a wide one (Chinese, Japanese, Korean, the full-width forms)
-    ///              two, as the eye reads it (<see cref="Units"/>). An intent's most is English's; Portuguese, German,
-    ///              French, Spanish and Russian run about a fifth longer for the same message, and have a fifth more
-    ///              (<see cref="MostUnits"/>); Chinese has the same units, so half the characters
-    ///   tokens     a reply may take, from its most units: about three Latin letters a token in English, fewer in the
-    ///              others, a Chinese character a token, with room to finish its sentence (<see cref="Tokens"/>)
-    ///
-    /// Game-free (EconomyCheck, TextsLanguageChecks.cs). COST: a pass over a line, or a few comparisons.
+    /// The seven languages RLO Texts writes from data v6: a card's lang code, its script, a line's length in units (a wide
+    /// character counts two) and a reply's tokens. Game-free. COST: a pass over a line, or a few comparisons.
     /// </summary>
     public static class TextLanguages
     {
         public const string English = "en";
-        public const int LongerShare = 120;    // per cent of English's most that Portuguese, German, French, Spanish and Russian may have
+        public const int LongerShare = 120;    // per cent of English's most for the languages that run about a fifth longer
         public const int TokenRoom = 16;       // tokens past the most units' own, for the end of a sentence and a name of several tokens
 
         /// <summary>The seven, in the mod's order (RealLifeOverhaul.Build/Shared/ModLanguages).</summary>
         public static readonly string[] All = { "en", "pt", "zh-cn", "de", "fr", "es", "ru" };
 
-        /// <summary>
-        /// The mod's other languages (RealLifeOverhaul.Build/Shared/ModLanguages, since 0.40.0): their texts are the mod's
-        /// own, and no pack writes them, so a game in one of them keeps every written line rather than show a model's
-        /// English. A language joins <see cref="All"/> only with packs trained and passed in it.
-        /// </summary>
+        /// <summary>The mod's other languages, which no pack writes, so a game in one keeps every written line.</summary>
         public static readonly string[] Unwritten = { "nl", "tr" };
 
-        /// <summary>
-        /// The language a card is written in for the game's language: one of <see cref="All"/>; one of <see cref="Unwritten"/>,
-        /// kept as itself (no pack writes it); English for any other or none (the mod reads it in English).
-        /// </summary>
+        /// <summary>The language a card is written in for the game's: a known one as itself, else English, as the mod reads it.</summary>
         public static string Of(string locale)
         {
             if (string.IsNullOrEmpty(locale))
@@ -71,12 +50,8 @@ namespace RealLifeOverhaul.Texts
             return English;
         }
 
-        /// <summary>
-        /// Each of the seven as its native speakers write it, and how they address the player: the teacher's brief of data
-        /// v6 word for word (textmodel data/gen/v6/prompts6.py, LANGUAGE and YOU), so that an AI service writes a language
-        /// as the packs learnt it (Brazilian Portuguese with você, the Spanish of Spain, vous to a stranger). In the
-        /// order of <see cref="All"/>; English's way of address is the system turn's own.
-        /// </summary>
+        // Each of the seven as its natives write it, and how they address the player: the teacher's brief of data v6 word for
+        // word (prompts6.py), so an AI service writes a language as the packs learnt it.
         private static readonly string[] Natives =
         {
             "British English", "Brazilian Portuguese", "Simplified Chinese (Mandarin as spoken in mainland China)", "German", "French (France)", "Spanish (Spain)", "Russian"
@@ -107,7 +82,7 @@ namespace RealLifeOverhaul.Texts
             return at >= 0 ? Address[at] : null;
         }
 
-        /// <summary>True for one of the seven codes, exactly as <see cref="All"/> writes it.</summary>
+        /// <summary>True for one of the seven codes, written exactly as in <see cref="All"/>.</summary>
         public static bool Known(string code)
         {
             return Array.IndexOf(All, code) >= 0;
@@ -123,13 +98,10 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        /// <summary>True where a sentence starts with a capital letter (every language but Chinese).</summary>
+        /// <summary>True where a sentence starts with a capital letter: every language but Chinese.</summary>
         public static bool Cased(string code) => Script(code) != TextScript.Han;
 
-        /// <summary>
-        /// The languages a pack's "languages" line names (codes between commas, in any case, spaces aside), in the mod's
-        /// order; unknown codes are left out. No line, or none known: English alone.
-        /// </summary>
+        /// <summary>The languages a pack's "languages" line names, in the mod's order; English alone with no line or none known.</summary>
         public static string[] Parse(string line)
         {
             if (string.IsNullOrEmpty(line))
@@ -163,7 +135,6 @@ namespace RealLifeOverhaul.Texts
             return codes;
         }
 
-        /// <summary>True when a pack of these languages writes in this one.</summary>
         public static bool Has(string[] codes, string code)
         {
             return codes != null && code != null && Array.IndexOf(codes, code) >= 0;
@@ -177,7 +148,7 @@ namespace RealLifeOverhaul.Texts
                    || (c >= '\uFE30' && c <= '\uFE4F') || (c >= '\uFF00' && c <= '\uFF60') || (c >= '\uFFE0' && c <= '\uFFE6');
         }
 
-        /// <summary>A line's length as it is read: one unit a character, two a wide one (<see cref="Wide"/>); a pair of surrogates two in all.</summary>
+        /// <summary>A line's length as it is read: one unit a character, two a wide one, two for a pair of surrogates.</summary>
         public static int Units(string text)
         {
             if (string.IsNullOrEmpty(text))
@@ -219,7 +190,7 @@ namespace RealLifeOverhaul.Texts
         {
             if (!char.IsLetter(c) || c <= '\u024F' || (c >= '\u1E00' && c <= '\u1EFF'))
             {
-                return true;   // (not a letter, or a Latin one: names are Latin in every language's line)
+                return true;   // not a letter, or a Latin one: names are Latin in every language's line
             }
             switch (script)
             {
@@ -229,7 +200,7 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        /// <summary>True when a line has a letter of the script itself (not Latin): a Russian line has Cyrillic, a Chinese one a Chinese character.</summary>
+        /// <summary>True when a line has a letter of the script itself: a Russian line Cyrillic, a Chinese one a Chinese character.</summary>
         public static bool HasOwnScript(string words, TextScript script)
         {
             if (script == TextScript.Latin || string.IsNullOrEmpty(words))

@@ -4,14 +4,10 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The feature of Meta/FeatureList a class of the mod belongs to, by its name and namespace, for a class that has no
-    /// guard of its own naming one (a component's FrameGuard does, Core/Guard). The running mod asks it for a handler's
-    /// class (Guard.OfHandler) and, as it starts, for each class of the mod that names a piece of the game this game
-    /// lacks (Core/ModScan); ContractCheck asks it the same, so that what it prints is what the running mod does.
-    ///
-    /// Most of the mod's older folders share the root namespace, so their classes are named here one by one where it
-    /// matters (the directors whose feature is not their namespace's); any other class is found through the classes that
-    /// use it (Core/ModScan). Null: the mod's own machinery. No Unity or game types.
+    /// The Meta/FeatureList feature a class of the mod belongs to, by its name and namespace, for a class with no guard
+    /// naming one: asked for a handler's class (Guard.OfHandler) and by Core/ModScan, and by ContractCheck the same way.
+    /// Older folders share the root namespace, so their directors are named one by one; any other class is placed by
+    /// the classes that use it (Core/ModScan). Game-free.
     /// </summary>
     public static class FeatureOwners
     {
@@ -41,7 +37,7 @@ namespace RealLifeOverhaul
             { "RealLifeOverhaul.Events", "events" }, { "RealLifeOverhaul.Permadeath", "permadeath" }, { "RealLifeOverhaul.Planner", "planner" },
             { "RealLifeOverhaul.Districts", "districtview" }, { "RealLifeOverhaul.Careers", "careers_study" }, { "RealLifeOverhaul.Interiors", "interiors" },
             { "RealLifeOverhaul.Rivals", "rivals" }, { "RealLifeOverhaul.Photos", "photos" }, { "RealLifeOverhaul.Walking", "walking" },
-            { "RealLifeOverhaul.Calendar", "calendar" }, { "RealLifeOverhaul.Designs", "designs" },
+            { "RealLifeOverhaul.Calendar", "calendar" }, { "RealLifeOverhaul.Designs", "designs" }, { "RealLifeOverhaul.Meals", "meals" },
         };
 
         // Namespaces that are the mod's own machinery, whatever a class of them is called.
@@ -51,9 +47,8 @@ namespace RealLifeOverhaul
         };
 
         /// <summary>
-        /// The feature of a class of the mod (its simple name and namespace; a nested class is its outermost class's), or
-        /// null when it is not known from these alone. <paramref name="known"/> is true when the answer is final: a
-        /// feature, or the mod's machinery (null); false when the class must be placed by the classes that use it.
+        /// The feature of a class (a nested class's outermost name), or null. <paramref name="known"/> is false when the
+        /// class must be placed by the classes that use it; true for a feature or the mod's machinery (null).
         /// </summary>
         public static string Of(string name, string ns, out bool known)
         {

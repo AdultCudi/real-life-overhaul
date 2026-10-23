@@ -9,12 +9,12 @@ namespace RealLifeOverhaul.Texts
     public enum TextShownWhy
     {
         Model,      // the model's words
-        NoPack,     // no pack installed (or none found yet)
+        NoPack,     // no pack installed, or none found yet
         Off,        // RLO Texts, or this kind of message, switched off
         Loading,    // the model was still starting
         Busy,       // the queue was full, or the game saved while the words were coming
         Slow,       // the words would not have come in time, or did not
-        Refused,    // the words came and the checker refused them (by which rule: TextVerdict)
+        Refused,    // the words came and the checker refused them
         NoCard,     // the pack has no card for it, or a value the card needs was missing
         Language,   // the pack does not write the game's language
         Unwanted,   // asked again, or no longer wanted when the words came
@@ -22,22 +22,17 @@ namespace RealLifeOverhaul.Texts
     }
 
     /// <summary>
-    /// Every line the game had for RLO Texts, counted by pack and intent: the model's words shown against the written lines,
-    /// and why each written line was shown (<see cref="TextShownWhy"/>; a refusal by the checker's rule, TextVerdict). Kept
-    /// for the session (never saved), at most <see cref="RowsMost"/> pairs of pack and intent. Read by the hourly line in
-    /// Player.log while Developer diagnostics are on (<see cref="Line"/>) and by "RLO Texts: what was shown" under Options
-    /// > Tests (<see cref="Totals"/>). Game-free (EconomyCheck, TextsShownChecks.cs).
-    /// COST: two dictionary reads and an increment a line; a line or the readout built when asked.
+    /// Every line the game had for RLO Texts, counted by pack and intent with why each written line was shown; kept for the
+    /// session. Game-free. COST: two dictionary reads and an increment a line.
     /// </summary>
     public sealed class TextShown
     {
-        public const int RowsMost = 800;   // pairs of pack and intent counted at most (about 280 intents of two packs): past it, a new pair is counted under "other"
+        public const int RowsMost = 800;   // pairs of pack and intent counted at most; past it a new pair is counted under "other"
 
         private static readonly int Whys = Enum.GetValues(typeof(TextShownWhy)).Length;
         private static readonly int Verdicts = Enum.GetValues(typeof(TextVerdict)).Length;
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
-        /// <summary>One pack and intent's counts.</summary>
         public sealed class Row
         {
             public string Pack, Intent;
@@ -64,7 +59,7 @@ namespace RealLifeOverhaul.Texts
 
         public IReadOnlyList<Row> Rows => _rows;
 
-        /// <summary>Lines counted since <see cref="Line"/> last took them (the hourly line is written only when there are some).</summary>
+        /// <summary>Lines counted since <see cref="Line"/> last took them; the hourly line is written only when there are some.</summary>
         public int Since => _since;
 
         /// <summary>Counts one line of an intent under a pack: what was shown, and for a refusal by which rule.</summary>
@@ -104,7 +99,6 @@ namespace RealLifeOverhaul.Texts
             return row;
         }
 
-        /// <summary>Every count let go (a new session).</summary>
         public void Clear()
         {
             _byPack.Clear();
@@ -112,7 +106,7 @@ namespace RealLifeOverhaul.Texts
             _since = 0;
         }
 
-        /// <summary>The counts of a pack, by what was shown (index by TextShownWhy), into <paramref name="why"/>, and by rule into <paramref name="rule"/>.</summary>
+        /// <summary>A pack's counts by what was shown into <paramref name="why"/>, and by rule into <paramref name="rule"/>; the lines in all.</summary>
         public int Totals(string pack, int[] why, int[] rule)
         {
             Array.Clear(why, 0, why.Length);
@@ -152,7 +146,6 @@ namespace RealLifeOverhaul.Texts
             return packs;
         }
 
-        /// <summary>A reason's name as the log and the readout write it ("no pack", "slow", "refused").</summary>
         public static string Name(TextShownWhy why)
         {
             switch (why)
@@ -171,11 +164,7 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        /// <summary>
-        /// The counts of every pack as one line for Player.log, and the count since the last line taken: "RLO Texts check
-        /// (what was shown): <pack>: the model 34, written 12 (loading 3; slow 5; refused 2: Long 1, Number 1), by
-        /// intent: street.greet 10/2, ...". Null with nothing counted since the last.
-        /// </summary>
+        /// <summary>The counts of every pack as one line for Player.log; null with nothing counted since the last.</summary>
         public string Line(string when)
         {
             if (_since == 0)
@@ -209,7 +198,7 @@ namespace RealLifeOverhaul.Texts
             return b.Append('.').ToString();
         }
 
-        /// <summary>The written line's reasons, as " (loading 3; slow 5; refused 2: Long 1, Number 1)" with "; " between; nothing with none.</summary>
+        /// <summary>The written line's reasons, as " (loading 3; slow 5; refused 2: Long 1, Number 1)"; nothing with none.</summary>
         public static void Reasons(int[] why, int[] rule, StringBuilder b, string between, string count)
         {
             bool any = false;

@@ -503,7 +503,7 @@ internal static partial class Program
             "photos: the one loader the Gallery uses reads a file of this computer, in the game file alone");
         Check(Regex.Matches(all, @"ScreenCapture\.CaptureScreenshotAsTexture\(\)").Count == 1 && game.Contains("HotSpots.Time(HotRead)") && game.Contains("watch.Elapsed.TotalMilliseconds"),
             "photos: the screen is read in one place, timed under a name of its own and measured");
-        Check(Regex.IsMatch(mode, @"Task\.Run\(\(\) =>\s*\{\s*path = PhotoStore\.NewPath\([^;]*;\s*return PhotosGame\.Develop\(given, path\);") && game.Contains("ImageConversion.EncodeNativeArrayToJPG"),
+        Check(Regex.IsMatch(mode, @"Task\.Run\(\(\) =>\s*\{\s*path = PhotoStore\.NewPath\([^;]*;\s*return path != null \? PhotosGame\.Develop\(given, path\) : null;") && game.Contains("ImageConversion.EncodeNativeArrayToJPG"),
             "photos: the photo is made, encoded and written on a worker");
         Check(!Regex.IsMatch(all, @"\.EncodeToJPG\(|\.EncodeToPNG\(") && Regex.Matches(all, @"File\.ReadAllBytes\(").Count == Regex.Matches(Read(@"Photos\PhotoStore.cs"), @"File\.ReadAllBytes\(").Count
               && Regex.Matches(all, @"\.LoadImage\(").Count == 1, "photos: no photo is encoded on the main thread; a file is read only by the store (a worker's); one decode, the whole photo's on a click");

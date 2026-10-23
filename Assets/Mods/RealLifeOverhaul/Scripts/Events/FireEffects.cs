@@ -7,16 +7,9 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul.Events
 {
     /// <summary>
-    /// The particle effects of a fire: flames, smoke, steam, the water jet, and one flickering
-    /// light. All of them are copies of the game's own smoke effect (the one accidents use: the
-    /// same search, the same material and texture, so they are drawn exactly as the game draws
-    /// smoke), given their motion and colour here. They are made once, the first time there is a
-    /// fire, kept switched off and reused; nothing is created or destroyed per fire.
-    ///
-    /// THE BUDGET (hard caps, set as each system's maxParticles):
-    ///   3 flames x 36 + 2 smoke columns x 96 + steam 48 + water jet 70 = 418 particles at most,
-    ///   seven particle systems, one point light without shadows. Nothing runs per frame here:
-    ///   the light's flicker is a timer of the director's, and only while something burns.
+    /// A fire's particle effects (flames, smoke, steam, the water jet) and one flickering light, copies of the game's own smoke
+    /// effect, made the first time there is a fire and reused. Budget, as each system's maxParticles: 3 flames x 36 + 2 smokes
+    /// x 96 + steam 48 + jet 70 = 418 particles in seven systems, one shadowless point light. Nothing runs per frame.
     /// </summary>
     internal sealed class FireEffects
     {
@@ -108,8 +101,6 @@ namespace RealLifeOverhaul.Events
             }
             return _built;
         }
-
-        // ---------------------------------------------------------------- what a fire asks for
 
         /// <summary>A flame at a place. Size is its width in metres (0.5 for a bin, 1.4 for a shopfront).</summary>
         public void Flame(int index, Vector3 at, float size)
@@ -272,8 +263,6 @@ namespace RealLifeOverhaul.Events
             }
         }
 
-        // ---------------------------------------------------------------- building them
-
         // The game's smoke, as Traffic/TrafficEffects finds it: the broken-engine smoke if it is in memory, else any smoke.
         private GameObject FindTemplate()
         {
@@ -308,7 +297,8 @@ namespace RealLifeOverhaul.Events
             {
                 Object.DestroyImmediate(script);
             }
-            EventDirector.Logger?.Info($"Fire: effects copied from the game's '{source.name}' (material {source.sharedMaterial.name}); budget {ParticleBudget} particles in {Flames + Smokes + 2} systems.");
+            EventDirector.Logger?.Info($"Fire: effects copied from the game's '{source.name}' (material {source.sharedMaterial.name}); "
+                                       + $"budget {ParticleBudget} particles in {Flames + Smokes + 2} systems.");
             return holder;
         }
 
@@ -322,8 +312,8 @@ namespace RealLifeOverhaul.Events
                 ParticleSystem.EmissionModule extra = systems[i].emission;
                 extra.enabled = false;   // one system per effect, whatever it was copied from
             }
-            // The system itself is what is placed and switched on and off: it stands directly under the effects' root,
-            // at a scale of one (every size above is in metres), whatever hierarchy it was copied in.
+            // The system itself is placed and switched: directly under the root at a scale of one (sizes are in metres),
+            // whatever hierarchy it came in.
             ParticleSystem first = systems[0];
             Transform own = first.transform;
             if (own != made.transform)
@@ -461,167 +451,6 @@ namespace RealLifeOverhaul.Events
                 new[] { new GradientColorKey(from, 0f), new GradientColorKey(to, 1f) },
                 new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(1f, fullAt), new GradientAlphaKey(holdAlpha, holdTo), new GradientAlphaKey(0f, 1f) });
             return gradient;
-        }
-    }
-
-    /// <summary>
-    /// Fireworks over the skyline: bursts of small glowing shapes, each burst one colour, from
-    /// four particle systems made once (plain meshes with the shared glowing paint; nothing of
-    /// the game's is copied, and nothing is lit by them). BUDGET: 4 systems x 60 = 240 particles
-    /// at most, a burst of 44 at a time, one pooled sound. Nothing here runs by itself: the
-    /// director asks for a burst on a timer.
-    /// </summary>
-    internal sealed class Fireworks
-    {
-        public const int ParticleBudget = Colours * PerSystem;
-        private const int Colours = 4;
-        private const int PerSystem = 60;
-        private const int PerBurst = 44;
-
-        private static readonly Color[] Palette =
-        {
-            new Color(1f, 0.25f, 0.2f), new Color(0.3f, 0.6f, 1f), new Color(1f, 0.85f, 0.35f), new Color(0.45f, 1f, 0.5f)
-        };
-
-        private readonly Transform _root;
-        private readonly ParticleSystem[] _bursts = new ParticleSystem[Colours];
-        private AudioSource _bang;
-        private AudioClip _clip;
-        private bool _built;
-        private int _next;
-
-        public Fireworks(Transform parent)
-        {
-            _root = new GameObject("RealLifeOverhaul Fireworks").transform;
-            _root.SetParent(parent, false);
-        }
-
-        public bool Ready()
-        {
-            if (_built)
-            {
-                return true;
-            }
-            if (!Shapes.Available)
-            {
-                return false;
-            }
-            for (int i = 0; i < Colours; i++)
-            {
-                var made = new GameObject("Burst " + i);
-                made.transform.SetParent(_root, false);
-                var particles = made.AddComponent<ParticleSystem>();
-                particles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-                ParticleSystem.MainModule main = particles.main;
-                main.loop = false;
-                main.playOnAwake = false;
-                main.simulationSpace = ParticleSystemSimulationSpace.World;
-                main.startLifetime = new ParticleSystem.MinMaxCurve(1.3f, 2.1f);
-                main.startSpeed = new ParticleSystem.MinMaxCurve(9f, 17f);
-                main.startSize = new ParticleSystem.MinMaxCurve(0.45f, 0.75f);
-                main.startRotation3D = true;
-                main.gravityModifier = 0.35f;
-                main.maxParticles = PerSystem;
-                ParticleSystem.EmissionModule emission = particles.emission;
-                emission.enabled = false;   // only ever by Emit
-                ParticleSystem.ShapeModule shape = particles.shape;
-                shape.enabled = true;
-                shape.shapeType = ParticleSystemShapeType.Sphere;
-                shape.radius = 0.5f;
-                ParticleSystem.LimitVelocityOverLifetimeModule limit = particles.limitVelocityOverLifetime;
-                limit.enabled = true;
-                limit.dampen = 0.08f;
-                limit.limit = 3f;
-                ParticleSystem.SizeOverLifetimeModule size = particles.sizeOverLifetime;
-                size.enabled = true;
-                size.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0f, 1f, 1f, 0f));
-                var renderer = made.GetComponent<ParticleSystemRenderer>();
-                renderer.renderMode = ParticleSystemRenderMode.Mesh;
-                renderer.mesh = Shapes.Cube;
-                renderer.sharedMaterial = Shapes.Paint(Palette[i], 30f);
-                renderer.enableGPUInstancing = false;
-                renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                renderer.receiveShadows = false;
-                made.SetActive(false);
-                _bursts[i] = particles;
-            }
-            var speaker = new GameObject("Bang");
-            speaker.transform.SetParent(_root, false);
-            _bang = speaker.AddComponent<AudioSource>();
-            _bang.playOnAwake = false;
-            _bang.spatialBlend = 1f;
-            _bang.rolloffMode = AudioRolloffMode.Linear;
-            _bang.minDistance = 40f;
-            _bang.maxDistance = 400f;
-            _bang.volume = 0.35f;
-            _clip = BuildBang();
-            _built = true;
-            return true;
-        }
-
-        /// <summary>One burst in the sky at a place, in the next colour.</summary>
-        public void Burst(Vector3 at)
-        {
-            if (!_built)
-            {
-                return;
-            }
-            ParticleSystem particles = _bursts[_next];
-            _next = (_next + 1) % Colours;
-            if (!particles.gameObject.activeSelf)
-            {
-                particles.gameObject.SetActive(true);
-            }
-            particles.transform.position = at;
-            particles.Emit(PerBurst);
-            _bang.transform.position = at;
-            _bang.pitch = Random.Range(0.8f, 1.15f);
-            _bang.PlayOneShot(_clip);
-        }
-
-        public void StopAll()
-        {
-            if (!_built)
-            {
-                return;
-            }
-            for (int i = 0; i < Colours; i++)
-            {
-                if (_bursts[i].gameObject.activeSelf)
-                {
-                    _bursts[i].Clear(true);
-                    _bursts[i].gameObject.SetActive(false);
-                }
-            }
-        }
-
-        public void Dispose()
-        {
-            if (_clip != null)
-            {
-                Object.Destroy(_clip);
-                _clip = null;
-            }
-        }
-
-        // A distant thump: noise that dies away over half a second, made once.
-        private static AudioClip BuildBang()
-        {
-            const int rate = 22050;
-            int samples = rate * 7 / 10;
-            var data = new float[samples];
-            float low = 0f;
-            var random = new System.Random(7);
-            for (int i = 0; i < samples; i++)
-            {
-                float t = i / (float)rate;
-                float noise = (float)(random.NextDouble() * 2.0 - 1.0);
-                low += (noise - low) * 0.12f;   // the high end is gone by the time it reaches the street
-                data[i] = low * Mathf.Exp(-t * 7f) * 0.9f;
-            }
-            AudioClip clip = AudioClip.Create("RealLifeOverhaul Firework", samples, 1, rate, false);
-            clip.SetData(data, 0);
-            return clip;
         }
     }
 }

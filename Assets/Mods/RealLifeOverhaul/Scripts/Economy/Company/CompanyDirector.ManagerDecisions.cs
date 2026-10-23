@@ -763,16 +763,22 @@ namespace RealLifeOverhaul.Economy
                 return;
             }
             d.State = DecisionState.Undone;
-            ManagerFile m = OwnOf(d.Place);
-            if (m != null)
-            {
-                m.Undone++;
-            }
+            CountUndone(d);
             Logger?.Info("Company: decision " + d.Id + " (" + (ManagerTask)d.Task + " at " + ManagedName(d.Place) + ", day " + d.Day + ", by " + d.Who
                          + ") undone by the player.");
             Notify(NotificationType.Success, "reallife_mgr_note_undone", new Dictionary<string, string> { { "place", ManagedName(d.Place) } }, 7f);
             Recount();
             Changed();
+        }
+
+        // An undone decision counted to whoever made it: the place's manager, or the regional manager who stood in.
+        private void CountUndone(Decision d)
+        {
+            ManagerFile m = MadeBy(ManagedAt(d.Place), d.Who) ?? OwnOf(d.Place);
+            if (m != null)
+            {
+                m.Undone++;
+            }
         }
 
         private void UndoOf(Decision d, int day)

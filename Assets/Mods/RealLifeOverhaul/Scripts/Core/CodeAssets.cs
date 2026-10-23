@@ -5,14 +5,12 @@ using UnityEngine.Rendering;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Engine assets the mod makes by code let go whole. Destroying the object that shows one does not free it, and some
-    /// carry others made with them: each setting a volume profile is given (VolumeProfile.Add) is a ScriptableObject of
-    /// its own that destroying the profile leaves behind, and a sprite made with Sprite.Create leaves its texture. These
-    /// destroy both. Nothing per frame; a call costs a Destroy per piece.
+    /// Destroys engine assets made by code together with what was made with them: destroying a volume profile leaves
+    /// each setting added to it, and destroying a sprite leaves its texture. COST: nothing per frame; a Destroy per piece.
     /// </summary>
     internal static class CodeAssets
     {
-        /// <summary>A profile made with ScriptableObject.CreateInstance destroyed with every setting added to it. Safe with null.</summary>
+        /// <summary>Destroys a profile made by code with every setting added to it. Safe with null.</summary>
         public static void DropProfile(VolumeProfile profile)
         {
             if (profile == null)
@@ -30,7 +28,7 @@ namespace RealLifeOverhaul
             Object.Destroy(profile);
         }
 
-        /// <summary>A sprite made with Sprite.Create destroyed with the texture made for it. Safe with null.</summary>
+        /// <summary>Destroys a sprite made with Sprite.Create and its texture. Safe with null.</summary>
         public static void DropSprite(Sprite sprite)
         {
             if (sprite == null)

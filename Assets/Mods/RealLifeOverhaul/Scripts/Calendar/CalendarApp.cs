@@ -9,25 +9,19 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.Calendar
 {
     /// <summary>
-    /// What the Calendar shows, in the game's frame (GameUi.AppShell). On the right two tabs: "Month" is the month's grid
-    /// of weeks (CalendarGrid), "Day" a table of everything on the chosen day, each row with the app that deals with it.
-    /// Over the left column the month's name and the day it ends on; on the left the white box, which is one of two
-    /// pages (CalendarApp.Box.cs): the chosen day, with its money, the player's own time, the city, the month's money and
-    /// what moves every night; or one entry of the day, with a button that opens its app. The buttons at the top turn the
-    /// month back and on. The app does nothing while it is closed: it reads the sources when it opens, when a month is
-    /// turned and when a new day begins while it is open (CalendarDirector).
+    /// The Calendar's page (GameUi.AppShell): the Month tab's grid, the Day tab's table and the white box. Idle while
+    /// closed: the sources are read on opening, a turn of the month or a new day.
     /// </summary>
     public sealed partial class CalendarApp
     {
         private const int MonthTab = 0, DayTab = 1;
-        private const string GuideTitle = "reallife_meta_title_calendar";   // the Guide's page the box points to at its foot
+        private const string GuideTitle = "reallife_meta_title_calendar";   // the Guide page the box points to
 
         public static IModLogger Logger;
 
         private static readonly string[] TabKeys = { "reallife_calendar_tab_month", "reallife_calendar_tab_day" };
         private static readonly string[] GroupKeys = { "reallife_calendar_kind_money", "reallife_calendar_kind_time", "reallife_calendar_kind_city" };
 
-        /// <summary>The Day tab's table: 0 when, 1 what, 2 the money, 3 the app; filtered by money, time and the city.</summary>
         private static readonly TableSpec DaySpec = new TableSpec("Calendar", "Day")
             .Column("reallife_calendar_col_when", 260f, TableSort.Date)
             .Column("reallife_calendar_col_what", 700f, TableSort.Text, flexible: true)
@@ -45,8 +39,8 @@ namespace RealLifeOverhaul.Calendar
         private CalendarGrid _grid;
         private Button _previous, _following;
         private int _tab;
-        private int _month = -1;      // the month shown (CalendarRules.MonthOf); -1 before the first opening
-        private int _chosen;          // the day chosen
+        private int _month = -1;      // CalendarRules.MonthOf; -1 before the first opening
+        private int _chosen;
         private int _writtenFor = -1; // the game's day the page was read for
         private int _wanted = -2;     // a month asked for before the app opened; -1 for today's, -2 for none
         private string _pick;         // the Day tab's row picked: an entry's id
@@ -59,9 +53,7 @@ namespace RealLifeOverhaul.Calendar
 
         private bool Showing => _shell != null && _shell.Root != null && _shell.Root.activeInHierarchy;
 
-        // ---------------------------------------------------------------- building it from the game's parts
-
-        /// <summary>The app's panel, asleep; null if the game's parts are not as expected (each has said so in Player.log).</summary>
+        /// <summary>The app's panel, asleep; null, logged, if the game's parts are not as expected.</summary>
         public GameObject Build(FullMenu menu, Transform dormant)
         {
             using var piece = SessionWatch.Piece("calendar: the app being built from the game's MyEmployees");   // once per city: a few hundred objects copied in one frame
@@ -95,8 +87,6 @@ namespace RealLifeOverhaul.Calendar
             return _shell.Root;
         }
 
-        // ---------------------------------------------------------------- opening, turning, choosing
-
         /// <summary>The month to show the next time the app opens: -1 for today's.</summary>
         public void Want(int month)
         {
@@ -124,10 +114,7 @@ namespace RealLifeOverhaul.Calendar
             _pick = null;
         }
 
-        /// <summary>
-        /// Once a second while the app is open (CalendarDirector): on a new day the month is read again, and a page that
-        /// showed today's month and day moves on to the new ones.
-        /// </summary>
+        /// <summary>Once a second while open: on a new day the month is read again, and a page on today moves to the new day.</summary>
         public void DayCheck(int today)
         {
             if (!Showing || _writing || today == _writtenFor || _writtenFor < 0)
@@ -215,9 +202,6 @@ namespace RealLifeOverhaul.Calendar
             WriteBox(CalendarGame.Today);
         }
 
-        // ---------------------------------------------------------------- writing
-
-        // The month read from the sources, then written.
         private void Refresh()
         {
             if (_shell == null || _table == null || _writing || _month < 0)
@@ -277,7 +261,7 @@ namespace RealLifeOverhaul.Calendar
             }
         }
 
-        // "March, year 2. This month ends on day 90.": the month shown, and the day it ends on.
+        // "March, year 2. This month ends on day 90."
         private void Headline(int today, int first, int last, int year)
         {
             string name = CalendarText.Month(CalendarRules.MonthInYear(_month, year));
@@ -302,7 +286,6 @@ namespace RealLifeOverhaul.Calendar
             }
         }
 
-        // The Day tab's rows: every entry of the chosen day, in the calendar's order.
         private void Rows()
         {
             for (int i = 0; i < _rows.Count; i++)
@@ -374,7 +357,6 @@ namespace RealLifeOverhaul.Calendar
             return null;
         }
 
-        // "09:00", or "All day" for what has no hour.
         private static string When(CalendarEntry e)
         {
             return e.Start >= 0 ? CalendarText.Clock(e.Start) : CalendarText.T("reallife_calendar_all_day");
@@ -386,7 +368,7 @@ namespace RealLifeOverhaul.Calendar
             return (e.Sign > 0 ? "+" : string.Empty) + CalendarText.Money(e.Amount);
         }
 
-        // The name of an app as it stands on the phone; null for none, or one that is not on the phone now.
+        // Null for none, or for an app not on the phone now.
         private static string AppName(string app)
         {
             return string.IsNullOrEmpty(app) ? null : PhoneApp.TitleOf(app);

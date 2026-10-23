@@ -33,6 +33,7 @@ namespace RealLifeOverhaul.Meta
             Walking.WalkGuide.Register();
             Calendar.CalendarGuide.Register();
             Designs.DesignsGuide.Register();
+            Meals.MealsGuide.Register();
         }
 
         private static void RegisterGameplay()
@@ -90,8 +91,8 @@ namespace RealLifeOverhaul.Meta
                 .Fact("mug_most", () => Guide.Money(Prices.At(PlayerMuggingScene.Most)))
                 .Fact("mug_refused_most", () => Guide.Money(Prices.At(PlayerMuggingScene.Most / 2)))
                 .Fact("crime_cash_least", () => Guide.Money(Prices.At(CrimeDirector.CashLeast)))
-                .Fact("holdup_least", () => Guide.Money(Prices.At(ShopIncidentScene.HoldUpLeast)))
-                .Fact("holdup_most", () => Guide.Money(Prices.At(ShopIncidentScene.HoldUpMost)))
+                .Fact("holdup_least", () => Guide.Money(Prices.At(CrimeRules.HoldUpLeast)))
+                .Fact("holdup_most", () => Guide.Money(Prices.At(CrimeRules.HoldUpMost)))
                 .Fact("breakin_least", () => Guide.Money(Prices.At(OffscreenCrimes.RepairLeast)))
                 .Fact("breakin_most", () => Guide.Money(Prices.At(OffscreenCrimes.RepairMost)))
                 .Fact("car_repair_most", () => Guide.Money(Prices.At(OffscreenCrimes.CarRepairCap)))
@@ -379,7 +380,7 @@ namespace RealLifeOverhaul.Meta
                 .Test("reallife_test_guard_fault", Guard.TestFault)
                 .Test("reallife_test_build_notice", GameBuild.TestNotice)
                 .Test("reallife_test_build_box", GameConfirm.TestOwnBox)
-                .Diagnostic(KeyAction.PerfProbe, KeyAction.PerfBench, KeyAction.PhoneDump, KeyAction.CharacterReport);
+                .Diagnostic(KeyAction.PerfProbe, KeyAction.PerfBench, KeyAction.CharacterReport);
 
             Features.Add("multiplayer", "reallife_meta_title_multiplayer")
                 .About("reallife_guide_multiplayer_about").Help("reallife_guide_multiplayer")

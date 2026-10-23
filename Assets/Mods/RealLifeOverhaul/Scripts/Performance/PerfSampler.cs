@@ -4,23 +4,23 @@ using UnityEngine;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>What one measuring window found. Times are milliseconds; a negative time was not reported by the platform.</summary>
+    /// <summary>What one measuring window found, in milliseconds; a negative time was not reported by the platform.</summary>
     public struct PerfWindow
     {
         public int Frames;
         public float Seconds;
         public float AverageMs;
         public float MedianMs;
-        public float Low1Ms;        // mean of the slowest 1 % of frames
-        public float Low01Ms;       // mean of the slowest 0.1 % of frames (at least one frame)
+        public float Low1Ms;   // mean of the slowest 1% of frames
+        public float Low01Ms;   // mean of the slowest 0.1% (at least one frame)
         public float WorstMs;
         public int FixedSteps;
-        public int Collections;     // garbage collections that ran inside the window
-        public int TimedFrames;     // frames the engine's frame timing answered for
+        public int Collections;   // garbage collections inside the window
+        public int TimedFrames;   // frames the engine's frame timing answered for
         public float MainMs;        // main thread, without the wait for the display
         public float RenderMs;      // render thread
         public float GpuMs;
-        public float PresentWaitMs; // main thread waiting for the display (a cap or v-sync shows up here)
+        public float PresentWaitMs;   // main thread waiting for the display: a cap or v-sync shows here
 
         public float Fps => AverageMs > 0f ? 1000f / AverageMs : 0f;
         public float Low1Fps => Low1Ms > 0f ? 1000f / Low1Ms : 0f;
@@ -28,16 +28,14 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// Measures frames over a window: every frame time, the engine's own main thread / render thread / GPU split
-    /// where the platform reports it, and a set of the engine's profiler counters. Shared by the probe and the
-    /// benchmark. The component is switched off (no Update, no FixedUpdate, no recorder running) except between
-    /// Open and Close, and a window allocates nothing: the buffers are made once.
+    /// Measures frames over a window: frame times, the engine's thread split and profiler counters. Off outside a window,
+    /// no cost a frame; a window allocates nothing.
     /// </summary>
     public sealed class PerfSampler : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("performance", "PerfSampler", typeof(PerfSampler));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("performance", "PerfSampler", typeof(PerfSampler));
 
-        /// <summary>One of the engine's profiler statistics, read once per frame while a window is open.</summary>
+        /// <summary>One of the engine's profiler statistics, read each frame while a window is open.</summary>
         public sealed class Stat
         {
             public readonly string Name;
@@ -58,14 +56,13 @@ namespace RealLifeOverhaul
             public double Average => Samples > 0 ? Sum / Samples : 0.0;
         }
 
-        private const int Capacity = 16384;   // frames: ten seconds at 1600 frames a second
+        private const int Capacity = 16384;   // frames: ten seconds at 1600 a second
 
         private readonly float[] _frames = new float[Capacity];
         private readonly float[] _sorted = new float[Capacity];
         private readonly FrameTiming[] _timing = new FrameTiming[1];
 
-        // The engine's own split of the frame. Following these three is also what switches the engine's frame
-        // timing on in a build that ships with it off, so every window follows them, whatever else it asks for.
+        // Following these three also switches the engine's frame timing on in a build that ships with it off.
         private readonly Stat[] _split =
         {
             new Stat("CPU Main Thread Frame Time", false), new Stat("CPU Render Thread Frame Time", false), new Stat("GPU Frame Time", false),
@@ -85,7 +82,7 @@ namespace RealLifeOverhaul
         /// <summary>Seconds the open window has been running.</summary>
         public float Elapsed => enabled ? Time.realtimeSinceStartup - _openedAt : 0f;
 
-        /// <summary>Every frame time of the window just closed (or still open), in order, in milliseconds.</summary>
+        /// <summary>Every frame time of the last window, in order, in milliseconds.</summary>
         public float[] Frames => _frames;
         public int FrameCount => _count;
 
@@ -94,7 +91,7 @@ namespace RealLifeOverhaul
             enabled = false;
         }
 
-        /// <summary>Which statistics to follow from now on. Recorders are only made here, never in a window.</summary>
+        /// <summary>The statistics to follow; recorders are made only here, never in a window.</summary>
         public void Follow(Stat[] stats)
         {
             Release();
@@ -106,7 +103,7 @@ namespace RealLifeOverhaul
                 {
                     options |= ProfilerRecorderOptions.CollectOnlyOnCurrentThread;
                 }
-                // Looked up by name in every category the engine has: a name it does not know leaves the recorder invalid.
+                // a name no category knows leaves the recorder invalid
                 stat.Recorder = Find(stat.Name, options);
             }
         }
@@ -207,7 +204,7 @@ namespace RealLifeOverhaul
             }
             else if (_split[0].Samples > 0 && _split[0].Sum > 0.0)
             {
-                // The frame timing manager stayed silent: the same three numbers as the engine's counters report them.
+                // the frame timing manager stayed silent: the engine's counters instead
                 window.TimedFrames = _split[0].Samples;
                 window.MainMs = (float)(_split[0].Average / 1000000.0);
                 window.RenderMs = (float)(_split[1].Average / 1000000.0);
@@ -249,14 +246,14 @@ namespace RealLifeOverhaul
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;
                 return;
             }
             try
             {
                 OnUpdate();
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 Guard.Fail(FrameGuard, e, this);
             }
@@ -274,7 +271,7 @@ namespace RealLifeOverhaul
                 _frames[_count++] = Time.unscaledDeltaTime * 1000f;
             }
 
-            // The engine answers a few frames late, and only where the platform supports it.
+            // the engine answers a few frames late, and only where the platform supports it
             FrameTimingManager.CaptureFrameTimings();
             if (FrameTimingManager.GetLatestTimings(1, _timing) > 0 && _timing[0].cpuFrameTime > 0.0)
             {
@@ -316,14 +313,14 @@ namespace RealLifeOverhaul
             using var hotSpot = HotSpots.Time(HotFixedUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;
                 return;
             }
             try
             {
                 OnFixedUpdate();
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 Guard.Fail(FrameGuard, e, this);
             }

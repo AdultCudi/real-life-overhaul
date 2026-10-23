@@ -5,21 +5,15 @@ using UnityEngine;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// A filter over a table: the game's own drop-down (UI.Elements.Dropdown), whole and working, as EconoView has
-    /// one over its list of transactions ("All types" first, then each type) and MyEmployees one over its table
-    /// (the "mass action" box, Right/MassActionDropdown, which is the object copied). Nothing of it is the mod's:
-    /// the box, the list that drops down, its scroller, typing in the box to find a choice, and closing it by a click
-    /// elsewhere (GameManager asks Dropdown.currentDropdown every click) are the game's scripts, left on the copy.
-    ///
-    /// The copy is made when a table first needs it, under the app's panel while that is showing, so the drop-down
-    /// wakes up before it is given its choices. Everything that touches the game's class is in this file: a caller
-    /// that gets an exception from it (a game update changed the class) drops the filter and says so once.
+    /// A filter over a table: a copy of the game's own drop-down (MyEmployees' mass action box), whole and working, as
+    /// EconoView has one. Everything touching the game's class is here: a caller that gets an exception drops the filter
+    /// and says so once. Costs nothing a frame of the mod's.
     /// </summary>
     public sealed class FilterDrop
     {
         private const float Width = 640f, Height = 80f, Gap = 20f;
-        // Where MyEmployees has the box: level with the tabs, at the right. Tables of the mod have up to seven tabs
-        // there, so a filter stands one row higher, over the tabs, in the band the game leaves empty.
+        // Where MyEmployees has the box is level with the tabs; the mod's tables have up to seven tabs, so a filter stands a
+        // row higher, in the band the game leaves empty.
         private static readonly Vector2 First = new Vector2(-127.5f, -134f);
 
         private readonly global::UI.Elements.Dropdown _dropdown;
@@ -40,13 +34,12 @@ namespace RealLifeOverhaul.GameUi
             }));
         }
 
-        /// <summary>Whether an object is the game's drop-down.</summary>
         public static bool Is(GameObject candidate)
         {
             return candidate != null && candidate.GetComponent<global::UI.Elements.Dropdown>() != null;
         }
 
-        /// <summary>A copy of the template at a place over the table (0: the right-hand one, 1: left of it). Null if it is no drop-down.</summary>
+        /// <summary>A copy of the template over the table (place 0: the right-hand one, 1: left of it). Null if it is no drop-down.</summary>
         public static FilterDrop Make(GameObject template, Transform parent, int place, string name)
         {
             if (template == null || parent == null)
@@ -65,22 +58,13 @@ namespace RealLifeOverhaul.GameUi
             rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(1f, 1f);
             rect.sizeDelta = new Vector2(Width, Height);
             rect.anchoredPosition = new Vector2(First.x - place * (Width + Gap), First.y);
-            // (whatever state MyEmployees had left its own box in when it was copied: this one is shown and can be clicked)
-            var group = copy.GetComponent<CanvasGroup>();
-            if (group != null)
-            {
-                group.alpha = 1f;
-                group.interactable = true;
-                group.blocksRaycasts = true;
-            }
+            // Shown and clickable, whatever state MyEmployees left its own box in.
+            UiClone.Visible(copy.GetComponent<CanvasGroup>());
             copy.SetActive(true);
             return new FilterDrop(dropdown);
         }
 
-        /// <summary>
-        /// A drop-down of the game's already placed (a copy of a row of the game's options, Core/GameUi/OptionRows), made
-        /// awake under a showing page so that the game's scripts on it start. Null if it is no drop-down.
-        /// </summary>
+        /// <summary>A drop-down of the game's already placed (a row of OptionRows), made awake under a showing page so its scripts start. Null if none.</summary>
         public static FilterDrop Of(GameObject placed)
         {
             var dropdown = placed != null ? placed.GetComponentInChildren<global::UI.Elements.Dropdown>(true) : null;
@@ -88,23 +72,16 @@ namespace RealLifeOverhaul.GameUi
             {
                 return null;
             }
-            var group = dropdown.GetComponent<CanvasGroup>();
-            if (group != null)
-            {
-                group.alpha = 1f;
-                group.interactable = true;
-                group.blocksRaycasts = true;
-            }
+            UiClone.Visible(dropdown.GetComponent<CanvasGroup>());
             return new FilterDrop(dropdown);
         }
 
-        /// <summary>Whether the player can change it: the game's own look for a control that cannot be used (its CanvasGroup and hover effects).</summary>
+        /// <summary>Usable or not, in the game's own look for a control that cannot be used.</summary>
         public void SetInteractable(bool interactable)
         {
             _dropdown.SetInteractable(interactable);
         }
 
-        /// <summary>Closes its list if it is open, as the game closes it.</summary>
         public void Close()
         {
             if (global::UI.Elements.Dropdown.currentDropdown == _dropdown)
@@ -113,10 +90,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>
-        /// The choices (final words, the first is "all") and which is chosen. The game's drop-down is only told when
-        /// something differs from what it was last given, so writing a table again costs it nothing.
-        /// </summary>
+        /// <summary>The choices ("all" first, final words) and the one chosen; the game's drop-down is told only when they differ.</summary>
         public void Set(List<string> options, int chosen, Action<int> picked)
         {
             _picked = picked;
@@ -143,7 +117,7 @@ namespace RealLifeOverhaul.GameUi
             }
             if (!shown && global::UI.Elements.Dropdown.currentDropdown == _dropdown)
             {
-                _dropdown.HideOptions();   // its list is open: closed as the game closes it, so it is no longer the "current drop-down"
+                _dropdown.HideOptions();   // its list is open: closed as the game closes it, so it is no longer the current drop-down
             }
             o.SetActive(shown);
         }

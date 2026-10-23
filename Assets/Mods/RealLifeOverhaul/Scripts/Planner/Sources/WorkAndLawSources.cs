@@ -3,7 +3,7 @@ using RealLifeOverhaul.Law;
 
 namespace RealLifeOverhaul.Planner
 {
-    /// <summary>Careers: the rota's shifts still to come (Jobs/CareerState). A shift that has been worked, missed or excused is not listed.</summary>
+    /// <summary>The rota's shifts not yet worked, missed or excused (CareerState).</summary>
     public sealed class CareerSource : IPlannerSource
     {
         public string Id => "work";
@@ -32,8 +32,7 @@ namespace RealLifeOverhaul.Planner
                 e.Start = CareerState.RotaHour * 60;
                 e.End = ((CareerState.RotaHour + CareerCatalogue.ShiftHours) % 24) * 60;
                 e.Attend = true;
-                // Clocking on is refused from this many hours after the rota's hour (CareerDirector.ClockOnRefusal): then it is missed.
-                // A shift clocked on to is dealt with (CareerState.ClockOn) and no longer listed.
+                // CareerDirector.ClockOnRefusal: clocking on is refused this many hours after the rota's hour
                 e.JoinBy = (CareerState.RotaHour + CareerCatalogue.LateHours) * 60 - 1;
                 if (into.WantText)
                 {
@@ -49,7 +48,7 @@ namespace RealLifeOverhaul.Planner
         }
     }
 
-    /// <summary>Justice: court dates, the day community service must be done by, the last day of probation (Justice/JusticeState).</summary>
+    /// <summary>Court dates, community service's last day and probation's (JusticeState).</summary>
     public sealed class JusticeSource : IPlannerSource
     {
         public string Id => "court";
@@ -95,7 +94,7 @@ namespace RealLifeOverhaul.Planner
         }
     }
 
-    /// <summary>Law: the hour of release while the player sits in a holding cell (Law/Record: LawState.Custody).</summary>
+    /// <summary>The hour of release from a holding cell (LawState.Custody).</summary>
     public sealed class CustodySource : IPlannerSource
     {
         public string Id => "cell";
@@ -123,7 +122,7 @@ namespace RealLifeOverhaul.Planner
         }
     }
 
-    /// <summary>Driving licences: the day each licence runs out, the end of a suspension, the day the theory test may be tried again (Licences/LicenceState).</summary>
+    /// <summary>Each licence's expiry, a suspension's end and the theory test's retry day (LicenceState).</summary>
     public sealed class LicenceSource : IPlannerSource
     {
         private static readonly string[] ClassKeys = { "reallife_lic_class_car", "reallife_lic_class_commercial", "reallife_lic_class_taxi" };

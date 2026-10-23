@@ -12,122 +12,16 @@ using UnityEngine.SceneManagement;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// A record of the session for "it stutters after a while": with "Developer diagnostics" on, one line a
-    /// minute in Player.log and one line for every frame that took longer than 80 ms. Off (as the mod ships)
-    /// this component is disabled: the engine does not call it, and nothing is measured.
-    ///
-    /// The line a minute:
-    ///
-    ///   Session 12 min: frames 5210, average 11.5 ms, worst 61 ms, over 33 ms: 4, over 50 ms: 1; managed heap
-    ///   412 MB of 610 MB, collections in the minute 3, grown by 31.0 MB in the minute (517 KB a second), the
-    ///   collector at work 212 ms in the minute and 3.1 ms at most in a frame; engine memory 2950 MB; mod objects
-    ///   345 (118 shown) under 6 roots; people 2 out, 12 made of 12; city people 3 out, 8 made of 8, city props
-    ///   made 14; looks built in the minute 1 (1 while playing), since the city loaded 23 (3 while playing);
-    ///   frames over 80 ms: 2, of them 2 behind the game's black screen (into or out of a building) or its loading
-    ///   screen and 0 seen;
-    ///   the mod's navigation obstacles changed in the minute 0; handlers put back on the game's events 0
-    ///   (changed events looked into 3); searches of the whole scene 0 (0 while playing); on foot in the street,
-    ///   game hour 9.
-    ///
-    /// How to read it over a session: a managed heap that climbs minute after minute with collections coming
-    /// more often is memory being used up on a timer ("grown by" is the allocation budget: what the heap grew by,
-    /// frame over frame, the game's share and the mod's together; it should not rise from one version of the mod
-    /// to the next); engine memory that climbs is meshes, textures or materials made and never destroyed; mod
-    /// objects that climb is something of the mod's that is never put away (they are pooled: the count should
-    /// rise while each kind of scene is seen for the first time and then stand still); "over 33 ms" and "over
-    /// 50 ms" are the stutters themselves, and "seen" are the long ones the player could see.
-    ///
-    /// A second line a minute says what grew since the first minute, so that a leak names itself (ObjectKinds):
-    ///
-    ///   Session 12 min, what grew since minute 2: textures 1834 (+40), 612 MB (+35); the mod's holders: Civic Props
-    ///   +120 (160 now), ...; the kinds below them: Civic Props > cone +80 (100 now), ...; in the scene kept across
-    ///   loads 412 of the mod's objects (+3) (58 holders and 214 kinds counted); the managed heap after its last
-    ///   collection 690 MB (+40 since the first collection seen); the mod's log lines in the minute 52, 610 this run.
-    ///
-    /// Textures are the engine's own count of those not streamed (every one a script makes is among them); the holders
-    /// are the objects right under a root of the mod's, and the kinds those under a holder, names without their numbers.
-    /// The heap after a collection is what is kept, garbage aside: a rise of it minute after minute is memory held.
-    /// The game keeps every line of the log in memory for the whole run, so the log lines are memory too.
-    ///
-    /// The line for a long frame says what the mod was doing, if one of its large one-off pieces of work was
-    /// under way: the places that do such work name it with <see cref="Mark"/> (a character being built, a bus
-    /// stop or a precinct front being put out, a scene starting, the save being written), and those that also
-    /// say when it was done (<see cref="Done"/>) have its time written beside it. Mark is a handful of writes
-    /// into a fixed ring with a constant text and one read of the clock: it costs the same whether diagnostics
-    /// are on or off, and it is never to be called per frame or with a text that is put together for the call.
-    ///
-    /// The same line then says everything that can tell the mod's work from the game's and from the engine's:
-    ///
-    ///   Session: a frame of 231 ms; none of the mod's large pieces of work was under way; where it went:
-    ///   coroutines and timers 204 ms, rendering 14 ms, the rest 13 ms; the collector: no collection (41 so far),
-    ///   at work 0.0 ms, heap 731 MB before and 733 MB after; the game: its screen was black (its own
-    ///   walk into or out of a building: not seen as a stutter), the player came out of a building in it, not
-    ///   saving, no scene loaded or unloaded; the mod's navigation obstacles changed in the second before it and
-    ///   in it: 0; the mod's last pieces of work: "people: a character being made" (3.1 ms) 41.0 s before; on
-    ///   foot in the street, game hour 7.
-    ///
-    /// How to read that: time under "navigation" is the engine cutting the walkable mesh (a carving obstacle
-    /// changed half a second earlier); time under "coroutines and timers" with the screen black is the game
-    /// taking the player into or out of a building; a collection with tens of milliseconds "at work" is the
-    /// collector; time under "scripts' Update" with a piece of the mod's work named "in it" is the mod's, and
-    /// the time beside the name says how much of the frame it was. Where "the rest" is large, the engine's step
-    /// it was mostly in is named beside it (Diagnostics/FrameSteps). After that comes "the mod's own scripts in
-    /// it": the time every Update, LateUpdate and FixedUpdate of the mod's, its handlers of the game's events and
-    /// its directors' one-second ticks took in that frame, with the three that took the most, by feature and
-    /// method (Core/HotSpots). Time under "scripts' Update" or "coroutines and timers" that is not under the mod's
-    /// own scripts is the game's, or another mod's.
-    ///
-    /// "Its screen was black" is said, and the frame is not counted as one the player saw, while the game's black
-    /// screen (UI.UiFader) was drawn at full strength as the frame began; "its screen was black or fading", likewise,
-    /// while its loading screen (UI.Load.LoadingScreen) was there: the loading screen is still there, fading out for
-    /// 0.8 s, after the game has said the save is loaded (LoadScene.isLoading false), which is when the record starts
-    /// counting frames again. "Its screen was fading, the picture showing through" is said, and the frame counted as
-    /// seen, while the black screen fades out or back in (0.2 s each way at a door): the picture stops there.
-    ///
-    /// With the step timing on, the frame is cut where the engine itself cuts it (just after it updates the time,
-    /// Diagnostics/FrameSteps), so the parts add up to the frame: the named groups, "waiting for the last frame to be
-    /// shown", "the rest" of the engine's steps, and "outside the engine's steps". Then the line says what the system
-    /// saw of the same frame (Diagnostics/MachineClock) and, where the build offers them, the engine's own figures for
-    /// the graphics card, and ends with "so:" and the cause the figures point to (Diagnostics/FrameRules):
-    ///
-    ///   ...; where it went: scripts' Update 1 ms, rendering 5 ms, waiting for the last frame to be shown 362 ms, the
-    ///   rest 2 ms, outside the engine's steps 1 ms; the processor: the main thread ran 16 ms of it, the game 47 ms over
-    ///   all its threads, the machine's 24 processors 97% busy (other programs 91%); page faults in it: 310; the
-    ///   engine's own figures: not offered by this build; so: the game waited for the last frame to be shown while
-    ///   other programs held the processor (...).
-    ///
-    /// How to tell them apart:
-    /// - The graphics card or the display: the time is under "waiting for the last frame to be shown", the main thread
-    ///   ran little of it and the other programs' share is small. Where the engine gives the graphics card's time, a
-    ///   large one says the card itself was slow; a small one says the render thread or the display.
-    /// - Another program: the main thread ran little of the frame while other programs held most of the machine's
-    ///   processors (a build, a game, a scan). The time can be under the wait (the render thread kept waiting) or
-    ///   outside the steps.
-    /// - The engine's own work, or a script's: the main thread ran most of the frame, and the steps above say where.
-    /// - Outside the engine's steps with the processor free: the window's messages, the system or the driver.
-    /// - Tens of thousands of page faults: memory was being brought in, paged back from the disk or touched for the
-    ///   first time (a large allocation, a texture coming in).
-    /// The thread's and the system's times are counted at the system's clock tick (about 15.6 ms): good for a long
-    /// frame and the minute's sums, not for one short frame.
-    ///
-    /// The line a minute says the same of the minute: the mod's own scripts' time a frame on average and at the
-    /// most, the three that took the most, and how much of the heap's growth happened under them (every frame
-    /// counted where the runtime counts allocations, else one frame in eight sampled), with the three under which
-    /// it grew the most. A frame in which the heap grows by 8 MB or more at once gets a line of its own, with how
-    /// much of it was under the mod's own scripts and under which. It also gives the minute's waits for the last
-    /// frame to be shown and its time outside the engine's steps (the sum and the worst frame), the share of the
-    /// minute the main thread ran, the other programs' share of the processor, the page faults, and the causes of
-    /// its frames over 33 ms counted by the same rules as the long-frame line.
-    ///
-    /// Per frame while recording: a dozen reads of numbers the engine and the game already keep (the frame's
-    /// time, the collection count, the heap's size, the collector's time, three of the game's flags, one look in its
-    /// register of singletons for the loading screen) and as many
-    /// comparisons; the mod's own scripts' timing, a few microseconds (Core/HotSpots); with the step timing on,
-    /// some two hundred and fifty reads of the clock more and four calls into kernel32 (Diagnostics/FrameSteps,
-    /// Diagnostics/MachineClock); where the build offers the engine's frame timing, two calls into it. Nothing is
-    /// allocated except for a line that is written.
+    /// A record of the session for "it stutters after a while": with "Developer diagnostics" on, one line a minute in
+    /// Player.log, a second saying what grew since the first minute (<see cref="ObjectKinds"/>), and one line for every
+    /// frame over 80 ms or with a heap leap of 8 MB: where the frame went (<see cref="FrameSteps"/>), what the mod was doing
+    /// (<see cref="Mark"/>) and the cause the figures point to (<see cref="FrameRules"/>). How to read the lines:
+    /// docs/reference/logs-and-debugging.md, "The session record". Off, as shipped, the component is disabled and costs
+    /// nothing. On, per frame: a dozen reads of figures the engine and the game keep and as many comparisons, the mod's own
+    /// script timing (Core/HotSpots), and with the step timing some two hundred and fifty clock reads and four kernel32
+    /// calls. Nothing is allocated but a line that is written.
     /// </summary>
-    public sealed class SessionWatch : MonoBehaviour
+    public sealed partial class SessionWatch : MonoBehaviour
     {
         private static readonly FeatureGuard FrameGuard = Guard.For("diagnostics", "SessionWatch", typeof(SessionWatch));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
 
@@ -253,11 +147,7 @@ namespace RealLifeOverhaul
             Marks.Close(mark, Stopwatch.GetTimestamp());
         }
 
-        /// <summary>
-        /// The test "write the session record's lines now" (Options, Tests): the line of a long frame, written for the
-        /// frame before this one whatever its length, and the line a minute, written early (its counts then start
-        /// again). So that every part of both can be read without waiting for a stutter.
-        /// </summary>
+        /// <summary>The test "write the session record's lines now": a long-frame line for the frame before this one and the line a minute, early.</summary>
         public static void TestSay()
         {
             try
@@ -350,151 +240,13 @@ namespace RealLifeOverhaul
             }
             Logger?.Info("Session: recording. One line a minute, and one for every frame over " + (LongFrame * 1000f).ToString("F0") + " ms. The collector has "
                          + (GC.MaxGeneration + 1) + " generation(s); its time in a frame is " + (_collector.Valid ? "read from the engine" : "not offered by this build")
-                         + "; the frame's steps are " + (FrameSteps.Installed ? "timed" : "not timed (the option 'Measurements time every step of the frame' is off, or the engine's loop could not be read)")
-                         + "; the mod's own scripts are timed by feature and method, and what they allocate is " + (_exact ? "counted in every frame (the runtime counts it)" : "read from the heap's size, one frame in " + HotSpots.AllocEvery) + ".");
+                         + "; the frame's steps are "
+                         + (FrameSteps.Installed ? "timed" : "not timed (the option 'Measurements time every step of the frame' is off, or the engine's loop could not be read)")
+                         + "; the mod's own scripts are timed by feature and method, and what they allocate is "
+                         + (_exact ? "counted in every frame (the runtime counts it)" : "read from the heap's size, one frame in " + HotSpots.AllocEvery) + ".");
             Logger?.Info("Session: the frame's pace: " + Pace() + "; the engine's own frame timing (the graphics card's time) is " + (_timing ? "offered" : "not offered by this build")
                          + "; processors " + SystemInfo.processorCount + "; the system's figures for each frame (kernel32): " + MachineClock.Status()
                          + (FrameSteps.Installed ? "; the frame's steps: " + FrameSteps.Shape : string.Empty) + ".");
-        }
-
-        // The frame rate cap and vSync, as the game has set them.
-        private static string Pace()
-        {
-            int sync = QualitySettings.vSyncCount;
-            int cap = Application.targetFrameRate;
-            return (sync > 0 ? "vSync on (every " + (sync == 1 ? "refresh" : sync + " refreshes") + ")" : "vSync off")
-                   + ", " + (cap > 0 ? "frame rate capped at " + cap + " a second" : "no frame rate cap") + (sync > 0 && cap > 0 ? " (vSync overrides the cap)" : string.Empty);
-        }
-
-        // Whether the build has the engine's frame timing switched on (Player Settings, Frame Timing Stats). In a method of its own:
-        // an engine without FrameTimingManager fails here alone.
-        private static bool TimingOffered()
-        {
-            try
-            {
-                return FrameTimingManager.IsFeatureEnabled();
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
-        private void CaptureTiming()
-        {
-            FrameTimingManager.CaptureFrameTimings();
-            if (FrameTimingManager.GetLatestTimings(1, _timings) >= 1 && _timings[0].gpuFrameTime > _gpuWorst)
-            {
-                _gpuWorst = _timings[0].gpuFrameTime;
-            }
-        }
-
-        // The worst of the last few frames the engine has figures for: they come a few frames late.
-        private void ReadTiming(ref FrameFigures figures)
-        {
-            uint got = FrameTimingManager.GetLatestTimings((uint)_timings.Length, _timings);
-            for (int i = 0; i < got && i < _timings.Length; i++)
-            {
-                figures.GpuMs = Math.Max(figures.GpuMs, _timings[i].gpuFrameTime);
-                figures.RenderThreadMs = Math.Max(figures.RenderThreadMs, _timings[i].cpuRenderThreadFrameTime);
-            }
-        }
-
-        // The frame before this one as the step timing and the system saw it, the engine's own figures beside them.
-        private FrameFigures Figures(float took, bool withTiming)
-        {
-            FrameFigures figures = FrameFigures.Unknown(took * 1000.0);
-            if (FrameSteps.Valid)
-            {
-                figures.SpanMs = FrameSteps.LastSpanMs;
-                figures.StepsMs = FrameSteps.LastStepsMs;
-                figures.WaitMs = FrameSteps.LastMs(FrameSteps.Wait);
-                figures.ThreadMs = MachineClock.ThreadMs;
-                figures.ProcessMs = MachineClock.ProcessMs;
-                figures.Busy = MachineClock.Busy;
-                figures.Others = MachineClock.Others;
-                figures.Faults = MachineClock.Faults;
-            }
-            figures.Processors = SystemInfo.processorCount;
-            if (withTiming && _timing)
-            {
-                try
-                {
-                    ReadTiming(ref figures);
-                }
-                catch (Exception)
-                {
-                    _timing = false;   // the engine's figures are left out from now on
-                }
-            }
-            return figures;
-        }
-
-        // The minute's sums of where its frames went.
-        private void Split(float took)
-        {
-            if (_timing)
-            {
-                try
-                {
-                    CaptureTiming();
-                }
-                catch (Exception)
-                {
-                    _timing = false;
-                }
-            }
-            if (!FrameSteps.Valid)
-            {
-                return;
-            }
-            FrameFigures f = Figures(took, false);
-            _split++;
-            _spanSum += f.SpanMs;
-            _waitSum += f.WaitMs;
-            _waitWorst = Math.Max(_waitWorst, f.WaitMs);
-            _outsideSum += f.OutsideMs;
-            _outsideWorst = Math.Max(_outsideWorst, f.OutsideMs);
-            if (f.ThreadMs >= 0.0)
-            {
-                _threadFrames++;
-                _threadSum += f.ThreadMs;
-                _threadSpan += f.SpanMs;
-            }
-            if (f.Others >= 0.0)
-            {
-                _othersFrames++;
-                _othersSum += f.Others;
-                _othersWorst = Math.Max(_othersWorst, f.Others);
-            }
-            if (f.Faults >= 0L)
-            {
-                _faultFrames++;
-                _faultsSum += f.Faults;
-                _faultsWorst = Math.Max(_faultsWorst, f.Faults);
-            }
-            if (took > 0.033f)
-            {
-                _causes[(int)FrameRules.Cause(f)]++;
-            }
-        }
-
-        // Whether the runtime counts what the main thread allocates (then the heap's growth under each of the mod's scripts
-        // is exact, and read in every frame): a megabyte asked for must show in the count. Once, when the record starts.
-        private static bool ExactCount()
-        {
-            try
-            {
-                long before = GC.GetAllocatedBytesForCurrentThread();
-                var probe = new byte[1 << 20];
-                long after = GC.GetAllocatedBytesForCurrentThread();
-                GC.KeepAlive(probe);
-                return after - before >= 1 << 20;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
         }
 
         private void OnDisable()
@@ -596,9 +348,8 @@ namespace RealLifeOverhaul
             bool covered = faded && SceneFinds.Covered;   // (its overlay read only while it fades)
             bool loading = LoadingThere();
             bool saving = SaveGameManager.SavingGameInProgress;
-            // The game's loading screen was there during the frame (it fades out for 0.8 s after the game has set isLoading
-            // false: UI.Load.LoadingScreen.LoadAsyncScenes), or its black screen was drawn at full strength as the frame began;
-            // its fades, with the picture showing through, are seen.
+            // A frame under the loading screen (it fades out for 0.8 s after isLoading goes false) or the black screen at full
+            // strength as it began is not seen; its fades, the picture showing through, are.
             FrameScreen screen = FrameRules.Screen(faded, _fadedLastFrame, _coveredLastFrame, loading, _loadingLastFrame);
             bool hidden = FrameRules.Unseen(screen);
             bool saved = saving || _savingLastFrame;
@@ -675,9 +426,8 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Whether the game's loading screen is there: from the moment it is made until it has faded out and is destroyed
-        // (UI.Load.LoadingScreen.LoadAsyncScenes), read from the game's own register of its singletons (no search). A build
-        // in which it cannot be read leaves it out from then on, with one line, and the record goes on as before.
+        // Whether the game's loading screen is up or fading out, from its register of singletons (no search); a build where it
+        // cannot be read leaves it out from then on, with one line.
         private bool LoadingThere()
         {
             if (_loadingUnread)
@@ -731,8 +481,7 @@ namespace RealLifeOverhaul
                 _line.Append("none of the mod's large pieces of work was under way");
             }
 
-            // Where the engine spent it.
-            // Where the engine spent it: the frame cut where the engine cuts it, so the parts add up to its length (FrameSteps).
+            // Where the engine spent it: cut where the engine cuts the frame, so the parts add up to its length.
             _line.Append("; where it went: ");
             FrameFigures figures = Figures(took, true);
             if (FrameSteps.Valid)
@@ -855,68 +604,6 @@ namespace RealLifeOverhaul
             Logger?.Info(_line.ToString());
         }
 
-        // A frame in which the managed heap grew by megabytes at once: how much, and how much of it under the mod's own scripts
-        // (where that frame was a sample of the heap), and under which. A third of a minute's growth can come in one such
-        // frame.
-        private void Leapt(long grown, float took)
-        {
-            int frame = Time.frameCount - 1;
-            _line.Length = 0;
-            _line.Append("Session: the managed heap grew by ").Append(Megabytes(grown)).Append(" MB in one frame of ").Append((took * 1000f).ToString("F0"))
-                .Append(" ms; under the mod's own scripts: ");
-            long own = HotSpots.FrameBytes(frame, out bool sampled);
-            if (!sampled)
-            {
-                _line.Append(HotSpots.FrameMs(frame) > 0.0 ? "not known (not a sampled frame)" : "nothing (none ran)");
-            }
-            else
-            {
-                _line.Append(own / 1024).Append(" KB");
-                for (int k = 0; k < 3 && HotSpots.FrameTopBytes(frame, k, out int slot, out long bytes) && bytes >= 1024; k++)
-                {
-                    _line.Append(k == 0 ? " (" : ", ").Append(HotSpots.Name(slot)).Append(' ').Append(bytes / 1024).Append(" KB");
-                    if (k == 2 || !HotSpots.FrameTopBytes(frame, k + 1, out _, out long next) || next < 1024)
-                    {
-                        _line.Append(')');
-                    }
-                }
-                _line.Append(own * 2 < grown ? "; the rest is the game's, or another mod's" : string.Empty);
-            }
-            _line.Append("; the mod's last pieces of work: ");
-            float began = Time.unscaledTime - took;
-            for (int back = 0; back < Marks.Count; back++)
-            {
-                Marks.Get(back, out string text, out int textFrame, out float at, out _);
-                _line.Append(back > 0 ? ", \"" : "\"").Append(text).Append("\" ");
-                Ago(textFrame, at, frame, began);
-            }
-            if (Marks.Count == 0)
-            {
-                _line.Append("none yet");
-            }
-            _line.Append("; ").Append(Where()).Append('.');
-            Logger?.Info(_line.ToString());
-        }
-
-        // "in it", "just after it" or "1.2 s before": when something happened, seen from the long frame.
-        private void Ago(int happenedFrame, float happenedAt, int frame, float began)
-        {
-            if (happenedFrame > frame)
-            {
-                _line.Append("just after it");
-            }
-            else if (happenedFrame == frame)
-            {
-                _line.Append("in it");
-            }
-            else
-            {
-                _line.Append(Mathf.Max(0f, began - happenedAt).ToString("F1", CultureInfo.InvariantCulture)).Append(" s before");
-            }
-        }
-
-        private static double Ms(long ticks) => ticks * 1000.0 / Stopwatch.Frequency;
-
         private void Minute(int collections)
         {
             float seconds = Time.unscaledTime - _since;
@@ -948,8 +635,7 @@ namespace RealLifeOverhaul
                 .Append(" while playing), since the city loaded ").Append(Looks.Built).Append(" (").Append(Looks.BuiltInPlay).Append(" while playing)");
             _looks = Looks.Built;
             _looksInPlay = Looks.BuiltInPlay;
-            // The stutters that were seen, and the two things that must stand still: obstacles of the mod's that cut the
-            // navigation mesh, and handlers put back on the game's events (a holder that puts itself back every second shows as 60).
+            // The stutters seen, and two counts that must stand still (a holder putting itself back every second shows as 60).
             _line.Append("; frames over ").Append((LongFrame * 1000f).ToString("F0")).Append(" ms: ").Append(_long).Append(", of them ").Append(_longHidden)
                 .Append(" behind the game's black screen (into or out of a building) or its loading screen and ").Append(_long - _longHidden).Append(" seen")
                 .Append("; the mod's navigation obstacles changed in the minute ").Append(MeshCuts.Total - _cuts)
@@ -970,8 +656,7 @@ namespace RealLifeOverhaul
             Clear();
         }
 
-        // The second line a minute: the textures the engine holds, and the holders and kinds of the mod's objects that grew the
-        // most since the first minute (ObjectKinds), so that a leak names itself.
+        // The second line a minute: what grew most since the first minute, so that a leak names itself.
         private void Grew(int minute)
         {
             long textures = (long)Texture.nonStreamingTextureCount, bytes = (long)Texture.nonStreamingTextureMemory;
@@ -1013,138 +698,6 @@ namespace RealLifeOverhaul
                 .Append(" this run (the game keeps every log line in memory for the whole run).");
             _linesAtMinute = lines;
             Logger?.Info(_line.ToString());
-        }
-
-        private void Growers(ObjectKinds tally)
-        {
-            int found = tally.Rank();
-            for (int k = 0; k < found; k++)
-            {
-                tally.Top(k, out string kind, out int grown, out int now);
-                _line.Append(k > 0 ? ", " : string.Empty).Append(kind).Append(" +").Append(grown).Append(" (").Append(now).Append(" now)");
-            }
-            _line.Append(found == 0 ? "none grew" : string.Empty);
-        }
-
-        private static string Signed(long value) => value >= 0 ? "+" + value : value.ToString(CultureInfo.InvariantCulture);
-
-        private static long Megabytes(long bytes) => bytes / (1024L * 1024L);
-
-        // Where the minute's frames went (the frames the step timing covered whole), as the long-frame line splits one.
-        private void Went()
-        {
-            if (_split == 0)
-            {
-                _line.Append("; where the frames went: not timed");
-                return;
-            }
-            _line.Append("; waiting for the last frame to be shown ").Append(_waitSum.ToString("F0")).Append(" ms in the minute, ").Append(_waitWorst.ToString("F0"))
-                .Append(" ms at most in a frame; outside the engine's steps ").Append(_outsideSum.ToString("F0")).Append(" ms, ").Append(_outsideWorst.ToString("F0")).Append(" ms at most");
-            _line.Append("; the main thread ran ");
-            if (_threadFrames > 0 && _threadSpan > 0.0)
-            {
-                _line.Append((_threadSum * 100.0 / _threadSpan).ToString("F0")).Append("% of the time");
-            }
-            else
-            {
-                _line.Append("for a time ").Append(MachineClock.ThreadWhy);
-            }
-            _line.Append("; other programs held ");
-            if (_othersFrames > 0)
-            {
-                _line.Append((_othersSum * 100.0 / _othersFrames).ToString("F0")).Append("% of the processors on average and ").Append((_othersWorst * 100.0).ToString("F0")).Append("% at most in a frame");
-            }
-            else
-            {
-                _line.Append("a share ").Append(MachineClock.SystemWhy);
-            }
-            _line.Append("; page faults ");
-            if (_faultFrames > 0)
-            {
-                _line.Append(_faultsSum).Append(" in the minute, ").Append(_faultsWorst).Append(" at most in a frame");
-            }
-            else
-            {
-                _line.Append(MachineClock.MemoryWhy);
-            }
-            _line.Append("; the frames over 33 ms: ");
-            bool any = false;
-            for (int c = 0; c < _causes.Length; c++)
-            {
-                if (_causes[c] > 0)
-                {
-                    _line.Append(any ? ", " : string.Empty).Append(_causes[c]).Append(' ').Append(FrameRules.Short((FrameCause)c));
-                    any = true;
-                }
-            }
-            _line.Append(any ? string.Empty : "none");
-            _line.Append(_timing ? "; the graphics card " + _gpuWorst.ToString("F1", CultureInfo.InvariantCulture) + " ms at most in a frame (the engine's own figures)" : "; the engine's own frame timing: not offered by this build");
-        }
-
-        // The minute of the mod's own scripts (Core/HotSpots): their time a frame, the three that took the most, and the
-        // heap's growth under them in the sampled frames, scaled to the minute and set beside the growth of the heap in all.
-        private void OwnScripts(float seconds)
-        {
-            int frames = HotSpots.Frames;
-            _line.Append("; the mod's own scripts: ").Append((frames > 0 ? HotSpots.TotalMs / frames : 0.0).ToString("F2", CultureInfo.InvariantCulture)).Append(" ms a frame on average and ")
-                .Append(HotSpots.WorstFrameMs.ToString("F1", CultureInfo.InvariantCulture)).Append(" ms at most in a frame");
-            for (int k = 0; k < 3 && HotSpots.StretchTop(k, false, out int slot, out double total, out double worst, out _); k++)
-            {
-                _line.Append(k == 0 ? ", the most in the minute: " : ", ").Append(HotSpots.Name(slot)).Append(" (")
-                    .Append((frames > 0 ? total / frames : 0.0).ToString("F2", CultureInfo.InvariantCulture)).Append(" ms a frame, ").Append(worst.ToString("F1", CultureInfo.InvariantCulture))
-                        .Append(" ms at worst)");
-            }
-            int sampled = HotSpots.Sampled;
-            if (sampled > 0 && seconds > 0f)
-            {
-                double scale = (double)HotSpots.Frames / sampled / seconds / 1024.0;   // sampled bytes to kilobytes a second
-                _line.Append("; the heap grew under them by ").Append(_exact ? string.Empty : "about ").Append((HotSpots.SampledBytes * scale).ToString("F0"))
-                    .Append(_exact ? " KB a second (every frame counted)" : " KB a second (one frame in " + HotSpots.AllocEvery + " sampled)")
-                    .Append(" of the ").Append((_grown / 1024.0 / seconds).ToString("F0")).Append(" KB a second it grew in all");
-                for (int k = 0; k < 3 && HotSpots.StretchTop(k, true, out int slot, out _, out _, out long bytes) && bytes > 0L; k++)
-                {
-                    _line.Append(k == 0 ? ", the most under " : ", ").Append(HotSpots.Name(slot)).Append(" (").Append((bytes * scale).ToString("F0")).Append(" KB a second)");
-                }
-            }
-            HotSpots.ClearStretch();
-        }
-
-        // Every object under a root object of the mod's (they are all named "RealLifeOverhaul ..."), in every loaded
-        // scene. What the mod hangs on the game's own objects (a prop in a hand, a part on a car) is not counted. The
-        // same walk counts them by holder and by kind; the scene kept across loads is counted for the kinds alone, so
-        // that the first line's figures mean what they always have.
-        private void CountObjects(ref int objects, ref int shown, ref int roots, int minute)
-        {
-            _holders.Begin();
-            _kinds.Begin();
-            for (int s = 0; s < SceneManager.sceneCount; s++)
-            {
-                Scene scene = SceneManager.GetSceneAt(s);
-                if (scene.isLoaded)
-                {
-                    CountScene(scene, ref objects, ref shown, ref roots);
-                }
-            }
-            try
-            {
-                Scene kept = KeptScene();
-                if (kept.IsValid() && kept.isLoaded)
-                {
-                    int keptShown = 0, keptRoots = 0;
-                    _keptObjects = 0;
-                    CountScene(kept, ref _keptObjects, ref keptShown, ref keptRoots);
-                }
-            }
-            catch (Exception e)
-            {
-                _keptRead = true;
-                _kept = default;   // an engine that will not list that scene: left out from now on, the rest of the record goes on
-                _roots.Clear();
-                _under.Clear();
-                Logger?.Warn("Session: the objects kept across loads cannot be counted in this build (" + e.GetType().Name + ").");
-            }
-            _holders.End(minute);
-            _kinds.End(minute);
         }
 
         private void CountScene(Scene scene, ref int objects, ref int shown, ref int roots)
@@ -1201,41 +754,6 @@ namespace RealLifeOverhaul
                 DestroyImmediate(probe);
             }
             return _kept;
-        }
-
-        // The two pools of characters: how many exist and how many are out.
-        private static void People(StringBuilder line)
-        {
-            ActorPool actors = ActorPool.Instance;
-            if (actors != null)
-            {
-                int made = actors.ActorCount, used = 0;
-                for (int i = 0; i < made; i++)
-                {
-                    used += actors.ActorAt(i).InUse ? 1 : 0;
-                }
-                line.Append("; people ").Append(used).Append(" out, ").Append(made).Append(" made of ").Append(ActorPool.MaxActors);
-            }
-            CityLifeDirector city = CityLifeDirector.Instance;
-            if (city != null && city.People != null && city.Props != null)
-            {
-                int made = city.People.Count;
-                line.Append("; city people ").Append(made - city.People.Free).Append(" out, ").Append(made).Append(" made of ").Append(CityPeople.MaxPeople)
-                    .Append(", city props made ").Append(city.Props.Made);
-            }
-        }
-
-        private static string Where()
-        {
-            try
-            {
-                return (BuildingManager.IsInsideBuilding ? "inside a building" : PerfGame.InVehicle() ? "in a vehicle" : "on foot in the street")
-                       + ", game hour " + TimeHelper.CurrentHour;
-            }
-            catch (Exception)
-            {
-                return "place unknown";
-            }
         }
     }
 }

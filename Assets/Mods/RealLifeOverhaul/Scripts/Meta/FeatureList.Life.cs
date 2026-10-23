@@ -134,7 +134,7 @@ namespace RealLifeOverhaul.Meta
                 .Data("reallife:social", "reallife:social_*")
                 .Contact(SocialPhone.PeopleId)
                 .Objects("RealLifeOverhaul Shift Card")
-                .Fact("social_cast", () => SocialRules.CastSize.ToString(CultureInfo.InvariantCulture))
+                .Fact("social_cast", () => SocialRules.MaxCast.ToString(CultureInfo.InvariantCulture))
                 .ResetData(() =>
                 {
                     SocialState.Reset();   // the director reads the (now empty) save again on its next second

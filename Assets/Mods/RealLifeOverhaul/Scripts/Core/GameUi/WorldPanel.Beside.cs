@@ -9,47 +9,25 @@ using UnityEngine;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// A panel of the mod's and the game's building box never cover each other. The rule is
-    /// <see cref="PanelPlacement"/>; this half of the class is the part that touches the game: it reads where the
-    /// two boxes are on the screen and moves the mod's.
-    ///
-    /// What the game does, and what is done here because of it:
-    ///  - the building box (UI.InGameUI.BuildingResume) is put over the door of its building in LateUpdate and
-    ///    switched on or off there, every frame; nothing announces it;
-    ///  - the panel's box (UI.Overlays.OverlayUI) is put at the screen point of IOverlay.GetTargetPosition in Update,
-    ///    every frame, by the game.
-    /// So the step aside is given to the game as a step in the world: GetTargetPosition answers the panel's place
-    /// plus <c>_shift</c>, a vector across the camera's view that is exactly the wanted pixels at the place's depth.
-    /// The game then puts the box beside the building box by itself each frame, and nothing of the mod's lays
-    /// anything out per frame. The step is worked out only when the building box comes or goes, when either box has
-    /// moved more than <see cref="PanelPlacement.Moved"/> pixels on the screen since the last time (a camera that has
-    /// moved; a passer-by the panel follows), or when the panel's own words or buttons changed its size.
-    ///
-    /// When it is looked at: on the engine's Canvas.willRenderCanvases, which runs after every LateUpdate and after
-    /// the interface's own layout, and before the frame is drawn. So the building box is already where it will be
-    /// drawn and has its final size, and the two are never drawn on top of each other, not for one frame.
-    ///
-    /// The cost: nothing while no panel of the mod's is up (the watch is taken off the event). While one is up, each
-    /// frame: one call from the engine, a few loads, the type of what is in the game's box, two positions read from
-    /// the game's objects and two subtractions.
-    /// A measurement (an event, as above): two rectangles read into an array made once, one WorldToScreenPoint, the
-    /// rule's arithmetic. Nothing is allocated either way. If a member of the game's this needs is missing, the panels
-    /// stand as they did before, with one line in the log.
+    /// Keeps a panel of the mod's and the game's building box apart (<see cref="PanelPlacement"/>): the step aside is given
+    /// to the game as a step in the world (<c>_shift</c> on GetTargetPosition), so the game places the box itself, worked out
+    /// again only when either box moves or comes, on Canvas.willRenderCanvases so the two never share a frame. Costs nothing
+    /// while no panel is up; while one is, a few loads a frame. Nothing is allocated.
     /// </summary>
     public sealed partial class WorldPanel
     {
         private const string TestLine = "reallife_panel_test_line";
         private const string TestClose = "reallife_panel_test_close";
-        private const float TestReach = 80f;   // metres: how far away the building for the test may be
+        private const float TestReach = 80f;   // metres: how far away the test's building may be
 
-        // The building box's own rectangle: private in the game, read once per city.
-        private static readonly FieldInfo ResumePanel = GameContract.ResumePanel.Field;   // (resolved once: Core/GameContract)
+        // The building box's own rectangle: private in the game.
+        private static readonly FieldInfo ResumePanel = GameContract.ResumePanel.Field;
 
         private static readonly Vector3[] Corners = new Vector3[4];
         private static readonly Canvas.WillRenderCanvases WatchCall = Beside;
 
         private static bool _watching;
-        private static bool _besideOff;         // a member of the game's is missing, or a fault: panels stand as before for the session
+        private static bool _besideOff;         // a game member is missing, or a fault: panels stand as before for the session
         private static bool _measureAgain;      // the panel's words or buttons changed: its size may have
         private static OverlayUI _overlay;      // the game's box for a panel over a place...
         private static RectTransform _box;      // ...and its rectangle
@@ -58,7 +36,7 @@ namespace RealLifeOverhaul.GameUi
         private static Canvas _resumeCanvas;
         private static PanelSide _side;
         private static bool _boxWasUp;
-        private static Vector3 _panelAt;        // where the panel's box was on the screen when the two were last measured
+        private static Vector3 _panelAt;        // where the panel's box was on the screen when last measured
         private static Vector3 _resumeAt;       // ...and the building box
         private static Vector3 _shift;          // the step aside, in the world
         private static EntityController _heldFor;   // the building whose box left no side free
@@ -74,10 +52,7 @@ namespace RealLifeOverhaul.GameUi
         /// <summary>True when the last <see cref="Show"/> was refused because the game's building box left the panel no room. The owner's timer tries again.</summary>
         public bool Waiting { get; private set; }
 
-        /// <summary>Where the panel of the mod's that is up stands in relation to the game's building box.</summary>
-        public static PanelSide Side => _current != null ? _side : PanelSide.Home;
-
-        // The watch on the engine's event: on while a panel of the mod's is in the game's box, off otherwise.
+        // On the engine's event while a panel of the mod's is in the game's box, off otherwise.
         private static void Watch(bool on)
         {
             _side = PanelSide.Home;
@@ -99,7 +74,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        // The game's two objects, found again when the city (and its interface) is another one.
+        // Found again when the city, and so its interface, is another one.
         private static bool Find()
         {
             if (_box != null && _resumeBox != null)
@@ -132,7 +107,7 @@ namespace RealLifeOverhaul.GameUi
             return true;
         }
 
-        // Once a frame while a panel of the mod's is up, after the game has placed its building box and before the frame is drawn.
+        // Once a frame while a panel is up: after the game placed its building box, before the frame is drawn.
         private static void Beside()
         {
             try
@@ -140,7 +115,7 @@ namespace RealLifeOverhaul.GameUi
                 WorldPanel panel = _current;
                 if (panel == null || _box == null || _resumeBox == null || !OverlayUI.IsVisible || _overlay.GetCurrentOverlayType != typeof(WorldPanel))
                 {
-                    Watch(false);   // the game took its box back (or put a panel of its own in it), or its interface went with the city
+                    Watch(false);   // the game took its box back, put its own panel in it, or its interface went with the city
                     return;
                 }
                 bool up = _resumeBox.gameObject.activeInHierarchy;
@@ -162,7 +137,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        // The two rectangles on the screen, the rule, and the step. An event, never a frame's routine.
+        // The two rectangles on the screen, the rule, and the step: on an event, never a frame's routine.
         private static void Measure(WorldPanel panel, bool up, Vector3 at, Vector3 resumeAt)
         {
             Camera camera = GameManager.GetMainCamera();
@@ -174,7 +149,7 @@ namespace RealLifeOverhaul.GameUi
             _resumeAt = resumeAt;
             _panelAt = at;
 
-            // The panel's rectangle as it would stand at home: where it is now, less the step it has been given.
+            // The panel's rectangle as it would stand at home: where it is now, less the step it was given.
             Vector3 home = camera.WorldToScreenPoint(panel.Home());
             _box.GetWorldCorners(Corners);   // an overlay canvas: its corners are pixels of the screen
             float backX = home.x - at.x;
@@ -201,7 +176,7 @@ namespace RealLifeOverhaul.GameUi
                                                   Screen.width, Screen.height, _side, out float dx, out float dy);
             if (side == PanelSide.Wait)
             {
-                // No side has room: the panel leaves the game's box until the building box has gone or moved (see Held).
+                // No side has room: the panel leaves the game's box until the building box has gone or moved (Held).
                 _heldFor = _resume != null ? GameMembers.TargetOf(_resume) : null;
                 _heldAt = resumeAt;
                 _current = null;
@@ -215,7 +190,7 @@ namespace RealLifeOverhaul.GameUi
             Vector3 shift = Vector3.zero;
             if (side != PanelSide.Home)
             {
-                // Metres across the view for one pixel, at the depth the place is at: exact for the game's camera, which looks through a plain lens.
+                // Metres across the view for one pixel at the place's depth: exact for the game's plain-lens camera.
                 float perPixel = camera.orthographic
                     ? 2f * camera.orthographicSize / camera.pixelHeight
                     : 2f * home.z * Mathf.Tan(camera.fieldOfView * 0.5f * Mathf.Deg2Rad) / camera.pixelHeight;
@@ -223,8 +198,8 @@ namespace RealLifeOverhaul.GameUi
                 shift = view.right * (dx * perPixel) + view.up * (dy * perPixel);
             }
             _shift = shift;
-            // The game placed its box for this frame already (OverlayUI.Update): it is put beside the building box now,
-            // and by the game itself from the next frame on.
+            // The game placed its box for this frame already (OverlayUI.Update): put beside the building box now, and by the game
+            // itself from the next frame on.
             var to = new Vector3(home.x + dx, home.y + dy, home.z);
             if ((to - at).sqrMagnitude > 0.01f)
             {
@@ -252,7 +227,7 @@ namespace RealLifeOverhaul.GameUi
                          + ": " + (clear ? "PASS" : "FAIL (the two boxes still share part of the screen)") + ".");
         }
 
-        // Whether the building box that left a panel no room is still up and still where it was. Called from Show: on the owner's timer, not per frame.
+        // The building box that left no room is still up and where it was. From Show, on the owner's timer.
         private static bool Held()
         {
             if (_heldFor == null)
@@ -268,14 +243,7 @@ namespace RealLifeOverhaul.GameUi
             return true;
         }
 
-        // ---------------------------------------------------------------- the test tool
-
-        /// <summary>
-        /// "Test: a stop's panel and a shop's box together": the game's building box is put up for the nearest building
-        /// (as the pointer over it would), and, unless a panel of the mod's is up already, a panel is stood over that
-        /// building's door, where the two must meet. The panel has to step aside; the log says to which side. Pressed
-        /// again, or with the panel's own button, both are taken down.
-        /// </summary>
+        /// <summary>Test: the building box up for the nearest building and a panel over its door, where the two must meet; pressed again, both go.</summary>
         public static void TestBeside()
         {
             try
@@ -285,7 +253,7 @@ namespace RealLifeOverhaul.GameUi
                     EndTest();
                     return;
                 }
-                _test = null;   // (one left from a city that has gone)
+                _test = null;   // one left from a city that has gone
                 UIs uis = InstanceBehavior<UIs>.Instance;
                 PlayerController player = Helpers.PlayerHelper.PlayerController;
                 if (uis == null || uis.buildingResume == null || player == null || SaveGameManager.Current == null)

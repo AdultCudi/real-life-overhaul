@@ -6,19 +6,10 @@ using System.Text;
 namespace RealLifeOverhaul.Interiors
 {
     /// <summary>
-    /// What the feature keeps in the save: one file per business of the player's it has seen, at most
-    /// <see cref="Most"/>. Its line ("reallife:interiors"): "2|place,wear,interior,day,story,refresh,first|...". A
-    /// line of the first version (without the first day) is read as businesses that were trading already. A place is
-    /// business pressure's own key (the street escaped, so it holds no '|' and no ','). A line that cannot be read gives
-    /// an empty store; a file that cannot be read is left out. Game-free, checked by EconomyCheck.
-    ///
-    /// Beside it, a line of its own ("reallife:interiors_rules": "1,day"): the day these rules (the bound and the phasing
-    /// in) first read the save, from which an established business's effects come in. A line of its own so that a save
-    /// read again by an older version of the mod keeps every business's file; a save without it meets the rules on the
-    /// day it is first read.
-    ///
-    /// A line that is there but that this version cannot read at all (damaged, or of a later version whose shape it does
-    /// not know) is kept in the save exactly as it was read (Core/SaveLines, <see cref="Load"/>): it is never written over.
+    /// What the feature keeps in the save: a file for each business seen, at most <see cref="Most"/>, in one line
+    /// ("2|place,wear,interior,day,story,refresh,first|..."; a version 1 line, without the first day, reads as businesses
+    /// trading already), and a line of its own for the day the rules first read the save ("1,day"), so an older version
+    /// of the mod keeps the files. A line this version cannot read is kept as read (Core/SaveLines). Game-free.
     /// </summary>
     public sealed class InteriorStore
     {
@@ -34,7 +25,7 @@ namespace RealLifeOverhaul.Interiors
         /// <summary>The day these rules first read the save (<see cref="InteriorFile.Unset"/> until they have).</summary>
         public int RulesFrom = InteriorFile.Unset;
 
-        /// <summary>The day a business's effects began to come in: its own first day, or the day the rules first read the save if it was trading before that.</summary>
+        /// <summary>The day a business's effects began to come in: its own first day, or the rules' first day if it traded before.</summary>
         public int PhaseFrom(InteriorFile f)
         {
             if (RulesFrom == InteriorFile.Unset)
@@ -118,10 +109,7 @@ namespace RealLifeOverhaul.Interiors
             return w.ToString();
         }
 
-        /// <summary>
-        /// Both lines of a save read (either may be missing). A line this version cannot read at all gives an empty store
-        /// or unset rules for the session, and is kept in the save as it was read (Core/SaveLines).
-        /// </summary>
+        /// <summary>Both lines of a save read, either may be missing; one this version cannot read gives an empty store or unset rules.</summary>
         public static InteriorStore Load(Dictionary<string, string> data)
         {
             string line = null, rules = null;

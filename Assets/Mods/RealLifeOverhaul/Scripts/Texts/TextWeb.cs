@@ -11,19 +11,13 @@ namespace RealLifeOverhaul.Texts
     /// <summary>How Your own AI reaches a service: one request, answered or given up within its time. The checks put a pretend one in.</summary>
     public interface ITextWeb
     {
-        /// <summary>Sends and waits, on the caller's thread (a worker's, never the game's), at most <paramref name="timeoutMs"/> and a little more.</summary>
+        /// <summary>Sends and waits on the caller's thread, never the game's, at most <paramref name="timeoutMs"/> and a little more.</summary>
         TextWebAnswer Send(TextWebRequest request, int timeoutMs);
     }
 
     /// <summary>
-    /// The web client of Your own AI: .NET's HttpClient (the game ships System.Net.Http with Unity's TLS), one for the
-    /// whole session, used only from the runner's worker threads and the sign-in's. Every request has its own time-out
-    /// by a cancellation, and the wait for it is bounded again by the caller's own clock (a task that has not ended
-    /// <see cref="GraceMs"/> after its time is left to end by itself and given up), so no worker is ever held longer
-    /// than its request's time. A streamed answer (the ChatGPT plan's) is read line by line as it comes and left as soon as
-    /// its text is whole (TextWebRequest.Lines). Nothing of a request or an answer is logged here. Game-free (EconomyCheck,
-    /// TextsServiceChecks.cs runs it against a local pretend service).
-    /// COST: nothing on the game's thread.
+    /// The web client of Your own AI: one HttpClient, used only from worker threads, the wait bounded again by the caller's
+    /// clock so no worker is held past its time. Game-free. COST: nothing on the game's thread.
     /// </summary>
     public sealed class TextWeb : ITextWeb
     {
@@ -31,9 +25,12 @@ namespace RealLifeOverhaul.Texts
 
         private static readonly HttpClient Client = Make();
 
+        // A request given up on still runs until its cancellation reaches it: its source is let go when it ends, not before.
+        private static readonly Action<Task, object> LetGo = (task, cancel) => ((CancellationTokenSource)cancel).Dispose();
+
         private static HttpClient Make()
         {
-            var client = new HttpClient { Timeout = Timeout.InfiniteTimeSpan };   // (each request has its own, by its cancellation)
+            var client = new HttpClient { Timeout = Timeout.InfiniteTimeSpan };   // each request has its own, by its cancellation
             client.DefaultRequestHeaders.UserAgent.ParseAdd("RealLifeOverhaul/1");
             return client;
         }
@@ -41,10 +38,11 @@ namespace RealLifeOverhaul.Texts
         public TextWebAnswer Send(TextWebRequest request, int timeoutMs)
         {
             var answer = new TextWebAnswer();
-            var cancel = new CancellationTokenSource(Math.Max(1, timeoutMs));
+            var cancel = new CancellationTokenSource(Math.Max(1, timeoutMs));   // its timer and handle are let go on every way out (finally)
+            Task<TextWebAnswer> task = null;
             try
             {
-                Task<TextWebAnswer> task = Run(request, cancel.Token);
+                task = Run(request, cancel.Token);
                 if (!task.Wait(Math.Max(1, timeoutMs) + GraceMs))
                 {
                     cancel.Cancel();
@@ -66,6 +64,17 @@ namespace RealLifeOverhaul.Texts
                 answer.Failure = "no connection (" + e.GetType().Name + ")";
                 return answer;
             }
+            finally
+            {
+                if (task == null || task.IsCompleted)
+                {
+                    cancel.Dispose();
+                }
+                else
+                {
+                    task.ContinueWith(LetGo, cancel, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                }
+            }
         }
 
         private static async Task<TextWebAnswer> Run(TextWebRequest request, CancellationToken token)
@@ -81,7 +90,7 @@ namespace RealLifeOverhaul.Texts
                     message.Content = new StringContent(request.Body, Encoding.UTF8);
                     message.Content.Headers.ContentType = MediaTypeHeaderValue.Parse(request.ContentType + "; charset=utf-8");
                 }
-                bool streamed = request.Lines != null;   // (a streamed answer is read line by line as it comes: TextStreamRead)
+                bool streamed = request.Lines != null;
                 HttpCompletionOption until = streamed ? HttpCompletionOption.ResponseHeadersRead : HttpCompletionOption.ResponseContentRead;
                 using (HttpResponseMessage response = await Client.SendAsync(message, until, token).ConfigureAwait(false))
                 {
@@ -92,7 +101,7 @@ namespace RealLifeOverhaul.Texts
                     }
                     else if (streamed && answer.Status >= 200 && answer.Status <= 299)
                     {
-                        using (token.Register(response.Dispose))   // (the time-out ends a read that waits on the network)
+                        using (token.Register(response.Dispose))   // the time-out ends a read that waits on the network
                         {
                             answer.Body = await ReadLines(response.Content, request.Lines).ConfigureAwait(false);
                         }
@@ -115,9 +124,8 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        // A streamed answer's lines as they come, each told to the reader, until it says the answer is whole or the stream
-        // ends: the body read so far (the rules read the words from it), so the line is shown at its last word rather than
-        // when the service closes the answer.
+        // A streamed answer's lines, each told to the reader until it says the answer is whole or the stream ends: the body
+        // read so far, so the line is shown at its last word rather than when the service closes the answer.
         private static async Task<string> ReadLines(HttpContent content, Func<string, bool> lines)
         {
             var body = new StringBuilder(2048);

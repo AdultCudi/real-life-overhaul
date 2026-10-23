@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using RealLifeOverhaul.Economy;
 using RealLifeOverhaul.Economy.Ventures;
 using RealLifeOverhaul.Planner;
-using Streets;
 using UnityEngine;
 
 namespace RealLifeOverhaul
@@ -11,34 +10,13 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// The cleaning service and selling a business with the rest of the mod (Economy/Services/ServicesBridges).
-        /// They call no other feature and none calls them: what they have to do with each other is here.
-        ///
-        ///   InvestorsOwed   what buying every investor out of a business costs today: Ventures' own price for each
-        ///                   deal on it (VenturesDirector.BuyOutPrice), read from the file Ventures keeps in public
-        ///   PayInvestors    each of them bought out through Ventures' own buy-out (VenturesDirector.BuyOut), which
-        ///                   takes the money, moves the reputation and tells the player as it always does
-        ///   LoansOwed       what is owed on business loans secured on a business: the credit side's own marks on
-        ///                   the game's loans (CreditDesk.File)
-        ///   SettleLoans     those loans paid off exactly as the game's own pay-off in EconoView does it
-        ///                   (LoanEntryUi.PayOffLoan: the game's transaction, the loan off the game's list, the
-        ///                   game's event). The credit side sees a loan paid off early at its next look, as it
-        ///                   would had the player paid it in EconoView
-        ///   BusinessGone    "running a business" is told that a business is no longer the player's
-        ///                   (CompanyDirector.BusinessGone, Economy/Services/CompanyDirector.Gone.cs)
-        ///   the Planner     a source of its own (<see cref="ServicesSource"/>): the last day of each offer that waits
-        ///
-        /// Everything is read from what those features already keep in public or asked through an entry they
-        /// already have. Nothing here has an Update: an adapter is called when a business's value is shown and when
-        /// a sale completes.
+        /// The cleaning service and selling a business (ServicesBridges) with Ventures (investors bought out through its
+        /// own buy-out), the credit side (business loans paid off exactly as the game's EconoView does it), running a
+        /// business and the Planner. Called when a business's value is shown and when a sale completes.
         /// </summary>
         public static class ServicesLinks
         {
-            /// <summary>
-            /// The services' rows in the Planner: a contract offer and an offer for a business on the last day each
-            /// can be answered, and a part of a price on the day it comes. Read from the state the director keeps;
-            /// it changes nothing.
-            /// </summary>
+            /// <summary>The services' rows in the Planner: offers on their last day, and a part of a price on its day. Read only.</summary>
             private sealed class ServicesSource : IPlannerSource
             {
                 public string Id => "services";
@@ -107,7 +85,7 @@ namespace RealLifeOverhaul
 
             internal static void Disconnect()
             {
-                ServicesBridges.Reset();   // (the Planner's director goes with the city, and its sources with it)
+                ServicesBridges.Reset();   // the Planner's director goes with the city, and its sources with it
                 CompanyBridges.OtherIncome = null;
                 CompanyBridges.Cleaned = null;
             }
@@ -206,13 +184,16 @@ namespace RealLifeOverhaul
                     {
                         sum += Loans[i].remainingAmount;
                     }
-                    Loans.Clear();
                     return Mathf.CeilToInt(Mathf.Min(sum, int.MaxValue / 4));
                 }
                 catch (Exception e)
                 {
                     Fault("ServicesLinks.LoansOwed", e);
                     return 0;
+                }
+                finally
+                {
+                    Loans.Clear();   // no loan of the game's kept past the answer, a fault or not
                 }
             }
 
@@ -237,13 +218,16 @@ namespace RealLifeOverhaul
                         save.Loans.Remove(loan);
                         GameEvent.Invoke(GameLoans.LoanPaidEvent);
                     }
-                    Loans.Clear();
                     return all;
                 }
                 catch (Exception e)
                 {
                     Fault("ServicesLinks.SettleLoans", e);
                     return false;
+                }
+                finally
+                {
+                    Loans.Clear();   // no loan of the game's kept past the payment, a fault or not
                 }
             }
 

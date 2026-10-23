@@ -3,25 +3,16 @@ using System;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Money at the city's prices. Every amount of the mod's is written at the prices of the start (the city's price
-    /// index at 100) and asked for here when it is charged, paid or shown, so that all of it moves with the city's
-    /// price level: the factor the city's economy adjusts the game's own rents, wages, shops and services by each night
-    /// (Economy/City, worked out once a month: inflation of -1 % to 12 % a year, moved by the cycle, the central bank and
-    /// events). While the city's economy is off the level stays at the start's and every amount is as written. Every
-    /// feature reads it, so it is the mod's and not the economy's (which no feature calls): game-free and on its own,
-    /// the factor handed in by Wiring/EconomyLinks, so that the checkers compile it with the catalogues. The rules are
-    /// <see cref="PriceRules"/>.
+    /// Money at the city's prices. Every amount of the mod's is written at the start's prices and asked for here when
+    /// charged, paid or shown, so it moves with the factor the city's economy adjusts the game's own costs by; with the
+    /// economy off it is as written. Game-free, with the factor handed in by the wiring, so the checkers compile it.
     /// </summary>
     public static class Prices
     {
-        /// <summary>
-        /// The factor the city's economy adjusts the game's own costs by, in tenths of a point (1000 at the start's
-        /// prices): set by the wiring (Economy.CityEconomy.CostFactor, the start's while the city's economy is off).
-        /// Null: the start's prices.
-        /// </summary>
+        /// <summary>The city's cost factor in tenths of a point (1000 at the start), set by the wiring; null: the start's.</summary>
         public static Func<int> Factor;
 
-        /// <summary>The city's price level in tenths of a point: 1000 at the start's prices.</summary>
+        /// <summary>The city's price level in tenths of a point: 1000 at the start.</summary>
         public static int Level
         {
             get
@@ -34,23 +25,18 @@ namespace RealLifeOverhaul
         /// <summary>An amount written at the start's prices, at today's, rounded as prices are named.</summary>
         public static float At(float amount) => PriceRules.At(amount, Level);
 
-        /// <summary>The same, in whole money.</summary>
         public static int At(int amount) => PriceRules.At(amount, Level);
     }
 
-    /// <summary>The rules of <see cref="Prices"/>, game-free (checked by EconomyCheck).</summary>
+    /// <summary>The rules of <see cref="Prices"/>, game-free.</summary>
     public static class PriceRules
     {
         public const int Start = 1000;       // the level at the start's prices, in tenths of a point
-        public const int Quiet = 10;         // within this of the start (1 %), the start's: the city adjusts nothing there either (CityAdjust.Of)
+        public const int Quiet = 10;         // within this of the start (1 %) the start's level: the city adjusts nothing there either
         public const int Least = 500;        // the level is read within these (the index runs from 50 to 400)
         public const int Most = 4000;
 
-        /// <summary>
-        /// The level from the city's factor for costs (CityModel.Costs, tenths of a point): the start's within the quiet
-        /// band, as the city adjusts nothing there, so a price of the mod's and the game's own one adjusted by the city
-        /// are always at the same level.
-        /// </summary>
+        /// <summary>The level from the city's cost factor: the start's within the quiet band, as the city's own adjusting.</summary>
         public static int Level(int factor)
         {
             if (Math.Abs(factor - Start) < Quiet)
@@ -73,7 +59,7 @@ namespace RealLifeOverhaul
             return Round(amount * Math.Max(Least, Math.Min(Most, level)) / Start);
         }
 
-        /// <summary>The same, in whole money (an amount under 10 is rounded to the whole after its own rounding).</summary>
+        /// <summary>The same in whole money (an amount under 10 is rounded to the whole after its own rounding).</summary>
         public static int At(int amount, int level)
         {
             if (level == Start)

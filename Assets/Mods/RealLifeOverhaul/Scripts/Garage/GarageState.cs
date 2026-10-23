@@ -23,17 +23,14 @@ namespace RealLifeOverhaul
         public BikeKind Kind;
         public bool Owned;         // false: on hire from a bike-share dock
         public Vector3 Position;   // where it last stood, to put an owned one back if the game removed its scooter
-        public float Heading;
+        public float Heading;   // degrees
         public int Day;            // the day it was hired
         public int Colour = -1;    // 0xRRGGBB of the frame or tank, -1 = the model's own
     }
 
     /// <summary>
-    /// The Garage's part of a save: what each car carries from the custom shop, and which of the save's
-    /// scooters are really bicycles and motorbikes. Two strings in the save's modData and nothing else.
-    /// The vehicles themselves stay exactly what the base game made: a car keeps its dealer colour name,
-    /// a two-wheeler is an ordinary electric scooter. A save loaded without the mod therefore shows stock
-    /// cars and scooters, and the game cleans the scooters up by itself as it does any other.
+    /// The Garage's part of a save, two strings in modData: each car's build, and which scooters are two-wheelers. The
+    /// vehicles stay what the game made, so a save loaded without the mod shows stock cars and scooters.
     /// </summary>
     public static class GarageState
     {
@@ -131,11 +128,7 @@ namespace RealLifeOverhaul
             Version++;
         }
 
-        /// <summary>
-        /// Called while the game saves. A car that is no longer in the save (sold, scrapped) loses its build
-        /// here, and a hired two-wheeler whose scooter is gone is forgotten; an owned one is kept, with where
-        /// it stood, so that it can be put back.
-        /// </summary>
+        /// <summary>While the game saves: builds of cars gone and hires gone are forgotten; an owned bike is kept to be put back.</summary>
         public static void Save(Dictionary<string, string> data, List<VehicleInstance> vehicles)
         {
             if (!Loaded || data == null)
@@ -242,21 +235,15 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// Where the Garage meets features it must not depend on. Each is a delegate another feature may set
-    /// when it loads; left null, the default written beside it applies. And the other way round: what
-    /// those features may want to know about a car's build, by vehicle instance id, safe to call at any time.
+    /// Where the Garage meets features it must not depend on: delegates they may set (null: the default beside it), and
+    /// what they may ask of a car's build by vehicle id, safe at any time.
     /// </summary>
     public static class GarageBridges
     {
-        /// <summary>
-        /// Licences: does the player hold a motorcycle licence? Null: yes. Buying a motorbike is never refused; the dealer says so in
-        /// a sentence if the answer is no. Riding without one is policed by Licences like driving a car without a licence.
-        /// </summary>
+        /// <summary>Licences: does the player hold a motorcycle licence? Null: yes. A motorbike is sold all the same; the dealer says so.</summary>
         public static Func<bool> HasMotorcycleLicence;
 
-        /// <summary>
-        /// For Licences: what a vehicle of the save is. 0 neither, 1 a bicycle (no licence), 2 a motorbike.
-        /// </summary>
+        /// <summary>For Licences: 0 neither, 1 a bicycle (no licence), 2 a motorbike.</summary>
         public static int TwoWheelerKind(VehicleController vehicle)
         {
             BikeRecord bike = vehicle != null && vehicle.vehicleInstance != null ? GarageState.Bike(vehicle.vehicleInstance.id) : null;
@@ -283,11 +270,7 @@ namespace RealLifeOverhaul
         /// <summary>Weather: is the road wet? Null: wet while the game's rain is falling.</summary>
         public static Func<bool> RoadIsWet;
 
-        /// <summary>
-        /// Crime: the police have noticed something about the player's vehicle ("exhaust", "helmet"). The
-        /// argument is the fine the Garage would charge. Return true if the Crime feature dealt with it (a stop,
-        /// a ticket of its own); false or null: the Garage charges the fine itself through the mod's own fine.
-        /// </summary>
+        /// <summary>Crime: the police noticed something ("exhaust", "helmet") with the Garage's fine. False or null: the Garage fines.</summary>
         public static Func<string, int, bool> PoliceNotice;
 
         /// <summary>Ragdoll: the rider has come off at this speed (m/s). Return true if a knockdown was played. Null: the bike just stops.</summary>

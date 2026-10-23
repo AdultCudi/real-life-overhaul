@@ -11,54 +11,30 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// The mod's notifications, told apart from the game's at a glance in the game's own toast and the game's own list:
-    /// each carries a picture of what it is about (<see cref="NoticeKinds"/>) on a disc in the mod's own colour, where the
-    /// game's carry theirs. The game's own notifications, and every other mod's, are left exactly as the game draws them.
-    ///
-    /// How the game draws them (decompiled UI.Notification): <c>NotificationsUI.ShowNotification</c> copies one of four
-    /// templates by type (background sprite button-green, -red, -gray, -orange) into its <c>container</c>, and the copy's
-    /// <c>Text/Image</c> is its picture (44 x 44, the game's Icon-Increase); the list
-    /// (<c>NotificationListCellView.SetData</c>) sets a row's background by type and, under its <c>Icon</c> (the white
-    /// "Circle", 48 x 48), switches on the one child named after the type (check, info, exclamation, close).
-    ///
-    /// The mod's look is put on in the same objects, at the moment the game makes them:
-    /// - A toast: this listens on <c>Notifications.onShow</c>, the game's own event for a notification, after the
-    ///   game's toast maker (re-joined at its end whenever something joined after it), and gives the copy just made a
-    ///   disc in the mod's colour for its picture with the kind's picture on it. A copy is made for each notification
-    ///   and destroyed after it, so nothing of the game's is changed and nothing needs putting back.
-    /// - A row of the list: this listens on the list scroller's <c>cellViewVisibilityChanged</c>, which the scroller
-    ///   raises right after the game has filled a row it brings into view (EnhancedScroller._AddCellView). The game
-    ///   reuses rows, so every row is set either way: the mod's get the disc in its colour and the kind's picture as one
-    ///   more child of <c>Icon</c>, which the game's own <c>SetData</c> switches off again for a row of its own; any
-    ///   other row gets back the game's white disc.
-    /// Nothing goes over the network: a guest of Going Public sees the look on what its own game shows, as the host does.
-    ///
-    /// Pictures: the game's own where one fits and is in memory (found once behind the loading screen through
-    /// <see cref="GameSprites"/>), otherwise one of the mod's drawn glyphs (<see cref="MapPlaces.Glyph"/>).
-    ///
-    /// Cost: nothing per frame (no Update). A notification: a prefix test of its key, and for the mod's a walk of the
-    /// kinds table and a few transform and image writes on the toast just made. A row brought into view: the same, plus
-    /// a look through its four or five icon children.
+    /// The mod's notifications told apart at a glance in the game's own toast and list: a picture of their kind
+    /// (<see cref="NoticeKinds"/>) on a disc in the mod's colour; the game's and other mods' are left alone. The look goes on
+    /// each toast as the game makes it (Notifications.onShow, joined last) and on each list row as the scroller fills it,
+    /// reused rows of the game's getting their white disc back. Nothing is sent. Costs nothing a frame.
     /// </summary>
     public sealed class NoticeLook : MonoBehaviour
     {
         public static IModLogger Logger;
         public static NoticeLook Instance { get; private set; }
 
-        /// <summary>The game's stack of notifications (NotificationsUI.container), once found behind the loading screen; null before. NoticeRoom moves it under the mod's panels.</summary>
+        /// <summary>The game's stack of notifications (NotificationsUI.container), found behind the loading screen; null before. NoticeRoom moves it.</summary>
         internal Transform Container => _container;
 
         private const string GlyphName = "RealLifeOverhaul";       // the mod's child on a picture's disc
-        private const float ToastDisc = 52f;                       // the toast's picture, px of its 3840 x 2160 canvas (the game's is 44)
+        private const float ToastDisc = 52f;                       // px of its 3840 x 2160 canvas (the game's is 44)
         private const float ToastGlyph = 32f;                      // the kind's picture on it
-        private const float RowGlyph = 30f;                        // the kind's picture on the list's 48 px disc (the game's are 24)
-        private const float TestGap = 1.2f;                        // s of real time between the test's notifications
-        private const float TestSeconds = 6f;                      // s each of them stays up
+        private const float RowGlyph = 30f;                        // on the list's 48 px disc (the game's pictures are 24)
+        private const float TestGap = 1.2f;                        // seconds of real time between the test's notifications
+        private const float TestSeconds = 6f;                      // seconds each of them stays up
 
-        /// <summary>The mod's colour: a deep indigo, unlike any of the game's four, that a white picture reads on over each.</summary>
+        /// <summary>The mod's colour: a deep indigo, unlike the game's four, that a white picture reads on.</summary>
         public static readonly Color Accent = new Color(0.17f, 0.19f, 0.45f, 1f);
 
-        // The game's picture for a kind where there is one (first found wins), else the mod's glyph.
+        // The game's picture for a kind where there is one, else the mod's glyph.
         private static readonly string[][] GameNames =
         {
             null,
@@ -81,7 +57,7 @@ namespace RealLifeOverhaul.GameUi
             MapIcon.Tower, MapIcon.Cloud, MapIcon.Paper, MapIcon.Heart, MapIcon.Star
         };
 
-        // The options page's test: one notification of each kind, by its own key (NoticeKinds' "notice_test_" rows).
+        // The options page's test: one notification of each kind, by its own key.
         private static readonly string[] TestKeys =
         {
             "reallife_notice_test_road", "reallife_notice_test_police", "reallife_notice_test_health", "reallife_notice_test_money",
@@ -116,7 +92,7 @@ namespace RealLifeOverhaul.GameUi
         private void Awake()
         {
             Instance = this;
-            _onShow = Guard.Wrap<NotificationType, string, Dictionary<string, string>, float, string, Action, bool, bool>(Shown);   // (the game's own events: Core/Guard)
+            _onShow = Guard.Wrap<NotificationType, string, Dictionary<string, string>, float, string, Action, bool, bool>(Shown);   // the game's own events: Core/Guard
             _onRow = new CellViewVisibilityChangedDelegate(Guard.Wrap<EnhancedScrollerCellView>(RowShown));
         }
 
@@ -140,7 +116,20 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>One-off work behind the loading screen (ScenePrewarm): finds the game's toast maker and list, and the pictures. True once done.</summary>
+        /// <summary>The game's pictures the notices ask for, named before the one look behind the loading screen (GameSprites.Prewarm).</summary>
+        internal static void WantPictures()
+        {
+            GameSprites.Want("circle");
+            for (int kind = 1; kind < GameNames.Length; kind++)
+            {
+                if (GameNames[kind] != null)
+                {
+                    GameSprites.Want(GameNames[kind]);
+                }
+            }
+        }
+
+        /// <summary>One-off work behind the loading screen (ScenePrewarm): the game's toast maker, its list and the pictures. True once done.</summary>
         public static bool Prewarm()
         {
             NoticeLook look = Instance;
@@ -155,7 +144,7 @@ namespace RealLifeOverhaul.GameUi
             UIs uis = InstanceBehavior<UIs>.Instance;
             if (uis == null || uis.notificationsListUI == null)
             {
-                return false;   // the interface is not there yet: tried again the next time the screen is black
+                return false;   // the interface is not there yet: tried again at the next black screen
             }
             look.Attach(uis);
             return true;
@@ -164,7 +153,7 @@ namespace RealLifeOverhaul.GameUi
         private void Attach(UIs uis)
         {
             _attached = true;
-            // The toast maker: Canvases/NotificationsUI, beside the list's Canvases/NotificationsList (the UI scene, level4).
+            // The toast maker, Canvases/NotificationsUI, stands beside the list's Canvases/NotificationsList.
             Transform canvases = uis.notificationsListUI.transform.parent;
             Transform maker = canvases != null ? canvases.Find("NotificationsUI") : null;
             _toasts = maker != null ? maker.GetComponent<NotificationsUI>() : null;
@@ -239,29 +228,26 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        // Last on the game's event, so that the toast is made by the time this runs.
+        // Last on the game's event, so the toast is made by the time this runs.
         private void Join()
         {
             Notifications.onShow = (Action<NotificationType, string, Dictionary<string, string>, float, string, Action, bool, bool>)Delegate.Remove(Notifications.onShow, _onShow);
             Notifications.onShow = (Action<NotificationType, string, Dictionary<string, string>, float, string, Action, bool, bool>)Delegate.Combine(Notifications.onShow, _onShow);
         }
 
-        // ---------------------------------------------------------------- the toast
-
         private void Shown(NotificationType type, string key, Dictionary<string, string> data, float seconds, string duplicate, Action onClick, bool sound, bool track)
         {
             try
             {
                 Transform made = Newest();
-                // Something joined the event after this did (it is the last one's target a combined delegate reports):
-                // join again at its end, for the next notification.
+                // Something joined the event after this (a combined delegate reports the last one's target): join again at its end.
                 if (!ReferenceEquals(Notifications.onShow?.Target, this))
                 {
                     Join();
                 }
                 if (made == null)
                 {
-                    return;   // nothing new: the game's maker had not run yet (it is now ahead of this)
+                    return;   // the game's maker had not run yet (it is now ahead of this)
                 }
                 _lastToast = made;
                 NoticeKind kind = Settings.NoticeLook ? NoticeKinds.Of(key) : NoticeKind.None;
@@ -304,7 +290,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        // The toast the game's maker has just put at the end of its container, or null if there is none new.
+        // The toast the game's maker just put at the end of its container, or null if none is new.
         private Transform Newest()
         {
             if (_container == null || _container.childCount == 0)
@@ -325,8 +311,6 @@ namespace RealLifeOverhaul.GameUi
             }
             return last;
         }
-
-        // ---------------------------------------------------------------- a row of the list
 
         private void RowShown(EnhancedScrollerCellView view)
         {
@@ -353,7 +337,7 @@ namespace RealLifeOverhaul.GameUi
                 NoticeKind kind = Settings.NoticeLook ? NoticeKinds.Of(key) : NoticeKind.None;
                 if (kind == NoticeKind.None)
                 {
-                    disc.color = _rowDisc;   // a reused row of the game's: its white disc, and SetData has already put its own picture on and the mod's off
+                    disc.color = _rowDisc;   // a reused row of the game's: SetData already put its picture on and the mod's off
                     Transform mine = icon.Find(GlyphName);
                     if (mine != null)
                     {
@@ -381,7 +365,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        // The mod's picture on a disc: made once on each toast or reused row, white, centred, never a click target.
+        // Made once on each toast or reused row: white, centred, never a click target.
         private static Image Glyph(Transform disc, float size)
         {
             Transform found = disc.Find(GlyphName);
@@ -403,9 +387,7 @@ namespace RealLifeOverhaul.GameUi
             return image;
         }
 
-        // ---------------------------------------------------------------- the options page's test
-
-        /// <summary>Options > Tests: one notification of each kind, a little apart, kept in the list as any other.</summary>
+        /// <summary>Options > Tests: one notification of each kind, a little apart, kept in the list like any other.</summary>
         public static void Test()
         {
             NoticeLook look = Instance;

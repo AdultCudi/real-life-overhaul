@@ -1,27 +1,12 @@
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// When a search of the whole scene for something that can turn up at any time may be made: only while the screen
-    /// shows black (the loading screen, or the game's own black screen drawn at full strength), never while the game is
-    /// being played, and never while that black screen fades in or out. Such a search is a frame of some 80 to 110 ms in
-    /// a city (Core/SceneFinds), and the game's fades at a door take 0.2 s each way (BuildingManager.EnterBuildingCoroutine
-    /// and ExitFromBuildingCoroutine: UiFader.Fade(0.2f), UnFade(0.2f)): a long frame in one of them stops the picture that
-    /// shows through it, and the player sees it.
-    ///
-    /// A stretch is the time the game's fade is under way, from the first frame of its fade out to the end of its fade
-    /// back in, or the loading screen (<c>dark</c>). A search is made only on a frame of it in which the screen is fully
-    /// black (<c>black</c>), twice at the most in one stretch:
-    ///  - as soon as the game says a building has come in behind it (<see cref="Arrived"/>: its "entered, and settled"
-    ///    call, GlobalEvents.onEnterBuildingDelayed, made with the screen still black, four frames before its fade back
-    ///    in begins: BuildingManager.DelayedEnterBuildingActions, then WarmUpBehaviourManager);
-    ///  - otherwise once it has been up for <see cref="First"/> seconds (a sleep, a taxi, a long black screen), and once
-    ///    more at <see cref="Second"/> if it is still up.
-    /// Up to 0.47.0 the search was made half a second into any fade, which at a door is in the middle of the fade back in:
-    /// every walk into a building ended in a frame of 80 to 110 ms with the room half shown (the session of 21 Oct 2026:
-    /// 27 searches, 21 of them frames over 80 ms).
-    ///
-    /// One per searcher. Asked once a frame, it costs a few comparisons. No Unity or game types: checked offline
-    /// (NavCheck, HotSpotCheck.cs).
+    /// When a whole-scene search for something that can turn up at any time may be made: only on a frame the screen
+    /// shows black, never in play and never in the game's 0.2 s fades at a door, where a frame of 80 to 110 ms stops the
+    /// picture showing through. In one dark stretch (the fade under way, or the loading screen) a search is made at most
+    /// twice: as soon as the game says a building has come in behind it (<see cref="Arrived"/>, onEnterBuildingDelayed,
+    /// four frames before the fade back in), else after <see cref="First"/> seconds and again at <see cref="Second"/>.
+    /// One per searcher; a few comparisons a frame. Game-free.
     /// </summary>
     public sealed class SearchPace
     {
@@ -31,25 +16,20 @@ namespace RealLifeOverhaul
 
         private float _since = -1f;         // when the stretch began; negative while the game is being played
         private int _made;                  // searches made in this stretch
-        private bool _arrived;              // the game has said a building came in behind the black screen, and no search has been made since
+        private bool _arrived;              // a building came in behind the black screen, and no search since
 
-        /// <summary>Searches made while hidden since this pace was made, for the log and the checks.</summary>
+        /// <summary>Searches made while hidden, for the log and the checks.</summary>
         public int Made { get; private set; }
 
-        /// <summary>
-        /// The game says a building has come in behind its black screen (its "entered, and settled" call): the next frame
-        /// of the stretch in which the screen is black makes a search, the one that finds who is in it.
-        /// </summary>
+        /// <summary>A building has come in behind the black screen: the next black frame makes a search.</summary>
         public void Arrived()
         {
             _arrived = true;
         }
 
         /// <summary>
-        /// True if a search may be made now. <paramref name="dark"/>: the stretch is under way (the loading screen, or the
-        /// game's black screen up or fading); <paramref name="black"/>: the screen shows black in this frame (the loading
-        /// screen, or the black screen at full strength); <paramref name="now"/>: real seconds. The caller makes the search
-        /// when this says so.
+        /// True if a search may be made now. <paramref name="dark"/>: the stretch is under way; <paramref name="black"/>:
+        /// the screen shows black in this frame; <paramref name="now"/>: real seconds.
         /// </summary>
         public bool Due(bool dark, bool black, float now)
         {
@@ -57,7 +37,7 @@ namespace RealLifeOverhaul
             {
                 _since = -1f;
                 _made = 0;
-                _arrived = false;   // (said with nothing dark: the game went in without its fade)
+                _arrived = false;   // said with nothing dark: the game went in without its fade
                 return false;
             }
             if (_since < 0f)

@@ -84,7 +84,10 @@ namespace RealLifeOverhaul.Meta
 
         private static void TryInstall()
         {
-            GameSprites.Want("Icon-Info", "Icon-Edit", "Icon-Notifications");
+            if (!PhoneApp.PhoneUp)
+            {
+                return;   // the game's phone is not built yet: asked again next time, nothing made for it
+            }
             var view = new GuideView();
             _app = PhoneApp.Install(new PhoneAppDef
             {
@@ -175,6 +178,12 @@ namespace RealLifeOverhaul.Meta
             {
                 MetaLog.Error(e);
             }
+        }
+
+        /// <summary>The game's pictures this asks for, named before the one look behind the loading screen (GameSprites.Prewarm).</summary>
+        internal static void WantPictures()
+        {
+            GameSprites.Want("Icon-Info", "Icon-Edit", "Icon-Notifications");
         }
     }
 }

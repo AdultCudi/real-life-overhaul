@@ -9,17 +9,13 @@ using UnityEngine;
 namespace RealLifeOverhaul.Nav
 {
     /// <summary>
-    /// The director's part for the city under the minimap's roads (NavBase: buildings and water): when it is made,
-    /// when the panel is given it, its two checks and its three tests.
-    ///
-    /// Cost: nothing of this runs per frame (the one test of NavBase.Busy is in Update). On the slow tick, four times
-    /// a second: three comparisons while nothing has changed. With the option off the picture is let go and the
-    /// panel is exactly what it is without it.
+    /// The director's part for the buildings and water under the minimap's roads (<see cref="NavBase"/>): when it is made
+    /// and given to the panel, its two checks and its three tests. Three comparisons on the slow tick while nothing changes.
     /// </summary>
     public sealed partial class NavDirector
     {
-        private const float AloneSeconds = 20f;     // the test "show the base alone" puts the roads back after this long
-        private const float TrialSeconds = 600f;    // the test's three markers go after this long
+        private const float AloneSeconds = 20f;     // seconds the test "show the base alone" leaves the roads off
+        private const float TrialSeconds = 600f;    // seconds the test's three markers stay
         private const float MisfitMost = 1f;        // metres the picture and the markers may disagree by
         private const float DoorMost = 8f;          // metres a building's door may lie outside its own outline (a porch, steps)
 
@@ -28,8 +24,7 @@ namespace RealLifeOverhaul.Nav
         private bool _baseGiven, _baseChecked, _baseAgain;
         private float _aloneUntil, _trialUntil;
 
-        // On the slow tick, loading screen or not: the picture is begun as soon as the roads are there (from the mod's
-        // folder that is done under the loading screen), and let go when its option or the minimap is switched off.
+        // On the slow tick: begun once the roads are there, let go when its option or the minimap is switched off.
         private void BaseWanted(bool wantMap)
         {
             if (!wantMap || !Settings.MinimapBase)
@@ -44,7 +39,7 @@ namespace RealLifeOverhaul.Nav
             if (_base.Idle && _graph.Finished)
             {
                 _base.Begin(_graph, _baseAgain);
-                _baseAgain = _baseAgain && _base.Idle;   // (still idle: the game's palette was not there yet, asked again on the next tick)
+                _baseAgain = _baseAgain && _base.Idle;   // still idle: the game's palette was not there yet, asked again next tick
             }
         }
 
@@ -60,7 +55,7 @@ namespace RealLifeOverhaul.Nav
             }
         }
 
-        // On the slow tick with a save loaded: the panel gets the picture once, the checks are written once, and what a test put out is taken back.
+        // On the slow tick with a save loaded: the picture given and the checks written once, and a test's doings taken back.
         private void BaseShown(float now)
         {
             if (_base.Picture != null)
@@ -92,8 +87,7 @@ namespace RealLifeOverhaul.Nav
             }
         }
 
-        // Two lines, once per picture: what it is, and whether three buildings far from one another (and the player)
-        // are drawn where the markers' layer puts them.
+        // Two lines once per picture: what it is, and whether it and the markers' layer agree on three buildings far apart.
         private void BaseCheck()
         {
             NavBaseData data = _base.Data;
@@ -151,8 +145,6 @@ namespace RealLifeOverhaul.Nav
                          + worstDoor.ToString("F1", plain) + " m outside it (wanted " + DoorMost.ToString("F0", plain) + " m or less): " + (fits ? "PASS" : "FAIL"));
         }
 
-        // ---------------------------------------------------------------- tests
-
         private bool BaseRefused(string test, bool needsPicture)
         {
             if (!ModState.Loaded || SaveGameManager.Current == null || PlayerHelper.PlayerController == null)
@@ -182,7 +174,7 @@ namespace RealLifeOverhaul.Nav
             return false;
         }
 
-        /// <summary>"Test: minimap, buildings and water alone": the roads, the route and the markers are left off the minimap for 20 seconds.</summary>
+        /// <summary>"Test: minimap, buildings and water alone": the roads, the route and the markers left off for a while.</summary>
         public void TestBaseAlone()
         {
             try
@@ -209,11 +201,7 @@ namespace RealLifeOverhaul.Nav
             }
         }
 
-        /// <summary>
-        /// "Test: minimap, mark three buildings": a marker for ten minutes on the door of the building nearest the
-        /// player (in view at once) and of two buildings far from each other, so that it can be seen whether a
-        /// marker stands on its building's front.
-        /// </summary>
+        /// <summary>"Test: minimap, mark three buildings": markers on the nearest building's door and two far apart.</summary>
         public void TestBaseMarks()
         {
             try
@@ -273,7 +261,7 @@ namespace RealLifeOverhaul.Nav
             }
         }
 
-        /// <summary>"Test: minimap, measure the city again": the kept file is deleted and the buildings and water are measured and drawn anew.</summary>
+        /// <summary>"Test: minimap, measure the city again": the kept file deleted, the buildings and water measured anew.</summary>
         public void TestBaseAgain()
         {
             try

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using BAModAPI;
 using Player.HUD.SmartphoneUI;
 using TMPro;
@@ -11,28 +10,21 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Makes the HUD phone look like a phone: a rounded thin-bezel body, an opaque wallpaper
-    /// instead of the see-through slab, a status bar with the time, a camera cut-out and a
-    /// home bar. It plugs into the game's own phone-frame system (the default entry of
-    /// SmartPhoneFrame), so phone accessories bought in game keep working.
-    /// All artwork is generated once in code; the only recurring work is updating the clock
-    /// text when the in-game minute changes. A photo of the Gallery's can be the wallpaper
-    /// (<see cref="Wallpaper"/>): it is laid over the drawn one, its middle cut to the screen's
-    /// shape, and taken away again when the look is switched off (and back when it is on).
+    /// Makes the HUD phone look like a modern phone: a thin rounded body, an opaque wallpaper (or a Gallery photo), a status
+    /// bar, a camera cut-out and a home bar. It goes in through the default entry of the game's SmartPhoneFrame, so bought
+    /// phone accessories keep working. The artwork is drawn once a session; a frame costs one minute comparison for the clock.
     /// </summary>
     public class PhoneSkin : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("phone", "PhoneSkin", typeof(PhoneSkin));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("phone", "PhoneSkin", typeof(PhoneSkin));
 
-        private const int TextureSize = 256;
-        private const int SliceBorder = 72;
-        private const float CornerRadius = 62f;
-        private const float BezelWidth = 18f;
+        private const int TextureSize = 256;   // pixels
+        private const int SliceBorder = 72;    // pixels
+        private const float CornerRadius = 62f;   // pixels
+        private const float BezelWidth = 18f;     // pixels
 
         public static IModLogger Logger;
-
-
-        // Generated once per session and shared by every city load.
+        // Drawn once a session and shared by every city load.
         private static Sprite _frameSprite;
         private static Sprite _maskSprite;
         private static Sprite _wallpaperSprite;
@@ -58,8 +50,8 @@ namespace RealLifeOverhaul
         private GameObject _chrome;
         private TextMeshProUGUI _clock;
         private int _clockMinute = -1;
-        private RawImage _photo;            // a photo of the Gallery's as the wallpaper (Photos/GalleryApp), over the drawn one
-        private Texture _photoTexture;      // ...its picture, the Gallery's own: it is never destroyed here
+        private RawImage _photo;            // a Gallery photo as the wallpaper, over the drawn one
+        private Texture _photoTexture;      // the Gallery's own texture: never destroyed here
 
         private const float ScreenShape = 628f / 1230f;   // the HUD phone's width to its height (Smartphone/Container), until its screen is laid out
 
@@ -69,11 +61,7 @@ namespace RealLifeOverhaul
         /// <summary>True while the modern look is on the phone: only then has it a wallpaper a photo can be.</summary>
         public bool Applied => _applied;
 
-        /// <summary>
-        /// A picture as the phone's wallpaper (null: the drawn one again). False, and nothing taken, while the look is off. A
-        /// picture taken stays the wallpaper when the look is switched off and on again; the caller keeps it alive until it
-        /// puts the drawn one back.
-        /// </summary>
+        /// <summary>A picture as the wallpaper, or null for the drawn one; false while the look is off. The caller keeps the picture alive.</summary>
         public bool Wallpaper(Texture picture)
         {
             if (picture != null && !_applied)
@@ -124,7 +112,7 @@ namespace RealLifeOverhaul
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;   // switched off after its faults
                 return;
             }
             try
@@ -432,7 +420,6 @@ namespace RealLifeOverhaul
             return new Color(1f, 1f, 1f, Mathf.Clamp01(0.5f - d));
         }
 
-        // Deep navy at the bottom rising to a dusk blue-violet at the top.
         private static Color WallpaperPixel(float x, float y, int width, int height)
         {
             float t = y / height;

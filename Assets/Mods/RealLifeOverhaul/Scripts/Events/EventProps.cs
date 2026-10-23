@@ -3,14 +3,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Events
 {
-    /// <summary>
-    /// The props of fires and street events, by id. A prop is the modelled one from the prop
-    /// bundle when the bundle has it; until then a clean stand-in built here from the shared
-    /// plain shapes (Core/Shapes), to the same size and pivot the wish-list in docs/features/city-events.md asks
-    /// for, so that the modelled prop drops in by id with no change here. Objects are made the
-    /// first time they are wanted, kept on a shelf (CityLife/CityProps: one of its own, not the
-    /// living city's) and handed out again; nothing is built or destroyed per scene.
-    /// </summary>
+    /// <summary>The props of fires and street events by id: the modelled one, else a stand-in of plain shapes to the wish-list's size and pivot.</summary>
     internal sealed class EventProps
     {
         public const string Helmet = "fire_helmet";
@@ -42,7 +35,6 @@ namespace RealLifeOverhaul.Events
         private readonly CityProps _shelf;
         private readonly Transform _root;
         private readonly HashSet<string> _noStandIn = new HashSet<string>();
-        private int _standIns;
 
         public EventProps(Transform parent)
         {
@@ -51,13 +43,10 @@ namespace RealLifeOverhaul.Events
             _shelf = new CityProps(_root);
         }
 
-        /// <summary>The shelf itself: what a CityPerson is handed so that a clip can take its own tool.</summary>
+        /// <summary>The shelf itself, handed to a CityPerson so that a clip can take its own tool.</summary>
         public CityProps Shelf => _shelf;
 
-        /// <summary>How many stand-ins were built (for the log).</summary>
-        public int StandIns => _standIns;
-
-        /// <summary>A prop object, switched on. Null only if there is neither a modelled prop nor a stand-in of that id.</summary>
+        /// <summary>A prop object, switched on; null only with neither a modelled prop nor a stand-in of that id.</summary>
         public Transform Take(string id)
         {
             Transform prop = _shelf.Take(id);   // one from the shelf, else the modelled prop
@@ -73,11 +62,9 @@ namespace RealLifeOverhaul.Events
                 _noStandIn.Add(id);
                 return null;
             }
-            _standIns++;
             return made.transform;
         }
 
-        /// <summary>A prop stood on the ground at a place, turned about the upright axis.</summary>
         public Transform Stand(string id, Vector3 position, float heading)
         {
             Transform prop = Take(id);
@@ -94,8 +81,7 @@ namespace RealLifeOverhaul.Events
             _shelf.Return(prop);
         }
 
-        // ---------------------------------------------------------------- the stand-ins (sizes and pivots as the wish-list has them)
-
+        // The stand-ins, to the wish-list's sizes and pivots.
         private static bool Build(string id, Transform root)
         {
             Mesh cube = Shapes.Cube;

@@ -8,42 +8,21 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.Photos
 {
     /// <summary>
-    /// The viewfinder: a phone camera's own look over the whole screen (an exception to the native rule it shares with
-    /// Flare; its lettering is the game's own font and its rounded shapes Flare's, Social/Flare/FlareKit).
-    /// Laid out on a canvas of the game's size (3840 by 2160, matched by height), from the top:
-    ///
-    ///   the top bar      a dark strip 150 high: Close on the left, the camera's name ("Rear camera", "Selfie") in the
-    ///                    middle with the zoom under it ("1.0x", the rear camera only), Grid on the right (lit while the
-    ///                    rule of thirds shows) and, for the selfie, Pose beside it
-    ///   the keys         a line under the bar: drag to aim, the wheel, the confirm key takes a photo, the cancel key leaves
-    ///   the grid         two lines across and two down at the thirds, thin and half clear
-    ///   the chips        a row over the bottom bar: the five filters (Natural, Warm, Cool, Black and white, Vivid), a gap,
-    ///                    the three frames (No frame, Border, Film); the one chosen of each lit
-    ///   the bottom bar   a dark strip 330 high: the latest photo's small copy on the left (opens it whole in the Gallery), the shutter
-    ///                    in the middle (a white ring round a white disc), on the right a dark disc naming the camera it
-    ///                    turns to ("Selfie", "Rear")
-    ///   a toast          a dark pill in the middle for a moment: "Saved to the Gallery", or why not
-    ///   the frame        drawn over the picture and taken with it: an instant photo's white border, or a film's bars
-    ///   the flash        white over everything for a quarter of a second as the shutter goes
-    ///
-    /// For a shot everything but the frame is put away for the frame the screen is read in (<see cref="ForShot"/>). The
-    /// drag and the wheel over the picture are caught by a clear surface under the controls (ViewfinderInput), so nothing
-    /// reaches the world behind it.
-    ///
-    /// COST: built once, the first time the camera opens (some sixty objects); shown and hidden with the camera. While it
-    /// is up, the camera's frame changes only what changed (a text set when it differs, a fade's alpha).
+    /// The viewfinder over the whole screen: a phone camera's own look, an exception to the native rule shared with Flare
+    /// (the game's font, FlareKit's shapes). Bars, filter and frame chips, the shutter, a toast and the flash, on a canvas
+    /// of the game's 3840 by 2160. Built once, about sixty objects; while up, a frame sets only what changed.
     /// </summary>
     internal sealed class CameraView
     {
-        private const float Height = 2160f;          // the canvas's height in its own units (the game's)
+        private const float Height = 2160f;          // canvas units
         private const float TopBar = 150f;
         private const float BottomBar = 330f;
         private const float ChipHeight = 76f, ChipWidth = 250f, ChipGap = 16f, ChipGroupGap = 60f;
-        private const int SortingOrder = 20;         // over the game's HUD and menus (which are hidden meanwhile), under its text box (21)
+        private const int SortingOrder = 20;         // over the game's HUD and menus, under its text box (21)
 
         private static readonly Color Bar = new Color(0f, 0f, 0f, 0.45f);
         private static readonly Color Pill = new Color(0.12f, 0.12f, 0.14f, 0.85f);
-        private static readonly Color Lit = new Color(1f, 0.82f, 0.2f, 1f);      // a phone camera's yellow, for what is on
+        private static readonly Color Lit = new Color(1f, 0.82f, 0.2f, 1f);
         private static readonly Color Line = new Color(1f, 1f, 1f, 0.45f);
         private static readonly Color Paper = new Color(0.97f, 0.96f, 0.93f, 1f);
 
@@ -62,7 +41,6 @@ namespace RealLifeOverhaul.Photos
         private readonly TextMeshProUGUI[] _frameLabels = new TextMeshProUGUI[3];
         private float _laidWidth = -1f;
 
-        /// <summary>The drag and the wheel over the picture, for the camera to take each frame.</summary>
         public readonly ViewfinderInput Input;
 
         public CameraView(Transform parent, Action close, Action shoot, Action flip, Action grid, Action pose, Action gallery, Action<int> filter, Action<int> frame)
@@ -160,7 +138,6 @@ namespace RealLifeOverhaul.Photos
             _root.SetActive(false);
         }
 
-        // A pill with a word, clicked.
         private static Image Button(Transform parent, string name, Color colour, out TextMeshProUGUI label, Action click)
         {
             Image pill = FlareKit.Box(parent, name, colour, 0f, true, true);
@@ -195,9 +172,7 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        // ---------------------------------------------------------------- laying it out
-
-        /// <summary>Everything placed for the screen's shape now; again only when the shape changes.</summary>
+        /// <summary>Everything placed for the screen's shape; does nothing until the shape changes.</summary>
         public void Lay(CameraFrame frame)
         {
             float w = _canvas.rect.width;
@@ -253,9 +228,6 @@ namespace RealLifeOverhaul.Photos
             FlareKit.Place(_toastBack.rectTransform, mid - 700f, h / 2f - 60f, 1400f, 120f);
         }
 
-        // ---------------------------------------------------------------- what it shows
-
-        /// <summary>The camera's state written: which camera, the zoom, the grid, the pose, the filter and frame chosen, the line of keys.</summary>
         public void Write(bool selfie, float zoom, bool grid, string poseKey, int filter, CameraFrame frame)
         {
             FlareKit.Set(_mode, PhotosText.T(selfie ? "reallife_phonecam_mode_selfie" : "reallife_phonecam_mode_rear"));
@@ -298,27 +270,26 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        /// <summary>The latest photo's small copy on the Gallery button (null: none yet, a plain tile).</summary>
+        /// <summary>The latest photo's small copy on the Gallery button; null for a plain tile.</summary>
         public void Latest(Texture texture)
         {
             _thumb.texture = texture;
             _thumb.color = texture != null ? Color.white : new Color(0.2f, 0.2f, 0.22f, 1f);
             if (texture != null && texture.height > 0)
             {
-                // the middle square of the picture, as a phone's gallery button shows it
+                // the middle square of the picture
                 float shape = (float)texture.width / texture.height;
                 _thumb.uvRect = shape >= 1f ? new Rect((1f - 1f / shape) / 2f, 0f, 1f / shape, 1f) : new Rect(0f, (1f - shape) / 2f, 1f, shape);
             }
         }
 
-        /// <summary>For the frame the screen is read in: everything but the frame put away (true), or back (false).</summary>
+        /// <summary>Everything but the photo's frame put away for the frame the screen is read in, or back.</summary>
         public void ForShot(bool shot, bool grid)
         {
             FlareKit.Show(_controls, !shot);
             FlareKit.Show(_grid, !shot && grid);
         }
 
-        /// <summary>The shutter's white, at a strength from 0 to 1.</summary>
         public void Flash(float strength)
         {
             Color c = _flash.color;
@@ -330,7 +301,7 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        /// <summary>A line in the middle for a moment (null: none), its strength from 0 to 1.</summary>
+        /// <summary>A line in the middle, its strength 0 to 1; null for none.</summary>
         public void Toast(string words, float strength)
         {
             bool on = words != null && strength > 0.01f;
@@ -345,7 +316,6 @@ namespace RealLifeOverhaul.Photos
             _toast.alpha = a;
         }
 
-        /// <summary>The shutter pressed (grey) or ready (white).</summary>
         public void Busy(bool busy)
         {
             _disc.color = busy ? new Color(0.7f, 0.7f, 0.7f, 1f) : Color.white;
@@ -353,17 +323,16 @@ namespace RealLifeOverhaul.Photos
     }
 
     /// <summary>
-    /// The clear surface under the viewfinder's controls: a drag over the picture aims the camera, the wheel zooms. It only
-    /// adds up what came (pixels and notches); the camera takes it each frame. Nothing reaches the world behind it (the
-    /// game's own zoom and clicks ask whether the pointer is over the interface, and it is). No Update.
+    /// The clear surface under the viewfinder's controls: it adds up the drag and the wheel for the camera to take each
+    /// frame, and keeps them from the world behind it. No Update; no cost a frame of its own.
     /// </summary>
     internal sealed class ViewfinderInput : MonoBehaviour, IBeginDragHandler, IDragHandler, IScrollHandler
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("photos", "ViewfinderInput", typeof(ViewfinderInput));   // the engine's calls of it (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("photos", "ViewfinderInput", typeof(ViewfinderInput));
 
         private float _x, _y, _wheel;
 
-        /// <summary>What came since the last take: the drag in pixels (right and up positive) and the wheel in notches (up positive).</summary>
+        /// <summary>The drag in pixels and the wheel in notches since the last take, right and up positive.</summary>
         public void Take(out float x, out float y, out float wheel)
         {
             x = _x;
@@ -419,7 +388,7 @@ namespace RealLifeOverhaul.Photos
                 float d = data != null ? data.scrollDelta.y : 0f;
                 if (d != 0f)
                 {
-                    _wheel += Mathf.Clamp(d / Mathf.Max(1f, Mathf.Min(120f, Mathf.Abs(d))), -1f, 1f);   // a notch an event (mice give 1 or 120 a notch; a touchpad less)
+                    _wheel += Mathf.Clamp(d / Mathf.Max(1f, Mathf.Min(120f, Mathf.Abs(d))), -1f, 1f);   // a notch an event: mice give 1 or 120, a touchpad less
                 }
             }
             catch (Exception fault)

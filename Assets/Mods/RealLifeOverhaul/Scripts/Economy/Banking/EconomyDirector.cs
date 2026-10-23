@@ -124,6 +124,7 @@ namespace RealLifeOverhaul.Economy
         private void Awake()
         {
             Instance = this;
+            GameSprites.Want(FinanceApp.AppGlyphs);   // asked for before the one look behind the loading screen (GameSprites.Prewarm)
             _desk = new CreditDesk(this);
             _deskSlow = _desk.Slow;
             _deskKeep = _desk.KeepHolds;

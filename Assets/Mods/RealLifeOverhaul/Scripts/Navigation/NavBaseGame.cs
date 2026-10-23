@@ -8,46 +8,34 @@ using UnityEngine.AI;
 namespace RealLifeOverhaul.Nav
 {
     /// <summary>
-    /// Everything the minimap's base picture reads from the game, and the only place of it that touches the game.
-    ///
-    /// The game's own city map is not a picture: it is the city itself seen by a camera (CityMap.Toggle sets the main
-    /// camera's culling mask and switches to the map's Cinemachine camera; CityMap.cs 221-284), on which every
-    /// building is drawn by its simple "lodVersion" mesh (CityBuildingController.ToggleLodMode, 230-244). So there is
-    /// no texture to show, and the base is drawn from what the game keeps:
-    ///
-    ///   buildings   CityManager.cityBuildingControllers; each one's outline is the outline of its lodVersion renderer
-    ///               seen from above (the very mesh the game's map shows), or of all its renderers if it has none;
-    ///   water       the game has no water object, layer or list. A place is asked the way Leisure's fishing asks:
-    ///               one look straight down (Physics.Raycast), and whether people can walk there (the navigation mesh);
-    ///   colours     the game's interface palette (GlobalReferences.colors), which the minimap's roads use already;
-    ///   the game's build number (GameVersion), which names the file the measured city is kept in.
-    ///
-    /// Nothing here runs by itself or per frame: NavBase calls it while it measures a city (once per version of the
-    /// game), and the director for its checks and tests.
+    /// The only place the minimap's base picture touches the game. The game's city map is the city under a camera, so
+    /// the base is drawn from what the game keeps: each building's lodVersion mesh seen from above, water asked as
+    /// fishing asks it (a ray down and the navigation mesh), and the game's palette. Run only while a city is measured
+    /// and for the director's checks.
     /// </summary>
     internal static class NavBaseGame
     {
-        private const float WidestOutline = 600f;   // metres: an outline wider than this is not one building's (a renderer that reports a whole batch)
-        private const float WalkReach = 1.2f;       // metres from the place looked at that still count as "people walk here" (the fishing rule's figure)
+        private const float WidestOutline = 600f;   // metres: anything wider is a renderer reporting a whole batch
+        private const float WalkReach = 1.2f;       // metres from the place looked at that still count as walked on, as fishing has it
         private const string Folder = "RealLifeOverhaul";
 
         private static readonly Vector3[] Corner = new Vector3[8];
         private static int _solid;
 
-        /// <summary>The game's build number; 0 if it cannot be read (the file is then kept under 0 and made again by the next version that can).</summary>
+        /// <summary>The game's build number, which names the kept file; 0 if it cannot be read.</summary>
         public static int Build()
         {
             GameVersion version = GameVersion.GetCurrent();
             return version != null ? version.buildNumber : 0;
         }
 
-        /// <summary>Where the measured city of a build is kept: in the mod's own folder beside the game's saves.</summary>
+        /// <summary>Where the measured city of a build is kept, in the mod's own folder beside the game's saves.</summary>
         public static string FilePath(int build)
         {
             return Path.Combine(Application.persistentDataPath, Folder, "minimap_base_" + build + ".bin");
         }
 
-        /// <summary>The file's bytes, or null if there is none (or it cannot be read: it is then made again).</summary>
+        /// <summary>The file's bytes, or null if there is none or it cannot be read.</summary>
         public static byte[] Read(string path)
         {
             try
@@ -75,10 +63,7 @@ namespace RealLifeOverhaul.Nav
             }
         }
 
-        /// <summary>
-        /// The two colours, from the game's palette: buildings a faint shade of the roads' own light grey, water the
-        /// palette's dark blue. False while the game's references are not there yet.
-        /// </summary>
+        /// <summary>Buildings in a faint light grey, water in the palette's dark blue; false while the game's references are not there.</summary>
         public static bool Colours(out Color32 building, out Color32 water)
         {
             building = default;
@@ -89,11 +74,11 @@ namespace RealLifeOverhaul.Nav
                 return false;
             }
             building = references.colors.lightGrey;
-            building.a = 84;    // of 255: a third as strong as the roads, so that a road stays the first thing seen
+            building.a = 84;    // of 255: a third as strong as the roads, so a road stays the first thing seen
             water = references.colors.darkBlue;
             if (water.r + water.g + water.b < 24)
             {
-                // The palette's dark blue is not set in this version of the game: its blue, at six tenths.
+                // the palette's dark blue is not set in this version of the game: its blue at six tenths
                 Color32 blue = references.colors.blue;
                 water = new Color32((byte)(blue.r * 6 / 10), (byte)(blue.g * 6 / 10), (byte)(blue.b * 6 / 10), 255);
             }
@@ -108,11 +93,7 @@ namespace RealLifeOverhaul.Nav
             return city != null ? city.cityBuildingControllers : null;
         }
 
-        /// <summary>
-        /// The corners of a building's outline seen from above, into <paramref name="x"/> and <paramref name="z"/>
-        /// (room for 8). Returns how many were written: 8 for a mesh of its own (its box, turned as the building is),
-        /// 4 for the engine's upright box round it, 0 if the building has nothing to measure.
-        /// </summary>
+        /// <summary>A building's outline from above, into arrays of 8: 8 corners for its own mesh's box, 4 for an upright box, else 0.</summary>
         public static int Outline(CityBuildingController building, float[] x, float[] z)
         {
             if (building == null)
@@ -122,7 +103,7 @@ namespace RealLifeOverhaul.Nav
             MeshRenderer simple = building.lodVersion;
             if (simple != null)
             {
-                // A mesh that is not part of a static batch still has its own box, which keeps the building's turn.
+                // A mesh not in a static batch still has its own box, which keeps the building's turn.
                 MeshFilter filter = simple.isPartOfStaticBatch ? null : simple.GetComponent<MeshFilter>();
                 Mesh mesh = filter != null ? filter.sharedMesh : null;
                 if (mesh != null && mesh.bounds.size.sqrMagnitude > 0.01f)
@@ -208,7 +189,7 @@ namespace RealLifeOverhaul.Nav
             return maxX - minX >= 0.5f && maxZ - minZ >= 0.5f && maxX - minX <= WidestOutline && maxZ - minZ <= WidestOutline;
         }
 
-        /// <summary>A building's front door (where the game's map points for it: CityMap.GetBuildingToFocusPos), or the building's own place. False for no building.</summary>
+        /// <summary>A building's front door, where the game's map points for it, or its own place; false for no building.</summary>
         public static bool Door(CityBuildingController building, out float x, out float z)
         {
             x = 0f;
@@ -243,7 +224,7 @@ namespace RealLifeOverhaul.Nav
             return building != null ? building.name : string.Empty;
         }
 
-        // Everything that is not part of the city itself: people, cars, the interface, and the game's own invisible helpers.
+        // Every layer but people, cars, the interface and the game's invisible helpers.
         private static int Solid()
         {
             if (_solid == 0)
@@ -254,12 +235,7 @@ namespace RealLifeOverhaul.Nav
             return _solid;
         }
 
-        /// <summary>
-        /// What one square of the water grid is (NavBaseWater.Classify), from one look straight down at its middle
-        /// from <paramref name="top"/>, <paramref name="depth"/> metres far. One ray; and, only where that leaves the
-        /// answer open (something lies there, well below the street, that is neither road nor building), one
-        /// question to the navigation mesh.
-        /// </summary>
+        /// <summary>One square of the water grid from a ray down; the navigation mesh is asked only where that leaves it open.</summary>
         public static byte Ask(float x, float z, float top, float depth, float streetY)
         {
             if (!Physics.Raycast(new Vector3(x, top, z), Vector3.down, out RaycastHit hit, depth, Solid(), QueryTriggerInteraction.Ignore))
@@ -275,7 +251,7 @@ namespace RealLifeOverhaul.Nav
             return NavBaseWater.Classify(true, named, built, walkable, hit.point.y, streetY);
         }
 
-        // As Leisure's fishing reads a name (LeisureVenues.NamedWater): the game's water has no component to ask.
+        // As Leisure's fishing reads a name: the game's water has no component to ask.
         private static bool NamedWater(string name)
         {
             return name.IndexOf("water", StringComparison.OrdinalIgnoreCase) >= 0 || name.IndexOf("ocean", StringComparison.OrdinalIgnoreCase) >= 0

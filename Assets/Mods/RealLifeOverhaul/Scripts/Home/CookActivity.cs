@@ -113,7 +113,11 @@ namespace RealLifeOverhaul
             if (!full)
             {
                 Host.OwnMeal = burnt ? Meal.Plain : Meal.Home;   // the game's "food eaten" event comes straight back to the director
-                Gesture(player, AnimationType.ConsumeFood);
+                bool atTable = HomeBridges.ServedAtTable != null && HomeBridges.ServedAtTable(fill);   // carried to a seat and eaten there (Meals)
+                if (!atTable)
+                {
+                    Gesture(player, AnimationType.ConsumeFood);
+                }
                 InstanceBehavior<GameManager>.Instance.ChangeHunger(fill);
             }
             // What was not eaten is put by: nothing of a burnt meal, everything when the player could not eat.

@@ -39,7 +39,11 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameBuild.cs" Link="Mod\GameBuild.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\FeatureOwners.cs" Link="Mod\FeatureOwners.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\ModImage.cs" Link="Mod\ModImage.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\ModImage.Tables.cs" Link="Mod\ModImage.Tables.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\ModImage.Signatures.cs" Link="Mod\ModImage.Signatures.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\ModImage.Code.cs" Link="Mod\ModImage.Code.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\ModScan.cs" Link="Mod\ModScan.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\ModScan.Users.cs" Link="Mod\ModScan.Users.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\LookRules.cs" Link="Mod\LookRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\ButtonRules.cs" Link="Mod\ButtonRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\PagerRules.cs" Link="Mod\PagerRules.cs" />

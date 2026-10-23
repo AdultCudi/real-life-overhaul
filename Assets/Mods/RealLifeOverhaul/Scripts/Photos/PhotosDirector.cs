@@ -13,18 +13,10 @@ using UnityEngine;
 namespace RealLifeOverhaul.Photos
 {
     /// <summary>
-    /// The Camera and the Gallery, kept going: the two apps on the phone (CameraApp, GalleryApp), the save's photos listed
-    /// (newest first, from its folder: PhotoStore), the latest photo's small copy for the viewfinder's Gallery button, the
-    /// photos marked as favourites (a file beside them), the phone's wallpaper from a photo, the look over deleted saves' photos once a game, the question when the Gallery is
-    /// full, and the tests. The camera itself is CameraMode, added beside this.
-    ///
-    /// It has no Update. A one-second timer on the real clock waits for the save, puts the apps on the phone, follows the
-    /// save being played (another save, another folder) and the option. Every file is read, written and deleted on a
-    /// worker thread (Task.Run), the textures made from what the worker read on the main thread (a small copy is one upload
-    /// of 110 KB). PER FRAME: NOTHING, open or shut. Nothing is written into the save.
-    ///
-    /// Going Public: nothing is sent; the photos and the wallpaper are this computer's own. Sharing goes through Flare,
-    /// which sends a photo's small copy alone.
+    /// Keeps the Camera and the Gallery going: the two apps, the save's photos, favourites, the wallpaper, the look over
+    /// deleted saves' photos, the question when the Gallery is full, and the tests. No Update: nothing per frame, open or
+    /// shut; a one-second timer follows the save and the option. Every file is read and written on a worker, nothing goes
+    /// into the save, and nothing is sent in Going Public.
     /// </summary>
     public sealed class PhotosDirector : MonoBehaviour
     {
@@ -40,36 +32,34 @@ namespace RealLifeOverhaul.Photos
         private GalleryApp _galleryApp;
         private bool _running, _listed, _swept, _pretendFull, _wallpaperWanted, _wallpaperLoading;
         private string _saveId, _folder, _root;
-        private int _generation;               // counts the saves followed: a worker's answer for an earlier one is let go
+        private int _generation;               // counts the saves followed, so a worker's answer for an earlier one is let go
         private Texture2D _latest;
         private string _latestName;
-        private LastWins _wallpaperWrites = new LastWins();   // the wallpaper's line written by workers, the last choice winning (one for each save)
-        private string _wallpaper;             // the photo set as the wallpaper, by name, or null
-        private readonly HashSet<string> _favourites = new HashSet<string>(StringComparer.Ordinal);   // the photos marked as favourites, by name
-        private LastWins _favouriteWrites = new LastWins();   // the favourites' file written by workers, the last change winning (one for each save)
-        private bool _listedWhole;             // the folder was read whole: only then can a favourite's photo be told gone
+        private LastWins _wallpaperWrites = new LastWins();   // one for each save
+        private string _wallpaper;             // by name, or null
+        private readonly HashSet<string> _favourites = new HashSet<string>(StringComparer.Ordinal);
+        private LastWins _favouriteWrites = new LastWins();   // one for each save
+        private bool _listedWhole;             // only a folder read whole can tell a favourite's photo gone
         private Texture _wallpaperTexture;
         private int _armed;                    // a test waiting for the options page to close: 1 the camera, 2 the selfie, 3 the Gallery
         private float _armedUntil;
 
-        /// <summary>True once the save's photos have been listed: the camera can take one.</summary>
+        /// <summary>True once the save's photos have been listed, so the camera can take one.</summary>
         public bool Ready => _running && _listed && _folder != null;
 
-        /// <summary>The save's photos in the Gallery's order (newest first).</summary>
+        /// <summary>Newest first.</summary>
         public List<PhotoEntry> Photos => _photos;
 
         public int Count => _photos.Count;
 
-        /// <summary>The save's folder of photos.</summary>
         public string Folder => _folder;
 
-        /// <summary>The newest photo's small copy, for the viewfinder's Gallery button, or null.</summary>
+        /// <summary>The newest photo's small copy, or null.</summary>
         public Texture LatestTexture => _latest;
 
         /// <summary>The photo set as the phone's wallpaper, by name, or null.</summary>
         public string WallpaperName => _wallpaper;
 
-        /// <summary>The photos marked as favourites, by name (the Gallery's Favourites album).</summary>
         public HashSet<string> Favourites => _favourites;
 
         public bool IsFavourite(string name) => name != null && _favourites.Contains(name);
@@ -114,7 +104,6 @@ namespace RealLifeOverhaul.Photos
         }
 
         private static readonly int HotTick = HotSpots.Slot("Photos: PhotosDirector.Tick");
-        // Once a second: start when the save is ready, stand down when the option goes off, follow the save, the apps on the phone.
         private void Slow()
         {
             using var hotSpot = HotSpots.Time(HotTick);
@@ -134,7 +123,7 @@ namespace RealLifeOverhaul.Photos
             if (!_running)
             {
                 _running = true;
-                _root = Path.GetFullPath(PhotosGame.Root);   // one form of the root from here on: the engine's '/' as the game's Mono gives paths back
+                _root = Path.GetFullPath(PhotosGame.Root);   // one form of the root from here on, as the game's Mono gives paths back
             }
             string id = PhotosGame.SaveId;
             if (_folder == null || !string.Equals(id, _saveId, StringComparison.Ordinal))
@@ -155,7 +144,6 @@ namespace RealLifeOverhaul.Photos
             Armed();
         }
 
-        // Another save (or the first): its folder, its photos listed on a worker, its wallpaper.
         private void Follow(string id)
         {
             _saveId = id;
@@ -179,7 +167,7 @@ namespace RealLifeOverhaul.Photos
             bool adopted = false;
             Task<bool> work = Task.Run(() =>
             {
-                adopted = PhotoStore.Adopt(root, id);   // (an earlier build's folder of this save, moved to its name now)
+                adopted = PhotoStore.Adopt(root, id);   // an earlier build's folder name for this save
                 bool read = PhotoStore.List(folder, found);
                 wallpaper = PhotoStore.Wallpaper(folder);
                 PhotoStore.Favourites(folder, favourites);
@@ -191,7 +179,7 @@ namespace RealLifeOverhaul.Photos
             }
             if (generation != _generation)
             {
-                yield break;   // another save meanwhile
+                yield break;
             }
             if (work.Status != TaskStatus.RanToCompletion || !work.Result)
             {
@@ -211,15 +199,13 @@ namespace RealLifeOverhaul.Photos
             _favourites.UnionWith(favourites);
             if (GalleryRules.PruneListed(_favourites, _photos, _listedWhole) > 0)
             {
-                WriteFavourites();   // (a photo deleted outside the game: its mark goes too; a failed listing keeps every mark)
+                WriteFavourites();   // a photo deleted outside the game loses its mark; a failed listing keeps every mark
             }
             Logger?.Info("Gallery: " + _photos.Count + " photo(s) of this save" + (wallpaper != null ? ", one of them the phone's wallpaper" : string.Empty)
                          + (_favourites.Count > 0 ? ", " + _favourites.Count + " of them favourites" : string.Empty) + ".");
             StartCoroutine(Guard.Routine(LoadLatest(generation)));
             _galleryApp.Changed();
         }
-
-        // ---------------------------------------------------------------- standing down
 
         private void StandDown()
         {
@@ -238,22 +224,14 @@ namespace RealLifeOverhaul.Photos
             _armed = 0;
         }
 
-        /// <summary>For the options page's clean-up: the camera shut and the wallpaper the phone's own (the photos stay on disk).</summary>
+        /// <summary>For the options page's clean-up: the camera shut and the phone's own wallpaper back; the photos stay.</summary>
         public void StopAll()
         {
             _mode?.Close("the save tools");
             ClearWallpaper();
         }
 
-        // ---------------------------------------------------------------- the camera
-
-        /// <summary>
-        /// The camera asked for (the Camera app, Flare's camera button, a test): the phone put away and the camera opened as the
-        /// rear camera or the selfie. Says why not in the game's notice. False when the Camera is off, or when it is asked for
-        /// from Flare where Flare's own picture still works and the Camera's does not (CameraRules.FlareTakesOver: a vehicle,
-        /// the bus, the game holding the player...): Flare then takes its own, with no word from the Camera. True when it
-        /// opened, will open, or was refused with a word.
-        /// </summary>
+        /// <summary>Opens the camera, or says why not; false when off, or where Flare's own picture works and the Camera's does not.</summary>
         public bool OpenCamera(bool selfie, bool fromFlare)
         {
             if (!Settings.PhoneCamera || !_running)
@@ -307,7 +285,7 @@ namespace RealLifeOverhaul.Photos
             Logger?.Info("Camera: not now (" + refusal + ").");
         }
 
-        // The phone put away with the game's own close, and the camera opened once it is (its fade is a tenth of a second).
+        // The phone's close fades for a tenth of a second; a quarter is waited, longer while the menu is still open.
         private IEnumerator OpenWhenPutAway(bool selfie, bool fromFlare)
         {
             PhotosGame.CloseMenu();
@@ -316,7 +294,7 @@ namespace RealLifeOverhaul.Photos
             {
                 if (Time.unscaledTime > until + 2f)
                 {
-                    yield break;   // the phone was opened again meanwhile: the player is doing something else
+                    yield break;   // the phone was opened again meanwhile
                 }
                 yield return null;
             }
@@ -327,7 +305,7 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        // The Gallery is full: the oldest offered for deletion with the game's question box. Never deleted without a yes.
+        // The oldest photos offered for deletion in the game's question box; nothing is deleted without a yes.
         private void AskRoom(int offer, bool selfie, bool fromFlare)
         {
             PhotoStoreRules.Oldest(_photos, offer, _wallpaper, _offer);
@@ -359,31 +337,27 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        /// <summary>The Gallery app opened on its photos (the Camera app's Gallery button, a test).</summary>
         public void OpenGallery()
         {
             _galleryApp.Open(false);
         }
 
-        /// <summary>The Gallery app opened on the newest photo, shown whole (the viewfinder's button with its small copy, as a phone's camera has it).</summary>
+        /// <summary>The Gallery opened on the newest photo shown whole.</summary>
         public void OpenLatestPhoto()
         {
             _galleryApp.Open(true);
         }
 
-        // ---------------------------------------------------------------- the photos
-
         /// <summary>
-        /// A photo the camera has just written into <paramref name="folder"/> (the folder the shot took from <see cref="Folder"/>):
-        /// first in the list, its small copy the latest. Returns that texture. The folder is told by the one the shot took, never
-        /// by taking the photo's path apart (the game's Mono gives '' where the engine's root has '/').
+        /// A photo just written into <paramref name="folder"/>, the folder the shot took; returns the latest small copy. The
+        /// folder is compared, never taken from the path, since the game's Mono and the engine write its separators apart.
         /// </summary>
         internal Texture Added(string folder, string path, PhotosGame.Developed made)
         {
             var entry = new PhotoEntry();
             if (path == null || !PhotoStoreRules.Parse(Path.GetFileName(path), entry) || !PhotoStoreRules.SameFolder(folder, _folder))
             {
-                return _latest;   // (a photo of a save no longer followed)
+                return _latest;   // a photo of a save no longer followed
             }
             _photos.Insert(0, entry);
             PhotoStoreRules.Order(_photos);
@@ -395,7 +369,7 @@ namespace RealLifeOverhaul.Photos
             return _latest;
         }
 
-        /// <summary>Photos deleted with their small copies, on a worker; the list, the latest and the wallpaper follow. The Gallery is told.</summary>
+        /// <summary>Photos deleted with their small copies on a worker; the list, the latest and the wallpaper follow.</summary>
         public IEnumerator Delete(List<string> names, int generation)
         {
             string folder = _folder;
@@ -450,10 +424,9 @@ namespace RealLifeOverhaul.Photos
             _galleryApp.Changed();
         }
 
-        /// <summary>A generation token for a worker's answer: an answer for an earlier save is let go.</summary>
+        /// <summary>A token for a worker's answer, so an answer for an earlier save is let go.</summary>
         public int Generation => _generation;
 
-        // The newest photo's small copy, read on a worker and made a texture.
         private IEnumerator LoadLatest(int generation)
         {
             if (_photos.Count == 0)
@@ -484,9 +457,7 @@ namespace RealLifeOverhaul.Photos
             _latestName = null;
         }
 
-        // ---------------------------------------------------------------- the favourites
-
-        /// <summary>A photo marked a favourite, or unmarked; written down beside the photos on a worker. True if it is one now.</summary>
+        /// <summary>A photo marked a favourite or unmarked, written beside the photos on a worker; true if it is one now.</summary>
         public bool ToggleFavourite(string name)
         {
             if (name == null || _folder == null || GalleryRules.IndexOf(_photos, name) < 0)
@@ -498,7 +469,7 @@ namespace RealLifeOverhaul.Photos
             return now;
         }
 
-        // The favourites' file written whole on a worker from a copy taken now; two quick changes: the later is the one written.
+        // Written whole on a worker from a copy taken now; of two quick changes the later wins.
         private void WriteFavourites()
         {
             string folder = _folder;
@@ -508,12 +479,9 @@ namespace RealLifeOverhaul.Photos
             Task.Run(() => writes.Run(ticket, () => PhotoStore.SetFavourites(folder, copy)));
         }
 
-        // ---------------------------------------------------------------- the wallpaper
-
-        /// <summary>Whether the phone has a wallpaper the Gallery can set now (the modern phone look on).</summary>
         public static bool CanSetWallpaper => PhotosBridges.HasWallpaper != null && PhotosBridges.HasWallpaper();
 
-        /// <summary>A photo set as the phone's wallpaper (null: the phone's own again), written down for this save and shown.</summary>
+        /// <summary>A photo set as the phone's wallpaper for this save, or with null the phone's own again.</summary>
         public void SetWallpaper(string name)
         {
             string folder = _folder;
@@ -521,7 +489,7 @@ namespace RealLifeOverhaul.Photos
             _wallpaperWanted = name != null;
             LastWins writes = _wallpaperWrites;
             int ticket = writes.Next();
-            Task.Run(() => writes.Run(ticket, () => PhotoStore.SetWallpaper(folder, name)));   // (two quick changes: the later is the one written)
+            Task.Run(() => writes.Run(ticket, () => PhotoStore.SetWallpaper(folder, name)));   // of two quick changes the later wins
             ClearShownWallpaper();
             if (name != null)
             {
@@ -558,7 +526,7 @@ namespace RealLifeOverhaul.Photos
                 }
                 else
                 {
-                    PhotosGame.Destroy(loaded);   // (the phone's look is off: tried again when it is on)
+                    PhotosGame.Destroy(loaded);   // the phone's look is off: tried again when it is on
                 }
             }
             finally
@@ -567,7 +535,7 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        // The phone's own wallpaper back, and the photo's texture let go (what is written for the save stays).
+        // What is written for the save stays.
         private void ClearShownWallpaper()
         {
             if (_wallpaperTexture != null)
@@ -585,9 +553,7 @@ namespace RealLifeOverhaul.Photos
             _wallpaperWanted = false;
         }
 
-        // ---------------------------------------------------------------- deleted saves
-
-        // Every save's photos looked over on a worker (PhotoStore.Sweep); 'say' tells what was found in a notice (the test).
+        // Every save's photos looked over on a worker; 'say' puts what was found in a notice, for the test.
         private void Sweep(bool say)
         {
             string root = _root ?? PhotosGame.Root;
@@ -621,41 +587,19 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        // ---------------------------------------------------------------- tests
-
-        /// <summary>Options > Tests: the camera opens (the rear camera, or the selfie) as soon as the options page is closed.</summary>
+        /// <summary>Options > Tests: the camera opens as soon as the options page is closed.</summary>
         public void TestOpen(bool selfie)
         {
-            if (!Settings.PhoneCamera)
-            {
-                TestRefusals.Tell(Logger, "Camera", TestRefusal.FeatureOff);
-                return;
-            }
-            if (!_running || !PhotosGame.Loaded)
-            {
-                TestRefusals.Tell(Logger, "Camera", TestRefusal.NotLoaded);
-                return;
-            }
-            Arm(selfie ? 2 : 1);
+            Arm("Camera", selfie ? 2 : 1);
         }
 
         /// <summary>Options > Tests: the Gallery opens as soon as the options page is closed.</summary>
         public void TestGallery()
         {
-            if (!Settings.PhoneCamera)
-            {
-                TestRefusals.Tell(Logger, "Gallery", TestRefusal.FeatureOff);
-                return;
-            }
-            if (!_running || !PhotosGame.Loaded)
-            {
-                TestRefusals.Tell(Logger, "Gallery", TestRefusal.NotLoaded);
-                return;
-            }
-            Arm(3);
+            Arm("Gallery", 3);
         }
 
-        /// <summary>Options > Tests: the next opening of the camera is asked as if the Gallery were full (the oldest offered, up to ten of those there are).</summary>
+        /// <summary>Options > Tests: the next opening of the camera asks as if the Gallery were full.</summary>
         public void TestFull()
         {
             if (!Settings.PhoneCamera || !_running)
@@ -672,7 +616,7 @@ namespace RealLifeOverhaul.Photos
             PhotosGame.Tell(NotificationType.Info, "reallife_gallery_test_full_armed", "count", PhotosText.N(Math.Min(PhotoStoreRules.OfferAtOnce, _photos.Count)));
         }
 
-        /// <summary>Options > Tests: the look over deleted saves' photos now, and what it found in a notice.</summary>
+        /// <summary>Options > Tests: the look over deleted saves' photos now, with what it found in a notice.</summary>
         public void TestSweep()
         {
             if (!Settings.PhoneCamera || !_running)
@@ -683,14 +627,23 @@ namespace RealLifeOverhaul.Photos
             Sweep(true);
         }
 
-        private void Arm(int what)
+        private void Arm(string feature, int what)
         {
+            if (!Settings.PhoneCamera)
+            {
+                TestRefusals.Tell(Logger, feature, TestRefusal.FeatureOff);
+                return;
+            }
+            if (!_running || !PhotosGame.Loaded)
+            {
+                TestRefusals.Tell(Logger, feature, TestRefusal.NotLoaded);
+                return;
+            }
             _armed = what;
             _armedUntil = Time.unscaledTime + ArmedSeconds;
             PhotosGame.Tell(NotificationType.Info, "reallife_phonecam_test_armed");
         }
 
-        // A test's opening, once the options page is closed (within half a minute).
         private void Armed()
         {
             if (_armed == 0)

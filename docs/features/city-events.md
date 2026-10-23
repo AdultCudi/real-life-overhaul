@@ -11,17 +11,17 @@ Fires and the fire service, weather that matters (grip, crime, sight, street lif
 
 | File | What it is |
 | --- | --- |
-| `EventDirector` | the one scene that is on (a fire or a street event), yielding to accidents and crimes; calendar announcements, the City Bulletin contact, 911, the test buttons, one line in modData |
-| `FireScene` | one fire from first smoke to the engine leaving (car, bin, shopfront); HoseHold (hands on the nozzle); FireDamage (the player's own business: closure and repair bill) |
-| `EventRoad` | the adapter over Scripts/Traffic (public surface only): lanes, the stretch to close, bringing a pooled vehicle; EngineLivery and FireEngine |
-| `FireEffects` | flames, smoke, steam, water jet and firelight: seven pooled particle systems copied from the game's smoke; Fireworks (four pooled mesh-particle systems) |
+| `EventDirector` | the one scene that is on (a fire or a street event), yielding to accidents and crimes; calendar announcements, the City Bulletin contact, 911, one line in modData; the test buttons in EventDirector.Tests |
+| `FireScene` | one fire from first smoke to the engine leaving (car, bin, shopfront), the fire service's part in FireScene.Response; HoseHold (hands on the nozzle); FireDamage (the player's own business: closure and repair bill) |
+| `EventRoad` | the adapter over Scripts/Traffic (public surface only): lanes, the stretch to close, bringing a pooled vehicle; beside it EngineLivery (with BarFlash and EventPropsBar) and FireEngine |
+| `FireEffects` | flames, smoke, steam, water jet and firelight: seven pooled particle systems copied from the game's smoke; beside it Fireworks (four pooled mesh-particle systems) |
 | `Hose` | sixteen pooled segments laid along the ground from the engine to the nozzle, clear of vehicles and street furniture |
 | `EventPeople` | the event pool of eight (a second CityPeople): people on a closed carriageway, things worn on a bone, a staff in the hand, walking in and off |
 | `EventProps` | the props by id: the modelled one if the bundle has it, else a plain-shape stand-in to the wish-list's size and pivot |
 | `FireOutfit` | turnout gear from the game's garments by name |
 | `Weather` | the static factors other features read (accidents, crime, sight, street life, grip, traffic speed); WeatherEffects applies tyres, traffic pace, energy, forecast |
 | `EventCalendar` | what is on which day: fixed days placed by how far through the year they fall, the rest by a roll that depends on the day and the save |
-| `StreetEventScene` | market, farmers' market, parade, protest, fun run, film shoot, fireworks: one class, one closed stretch of road |
+| `StreetEventScene` | market, farmers' market, parade, protest, fun run, film shoot, fireworks: one class in three parts (the scene, .Setup, .Player), one closed stretch of road; IEventScene is what the director runs |
 
 ## How it talks to other features
 
@@ -54,7 +54,7 @@ Twenty seconds after the flames, or at once on a 911 call, a fire engine is sent
 With the modelled `fire_engine` in the bundle a Delivery Truck wears it: the body is made to that truck (the same 7.43 m, the same axles), so it wears the body with its wheels on the truck's own.
 Any other truck, or a van, and every truck without the bundle, is repainted red with a light bar instead.
 
-Three firefighters get out one a second: the first takes the nozzle to 3.6 to 5.5 m from the fire, the hose is laid behind them and the jet arcs on to the fire.
+Three firefighters get out one a second: the first takes the nozzle to 3.6 to 5.5 m from the fire, the hose is laid behind them and the jet arcs on to the fire. A spare rolled hose (`hose_coil`) lies 0.8 m off the engine's side towards the fire, behind the rear axle, where nobody works and the hose is not laid: stood once as the engine parks, on clear ground only, and given back as the crew pack up and on every way the fire ends.
 
 The second works the pump panel (on the modelled engine: 0.50 m off the panel of the fire's side, square to it, which is where `pump_panel` has its hands; the first gets out at the front door, the third at the crew door).
 The third stands between the fire and the street.
@@ -92,7 +92,7 @@ The game has rain and nothing else: no snow, fog, wind, temperature or forecast.
 Seasons are quarters of the game's year (`gameVariables.daysPerYear`, 60 by default), starting in midwinter.
 
 `WeatherEffects` applies grip to the driven car's `LateralFrictionGrip` and `LongitudinalFrictionGrip` (the values `Driving/CarTuning` reads; recorded per wheel and written back exactly).
-It narrows each pooled traffic vehicle's `minPossibleSpeed`/`maxPossibleSpeed` (the traffic system has no speed factor; it takes effect as cars are put on the road; originals written back).
+It narrows each pooled traffic vehicle's `minPossibleSpeed`/`maxPossibleSpeed` (the traffic system has no speed factor; it takes effect as cars are put on the road; originals written back). The pool is made once, when the traffic system starts (GleyTrafficSystem's TrafficVehicles.Initialize), and never grows: an idle car is in it too, so a car that sets off later already has the weather's range. On a Going Public guest the traffic is the host's cars, so nothing is narrowed there, and what was is put back the moment the machine becomes a guest.
 
 It spends 1 to 2 energy an hour out of doors in heat (11 to 19 h) and cold (never below 15; `Weather.Wardrobe`, if anybody sets it, says whether a coat is worn).
 It gives the morning forecast (toast and City Bulletin) and a warning when the weather turns.

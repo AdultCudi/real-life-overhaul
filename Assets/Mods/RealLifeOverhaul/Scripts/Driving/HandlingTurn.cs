@@ -44,12 +44,10 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// A car holding a steady turn with the steering key held, as the game's own vehicle physics (NWH Vehicle Physics 2)
-    /// works it: the steering's lock times its curve by speed, the front wheels' angles by the game's Ackermann sum; each
-    /// tyre's side force from its curve at its slip (the slip angle in degrees over 90, times its slip stiffness, softened
-    /// by its load against its rating) times 1.9, its load (to its rating) and its grip; the body rolling about the force
-    /// points on its springs and bars, the weight moving out by each axle's share of the roll stiffness. Game-free; a turn
-    /// costs a few thousand curve readings, run once when the player gets in and in NavCheck, never per frame.
+    /// A car holding a steady turn with the steering key held, as the game's vehicle physics works it: the lock times its
+    /// curve by speed, the game's Ackermann sum, each tyre's side force from its curve at its slip, and the body rolling
+    /// about the force points as each axle's share of the roll stiffness moves the weight out. Game-free; a turn is a few
+    /// thousand curve readings, run when the player gets in and in NavCheck, never per frame.
     /// </summary>
     public static class HandlingTurn
     {
@@ -118,9 +116,9 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// The cornering in g at which the car would roll over (both inner wheels off the road): half its track, weighted
-        /// by where its weight sits, against the arm, the body leaning its weight out as far as a sudden turn swings it
-        /// (<paramref name="overshoot"/> times its steady lean). 99 when the forces act at or above the centre of mass.
+        /// The cornering in g at which the car would roll over: half its track, weighted by where its weight sits, against
+        /// the arm, the body leaning out <paramref name="overshoot"/> times its steady lean. 99 with the forces at or above
+        /// the centre of mass.
         /// </summary>
         public static float Rollover(TurnCar c, float overshoot)
         {
@@ -167,9 +165,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// The steady turn at <paramref name="speed"/> m/s with the steering key held: the cornering at which the front
-        /// wheels' angle the key gives is what the turn and the tyres' slip angles ask; or, if the tyres run out first,
-        /// the most they hold (Limited). False if the car holds no turn at all at that speed.
+        /// The steady turn at <paramref name="speed"/> m/s with the steering key held, or the most the tyres hold if they run
+        /// out first (Limited). False if the car holds no turn at that speed.
         /// </summary>
         public static bool Steady(TurnCar c, float speed, out TurnState st)
         {
@@ -234,8 +231,8 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        // Each wheel's load cornering at ay m/s2: the body rolled by the tyres' forces about their points, each axle taking
-        // its share of the roll stiffness, an axle's outer wheel carrying at most the whole axle once the inner one lifts.
+        // Each wheel's load cornering at ay m/s2, each axle taking its share of the roll stiffness; an outer wheel carries
+        // at most the whole axle once the inner one lifts.
         private static void Loads(TurnCar c, float ay, out float frontOut, out float frontIn, out float rearOut, out float rearIn, out float roll)
         {
             float weight = c.Mass * HandlingModel.G;
@@ -252,8 +249,7 @@ namespace RealLifeOverhaul
             rearIn = c.LoadR - moveR;
         }
 
-        // The least slip angle in degrees at which an axle's two tyres together give the force (on the rising side of their
-        // curve, should it peak); -1 if they cannot.
+        // The least slip angle in degrees at which an axle's two tyres give the force, on the rising side; -1 if they cannot.
         private static float Slip(TurnCar c, float outer, float inner, float grip, float stiff, float rating, float want)
         {
             if (MostAxle(c, outer, inner, grip, stiff, rating, out float atMost) < want)
@@ -277,8 +273,7 @@ namespace RealLifeOverhaul
             return high;
         }
 
-        // The most an axle's two tyres give at any slip angle (sampled every 3 degrees and sideways on), and the least
-        // angle it is reached at.
+        // The most an axle's two tyres give at any slip angle (sampled every 3 degrees), and the least angle it comes at.
         private static float MostAxle(TurnCar c, float outer, float inner, float grip, float stiff, float rating, out float atAngle)
         {
             float most = 0f;

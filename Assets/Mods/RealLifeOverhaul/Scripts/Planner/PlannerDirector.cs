@@ -10,26 +10,21 @@ using UnityEngine;
 namespace RealLifeOverhaul.Planner
 {
     /// <summary>
-    /// The Planner: an app on the game's phone that gathers what the player has to do, from this mod's features and
-    /// from the game, into one agenda, with reminders and the player's own notes. See docs/features/planner.md.
-    ///
-    /// This class keeps it going and nothing more: it puts the app on the phone once the game's phone is there, reads
-    /// and writes the save's three lines, asks the sources when someone looks, and sends reminders. Its Update is a
-    /// timer comparison; once a second the clock is compared with the soonest reminder (PlannerStore.NextFire) and,
-    /// until the app is on the phone, it is put there; the rest is done on the game's own hour event, on the save
-    /// event, when a reminder's minute comes and when the app is opened.
+    /// The Planner: a phone app gathering what the player has to do into one agenda, with reminders and notes
+    /// (docs/features/planner.md). It installs the app, keeps the save lines, asks the sources and sends reminders.
+    /// Cost a frame: a timer comparison; once a second the clock against the soonest reminder; the rest on the hour.
     /// </summary>
     public sealed class PlannerDirector : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("planner", "PlannerDirector", typeof(PlannerDirector));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("planner", "PlannerDirector", typeof(PlannerDirector));
 
         public const string AppId = "RealLifePlanner";
-        private const int BadgeMinutes = 120;      // the badge counts what begins within two hours
+        private const int BadgeMinutes = 120;      // game minutes ahead the badge counts
 
         public static IModLogger Logger;
         public static PlannerDirector Instance { get; private set; }
 
-        /// <summary>Every source, in the order of PlannerCategory. A feature that is off or absent is skipped at no cost.</summary>
+        // in the order of PlannerCategory; a feature that is off or absent costs nothing
         private IPlannerSource[] _sources =
         {
             new NoteSource(), new SampleSource(), new TaxSource(), new CareerSource(), new JusticeSource(), new CustodySource(),
@@ -45,13 +40,13 @@ namespace RealLifeOverhaul.Planner
         private PlannerApp _view;
         private PhoneApp _app;
         private float _next;
-        private bool _gaveUp;          // the game's phone is not built as expected: one line was logged, nothing more is tried
+        private bool _gaveUp;          // the game's phone is not built as expected: logged once, not tried again
         private bool _broken;
         private Action _onSave, _onHour, _hourSeen;
         private int _lastHour = -1;
-        private int _morningSeen = -1;   // the game minute the morning line was last looked at: once a game minute at most
+        private int _morningSeen = -1;   // the game minute the morning line was last looked at
 
-        /// <summary>The test button's sample entries are showing (this session only; the sample notes are in the save and marked).</summary>
+        /// <summary>The test's sample entries are showing, for this session; its sample notes are saved and marked.</summary>
         public static bool Samples;
 
         public PlannerDirector()
@@ -60,10 +55,7 @@ namespace RealLifeOverhaul.Planner
             _failed = new bool[_sources.Length];
         }
 
-        /// <summary>
-        /// One more source, from a pairing in Scripts/Wiring (a feature the Planner does not know of). Its id must be
-        /// one no other source has; adding it again does nothing.
-        /// </summary>
+        /// <summary>One more source, from Scripts/Wiring; a source with an id already there is ignored.</summary>
         public void AddSource(IPlannerSource source)
         {
             if (source == null)
@@ -92,6 +84,7 @@ namespace RealLifeOverhaul.Planner
         private void Awake()
         {
             Instance = this;
+            PlannerText.WantIcons();   // asked for before the one look behind the loading screen (GameSprites.Prewarm)
             PlannerStore.Reset();
             Samples = false;
             _onSave = OnSave;
@@ -121,14 +114,14 @@ namespace RealLifeOverhaul.Planner
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;
                 return;
             }
             try
             {
                 OnUpdate();
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 Guard.Fail(FrameGuard, e, this);
             }
@@ -163,7 +156,6 @@ namespace RealLifeOverhaul.Planner
             }
         }
 
-        // Once a second: the save's lines (once), the app on or off the phone as the option says, and the game's hour event held.
         private void Slow()
         {
             if (SaveGameManager.Current == null || LoadScene.isLoading || !ModState.Loaded)
@@ -173,13 +165,13 @@ namespace RealLifeOverhaul.Planner
             if (!PlannerStore.Loaded)
             {
                 PlannerStore.Load(SaveGameManager.Current.modData);
-                PlannerStore.ArmAll(Now());   // each repeated entry's next reminder, from today's clock
+                PlannerStore.ArmAll(Now());
                 SaveHook.Keep(_onSave);
                 Logger?.Info("Planner: ready. " + PlannerStore.Notes.Count + " note(s), " + PlannerStore.Reminders.Count + " reminder(s) waiting.");
             }
             if (Now() >= PlannerStore.NextFire)
             {
-                Due();   // a reminder's minute has come: one comparison a second until then
+                Due();
             }
             SaveHook.Keep(_onSave);
             EventHold.Keep(ref GlobalEvents.onNewHour, _onHour, ref _hourSeen);
@@ -200,7 +192,7 @@ namespace RealLifeOverhaul.Planner
             Morning();
             if (_lastHour < 0 && (_app != null || _gaveUp))
             {
-                // A save loaded in the middle of things: whatever fell due while it was not running goes out now, once, as late.
+                // a save just loaded: whatever fell due goes out now, once, as late
                 _lastHour = TimeHelper.CurrentHour;
                 OnHour();
             }
@@ -208,9 +200,11 @@ namespace RealLifeOverhaul.Planner
 
         private void Install()
         {
+            if (!PhoneApp.PhoneUp)
+            {
+                return;   // the game's phone is not built yet: asked again next time, nothing made for it
+            }
             var view = new PlannerApp(this);
-            PlannerText.WantIcons();   // named before the one look through the game's pictures
-            bool tryAgain;
             _app = PhoneApp.Install(new PhoneAppDef
             {
                 Id = AppId,
@@ -219,7 +213,7 @@ namespace RealLifeOverhaul.Planner
                 Build = view.Build,
                 Opened = view.Opened,
                 Closed = view.Closed
-            }, out tryAgain);
+            }, out bool tryAgain);
             if (_app == null)
             {
                 _gaveUp = !tryAgain;
@@ -245,12 +239,7 @@ namespace RealLifeOverhaul.Planner
             }
         }
 
-        // ---------------------------------------------------------------- looking
-
-        /// <summary>
-        /// Asks every source for the days fromDay..toDay and puts the answer in order (List). A source that throws is
-        /// logged once and left out for the rest of the session; the others are not affected.
-        /// </summary>
+        /// <summary>Fills List from every source for the days fromDay..toDay; a source that throws is left out for the session.</summary>
         public void Look(int fromDay, int toDay, bool wantText)
         {
             List.Begin(fromDay, toDay, wantText);
@@ -261,24 +250,9 @@ namespace RealLifeOverhaul.Planner
                 {
                     continue;
                 }
-                int before = List.Items.Count;
-                try
-                {
-                    if (_sources[s].Available)
-                    {
-                        _sources[s].Collect(fromDay, toDay, List);
-                    }
-                }
-                catch (Exception e)
-                {
-                    _failed[s] = true;
-                    Logger?.Error(e);
-                    Logger?.Warn("Planner: the source '" + _sources[s].Id + "' failed and is left out for this session.");
-                    List.Items.RemoveRange(before, List.Items.Count - before);
-                }
-                _counts[s] = List.Items.Count - before;
+                _counts[s] = CollectFrom(s, List, fromDay, toDay);
             }
-            // What the player has switched off in the app is not shown, not counted and not reminded of.
+            // a kind switched off is not shown, counted or reminded of
             if (PlannerStore.HiddenCategories != 0)
             {
                 for (int i = List.Items.Count - 1; i >= 0; i--)
@@ -289,8 +263,7 @@ namespace RealLifeOverhaul.Planner
                     }
                 }
             }
-            // With the texts (the app, a reminder) each entry's place is found, so that a way too long between two is a clash
-            // as well: by car or taxi, the quickest way the city offers everybody. The hourly look for the badge needs neither.
+            // only with the texts are places found and a way too long a clash, at the pace by car or taxi
             if (wantText)
             {
                 Places();
@@ -299,10 +272,8 @@ namespace RealLifeOverhaul.Planner
         }
 
         /// <summary>
-        /// For another app (the Calendar, through Scripts/Wiring): the sources <paramref name="wanted"/> says yes to by their
-        /// id, asked for the days fromDay..toDay into a list of the caller's own, with their texts. The Planner's own list,
-        /// the categories the player hid in it and its reminders are not touched; a source that throws is left out for the
-        /// session, as on the Planner's own look.
+        /// For another app (the Calendar): the sources <paramref name="wanted"/> accepts by id, for the days fromDay..toDay,
+        /// into the caller's own list with their texts; the Planner's own list, hidden kinds and reminders are untouched.
         /// </summary>
         public void LookFor(PlannerList into, int fromDay, int toDay, Func<string, bool> wanted)
         {
@@ -313,25 +284,31 @@ namespace RealLifeOverhaul.Planner
                 {
                     continue;
                 }
-                int before = into.Items.Count;
-                try
-                {
-                    if (_sources[s].Available)
-                    {
-                        _sources[s].Collect(fromDay, toDay, into);
-                    }
-                }
-                catch (Exception e)
-                {
-                    _failed[s] = true;
-                    Logger?.Error(e);
-                    Logger?.Warn("Planner: the source '" + _sources[s].Id + "' failed and is left out for this session.");
-                    into.Items.RemoveRange(before, into.Items.Count - before);
-                }
+                CollectFrom(s, into, fromDay, toDay);
             }
         }
 
-        // An entry's place in the city: the point it was given, or its address's door (a lookup in the game's table each).
+        // one source's entries into a list, how many; a source that throws is left out for the session
+        private int CollectFrom(int s, PlannerList into, int fromDay, int toDay)
+        {
+            int before = into.Items.Count;
+            try
+            {
+                if (_sources[s].Available)
+                {
+                    _sources[s].Collect(fromDay, toDay, into);
+                }
+            }
+            catch (Exception e)
+            {
+                _failed[s] = true;
+                Logger?.Error(e);
+                Logger?.Warn("Planner: the source '" + _sources[s].Id + "' failed and is left out for this session.");
+                into.Items.RemoveRange(before, into.Items.Count - before);
+            }
+            return into.Items.Count - before;
+        }
+
         private void Places()
         {
             List<PlannerEntry> items = List.Items;
@@ -351,7 +328,6 @@ namespace RealLifeOverhaul.Planner
             }
         }
 
-        /// <summary>For the diagnostics line: how many entries each source gave at the last look.</summary>
         public string LookSummary()
         {
             var text = new StringBuilder(160);
@@ -368,17 +344,16 @@ namespace RealLifeOverhaul.Planner
         {
             int now = Now();
             PlannerStore.SeenStamp = PlannerLogic.DueStamp(List, now, BadgeMinutes);
+            PlannerStore.SeenOldHash = false;
             if (_app != null)
             {
                 _app.SetBadge(0);
             }
         }
 
-        // ---------------------------------------------------------------- the hour
-
         private static readonly int HotOnHour = HotSpots.Slot("Planner: PlannerDirector.OnHour");
-        // The game's own hour event (GlobalEvents.onNewHour; a new day raises it too). Nothing here builds a text
-        // unless a reminder is due.
+
+        // GlobalEvents.onNewHour, raised on a new day too; no text is built unless a reminder is due
         private void OnHour()
         {
             using var hotSpot = HotSpots.Time(HotOnHour);
@@ -396,7 +371,12 @@ namespace RealLifeOverhaul.Planner
                 {
                     Look(today, today + 1, false);
                     int count = PlannerLogic.DueSoon(List, now, BadgeMinutes);
-                    _app.SetBadge(count > 0 && PlannerLogic.DueStamp(List, now, BadgeMinutes) != PlannerStore.SeenStamp ? count : 0);
+                    int stamp = PlannerLogic.DueStamp(List, now, BadgeMinutes);
+                    if (PlannerStore.SeenOldHash)
+                    {
+                        PlannerStore.CarrySeen(PlannerLogic.OldDueStamp(List, now, BadgeMinutes), stamp);
+                    }
+                    _app.SetBadge(count > 0 && stamp != PlannerStore.SeenStamp ? count : 0);
                 }
             }
             catch (Exception e)
@@ -407,7 +387,6 @@ namespace RealLifeOverhaul.Planner
             }
         }
 
-        // The reminders whose minute has come go out (on the second it is seen, and on the hour as well).
         private void Due()
         {
             int now = Now();
@@ -418,13 +397,13 @@ namespace RealLifeOverhaul.Planner
             }
         }
 
-        // Each reminder that is due is checked against its source now: only what is still there and still to do is said.
+        // each reminder is checked against its source now: only what is still there and to do is said
         private void Remind(int now, int today)
         {
             if (!Settings.Planner || !Settings.PlannerReminders)
             {
                 Rearm(now);
-                _due.Clear();   // reminders are switched off: what fell due is let go
+                _due.Clear();
                 return;
             }
             int first = today, last = today;
@@ -451,7 +430,7 @@ namespace RealLifeOverhaul.Planner
                 }
                 else
                 {
-                    // The entry has moved since the reminder was set (a hearing put back): the reminder moves with it.
+                    // an entry moved since (a hearing put back) takes its reminder with it
                     int start = entry.Deadline && entry.End >= 0 ? entry.End : entry.Start;
                     int fireAt = PlannerStore.FireAt(entry.Day, start, reminder.Lead, reminder.Travel);
                     if (fireAt > now && PlannerStore.SetReminder(entry.Id, entry.Day, start, reminder.Lead, now, reminder.Travel))
@@ -473,10 +452,9 @@ namespace RealLifeOverhaul.Planner
                     { "when", PlannerText.WhenLong(entry, today) }
                 };
                 string key = late ? "reallife_planner_reminder_late" : "reallife_planner_reminder";
-                float metres;
-                if (reminder.Lead == ReminderLead.LeaveBy && PlannerGame.MetresTo(entry, out metres))
+                if (reminder.Lead == ReminderLead.LeaveBy && PlannerGame.MetresTo(entry, out float metres))
                 {
-                    // When to leave: the way is told again from where the player is now.
+                    // the way from where the player is now
                     key = late ? "reallife_planner_reminder_leave_late" : "reallife_planner_reminder_leave";
                     data["way"] = PlannerText.Span(PlannerRules.TravelMinutes(metres, PlannerGame.ByCar() ? PlannerRules.DrivePerMinute : PlannerRules.WalkPerMinute));
                 }
@@ -492,7 +470,7 @@ namespace RealLifeOverhaul.Planner
             _due.Clear();
         }
 
-        // A reminder of one of the player's entries that repeats is followed by the one for its next time.
+        // a repeating note's reminder is followed by the one for its next time
         private void Rearm(int now)
         {
             for (int i = 0; i < _due.Count; i++)
@@ -529,11 +507,7 @@ namespace RealLifeOverhaul.Planner
             }
         }
 
-        // ---------------------------------------------------------------- the morning line
-
-        // On waking (the game's sleep over), or from 05:00 for a player who is up: one line of the day, "Today: 3 entries,
-        // the first at 09:00 (Forklift ticket), leave by 08:35." Nothing for an empty day; once a day, the day kept in the
-        // save. Looked at once a game minute at most, and only a comparison until it is due.
+        // the day's line on waking or from 05:00, once a day; looked at once a game minute at most
         private void Morning()
         {
             int now = Now();
@@ -549,15 +523,14 @@ namespace RealLifeOverhaul.Planner
             }
             if (_app != null && _app.Showing)
             {
-                return;   // (the app shows its own look: the line waits until it is closed)
+                return;   // the line waits until the app is closed
             }
             PlannerStore.MorningDay = today;
             Look(today, today, true);
             int count = PlannerRules.MorningCount(List.Items, today);
             PlannerEntry first = PlannerRules.FirstOf(List.Items, today);
             int leave = -1;
-            float metres;
-            if (first != null && first.State == PlannerState.Upcoming && PlannerGame.MetresTo(first, out metres) && metres > PlannerRules.HereMetres)
+            if (first != null && first.State == PlannerState.Upcoming && PlannerGame.MetresTo(first, out float metres) && metres > PlannerRules.HereMetres)
             {
                 leave = PlannerRules.LeaveBy(first, PlannerRules.TravelMinutes(metres, PlannerGame.ByCar() ? PlannerRules.DrivePerMinute : PlannerRules.WalkPerMinute));
             }
@@ -587,9 +560,7 @@ namespace RealLifeOverhaul.Planner
             Notifications.Show(NotificationType.Info, key, data, 12f, null, Guard.Wrap(Open), true, false);
         }
 
-        // ---------------------------------------------------------------- tests
-
-        /// <summary>"Test: fill the Planner with one of everything": a marked sample entry of every kind today, and two marked notes.</summary>
+        /// <summary>A test: a marked sample entry of every kind today, and two marked notes.</summary>
         public void TestFill()
         {
             if (!PlannerStore.Loaded || SaveGameManager.Current == null)
@@ -611,7 +582,7 @@ namespace RealLifeOverhaul.Planner
             if (soon != null)
             {
                 soon.Sample = true;
-                soon.Repeat = PlannerRepeat.Daily;   // one that comes back each day: the Week tab shows it in every column
+                soon.Repeat = PlannerRepeat.Daily;   // in every column of the Week tab
             }
             if (later != null)
             {
@@ -622,20 +593,15 @@ namespace RealLifeOverhaul.Planner
             Notifications.Show(NotificationType.Info, "reallife_planner_test_filled", null, 8f, null, Guard.Wrap(Open), true, false);
         }
 
-        /// <summary>"Test: clear the Planner's samples".</summary>
-        public void TestClear()
-        {
-            TestClear(true);
-        }
-
-        private void TestClear(bool tell)
+        /// <summary>A test: the samples taken away.</summary>
+        public void TestClear(bool tell = true)
         {
             Samples = false;
             for (int i = PlannerStore.Notes.Count - 1; i >= 0; i--)
             {
                 if (PlannerStore.Notes[i].Sample)
                 {
-                    PlannerStore.RemoveNote(PlannerStore.Notes[i].Id);   // with every reminder for it
+                    PlannerStore.RemoveNote(PlannerStore.Notes[i].Id);
                 }
             }
             if (tell && PlannerStore.Loaded)
@@ -645,7 +611,7 @@ namespace RealLifeOverhaul.Planner
             }
         }
 
-        /// <summary>For the save tools: the app goes off the phone and comes back with whatever the options say.</summary>
+        /// <summary>For the save tools: the app off the phone, back as the options say.</summary>
         public void StopAll()
         {
             Samples = false;

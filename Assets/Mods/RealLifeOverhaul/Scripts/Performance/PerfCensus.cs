@@ -14,11 +14,7 @@ using UnityEngine.UI;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// Counts what the game has in the scene and how the engine is set up, for the probe's report. It walks
-    /// every object and allocates freely, so it runs once, after the measuring window has closed, and never
-    /// otherwise. Every section stands alone: one that fails says so and the rest are still written.
-    /// </summary>
+    /// <summary>The probe report's census of the scene and the engine: it walks every object, so once, after the window.</summary>
     internal static class PerfCensus
     {
         private const int Most = 14;   // rows per "largest groups" list
@@ -59,24 +55,30 @@ namespace RealLifeOverhaul
 
         private static void Engine(StringBuilder text)
         {
-            text.AppendLine("  cpu: " + SystemInfo.processorType + "  logical cores " + SystemInfo.processorCount + "  " + SystemInfo.processorFrequency + " MHz  memory " + SystemInfo.systemMemorySize + " MB");
-            text.AppendLine("  gpu: " + SystemInfo.graphicsDeviceName + "  vram " + SystemInfo.graphicsMemorySize + " MB  api " + SystemInfo.graphicsDeviceType + " (" + SystemInfo.graphicsDeviceVersion + ")");
+            text.AppendLine("  cpu: " + SystemInfo.processorType + "  logical cores " + SystemInfo.processorCount + "  " + SystemInfo.processorFrequency + " MHz  memory "
+                            + SystemInfo.systemMemorySize + " MB");
+            text.AppendLine("  gpu: " + SystemInfo.graphicsDeviceName + "  vram " + SystemInfo.graphicsMemorySize + " MB  api " + SystemInfo.graphicsDeviceType
+                            + " (" + SystemInfo.graphicsDeviceVersion + ")");
             text.AppendLine("  rendering thread mode: " + SystemInfo.renderingThreadingMode + "  multi-threaded " + SystemInfo.graphicsMultiThreaded
                             + "  job workers " + JobsUtility.JobWorkerCount + " of " + JobsUtility.JobWorkerMaximumCount);
             Resolution display = Screen.currentResolution;
-            text.AppendLine("  screen: " + Screen.width + "x" + Screen.height + "  mode " + Screen.fullScreenMode + "  display " + display.width + "x" + display.height + " at " + display.refreshRateRatio.value.ToString("F0") + " Hz");
+            text.AppendLine("  screen: " + Screen.width + "x" + Screen.height + "  mode " + Screen.fullScreenMode + "  display " + display.width + "x" + display.height
+                            + " at " + display.refreshRateRatio.value.ToString("F0") + " Hz");
             text.AppendLine("  frame pacing: targetFrameRate " + Application.targetFrameRate + " (-1 = uncapped)  vSyncCount " + QualitySettings.vSyncCount
                             + "  maxQueuedFrames " + QualitySettings.maxQueuedFrames + "  render every " + OnDemandRendering.renderFrameInterval + " frame(s)"
                             + "  runInBackground " + Application.runInBackground + "  focused " + Application.isFocused);
-            text.AppendLine("  time: timeScale " + PerfText.F2(Time.timeScale) + "  fixedDeltaTime " + Time.fixedDeltaTime.ToString("F4") + "  maximumDeltaTime " + PerfText.F2(Time.maximumDeltaTime));
-            text.AppendLine("  physics: simulationMode " + Physics.simulationMode + "  autoSyncTransforms " + Physics.autoSyncTransforms + "  reuseCollisionCallbacks " + Physics.reuseCollisionCallbacks
-                            + "  solver iterations " + Physics.defaultSolverIterations + "/" + Physics.defaultSolverVelocityIterations + "  2D " + Physics2D.simulationMode);
-            text.AppendLine("  garbage collector: incremental " + GarbageCollector.isIncremental + "  slice " + (GarbageCollector.incrementalTimeSliceNanoseconds / 1000000.0).ToString("F1") + " ms  mode " + GarbageCollector.GCMode
-                            + "  managed heap " + (UnityEngine.Profiling.Profiler.GetMonoHeapSizeLong() >> 20) + " MB, in use " + (UnityEngine.Profiling.Profiler.GetMonoUsedSizeLong() >> 20) + " MB");
-            text.AppendLine("  loading: backgroundLoadingPriority " + Application.backgroundLoadingPriority + "  asyncUploadTimeSlice " + QualitySettings.asyncUploadTimeSlice + " ms  buffer " + QualitySettings.asyncUploadBufferSize
-                            + " MB  persistent " + QualitySettings.asyncUploadPersistentBuffer);
-            text.AppendLine("  frame timing feature enabled in this build: " + FrameTimingManager.IsFeatureEnabled()
-                            + "  dynamic resolution handler: " + (DynamicResolutionHandler.instance.DynamicResolutionEnabled() ? "on, scale " + PerfText.F2(DynamicResolutionHandler.instance.GetCurrentScale()) : "off"));
+            text.AppendLine("  time: timeScale " + PerfText.F2(Time.timeScale) + "  fixedDeltaTime " + Time.fixedDeltaTime.ToString("F4") + "  maximumDeltaTime "
+                            + PerfText.F2(Time.maximumDeltaTime));
+            text.AppendLine("  physics: simulationMode " + Physics.simulationMode + "  autoSyncTransforms " + Physics.autoSyncTransforms + "  reuseCollisionCallbacks "
+                            + Physics.reuseCollisionCallbacks + "  solver iterations " + Physics.defaultSolverIterations + "/" + Physics.defaultSolverVelocityIterations
+                            + "  2D " + Physics2D.simulationMode);
+            text.AppendLine("  garbage collector: incremental " + GarbageCollector.isIncremental + "  slice " + (GarbageCollector.incrementalTimeSliceNanoseconds / 1000000.0).ToString("F1")
+                            + " ms  mode " + GarbageCollector.GCMode + "  managed heap " + (UnityEngine.Profiling.Profiler.GetMonoHeapSizeLong() >> 20) + " MB, in use "
+                            + (UnityEngine.Profiling.Profiler.GetMonoUsedSizeLong() >> 20) + " MB");
+            text.AppendLine("  loading: backgroundLoadingPriority " + Application.backgroundLoadingPriority + "  asyncUploadTimeSlice " + QualitySettings.asyncUploadTimeSlice
+                            + " ms  buffer " + QualitySettings.asyncUploadBufferSize + " MB  persistent " + QualitySettings.asyncUploadPersistentBuffer);
+            text.AppendLine("  frame timing feature enabled in this build: " + FrameTimingManager.IsFeatureEnabled() + "  dynamic resolution handler: "
+                            + (DynamicResolutionHandler.instance.DynamicResolutionEnabled() ? "on, scale " + PerfText.F2(DynamicResolutionHandler.instance.GetCurrentScale()) : "off"));
         }
 
         private static void Quality(StringBuilder text)
@@ -86,10 +88,12 @@ namespace RealLifeOverhaul
             text.AppendLine("  level " + level + " '" + (level < names.Length ? names[level] : "?") + "' of [" + string.Join(", ", names) + "]");
             text.AppendLine("  lodBias " + PerfText.F2(QualitySettings.lodBias) + "  maximumLODLevel " + QualitySettings.maximumLODLevel + "  skinWeights " + QualitySettings.skinWeights
                             + "  anisotropic " + QualitySettings.anisotropicFiltering + "  texture mip limit " + QualitySettings.globalTextureMipmapLimit);
-            text.AppendLine("  (built-in values, mostly unused by HDRP) shadows " + QualitySettings.shadows + "  shadowDistance " + PerfText.F1(QualitySettings.shadowDistance) + "  cascades " + QualitySettings.shadowCascades
-                            + "  pixelLightCount " + QualitySettings.pixelLightCount + "  antiAliasing " + QualitySettings.antiAliasing + "  realtimeReflectionProbes " + QualitySettings.realtimeReflectionProbes);
-            text.AppendLine("  streamingMipmaps " + QualitySettings.streamingMipmapsActive + "  budget " + PerfText.F1(QualitySettings.streamingMipmapsMemoryBudget) + " MB  discardUnusedMips " + Texture.streamingTextureDiscardUnusedMips
-                            + "  particleRaycastBudget " + QualitySettings.particleRaycastBudget + "  softParticles " + QualitySettings.softParticles);
+            text.AppendLine("  (built-in values, mostly unused by HDRP) shadows " + QualitySettings.shadows + "  shadowDistance " + PerfText.F1(QualitySettings.shadowDistance)
+                            + "  cascades " + QualitySettings.shadowCascades + "  pixelLightCount " + QualitySettings.pixelLightCount + "  antiAliasing " + QualitySettings.antiAliasing
+                            + "  realtimeReflectionProbes " + QualitySettings.realtimeReflectionProbes);
+            text.AppendLine("  streamingMipmaps " + QualitySettings.streamingMipmapsActive + "  budget " + PerfText.F1(QualitySettings.streamingMipmapsMemoryBudget)
+                            + " MB  discardUnusedMips " + Texture.streamingTextureDiscardUnusedMips + "  particleRaycastBudget " + QualitySettings.particleRaycastBudget
+                            + "  softParticles " + QualitySettings.softParticles);
         }
 
         private static void Pipeline(StringBuilder text)
@@ -124,8 +128,8 @@ namespace RealLifeOverhaul
                 }
                 (frame.IsEnabled(field) ? on : off).Append(field).Append(' ');
             }
-            text.AppendLine("  lit shader mode " + frame.litShaderMode + "  msaa " + frame.msaaMode + "  lodBias " + PerfText.F2(frame.lodBias) + " (" + frame.lodBiasMode + ")  maximumLODLevel " + frame.maximumLODLevel
-                            + " (" + frame.maximumLODLevelMode + ")  material quality " + frame.materialQuality);
+            text.AppendLine("  lit shader mode " + frame.litShaderMode + "  msaa " + frame.msaaMode + "  lodBias " + PerfText.F2(frame.lodBias) + " (" + frame.lodBiasMode
+                            + ")  maximumLODLevel " + frame.maximumLODLevel + " (" + frame.maximumLODLevelMode + ")  material quality " + frame.materialQuality);
             text.AppendLine("  frame settings ON:  " + on);
             text.AppendLine("  frame settings OFF: " + off);
 
@@ -178,7 +182,8 @@ namespace RealLifeOverhaul
                     }
                 }
                 text.AppendLine("    '" + volume.name + "' " + (volume.isGlobal ? "global" : "local") + " priority " + PerfText.F1(volume.priority) + " weight " + PerfText.F2(volume.weight)
-                                + " layer " + LayerMask.LayerToName(volume.gameObject.layer) + " scene '" + volume.gameObject.scene.name + "' profile '" + (profile != null ? profile.name : "none") + "': " + parts);
+                                + " layer " + LayerMask.LayerToName(volume.gameObject.layer) + " scene '" + volume.gameObject.scene.name + "' profile '"
+                                + (profile != null ? profile.name : "none") + "': " + parts);
             }
         }
 
@@ -199,11 +204,14 @@ namespace RealLifeOverhaul
                 bool renders = c.isActiveAndEnabled;
                 RenderTexture target = c.targetTexture;
                 var line = new StringBuilder("    ");
-                line.Append(renders ? "RENDERS " : "idle    ").Append('\'').Append(c.name).Append("' under '").Append(PerfText.Above(c.transform, 2)).Append("' scene '").Append(c.gameObject.scene.name).Append('\'');
-                line.Append(" depth ").Append(PerfText.F1(c.depth)).Append(" type ").Append(c.cameraType).Append(" near ").Append(PerfText.F2(c.nearClipPlane)).Append(" far ").Append(PerfText.F1(c.farClipPlane))
-                    .Append(c.orthographic ? " ortho" : " fov " + PerfText.F1(c.fieldOfView)).Append(" mask 0x").Append(c.cullingMask.ToString("X")).Append(" occlusion ").Append(c.useOcclusionCulling);
+                line.Append(renders ? "RENDERS " : "idle    ").Append('\'').Append(c.name).Append("' under '").Append(PerfText.Above(c.transform, 2))
+                    .Append("' scene '").Append(c.gameObject.scene.name).Append('\'');
+                line.Append(" depth ").Append(PerfText.F1(c.depth)).Append(" type ").Append(c.cameraType).Append(" near ").Append(PerfText.F2(c.nearClipPlane))
+                    .Append(" far ").Append(PerfText.F1(c.farClipPlane)).Append(c.orthographic ? " ortho" : " fov " + PerfText.F1(c.fieldOfView))
+                    .Append(" mask 0x").Append(c.cullingMask.ToString("X")).Append(" occlusion ").Append(c.useOcclusionCulling);
                 line.Append(target != null ? " -> texture '" + target.name + "' " + target.width + "x" + target.height
-                    : " -> display " + (c.targetDisplay + 1) + (c.targetDisplay < Display.displays.Length && Display.displays[c.targetDisplay].active ? string.Empty : " (NOT IN USE: the engine should not draw this camera; the step table lists the cameras really drawn)"));
+                    : " -> display " + (c.targetDisplay + 1) + (c.targetDisplay < Display.displays.Length && Display.displays[c.targetDisplay].active
+                        ? string.Empty : " (NOT IN USE: the engine should not draw this camera; the step table lists the cameras really drawn)"));
                 if (renders)
                 {
                     float[] distances = c.layerCullDistances;
@@ -374,11 +382,14 @@ namespace RealLifeOverhaul
                 }
             }
 
-            text.AppendLine("  Light components loaded " + all.Length + "  on active objects " + active + "  ENABLED " + enabled + "  (directional " + directional + ", spot " + spot + ", point " + point + ", area " + area + ")");
-            text.AppendLine("  casting shadows " + shadowed + "  baked-only (free at run time) " + baked + "  affecting volumetric fog " + volumetric + "  with an Animator " + animated + "  without HDRP light data " + noData);
+            text.AppendLine("  Light components loaded " + all.Length + "  on active objects " + active + "  ENABLED " + enabled + "  (directional " + directional + ", spot " + spot
+                            + ", point " + point + ", area " + area + ")");
+            text.AppendLine("  casting shadows " + shadowed + "  baked-only (free at run time) " + baked + "  affecting volumetric fog " + volumetric + "  with an Animator " + animated
+                            + "  without HDRP light data " + noData);
             text.AppendLine("  every enabled light with HDRP data costs one script LateUpdate call per frame (HDAdditionalLightData), on screen or not");
-            text.AppendLine("  camera far plane " + PerfText.F1(far) + " m: lights wholly beyond it " + beyondFar + "  lights whose range touches the view frustum " + inFrustum + " (shadow-casting " + inFrustumShadowed + ")"
-                            + "  beyond their own fade distance " + beyondFade + "  shadow-casting beyond their shadow fade distance " + beyondShadowFade);
+            text.AppendLine("  camera far plane " + PerfText.F1(far) + " m: lights wholly beyond it " + beyondFar + "  lights whose range touches the view frustum " + inFrustum
+                            + " (shadow-casting " + inFrustumShadowed + ")" + "  beyond their own fade distance " + beyondFade + "  shadow-casting beyond their shadow fade distance "
+                            + beyondShadowFade);
             text.AppendLine("  shadow update mode of shadow-casting lights: every frame " + shadowEveryFrame + "  on enable " + shadowOnEnable + "  on demand " + shadowOnDemand);
             text.AppendLine("  distance from camera (m), local lights:        " + byDistance);
             text.AppendLine("  distance from camera (m), shadow-casting ones:  " + shadowedByDistance);
@@ -394,8 +405,9 @@ namespace RealLifeOverhaul
             for (int i = 0; i < rows.Count && i < 30; i++)
             {
                 LightGroup g = rows[i].Value;
-                text.AppendLine("  " + g.Count.ToString().PadLeft(6) + "  " + rows[i].Key + "  " + g.Type + " range " + PerfText.F1(g.Range / g.Count) + " intensity " + PerfText.F1(g.Intensity / g.Count)
-                                + " shadows " + g.Shadowed + " animated " + g.Animated + " within far plane " + g.InRange + " nearest " + PerfText.F1(g.Nearest) + " m");
+                text.AppendLine("  " + g.Count.ToString().PadLeft(6) + "  " + rows[i].Key + "  " + g.Type + " range " + PerfText.F1(g.Range / g.Count) + " intensity "
+                                + PerfText.F1(g.Intensity / g.Count) + " shadows " + g.Shadowed + " animated " + g.Animated + " within far plane " + g.InRange + " nearest "
+                                + PerfText.F1(g.Nearest) + " m");
             }
             if (rows.Count > 30)
             {
@@ -421,11 +433,12 @@ namespace RealLifeOverhaul
                     {
                         everyFrame++;
                     }
-                    text.AppendLine("    realtime " + (isPlanar ? "PLANAR " : "probe ") + "'" + probe.name + "' under '" + PerfText.Above(probe.transform, 2) + "' update " + probe.realtimeMode + " time-sliced " + probe.timeSlicing
-                                    + " scene '" + probe.gameObject.scene.name + "'");
+                    text.AppendLine("    realtime " + (isPlanar ? "PLANAR " : "probe ") + "'" + probe.name + "' under '" + PerfText.Above(probe.transform, 2) + "' update "
+                                    + probe.realtimeMode + " time-sliced " + probe.timeSlicing + " scene '" + probe.gameObject.scene.name + "'");
                 }
             }
-            text.AppendLine("  enabled probes " + probes.Length + "  planar " + planar + "  realtime " + realtime + "  rendered every frame " + everyFrame + " (each of those is a whole extra camera render)");
+            text.AppendLine("  enabled probes " + probes.Length + "  planar " + planar + "  realtime " + realtime + "  rendered every frame " + everyFrame
+                            + " (each of those is a whole extra camera render)");
         }
 
         private static void Renderers(StringBuilder text, Camera camera)
@@ -521,8 +534,9 @@ namespace RealLifeOverhaul
                 }
             }
 
-            text.AppendLine("  enabled renderers " + enabled + " (mesh " + meshes + ", skinned " + skinned + ", particle " + particles + ", other " + other + ")  casting shadows " + casting
-                            + "  in a static batch " + staticBatched + "  per-object motion vectors " + motionVectors + "  LOD groups " + UnityEngine.Object.FindObjectsByType<LODGroup>(FindObjectsSortMode.None).Length);
+            text.AppendLine("  enabled renderers " + enabled + " (mesh " + meshes + ", skinned " + skinned + ", particle " + particles + ", other " + other + ")  casting shadows "
+                            + casting + "  in a static batch " + staticBatched + "  per-object motion vectors " + motionVectors + "  LOD groups "
+                            + UnityEngine.Object.FindObjectsByType<LODGroup>(FindObjectsSortMode.None).Length);
             text.AppendLine("  VISIBLE to some camera or shadow pass this frame: " + visible + " (shadow-casting " + visibleCasting + ")  material slots on them " + materialSlots
                             + "  distinct materials " + materials.Count + " (GPU instancing on " + instanced + ", off " + notInstanced + ")");
             text.AppendLine("  visible renderers by distance from camera (m): " + visibleByDistance);
@@ -550,7 +564,8 @@ namespace RealLifeOverhaul
                         passes.Append(pass.GetType().Name).Append(" '").Append(pass.name).Append(pass.enabled ? "' on; " : "' off; ");
                     }
                 }
-                text.AppendLine("    '" + volume.name + "' " + (volume.isActiveAndEnabled ? "ACTIVE" : "inactive") + (volume.isGlobal ? " global" : " local") + " at " + volume.injectionPoint + ": " + passes);
+                text.AppendLine("    '" + volume.name + "' " + (volume.isActiveAndEnabled ? "ACTIVE" : "inactive") + (volume.isGlobal ? " global" : " local") + " at "
+                                + volume.injectionPoint + ": " + passes);
             }
             text.AppendLine("  largest groups of visible renderers:");
             visibleFamilies.Write(text, 30, "  ");
@@ -596,7 +611,8 @@ namespace RealLifeOverhaul
                     }
                 }
             }
-            text.AppendLine("  skinned meshes enabled " + enabled + "  visible " + visible + "  updateWhenOffscreen " + offscreenUpdating + "  skinned motion vectors " + motion + "  with blend shapes " + blendShapes);
+            text.AppendLine("  skinned meshes enabled " + enabled + "  visible " + visible + "  updateWhenOffscreen " + offscreenUpdating + "  skinned motion vectors " + motion
+                            + "  with blend shapes " + blendShapes);
             text.AppendLine("  bones in total " + bones + " (largest " + maxBones + ")  vertices skinned if all were visible " + vertices + "  global skin weights " + QualitySettings.skinWeights);
             text.AppendLine("  per-renderer quality:");
             quality.Write(text, 6, "  ");
@@ -696,8 +712,9 @@ namespace RealLifeOverhaul
                     awakeFamilies.Add(PerfText.Family(body.name));
                 }
             }
-            text.AppendLine("  rigidbodies " + bodies.Length + "  non-kinematic " + dynamic + "  awake " + awake + "  colliders " + UnityEngine.Object.FindObjectsByType<Collider>(FindObjectsSortMode.None).Length
-                            + "  wheel colliders " + UnityEngine.Object.FindObjectsByType<WheelCollider>(FindObjectsSortMode.None).Length);
+            text.AppendLine("  rigidbodies " + bodies.Length + "  non-kinematic " + dynamic + "  awake " + awake + "  colliders "
+                            + UnityEngine.Object.FindObjectsByType<Collider>(FindObjectsSortMode.None).Length + "  wheel colliders "
+                            + UnityEngine.Object.FindObjectsByType<WheelCollider>(FindObjectsSortMode.None).Length);
             awakeFamilies.Write(text, 8, "  ");
 
             NavMeshAgent[] agents = UnityEngine.Object.FindObjectsByType<NavMeshAgent>(FindObjectsSortMode.None);
@@ -720,7 +737,7 @@ namespace RealLifeOverhaul
             }
             text.AppendLine("  agents by avoidance quality (the thorough kinds are what the navigation step spends its time on when agents are close together):");
             avoidance.Write(text, 8, "  ");
-            // Obstacles that cut the navigation mesh: one that moves re-cuts the mesh round it each time it does.
+            // obstacles that cut the navigation mesh: one that moves re-cuts the mesh round it each time it does
             var obstacles = new PerfText.Tally();
             int onMoving = 0;
             foreach (NavMeshObstacle obstacle in UnityEngine.Object.FindObjectsByType<NavMeshObstacle>(FindObjectsSortMode.None))
@@ -735,13 +752,17 @@ namespace RealLifeOverhaul
                 {
                     onMoving++;
                 }
-                obstacles.Add((moving ? "MOVING NOW  " : carrier != null && !carrier.isKinematic ? "on a body at rest  " : "fixed  ") + (obstacle.carveOnlyStationary ? "carves only when stationary" : "CARVES WHILE MOVING")
-                              + ", move threshold " + PerfText.F2(obstacle.carvingMoveThreshold) + " m, time to stationary " + PerfText.F2(obstacle.carvingTimeToStationary) + " s  (" + PerfText.Family(obstacle.transform.root.name) + " / " + PerfText.Family(obstacle.name) + ")");
+                obstacles.Add((moving ? "MOVING NOW  " : carrier != null && !carrier.isKinematic ? "on a body at rest  " : "fixed  ")
+                              + (obstacle.carveOnlyStationary ? "carves only when stationary" : "CARVES WHILE MOVING") + ", move threshold "
+                              + PerfText.F2(obstacle.carvingMoveThreshold) + " m, time to stationary " + PerfText.F2(obstacle.carvingTimeToStationary) + " s  ("
+                              + PerfText.Family(obstacle.transform.root.name) + " / " + PerfText.Family(obstacle.name) + ")");
             }
             text.AppendLine("  carving obstacles on something moving right now: " + onMoving + "   largest groups:");
             obstacles.Write(text, 12, "  ");
-            text.AppendLine("  texture streaming: active " + QualitySettings.streamingMipmapsActive + "  renderers re-checked per frame " + QualitySettings.streamingMipmapsRenderersPerFrame + "  add all cameras " + QualitySettings.streamingMipmapsAddAllCameras
-                            + "  max level reduction " + QualitySettings.streamingMipmapsMaxLevelReduction + "   navigation: pathfinding iterations per frame " + NavMesh.pathfindingIterationsPerFrame + "  avoidance prediction " + PerfText.F2(NavMesh.avoidancePredictionTime) + " s");
+            text.AppendLine("  texture streaming: active " + QualitySettings.streamingMipmapsActive + "  renderers re-checked per frame " + QualitySettings.streamingMipmapsRenderersPerFrame
+                            + "  add all cameras " + QualitySettings.streamingMipmapsAddAllCameras + "  max level reduction " + QualitySettings.streamingMipmapsMaxLevelReduction
+                            + "   navigation: pathfinding iterations per frame " + NavMesh.pathfindingIterationsPerFrame + "  avoidance prediction "
+                            + PerfText.F2(NavMesh.avoidancePredictionTime) + " s");
 
             AudioSource[] sources = UnityEngine.Object.FindObjectsByType<AudioSource>(FindObjectsSortMode.None);
             int sounding = 0;
@@ -815,12 +836,14 @@ namespace RealLifeOverhaul
                 }
                 totalGraphics += graphics.Count;
                 totalTargets += targets;
-                rows.Add(new KeyValuePair<int, string>(graphics.Count, "'" + canvas.name + "' " + canvas.renderMode + (canvas.pixelPerfect ? " PIXEL-PERFECT" : string.Empty) + " order " + canvas.sortingOrder
-                                                                        + " nested canvases " + (canvas.GetComponentsInChildren<Canvas>(false).Length - 1) + " graphics " + graphics.Count + " (texts " + texts
-                                                                        + ", raycast targets " + targets + ") scene '" + canvas.gameObject.scene.name + "'"));
+                rows.Add(new KeyValuePair<int, string>(graphics.Count, "'" + canvas.name + "' " + canvas.renderMode + (canvas.pixelPerfect ? " PIXEL-PERFECT" : string.Empty)
+                                                                        + " order " + canvas.sortingOrder + " nested canvases " + (canvas.GetComponentsInChildren<Canvas>(false).Length - 1)
+                                                                        + " graphics " + graphics.Count + " (texts " + texts + ", raycast targets " + targets + ") scene '"
+                                                                        + canvas.gameObject.scene.name + "'"));
             }
-            text.AppendLine("  enabled canvases: root " + roots + ", nested " + nested + "  world-space " + world + "  pixel-perfect " + pixelPerfect + "  active graphics " + totalGraphics + "  raycast targets " + totalTargets
-                            + "  graphic raycasters " + UnityEngine.Object.FindObjectsByType<GraphicRaycaster>(FindObjectsSortMode.None).Length + "  layout groups " + UnityEngine.Object.FindObjectsByType<LayoutGroup>(FindObjectsSortMode.None).Length
+            text.AppendLine("  enabled canvases: root " + roots + ", nested " + nested + "  world-space " + world + "  pixel-perfect " + pixelPerfect + "  active graphics "
+                            + totalGraphics + "  raycast targets " + totalTargets + "  graphic raycasters "
+                            + UnityEngine.Object.FindObjectsByType<GraphicRaycaster>(FindObjectsSortMode.None).Length + "  layout groups " + UnityEngine.Object.FindObjectsByType<LayoutGroup>(FindObjectsSortMode.None).Length
                             + "  content size fitters " + UnityEngine.Object.FindObjectsByType<ContentSizeFitter>(FindObjectsSortMode.None).Length);
             rows.Sort((a, b) => b.Key.CompareTo(a.Key));
             for (int i = 0; i < rows.Count && i < 25; i++)
@@ -833,11 +856,11 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Which per-frame messages a script type receives: looked up once per type.
+        // which per-frame messages a script type receives, looked up once a type
         private static readonly Dictionary<Type, int> Messages = new Dictionary<Type, int>();
         private const int HasUpdate = 1, HasLate = 2, HasFixed = 4, HasGui = 8, HasRender = 16;
 
-        // Messages the engine sends a script because of a renderer or a camera: per visible object, per camera, per frame.
+        // messages the engine sends because of a renderer or a camera: per visible object, per camera, per frame
         private static readonly string[] RenderMessages = { "OnWillRenderObject", "OnBecameVisible", "OnBecameInvisible", "OnRenderObject", "OnPreCull", "OnPreRender", "OnPostRender" };
 
         private static int MessagesOf(Type type)
@@ -906,15 +929,18 @@ namespace RealLifeOverhaul
                 fixeds += (flags & HasFixed) != 0 ? 1 : 0;
                 guis += (flags & HasGui) != 0 ? 1 : 0;
             }
-            text.AppendLine("  enabled script components " + enabled + "  calls per frame: Update " + updates + "  LateUpdate " + lates + "  per physics step: FixedUpdate " + fixeds + "  OnGUI components " + guis);
+            text.AppendLine("  enabled script components " + enabled + "  calls per frame: Update " + updates + "  LateUpdate " + lates + "  per physics step: FixedUpdate " + fixeds
+                            + "  OnGUI components " + guis);
             text.AppendLine("  components with a rendering message (OnWillRenderObject, OnBecameVisible...: called per visible object or per camera) " + renders);
-            text.AppendLine("  (each call crosses from the engine into script code whether or not the method then does anything; U = Update, L = LateUpdate, F = FixedUpdate, G = OnGUI, R = a rendering message)");
+            text.AppendLine("  (each call crosses from the engine into script code whether or not the method then does anything;"
+                            + " U = Update, L = LateUpdate, F = FixedUpdate, G = OnGUI, R = a rendering message)");
             var rows = new List<KeyValuePair<Type, int>>(counts);
             rows.Sort((a, b) => b.Value.CompareTo(a.Value));
             for (int i = 0; i < rows.Count && i < 60; i++)
             {
                 int flags = MessagesOf(rows[i].Key);
-                string marks = ((flags & HasUpdate) != 0 ? "U" : "-") + ((flags & HasLate) != 0 ? "L" : "-") + ((flags & HasFixed) != 0 ? "F" : "-") + ((flags & HasGui) != 0 ? "G" : "-") + ((flags & HasRender) != 0 ? "R" : "-");
+                string marks = ((flags & HasUpdate) != 0 ? "U" : "-") + ((flags & HasLate) != 0 ? "L" : "-") + ((flags & HasFixed) != 0 ? "F" : "-")
+                               + ((flags & HasGui) != 0 ? "G" : "-") + ((flags & HasRender) != 0 ? "R" : "-");
                 text.AppendLine("  " + rows[i].Value.ToString().PadLeft(6) + "  " + marks + "  " + rows[i].Key.FullName + "  [" + rows[i].Key.Assembly.GetName().Name + "]");
             }
             if (rows.Count > 60)

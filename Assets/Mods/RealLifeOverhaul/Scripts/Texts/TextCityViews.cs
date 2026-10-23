@@ -2,11 +2,7 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Texts
 {
-    /// <summary>
-    /// One of the player's staff as RLO Texts reads them (Wiring/Wiring.TextsCity, from running a business and the game's own
-    /// employee): their name, job in English words, business, pay and the going rate, a raise asked for or agreed, whether
-    /// they are off sick, and their hours against the most they agreed to. Game-free; refilled each look.
-    /// </summary>
+    /// <summary>One of the player's staff as RLO Texts reads them (Wiring/Wiring.TextsCity). Game-free; refilled each look.</summary>
     public sealed class TextStaff
     {
         public string Id;            // the game's employee id
@@ -22,26 +18,22 @@ namespace RealLifeOverhaul.Texts
         public bool Sick;            // off sick today, as the game picked
         public int WeekHours;        // hours the game has them down for this week
         public int MostHours;        // the most hours a week they agreed to (their demand); 0 with none
-        public bool Complaining;     // the game's own complaint of theirs is open (the mod then says nothing of hours)
+        public bool Complaining;     // the game's own complaint of theirs is open: the mod then says nothing of hours
     }
 
     /// <summary>What RLO Texts last saw of one of the staff: the raise, and the days or week each message was sent.</summary>
     public sealed class TextStaffMark
     {
         public string Id;
-        public int RaiseSeen = -1;   // the raise when last seen, hundredths; -1 never seen (a first sight thanks nobody)
+        public int RaiseSeen = -1;   // the raise when last seen, hundredths; -1 never seen, so a first sight thanks nobody
         public int AskTold;          // the day the raise asked for was texted
         public int SickTold;         // the day the sick message was sent
         public int HoursWeek = -1;   // the week the hours were complained of
-        public int LastDay;          // the last day any message of theirs was sent (one a day at most)
-        public int SeenDay;          // the last day they were seen (marks of staff gone are let go)
+        public int LastDay;          // the last day any message of theirs was sent: one a day at most
+        public int SeenDay;          // the last day they were seen: marks of staff gone are let go
     }
 
-    /// <summary>
-    /// The player's life as the people in it could hear of it, read once a game hour (Wiring/Wiring.TextsCity): children,
-    /// marriage, a graduation today, the court's cases closed, the player's company on the market, the newest business,
-    /// and what the player is worth. Game-free; refilled each look.
-    /// </summary>
+    /// <summary>The player's life as the people in it could hear of it, read once a game hour. Game-free; refilled each look.</summary>
     public sealed class TextLife
     {
         public int Day;
@@ -57,12 +49,12 @@ namespace RealLifeOverhaul.Texts
         public string Listed;        // the player's company on the stock market, or null
         public int ListedDay;
         public string Business;      // the player's newest business, or null
-        public int BusinessDay;      // ...the day it was the player's (the game's creation day)
+        public int BusinessDay;      // ...the game's creation day of it
         public long Worth;           // the player's net worth (the Finance app's)
         public bool HasWorth;        // the worth was read
     }
 
-    /// <summary>Where the player's life stood when RLO Texts last looked (saved, so a load carries on rather than telling everything again).</summary>
+    /// <summary>Where the player's life stood when RLO Texts last looked; saved, so a load does not tell everything again.</summary>
     public sealed class TextLifeMark
     {
         public int Day = -1;         // the day of the last look; -1 never looked
@@ -76,7 +68,7 @@ namespace RealLifeOverhaul.Texts
         public int WorthDay = -1;
     }
 
-    /// <summary>Something of the player's life the people in it hear of: its kind (TextMemoryRules' event codes), day, name or sum, and who told whom.</summary>
+    /// <summary>Something of the player's life the people in it hear of, by TextMemoryRules' event codes.</summary>
     public sealed class TextLifeEvent
     {
         public string Kind;          // "crash", "arrest", "court_guilty", "court_cleared", "opened", "graduated", "listed", "married", "baby", "win", "loss", "knocked"
@@ -89,7 +81,7 @@ namespace RealLifeOverhaul.Texts
         public bool Gossiped;        // passed on by gossip (once)
     }
 
-    /// <summary>A person of the social life as gossip and the life's texts read them (Wiring/Wiring.TextsCity): who, how close, where from.</summary>
+    /// <summary>A person of the social life as gossip and the life's texts read them (Wiring/Wiring.TextsCity).</summary>
     public sealed class TextPerson
     {
         public int Index;
@@ -100,7 +92,7 @@ namespace RealLifeOverhaul.Texts
         public bool Family;          // Mom
         public bool Met;
         public bool Drifted;
-        public bool Asleep;          // asleep at this hour (no text now)
+        public bool Asleep;          // asleep at this hour: no text now
         public int District;
         public int Origin;           // SocialOrigin
         public int LastTextDay;
@@ -114,7 +106,7 @@ namespace RealLifeOverhaul.Texts
         public string Intent, Branch, Key;
     }
 
-    /// <summary>The lists RLO Texts fills from the city on each look, kept and cleared (nothing made on a look but the views' strings).</summary>
+    /// <summary>The lists RLO Texts fills from the city on each look, kept and cleared.</summary>
     public sealed class TextCityViews
     {
         public readonly List<TextStaff> Staff = new List<TextStaff>(16);

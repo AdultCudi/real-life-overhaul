@@ -77,6 +77,7 @@ namespace RealLifeOverhaul.Economy
         private void Awake()
         {
             Instance = this;
+            GameSprites.Want(AppGlyphs);   // asked for before the one look behind the loading screen (GameSprites.Prewarm)
             _second = EachSecond;
             _onSave = OnSave;
             _onHour = OnHour;
@@ -413,8 +414,11 @@ namespace RealLifeOverhaul.Economy
 
         private void Install()
         {
+            if (!PhoneApp.PhoneUp)
+            {
+                return;   // the game's phone is not built yet: asked again next time, nothing made for it
+            }
             var view = new EstateApp(this);
-            GameSprites.Want(AppGlyphs);
             bool tryAgain;
             _app = PhoneApp.Install(new PhoneAppDef
             {

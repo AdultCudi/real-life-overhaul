@@ -7,9 +7,9 @@ namespace RealLifeOverhaul
     /// <summary>What the front of one of the mod's buildings shows on the game's own sign holders (Core/FrontSigns).</summary>
     public enum FrontLook
     {
-        Game,   // as the game has it: its own call decides (the building is not refused, not to let, or its feature is off)
-        Off,    // the game's signs switched off: no "For rent", and the building's own board or dressing is its one sign
-        Named   // the game's signs carry the company's or the institution's name and logo, made by the game's logo maker
+        Game,   // as the game has it
+        Off,    // the game's signs off: no "For rent"; the building's own board or dressing is its one sign
+        Named   // the game's signs carry the name and a logo from the game's logo maker
     }
 
     /// <summary>How a named front looks: the logo the game's maker draws, and the sign's lights. Colours are 0 to 1.</summary>
@@ -22,32 +22,22 @@ namespace RealLifeOverhaul
         public float MarkR, MarkG, MarkB;            // the logo shape
         public float NeonR, NeonG, NeonB;            // the sign's neon, on a sign type that has it
         public float LampR, LampG, LampB;            // the sign's bulbs and the light they throw
-        public int Preferred;                        // which of the sign types with lights to take (in turn over them)
+        public int Preferred;                        // which of the lit sign types to take, in turn over them
     }
 
     /// <summary>
-    /// The rules of the mod's buildings' fronts, game-free and checked offline (NavCheck, FrontSignCheck.cs): which of the
-    /// buildings the mod has made its own (Core/SpecialNameBook) lose the game's "For rent" sign and what they show
-    /// instead, how each company's or institution's sign looks, which of the game's sign types it takes, and which of them
-    /// the game's city map rows of units to let and buildings for sale leave out.
-    ///
-    /// Nothing here is saved, and nothing is read from a save: a building's look is worked out again from its claim and
-    /// its registration as it stands. Every machine of a Going Public session has the same claims, so every machine works
-    /// out the same fronts, and a building that any player rents or owns is never touched (it is the player's on every
-    /// machine, and not refused).
+    /// The rules of the mod's buildings' fronts (Core/SpecialNameBook), game-free, checked by NavCheck: which lose the
+    /// game's "For rent" sign and what they show instead, how each sign looks, and which the city map's rows leave out.
+    /// Nothing is saved: every Going Public machine has the same claims and works out the same fronts, and a building any
+    /// player rents or owns is never touched.
     /// </summary>
     public static class FrontSignRules
     {
-        public const string HqPrefix = "techhq_";   // Tech/Sites/Headquarters.IdPrefix: a tech company's headquarters, "techhq_" and its place in the list
+        public const string HqPrefix = "techhq_";   // Tech/Sites/Headquarters.IdPrefix, then the company's place in the list
 
         /// <summary>
-        /// The look of a building in the book: <paramref name="refused"/> (its feature holds it, is on, and no player rents
-        /// or owns it: SpecialNameBook.RefusesEntry), <paramref name="toLet"/> (the game holds it as to let, so its own sign
-        /// would say "For rent"), <paramref name="board"/> (its feature stood a board of its own at its door), and
-        /// <paramref name="named"/> (the option for the special buildings' names is on). A police station and a hotel are
-        /// dressed by their own features (the station's fascia, the hotel's board): the game's signs are only switched off.
-        /// The university's building carries its lit name on the game's signs as the tech towers do, its board at the door
-        /// or not: it is a permanent building to be seen from the street, and the board is only where to attend.
+        /// The look of a building in the book. Police stations and hotels are dressed by their own features, so the game's
+        /// signs only go off; the university carries its lit name with its board up too, as the tech towers do.
         /// </summary>
         public static FrontLook Look(SpecialKind kind, bool refused, bool toLet, bool board, bool named)
         {
@@ -63,18 +53,17 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// True if the game's city map is to put out a light it gave a building of the mod's (CityMapFilters.ApplyFilters):
-        /// a refused building with nothing of the game's in it that the game lit for its rows of units to let or buildings
-        /// for sale. A business in it stays as the game's rows of businesses show it; the player's own stay theirs.
+        /// True if the city map is to put out a light the game gave a refused building, empty and nobody's, for its rows
+        /// of units to let or for sale.
         /// </summary>
         public static bool PutOut(bool refused, bool players, bool business, bool toLet, bool forSale)
         {
             return refused && !players && !business && (toLet || forSale);
         }
 
-        public const string TowerPrefix = "techhq_tower_";   // Tech/Sites/Headquarters: a tower the tech companies share, a floor each, "techhq_tower_" and its number
+        public const string TowerPrefix = "techhq_tower_";   // a tower the tech companies share, a floor each, then its number
 
-        /// <summary>The tower's number for a tower's id ("techhq_tower_1": 1), or -1. A tower is no one company's: it is not a headquarters' id.</summary>
+        /// <summary>The tower's number for a tower's id ("techhq_tower_1": 1), or -1.</summary>
         public static int TowerIndex(string id)
         {
             if (id == null || id.Length <= TowerPrefix.Length || !id.StartsWith(TowerPrefix, StringComparison.Ordinal))
@@ -111,13 +100,11 @@ namespace RealLifeOverhaul
             "headquarter3"             // Fibreway Networks: the city
         };
 
-        /// <summary>The number of tech companies with a shape of their own (the others go round the list).</summary>
         public static int HqShapeCount => HqShapes.Length;
 
         /// <summary>
-        /// The style of a building's named front: a tech company's in its own colours (Tech/Sites/RoomPlans HqColours: its
-        /// main colour as the ground and the neon, its second for the lettering and the logo), an institution's in the
-        /// colours of its board. The same id and kind give the same style on every machine.
+        /// The style of a named front: a tech company's in its HqColours (the main as ground and neon, the second for the
+        /// name and logo), an institution's in its board's colours. The same on every machine.
         /// </summary>
         public static FrontStyle Style(SpecialKind kind, string id)
         {
@@ -125,8 +112,7 @@ namespace RealLifeOverhaul
             int tower = TowerIndex(id);
             if (tower >= 0)
             {
-                // A tower of the tech companies: its own name, in slate and brass, the same for every tower (its companies
-                // are named on the game's card, at its door and in the map's search; each floor's lobby has its company's colours).
+                // A shared tower: its own name in slate and brass, every tower alike.
                 Set(ref s, "headquarter1", 4, 0.14f, 0.16f, 0.20f, 0.96f, 0.97f, 0.98f, 0.86f, 0.74f, 0.42f, tower);
                 s.NeonR = s.MarkR;
                 s.NeonG = s.MarkG;
@@ -160,7 +146,7 @@ namespace RealLifeOverhaul
                 case SpecialKind.Campus:  // the university: the board's burgundy and gold
                     Set(ref s, "school1", 3, 0.36f, 0.08f, 0.12f, 0.95f, 0.91f, 0.80f, 0.82f, 0.68f, 0.30f, 3);
                     break;
-                default:                  // any other role: plain, in the game's own default black on white
+                default:                  // plain, in the game's default black on white
                     Set(ref s, "headquarter1", 4, 1f, 1f, 1f, 0f, 0f, 0f, 0f, 0f, 0f, 0);
                     s.NeonR = s.NeonG = s.NeonB = 1f;
                     return s;
@@ -188,10 +174,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// The game's sign type a named front takes on one of the game's wide signs, by number (SignType.Type1 is 0): of the
-        /// types that sign has with lights (<paramref name="lit"/>, the first <paramref name="litCount"/>), the preferred one
-        /// in turn, so that it lights up at night as the game's own signs do; a sign with none lit takes the first type it
-        /// has (<paramref name="first"/>), and one that has none, Type1 (what the game's own "For rent" sign uses).
+        /// The sign type (SignType.Type1 is 0) a named front takes: one of the lit types in turn, so it lights up at night;
+        /// else <paramref name="first"/>, else Type1, as the game's "For rent" sign.
         /// </summary>
         public static int SignType(int preferred, int[] lit, int litCount, int first)
         {
@@ -203,10 +187,7 @@ namespace RealLifeOverhaul
             return first >= 0 ? first : 0;
         }
 
-        /// <summary>
-        /// A short mark of a name and its style, for the folder the made logo is kept in (outside the save): the same
-        /// name in the same style finds the same files in the next session, and a change of either makes them anew.
-        /// </summary>
+        /// <summary>A hash of a name and its style, naming the folder its logo is kept in, so a change of either makes it anew.</summary>
         public static uint Mark(string name, FrontStyle s)
         {
             uint h = 2166136261u;

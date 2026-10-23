@@ -1,11 +1,8 @@
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// A curve of the game's (an AnimationCurve of plain keys: the tyres' side force by slip, a spring's force by
-    /// compression, the steering's share by speed) as the engine evaluates it: a cubic Hermite between neighbouring keys
-    /// from their values and slopes, held at the first and last values beyond them. Game-free, so the handling's model and
-    /// NavCheck read the game's curves exactly as the car does. The arrays grow only when a car brings a longer curve,
-    /// once per car; evaluating allocates nothing.
+    /// A curve of the game's (an AnimationCurve of plain keys) as the engine evaluates it: cubic Hermite between keys, held
+    /// beyond the ends. Game-free, so the model and NavCheck read the curves as the car does; evaluating allocates nothing.
     /// </summary>
     public sealed class CurveKeys
     {
@@ -14,7 +11,6 @@ namespace RealLifeOverhaul
         private float[] _in = new float[24];
         private float[] _out = new float[24];
 
-        /// <summary>How many keys the curve has.</summary>
         public int Count { get; private set; }
 
         public float Time(int i) => _time[i];
@@ -101,7 +97,7 @@ namespace RealLifeOverhaul
             return ((6f * s2 - 6f * s) * _value[i] + (3f * s2 - 4f * s + 1f) * dt * _out[i] + (-6f * s2 + 6f * s) * _value[i + 1] + (3f * s2 - 2f * s) * dt * _in[i + 1]) / dt;
         }
 
-        /// <summary>The most the curve reaches between x = 0 and its last key, sampled finely (the keys and 16 steps between each).</summary>
+        /// <summary>The most the curve reaches between 0 and its last key, sampled at the keys and 16 steps between each.</summary>
         public float Most()
         {
             float most = Evaluate(0f);
@@ -116,7 +112,7 @@ namespace RealLifeOverhaul
             return most;
         }
 
-        // The key before x: the segment x falls in (between the first and last keys).
+        // The key before x, between the first and last keys.
         private int Segment(float x)
         {
             int low = 0;

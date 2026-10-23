@@ -104,7 +104,7 @@ internal static partial class Program
         var data = new Dictionary<string, string>();
         SocialState.Load(data, 0, 112, 9, 5150);
         SocialPerson met = null;
-        for (int i = 2; i < SocialRules.CastSize && met == null; i++)
+        for (int i = 2; i < SocialRules.BaseCast && met == null; i++)
         {
             SocialPerson p = SocialState.Get(i);
             if (p != null && !p.Met && !p.IsFamily && p.Origin != SocialOrigin.OldFriend)
@@ -196,7 +196,7 @@ internal static partial class Program
     {
         string scripts = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts"));
         string Read(params string[] parts) => File.ReadAllText(System.IO.Path.Combine(scripts, System.IO.Path.Combine(parts)));
-        string links = Read("Wiring", "StreetLinks.cs"), talk = Read("Street", "StreetDirector.Talk.cs"), game = Read("Street", "StreetGame.cs");
+        string links = Read("Wiring", "StreetLinks.cs"), talk = Read("Street", "StreetDirector.Talk.cs") + Read("Street", "StreetDirector.Outcomes.cs"), game = Read("Street", "StreetGame.cs");
         Check(links.Contains("int seed = PersonLooks.Remember(m.Look);") && links.Contains("p.Look = m.Look;") && links.Contains("p.Seed = seed;")
               && links.IndexOf("p.Seed = seed;", StringComparison.Ordinal) < links.IndexOf("ContactPictures.Person(SocialPhone.IdOf(p), p.Female, p.Age, p.Seed);", StringComparison.Ordinal)
               && talk.Contains("Look = _hold.Held && !_hold.Gone ? StreetGame.Look(_hold.Body) : null") && game.Contains("PersonLookGame.Of(p.appearanceSetter.data)"),

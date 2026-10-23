@@ -3,18 +3,12 @@ using UnityEngine.AI;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// Two friends sitting on a bench with its back to a wall, talking: one turned to the other with a hand going
-    /// (<c>sit_chat_a</c>), the other listening, nodding and sitting back (<c>sit_chat_b</c>). The bench is a prop the mod
-    /// stands there (<c>precinct_bench</c>: seat top 0.46 m up, the sitter facing its +Z, the seat's middle 0.03 m ahead of
-    /// its pivot), so the height the two clips sit at (0.45 m, the seat's middle at the character's own origin) and the
-    /// 0.55 m between the two are known. Both are seated or neither is, and both always animate at each other.
-    /// </summary>
+    /// <summary>Two friends talking on a bench stood with its back to a wall (precinct_bench: seat 0.46 m up, 0.55 m between them); both seated or neither.</summary>
     public sealed class BenchChatActivity : CityActivity
     {
         private const string Bench = "precinct_bench";
         private const float FromWall = 0.45f;     // the bench's pivot from the wall: its back (0.275 m behind the pivot) stands clear of it
-        private const float SeatAhead = 0.03f;    // the seat's middle ahead of the bench's pivot
+        private const float SeatAhead = 0.03f;    // metres, the seat's middle ahead of the bench's pivot
         private const float Apart = 0.55f;        // sit_chat_a / sit_chat_b: the other one this far to the side
         private const float HalfLength = 0.90f;   // the bench is 1.80 m long
 

@@ -15,13 +15,9 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// Builds the physical body of a ragdoll on a humanoid skeleton and takes it off again. The
-    /// game has no ragdolls, so nothing is prepared on its characters: eleven of the bones get
-    /// a rigidbody, a collider sized from the distances measured between the bones, and a joint
-    /// to the part above with roughly human limits. Nothing is assumed about how the bones are
-    /// rolled: every axis is worked out from where the neighbouring bones are at that moment.
-    /// Built when someone is hit and removed when they get up or are taken away; an idle
-    /// character carries nothing of ours.
+    /// Builds a ragdoll's body on a humanoid skeleton and takes it off again: eleven bones get a rigidbody, a collider
+    /// sized from the distances between the bones, and a joint with roughly human limits. The game has no ragdolls, so
+    /// nothing is assumed about how its bones are rolled: every axis comes from where the neighbouring bones are.
     /// </summary>
     internal static class RagdollRig
     {
@@ -49,7 +45,7 @@ namespace RealLifeOverhaul
         private static readonly float[] Mass = { 12f, 24f, 5f, 2.2f, 1.6f, 2.2f, 1.6f, 8f, 5.2f, 8f, 5.2f };
 
         private const float ElbowReach = 140f;   // degrees a joint can fold from straight
-        private const float KneeReach = 130f;
+        private const float KneeReach = 130f;    // degrees
 
         /// <summary>Finds the bones. False if this skeleton lacks any of the eleven, or is not near natural size and evenly scaled.</summary>
         public static bool Resolve(Animator animator, RagdollPart[] parts, Transform[] ends)
@@ -90,10 +86,7 @@ namespace RealLifeOverhaul
             return scale.y > 0.9f && scale.y < 1.16f && Mathf.Abs(scale.x - scale.y) < 0.02f && Mathf.Abs(scale.z - scale.y) < 0.02f;
         }
 
-        /// <summary>
-        /// Adds the bodies, colliders and joints. On false (or an exception) the caller strips
-        /// whatever was added; everything added is recorded in the parts as it is made.
-        /// </summary>
+        /// <summary>Adds the bodies, colliders and joints, each recorded in the parts as made: on false or a throw the caller strips them.</summary>
         public static bool Build(RagdollPart[] parts, Transform[] ends, int layer)
         {
             // The body's own directions, from the hip joints: they are right however the root is turned.
@@ -158,8 +151,8 @@ namespace RealLifeOverhaul
             AddLimb(ref parts[LowerLegL], ends[FootL], 0.38f, 0.055f);
             AddLimb(ref parts[LowerLegR], ends[FootR], 0.38f, 0.055f);
 
-            // No part of one body collides with another part of it. The joints hold the pose; what this
-            // gives up (an arm can pass through the chest) is what makes a ragdoll blow itself apart.
+            // No part collides with another of the same body: an arm may pass through the chest, but parts pushing on
+            // each other are what make a ragdoll blow itself apart.
             for (int i = 0; i < PartCount; i++)
             {
                 for (int j = i + 1; j < PartCount; j++)
@@ -168,10 +161,8 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // Joints. A joint's limits are measured from the pose it is made in, and (as in the
-            // engine's own ragdoll builder) turning the limb the positive way about the axis counts
-            // towards the low limit. About the body's right that is bowing, nodding and a leg
-            // swinging back, so "low" is those and "high" is leaning back and a leg lifting forward.
+            // Limits are measured from the pose the joint is made in, and turning the positive way about the axis counts
+            // towards the low limit: about the body's right, low is bowing, nodding and a leg swinging back.
             Join(ref parts[Torso], parts[Hips].Body, right, forward, -45f, 25f, 20f, 20f);
             Join(ref parts[Head], parts[Torso].Body, right, forward, -45f, 35f, 30f, 40f);
             AddShoulder(ref parts[UpperArmL], parts[Torso].Body, parts[LowerArmL].Bone, forward, right);
@@ -211,8 +202,8 @@ namespace RealLifeOverhaul
             }
         }
 
-        // A box on a trunk bone. Its tall side follows the bone and its wide side the body's right,
-        // whichever of the bone's own axes those happen to lie along.
+        // A box on a trunk bone: its tall side along the bone and its wide side along the body's right, whichever of the
+        // bone's own axes those lie along.
         private static void AddBox(ref RagdollPart part, Vector3 localUp, Vector3 centre, Vector3 right, float height, float width, float depth)
         {
             Transform bone = part.Bone;
@@ -258,8 +249,8 @@ namespace RealLifeOverhaul
             Join(ref arm, torso, along, Mathf.Abs(Vector3.Dot(along, forward)) > 0.9f ? right : forward, -70f, 70f, 80f, 60f);
         }
 
-        // Elbows and knees fold one way only. The axis is the one the limb is already bent about;
-        // a straight limb takes it from the body instead (knees fold back, elbows fold forward).
+        // Elbows and knees fold one way, about the axis the limb is already bent about; a straight limb takes it from the
+        // body (knees fold back, elbows forward).
         private static void AddHinge(ref RagdollPart lower, RagdollPart upper, Transform end, float reach, Vector3 forward, Vector3 right, bool elbow)
         {
             Transform bone = lower.Bone;

@@ -1,39 +1,19 @@
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// When a rival's offer to one of the player's employees keeps its buttons (Core/RivalOfferGuard takes them away).
-    ///
-    /// THE GAME'S OFFER. EmployeeInstance.PoachByRival texts the offer from the employee's own chat, with Decline and
-    /// Accept buttons whose calls are methods of that employee (DeclinePoachPayRaise, AcceptPoachPayRaise), kept in the
-    /// message (TextMessage.additionalData.contextButtonData). When the rival gives up, StopPoachingRivalSurrender
-    /// texts again with two more, the employee's own calls as well. The game takes a message's buttons away only when
-    /// one of them is pressed (ContextButton.SetUp empties the list), and the chat draws them on the newest message of
-    /// a chat whatever has happened since (ContactsApp.ShowMessage); the save keeps them too, as calls on that employee
-    /// (Odin keeps a call's object and method). So an offer whose employee has gone another way keeps live buttons:
-    /// fired (MyEmployees, its mass action), resigned over a complaint, sold with a business, replaced by the
-    /// headhunter (the same employee object, renamed and started afresh), moved to another player by Going Public, or
-    /// let go by this mod (business pressure, the company, the tech sector). Nothing new comes into the chat on most of
-    /// these ways, and a message deleted with its cross brings an older offer back to the bottom. Decline then sends
-    /// somebody to the rival again (MoveEmployeeToRival: another copy of them among the rival's staff, one of the
-    /// rival's own let go, the day's wage paid again and a second resignation, or the headhunter's fee for a
-    /// replacement that never comes); Accept sets the wage of whoever that employee object is now.
-    ///
-    /// THE RULE. The buttons stay while the very employee they act on is one of the player's employees, under the name
-    /// the message was sent to (the chat's), is not being replaced and has not resigned, and the offer is still open
-    /// and is this message's own (sent on the day it was made). The rival's giving up keeps its buttons on the same
-    /// terms, until a newer offer is made. Otherwise they go, as a press takes them.
-    ///
-    /// Game-free (no Unity or game types): checked offline (EconomyCheck, RivalOfferChecks.cs). Cost: a few comparisons
-    /// a message.
+    /// When a rival's offer to one of the player's employees keeps its buttons. The game takes them away only on a press
+    /// and keeps them in the save as calls on the employee, so an offer to someone fired, resigned, sold with a business,
+    /// replaced by the headhunter (the same object renamed) or let go by the mod keeps live buttons, and Decline would
+    /// send somebody to the rival again. The buttons stay while that very employee is the player's under the chat's
+    /// name, not being replaced or resigned, and the offer is open and this message's own (sent on its day); the
+    /// rival's giving up keeps them until a newer offer. Game-free; a few comparisons a message.
     /// </summary>
     public static class RivalOfferRules
     {
-        // The game's two rival messages with buttons: the offer (EmployeeInstance.PoachByRival) and the rival's
-        // giving up (EmployeeInstance.StopPoachingRivalSurrender).
+        // The game's two rival messages with buttons (EmployeeInstance.PoachByRival, StopPoachingRivalSurrender).
         public const string OfferKey = "ba:messagetype_rivals_poach_employee_offer";
         public const string SurrenderKey = "ba:messagetype_rivals_poach_employee_rival_surrender";
 
-        /// <summary>Which of the game's rival messages a message is.</summary>
         public enum Kind
         {
             None = 0,
@@ -52,7 +32,7 @@ namespace RealLifeOverhaul
             Older = 5        // an older offer: the one open now came on another day
         }
 
-        /// <summary>What the game knows of the employee a rival's message is about, as it is looked at.</summary>
+        /// <summary>What the game knows of the employee a rival's message is about.</summary>
         public struct Facts
         {
             public bool Employed;        // that very employee is in the player's list of employees
@@ -66,17 +46,12 @@ namespace RealLifeOverhaul
             public int MessageDay;       // the day the message came (TextMessage.timestamp.Day)
         }
 
-        /// <summary>The kind of a message by its key; <see cref="Kind.None"/> for every other message.</summary>
         public static Kind KindOf(string key)
         {
             return key == OfferKey ? Kind.Offer : key == SurrenderKey ? Kind.Surrender : Kind.None;
         }
 
-        /// <summary>
-        /// Whether the employee is still the player's to keep: the part of the rule about the employee alone, which
-        /// business pressure's watch on its own poaching reads too (Business/BusinessIssues.Watch), so that it never
-        /// says an employee has left while their offer's buttons stay, or the other way round.
-        /// </summary>
+        /// <summary>The rule's part about the employee alone, which business pressure reads too, so both agree.</summary>
         public static State Standing(bool employed, bool sameName, bool beingReplaced, float satisfaction)
         {
             if (!employed)
@@ -90,7 +65,6 @@ namespace RealLifeOverhaul
             return satisfaction > 0f ? State.Live : State.Leaving;
         }
 
-        /// <summary>What a rival message's buttons are now, by the rule above.</summary>
         public static State Of(Kind kind, Facts f)
         {
             if (kind == Kind.None)
@@ -121,13 +95,7 @@ namespace RealLifeOverhaul
             return f.MessageDay == f.OfferDay ? State.Live : State.Older;
         }
 
-        /// <summary>
-        /// Whether the game's own offer to an employee is open now: a rival named (poachedByRivalId, cleared when it is
-        /// matched) and days left on it (poachDeadlineDays, nothing once it is answered, has run out or the rival gave up).
-        /// Without the days (<paramref name="known"/> false: a newer game), while a rival is named; a rival who gave up
-        /// then still counts, which only keeps the mod's own offers waiting. The company's and the tech sector's own
-        /// offers ask it: one rival's offer to an employee at a time, and the game's, which the mod cannot stop, comes first.
-        /// </summary>
+        /// <summary>Whether the game's own offer is open: a rival named and days left (unknown days: while a rival is named).</summary>
         public static bool Open(string rivalId, bool known, int deadlineDays)
         {
             return !string.IsNullOrEmpty(rivalId) && (!known || deadlineDays > 0);
@@ -145,7 +113,7 @@ namespace RealLifeOverhaul
             return standing == State.Live && string.IsNullOrEmpty(rivalId);
         }
 
-        /// <summary>Why the buttons went, for Player.log.</summary>
+        /// <summary>Why the buttons went, for the log.</summary>
         public static string Why(State state)
         {
             switch (state)

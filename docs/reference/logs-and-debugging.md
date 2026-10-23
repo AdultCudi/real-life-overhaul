@@ -52,7 +52,7 @@ If the mod is switched on twice (the Workshop item and a copy in `ModsLocal`), t
 On the mod's options page, under **Troubleshooting**, **Diagnostics**, switch on **Developer diagnostics**. Switch on **Show test tools** too if you want the test buttons. In code the switch is `Meta.Dev`, and `Meta.Dev.Verbose` is true while it is on.
 
 "Show test tools" and "Developer diagnostics" are off as shipped.
-With diagnostics off the mod writes only warnings and errors to `Player.log` (every logger in the mod goes through the one switch, `Meta.Dev.Gated`), and the four diagnostic keys (F7, Shift+F7, F8, F9) do nothing.
+With diagnostics off the mod writes only warnings and errors to `Player.log` (every logger in the mod goes through the one switch, `Meta.Dev.Gated`), and the three diagnostic keys (F7, Shift+F7, F9) do nothing.
 To work on the mod, switch both on under Diagnostics on the options page.
 
 The switch drops the line, not the work of making it: the text handed to `Info` is put together before the logger sees it.
@@ -177,7 +177,31 @@ It is called where the mod does something large in one go: a character made or g
 Nearly all of them name it with `using var piece = SessionWatch.Piece("...")`, which is `Mark` and, at the end of the block, `Done`, so the line has its time beside it.
 New code that builds something in one frame names it the same way; `Mark` is never called per frame and never with a text put together for the call.
 
-What the lines cannot say: which of the game's scripts, or another mod's, a long frame was spent in; how long the mod's own coroutines took (they run under "coroutines and timers" and are not timed one by one); and anything about the graphics card.
+With the step timing on, the frame is cut where the engine itself cuts it (just after it updates the time, `Diagnostics/FrameSteps`), so the parts add up to the frame: the named groups, "waiting for the last frame to be shown", "the rest" of the engine's steps, and "outside the engine's steps".
+The line then says what the system saw of the same frame (`Diagnostics/MachineClock`) and, where the build offers them, the engine's own figures for the graphics card, and ends with "so:" and the cause the figures point to (`Diagnostics/FrameRules`):
+
+```
+...; where it went: scripts' Update 1 ms, rendering 5 ms, waiting for the last frame to be shown 362 ms, the rest 2 ms,
+outside the engine's steps 1 ms; the processor: the main thread ran 16 ms of it, the game 47 ms over all its threads,
+the machine's 24 processors 97% busy (other programs 91%); page faults in it: 310; the engine's own figures: not offered
+by this build; so: the game waited for the last frame to be shown while other programs held the processor (...).
+```
+
+How to tell the causes apart:
+
+- **The graphics card or the display:** the time is under "waiting for the last frame to be shown", the main thread ran little of it and the other programs' share is small. Where the engine gives the graphics card's time, a large one says the card itself was slow; a small one says the render thread or the display.
+- **Another program:** the main thread ran little of the frame while other programs held most of the machine's processors (a build, a game, a scan). The time can be under the wait (the render thread kept waiting) or outside the steps.
+- **The engine's own work, or a script's:** the main thread ran most of the frame, and the steps above say where.
+- **Outside the engine's steps with the processor free:** the window's messages, the system or the driver.
+- **Tens of thousands of page faults:** memory was being brought in, paged back from the disk or touched for the first time (a large allocation, a texture coming in).
+
+The thread's and the system's times are counted at the system's clock tick (about 15.6 ms): good for a long frame and the minute's sums, not for one short frame.
+
+The line a minute says the same of the minute: the minute's waits for the last frame to be shown and its time outside the engine's steps (the sum and the worst frame), the share of the minute the main thread ran, the other programs' share of the processor, the page faults, and the causes of its frames over 33 ms counted by the same rules as the long-frame line. Where the build offers the engine's own frame timing (`FrameTimingManager`), it ends with the graphics card's longest frame of the minute in milliseconds; where it does not, it says "the engine's own frame timing: not offered by this build".
+
+What the graphics card's figures are (`Diagnostics/SessionWatch.Timing`): on the long-frame line, the engine's own time for the card and for the render thread, the worst of the last few frames it has figures for (they come a few frames late); on the minute's line, the card's longest frame. They say how long the card took, not what it spent the time on.
+
+What the lines cannot say: which of the game's scripts, or another mod's, a long frame was spent in; how long the mod's own coroutines took (they run under "coroutines and timers" and are not timed one by one); what the graphics card spent its time on (which pass, which shader); and anything about the card at all on a build without the engine's frame timing.
 
 ## Log lines by feature
 

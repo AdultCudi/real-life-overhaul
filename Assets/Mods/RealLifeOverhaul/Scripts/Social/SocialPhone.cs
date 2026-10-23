@@ -18,12 +18,9 @@ namespace RealLifeOverhaul
         private const string MomId = "reallife-mom";
         private const string FriendId = "reallife-friend";
 
-        // One per person: the game's factory makes a dialog by its type, and each must know who it is.
-        private static readonly string[] DialogTypes =
-        {
-            "reallife_socialp0_calldialogtype", "reallife_socialp1_calldialogtype", "reallife_socialp2_calldialogtype", "reallife_socialp3_calldialogtype",
-            "reallife_socialp4_calldialogtype", "reallife_socialp5_calldialogtype", "reallife_socialp6_calldialogtype", "reallife_socialp7_calldialogtype"
-        };
+        // One call dialog type per person, "reallife_socialp<index>_calldialogtype": the game's factory makes a dialog by its
+        // type, and each must know who it is. Hashed once a slot; 0 until then (the game's hash is never under 2001).
+        private static readonly int[] DialogTypes = new int[SocialRules.MaxCast];
 
         /// <summary>The index of whoever is ringing the player now, or -1, for the dialog the call opens.</summary>
         public static int Incoming = -1;
@@ -57,14 +54,14 @@ namespace RealLifeOverhaul
                 }
                 else
                 {
-                    for (int i = 0; i < SocialRules.CastSize; i++)
+                    for (int i = 0; i < SocialState.Count; i++)
                     {
                         SocialPerson person = SocialState.Get(i);
                         if (person == null)
                         {
                             continue;
                         }
-                        ContactPictures.Person(IdOf(person), person.Female, person.Age, person.Seed);   // their own face, as SocialCast dresses them
+                        Picture(person);
                         if (person.Met)
                         {
                             Add(person, person.Origin > SocialOrigin.OldFriend);
@@ -86,6 +83,12 @@ namespace RealLifeOverhaul
                 logger?.Error(e);
                 logger?.Warn("Social: the phone contacts could not be set up (see the error above); people can still be met and plans still happen.");
             }
+        }
+
+        /// <summary>Their own face on the contact, as SocialCast dresses them: for everybody of the cast, met or not.</summary>
+        public static void Picture(SocialPerson person)
+        {
+            ContactPictures.Person(IdOf(person), person.Female, person.Age, person.Seed);
         }
 
         /// <summary>The contact of somebody who has been met, made again if the player deleted it. Null for a stranger.</summary>
@@ -177,7 +180,7 @@ namespace RealLifeOverhaul
         public static Contact Add(SocialPerson person, bool welcome)
         {
             Contact contact = Contact.GetContact(IdOf(person), ContactCategoryName.General, SocialCatalogue.OriginDesc[(int)person.Origin], null, false, true);
-            var dialogType = (CallDialogType)ModEnumHash.GetSafeHash(DialogTypes[person.Index]);
+            var dialogType = (CallDialogType)DialogType(person.Index);
             contact.callDialogTypeOverride = dialogType;
             int index = person.Index;
             CallDialogFactory.RegisterDialog(dialogType, Guard.Maker(() => new PersonDialog(index)));
@@ -186,6 +189,16 @@ namespace RealLifeOverhaul
                 contact.SendMessage(new TextMessage(SocialCatalogue.OriginWelcome[(int)person.Origin], SocialLife.Data(person)), notify: false);
             }
             return contact;
+        }
+
+        // The first eight's are the types every version has registered, so a contact's call opens the same dialog.
+        private static int DialogType(int index)
+        {
+            if (DialogTypes[index] == 0)
+            {
+                DialogTypes[index] = ModEnumHash.GetSafeHash(SocialRules.DialogTypeName(index));
+            }
+            return DialogTypes[index];
         }
 
         /// <summary>A payment, a subscription stopped: with the game's notification.</summary>

@@ -3,24 +3,12 @@ using System;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Keeps a handler on one of the game's event fields (entering and leaving a building, the city map, a new hour,
-    /// the game's own events). The game empties those fields on every load, so a feature asks once a second to be
-    /// kept on:
-    ///
-    ///     EventHold.Keep(ref GlobalEvents.onEnterBuilding, _onEnter, ref _enterSeen);
-    ///
-    /// The field is looked into only when it is not the one this holder last saw, and the handler is put on only
-    /// when it is not in it. That second half is what makes it right with several holders on one event (three
-    /// features keep the new hour, three the city map): one holder's putting itself on changes the field for all
-    /// the others, and when each of them answered a changed field by taking itself off and putting itself back, each
-    /// changed it for the rest again, for ever, two new delegates per holder per second. Now a holder that finds
-    /// itself still in a changed field only remembers the field, so once every holder is on, the field stands
-    /// still and asking costs one reference comparison. A handler stays where it was put: behind everything that was
-    /// on the event at the time, as before.
-    ///
-    /// No Unity or game types: checked offline (NavCheck, HitchCheck.cs). <see cref="Looked"/> and
-    /// <see cref="PutBack"/> are counted for the session record's line a minute, where a holder that puts itself
-    /// back every second would show as sixty a minute.
+    /// Keeps a handler on one of the game's event fields, which the game empties on every load; a feature asks once a
+    /// second: <c>EventHold.Keep(ref GlobalEvents.onEnterBuilding, _onEnter, ref _enterSeen);</c>
+    /// The field is looked into only when it changed since this holder last saw it, and the handler is put on only when
+    /// it is not in it: several holders on one event would otherwise keep changing the field for each other. Once every
+    /// holder is on, asking costs one reference comparison. Game-free, checked by NavCheck; <see cref="Looked"/> and
+    /// <see cref="PutBack"/> feed the session record.
     /// </summary>
     public static class EventHold
     {
@@ -43,10 +31,7 @@ namespace RealLifeOverhaul
             seen = field;
         }
 
-        /// <summary>
-        /// Whether a handler is in an event's list. Only called for a field that has changed; the list of a field
-        /// with several handlers is copied by the runtime to be read (one array), which is the whole cost.
-        /// </summary>
+        /// <summary>True if a handler is in an event's list. COST: one array copy of a list of several handlers.</summary>
         public static bool Holds(Delegate field, Delegate handler)
         {
             if (field == null || handler == null)

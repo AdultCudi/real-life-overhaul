@@ -110,7 +110,8 @@ namespace RealLifeOverhaul
             int cost = (medicine ? HomeBalance.PrescriptionFee : 0) + (note ? HomeBalance.SickNoteFee : 0);
             if (!DoctorVisit.Pay(cost, "reallife_transaction_prescription"))
             {
-                return null;
+                // The game keeps the entry on a null (DialogController.ConfirmCurrentEntry): the visit ends with a word instead.
+                return PhoneContacts.Closing("reallife_doctor_prescribe_no_money", new { amount = JobText.Money(cost) });
             }
             if (medicine)
             {

@@ -8,20 +8,14 @@ using UnityEngine;
 namespace RealLifeOverhaul.Calendar
 {
     /// <summary>
-    /// The Calendar: an app on the game's phone with the month the player is in, as the year they chose divides it
-    /// (Core/CalendarRules: twelve months of 5 days in a 60-day year, of 30 and 31 in a 365-day one), the days money
-    /// moves, their own time and what is on in the city, read from each feature's real schedule. See
-    /// docs/features/calendar.md.
-    ///
-    /// This class keeps it going and nothing more: it puts the app on the phone once the game's phone is there, and asks
-    /// the sources when the app wants a month. Nothing is saved and nothing is sent. Its Update is a timer comparison;
-    /// once a second it puts the app on the phone (or takes it off with its option) and, while the app is open, compares
-    /// the game's day with the one the page was written for, so that a page stays right across midnight. It costs nothing
-    /// while the app is closed.
+    /// The Calendar app on the phone: the month as the chosen year divides it (Core/CalendarRules), with the days money
+    /// moves, the player's own time and the city's events read from each feature's schedule (docs/features/calendar.md).
+    /// This keeps the app on the phone and asks the sources when the app wants a month; nothing is saved or sent.
+    /// Cost: a timer comparison a frame; once a second the app is put on or off and an open page checked for a new day.
     /// </summary>
     public sealed partial class CalendarDirector : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("calendar", "CalendarDirector", typeof(CalendarDirector));   // its Update (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("calendar", "CalendarDirector", typeof(CalendarDirector));
 
         public const string AppId = "RealLifeCalendar";
         private static readonly string[] AppGlyphs = { "Icon-Calendar", "Icon-Clock", "Icon-OpeningHours" };
@@ -29,27 +23,20 @@ namespace RealLifeOverhaul.Calendar
         public static IModLogger Logger;
         public static CalendarDirector Instance { get; private set; }
 
-        /// <summary>Every source: the game's own, then each feature's, added from Scripts/Wiring.</summary>
-        private ICalendarSource[] _sources = { CalendarGame.Source };
+        private ICalendarSource[] _sources = { CalendarGame.Source };   // the game's own, then each feature's from Scripts/Wiring
         private int[] _counts = new int[1];
         private bool[] _failed = new bool[1];
 
-        /// <summary>The last look: the month asked for, its entries in the calendar's order and what moves every night.</summary>
+        /// <summary>The last look's entries, in the calendar's order, and nightly lines.</summary>
         public readonly CalendarList List = new CalendarList();
 
         private CalendarApp _view;
         private PhoneApp _app;
         private float _next;
-        private bool _gaveUp;     // the game's phone is not built as expected: one line was logged, nothing more is tried
+        private bool _gaveUp;     // the game's phone is not built as expected: logged once, not tried again
         private bool _broken;
 
-        /// <summary>The month (CalendarRules.MonthOf) the last look was for; -1 before the first.</summary>
-        public int LookedMonth { get; private set; } = -1;
-
-        /// <summary>
-        /// One more source, from a pairing in Scripts/Wiring (a feature the calendar does not know of). Its id must be one
-        /// no other source has; adding it again does nothing.
-        /// </summary>
+        /// <summary>One more source, from Scripts/Wiring; a source or an id already there is not added again.</summary>
         public void AddSource(ICalendarSource source)
         {
             if (source == null)
@@ -73,6 +60,7 @@ namespace RealLifeOverhaul.Calendar
         private void Awake()
         {
             Instance = this;
+            GameSprites.Want(AppGlyphs);   // asked for before the one look behind the loading screen (GameSprites.Prewarm)
         }
 
         private void OnDestroy()
@@ -90,7 +78,7 @@ namespace RealLifeOverhaul.Calendar
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;
                 return;
             }
             try
@@ -128,7 +116,6 @@ namespace RealLifeOverhaul.Calendar
             }
         }
 
-        // Once a second: the app on or off the phone as the option says, and an open page written again on a new day.
         private void Slow()
         {
             if (CalendarGame.Loading())
@@ -152,8 +139,11 @@ namespace RealLifeOverhaul.Calendar
 
         private void Install()
         {
+            if (!PhoneApp.PhoneUp)
+            {
+                return;   // the game's phone is not built yet: asked again next time, nothing made for it
+            }
             var view = new CalendarApp(this);
-            GameSprites.Want(AppGlyphs);   // named before the one look through the game's pictures
             bool tryAgain;
             _app = PhoneApp.Install(new PhoneAppDef
             {
@@ -189,16 +179,6 @@ namespace RealLifeOverhaul.Calendar
             return null;
         }
 
-        /// <summary>Opens the app on today's month.</summary>
-        public void Open()
-        {
-            if (_app != null && Settings.Calendar)
-            {
-                _view?.Want(-1);
-                _app.Open();
-            }
-        }
-
         /// <summary>Opens the app on a month (CalendarRules.MonthOf).</summary>
         public void OpenAt(int month)
         {
@@ -209,11 +189,9 @@ namespace RealLifeOverhaul.Calendar
             }
         }
 
-        // ---------------------------------------------------------------- looking
-
         /// <summary>
-        /// Asks every source for the days of one month and puts the answer in the calendar's order (List). A source that
-        /// throws is logged once and left out for the rest of the session; the others are not affected.
+        /// Fills <see cref="List"/> for a month from every source; one that throws is logged and left out for the session, and
+        /// nothing it added stays.
         /// </summary>
         public void Look(int month)
         {
@@ -228,7 +206,7 @@ namespace RealLifeOverhaul.Calendar
                 {
                     continue;
                 }
-                int before = List.Items.Count;
+                int before = List.Items.Count, nightsBefore = List.Nights.Count;
                 try
                 {
                     if (_sources[s].Available)
@@ -241,12 +219,11 @@ namespace RealLifeOverhaul.Calendar
                     _failed[s] = true;
                     Logger?.Error(e);
                     Logger?.Warn("Calendar: the source '" + _sources[s].Id + "' failed and is left out for this session.");
-                    List.Items.RemoveRange(before, List.Items.Count - before);
+                    List.Cut(before, nightsBefore);   // its entries and nightly lines alike, back to the pools
                 }
                 _counts[s] = List.Items.Count - before;
             }
             List.Items.Sort(MonthViewRules.ByTime);
-            LookedMonth = month;
             if (Meta.Dev.Verbose)
             {
                 bool whole = CalendarRules.MonthOf(from, year) == month && CalendarRules.MonthOf(to, year) == month && CalendarRules.MonthOf(to + 1, year) == month + 1
@@ -258,7 +235,7 @@ namespace RealLifeOverhaul.Calendar
             }
         }
 
-        /// <summary>For the diagnostics line: how many entries each source gave at the last look.</summary>
+        /// <summary>How many entries each source gave at the last look, for the log.</summary>
         public string LookSummary()
         {
             var text = new StringBuilder(200);
@@ -270,7 +247,7 @@ namespace RealLifeOverhaul.Calendar
             return text.ToString();
         }
 
-        /// <summary>The app goes off the phone (its option switched off, a fault, the save tools); it comes back with what the options say.</summary>
+        /// <summary>Takes the app off the phone; the next second puts it back while the option is on and no fault stopped it.</summary>
         public void StopAll()
         {
             if (_app != null)

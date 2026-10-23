@@ -725,7 +725,7 @@ namespace RealLifeOverhaul.Law
             _lastThanks = line;
             if (Reputation.Public >= Reputation.LovedFrom)
             {
-                int tip = Random.Range(1, 5) * 5;
+                int tip = Prices.At(Random.Range(1, 5) * 5);   // 5 to 20 at the start's prices
                 Crime.Give(tip, "reallife_transaction_thanks");
                 Crime.ShowAmount(NotificationType.Success, "reallife_law_thanks_tip", tip, 8f);
             }

@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Text;
 using BAModAPI;
-using Buildings;
 using Helpers;
 using RealLifeOverhaul.GameUi;
 using UI.Load;
@@ -13,42 +11,21 @@ using UnityEngine;
 namespace RealLifeOverhaul.Utilities
 {
     /// <summary>
-    /// The city's power and water for every place the player rents or owns (Scripts/Utilities):
-    ///
-    ///   accounts   a rented place has the landlord's, supplied at once: the player just pays. A bought place is
-    ///              supplied for three days at half as much again (the temporary supply) and then cut, unless an
-    ///              account is applied for in person at the utilities office, which connects it the next morning
-    ///              (a deposit on a poor credit rating). A place the player gives up has its last bill.
-    ///   the books  each morning yesterday's use is added to the month's (UtilitiesRules: by floor, kind, people and
-    ///              season, at that day's prices); at the turn of the month each account is billed, due in half a
-    ///              month. Auto debit (the Utilities app) pays on the due day. A bill a day overdue has the late fee
-    ///              added; three days after its due day the supply is cut, and reconnecting costs a fee.
-    ///   a cut      a business without power closes, as one without water does where it needs water (food and
-    ///              drink, salons, gyms), and stays closed until it has them again, whether or not business events are
-    ///              on (the closure is the utilities' own, kept by Business/BusinessDirector); a home without power has
-    ///              no screens or cooking, without water no shower or sink (Home/HomeHealth, through
-    ///              Wiring/UtilityLinks), and either weighs on the player's mood.
-    ///   internet   web design and software companies and the headquarters cannot open without a connection that works.
-    ///              A save meeting that rule for the first time gives the businesses it already has a grace period of a
-    ///              week on the game's clock (InternetRules.BeginGrace); a business started after that needs one at once.
-    ///
-    /// The office is a desk at the door of 13 7th Street (UtilitiesOffice); the desk is the game's own list (DeskList, UtilitiesDesk). The Utilities
-    /// app (UtilitiesApp) shows every account, its bills and auto debit. Nothing runs per frame but a few checks: the
-    /// day's books once a morning, the places and the effects once an hour (a place let go: UtilitiesDirector.Gone), the
-    /// office and its panel once a second.
+    /// The city's power, water and internet for every place the player rents or owns: accounts, the day's use, monthly bills,
+    /// and businesses closed and homes worse off without them. Parts: .Bills, .Internet, .Gone, .Tests. Cost a frame: a few
+    /// comparisons; the books once a morning, the places once an hour, the office once a second.
     /// </summary>
     public sealed partial class UtilitiesDirector : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("utilities", "UtilitiesDirector", typeof(UtilitiesDirector));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("utilities", "UtilitiesDirector", typeof(UtilitiesDirector));
 
         public const string AppId = "RealLifeOverhaulUtilities";
         private static readonly string[] AppGlyphs = { "Icon-Electricity", "Icon-Energy", "Icon-Lightbulb", "Icon-Building" };
-        private const int CatchUpDays = 7;          // a long jump (a stay in hospital, a trip) is added up day by day for at most a week
-        private const int ClosedHours = 2;          // a business without what it needs is kept closed this long, asked again each hour: closed while it lacks it
+        private const int CatchUpDays = 7;   // days at most added up one by one after a long jump (hospital, a trip)
+        private const int ClosedHours = 2;   // hours a business without what it needs is kept closed, asked again each hour
 
-        // Each business closed for want of something, and what it was told it lacked: told once a spell, again only when the
-        // reason changes or the business has been open in between. (A headquarters has no switch of the game's to open it
-        // again by hand: without being told, the player saw "temporarily closed" and nothing more.)
+        // each business closed for want of something, and what it was told it lacked: told once a spell, again when the
+        // reason changes or it has been open in between (a headquarters has no switch of the game's to open it by hand)
         private readonly Dictionary<string, string> _toldClosed = new Dictionary<string, string>(8);
 
         public static IModLogger Logger;
@@ -65,12 +42,11 @@ namespace RealLifeOverhaul.Utilities
         private bool _loaded, _failed, _gaveUp;
         private float _nextSecond, _nextHook;
         private int _hour = -1;
-        private int _graceSeen = -1;   // the day the internet's grace last saw (InternetRules.MoveGrace)
+        private int _graceSeen = -1;   // the day the internet's grace last saw
         private Action _onSave;
         private Action _onDesk;
         private readonly List<PlaceInfo> _places = new List<PlaceInfo>(16);
         private readonly AccountIndex _index = new AccountIndex();   // the accounts by place and service, for the day's and the hour's passes
-        private readonly StringBuilder _text = new StringBuilder(256);
         private UtilitiesOffice _office;
         private DoorPanel _door;
         private DeskList _window;
@@ -82,7 +58,7 @@ namespace RealLifeOverhaul.Utilities
         /// <summary>The accounts while a save is running; null otherwise.</summary>
         public UtilitiesState State => _loaded ? _state : null;
 
-        /// <summary>The player's places as last read (each morning, when the app opens, at the desk).</summary>
+        /// <summary>The player's places as last read: each morning and hour, when the app opens, at the desk.</summary>
         public IReadOnlyList<PlaceInfo> Places => _places;
 
         /// <summary>The player's broadband company while a save is running; null otherwise.</summary>
@@ -91,7 +67,7 @@ namespace RealLifeOverhaul.Utilities
         public UtilitiesOffice Office => _office;
         public DeskList Window => _window;
 
-        /// <summary>True if the player holds a power account of their own that is supplied (Life: the electricity company's events).</summary>
+        /// <summary>The player holds a supplied power account of their own (Life: the electricity company's events).</summary>
         public static bool HasPowerAccount
         {
             get
@@ -114,7 +90,7 @@ namespace RealLifeOverhaul.Utilities
             }
         }
 
-        /// <summary>True if a place has a service now; true for a place the utilities do not know (nothing to cut).</summary>
+        /// <summary>A place has a service now; true for a place the utilities do not know (nothing to cut).</summary>
         public static bool Supplied(BuildingRegistration reg, Service service)
         {
             UtilitiesDirector d = Instance;
@@ -126,7 +102,7 @@ namespace RealLifeOverhaul.Utilities
             return a == null || UtilitiesRules.Supplied(a, UtilitiesGame.Today);
         }
 
-        /// <summary>What a place's power and water come to a day now (money): today's use as supplied, at today's prices; nothing for a place not supplied.</summary>
+        /// <summary>A place's power, water and internet a day now, money, at today's prices; nothing for what is not supplied.</summary>
         public static float DayCost(BuildingRegistration reg)
         {
             UtilitiesDirector d = Instance;
@@ -167,6 +143,7 @@ namespace RealLifeOverhaul.Utilities
         private void Awake()
         {
             Instance = this;
+            GameSprites.Want(AppGlyphs);   // asked for before the one look behind the loading screen (GameSprites.Prewarm)
             _onSave = OnSaveGame;
             _door = new DoorPanel(Logger, "Utilities check (office panel)");
             _window = new DeskList("RealLifeOverhaul Utilities Desk", 1100f, 120f);
@@ -183,22 +160,20 @@ namespace RealLifeOverhaul.Utilities
             }
         }
 
-        // ---------------------------------------------------------------- running
-
         private static readonly int HotUpdate = HotSpots.Slot("Utilities: UtilitiesDirector.Update");
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;
                 return;
             }
             try
             {
                 OnUpdate();
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 Guard.Fail(FrameGuard, e, this);
             }
@@ -271,10 +246,10 @@ namespace RealLifeOverhaul.Utilities
             int today = save.Day;
             _state = UtilitiesStore.Load(save.modData, out int version);
             bool fresh = _state == null;
-            bool firstNet = InternetRules.FirstMeeting(_state);   // (read before the seed below is drawn)
+            bool firstNet = InternetRules.FirstMeeting(_state);   // read before the seed below is drawn
             if (fresh)
             {
-                // The feature has just appeared in this save: today's use is the first added up, from a month that starts today.
+                // the feature has just appeared in this save: today's use is the first added up, from a month starting today
                 _state = new UtilitiesState { LastDay = today - 1, MonthStart = today };
             }
             if (_state.Seed == 0)
@@ -290,11 +265,12 @@ namespace RealLifeOverhaul.Utilities
             if (firstNet)
             {
                 BeginGrace(today);
-                OnSaveGame();   // (kept in the save's data at once: switched off and on before a save, it is read back, not begun again)
+                OnSaveGame();   // kept in the save at once: switched off and on before a save, it is read back, not begun again
             }
             BroadbandRules.Apply(_state.Network, today);   // the company as a provider, as this save has it
             Logger?.Info("Utilities: " + (fresh ? "started in this save" : "read from the save (line v" + version + ")") + ": " + _state.Accounts.Count + " account(s) for "
-                         + _places.Count + " place(s); the month began on day " + _state.MonthStart + (_state.Network.Exists ? "; a broadband company (" + _state.Network.State + ")" : string.Empty) + ".");
+                         + _places.Count + " place(s); the month began on day " + _state.MonthStart
+                         + (_state.Network.Exists ? "; a broadband company (" + _state.Network.State + ")" : string.Empty) + ".");
         }
 
         private void Stop(string why)
@@ -317,7 +293,7 @@ namespace RealLifeOverhaul.Utilities
             _save = null;
             _state = null;
             _graceSeen = -1;
-            BroadbandRules.Apply(null, 0);   // (no company of this save's is a provider of the next one)
+            BroadbandRules.Apply(null, 0);   // no company of this save's is a provider of the next one
             _places.Clear();
             Logger?.Info("Utilities: stopped (" + why + ").");
         }
@@ -326,14 +302,15 @@ namespace RealLifeOverhaul.Utilities
         {
             _failed = true;
             Logger?.Error(e);
-            Logger?.Warn("Utilities: switched off for this session after an error in " + where + ". Nothing more is billed or cut; every place keeps its supply, and a business closed for want of one opens again.");
+            Logger?.Warn("Utilities: switched off for this session after an error in " + where
+                         + ". Nothing more is billed or cut; every place keeps its supply, and a business closed for want of one opens again.");
             try
             {
                 Stop("an error");
             }
             catch (Exception)
             {
-                // (stopping is best effort after a fault)
+                // stopping is best effort after a fault
             }
         }
 
@@ -352,13 +329,7 @@ namespace RealLifeOverhaul.Utilities
             }
         }
 
-        // ---------------------------------------------------------------- the places and their accounts
-
-        /// <summary>
-        /// The accounts brought up to the player's places today: a new place gets one (a rented place the landlord's, a
-        /// bought one the temporary supply), a place bought after being rented needs an account of its own, and a place
-        /// no longer the player's has its last bill (its deposit set against it).
-        /// </summary>
+        /// <summary>The accounts brought up to today's places: new places get one, a place bought after renting needs its own.</summary>
         public void Sync(int today, bool fresh)
         {
             ReadPlaces();
@@ -375,7 +346,7 @@ namespace RealLifeOverhaul.Utilities
                     {
                         if (a != null)
                         {
-                            _state.Accounts.Remove(a);   // (a place given up and taken again starts afresh; what was owed on it was settled when it closed)
+                            _state.Accounts.Remove(a);   // a place given up and taken again starts afresh; what was owed was settled when it closed
                         }
                         a = place.Owned ? UtilitiesRules.Temporary(place.Place, service, place.Kind, today) : UtilitiesRules.Rented(place.Place, service, place.Kind, today);
                         _state.Accounts.Add(a);
@@ -389,7 +360,7 @@ namespace RealLifeOverhaul.Utilities
                     a.Kind = place.Kind;
                     if (place.Owned && !a.Owned && a.State == SupplyState.Active)
                     {
-                        // Bought after being rented: the landlord's account goes with the landlord.
+                        // bought after being rented: the landlord's account goes with the landlord
                         a.Owned = true;
                         a.State = SupplyState.Temporary;
                         a.TemporaryUntil = today + UtilitiesCatalogue.TemporaryDays;
@@ -429,7 +400,7 @@ namespace RealLifeOverhaul.Utilities
             return false;
         }
 
-        // A place no longer the player's: its last bill now, its deposit set against it, and the rest given back or owed.
+        // a place no longer the player's: its last bill now, its deposit set against it, the rest given back or owed
         private void Close(Account a, int today)
         {
             UtilitiesRules.Bill(a, today, GameCalendar.MonthDays);
@@ -462,8 +433,6 @@ namespace RealLifeOverhaul.Utilities
             return null;
         }
 
-        // ---------------------------------------------------------------- the day
-
         private void Day(int today)
         {
             float started = Time.realtimeSinceStartup;
@@ -476,7 +445,7 @@ namespace RealLifeOverhaul.Utilities
             for (int d = from; d < today; d++)
             {
                 int season = CalendarRules.Season(d, GameCalendar.DaysPerYear);
-                _index.Build(_state);   // (the use of the day changes no account's place or service)
+                _index.Build(_state);   // the day's use changes no account's place or service
                 for (int p = 0; p < _places.Count; p++)
                 {
                     PlaceInfo place = _places[p];
@@ -497,7 +466,7 @@ namespace RealLifeOverhaul.Utilities
                     Account a = _state.Accounts[i];
                     if (a.Service == Service.Internet)
                     {
-                        InternetRules.AddDay(a, monthDays, a.OutageUntil > a.OutageFrom && a.OutageFrom / 24 == d);   // (a day the provider failed is not charged)
+                        InternetRules.AddDay(a, monthDays, a.OutageUntil > a.OutageFrom && a.OutageFrom / 24 == d);   // a day the provider failed is not charged
                     }
                 }
                 _company.Day(d, level, monthDays);
@@ -541,474 +510,6 @@ namespace RealLifeOverhaul.Utilities
             }
         }
 
-        // The providers' month: each rival's price moves (InternetRules.NextPromo), held down where the player's broadband
-        // company has taken its customers (BroadbandRules.AnswerCap); a plan out of contract is priced again; the city's
-        // market moves (BroadbandCompany.Month).
-        private void NewMonth(int day, int level)
-        {
-            int answered = 0;
-            for (int p = 0; p < InternetCatalogue.Providers.Length && p < _state.Promo.Length; p++)
-            {
-                int walked = InternetRules.NextPromo(_state.Seed, _state.Month, p, _state.Promo[p]);
-                _state.Promo[p] = Math.Max(InternetCatalogue.PromoLeast, Math.Min(walked, BroadbandRules.AnswerCap(_state.Network, p)));
-                answered += _state.Promo[p] < walked ? 1 : 0;
-            }
-            _state.Month++;
-            for (int i = 0; i < _state.Accounts.Count; i++)
-            {
-                Account a = _state.Accounts[i];
-                if (a.Service == Service.Internet && a.State != SupplyState.Closed && a.ContractUntil <= day && a.Provider >= 0)
-                {
-                    a.PriceCents = InternetRules.MonthCents(a.Provider, a.Plan, a.BusinessPlan, false, level, _state.PromoOf(a.Provider));
-                }
-            }
-            _company.Month(day, level, GameCalendar.MonthDays, answered);
-        }
-
-        // Today's outages, drawn from the save's seed: each connection of a provider that fails is down for some hours.
-        private void Outages(int today)
-        {
-            for (int p = 0; p < InternetRules.Count; p++)
-            {
-                if (!InternetRules.Outage(_state.Seed, today, p, false, out int from, out int hours))
-                {
-                    continue;
-                }
-                InternetRules.Outage(_state.Seed, today, p, true, out _, out int repaired);
-                int affected = 0;
-                for (int i = 0; i < _state.Accounts.Count; i++)
-                {
-                    Account a = _state.Accounts[i];
-                    if (a.Service == Service.Internet && a.Provider == p && a.State == SupplyState.Active)
-                    {
-                        a.OutageFrom = today * 24 + from;
-                        a.OutageUntil = a.OutageFrom + (a.BusinessPlan ? repaired : hours);
-                        affected++;
-                    }
-                }
-                if (p == InternetCatalogue.OwnIndex && _state.Network.Running)
-                {
-                    // (the player's own network: its customers are not billed for the day, BroadbandCompany.Day)
-                    UtilitiesText.Toast(NotificationType.Warning, UtilitiesText.T("reallife_bb_toast_outage", "hour", UtilitiesText.Hour(from), "hours", hours.ToString()), 12f);
-                }
-                else if (affected > 0)
-                {
-                    UtilitiesText.Toast(NotificationType.Warning, UtilitiesText.T("reallife_net_toast_outage", "provider", UtilitiesText.T(InternetRules.Get(p).NameKey),
-                        "hour", UtilitiesText.Hour(from), "hours", hours.ToString()), 12f);
-                }
-            }
-        }
-
-        // A business that cannot open without a connection, and has none: said once a morning. One the grace period covers
-        // is not closed for it yet: those are counted in one line with the days left.
-        private void Unconnected()
-        {
-            int today = UtilitiesGame.Today, graced = 0;
-            _index.Build(_state);
-            for (int p = 0; p < _places.Count; p++)
-            {
-                PlaceInfo place = _places[p];
-                bool needs = NeedsNet(place);
-                Account a = needs ? _index.Find(_state, place.Place, Service.Internet) : null;
-                if (needs && !Online(a, today * 24 + 12))
-                {
-                    if (a == null || a.State == SupplyState.Closed || a.State == SupplyState.Cut)
-                    {
-                        if (InternetRules.InGrace(_state, place.Place, today))
-                        {
-                            graced++;
-                            continue;
-                        }
-                        UtilitiesText.Toast(NotificationType.Warning, UtilitiesText.T("reallife_net_toast_needed", "place", place.Name), 10f);
-                    }
-                }
-            }
-            if (graced > 0 && InternetRules.GraceLeft(_state, today) < InternetCatalogue.GraceDays)   // (on its first day the notice that began it has just said so)
-            {
-                UtilitiesText.Toast(NotificationType.Warning, UtilitiesText.T("reallife_net_toast_grace_left", "left", InternetRules.GraceLeft(_state, today).ToString(),
-                    "days", InternetCatalogue.GraceDays.ToString(), "count", graced.ToString(), "day", UtilitiesText.Day(_state.GraceUntil - 1)), 12f);
-            }
-        }
-
-        // The internet newly in this save: the businesses it has now that need a connection may open without one for a
-        // week on the game's clock. Only the player's own (the places are read through GoingPublic.Mine); told once, and
-        // kept in the save.
-        private void BeginGrace(int today)
-        {
-            var needing = new List<string>(4);
-            for (int p = 0; p < _places.Count; p++)
-            {
-                if (NeedsNet(_places[p]))
-                {
-                    needing.Add(_places[p].Place);
-                }
-            }
-            int count = InternetRules.BeginGrace(_state, needing, today);
-            if (count == 0)
-            {
-                return;
-            }
-            var data = new Dictionary<string, string>(3)
-            {
-                { "count", count.ToString() },
-                { "days", InternetCatalogue.GraceDays.ToString() },
-                { "day", UtilitiesText.Day(_state.GraceUntil - 1) }
-            };
-            UtilitiesText.Toast(NotificationType.Warning, UtilitiesText.T("reallife_net_toast_grace_start", "count", data["count"], "days", data["days"], "day", data["day"]), 20f);
-            UtilitiesBridges.Record?.Invoke("reallife_net_toast_grace_start", data);
-            Logger?.Info("Utilities: the internet is new in this save: a grace period for " + count + " business(es) that need a connection, until day " + _state.GraceUntil + ".");
-        }
-
-        // The clock moved since the grace last looked: a step back, or a guest's clock set to the host's as they join, is
-        // not days played, so the grace moves with it. (With Going Public switched on, any leap of more than a day.)
-        private void GraceClock(int today)
-        {
-            int seen = _graceSeen;
-            _graceSeen = today;
-            if (InternetRules.MoveGrace(_state, seen, today, GoingPublic.Role != GoingPublicRole.Absent))
-            {
-                Logger?.Info("Utilities: the clock went from day " + seen + " to day " + today + " without those days played; the internet's grace period now ends on day " + _state.GraceUntil + ".");
-            }
-        }
-
-        /// <summary>True for a business that cannot open without a connection (web design, software, the headquarters).</summary>
-        public static bool NeedsNet(PlaceInfo place)
-        {
-            return place.Kind != PlaceKind.Home && place.Reg != null && Array.IndexOf(InternetCatalogue.Needs, place.Reg.businessTypeName) >= 0;
-        }
-
-        /// <summary>True if a place has a connection that works at an hour (hours from the save's first day).</summary>
-        public bool Online(PlaceInfo place, int hour)
-        {
-            return Online(_state.Find(place.Place, Service.Internet), hour);
-        }
-
-        private static bool Online(Account a, int hour)
-        {
-            return a != null && a.State == SupplyState.Active && !InternetRules.InOutage(a, hour);
-        }
-
-        // Accounts applied for connect; a temporary supply that has run out is cut.
-        private void Turns(int today)
-        {
-            for (int i = 0; i < _state.Accounts.Count; i++)
-            {
-                Account a = _state.Accounts[i];
-                SupplyState before = a.State;
-                if (!UtilitiesRules.Turn(a, today))
-                {
-                    continue;
-                }
-                string where = NameOf(a);
-                if (before == SupplyState.Pending && a.State == SupplyState.Active)
-                {
-                    UtilitiesText.Toast(NotificationType.Success, UtilitiesText.T("reallife_util_toast_connected", "service", UtilitiesText.Service(a.Service), "place", where), 8f);
-                }
-                else if (a.State == SupplyState.Cut)
-                {
-                    UtilitiesText.Toast(NotificationType.Warning, UtilitiesText.T("reallife_util_toast_temporary_over", "service", UtilitiesText.Service(a.Service), "place", where,
-                        "office", OfficeName()), 12f);
-                }
-            }
-        }
-
-        // The bills that fall due: auto debit pays them; one a day overdue has the late fee added, and is cut three days after.
-        private void Dues(int today)
-        {
-            for (int i = 0; i < _state.Accounts.Count; i++)
-            {
-                Account a = _state.Accounts[i];
-                if (a.Owed > 0 && a.AutoDebit && a.DueDay > 0 && today >= a.DueDay)
-                {
-                    if (!Pay(a, today, true))
-                    {
-                        UtilitiesText.Toast(NotificationType.Warning, UtilitiesText.T("reallife_util_toast_debit_failed", "service", UtilitiesText.Service(a.Service), "place", NameOf(a),
-                            "amount", UtilitiesText.Money(a.Owed)), 10f);
-                    }
-                }
-                switch (UtilitiesRules.Due(a, today))
-                {
-                    case DueStep.ChargeLate:
-                        int fee = UtilitiesCatalogue.LateFee;
-                        a.Owed = (int)Math.Min((long)a.Owed + fee, int.MaxValue / 4);
-                        a.LateCharged = true;
-                        UtilitiesText.Toast(NotificationType.Warning, UtilitiesText.T("reallife_util_toast_late", "service", UtilitiesText.Service(a.Service), "place", NameOf(a),
-                            "fee", UtilitiesText.Money(fee), "day", UtilitiesText.Day(a.DueDay + UtilitiesCatalogue.CutAfterDays)), 12f);
-                        break;
-                    case DueStep.Cut:
-                        UtilitiesRules.Cut(a, today, true);
-                        UtilitiesText.Toast(NotificationType.Error, UtilitiesText.T("reallife_util_toast_cut", "service", UtilitiesText.Service(a.Service), "place", NameOf(a),
-                            "office", OfficeName()), 14f);
-                        break;
-                }
-            }
-        }
-
-        /// <summary>What is owed on an account paid now. False if there was not the cash (the game says so when not quiet).</summary>
-        public bool Pay(Account a, int today, bool quiet = false)
-        {
-            if (a == null || a.Owed <= 0)
-            {
-                return true;
-            }
-            PlaceInfo? place = PlaceOf(a);
-            string key = a.Service == Service.Power ? "reallife_transaction_util_power" : a.Service == Service.Water ? "reallife_transaction_util_water" : "reallife_transaction_util_net_bill";
-            if (!UtilitiesGame.Pay(a.Owed, key, place?.Reg, deductible: true))
-            {
-                return false;
-            }
-            int paid = a.Owed;
-            int back = UtilitiesRules.Paid(a, today);
-            if (back > 0)
-            {
-                UtilitiesGame.Give(back, "reallife_transaction_util_deposit_back", place?.Reg);
-            }
-            if (!quiet)
-            {
-                UtilitiesText.Toast(NotificationType.Success, UtilitiesText.T("reallife_util_toast_paid", "service", UtilitiesText.Service(a.Service), "place", NameOf(a),
-                    "amount", UtilitiesText.Money(paid)), 8f);
-            }
-            _view?.Changed();
-            return true;
-        }
-
-        /// <summary>What an application costs today: the deposit by the credit grade, and the reconnection fee after a cut for debt.</summary>
-        public int ApplicationCost(Account a, out int deposit, out int fee)
-        {
-            deposit = fee = 0;
-            if (a == null)
-            {
-                return 0;
-            }
-            PlaceInfo? place = PlaceOf(a);
-            if (a.Owned && place.HasValue)
-            {
-                int season = CalendarRules.Season(UtilitiesGame.Today, GameCalendar.DaysPerYear);
-                long use = UtilitiesRules.Use(a.Service, place.Value.Kind, place.Value.Sqm, UtilitiesGame.People(place.Value), true, season);
-                int month = UtilitiesRules.Month(UtilitiesRules.DayCents(a.Service, use, Prices.Level, false), GameCalendar.MonthDays);
-                deposit = UtilitiesRules.Deposit(UtilitiesBridges.GradeNow, month);
-            }
-            fee = a.CutForDebt ? UtilitiesCatalogue.ReconnectFee : 0;
-            return deposit + fee;
-        }
-
-        /// <summary>An account applied for in person: what it costs is paid, and it connects the next morning. False with a reason key if it cannot be.</summary>
-        public bool Apply(Account a, out string why)
-        {
-            why = null;
-            int today = UtilitiesGame.Today;
-            if (a == null || a.Owed > 0)
-            {
-                why = "reallife_util_desk_owed_first";
-                return false;
-            }
-            int cost = ApplicationCost(a, out int deposit, out int fee);
-            PlaceInfo? place = PlaceOf(a);
-            if (cost > 0 && !UtilitiesGame.Pay(cost, fee > 0 && deposit == 0 ? "reallife_transaction_util_reconnect" : "reallife_transaction_util_deposit", place?.Reg, deductible: deposit == 0))
-            {
-                why = "reallife_util_desk_no_cash";
-                return false;
-            }
-            bool reconnect = a.CutForDebt;
-            if (!UtilitiesRules.Apply(a, today))
-            {
-                why = "reallife_util_desk_not_now";
-                return false;
-            }
-            a.Deposit += deposit;
-            Logger?.Info("Utilities: " + a.Service + " applied for at " + a.Place + (reconnect ? " (reconnection)" : string.Empty) + ": deposit " + deposit + ", fee " + fee
-                         + "; connects on day " + a.ConnectDay + ".");
-            _view?.Changed();
-            return true;
-        }
-
-        // ---------------------------------------------------------------- the internet, bought online in the app
-
-        /// <summary>What a plan costs a place a month now, cents (a business plan at a business).</summary>
-        public int NetPrice(PlaceInfo place, int provider, int plan, bool contract)
-        {
-            return InternetRules.MonthCents(provider, plan, place.Kind != PlaceKind.Home, contract, Prices.Level, provider >= 0 && provider < _state.Promo.Length ? _state.Promo[provider] : 1000);
-        }
-
-        /// <summary>The fee for leaving the place's connection now (a contract left early); nothing without one.</summary>
-        public int NetExitFee(PlaceInfo place)
-        {
-            Account a = _state.Find(place.Place, Service.Internet);
-            return a != null && a.State != SupplyState.Closed ? InternetRules.ExitFee(a, UtilitiesGame.Today, GameCalendar.MonthDays) : 0;
-        }
-
-        /// <summary>
-        /// A plan bought for a place, or the place's plan changed: another provider means leaving the old one (the exit
-        /// fee of a contract left early) and an engineer's visit; the same provider changes the plan at once. False with a
-        /// reason key if it cannot be.
-        /// </summary>
-        public bool BuyNet(PlaceInfo place, int provider, int plan, bool contract, out string why)
-        {
-            why = null;
-            int today = UtilitiesGame.Today, monthDays = GameCalendar.MonthDays;
-            if (!InternetRules.Reaches(provider, place.Reg != null ? place.Reg.Neighborhood : null))
-            {
-                why = "reallife_net_no_reach";
-                return false;
-            }
-            Account a = _state.Find(place.Place, Service.Internet);
-            if (a != null && a.Owed > 0)
-            {
-                why = "reallife_net_owed_first";
-                return false;
-            }
-            bool ours = provider == InternetCatalogue.OwnIndex && _state.Network.Running;
-            contract &= !ours;   // (no contract with one's own company, nor installation fee: its engineers do it)
-            bool live = a != null && a.State != SupplyState.Closed && a.State != SupplyState.Cut;
-            bool same = live && a.Provider == provider;
-            int exit = live && !same ? InternetRules.ExitFee(a, today, monthDays) : 0;
-            int install = same || contract || ours ? 0 : InternetCatalogue.InstallFee;
-            int price = NetPrice(place, provider, plan, contract);
-            if (exit + install > UtilitiesGame.Cash)
-            {
-                why = "reallife_net_no_cash";
-                return false;
-            }
-            if (exit > 0)
-            {
-                UtilitiesGame.Pay(exit, "reallife_transaction_util_net_exit", place.Reg, deductible: true);
-            }
-            if (install > 0)
-            {
-                UtilitiesGame.Pay(install, "reallife_transaction_util_net_install", place.Reg, deductible: true);
-            }
-            if (a == null)
-            {
-                a = new Account { Place = place.Place, Kind = place.Kind, AutoDebit = true };
-                _state.Accounts.Add(a);
-            }
-            if (same)
-            {
-                // The same provider: the plan and its price change today; a contract runs on (or begins, if one is taken now).
-                a.Plan = plan;
-                a.PriceCents = price;
-                if (contract && a.ContractUntil <= today)
-                {
-                    a.ContractUntil = today + InternetCatalogue.ContractMonths * Math.Max(1, monthDays);
-                }
-                UtilitiesText.Toast(NotificationType.Success, UtilitiesText.T("reallife_net_toast_changed", "place", place.Name, "provider", UtilitiesText.T(InternetRules.Get(provider).NameKey),
-                    "mbps", InternetRules.Get(provider).Mbps[plan].ToString(), "price", UtilitiesText.Money(price / 100f)), 10f);
-            }
-            else
-            {
-                if (a.Accrued > 0)
-                {
-                    UtilitiesRules.Bill(a, today, monthDays);   // what the old connection came to this month, billed now
-                }
-                InternetRules.SignUp(a, provider, plan, place.Kind != PlaceKind.Home, contract, today, monthDays, price);
-                a.Kind = place.Kind;
-                UtilitiesText.Toast(NotificationType.Success, UtilitiesText.T("reallife_net_toast_bought", "place", place.Name, "provider", UtilitiesText.T(InternetRules.Get(provider).NameKey),
-                    "mbps", InternetRules.Get(provider).Mbps[plan].ToString(), "day", UtilitiesText.Day(a.ConnectDay)), 10f);
-            }
-            Logger?.Info("Utilities: internet at " + place.Place + ": " + InternetRules.Get(provider).Id + " plan " + plan + (contract ? " on contract" : " month by month") + ", " + price
-                         + " cents a month" + (exit > 0 ? ", exit fee " + exit : string.Empty) + (install > 0 ? ", installation " + install : string.Empty) + ".");
-            _view?.Changed();
-            return true;
-        }
-
-        /// <summary>A place's connection cancelled: the exit fee of a contract left early, the month so far billed, and it is closed.</summary>
-        public bool CancelNet(PlaceInfo place, out string why)
-        {
-            why = null;
-            Account a = _state.Find(place.Place, Service.Internet);
-            if (a == null || a.State == SupplyState.Closed)
-            {
-                return true;
-            }
-            int today = UtilitiesGame.Today, monthDays = GameCalendar.MonthDays;
-            int exit = InternetRules.ExitFee(a, today, monthDays);
-            if (exit > 0 && !UtilitiesGame.Pay(exit, "reallife_transaction_util_net_exit", place.Reg, deductible: true))
-            {
-                why = "reallife_net_no_cash";
-                return false;
-            }
-            UtilitiesRules.Bill(a, today, monthDays);
-            a.State = SupplyState.Closed;
-            a.ContractUntil = 0;
-            a.OutageFrom = a.OutageUntil = 0;
-            UtilitiesText.Toast(NotificationType.Info, UtilitiesText.T("reallife_net_toast_cancelled", "place", place.Name), 8f);
-            _view?.Changed();
-            return true;
-        }
-
-        /// <summary>A connection cut for an unpaid bill, with nothing owed now, reconnected the next morning.</summary>
-        public bool ReconnectNet(PlaceInfo place, out string why)
-        {
-            why = null;
-            Account a = _state.Find(place.Place, Service.Internet);
-            if (a == null || a.State != SupplyState.Cut)
-            {
-                return false;
-            }
-            if (a.Owed > 0)
-            {
-                why = "reallife_net_owed_first";
-                return false;
-            }
-            a.State = SupplyState.Pending;
-            a.CutForDebt = false;
-            a.ConnectDay = UtilitiesGame.Today + 1;
-            UtilitiesText.Toast(NotificationType.Success, UtilitiesText.T("reallife_net_toast_reconnect", "place", place.Name), 8f);
-            _view?.Changed();
-            return true;
-        }
-
-        /// <summary>Test: a month of the city's market and the company's books now (its takings and costs of the month so far closed).</summary>
-        public void TestNetworkMonth()
-        {
-            if (!Ready("reallife_util_test_network_month"))
-            {
-                return;
-            }
-            if (!_state.Network.Exists)
-            {
-                UtilitiesText.Toast(NotificationType.Warning, UtilitiesText.T("reallife_bb_not_running"), 8f);
-                return;
-            }
-            _company.Month(UtilitiesGame.Today, Prices.Level, GameCalendar.MonthDays, 0);
-            _view?.Changed();
-        }
-
-        /// <summary>Test: every network being dug opens this morning.</summary>
-        public void TestNetworkBuilt()
-        {
-            if (!Ready("reallife_util_test_network_built"))
-            {
-                return;
-            }
-            int opened = _company.TestBuilt(UtilitiesGame.Today);
-            UtilitiesText.Toast(NotificationType.Info, UtilitiesText.T("reallife_util_test_network_built_done", "count", opened.ToString()), 8f);
-            _view?.Changed();
-        }
-
-        /// <summary>Test: every connection in an outage from now for two hours.</summary>
-        public void TestOutage()
-        {
-            if (!Ready("reallife_util_test_outage"))
-            {
-                return;
-            }
-            int now = UtilitiesGame.Today * 24 + (SaveGameManager.Current != null ? SaveGameManager.Current.Hour : 0), count = 0;
-            for (int i = 0; i < _state.Accounts.Count; i++)
-            {
-                Account a = _state.Accounts[i];
-                if (a.Service == Service.Internet && a.State == SupplyState.Active)
-                {
-                    a.OutageFrom = now;
-                    a.OutageUntil = now + 2;
-                    count++;
-                }
-            }
-            Effects();
-            UtilitiesText.Toast(NotificationType.Warning, UtilitiesText.T("reallife_util_test_outage_done", "count", count.ToString()), 8f);
-            _view?.Changed();
-        }
-
         public string NameOf(Account a)
         {
             PlaceInfo? place = PlaceOf(a);
@@ -1020,15 +521,13 @@ namespace RealLifeOverhaul.Utilities
             return _office != null && _office.Searched && _office.Building != null ? _office.Name : UtilitiesText.T("reallife_util_office_unknown");
         }
 
-        // ---------------------------------------------------------------- the hour: what a cut does
-
         private void Hour()
         {
             if (!_loaded)
             {
                 return;
             }
-            Refresh();   // a place given up since the morning is closed now, and never closed or billed again
+            Refresh();   // a place given up since the morning closes now, never closed or billed again
             Effects();
         }
 
@@ -1044,7 +543,7 @@ namespace RealLifeOverhaul.Utilities
                 PlaceInfo place = _places[p];
                 if (!GoingPublic.Mine(place.Reg))
                 {
-                    continue;   // no longer the player's since the places were read: never closed by the utilities (Refresh drops it)
+                    continue;   // no longer the player's since the places were read: never closed by the utilities
                 }
                 Account power = _index.Find(_state, place.Place, Service.Power), water = _index.Find(_state, place.Place, Service.Water);
                 bool dark = power != null && !UtilitiesRules.Supplied(power, today);
@@ -1065,9 +564,8 @@ namespace RealLifeOverhaul.Utilities
                     Func<BuildingRegistration, int, bool> close = UtilitiesBridges.CloseFor;
                     if (close != null)
                     {
-                        // Closed, or kept closed longer: asked again each hour, it stays closed while the want lasts. Told only
-                        // when it is the mod that keeps it closed: one the player closed by hand is theirs to open, so "it
-                        // opens again by itself" would not be true of it.
+                        // closed, or kept closed longer while the want lasts; told only when it is the mod that keeps it
+                        // closed (one the player closed by hand is theirs to open)
                         if (close(place.Reg, ClosedHours))
                         {
                             TellClosed(place, dark ? power : dry && needsWater ? water : _state.Find(place.Place, Service.Internet), !dark && !(dry && needsWater), today, hour);
@@ -1077,7 +575,7 @@ namespace RealLifeOverhaul.Utilities
                 else
                 {
                     _toldClosed.Remove(place.Place);   // open again: a later closure is told afresh
-                    UtilitiesBridges.Release?.Invoke(place.Reg);   // it has what it lacked: the utilities' closure on it ends now, not on its hour
+                    UtilitiesBridges.Release?.Invoke(place.Reg);   // it has what it lacked: the utilities' closure ends now, not on its hour
                 }
             }
             if (homeDark)
@@ -1090,8 +588,7 @@ namespace RealLifeOverhaul.Utilities
             }
         }
 
-        // Why a business is closed and what opens it again, the first time it is closed for that reason: a notification now,
-        // a line in the Business desk's messages to read back, and a line in Player.log.
+        // why a business is closed and what opens it, the first time for that reason: a notice, a Business desk message, a log line
         private void TellClosed(PlaceInfo place, Account account, bool internet, int today, int hour)
         {
             string key;
@@ -1116,16 +613,15 @@ namespace RealLifeOverhaul.Utilities
             var data = new Dictionary<string, string>(4)
             {
                 { "place", place.Name },
-                { "service", (account != null ? UtilitiesText.Service(account.Service) : UtilitiesText.Service(Service.Power)).ToLowerInvariant() },   // (mid-sentence)
+                { "service", (account != null ? UtilitiesText.Service(account.Service) : UtilitiesText.Service(Service.Power)).ToLowerInvariant() },   // mid-sentence
                 { "office", OfficeName() },
                 { "time", account != null && account.OutageUntil > hour ? (account.OutageUntil % 24).ToString("00") + ":00" : string.Empty }
             };
             UtilitiesText.Toast(NotificationType.Warning, UtilitiesText.T(key, "place", data["place"], "service", data["service"], "office", data["office"], "time", data["time"]), 14f);
             UtilitiesBridges.Record?.Invoke(key, data);
-            Logger?.Warn("Utilities: " + place.Name + " is closed (" + key + ", told), on day " + today + ".");   // (a warning, so that it is there without Developer diagnostics: once a reason, a business)
+            Logger?.Warn("Utilities: " + place.Name + " is closed (" + key + ", told), on day " + today + ".");   // a warning: logged without Developer diagnostics
         }
 
-        // The player's home they are in now, or null.
         private static BuildingRegistration HomeIn()
         {
             if (!BuildingManager.IsInsideBuilding)
@@ -1135,8 +631,6 @@ namespace RealLifeOverhaul.Utilities
             BuildingManager manager = InstanceBehavior<BuildingManager>.Instance;
             return manager != null && GoingPublic.Mine(manager.buildingRegistration) ? manager.buildingRegistration : null;
         }
-
-        // ---------------------------------------------------------------- the second: the office, its panel, the app
 
         private void Second()
         {
@@ -1148,7 +642,6 @@ namespace RealLifeOverhaul.Utilities
             OfficePanel();
         }
 
-        // The office's panel while the player stands at its desk on foot.
         private void OfficePanel()
         {
             PlayerController player = PlayerHelper.PlayerController;
@@ -1182,8 +675,11 @@ namespace RealLifeOverhaul.Utilities
 
         private void Install()
         {
+            if (!PhoneApp.PhoneUp)
+            {
+                return;   // the game's phone is not built yet: asked again next time, nothing made for it
+            }
             var view = new UtilitiesApp(this);
-            GameSprites.Want(AppGlyphs);
             _app = PhoneApp.Install(new PhoneAppDef
             {
                 Id = AppId,
@@ -1198,7 +694,8 @@ namespace RealLifeOverhaul.Utilities
                 _gaveUp = !tryAgain;
                 if (_gaveUp)
                 {
-                    Logger?.Warn("Utilities: the game's phone is not built as this version expects, so the Utilities app is left off. Bills are still billed and paid by auto debit; the office's desk takes payments.");
+                    Logger?.Warn("Utilities: the game's phone is not built as this version expects, so the Utilities app is left off."
+                                 + " Bills are still billed and paid by auto debit; the office's desk takes payments.");
                 }
                 return;
             }
@@ -1218,7 +715,7 @@ namespace RealLifeOverhaul.Utilities
             return null;
         }
 
-        /// <summary>Opens the Utilities app on its internet page (Newsstand: a connection is what its editions need). False if the app is not on the phone.</summary>
+        /// <summary>Opens the Utilities app on its internet page (Newsstand needs a connection); false if the app is not on the phone.</summary>
         public bool OpenInternet()
         {
             if (!_loaded || _app == null || _view == null || !_app.Installed)
@@ -1230,7 +727,7 @@ namespace RealLifeOverhaul.Utilities
             return true;
         }
 
-        /// <summary>The app is opening: the places are read again so that it shows today's.</summary>
+        /// <summary>The app is opening: the places are read again so it shows today's.</summary>
         public bool AppOpened()
         {
             if (!_loaded)
@@ -1239,109 +736,6 @@ namespace RealLifeOverhaul.Utilities
             }
             Refresh();
             return true;
-        }
-
-        // ---------------------------------------------------------------- tests (the options' buttons)
-
-        /// <summary>Test: the month billed now, as at its turn.</summary>
-        public void TestBill()
-        {
-            if (!Ready("reallife_util_test_bill"))
-            {
-                return;
-            }
-            int today = UtilitiesGame.Today, count = 0, total = 0;
-            for (int i = 0; i < _state.Accounts.Count; i++)
-            {
-                int bill = UtilitiesRules.Bill(_state.Accounts[i], today, GameCalendar.MonthDays);
-                if (bill > 0)
-                {
-                    count++;
-                    total += bill;
-                }
-            }
-            _state.MonthStart = today;
-            UtilitiesText.Toast(NotificationType.Info, UtilitiesText.T("reallife_util_toast_bills", "count", count.ToString(), "amount", UtilitiesText.Money(total),
-                "day", UtilitiesText.Day(today + UtilitiesRules.DueIn(GameCalendar.MonthDays))), 10f);
-            _view?.Changed();
-        }
-
-        /// <summary>Test: the bills owed fall due today, so that tomorrow is a day late (and the cut follows).</summary>
-        public void TestDue()
-        {
-            if (!Ready("reallife_util_test_due"))
-            {
-                return;
-            }
-            int today = UtilitiesGame.Today, count = 0;
-            for (int i = 0; i < _state.Accounts.Count; i++)
-            {
-                Account a = _state.Accounts[i];
-                if (a.Owed > 0)
-                {
-                    a.DueDay = today;
-                    count++;
-                }
-            }
-            UtilitiesText.Toast(NotificationType.Info, UtilitiesText.T("reallife_util_test_due_done", "count", count.ToString()), 8f);
-            _view?.Changed();
-        }
-
-        /// <summary>Test: the supply at the player's home cut now, as for an unpaid bill.</summary>
-        public void TestCutHome()
-        {
-            if (!Ready("reallife_util_test_cut"))
-            {
-                return;
-            }
-            int today = UtilitiesGame.Today, count = 0;
-            for (int i = 0; i < _state.Accounts.Count; i++)
-            {
-                Account a = _state.Accounts[i];
-                if (a.Kind == PlaceKind.Home && a.State != SupplyState.Closed)
-                {
-                    UtilitiesRules.Cut(a, today, true);
-                    count++;
-                }
-            }
-            Effects();
-            UtilitiesText.Toast(NotificationType.Warning, UtilitiesText.T("reallife_util_test_cut_done", "count", count.ToString()), 8f);
-            _view?.Changed();
-        }
-
-        /// <summary>Test: every account supplied again with nothing owed, as if all had been paid and reconnected.</summary>
-        public void TestRestore()
-        {
-            if (!Ready("reallife_util_test_restore"))
-            {
-                return;
-            }
-            for (int i = 0; i < _state.Accounts.Count; i++)
-            {
-                Account a = _state.Accounts[i];
-                if (a.State == SupplyState.Closed)
-                {
-                    continue;
-                }
-                a.Owed = 0;
-                a.DueDay = 0;
-                a.LateCharged = false;
-                a.CutForDebt = false;
-                a.State = SupplyState.Active;
-                a.TemporaryUntil = 0;
-            }
-            UtilitiesText.Toast(NotificationType.Success, UtilitiesText.T("reallife_util_test_restore_done"), 8f);
-            _view?.Changed();
-        }
-
-        private bool Ready(string what)
-        {
-            if (_loaded)
-            {
-                return true;
-            }
-            UtilitiesText.Toast(NotificationType.Warning, UtilitiesText.T("reallife_util_test_not_running"), 6f);
-            return false;
         }
     }
 }

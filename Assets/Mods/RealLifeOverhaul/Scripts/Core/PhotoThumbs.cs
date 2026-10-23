@@ -7,35 +7,16 @@ using System.Threading.Tasks;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The small copy of a photo the player took (Leisure/Photo/PhotoMode), 256 pixels wide, that Flare shows in a post
-    /// (Social/Flare/FlareApp.Pictures.cs). A photo is a full-screen PNG of 3 to 8 MB; the small copy was once made from it
-    /// on the main thread every time Flare was opened: the file read whole, decoded by the engine (40 to 150 ms) and drawn
-    /// small. Now it is made once, off the main thread, when the photo is taken (for a photo taken before this, the first
-    /// time Flare wants it), and kept beside the photo in "Thumbs" as its raw pixels; showing it is one read of some 100 KB
-    /// off the main thread and one upload of those pixels on it.
-    ///
-    /// THE SAME PICTURE. The small copy is worked out as the engine drew it before: the PNG read row by row to its 8-bit
-    /// pixels (<see cref="PngRows"/>: every filter of the format; grey, grey and alpha, colour, colour and alpha at 8 bits a
-    /// channel, not interlaced; anything else is left to the engine, as before), and each pixel of the copy sampled at its
-    /// centre between the four nearest pixels of the photo (what Graphics.Blit of a texture without mipmaps to a smaller
-    /// target does), in linear light (the texture and the target are sRGB in a linear project: each pixel made linear
-    /// before the four are weighed, the result sRGB again), rounded to 8 bits, rows from the bottom up as the engine keeps
-    /// them, without alpha (the copy is RGB24). A graphics card weighs the four with fewer bits than this does: a channel
-    /// may differ by one step in 255. A photo no wider than the copy (256 pixels or less) is left to the engine.
-    ///
-    /// MEMORY. The photo is never held whole: the file is read through a small buffer, inflated a row at a time, and only
-    /// two rows of it are kept, so a 4K photo costs some 40 KB of managed memory to shrink, not the 60 MB a whole decode
-    /// would (an allocation that size on the Boehm heap would bring on a collection, a pause of the main thread).
-    ///
-    /// The file: "RLOT", the width and the height (little-endian 32-bit), then the rows. Written under a name of its own and
-    /// then moved into place, so a reader never finds half of one; one that is not whole is made again.
-    ///
-    /// Game-free: no Unity or game type; the offline checks run it as it is (EconomyCheck, AppsChecks.cs). Nothing here
-    /// runs on the main thread but the call that starts the work.
+    /// The 256-pixel copy of a player's photo that Flare shows, made once off the main thread when the photo is taken
+    /// (or when Flare first wants it) and kept beside it in "Thumbs" as raw pixels. It is worked out as Graphics.Blit
+    /// draws it: bilinear at each pixel's centre, in linear light, rows from the bottom, RGB24 (a graphics card may
+    /// differ by one step in 255). The PNG is inflated a row at a time with two rows kept, so a 4K photo costs about
+    /// 40 KB, not the 60 MB of a whole decode. The file is "RLOT", width, height (little-endian 32-bit), then the rows,
+    /// written under its own name and moved into place. Game-free.
     /// </summary>
     public static class PhotoThumbs
     {
-        public const int Width = 256;                 // pixels: the width Flare shows a picture at (FlareRules.ThumbWidth)
+        public const int Width = 256;                 // pixels: the width Flare shows a picture at
         private const int WaitMs = 30000;             // milliseconds a new photo is waited for while the engine writes it
         private const int PollMs = 100;               // milliseconds between two looks at a photo being written
         private const int ReadBuffer = 65536;         // bytes: the file is read through a buffer this size
@@ -43,17 +24,12 @@ namespace RealLifeOverhaul
 
         private static readonly float[] Linear = MakeLinear();
 
-        /// <summary>The small copy's file for a photo: beside it, in "Thumbs".</summary>
         public static string FileOf(string photo)
         {
             return Path.Combine(Path.GetDirectoryName(photo) ?? string.Empty, "Thumbs", Path.GetFileName(photo) + ".thumb");
         }
 
-        /// <summary>
-        /// A photo just taken: its small copy is made on a worker thread once the engine has written the photo (at the end
-        /// of the frame it was taken in). Nothing is done on the calling thread but starting it; a failure leaves the copy
-        /// to be made when Flare first wants it.
-        /// </summary>
+        /// <summary>Makes a new photo's copy on a worker thread once the engine has written it.</summary>
         public static void MakeSoon(string photo)
         {
             if (string.IsNullOrEmpty(photo))
@@ -68,7 +44,7 @@ namespace RealLifeOverhaul
                 }
                 catch (Exception)
                 {
-                    // (left to be made when Flare first wants it)
+                    // made when Flare first wants it
                 }
             });
         }
@@ -80,7 +56,7 @@ namespace RealLifeOverhaul
                 Thread.Sleep(PollMs);
                 if (Read(FileOf(photo), out _, out _) != null)
                 {
-                    return;   // made meanwhile (Flare asked for it)
+                    return;   // Flare asked for it meanwhile
                 }
                 byte[] small = FromPhoto(photo, out int width, out int height, out bool undecoded);
                 if (small != null)
@@ -90,12 +66,12 @@ namespace RealLifeOverhaul
                 }
                 if (undecoded && File.Exists(photo) && Whole(photo))
                 {
-                    return;   // a PNG this does not read: the engine makes the copy when Flare wants it, as before
+                    return;   // a PNG this does not read: the engine makes the copy when Flare wants it
                 }
             }
         }
 
-        // Whether a file ends as a PNG does (its last chunk, IEND, written): one not yet whole is still being written.
+        // Whether a file ends with a PNG's IEND chunk: one that does not is still being written.
         private static bool Whole(string file)
         {
             try
@@ -120,11 +96,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// A photo's small copy: read from its file, or made from the photo and its file written. Null if the photo is not
-        /// there or not whole yet, or ('undecoded') is a PNG this does not read: the caller then lets the engine make it, as
-        /// before. Run off the main thread.
-        /// </summary>
+        /// <summary>A photo's small copy, read or made; null if not there yet, or <paramref name="undecoded"/>. Off the main thread.</summary>
         public static byte[] Get(string photo, out int width, out int height, out bool undecoded)
         {
             undecoded = false;
@@ -154,21 +126,18 @@ namespace RealLifeOverhaul
                 }
                 using (var stream = new FileStream(photo, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, ReadBuffer))
                 {
-                    byte[] small = Small(stream, out width, out height, out undecoded);
-                    return small;
+                    return Small(stream, out width, out height, out undecoded);
                 }
             }
             catch (IOException)
             {
-                return null;   // (being written)
+                return null;   // being written
             }
             catch (UnauthorizedAccessException)
             {
                 return null;
             }
         }
-
-        // ---------------------------------------------------------------- the small copy's file
 
         /// <summary>A small copy's rows from its file, or null if there is none or it is not whole.</summary>
         public static byte[] Read(string file, out int width, out int height)
@@ -206,7 +175,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Writes a small copy's file whole: under a name of its own first, then moved into place.</summary>
         public static void Write(string file, byte[] rows, int width, int height)
         {
             string temporary = file + "." + Guid.NewGuid().ToString("N") + ".part";
@@ -224,13 +192,13 @@ namespace RealLifeOverhaul
                 File.WriteAllBytes(temporary, all);
                 if (File.Exists(file))
                 {
-                    File.Delete(file);   // (one that was not whole)
+                    File.Delete(file);   // one that was not whole
                 }
                 File.Move(temporary, file);
             }
             catch (IOException)
             {
-                // (another thread put one there meanwhile, or the disk refused: it is made again next time)
+                // another thread put one there meanwhile, or the disk refused: made again next time
             }
             catch (UnauthorizedAccessException)
             {
@@ -246,19 +214,12 @@ namespace RealLifeOverhaul
                 }
                 catch (Exception)
                 {
-                    // (a stray part file is harmless)
+                    // a stray part file is harmless
                 }
             }
         }
 
-        // ---------------------------------------------------------------- the small copy
-
-        /// <summary>
-        /// The small copy of a PNG read from a stream: <see cref="Width"/> pixels wide and as tall as its shape gives (the
-        /// photo's height times that width over its width, in whole pixels, at least one), RGB, rows from the bottom up, each
-        /// pixel the photo sampled bilinearly at its centre in linear light (see the class's summary). Null if the stream is
-        /// not whole, or ('undecoded') is a PNG this does not read or a photo narrower than the copy.
-        /// </summary>
+        /// <summary>The small copy of a PNG, <see cref="Width"/> wide; null if not whole, or <paramref name="undecoded"/>.</summary>
         public static byte[] Small(Stream png, out int width, out int height, out bool undecoded)
         {
             width = height = 0;
@@ -273,12 +234,11 @@ namespace RealLifeOverhaul
             int w = reader.Width, h = reader.Height;
             if (w <= Width)
             {
-                undecoded = true;   // a copy as large as the photo or larger samples at its edges: left to the engine
+                undecoded = true;   // a copy as wide as the photo samples at its edges: left to the engine
                 return null;
             }
             int tw = Width, th = Math.Max(1, h * Width / w);
-            // Each row of the copy (from the bottom) weighs two neighbouring rows of the photo: the engine's texture row y0,
-            // which is the file's row h - 1 - y0, and the one above it in the picture, the file's row before it.
+            // Each row of the copy (from the bottom) weighs texture row y0, the file's row h - 1 - y0, and the one above it.
             var lower = new int[th];
             var weight = new float[th];
             for (int y = 0; y < th; y++)
@@ -287,7 +247,7 @@ namespace RealLifeOverhaul
                 int y0 = (int)Math.Floor(ty);
                 if (y0 < 0 || y0 + 1 >= h)
                 {
-                    undecoded = true;   // (only a copy taller than its photo samples past the edge)
+                    undecoded = true;   // only a copy taller than its photo samples past the edge
                     return null;
                 }
                 lower[y] = h - 1 - y0;
@@ -301,7 +261,7 @@ namespace RealLifeOverhaul
                 int x0 = (int)Math.Floor(tx);
                 if (x0 < 0 || x0 + 1 >= w)
                 {
-                    undecoded = true;   // (only a copy as wide as its photo samples at the edge)
+                    undecoded = true;   // only a copy as wide as its photo samples at the edge
                     return null;
                 }
                 left[x] = x0;
@@ -319,7 +279,7 @@ namespace RealLifeOverhaul
                 }
                 while (next >= 0 && lower[next] == r)
                 {
-                    // 'row' is the engine's texture row y0, 'above' the row over it in the picture (texture row y0 + 1)
+                    // 'row' is texture row y0, 'above' texture row y0 + 1
                     float fy = weight[next];
                     int to = next * tw * 3;
                     for (int x = 0; x < tw; x++)
@@ -368,12 +328,9 @@ namespace RealLifeOverhaul
             return (byte)(v < 0 ? 0 : v > 255 ? 255 : v);
         }
 
-        // ---------------------------------------------------------------- the PNG, a row at a time
-
         /// <summary>
-        /// A PNG read a row at a time from a stream: its header first (<see cref="Open"/>), then each row's pixels as RGB, from
-        /// the top (<see cref="Next"/>). Only the image data's chunks are inflated, through a stream of their own; nothing is
-        /// held but the row being read and the one above it.
+        /// A PNG read a row at a time: the header (<see cref="Open"/>), then each row as RGB from the top
+        /// (<see cref="Next"/>); 8 bits a channel, not interlaced. Only the row and the one above it are held.
         /// </summary>
         public sealed class PngRows
         {
@@ -393,7 +350,6 @@ namespace RealLifeOverhaul
                 _file = file;
             }
 
-            /// <summary>Reads the signature and the header, up to the first image data.</summary>
             public Opened Open()
             {
                 var head = new byte[8];
@@ -469,7 +425,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            /// <summary>The next row's pixels as RGB (3 bytes a pixel) into 'rgb'; false if the data ends short or is damaged.</summary>
+            /// <summary>The next row as RGB into <paramref name="rgb"/>; false if the data ends short or is damaged.</summary>
             public bool Next(byte[] rgb)
             {
                 if (_inflate == null || _rows >= Height)
@@ -517,7 +473,7 @@ namespace RealLifeOverhaul
                 return true;
             }
 
-            // The row out of its filter (PNG's five: none, sub, up, average, Paeth), against the row above it.
+            // PNG's five filters: none, sub, up, average, Paeth.
             private bool Unfilter(int filter)
             {
                 byte[] raw = _raw, row = _row, up = _up;
@@ -596,7 +552,7 @@ namespace RealLifeOverhaul
                 return true;
             }
 
-            /// <summary>The image data: one IDAT chunk's bytes after another, as one stream (each chunk's check sum passed over).</summary>
+            /// <summary>The IDAT chunks' bytes as one stream, their check sums skipped.</summary>
             private sealed class ChunkData : Stream
             {
                 private readonly Stream _file;
@@ -614,7 +570,7 @@ namespace RealLifeOverhaul
                 {
                     while (_left == 0 && !_ended)
                     {
-                        // the chunk's check sum, then the next chunk: more image data, or the end of it
+                        // the check sum, then the next chunk: more image data or the end of it
                         if (!Skip(_file, 4) || !Fill(_file, _head, 8))
                         {
                             _ended = true;

@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using BAModAPI;
 using Extensions;
 using TMPro;
 using UnityEngine;
@@ -379,8 +378,5 @@ namespace RealLifeOverhaul.Tech
             spot = near;
             return false;
         }
-
-        /// <summary>The logger for every view, set once by TechSites.</summary>
-        public static IModLogger Logger;
     }
 }

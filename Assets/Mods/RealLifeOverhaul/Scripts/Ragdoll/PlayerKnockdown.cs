@@ -9,39 +9,27 @@ using UnityEngine.AI;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The player on foot being hit by traffic: a traffic car that could not stop in time, or
-    /// one of the mod's own driven vehicles (ambulance, patrol car, fleeing suspect), which do
-    /// not brake for people. By the vehicle's speed:
-    ///   under 15 km/h   knocked down and shaken;
-    ///   15 to 35 km/h   knocked down and injured;
-    ///   over 35 km/h    knocked down, badly injured and taken to hospital.
-    /// The player is never killed, unless Permadeath is on (Permadeath/PermadeathRules: from 55 km/h, a near miss the
-    /// first time; after that the hit may end the life, and the fall plays into the fade). They lie as a ragdoll for two to five seconds with input
-    /// blocked by the game's own navigation blocker and the camera on the body, then stand
-    /// where they landed, and only then does the consequence follow (the hospital sequence
-    /// needs the player animated and in control of nothing but itself).
-    /// The ragdoll is the optional part. If anything about the player is not exactly as
-    /// expected it is skipped and only the consequence applies, and every way out of it
-    /// (normal, error, scene change, the game taking over) runs the same restore.
-    /// Ten times a second while outdoors on foot: one small overlap query against the traffic
-    /// layer. While the player is down: a few flags per frame.
+    /// The player on foot hit by a vehicle: shaken under 15 km/h, injured to 35 km/h, taken to hospital above that, and
+    /// killed only by Permadeath's rules. They lie as a ragdoll for a few seconds with input blocked, then stand and the
+    /// consequence follows. The ragdoll is optional: if the player is not exactly as expected only the consequence
+    /// applies, and every way out runs the same restore.
+    /// Cost: on foot outdoors, one small overlap query ten times a second; while down, a few flags per frame.
     /// </summary>
     public class PlayerKnockdown : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("ragdoll", "PlayerKnockdown", typeof(PlayerKnockdown));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("ragdoll", "PlayerKnockdown", typeof(PlayerKnockdown));
 
-        private const float SenseInterval = 0.1f;
+        private const float SenseInterval = 0.1f;       // seconds
         private const float SenseRadius = 0.55f;        // around the chest: the vehicle has to be touching
         private const float MinSpeed = 2f;              // m/s; slower than this is a bump, not a hit
-        private const float InjurySpeed = 15f / 3.6f;
-        private const float HospitalSpeed = 35f / 3.6f;
+        private const float InjurySpeed = 15f / 3.6f;   // m/s
+        private const float HospitalSpeed = 35f / 3.6f; // m/s
         private const float DownAtLeast = 2.4f;         // seconds on the ground
-        private const float DownAtMost = 5f;
+        private const float DownAtMost = 5f;            // seconds
         private const float PathHalfWidth = 1.1f;       // metres either side of the vehicle's line of travel
         private const float Immunity = 8f;              // seconds after a hit before another counts
 
-        // The game blocks player input with named blockers kept in a set. This is one of our own,
-        // outside the game's list, so it can never be mistaken for (or cancel) one of the game's.
+        // Outside the game's own blockers, so it can never be mistaken for, or cancel, one of them.
         private const NavigationBlocker Blocker = (NavigationBlocker)7301;
 
         private enum Harm { Shaken, Injured, Hospital }
@@ -78,19 +66,20 @@ namespace RealLifeOverhaul
         }
 
         private static readonly int HotUpdate = HotSpots.Slot("Ragdoll: PlayerKnockdown.Update");
+
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;
                 return;
             }
             try
             {
                 OnUpdate();
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 Guard.Fail(FrameGuard, e, this);
             }
@@ -140,14 +129,11 @@ namespace RealLifeOverhaul
             Restore(stand: false);
         }
 
-        // ---------------------------------------------------------------- being hit
-
         private void Sense(float now)
         {
             var gm = InstanceBehavior<GameManager>.Instance;
             PlayerController player = gm != null ? gm.playerController : null;
-            // Scooters and hand trucks count as vehicles here. A player who is hidden or busy (getting into a
-            // taxi, in an activity) is not walking about, and is left alone altogether.
+            // Scooters and hand trucks count as vehicles; a player hidden or busy (getting into a taxi, an activity) is left alone.
             if (player == null || gm.selectedVehicle != null || !player.gameObject.activeInHierarchy || player.NavigationDisabled)
             {
                 return;
@@ -167,12 +153,12 @@ namespace RealLifeOverhaul
                 Vector3 towards = chest - vehicle.worldCenterOfMass;
                 towards.y = 0f;
                 float speed = velocity.magnitude;
-                // Moving, and moving at the player: walking into the side of a passing car is not being run over.
+                // Moving, at the player and with the player in its path: walking into a passing car, or a car passing
+                // close along the kerb, has not run anyone over.
                 if (speed < MinSpeed)
                 {
                     continue;
                 }
-                // ...and in its path, not beside it: a car passing close along the kerb has not hit anyone.
                 Vector3 heading = velocity / speed;
                 float ahead = Vector3.Dot(heading, towards);
                 if (ahead <= 0f || (towards - heading * ahead).sqrMagnitude > PathHalfWidth * PathHalfWidth)
@@ -190,7 +176,7 @@ namespace RealLifeOverhaul
 
         private void Hit(PlayerController player, Vector3 direction, float speed, float now)
         {
-            // Not while the game has the player's attention (a dialog, a fade, the hospital): then nothing happened.
+            // Not while the game has the player's attention (a dialog, a fade, the hospital).
             if (LifeEvents.Instance == null || !LifeEvents.IsSafeForEvent())
             {
                 return;
@@ -208,7 +194,7 @@ namespace RealLifeOverhaul
             bool fell = TryFall(player, launch, now);
             if (fate == Permadeath.Verdict.Death && Permadeath.Mortality.Die(Permadeath.DeathCause.Struck))
             {
-                return;   // the fall plays into the fade; the game's "the player is dead" then ends it like anything that overtakes it
+                return;   // the fall plays into the fade; the game's death then ends it like anything that overtakes it
             }
             if (!fell)
             {
@@ -231,7 +217,7 @@ namespace RealLifeOverhaul
                 return false;
             }
 
-            // Marked down before anything is changed, so that whatever fails from here on is undone by Restore.
+            // Marked down before anything changes, so whatever fails from here on is undone by Restore.
             _down = true;
             _player = player;
             _ragdoll = null;
@@ -259,7 +245,7 @@ namespace RealLifeOverhaul
         private void TickDown(float now)
         {
             bool mine = _ragdoll != null && _ragdoll.Active && _ragdoll.Serial == _serial;
-            // The game has moved on without us: restore where the player stood and say no more about it.
+            // The game has moved on: put the player back where they stood and say no more.
             bool overtaken = !mine || _player == null || !_player.isActiveAndEnabled || LoadScene.isLoading
                              || EnergyHelper.goingToHospital || GameMembers.PlayerDead || BuildingManager.IsInsideBuilding
                              || PlayerHelper.IsUsingVehicle || !TrafficTools.Ready;
@@ -275,12 +261,8 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- getting up
-
-        /// <summary>
-        /// Puts the player back: ragdoll off, standing, on the navigation mesh, in control, camera
-        /// on them. Each step is taken whether or not the one before it worked.
-        /// </summary>
+        // Puts the player back: ragdoll off, standing on the navigation mesh, in control, the camera on them. Each step is
+        // taken whether or not the one before worked.
         private void Restore(bool stand)
         {
             if (!_down)
@@ -340,7 +322,7 @@ namespace RealLifeOverhaul
                             }
                             if (!agent.isOnNavMesh)
                             {
-                                character.transform.position = origin;   // where they stood when they were hit
+                                character.transform.position = origin;
                                 if (!agent.Warp(origin) || !agent.isOnNavMesh)
                                 {
                                     character.WarpSafely(origin);
@@ -373,7 +355,7 @@ namespace RealLifeOverhaul
             _blocked = false;
         }
 
-        // What it cost them. Run after they are back on their feet, or at once if they never fell.
+        // What it cost them: after they are back on their feet, or at once if they never fell.
         private void Consequence()
         {
             try

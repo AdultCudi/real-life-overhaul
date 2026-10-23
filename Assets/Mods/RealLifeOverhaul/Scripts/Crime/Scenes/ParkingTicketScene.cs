@@ -2,11 +2,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// An officer on foot writing a ticket for one of the game's parked cars. The car is only
-    /// stood beside, never touched. The owner may come running: too late, in time to argue, or
-    /// in time to be let off.
-    /// </summary>
+    /// <summary>An officer tickets one of the game's parked cars (never touched); the owner may come running to argue.</summary>
     internal sealed class ParkingTicketScene : CrimeScene
     {
         private const int Writing = 0, Owner = 1, Argument = 2, Lingering = 3;
@@ -33,7 +29,7 @@ namespace RealLifeOverhaul
             }
             Scene = Cop.Position;
             Cop.Stand(_car);
-            Cop.Work(SceneClips.Clipboard, TextPose, PhoneProp);   // the ticket book: the clipboard clip, or texting where that cannot be had
+            Cop.Work(SceneClips.Clipboard, TextPose, PhoneProp);   // the clipboard clip, or texting where it cannot be had
             Go(Writing, now, Is("ticketed") ? 14f : 6f, Is("ticketed") ? 22f : 10f);
             return true;
         }

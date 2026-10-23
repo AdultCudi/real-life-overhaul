@@ -38,6 +38,8 @@ namespace RealLifeOverhaul.Careers
         private void Awake()
         {
             Instance = this;
+            GameUi.GameSprites.Want(CareerGlyphs);   // asked for before the one look behind the loading screen (GameSprites.Prewarm)
+            GameUi.GameSprites.Want(CampusGlyphs);   // asked for before the one look behind the loading screen (GameSprites.Prewarm)
             CareersGame.Logger = Logger;
             _onSave = OnSave;
             _onHour = Guard.Wrap(OnHour);
@@ -140,6 +142,10 @@ namespace RealLifeOverhaul.Careers
             if (_skip != null && !_skip.Open)
             {
                 _skip = null;   // its sitting, if any, is the book's: settled, or let go by the look above
+            }
+            if (_visit != null && !_visit.Open)
+            {
+                _visit = null;   // likewise an interview at a place, once over
             }
             if (!_studyOn)
             {
@@ -443,6 +449,7 @@ namespace RealLifeOverhaul.Careers
             ShiftSkip skip = _skip;
             DeskWork desk = _deskWork;
             ComputerSitting computer = _computer;
+            InterviewVisit visit = _visit;
             for (int i = _book.Count - 1; i >= 0; i--)
             {
                 _book[i].Settle(SittingEnd.LetGo);   // a later end of its activity counts nothing
@@ -452,9 +459,11 @@ namespace RealLifeOverhaul.Careers
             _sitting = null;
             _deskWork = null;
             _computer = null;
+            _visit = null;
             skip?.Close();
             desk?.Close();
             computer?.Close();
+            visit?.Close();   // out at the door and the black screen given back
             CareersGame.Tiring(false);
         }
 

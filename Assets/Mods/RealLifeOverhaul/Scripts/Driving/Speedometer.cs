@@ -3,13 +3,12 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Shows the speed of the vehicle being driven, in km/h or mph following the game's units
-    /// setting, as one more reading of the game's own vehicle panel (<see cref="SpeedReading"/>). Reads one velocity per frame; the text
-    /// is only rebuilt when the whole number changes.
+    /// Shows the speed of the vehicle being driven, in the game's units, as a reading of the game's vehicle panel
+    /// (<see cref="SpeedReading"/>). One velocity read a frame; the text is rebuilt only when the whole number changes.
     /// </summary>
     public class Speedometer : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("driving", "Speedometer", typeof(Speedometer));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("driving", "Speedometer", typeof(Speedometer));
 
         private const float MetresPerSecondToKmh = 3.6f;
         private const float MetresPerSecondToMph = 2.23694f;
@@ -25,7 +24,7 @@ namespace RealLifeOverhaul
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;   // switched off after its faults
                 return;
             }
             try

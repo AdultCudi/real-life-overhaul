@@ -5,7 +5,7 @@ using UI.Notification;
 
 namespace RealLifeOverhaul.Utilities
 {
-    /// <summary>The utilities' words: money as the game writes it, a text with its names filled, a label and its value, a toast.</summary>
+    /// <summary>The utilities' words: money as the game writes it, texts with their names filled, a label and value, a notice.</summary>
     public static class UtilitiesText
     {
         public static string Money(float amount)
@@ -46,7 +46,7 @@ namespace RealLifeOverhaul.Utilities
 
         public static void Toast(NotificationType type, string text, float seconds = 8f)
         {
-            // The game localises what it is given by key; a line already built goes through a key whose text is only {text}.
+            // the game localises by key: a line already built goes through a key whose text is only {text}
             Notifications.Show(type, "reallife_util_toast", new Dictionary<string, string>(1) { { "text", text } }, seconds);
         }
 
@@ -99,7 +99,6 @@ namespace RealLifeOverhaul.Utilities
             return T("reallife_util_day", "day", day.ToString(System.Globalization.CultureInfo.InvariantCulture));
         }
 
-        /// <summary>Where an account stands, in a few words.</summary>
         public static string State(Account a, int day)
         {
             if (a == null)

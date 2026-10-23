@@ -1,10 +1,9 @@
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The last few large pieces of work the mod named (Diagnostics/SessionWatch.Mark), each with the frame and the
-    /// time it began in and, where the place that named it also said when it was done, how long it took. A fixed
-    /// ring: naming a piece of work is six writes, closing it two; nothing is allocated after the ring is made, and
-    /// it is read only for the line of a long frame. No Unity or game types: checked offline (NavCheck, HitchCheck.cs).
+    /// The last few large pieces of work the mod named (SessionWatch.Mark), with the frame and time each began in and,
+    /// once closed, how long it took. A fixed ring: naming is six writes, closing two; read only for a long frame's
+    /// line. Game-free.
     /// </summary>
     public sealed class MarkRing
     {
@@ -35,7 +34,7 @@ namespace RealLifeOverhaul
             return serial;
         }
 
-        /// <summary>The piece is done. A number that is no longer in the ring (three newer pieces since) is ignored.</summary>
+        /// <summary>The piece is done; a number no longer in the ring is ignored.</summary>
         public void Close(int serial, long ticks)
         {
             int slot = serial % Kept;
@@ -45,10 +44,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// The piece named <paramref name="back"/> pieces ago (0 the newest). <paramref name="spent"/> is in the
-        /// ticks it was given, or negative for a piece nobody closed. False when there is no such piece.
-        /// </summary>
+        /// <summary>The piece named <paramref name="back"/> ago (0 the newest); <paramref name="spent"/> negative if never closed.</summary>
         public bool Get(int back, out string text, out int frame, out float at, out long spent)
         {
             if (back < 0 || back >= Count)
@@ -67,11 +63,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>
-        /// Which piece explains a long frame, as <see cref="Get"/>'s back: the costliest closed piece that began in
-        /// <paramref name="frame"/>, the newest of equals; the newest (0) when none closed in that frame; -1 when the ring
-        /// is empty.
-        /// </summary>
+        /// <summary>The costliest closed piece begun in <paramref name="frame"/>, as a back; else 0; -1 when empty.</summary>
         public int Costliest(int frame)
         {
             int pick = -1;
@@ -105,9 +97,8 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// Counts of something that happened at noted times (the navigation obstacles the mod changed: Core/MeshCuts),
-    /// to be added up over a stretch of time afterwards. A fixed ring; a note is three writes. No Unity or game
-    /// types: checked offline (NavCheck, HitchCheck.cs).
+    /// Counts of something at noted times (the navigation obstacles the mod changed), to be added up over a stretch of
+    /// time afterwards. A fixed ring; a note is three writes. Game-free.
     /// </summary>
     public sealed class CountRing
     {
@@ -121,7 +112,7 @@ namespace RealLifeOverhaul
             _counts = new int[_times.Length];
         }
 
-        /// <summary>Everything ever noted, whether or not the ring still holds it.</summary>
+        /// <summary>Everything ever noted, held or not.</summary>
         public int Total { get; private set; }
 
         public void Note(float time, int count)

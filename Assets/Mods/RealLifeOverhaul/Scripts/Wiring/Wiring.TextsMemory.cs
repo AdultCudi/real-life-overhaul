@@ -9,36 +9,17 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// What people remember of the player, for RLO Texts' cards of data v6 (Texts/TextMemoryRules), from what the game and
-        /// the mod already decided:
-        ///
-        ///   the social life   read, never copied: how and when a person met the player (their origin and day), their
-        ///                     outings, loans and favours, a birthday remembered, being stood up, a rudeness, the arrest
-        ///                     and crash they heard of (SocialPerson.Memories, Debt, Loan), and what they know: the name,
-        ///                     the player's job and business, how well known the player is
-        ///   street talk       recorded at each line the stranger says (<see cref="Street"/>): met in the street, what was
-        ///                     talked about, how it went, the way given, numbers swapped, the name told, the business
-        ///                     heard of, a famous face recognised; a stranger who swaps numbers takes it with them
-        ///   texts and calls   what each text, call or Flare message was about (<see cref="Spoke"/>), and what a person of
-        ///                     the social life last texted the player about, read from their own thread in the game's phone
-        ///                     (<see cref="Texted"/>: every feature's texts, the family's, life's little moments' and
-        ///                     travel's too, worded by a pack or not), so a text remembers the one before it and a call back
-        ///                     the text it opens on
-        ///   the city          the player's own life events the people of the player's life have heard of
-        ///                     (TextsDirector.Events), and what gossip passed on
-        ///
-        /// Only with a pack of data 6 (TextsDirector.Six); only on cards of the player's own people, never a shared one. A
-        /// card's memory lines are of the kinds and codes data 6 was trained on, at most TextMemoryRules.CardMost of them, so a
-        /// card keeps the shape and the size the packs know (the thread's own lines are not put on a text's card: see
-        /// docs/features/social.md, What a later pack could add).
-        /// COST: nothing per frame; a few facts a card and one thread of twenty messages at most, a few a line of street talk.
+        /// What people remember of the player, for RLO Texts' cards of data 6: read from the social life (never copied),
+        /// recorded from street talk and from what each text, call or Flare message was about, the last text in a person's
+        /// thread, and the player's life events. Only with a pack of data 6, and only on cards of the player's own people,
+        /// never a shared one. Nothing per frame: a few facts a card, a thread of twenty messages at most.
         /// </summary>
         public static class TextsMemory
         {
             private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
             private static readonly List<SocialThreadLine> Lines = new List<SocialThreadLine>(Entities.Contact.MaxMessages);
 
-            /// <summary>The memory a request's card may carry: its person's kept facts, and for a person of the social life what it keeps of them.</summary>
+            /// <summary>The memory a request's card may carry: its person's kept facts, and what the social life keeps of them.</summary>
             internal static void Fill(TextRequest r, SocialPerson person)
             {
                 if (r == null || !TextsDirector.Six || r.Shared)
@@ -62,7 +43,7 @@ namespace RealLifeOverhaul
                 Heard(r.Memory);
             }
 
-            // What a person last texted the player about, from their own thread in the game's phone (TextsMemoryFacts.Texted).
+            // What a person last texted the player about, from their thread in the game's phone.
             private static void Texted(SocialPerson p, int today, List<TextFact> into)
             {
                 SocialPhone.Thread(p, Lines);
@@ -70,7 +51,7 @@ namespace RealLifeOverhaul
                 Lines.Clear();
             }
 
-            /// <summary>What a text, a call or a Flare message was about, remembered by its person (only an intent of the player's own people).</summary>
+            /// <summary>What a text, a call or a Flare message was about, remembered by its person.</summary>
             internal static void Spoke(TextRequest r, string how)
             {
                 if (r == null || r.Person == null || !TextsDirector.Six)
@@ -82,7 +63,7 @@ namespace RealLifeOverhaul
                 {
                     if (r.Intent == null || r.Intent.IndexOf(".dm.", StringComparison.Ordinal) < 0)
                     {
-                        return;   // (a post or a comment: what everybody reads is not a talk with the player)
+                        return;   // a post or a comment, which everybody reads, is not a talk with the player
                     }
                     if (TextsDirector.Memory.Of(r.Person) == null)
                     {
@@ -102,7 +83,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // The player's own events of the last weeks, as everybody in the player's life has heard of them by now.
+            // The player's events of the last weeks, which everybody in their life has heard of by now.
             private static void Heard(List<TextFact> into)
             {
                 IReadOnlyList<TextLifeEvent> events = TextsDirector.Events;
@@ -116,14 +97,14 @@ namespace RealLifeOverhaul
                 }
             }
 
-            /// <summary>What the social life keeps of one of its people, as memory facts (none of it saved again).</summary>
+            /// <summary>What the social life keeps of one of its people, as memory facts; none of it is saved again.</summary>
             internal static void Derived(SocialPerson p, int today, List<TextFact> into)
             {
                 if (p == null || !p.Met)
                 {
                     return;
                 }
-                TextsMemoryFacts.People(p, into);   // (how they met, and their memories)
+                TextsMemoryFacts.People(p, into);
                 if (p.Debt > 0)
                 {
                     into.Add(new TextFact(TextMemoryKinds.Favour, "owed", Math.Max(p.DebtDay, 0), TextsGame.Money(p.Debt)));
@@ -136,8 +117,7 @@ namespace RealLifeOverhaul
                 Knows(p, into);
             }
 
-            // What a person of the social life knows of the player: their job (one met at work, or a friend), their business
-            // (a friend, or one met at the shop), and how well known the player is.
+            // The job (to a friend or one met at work), the business (to a friend or one met at the shop), and fame.
             private static void Knows(SocialPerson p, List<TextFact> into)
             {
                 bool friend = p.Stage >= SocialStage.Friend || p.IsFamily;
@@ -162,7 +142,6 @@ namespace RealLifeOverhaul
 
             private static readonly List<BuildingRegistration> Mine = new List<BuildingRegistration>(8);
 
-            // The player's first business by name, or null.
             private static string FirstBusiness()
             {
                 Economy.Books.Businesses(Mine);
@@ -176,15 +155,10 @@ namespace RealLifeOverhaul
                 return null;
             }
 
-            // ---------------------------------------------------------------- street talk
-
-            /// <summary>The memory key of a stranger in the street: their seed (one person for the day).</summary>
+            /// <summary>The memory key of a stranger in the street: their seed, one person for the day.</summary>
             internal static string StrangerKey(StreetChat c) => "sp:" + c.Who.Seed.ToString(Inv);
 
-            /// <summary>
-            /// A line a stranger says, as what they will remember: met in the street (their first line), what was talked
-            /// about, how it went, a favour, what they now know. A number swapped takes what they remember to the contact.
-            /// </summary>
+            /// <summary>A line a stranger says, as what they will remember; a number swapped takes it to the contact.</summary>
             internal static void Street(StreetChat c, StreetLine line, Dictionary<string, string> data)
             {
                 if (c == null || !TextsDirector.Six)
@@ -241,7 +215,7 @@ namespace RealLifeOverhaul
                         TextsDirector.Remember(key, TextMemoryKinds.Favour, "number");
                         if (c.Memo != null && c.Memo.Cast >= 0)
                         {
-                            TextsDirector.Move(key, "s:" + c.Memo.Cast.ToString(Inv));   // (now somebody the player knows: what they remember goes with them)
+                            TextsDirector.Move(key, "s:" + c.Memo.Cast.ToString(Inv));
                         }
                         break;
                 }

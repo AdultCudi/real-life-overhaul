@@ -31,7 +31,8 @@ namespace RealLifeOverhaul.Economy
                 .Fact("mgr_kept", () => Whole(ManagerCatalogue.DecisionsKept))
                 .Fact("mgr_items", () => Whole(ManagerCatalogue.ItemsInDecision))
                 .Fact("mgr_price_step", () => CompanyText.Share(ManagerCatalogue.PriceStep))
-                .Fact("mgr_stock_step", () => CompanyText.Share(ManagerCatalogue.StockStep));
+                .Fact("mgr_stock_step", () => CompanyText.Share(ManagerCatalogue.StockStep))
+                .Fact("mgr_budget_near", () => CompanyText.Share(ManagerDirectoryRules.BudgetNearShare));
         }
 
         private static string Whole(int value)

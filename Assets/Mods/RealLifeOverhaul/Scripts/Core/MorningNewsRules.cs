@@ -12,27 +12,11 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The city's news gathered into the morning line: Core/MorningNews holds it while the player sleeps, Home/HomeReport
-    /// sends it on waking. This is what is held, for how long after the wake, and how the texts are packed.
-    ///
-    /// WHY AT THE WAKE. The game's sleep runs its time skip with the game paused (TimeMachine.StartTimeMachine sets the
-    /// game's speed to paused, so Time.timeScale is 0), and the parts of the mod that keep the city's hours on game time
-    /// (Civic's government and works, Events' weather and street events, the Ledger's morning round) stand still until
-    /// it ends. Then each catches up every hour it missed at once: the policies in force and ended, the works finished
-    /// next door, the weather, what is on, the morning's papers, all in the minute the player wakes, beside the morning
-    /// line. Held from the lying down to just after the wake, they go out with the morning line instead.
-    ///
-    /// THE MOMENT AFTER THE WAKE. Those parts look once a second of game time, so every one has looked again once
-    /// <see cref="CatchUpGame"/> seconds of game time have passed since the wake; a game paused at once does not hold
-    /// the line back for more than <see cref="CatchUpReal"/> seconds of real time.
-    ///
-    /// THE PACKING. Each notice keeps its own text, whole, in the order it came. The first notification is the morning
-    /// line with as many as fit after it; the rest go into as few more as they fit in, each at most <see cref="Most"/>
-    /// characters with the words around it. A notice too long to share one goes out as it came. In order, a greedy fill
-    /// is the fewest notifications there can be.
-    ///
-    /// Game-free (no Unity or game types): checked offline (EconomyCheck, MorningNewsChecks.cs). Cost: one pass over a
-    /// dozen notices at most, nothing allocated.
+    /// The city's news gathered into the morning line: what is held, for how long after the wake, and how it is packed.
+    /// The game's sleep skips time with the game paused, so the mod's parts on game time catch up every missed hour in
+    /// the minute the player wakes; held until each has looked again, that news goes out with the morning line. Each
+    /// notice keeps its text whole and in order; a greedy fill in order gives the fewest notifications. Game-free; one
+    /// pass over a dozen notices at most, nothing allocated.
     /// </summary>
     public static class MorningNewsRules
     {
@@ -41,13 +25,13 @@ namespace RealLifeOverhaul
         public const float CatchUpGame = 1.5f;    // seconds of game time after the wake: every part on game time has looked again
         public const float CatchUpReal = 6f;      // seconds of real time at most: a game paused at once does not keep the line waiting
         public const int Gap = 1;                 // characters between two notices in one notification: a space
-        public const int WarningWeight = 2;       // a warning's weight (Core/MorningNews.Weight): news at least this strong colours the morning line's notification
+        public const int WarningWeight = 2;       // MorningNews.Weight: news at least this strong colours the morning line's notification
 
         /// <summary>Whether the moment after the wake is over, by game time (Time.time) and real time (Time.unscaledTime), in seconds.</summary>
         public static bool CaughtUp(float gameNow, float gameWoke, float realNow, float realWoke) =>
             gameNow - gameWoke >= CatchUpGame || realNow - realWoke >= CatchUpReal;
 
-        /// <summary>The characters a template adds around its placeholders: its length less theirs, each counted once if it is there.</summary>
+        /// <summary>The characters a template adds around its placeholders, each placeholder counted once if present.</summary>
         public static int Extra(string template, string first, string second)
         {
             if (template == null)
@@ -66,7 +50,7 @@ namespace RealLifeOverhaul
             return extra < 0 ? 0 : extra;
         }
 
-        /// <summary>The held notice a new one replaces: the first with the same duplicate id (the game's own, such as the weather's); -1 for none or no id.</summary>
+        /// <summary>The held notice a new one replaces: the first with the same duplicate id; -1 for none or no id.</summary>
         public static int Same(IList<string> ids, int count, string id)
         {
             if (string.IsNullOrEmpty(id) || ids == null)
@@ -83,7 +67,7 @@ namespace RealLifeOverhaul
             return -1;
         }
 
-        /// <summary>The strongest of a part's kinds, by weight (a success 0, news 1, a warning 2, an error 3), starting from <paramref name="start"/>.</summary>
+        /// <summary>The strongest weight of a part's notices, starting from <paramref name="start"/>.</summary>
         public static int Strongest(IList<int> weights, int from, int count, int start)
         {
             int best = start;
@@ -97,13 +81,12 @@ namespace RealLifeOverhaul
             return best;
         }
 
-        /// <summary>The weight of the morning line's own notification: the sleep's, unless the news it carries holds a warning or an error above it.</summary>
+        /// <summary>The morning line's weight: the sleep's, unless its news holds a stronger warning or error.</summary>
         public static int HeadWeight(int morning, int news) => news >= WarningWeight && news > morning ? news : morning;
 
         /// <summary>
-        /// Packs the held notices, by the length of each one's text, into the notifications of the summary: the head
-        /// (the morning line, <paramref name="morning"/> characters, with <paramref name="headExtra"/> more around the
-        /// news it carries), then as few more as fit (<paramref name="moreExtra"/> characters around each one's news).
+        /// Packs the held notices by length: the head (the morning line of <paramref name="morning"/> characters plus
+        /// <paramref name="headExtra"/>), then as few more as fit, each with <paramref name="moreExtra"/> around its news.
         /// </summary>
         public static void Pack(int morning, int headExtra, int moreExtra, IList<int> lengths, int count, List<NewsPart> parts)
         {

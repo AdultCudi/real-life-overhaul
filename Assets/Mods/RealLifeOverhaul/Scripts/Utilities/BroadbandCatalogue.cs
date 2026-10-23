@@ -1,13 +1,8 @@
 namespace RealLifeOverhaul.Utilities
 {
     /// <summary>
-    /// The player's own broadband company, late in a game and very costly: the city's operator's licence first (the
-    /// player's headquarters is its office, and bills its customers), then a fibre network dug district by district,
-    /// each a fortune and two of the game's months; the company is one of the internet providers wherever its network
-    /// is open. A district's homes and businesses are won from the four rivals month by month: by the company's prices
-    /// against the usual, its reliability (what is spent on maintenance), its marketing, and a name the district takes
-    /// most of a year to trust. The rivals answer with lower prices where it takes their customers. Every figure at the
-    /// start's prices (charged at today's, Core/Prices). Game-free, checked by EconomyCheck.
+    /// The player's own broadband company's figures at the start's prices: a licence, fibre dug district by district, and a
+    /// market won from the rivals month by month. Checked offline (EconomyCheck).
     /// </summary>
     public static class BroadbandCatalogue
     {
@@ -28,24 +23,20 @@ namespace RealLifeOverhaul.Utilities
         public const int NetworkCents = 1800;    // the backbone, its transit and the box in each home, a connection a month
         public const int InstallCents = 12000;   // an engineer's visit and the box, for each new connection
 
-        // The company's plans (fibre), the share of its customers on each, and their usual prices a month.
+        // the company's plans, the share of customers on each, and their usual prices a month
         public static readonly int[] Mbps = { 300, 1000, 2000 };
         public static readonly int[] TierMix = { 500, 350, 150 };
         public static readonly int[] DefaultCents = { 5500, 7500, 10500 };
         public const int PriceLeast = 500, PriceMost = 2000, PriceStep = 50;   // the prices the player may set, thousandths of the usual
 
-        // What is spent on maintenance, thousandths of the usual, decides how often the network fails (in a thousand days).
+        // maintenance spent, thousandths of the usual, sets how often the network fails (in a thousand days)
         public const int MaintenanceLeast = 500, MaintenanceMost = 1500, MaintenanceStep = 100;
         public const int OutageBase = 20, OutageLeast = 5, OutageMost = 60;
 
         public static readonly int[] Marketing = { 0, 10000, 25000, 50000, 100000, 250000, 500000 };   // the budgets to choose from, a month
         public const int MarketingUnit = 25000, MarketingPull = 150;   // each natural log of (1 + budget / unit) adds this many thousandths to the weight
 
-        // How a district chooses. A provider's weight is its hold: the rivals' as the city's market stands when the company
-        // is founded (their shares then are what these weights give), the company's grown with the district's trust; then
-        // its price against its usual, to the power PriceElasticity / 1000; the company's also by its reliability (to the
-        // power ReliabilityElasticity / 1000) and marketing. Each month a share moves Follow thousandths of the way to its
-        // weight's share of the whole.
+        // a district's choice: each provider's hold by its price (and the company's trust, reliability, marketing); shares follow
         public static readonly int[] RivalHold = { 450, 300, 100, 150 };   // InternetCatalogue.Providers
         public const int OwnHold = 300;          // the company's, trusted fully: as Brightvein's
         public const int TrustMonths = 9;        // a district trusts a new network fully this many months after it opens there
@@ -58,7 +49,7 @@ namespace RealLifeOverhaul.Utilities
         public const int SaleMultiple = 4;       // a buyer pays four years of the last year's profit...
         public const int SaleFloorShare = 300;   // ...or, for a company that has made none, this share of what its network cost
 
-        // The company's money (transaction types: CashCategory reads them as takings, wages, investments, marketing, fees).
+        // the company's money, by transaction type (CashCategory reads takings, wages, investments, marketing, fees)
         public const string TakingsKey = "reallife_transaction_broadband_takings";
         public const string WagesKey = "reallife_transaction_broadband_wages";
         public const string NetworkKey = "reallife_transaction_broadband_network";
@@ -71,11 +62,8 @@ namespace RealLifeOverhaul.Utilities
 
         public const string OwnNameKey = "reallife_net_provider_own", SoldNameKey = "reallife_net_provider_sold";
 
-        // ---------------------------------------------------------------- at scale (Core/EndScale: the end game's real figures, mixed in by its share)
-        // The city's homes and businesses at its real size, a network dug to every one of them in a district (a fortune a
-        // district), the operator's licence with its core network, and crews of field engineers, call centre agents and
-        // network operations engineers the company hires itself. A district dug before the scale reaches the old number of
-        // homes until its network is extended to the whole district, for what the scale's network costs less what it cost.
+        // At scale (Core/EndScale): the city's real number of connections, a network to every one, a licence with its core
+        // network and crews the company hires itself. A district dug before the scale reaches the old number until extended.
         public const int MarketScale = 5000;                 // thousandths of a district's connections at the city's real size
         public const int HomeCentsScale = 35000;             // a home or business passed by the fibre, cents
         public const int HomeCentsFarScale = 105000;         // ...in the Hamptons, where the houses stand far apart
@@ -85,13 +73,13 @@ namespace RealLifeOverhaul.Utilities
         public const int InstallCentsScale = 60000;          // an engineer's visit, the box and the drop to the home
 
         public const int Field = 0, Calls = 1, Operations = 2, CrewKinds = 3;
-        public static readonly int[] CrewWage = { 30000, 18000, 38000 };   // cents a day each in a month of WageMonthDays: field engineers, call centre agents, network operations engineers
-        public const int WageMonthDays = 5;                  // the crews are paid by the month, as the old cost per connection was: their wages are written for the game's own 60-day year's month of five days, so a longer year earns and pays alike
+        public static readonly int[] CrewWage = { 30000, 18000, 38000 };   // cents a day each in a WageMonthDays month: field, call centre, operations
+        public const int WageMonthDays = 5;                  // wages are written for the 60-day year's five-day month, so a longer year earns and pays alike
         public const int FieldConnections = 1500;            // connections a field engineer looks after
         public const int CallConnections = 800;              // ...a call centre agent
         public const int OperationsPerDistrict = 6;          // network operations engineers for each district open, round the clock
         public const int CrewPace = 40;                      // thousandths of the need hired a day while short
         public const int IncomeAtScale = 1000;               // thousandths: the one knob for what the company takes at scale, tuned in one edit
-        public const int SaleMultipleScale = 3;              // a buyer at scale pays three years of the last year's profit: less than running on, so digging to sell never beats keeping it
+        public const int SaleMultipleScale = 3;   // a buyer at scale pays three years of profit: less than running on, so digging to sell never pays
     }
 }

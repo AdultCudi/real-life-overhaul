@@ -104,6 +104,18 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--managers")
+        {
+            Managers();   // (the managers' checks alone, the directory's among them, while working on them: ManagerChecks.cs, ManagerDirectoryChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--meals")
+        {
+            Meals();   // (meals and music alone, while working on them: MealsChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--texts-history")
         {
             CallBack();       // (a call back's and RLO Texts' shared history's checks alone, while working on them: CallBackChecks.cs, TextsHistoryChecks.cs)
@@ -111,9 +123,28 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--more-people")
+        {
+            MorePeople();   // (more people to meet alone, while working on it: MorePeopleChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--designs")
         {
             Designs();   // (the ready-made designs' checks alone, while working on them: DesignChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--clean-fixes")
+        {
+            RagdollLifeFixes();   // (the clean-up's fixes alone, while working on them: RagdollFixChecks.cs and the rest named in Main)
+            BusinessInteriorFixes();
+            PhoneWorldFixes();
+            DiagnosticsFixes();
+            CalendarFixes();
+            TextsStreetFixes();
+            WiringFixes();
+            CoreFixes();
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
@@ -233,6 +264,16 @@ internal static partial class Program
         FlareThemeSwitch();   // Flare's light and dark switch: the look by setting and hour, a press always the other look, its words, written and saved as the Settings app does, every open part painted again (FlareThemeChecks.cs)
         Shared();
         Fame();
+        CrimeFixes();   // a hold-up empties the till, rewards at today's prices, a release in a session names no hours, no Crime.Pay dropped (CrimeFixChecks.cs)
+        CityEventFixes();   // the spare hose by the engine, a guest's traffic left alone by the weather, arrivals past one who never came (CityEventFixChecks.cs)
+        RagdollLifeFixes();   // a kneeling medic struck as one standing and kneeling again if not, the memorial's ids with commas, the building manager tested (RagdollFixChecks.cs)
+        BusinessInteriorFixes();   // a smear's room tested with its own dip, an office's stations with no item list, a refresh that says why not, the wear test as play (BusinessFixChecks.cs)
+        PhoneWorldFixes();   // the level of detail put back only if it was set, the doctor's refused payment ends the call with a word (PhoneFixChecks.cs)
+        DiagnosticsFixes();   // the logs page on the graphics card's figures, no count of civic props nobody reads (DiagnosticsFixChecks.cs)
+        CalendarFixes();   // a failed calendar source leaves nothing behind, every app made only once the phone can take it (CalendarFixChecks.cs)
+        WiringFixes();   // every Wiring adapter behind a try with a Wiring fault, the pairing before asked inside one, the financial analyst named, lists let go after a fault (WiringFixChecks.cs)
+        CoreFixes();   // the phone dump gone, the shown buildings compared as a set, the tab copies taken back, the pictures found behind the loading screen, the bar marker by share, the font not looked for again (CoreFixChecks.cs)
+        TextsStreetFixes();   // a raise thanked though first seen on another text's look, never "X and X", web requests let go, the packs said found by a barrier, a Done that asks again safe in the hub's look (TextsFixChecks.cs)
         LogNumbers();   // no number in a log line written in the machine's culture: decimals and groupings invariant (LogNumberChecks.cs)
         JusticeSaveRoundTrip();   // Justice's save line: names with %XXXX escapes come back as written, one at the very end too (JusticeSaveChecks.cs)
         TravelPrices();   // travel's extras, dinners, splurges, events and loyalty night at today's prices, and what the room shows is what it charges (TravelPriceChecks.cs)
@@ -291,6 +332,7 @@ internal static partial class Program
         BankingFixes(); // the player's banking: the student loan kept, an approval's interest once and on what is financed, a card paid early, a quest loan, loans priced again, the lender's fee (BankingFixChecks.cs)
         SocialFixes();  // the social life: a loan's few more days, a report placed indoors, a missed call's favour, one trainer a cast, an outing put forward kept (SocialFixChecks.cs)
         PeopleAge();    // the People page: each person's age, a year more at each birthday, in every language; the Guide names People as a contact (PeopleAgeChecks.cs)
+        MorePeople();   // more people to meet: the first eight kept, every place bringing somebody new up to 400, the later people's own record, the circle (MorePeopleChecks.cs)
         CinemaFixes();  // a film with a friend: rested as in the game's own cinema seat, given back on every way out (CinemaFixChecks.cs)
         PartnerTalk();    // the partner: Social's calls, texts and outings count as talking for family life (PartnerTalkChecks.cs)
         MealFixes();    // a completed meal fills once by the game's food and records bought food through the bridge
@@ -300,6 +342,7 @@ internal static partial class Program
         BizManLink();   // the Company app's Open in BizMan: on every business's page, the game's BizMan.Open for the player's own business, the notice, the texts (BizManLinkChecks.cs)
         MarketFixes();  // the stock market: a guest's trade lines culture-free, the index steady as companies join over the cap, the tape swapped safely, the chart's guard (MarketFixChecks.cs)
         CareersFixes(); // education and careers: stood down once the guard has switched it off, no sitting on a disabled host, a lost course never read back (CareersFixChecks.cs)
+        InterviewPlaces(); // an interview where it is held: in at the door behind the black screen and out again, at the home's computer, every end (InterviewPlaceChecks.cs)
         ClassCounts();  // a class, homework or exam being sat is never lost: settled once by its own record, the hourly pass asks the book, the clock's minutes, the school desk's keys (ClassCountChecks.cs)
         HomeFixes();    // home life: the roommate's talk test with no character, the door to social life nobody read, rain and sleep in a hotel room (HomeFixChecks.cs)
         LifeFixes();    // life events: news of the player's home, building, neighbours and landlord only to a player with a home (LifeFixChecks.cs)
@@ -323,6 +366,7 @@ internal static partial class Program
         HardTimesTriggers(); // a difficult moment at home comes of what is going on: each one's causes, nothing when all is well, a cause gone, the options, the save, the same state (HardTimesChecks.cs)
         MorningNotices(); // the morning line only from a sleep the game ended, with its hours; the city's news of the night packed into it; four notices' switches (MorningNewsChecks.cs)
         CalendarApp();  // the Calendar: the months of every year length, the grid, each schedule's days against its feature's own rule, an empty month, the sources, the texts (CalendarAppChecks.cs)
+        Meals();        // meals and music: the seat a meal is taken to, how long it is eaten, the dance's lift and its cap, every way out, the texts (MealsChecks.cs)
         Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
         return _failed == 0 ? 0 : 1;
     }

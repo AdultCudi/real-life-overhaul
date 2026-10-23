@@ -25,7 +25,9 @@
   <ItemGroup>
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\RouteSearch.cs" Link="Mod\RouteSearch.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Navigation\NavModel.cs" Link="Mod\NavModel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Navigation\NavRoute.cs" Link="Mod\NavRoute.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Navigation\NavBaseRules.cs" Link="Mod\NavBaseRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Navigation\NavBaseRaster.cs" Link="Mod\NavBaseRaster.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\BusBay.cs" Link="Mod\BusBay.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\BusPath.cs" Link="Mod\BusPath.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\Taxi\TaxiRules.cs" Link="Mod\TaxiRules.cs" />
@@ -62,6 +64,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\FitOut\FitRules.cs" Link="Mod\FitRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\FitOut\FitPlanner.cs" Link="Mod\FitPlanner.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\FitOut\FitPlanner.Zones.cs" Link="Mod\FitPlanner.Zones.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\FitOut\FitPlanner.Work.cs" Link="Mod\FitPlanner.Work.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\FitOut\FitPlanner.Walkway.cs" Link="Mod\FitPlanner.Walkway.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\FitOut\DeskReach.cs" Link="Mod\DeskReach.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\WhoseCar.cs" Link="Mod\WhoseCar.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Offices\ConversionRules.cs" Link="Mod\ConversionRules.cs" />

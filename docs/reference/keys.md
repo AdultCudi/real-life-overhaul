@@ -115,6 +115,7 @@ Each feature keeps its state in the save's `modData` under keys that start `real
 | `reallife:sick_until` | `Core/ModState.cs`, `Meta/FeatureList.cs` |
 | `reallife:social` | `Meta/FeatureList.cs`, `Social/SocialState.cs` |
 | `reallife:social_filler` | `Social/News.cs` |
+| `reallife:social_more` | `Social/SocialState.cs` |
 | `reallife:social_news` | `Social/News.cs` |
 | `reallife:social_offer` | `Social/SocialState.cs` |
 | `reallife:social_paper` | `Social/News.cs` |
@@ -191,6 +192,6 @@ A key the game itself has bound is allowed and named beside the button (read fro
 | `LookBehind` | Right mouse (held) | `Camera/ThirdPersonCamera` |
 | `GentleThrottle` | G (held) | `Driving/CarTuning`: the pedal goes no further than half |
 | `PerfProbe`, `PerfBench` | F7, Shift+F7 | `Performance/PerfDirector` |
-| `PhoneDump`, `CharacterReport` | F8, F9 | the two development aids |
+| `CharacterReport` | F9 | the development aid that writes a report of the characters on screen |
 | `PhotoMode` | F10 | `Leisure/Photo/PhotoMode`: into and out of photo mode (its other keys are fixed: `PhotoKeys`) |
 | `Walk` | F3 | `Walking/WalkDirector`: on foot, the game's own walk, and a press again for the usual pace. ContractCheck (`KeyClashChecks.cs`) fails if its default is a key of the game's, the mod's, the system's or another mod's |

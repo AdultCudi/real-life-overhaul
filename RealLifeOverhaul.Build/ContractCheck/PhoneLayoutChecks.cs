@@ -431,7 +431,7 @@ internal static partial class Program
 
     private static void PhoneSources(string scripts)
     {
-        string pager = Read(scripts, "Core/GameUi/PhoneGridPager.cs");
+        string pager = PagerSource(scripts);
         string folders = Read(scripts, "Core/GameUi/PhoneFolders.cs");
         string keys = Read(scripts, "Core/GameUi/PhoneFolderKeys.cs");
         string move = Read(scripts, "Core/GameUi/PhoneMove.cs");

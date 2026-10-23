@@ -42,6 +42,7 @@ namespace RealLifeOverhaul.Economy
         private void Awake()
         {
             Instance = this;
+            GameSprites.Want(AppGlyphs);   // asked for before the one look behind the loading screen (GameSprites.Prewarm)
             BankApp.Logger = Logger;
             _second = EachSecond;
             _onHour = Badges;
@@ -160,9 +161,12 @@ namespace RealLifeOverhaul.Economy
 
         private void Install(EconomyDirector credit)
         {
+            if (!PhoneApp.PhoneUp)
+            {
+                return;   // the game's phone is not built yet: asked again next time, nothing made for it
+            }
             var view = new BankApp(credit, AppId);
             view.Offer(_banks);
-            GameSprites.Want(AppGlyphs);
             bool tryAgain;
             PhoneApp app = PhoneApp.Install(new PhoneAppDef
             {

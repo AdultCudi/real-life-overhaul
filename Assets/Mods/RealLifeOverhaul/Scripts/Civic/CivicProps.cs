@@ -29,9 +29,6 @@ namespace RealLifeOverhaul
             _root.SetParent(parent, false);
         }
 
-        /// <summary>How many are out now.</summary>
-        public int Out { get; private set; }
-
         /// <summary>A prop object, switched on. Null only if the id has neither a model nor a stand-in, or shapes cannot be drawn at all.</summary>
         public Transform Take(string id)
         {
@@ -43,7 +40,6 @@ namespace RealLifeOverhaul
                     if (again != null)
                     {
                         again.gameObject.SetActive(true);
-                        Out++;
                         return again;
                     }
                 }
@@ -60,7 +56,6 @@ namespace RealLifeOverhaul
             renderer.sharedMaterials = kind.Materials;
             renderer.lightProbeUsage = LightProbeUsage.Off;
             renderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
-            Out++;
             return made.transform;
         }
 
@@ -93,7 +88,6 @@ namespace RealLifeOverhaul
                 _shelf[prop.name] = spare;
             }
             spare.Push(prop);
-            Out = Mathf.Max(0, Out - 1);
         }
 
         public void ReturnAll(List<Transform> props)

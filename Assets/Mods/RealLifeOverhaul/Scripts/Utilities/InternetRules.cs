@@ -14,15 +14,8 @@ namespace RealLifeOverhaul.Utilities
     }
 
     /// <summary>
-    /// The rules of the city's internet (InternetCatalogue), game-free and checked by EconomyCheck: where a provider
-    /// reaches, what a plan costs this month, a plan bought and installed, the fee for leaving a contract early, the
-    /// month's price moving, and the outages. Every draw comes from the save's seed, the day and the provider (Draw):
-    /// the same day of the same save always has the same outages and prices, so reloading changes nothing.
-    ///
-    /// The grace period: a save that meets the rule that some businesses cannot open without a connection for the first
-    /// time (the feature newly in it: no utilities line yet, or one from before the internet) gives the businesses it
-    /// already has that need one GraceDays of the game's clock to get connected. Only those places, listed when it
-    /// begins; a business started after that needs a connection from its first day.
+    /// The rules of the city's internet; every draw from the save's seed, the day and the provider, so a reload changes
+    /// nothing. Checked offline (EconomyCheck).
     /// </summary>
     public static class InternetRules
     {
@@ -40,7 +33,6 @@ namespace RealLifeOverhaul.Utilities
 
         private static bool OwnReaches => InternetCatalogue.Own.Districts.Length > 0;
 
-        /// <summary>True if a provider reaches a neighbourhood.</summary>
         public static bool Reaches(int provider, string district)
         {
             Provider p = Get(provider);
@@ -58,7 +50,7 @@ namespace RealLifeOverhaul.Utilities
             return false;
         }
 
-        /// <summary>What a plan costs a month now, cents: its list price for a home or a business, on a contract or month by month, at the provider's month and today's prices.</summary>
+        /// <summary>A plan's price a month now, cents: home or business, contract or not, at the provider's month and today's prices.</summary>
         public static int MonthCents(int provider, int plan, bool business, bool contract, int level, int promo)
         {
             Provider p = Get(provider);
@@ -75,10 +67,7 @@ namespace RealLifeOverhaul.Utilities
             return (int)Math.Min(cents, int.MaxValue / 4);
         }
 
-        /// <summary>
-        /// A plan bought: installed after the catalogue's days, its price held for the contract (or set month by month),
-        /// whatever was owed on the place's connection still owed.
-        /// </summary>
+        /// <summary>A plan bought: installed after InstallDays, its price held for a contract; anything owed stays owed.</summary>
         public static void SignUp(Account a, int provider, int plan, bool business, bool contract, int day, int monthDays, int monthCents)
         {
             a.Service = Service.Internet;
@@ -95,7 +84,7 @@ namespace RealLifeOverhaul.Utilities
             a.OutageFrom = a.OutageUntil = 0;
         }
 
-        /// <summary>The fee for leaving a contract early: half of each month left (a month begun counts), money; nothing out of contract.</summary>
+        /// <summary>Leaving a contract early: half of each month left, a month begun counting, money; nothing out of contract.</summary>
         public static int ExitFee(Account a, int day, int monthDays)
         {
             if (a == null || a.ContractUntil <= day)
@@ -113,7 +102,7 @@ namespace RealLifeOverhaul.Utilities
             return a == null ? 0 : (int)(((long)a.PriceCents + Math.Max(1, monthDays) / 2) / Math.Max(1, monthDays));
         }
 
-        /// <summary>A day of a connection added to the month: its share of the price, or nothing on a day the provider failed it (its service credit).</summary>
+        /// <summary>A day of a connection added to the month; nothing on a day the provider failed it (its service credit).</summary>
         public static void AddDay(Account a, int monthDays, bool outage)
         {
             if (a == null || a.State != SupplyState.Active || outage)
@@ -123,17 +112,13 @@ namespace RealLifeOverhaul.Utilities
             a.Accrued = (int)Math.Min((long)a.Accrued + DayCents(a, monthDays), int.MaxValue / 4);
         }
 
-        /// <summary>True while an outage is on (hours counted from the save's first day: day * 24 + hour).</summary>
+        /// <summary>An outage is on (hours from the save's first day: day * 24 + hour).</summary>
         public static bool InOutage(Account a, int hour)
         {
             return a != null && a.OutageUntil > a.OutageFrom && hour >= a.OutageFrom && hour < a.OutageUntil;
         }
 
-        /// <summary>
-        /// True if an outage was on at any minute from <paramref name="fromMinute"/> to <paramref name="toMinute"/>
-        /// (minutes from the save's first day: day * 1440 + minute). It reads the connection's last outage, which stands
-        /// until the provider's next one is drawn on a later morning, so a span of the same day is always answered.
-        /// </summary>
+        /// <summary>An outage was on at any minute of the span (minutes from the save's first day), by the last outage drawn.</summary>
         public static bool OutageBetween(Account a, int fromMinute, int toMinute)
         {
             if (a == null || a.OutageUntil <= a.OutageFrom)
@@ -144,13 +129,10 @@ namespace RealLifeOverhaul.Utilities
             return toMinute >= from && fromMinute < until;
         }
 
-        /// <summary>
-        /// Why a place's internet was down over some minutes, or that it was up: what other features are told (Wiring).
-        /// Only <see cref="NetDown.Outage"/> is the provider's doing; the rest are the player's own.
-        /// </summary>
+        /// <summary>Why a place's internet was down over some minutes, or up; only <see cref="NetDown.Outage"/> is the provider's doing.</summary>
         public static NetDown Down(Account a, int fromMinute, int toMinute)
         {
-            if (a == null || a.State == SupplyState.Closed)
+            if (a == null)
             {
                 return NetDown.NoPlan;
             }
@@ -163,7 +145,7 @@ namespace RealLifeOverhaul.Utilities
             }
         }
 
-        /// <summary>Whether a provider fails on a day, and when: from an hour of the day for so many hours (half as long on a business plan).</summary>
+        /// <summary>Whether a provider fails on a day, from an hour for so many hours (half as long on a business plan).</summary>
         public static bool Outage(int seed, int day, int provider, bool business, out int fromHour, out int hours)
         {
             fromHour = hours = 0;
@@ -181,7 +163,7 @@ namespace RealLifeOverhaul.Utilities
             return true;
         }
 
-        /// <summary>A provider's next month: a step up or down within the bounds, now and then a promotion that cuts the price.</summary>
+        /// <summary>A provider's next month: a step within the bounds, now and then a promotion's cut.</summary>
         public static int NextPromo(int seed, int month, int provider, int promo)
         {
             int step = Draw(seed, month, provider, 4, 3) - 1;   // down, the same or up
@@ -193,19 +175,13 @@ namespace RealLifeOverhaul.Utilities
             return Math.Max(InternetCatalogue.PromoLeast, Math.Min(InternetCatalogue.PromoMost, next));
         }
 
-        // ---------------------------------------------------------------- the grace period
-
-        /// <summary>
-        /// True for a save meeting the internet for the first time: the state read from it is none (the utilities newly in
-        /// it), or a line written before the internet, which had no seed (every line since has one: it is drawn on the first
-        /// load and kept).
-        /// </summary>
+        /// <summary>A save meeting the internet for the first time: no state, or a line from before it, with no seed.</summary>
         public static bool FirstMeeting(UtilitiesState loaded)
         {
             return loaded == null || loaded.Seed == 0;
         }
 
-        /// <summary>The grace begun today for the places that need a connection now (each once); none if there are none. The number of places it covers.</summary>
+        /// <summary>The grace begun today for the places that need a connection now; how many it covers.</summary>
         public static int BeginGrace(UtilitiesState s, IList<string> places, int today)
         {
             s.Grace.Clear();
@@ -220,23 +196,19 @@ namespace RealLifeOverhaul.Utilities
             return s.Grace.Count;
         }
 
-        /// <summary>True if a place may open without a connection today: one the grace covers, before it ends.</summary>
+        /// <summary>A place the grace covers may open without a connection before it ends.</summary>
         public static bool InGrace(UtilitiesState s, string place, int today)
         {
             return s != null && place != null && today < s.GraceUntil && s.Grace.Contains(place);
         }
 
-        /// <summary>The days of the grace left, today counted (GraceDays on the day it begins, 1 on its last); 0 with none.</summary>
+        /// <summary>The grace's days left, today counted; 0 with none.</summary>
         public static int GraceLeft(UtilitiesState s, int today)
         {
             return s == null || s.Grace.Count == 0 ? 0 : Math.Max(0, s.GraceUntil - today);
         }
 
-        /// <summary>
-        /// The clock moved from the day last seen to today without those days being played: a step back, or, where the
-        /// clock is a session's (Going Public: a guest's clock is set to the host's as they join), a leap of more than a
-        /// day. The grace moves with it and keeps the days it had left. True if it moved.
-        /// </summary>
+        /// <summary>The clock moved without the days played (a step back, a guest joining a host): the grace keeps its days left.</summary>
         public static bool MoveGrace(UtilitiesState s, int seen, int today, bool sessionClock)
         {
             int step = today - seen;
@@ -248,7 +220,7 @@ namespace RealLifeOverhaul.Utilities
             return true;
         }
 
-        /// <summary>The grace over by today: ended and forgotten. True on the day it ends (to tell the player once).</summary>
+        /// <summary>The grace over by today, ended and forgotten; true on the day it ends, to tell the player once.</summary>
         public static bool EndGrace(UtilitiesState s, int today)
         {
             if (s == null || s.GraceUntil <= 0 || today < s.GraceUntil)

@@ -2,36 +2,21 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using BAModAPI;
-using UI.Smartphone.Apps.Contacts;
 using Unity.Collections;
 using UnityEngine;
 
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The pictures of the mod's phone contacts, from the game's own assets: a person's face from the game's portrait
-    /// camera, an organisation's logo from the game's own logo shapes (ContactCatalogue says which is which). Every
-    /// feature that adds a contact asks here (<see cref="Add"/>, or <see cref="Person"/> for someone whose look it knows),
-    /// and nothing else of the mod draws a contact picture.
-    ///
-    /// HOW THE GAME FINDS A PICTURE. The Contacts app looks a contact's picture up by the contact's id among the sprites of
-    /// GlobalReferences.contactIcons (ContactsApp.GetPredefinedContactIcon), and copies that list into a dictionary of its
-    /// own the first time it looks, never again (ContactsApp.PredefinedContactIconSprites, static for the whole run). So
-    /// each contact has ONE sprite for the whole session, named by its id, put in both places when the contact is added:
-    /// the list for a Contacts app that has not looked yet, the dictionary (one field, read once) for one that has. The
-    /// picture is then painted into that same sprite's texture when it is ready, so the app shows it without being told.
-    ///
-    /// COST. Adding a contact: a look through the list (a few dozen sprites) and one texture of 256 x 256, filled with its
-    /// colour in the texture's own memory (it used to be a new array of 256 KB for each: eight contacts set up in one frame
-    /// made exactly 2 MB of garbage on a heap of 800 MB). The painting is
-    /// done by <see cref="ContactPainter"/>, one picture at a time, spread over seconds; nothing runs while there is
-    /// nothing to paint. A face is drawn once per look ever: it is kept as a JPEG in the portrait cache and read from there
-    /// on every later load.
+    /// The pictures of the mod's phone contacts, from the game's own assets (<see cref="ContactCatalogue"/>). The Contacts
+    /// app finds a picture by the contact's id in GlobalReferences.contactIcons and copies that list once into a static
+    /// dictionary, so each contact has one sprite for the session in both places, painted later by
+    /// <see cref="ContactPainter"/>. Cost: adding a contact looks through a few dozen sprites and fills one texture.
     /// </summary>
     public static class ContactPictures
     {
-        public const int Size = 256;                    // pixels: the game's own portraits are 256 x 256 (PortraitGenerator.widthPixels)
-        private static readonly Color32 Waiting = new Color32(86, 96, 108, 255);   // a face's square until it is drawn: the game's dark grey of a panel
+        public const int Size = 256;                    // pixels, as the game's own portraits
+        private static readonly Color32 Waiting = new Color32(86, 96, 108, 255);   // a face's square until it is drawn: the game's panel grey
 
         public static IModLogger Logger;
 
@@ -49,7 +34,7 @@ namespace RealLifeOverhaul
         }
 
         private static readonly Dictionary<string, Picture> Pictures = new Dictionary<string, Picture>(48, StringComparer.Ordinal);
-        private static FieldInfo _predefined;   // ContactsApp.PredefinedContactIconSprites (private static)
+        private static FieldInfo _predefined;   // ContactsApp.PredefinedContactIconSprites, private static
         private static bool _predefinedLooked;
         private static readonly HashSet<string> Unknown = new HashSet<string>(StringComparer.Ordinal);
 
@@ -71,18 +56,18 @@ namespace RealLifeOverhaul
                 string save = SaveKey();
                 if (Pictures.TryGetValue(id, out p) && p.Described != null && p.Described == save)
                 {
-                    Ensure(p);   // a person a feature has described in this save (Mom and Alex of the social life): their own look stands
+                    Ensure(p);   // a person a feature described in this save keeps their own look
                     return;
                 }
-                Set(id, look, look.Kind != PictureKind.Person ? 0 : look.Seed != 0 ? look.Seed : ContactCatalogue.Seed(id, save), null);   // (Mom and Alex: one face in every game)
+                Set(id, look, look.Kind != PictureKind.Person ? 0 : look.Seed != 0 ? look.Seed : ContactCatalogue.Seed(id, save), null);
             }
             catch (Exception e)
             {
-                Logger?.Error(e);   // (a contact without its picture still works: the game shows its own empty square)
+                Logger?.Error(e);   // a contact without its picture still works: the game shows its empty square
             }
         }
 
-        /// <summary>A person whose look another feature gives (the same sex, age and seed it builds them in the city from): their own face.</summary>
+        /// <summary>A person whose look another feature gives (the sex, age and seed it builds them from): their own face.</summary>
         public static void Person(string id, bool female, int age, int seed)
         {
             try
@@ -134,7 +119,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The sprite is where the game looks for it: in GlobalReferences' list, and in the Contacts app's own dictionary once that has been filled.
+        // Where the game looks: GlobalReferences' list, and the Contacts app's dictionary once that is filled.
         private static void Ensure(Picture p)
         {
             var references = InstanceBehavior<GlobalReferences>.Instance;
@@ -159,13 +144,13 @@ namespace RealLifeOverhaul
                 }
                 else if (icons[at] != p.Sprite)
                 {
-                    icons[at] = p.Sprite;   // a sprite of an earlier version's (a coloured disc): this picture takes its place
+                    icons[at] = p.Sprite;   // an older sprite under this id gives way to this picture
                 }
             }
             Dictionary<string, Sprite> cached = Predefined();
             if (cached != null && cached.Count > 0)
             {
-                cached[p.Id] = p.Sprite;   // (an empty dictionary is filled from the list above the first time the app looks)
+                cached[p.Id] = p.Sprite;   // an empty dictionary is filled from the list the first time the app looks
             }
         }
 
@@ -174,17 +159,18 @@ namespace RealLifeOverhaul
             if (!_predefinedLooked)
             {
                 _predefinedLooked = true;
-                _predefined = GameContract.ContactIcons.Field;   // (resolved once: Core/GameContract)
+                _predefined = GameContract.ContactIcons.Field;
                 if (_predefined == null || _predefined.FieldType != typeof(Dictionary<string, Sprite>))
                 {
                     _predefined = null;
-                    Logger?.Warn("Contacts: the Contacts app keeps its pictures in another way in this version of the game; a contact added after the app was first opened shows its picture from the next load.");
+                    Logger?.Warn("Contacts: the Contacts app keeps its pictures in another way in this version of the game; "
+                                 + "a contact added after the app was first opened shows its picture from the next load.");
                 }
             }
             return _predefined != null ? _predefined.GetValue(null) as Dictionary<string, Sprite> : null;
         }
 
-        // The square in one colour, written into the texture's own memory (no array of our own), then sent to the graphics card.
+        // Written into the texture's own memory, then sent to the graphics card.
         internal static void Fill(Texture2D texture, Color32 colour)
         {
             NativeArray<Color32> pixels = texture.GetPixelData<Color32>(0);
@@ -195,7 +181,7 @@ namespace RealLifeOverhaul
             texture.Apply(false, false);
         }
 
-        /// <summary>Test: one line per contact picture in Player.log (what it is, what it is drawn from, whether it is drawn), and a notice.</summary>
+        /// <summary>Test: one line per contact picture in Player.log, and a notice.</summary>
         public static void TestReport()
         {
             try
@@ -219,7 +205,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Test: every face is drawn again by the game's portrait camera (the portrait cache's files of them are deleted first).</summary>
+        /// <summary>Test: every face is drawn again, its cached file deleted first.</summary>
         public static void TestRedraw()
         {
             try

@@ -3,13 +3,7 @@ using System.Text.RegularExpressions;
 
 namespace RealLifeOverhaul.Street
 {
-    /// <summary>
-    /// Which card of RLO Texts words a line of street talk (Wiring/StreetTexts asks it): data v4's own (TextIntents.Street.cs,
-    /// a branch per outcome; data v5's for a data 5 pack, the lines written until then too) and, for a v3 pack, what of data
-    /// v3 fits; the stranger's role, the mood leaned the way the game decided, the card's moment, whether the stranger knows
-    /// the player's name, and the words never shown because they speak of chat rather than of speech. Game-free
-    /// (EconomyCheck, StreetTalkChecks.cs: every line's card is registered and is the generator's). COST: a switch.
-    /// </summary>
+    /// <summary>Which card of RLO Texts words a line of street talk, and the model's words made fit to be said. Game-free. COST: a switch.</summary>
     public static class StreetCards
     {
         private static readonly Regex Chat = new Regex(@"\b(flare|messages?|dms?|inbox|followers?|following|posts?|posted|online|app|text me|texting|emoji|profile)\b|@",
@@ -92,15 +86,11 @@ namespace RealLifeOverhaul.Street
                 case StreetLine.Tired: return "street.tired";
                 case StreetLine.Bye: branch = "warm"; lean = 1; return "street.bye";
                 case StreetLine.ByeCool: branch = "cool"; lean = -1; return "street.bye";
-                default: return null;   // (waiting, the question of where to: always written)
+                default: return null;   // waiting, the question of where to: always written
             }
         }
 
-        /// <summary>
-        /// The card of data v5 for a line (a data 5 pack): v4's, and the lines v4 had no card for (TextIntents.Street.cs V5):
-        /// how their day is going (leaning with it), the street event, their work, thanks (warmly when the talk so far was
-        /// friendly enough: <paramref name="warmThanks"/>, StreetRules.WarmThanks), and hello again. Null: written.
-        /// </summary>
+        /// <summary>The card of data v5 for a line: v4's, and the lines v4 had no card for. Null: written.</summary>
         public static string V5(StreetLine line, bool warmThanks, out string branch, out int lean)
         {
             branch = null;
@@ -121,16 +111,13 @@ namespace RealLifeOverhaul.Street
             }
         }
 
-        /// <summary>The card of a line for a pack of this data version: data v5's for a data 5 pack, else v4's (a v3 pack is never asked either).</summary>
+        /// <summary>The card of a line for a pack of this data version (a v3 pack is never asked this).</summary>
         public static string ByData(StreetLine line, int data, bool warmThanks, out string branch, out int lean)
         {
             return data >= Texts.TextIntents.DataV5 ? V5(line, warmThanks, out branch, out lean) : V4(line, out branch, out lean);
         }
 
-        /// <summary>
-        /// The card's moment (defs_v5.moment_of) from its weekday (0 Monday ... 6 Sunday) and hour: a weekday's rush hours,
-        /// then the night, a weekend's day, the morning and the evening; null for the rest of the day (the fact left out).
-        /// </summary>
+        /// <summary>The card's moment (defs_v5.moment_of) from the weekday (0 Monday) and hour; null when there is none.</summary>
         public static string Moment(int weekday, int hour)
         {
             bool weekend = weekday >= 5;
@@ -153,15 +140,10 @@ namespace RealLifeOverhaul.Street
             return hour >= 17 ? "evening" : null;
         }
 
-        /// <summary>
-        /// Whether a stranger knows the player's name: only when the player told them (in this talk, or earlier today), or
-        /// they know the player's face as a well-known or a disliked business owner. Never because they gave their own name
-        /// or numbers were swapped. The card says so ("you know their name: yes"), and words that name the player otherwise
-        /// lose the name or are not shown (<see cref="Spoken"/>).
-        /// </summary>
+        /// <summary>Whether a stranger knows the player's name: told today, or famed; never for their own name given or numbers swapped.</summary>
         public static bool KnowsName(bool famed, bool askedName, bool toldToday) => famed || askedName || toldToday;
 
-        /// <summary>The card of data v3 that fits a line until a v4 pack is trained (its branch none), and the mood's lean; null for the written line.</summary>
+        /// <summary>The card of data v3 that fits a line, and the mood's lean; null for the written line.</summary>
         public static string V3(StreetLine line, out string reason, out int lean)
         {
             reason = null;
@@ -186,7 +168,7 @@ namespace RealLifeOverhaul.Street
             }
         }
 
-        /// <summary>The stranger's role on a v4 card: the generator's own two (somebody met earlier today on the branches that say so).</summary>
+        /// <summary>The stranger's role on a v4 card, one of the generator's own two.</summary>
         public static string Role(string intent, string branch)
         {
             bool again = (intent == "street.greet" && branch == "again") || (intent == "street.name" && branch == "known") || (intent == "street.number" && branch == "already")
@@ -197,18 +179,13 @@ namespace RealLifeOverhaul.Street
         /// <summary>Today's mood leaned the way the game decided (-2 a rough day ... 2 a great one).</summary>
         public static int Leaned(int mood, int lean) => lean > 0 ? Math.Max(0, mood) : lean < 0 ? Math.Min(0, mood) : mood;
 
-        /// <summary>Words that speak of chat rather than of speech (the v3 cards are a Flare message's): never shown.</summary>
+        /// <summary>True for words that speak of chat rather than of speech (the v3 cards are a Flare message's): never shown.</summary>
         public static bool Chatty(string words) => words != null && Chat.IsMatch(words);
 
-        /// <summary>
-        /// The lines no card of data v4 words (always written for a pack before data 5): the "go on" between choices, the
-        /// question of where to, and the answers v4 was not trained for (data v5 was: see <see cref="V5"/>). Tried offline on the 2B v4 model, the nearest cards answered how their day is going
-        /// with small talk about the remark, whether they like their work with their job and district again, and thanks with
-        /// "That's interesting" or a goodbye; written lines say them right until a pack is trained on them.
-        /// </summary>
+        /// <summary>The lines no card of data v4 words: the v4 model's nearest cards answered them wrongly.</summary>
         public static bool Written(StreetLine line) => Written(line, Texts.TextIntents.DataV4);
 
-        /// <summary>The lines always written for a pack of this data version: for data 5 only the "go on" and the question of where to.</summary>
+        /// <summary>The lines always written for a pack of this data version.</summary>
         public static bool Written(StreetLine line, int data)
         {
             if (data >= Texts.TextIntents.DataV5)
@@ -229,11 +206,8 @@ namespace RealLifeOverhaul.Street
         private static readonly Regex Starts = new Regex(@"([.?]\s+)([a-z])", RegexOptions.CultureInvariant);
 
         /// <summary>
-        /// The model's words made fit to be said by a stranger: a sentence that starts in lower case gets its capital (the 2B
-        /// v4 model puts a slot's words after a full stop as they are: "on 5th Avenue. off to your right"), and when the
-        /// player's name was not told to them (<paramref name="untold"/>, else null) the name said in passing goes ("What do
-        /// you want, Sam?" to "What do you want?"; "Sam, hello." to "Hello."). Null when the name is still in them otherwise:
-        /// then the written line. COST: a few short regular expressions on a line, when its words come.
+        /// The model's words made fit to be said: each sentence capitalised (the v4 model leaves a slot's words in lower case),
+        /// an <paramref name="untold"/> name said in passing taken out; null when the name is still in them.
         /// </summary>
         public static string Spoken(string words, string untold)
         {
@@ -257,11 +231,7 @@ namespace RealLifeOverhaul.Street
             return w.Length > 0 && char.IsLower(w[0]) ? char.ToUpperInvariant(w[0]) + w.Substring(1) : w;
         }
 
-        /// <summary>
-        /// The model's last lines across all strangers (<see cref="Most"/>): the 2B v4 model greets most warm strangers with
-        /// the same line, so one another stranger said lately is not said again (the written line instead). Game-free; kept
-        /// for the session. COST: a pass over a few short strings, when words come.
-        /// </summary>
+        /// <summary>The model's last lines across all strangers: the v4 model greets most of them alike, so one said lately is not said again.</summary>
         public sealed class Echoes
         {
             public const int Most = 8;   // lines remembered: about two conversations' worth
@@ -269,7 +239,7 @@ namespace RealLifeOverhaul.Street
             private readonly string[] _said = new string[Most];
             private int _next;
 
-            /// <summary>True if one of the last lines is these words (letters and spaces alike, case aside).</summary>
+            /// <summary>True if one of the last lines is these words, case aside.</summary>
             public bool Heard(string words)
             {
                 for (int i = 0; i < Most; i++)

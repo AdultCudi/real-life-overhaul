@@ -5,9 +5,8 @@ using RealLifeOverhaul.Meta;
 namespace RealLifeOverhaul.Photos
 {
     /// <summary>
-    /// The Camera and the Gallery in the mod's feature list, and the figures their Guide page prints: every {name} in its
-    /// text is filled from the rules here (PhotoStoreRules, CameraRules), so the page can never say anything the apps do not
-    /// do. Called once, when the feature list is built (Meta/FeatureList); each figure is worked out when the page is opened.
+    /// The Camera and the Gallery in the mod's feature list, with the figures their Guide page prints, read from the rules
+    /// so the page cannot drift from the apps. Registered once; each figure is worked out when the page opens.
     /// </summary>
     public static class PhotosGuide
     {
@@ -31,10 +30,9 @@ namespace RealLifeOverhaul.Photos
         }
     }
 
-    /// <summary>The Camera and the Gallery's place on the options page, under the mod's own namespace so that it is one line there.</summary>
+    /// <summary>The Camera and the Gallery's block on the options page: its two switches and the test buttons.</summary>
     public static class PhotosOptions
     {
-        /// <summary>The "Camera and Gallery" block of the options page: its two switches and the test buttons.</summary>
         public static ModOptions AddPhotos(this ModOptions options)
         {
             return options

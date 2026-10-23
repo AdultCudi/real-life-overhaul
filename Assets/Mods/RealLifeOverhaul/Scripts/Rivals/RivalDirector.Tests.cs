@@ -4,13 +4,10 @@ using UI.Notification;
 namespace RealLifeOverhaul.Rivals
 {
     /// <summary>
-    /// The test buttons of the rival tycoons (Options > Tests). Each does at once what otherwise waits for the late game:
-    /// one for each kind of move (announced, then come at once, through the very code a day's move goes through), a move
-    /// by the rules' own pick, all three tycoons forward, the rich list in the City Ledger, a takeover with nothing paid,
-    /// and "put the rivals back", which puts the rivals' own file back as before the first test of the session and
-    /// withdraws a test's claim. A test's stake, bid, offer, inspection and smear are the market's, the company's and
-    /// business pressure's own and are not undone: their buttons say "real". The copy from before the tests is kept under
-    /// <see cref="RivalStore.TestKey"/> for this session alone. A button that cannot do its work says why in a notice.
+    /// The rivals, part: the test buttons (Options > Tests), each doing at once what waits for the late game, through the
+    /// code a day's move goes through. "Put the rivals back" restores the file from before the first test of the session
+    /// (<see cref="RivalStore.TestKey"/>) and withdraws a test's claim; a test's stake, bid, offer, inspection and smear
+    /// are other features' own and stay, as their buttons say.
     /// </summary>
     public sealed partial class RivalDirector
     {
@@ -110,7 +107,7 @@ namespace RealLifeOverhaul.Rivals
             }
         }
 
-        /// <summary>"Test: a rival's move" of one kind: announced by the first tycoon forward (the first comes forward if none has), and come at once.</summary>
+        /// <summary>"Test: a rival's move" of one kind: announced by the first tycoon forward (one comes forward if needed) and come at once.</summary>
         public void TestMove(RivalMoveKind kind)
         {
             string test = "A rival's move (" + kind + ")";
@@ -159,7 +156,7 @@ namespace RealLifeOverhaul.Rivals
             });
         }
 
-        /// <summary>"Test: the next move": the rules pick a tycoon and a move now, as on a day the gap is over (announced, to come in its days).</summary>
+        /// <summary>"Test: the next move": the rules pick a tycoon and a move now, announced as on a day the gap is over.</summary>
         public void TestAnnounce()
         {
             const string Test = "The rivals' next move";
@@ -285,7 +282,7 @@ namespace RealLifeOverhaul.Rivals
                     RivalMove m = _file.Moves[i];
                     if (m.Test && m.Kind == RivalMoveKind.Suit && m.Second > 0 && RivalBridges.Withdraw != null && RivalBridges.Withdraw((int)m.Second))
                     {
-                        withdrawn++;   // (a test's claim is withdrawn; a stake, a bid, an offer, an inspection and a smear are the market's, the company's and business pressure's own, and stay: their buttons say so)
+                        withdrawn++;
                     }
                 }
                 RivalFile back = RivalStore.Read(_beforeTests, out int _);

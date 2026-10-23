@@ -1,6 +1,5 @@
 using System;
 using System.Collections;
-using System.Reflection;
 using BAModAPI;
 using BigAmbitions.Mods;
 using BigAmbitions.ModsInternal;
@@ -21,12 +20,12 @@ namespace RealLifeOverhaul
         GentleThrottle,    // held: half throttle at most
         PerfProbe,
         PerfBench,
-        PhoneDump,
         CharacterReport,
         PhotoMode,          // into and out of photo mode (Leisure/Photo)
         Walk,               // on foot: walk, and press again for the game's own pace (Walking/WalkDirector)
     }
 
+    /// <summary>The modifier a key is bound with.</summary>
     public enum KeyModifier
     {
         None,
@@ -36,11 +35,9 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The one place that knows which key does what. Every key test in the mod goes through
-    /// <see cref="Down"/> or <see cref="Held"/> (one engine call each), every text that names a key through
-    /// <see cref="Label"/>. Bindings are saved in PlayerPrefs under the mod's own key format and changed on
-    /// the options page ("Controls"): a button per action that waits for the next key, and a reset button.
-    /// A key the game itself uses is allowed, and said so beside the button.
+    /// The one place that knows which key does what: every key test goes through <see cref="Down"/> or
+    /// <see cref="Held"/> (one engine call each), every text naming a key through <see cref="Label"/>. Bindings are
+    /// saved in PlayerPrefs and changed on the options page; a key the game also uses is allowed, and said so.
     /// </summary>
     public static class Keys
     {
@@ -52,7 +49,7 @@ namespace RealLifeOverhaul
             public readonly KeyModifier DefaultModifier;
             public KeyCode Key;
             public KeyModifier Modifier;
-            public KeyModifier Unless;            // another action has this key with that modifier: this one yields while it is held
+            public KeyModifier Unless;            // another action has this key with this modifier: this one yields while it is held
             public string Label;
 
             public Binding(string id, string labelKey, KeyCode key, KeyModifier modifier = KeyModifier.None)
@@ -75,10 +72,9 @@ namespace RealLifeOverhaul
             new Binding("gentle_throttle", "reallife_keys_gentle_throttle", KeyCode.G),
             new Binding("perf_probe", "reallife_keys_perf_probe", KeyCode.F7),
             new Binding("perf_bench", "reallife_keys_perf_bench", KeyCode.F7, KeyModifier.Shift),
-            new Binding("phone_dump", "reallife_keys_phone_dump", KeyCode.F8),
             new Binding("character_report", "reallife_keys_character_report", KeyCode.F9),
             new Binding("photo_mode", "reallife_keys_photo_mode", KeyCode.F10),
-            new Binding("walk", "reallife_keys_walk", KeyCode.F3),   // nothing of the game's, the mod's or the system's (ContractCheck, KeyClashChecks.cs)
+            new Binding("walk", "reallife_keys_walk", KeyCode.F3),   // free of the game, the mod and the system (ContractCheck)
         };
 
         private static readonly TextLocalizationComponent[] Rows = new TextLocalizationComponent[All.Length];
@@ -98,37 +94,33 @@ namespace RealLifeOverhaul
             Refresh();
         }
 
-        /// <summary>True in the frame the action's key goes down (with its modifier, if it has one).</summary>
+        /// <summary>True in the frame the action's key goes down, with its modifier if it has one.</summary>
         public static bool Down(KeyAction action)
         {
             Binding binding = All[(int)action];
             return !_capturing && !Suspended && !Off[(int)action] && Input.GetKeyDown(binding.Key) && Modified(binding);
         }
 
-        /// <summary>True while the action's key is held.</summary>
         public static bool Held(KeyAction action)
         {
             Binding binding = All[(int)action];
             return !_capturing && !Suspended && !Off[(int)action] && Input.GetKey(binding.Key) && Modified(binding);
         }
 
-        // ---------------------------------------------------------------- for Meta (the guide, the diagnostics switch)
-
         private static readonly bool[] Off = new bool[All.Length];
 
-        /// <summary>While true no action fires: one of the mod's own panels (the guide) has the keyboard.</summary>
+        /// <summary>While true no action fires: one of the mod's own panels has the keyboard.</summary>
         public static bool Suspended;
 
-        /// <summary>How many actions there are, for anything that lists them.</summary>
         public static int Count => All.Length;
 
-        /// <summary>The en.json key of the action's name, as on the options page.</summary>
+        /// <summary>The locale key of the action's name, as on the options page.</summary>
         public static string LabelKey(KeyAction action)
         {
             return All[(int)action].LabelKey;
         }
 
-        /// <summary>Is this the en.json key of one of the actions: the label of a row that changes a key.</summary>
+        /// <summary>True for the locale key of one of the actions: the label of a row that changes a key.</summary>
         public static bool IsActionLabel(string key)
         {
             if (!string.IsNullOrEmpty(key))
@@ -150,7 +142,7 @@ namespace RealLifeOverhaul
             return "key_" + All[(int)action].Id;
         }
 
-        /// <summary>Switches one action off or on again without touching its binding (the developer diagnostics).</summary>
+        /// <summary>Switches one action off or on again without touching its binding, for the developer diagnostics.</summary>
         public static void SetOff(KeyAction action, bool off)
         {
             Off[(int)action] = off;
@@ -162,7 +154,7 @@ namespace RealLifeOverhaul
             return Input.GetKeyDown(KeyCode.Escape);
         }
 
-        /// <summary>Lines to scroll this frame: the arrow keys one, Page Up and Page Down thirty; plus or minus a thousand for Home and End.</summary>
+        /// <summary>Lines to scroll this frame: one for an arrow, thirty for a page, a thousand for Home or End.</summary>
         public static int PanelScroll()
         {
             if (!Input.anyKey)
@@ -188,12 +180,6 @@ namespace RealLifeOverhaul
             return Input.GetKey(KeyCode.UpArrow) ? -1 : Input.GetKey(KeyCode.DownArrow) ? 1 : 0;
         }
 
-        /// <summary>What was typed this frame (the guide's search), or null. Only read while a panel is open.</summary>
-        public static string PanelTyped()
-        {
-            return Input.anyKeyDown ? Input.inputString : null;
-        }
-
         /// <summary>What to call the action's key in a prompt: "F", "Shift+F7", "Right mouse".</summary>
         public static string Label(KeyAction action)
         {
@@ -206,7 +192,7 @@ namespace RealLifeOverhaul
             return All[(int)action].Key;
         }
 
-        /// <summary>The modifier the action's key is bound with (None for the key alone).</summary>
+        /// <summary>The modifier the action's key is bound with; None for the key alone.</summary>
         public static KeyModifier Modifier(KeyAction action)
         {
             return All[(int)action].Modifier;
@@ -230,9 +216,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- saved bindings
-
-        /// <summary>Reads the saved bindings. Called once at game start, with the other options.</summary>
+        /// <summary>Reads the saved bindings, once at game start with the other options.</summary>
         public static void Load(string modId)
         {
             _modId = modId;
@@ -268,7 +252,6 @@ namespace RealLifeOverhaul
             Logger?.Info("Keys: " + binding.Id + " is now " + binding.Label + ".");
         }
 
-        /// <summary>Every action back on the key it shipped with.</summary>
         public static void ResetAll()
         {
             foreach (Binding binding in All)
@@ -284,7 +267,7 @@ namespace RealLifeOverhaul
             Logger?.Info("Keys: all back to their defaults.");
         }
 
-        // Same key format the game uses when it saves mod options.
+        // The key format the game uses for mod options.
         private static string PrefsKey(Binding binding) => "m:" + _modId + ":key_" + binding.Id;
 
         // After any change: the labels, and which plain binding must yield to a modified one on the same key.
@@ -311,7 +294,7 @@ namespace RealLifeOverhaul
             {
                 ShowRow((KeyAction)i, false);
             }
-            EmpireView.KeysChanged();   // the camera key moved off V: Empire Motors' view on V is switched on again (Camera/EmpireView)
+            EmpireView.KeysChanged();   // with the camera key off V, Empire Motors' view on V comes back
         }
 
         private static string KeyName(KeyCode key)
@@ -350,17 +333,15 @@ namespace RealLifeOverhaul
             return key.ToString();
         }
 
-        // ---------------------------------------------------------------- the options page
-
-        /// <summary>The "Controls" group: the reset button, then one rebind button per action.</summary>
         private static Action _reset;
 
+        /// <summary>The "Controls" group: the reset button, then one rebind button per action.</summary>
         public static ModOptions AddControls(this ModOptions options)
         {
             if (!_hooked)
             {
                 _hooked = true;
-                _reset = _reset ?? Guard.Way(ResetAll);   // (made once, through the guard: Core/Guard)
+                _reset = _reset ?? Guard.Way(ResetAll);   // made once
                 OptionsService.OnReset += _reset;   // the game's own "reset all options"
             }
             options.AddHeader("reallife_keys_header");
@@ -373,7 +354,6 @@ namespace RealLifeOverhaul
             return options.AddSplitter();
         }
 
-        /// <summary>The mod is being unloaded.</summary>
         public static void Dispose()
         {
             if (_hooked)
@@ -385,12 +365,12 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// One action's row. The options builder has no key control, so the row is a copy of one of the
-        /// page's own buttons: its label is the action, followed by the key ("Free the cursor:  Left Alt").
+        /// One action's row: the options builder has no key control, so it is a copy of one of the page's buttons,
+        /// the action followed by its key ("Free the cursor:  Left Alt").
         /// </summary>
         private sealed class RebindOption : ModOption
         {
-            private static readonly FeatureGuard FrameGuard = Guard.For("keys", "Keys.RebindOption", typeof(RebindOption));   // the game's calls of it (Core/Guard)
+            private static readonly FeatureGuard FrameGuard = Guard.For("keys", "Keys.RebindOption", typeof(RebindOption));   // the game's calls of it
 
             private readonly KeyAction _action;
 
@@ -431,31 +411,28 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// Told each time a key's row is written again: while a new key is waited for (true), and when it is chosen or the
-        /// wait ends (false). The Settings app listens while it is open.
-        /// </summary>
+        /// <summary>Told each time a key's row is written again, true while a new key is waited for; the Settings app listens.</summary>
         public static Action<KeyAction, bool> RowShown;
 
-        /// <summary>Waits for the next key for an action, as its row on the Mods tab does when clicked: Esc, or eight seconds, keep the key it has.</summary>
+        /// <summary>Waits for the next key for an action, as its row does when clicked; Esc or eight seconds keep the old key.</summary>
         public static void Rebind(KeyAction action)
         {
             KeyCapture.Begin(action);
         }
 
-        /// <summary>The key an action has now, and the game's or another mod's use of the same key when there is one: what its row shows.</summary>
+        /// <summary>What an action's row shows: its key, and the game's or another mod's use of it.</summary>
         public static string RowText(KeyAction action)
         {
             string clash = Clash(action, "   (", ")");
             return clash == null ? All[(int)action].Label : All[(int)action].Label + clash;
         }
 
-        /// <summary>Who else acts on an action's key ("the game also uses it: Sleep"), each part between the two words given; null when nobody does.</summary>
+        /// <summary>Who else acts on an action's key ("the game also uses it: Sleep"), each part between the words given; null when nobody.</summary>
         public static string Clash(KeyAction action, string before, string after)
         {
             Binding binding = All[(int)action];
             string used = GameUse(binding.Key);
-            string other = EmpireMotors.KeyUse(binding.Key, binding.Modifier);   // another author's mod that acts on the key by itself (Core/EmpireMotors)
+            string other = EmpireMotors.KeyUse(binding.Key, binding.Modifier);
             if (used == null && other == null)
             {
                 return null;
@@ -464,7 +441,7 @@ namespace RealLifeOverhaul
             return other != null ? text + before + other.GetLocalization() + after : text;
         }
 
-        // Writes the key (or "press a key") after the action's name on its button, if the page is open, and tells the Settings app.
+        // Writes the key, or "press a key", after the action's name on its button, and tells the Settings app.
         private static void ShowRow(KeyAction action, bool waiting)
         {
             RowShown?.Invoke(action, waiting);
@@ -476,12 +453,10 @@ namespace RealLifeOverhaul
             row.Suffix = ":  " + (waiting ? "reallife_keys_press".GetLocalization() : RowText(action));
         }
 
-        // ---------------------------------------------------------------- waiting for a key
-
-        /// <summary>Exists only between a click on a rebind button and the next key (or eight seconds).</summary>
+        /// <summary>Exists only between a click on a rebind button and the next key. COST: a key scan a frame while it lives.</summary>
         private sealed class KeyCapture : MonoBehaviour
         {
-            private static readonly FeatureGuard FrameGuard = Guard.For("keys", "Keys.KeyCapture", typeof(Keys.KeyCapture));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+            private static readonly FeatureGuard FrameGuard = Guard.For("keys", "Keys.KeyCapture", typeof(Keys.KeyCapture));
 
             private static readonly KeyCode[] Codes = (KeyCode[])Enum.GetValues(typeof(KeyCode));
             private static KeyCapture _live;
@@ -523,7 +498,7 @@ namespace RealLifeOverhaul
                 using var hotSpot = HotSpots.Time(HotUpdate);
                 if (FrameGuard.Off)
                 {
-                    enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                    enabled = false;   // switched off after its faults
                     return;
                 }
                 try
@@ -612,9 +587,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- the game's own keys
-
-        // The game's defaults, for when its live bindings cannot be read (before its input is set up).
+        // The game's defaults, for when its live bindings cannot be read.
         private static readonly KeyCode[] KnownKeys =
         {
             KeyCode.W, KeyCode.A, KeyCode.S, KeyCode.D, KeyCode.UpArrow, KeyCode.DownArrow, KeyCode.LeftArrow, KeyCode.RightArrow,
@@ -633,7 +606,7 @@ namespace RealLifeOverhaul
             "VehicleRightBlinker", "VehicleLeftBlinker", "VehicleHorn", "Handbrake"
         };
 
-        /// <summary>The game action that is on this key (as the player has it bound now), or null.</summary>
+        /// <summary>The game action on this key as the player has it bound now, or null.</summary>
         private static string GameUse(KeyCode key)
         {
             if (key == KeyCode.None)
@@ -645,7 +618,7 @@ namespace RealLifeOverhaul
                 string path = InputPath(key, false);
                 string either = InputPath(key, true);
                 bool read = false;
-                object player = GameContract.PlayerInput.Field?.GetValue(null);   // (resolved once: Core/GameContract)
+                object player = GameContract.PlayerInput.Field?.GetValue(null);
                 object vehicle = GameContract.VehicleInput.Field?.GetValue(null);
                 string found = Bound(player, "Player", path, either, ref read) ?? Bound(vehicle, null, path, either, ref read);
                 if (read)
@@ -655,14 +628,13 @@ namespace RealLifeOverhaul
             }
             catch (Exception)
             {
-                // The input layer is not what it was: the list below still warns about the game's defaults.
+                // the input layer is not what it was: the defaults below still warn
             }
             int known = Array.IndexOf(KnownKeys, key);
             return known >= 0 ? KnownUses[known] : null;
         }
 
-        // Looks through the bindings of the game's generated input wrapper without naming the input system's types,
-        // which this assembly does not reference. Only run when a rebind button is drawn.
+        // By reflection: this assembly does not reference the input system. Only when a rebind button is drawn.
         private static string Bound(object wrapper, string onlyMap, string path, string either, ref bool read)
         {
             object asset = wrapper?.GetType().GetProperty("asset")?.GetValue(wrapper);
@@ -699,8 +671,6 @@ namespace RealLifeOverhaul
             return null;
         }
 
-        // The input system's name for a key: "<Keyboard>/f", "<Mouse>/rightButton". "either" gives the name that
-        // covers both of a pair ("<Keyboard>/shift"). One rule for the page and the checks (Core/KeyRules).
         private static string InputPath(KeyCode key, bool either)
         {
             return KeyRules.PathOf(key.ToString(), either);
@@ -708,11 +678,9 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The fixed keys of photo mode (Leisure/Photo/PhotoMode), which works like a tool with a layout of its own
-    /// rather than a set of bindings: only getting into and out of it is a rebindable action
-    /// (<see cref="KeyAction.PhotoMode"/>). They are kept here so that no KeyCode lives outside this file, and are
-    /// chosen from keys the game binds to nothing that acts while it is paused (not Space, which is its pause; not
-    /// Q and E, which turn its camera; not F, its interaction). One engine call each, nothing allocated.
+    /// The fixed keys of photo mode, a tool with a layout of its own: only getting in and out is rebindable
+    /// (<see cref="KeyAction.PhotoMode"/>). Kept here so no KeyCode lives outside this file; none acts in the game
+    /// while it is paused (not Space, Q, E or F). COST: one engine call each, nothing allocated.
     /// </summary>
     public static class PhotoKeys
     {

@@ -4,8 +4,8 @@ Talking to anybody in the street: walk up to one of the game's walkers and Talk,
 
 ## Read first
 
-- `StreetDirector.cs`: the offer, the hold, the conversation.
-- `StreetRules.cs`: what comes of it (game-free).
+- `StreetDirector.cs`: the offer; its parts `.Talk` and `.Outcomes` the conversation; `StreetHold.cs` the person held.
+- `StreetRules.cs` and `StreetRules.Choices.cs`: what comes of it (game-free).
 - `StreetStore.cs`: the save.
 
 ## Documentation

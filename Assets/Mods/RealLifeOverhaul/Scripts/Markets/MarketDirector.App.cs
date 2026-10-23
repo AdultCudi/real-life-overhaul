@@ -22,8 +22,11 @@ namespace RealLifeOverhaul.Markets
             {
                 return;
             }
+            if (!PhoneApp.PhoneUp)
+            {
+                return;   // the game's phone is not built yet: asked again next time, nothing made for it
+            }
             var view = new MarketApp(this);
-            GameSprites.Want(AppGlyphs);
             _app = PhoneApp.Install(new PhoneAppDef
             {
                 Id = AppId,

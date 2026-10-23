@@ -10,14 +10,14 @@ namespace RealLifeOverhaul
     /// <summary>The "People" page: everybody the player knows, closest first, how things stand with each, and what they would like to do.</summary>
     public sealed class PeopleDialog : Dialog
     {
-        // By origin: where somebody not yet met may be found.
+        // By origin (SocialOrigin's numbers): where somebody not yet met may be found.
         private static readonly string[] Hints =
         {
             null, null, "reallife_social_hint_gym", "reallife_social_hint_work", "reallife_social_hint_cart", "reallife_social_hint_neighbour",
             "reallife_social_hint_helped", "reallife_social_hint_customer"
         };
 
-        private readonly List<SocialPerson> _known = new List<SocialPerson>(SocialRules.CastSize);
+        private readonly List<SocialPerson> _known = new List<SocialPerson>(SocialRules.BaseCast);
 
         public PeopleDialog()
         {
@@ -27,7 +27,7 @@ namespace RealLifeOverhaul
                 DialogController.current.ShowEntry(Guard.Entry(PhoneContacts.Closing("reallife_social_call_off")));
                 return;
             }
-            for (int i = 0; i < SocialRules.CastSize; i++)
+            for (int i = 0; i < SocialState.Count; i++)
             {
                 SocialPerson p = SocialState.Get(i);
                 if (p != null && p.Met)
@@ -41,13 +41,14 @@ namespace RealLifeOverhaul
 
         private DialogEntry Overview()
         {
+            // Every place while somebody new can still come from it; once the cast is full, the places with somebody left.
             var text = new StringBuilder(256);
-            for (int i = 0; i < SocialRules.CastSize; i++)
+            bool room = SocialState.Count < SocialRules.MaxCast;
+            for (int o = 0; o < Hints.Length; o++)
             {
-                SocialPerson p = SocialState.Get(i);
-                if (p != null && !p.Met && Hints[i] != null)
+                if (Hints[o] != null && (room || SocialState.Unmet((SocialOrigin)o) != null))
                 {
-                    text.Append(text.Length > 0 ? ", " : string.Empty).Append(SocialLife.T(Hints[i]));
+                    text.Append(text.Length > 0 ? ", " : string.Empty).Append(SocialLife.T(Hints[o]));
                 }
             }
             SocialPlan plan = SocialState.Plan;
