@@ -864,6 +864,8 @@ namespace RealLifeOverhaul
                     v => Settings.MarketsReinvest = v)
                 .AddToggle(Settings.MarketsDerivativesId, "reallife_mkt_drv_opt", Settings.MarketsDerivatives,
                     v => Settings.MarketsDerivatives = v)
+                .AddToggle(Settings.MarketsBuildersId, "reallife_mkt_builders_opt", Settings.MarketsBuilders,
+                    v => Settings.MarketsBuilders = v)
                 .AddButton("reallife_mkt_test_open", () => Markets.MarketDirector.Instance?.TestOpen())
                 .AddButton("reallife_mkt_test_crisis", () => Markets.MarketDirector.Instance?.TestNews(true))
                 .AddButton("reallife_mkt_test_windfall", () => Markets.MarketDirector.Instance?.TestNews(false))
@@ -874,6 +876,13 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_mkt_drv_test_open", () => Markets.MarketDirector.Instance?.TestFutures())
                 .AddButton("reallife_mkt_drv_test_settle", () => Markets.MarketDirector.Instance?.TestSettle())
                 .AddButton("reallife_mkt_drv_test_call", () => Markets.MarketDirector.Instance?.TestCall())
+                .AddButton("reallife_mkt_builders_test_win", () => Markets.MarketDirector.TestBuilderWins())
+                .AddButton("reallife_mkt_builders_test_scandal", () => Markets.MarketDirector.TestBuilderScandal())
+                .AddButton("reallife_mkt_builders_test_back", () => Markets.MarketDirector.TestBuildersBack())
+                .AddButton("reallife_mkt_hedge_test_hedge", () => Construction.ConstructionDirector.TestHedge())
+                .AddButton("reallife_mkt_hedge_test_end", () => Construction.ConstructionDirector.TestHedgeEnd())
+                .AddButton("reallife_mkt_hedge_test_back", () => Construction.ConstructionDirector.TestHedgeBack())
+                .AddButton("reallife_mkt_builders_test_listing", () => Markets.MarketDirector.TestListingBuilder())
                 .AddButton("reallife_mkt_inv_test_work", () => Markets.MarketDirector.Instance?.TestWorkedDay())
                 .AddButton("reallife_mkt_inv_test_back", () => Markets.MarketDirector.Instance?.TestPutBack())
                 .AddButton("reallife_mkt_inv_test_roll", () => Markets.MarketDirector.Instance?.TestRollover())

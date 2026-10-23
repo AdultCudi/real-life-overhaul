@@ -88,7 +88,7 @@ namespace RealLifeOverhaul.Construction
             {
                 return "reallife_bld_answer_no_money";
             }
-            f.Spent += LicenceFee;
+            _state.PayOut(LicenceFee, ConstructionGame.Day);
             if (f.Licence == LicenceState.Granted)
             {
                 f.LicenceUntil = PlanningRules.LicenceUntil(f.LicenceUntil + 1, ConstructionGame.DaysPerYear);   // renewed from the day it would run out
@@ -211,7 +211,7 @@ namespace RealLifeOverhaul.Construction
             {
                 return "reallife_bld_answer_no_money";
             }
-            _state.Firm.Spent += ZoneFee;
+            _state.PayOut(ZoneFee, ConstructionGame.Day);
             l.ZoneAsk = BuildCatalogue.Zone(use);
             l.ZoneDay = LandRules.CouncilDay(ConstructionGame.Day);
             Changed();
@@ -537,7 +537,7 @@ namespace RealLifeOverhaul.Construction
             p.Deposits += (long)deposit * n;
             p.OffPlanBalance += (long)(price - deposit) * n;
             ConstructionGame.Give((long)deposit * n, "reallife_transaction_bld_sales", ProjectName(p));
-            _state.Firm.Earned += (long)deposit * n;
+            _state.TakeIn((long)deposit * n, ConstructionGame.Day);
             Logger?.Info("Construction: project " + p.Id + " sold " + n + " flat(s) off plan at " + price + " each, " + deposit + " down.");
             Changed();
             return "reallife_bld_answer_off_plan";

@@ -161,8 +161,26 @@ namespace RealLifeOverhaul.Construction
         public int Tender;                           // the tender it came from; 0 for none
         public int CostPermille = 1000;              // the design's cost against the plans' budget: the player's own design sets it
         public int Units;                            // the flats the player's own design gives a block of homes; 0 for the usual
+        public int HedgeDay;                         // the day its materials were last hedged on the exchange; 0 never
+        public long HedgeEnded;                      // cents: what its hedge's futures that have ended made, their commission in it
+        public bool HedgeTest;                       // the test tools' project, put back by their put back
+        public readonly List<HedgeHold> Hedges = new List<HedgeHold>(4);   // its futures still on the exchange's book
 
         public bool Live => Stage != ProjectStage.Finished && Stage != ProjectStage.Abandoned;
+
+        /// <summary>Cents: what the hedge has saved (over nothing) or cost, its ended futures and its open ones as they stand.</summary>
+        public long HedgeCents
+        {
+            get
+            {
+                long cents = HedgeEnded;
+                for (int i = 0; i < Hedges.Count; i++)
+                {
+                    cents += Hedges[i].Result;
+                }
+                return cents;
+            }
+        }
 
         /// <summary>The rules' model of its work: a contract on a lot is built as a plot, a client's as a rebuild, the city's works as works.</summary>
         public ProjectKind Model
@@ -221,6 +239,20 @@ namespace RealLifeOverhaul.Construction
         public bool Public;                          // a public building a rival won the tender for: finished when its site is handed over
     }
 
+    /// <summary>One day of the construction company's books: what its works brought in and what they cost, in money.</summary>
+    public struct DayBook
+    {
+        public int Day;
+        public long In, Out;
+    }
+
+    /// <summary>A future of a project's hedge still on the exchange's book, and what it had made at the last look, in cents.</summary>
+    public struct HedgeHold
+    {
+        public int Contract;
+        public long Result;
+    }
+
     /// <summary>The construction game in one save. Game-free: the director tells it the day and the game's figures.</summary>
     public sealed class BuildState
     {
@@ -239,6 +271,71 @@ namespace RealLifeOverhaul.Construction
         public readonly List<DevFile> Developments = new List<DevFile>(16);
         public readonly List<int> HiredOffers = new List<int>(4);   // this week's offers already taken, by slot
         public int OffersWeek = -1;
+        public readonly List<DayBook> Books = new List<DayBook>(64);   // the company's takings and costs by day, the newest last
+
+        /// <summary>Money a work brought in today, in the company's books and its total.</summary>
+        public void TakeIn(long amount, int day)
+        {
+            if (amount > 0)
+            {
+                Firm.Earned += amount;
+                Book(day, amount, 0L);
+            }
+        }
+
+        /// <summary>Money a work cost today, in the company's books and its total.</summary>
+        public void PayOut(long amount, int day)
+        {
+            if (amount > 0)
+            {
+                Firm.Spent += amount;
+                Book(day, 0L, amount);
+            }
+        }
+
+        // A day's line, kept as long as a listed company's year of books reaches back (ExposureRules.BooksDays).
+        private void Book(int day, long earned, long spent)
+        {
+            int last = Books.Count - 1;
+            if (last >= 0 && Books[last].Day == day)
+            {
+                DayBook b = Books[last];
+                b.In += earned;
+                b.Out += spent;
+                Books[last] = b;
+            }
+            else
+            {
+                Books.Add(new DayBook { Day = day, In = earned, Out = spent });
+            }
+            while (Books.Count > 0 && (Books[0].Day < day - ExposureRules.BooksDays || Books.Count > ExposureRules.BooksDays))
+            {
+                Books.RemoveAt(0);
+            }
+        }
+
+        /// <summary>The company's takings and costs over the days from one day up to, not with, another; how many days had any.</summary>
+        public int BooksOver(int from, int to, out long earned, out long spent)
+        {
+            earned = 0L;
+            spent = 0L;
+            int days = 0;
+            for (int i = Books.Count - 1; i >= 0; i--)
+            {
+                DayBook b = Books[i];
+                if (b.Day < from)
+                {
+                    break;
+                }
+                if (b.Day < to)
+                {
+                    earned += b.In;
+                    spent += b.Out;
+                    days++;
+                }
+            }
+            return days;
+        }
 
         private static RivalFile[] NewRivals()
         {

@@ -35,8 +35,8 @@ namespace RealLifeOverhaul.Construction
     /// What the construction game asks of the rest of the mod, each with a default so it works alone; Wiring/Wiring.ConstructionLinks
     /// fills them in. The district's lots and buildings (Scripts/Uptown), the city's sites (Scripts/Civic), the copy engine's
     /// designs (Scripts/NewBuildings), the credit side and the raw materials exchange (Economy, Markets), the record, the
-    /// courts, Flare and Standing, the weather, and the trades' careers (Scripts/BuildTrades). Each is asked on an hour, a day,
-    /// a page or a press, never per frame.
+    /// courts, Flare and Standing, the weather, the trades' careers (Scripts/BuildTrades), and the stock market's builders and
+    /// futures (Scripts/Markets). Each is asked on an hour, a day, a page or a press, never per frame.
     /// </summary>
     public static class ConstructionBridges
     {
@@ -129,7 +129,10 @@ namespace RealLifeOverhaul.Construction
         /// <summary>Tells the credit file of a loan drawn (0, with the amount) or repaid in full (1). Default: nothing.</summary>
         public static Action<int, int> Credit;
 
-        /// <summary>A raw material's price on the exchange against its own (by the game's item name); NaN for none. Default: none.</summary>
+        /// <summary>
+        /// A raw material's move on the exchange against its own price at the city's price level (by the exchange's name),
+        /// since a load's list price already follows the price level; NaN for none. Default: none.
+        /// </summary>
         public static Func<string, double> MaterialFactor;
 
         // ------------------------------------------------------------------ the record, the courts, the paper, Standing
@@ -168,6 +171,35 @@ namespace RealLifeOverhaul.Construction
 
         public delegate bool DesignAnswer(string projectId, out int total, out int costPermille, out int storeys, out int units);
 
+        // ------------------------------------------------------------------ the stock market
+
+        /// <summary>
+        /// A rival builder's news for the stock market: its number (-1 the player's company winning a tender), what happened
+        /// (Markets.BuilderNewsKind's number) and a weight from 1 to 3 by the works' size. Default: nothing.
+        /// </summary>
+        public static Action<int, int, int> RivalNews;
+
+        /// <summary>A hedge of a project's purchases to come as it would be bought now, its futures into the list. False while the exchange cannot hedge. Default: none.</summary>
+        public static HedgePlanCall HedgePlan;
+
+        public delegate bool HedgePlanCall(List<MaterialNeed> needs, List<HedgeLine> lines, out HedgeQuote quote);
+
+        /// <summary>A hedge bought now (a test's by the test tools): its futures' ids into the list; how many, with why not as a text key. Default: none.</summary>
+        public static HedgeCall Hedge;
+
+        public delegate int HedgeCall(List<MaterialNeed> needs, bool test, List<int> opened, out string whyKey);
+
+        /// <summary>A future of a hedge as the exchange's book has it now; false while the exchange is not running. Default: not running.</summary>
+        public static ContractCall Contract;
+
+        public delegate bool ContractCall(int id, out HedgeLook look);
+
+        /// <summary>Test: the given futures settle now at today's prices. How many. Default: none.</summary>
+        public static Func<List<int>, int> SettleTest;
+
+        /// <summary>Test: every future the test tools bought undone, its money given back. How many. Default: none.</summary>
+        public static Func<int> UndoTests;
+
         public static void Reset()
         {
             Lots = null;
@@ -204,6 +236,12 @@ namespace RealLifeOverhaul.Construction
             Qualified = null;
             Commission = null;
             DesignOf = null;
+            RivalNews = null;
+            HedgePlan = null;
+            Hedge = null;
+            Contract = null;
+            SettleTest = null;
+            UndoTests = null;
         }
     }
 }

@@ -2,8 +2,11 @@ using System;
 
 namespace RealLifeOverhaul.Markets
 {
-    /// <summary>A group of raw materials that move together on the exchange. Saved as a number: never renumber.</summary>
-    public enum MaterialGroup { Farm = 0, Food = 1, Drinks = 2, Metals = 3, Electronics = 4, Paper = 5, Other = 6, Count }
+    /// <summary>
+    /// A group of raw materials that move together on the exchange. Saved as a number: never renumber. Building is the
+    /// exchange's own building materials (<see cref="DerivCatalogue.BuildingNames"/>), which no recipe of the game's has.
+    /// </summary>
+    public enum MaterialGroup { Farm = 0, Food = 1, Drinks = 2, Metals = 3, Electronics = 4, Paper = 5, Other = 6, Building = 7, Count }
 
     /// <summary>
     /// Every figure of the raw materials exchange, its futures and the options on materials and shares. Game-free: the
@@ -19,8 +22,8 @@ namespace RealLifeOverhaul.Markets
         // and the price level as an autoregression: x' = phi x + mu + sigma (rho zg + sqrt(1 - rho^2) zi), with mu set so
         // the price's long-run mean is exactly its own price at the price level. Normal draws only, so every forward and
         // option has an exact price.
-        public static readonly int[] GroupSigmaBp = { 400, 300, 240, 320, 260, 220, 250 };   // a market day's move, bp of the price, by group
-        public static readonly int[] GroupHalfLife = { 8, 10, 10, 14, 14, 12, 12 };          // market days for a move away from the mean to halve
+        public static readonly int[] GroupSigmaBp = { 400, 300, 240, 320, 260, 220, 250, 280 };   // a market day's move, bp of the price, by group
+        public static readonly int[] GroupHalfLife = { 8, 10, 10, 14, 14, 12, 12, 16 };          // market days for a move away from the mean to halve
         public const int GroupShareBp = 5000;              // of a day's move's variance shared with its group (rho squared)
         public const double XMost = 1.2;                   // ln: a guard only, ten long-run spreads and more away; never reached in play
         public const int ClosesKept = 30;                  // the last closes' prices kept for each material
@@ -102,12 +105,38 @@ namespace RealLifeOverhaul.Markets
         public static readonly string[] GroupKeys =
         {
             P + "_mkt_drv_group_farm", P + "_mkt_drv_group_food", P + "_mkt_drv_group_drinks", P + "_mkt_drv_group_metals", P + "_mkt_drv_group_electronics",
-            P + "_mkt_drv_group_paper", P + "_mkt_drv_group_other"
+            P + "_mkt_drv_group_paper", P + "_mkt_drv_group_other", P + "_mkt_drv_group_building"
         };
+
+        // The building materials the city's builders buy and the game's recipes have not: added the exchange's own way, each
+        // at its own price a unit at the start's prices (the save's price multiplier and the city's price level on it, as
+        // for every material), so a builders' merchant's lorry load is a round number of them. Each name is its word's key.
+        public static readonly string[] BuildingNames =
+        {
+            P + "_mkt_drv_mat_cement", P + "_mkt_drv_mat_steel", P + "_mkt_drv_mat_bricks", P + "_mkt_drv_mat_timber"
+        };
+
+        public static readonly long[] BuildingBaseMicros =
+        {
+            450 * Micro,    // a tonne of cement: twenty to a lorry load
+            1600 * Micro,   // a tonne of steel bar: twenty to a load
+            1100 * Micro,   // a thousand bricks: ten to a load
+            560 * Micro     // a cubic metre of timber: twenty five to a load
+        };
+
+        /// <summary>True for one of the exchange's own building materials, which no game item is: it is settled in cash, never delivered.</summary>
+        public static bool IsBuilding(string name)
+        {
+            return Array.IndexOf(BuildingNames, name) >= 0;
+        }
 
         /// <summary>A material's group by its name; Other for a name the catalogue does not know.</summary>
         public static MaterialGroup GroupOf(string name)
         {
+            if (IsBuilding(name))
+            {
+                return MaterialGroup.Building;
+            }
             for (int g = 0; g < GroupNames.Length; g++)
             {
                 string[] names = GroupNames[g];

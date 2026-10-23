@@ -33,9 +33,9 @@ namespace RealLifeOverhaul.Construction
         private AppShell _shell;
         private DataTable _table;
         private TableSpec _spec = ConstructionTables.Off;
-        private int _tab, _wanted = -1, _wantPick;
+        private int _tab, _wanted = -1, _wantPick, _wantPage;
         private string _pick;      // a row's id: "lot:", "own:", "prj:", "tnd:", "crew:", "offer:", "plant:", "buy:", "staff:", "co:", "rival:"
-        private int _page;         // a project's second page (its money) when 1
+        private int _page;         // a project's second page (its money) when 1, its materials and hedge when 2
         private bool _writing;
 
         public ConstructionApp(ConstructionDirector director)
@@ -88,8 +88,9 @@ namespace RealLifeOverhaul.Construction
             {
                 _tab = _wanted;
                 _pick = _wantPick <= 0 ? null : _tab == ConstructionDirector.TabTenders ? "tnd:" + _wantPick : _tab == ConstructionDirector.TabProjects ? "prj:" + _wantPick : null;
-                _page = 0;
+                _page = _pick != null ? _wantPage : 0;
                 _wanted = -1;
+                _wantPage = 0;
             }
             Refresh();
         }

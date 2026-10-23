@@ -47,7 +47,7 @@ namespace RealLifeOverhaul.Markets
                     Made.Add(r.output.item);
                 }
             }
-            float multiplier = SaveGameManager.Current != null && SaveGameManager.Current.gameVariables != null ? SaveGameManager.Current.gameVariables.marketPriceMultiplier : 1f;
+            float multiplier = Multiplier();
             foreach (Recipe r in recipes)
             {
                 if (r == null || r.ingredients == null)
@@ -76,6 +76,13 @@ namespace RealLifeOverhaul.Markets
                 }
             }
             return names.Count;
+        }
+
+        /// <summary>The save's price multiplier, which every material's own price carries (the exchange's building materials too).</summary>
+        public static float Multiplier()
+        {
+            GameInstance save = SaveGameManager.Current;
+            return save != null && save.gameVariables != null ? save.gameVariables.marketPriceMultiplier : 1f;
         }
 
         /// <summary>A material's name in the game's language.</summary>

@@ -182,6 +182,7 @@ namespace RealLifeOverhaul.Markets
             FinishMoment();   // waited for above; one comparison
             SaveHook.Keep(_onSave);
             MarketBridges.Poll?.Invoke(_say);   // a guest hears nothing of its own: the tape's events are the host's
+            BuildersSecond();   // the construction game's news of the city's builders (MarketDirector.Builders.cs)
             _engine.TradesAsEvents = SharedCity.Leading || _engine.Tape.Traded(_engine.State.Day);   // for the rest of a day that had a shared trade, so a replay takes every move from the tape
             OwnSecond();
             BotsSecond();
@@ -357,6 +358,7 @@ namespace RealLifeOverhaul.Markets
             _frontierWritten = tape.Frontier;
             _save = save;
             _running = true;
+            BuilderMarket.Clear();   // news of builders heard before this save's market ran is no news of its
             Behind = _engine.State.Now < Target();
             if (fresh)
             {
@@ -386,7 +388,7 @@ namespace RealLifeOverhaul.Markets
             MarketBridges.Rivals?.Invoke(names, ids);
             List<CarriedPrice> carried = old != null && old.Holdings.Count > 0 && !old.MarketMoved ? MarketCarryOver.Prices(old) : null;
             int minute = save.Hour * 60 + Mathf.FloorToInt(save.Minute);
-            return MarketSetup.Open(id, save.Day, minute, GameCalendar.DaysPerYear, _world.Env(save.Day), id, names, ids, carried);
+            return MarketSetup.Open(id, save.Day, minute, GameCalendar.DaysPerYear, _world.Env(save.Day), id, names, ids, carried, Settings.MarketsBuilders);
         }
 
         // The market stops; with 'keep' it goes into the save's data first, when the current save is certainly its own.
@@ -417,6 +419,7 @@ namespace RealLifeOverhaul.Markets
             _shared.Length = 0;
             _guestTrades.Clear();   // a guest's unsent trades never reach another host
             _deliveries.Clear();
+            BuilderMarket.Clear();   // the builders' news waiting was this save's
             RemoveApp();
             try
             {

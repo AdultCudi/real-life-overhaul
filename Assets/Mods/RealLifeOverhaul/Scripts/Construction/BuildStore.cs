@@ -7,7 +7,7 @@ namespace RealLifeOverhaul.Construction
 {
     /// <summary>
     /// The construction game in the save, game-free: one line under <see cref="Key"/>, "v=1^h:header^f:firm^l:lots^c:crews
-    /// ^q:plant^s:staff^p:projects^t:tenders^r:rivals^d:developments^o:offers". Parts are divided by '^', records by ';' and
+    /// ^q:plant^s:staff^p:projects^t:tenders^r:rivals^d:developments^o:offers^b:books". Parts are divided by '^', records by ';' and
     /// fields by '|'; a text is escaped, so no divider is ever in one. A newer version adds fields at the end of a record, or
     /// a part with a new letter: this reader takes what it knows, gives a missing field its default, bounds every figure
     /// and caps every list. It names the district's lots by their ids only: nothing of the game's part of the save.
@@ -106,6 +106,15 @@ namespace RealLifeOverhaul.Construction
             {
                 t.Append(i > 0 ? "|" : string.Empty).Append(s.HiredOffers[i].ToString(Inv));
             }
+            if (s.Books.Count > 0)
+            {
+                t.Append("^b:");
+                for (int i = Math.Max(0, s.Books.Count - ExposureRules.BooksDays), n = 0; i < s.Books.Count; i++, n++)
+                {
+                    DayBook b = s.Books[i];
+                    t.Append(n > 0 ? ";" : string.Empty).Append(b.Day.ToString(Inv)).Append('|').Append(b.In.ToString(Inv)).Append('|').Append(b.Out.ToString(Inv));
+                }
+            }
             return t.ToString();
         }
 
@@ -141,6 +150,11 @@ namespace RealLifeOverhaul.Construction
             t.Append('|').Append(Esc(p.Lot)).Append('|').Append(Esc(p.Street)).Append('|').Append(Esc(p.District)).Append('|').Append(Esc(p.Design)).Append('|')
                 .Append(Esc(p.Size)).Append('|').Append(Esc(p.ArchitectId)).Append('|');
             Join(t, p.CostPermille, p.Units);
+            t.Append('|').Append(p.HedgeDay.ToString(Inv)).Append('|').Append(p.HedgeEnded.ToString(Inv)).Append('|').Append(p.HedgeTest ? '1' : '0').Append('|');
+            for (int i = 0; i < p.Hedges.Count && i < ExposureRules.HedgesMost; i++)
+            {
+                t.Append(i > 0 ? "," : string.Empty).Append(p.Hedges[i].Contract.ToString(Inv)).Append(':').Append(p.Hedges[i].Result.ToString(Inv));
+            }
         }
 
         /// <summary>Reads a line; null for one that is not this feature's.</summary>
@@ -342,6 +356,17 @@ namespace RealLifeOverhaul.Construction
                                 }
                             }
                             break;
+                        case 'b':
+                            foreach (string rec in Records(body))
+                            {
+                                var r = new Fields(rec);
+                                var b = new DayBook { Day = r.I(0), In = Math.Max(0L, r.L(0L)), Out = Math.Max(0L, r.L(0L)) };
+                                if (b.Day > 0 && s.Books.Count < ExposureRules.BooksDays && (s.Books.Count == 0 || s.Books[s.Books.Count - 1].Day < b.Day))
+                                {
+                                    s.Books.Add(b);
+                                }
+                            }
+                            break;
                         case 'o':
                         {
                             var r = new Fields(body);
@@ -449,6 +474,18 @@ namespace RealLifeOverhaul.Construction
             p.ArchitectId = r.S();
             p.CostPermille = BuildCatalogue.Clamp(r.I(1000), BuildCatalogue.DesignCostLeast, BuildCatalogue.DesignCostMost);
             p.Units = BuildCatalogue.Clamp(r.I(0), 0, 2000);
+            p.HedgeDay = Math.Max(0, r.I(0));
+            p.HedgeEnded = r.L(0L);
+            p.HedgeTest = r.I(0) == 1;
+            foreach (string hold in r.S().Split(','))
+            {
+                int colon = hold.IndexOf(':');
+                if (colon > 0 && p.Hedges.Count < ExposureRules.HedgesMost && int.TryParse(hold.Substring(0, colon), NumberStyles.Integer, Inv, out int id) && id > 0
+                    && long.TryParse(hold.Substring(colon + 1), NumberStyles.Integer, Inv, out long result))
+                {
+                    p.Hedges.Add(new HedgeHold { Contract = id, Result = result });
+                }
+            }
             if (p.FlatsSold > p.Flats)
             {
                 p.FlatsSold = p.Flats;

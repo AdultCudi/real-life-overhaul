@@ -91,6 +91,7 @@ namespace RealLifeOverhaul.Construction
             PapersDay(day);
             RisksDay(day);
             MarketDay(day);
+            HedgesDay();   // what each project's futures have made (ConstructionDirector.Hedge.cs)
             OpenedDay(day);
             if (Verbose)
             {
@@ -121,7 +122,7 @@ namespace RealLifeOverhaul.Construction
                     }
                     else if (paid)
                     {
-                        _state.Firm.Spent += c.Rate;
+                        _state.PayOut(c.Rate, day);
                     }
                 }
                 c.IdleDays = atWork ? 0 : c.IdleDays + 1;
@@ -205,7 +206,7 @@ namespace RealLifeOverhaul.Construction
             {
                 long upkeep = FirmRules.Upkeep(_state.Plant[i].Price);
                 ConstructionGame.Force(upkeep, "reallife_transaction_bld_plant", ConstructionText.T(BuildCatalogue.PlantKeys[(int)_state.Plant[i].Kind]), true);
-                _state.Firm.Spent += upkeep;
+                _state.PayOut(upkeep, ConstructionGame.Day);
             }
         }
 
@@ -254,7 +255,7 @@ namespace RealLifeOverhaul.Construction
             {
                 long premium = FirmRules.Premium(_state.Firm.Cover, underWay, ConstructionGame.Prices);
                 ConstructionGame.Force(premium, "reallife_transaction_bld_cover", ConstructionText.T(BuildCatalogue.CoverKeys[(int)_state.Firm.Cover]), true);
-                _state.Firm.Spent += premium;
+                _state.PayOut(premium, day);
             }
             if (Settings.ConstructionLandTax)
             {
@@ -273,7 +274,7 @@ namespace RealLifeOverhaul.Construction
                     bool empty = _state.OnLot(l.Id) == null && LandRules.Empty(l.EmptySince, day);
                     int tax = LandRules.LandTax(l.Paid, day - l.TaxedTo, year, empty);
                     ConstructionGame.Force(tax, empty ? "reallife_transaction_bld_vacant_tax" : "reallife_transaction_bld_land_tax", LotWords(l.Id), true);
-                    _state.Firm.Spent += tax;
+                    _state.PayOut(tax, day);
                     l.TaxedTo = day;
                 }
             }
@@ -310,7 +311,7 @@ namespace RealLifeOverhaul.Construction
             long toPlayer = MoneyRules.Share(price, p.LoanOwed, p.InvestorOwed, out long toLoan, out long toInvestor);
             SalePaid(p, toLoan, toInvestor);
             ConstructionGame.Give(toPlayer, "reallife_transaction_bld_sales", ProjectName(p));
-            _state.Firm.Earned += price;
+            _state.TakeIn(price, ConstructionGame.Day);
             Tell(NotificationType.Success, "reallife_bld_notice_flat_sold", ProjectName(p), null, TabProjects, p.Id, p.Flats - p.FlatsSold);
             return true;
         }
@@ -364,7 +365,7 @@ namespace RealLifeOverhaul.Construction
                 return;
             }
             p.ClientPaid += pay;
-            _state.Firm.Earned += pay;
+            _state.TakeIn(pay, ConstructionGame.Day);
             ConstructionGame.Give(pay, "reallife_transaction_bld_contract", ProjectName(p));
             Logger?.Info("Construction: project " + p.Id + " paid " + pay + " by its client (" + p.ClientPaid + " of " + value + ").");
         }
