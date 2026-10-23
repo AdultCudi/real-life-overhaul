@@ -14,8 +14,10 @@ namespace RealLifeOverhaul.NewGround
     /// the traffic starts: new arrays with the game's own points first (their indices never change), the joins added to
     /// the game's points' neighbours or previous points, every new point filed in its cell (and its spawn list, through the
     /// game's own GridCell.AddWaypoint), every new junction appended after the game's (their light indices never change,
-    /// which Going Public sends) and filed in its cells. The traffic is never started again. Called on a load or a test,
-    /// never per frame.
+    /// which Going Public sends) and filed in its cells. A street continued through one of the game's junctions with
+    /// lights gives that junction its new stop points (in the way of its own street, with the lamps the game hangs for that
+    /// approach) and its new exits; the junction keeps its index and its number of ways. The traffic is never started
+    /// again. Called on a load or a test, never per frame.
     /// </summary>
     public static class RoadsGame
     {
@@ -24,8 +26,27 @@ namespace RealLifeOverhaul.NewGround
         public const int TestLeast = 6;          // ...and at least: four copied between the fork and the merge
         public const float TestBend = 20f;       // degrees the lane may turn over the chain: the copy is of a straight stretch
         public const string LampsName = "RealLifeOverhaul new ground lamps";
+        private const float LampReach = 4f;      // m: a light of the game's junction this near where a new approach's light belongs is that approach's
 
         private static readonly List<int> CellPoints = new List<int>(256);
+
+        // What an append changed, kept until the city goes, so that a district standing down at its load takes it all back.
+        private sealed class Applied
+        {
+            public Waypoint[] OldPoints;
+            public int[] OldIds;
+            public IntersectionData[] OldJunctions;
+            public TrafficLightsIntersection[] OldLights;
+            public PriorityIntersection[] OldPriority;
+            public readonly List<LinkEdit> Edited = new List<LinkEdit>(8);
+            public readonly List<int> Filed = new List<int>(64);
+            public readonly List<ThroughEdit> Through = new List<ThroughEdit>(4);
+            public readonly List<GameObject> Lamps = new List<GameObject>(12);   // the game's lamps given to a way for a new approach, three a stop
+            public readonly List<int> LampWays = new List<int>(12);              // ... the junction and way each went to, as junction * 64 + way
+            public readonly List<long> Cells = new List<long>(8);                // cells given one of the game's junctions: row, column and junction packed
+        }
+
+        private static readonly Dictionary<RoadBuild, Applied> Appends = new Dictionary<RoadBuild, Applied>(2);
 
         /// <summary>The road grid as the game has it now; false where its scene data has none.</summary>
         public static bool Grid(CurrentSceneData data, out RoadGrid grid)
@@ -95,6 +116,16 @@ namespace RealLifeOverhaul.NewGround
             {
                 return problem;
             }
+            for (int t = 0; t < build.Through.Count; t++)
+            {
+                ThroughEdit edit = build.Through[t];
+                TrafficLightsIntersection[] gameLights = data.allLightsIntersections;
+                if (gameLights == null || edit.Junction >= gameLights.Length || gameLights[edit.Junction] == null || gameLights[edit.Junction].stopWaypoints == null
+                    || edit.Way >= gameLights[edit.Junction].stopWaypoints.Count || gameLights[edit.Junction].exitWaypoints == null)
+                {
+                    return "the game's junction " + edit.Junction + " a street goes through is not as it was read";
+                }
+            }
             // Everything is made first; the game's data is changed only once all of it is there.
             var points = new Waypoint[count + build.Count];
             var ids = new int[count + build.Count];
@@ -132,21 +163,27 @@ namespace RealLifeOverhaul.NewGround
                     junctions[oldJunctions.Length + j] = new IntersectionData(IntersectionType.Priority, priority.Count - 1);
                 }
             }
-            var edited = new List<LinkEdit>(build.Edits.Count);
-            var filed = new List<int>(build.Count);
+            var applied = new Applied
+            {
+                OldPoints = old,
+                OldIds = data.roadIds,
+                OldJunctions = oldJunctions,
+                OldLights = data.allLightsIntersections,
+                OldPriority = data.allPriorityIntersections
+            };
             try
             {
                 for (int e = 0; e < build.Edits.Count; e++)
                 {
                     LinkEdit edit = build.Edits[e];
                     (edit.AsNext ? old[edit.Existing].neighbors : old[edit.Existing].prev).Add(edit.Added);
-                    edited.Add(edit);
+                    applied.Edited.Add(edit);
                 }
                 for (int i = 0; i < build.Count; i++)
                 {
                     LanePoint point = build.Points[i];
                     data.grid[point.Row].row[point.Column].AddWaypoint(count + i, point.Name, points[count + i].allowedAgents, point.Spawn);
-                    filed.Add(i);
+                    applied.Filed.Add(i);
                 }
                 for (int j = 0; j < build.Junctions.Count; j++)
                 {
@@ -156,32 +193,69 @@ namespace RealLifeOverhaul.NewGround
                         data.grid[cells[c] / grid.Columns].row[cells[c] % grid.Columns].AddIntersection(oldJunctions.Length + j);
                     }
                 }
+                GiveThrough(build, data, applied);
                 data.allWaypoints = points;
                 data.roadIds = ids;
                 data.allIntersections = junctions;
                 data.allLightsIntersections = lights.ToArray();
                 data.allPriorityIntersections = priority.ToArray();
+                Appends[build] = applied;
                 return null;
             }
             catch (Exception e)
             {
-                Undo(build, data, old, edited, filed, oldJunctions.Length, grid);
+                Undo(build, data, applied, grid);
                 return "the road data could not take the build (" + e.GetType().Name + ": " + e.Message + "); it is as it was";
             }
         }
 
-        // What a failed append had done is taken off again, before the traffic ever saw it.
-        private static void Undo(RoadBuild build, CurrentSceneData data, Waypoint[] old, List<LinkEdit> edited, List<int> filed, int oldJunctions, RoadGrid grid)
+        /// <summary>
+        /// Takes an appended build back off the road data while the traffic has not started: a district that stands down
+        /// later in its own load leaves the roads as the game made them. Null when done; otherwise why not, and the build
+        /// stays until the next load.
+        /// </summary>
+        public static string TakeBack(RoadBuild build, CurrentSceneData data)
         {
-            for (int e = 0; e < edited.Count; e++)
+            if (build == null || data == null || !Appends.TryGetValue(build, out Applied applied))
             {
-                (edited[e].AsNext ? old[edited[e].Existing].neighbors : old[edited[e].Existing].prev).Remove(edited[e].Added);
+                return "it was not appended at this load";
             }
-            for (int f = 0; f < filed.Count; f++)
+            if (TrafficManager.IsInitialized)
             {
-                LanePoint point = build.Points[filed[f]];
+                return "the traffic has already started: it stays until the next load";
+            }
+            if (!Grid(data, out RoadGrid grid))
+            {
+                return "the road data has no grid";
+            }
+            Undo(build, data, applied, grid);
+            data.allWaypoints = applied.OldPoints;
+            data.roadIds = applied.OldIds;
+            data.allIntersections = applied.OldJunctions;
+            data.allLightsIntersections = applied.OldLights;
+            data.allPriorityIntersections = applied.OldPriority;
+            for (int j = 0; j < build.Junctions.Count; j++)
+            {
+                DropLamps(build.Junctions[j]);
+            }
+            Appends.Remove(build);
+            return null;
+        }
+
+        // What an append had done is taken off again, before the traffic ever saw it: a failed append, or one taken back.
+        private static void Undo(RoadBuild build, CurrentSceneData data, Applied applied, RoadGrid grid)
+        {
+            Waypoint[] old = applied.OldPoints;
+            for (int e = 0; e < applied.Edited.Count; e++)
+            {
+                LinkEdit edit = applied.Edited[e];
+                (edit.AsNext ? old[edit.Existing].neighbors : old[edit.Existing].prev).Remove(edit.Added);
+            }
+            for (int f = 0; f < applied.Filed.Count; f++)
+            {
+                LanePoint point = build.Points[applied.Filed[f]];
                 GridCell cell = data.grid[point.Row].row[point.Column];
-                int index = build.First + filed[f];
+                int index = build.First + applied.Filed[f];
                 cell.waypointsInCell.Remove(index);
                 for (int s = cell.spawnWaypoints.Count - 1; s >= 0; s--)
                 {
@@ -191,6 +265,7 @@ namespace RealLifeOverhaul.NewGround
                     }
                 }
             }
+            int oldJunctions = applied.OldJunctions.Length;
             for (int j = 0; j < build.Junctions.Count; j++)
             {
                 List<int> cells = build.Junctions[j].Cells;
@@ -199,6 +274,294 @@ namespace RealLifeOverhaul.NewGround
                     data.grid[cells[c] / grid.Columns].row[cells[c] % grid.Columns].intersectionsInCell.Remove(oldJunctions + j);
                 }
             }
+            TrafficLightsIntersection[] gameLights = applied.OldLights;
+            for (int t = 0; t < applied.Through.Count; t++)
+            {
+                ThroughEdit edit = applied.Through[t];
+                TrafficLightsIntersection junction = gameLights[edit.Junction];
+                if (edit.Way >= 0)
+                {
+                    junction.stopWaypoints[edit.Way].roadWaypoints.Remove(edit.Point);
+                }
+                else
+                {
+                    junction.exitWaypoints.Remove(edit.Point);
+                }
+            }
+            for (int l = 0; l < applied.Lamps.Count; l += 3)
+            {
+                IntersectionStopWaypointsIndex way = gameLights[applied.LampWays[l] / 64].stopWaypoints[applied.LampWays[l] % 64];
+                way.redLightObjects.Remove(applied.Lamps[l]);
+                way.yellowLightObjects.Remove(applied.Lamps[l + 1]);
+                way.greenLightObjects.Remove(applied.Lamps[l + 2]);
+            }
+            for (int c = 0; c < applied.Cells.Count; c++)
+            {
+                Unpack(applied.Cells[c], out int row, out int column, out int junction);
+                data.grid[row].row[column].intersectionsInCell.Remove(junction);
+            }
+            applied.Edited.Clear();
+            applied.Filed.Clear();
+            applied.Through.Clear();
+            applied.Lamps.Clear();
+            applied.LampWays.Clear();
+            applied.Cells.Clear();
+        }
+
+        // The new stop points and exits a build gives the game's junctions: a stop point in the way of the street it
+        // continues, the lamps the game hangs for its approach given to that way (the module of the junction has them,
+        // unlit, for a fourth arm), an exit among its exits, and each point's cell told of the junction.
+        private static void GiveThrough(RoadBuild build, CurrentSceneData data, Applied applied)
+        {
+            for (int t = 0; t < build.Through.Count; t++)
+            {
+                ThroughEdit edit = build.Through[t];
+                TrafficLightsIntersection junction = data.allLightsIntersections[edit.Junction];
+                if (edit.Way >= 0)
+                {
+                    junction.stopWaypoints[edit.Way].roadWaypoints.Add(edit.Point);
+                    applied.Through.Add(edit);
+                    GiveLamps(junction, edit, applied);
+                }
+                else
+                {
+                    junction.exitWaypoints.Add(edit.Point);
+                    applied.Through.Add(edit);
+                }
+                LanePoint point = build.At(edit.Point);
+                int dataIndex = JunctionData(data, edit.Junction);
+                if (point == null || dataIndex < 0)
+                {
+                    continue;
+                }
+                GridCell cell = data.grid[point.Row].row[point.Column];
+                if (!cell.intersectionsInCell.Contains(dataIndex))
+                {
+                    cell.intersectionsInCell.Add(dataIndex);
+                    applied.Cells.Add(Pack(point.Row, point.Column, dataIndex));
+                }
+            }
+        }
+
+        // The lamps of the game's junction's own module for a new approach: the red, yellow and green of the light nearest
+        // where that approach's light hangs that no way uses yet; none found, the approach goes on the way's green unlit.
+        private static void GiveLamps(TrafficLightsIntersection junction, ThroughEdit edit, Applied applied)
+        {
+            Transform traffic = null;
+            for (int w = 0; w < junction.stopWaypoints.Count && traffic == null; w++)
+            {
+                List<GameObject> reds = junction.stopWaypoints[w].redLightObjects;
+                for (int r = 0; reds != null && r < reds.Count && traffic == null; r++)
+                {
+                    traffic = Above(reds[r] != null ? reds[r].transform : null, "Traffic");
+                }
+            }
+            if (traffic == null)
+            {
+                return;
+            }
+            GameObject red = null;
+            float nearest = LampReach * LampReach;
+            foreach (Transform light in traffic.GetComponentsInChildren<Transform>(true))
+            {
+                if (!string.Equals(light.name, "RedLight", StringComparison.OrdinalIgnoreCase) || Used(junction, light.gameObject))
+                {
+                    continue;
+                }
+                float dx = light.position.x - edit.LampX, dz = light.position.z - edit.LampZ;
+                if (dx * dx + dz * dz < nearest)
+                {
+                    nearest = dx * dx + dz * dz;
+                    red = light.gameObject;
+                }
+            }
+            GameObject yellow = red != null ? Sibling(red.transform, "YellowLight") : null;
+            GameObject green = red != null ? Sibling(red.transform, "Greenlight") : null;
+            if (red == null || yellow == null || green == null)
+            {
+                return;
+            }
+            IntersectionStopWaypointsIndex way = junction.stopWaypoints[edit.Way];
+            way.redLightObjects.Add(red);
+            way.yellowLightObjects.Add(yellow);
+            way.greenLightObjects.Add(green);
+            applied.Lamps.Add(red);
+            applied.Lamps.Add(yellow);
+            applied.Lamps.Add(green);
+            int at = edit.Junction * 64 + edit.Way;
+            applied.LampWays.Add(at);
+            applied.LampWays.Add(at);
+            applied.LampWays.Add(at);
+        }
+
+        // The nearest ancestor of that name, or null.
+        private static Transform Above(Transform from, string name)
+        {
+            for (Transform t = from; t != null; t = t.parent)
+            {
+                if (t.name == name)
+                {
+                    return t;
+                }
+            }
+            return null;
+        }
+
+        private static GameObject Sibling(Transform of, string name)
+        {
+            Transform parent = of.parent;
+            for (int i = 0; parent != null && i < parent.childCount; i++)
+            {
+                if (string.Equals(parent.GetChild(i).name, name, StringComparison.OrdinalIgnoreCase))
+                {
+                    return parent.GetChild(i).gameObject;
+                }
+            }
+            return null;
+        }
+
+        // A red lamp some way of the junction switches already.
+        private static bool Used(TrafficLightsIntersection junction, GameObject red)
+        {
+            for (int w = 0; w < junction.stopWaypoints.Count; w++)
+            {
+                if (junction.stopWaypoints[w].redLightObjects != null && junction.stopWaypoints[w].redLightObjects.Contains(red))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // The index in the road data's list of all junctions of one with lights (by its index among them), or -1.
+        private static int JunctionData(CurrentSceneData data, int lights)
+        {
+            IntersectionData[] all = data.allIntersections;
+            for (int i = 0; all != null && i < all.Length; i++)
+            {
+                if (all[i].type == IntersectionType.TrafficLights && all[i].index == lights)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        private static long Pack(int row, int column, int junction)
+        {
+            return ((long)row << 40) | ((long)column << 20) | (uint)junction;
+        }
+
+        private static void Unpack(long packed, out int row, out int column, out int junction)
+        {
+            row = (int)(packed >> 40);
+            column = (int)((packed >> 20) & 0xFFFFF);
+            junction = (int)(packed & 0xFFFFF);
+        }
+
+        /// <summary>
+        /// Finds the game's junction with lights each through end of a plan meets at this load (never a kept index): the one
+        /// whose stop points' middle lies nearest the end's place, and reads its stop points and exits for the build.
+        /// </summary>
+        public static void FindThroughs(RoadPlan plan, CurrentSceneData data)
+        {
+            TrafficLightsIntersection[] lights = data != null ? data.allLightsIntersections : null;
+            Waypoint[] all = data != null ? data.allWaypoints : null;
+            if (lights == null || all == null || data.roadIds == null || data.roadIds.Length != all.Length)
+            {
+                for (int t = 0; t < plan.Throughs.Count; t++)
+                {
+                    plan.Throughs[t].Existing = -1;
+                }
+                return;
+            }
+            var cx = new float[lights.Length];
+            var cz = new float[lights.Length];
+            for (int j = 0; j < lights.Length; j++)
+            {
+                cx[j] = float.MaxValue;
+                cz[j] = float.MaxValue;
+                if (lights[j] == null || lights[j].stopWaypoints == null)
+                {
+                    continue;
+                }
+                float sx = 0f, sz = 0f;
+                int n = 0;
+                for (int w = 0; w < lights[j].stopWaypoints.Count; w++)
+                {
+                    List<int> stops = lights[j].stopWaypoints[w].roadWaypoints;
+                    for (int s = 0; stops != null && s < stops.Count; s++)
+                    {
+                        if (stops[s] >= 0 && stops[s] < all.Length)
+                        {
+                            sx += all[stops[s]].position.x;
+                            sz += all[stops[s]].position.z;
+                            n++;
+                        }
+                    }
+                }
+                if (n > 0)
+                {
+                    cx[j] = sx / n;
+                    cz[j] = sz / n;
+                }
+            }
+            for (int t = 0; t < plan.Throughs.Count; t++)
+            {
+                PlanThrough through = plan.Throughs[t];
+                through.Stops.Clear();
+                through.Exits.Clear();
+                through.Existing = RoadRules.FindThrough(through, cx, cz);
+                if (through.Existing < 0)
+                {
+                    continue;
+                }
+                TrafficLightsIntersection junction = lights[through.Existing];
+                for (int w = 0; w < junction.stopWaypoints.Count; w++)
+                {
+                    List<int> stops = junction.stopWaypoints[w].roadWaypoints;
+                    for (int s = 0; stops != null && s < stops.Count; s++)
+                    {
+                        if (stops[s] >= 0 && stops[s] < all.Length && all[stops[s]].prev != null && all[stops[s]].prev.Count > 0)
+                        {
+                            Waypoint stop = all[stops[s]];
+                            through.Stops.Add(Read(data, stops[s], stop.position - all[stop.prev[0]].position, w));
+                        }
+                    }
+                }
+                List<int> exits = junction.exitWaypoints;
+                for (int e = 0; exits != null && e < exits.Count; e++)
+                {
+                    if (exits[e] >= 0 && exits[e] < all.Length && all[exits[e]].neighbors != null && all[exits[e]].neighbors.Count > 0)
+                    {
+                        Waypoint exit = all[exits[e]];
+                        through.Exits.Add(Read(data, exits[e], all[exit.neighbors[0]].position - exit.position, -1));
+                    }
+                }
+            }
+        }
+
+        // One of the game's lane points as the road rules read it.
+        private static GamePoint Read(CurrentSceneData data, int index, Vector3 heading, int way)
+        {
+            Waypoint point = data.allWaypoints[index];
+            string name = point.name ?? string.Empty;
+            int cut = name.IndexOf('-', name.IndexOf("-Lane_", StringComparison.Ordinal) + 1);
+            return new GamePoint
+            {
+                Index = index,
+                X = point.position.x,
+                Y = point.position.y,
+                Z = point.position.z,
+                Dx = heading.x,
+                Dz = heading.z,
+                Way = way,
+                RoadId = data.roadIds[index],
+                Lane = cut > 0 ? name.Substring(0, cut) : name,
+                Speed = point.maxSpeed,
+                Cars = point.allowedCars != null && point.allowedCars.Contains(VehicleTypes.Car),
+                Trucks = point.allowedCars != null && point.allowedCars.Contains(VehicleTypes.Truck)
+            };
         }
 
         private static List<VehicleTypes> Vehicles(LanePoint point)
@@ -244,11 +607,20 @@ namespace RealLifeOverhaul.NewGround
         /// </summary>
         public static GameObject RedLamp(BuiltJunction junction, int way)
         {
+            return LampOf(junction, way, "red");
+        }
+
+        /// <summary>
+        /// One lamp ("red", "yellow" or "green") of one road into a new junction with lights: the object its lights switch on
+        /// and off, under which a street's art puts the game's own light of that colour. Null as for <see cref="RedLamp"/>.
+        /// </summary>
+        public static GameObject LampOf(BuiltJunction junction, int way, string colour)
+        {
             if (_lamps == null || junction == null || !junction.Lights)
             {
                 return null;
             }
-            string name = LampName(junction, way, "red");
+            string name = LampName(junction, way, colour);
             foreach (Transform lamp in _lamps.transform)
             {
                 if (lamp.name == name)
@@ -259,7 +631,25 @@ namespace RealLifeOverhaul.NewGround
             return null;
         }
 
-        /// <summary>The city is going: the lamps of its new junctions go with it.</summary>
+        // A junction taken back: its lamps go, and whatever a street's art hung under them.
+        private static void DropLamps(BuiltJunction junction)
+        {
+            if (_lamps == null)
+            {
+                return;
+            }
+            string prefix = junction.Name + " road ";
+            for (int i = _lamps.transform.childCount - 1; i >= 0; i--)
+            {
+                Transform lamp = _lamps.transform.GetChild(i);
+                if (lamp.name.StartsWith(prefix, StringComparison.Ordinal))
+                {
+                    UnityEngine.Object.Destroy(lamp.gameObject);
+                }
+            }
+        }
+
+        /// <summary>The city is going: the lamps of its new junctions go with it, and what its appends changed is let go.</summary>
         public static void Forget()
         {
             if (_lamps != null)
@@ -267,6 +657,7 @@ namespace RealLifeOverhaul.NewGround
                 UnityEngine.Object.Destroy(_lamps);
             }
             _lamps = null;
+            Appends.Clear();
         }
 
         /// <summary>
@@ -306,10 +697,15 @@ namespace RealLifeOverhaul.NewGround
                         }
                     }
                 }
+                for (int t = 0; t < build.Through.Count; t++)
+                {
+                    stops++;
+                    marked += data.allWaypoints[build.Through[t].Point].IsInIntersection() ? 1 : 0;   // the game's junctions mark their new stop points and exits too
+                }
                 bool ids = data.roadIds != null && data.roadIds.Length == data.allWaypoints.Length;
                 bool pass = ids && marked == stops;
                 line = head + ", " + data.allWaypoints.Length + " road ids " + (ids ? "for all" : "MISSING") + ", " + marked + " of " + stops
-                       + " new stop points marked by their junctions: " + (pass ? "PASS" : "FAIL");
+                       + " new stop points (and exits given to the game's junctions) marked by their junctions: " + (pass ? "PASS" : "FAIL");
                 return pass;
             }
             catch (Exception e)
