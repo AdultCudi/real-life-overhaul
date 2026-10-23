@@ -167,6 +167,14 @@ namespace RealLifeOverhaul
         /// <summary>Five times a second while the job is on.</summary>
         public abstract void Tick(float now);
 
+        /// <summary>
+        /// Every frame while the job is on, after its tick: only for what must follow the frame (a building trade's marker on the
+        /// game's bar). Keep it to a comparison and a write; most jobs have none.
+        /// </summary>
+        public virtual void Frame(float now)
+        {
+        }
+
         /// <summary>The time asked for with <see cref="JobContext.At"/> has come; called in the director's frame.</summary>
         public virtual void Moment(float now)
         {
@@ -379,6 +387,17 @@ namespace RealLifeOverhaul
         public static string T(string key, string name, string value, string name2, string value2)
         {
             return JobKeys.Fill(key.GetLocalization()).Replace("{" + name + "}", value).Replace("{" + name2 + "}", value2);
+        }
+
+        /// <summary>A line with several {name}s in it, given as name and value in turn. Builds strings: for when something changes, never per frame.</summary>
+        public static string T(string key, params string[] pairs)
+        {
+            string text = JobKeys.Fill(key.GetLocalization());
+            for (int i = 0; i + 1 < pairs.Length; i += 2)
+            {
+                text = text.Replace("{" + pairs[i] + "}", pairs[i + 1]);
+            }
+            return text;
         }
 
         private static readonly string[] Numbers = new string[100];
