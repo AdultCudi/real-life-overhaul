@@ -44,6 +44,7 @@
         public const string ConstructionDevelopersId = "construction_developers";  // ...the city's developers and the tenders
         public const string ConstructionLandTaxId = "construction_land_tax";       // ...land tax on the lots owned
         public const string ConstructionRisksId = "construction_risks";            // ...theft, storms and faults on the sites
+        public const string ConstructionCityId = "construction_city";              // ...the city around it: rigged tenders, unpaid bills, the building of the year
         public const string CameraFovId = "camera_fov";
         public const string CameraHeightId = "camera_height";
         public const string CarCameraId = "car_camera";
@@ -370,6 +371,7 @@
         public static bool ConstructionDevelopers = true;  // the city's developers build on the district's lots, and works are put out to tender
         public static bool ConstructionLandTax = true;     // the lots the player owns pay land tax, and more kept empty
         public static bool ConstructionRisks = true;       // theft, storm damage and faults coming to light on the company's works
+        public static bool ConstructionCity = true;        // rigged tenders, unpaid bills taken to court, and the City Ledger's building of the year
         public static int CameraFov = 55;        // degrees, vertical
         public static bool LifeEvents = true;
         public static int EventFrequency = 5;        // about this many random events per game week
@@ -730,6 +732,7 @@
             ConstructionDevelopers = Bool(modId, ConstructionDevelopersId, ConstructionDevelopers);
             ConstructionLandTax = Bool(modId, ConstructionLandTaxId, ConstructionLandTax);
             ConstructionRisks = Bool(modId, ConstructionRisksId, ConstructionRisks);
+            ConstructionCity = Bool(modId, ConstructionCityId, ConstructionCity);
             CameraFov = Int(modId, CameraFovId, CameraFov);
             CameraHeight = Int(modId, CameraHeightId, CameraHeight);
             CarCamera = Bool(modId, CarCameraId, CarCamera);

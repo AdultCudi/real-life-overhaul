@@ -39,6 +39,36 @@ namespace RealLifeOverhaul
             return Summons(JusticeLaw.Misconduct, ": an interest not declared on a vote that it decided came out;");
         }
 
+        /// <summary>A ring of the city's builders on a tender the player's company covered for came out: the cut taken.</summary>
+        public static int FileBidRigging(long cut)
+        {
+            return Summons(JusticeLaw.BidRigging, " for bid rigging (a cover bid on a tender, " + cut + " taken from the ring, came out),");
+        }
+
+        /// <summary>
+        /// A case opened on a summons and not yet heard is taken back (a test put back): it was never before the court. True if
+        /// there was one.
+        /// </summary>
+        public static bool Withdraw(int number)
+        {
+            List<JusticeCase> cases = JusticeState.Cases;
+            for (int i = cases.Count - 1; number > 0 && i >= 0; i--)
+            {
+                JusticeCase c = cases[i];
+                if (c.Number == number && c.Open && c.Stage == CaseStage.Pending)
+                {
+                    cases.RemoveAt(i);
+                    if (JusticeState.HearNow == number)
+                    {
+                        JusticeState.HearNow = 0;
+                    }
+                    JusticeDirector.Logger?.Info("Justice: case " + number + " was taken back unheard (a test put back).");
+                    return true;
+                }
+            }
+            return false;
+        }
+
         /// <summary>A breach at a firm off the data protection register, or breached before.</summary>
         public static int FileDataProtection(string firm)
         {

@@ -240,6 +240,7 @@ namespace RealLifeOverhaul
             Debts.Clear();
             Record.Clear();
             Suits.Clear();
+            Claims.Clear();
             NextNumber = 1;
             Day = ProbationUntil = SuspendedUntil = CommunityHours = CommunityDue = LastConvictionDay = LastSuitDay = 0;
             JailHoursPending = HearNow = Compensated = 0;
@@ -454,9 +455,10 @@ namespace RealLifeOverhaul
             return count;
         }
 
-        /// <summary>Drops the oldest closed cases so the save's line stays short.</summary>
+        /// <summary>Drops the oldest closed cases (and claims of the player's long decided) so the save's line stays short.</summary>
         public static void Trim()
         {
+            TrimClaims();
             int closed = 0;
             for (int i = Cases.Count - 1; i >= 0; i--)
             {

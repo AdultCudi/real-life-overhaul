@@ -54,6 +54,32 @@ namespace RealLifeOverhaul
                 .Replace("{floor}", Money(CivicCatalogue.WageFloorNow(policy.Dir)));
         }
 
+        /// <summary>
+        /// What a policy does with all it carries: the permits policy is the building code too (the height limits, parking,
+        /// the planning fee and the surcharge on land kept empty), shown wherever the policy is read at leisure; a toast keeps
+        /// to <see cref="Effect"/>.
+        /// </summary>
+        public static string Full(PolicyDef policy)
+        {
+            string effect = Effect(policy);
+            if (policy == null || policy.Lever != Lever.Permits)
+            {
+                return effect;
+            }
+            return effect + "; " + Code(policy.Dir);
+        }
+
+        /// <summary>The building code under the permits policy at a position (-1 to 1), in words.</summary>
+        public static string Code(int permits)
+        {
+            string key = permits > 0 ? "reallife_civic_code_up" : permits < 0 ? "reallife_civic_code_down" : "reallife_civic_code_usual";
+            return key.GetLocalization().Replace("{uptown}", CivicCatalogue.UptownStoreys(permits).ToString())
+                .Replace("{height}", CivicCatalogue.PercentOff(CivicCatalogue.HeightPermille(permits)).ToString())
+                .Replace("{parking}", CivicCatalogue.PercentOff(CivicCatalogue.ParkingPermille(permits)).ToString())
+                .Replace("{fee}", CivicCatalogue.PercentOff(CivicCatalogue.PlanningFeePermille(permits)).ToString())
+                .Replace("{vacant}", CivicCatalogue.PercentOff(CivicCatalogue.VacantPermille(permits)).ToString());
+        }
+
         public static string Name(Candidate candidate)
         {
             if (candidate.Player)

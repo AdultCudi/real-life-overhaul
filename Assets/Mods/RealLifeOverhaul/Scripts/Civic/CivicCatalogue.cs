@@ -164,6 +164,31 @@ namespace RealLifeOverhaul
 
         public static int SiteShuts(int permits) => permits > 0 ? 19 : permits < 0 ? 16 : 17;
 
+        // The building code the permits policy sets with the sites' hours: the construction game's height limits, parking,
+        // planning fee and the surcharge on land kept empty (Construction's PlansRules and LandRules read these). Fast-track
+        // permits speak to growth, strict ones to the neighbours' living; the locales quote these numbers.
+
+        /// <summary>A district's height limit against its own, in thousandths: a third more or a third less.</summary>
+        public static int HeightPermille(int permits) => permits > 0 ? 1334 : permits < 0 ? 667 : 1000;
+
+        /// <summary>The new district's storeys: the most its buildings take (DistrictBuildings.Finish, 12) unless permits are strict.</summary>
+        public static int UptownStoreys(int permits) => permits < 0 ? UptownStrictStoreys : UptownMostStoreys;
+
+        public const int UptownMostStoreys = 12;    // storeys a building of the new district can have at all
+        public const int UptownStrictStoreys = 8;   // under strict permits
+
+        /// <summary>Parking spaces asked of a building against the usual, in thousandths.</summary>
+        public static int ParkingPermille(int permits) => permits > 0 ? 667 : permits < 0 ? 1500 : 1000;
+
+        /// <summary>The planning fee against the usual, in thousandths.</summary>
+        public static int PlanningFeePermille(int permits) => permits > 0 ? 600 : permits < 0 ? 1500 : 1000;
+
+        /// <summary>The land tax's surcharge on land kept empty against the usual, in thousandths: build on it or pay.</summary>
+        public static int VacantPermille(int permits) => permits > 0 ? 2000 : permits < 0 ? 500 : 1000;
+
+        /// <summary>A share in thousandths as the per cent it moves a figure by, for the texts: 1334 is 33, 600 is 40.</summary>
+        public static int PercentOff(int permille) => Math.Abs(permille - 1000) / 10;
+
         public static float EventScale(int events) => Pick(events, 1.5f, 0.5f);
 
         /// <summary>The hourly wage floor; 0 for none.</summary>
