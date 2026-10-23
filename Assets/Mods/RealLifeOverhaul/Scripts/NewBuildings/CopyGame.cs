@@ -55,6 +55,13 @@ namespace RealLifeOverhaul.NewBuildings
 
         public static IList<DesignEntry> Catalogue => Designs;
 
+        /// <summary>The floor area (m2) of the game's building a design is measured and copied from, or 0 when it is gone.</summary>
+        public static int SourceArea(int design)
+        {
+            CityBuildingController source = design >= 0 && design < Designs.Count ? Sources[Designs[design].Source] : null;
+            return source != null && source.building != null ? source.building.totalSqm : 0;
+        }
+
         /// <summary>The copies stand under <paramref name="root"/>, the templates sleep under a holder of it switched off; both go with the city.</summary>
         public static void Begin(Transform root)
         {

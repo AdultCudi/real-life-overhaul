@@ -12,12 +12,14 @@ namespace RealLifeOverhaul.NewBuildings
         public int Lot = -1;                         // the lot of Spec.Lots it stands on
         public CityBuildingController Controller;    // the game's own controller of its copy, never destroyed in a session
         public Building Building;                    // the game's record of it, made at the load and never saved
-        public BuildingRegistration Registration;    // kept only in the game's private lookup, never in the save's list
+        public BuildingRegistration Registration;    // kept only in the game's private lookup, never in the save's list (a district's: the save's own)
         public float X, Z, Yaw;                      // m and degrees: where its root stands and its turn
         public float DoorX, DoorY, DoorZ;            // m: its first door, where a save made inside it puts the player
         public float DoorFacing;                     // degrees: the way that door faces out
         public bool Shown;                           // standing in view; hidden while the option is off or a session disagrees
         public string Address;                       // as the game writes it, for the log
+        public int DesignIndex = -1;                 // the design's place in the copy engine's catalogue at this load
+        public bool NewRegistration;                 // a district's building whose registration was made at this load: nothing of it was in the save
     }
 
     /// <summary>

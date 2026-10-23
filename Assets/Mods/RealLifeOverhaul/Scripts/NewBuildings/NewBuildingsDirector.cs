@@ -197,13 +197,20 @@ namespace RealLifeOverhaul.NewBuildings
         private bool MakeAll()
         {
             _specs.Clear();
+            MadeBuildings.Wanted(_specs);
             if (!Settings.NewBuildings)
             {
-                Logger?.Info("Made buildings: the option is off: nothing of the mod's own is made in this city.");
-                return true;
+                for (int i = _specs.Count - 1; i >= 0; i--)
+                {
+                    if (!_specs[i].Life)
+                    {
+                        _specs.RemoveAt(i);   // a district's buildings follow their district's own switch, as the game's own buildings stand whatever this is
+                    }
+                }
+                Logger?.Info("Made buildings: the option is off: nothing of the mod's own is made in this city"
+                             + (_specs.Count > 0 ? " (but " + _specs.Count + " building(s) of a district of the game's, by their district's own switch)" : string.Empty) + ".");
             }
-            MadeBuildings.Wanted(_specs);
-            if (TestAsked && Meta.Dev.Verbose && MadeBuildings.Get(NewBuildingsTestPlot.Id) == null && !Declares(NewBuildingsTestPlot.Id))
+            else if (TestAsked && Meta.Dev.Verbose && MadeBuildings.Get(NewBuildingsTestPlot.Id) == null && !Declares(NewBuildingsTestPlot.Id))
             {
                 _specs.Add(NewBuildingsTestPlot.Spec());
             }
@@ -283,10 +290,11 @@ namespace RealLifeOverhaul.NewBuildings
                 Logger?.Info("Made buildings: '" + spec.Id + "' stands down: none of its " + spec.Lots.Length + " lot(s) is free now (" + _why + ").");
                 return false;
             }
-            Building record = MadeGame.MakeRecord(spec);
-            BuildingRegistration registration = MadeGame.MakeRegistration(spec);
+            Building record = MadeGame.MakeRecord(spec, spec.DesignArea ? CopyGame.SourceArea(design) : 0);
+            BuildingRegistration registration = MadeGame.MakeRegistration(spec, out bool fresh);
             if (!MadeGame.Enter(record, registration, out why))
             {
+                MadeGame.Forsake(registration, fresh);
                 Logger?.Warn("Made buildings: '" + spec.Id + "' stands down: " + why + ".");
                 return false;
             }
@@ -295,20 +303,24 @@ namespace RealLifeOverhaul.NewBuildings
             if (copy == null)
             {
                 MadeGame.Leave(record);
+                MadeGame.Forsake(registration, fresh);
                 Logger?.Warn("Made buildings: '" + spec.Id + "' stands down: the game's building of the design " + chosen.Name + " is gone.");
                 return false;
             }
             NewBuildingsRules.Footprint(chosen, spec.Lots[lot], out float cx, out float cz, out float hw, out float hd);
             CopyGame.KeepMade(cx, cz, spec.Lots[lot].Facing, hw, hd, spec.Id);
-            MadeSpec claimed = spec;
-            MadeGame.Claim(spec, () => Settings.NewBuildings && (claimed.Wanted == null || claimed.Wanted()));
+            if (!spec.Life)
+            {
+                MadeSpec claimed = spec;   // a district's building is the game's to let and its rivals' to run: never held in the book
+                MadeGame.Claim(spec, () => Settings.NewBuildings && (claimed.Wanted == null || claimed.Wanted()));
+            }
             var made = new MadeBuilding
             {
                 Spec = spec, Design = chosen.Name, Lot = lot, Controller = copy, Building = record, Registration = registration,
                 X = root.x, Z = root.z, Yaw = yaw, DoorX = door.x, DoorY = door.y, DoorZ = door.z, DoorFacing = spec.Lots[lot].Facing, Shown = true,
-                Address = MadeGame.Written(spec.Street, spec.Number)
+                Address = MadeGame.Written(spec.Street, spec.Number), DesignIndex = design, NewRegistration = fresh
             };
-            if (spec.Type == NewBuildingsRules.HomeType)
+            if (spec.Type == NewBuildingsRules.HomeType && !spec.Life)
             {
                 _homes.Add(new Address(spec.Street, spec.Number));
             }
@@ -358,6 +370,8 @@ namespace RealLifeOverhaul.NewBuildings
         }
 
         // Every made building shown or hidden as the option, the session and the switch-off test want: hidden is never destroyed.
+        // A district's building is left to its district (Scripts/Uptown): its registration is the game's own, and hiding it
+        // under a business the game runs would leave a door nobody can find.
         private void Apply(string why)
         {
             bool want = Settings.NewBuildings && !_heldHidden && MadeGame.SessionAgrees();
@@ -365,6 +379,10 @@ namespace RealLifeOverhaul.NewBuildings
             for (int i = 0; i < _made.Count; i++)
             {
                 MadeBuilding made = _made[i];
+                if (made.Spec.Life)
+                {
+                    continue;
+                }
                 if (made.Shown != want && made.Controller != null)
                 {
                     CopyGame.Show(made.Controller, want);
@@ -390,7 +408,8 @@ namespace RealLifeOverhaul.NewBuildings
         // ---------------------------------------------------------------- the made buildings' check
 
         // Once, after the load, with Developer diagnostics on: each made building in the game's lookup and the city's list,
-        // not in the save's registrations, and the game's closest-building job as long as the city's list.
+        // not in the save's registrations (a district's building: in them, as the game's own are), and the game's
+        // closest-building job as long as the city's list.
         private void Check(float now)
         {
             if (!Meta.Dev.Verbose)
@@ -414,7 +433,7 @@ namespace RealLifeOverhaul.NewBuildings
                 Logger?.Info("Made buildings check (" + name + ", " + made.Address + "): in the game's building lookup " + (lookup ? "YES" : "NO") + ", in the city's list "
                              + (listed ? "YES" : "NO") + ", in the save's registrations " + (inSave ? "YES" : "NO") + ", the closest-building job sized to the list"
                              + (job < 0 ? " (not made in " + ClosestWait.ToString("F0", Plain) + " s)" : sized ? string.Empty : " (" + job + " for " + count + ")") + ": "
-                             + (lookup && listed && !inSave && sized ? "PASS" : "FAIL"));
+                             + (lookup && listed && inSave == made.Spec.Life && sized ? "PASS" : "FAIL"));
             }
         }
 

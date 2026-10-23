@@ -68,6 +68,8 @@ namespace RealLifeOverhaul.NewBuildings
         public int Traffic;        // the building's traffic index, 0 to 100, as the game's buildings have one
         public int Floors = 1;     // storeys of floor area its record has: the floors core gives a host that many floors
         public Func<bool> Wanted;  // the declaring feature's own option; null for always
+        public bool Life;          // a district's building in the game's own simulation: its registration the save's (the district save keeps it), never claimed
+        public bool DesignArea;    // its record's floor area that of the game's building its design copies (it is as large as it looks), not its size's times Floors
     }
 
     /// <summary>A street of the mod's own: its id, the locale key of its name, its short name for the game's help, avenue or not.</summary>
@@ -548,8 +550,9 @@ namespace RealLifeOverhaul.NewBuildings
             {
                 return "the game has no district " + (spec.District ?? "(none)");
             }
-            if (spec.Type == HomeType && !homesLeftOut)
+            if (spec.Type == HomeType && !homesLeftOut && !spec.Life)
             {
+                // A district's home takes the game's food deliveries as any home does: what names it leaves every save with the district's records.
                 return "a home would be sent the game's food deliveries, and the game's list of addresses those leave out could not be reached";
             }
             if (spec.Lots == null || spec.Lots.Length == 0)

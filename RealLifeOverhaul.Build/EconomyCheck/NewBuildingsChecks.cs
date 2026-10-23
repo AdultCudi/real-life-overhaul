@@ -585,8 +585,11 @@ internal static partial class Program
             "new buildings: a working copy is given its record and registration before it wakes (the city's list can reach it before its Start)");
         Check(MemberText(made, "public static BuildingRegistration MakeRegistration(").Contains("reg.AvailableForRent = false;") && !Regex.IsMatch(all, @"AvailableForRent\s*=\s*true|ForSale\s*=\s*true|RentedByPlayer\s*=\s*true")
               && MemberText(made, "public static Building MakeRecord(").Contains("b.SpecialService = null;") && MemberText(made, "public static Building MakeRecord(").Contains("ScriptableObject.CreateInstance<Building>()")
-              && MemberText(made, "public static Building MakeRecord(").Contains("b.totalSqm = SquareMetres(spec.Size) * Math.Max(1, spec.Floors);"),
-            "new buildings: a made building is never to let or for sale and has no special service; its record is new, so its DLC is the default, none");
+              && MemberText(made, "public static Building MakeRecord(").Contains("b.totalSqm = spec.DesignArea && designArea > 0 ? designArea : SquareMetres(spec.Size) * Math.Max(1, spec.Floors);")
+              && MemberText(made, "public static BuildingRegistration MakeRegistration(").Contains("if (!spec.Life)")
+              && MemberText(made, "public static BuildingRegistration MakeRegistration(").Contains("InSave(spec.Street, spec.Number) ?? DistrictSave.DistrictSaveDirector.KeptRegistration(spec.Street, spec.Number)"),
+            "new buildings: a made building of the mod's own is never to let or for sale and has no special service, and its record is new, so its DLC is the default, "
+            + "none; a district's building takes the save's own registration (the game lets it as its own)");
         Check(MemberText(made, "public static bool Claim(").Contains("SpecialBuildings.Reserve(spec.Id, spec.Street, spec.Number, on, SpecialKind.Other)") && !all.Contains("IgnoredAddresses"),
             "new buildings: a made building is claimed through the special buildings' book, and never put on the game's ignore list here");
 
@@ -663,12 +666,14 @@ internal static partial class Program
         Check(strip.Contains("MadeStreets.IsMine(save.CurrentStreetName)") && strip.Contains("save.CurrentStreetName = string.Empty;") && strip.Contains("save.LastPlayerPosition = ")
               && strip.Contains("MadeStreets.IsMine(regs[i].StreetName)") && back.Contains("save.CurrentStreetName = taken.Street;") && back.Contains("save.LastPlayerPosition = taken.Position;"),
             "new buildings: a save made inside a made building is written with no address and the player at its door outside, and the save in memory is put back as it was");
-        Check(MemberText(director, "private bool MakeAll()").IndexOf("if (!Settings.NewBuildings)", StringComparison.Ordinal) is int off && off > 0
-              && off < MemberText(director, "private bool MakeAll()").IndexOf("MadeBuildings.Wanted(", StringComparison.Ordinal)
+        string makeAll = MemberText(director, "private bool MakeAll()");
+        Check(makeAll.IndexOf("if (!Settings.NewBuildings)", StringComparison.Ordinal) is int off && off > 0
+              && off > makeAll.IndexOf("MadeBuildings.Wanted(", StringComparison.Ordinal) && makeAll.IndexOf("if (!_specs[i].Life)", StringComparison.Ordinal) > off
+              && makeAll.IndexOf("_specs.RemoveAt(i);", StringComparison.Ordinal) > off
               && settings.Contains("public const string NewBuildingsId = \"new_buildings\";") && settings.Contains("public static bool NewBuildings = true;")
               && settings.Contains("NewBuildings = Bool(modId, NewBuildingsId, NewBuildings);") && guide.Contains(".Owns(Settings.NewBuildingsId)")
               && tree.Contains("S(\"newbuildings\").For(\"newbuildings\").Main(\"new_buildings\")") && owners.Contains("{ \"RealLifeOverhaul.NewBuildings\", \"newbuildings\" }"),
-            "new buildings: an option of its own, on by default, in the options tree; off, nothing is made at the next load");
+            "new buildings: an option of its own, on by default, in the options tree; off, nothing of the mod's own is made at the next load (a district's buildings by its own switch)");
         Check(MemberText(director, "private void Apply(string why)").Contains("MadeGame.SessionAgrees()") && MemberText(made, "public static bool SessionAgrees()").Contains("SharedCity.Following")
               && MemberText(made, "public static bool SessionAgrees()").Contains("SharedCity.Leading") && !Regex.IsMatch(all, @"\bSend\w*\(|Network|Rpc"),
             "new buildings: in a Going Public session they stand only while every machine is known to run the mod, and nothing is sent");
