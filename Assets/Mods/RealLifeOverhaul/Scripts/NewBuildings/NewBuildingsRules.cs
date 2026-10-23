@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 
 namespace RealLifeOverhaul.NewBuildings
 {
@@ -514,6 +515,44 @@ namespace RealLifeOverhaul.NewBuildings
                 }
             }
             return -1;
+        }
+
+        /// <summary>
+        /// The lot ahead of someone standing at (<paramref name="x"/>, <paramref name="z"/>) and looking along
+        /// <paramref name="yaw"/> (degrees round the vertical, as the game turns things): its front line <paramref name="gap"/>
+        /// metres ahead of them, its middle on their line of sight, its front turned back towards them. The test building's lot
+        /// where the developer stood when they asked for it, so a plot found taken in the game can be swapped for ground they see.
+        /// </summary>
+        public static MadeLot LotAhead(float x, float z, float yaw, float width, float depth, float gap)
+        {
+            double turn = yaw * Math.PI / 180.0;
+            float ahead = gap + depth * 0.5f;
+            float facing = yaw + 180f;
+            facing -= 360f * (float)Math.Floor(facing / 360f);
+            return new MadeLot(x + (float)Math.Sin(turn) * ahead, z + (float)Math.Cos(turn) * ahead, facing, width, depth);
+        }
+
+        /// <summary>Where someone stood and the way they looked, as text kept until the next load: "x;z;yaw", the invariant culture's.</summary>
+        public static string SpotText(float x, float z, float yaw)
+        {
+            return x.ToString("R", CultureInfo.InvariantCulture) + ";" + z.ToString("R", CultureInfo.InvariantCulture) + ";"
+                   + yaw.ToString("R", CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>The spot back from <see cref="SpotText"/>; false for anything else (nothing kept, or text of another form).</summary>
+        public static bool ReadSpot(string text, out float x, out float z, out float yaw)
+        {
+            x = 0f;
+            z = 0f;
+            yaw = 0f;
+            if (string.IsNullOrEmpty(text))
+            {
+                return false;
+            }
+            string[] parts = text.Split(';');
+            return parts.Length == 3 && float.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out x)
+                   && float.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out z)
+                   && float.TryParse(parts[2], NumberStyles.Float, CultureInfo.InvariantCulture, out yaw);
         }
 
         /// <summary>
