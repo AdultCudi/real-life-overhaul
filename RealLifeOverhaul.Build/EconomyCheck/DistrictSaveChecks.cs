@@ -23,6 +23,7 @@ internal static partial class Program
         DistrictSaveKinds();
         DistrictSaveWritten();
         DistrictSaveIdle();
+        DistrictSaveTwoOwners();
     }
 
     private static void DistrictSaveIds()
@@ -68,6 +69,24 @@ internal static partial class Program
             "district save: the set's account is the same in any order it was filled (ordinal)");
         var groundOnly = new PlaceSet().Ground(0f, 0f, 1f, 1f);
         Check(!groundOnly.Empty, "district save: ground alone is something to keep out (the player and the cars on it)");
+
+        // A building of the mod's with its door: the address is the mod's, and its door is where a save made inside puts the player.
+        var doors = new PlaceSet().Door("reallife:street_provinglane", 1, 10f, 0.5f, 20f, 270f, "ba:neighborhood_midtown")
+                                  .Door("reallife:street_provinglane", 2, -10f, 0f, 5f, 90f, "ba:neighborhood_garmentdistrict");
+        Check(doors.Has("reallife:street_provinglane", 1) && doors.Names("reallife:street_provinglane", 2) && doors.Addresses == 2 && doors.Doors == 2 && !doors.Empty
+              && doors.Exits == 0 && !doors.FirstExit(out PlaceExit _),
+            "district save: a building's door names its address, and is no way out for anyone else");
+        Check(doors.DoorOf("reallife:street_provinglane", 1, out PlaceExit one) && one.X == 10f && one.Y == 0.5f && one.Z == 20f && one.Heading == 270f
+              && one.District == "ba:neighborhood_midtown" && !doors.DoorOf("reallife:street_provinglane", 3, out PlaceExit _) && !doors.DoorOf(null, 1, out PlaceExit _),
+            "district save: the door of the building at an address is found by its address alone");
+        DistrictPlaces.Reset();
+        DistrictPlaces.Add("made", s => s.Door("reallife:street_provinglane", 1, 1f, 0f, 1f, 0f, "ba:neighborhood_midtown"));
+        DistrictPlaces.Add("district", s => s.Ground(-5f, -5f, 5f, 5f).Exit(50f, 0f, 0f, 90f, "ba:neighborhood_midtown"));
+        PlaceSet joined = DistrictPlaces.Build();
+        Check(joined.DoorOf("reallife:street_provinglane", 1, out PlaceExit onGround) && joined.OnGround(onGround.X, onGround.Z) && joined.NearestExit(onGround.X, onGround.Z, out PlaceExit outside)
+              && outside.X == 50f && joined.Doors == 1 && joined.Exits == 1,
+            "district save: the features' doors join the set, and a door on the mod's own ground finds the way out nearest it");
+        DistrictPlaces.Reset();
     }
 
     private static void DistrictSaveProviders()
@@ -183,6 +202,121 @@ internal static partial class Program
         Check(string.Join(",", queue.ToArray()) == "t1,M1,t2,M2,t3", "district save: put back, the queue reads as it did (the transactions' order)");
         var emptyQueue = new Queue<string>();
         Check(DistrictSaveRules.TakeOut(emptyQueue, s => true, new List<Taken<string>>(), scratch) == 0 && emptyQueue.Count == 0, "district save: an empty queue: nothing");
+    }
+
+    // Two movers of the same lists at a save: new buildings' save guard (where the district save is not present this
+    // session) and the district save. The guard runs among the save hook's handlers, before the district save's last
+    // step, and puts back a frame later; the district save puts back on the game's line, before. Whichever takes first,
+    // each takes only what is still there and puts back only what it took, the later taker's first: no item is taken
+    // twice and every one is back once, where it stood. While the district save is present the guard takes nothing.
+    // The guard's moves are its own (MadeGame.Strip and PutBack: from the end, put back from the start at each place).
+    private static void DistrictSaveTwoOwners()
+    {
+        bool once = true, whole = true, aside = true, player = true;
+        for (int present = 0; present < 2; present++)
+        {
+            for (int guardFirst = 0; guardFirst < 2; guardFirst++)
+            {
+                var list = new List<string> { "a", "reallife:street_provinglane 1", "b", "reallife:street_district 4", "reallife:street_provinglane 2", "c", "reallife:street_district 9", "d" };
+                var was = new List<string>(list);
+                var takes = new Dictionary<string, int>(StringComparer.Ordinal);
+                var guardAt = new List<int>();
+                var guardItems = new List<string>();
+                var district = new List<Taken<string>>();
+                void Guard()
+                {
+                    if (present == 1)
+                    {
+                        return;   // DistrictSaveDirector.Present: the guard steps aside
+                    }
+                    for (int i = list.Count - 1; i >= 0; i--)
+                    {
+                        if (list[i].StartsWith("reallife:street_provinglane", StringComparison.Ordinal))   // a made street (MadeStreets.IsMine)
+                        {
+                            guardAt.Add(i);
+                            guardItems.Add(list[i]);
+                            takes[list[i]] = (takes.TryGetValue(list[i], out int n) ? n : 0) + 1;
+                            list.RemoveAt(i);
+                        }
+                    }
+                }
+                void District()
+                {
+                    DistrictSaveRules.TakeOut(list, x => DistrictSaveRules.IsModId(x), district);   // every place of the mod's, made ones too
+                    for (int i = 0; i < district.Count; i++)
+                    {
+                        takes[district[i].Item] = (takes.TryGetValue(district[i].Item, out int n) ? n : 0) + 1;
+                    }
+                }
+                void GuardBack()
+                {
+                    for (int i = guardItems.Count - 1; i >= 0; i--)
+                    {
+                        list.Insert(Math.Min(guardAt[i], list.Count), guardItems[i]);
+                    }
+                }
+                if (guardFirst == 1)
+                {
+                    Guard();
+                    District();
+                    DistrictSaveRules.PutBack(list, district);   // the game's line, while the save call runs
+                    GuardBack();                                 // a frame later
+                }
+                else
+                {
+                    District();
+                    Guard();
+                    GuardBack();
+                    DistrictSaveRules.PutBack(list, district);
+                }
+                foreach (string item in was)
+                {
+                    int n = takes.TryGetValue(item, out int c) ? c : 0;
+                    once &= DistrictSaveRules.IsModId(item) ? n == 1 : n == 0;
+                }
+                whole &= string.Join("|", list) == string.Join("|", was);
+                aside &= present == 0 || guardItems.Count == 0;
+
+                // The player inside a made building: whoever is first writes the door outside; the other sees no address.
+                string street = "reallife:street_provinglane";
+                float x = 500f;
+                int movers = 0;
+                bool Inside(string s) => s != null && s.StartsWith("reallife:street_provinglane", StringComparison.Ordinal);
+                void GuardPlayer()
+                {
+                    if (present == 0 && Inside(street))
+                    {
+                        street = string.Empty;
+                        x = 10f;
+                        movers++;
+                    }
+                }
+                void DistrictPlayer()
+                {
+                    if (DistrictSaveRules.IsModId(street))
+                    {
+                        street = string.Empty;
+                        x = 10f;
+                        movers++;
+                    }
+                }
+                if (guardFirst == 1)
+                {
+                    GuardPlayer();
+                    DistrictPlayer();
+                }
+                else
+                {
+                    DistrictPlayer();
+                    GuardPlayer();
+                }
+                player &= movers == 1 && street.Length == 0 && x == 10f;
+            }
+        }
+        Check(once, "district save: with new buildings' save guard, in either order, every record of the mod's places is taken out once and nothing else at all");
+        Check(whole, "district save: with new buildings' save guard, in either order, the later taker putting back first, every list is back exactly as it was");
+        Check(aside, "district save: while the district save is present new buildings' save guard takes nothing (one owner of every record)");
+        Check(player, "district save: the player in a made building is written outside its door by one of the two, whichever runs first, never twice");
     }
 
     private static void DistrictSaveText()

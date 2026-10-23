@@ -9,8 +9,10 @@ namespace RealLifeOverhaul.DistrictSave
     /// machine, no DLC asked). The set is built when a save is read, before the city loads (DistrictSaveEntry), and again
     /// at every city load; <see cref="Changed"/> builds it afresh in play. A feature whose buildings are to have their
     /// records back before the city's scenes are built also gives an early step, which puts its buildings' assets into the
-    /// game's address lookup then (<see cref="Early"/>): a record goes back only once the game knows its places.
-    /// With no feature registered, or none naming anything, the district save costs nothing.
+    /// game's address lookup then (<see cref="Early"/>): a record goes back only once the game knows its places (each
+    /// address by BuildingHelper.GetBuilding, each district in NeighborhoodHelper.Neighborhoods). The API stays as it is
+    /// (docs/features/district-save.md, "How a feature names its places"). With no feature registered, or none naming
+    /// anything, the district save costs nothing.
     /// Game-free. COST: nothing per frame; one call of each fill at a load and on <see cref="Changed"/>.
     /// </summary>
     public static class DistrictPlaces
@@ -23,7 +25,8 @@ namespace RealLifeOverhaul.DistrictSave
 
         /// <summary>
         /// A feature's places, under its own name: <paramref name="fill"/> adds them to the set it is given (streets,
-        /// addresses, districts, ground and the ways out to the game's streets); <paramref name="early"/>, if given, runs
+        /// addresses, buildings with their doors, districts, ground and the ways out to the game's streets);
+        /// <paramref name="early"/>, if given, runs
         /// when a save has been read and before its city is built, and puts the feature's buildings' assets into the game's
         /// address lookup, so that their records go back before the game builds its lookups from the save's lists.
         /// Registering again under the same name replaces both.
@@ -200,10 +203,10 @@ namespace RealLifeOverhaul.DistrictSave
     }
 
     /// <summary>
-    /// The places of the mod's own: whole streets, addresses, districts, ground and the ways out. A street or district
-    /// whose id is the mod's (DistrictSaveRules.IsModId) is the mod's whether or not a feature named it; what a feature
-    /// names is also made this session (<see cref="Has"/>), which is what decides whether a kept record goes back at a
-    /// load. Game-free; built by <see cref="DistrictPlaces.Build"/>, read at a save and a load, never per frame.
+    /// The places of the mod's own: whole streets, addresses (a building's with its door), districts, ground and the ways
+    /// out. A street or district whose id is the mod's (DistrictSaveRules.IsModId) is the mod's whether or not a feature
+    /// named it; what a feature names is made this session (<see cref="Has"/>). Game-free; built by
+    /// <see cref="DistrictPlaces.Build"/>, read at a save and a load, never per frame.
     /// </summary>
     public sealed class PlaceSet
     {
@@ -212,6 +215,7 @@ namespace RealLifeOverhaul.DistrictSave
         private readonly HashSet<string> _districts = new HashSet<string>(StringComparer.Ordinal);
         private readonly List<PlaceGround> _ground = new List<PlaceGround>(2);
         private readonly List<PlaceExit> _exits = new List<PlaceExit>(2);
+        private readonly Dictionary<PlaceKey, PlaceExit> _doors = new Dictionary<PlaceKey, PlaceExit>();
 
         /// <summary>Every number on a street of the mod's own (its id is the mod's).</summary>
         public PlaceSet Street(string id)
@@ -257,6 +261,21 @@ namespace RealLifeOverhaul.DistrictSave
             return this;
         }
 
+        /// <summary>
+        /// A building of the mod's at an address, and the spot outside its door (on the street it fronts, facing out) where
+        /// a save made inside it puts the player; the game's district that spot is in. The address is the mod's from then on.
+        /// </summary>
+        public PlaceSet Door(string street, int number, float x, float y, float z, float heading, string gameDistrict)
+        {
+            if (!string.IsNullOrEmpty(street))
+            {
+                var key = new PlaceKey(street, number);
+                _addresses.Add(key);
+                _doors[key] = new PlaceExit { X = x, Y = y, Z = z, Heading = heading, District = gameDistrict };
+            }
+            return this;
+        }
+
         /// <summary>Adds another set's places (one feature's) to this one.</summary>
         internal void Take(PlaceSet other)
         {
@@ -265,6 +284,10 @@ namespace RealLifeOverhaul.DistrictSave
             _districts.UnionWith(other._districts);
             _ground.AddRange(other._ground);
             _exits.AddRange(other._exits);
+            foreach (KeyValuePair<PlaceKey, PlaceExit> door in other._doors)
+            {
+                _doors[door.Key] = door.Value;
+            }
         }
 
         /// <summary>True for an address the save must never name: on a street whose id is the mod's, or one a feature named.</summary>
@@ -329,6 +352,13 @@ namespace RealLifeOverhaul.DistrictSave
             return found;
         }
 
+        /// <summary>The spot outside the door of the mod's building at an address; false when no feature named one.</summary>
+        public bool DoorOf(string street, int number, out PlaceExit door)
+        {
+            door = default;
+            return !string.IsNullOrEmpty(street) && _doors.TryGetValue(new PlaceKey(street, number), out door);
+        }
+
         /// <summary>The first way out a feature named; false when there is none.</summary>
         public bool FirstExit(out PlaceExit exit)
         {
@@ -341,6 +371,7 @@ namespace RealLifeOverhaul.DistrictSave
         public int Districts => _districts.Count;
         public int GroundCount => _ground.Count;
         public int Exits => _exits.Count;
+        public int Doors => _doors.Count;
 
         /// <summary>True when no feature named anything: the save is then left as the game has it.</summary>
         public bool Empty => _streets.Count == 0 && _addresses.Count == 0 && _districts.Count == 0 && _ground.Count == 0;

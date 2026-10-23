@@ -32,6 +32,7 @@ namespace RealLifeOverhaul.DistrictSave
             public int Left;        // whole records and elements taken out
             public int StoodIn;     // fields written as a stand-in
             public int NotKept;     // of those, another player's: put back after the write, never kept
+            public bool ForGood;    // the save tools' removal: never put back, so another player's are not taken at all
 
             /// <summary>The record's place in the payload.</summary>
             public int Slot(object item)
@@ -44,11 +45,12 @@ namespace RealLifeOverhaul.DistrictSave
         /// <summary>
         /// Takes every record that names one of the mod's places out of the save, and writes every such field as its
         /// stand-in. The order matters only where one kind leaves because another did (an employee's plan, a message about
-        /// an employee): those come after.
+        /// an employee): those come after. <paramref name="forGood"/>: for the save tools' removal, nothing is to go back,
+        /// so another player's things are left where they stand.
         /// </summary>
-        public static Strip TakeOut(GameInstance save, PlaceSet places)
+        public static Strip TakeOut(GameInstance save, PlaceSet places, bool forGood = false)
         {
-            var s = new Strip();
+            var s = new Strip { ForGood = forGood };
             Step(s, "the businesses", () => Registrations(save, places, s));
             Step(s, "their staff and candidates", () => People(save, places, s));
             Step(s, "the offices' plans", () => Plans(save, places, s));
@@ -105,7 +107,8 @@ namespace RealLifeOverhaul.DistrictSave
                 return null;
             }
             var taken = new List<Taken<T>>(2);
-            if (DistrictSaveRules.TakeOut(list, mine, taken) == 0)
+            Predicate<T> pick = s.ForGood && foreign != null ? x => mine(x) && !foreign(x) : mine;   // for good: another player's stay where they are
+            if (DistrictSaveRules.TakeOut(list, pick, taken) == 0)
             {
                 return null;
             }
@@ -113,7 +116,7 @@ namespace RealLifeOverhaul.DistrictSave
             for (int i = 0; i < taken.Count; i++)
             {
                 s.Left++;
-                if (foreign != null && foreign(taken[i].Item))
+                if (!s.ForGood && foreign != null && foreign(taken[i].Item))
                 {
                     s.NotKept++;
                     continue;

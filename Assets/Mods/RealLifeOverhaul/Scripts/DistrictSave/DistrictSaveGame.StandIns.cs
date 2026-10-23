@@ -14,9 +14,11 @@ namespace RealLifeOverhaul.DistrictSave
     /// <summary>
     /// The fields written as a stand-in, because what they belong to is never lost: the player, the player's cars and
     /// contacts, the map's destination, the job under way, and the references of the game's own records to someone or
-    /// a plan that left. Each is written naming the game's own places (the way out nearest, a district of the game's,
-    /// nothing) and its real value goes back after the write and at a load where its place is made. Never another
-    /// player's things: the save's cars are this player's alone (GoingPublic.MineVehicle). COST: one pass at a save.
+    /// a plan that left. Each is written naming the game's own places (outside a building's door, the way out nearest, a
+    /// district of the game's, nothing) and its real value goes back after the write and at a load where its place is
+    /// made; the player in a building of the mod's is the one stand-in that is not kept, as the save loads with the
+    /// player outside its door with or without the mod. Never another player's things: the save's cars are this
+    /// player's alone (GoingPublic.MineVehicle). COST: one pass at a save.
     /// </summary>
     internal static partial class DistrictSaveGame
     {
@@ -43,7 +45,10 @@ namespace RealLifeOverhaul.DistrictSave
             Step(s, "the vans' drivers and the headhunters' plans", () => Slots(save, s));
         }
 
-        // The player in a building of the mod's, or out of doors on its ground, is written at the way out nearest.
+        // The player in a building of the mod's is written outside its door, facing out (a made building's door, as new
+        // buildings has it), and the save loads with the player there with or without the mod: nothing of it is kept. A
+        // door on the mod's own ground is kept as a spot there, the save naming the way out nearest. The player out of
+        // doors on the mod's ground is written at the way out nearest, and goes back at a load where that ground is made.
         // save path: GameInstance.CurrentStreetName
         // save path: GameInstance.CurrentStreetNumber
         // save path: GameInstance.LastPlayerPosition
@@ -59,14 +64,20 @@ namespace RealLifeOverhaul.DistrictSave
             {
                 return;
             }
-            bool hasWay = Way(places, inside ? Door(street, number) : (Vector3?)at, out PlaceExit exit);   // chosen before anything is written
-            var record = new StoredRecord(SaveKind.Player, 0, null);
-            if (inside)
+            bool hasWay = Leaving(places, inside, street, number, at, out PlaceExit exit, out bool doorOnGround);   // chosen before anything is written
+            if (ground || doorOnGround)
             {
-                record.Addresses.Add(new PlaceKey(street, number));
+                var record = new StoredRecord(SaveKind.Player, 0, null);
+                if (ground)
+                {
+                    Spot(record.Values, street, number, at, turn, Ground);
+                }
+                else if (places.DoorOf(street, number, out PlaceExit door))
+                {
+                    Spot(record.Values, string.Empty, 0, new SerializableVector3(door.X, door.Y, door.Z), Facing(door.Heading), Ground);
+                }
+                s.Records.Add(record);
             }
-            Spot(record.Values, street, number, at, turn, inside ? Inside : Ground);
-            s.Records.Add(record);
             s.StoodIn++;
             save.CurrentStreetName = string.Empty;   // out of doors, as a new game starts
             save.CurrentStreetNumber = 0;
@@ -179,7 +190,7 @@ namespace RealLifeOverhaul.DistrictSave
             {
                 return;
             }
-            bool hasWay = Way(places, inside ? Door(street, number) : (Vector3?)at, out PlaceExit exit);   // chosen before anything is written
+            bool hasWay = Leaving(places, inside, street, number, at, out PlaceExit exit, out bool _);   // chosen before anything is written
             var record = new StoredRecord(kind, i, car.id);
             if (inside)
             {
@@ -379,6 +390,28 @@ namespace RealLifeOverhaul.DistrictSave
             values.Add(what);
         }
 
+        // Where the player or a car in a building of the mod's, or on its ground, is written: outside the building's own
+        // door when that gives onto the game's streets; else the way out nearest to the door, or to where it stands.
+        private static bool Leaving(PlaceSet places, bool inside, string street, int number, SerializableVector3 at, out PlaceExit spot, out bool doorOnGround)
+        {
+            doorOnGround = false;
+            if (inside && places.DoorOf(street, number, out PlaceExit door))
+            {
+                if (!places.OnGround(door.X, door.Z))
+                {
+                    spot = door;
+                    return true;
+                }
+                doorOnGround = true;
+                if (!places.NearestExit(door.X, door.Z, out spot))
+                {
+                    spot = door;   // no way out named: outside the door, on the mod's ground (the self-check says so)
+                }
+                return true;
+            }
+            return Way(places, inside ? Door(street, number) : (Vector3?)at, out spot);
+        }
+
         // The way out nearest to a point, or the first way out when the point is not known.
         private static bool Way(PlaceSet places, Vector3? from, out PlaceExit exit)
         {
@@ -389,7 +422,7 @@ namespace RealLifeOverhaul.DistrictSave
             return places.FirstExit(out exit);
         }
 
-        // The door of a building of the mod's, where the city has it; none when it cannot be read (the first way out is taken).
+        // The door of a building of the mod's that no feature gave a door, where the city has it; none when it cannot be read.
         private static Vector3? Door(string street, int number)
         {
             try

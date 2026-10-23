@@ -36,6 +36,7 @@ namespace RealLifeOverhaul.DistrictSave
         private static readonly Action Join = Guard.Way(KeepHook);
 
         private static GameInstance _restoredFor;           // the save the last load put back
+        private static int _restored;                       // records this load put back: they leave every save of it, whatever names them now
         private static readonly List<StoredRecord> KeptRecords = new List<StoredRecord>();
         private static readonly List<object> KeptItems = new List<object>();
 
@@ -53,6 +54,14 @@ namespace RealLifeOverhaul.DistrictSave
 
         /// <summary>The last save's check line, for the test.</summary>
         public static string LastCheck { get; private set; }
+
+        /// <summary>
+        /// True once the district save's city step is done: from then on it alone takes out and puts back whatever of a
+        /// save names the mod's places, and a feature's own save guard steps aside (new buildings', MadeGame.Save). False
+        /// from a save's reading to its city step, and for a city whose district save step failed, where the guard does
+        /// its own. The save tools' stop in a city that stays leaves it true: the district save stays in that city's saves.
+        /// </summary>
+        public static bool Present { get; private set; }
 
         /// <summary>True for a key of the district's records: the save tools leave it, as it holds the player's own things.</summary>
         public static bool Keeps(string key)
@@ -78,14 +87,28 @@ namespace RealLifeOverhaul.DistrictSave
                 PutBackNow("before the next save, as the game's line for the last did not come");
             }
             Flush();
+            if (_test != null)
+            {
+                try
+                {
+                    _test.Add(save);   // the district save test's things: no other handler of the save sees them
+                }
+                catch (Exception e)
+                {
+                    Logger?.Error(e);
+                }
+            }
             PlaceSet places = DistrictPlaces.Stale ? DistrictPlaces.Build() : DistrictPlaces.Current;
-            if (DistrictSaveRules.Idle(places, KeptRecords.Count))
+            if (DistrictSaveRules.Idle(places, KeptRecords.Count + _restored))
             {
                 Clean(save);
                 return;   // nothing of the mod's can be in this save: nothing to do
             }
             long began = Stopwatch.GetTimestamp();
             DistrictSaveGame.Strip s = DistrictSaveGame.TakeOut(save, places);
+            _pending = s;   // at once: whatever follows, what was taken out goes back
+            Arm();
+            DistrictSaveWatch.Wake();
             int bytes = Write(save, s, out int records, out string fault);
             List<string> hits;
             try
@@ -97,9 +120,6 @@ namespace RealLifeOverhaul.DistrictSave
                 hits = new List<string>(1) { "the check itself failed: " + e.GetType().Name + ": " + e.Message };
             }
             double ms = (Stopwatch.GetTimestamp() - began) * 1000.0 / Stopwatch.Frequency;
-            _pending = s;
-            Arm();
-            DistrictSaveWatch.Wake();
             bool failed = hits.Count > 0 || fault != null || s.Faults.Count > 0;
             LastCheck = CheckLine(places, s, records, bytes, ms, hits, fault);
             Say(LastCheck, failed);
@@ -274,6 +294,7 @@ namespace RealLifeOverhaul.DistrictSave
         /// </summary>
         public static void Early()
         {
+            Present = false;   // a new city: a feature's guard does its own until the district save's city step is done
             GameInstance save = SaveGameManager.Current;
             if (save == null || ReferenceEquals(save, _restoredFor))
             {
@@ -312,6 +333,7 @@ namespace RealLifeOverhaul.DistrictSave
             GlobalEvents.RegisterOnGameLoadedLateCallback(Join);
             Guard.Add<DistrictSaveWatch>(root);
             Flush();
+            Present = true;   // last: a step that failed above leaves the guards of the features to do their own
         }
 
         /// <summary>The city is unloading: what this session put back stays in its save; the next load starts afresh.</summary>
@@ -324,10 +346,64 @@ namespace RealLifeOverhaul.DistrictSave
             Flush();
         }
 
+        /// <summary>
+        /// The save tools stop the mod in a city that stays ("Prepare this save for removing the mod"): every record that
+        /// names the mod's places leaves the save in memory for good, kept in the mod's section (which the tools leave),
+        /// and every stand-in is written for good, so that no later save of this city names them, whatever still runs.
+        /// Another player's things stay where they are. The places are the city's as it loaded (its features have stopped:
+        /// a made building's door is still known). Returns how many records and stand-ins.
+        /// </summary>
+        public static int KeepOutForGood()
+        {
+            try
+            {
+                GameInstance save = SaveGameManager.Current;
+                if (save == null)
+                {
+                    return 0;
+                }
+                PutBackNow("before the save tools take the mod's places out for good");
+                Flush();
+                DistrictSaveGame.Strip s = DistrictSaveGame.TakeOut(save, DistrictPlaces.Current, true);
+                Write(save, s, out int records, out string fault);
+                if (fault != null)
+                {
+                    DistrictSaveGame.PutBack(s, null);   // not kept, so not out for good: every save goes on taking them out and putting them back
+                    Logger?.Warn("District save: the save tools stopped the mod, and the records of the mod's places stay in the save in memory, as " + fault + ": FAIL");
+                    return 0;
+                }
+                s.PutBacks.Clear();   // for good
+                for (int i = 0; i < s.Records.Count; i++)
+                {
+                    StoredRecord r = s.Records[i];
+                    KeptRecords.Add(r);
+                    KeptItems.Add(r.Slot >= 0 && r.Slot < s.Payload.Count ? s.Payload[r.Slot] : null);
+                }
+                string line = "District save: the save tools stopped the mod: " + s.Left + " record(s) taken out of the save in memory for good and " + s.StoodIn
+                              + " stand-in(s) written for good; the mod's section keeps " + records + " record(s) for a load with the mod"
+                              + (s.Faults.Count > 0 ? "; not taken out: " + string.Join("; ", s.Faults) + ": FAIL" : ": PASS");
+                if (s.Faults.Count > 0)
+                {
+                    Logger?.Warn(line);
+                }
+                else
+                {
+                    Logger?.Info(line);
+                }
+                return s.Left + s.StoodIn;
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);   // the save tools go on; every save still takes out what names the mod's places
+                return 0;
+            }
+        }
+
         // A save's records read for its load: the mod's section's lines, and those an older version could not read.
         private static void Start(GameInstance save)
         {
             _restoredFor = save;
+            _restored = 0;
             KeptRecords.Clear();
             KeptItems.Clear();
             if (save.modData == null)
@@ -397,6 +473,7 @@ namespace RealLifeOverhaul.DistrictSave
             KeptRecords.Clear();
             KeptItems.Clear();
             DistrictSaveGame.Return r = DistrictSaveGame.Restore(save, records, items, places, city);
+            _restored += r.Back;
             if (city)
             {
                 DistrictSaveGame.Refresh(r);   // the game built its lookups from the lists as the scenes loaded
@@ -425,13 +502,31 @@ namespace RealLifeOverhaul.DistrictSave
             return save.modData != null && save.modData.TryGetValue(key, out string text) ? text : null;
         }
 
-        /// <summary>For the save tools' report: the district's records the tool leaves in the mod's section, or null when there are none.</summary>
+        /// <summary>For the save tools' report: how many of the district's records the tool leaves in the mod's section.</summary>
         public static int StoredRecords()
         {
             GameInstance save = SaveGameManager.Current;
             string text = save != null ? Value(save, DistrictSaveStore.Key) : null;
             StoredLine line = DistrictSaveStore.Read(text, out int _);
             return line != null ? line.Records.Count : 0;
+        }
+
+        /// <summary>
+        /// The registration the mod's section keeps for an address and has not put back yet (it goes back into the save's
+        /// list at the city step, this same object): for a feature that makes a building of the mod's with a registration of
+        /// its own, which must take the player's instead of a new empty one. Null when none is kept for that address.
+        /// </summary>
+        public static BuildingRegistration KeptRegistration(string street, int number)
+        {
+            for (int i = 0; i < KeptRecords.Count && i < KeptItems.Count; i++)
+            {
+                if (KeptRecords[i].Kind == SaveKind.Registration && KeptItems[i] is BuildingRegistration reg && reg.StreetNumber == number
+                    && string.Equals(reg.StreetName, street, StringComparison.Ordinal))
+                {
+                    return reg;
+                }
+            }
+            return null;
         }
     }
 }

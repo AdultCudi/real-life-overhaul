@@ -249,6 +249,7 @@ namespace RealLifeOverhaul.Meta
             bool saved = false;
             try
             {
+                DistrictSave.DistrictSaveDirector.KeepOutForGood();   // what names the mod's places, out of the save in memory for good and kept in its section
                 Purge(removed);
                 RefreshGame();
                 GlobalEvents.onSaveGame -= PurgeCall;   // last in line, after anything attached since

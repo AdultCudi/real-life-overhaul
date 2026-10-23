@@ -15,10 +15,12 @@ namespace RealLifeOverhaul.DistrictSave
     /// <summary>
     /// Options > Tests, "District save: keep a test record out of the save": a building of the test's own at an address
     /// of the mod's (never in the game's lookup), a registration there, a task and a transaction naming it, a district of
-    /// the test's with its stats, and the map's destination at it; a save written by the game into a folder of the test's
-    /// own; the game's lists then without the test's things and compared with before; the file read back with the game's
-    /// own reader and gone through for anything of the test's, and the mod's section read for the records it should
-    /// hold; the folder removed. One log line and one notice. COST: on the button only.
+    /// the test's with its stats, and the map's destination at it, added to the save inside the mod's last step of the
+    /// game's save event (no other handler of the save sees them); a save written by the game into this character's own
+    /// saves under the test's name, kept there to be loaded without the mod; the game's lists after the save with the
+    /// test's things back where they stood, and whole again once they are taken away; the file read back with the game's
+    /// own reader and gone through for anything of the test's, and the mod's section read for the records it should hold.
+    /// One log line and one notice. COST: on the button only; at a save, one null test.
     /// </summary>
     public static partial class DistrictSaveDirector
     {
@@ -26,10 +28,13 @@ namespace RealLifeOverhaul.DistrictSave
         private const string TestStreet = "reallife:street_district_save_test";
         private const int TestNumber = 1;
         private const string TestDistrict = "reallife:district_save_test";
-        private const string TestSave = "RealLifeOverhaul district save test";
+        private const string TestSave = "RealLifeOverhaul district save test";   // the save's name in this character's saves
+        private const string TestTask = "district-save-test";                    // the test task's id
+        private const string TestTransaction = "reallife_transaction_district_save_test";   // its name in the bank's history, were it ever shown
         private const float TestWait = 60f;   // real seconds the test waits for the game to finish writing the file
 
         private static bool _testing;
+        private static TestThings _test;      // the test's things while its save is written: added in BeforeWrite
 
         public static void Test()
         {
@@ -90,12 +95,11 @@ namespace RealLifeOverhaul.DistrictSave
         private static IEnumerator TestRun()
         {
             var problems = new List<string>(4);
-            string folder = Path.Combine(Application.temporaryCachePath, "RealLifeOverhaul", "district-save-test");
             string file = null;
             GameInstance save = SaveGameManager.Current;
             try
             {
-                file = TestWrite(save, folder, problems);
+                file = TestWrite(save, problems);
             }
             catch (Exception e)
             {
@@ -130,21 +134,11 @@ namespace RealLifeOverhaul.DistrictSave
             {
                 problems.Add("reading the file back threw " + e.GetType().Name + ": " + e.Message);
             }
-            try
-            {
-                if (Directory.Exists(folder))
-                {
-                    Directory.Delete(folder, true);
-                }
-            }
-            catch (Exception e)
-            {
-                problems.Add("the test's folder could not be removed (" + e.Message + ")");
-            }
             _testing = false;
             bool pass = problems.Count == 0;
             string line = "District save test: a registration, a task, a transaction and the stats of a district of the test's, and the map's destination, kept out of a "
                           + "save written by the game and read back with its own reader" + (pass ? ": PASS" : ": FAIL (" + string.Join("; ", problems) + ")")
+                          + (file != null ? ". The save is kept as '" + TestSave + "' in this character's saves (" + file + "), to be loaded without the mod" : string.Empty)
                           + (LastCheck != null ? ". " + LastCheck : string.Empty);
             if (pass)
             {
@@ -157,15 +151,17 @@ namespace RealLifeOverhaul.DistrictSave
             Notifications.Show(pass ? NotificationType.Success : NotificationType.Error, pass ? DistrictSaveText.TestPass : DistrictSaveText.TestFail, null, 10f);
         }
 
-        // The test's things in, a save of the game's into the test's folder, the test's things out; returns the file.
-        private static string TestWrite(GameInstance save, string folder, List<string> problems)
+        // The test's things ready, a save of the game's into this character's saves (they are added inside its event), the
+        // test's things away again; returns the file, or null when the game did not save.
+        private static string TestWrite(GameInstance save, List<string> problems)
         {
-            if (Directory.Exists(folder))
+            GameManager game = InstanceBehavior<GameManager>.Instance;
+            string folder = SaveGamePathHelper.GetCharacterFolderPath(save.characterId);
+            string file = Path.Combine(folder, TestSave + (game != null && game.useSaveGameTypeJson ? ".json" : ".hsg"));
+            if (File.Exists(file))
             {
-                Directory.Delete(folder, true);
+                File.Delete(file);   // the last test's: the file read back is this one's
             }
-            Directory.CreateDirectory(folder);
-            var before = new Snapshot(save);
             Building building = ScriptableObject.CreateInstance<Building>();
             building.name = "RealLifeOverhaul district save test";
             building.StreetName = TestStreet;
@@ -174,21 +170,17 @@ namespace RealLifeOverhaul.DistrictSave
             building.BuildingType = "ba:buildingtype_retail";
             var reg = new BuildingRegistration { StreetName = TestStreet, StreetNumber = TestNumber, BusinessName = "District save test" };
             reg.BuildingCached = building;
-            var task = new TodoTask { id = "reallife_district_save_test", type = TodoTaskType.MissingSchedule, address = new Address(TestStreet, TestNumber) };
-            var tx = new Transaction(new TransactionInfo("reallife_transaction_district_save_test")) { address = new Address(TestStreet, TestNumber) };
-            var stats = new NeighbourhoodStats { name = TestDistrict };
-            Address guide = save.customDestination;
+            var things = new TestThings(reg, new TodoTask { id = TestTask, type = TodoTaskType.MissingSchedule, address = new Address(TestStreet, TestNumber) },
+                new Transaction(new TransactionInfo(TestTransaction)) { address = new Address(TestStreet, TestNumber) }, new NeighbourhoodStats { name = TestDistrict },
+                new Address(TestStreet, TestNumber));
             string name = save.SaveGameName;
+            bool unsaved = SaveGameManager.HasChangesSinceLastSave();
             bool savedOk = false;
             DistrictPlaces.Add(TestOwner, set => set.Street(TestStreet).District(TestDistrict));
             DistrictPlaces.Changed();
+            _test = things;
             try
             {
-                save.BuildingRegistrations.Add(reg);
-                save.TodoTasks.Add(task);
-                save.Transactions.Enqueue(tx);
-                save.NeighbourhoodStats.Add(stats);
-                save.customDestination = new Address(TestStreet, TestNumber);
                 SaveHook.Keep(null);   // the mod's hook in the game's save event, last
                 savedOk = SaveGameManager.Save(SaveGameManager.SaveType.OldAgeBackUp, TestSave, folder);
                 if (Waiting)
@@ -200,33 +192,33 @@ namespace RealLifeOverhaul.DistrictSave
                 {
                     problems.Add("the game did not save (it refused or failed)");
                 }
-                else if (!before.Back(save, reg, task, tx, stats))
+                else if (!things.Added)
+                {
+                    problems.Add("the district save's step did not run in the game's save event");
+                }
+                else if (!things.Back(save))
                 {
                     problems.Add("after the save the game's lists were not as they were with the test's things where they stood");
                 }
             }
             finally
             {
+                _test = null;
+                things.Remove(save);
                 save.SaveGameName = name;   // a save under another name names the game after it, as the player's own does
-                save.BuildingRegistrations.Remove(reg);
-                save.TodoTasks.Remove(task);
-                Drop(save.Transactions, tx);
-                save.NeighbourhoodStats.Remove(stats);
-                save.customDestination = guide;
                 DistrictPlaces.Remove(TestOwner);
                 DistrictPlaces.Build();   // the places of the features alone again
                 UnityEngine.Object.Destroy(building);
+                if (unsaved)
+                {
+                    SaveGameManager.MarkChange();   // the game's own autosave still sees what the player has not saved
+                }
             }
-            if (!before.Same(save))
+            if (things.Added && !things.Same(save))
             {
-                problems.Add("the game's lists are not whole again after the test's things were taken out");
+                problems.Add("the game's lists are not whole again after the test's things were taken away");
             }
-            if (!savedOk)
-            {
-                return null;
-            }
-            bool json = SaveGameManager.Current != null && InstanceBehavior<GameManager>.Instance != null && InstanceBehavior<GameManager>.Instance.useSaveGameTypeJson;
-            return Path.Combine(folder, TestSave + (json ? ".json" : ".hsg"));
+            return savedOk ? file : null;
         }
 
         // The file as the game reads it: nothing of the test's in the game's part, the test's records in the mod's section.
@@ -258,8 +250,8 @@ namespace RealLifeOverhaul.DistrictSave
                 StoredRecord r = line.Records[i];
                 object item = r.Slot >= 0 && r.Slot < items.Length ? items[r.Slot] : null;
                 reg |= r.Kind == SaveKind.Registration && item is BuildingRegistration b && b.StreetName == TestStreet;
-                task |= r.Kind == SaveKind.Task && item is TodoTask k && k.id == "reallife_district_save_test";
-                tx |= r.Kind == SaveKind.Transaction && item is Transaction x && x.transactionType == "reallife_transaction_district_save_test";
+                task |= r.Kind == SaveKind.Task && item is TodoTask k && k.id == TestTask;
+                tx |= r.Kind == SaveKind.Transaction && item is Transaction x && x.transactionType == TestTransaction;
                 stats |= r.Kind == SaveKind.DistrictStats && item is NeighbourhoodStats n && n.name == TestDistrict;
                 guide |= r.Kind == SaveKind.Guider && r.Values.Count > 0 && r.Values[0] == TestStreet;
             }
@@ -270,44 +262,88 @@ namespace RealLifeOverhaul.DistrictSave
             }
         }
 
-        private static void Drop(Queue<Transaction> queue, Transaction tx)
+        /// <summary>
+        /// The test's things, added to the save by the district save's own step (BeforeWrite) after every other handler of
+        /// the game's save event has run, and the lists they go into as they stood just before, to tell that the save put
+        /// each back where it stood and that the lists are whole again once the test takes them away.
+        /// </summary>
+        private sealed class TestThings
         {
-            var none = new List<Taken<Transaction>>(1);
-            DistrictSaveRules.TakeOut(queue, t => ReferenceEquals(t, tx), none, new List<Transaction>(queue.Count));
-        }
-
-        // The lists the test touches, as they stood before: to tell they are whole again.
-        private sealed class Snapshot
-        {
-            private readonly BuildingRegistration[] _regs;
-            private readonly TodoTask[] _tasks;
-            private readonly Transaction[] _txs;
-            private readonly NeighbourhoodStats[] _stats;
+            private readonly BuildingRegistration _reg;
+            private readonly TodoTask _task;
+            private readonly Transaction _tx;
+            private readonly NeighbourhoodStats _stats;
             private readonly Address _guide;
+            private BuildingRegistration[] _regs;
+            private TodoTask[] _tasks;
+            private Transaction[] _txs;
+            private NeighbourhoodStats[] _allStats;
+            private Address _guideWas;
 
-            public Snapshot(GameInstance save)
+            public bool Added { get; private set; }
+
+            public TestThings(BuildingRegistration reg, TodoTask task, Transaction tx, NeighbourhoodStats stats, Address guide)
             {
+                _reg = reg;
+                _task = task;
+                _tx = tx;
+                _stats = stats;
+                _guide = guide;
+            }
+
+            // In the save event, last: the lists as they stand, then the test's things at their ends and the destination.
+            public void Add(GameInstance save)
+            {
+                if (Added)
+                {
+                    return;
+                }
                 _regs = save.BuildingRegistrations.ToArray();
                 _tasks = save.TodoTasks.ToArray();
                 _txs = save.Transactions.ToArray();
-                _stats = save.NeighbourhoodStats.ToArray();
-                _guide = save.customDestination;
+                _allStats = save.NeighbourhoodStats.ToArray();
+                _guideWas = save.customDestination;
+                save.BuildingRegistrations.Add(_reg);
+                save.TodoTasks.Add(_task);
+                save.Transactions.Enqueue(_tx);
+                save.NeighbourhoodStats.Add(_stats);
+                save.customDestination = _guide;
+                Added = true;
             }
 
-            // Every list as before with the test's thing at its end, where it stood, and the destination the test's.
-            public bool Back(GameInstance save, BuildingRegistration reg, TodoTask task, Transaction tx, NeighbourhoodStats stats)
+            // After the save: every list as before with the test's thing at its end, where it stood, and the test's destination.
+            public bool Back(GameInstance save)
             {
-                Address g = save.customDestination;
-                return Equal(save.BuildingRegistrations.ToArray(), _regs, reg) && Equal(save.TodoTasks.ToArray(), _tasks, task)
-                       && Equal(save.Transactions.ToArray(), _txs, tx) && Equal(save.NeighbourhoodStats.ToArray(), _stats, stats)
-                       && g != null && g.streetName == TestStreet;
+                return Equal(save.BuildingRegistrations.ToArray(), _regs, _reg) && Equal(save.TodoTasks.ToArray(), _tasks, _task)
+                       && Equal(save.Transactions.ToArray(), _txs, _tx) && Equal(save.NeighbourhoodStats.ToArray(), _allStats, _stats)
+                       && ReferenceEquals(save.customDestination, _guide);
             }
 
+            // The test's things away again, wherever they are.
+            public void Remove(GameInstance save)
+            {
+                if (!Added)
+                {
+                    return;
+                }
+                save.BuildingRegistrations.Remove(_reg);
+                save.TodoTasks.Remove(_task);
+                var none = new List<Taken<Transaction>>(1);
+                Transaction tx = _tx;
+                DistrictSaveRules.TakeOut(save.Transactions, t => ReferenceEquals(t, tx), none, new List<Transaction>(save.Transactions.Count));
+                save.NeighbourhoodStats.Remove(_stats);
+                if (ReferenceEquals(save.customDestination, _guide))
+                {
+                    save.customDestination = _guideWas;
+                }
+            }
+
+            // Every list as it stood before the test's things were added.
             public bool Same(GameInstance save)
             {
                 return Equal(save.BuildingRegistrations.ToArray(), _regs, null) && Equal(save.TodoTasks.ToArray(), _tasks, null)
-                       && Equal(save.Transactions.ToArray(), _txs, null) && Equal(save.NeighbourhoodStats.ToArray(), _stats, null)
-                       && ReferenceEquals(save.customDestination, _guide);
+                       && Equal(save.Transactions.ToArray(), _txs, null) && Equal(save.NeighbourhoodStats.ToArray(), _allStats, null)
+                       && ReferenceEquals(save.customDestination, _guideWas);
             }
 
             private static bool Equal<T>(T[] now, T[] was, T added) where T : class
