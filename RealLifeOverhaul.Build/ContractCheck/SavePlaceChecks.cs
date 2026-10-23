@@ -28,6 +28,7 @@ internal static partial class Program
         ("BigAmbitions.Neighborhoods.NeighbourhoodStats", "name", "district"),
         ("GameInstance", "LastPlayerPosition", "position"),
         ("VehicleInstance", "position", "position"),
+        ("GameInstance", "SelectedCitymapFilters", "district"),   // the city map's ticked rows: a district's row is named by its id
     };
 
     private static readonly Regex SavePathComment = new Regex(@"//\s*save path:\s*(GameInstance\S*)", RegexOptions.Compiled);
@@ -774,5 +775,16 @@ internal static partial class Program
         Check(keptOut.Contains("DistrictSaveGame.TakeOut(save, DistrictPlaces.Current, true);") && keptOut.IndexOf("DistrictSaveGame.PutBack(s, null);", StringComparison.Ordinal) is int undo
               && undo > 0 && undo < keptOut.IndexOf("s.PutBacks.Clear();", StringComparison.Ordinal) && game.Contains("s.ForGood && foreign != null ? x => mine(x) && !foreign(x) : mine"),
             "the district save's removal no longer keeps every record it takes out for good, puts them back when its section cannot be written, or leaves another player's things");
+
+        // One feature's take-out in play: its own places alone (a scoped set), kept, and put back if its section cannot be written.
+        string keepOut = Body(Text(Path.Combine(folder, "DistrictSaveDirector.KeepOut.cs")), "public static int KeepOut(string owner, string why)") ?? string.Empty;
+        string places = Text(Path.Combine(folder, "DistrictPlaces.cs"));
+        Check(keepOut.Contains("PlaceSet places = DistrictPlaces.Of(owner);") && keepOut.Contains("DistrictSaveGame.TakeOut(save, places, true);")
+              && keepOut.IndexOf("DistrictSaveGame.PutBack(s, null);", StringComparison.Ordinal) is int undone && undone > 0 && undone < keepOut.IndexOf("s.PutBacks.Clear();", StringComparison.Ordinal)
+              && keepOut.IndexOf("DistrictSaveGame.Down(s);", StringComparison.Ordinal) > keepOut.IndexOf("s.PutBacks.Clear();", StringComparison.Ordinal),
+            "a feature's take-out in play (DistrictSaveDirector.KeepOut) no longer takes its own places alone, keeps them, puts them back when its section cannot be written, or brings the game's lookups down");
+        Check(places.Contains("(!_scoped && DistrictSaveRules.IsModId(street))") && places.Contains("(!_scoped && DistrictSaveRules.IsModId(id))")
+              && places.Contains("PlaceSet own = PlaceSet.Scoped();"),
+            "a feature's own places (DistrictPlaces.Of) would sweep in every id with the mod's prefix: another feature's buildings would leave with it");
     }
 }

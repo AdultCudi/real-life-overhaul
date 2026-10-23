@@ -103,6 +103,8 @@ namespace RealLifeOverhaul
         public static readonly GamePart NewGroundWalk = ContractBook.Part("new_ground_walk", "newground", "the city's two walking meshes read for new ground and the walking tests");
         public static readonly GamePart OwnBuildings = ContractBook.Part("own_buildings", "newbuildings", "the mod's own buildings, made at each load from the game's designs");
         public static readonly GamePart UptownLabels = ContractBook.Part("uptown_labels", "uptown", "the names over Uptown's streets, on road modules copied from the game's own");
+        public static readonly GamePart UptownDistrict = ContractBook.Part("uptown_district", "uptown",
+            "Uptown as a district of the game: in its lists of districts, its people's tables and its city map");
 
         // The pieces, each group under the code that reads it.
 
@@ -428,6 +430,17 @@ namespace RealLifeOverhaul
         // Uptown/GroundGame: the street a road module's name label shows (Road.cs 13; its Start writes the label from it). Optional:
         // without it the copied modules' labels are hidden.
         public static readonly GameMember RoadStreetName = Optional(Field(UptownLabels, Game, "Road", "streetName", "String"));
+        // Uptown/LifeGame: the game's private lookup of its districts and its array of them (NeighborhoodHelper.cs 12, 18: GetData and the city map's rows read them),
+        // the people's class table and the wholesalers' table it makes once a run (CitizenHelper.cs 22, ProductMarketHelper.cs 44), the city map's district zones
+        // (CityMapNeighborhoodZones.cs 30). Optional: the game's start of a business in a district, for the test that runs it for Uptown alone.
+        public static readonly GameMember DistrictLookup = StaticField(UptownDistrict, Game, "NeighborhoodHelper", "NeighborhoodsDictionary", "Dictionary<String,NeighborhoodData>");
+        public static readonly GameMember DistrictArray = NeedsSetter(Prop(UptownDistrict, Game, "NeighborhoodHelper", "NeighborhoodsData", "NeighborhoodData[]", true));
+        public static readonly GameMember ClassShares = StaticField(UptownDistrict, Game, "AI.Citizens.CitizenHelper", "SocialClassesShares",
+            "Dictionary<String,List<ValueTuple<SocialClass,Single>>>");
+        public static readonly GameMember WholesalersByDistrict = StaticField(UptownDistrict, Game, "Helpers.ProductMarketHelper", "ItemsInWholesalersPerNeighbourhood",
+            "Dictionary<String,HashSet<String>>");
+        public static readonly GameMember DistrictZones = Field(UptownDistrict, Game, "CityMapNeighborhoodZones", "zones", "CityMapNeighborhoodZones.CityMapNeighborhoodZone[]");
+        public static readonly GameMember StartBusiness = Optional(StaticMethod(UptownDistrict, Game, "Helpers.CompetitionHelper", "StartNewBusiness", "Int32", "List<Building>", "String"));
 
         /// <summary>The five pieces Build 3675 lacks (the funeral helper's two properties are one, its type).</summary>
         public static readonly GameMember[] LackedBy3675 = { PlayerDead, FuneralActive, FenceIndex, ResumeTarget, StationNameKey, ConfirmByKey };

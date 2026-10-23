@@ -61,6 +61,7 @@ namespace RealLifeOverhaul
             Designs.DesignsDirector.Logger = context.Logger;
             // The installation firms' designs for the mod's business types, put in place or taken away on a worker.
             Guard.Step("the ready-made designs", () => Designs.DesignsDirector.Ask(Settings.Designs));
+            Guard.Step("Uptown's places for the district save", () => Uptown.LifeDirector.Register(context.Logger));   // before any save is read: its early step runs then
 
             var options = new ModOptions()
                 .AddHeader("reallife_camera_header")
@@ -1511,6 +1512,8 @@ namespace RealLifeOverhaul
             Guard.Step("Uptown.GroundDirector", () => Uptown.GroundDirector.Logger = context.Logger);
             // Uptown's ground is laid in its Awake, before the traffic starts and before the city's buildings are made on its lots.
             Guard.Step("Uptown.GroundDirector", () => Guard.Add<Uptown.GroundDirector>(_root));
+            Guard.Step("Uptown.LifeDirector", () => Uptown.LifeDirector.Logger = context.Logger);
+            Guard.Step("Uptown.LifeDirector", () => Guard.Add<Uptown.LifeDirector>(_root));   // after Uptown's ground's director: its buildings declared for the made buildings below
             Guard.Step("NewBuildings.NewBuildingsDirector", () => NewBuildings.NewBuildingsDirector.Logger = context.Logger);
             // Its buildings are made behind the loading screen, once every director has declared its own.
             Guard.Step("NewBuildings.NewBuildingsDirector", () => Guard.Add<NewBuildings.NewBuildingsDirector>(_root));
@@ -1527,6 +1530,7 @@ namespace RealLifeOverhaul
             Guard.Step("the scene prewarm", () => ScenePrewarm.Begin());
             Guard.Step("the options page in the city", () => Meta.MetaCity.Begin(context, _root));   // the check for leftovers, the guide's contact, the welcome panel
             Guard.Step("DistrictSave.DistrictSaveDirector", () => DistrictSave.DistrictSaveDirector.Logger = context.Logger);
+            Guard.Step("Uptown's buildings", () => Uptown.LifeDirector.Settle());   // the made buildings stand now: Uptown's into the game's lists, before the district save puts back theirs
             Guard.Step("the district save", () => DistrictSave.DistrictSaveDirector.City(_root));   // after every step that makes places of the mod's
             context.Logger.Info("City features started.");
             // The loading screen stays up while pieces that need frames of their own are done, two seconds at most.

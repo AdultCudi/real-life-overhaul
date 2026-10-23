@@ -156,6 +156,30 @@ namespace RealLifeOverhaul.DistrictSave
             }
         }
 
+        /// <summary>
+        /// After a take-out in play that keeps the records (DistrictSaveDirector.KeepOut): the game's lookups brought down
+        /// to match, the inverse of <see cref="Refresh"/>: the people who left out of the game's lookup by id, and the
+        /// rivals' lists made again from the registrations that stay, when a business left.
+        /// </summary>
+        internal static void Down(Strip s)
+        {
+            foreach (string id in s.Employees)
+            {
+                if (!string.IsNullOrEmpty(id))
+                {
+                    EmployeeHelper.EmployeeInstancesDictionary.Remove(id);
+                }
+            }
+            for (int i = 0; i < s.Records.Count; i++)
+            {
+                if (s.Records[i].Kind == SaveKind.Registration)
+                {
+                    Rivals();
+                    return;
+                }
+            }
+        }
+
         // The rivals' lists of what they own, made again from the registrations as the game makes them at a load.
         private static void Rivals()
         {
@@ -235,6 +259,12 @@ namespace RealLifeOverhaul.DistrictSave
                         return Twice;
                     }
                     return Insert<NeighbourhoodStats>(save.NeighbourhoodStats, record.Index, item);
+                case SaveKind.MapFilter:
+                    if (item is string row && save.SelectedCitymapFilters != null && save.SelectedCitymapFilters.Contains(row))
+                    {
+                        return Twice;
+                    }
+                    return Insert<string>(save.SelectedCitymapFilters, record.Index, item);
                 case SaveKind.Employee:
                 case SaveKind.Candidate:
                 {
