@@ -16,7 +16,7 @@ Every feature runs in the New York the mod knows, a New York with districts a fr
 - [Construction](construction.md): buildings going up, wrapped in the game's own scaffolding, and new buildings on given ground; a construction company of the player's: land, plans, planning permission, sites, money, tenders and the city's builders.
 - [New ground](new-ground.md): ground the mod lays itself, to walk and drive on, with parking, people and buses, for a district of the mod's own (developer tests so far).
 - [New buildings](new-buildings.md): buildings of the mod's own for its places, copied from the city's own designs, and the finished looks of the construction sites.
-- [Uptown](uptown.md): a district of the mod's own north of Manhattan, its streets, ground and lots laid at every load.
+- [Uptown](uptown.md): a district of the mod's own north of Manhattan, three rows of eighteen blocks, its streets, ground and lots laid at every load.
 - [Uptown's landmarks](landmarks.md): Summit Tower, Uptown Galleria and Crest Field, the city's megaprojects in the new district: tendered, built, opened, and what they do for the lots round them.
 
 ## The player's life

@@ -18,6 +18,8 @@ namespace RealLifeOverhaul.NewGround
     {
         private static readonly Dictionary<CityMesh, float> Proved = new Dictionary<CityMesh, float>(2);   // the dry run's margin, once a load each
         private static readonly List<string> Seen = new List<string>(3);   // the game's colliders found on a plan's ground, for its line
+        private static readonly List<GroundBox> Standing = new List<GroundBox>(64);   // what stands on a plan's ground, walked round
+        private static readonly HashSet<int> Counted = new HashSet<int>();            // ...each collider once
 
         /// <summary>How the last ground grown can be walked on, for the caller's log line; null before any.</summary>
         public static string LastWalk { get; private set; }
@@ -62,9 +64,11 @@ namespace RealLifeOverhaul.NewGround
 
         /// <summary>
         /// The plan's ground laid into both city walking meshes now: the game's colliders on it counted against the plan's,
-        /// Unity's builder proved once a load on data of the mod's own, then each mesh grown tile by tile and the tiles
-        /// round about compared with how they were. Null when done; else why it stood down. A mesh that fails is given its
-        /// tiles back as they were; the player's, grown before the pedestrians' failed, stays so until the next load.
+        /// everything solid standing on it gathered to be built as no walking surface, Unity's builder proved once a load on
+        /// data of the mod's own, then each mesh grown in rectangles of tiles (GroundBuilder.Grow), the old ground the plan's
+        /// seeds stand on joined and the rest let go, the tiles round about compared with how they were. Null when done;
+        /// else why it stood down. A mesh that fails is given its tiles back as they were; the player's, grown before the
+        /// pedestrians' failed, stays so until the next load.
         /// </summary>
         public static string Ground(GroundPlan plan)
         {
@@ -78,6 +82,12 @@ namespace RealLifeOverhaul.NewGround
             {
                 return "the game has " + found + " colliders of its own on the plan's ground, " + plan.ExpectColliders + " when it was made (a game update has built there): "
                        + string.Join("; ", Seen);
+            }
+            Standing.Clear();
+            Counted.Clear();
+            for (int b = 0; b < plan.Boxes.Count; b++)
+            {
+                WalkGame.Obstacles(plan.Boxes[b], Counted, Standing);
             }
             string why = Grow(WalkGame.Player, plan, plan.Player);
             return why ?? Grow(WalkGame.Npc, plan, plan.Npc);
@@ -106,52 +116,22 @@ namespace RealLifeOverhaul.NewGround
                 }
                 Proved[mesh] = flat;
             }
-            GroundJob job = GroundBuilder.Plan(mesh, plan.Boxes, plan.Boxes[0].Top, flat);
-            try
+            string why = GroundBuilder.Grow(mesh, plan.Boxes, plan.Area, Standing, plan.Seeds, flat, out int walkable, out GroundJob job);
+            if (why == null && job != null)
             {
-                if (job.Problem != null)
-                {
-                    return job.Problem;
-                }
-                GroundBuilder.Now(job, GroundPass.Fresh);
-                if (job.Problem == null)
-                {
-                    GroundBuilder.Now(job, GroundPass.Join);
-                }
-                int samples = job.RoundBefore.Length / 3;
-                int alike = job.Problem == null ? GroundBuilder.RoundAlike(job) : samples;
-                if (alike != samples)
-                {
-                    job.Problem = "the " + mesh.Label + " mesh changed beyond the new ground's tiles (" + (samples - alike) + " of " + samples + " samples moved)";
-                }
-                // Unity's builder says an update was done whether or not it rebuilt anything (the owner's game of 23 Oct), so
-                // the ground is said grown only when it can be walked on.
-                int walkable = job.Problem == null ? WalkGame.Walkable(mesh, plan) : 0;
-                if (job.Problem == null && walkable == 0)
-                {
-                    job.Problem = "the ground grown into the " + mesh.Label + " mesh cannot be walked on";
-                }
-                if (job.Problem == null)
-                {
-                    LastWalk = "the " + mesh.Label + " mesh walkable on " + walkable + " of the new ground's " + plan.Boxes.Count + " boxes";
-                    return null;
-                }
-                // Standing down leaves no island of new ground unjoined, nor an old tile half rebuilt.
-                string why = job.Problem;
-                job.Problem = null;
-                GroundBuilder.Now(job, GroundPass.Back);
-                return why + (job.Problem == null ? "; its tiles given back" : "; giving its tiles back failed too (" + job.Problem + ")");
+                LastWalk = "the " + mesh.Label + " mesh walkable on " + walkable + " of the new ground's " + plan.Boxes.Count + " boxes; " + job.Covered.Count + " tiles ("
+                           + job.Fresh.Count + " new in " + job.FreshRects.Count + " update(s), " + job.Joining.Count + " joined to the city's own ground in " + job.JoinRects.Count
+                           + "), " + job.OldTriangles + " of the city's own triangles kept, " + job.SeededIslands + " of " + job.Islands + " islands of old ground joined, "
+                           + Standing.Count + " things standing on it walked round, built in " + job.Ms.ToString("0", System.Globalization.CultureInfo.InvariantCulture) + " ms";
             }
-            finally
-            {
-                GroundBuilder.Free(job);
-            }
+            return why;
         }
 
         /// <summary>The city is going: the next load proves the builder again on its own meshes.</summary>
         public static void Forget()
         {
             Proved.Clear();
+            WalkGame.ForgetTriangles();
         }
     }
 }

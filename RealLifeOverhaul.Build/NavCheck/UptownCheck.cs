@@ -10,11 +10,13 @@ using RealLifeOverhaul.Uptown;
 
 // Uptown's ground (Uptown/LayoutRules.cs, LayoutPlans.cs, LayoutStreets.cs, UptownLots.cs and the folder's sources): the band's
 // streets on the game's own grid, the lots round its blocks in Manhattan's mix with their classes' footprints, clear of
-// the streets and of one another, their ids, streets and numbers fixed; the first block's 80 to 100 lots on the ground
-// it lays; its streets built as lanes and joined through 1st Avenue's own junctions (a model of each, from the game's
-// baked lanes), never off the road grid, the same twice; the walking ground under every lot and its door; the walls,
-// the colliders, the hiding, the zones and the terminus where they belong. Over the sources: the game touched only
-// through the folder's Game files, nothing saved or sent, no LINQ, nothing left to chance, the texts in three languages.
+// the streets and of one another, their ids, streets and numbers fixed; the whole band laid at every load, three rows of
+// eighteen blocks: its streets built as lanes and joined through 1st Avenue's own junctions and its corner at 9th Street
+// (a model of each, from the game's baked lanes), never off the road grid, the same twice; the walking ground under every
+// lot and its door, one surface for each mesh, joined to the game's own where they stop (measured from its data), off
+// what stands on the old corners and the walls that stay, its margin kept only where it meets no other ground; the art,
+// the walls, the colliders, the hiding, the zones and the termini where they belong. Over the sources: the game touched
+// only through the folder's Game files, nothing saved or sent, no LINQ, nothing left to chance, the texts in three languages.
 internal static partial class Program
 {
     private static void Uptowns(bool print)
@@ -25,6 +27,7 @@ internal static partial class Program
         UptownGroundChecks();
         UptownRoadChecks(print);
         UptownWalkChecks();
+        UptownJoinChecks();
         UptownPlaceChecks();
         UptownCountChecks();
         UptownLifeChecks();
@@ -153,7 +156,7 @@ internal static partial class Program
             Check(ok, "uptown lots: the numbers along " + s[0].Street + " (" + (s[0].Number % 2 == 1 ? "odd" : "even") + " side) run from its first, two apart, in order");
         }
         Check(lots.Where(l => LayoutStreets.Find(l.Street).Continues != null).All(l => l.Number > 1000), "uptown lots: on a continued street every number is over 1000");
-        Check(first.All(l => UptownLots.Open(l) == UptownLots.Ready) && lots.Where(l => !l.First).All(l => !UptownLots.Open(l)), "uptown lots: only the first block's open, and only while the ground stands");
+        Check(lots.All(l => UptownLots.Open(l) == UptownLots.Ready) && !UptownLots.Open(null), "uptown lots: every lot of the band open while its ground stands, and none while it does not");
         Check(UptownLots.SizesOf(LotClass.Small).SequenceEqual(new[] { "ba:buildingsize_a", "ba:buildingsize_b", "ba:buildingsize_c", "ba:buildingsize_f" })
               && UptownLots.SizesOf(LotClass.Office).SequenceEqual(new[] { "ba:buildingsize_d", "ba:buildingsize_j", "ba:buildingsize_k" })
               && UptownLots.SizesOf(LotClass.Big).SequenceEqual(new[] { "ba:buildingsize_m", "ba:buildingsize_l", "ba:buildingsize_n" })
@@ -208,19 +211,68 @@ internal static partial class Program
         return true;
     }
 
-    // ---------------------------------------------------------------- the first block's own ground and the way out
+    // ---------------------------------------------------------------- the band's own ground and the way out
 
     private static void UptownGroundChecks()
     {
-        List<GroundRect> ground = LayoutRules.FirstGround;
-        Check(ground.Count == 18 && ReferenceEquals(UptownLots.Ground, ground), "uptown ground: eight blocks, nine streets and the avenue's band (" + ground.Count + ")");
-        Check(LayoutRules.FirstLots.All(l => LayoutRules.OnFirstGround(l.X, l.Z)), "uptown ground: every first lot's middle on it");
+        List<GroundRect> first = LayoutRules.FirstGround, band = LayoutRules.BandGround;
+        Check(first.Count == 18 && band.Count == 23 && first.All(r => band.Contains(r)) && ReferenceEquals(UptownLots.Ground, band),
+            "uptown ground: the first block's eight blocks, nine streets and its stretch of Uptown Avenue, then the band west, east and north of it and 1st Avenue's two continuations ("
+            + band.Count + ")");
+        Check(LayoutRules.FirstLots.All(l => LayoutRules.OnFirstGround(l.X, l.Z)), "uptown ground: every first lot's middle on the first block's ground");
+        bool lotsOn = LayoutRules.Lots.All(l =>
+        {
+            Corners(l, out float x0, out float z0, out float x1, out float z1);
+            return LayoutRules.OnGround(l.X, l.Z) && LayoutRules.OnGround(x0 + 0.5f, z0 + 0.5f) && LayoutRules.OnGround(x1 - 0.5f, z0 + 0.5f)
+                   && LayoutRules.OnGround(x0 + 0.5f, z1 - 0.5f) && LayoutRules.OnGround(x1 - 0.5f, z1 - 0.5f);
+        });
+        Check(lotsOn, "uptown ground: every lot of the band on its ground, its middle and its corners");
         // The game's own buildings north of 1st Avenue and its doors there are never the district's ground (Build 3682).
         float[][] doors = { new[] { 373.1f, 478.9f }, new[] { 266.8f, 479.5f }, new[] { 92.0f, 479f }, new[] { 2f, 478f }, new[] { -94f, 478f }, new[] { -175f, 478f }, new[] { -272f, 478f } };
-        Check(doors.All(d => !LayoutRules.OnFirstGround(d[0], d[1])), "uptown ground: 1st Avenue's north side and its doors stay the game's");
-        Check(ground.All(r => r.Z1 >= LayoutRules.OldWallZ - 0.01f && r.X1 >= -330f && r.X2 <= 430f && r.Z2 <= 640f), "uptown ground: north of the old wall, inside the band's first row");
+        Check(doors.All(d => !LayoutRules.OnGround(d[0], d[1])), "uptown ground: 1st Avenue's north side and its doors stay the game's");
+        float west = LayoutPlans.West, east = LayoutPlans.East, north = LayoutPlans.North, south = LayoutPlans.South;
+        Check(band.All(r => r.X1 >= west - 0.01f && r.X2 <= east + 0.01f && r.Z1 >= south - 0.01f && r.Z2 <= north + 0.01f && r.X2 > r.X1 && r.Z2 > r.Z1),
+            "uptown ground: inside the band, Willow to Lake Street, 1st Avenue's south pavement to Crest Avenue's north one");
+        // 1st Avenue between its corners and Manhattan south of it are never the band's, nor north of it the backs of its
+        // buildings up to the old wall line; past 9th and 1st Street the band begins at 1st Avenue's north pavement.
+        bool own = true;
+        float corner0 = LayoutRules.StreetX(0) - LayoutRules.CrossingHalfX, corner8 = LayoutRules.StreetX(LayoutRules.FirstColumns) + LayoutRules.CrossingHalfX;
+        float edge0 = LayoutRules.StreetX(0) - LayoutRules.StreetHalf, edge8 = LayoutRules.StreetX(LayoutRules.FirstColumns) + LayoutRules.StreetHalf;
+        for (float x = corner0 + 0.5f; x <= corner8 - 0.5f; x += 2.5f)
+        {
+            for (float z = south - 40f; z < LayoutRules.OldWallZ - 0.5f; z += 1f)
+            {
+                own &= (z >= LayoutPlans.RowOneFrom && (x < edge0 || x > edge8)) || !LayoutRules.OnGround(x, z);
+            }
+        }
+        for (float x = west; x <= east; x += 5f)
+        {
+            own &= !LayoutRules.OnGround(x, south - 0.5f) && !LayoutRules.OnGround(x, north + 0.5f);
+        }
+        Check(own, "uptown ground: 1st Avenue between its corners, Manhattan south of it and the city past Crest Avenue are never the band's");
+        // Every street, avenue, crossing and block of the band on it, and 1st Avenue's continuations.
+        bool whole = true;
+        for (int row = 1; row <= LayoutRules.Rows; row++)
+        {
+            float middle = (LayoutRules.AvenueZ(row - 1) + LayoutRules.AvenueZ(row)) * 0.5f;
+            for (int k = LayoutStreets.WestMost; k <= LayoutStreets.EastMost; k++)
+            {
+                whole &= LayoutRules.OnGround(LayoutRules.StreetX(k), middle) && LayoutRules.OnGround(LayoutRules.StreetX(k), LayoutRules.AvenueZ(row));
+                whole &= k == LayoutStreets.EastMost || LayoutRules.OnGround(LayoutRules.StreetX(k) + LayoutRules.StreetPitch * 0.5f, LayoutRules.AvenueZ(row));
+            }
+            for (int column = 1; column <= LayoutRules.Columns; column++)
+            {
+                LayoutRules.Block(row, column, out float x0, out float z0, out float x1, out float z1);
+                whole &= LayoutRules.OnGround((x0 + x1) * 0.5f, (z0 + z1) * 0.5f);
+            }
+        }
+        for (int k = LayoutStreets.WestMost; k <= LayoutStreets.EastMost; k++)
+        {
+            whole &= !LayoutPlans.OnFirstAvenue(k) || LayoutRules.OnGround(LayoutRules.StreetX(k), LayoutRules.AvenueZ(0));
+        }
+        Check(whole, "uptown ground: every street, avenue, crossing and block of the band on its ground, and 1st Avenue's continuations west and east");
         UptownExit exit = UptownLots.Exit;
-        Check(!LayoutRules.OnFirstGround(exit.X, exit.Z) && exit.Z > 472.1f && exit.Z < 474.5f && exit.X > 66.2f && exit.X < 116.2f && exit.Heading == 270f
+        Check(!LayoutRules.OnGround(exit.X, exit.Z) && exit.Z > 472.1f && exit.Z < 474.5f && exit.X > 66.2f && exit.X < 116.2f && exit.Heading == 270f
               && exit.District == "ba:neighborhood_midtown", "uptown ground: the way out is a parking place on 1st Avenue's north side, heading west, in Midtown");
     }
 
@@ -276,20 +328,71 @@ internal static partial class Program
     private static RoadBuild UptownBuild(out RoadPlan plan)
     {
         plan = LayoutPlans.Streets();
+        var points = new Dictionary<int, int>();
         int index = 100;
         foreach (PlanThrough through in plan.Throughs)
         {
             int k = (int)Math.Round((through.X - LayoutRules.StreetFirstX) / LayoutRules.StreetPitch);
-            GameJunction(through, k, index);
-            index += 20;
+            // Two ends through one junction (9th Street's and 1st Avenue West's, at its corner) meet the same points of the game's.
+            if (!points.TryGetValue(k, out int at))
+            {
+                at = index;
+                points[k] = at;
+                index += 20;
+            }
+            GameJunction(through, k, at);
         }
         return RoadRules.Build(plan, GameGrid, GamePoints, 300);
+    }
+
+    // The plan's road a turn from one of the game's stop points leads into: past its turn points to the lane they reach.
+    private static int UptownRoadInto(RoadBuild build, int index)
+    {
+        LanePoint p = build.At(index);
+        for (int guard = 0; p != null && p.Through && p.Next.Count > 0 && guard < 64; guard++)
+        {
+            p = build.At(p.Next[0]);
+        }
+        return p == null || p.Through ? -1 : p.RoadId - build.FirstRoadId;
+    }
+
+    // Which of the game's lanes at its junction turn into a new road, as the game lays its own turns (right kerb to kerb,
+    // left from the lane nearest the middle into the lane nearest the middle, straight on lane by lane).
+    private static bool UptownTurnsIn(int k, bool avenue, string lane)
+    {
+        if (avenue)
+        {
+            return true;   // 1st Avenue West out of 9th Street's corner: straight on from both westbound lanes, left from 9th Street's northbound
+        }
+        if (k == 0)
+        {
+            return lane != "Road_59-Lane_1";
+        }
+        return k == 8 || (lane != "Road_35-Lane_2" && lane != "Road_29-Lane_1");
+    }
+
+    // ... and which of its exits a new road coming in turns into.
+    private static bool UptownTurnsOut(int k, bool avenue, string lane)
+    {
+        if (avenue)
+        {
+            return true;   // into 1st Avenue's eastbound lane by lane, and right into 9th Street from the kerb lane
+        }
+        if (k == 0)
+        {
+            return lane != "Road_59-Lane_2";
+        }
+        if (k == 8)
+        {
+            return lane != "Road_23-Lane_0";
+        }
+        return lane != "Road_29-Lane_2" && lane != "Road_35-Lane_1";
     }
 
     private static void UptownRoadChecks(bool print)
     {
         RoadBuild build = UptownBuild(out RoadPlan plan);
-        Check(build.Problem == null, "uptown streets: the first block's plan builds (" + build.Problem + ")");
+        Check(build.Problem == null, "uptown streets: the band's plan builds (" + build.Problem + ")");
         string check = RoadRules.Check(build, GameGrid, GamePoints, 299);
         Check(check == null, "uptown streets: the build is sound (" + check + ")");
         if (build.Problem != null)
@@ -299,76 +402,139 @@ internal static partial class Program
         if (print)
         {
             Console.WriteLine("uptown streets: " + RoadRules.Words(build));
-            var modules = new List<ModulePlace>();
-            LayoutPlans.Modules(modules);
-            var walls = new List<PlanBox>();
-            LayoutPlans.NewWalls(walls);
-            var hides = new List<GroundRect>();
-            LayoutPlans.Hides(hides);
-            var zones = new List<PlanBox>();
-            LayoutPlans.Zones(zones);
-            object Boxes(GroundPlan p) => p.Boxes.Select(b => new[] { b.X - b.HalfX, b.Z - b.HalfZ, b.X + b.HalfX, b.Z + b.HalfZ }).ToArray();
-            var dump = new
-            {
-                Points = build.Points.Select(p => new[] { p.X, p.Z, p.Through ? 1f : 0f }).ToArray(),
-                Player = Boxes(LayoutPlans.PlayerGround()),
-                Npc = Boxes(LayoutPlans.NpcGround()),
-                Walls = walls.Select(w => new[] { w.X - w.HalfX, w.Z - w.HalfZ, w.X + w.HalfX, w.Z + w.HalfZ }).ToArray(),
-                Hides = hides.Select(h => new[] { h.X1, h.Z1, h.X2, h.Z2 }).ToArray(),
-                Zones = zones.Select(w => new[] { w.X - w.HalfX, w.Z - w.HalfZ, w.X + w.HalfX, w.Z + w.HalfZ }).ToArray(),
-                Modules = modules.Select(m => new[] { (float)m.Kind, m.X, m.Z }).ToArray(),
-                Ground = LayoutRules.FirstGround.Select(h => new[] { h.X1, h.Z1, h.X2, h.Z2 }).ToArray()
-            };
-            File.WriteAllText(Path.Combine(AppContext.BaseDirectory, "uptown_plans.json"), JsonSerializer.Serialize(dump));
+            UptownDump(build);
         }
-        Check(plan.Roads.Count == 15 && plan.Junctions.Count == 8 && plan.Throughs.Count == 8, "uptown streets: eight continued streets, seven stretches of Uptown Avenue, eight junctions");
-        Check(!LayoutPlans.HasLanes(4) && LayoutPlans.JunctionAt(4) == -1 && Enumerable.Range(0, 9).Where(k => k != 4).All(LayoutPlans.HasLanes),
-            "uptown streets: every street but 5th Street (no junction of 1st Avenue's there) has lanes");
-        // Through 1st Avenue's junctions: each street's lane north an exit of it, its lane south a stop point in the street's way.
-        Check(build.Through.Count == 16 && build.Through.Count(t => t.Way >= 0) == 8, "uptown streets: eight exits and eight stop points given to 1st Avenue's junctions");
+        int streets = LayoutPlans.StreetCount * LayoutRules.Rows - 1, avenues = LayoutRules.Rows * (LayoutPlans.StreetCount - 1) + 9;
+        Check(plan.Roads.Count == streets + avenues && plan.Roads.Count == 119 && plan.Junctions.Count == LayoutPlans.JunctionCount && LayoutPlans.JunctionCount == 67
+              && plan.Throughs.Count == 9,
+            "uptown streets: 56 lengths of street and 63 of avenue, 1st Avenue's continuations among them, 67 junctions and nine ends through the game's ("
+            + plan.Roads.Count + ", " + plan.Junctions.Count + ", " + plan.Throughs.Count + ")");
+        // A junction with lights at every crossing of the band and on 1st Avenue's continuations, each once.
+        var seen = new HashSet<int>();
+        bool placed = true;
+        for (int row = 0; row <= LayoutRules.Rows; row++)
+        {
+            for (int k = LayoutStreets.WestMost; k <= LayoutStreets.EastMost; k++)
+            {
+                int j = LayoutPlans.JunctionAt(k, row);
+                if (j < 0)
+                {
+                    placed &= row == 0 && !LayoutPlans.OnFirstAvenue(k);
+                    continue;
+                }
+                placed &= seen.Add(j) && j < plan.Junctions.Count && Near(plan.Junctions[j].X, LayoutRules.StreetX(k)) && Near(plan.Junctions[j].Z, LayoutRules.AvenueZ(row))
+                          && plan.Junctions[j].Lights;
+            }
+        }
+        Check(placed && seen.Count == plan.Junctions.Count && LayoutPlans.JunctionAt(LayoutStreets.WestMost - 1, 1) == -1 && LayoutPlans.JunctionAt(0, 4) == -1
+              && LayoutPlans.JunctionAt(4, 0) == -1, "uptown streets: a junction with lights at every crossing of the band and of 1st Avenue's continuations, each once, none of 1st Avenue's own");
+        bool lanes = true;
+        for (int k = LayoutStreets.WestMost - 1; k <= LayoutStreets.EastMost + 1; k++)
+        {
+            for (int row = 0; row <= LayoutRules.Rows + 1; row++)
+            {
+                bool want = k >= LayoutStreets.WestMost && k <= LayoutStreets.EastMost && row >= 1 && row <= LayoutRules.Rows && !(k == 4 && row == 1);
+                lanes &= LayoutPlans.HasLanes(k, row) == want;
+            }
+        }
+        Check(lanes, "uptown streets: every street has lanes in every row but 5th Street's first, where 1st Avenue has no junction");
+        // The avenues' arms: an avenue's length east of a junction and one west of it, as the plan's roads run.
+        var eastArm = new HashSet<int>();
+        var westArm = new HashSet<int>();
+        foreach (PlanRoad r in plan.Roads.Where(r => r.Ahead == 2))
+        {
+            if (r.Start >= 0)
+            {
+                eastArm.Add(r.Start);
+            }
+            if (r.End >= 0)
+            {
+                westArm.Add(r.End);
+            }
+        }
+        bool arms = true;
+        for (int row = 0; row <= LayoutRules.Rows; row++)
+        {
+            for (int k = LayoutStreets.WestMost; k <= LayoutStreets.EastMost; k++)
+            {
+                int j = LayoutPlans.JunctionAt(k, row);
+                arms &= j < 0 || (LayoutPlans.AvenueArm(k, row, true) == eastArm.Contains(j) && LayoutPlans.AvenueArm(k, row, false) == westArm.Contains(j));
+            }
+        }
+        Check(arms && !LayoutPlans.AvenueArm(LayoutRules.FirstColumns + 1, 0, false) && LayoutPlans.AvenueArm(-1, 0, true),
+            "uptown streets: the avenues' arms where their roads run: none from Hill Street west to 1st Street, 1st Avenue West on into 9th Street's corner");
+        // Through 1st Avenue's junctions: each street's lane north an exit of it, its lane south a stop point; 1st Avenue
+        // West's two lanes out of 9th Street's corner exits of it, its two lanes into it stop points.
+        Check(build.Through.Count == 20 && build.Through.Count(t => t.Way >= 0) == 10, "uptown streets: ten exits and ten stop points given to the game's junctions ("
+            + build.Through.Count + ")");
         foreach (ThroughEdit t in build.Through)
         {
             LanePoint p = build.At(t.Point);
-            Check(p != null && p.Name.EndsWith(t.Way >= 0 ? "-Out" : "-In") && Near(p.Z, LayoutPlans.ThroughZ, 0.1f),
-                "uptown streets: " + (t.Way >= 0 ? "a stop point" : "an exit") + " given to junction " + t.Junction + " is the street's own end there");
+            bool atStreet = p != null && Near(p.Z, LayoutPlans.ThroughZ, 0.1f);
+            bool atCorner = p != null && Near(p.X, LayoutRules.StreetX(0) - LayoutPlans.AvenueStop, 0.1f) && Math.Abs(p.Z - LayoutRules.AvenueZ(0)) < LayoutRules.AvenueKerb;
+            Check(p != null && p.Name.EndsWith(t.Way >= 0 ? "-Out" : "-In") && (atStreet || atCorner),
+                "uptown streets: " + (t.Way >= 0 ? "a stop point" : "an exit") + " given to junction " + t.Junction + " is its road's own end there");
         }
-        // Its way is the one of the street's own northbound lane (way 1 at a T, way 1 at the north-west corner, way 0 at the north-east).
+        // Its way is the one whose lanes it runs against: a street's southbound with the street's northbound, 1st Avenue
+        // West's eastbound with 1st Avenue's westbound.
         foreach (PlanThrough through in plan.Throughs)
         {
-            int street = through.Existing - 20;
-            int way = build.Through.First(t => t.Junction == through.Existing && t.Way >= 0).Way;
-            Check(way == (street == 8 ? 0 : 1), "uptown streets: the street south stops on the green of the street north at junction " + through.Existing + " (way " + way + ")");
+            int k = through.Existing - 20;
+            bool avenue = !through.AtStart;
+            int[] ways = build.Through.Where(t => t.Way >= 0 && build.At(t.Point).RoadId - build.FirstRoadId == through.Road).Select(t => t.Way).Distinct().ToArray();
+            int want = avenue || k == 8 ? 0 : 1;
+            Check(ways.Length == 1 && ways[0] == want && build.Through.Where(t => build.At(t.Point).RoadId - build.FirstRoadId == through.Road).All(t => t.Junction == through.Existing),
+                "uptown streets: road " + through.Road + " stops on the green of the lanes it runs against at junction " + through.Existing + " (way " + string.Join(", ", ways) + ")");
         }
         // The turns through each junction: from the game's stop points, named after the game's lanes and keeping their road ids.
         List<LanePoint> turns = build.Points.Where(p => p.Keeps >= 0).ToList();
         Check(turns.Count > 0 && turns.All(p => p.Through && p.RoadId == p.Keeps && Regex.IsMatch(p.Name, @"^Road_\d+-Lane_\d+-(CConnect|Connector)\d+$")),
             "uptown streets: turns from the game's stop points keep its lane's name and road id, as its own turns do");
+        Check(build.Points.Select(p => p.Name).Distinct().Count() == build.Points.Count, "uptown streets: every new lane point named once, the turns from one lane of the game's into two roads too");
+        var into = new Dictionary<int, HashSet<int>>();
+        var from = new Dictionary<int, HashSet<int>>();
+        foreach (LinkEdit e in build.Edits)
+        {
+            Dictionary<int, HashSet<int>> map = e.AsNext ? into : from;
+            if (!map.TryGetValue(e.Existing, out HashSet<int> roads))
+            {
+                map[e.Existing] = roads = new HashSet<int>();
+            }
+            roads.Add(e.AsNext ? UptownRoadInto(build, e.Added) : build.At(e.Added).RoadId - build.FirstRoadId);
+        }
         foreach (PlanThrough through in plan.Throughs)
         {
-            int street = through.Existing - 20;
+            int k = through.Existing - 20;
+            bool avenue = !through.AtStart;
             foreach (GamePoint stop in through.Stops)
             {
-                bool turnsOut = build.Edits.Any(e => e.Existing == stop.Index && e.AsNext);
-                // Straight on from the street; right from the avenue's kerb lane, left from its middle lane, as the game's own turns.
-                bool expected = street == 0 ? stop.Lane != "Road_59-Lane_1" : street == 8 || (stop.Lane != "Road_35-Lane_2" && stop.Lane != "Road_29-Lane_1");
-                Check(turnsOut == expected, "uptown streets: at junction " + through.Existing + " the game's " + stop.Lane + (expected ? " turns into the new street" : " goes on as it did"));
+                bool turnsIn = into.TryGetValue(stop.Index, out HashSet<int> roads) && roads.Contains(through.Road);
+                bool expected = UptownTurnsIn(k, avenue, stop.Lane);
+                Check(turnsIn == expected, "uptown streets: at junction " + through.Existing + " the game's " + stop.Lane + (expected ? " turns into" : " leaves alone") + " road " + through.Road);
             }
             foreach (GamePoint exit in through.Exits)
             {
-                bool reached = build.Edits.Any(e => e.Existing == exit.Index && !e.AsNext);
-                bool expected = street == 0 ? exit.Lane != "Road_59-Lane_2" : street == 8 ? exit.Lane != "Road_23-Lane_0" : exit.Lane != "Road_29-Lane_2" && exit.Lane != "Road_35-Lane_1";
-                Check(reached == expected, "uptown streets: at junction " + through.Existing + " the street south " + (expected ? "turns into" : "leaves alone") + " the game's " + exit.Lane);
+                bool reached = from.TryGetValue(exit.Index, out HashSet<int> roads) && roads.Contains(through.Road);
+                bool expected = UptownTurnsOut(k, avenue, exit.Lane);
+                Check(reached == expected, "uptown streets: at junction " + through.Existing + " road " + through.Road + (expected ? " turns into" : " leaves alone") + " the game's " + exit.Lane);
             }
         }
-        // Uptown Avenue's junctions: the avenue's two ways on one green, the street's on the other.
-        Check(build.Junctions.Count == 8 && build.Junctions.All(j => j.Lights && j.Ways.Count == 2), "uptown streets: each junction on Uptown Avenue has lights and two greens");
+        // The band's own junctions: the avenue's two ways on one green, the street's two arms on the other.
+        Check(build.Junctions.Count == 67 && build.Junctions.All(j => j.Lights && j.Ways.Count == 2),
+            "uptown streets: each of the band's junctions has lights and two greens, the avenue's and the street's");
         Check(build.Points.All(p => GameGrid.Inside(p.X, p.Z, RoadRules.EdgeMargin)), "uptown streets: never a lane point off the road grid");
-        Check(build.Points.Where(p => !p.Through).All(p => p.Z >= LayoutPlans.ThroughZ - 0.01f && p.Z <= LayoutRules.AvenueZ(1) + 8f),
-            "uptown streets: the new lanes stay on the first block's ground, north of 1st Avenue's junctions");
-        // The game's lanes round 1st Avenue never clash with the new streets but at the junctions.
+        // The new lanes stay on the band's ground, or on 9th Street's corner, which 1st Avenue West's lanes cross into.
+        bool onBand = build.Points.Where(p => !p.Through).All(p => LayoutRules.OnGround(p.X, p.Z)
+            || (Math.Abs(p.X - LayoutRules.StreetX(0)) <= LayoutRules.CrossingHalfX && Math.Abs(p.Z - LayoutRules.AvenueZ(0)) <= LayoutRules.AvenueKerb));
+        Check(onBand, "uptown streets: the new lanes stay on the band's ground, and 1st Avenue West's on to 9th Street's corner");
+        float fifth = LayoutRules.StreetX(4), hill = LayoutRules.StreetX(LayoutRules.FirstColumns + 1), first = LayoutRules.StreetX(LayoutRules.FirstColumns);
+        bool gaps = build.Points.All(p => !(Math.Abs(p.X - fifth) < LayoutRules.StreetHalf && p.Z > LayoutPlans.RowOneFrom && p.Z < LayoutRules.AvenueZ(1) - LayoutRules.CrossingHalfZ)
+                                          && !(p.X > first + LayoutRules.CrossingHalfX && p.X < hill - LayoutRules.CrossingHalfX && Math.Abs(p.Z - LayoutRules.AvenueZ(0)) < LayoutRules.AvenueHalf));
+        Check(gaps, "uptown streets: no lane on 5th Street's first row, nor on 1st Avenue from 1st Street's corner to Hill Street");
+        // The game's lanes along 1st Avenue (its four, between its corners) never clash with the new streets but at the junctions.
         var gx = new List<float>();
         var gz = new List<float>();
-        for (float x = -320f; x <= 420f; x += 4.8f)
+        for (float x = -286f; x <= 382f; x += 4.8f)
         {
             foreach (float z in new[] { 458.6f, 462.6f, 466.6f, 470.6f })
             {
@@ -380,118 +546,529 @@ internal static partial class Program
             "uptown streets: 1st Avenue's own lanes are beside the new streets only where they go through its junctions");
         string clash = RoadRules.Clear(build, new[] { 9999 }, new[] { LayoutRules.StreetX(2) + 3.1f }, new[] { 540f });
         Check(clash != null && clash.Contains("9999"), "uptown streets: a road of the game's where a new street goes is found (a free update built there): " + clash);
+        string far = RoadRules.Clear(build, new[] { 9998 }, new[] { LayoutRules.StreetX(11) + 43.65f }, new[] { LayoutRules.AvenueZ(3) + 2f });
+        Check(far != null && far.Contains("9998"), "uptown streets: one where Crest Avenue goes is found too: " + far);
         // The same plan twice gives the same build.
         RoadBuild again = UptownBuild(out _);
         Check(again.Count == build.Count && again.Points.Select((p, i) => p.Name == build.Points[i].Name && p.X == build.Points[i].X && p.Z == build.Points[i].Z
-                  && p.Next.SequenceEqual(build.Points[i].Next)).All(s => s) && again.Edits.Count == build.Edits.Count,
+                  && p.Next.SequenceEqual(build.Points[i].Next)).All(s => s) && again.Edits.Count == build.Edits.Count && again.Through.Count == build.Through.Count,
             "uptown streets: the same build every time, on every machine");
-        // A junction of 1st Avenue's not found at this load: the streets stand down, nothing built.
+        // A junction of the game's not found at this load: the streets stand down, nothing built.
         RoadPlan missing = LayoutPlans.Streets();
         foreach (PlanThrough through in missing.Throughs)
         {
             through.Existing = -1;
         }
         Check((RoadRules.Build(missing, GameGrid, GamePoints, 300).Problem ?? string.Empty).Contains("found no junction"), "uptown streets: no junction of the game's found, the streets stand down");
+        RoadPlan corner = LayoutPlans.Streets();
+        int index = 100;
+        foreach (PlanThrough through in corner.Throughs)
+        {
+            GameJunction(through, (int)Math.Round((through.X - LayoutRules.StreetFirstX) / LayoutRules.StreetPitch), index);
+            index += 20;
+            if (!through.AtStart)
+            {
+                through.Existing = -1;   // 9th Street's corner found for the street but not for the avenue
+            }
+        }
+        Check((RoadRules.Build(corner, GameGrid, GamePoints, 300).Problem ?? string.Empty).Contains("found no junction"),
+            "uptown streets: 9th Street's corner not found for 1st Avenue West, the streets stand down");
+    }
+
+    // The band as NavCheck lays it, for the offline scans against the game's scene (not-in-repo navlab facts, band_clear.py).
+    private static void UptownDump(RoadBuild build)
+    {
+        var modules = new List<ModulePlace>();
+        LayoutPlans.Modules(modules);
+        var walls = new List<PlanBox>();
+        LayoutPlans.NewWalls(walls);
+        var hides = new List<GroundRect>();
+        LayoutPlans.Hides(hides);
+        var zones = new List<PlanBox>();
+        LayoutPlans.Zones(zones);
+        var grounds = new List<PlanBox>();
+        var roads = new List<PlanBox>();
+        LayoutPlans.Colliders(grounds, roads);
+        var wx = new List<float>();
+        var wz = new List<float>();
+        LayoutPlans.OldWalls(wx, wz);
+        var termini = new List<PlanTerminus>();
+        LayoutPlans.Termini(termini);
+        float[] Rect(PlanBox w) => new[] { w.X - w.HalfX, w.Z - w.HalfZ, w.X + w.HalfX, w.Z + w.HalfZ };
+        object Boxes(GroundPlan p) => p.Boxes.Select(b => new[] { b.X - b.HalfX, b.Z - b.HalfZ, b.X + b.HalfX, b.Z + b.HalfZ }).ToArray();
+        var dump = new Dictionary<string, object>
+        {
+            { "Points", build.Points.Select(p => new[] { p.X, p.Z, p.Through ? 1f : 0f }).ToArray() },
+            { "Player", Boxes(LayoutPlans.PlayerGround()) },
+            { "Npc", Boxes(LayoutPlans.NpcGround()) },
+            { "Walls", walls.Select(Rect).ToArray() },
+            { "Hides", hides.Select(h => new[] { h.X1, h.Z1, h.X2, h.Z2 }).ToArray() },
+            { "Zones", zones.Select(Rect).ToArray() },
+            { "Grounds", grounds.Select(Rect).ToArray() },
+            { "Roads", roads.Select(Rect).ToArray() },
+            { "OldWalls", wx.Select((x, i) => new[] { x, wz[i] }).ToArray() },
+            { "Modules", modules.Select(m => new[] { (float)m.Kind, m.X, m.Z, m.Scenery ? 1f : 0f }).ToArray() },
+            { "Band", LayoutRules.BandGround.Select(h => new[] { h.X1, h.Z1, h.X2, h.Z2 }).ToArray() },
+            { "Termini", termini.Select(t => new[] { t.X, t.Z }).ToArray() },
+            {
+                "Lots", LayoutRules.Lots.Select(l =>
+                {
+                    Corners(l, out float x0, out float z0, out float x1, out float z1);
+                    return new object[] { x0, z0, x1, z1, l.Id };
+                }).ToArray()
+            }
+        };
+        string path = Path.Combine(AppContext.BaseDirectory, "uptown_plans.json");
+        File.WriteAllText(path, JsonSerializer.Serialize(dump));
+        Console.WriteLine("uptown plans written to " + path);
     }
 
     // ---------------------------------------------------------------- the walking ground
+
+    private const float AgentRadius = 0.25f;   // m: both of the game's walking meshes' agents (Build 3682), the margin new ground keeps where it meets nothing
+
+    private static bool UptownCovered(List<GroundBox> boxes, float x, float z)
+    {
+        for (int i = 0; i < boxes.Count; i++)
+        {
+            if (boxes[i].Covers(x, z, 0.001f))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // How many pieces a plan's ground is in: boxes that overlap or meet along a metre or more are one surface.
+    private static int UptownPieces(List<GroundBox> boxes)
+    {
+        int n = boxes.Count;
+        var group = Enumerable.Range(0, n).ToArray();
+        int Find(int i)
+        {
+            while (group[i] != i)
+            {
+                group[i] = group[group[i]];
+                i = group[i];
+            }
+            return i;
+        }
+        for (int a = 0; a < n; a++)
+        {
+            boxes[a].Extent(out float ax0, out float az0, out float ax1, out float az1);
+            for (int b = a + 1; b < n; b++)
+            {
+                boxes[b].Extent(out float bx0, out float bz0, out float bx1, out float bz1);
+                float wx = Math.Min(ax1, bx1) - Math.Max(ax0, bx0), wz = Math.Min(az1, bz1) - Math.Max(az0, bz0);
+                if (wx >= -0.01f && wz >= -0.01f && Math.Max(wx, wz) >= 1f)
+                {
+                    group[Find(a)] = Find(b);
+                }
+            }
+        }
+        return Enumerable.Range(0, n).Select(Find).Distinct().Count();
+    }
 
     private static void UptownWalkChecks()
     {
         GroundPlan player = LayoutPlans.PlayerGround(), npc = LayoutPlans.NpcGround();
         Check(player.Player && !player.Npc && !npc.Player && npc.Npc && player.ExpectColliders == 0 && npc.ExpectColliders == 0,
             "uptown walking: one plan for the player's mesh and one for the pedestrians', nothing of the game's on either");
-        bool Covered(GroundPlan plan, float x, float z) => plan.Boxes.Any(b => b.Covers(x, z, 0.01f));
-        // The made buildings' ground check: the player's mesh under a lot's middle, its corners a metre in, and its door.
-        foreach (Lot l in LayoutRules.FirstLots)
+        // The made buildings' ground check: the player's mesh under a lot's middle, its corners a metre in, and both at its door.
+        int under = 0, doors = 0;
+        foreach (Lot l in LayoutRules.Lots)
         {
             Corners(l, out float x0, out float z0, out float x1, out float z1);
-            bool under = Covered(player, l.X, l.Z) && Covered(player, x0 + 1f, z0 + 1f) && Covered(player, x1 - 1f, z0 + 1f) && Covered(player, x0 + 1f, z1 - 1f)
-                         && Covered(player, x1 - 1f, z1 - 1f);
+            bool on = UptownCovered(player.Boxes, l.X, l.Z) && UptownCovered(player.Boxes, x0 + 1f, z0 + 1f) && UptownCovered(player.Boxes, x1 - 1f, z0 + 1f)
+                      && UptownCovered(player.Boxes, x0 + 1f, z1 - 1f) && UptownCovered(player.Boxes, x1 - 1f, z1 - 1f);
             float dx = l.Facing == 90f ? 1f : l.Facing == 270f ? -1f : 0f, dz = l.Facing == 0f ? 1f : l.Facing == 180f ? -1f : 0f;
-            float doorX = l.X + dx * l.Depth * 0.5f, doorZ = l.Z + dz * l.Depth * 0.5f;
-            bool door = Covered(player, doorX + dx * 1f, doorZ + dz * 1f) && Covered(npc, doorX + dx * 1f, doorZ + dz * 1f);
-            Check(under && door, "uptown walking: " + l.Id + " stands on the player's ground, and both meshes reach its door");
+            float doorX = l.X + dx * (l.Depth * 0.5f + 1f), doorZ = l.Z + dz * (l.Depth * 0.5f + 1f);
+            bool door = UptownCovered(player.Boxes, doorX, doorZ) && UptownCovered(npc.Boxes, doorX, doorZ);
+            under += on ? 1 : 0;
+            doors += door ? 1 : 0;
+            if (!on || !door)
+            {
+                Check(false, "uptown walking: " + l.Id + " stands on the player's ground (" + on + "), and both meshes reach its door (" + door + ")");
+            }
         }
-        // Joined to Manhattan: every street's carriageway (the player's) and east strip (the pedestrians') begins over the old dead end.
-        for (int k = 0; k <= 8; k++)
+        Check(under == LayoutRules.Lots.Count && doors == under, "uptown walking: all " + LayoutRules.Lots.Count + " lots stand on the player's ground, and both meshes reach every door ("
+            + under + ", " + doors + ")");
+        Check(UptownPieces(player.Boxes) == 1 && UptownPieces(npc.Boxes) == 1, "uptown walking: each plan's ground is one surface, no box apart from the rest ("
+            + UptownPieces(player.Boxes) + ", " + UptownPieces(npc.Boxes) + ")");
+        // The pedestrians keep to the pavements and the crosswalks: off every carriageway, block and avenue's middle.
+        bool kept = true;
+        for (int row = 1; row <= LayoutRules.Rows; row++)
         {
-            float c = LayoutRules.StreetX(k);
-            Check(Covered(player, c, 477f) && Covered(player, c, 560f) && Covered(npc, c + 7.5f, 480f) && Covered(npc, c + 7.5f, 530f) && Covered(npc, c + 7.5f, 597f),
-                "uptown walking: street " + k + " joins Manhattan's ground for both meshes, up to Uptown Avenue");
+            float middle = (LayoutRules.AvenueZ(row - 1) + LayoutRules.AvenueZ(row)) * 0.5f, a = LayoutRules.AvenueZ(row);
+            for (int k = LayoutStreets.WestMost; k <= LayoutStreets.EastMost; k++)
+            {
+                kept &= !UptownCovered(npc.Boxes, LayoutRules.StreetX(k), middle) && !UptownCovered(npc.Boxes, LayoutRules.StreetX(k) + LayoutRules.StreetPitch * 0.5f, a);
+                kept &= k == LayoutStreets.WestMost || UptownCovered(npc.Boxes, LayoutRules.StreetX(k) - 7.8f, a);
+                kept &= k == LayoutStreets.EastMost || UptownCovered(npc.Boxes, LayoutRules.StreetX(k) + 7.8f, a);
+            }
+            for (int column = 1; column <= LayoutRules.Columns; column++)
+            {
+                LayoutRules.Block(row, column, out float x0, out float z0, out float x1, out float z1);
+                kept &= !UptownCovered(npc.Boxes, (x0 + x1) * 0.5f, (z0 + z1) * 0.5f);
+            }
         }
-        Check(!Covered(npc, LayoutRules.StreetX(2) + 1f, 540f) && !Covered(npc, LayoutRules.FirstLots[0].X, LayoutRules.FirstLots[0].Z),
-            "uptown walking: the pedestrians keep to the pavements and crosswalks, off the carriageways and the lots");
-        Check(player.Boxes.Concat(npc.Boxes).All(b => { b.Extent(out _, out float bz0, out _, out float bz1); return bz0 >= LayoutPlans.ArmFrom - 0.01f && bz1 <= 626f; }),
-            "uptown walking: every box north of 1st Avenue's road, none past Uptown Avenue's north pavement");
-        Check(player.Boxes.Concat(npc.Boxes).All(b => Near(b.Top, LayoutPlans.GroundTop) && b.HalfX > 0.2f && b.HalfZ > 0.2f), "uptown walking: every box flat at the ground's height, none a sliver");
-        // The game's own colliders measured on the north arms' pavements (Build 3682) are never under a box, nor the
-        // backdrop's buildings east of 1st Street, which stay (their walls stand 0.3 m onto its east pavement).
-        float[][] game =
+        Check(kept, "uptown walking: the pedestrians keep to the pavements, crossing each avenue at every junction on both sides, off the carriageways and the blocks");
+        // Inside its edge: every box off the walls by the edge's clearance, north of 1st Avenue's kerbs.
+        float west = LayoutPlans.West + LayoutPlans.EdgeClear - 0.01f, east = LayoutPlans.East - LayoutPlans.EdgeClear + 0.01f, north = LayoutPlans.North - LayoutPlans.EdgeClear + 0.01f;
+        bool inside = player.Boxes.Concat(npc.Boxes).All(b =>
         {
-            new[] { -309.0f, -307.8f, 478.9f, 479.9f }, new[] { -47.3f, -46.7f, 480.9f, 503.7f }, new[] { 127.4f, 128.8f, 479.0f, 480.2f }, new[] { 140.0f, 141.8f, 482.1f, 483.4f },
-            new[] { 127.3f, 127.8f, 485.2f, 508.9f }, new[] { 214.3f, 214.5f, 480.0f, 506.8f }, new[] { 215.2f, 217.0f, 482.2f, 483.5f }, new[] { 227.3f, 229.1f, 484.5f, 485.8f },
-            new[] { 302.5f, 304.3f, 484.6f, 485.9f }, new[] { 314.6f, 316.4f, 482.1f, 483.4f }, new[] { 386.7f, 389.6f, 478.2f, 508.9f }, new[] { 401.9f, 403.7f, 482.1f, 483.4f },
-            new[] { -205.8f, -155.8f, 478.5f, 508.5f }, new[] { 405.2f, 431.4f, 478.0f, 500.2f }, new[] { 405.1f, 434.0f, 500.0f, 523.9f }
-        };
-        foreach (float[] g in game)
+            b.Extent(out float x0, out float z0, out float x1, out float z1);
+            return x0 >= west && x1 <= east && z1 <= north && z0 >= LayoutRules.AvenueZ(0) - LayoutRules.AvenueKerb - 0.01f;
+        });
+        Check(inside, "uptown walking: every box inside the band, " + LayoutPlans.EdgeClear + " m off its walls, none on 1st Avenue's south pavement");
+        Check(player.Boxes.Concat(npc.Boxes).All(b => Near(b.Top, LayoutPlans.GroundTop) && b.Yaw == 0f && b.HalfX >= 0.5f - 0.01f && b.HalfZ >= 0.5f - 0.01f),
+            "uptown walking: every box flat at the ground's height, square to the grid, none narrower than a metre");
+        // What stands on the old corners' pavements: no box on it, and only slivers beside it let go.
+        var kept0 = new List<FlatRect>();
+        LayoutPlans.KeptOff(kept0);
+        bool off = kept0.All(h => player.Boxes.Concat(npc.Boxes).All(b =>
         {
-            bool touched = player.Boxes.Concat(npc.Boxes).Any(b =>
+            b.Extent(out float x0, out float z0, out float x1, out float z1);
+            FlatRect g = h.Grown(AgentRadius);
+            return !(x1 > g.MinX && x0 < g.MaxX && z1 > g.MinZ && z0 < g.MaxZ);
+        }));
+        Check(kept0.Count == 6 && off, "uptown walking: no box on the five scaffolds and building fronts standing on the first block's pavements nor on the game's wall at 9th Street's "
+                                       + "corner, nor within a walker's margin of them");
+        int lost = 0;
+        for (int k = 0; k <= LayoutRules.FirstColumns; k++)
+        {
+            float c = LayoutRules.StreetX(k), to = LayoutRules.AvenueZ(1) - LayoutRules.AvenueHalf;
+            foreach (float[] side in new[] { new[] { c - LayoutRules.StreetHalf, c - LayoutRules.StreetKerbWest }, new[] { c + LayoutRules.StreetKerbEast, c + LayoutRules.StreetHalf } })
+            {
+                for (float x = side[0] + 0.05f; x < side[1]; x += 0.2f)
+                {
+                    for (float z = LayoutPlans.JoinFrom + 0.05f; z < to; z += 0.5f)
+                    {
+                        bool hole = kept0.Take(5).Any(h => h.Grown(LayoutPlans.KeepClear + LayoutPlans.Least).Holds(x, z));
+                        lost += !hole && !UptownCovered(player.Boxes, x, z) ? 1 : 0;
+                        lost += !hole && !UptownCovered(npc.Boxes, x, z) ? 1 : 0;
+                    }
+                }
+            }
+        }
+        Check(lost == 0, "uptown walking: every bit of the first block's pavements laid for both meshes but what stands there and a metre beside it (" + lost + " points missed)");
+        // Seeds: on 1st Avenue's own ground between its corners, never under the new ground, so the city's own is what they join.
+        bool seeds = player.Seeds.Count == 2 * LayoutRules.FirstColumns + 1 && npc.Seeds.Count == LayoutRules.FirstColumns;
+        float corner0 = LayoutRules.StreetX(0), corner8 = LayoutRules.StreetX(LayoutRules.FirstColumns);
+        seeds &= player.Seeds.All(s => !UptownCovered(player.Boxes, s.X, s.Z) && s.X >= corner0 - 0.01f && s.X <= corner8 + 0.01f
+                                       && Math.Abs(s.Z - LayoutRules.AvenueZ(0)) < LayoutRules.AvenueKerb);
+        seeds &= npc.Seeds.All(s => !UptownCovered(npc.Boxes, s.X, s.Z) && s.X > corner0 && s.X < corner8 && s.Z > LayoutRules.AvenueZ(0) + LayoutRules.AvenueKerb
+                                    && s.Z < LayoutPlans.RowOneFrom);
+        Check(seeds, "uptown walking: the seeds on 1st Avenue's own carriageway and north pavement, never under new ground");
+        // The ground rebuilt whole: the band's own, every box on it.
+        bool area = player.Area.Count == LayoutRules.BandGround.Count && npc.Area.Count == player.Area.Count;
+        for (int i = 0; area && i < player.Area.Count; i++)
+        {
+            GroundRect r = LayoutRules.BandGround[i];
+            area &= Near(player.Area[i].MinX, r.X1) && Near(player.Area[i].MinZ, r.Z1) && Near(player.Area[i].MaxX, r.X2) && Near(player.Area[i].MaxZ, r.Z2);
+        }
+        // Off the band's ground the new ground lies only where it joins the city's own: the first block's streets from their
+        // old dead ends to the old wall line, 1st Avenue's continuations over its old corners.
+        float avenue0 = LayoutRules.AvenueZ(0), x0First = LayoutRules.StreetX(0) - LayoutRules.StreetHalf, x8First = LayoutRules.StreetX(LayoutRules.FirstColumns) + LayoutRules.StreetHalf;
+        bool Joins(float x, float z) => (z >= LayoutPlans.ArmFrom - 0.01f && z <= LayoutRules.OldWallZ + 0.01f && x >= x0First - 0.01f && x <= x8First + 0.01f)
+                                        || (z >= avenue0 - LayoutRules.AvenueKerb - 0.01f && z <= LayoutPlans.RowOneFrom + 0.01f
+                                            && ((x >= LayoutRules.StreetX(0) - LayoutRules.CrossingHalfX - 0.01f && x <= LayoutPlans.WestCornerJoin + 0.01f)
+                                                || (x >= LayoutPlans.EastCornerJoin - 0.01f && x <= LayoutRules.StreetX(LayoutRules.FirstColumns) + LayoutRules.CrossingHalfX + 0.01f)));
+        bool InArea(List<FlatRect> rects, float x, float z) => rects.Any(r => r.Holds(x, z));
+        int offBand = 0;
+        foreach (GroundPlan plan in new[] { player, npc })
+        {
+            foreach (GroundBox b in plan.Boxes)
             {
                 b.Extent(out float x0, out float z0, out float x1, out float z1);
-                return x1 > g[0] && x0 < g[1] && z1 > g[2] && z0 < g[3];
-            });
-            Check(!touched, "uptown walking: the game's own collider at x " + g[0] + " to " + g[1] + ", z " + g[2] + " to " + g[3] + " is under no box");
+                for (float x = x0 + 0.01f; x < x1; x += Math.Max(0.5f, (x1 - x0 - 0.02f) / 8f))
+                {
+                    for (float z = z0 + 0.01f; z < z1; z += Math.Max(0.5f, (z1 - z0 - 0.02f) / 8f))
+                    {
+                        offBand += InArea(plan.Area, x, z) || Joins(x, z) ? 0 : 1;
+                    }
+                }
+                offBand += InArea(plan.Area, x1 - 0.01f, z1 - 0.01f) || Joins(x1 - 0.01f, z1 - 0.01f) ? 0 : 1;
+            }
         }
+        Check(area && offBand == 0, "uptown walking: both meshes' tiles over the band's ground rebuilt whole, every box on it but where it joins the city's own ("
+                                    + offBand + " points off it)");
     }
 
-    // ---------------------------------------------------------------- the walls, the colliders, the hiding, the people and the buses
+    // ---------------------------------------------------------------- the joins to the game's own walking ground
+
+    // The game's own walking meshes where the first block meets them (Build 3682, read from its data by the navlab's
+    // band_joins.py): for each street, the least the player's mesh reaches north over its carriageway, then the most it
+    // reaches along a line over each pavement for the player's and the pedestrians' (west, then east); and how far west
+    // and east they reach over 1st Avenue's carriageway and north pavement at its two ends.
+    private static readonly float[,] GameReach =
+    {
+        { 479.30f, 480.75f, 480.80f, 480.60f, 480.40f },
+        { 479.35f, 480.80f, 480.80f, 480.30f, 480.25f },
+        { 479.60f, 480.90f, 480.90f, 480.80f, 480.80f },
+        { 479.30f, 480.75f, 480.70f, 480.65f, 480.40f },
+        { 479.45f, 480.90f, 480.90f, 480.85f, 480.85f },
+        { 479.45f, 480.70f, 480.70f, 480.85f, 480.85f },
+        { 478.90f, 480.90f, 480.90f, 480.90f, 480.90f },
+        { 478.90f, 480.90f, 480.90f, 480.85f, 480.90f },
+        { 478.75f, 480.30f, 480.30f, 479.30f, 479.30f },
+    };
+    private const float GameWestRoad = -311.80f, GameWestPavement = -312.80f, GameEastRoad = 406.10f, GameEastPavement = 405.85f;
+
+    // The first z from z0 north that the boxes cover along a line, or NaN.
+    private static float UptownFrom(List<GroundBox> boxes, float x, float z0, float z1)
+    {
+        for (float z = z0; z <= z1; z += 0.01f)
+        {
+            if (UptownCovered(boxes, x, z))
+            {
+                return z;
+            }
+        }
+        return float.NaN;
+    }
+
+    // The last x along a line, from x0 toward x1, the boxes cover without a gap, or NaN.
+    private static float UptownTo(List<GroundBox> boxes, float z, float x0, float x1)
+    {
+        float step = x1 > x0 ? 0.01f : -0.01f, last = float.NaN;
+        for (float x = x0; (x - x1) * step <= 0f; x += step)
+        {
+            if (UptownCovered(boxes, x, z))
+            {
+                last = x;
+            }
+            else if (!float.IsNaN(last))
+            {
+                break;
+            }
+        }
+        return last;
+    }
+
+    private static void UptownJoinChecks()
+    {
+        GroundPlan player = LayoutPlans.PlayerGround(), npc = LayoutPlans.NpcGround();
+        var shrunkPlayer = new List<GroundBox>();
+        var shrunkNpc = new List<GroundBox>();
+        GroundShapes.ShrinkOutward(player.Boxes, AgentRadius, shrunkPlayer);
+        GroundShapes.ShrinkOutward(npc.Boxes, AgentRadius, shrunkNpc);
+        float need = GroundRules.JoinOverlap;
+        // Each street end: the new ground, its margin kept, begins far enough south that the game's mesh runs on over it.
+        for (int k = 0; k <= LayoutRules.FirstColumns; k++)
+        {
+            float c = LayoutRules.StreetX(k);
+            float road = float.MinValue;
+            for (int i = 0; i < 5; i++)
+            {
+                float x = c - LayoutRules.StreetKerbWest + 0.3f + (LayoutRules.StreetKerbWest + LayoutRules.StreetKerbEast - 0.6f) * i / 4f;
+                road = Math.Max(road, UptownFrom(shrunkPlayer, x, 470f, 500f));
+            }
+            float westX = c - (LayoutRules.StreetHalf + LayoutRules.StreetKerbWest) * 0.5f, eastX = c + (LayoutRules.StreetHalf + LayoutRules.StreetKerbEast) * 0.5f;
+            if (k == 1)
+            {
+                eastX = c + 6.5f;   // 8th Street's east pavement is laid only as far east as the building front standing on it
+            }
+            float pw = UptownFrom(shrunkPlayer, westX, 470f, 500f), nw = UptownFrom(shrunkNpc, westX, 470f, 500f);
+            float pe = UptownFrom(shrunkPlayer, eastX, 470f, 500f), ne = UptownFrom(shrunkNpc, eastX, 470f, 500f);
+            Check(road + need <= GameReach[k, 0] && pw + need <= GameReach[k, 1] && nw + need <= GameReach[k, 2] && pe + need <= GameReach[k, 3] && ne + need <= GameReach[k, 4],
+                "uptown joins: street " + k + "'s new ground, its margin kept, begins " + need + " m or more short of where the game's meshes stop over its carriageway and pavements"
+                + " (from z " + road.ToString("0.00") + ", " + pw.ToString("0.00") + ", " + nw.ToString("0.00") + ", " + pe.ToString("0.00") + ", " + ne.ToString("0.00") + ")");
+        }
+        // 1st Avenue's two ends: its continuations reach over its old corners past where the game's meshes stop.
+        float westRoad = UptownTo(shrunkPlayer, LayoutRules.AvenueZ(0), -330f, -290f), westWalk = UptownTo(shrunkNpc, 477f, -330f, -290f);
+        float eastRoad = UptownTo(shrunkPlayer, LayoutRules.AvenueZ(0), 420f, 380f), eastWalk = UptownTo(shrunkNpc, 477f, 420f, 380f);
+        Check(westRoad - need >= GameWestRoad && westWalk - need >= GameWestPavement && eastRoad + need <= GameEastRoad && eastWalk + need <= GameEastPavement,
+            "uptown joins: 1st Avenue's continuations reach " + need + " m or more over the game's meshes at its two corners (to x " + westRoad.ToString("0.00") + ", "
+            + westWalk.ToString("0.00") + " and from x " + eastRoad.ToString("0.00") + ", " + eastWalk.ToString("0.00") + ")");
+        // The sidewalks' second cause, held for the band's own layout: the margin is kept only where the ground meets nothing,
+        // so a kerb between a carriageway and its pavement, or a block and a street, is one surface with no gap.
+        bool kerbs = true;
+        for (int k = 0; k <= LayoutRules.FirstColumns; k++)
+        {
+            float c = LayoutRules.StreetX(k);
+            foreach (float z in new[] { 490f, 520f, 560f, 590f })
+            {
+                foreach (float x in new[] { c - LayoutRules.StreetKerbWest, c + LayoutRules.StreetKerbEast })
+                {
+                    kerbs &= UptownCovered(shrunkPlayer, x - 0.05f, z) && UptownCovered(shrunkPlayer, x + 0.05f, z);
+                }
+            }
+        }
+        for (int row = 1; row <= LayoutRules.Rows; row++)
+        {
+            float middle = (LayoutRules.AvenueZ(row - 1) + LayoutRules.AvenueZ(row)) * 0.5f;
+            for (int k = LayoutStreets.WestMost + 1; k <= LayoutStreets.EastMost; k++)
+            {
+                float c = LayoutRules.StreetX(k);
+                kerbs &= UptownCovered(shrunkPlayer, c - LayoutRules.StreetHalf - 0.05f, middle + 30f) && UptownCovered(shrunkPlayer, c - LayoutRules.StreetHalf + 0.05f, middle + 30f);
+            }
+        }
+        Check(kerbs, "uptown joins: with the agent's margin kept, the player's ground has no gap at a kerb nor where a block meets its street");
+        // ... and is kept at the band's edge, where the walls stand.
+        float z1 = LayoutRules.AvenueZ(2);
+        float edge = LayoutPlans.West + LayoutPlans.EdgeClear + AgentRadius;
+        Check(!UptownCovered(shrunkPlayer, edge - 0.05f, z1) && UptownCovered(shrunkPlayer, edge + 0.05f, z1)
+              && !UptownCovered(shrunkPlayer, LayoutPlans.East - LayoutPlans.EdgeClear - AgentRadius + 0.05f, z1)
+              && !UptownCovered(shrunkPlayer, LayoutRules.StreetX(5), LayoutPlans.North - LayoutPlans.EdgeClear - AgentRadius + 0.05f)
+              && !UptownCovered(shrunkNpc, LayoutRules.StreetX(5) + LayoutRules.StreetKerbEast + AgentRadius - 0.05f, z1 - 50f)
+              && UptownCovered(shrunkNpc, LayoutRules.StreetX(5) + LayoutRules.StreetKerbEast + AgentRadius + 0.05f, z1 - 50f),
+            "uptown joins: the agent's margin kept at the band's edge, and at the pedestrians' kerbs as the game keeps it");
+        // Inside the band beyond the first block, away from its edge: one surface for the player, nowhere a hole but where
+        // the game's wall at 9th Street's corner stands.
+        var kept = new List<FlatRect>();
+        LayoutPlans.KeptOff(kept);
+        FlatRect wall = kept[kept.Count - 1].Grown(LayoutPlans.KeepClear + AgentRadius + 0.05f);
+        int holes = 0;
+        float x0 = LayoutRules.StreetX(0) - LayoutRules.StreetHalf, x8 = LayoutRules.StreetX(LayoutRules.FirstColumns) + LayoutRules.StreetHalf;
+        float lift = LayoutPlans.EdgeClear + AgentRadius + 0.1f;
+        for (float x = LayoutPlans.West + lift; x <= LayoutPlans.East - lift; x += 1.7f)
+        {
+            bool firstBlock = x > x0 && x < x8;
+            float from = firstBlock ? LayoutRules.AvenueZ(1) - LayoutRules.AvenueHalf + 0.05f
+                : x < LayoutPlans.WestCornerJoin - AgentRadius - 0.1f || x > LayoutPlans.EastCornerJoin + AgentRadius + 0.1f
+                    ? LayoutRules.AvenueZ(0) - LayoutRules.AvenueKerb + AgentRadius + 0.1f : LayoutPlans.RowOneFrom + 0.05f;
+            for (float z = from; z <= LayoutPlans.North - lift; z += 1.3f)
+            {
+                holes += UptownCovered(shrunkPlayer, x, z) || wall.Holds(x, z) ? 0 : 1;
+            }
+        }
+        Check(holes == 0, "uptown joins: the player's ground over the band beyond the first block is one surface once its margin is kept (" + holes + " points missed)");
+    }
+
+    // ---------------------------------------------------------------- the art, the walls, the colliders, the hiding, the people and the buses
 
     private static void UptownPlaceChecks()
     {
         var modules = new List<ModulePlace>();
         LayoutPlans.Modules(modules);
-        Check(modules.Count(m => m.Kind == ModuleKind.Street) == 9 && modules.Count(m => m.Kind == ModuleKind.Crossing) == 9 && modules.Count(m => m.Kind == ModuleKind.Avenue) == 8,
-            "uptown art: nine streets, nine crossings and eight lengths of avenue of the game's own modules");
-        Check(modules.Where(m => m.Kind == ModuleKind.Street).All(m => Near(m.Z - LayoutRules.StreetModule * 0.5f, LayoutRules.FirstAvenueZ + LayoutRules.CrossingHalfZ, 0.01f)
-                                                                       && Near(m.Z + LayoutRules.StreetModule * 0.5f, LayoutRules.AvenueZ(1) - LayoutRules.CrossingHalfZ, 0.01f)),
-            "uptown art: each street module fills its street from 1st Avenue's crossing to Uptown Avenue's");
-        Check(modules.Where(m => m.Kind == ModuleKind.Crossing).All(m => m.Junction == LayoutPlans.JunctionAt(m.Street)) && modules.Count(m => m.Junction >= 0) == 8,
-            "uptown art: every crossing but 5th Street's is one of the plan's junctions, its lights theirs");
+        int Count(ModuleKind kind, bool scenery) => modules.Count(m => m.Kind == kind && m.Scenery == scenery);
+        Check(Count(ModuleKind.Street, false) == 57 && Count(ModuleKind.Street, true) == 19 && Count(ModuleKind.Avenue, false) == 64 && Count(ModuleKind.Avenue, true) == 8
+              && Count(ModuleKind.Crossing, false) == 67 && Count(ModuleKind.Crossing, true) == 0 && Count(ModuleKind.Ground, false) == 46 && Count(ModuleKind.Ground, true) == 28,
+            "uptown art: 57 street lengths, 64 avenue lengths, 67 crossings and 46 blocks' grounds of the game's own pieces, and past the walls 19 streets, 8 avenues and 28 grounds as scenery");
+        Check(modules.Where(m => m.Kind == ModuleKind.Street).All(m => Near(m.Z - LayoutRules.StreetModule * 0.5f, LayoutRules.AvenueZ(m.Row - 1) + LayoutRules.CrossingHalfZ, 0.01f)
+                                                                       && Near(m.X, LayoutRules.StreetX(m.Street)) && m.Scenery == (m.Row > LayoutRules.Rows)),
+            "uptown art: each street length fills its street from one avenue's crossing to the next, the row past Crest Avenue scenery");
+        Check(modules.Where(m => m.Kind == ModuleKind.Avenue).All(m => Near(m.Z, LayoutRules.AvenueZ(m.Row)) && Near(m.X, LayoutRules.StreetX(m.Street) + LayoutRules.StreetPitch * 0.5f)
+                                                                       && m.Scenery == (m.Street < LayoutStreets.WestMost || m.Street == LayoutStreets.EastMost)
+                                                                       && !(m.Row == 0 && m.Street >= 0 && m.Street < LayoutRules.FirstColumns)),
+            "uptown art: each avenue length between two crossings, those past Willow and Lake Street scenery, none over 1st Avenue's own");
+        var crossings = modules.Where(m => m.Kind == ModuleKind.Crossing).ToList();
+        Check(crossings.All(m => m.Junction == LayoutPlans.JunctionAt(m.Street, m.Row) && m.Junction >= 0 && Near(m.Z, LayoutRules.AvenueZ(m.Row)))
+              && crossings.Select(m => m.Junction).Distinct().Count() == LayoutPlans.JunctionCount,
+            "uptown art: every crossing one of the plan's junctions, each junction one crossing, its lights theirs");
+        var grounds = modules.Where(m => m.Kind == ModuleKind.Ground).ToList();
+        Check(grounds.All(m => !(m.Row == 1 && m.Street >= 0 && m.Street < LayoutRules.FirstColumns)) && grounds.Select(m => m.X + "," + m.Z).Distinct().Count() == grounds.Count
+              && grounds.Where(m => !m.Scenery).All(m => LayoutRules.OnGround(m.X, m.Z)),
+            "uptown art: a block's ground on every block of the band but the first block's, which keeps the backdrop's, and round it past the walls");
         var walls = new List<PlanBox>();
         LayoutPlans.NewWalls(walls);
-        GroundPlan player = LayoutPlans.PlayerGround();
-        Check(walls.Count == 3 && walls.All(w => Near(w.Top, LayoutPlans.WallHigh)), "uptown edge: three new walls of the game's height round the first block");
-        Check(walls.All(w => player.Boxes.All(b =>
+        GroundPlan player = LayoutPlans.PlayerGround(), npc = LayoutPlans.NpcGround();
+        Check(walls.Count == 5 && walls.All(w => Near(w.Top, LayoutPlans.WallHigh)),
+            "uptown edge: five new walls of the game's height: north, west, east and two south of 1st Avenue's continuations");
+        Check(walls.All(w => player.Boxes.Concat(npc.Boxes).All(b =>
         {
             b.Extent(out float x0, out float z0, out float x1, out float z1);
             return !(x1 > w.X - w.HalfX + 0.01f && x0 < w.X + w.HalfX - 0.01f && z1 > w.Z - w.HalfZ + 0.01f && z0 < w.Z + w.HalfZ - 0.01f);
         })), "uptown edge: the walls stand off the walking ground, round its edge");
-        var old = new List<float>();
-        LayoutPlans.OldWalls(old, out float oldZ);
-        float[] gameWalls = { -299f, -212f, -123f, -37f, 50f, 137f, 224f, 310f, 397f };   // the game's walls across the street ends (Build 3682)
-        Check(old.Count == 9 && gameWalls.All(w => old.Any(x => Math.Abs(x - w) <= LayoutPlans.OldWallReach)) && Math.Abs(oldZ - 483f) < 1f,
-            "uptown edge: the nine old walls across the street ends are the ones opened");
-        LayoutPlans.Colliders(out PlanBox ground, new List<PlanBox>());
+        // Closed all round: a point just outside the band on each side is inside a wall.
+        bool closed = true;
+        for (float z = LayoutPlans.SouthWall + 1f; z < LayoutPlans.North; z += 10f)
+        {
+            closed &= walls.Any(w => w.Holds(LayoutPlans.West - 1f, z, 0f)) && walls.Any(w => w.Holds(LayoutPlans.East + 1f, z, 0f));
+        }
+        for (float x = LayoutPlans.West; x <= LayoutPlans.East; x += 10f)
+        {
+            closed &= walls.Any(w => w.Holds(x, LayoutPlans.North + 1f, 0f));
+        }
+        for (float x = LayoutPlans.West + 1f; x <= LayoutPlans.WestKeptWall; x += 10f)
+        {
+            closed &= walls.Any(w => w.Holds(x, LayoutPlans.SouthWall - 1f, 0f));
+        }
+        for (float x = LayoutPlans.EastBuilding + 1f; x <= LayoutPlans.East - 1f; x += 10f)
+        {
+            closed &= walls.Any(w => w.Holds(x, LayoutPlans.SouthWall - 1f, 0f));
+        }
+        Check(closed, "uptown edge: the band walled all round, the south of 1st Avenue's continuations from its west end to the game's kept corner wall and from the building at 2 1st Street east");
+        var oldX = new List<float>();
+        var oldZ = new List<float>();
+        LayoutPlans.OldWalls(oldX, oldZ);
+        // The game's walls (MapBorder's City Bounds Colliders, Build 3682): across the nine street ends, then across 1st
+        // Avenue at its two corners, and the one across 9th Street's south-west corner, which stays.
+        float[][] gameWalls =
+        {
+            new[] { -302.11f, 482.89f }, new[] { -215.01f, 482.41f }, new[] { -126.09f, 483.23f }, new[] { -39.18f, 483.35f }, new[] { 47.80f, 483.54f },
+            new[] { 134.70f, 483.50f }, new[] { 222.20f, 483.26f }, new[] { 309.46f, 483.28f }, new[] { 396.13f, 482.26f },
+            new[] { -315.74f, 468.03f }, new[] { 409.08f, 464.74f }
+        };
+        float[] kept = { -317.16f, 451.79f };
+        float Distance(float ax, float az, float bx, float bz) => (float)Math.Sqrt((ax - bx) * (ax - bx) + (az - bz) * (az - bz));
+        bool opens = oldX.Count == 11 && oldZ.Count == 11;
+        for (int i = 0; opens && i < oldX.Count; i++)
+        {
+            int nearest = Enumerable.Range(0, gameWalls.Length).OrderBy(w => Distance(oldX[i], oldZ[i], gameWalls[w][0], gameWalls[w][1])).First();
+            opens &= nearest == i && Distance(oldX[i], oldZ[i], gameWalls[i][0], gameWalls[i][1]) <= LayoutPlans.OldWallReach
+                     && Distance(oldX[i], oldZ[i], kept[0], kept[1]) > LayoutPlans.OldWallReach;
+        }
+        Check(opens, "uptown edge: the eleven walls opened are the game's across the street ends and 1st Avenue's two ends, the one across 9th Street's south-west corner out of reach");
+        var groundsBoxes = new List<PlanBox>();
         var roads = new List<PlanBox>();
-        LayoutPlans.Colliders(out _, roads);
-        Check(LayoutRules.FirstLots.All(l => ground.Holds(l.X, l.Z, 0f)) && roads.Count == 10 && Near(ground.Top, UptownLots.GroundY),
-            "uptown ground: a ground collider under the whole first block at the city's height, and one under each of ten carriageways");
+        LayoutPlans.Colliders(groundsBoxes, roads);
+        // The city's own ground collider (GroundPlanes/GroundPlane, Build 3682) ends at z 606.05 between x -398.57 and 481.72.
+        bool CityGround(float x, float z) => x >= -398.57f && x <= 481.72f && z <= 606.05f;
+        bool grounded = player.Boxes.All(b =>
+        {
+            b.Extent(out float x0, out float z0, out float x1, out float z1);
+            return new[] { b.X, x0 + 0.01f, x1 - 0.01f }.All(x => new[] { b.Z, z0 + 0.01f, z1 - 0.01f }.All(z => groundsBoxes.Any(g => g.Holds(x, z, 0f)) || CityGround(x, z)));
+        });
+        Check(groundsBoxes.Count == 3 && LayoutRules.Lots.All(l => groundsBoxes.Any(g => g.Holds(l.X, l.Z, 0f))) && groundsBoxes.All(g => Near(g.Top, UptownLots.GroundY)) && grounded,
+            "uptown ground: three ground colliders at the city's height, under every lot, and the walking ground on them or on the city's own");
+        bool carriageways = roads.Count == LayoutPlans.StreetCount * LayoutRules.Rows + LayoutRules.Rows + 2 && roads.All(r => Near(r.Top, UptownLots.GroundY));
+        for (int row = 1; row <= LayoutRules.Rows; row++)
+        {
+            float middle = (LayoutRules.AvenueZ(row - 1) + LayoutRules.AvenueZ(row)) * 0.5f;
+            for (int k = LayoutStreets.WestMost; k <= LayoutStreets.EastMost; k++)
+            {
+                carriageways &= roads.Any(r => r.Holds(LayoutRules.StreetX(k), middle, 0f));
+            }
+            carriageways &= roads.Any(r => r.Holds(LayoutRules.StreetX(3) + 40f, LayoutRules.AvenueZ(row), 0f));
+        }
+        carriageways &= roads.Any(r => r.Holds(LayoutRules.StreetX(-3), LayoutRules.AvenueZ(0), 0f)) && roads.Any(r => r.Holds(LayoutRules.StreetX(11), LayoutRules.AvenueZ(0), 0f));
+        Check(carriageways, "uptown ground: a road collider under every carriageway of the band and of 1st Avenue's continuations");
         var hides = new List<GroundRect>();
         LayoutPlans.Hides(hides);
-        Check(hides.Count == 10 && hides.All(h => h.Z1 >= LayoutPlans.HideFrom - 0.01f) && !hides.Any(h => h.Holds(LayoutRules.StreetX(0), 700f)),
-            "uptown hiding: the dead ends and the first block's main area, never 1st Avenue's road nor the rows beyond");
-        Check(!hides.Any(h => h.Holds(-345f, 611.4f)) && !hides.Any(h => h.Holds(LayoutRules.StreetX(3), 685f)) && hides.Any(h => h.Holds(LayoutRules.StreetX(3), 538f))
-              && hides.Any(h => h.Holds(LayoutRules.StreetX(3) + 43.65f, 611.4f)), "uptown hiding: the backdrop's own street north of Uptown Avenue and its avenue west of 9th Street stay; those on the first block go");
+        bool hidesOk = hides.Count == 15 && hides.All(h => h.Z1 >= LayoutPlans.South - 0.01f);
+        float[][] doors = { new[] { 373.1f, 478.9f }, new[] { 266.8f, 479.5f }, new[] { 92.0f, 479f }, new[] { 2f, 478f }, new[] { -94f, 478f }, new[] { -175f, 478f }, new[] { -272f, 478f } };
+        hidesOk &= doors.All(d => !hides.Any(h => h.Holds(d[0], d[1])));
+        for (float x = LayoutPlans.WestCornerJoin + 0.5f; x < LayoutPlans.EastCornerJoin; x += 5f)
+        {
+            hidesOk &= !hides.Any(h => h.Holds(x, LayoutRules.AvenueZ(0))) && !hides.Any(h => h.Holds(x, LayoutPlans.South - 0.5f));
+        }
+        // The backdrop over the band and its scenery goes: the middles of every block and street of it.
+        for (int row = 1; row <= LayoutRules.Rows; row++)
+        {
+            for (int column = 1; column <= LayoutRules.Columns; column++)
+            {
+                LayoutRules.Block(row, column, out float x0, out float z0, out float x1, out float z1);
+                hidesOk &= LayoutRules.IsFirst(row, column) || hides.Any(h => h.Holds((x0 + x1) * 0.5f, (z0 + z1) * 0.5f));
+            }
+        }
+        hidesOk &= modules.Where(m => (m.Scenery || m.Kind == ModuleKind.Ground) && m.Z > LayoutPlans.South).All(m => hides.Any(h => h.Holds(m.X, m.Z)));
+        Check(hidesOk, "uptown hiding: the backdrop goes over the band and under its scenery north of 1st Avenue, never over 1st Avenue between its corners, its buildings or "
+                       + "Manhattan south of it");
         var zones = new List<PlanBox>();
         LayoutPlans.Zones(zones);
-        GroundPlan npc = LayoutPlans.NpcGround();
-        Check(zones.Count == 17 && zones.All(z => npc.Boxes.Any(b => b.Covers(z.X, z.Z, 0.01f)) && npc.Boxes.Any(b => b.Covers(z.X - z.HalfX + 0.1f, z.Z - z.HalfZ + 0.1f, 0.01f))
-                                                    && npc.Boxes.Any(b => b.Covers(z.X + z.HalfX - 0.1f, z.Z + z.HalfZ - 0.1f, 0.01f))),
-            "uptown people: seventeen zones, each on the pedestrians' pavements");
-        LayoutPlans.Terminus(out float tx, out float tz);
-        Check(npc.Boxes.Any(b => b.Covers(tx, tz, 0.01f)) && Math.Abs(tz - (LayoutRules.AvenueZ(1) - 6f)) < 10f, "uptown buses: the terminus on Uptown Avenue's south pavement, beside its lanes");
-        Check(LayoutRules.FirstLots.All(l => l.Z + 40f <= LayoutPlans.MapNorth), "uptown map: the city map's bounds reach 40 m past every first lot, as a made building needs");
+        Check(zones.Count == 111 && zones.All(z => UptownCovered(npc.Boxes, z.X, z.Z) && UptownCovered(npc.Boxes, z.X - z.HalfX + 0.1f, z.Z - z.HalfZ + 0.1f)
+                                                    && UptownCovered(npc.Boxes, z.X + z.HalfX - 0.1f, z.Z + z.HalfZ - 0.1f)),
+            "uptown people: 111 zones, one along each street's east pavement and each avenue's south one, every one on the pedestrians' ground");
+        var termini = new List<PlanTerminus>();
+        LayoutPlans.Termini(termini);
+        Check(termini.Count == 3 && termini.All(t => UptownCovered(npc.Boxes, t.X, t.Z)) && termini.Select(t => t.NameKey).Distinct().Count() == 3
+              && termini[0].NameKey == GroundText.Terminus && termini[0].X > LayoutRules.StreetX(0) && termini[0].X < LayoutRules.StreetX(LayoutRules.FirstColumns)
+              && termini.Select(t => (int)Math.Round((t.Z - LayoutRules.FirstAvenueZ) / LayoutRules.AvenuePitch)).SequenceEqual(new[] { 1, 2, 3 }),
+            "uptown buses: three termini, one on each avenue's south pavement, Uptown Avenue's in the first block, each named");
+        LayoutPlans.MapBounds(out float west, out float east, out float north);
+        Check(LayoutRules.Lots.All(l => l.X - 40f >= west && l.X + 40f <= east && l.Z + 40f <= north), "uptown map: the city map's bounds reach 40 m past every lot, as a made building needs");
     }
 
     // ---------------------------------------------------------------- what the census counts, and the lots' life at a load
@@ -500,55 +1077,69 @@ internal static partial class Program
     {
         var modules = new List<ModulePlace>();
         LayoutPlans.Modules(modules);
-        var old = new List<float>();
-        LayoutPlans.OldWalls(old, out _);
+        var oldX = new List<float>();
+        var oldZ = new List<float>();
+        LayoutPlans.OldWalls(oldX, oldZ);
         var zones = new List<PlanBox>();
         LayoutPlans.Zones(zones);
-        Check(LayoutPlans.StreetCount == 9 && LayoutPlans.ModuleCount == modules.Count && LayoutPlans.OldWallCount == old.Count && LayoutPlans.ZoneCount == zones.Count,
-            "uptown census: it expects the modules, walls and zones the plans lay (" + LayoutPlans.ModuleCount + ", " + LayoutPlans.OldWallCount + ", " + LayoutPlans.ZoneCount + ")");
-        int streets = modules.Count(m => m.Kind == ModuleKind.Street), avenues = modules.Count(m => m.Kind == ModuleKind.Avenue);
-        Check(LayoutPlans.ParkingCount == streets * LayoutPlans.StreetParking + avenues * LayoutPlans.AvenueParking && LayoutPlans.ParkingCount == 25,
-            "uptown census: a parking lane along each copied street and two along each length of avenue (" + LayoutPlans.ParkingCount + ")");
-        bool nearest = true;
-        for (float x = -400f; x <= 500f; x += 2.5f)
+        bool kinds = true;
+        foreach (ModuleKind kind in new[] { ModuleKind.Street, ModuleKind.Avenue, ModuleKind.Crossing, ModuleKind.Ground })
         {
-            int k = LayoutPlans.NearestLanes(x);
-            float best = Enumerable.Range(0, 9).Where(LayoutPlans.HasLanes).Min(s => Math.Abs(LayoutRules.StreetX(s) - x));
-            nearest &= LayoutPlans.HasLanes(k) && Near(Math.Abs(LayoutRules.StreetX(k) - x), best, 0.001f);
+            foreach (bool scenery in new[] { false, true })
+            {
+                kinds &= LayoutPlans.ModuleCount(kind, scenery) == modules.Count(m => m.Kind == kind && m.Scenery == scenery);
+            }
         }
-        Check(nearest && LayoutPlans.NearestLanes(LayoutRules.StreetX(4)) != 4, "uptown census: a walk from Manhattan starts at the nearest street with lanes, never 5th Street");
+        Check(LayoutPlans.StreetCount == 19 && kinds && LayoutPlans.OldWallCount == oldX.Count && LayoutPlans.ZoneCount == zones.Count
+              && LayoutPlans.JunctionCount == LayoutPlans.Streets().Junctions.Count,
+            "uptown census: it expects the pieces, walls, zones and junctions the plans lay (" + modules.Count + ", " + LayoutPlans.OldWallCount + ", " + LayoutPlans.ZoneCount + ", "
+            + LayoutPlans.JunctionCount + ")");
+        int streets = LayoutPlans.ModuleCount(ModuleKind.Street, false), avenues = LayoutPlans.ModuleCount(ModuleKind.Avenue, false);
+        Check(LayoutPlans.ParkingCount == streets * LayoutPlans.StreetParking + avenues * LayoutPlans.AvenueParking && LayoutPlans.ParkingCount == 185,
+            "uptown census: a parking lane along each street length of the band and two along each avenue length, none in the scenery (" + LayoutPlans.ParkingCount + ")");
+        bool nearest = true;
+        int[] through = { 0, 1, 2, 3, 5, 6, 7, 8 };
+        for (float x = -800f; x <= 900f; x += 2.5f)
+        {
+            int k = LayoutPlans.NearestThrough(x);
+            float best = through.Min(s => Math.Abs(LayoutRules.StreetX(s) - x));
+            nearest &= LayoutPlans.HasThrough(k) && Near(Math.Abs(LayoutRules.StreetX(k) - x), best, 0.001f);
+        }
+        Check(nearest && LayoutPlans.NearestThrough(LayoutRules.StreetX(4)) != 4 && through.All(LayoutPlans.HasThrough) && !LayoutPlans.HasThrough(4) && !LayoutPlans.HasThrough(9),
+            "uptown census: a walk from Manhattan starts at the nearest street through 1st Avenue's junctions, never 5th Street");
     }
 
     private static void UptownLifeChecks()
     {
         int stamp = UptownLots.Stamp;
+        Lot firstLot = LayoutRules.FirstLots[0], farLot = LayoutRules.Lots.Last(l => !l.First);
         UptownLots.Begin("the city is loading");
-        Check(!UptownLots.Ready && !UptownLots.Closed && UptownLots.Why == "the city is loading" && !UptownLots.Open(LayoutRules.FirstLots[0]),
+        Check(!UptownLots.Ready && !UptownLots.Closed && UptownLots.Why == "the city is loading" && !UptownLots.Open(firstLot) && !UptownLots.Open(farLot),
             "uptown lots: a load begins with nothing open and why");
         UptownLots.Laid(true, null);
-        Check(UptownLots.Ready && UptownLots.Why == null && UptownLots.Stamp == stamp + 1 && UptownLots.Open(LayoutRules.FirstLots[0]) && !UptownLots.Open(LayoutRules.Lots.First(l => !l.First)),
-            "uptown lots: laid, the first block opens and the stamp moves once");
+        Check(UptownLots.Ready && UptownLots.Why == null && UptownLots.Stamp == stamp + 1 && UptownLots.All.All(UptownLots.Open) && !UptownLots.Open(null),
+            "uptown lots: laid, every lot of the band opens and the stamp moves once");
         var heard = new List<string>();
-        Action<string> first = why => heard.Add("first " + UptownLots.Ready);
+        Action<string> earliest = why => heard.Add("first " + UptownLots.Ready);
         Action<string> faulty = why => throw new InvalidOperationException("a handler's fault");
-        Action<string> last = why => heard.Add("last " + why);
-        UptownLots.Closing += first;
+        Action<string> latest = why => heard.Add("last " + why);
+        UptownLots.Closing += earliest;
         UptownLots.Closing += faulty;
-        UptownLots.Closing += last;
+        UptownLots.Closing += latest;
         int faults = 0;
         UptownLots.Close("the test's clean-up", e => faults++);
         UptownLots.Close("again", e => faults++);
-        UptownLots.Closing -= first;
+        UptownLots.Closing -= earliest;
         UptownLots.Closing -= faulty;
-        UptownLots.Closing -= last;
+        UptownLots.Closing -= latest;
         Check(heard.Count == 2 && heard[0] == "first True" && heard[1] == "last the test's clean-up" && faults == 1,
             "uptown lots: closing tells every handler first, while the lots are still open, a faulty one apart, and only once");
-        Check(UptownLots.Closed && !UptownLots.Ready && UptownLots.Why.Contains("the test's clean-up") && UptownLots.Stamp == stamp + 2 && !UptownLots.Open(LayoutRules.FirstLots[0]),
+        Check(UptownLots.Closed && !UptownLots.Ready && UptownLots.Why.Contains("the test's clean-up") && UptownLots.Stamp == stamp + 2 && !UptownLots.Open(firstLot) && !UptownLots.Open(farLot),
             "uptown lots: closed until the next load, with why, the stamp moved again");
         UptownLots.Begin("the city is loading");
         Check(!UptownLots.Closed && !UptownLots.Ready, "uptown lots: the next load opens the way again");
         UptownLots.Laid(false, null);
-        Check(!UptownLots.Ready && UptownLots.Why != null, "uptown lots: a step that stood down without a reason still says something");
+        Check(!UptownLots.Ready && UptownLots.Why != null && !UptownLots.Open(farLot), "uptown lots: a step that stood down without a reason still says something, and no lot opens");
     }
 
     // ---------------------------------------------------------------- the cost
@@ -558,10 +1149,19 @@ internal static partial class Program
         var watch = Stopwatch.StartNew();
         RoadPlan plan = LayoutPlans.Streets();
         GroundPlan player = LayoutPlans.PlayerGround(), npc = LayoutPlans.NpcGround();
+        var modules = new List<ModulePlace>(512);
+        LayoutPlans.Modules(modules);
         RoadBuild build = UptownBuild(out _);
         watch.Stop();
-        Check(watch.Elapsed.TotalMilliseconds < 100.0 && plan.Roads.Count > 0 && player.Boxes.Count > 0 && npc.Boxes.Count > 0 && build.Problem == null,
-            "uptown cost: the first block's plans and its streets' build in under 100 ms (" + watch.Elapsed.TotalMilliseconds.ToString("0.0") + " ms), once a load");
+        var shrink = Stopwatch.StartNew();
+        var into = new List<GroundBox>();
+        GroundShapes.ShrinkOutward(player.Boxes, AgentRadius, into);
+        GroundShapes.ShrinkOutward(npc.Boxes, AgentRadius, into);
+        shrink.Stop();
+        Check(watch.Elapsed.TotalMilliseconds < 400.0 && plan.Roads.Count > 0 && player.Boxes.Count > 0 && npc.Boxes.Count > 0 && modules.Count > 0 && build.Problem == null,
+            "uptown cost: the band's plans and its streets' build in under 400 ms (" + watch.Elapsed.TotalMilliseconds.ToString("0.0") + " ms, " + build.Count + " lane points, "
+            + player.Boxes.Count + " and " + npc.Boxes.Count + " boxes), once a load behind the loading screen");
+        Check(shrink.Elapsed.TotalMilliseconds < 200.0, "uptown cost: both plans' margins in under 200 ms (" + shrink.Elapsed.TotalMilliseconds.ToString("0.0") + " ms)");
     }
 
     // ---------------------------------------------------------------- the sources
@@ -625,21 +1225,22 @@ internal static partial class Program
         int Order(string text, string what) => text.IndexOf(what, StringComparison.Ordinal);
         string[] steps =
         {
-            "GroundSession.Agrees(", "GroundGame.FindBackdrop()", "GroundGame.FindTemplates()", "GroundGame.HideBackdrop(", "GroundGame.OpenWalls(",
-            "GroundWork.Streets(", "GroundWork.Ground(LayoutPlans.PlayerGround())", "GroundWork.TakeBack(", "GroundWork.Ground(LayoutPlans.NpcGround())",
-            "GroundGame.Build(", "GroundGame.CopyArt(", "GroundGame.WidenMap(", "TransitMap.AddTerminus(", "ScenePrewarm.AddLate(", "UptownLots.Laid(_walkable"
+            "GroundSession.Agrees(", "GroundGame.FindBackdrop()", "GroundGame.FindTemplates()", "GroundGame.HideBackdrop(", "GroundGame.HideStrays(", "GroundGame.OpenWalls(",
+            "GroundWork.Streets(", "GroundGame.CopyArt(", "GroundWork.Ground(LayoutPlans.PlayerGround())", "GroundWork.TakeBack(", "GroundWork.Ground(LayoutPlans.NpcGround())",
+            "GroundGame.Build(", "GroundGame.WidenMap(", "TransitMap.AddTerminus(", "ScenePrewarm.AddLate(", "UptownLots.Laid(_walkable"
         };
         bool ordered = true;
         for (int i = 0; i < steps.Length; i++)
         {
             ordered &= Order(director, steps[i]) >= 0 && (i == 0 || Order(director, steps[i]) > Order(director, steps[i - 1]));
         }
-        Check(ordered, "uptown load: asked, found, the backdrop and the old walls put away (the ground's check counts what is left), the streets, the player's ground "
-                       + "(or the streets taken back), the pedestrians', the new walls and colliders, the art, the map, the terminus, the late parking and people, "
-                       + "then the lots open; in that order");
+        Check(ordered, "uptown load: asked, found, the backdrop, its strays and the old walls put away (the ground's count finds what is left), the streets, the art (what of it "
+                       + "stands on the ground is walked round), the player's ground (or the streets taken back), the pedestrians', the new walls and colliders, the map, the "
+                       + "termini, the late parking and people, then the lots open; in that order");
         Check(Regex.Matches(director, @"StandDown\(""its streets: "" \+ why, true\)|StandDown\(""its ground for the player: "" \+ why, true\)").Count == 2
-              && Regex.IsMatch(director, @"StandDown\(why, false\)") && Regex.IsMatch(director, @"if \(laid\)\s*\{\s*GroundGame\.GiveBack\(\);"),
-            "uptown load: every step that stands down after the backdrop was put away gives it all back the same load, with one line");
+              && Regex.IsMatch(director, @"StandDown\(why, false\)") && Regex.IsMatch(director, @"if \(laid\)\s*\{\s*GroundGame\.GiveBack\(\);")
+              && Regex.IsMatch(game, @"public static void GiveBack\(\)\s*\{\s*ShowBackdrop\(\);\s*CloseWalls\(\);\s*Forget\(\);"),
+            "uptown load: every step that stands down after the backdrop was put away gives it all back the same load, the copied art with it, with one line");
         Check(Regex.IsMatch(director, @"private void Awake\(\)\s*\{[^}]*UptownLots\.Begin\([^}]*Lay\(\);") && director.Contains("UptownLots.Laid(false, stays ?"),
             "uptown lots: closed as a load begins, opened by the ground's step alone, closed again when the city goes");
         Check(Regex.IsMatch(session, @"if \(!Settings\.Uptown\)") && session.Contains("GoingPublic.RefusesOtherMods") && session.Contains("GoingPublic.ModsAsHost")
@@ -653,6 +1254,10 @@ internal static partial class Program
               && Order(art, "_art.SetActive(true);") > Order(art, "Wire(copy, build"),
             "uptown art: the copies made asleep and woken together once stripped and wired");
         Check(Regex.Matches(art, @"SceneFinds\.All<").Count == 2 && !Regex.IsMatch(game + art, @"FindObjects|GameObject\.Find\("), "uptown art: two searches of the scene, behind the loading screen, through SceneFinds");
+        Check(Regex.IsMatch(art, @"ArtName = ""RealLifeOverhaul ") && Regex.IsMatch(game, @"GroundName = ""RealLifeOverhaul "),
+            "uptown art: the copies and the walls under roots named for the mod, which the ground's count of the game's colliders leaves out");
+        Check(Regex.IsMatch(game, @"StrayRoot = ""TheHamptons""") && Regex.IsMatch(game, @"SceneRoots\[i\]\.name != StrayRoot"),
+            "uptown hiding: the strays put away are another scene's pieces on the band, of that one scene alone");
         Check(game.Contains("ShowBackdrop();") && game.Contains("CloseWalls();") && Regex.IsMatch(game, @"public static void Forget\(\)\s*\{\s*DropArt\(\);"),
             "uptown sources: the backdrop and the walls given back on a stand-down, the mod's own pieces when the city goes");
         Check(tests.Contains("\"Uptown check (path, \"") && tests.Contains("\"Uptown check (traffic): ") && tests.Contains("\"Uptown check (census): ")
@@ -708,20 +1313,26 @@ internal static partial class Program
             { "en", "Fixed: " }, { "pt", "Corrigido: " }, { "zh-cn", "已修复：" }, { "de", "Behoben: " }, { "fr", "Corrigé : " }, { "es", "Corregido: " },
             { "ru", "Исправлено: " }, { "nl", "Opgelost: " }, { "tr", "Düzeltildi: " }
         };
-        var piece = new Dictionary<string, string>
+        // Uptown's line opens as it did and now tells of the whole band.
+        var piece = new Dictionary<string, string[]>
         {
-            { "en", "Manhattan now goes on north past 1st Avenue into Uptown" }, { "pt", "Manhattan agora segue para o norte depois da 1st Avenue" },
-            { "zh-cn", "曼哈顿现在越过 1st Avenue 继续向北延伸" }, { "de", "Manhattan geht jetzt hinter der 1st Avenue nach Norden weiter" },
-            { "fr", "Manhattan se prolonge désormais vers le nord après la 1st Avenue" }, { "es", "Manhattan ahora sigue hacia el norte más allá de la 1st Avenue" },
-            { "ru", "Манхэттен теперь продолжается на север за 1st Avenue" }, { "nl", "Manhattan loopt nu door naar het noorden, voorbij 1st Avenue" },
-            { "tr", "Manhattan artık 1st Avenue'nun ötesinde kuzeye" }
+            { "en", new[] { "Manhattan now goes on north past 1st Avenue into Uptown", "three rows of eighteen blocks" } },
+            { "pt", new[] { "Manhattan agora segue para o norte depois da 1st Avenue", "três fileiras de dezoito quarteirões" } },
+            { "zh-cn", new[] { "曼哈顿现在越过 1st Avenue 继续向北延伸", "三排共十八列街区" } },
+            { "de", new[] { "Manhattan geht jetzt hinter der 1st Avenue nach Norden weiter", "drei Reihen mit je achtzehn Blöcken" } },
+            { "fr", new[] { "Manhattan se prolonge désormais vers le nord après la 1st Avenue", "trois rangées de dix-huit pâtés de maisons" } },
+            { "es", new[] { "Manhattan ahora sigue hacia el norte más allá de la 1st Avenue", "tres filas de dieciocho manzanas" } },
+            { "ru", new[] { "Манхэттен теперь продолжается на север за 1st Avenue", "три ряда по восемнадцать кварталов" } },
+            { "nl", new[] { "Manhattan loopt nu door naar het noorden, voorbij 1st Avenue", "drie rijen van achttien blokken" } },
+            { "tr", new[] { "Manhattan artık 1st Avenue'nun ötesinde kuzeye", "on sekizer bloktan oluşan üç sıra" } }
         };
         foreach (var language in piece)
         {
             using JsonDocument doc = JsonDocument.Parse(File.ReadAllText(Path.Combine(locales, language.Key + ".json")));
             string next = doc.RootElement.TryGetProperty("reallife_changes_next", out JsonElement row) ? row.GetString() : string.Empty;
-            int at = next.IndexOf(language.Value, StringComparison.Ordinal), fix = next.IndexOf(fixMark[language.Key], StringComparison.Ordinal);
-            Check(at >= 0 && (fix < 0 || at < fix), "uptown texts: What's new's next row tells of Uptown in " + language.Key + ", before its fixes");
+            int at = next.IndexOf(language.Value[0], StringComparison.Ordinal), band = next.IndexOf(language.Value[1], StringComparison.Ordinal);
+            int fix = next.IndexOf(fixMark[language.Key], StringComparison.Ordinal);
+            Check(at >= 0 && band > at && (fix < 0 || band < fix), "uptown texts: What's new's next row tells of Uptown's whole band in " + language.Key + ", before its fixes");
         }
     }
 }
