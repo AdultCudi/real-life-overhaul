@@ -154,10 +154,18 @@ namespace RealLifeOverhaul.Uptown
             {
                 Logger?.Warn("Uptown: " + GroundBuilder.ClearMiss + "; the district is laid all the same, as it never gives its ground back at this load once it is grown.");
             }
+            if (_walkable)
+            {
+                Logger?.Info("Uptown: " + GroundWork.LastWalk + (GroundBuilder.ReadNeeded ? "; the dry run's change also showed only once read anew" : "") + ".");
+            }
             mark = Stopwatch.GetTimestamp();
             _peopleWhy = _walkable ? GroundWork.Ground(LayoutPlans.NpcGround()) : "the player's ground was not laid";
             _peopleMs = Ms(mark);
             _people = _peopleWhy == null;
+            if (_people)
+            {
+                Logger?.Info("Uptown: " + GroundWork.LastWalk + ".");
+            }
             LayoutPlans.NewWalls(_walls);
             LayoutPlans.Colliders(out PlanBox ground, _roads);
             GroundGame.Build(_walls, ground, _roads, LayoutPlans.GroundCollider, LayoutPlans.RoadCollider);

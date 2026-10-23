@@ -611,6 +611,12 @@ internal static partial class Program
         Check(Regex.IsMatch(builder, @"job\.BackSources\.Add\(WalkGame\.Box\(Inside\(job\.Fresh\[i\], grid, height\), WalkGame\.NotWalkable\)\)")
               && builder.Contains("public const float BackInset = 2f;") && walk.Contains("NavMesh.GetAreaFromName(\"Not Walkable\")"),
             "new ground sources: given back, each fresh tile is rebuilt from nothing walkable well inside it, so it is emptied and the tiles beside are not touched");
+        // The owner's game of 23 Oct: Uptown's ground was said grown, yet nothing could walk on it.
+        Check(grow.Success && Regex.IsMatch(grow.Groups["b"].Value, @"bool reloaded = job\.Problem == null && WalkGame\.Walkable\(mesh, plan\) == 0 && WalkGame\.Reload\(mesh\);[\s\S]*"
+                                                                      + @"GroundBuilder\.RoundAlike\(job\)[\s\S]*if \(job\.Problem == null && walkable == 0\)")
+              && walk.Contains("GameContract.SurfaceRemoveData.Method.Invoke(mesh.Surface, null);") && walk.Contains("GameContract.SurfaceAddData.Method.Invoke(mesh.Surface, null);")
+              && dry.Success && dry.Groups["b"].Value.Contains("WalkGame.Readd(ref instance, data);"),
+            "new ground sources: ground the live mesh does not show is read anew by the game's own surface and checked walkable, never said grown when nothing can walk on it");
         Check(!Regex.IsMatch(work, @"\bconst\s+float\s+\w*(Corner|Cell|Origin|Side|Bounds)\w*\s*="), "new ground sources: the grid, the tiles and the map are read from the game, never kept in the code");
 
         // The buses: lines run between the game's subway stations, then termini of the mod's own (a district has no station).

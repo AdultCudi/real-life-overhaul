@@ -19,6 +19,9 @@ namespace RealLifeOverhaul.NewGround
         private static readonly Dictionary<CityMesh, float> Proved = new Dictionary<CityMesh, float>(2);   // the dry run's margin, once a load each
         private static readonly List<string> Seen = new List<string>(3);   // the game's colliders found on a plan's ground, for its line
 
+        /// <summary>How the last ground grown can be walked on, for the caller's log line; null before any.</summary>
+        public static string LastWalk { get; private set; }
+
         /// <summary>
         /// The plan's streets appended to the traffic's data, its joins found again among the game's lanes and its ends
         /// through the game's junctions found again among its junctions at this load. Null when done; else why it stood
@@ -115,20 +118,34 @@ namespace RealLifeOverhaul.NewGround
                 {
                     GroundBuilder.Now(job, GroundPass.Join);
                 }
+                // The live mesh read anew when the new ground does not show on it yet: in the owner's game of 23 Oct Unity's
+                // builder changed the data and the live mesh kept the old.
+                bool reloaded = job.Problem == null && WalkGame.Walkable(mesh, plan) == 0 && WalkGame.Reload(mesh);
                 int samples = job.RoundBefore.Length / 3;
                 int alike = job.Problem == null ? GroundBuilder.RoundAlike(job) : samples;
                 if (alike != samples)
                 {
                     job.Problem = "the " + mesh.Label + " mesh changed beyond the new ground's tiles (" + (samples - alike) + " of " + samples + " samples moved)";
                 }
+                int walkable = job.Problem == null ? WalkGame.Walkable(mesh, plan) : 0;
+                if (job.Problem == null && walkable == 0)
+                {
+                    job.Problem = "the ground grown into the " + mesh.Label + " mesh cannot be walked on" + (reloaded ? ", even with the game's surface read anew" : "");
+                }
                 if (job.Problem == null)
                 {
+                    LastWalk = "the " + mesh.Label + " mesh walkable on " + walkable + " of the new ground's " + plan.Boxes.Count + " boxes"
+                               + (reloaded ? ", once the game's surface was read anew" : "");
                     return null;
                 }
                 // Standing down leaves no island of new ground unjoined, nor an old tile half rebuilt.
                 string why = job.Problem;
                 job.Problem = null;
                 GroundBuilder.Now(job, GroundPass.Back);
+                if (reloaded)
+                {
+                    WalkGame.Reload(mesh);
+                }
                 return why + (job.Problem == null ? "; its tiles given back" : "; giving its tiles back failed too (" + job.Problem + ")");
             }
             finally
