@@ -29,6 +29,9 @@ namespace RealLifeOverhaul
 
         public static IModLogger Logger;
 
+        /// <summary>True only while save handlers put live projections back for serialization.</summary>
+        internal static bool Saving { get; private set; }
+
         public static void Keep(Action handler)
         {
             if (handler != null && !Handlers.Contains(handler))
@@ -71,6 +74,19 @@ namespace RealLifeOverhaul
         }
 
         private static void Run()
+        {
+            Saving = true;
+            try
+            {
+                RunHandlers();
+            }
+            finally
+            {
+                Saving = false;
+            }
+        }
+
+        private static void RunHandlers()
         {
             using var piece = SessionWatch.Piece("the game is saving (the mod writes its state into the save first)");
             bool timed = Meta.Dev.Verbose;

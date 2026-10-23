@@ -10,6 +10,23 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>Per cent of customers the company adds at a business now; 0 while stopped or held for a save.</summary>
+        internal static System.Collections.Generic.Dictionary<BuildingRegistration, int> CompanionFootfalls()
+        {
+            var values = new System.Collections.Generic.Dictionary<BuildingRegistration, int>();
+            CompanyDirector d = Instance;
+            if (d != null && d._running && !d._broken && Save != null)
+            {
+                foreach (CompanyShop shop in d._shops)
+                {
+                    if (shop.Reg != null)
+                    {
+                        values[shop.Reg] = d.Footfall(shop, Save.Day);
+                    }
+                }
+            }
+            return values;
+        }
+
         public static int FootfallOf(BuildingRegistration reg)
         {
             CompanyDirector d = Instance;

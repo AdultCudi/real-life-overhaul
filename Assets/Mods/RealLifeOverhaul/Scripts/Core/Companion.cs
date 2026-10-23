@@ -7,7 +7,10 @@ namespace RealLifeOverhaul
     /// </summary>
     public static class Companion
     {
-        /// <summary>The report as JSON, or null when none can be made: no session, Going Public, or a fault (logged once).</summary>
+        /// <summary>The report as JSON, or null when none can be made: no session, Going Public, or a fault.</summary>
         public static string CaptureV1(GameInstance game) => CompanionGame.CaptureSafe(game);
+
+        /// <summary>Pure current ownership decision. Only allowed authorizes the caller to write.</summary>
+        public static string OwnershipV1(GameInstance game, string requestJson) => CompanionOwnership.Query(game, requestJson);
     }
 }

@@ -261,6 +261,7 @@ namespace RealLifeOverhaul.Economy
             new[] { 0, -20, 0, 0, 10, 0, 0, 0 }
         };
 
+        public const int BearsLeast = -100, BearsMost = 100;
         public const int AdjustQuiet = PriceRules.Quiet;   // thousandths: within 1% of nothing no rent, wage or takings adjustment is made
 
         public const int CopycatDays = 14;          // days running a business must have made a profit to draw a rival

@@ -9,13 +9,14 @@ namespace RealLifeOverhaul
         /// <summary>
         /// The companion report's capabilities (Core/CompanionBridges), each read from the feature that owns it; the report
         /// never reads a feature's save line. Called only during a capture, on a save or a reader's call: nothing per frame.
-        /// A fault is said once (<see cref="Fault"/>) and only that capability reads "failed".
+        /// A fault changes no diagnostic latch; only that capability reads "failed".
         /// </summary>
         private static class CompanionLinks
         {
             internal static void Connect()
             {
                 CompanionGame.Reset();
+                PlanningCompanionLinks.Connect();
                 CompanionBridges.Readers["features"] = Features;
                 CompanionBridges.Readers["businesses"] = Businesses;
                 CompanionBridges.Readers["employment"] = Employment;
@@ -26,6 +27,7 @@ namespace RealLifeOverhaul
             internal static void Disconnect()
             {
                 CompanionBridges.Readers.Clear();
+                CompanionBridges.Ownership = null;
                 CompanionGame.Reset();
             }
 
@@ -54,9 +56,8 @@ namespace RealLifeOverhaul
                         Feature("managers", ManagersEnabled, company != null && company.ManagersOn)
                     });
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
-                    Fault("CompanionLinks.Features", e);
                     return new CompanionModule("failed");
                 }
             }
@@ -67,9 +68,8 @@ namespace RealLifeOverhaul
                 {
                     return CompanionGame.Businesses();
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
-                    Fault("CompanionLinks.Businesses", e);
                     return new CompanionModule("failed");
                 }
             }
@@ -86,9 +86,8 @@ namespace RealLifeOverhaul
                     }
                     return CompanyGame.CompanionEmployment(StaffEnabled ? company : null, CityEnabled ? Prices.Level : 1000);
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
-                    Fault("CompanionLinks.Employment", e);
                     return new CompanionModule("failed");
                 }
             }
@@ -108,9 +107,8 @@ namespace RealLifeOverhaul
                     }
                     return economy.Desk.CompanionCredit();
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
-                    Fault("CompanionLinks.Credit", e);
                     return new CompanionModule("failed");
                 }
             }
@@ -124,9 +122,8 @@ namespace RealLifeOverhaul
                     return new CompanionModule("ready", CompanionSnapshot.Row("source", "game.financialSummaries",
                         "coverage", "statement-backed-only", "adjustment", "none"));
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
-                    Fault("CompanionLinks.Accounting", e);
                     return new CompanionModule("failed");
                 }
             }

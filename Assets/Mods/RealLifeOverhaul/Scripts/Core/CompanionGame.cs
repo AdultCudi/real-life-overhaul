@@ -13,28 +13,32 @@ namespace RealLifeOverhaul
         private static readonly HashSet<string> Reported = new HashSet<string>(StringComparer.Ordinal);
 
         /// <summary>The report, or null outside a loaded session or in Going Public. Throws on a fault of the envelope.</summary>
+        internal static bool Available(GameInstance game)
+        {
+            return game != null && ReferenceEquals(game, SaveGameManager.Current) && ModState.Loaded
+                && Wiring.Connected && !GoingPublic.InSession;
+        }
+
         public static string Capture(GameInstance game)
         {
-            if (game == null || !ReferenceEquals(game, SaveGameManager.Current) || !ModState.Loaded
-                || !Wiring.Connected || GoingPublic.InSession)
+            if (!Available(game))
             {
                 return null;
             }
             return CompanionSnapshot.Capture(Meta.Changelog.Latest,
                 CompanionSnapshot.Row("character", game.characterId, "day", game.Day, "hour", game.Hour, "minute", (int)game.Minute),
-                CompanionBridges.Readers, Failed);
+                CompanionBridges.Readers);
         }
 
-        /// <summary>As <see cref="Capture"/>, but a fault is logged once and gives null: another mod's call never throws.</summary>
+        /// <summary>As <see cref="Capture"/>, but a fault gives null without diagnostics or latch changes: another mod's call never throws.</summary>
         public static string CaptureSafe(GameInstance game)
         {
             try
             {
                 return Capture(game);
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                Failed("capture", e);
                 return null;
             }
         }

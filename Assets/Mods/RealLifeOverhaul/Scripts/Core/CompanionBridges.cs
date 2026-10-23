@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Newtonsoft.Json.Linq;
 
 namespace RealLifeOverhaul
 {
@@ -7,6 +8,8 @@ namespace RealLifeOverhaul
     internal static class CompanionBridges
     {
         /// <summary>Each capability's reader by its module name; called only during a capture.</summary>
+        public static Func<string, JArray, object> Ownership;
+
         public static readonly Dictionary<string, Func<CompanionModule>> Readers
             = new Dictionary<string, Func<CompanionModule>>(StringComparer.Ordinal);
     }
