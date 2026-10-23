@@ -82,6 +82,7 @@ internal static partial class Program
         MeshCutLabels();  // what the session record names as the mod's last change to the walking mesh: a constant text that says where (MeshCutCheck.cs)
         Drivers();        // the city's drivers against a model of the game's own traffic, and the officer's wave-through (DriverCheck.cs)
         PanelPicks();     // who has the game's one panel box near two places, the key to what it shows, and every panel through that rule (PanelPickCheck.cs)
+        PanelEdges();     // a job's panel over a place out of the picture waits at the screen's edge toward it, never off the screen (PanelEdgeCheck.cs)
         CarSounds();      // the recorded car sounds: the crossfade, the parts, every clip shipped and licensed, every way back to the game's sound (CarSoundCheck.cs)
         CarContactChecks(); // when a contact of the player's car is a hit: never the road under a braking van, a kerb or its load; every collision judged so (CarContactCheck.cs)
         Handling(Array.IndexOf(args, "--handling") >= 0);   // the driven car's handling on the game's own cars, with the Garage's builds, and its sources (HandlingCheck.cs)

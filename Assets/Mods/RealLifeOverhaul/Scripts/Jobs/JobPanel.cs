@@ -29,6 +29,7 @@ namespace RealLifeOverhaul
         {
             _name = name;
             _panel.Name = name;
+            _panel.KeepInView = true;   // the game's camera sees little of a shop and indoors hides its guider: off the screen nothing would say where
             _run = run;
             _second = second;
             _press = Press;
@@ -62,43 +63,26 @@ namespace RealLifeOverhaul
             _second?.Invoke();
         }
 
-        /// <summary>Over a place in the world; over the player's head while that place is behind the camera.</summary>
-        public bool Show(Vector3 over, PlayerController player)
+        /// <summary>Over a place in the world; at the screen's edge toward it while it is out of the picture (<see cref="WorldPanel.KeepInView"/>).</summary>
+        public bool Show(Vector3 over)
         {
             _panel.Follow = null;
             _panel.For(over);   // measured from the place itself when another panel wants the game's box
-            _panel.Position = Fit(over, player);
+            _panel.Position = over;
             return Note(_panel.Show());
         }
 
-        /// <summary>Over a person or thing that moves, followed by the game every frame; over the player's head while it is behind the camera.</summary>
-        public bool Show(Transform over, float lift, PlayerController player)
+        /// <summary>Over a person or thing that moves, followed by the game every frame; at the screen's edge toward it while it is out of the picture.</summary>
+        public bool Show(Transform over, float lift)
         {
-            Vector3 at = over.position + Vector3.up * lift;
             _panel.For(over.position);
-            Vector3 fitted = Fit(at, player);
-            if (fitted == at)
-            {
-                _panel.Follow = over;
-                _panel.FollowLift = lift;
-            }
-            else
-            {
-                _panel.Follow = null;
-                _panel.Position = fitted;
-            }
+            _panel.Follow = over;
+            _panel.FollowLift = lift;
             return Note(_panel.Show());
         }
 
-        private static Vector3 Fit(Vector3 over, PlayerController player)
-        {
-            Camera camera = GameManager.GetMainCamera();
-            if (camera != null && player != null && Vector3.Dot(over - camera.transform.position, camera.transform.forward) < 0.5f)
-            {
-                return player.transform.position + Vector3.up * 2.1f;
-            }
-            return over;
-        }
+        /// <summary>True while the panel's place is out of the picture and the panel stands at the screen's edge toward it. For a self-check line.</summary>
+        public bool AtEdge => _panel.AtEdge;
 
         private bool Note(bool shown)
         {

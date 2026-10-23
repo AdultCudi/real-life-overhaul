@@ -247,10 +247,11 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        // The place before any step aside.
+        // The place before any step aside; for a panel kept in view, the picture's edge toward a place out of it.
         private Vector3 Home()
         {
-            return Follow != null ? Follow.position + Vector3.up * FollowLift : Position;
+            Vector3 at = Unmoved();
+            return KeepInView && InView(at, out Vector3 shown) ? shown : at;
         }
 
         LabelInfo IOverlay.GetFirstLineLabel()

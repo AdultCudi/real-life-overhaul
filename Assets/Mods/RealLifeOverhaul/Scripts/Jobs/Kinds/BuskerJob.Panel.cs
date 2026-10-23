@@ -59,7 +59,7 @@ namespace RealLifeOverhaul
                     _panel.Panel.Button(3, ButtonMore, _onMore, true, false);
                 }
             }
-            _panel.Show(_pitch + Vector3.up * PanelUp, Ctx.Player);
+            _panel.Show(_pitch + Vector3.up * PanelUp);
         }
 
         private void More()

@@ -228,7 +228,7 @@ namespace RealLifeOverhaul
         {
             _wanted = true;
             _panel.Offer(first, _panelLeft, JobText.Number(_count - _delivered), _panel.White, action, actionOn, null, false);
-            _panel.Show(over, Ctx.Player);
+            _panel.Show(over);
         }
 
         private void Figures(float now)

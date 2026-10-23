@@ -75,6 +75,9 @@ internal static partial class Program
         var unnamed = asked.FindAll(n => !wanted.Contains(n));
         Check(late.Count == 0, "game UI fix: every feature names the game's pictures it wants in its Awake, before the look (none later: " + string.Join(", ", late) + ")");
         Check(asked.Count >= 8 && unnamed.Count == 0, "game UI fix: every picture asked for by its name is named before the look (" + asked.Count + "; not named: " + string.Join(", ", unnamed) + ")");
+        PictureNames();   // the names passed through an array, a constant, a parameter, a local or a method's answer too (PictureNameChecks.cs)
+        Check(Block(sprites, "public static Sprite Get(string name)").Contains("\"Game UI check (pictures): '\""),
+            "game UI fix: a picture first asked for in play says so in one self-check line, with Developer diagnostics on");
 
         string bar = ModSource(@"Core\GameUi\GameBar.cs"), mark = Block(bar, "public void Mark(float value)");
         Check(mark.Contains("_mark.anchorMin = new Vector2(_markShown, 0f);") && mark.Contains("_mark.anchorMax = new Vector2(_markShown, 1f);") && !bar.Contains("_width") && !bar.Contains(".rect.width"),

@@ -71,6 +71,7 @@ namespace RealLifeOverhaul
         private Vector3 _shelfStand;
         private Vector3 _shelfAt;
         private bool _hasShelf;
+        private bool _shelfTold;       // the shelf's self-check line is written
         private float _nextTry;
         private int _tries;
         private float _stockEnds;
@@ -276,7 +277,7 @@ namespace RealLifeOverhaul
         {
             _wanted = true;
             _panel.Offer(first, _panelLeft, JobText.Number(_boxes - _stocked), _panel.White, action, actionOn, skip ? ButtonSkip : null, true);
-            _panel.Show(over, Ctx.Player);
+            _panel.Show(over);
         }
 
         private void Figures(float now)
@@ -320,12 +321,18 @@ namespace RealLifeOverhaul
                 {
                     if (++_tries >= 5)
                     {
+                        if (Meta.Dev.Verbose)
+                        {
+                            Ctx.Logger?.Info("Jobs check (stocker shelf): no shelf of " + _clientName + "'s could be walked to in " + _tries
+                                             + " looks: FAIL, the round is called off and paid for what was done.");
+                        }
                         Ctx.Say("reallife_job_stocker_no_shelf", 8f);   // no shelf to walk to: the round is called off, paid for what was done
                         Conclude();
                     }
                     return;
                 }
                 _hasShelf = true;
+                _shelfTold = false;
                 if (Meta.Dev.Verbose)
                 {
                     Ctx.Logger?.Info("Jobs: stocker: shelf chosen '" + shelfName + "'; its standing point is "
@@ -336,6 +343,21 @@ namespace RealLifeOverhaul
             Mark(_shelfStand, _shelfLabel);
             Up(_panelShelf, ButtonStock, JobSpots.Flat(Ctx.Player.transform.position, _shelfStand) < ShelfReach, false,
                 new Vector3(_shelfAt.x, _shelfStand.y + PanelUp, _shelfAt.z));
+            if (!_shelfTold && Meta.Dev.Verbose)
+            {
+                _shelfTold = true;
+                TellShelf();
+            }
+        }
+
+        // Once a shelf: the one thing that says where it is indoors, where the game hides its guider, is the panel, in the picture.
+        private void TellShelf()
+        {
+            string away = JobSpots.Flat(Ctx.Player.transform.position, _shelfStand).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
+            Ctx.Logger?.Info("Jobs check (stocker shelf): the shelf to stock is " + away + " m from the player; the game's panel over it is "
+                             + (!_panel.Up ? "not up: FAIL, another panel has the game's box or the building box leaves it no room; it is asked again five times a second."
+                                 : _panel.AtEdge ? "up, held on the screen at its edge toward the shelf, which is out of the picture or too near its edge for the box: PASS."
+                                 : "up over the shelf, in the picture: PASS."));
         }
 
         private void Act(string action)
