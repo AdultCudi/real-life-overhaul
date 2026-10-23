@@ -4,11 +4,18 @@ using System.Collections.Generic;
 using BigAmbitions.DayNightCycle;
 using Buildings;
 using Helpers;
+using Localizor;
+using RealLifeOverhaul.Floors;
+using RealLifeOverhaul.GameUi;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Careers
 {
-    /// <summary>Going into the university: its building read as the school while the game loads it, and the floor's registration.</summary>
+    /// <summary>
+    /// Going into the university: its own refusals (closed, a vehicle, away from its door), then the floors core, which reads
+    /// the building as the school's structure while the game loads it; the floor's registration of the mod's own; and the
+    /// university's building and floors as the core sees them (<see cref="CampusHost"/>, <see cref="CampusFloors"/>).
+    /// </summary>
     internal sealed partial class CampusInterior
     {
         /// <summary>Goes in to a floor and on to a course's room (or -1), begun there with <paramref name="begin"/>; null if asked, else a reason key, logged.</summary>
@@ -16,7 +23,7 @@ namespace RealLifeOverhaul.Careers
         {
             CampusBuilding campus = Campus;
             BuildingManager manager = Manager;
-            if (!Available || manager == null)
+            if (!Available || manager == null || _host == null)
             {
                 return Refused("reallife_study_why_not_university", how, "the university's floors are not there");
             }
@@ -34,7 +41,7 @@ namespace RealLifeOverhaul.Careers
             {
                 return Refused("reallife_study_why_not_university", how, "the player is not at its door (" + new Vector2(offset.x, offset.z).magnitude.ToString("0") + " m away)");
             }
-            if (manager.enteringBuilding || _mutated)
+            if (manager.enteringBuilding || FloorsDirector.GoingIn)
             {
                 return Refused("reallife_study_why_game_busy", how, "the game is already going into a building");
             }
@@ -43,22 +50,18 @@ namespace RealLifeOverhaul.Careers
                 ChangeFloor(floor, course, begin);
                 return null;
             }
-            _pending = Mathf.Clamp(floor, 1, CampusRules.Floors);
+            int pending = Mathf.Clamp(floor, 1, CampusRules.Floors);
             _goCourse = course;
             _goBegin = begin && course >= 0;
-            int doorId = NearestDoor(campus.Building);
-            Mutate("asked by " + how);
-            _logger?.Info("Careers: going into the university, floor " + _pending + (course >= 0 ? " for " + CareersText.Course(course) : string.Empty) + " (" + how
+            int doorId = FloorsDirector.NearestDoor(campus.Building);
+            _logger?.Info("Careers: going into the university, floor " + pending + (course >= 0 ? " for " + CareersText.Course(course) : string.Empty) + " (" + how
                           + ", door " + doorId + ", at " + Clock() + ").");
-            try
+            string why = FloorsDirector.Enter(_host, pending, how);
+            if (why != null)
             {
-                manager.EnterBuilding(campus.Building.building, false, false, 0, doorId);
-            }
-            catch (Exception e)
-            {
-                Restore("the game's going in failed");
-                _logger?.Error(e);
-                return "reallife_study_why_game_busy";
+                _goCourse = -1;
+                _goBegin = false;
+                return Refused("reallife_study_why_game_busy", how, why);
             }
             return null;
         }
@@ -69,199 +72,79 @@ namespace RealLifeOverhaul.Careers
             return key;
         }
 
-        private static int NearestDoor(CityBuildingController building)
+        // The floor the game's own door takes the player to: the floor of the class, exam or ceremony on now, else of the first
+        // course they are on in person, else the first.
+        private int DoorFloor()
         {
-            Vector3 at = PlayerHelper.GetPosition();
-            int best = building.entranceDoors[0].doorId;
-            float near = float.MaxValue;
-            for (int i = 0; i < building.entranceDoors.Length; i++)
-            {
-                Transform t = building.entranceDoors[i] != null ? building.entranceDoors[i].doorTransform : null;
-                if (t != null && (t.position - at).sqrMagnitude < near)
-                {
-                    near = (t.position - at).sqrMagnitude;
-                    best = building.entranceDoors[i].doorId;
-                }
-            }
-            return best;
-        }
-
-        // The building's size and version read as the school's while the game loads the structure.
-        private void Mutate(string why)
-        {
-            Building asset = Campus != null && Campus.Building != null ? Campus.Building.building : null;
-            if (asset == null || _mutated)
-            {
-                return;
-            }
-            _asset = asset;
-            _wasSize = asset.BuildingSize;
-            _wasVersion = asset.BuildingVersion;
-            asset.BuildingSize = SizeD;
-            asset.BuildingVersion = SchoolVersion;
-            _mutated = true;
-            _director.StartCoroutine(Guard.Routine(Settle()));
-            if (Meta.Dev.Verbose)
-            {
-                _logger?.Info("Careers check (university way in): " + why + ": the building read as D1 until the game has loaded it (was " + _wasSize + " " + _wasVersion + "): PASS");
-            }
-        }
-
-        private void Restore(string why)
-        {
-            if (!_mutated)
-            {
-                return;
-            }
-            _mutated = false;
-            if (_asset != null)
-            {
-                _asset.BuildingSize = _wasSize;
-                _asset.BuildingVersion = _wasVersion;
-            }
-            if (Meta.Dev.Verbose)
-            {
-                _logger?.Info("Careers check (university way in): the building's own size put back (" + why + "): PASS");
-            }
-        }
-
-        // The safety net: whatever happens to the entering, the building's own size is put back when it is over.
-        private IEnumerator Settle()
-        {
-            float until = Time.realtimeSinceStartup + 15f;
-            yield return null;
-            while (_mutated && Manager != null && Manager.enteringBuilding && Time.realtimeSinceStartup < until)
-            {
-                yield return null;
-            }
-            yield return null;
-            if (_mutated && (Manager == null || !Manager.enteringBuilding))
-            {
-                Restore("the game's going in ended without the university");
-            }
-            else if (_mutated)
-            {
-                Restore("the game took longer than 15 s to go in");
-            }
-        }
-
-        // While open and the player is near the door: the game's own click on the building is seen before it loads.
-        private IEnumerator WatchClick()
-        {
-            while (_watching)
-            {
-                BuildingManager manager = Manager;
-                if (manager != null && manager.enteringBuilding && !_mutated && !BuildingManager.IsInsideBuilding)
-                {
-                    _pending = Mathf.Clamp(DefaultFloor(out _goCourse), 1, CampusRules.Floors);
-                    _goBegin = false;   // the game's own way in: to the classroom's door, nothing begun
-                    Mutate("the game's own way in (a click on the building, or its door)");
-                    _logger?.Info("Careers: the player is going into the university by the game's own door, to floor " + _pending + " (at " + Clock() + ").");
-                    _watching = false;
-                }
-                yield return null;
-            }
-        }
-
-        private int DefaultFloor(out int course)
-        {
-            if (_director.UniversityBusinessNow(out course))
+            if (_director.UniversityBusinessNow(out int course))
             {
                 return CampusRules.FloorOf(course);
             }
-            course = -1;
             int first = _director.FirstUniversityCourse();
             return first >= 0 ? CampusRules.FloorOf(first) : 1;
         }
 
-        private static readonly int HotEntered = HotSpots.Slot("Careers: CampusInterior.Entered");
-        private static readonly int HotLeft = HotSpots.Slot("Careers: CampusInterior.Left");
-
-        // The game has entered a building.
-        private void Entered(Address address)
+        // The game's own way in was seen: to the door's floor, and to its class's room if one is on there (nothing begun).
+        private void GameWayIn(int floor)
         {
-            using var hotSpot = HotSpots.Time(HotEntered);
-            try
+            _goCourse = _director.UniversityBusinessNow(out int course) && CampusRules.FloorOf(course) == floor ? course : -1;
+            _goBegin = false;   // the game's own way in: to the classroom's door, nothing begun
+            _logger?.Info("Careers: the player is going into the university by the game's own door, to floor " + floor + " (at " + Clock() + ").");
+        }
+
+        // The player is on a floor: the classrooms open as the university is.
+        private void Arrived(FloorVisit v)
+        {
+            _visit = v;
+            Floor = v.Floor;
+            _layCourse = _goCourse;
+            _layBegin = _goBegin;
+            _goCourse = -1;
+            _goBegin = false;
+            BuildingManager manager = Manager;
+            if (manager != null)
             {
-                CampusBuilding campus = Campus;
-                bool ours = campus != null && campus.Usable && address != null && address.streetName == campus.Street && address.streetNumber == campus.Number;
-                if (!ours)
-                {
-                    Restore("another building was entered");
-                    return;
-                }
-                if (!_mutated)
-                {
-                    return;   // the building's own interior: Tick takes the player to a floor (Wrong)
-                }
-                Restore("the game has loaded the school's structure");
-                BuildingManager manager = Manager;
-                Floor = _pending;
-                _wrongTold = false;
-                _spawn = PlayerHelper.GetPosition();
-                _shadow = Shadow(manager.buildingRegistration, campus);
-                manager.buildingRegistration = _shadow;
                 manager.isOpen = OpenNow();
-                _director.StartCoroutine(Guard.Routine(Lay(++_built, _goCourse, _goBegin)));
-                _goCourse = -1;
-                _goBegin = false;
-            }
-            catch (Exception e)
-            {
-                _logger?.Error(e);
             }
         }
 
-        private void Left(Address address)
+        // The player is off the university's floors: what the game took away with the building is forgotten.
+        private void Left(FloorVisit v)
         {
-            using var hotSpot = HotSpots.Time(HotLeft);
-            CampusBuilding campus = Campus;
-            if (Floor == 0 || campus == null || address == null || address.streetName != campus.Street || address.streetNumber != campus.Number)
-            {
-                return;
-            }
             _logger?.Info("Careers: the player has left the university (floor " + Floor + ", at " + Clock() + ").");
             Floor = 0;
-            _built++;
-            _shadow = null;
+            _visit = null;
             for (int i = 0; i < _rooms.Length; i++)
             {
                 _rooms[i] = null;
                 _chairs[i] = null;
                 _signs[i] = null;   // destroyed with the game's indoor items
             }
-            _marks.Forget();       // the game let its icons go with the building
-            _lift.Hide("left the building");
-        }
-
-        // The building entered by its own interior (a save made inside it, or a way in the mod did not see): to a floor, or out.
-        private void Wrong(bool open)
-        {
-            if (_wrongTold)
+            if (v.Stays)
             {
-                return;
-            }
-            _wrongTold = true;
-            if (open)
-            {
-                _logger?.Info("Careers: the player is inside the university's building without its floors (a save made inside, or a way in the mod did not see); taken to floor 1.");
-                _director.StartCoroutine(Guard.Routine(Again()));
+                _marks.Clear();    // the player stays inside (the floors were taken away): the icons are given back to the game's pool
             }
             else
             {
-                _logger?.Info("Careers: the player is inside the university's building while it is closed; taken out to the street.");
-                Manager.ExitFromBuilding(NearestDoor(Campus.Building));
+                _marks.Forget();   // the game let its icons go with the building
             }
         }
 
-        private IEnumerator Again()
+        // Once a second on a floor: the classrooms open or shut with the university, and the marks over their doors.
+        private void OnFloor(FloorVisit v)
         {
-            yield return null;
-            string why = Enter(1, -1, "a way back to the floors");
-            if (why != null)
+            BuildingManager manager = Manager;
+            bool open = OpenNow();
+            if (manager != null)
             {
-                Manager?.ExitFromBuilding(0);
+                bool wasOpen = manager.isOpen;
+                manager.isOpen = open;
+                if (wasOpen != open && Meta.Dev.Verbose)
+                {
+                    _logger?.Info("Careers check (university floor): the classrooms are " + (open ? "open" : "closed") + " now: PASS");
+                }
             }
+            Marks();
         }
 
         // The building manager's registration while on a floor: the mod's own, kept nowhere.
@@ -294,6 +177,140 @@ namespace RealLifeOverhaul.Careers
                 r.scheduleDays.Add(day);
             }
             return r;
+        }
+
+        // A floor button's arguments, made once for each (the class's key or the floor's, the floor, the course).
+        private object Args(bool here, int floor, int course)
+        {
+            long id = ((here ? 1L : 0L) << 62) | ((long)(uint)floor << 31) | (uint)(course + 1);
+            if (!_args.TryGetValue(id, out object args))
+            {
+                args = course >= 0 ? (object)new { floor = floor.ToString(), course = CareersText.Course(course) } : new { floor = floor.ToString() };
+                _args[id] = args;
+            }
+            return args;
+        }
+
+        /// <summary>The university's building as the floors core holds it: open by its hours, its panel at the door even while closed.</summary>
+        private sealed class CampusHost : FloorHost
+        {
+            private readonly CampusInterior _u;
+
+            public CampusHost(CampusInterior u) : base(CampusRules.BookId, "Careers check (university door)", "Careers check (university lift)")
+            {
+                _u = u;
+            }
+
+            public override bool Open() => _u.OpenNow();
+
+            public override bool ShowsDoor(bool open) => true;   // closed, its floors are offered greyed with its hours
+
+            public override int DefaultFloor(bool afterLoad) => afterLoad ? 1 : _u.DoorFloor();
+
+            public override void GameWayIn(int floor) => _u.GameWayIn(floor);
+
+            public override void DoorLine(bool open, out string left, out string right, out Color32 colour)
+            {
+                left = _u.HoursLine(open);
+                right = (open ? "common_open" : "common_closed").GetLocalization();
+                colour = open ? WorldPanel.Green() : WorldPanel.Red();
+            }
+
+            public override void DoorsChanged(bool open)
+            {
+                _u._logger?.Info("Careers: the university's doors are " + (open ? "open" : "shut") + " (" + Clock() + ", " + _u.HoursLine(open) + ").");
+            }
+
+            public override void DoorUp(bool up, bool open)
+            {
+                GameInstance save = SaveGameManager.Current;
+                if (!up || open || save == null || _u._toldClosed == save.Day * 100 + save.Hour)
+                {
+                    return;
+                }
+                _u._toldClosed = save.Day * 100 + save.Hour;
+                _u._logger?.Info("Careers: the player is at the university's door at " + Clock() + " and it is closed (" + _u.HoursLine(false) + "); the floors are offered greyed.");
+            }
+
+            public override void FoundInside(int floor, bool throughDoor, bool open)
+            {
+                _u._logger?.Info(open
+                    ? "Careers: the player is inside the university's building without its floors (a save made inside, or a way in the mod did not see); taken to floor " + floor + "."
+                    : "Careers: the player is inside the university's building while it is closed; taken out to the street.");
+            }
+
+            public override string DoorWhat(bool open)
+            {
+                CampusBuilding campus = _u.Campus;
+                return "at the door of " + (campus != null ? campus.Name : Name) + (open ? ", open" : ", closed");
+            }
+
+            public override string LiftWhat(int floor) => "the lift on floor " + floor;
+        }
+
+        /// <summary>
+        /// The university's classrooms: its floors on the game's school structure (D1) with the school's layout laid in, five rooms a
+        /// floor each holding a course of its own (CampusRules), and the registration of the mod's own while the player is there.
+        /// </summary>
+        private sealed class CampusFloors : FloorPlace
+        {
+            private readonly CampusInterior _u;
+
+            public CampusFloors(CampusInterior u) : base(CampusRules.BookId, "reallife_study_campus_university")
+            {
+                _u = u;
+                Floors = CampusRules.Floors;
+                Structure = new FloorStructure(SizeD, SchoolVersion);
+                Layout = new FloorLayout(CareersGame.SchoolType, SchoolLayout);
+                LayLast = SchoolDoor;   // the classroom doors after the chairs they find
+                Check = "Careers check (university way in)";
+                LayCheck = "Careers check (university floor)";
+                LogName = "the university";
+                StructureWords = "the school's structure";
+            }
+
+            public override bool Open() => _u.OpenNow();
+
+            public override void Button(int floor, int part, out string key, out object args, out bool marked)
+            {
+                int classFloor = _u._director.UniversityBusinessNow(out int classCourse) ? CampusRules.FloorOf(classCourse) : 0;
+                bool here = floor == classFloor;
+                key = here ? "reallife_campus_floor_class" : "reallife_campus_floor";
+                args = _u.Args(here, floor, here ? classCourse : -1);
+                marked = here;
+            }
+
+            public override string LiftLine(int floor, int part) => CareersText.T("reallife_campus_lift_here", "floor", floor.ToString());
+
+            public override bool Busy() => _u._director.SittingNow;
+
+            public override void Pressed(FloorHost host, int floor)
+            {
+                int course = _u._director.UniversityBusinessNow(out int now) && CampusRules.FloorOf(now) == floor ? now : -1;
+                string why = _u.Enter(floor, course, "the floor button at the door");
+                if (why != null)
+                {
+                    _u.Tell(why);
+                }
+            }
+
+            public override void Arrive(FloorVisit visit) => _u.Arrived(visit);
+
+            public override void Laid(FloorVisit visit, FloorLaid laid) => _u.Laid(visit, laid);
+
+            public override void Moved(FloorVisit visit, int fromFloor) => _u.Moved(visit, fromFloor);
+
+            public override void Shown(FloorVisit visit) => _u.Shown(visit);
+
+            public override void Leave(FloorVisit visit) => _u.Left(visit);
+
+            public override void Tick(FloorVisit visit) => _u.OnFloor(visit);
+
+            public override BuildingRegistration MakeShadow(BuildingRegistration real, bool borrowed)
+            {
+                CampusBuilding campus = _u.Campus;
+                return campus != null ? Shadow(real, campus) : null;
+            }
         }
     }
 }
