@@ -16,6 +16,8 @@ namespace RealLifeOverhaul.Floors
     /// the building's own: the building reads as that size and version while the game loads it, and all that is borrowed goes
     /// back on every way out (FloorLoan). A floor's furniture is the game's own layout, FitOut's fit-out, or the place's own.
     /// Which place is on which floor is worked out from the buildings and places alone, the same on every machine; nothing is saved.
+    /// The floors follow their hosts: a building or place is put away while the feature that holds it stands down in another city
+    /// or is switched off (Core/CityCheck; Follow), and no building a DLC keeps is ever held or taken (Core/GameDlc).
     /// COST: no Update. A one-second timer; while the player is outdoors within twelve metres of an open door whose floor stands
     /// on another structure, one flag a frame (the game's own click on the building is seen before it loads); the lift and the
     /// panels' buttons on their presses only.
@@ -97,7 +99,11 @@ namespace RealLifeOverhaul.Floors
             }
             Hosts.Clear();
             Guests.Clear();
+            Parked.Clear();
+            ParkedGuests.Clear();
             Claimed.Clear();
+            _lookAgainAt = 0f;
+            _waitTold = 0;
             _dirty = true;
             if (Instance == this)
             {
@@ -138,9 +144,15 @@ namespace RealLifeOverhaul.Floors
             EventHold.Keep(ref GlobalEvents.onEnterBuilding, _onEnter, ref _enterSeen);
             EventHold.Keep(ref GlobalEvents.onExitBuilding, _onExit, ref _exitSeen);
             SaveHook.Keep(_onSave);
+            Follow();
             if (Claimed.Count > 0)
             {
                 LetClaims(null, false);   // a building taken for places that is let meanwhile goes back; the book takes another
+            }
+            if (_lookAgainAt > 0f && Time.realtimeSinceStartup >= _lookAgainAt)
+            {
+                _lookAgainAt = 0f;
+                _dirty = true;   // places waiting for a building: the city is looked at again for an empty office
             }
             Book();
             for (int i = 0; i < Hosts.Count; i++)
@@ -176,15 +188,28 @@ namespace RealLifeOverhaul.Floors
 
         // ---------------------------------------------------------------- what the holders and features call
 
-        /// <summary>A holder's building with its own places (its Own list), held by the floors from now; again whenever its places change.</summary>
+        /// <summary>
+        /// A holder's building with its own places (its Own list), held by the floors from now; again whenever its places change.
+        /// Never a building a DLC keeps (Core/GameDlc), which is refused with a line.
+        /// </summary>
         public static void Hold(FloorHost host)
         {
-            if (host == null || host.Building == null)
+            if (host == null || host.Building == null || Parked.Contains(host))
             {
-                return;
+                return;   // put away with its feature: taken up again with it, its places as they are then
             }
             if (!Hosts.Contains(host))
             {
+                if (GameDlc.Gated(host.Building))
+                {
+                    Logger?.Warn("Floors: " + FloorsGame.Address(host.Building) + " is kept behind a DLC and is never held for floors (" + host.Id + ").");
+                    return;
+                }
+                if (Asleep(host.Feature))
+                {
+                    Parked.Add(host);
+                    return;
+                }
                 Hosts.Add(host);
             }
             _dirty = true;
@@ -193,9 +218,9 @@ namespace RealLifeOverhaul.Floors
         /// <summary>The holder lets its building go: its panels down, its doors as they were, the player off its floors.</summary>
         public static void Let(FloorHost host, string why)
         {
-            if (host == null || !Hosts.Remove(host))
+            if (host == null || Parked.Remove(host) || !Hosts.Remove(host))
             {
-                return;
+                return;   // one put away with its feature has nothing out
             }
             Drop(host, why);
             _dirty = true;
@@ -205,11 +230,16 @@ namespace RealLifeOverhaul.Floors
         /// <summary>A feature asks a floor for its place: a spare one now, or as soon as a building has one.</summary>
         public static void Ask(FloorPlace place)
         {
-            if (place == null || Guests.Contains(place))
+            if (place == null || Guests.Contains(place) || ParkedGuests.Contains(place))
             {
                 return;
             }
             place.Guest = true;
+            if (Asleep(place.Feature))
+            {
+                ParkedGuests.Add(place);
+                return;
+            }
             Guests.Add(place);
             _dirty = true;
         }
@@ -217,10 +247,17 @@ namespace RealLifeOverhaul.Floors
         /// <summary>The feature lets its place's floor go (its option off, the city going): the player off it first.</summary>
         public static void Release(FloorPlace place, string why)
         {
-            if (place == null || !Guests.Remove(place))
+            if (place == null || ParkedGuests.Remove(place) || !Guests.Remove(place))
             {
                 return;
             }
+            PutAway(place, why);
+            Book();
+        }
+
+        // A place's floor taken from it: the player off it first, or a going in to it under way given the building's own structure.
+        private static void PutAway(FloorPlace place, string why)
+        {
             if (_visit != null && ReferenceEquals(_visit.Place, place))
             {
                 Off(why);
@@ -232,7 +269,69 @@ namespace RealLifeOverhaul.Floors
             place.Host = null;
             place.First = 0;
             _dirty = true;
-            Book();
+        }
+
+        // The floors follow their features. One whose feature stands down in this city (Core/CityCheck: another city, or the test
+        // as in one) or is switched off after its faults no longer runs the code that would let its building or place go, so the
+        // core puts them away as a Let or a Release would, the player off their floors first, and takes them up again once the
+        // feature is back. Two set lookups a building and a place, once a second; nothing allocated unless one goes or comes.
+        private static void Follow()
+        {
+            for (int i = Hosts.Count - 1; i >= 0; i--)
+            {
+                FloorHost host = Hosts[i];
+                if (Asleep(host.Feature))
+                {
+                    string why = AsleepWhy(host.Feature);
+                    Hosts.RemoveAt(i);
+                    Parked.Add(host);
+                    Drop(host, why);
+                    _dirty = true;
+                    Logger?.Info("Floors: " + host.Name + " (" + host.Id + ") is put away while " + why + "; it comes back with its feature.");
+                }
+            }
+            for (int i = Guests.Count - 1; i >= 0; i--)
+            {
+                FloorPlace place = Guests[i];
+                if (Asleep(place.Feature))
+                {
+                    string why = AsleepWhy(place.Feature);
+                    Guests.RemoveAt(i);
+                    ParkedGuests.Add(place);
+                    PutAway(place, why);
+                    Logger?.Info("Floors: the floor of " + place.Said + " is put away while " + why + "; it comes back with its feature.");
+                }
+            }
+            for (int i = Parked.Count - 1; i >= 0; i--)
+            {
+                FloorHost host = Parked[i];
+                if (!Asleep(host.Feature))
+                {
+                    Parked.RemoveAt(i);
+                    Hosts.Add(host);
+                    _dirty = true;
+                    Logger?.Info("Floors: " + host.Name + " (" + host.Id + ") is held again, its feature '" + host.Feature + "' back.");
+                }
+            }
+            for (int i = ParkedGuests.Count - 1; i >= 0; i--)
+            {
+                FloorPlace place = ParkedGuests[i];
+                if (!Asleep(place.Feature))
+                {
+                    ParkedGuests.RemoveAt(i);
+                    Guests.Add(place);
+                    _dirty = true;
+                    Logger?.Info("Floors: " + place.Said + " asks for a floor again, its feature '" + place.Feature + "' back.");
+                }
+            }
+        }
+
+        // True while a feature's code does not run: it stands down in this city, or is switched off after its faults.
+        private static bool Asleep(string feature) => FeatureGuards.FeatureAway(feature) || FeatureGuards.FeatureOff(feature);
+
+        private static string AsleepWhy(string feature)
+        {
+            return FeatureGuards.FeatureAway(feature) ? "its feature '" + feature + "' stands down in this city" : "its feature '" + feature + "' is switched off after its faults";
         }
 
         /// <summary>Where a place's floor is now, for the map, the route guider and the Guide; false while it has none.</summary>

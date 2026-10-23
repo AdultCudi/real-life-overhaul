@@ -475,12 +475,12 @@ namespace RealLifeOverhaul.Floors
 
         /// <summary>
         /// The largest office building that stands empty and that nobody holds (no feature of the mod's, its reservations included,
-        /// no conversion, not the player's or another player's), ties by address: the same on every machine. Null for none.
+        /// no conversion, not the player's or another player's, never one a DLC keeps), ties by address: the same on every machine.
+        /// Null for none.
         /// </summary>
         public static CityBuildingController PickClaim(Func<string, int, bool> taken)
         {
-            CityManager city = InstanceBehavior<CityManager>.Instance;
-            CityBuildingController[] all = city != null ? city.cityBuildingControllers : null;
+            CityBuildingController[] all = GameDlc.Open(InstanceBehavior<CityManager>.Instance);   // nothing a DLC keeps: the same pick on every machine
             if (all == null || all.Length == 0)
             {
                 return null;
@@ -493,7 +493,7 @@ namespace RealLifeOverhaul.Floors
         /// <summary>An office of the city's own that stands empty and can be walked into.</summary>
         public static bool Claimable(CityBuildingController b)
         {
-            return Usable(b) && b.building.SpecialService == null && b.building.BuildingType == Office && !GameMembers.Fenced(b.building) && (int)b.building.requiredDLC == 0
+            return Usable(b) && b.building.SpecialService == null && b.building.BuildingType == Office && !GameMembers.Fenced(b.building) && !GameDlc.Gated(b)
                    && b.building.totalSqm > 0 && !Offices.Conversions.Holds(b.building) && !SpecialBuildings.Players(b) && Vacant(RegistrationOf(b));
         }
 

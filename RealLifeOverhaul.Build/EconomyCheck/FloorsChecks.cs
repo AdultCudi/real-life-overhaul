@@ -9,7 +9,7 @@ using RealLifeOverhaul.Floors;
 // floors on the game's four-button panel, three to a page with "more floors" beyond four; the loan of the game's (FloorLoan)
 // driven through every way in and out, each thing borrowed given back exactly once; and over the sources the university's and
 // the towers' floors on the core, the swaps in its Game file alone and acted on at every answer of the loan, nothing of it
-// saved, nothing per frame, and the test and its words.
+// saved, nothing per frame, in another city as their features are, nothing a DLC keeps, and the test and its words.
 internal static partial class Program
 {
     private static void FloorsCore()
@@ -20,6 +20,7 @@ internal static partial class Program
         FloorsLoanPaths();
         FloorsSources();
         FloorsKept();
+        FloorsCities();
         FloorsTexts();
     }
 
@@ -553,6 +554,59 @@ internal static partial class Program
         Check(MethodText(panels, "private static void DoorPressed(FloorHost host, int slot)").Contains("DoorPanel(host, at);   // the next page at once, on the press")
               && MethodText(panels, "private static void LiftPressed(FloorHost host, int slot)").Contains("LiftPanel(v, at);   // the next page at once, on the press"),
             "floors: \"More floors\" turns the page on its press, at the door and the lift");
+    }
+
+    // ---------------------------------------------------------------- in another city, and what a DLC keeps
+
+    // Over the sources (docs/standards/dlc-and-updates.md): the floors follow their hosts' features. The university's and the
+    // towers' floors go with features of New York's and the test's with one that runs anywhere; a building or place whose
+    // feature stands down in this city or is switched off is put away and taken up again once it is back; nothing a DLC keeps
+    // is held or taken, and the floors read no DLC themselves.
+    private static void FloorsCities()
+    {
+        string scripts = System.IO.Path.GetFullPath(System.IO.Path.Combine(LocalesFolder(), "..", "Scripts"));
+        string Read(string file) => File.Exists(System.IO.Path.Combine(scripts, file)) ? File.ReadAllText(System.IO.Path.Combine(scripts, file)) : string.Empty;
+        string campus = Read(@"Careers\CampusInterior.cs") + Read(@"Careers\CampusInterior.Entering.cs");
+        string towers = Read(@"Tech\Sites\TowerFloors.cs");
+        string director = Read(@"Floors\FloorsDirector.cs") + Read(@"Floors\FloorsDirector.Book.cs") + Read(@"Floors\FloorsDirector.Tests.cs");
+        string game = Read(@"Floors\FloorsGame.cs");
+        string Feature(string text, string name)
+        {
+            Match m = Regex.Match(text, "private const string " + name + " = \"([a-z_]+)\";");
+            return m.Success ? m.Groups[1].Value : null;
+        }
+        bool Scoped(string feature, RealLifeOverhaul.Meta.CityScope scope) => feature != null && RealLifeOverhaul.Meta.FeatureCities.Has(feature) && RealLifeOverhaul.Meta.FeatureCities.Of(feature) == scope;
+
+        string university = Feature(campus, "Holder"), tower = Feature(towers, "Holder"), test = Feature(director, "TestFeature");
+        Check(Scoped(university, RealLifeOverhaul.Meta.CityScope.NewYork) && Occurrences(campus, "base(CampusRules.BookId, Holder, ") == 2,
+            "floors in another city: the university's building and its floors go with '" + university + "', a feature of New York's in the city table");
+        Check(Scoped(tower, RealLifeOverhaul.Meta.CityScope.NewYork) && towers.Contains("base(Headquarters.TowerIdOf(tower.Index), Holder, ")
+              && towers.Contains("base(Headquarters.IdPrefix + \"floor_\" + hq.Company, Holder, "),
+            "floors in another city: the towers and their companies' floors go with '" + tower + "', a feature of New York's in the city table");
+        Check(Scoped(test, RealLifeOverhaul.Meta.CityScope.AnyCity) && director.Contains("new FloorPlace(TestId, TestFeature, ") && director.Contains(": base(id, null, "),
+            "floors in another city: the test's office goes with '" + test + "', which runs in any city; the building taken for places has no feature, and goes once no place needs it");
+
+        string slow = MethodText(director, "private void Slow()");
+        string follow = MethodText(director, "private static void Follow()");
+        Check(ComesBefore(slow, "Follow();", "Book();") && director.Contains("FeatureGuards.FeatureAway(feature) || FeatureGuards.FeatureOff(feature)")
+              && ComesBefore(follow, "Parked.Add(host);", "Drop(host, why);") && ComesBefore(follow, "ParkedGuests.Add(place);", "PutAway(place, why);")
+              && follow.Contains("Hosts.Add(host);") && follow.Contains("Guests.Add(place);"),
+            "floors in another city: once a second a building or place whose feature stands down or is switched off is put away as a Let or a Release would, and taken up again once it is back");
+        Check(MethodText(director, "public static void Hold(FloorHost host)").Contains("Asleep(host.Feature)") && MethodText(director, "public static void Ask(FloorPlace place)").Contains("Asleep(place.Feature)")
+              && MethodText(director, "public static void Let(FloorHost host, string why)").Contains("Parked.Remove(host)")
+              && MethodText(director, "public static void Release(FloorPlace place, string why)").Contains("ParkedGuests.Remove(place)"),
+            "floors in another city: one held or asked for while its feature does not run waits put away; a Let or a Release of one put away is the end of it");
+
+        string floors = game + director + Read(@"Floors\FloorsGame.Layout.cs") + Read(@"Floors\FloorsDirector.Entering.cs") + Read(@"Floors\FloorsDirector.Lift.cs")
+                        + Read(@"Floors\FloorsDirector.Panels.cs") + Read(@"Floors\FloorHost.cs") + Read(@"Floors\FloorPlace.cs");
+        Check(MethodText(director, "public static void Hold(FloorHost host)").Contains("GameDlc.Gated(host.Building)")
+              && MethodText(game, "public static CityBuildingController PickClaim(Func<string, int, bool> taken)").Contains("GameDlc.Open(")
+              && MethodText(game, "public static bool Claimable(CityBuildingController b)").Contains("!GameDlc.Gated(b)")
+              && !Regex.IsMatch(floors, @"requiredDLC|cityBuildingControllers|DlcIsOwned|SteamAPI\.|SteamApps\."),
+            "floors and DLCs: a building a DLC keeps is never held, and the building taken for places is picked through GameDlc; the floors read no DLC themselves");
+        Check(MethodText(director, "private static bool Claim()").Contains("_lookAgainAt = Time.realtimeSinceStartup + LookAgain;") && slow.Contains("Time.realtimeSinceStartup >= _lookAgainAt")
+              && director.Contains("private const float LookAgain = 60f;"),
+            "floors: places that found no spare floor and no empty office building wait, and the city is looked at again once a minute");
     }
 
     // ---------------------------------------------------------------- the words

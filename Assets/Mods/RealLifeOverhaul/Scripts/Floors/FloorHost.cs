@@ -11,8 +11,10 @@ namespace RealLifeOverhaul.Floors
     /// taken for places) gives the floors core. The holder sets the building, the place outside its door, its name and its own
     /// places from floor 1, then hands it over (FloorsDirector.Hold) and takes it back (Let); the core keeps the floor table, the
     /// panels at its door and lift, and its doors. A host needs a CityBuildingController with its Building (address, size,
-    /// version, floor area) and an entrance door; its registration is found by address (BuildingHelper.GetBuildingRegistration),
-    /// so a building made at run time serves as well as one of the city's. Nothing of it is saved.
+    /// version, floor area) and an entrance door, and is never a building a DLC keeps (Core/GameDlc: the core refuses one); its
+    /// registration is found by address (BuildingHelper.GetBuildingRegistration), so a building made at run time serves as well
+    /// as one of the city's. It goes with its holder's feature: put away while that stands down in another city or is switched
+    /// off, taken up again once it is back. Nothing of it is saved.
     /// </summary>
     public abstract class FloorHost
     {
@@ -20,15 +22,23 @@ namespace RealLifeOverhaul.Floors
         private bool _doorWhatOpen;
         private int _liftWhatFloor;
 
-        protected FloorHost(string id, string doorCheck, string liftCheck)
+        protected FloorHost(string id, string feature, string doorCheck, string liftCheck)
         {
             Id = id;
+            Feature = feature;
             DoorPanel = new DoorPanel(FloorsDirector.Logger, doorCheck);
             LiftPanel = new DoorPanel(FloorsDirector.Logger, liftCheck);
         }
 
         /// <summary>Its holder's id for it (its id in Core/SpecialBuildings).</summary>
         public readonly string Id;
+
+        /// <summary>
+        /// The feature of Meta/FeatureList whose code holds it: while that feature stands down in this city (Core/CityCheck) or is
+        /// switched off after its faults, its holder's code no longer runs to let it go, so the core puts it away itself. Null for
+        /// the core's own building taken for places, which goes once no place needs it.
+        /// </summary>
+        public readonly string Feature;
 
         /// <summary>The holder's own places, from floor 1; spare floors above them go to places that ask (FloorsDirector.Ask).</summary>
         public readonly List<FloorPlace> Own = new List<FloorPlace>(4);

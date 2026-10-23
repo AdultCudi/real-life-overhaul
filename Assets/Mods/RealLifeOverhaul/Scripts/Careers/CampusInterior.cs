@@ -31,6 +31,7 @@ namespace RealLifeOverhaul.Careers
         private const string SizeD = "ba:buildingsize_d";
         private const int SchoolVersion = 1;
         private const float WatchReach = 12f;   // metres: from its door the university takes the player in, and says the game's refusals there
+        private const string Holder = "careers_study";   // the feature whose director holds the university (Meta/FeatureList): its floors go with it
 
         private readonly CareersDirector _director;
         private readonly IModLogger _logger;

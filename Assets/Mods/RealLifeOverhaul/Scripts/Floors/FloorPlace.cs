@@ -7,7 +7,7 @@ namespace RealLifeOverhaul.Floors
     /// A place on a floor of a building the mod holds: what a feature declares, and the floors core gives a floor, furnishes and
     /// takes the player to. A plain one needs no code of its own:
     ///
-    ///   _office = new FloorPlace("cityhall", "reallife_civic_cityhall") { Structure = new FloorStructure("ba:buildingsize_c", 1), Fit = FitKind.CivicOffice };
+    ///   _office = new FloorPlace("cityhall", "civic", "reallife-cityhall") { Structure = new FloorStructure("ba:buildingsize_c", 1), Fit = FitKind.CivicOffice };
     ///   _office.Designs.Add("LawFirm");
     ///   FloorsDirector.Ask(_office);                        // a floor, now or as soon as a building has one
     ///   FloorsDirector.Where(_office, out FloorWhere at);   // where it is, for the map, the route guider and the Guide
@@ -20,15 +20,22 @@ namespace RealLifeOverhaul.Floors
     {
         private readonly Dictionary<int, object> _args = new Dictionary<int, object>(4);   // a floor's button arguments, made once a floor
 
-        public FloorPlace(string id, string name, bool literal = false)
+        public FloorPlace(string id, string feature, string name, bool literal = false)
         {
             Id = id;
+            Feature = feature;
             NameKey = name;
             Literal = literal;
         }
 
         /// <summary>Its own id, unique among places: the order of spare floors goes by it, the same on every machine.</summary>
         public readonly string Id;
+
+        /// <summary>
+        /// The feature of Meta/FeatureList that declares it: while that feature stands down in this city or is switched off after its
+        /// faults, the core puts its floor away (the player off it first), and asks for it again once the feature is back.
+        /// </summary>
+        public readonly string Feature;
 
         public string NameKey;     // a locale key; with Literal the name itself (a company's proper name, never translated)
         public bool Literal;

@@ -18,6 +18,7 @@ namespace RealLifeOverhaul.Tech
     internal sealed class TowerFloors
     {
         private const int LiftClearFrames = 10;   // frames between a floor's furniture going and the next floor's: its cuts out of the walkable floor go with it
+        private const string Holder = "tech_sites";   // the feature whose TechSites holds the towers (Meta/FeatureList): their floors go with it
 
         private readonly IModLogger _logger;
         private readonly TechSites _sites;
@@ -173,7 +174,7 @@ namespace RealLifeOverhaul.Tech
             private readonly TowerFloors _floors;
             public readonly Headquarters.Tower Tower;
 
-            public TowerHost(TowerFloors floors, Headquarters.Tower tower) : base(Headquarters.TowerIdOf(tower.Index), "Tech sites check (tower door)", "Tech sites check (tower lift)")
+            public TowerHost(TowerFloors floors, Headquarters.Tower tower) : base(Headquarters.TowerIdOf(tower.Index), Holder, "Tech sites check (tower door)", "Tech sites check (tower lift)")
             {
                 _floors = floors;
                 Tower = tower;
@@ -207,7 +208,7 @@ namespace RealLifeOverhaul.Tech
             private readonly TowerFloors _floors;
             public Headquarters.Hq Hq;
 
-            public CompanyFloor(TowerFloors floors, Headquarters.Hq hq) : base(Headquarters.IdPrefix + "floor_" + hq.Company, hq.Name, true)
+            public CompanyFloor(TowerFloors floors, Headquarters.Hq hq) : base(Headquarters.IdPrefix + "floor_" + hq.Company, Holder, hq.Name, true)
             {
                 _floors = floors;
                 Hq = hq;

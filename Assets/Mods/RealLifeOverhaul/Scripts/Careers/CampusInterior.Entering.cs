@@ -196,7 +196,7 @@ namespace RealLifeOverhaul.Careers
         {
             private readonly CampusInterior _u;
 
-            public CampusHost(CampusInterior u) : base(CampusRules.BookId, "Careers check (university door)", "Careers check (university lift)")
+            public CampusHost(CampusInterior u) : base(CampusRules.BookId, Holder, "Careers check (university door)", "Careers check (university lift)")
             {
                 _u = u;
             }
@@ -256,7 +256,7 @@ namespace RealLifeOverhaul.Careers
         {
             private readonly CampusInterior _u;
 
-            public CampusFloors(CampusInterior u) : base(CampusRules.BookId, "reallife_study_campus_university")
+            public CampusFloors(CampusInterior u) : base(CampusRules.BookId, Holder, "reallife_study_campus_university")
             {
                 _u = u;
                 Floors = CampusRules.Floors;

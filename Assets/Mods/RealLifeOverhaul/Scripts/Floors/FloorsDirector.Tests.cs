@@ -9,6 +9,7 @@ namespace RealLifeOverhaul.Floors
     {
         private const string TestId = "floors_test";
         private const string TestName = "Floors";      // the test's name in its log lines
+        private const string TestFeature = "diagnostics";   // the feature its button stands under (Meta/FeatureList): it runs in any city
         private const string SchoolSize = "ba:buildingsize_d";   // the university's structure (D1): the one the floors were proven on already
         private const int SchoolVersion = 1;
         private static FloorPlace _test;               // the test's place while it stands
@@ -49,7 +50,7 @@ namespace RealLifeOverhaul.Floors
         {
             if (_test == null)
             {
-                _test = new FloorPlace(TestId, "reallife_floors_test_name") { Fit = FitKind.CivicOffice, LogName = "the test office" };
+                _test = new FloorPlace(TestId, TestFeature, "reallife_floors_test_name") { Fit = FitKind.CivicOffice, LogName = "the test office" };
                 _test.Designs.Add("LawFirm");
                 _test.Designs.Add("Headquarters");
                 _test.Designs.Add("MarketingAgency");

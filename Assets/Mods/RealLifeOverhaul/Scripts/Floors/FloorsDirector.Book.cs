@@ -15,10 +15,13 @@ namespace RealLifeOverhaul.Floors
     public sealed partial class FloorsDirector
     {
         private const string ClaimPrefix = "floors_host_";   // the ids of buildings taken for places in Core/SpecialBuildings
+        private const float LookAgain = 60f;   // real seconds between looks at the city for an empty office while places wait for one
         private static readonly Color MapColour = new Color(0.36f, 0.42f, 0.52f);   // their map row's and markers' colour: the slate of a city office
 
         private static readonly List<FloorHost> Hosts = new List<FloorHost>(8);
         private static readonly List<FloorPlace> Guests = new List<FloorPlace>(8);
+        private static readonly List<FloorHost> Parked = new List<FloorHost>(4);           // buildings whose feature does not run now (Follow)
+        private static readonly List<FloorPlace> ParkedGuests = new List<FloorPlace>(4);   // ...and places
         private static readonly List<ClaimedHost> Claimed = new List<ClaimedHost>(FloorsRules.MostClaims);
         private static readonly List<FloorHostRow> HostRows = new List<FloorHostRow>(8);
         private static readonly List<FloorGuestRow> GuestRows = new List<FloorGuestRow>(8);
@@ -26,6 +29,8 @@ namespace RealLifeOverhaul.Floors
         private static int[] _first = new int[8];
         private static bool _dirty = true;
         private static int _claims;   // buildings taken this city, for their ids
+        private static float _lookAgainAt;   // when the city is looked at again for places waiting for a building; 0 while none waits
+        private static int _waitTold;        // places last said to be waiting, so the line is written once a change
         private static MapPlaces.Category _map;   // the city map's row of the buildings taken for places, made with the first
 
         /// <summary>The buildings the floors hold now (the holders' and those taken for places).</summary>
@@ -56,6 +61,11 @@ namespace RealLifeOverhaul.Floors
                     break;
                 }
                 Assigned();
+            }
+            if (FloorsRules.ClaimsFor(GuestRows, _hostOf) == 0)
+            {
+                _lookAgainAt = 0f;
+                _waitTold = 0;
             }
             LetIdleClaims();
             for (int i = 0; i < Hosts.Count; i++)
@@ -244,9 +254,16 @@ namespace RealLifeOverhaul.Floors
             CityBuildingController b = FloorsGame.PickClaim(SpecialBuildings.Holds);
             if (b == null)
             {
-                Logger?.Info("Floors: " + Unplaced() + " place(s) found no spare floor, and no empty office building is free to take for them; they wait for one.");
+                int waiting = Unplaced();
+                if (waiting != _waitTold)
+                {
+                    _waitTold = waiting;
+                    Logger?.Info("Floors: " + waiting + " place(s) found no spare floor, and no empty office building is free to take for them; the city is looked at again each minute.");
+                }
+                _lookAgainAt = Time.realtimeSinceStartup + LookAgain;
                 return false;
             }
+            _waitTold = 0;
             int index = _claims++;
             var host = new ClaimedHost(ClaimPrefix + index, b);
             if (!SpecialBuildings.Set(ClaimPrefix + index, b, SpecialKind.Other, "reallife_floors_host", "reallife_floors_host_card_type"))
@@ -376,7 +393,7 @@ namespace RealLifeOverhaul.Floors
         {
             public MapPlace Marker;   // its place on the city map while taken
 
-            public ClaimedHost(string id, CityBuildingController building) : base(id, "Floors check (door)", "Floors check (lift)")
+            public ClaimedHost(string id, CityBuildingController building) : base(id, null, "Floors check (door)", "Floors check (lift)")
             {
                 Building = building;
                 Door = FloorsGame.Front(building);
