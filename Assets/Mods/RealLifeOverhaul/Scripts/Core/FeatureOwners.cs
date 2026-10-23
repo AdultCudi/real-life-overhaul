@@ -39,6 +39,7 @@ namespace RealLifeOverhaul
             { "RealLifeOverhaul.Rivals", "rivals" }, { "RealLifeOverhaul.Photos", "photos" }, { "RealLifeOverhaul.Walking", "walking" },
             { "RealLifeOverhaul.Calendar", "calendar" }, { "RealLifeOverhaul.Designs", "designs" }, { "RealLifeOverhaul.Meals", "meals" },
             { "RealLifeOverhaul.NewBuildings", "newbuildings" },
+            { "RealLifeOverhaul.BuildTrades", "buildtrades" },
         };
 
         // Namespaces that are the mod's own machinery, whatever a class of them is called.

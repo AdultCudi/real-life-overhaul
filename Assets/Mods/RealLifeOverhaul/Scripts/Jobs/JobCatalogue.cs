@@ -10,7 +10,9 @@ namespace RealLifeOverhaul
         Car = 1,            // an enclosed motor vehicle of the player's own, being driven or standing nearby
         Reference = 2,      // a reference letter: level two in any job
         CleanRecord = 4,    // not stopped by the police on a job for two days, and not sacked from this one
-        Outdoors = 8        // taken on the street, not inside a building
+        Outdoors = 8,       // taken on the street, not inside a building
+        Site = 16,          // a building trade: taken at a works site's notice board (Scripts/BuildTrades), never on the Gig Line
+        Office = 32         // a building trade worked at the architects' office on a floor: taken inside it, not on the street
     }
 
     /// <summary>One job: who can take it, what a unit of its work pays, its energy, how much a day and how experience counts.</summary>
@@ -66,6 +68,23 @@ namespace RealLifeOverhaul
         public const string Busker = "busker";
         public const string Dispatch = "dispatch";   // the two career-only kinds: never on the Gig Line, no record in JobState
         public const string Lead = "lead";
+
+        // The building trades (Scripts/BuildTrades): taken at a works site or the architects' office, never on the Gig Line.
+        public const string Labourer = "labourer";
+        public const string Mason = "mason";
+        public const string Scaffolder = "scaffolder";
+        public const string Painter = "painter";
+        public const string Roofer = "roofer";
+        public const string Electrician = "electrician";
+        public const string Plumber = "plumber";
+        public const string Crane = "crane_operator";
+        public const string Inspector = "inspector";
+        public const string Surveyor = "surveyor";
+        public const string Security = "site_security";
+        public const string Architect = "architect";
+        public const string Draughting = "draughtsperson";
+        public const string Engineer = "engineer";
+        public const string Estimator = "estimator";
 
         public const int MaxLevel = 4;
         public const float LevelBonus = 0.08f;       // pay per level above the first
@@ -123,6 +142,13 @@ namespace RealLifeOverhaul
                     return Career[i];
                 }
             }
+            for (int i = 0; i < Trades.Length; i++)
+            {
+                if (Trades[i].Id == id)
+                {
+                    return Trades[i];
+                }
+            }
             return null;
         }
 
@@ -134,6 +160,74 @@ namespace RealLifeOverhaul
             new JobDef(Lead, "reallife_job_lead_name", "reallife_job_lead_name", "reallife_transaction_job_lead",
                 JobNeed.Outdoors, 36f, 0f, 0.7f, 0.05f, "ba:skill_hrmanager", 999, 0, 4)
         };
+
+        /// <summary>
+        /// The building trades, each a gig of its own with a level and a record (<see cref="Recorded"/>), taken at a works site
+        /// or the architects' office. Four game hours a shift, as every gig: a trade that asks nothing pays about what a gig
+        /// on foot does (44 to 51 an hour), one after a short course 70 to 80, a diploma's about 80, a degree's 90 to 120,
+        /// as the professions' first rungs do (Careers/Work/ProCatalogue); the shift's mini-game moves it (Scripts/BuildTrades).
+        /// </summary>
+        public static readonly JobDef[] Trades =
+        {
+            // Eight loads dug, mixed or carried at 22: 176 a shift, 44 an hour. Open to anyone; it teaches masonry on the job.
+            Trade(Labourer, JobNeed.Site, 22f, 1.2f, 16, 24, 8),
+            // Six stretches of wall at 34: 204, 51 an hour, by how true they are laid. Open to anyone.
+            Trade(Mason, JobNeed.Site, 34f, 1.1f, 12, 18, 6),
+            Trade(Scaffolder, JobNeed.Site, 30f, 1.2f, 12, 18, 6),
+            Trade(Painter, JobNeed.Site, 22f, 0.8f, 16, 24, 8),
+            // A carpenter's diploma or joinery: 46 a run of tiles, 69 an hour.
+            Trade(Roofer, JobNeed.Site, 46f, 1.1f, 12, 18, 6),
+            // A diploma of the trade, or its skill: 52 and 50 a circuit or a run of pipe, about 78 an hour.
+            Trade(Electrician, JobNeed.Site, 52f, 0.7f, 12, 18, 6),
+            Trade(Plumber, JobNeed.Site, 50f, 0.8f, 12, 18, 6),
+            // The crane ticket: eight loads set down at 40, 80 an hour.
+            Trade(Crane, JobNeed.Site, 40f, 0.5f, 16, 24, 8),
+            // A degree in building: eight items judged right at 55, 110 an hour; four corners at 110.
+            Trade(Inspector, JobNeed.Site, 55f, 0.5f, 16, 24, 8),
+            Trade(Surveyor, JobNeed.Site, 110f, 0.7f, 8, 12, 4),
+            // The security licence: six rounds of the site at 46, 69 an hour, after its working hours.
+            Trade(Security, JobNeed.Site, 46f, 0.6f, 12, 18, 6),
+            // At the architects' office: a stage of a design at 160 (two or three to a commission, 80 to 120 an hour),
+            // a draughtsperson's sheet at 60 (45 an hour), an engineer's frame at 220 (110), an estimator's tender at 120 (90).
+            Trade(Architect, JobNeed.Office, 160f, 0.6f, 6, 6, 3),
+            Trade(Draughting, JobNeed.Office, 60f, 0.5f, 9, 9, 3),
+            Trade(Engineer, JobNeed.Office, 220f, 0.5f, 4, 6, 2),
+            Trade(Estimator, JobNeed.Office, 120f, 0.5f, 6, 6, 3)
+        };
+
+        private static JobDef Trade(string id, JobNeed needs, float unitPay, float unitEnergy, int dailyUnits, int unitsPerLevel, int shiftUnits)
+        {
+            const string mod = "reallife_";
+            return new JobDef(id, mod + "trades_" + id + "_name", mod + "trades_" + id + "_about", mod + "transaction_trades_" + id,
+                (needs & JobNeed.Office) != 0 ? needs : needs | JobNeed.Outdoors, unitPay, 0f, unitEnergy, 0f, null, dailyUnits, unitsPerLevel, shiftUnits);
+        }
+
+        /// <summary>True for one of the building trades (<see cref="Trades"/>).</summary>
+        public static bool IsTrade(JobDef def) => def != null && (def.Needs & (JobNeed.Site | JobNeed.Office)) != 0;
+
+        /// <summary>Every job that keeps a record in JobState (experience, strikes, the day's amount): the Gig Line's, then the trades.</summary>
+        public static readonly JobDef[] Recorded = Join(All, Trades);
+
+        private static JobDef[] Join(JobDef[] first, JobDef[] then)
+        {
+            var all = new JobDef[first.Length + then.Length];
+            first.CopyTo(all, 0);
+            then.CopyTo(all, first.Length);
+            return all;
+        }
+
+        /// <summary>A job's place in <see cref="Recorded"/>, or -1 for one with no record (the two career-only kinds).</summary>
+        public static int RecordOf(string id)
+        {
+            for (int i = 0; i < Recorded.Length; i++)
+            {
+                if (Recorded[i].Id == id)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
 
         public static int IndexOf(string id)
         {
