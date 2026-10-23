@@ -70,7 +70,7 @@ namespace RealLifeOverhaul.Construction
         {
             try
             {
-                return !Down("LotTaken") && ConstructionBridges.LotTaken != null && ConstructionBridges.LotTaken(lot);
+                return LandmarkHeld(lot) || (!Down("LotTaken") && ConstructionBridges.LotTaken != null && ConstructionBridges.LotTaken(lot));
             }
             catch (Exception e)
             {
@@ -83,6 +83,10 @@ namespace RealLifeOverhaul.Construction
         {
             try
             {
+                if (LandmarkBuilt(lot))
+                {
+                    return true;   // a landmark's site: the stadium stands as the mod's own, the tower and the mall as the district's
+                }
                 return !Down("LotBuilt") && ConstructionBridges.LotBuilt != null && ConstructionBridges.LotBuilt(lot);
             }
             catch (Exception e)

@@ -159,6 +159,10 @@ namespace RealLifeOverhaul
                 Kind = site.Kind, Street = site.Street, Number = site.Number, X = site.X, Y = site.Y, Z = site.Z,
                 Design = SiteBuilders.DesignOf(site), Tag = SiteBuilders.TagOf(site), Day = day, Mine = Shared && site.Mine
             };
+            if (look.Kind == SiteKind.Plot && SiteBuilders.IsTaken(look.Tag))
+            {
+                return;   // what stands there is its builder's own (a landmark's stadium) or the district's already: no look of the programme's
+            }
             for (int i = State.Looks.Count - 1; i >= 0; i--)
             {
                 if (State.Looks[i].Same(look))

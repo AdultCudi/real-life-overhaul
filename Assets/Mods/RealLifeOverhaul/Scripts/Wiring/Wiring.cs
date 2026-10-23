@@ -79,6 +79,7 @@ namespace RealLifeOverhaul
             Step("the mod's own buildings on the minimap", NewBuildingsLinks.Connect);   // wraps nothing
             Step("the building trades", TradesLinks.Connect);   // wraps nothing
             Step("the construction game", ConstructionLinks.Connect);   // after the paper's and the credit side's: its piece and its account go on top of theirs
+            Step("the landmarks", LandmarkLinks.Connect);   // after the construction game's: its piece of the paper goes on top of it
             Logger?.Info("Wiring: the features are connected.");
         }
 
@@ -89,6 +90,7 @@ namespace RealLifeOverhaul
                 return;
             }
             Connected = false;
+            Step("the landmarks", LandmarkLinks.Disconnect);   // first: what it wrapped of the paper goes back before the construction game's
             Step("the construction game", ConstructionLinks.Disconnect);   // first: what it wrapped of the paper and the accounts goes back before the others take theirs off
             Step("the building trades", TradesLinks.Disconnect);
             Step("the mod's own buildings on the minimap", NewBuildingsLinks.Disconnect);

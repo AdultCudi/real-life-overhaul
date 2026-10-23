@@ -207,6 +207,17 @@ namespace RealLifeOverhaul.Uptown
         public static string FinishRefusal(BuildingsLot lot, bool known, bool taken, string size, int version, string type, int storeys, FinishOwner owner,
                                            double price, bool structure, bool lives, bool inSession)
         {
+            return FinishRefusal(lot, known, taken, size, version, type, storeys, owner, price, structure, lives, inSession, false);
+        }
+
+        /// <summary>
+        /// As above; <paramref name="spanned"/>: the building stands over other lots too (<see cref="SpanRefusal"/> has passed
+        /// them), so its size need not be one its own lot's class takes: the made buildings' engine stands its design only on
+        /// ground it fits, at its load.
+        /// </summary>
+        public static string FinishRefusal(BuildingsLot lot, bool known, bool taken, string size, int version, string type, int storeys, FinishOwner owner,
+                                           double price, bool structure, bool lives, bool inSession, bool spanned)
+        {
             if (!lives)
             {
                 return "Uptown is not a district of the game at this load";
@@ -223,7 +234,7 @@ namespace RealLifeOverhaul.Uptown
             {
                 return "the game's special building type needs a special service of the game's";
             }
-            if (!TakesSize(lot, size))
+            if (!spanned && !TakesSize(lot, size))
             {
                 return "the size " + (size ?? "(none)") + " is not one the lot's class takes";
             }
@@ -247,5 +258,82 @@ namespace RealLifeOverhaul.Uptown
         }
 
         public const float NewDeedOccupancy = 0f;   // % of a new deed's floor let at its first load: a building just finished has nobody in it yet
+
+        // ---- a building over several lots (a landmark of Scripts/Landmarks), and a lot's traffic lifted by what is near it
+
+        public const int SpanMost = 16;             // lots one building may stand over, its own among them: more than any block of the band holds
+        public const int LiftedMost = 80;           // the most a lot's traffic index is lifted to: Midtown's busiest quarter, under the game's busiest (84)
+
+        /// <summary>
+        /// The ground a building over several lots stands on: the rectangle round all their footprints, its middle, and its
+        /// width along the street and depth back from it as the first lot (the building's own, whose address it takes) faces.
+        /// False for no lots. Every lot of the district's grid lies along the world's axes, so the rectangle does too.
+        /// </summary>
+        public static bool SpanGround(IList<BuildingsLot> lots, out float x, out float z, out float width, out float depth)
+        {
+            x = z = width = depth = 0f;
+            if (lots == null || lots.Count == 0)
+            {
+                return false;
+            }
+            float x0 = float.MaxValue, z0 = float.MaxValue, x1 = float.MinValue, z1 = float.MinValue;
+            for (int i = 0; i < lots.Count; i++)
+            {
+                BuildingsLot l = lots[i];
+                bool avenue = FrontsAvenue(l.Facing);
+                float halfX = (avenue ? l.Width : l.Depth) * 0.5f, halfZ = (avenue ? l.Depth : l.Width) * 0.5f;
+                x0 = Math.Min(x0, l.X - halfX);
+                x1 = Math.Max(x1, l.X + halfX);
+                z0 = Math.Min(z0, l.Z - halfZ);
+                z1 = Math.Max(z1, l.Z + halfZ);
+            }
+            x = (x0 + x1) * 0.5f;
+            z = (z0 + z1) * 0.5f;
+            bool along = FrontsAvenue(lots[0].Facing);
+            width = along ? x1 - x0 : z1 - z0;
+            depth = along ? z1 - z0 : x1 - x0;
+            return true;
+        }
+
+        /// <summary>
+        /// Why a building cannot stand over other lots as well as its own (English, for the log), or null. Of the
+        /// <paramref name="count"/> lots named: <paramref name="known"/> are in the plan, <paramref name="free"/> hold no
+        /// building and wait for none, <paramref name="sameBlock"/> are in the building's own block; <paramref name="distinct"/>
+        /// when none is named twice or is the building's own lot.
+        /// </summary>
+        public static string SpanRefusal(int count, int known, int free, int sameBlock, bool distinct)
+        {
+            if (count <= 0)
+            {
+                return null;
+            }
+            if (count + 1 > SpanMost)
+            {
+                return "a building stands over " + SpanMost + " lots at most";
+            }
+            if (!distinct)
+            {
+                return "a lot it stands over is named twice, or is its own";
+            }
+            if (known < count)
+            {
+                return "a lot it stands over is not in Uptown's plan";
+            }
+            if (sameBlock < count)
+            {
+                return "a lot it stands over is in another block: a street runs between";
+            }
+            if (free < count)
+            {
+                return "a building stands on a lot it stands over, or one finished there waits for the next load";
+            }
+            return null;
+        }
+
+        /// <summary>A lot's traffic index lifted by what stands near it (a landmark's crowds): never under the game's least, never over <see cref="LiftedMost"/>.</summary>
+        public static int Lifted(int traffic, int lift)
+        {
+            return Math.Max(TrafficLeast, Math.Min(LiftedMost, traffic + Math.Max(0, lift)));
+        }
     }
 }

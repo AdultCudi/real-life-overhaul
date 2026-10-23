@@ -332,6 +332,7 @@
         public const string PermadeathId = "permadeath";
         public const string NewGroundTestRoadId = "newground_test_road";   // NewGround: a developer's test road, read at each load
         public const string UptownId = "uptown";   // Uptown, north of Manhattan: its ground laid at each load
+        public const string LandmarksId = "uptown_landmarks";   // Uptown's landmarks: the tower, the mall and the stadium (Scripts/Landmarks)
 
         public static bool CameraEnabled = true;
         public static bool CameraIndoors = false;
@@ -668,6 +669,7 @@
         public static bool Permadeath = false;           // what the options page shows; the switch itself is kept per save, off unless switched on
         public static bool NewGroundTestRoad = false;    // a copy of a short stretch of road added to the traffic at each load, for the developer's test
         public static bool Uptown = true;                // the district north of Manhattan laid at each load; read only then
+        public static bool Landmarks = true;             // Uptown's three landmarks: announced, tendered, built, opened, and what they do for the district
 
         private static string _modId;
 
@@ -1017,6 +1019,7 @@
             Designs = Bool(modId, DesignsId, Designs);
             NewGroundTestRoad = Bool(modId, NewGroundTestRoadId, NewGroundTestRoad);
             Uptown = Bool(modId, UptownId, Uptown);
+            Landmarks = Bool(modId, LandmarksId, Landmarks);
         }
 
         /// <summary>

@@ -216,7 +216,7 @@ namespace RealLifeOverhaul.Uptown
                     structure = Options[pick];
                 }
                 Lot plain = UptownLots.Get(lot.Id);
-                MadeSpec spec = LifeGame.Spec(lot, structure, f != null ? f.Design : null, f != null ? f.Storeys : 0, BuildingsRules.Traffic(lot, _nearest, LifeGame.AwayX, LifeGame.AwayZ),
+                MadeSpec spec = LifeGame.Spec(GroundOf(lot, f), structure, f != null ? f.Design : null, f != null ? f.Storeys : 0, TrafficOf(lot.Id),
                     () => _known && !_down && UptownLots.Ready && plain != null && UptownLots.Open(plain));
                 MadeBuildings.Declare(spec);
                 Declared.Add(spec);
