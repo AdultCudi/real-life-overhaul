@@ -45,6 +45,9 @@ namespace RealLifeOverhaul
         private OfficeScenes _scenes;
 
         private CivicEffects _effects;
+        private SiteLooks _looks;
+        private bool _worksEarly;      // the works line was read behind the loading screen, for the finished buildings' looks
+        private bool _looksOn;         // the looks stand: the construction sites' option was on when last looked at
         private CivicProps _props;
         private CivicCast _cast;
         private SiteDresser _sites;
@@ -75,7 +78,10 @@ namespace RealLifeOverhaul
             _props = new CivicProps(transform);
             _cast = new CivicCast(gameObject);
             _sites = new SiteDresser(_props, Works, _cast, transform);
+            _looks = new SiteLooks(Works.State);
+            Works.LookAdded = LookAdded;
             ScenePrewarm.AddLate("construction: the game's own scaffolding, concrete, metal and fence wire being found", () => SiteKit.Prewarm(transform));
+            ScenePrewarm.AddLate("construction: the finished buildings' looks asked for", LooksAtLoad);
             _campaign = new CampaignWorld(_props, Government, City, _cast);
             _hud = new CivicScreen(Logger, PromptPressed);
             Volunteer = new VolunteerShift(Government, this);
@@ -129,6 +135,7 @@ namespace RealLifeOverhaul
                 CivicPolicy.Publish(null);
                 _hud.Dispose();
                 _props.Dispose();
+                _looks.Clear();
                 SiteKit.Forget();
                 CraneSlew.Dispose();
                 _scenes.Destroy();
@@ -315,6 +322,18 @@ namespace RealLifeOverhaul
                     _effects.Hourly(Government.State, day);
                 }
             }
+            if (Settings.CivicConstruction != _looksOn)
+            {
+                _looksOn = Settings.CivicConstruction;
+                if (_looksOn)
+                {
+                    _looks.StandAll(true);
+                }
+                else
+                {
+                    _looks.Clear();   // the street as without the construction sites; the looks are kept for when they are on again
+                }
+            }
             if (Settings.CivicConstruction)
             {
                 Works.Permits = Elections ? Government.State.Levers[(int)Lever.Permits] : 0;
@@ -327,7 +346,7 @@ namespace RealLifeOverhaul
                 if (newHour)
                 {
                     bool outside = !BuildingManager.IsInsideBuilding;
-                    if (outside && Works.State.Sites.Count < CivicCatalogue.ActiveSites)
+                    if (outside && Works.OwnCount() < CivicCatalogue.ActiveSites)
                     {
                         Works.TopUp(day);
                     }
@@ -389,9 +408,10 @@ namespace RealLifeOverhaul
                 Government.NewSave(day, now);
                 Logger?.Info("Civic: a new city government for this save; the first election is on day " + Government.State.ElectionDay + ".");
             }
-            if (data == null || !data.TryGetValue(KeyWorks, out string works) || string.IsNullOrEmpty(works) || !Readable(data, KeyWorks, Works.State.Read(works)))
+            if (!_worksEarly && (data == null || !data.TryGetValue(KeyWorks, out string works) || string.IsNullOrEmpty(works) || !Readable(data, KeyWorks, Works.State.Read(works))))
             {
                 Works.State.Sites.Clear();
+                Works.State.Looks.Clear();
                 Works.State.LastHour = now;
             }
             if (data == null || !data.TryGetValue(KeyOffice, out string office) || string.IsNullOrEmpty(office) || !Readable(data, KeyOffice, Office.State.Read(office)))
@@ -408,6 +428,37 @@ namespace RealLifeOverhaul
         }
 
         private Action _onSave;   // made once: SaveHook compares it
+
+        // Behind the loading screen, in the game's late call: the save's works line is read now, so every finished building
+        // wears its new look before the player sees the street.
+        private bool LooksAtLoad()
+        {
+            if (!Settings.Civic || !Settings.CivicConstruction || SaveGameManager.Current == null)
+            {
+                return true;
+            }
+            Dictionary<string, string> data = SaveGameManager.Current.modData;
+            if (!_loaded && data != null && data.TryGetValue(KeyWorks, out string works) && !string.IsNullOrEmpty(works) && Works.State.Read(works))
+            {
+                _worksEarly = true;
+            }
+            int asked = _looks.StandAll(true);
+            _looksOn = true;
+            if (asked > 0)
+            {
+                Logger?.Info("Construction: " + asked + " finished building(s) asked to wear their new look behind the loading screen.");
+            }
+            return true;
+        }
+
+        // A handover added a look: it stands once out of view.
+        private void LookAdded(SiteLook look)
+        {
+            if (Settings.Civic && Settings.CivicConstruction && look != null)
+            {
+                _looks.Stand(look);
+            }
+        }
 
         private void OnSaveGame()
         {

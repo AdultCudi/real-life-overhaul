@@ -172,7 +172,7 @@ namespace RealLifeOverhaul
             {
                 Dressed dressed = _dressed[i];
                 float sqr = CivicCity.Flat(dressed.Origin - player);
-                if (!dressed.Gone && !sites.Contains(dressed.Site))
+                if (!dressed.Gone && (!sites.Contains(dressed.Site) || !SiteBuilders.IsShown(dressed.Site)))   // a builder's site put away goes as one finished
                 {
                     dressed.Gone = true;
                     dressed.Road.Open();   // the road first, whoever is looking
@@ -210,7 +210,8 @@ namespace RealLifeOverhaul
             {
                 SiteState site = sites[i];
                 var at = new Vector3(site.X, site.Y, site.Z);
-                if (CivicCity.Flat(at - player) > DressNear * DressNear || Find(site) != null || CitySpots.InView(at) || (site.Kind == SiteKind.Plot && PlotInView(site)))
+                if (CivicCity.Flat(at - player) > DressNear * DressNear || Find(site) != null || !SiteBuilders.IsShown(site) || CitySpots.InView(at)
+                    || (site.Kind == SiteKind.Plot && PlotInView(site)))
                 {
                     continue;   // a plot's fence and slab stand at once: never while any of its ground is in the picture
                 }

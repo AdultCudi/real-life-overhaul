@@ -275,9 +275,15 @@ internal static partial class Program
         Check(!PlotRules.TryRead("plot:24x20:090", out _, out _, out _, out _) && !PlotRules.TryRead("plot:axb:1:2", out _, out _, out _, out _)
               && !PlotRules.TryRead("plot:5x5:000:1", out _, out _, out _, out _) && !PlotRules.TryRead("ba:street_x", out _, out _, out _, out _),
             "plot: a record cut short, unreadable, too small for a plot or not a plot is refused");
-        Check(PlotRules.Unfit(24, 20, 5) == null && PlotRules.Unfit(20, 20, 5) != null && PlotRules.Unfit(24, 15, 5) != null && PlotRules.Unfit(24, 20, 0) != null
+        Check(PlotRules.Unfit(24, 20, 5) == null && PlotRules.Unfit(24, 15, 5) != null && PlotRules.Unfit(24, 20, 0) != null
               && PlotRules.Unfit(70, 20, 5) != null && PlotRules.Unfit(24, 20, 11) != null,
             "plot: ground of 21 by 16 m to 60 m each way, 1 to 10 storeys");
+        Check(PlotRules.Unfit(11, 24, 6) == null && PlotRules.Unfit(20, 20, 5) == null && PlotRules.Unfit(9, 24, 3) != null && PlotRules.Unfit(11, 19, 3) != null
+              && PlotRules.Unfit(11, 24, 7) != null && PlotRules.Narrow(11) && PlotRules.Narrow(20) && !PlotRules.Narrow(21),
+            "plot: narrower ground, 10 to 20 m wide and 20 m deep at least, takes a narrow plot of up to 6 storeys (a city lot of a small shop or home)");
+        Check(PlotRules.TryRead(PlotRules.Encode(11, 24, 180, 4), out int nw, out int nd, out _, out int ns) && nw == 11 && nd == 24 && ns == 4
+              && !PlotRules.TryRead(PlotRules.Encode(11, 24, 180, 8), out _, out _, out _, out _),
+            "plot: a narrow plot's record reads back as written, and one of more storeys than it takes is refused");
         // Storeys as the work goes: none before the frame stage, one more for each share of it, all after.
         bool rising = true;
         int last = 0;
@@ -317,6 +323,7 @@ internal static partial class Program
         Check(Near(minX, -8.5f) && Near(maxX, 3f) && Near(minZ, -6.5f) && Near(maxZ, 6.5f) && maxX - minX >= PlotRules.MinFrame && maxZ - minZ >= PlotRules.MinFrame,
             "plot: the frame stands 3.5 m in from three edges of the land, 9 m from the yard's");
         Check(PlotRules.Margin >= WrapRules.Depth + WrapRules.Gap, "plot: the margin round the frame takes the game's scaffold");
+        PlotNarrow();
         var concrete = new List<ShellBox>();
         var metal = new List<ShellBox>();
         PlotRules.FrameBoxes(width, depth, 3, true, concrete, metal);
@@ -418,5 +425,34 @@ internal static partial class Program
         string slew = Source(scripts, @"Civic\CraneSlew.cs");
         Check(slew.Contains("legacy = true") && slew.Contains("AddComponent<Animation>") && slew.Contains("AnimationCullingType.BasedOnRenderers") && !slew.Contains("void Update"),
             "crane source: the jib slews by the engine's own Animation and a legacy clip, culled with its renderer, with no frame code of the mod's");
+    }
+
+    // A narrow plot (a small lot of the new district): the frame across its width with a metre each side, the yard behind
+    // it, the gate at one end of the front, everything on its own land, and no crane's pad.
+    private static void PlotNarrow()
+    {
+        const int width = 11, depth = 24;
+        PlotRules.Frame(width, depth, out float minX, out float maxX, out float minZ, out float maxZ);
+        Check(Near(minX, -4.5f) && Near(maxX, 4.5f) && Near(minZ, -8.5f) && Near(maxZ, 4.5f) && maxX - minX >= PlotRules.MinFrame && maxZ - minZ >= PlotRules.MinFrame,
+            "plot, narrow: the frame stands a metre in from the sides, 3.5 m from the front and 7.5 m from the back, at least 8 m each way");
+        PlotRules.Gate(width, out float gateFrom, out float gateTo);
+        Check(gateFrom >= -width * 0.5f && Near(gateTo, width * 0.5f) && Near(gateTo - gateFrom, PlotRules.NarrowGate), "plot, narrow: the gate is at the end of its front, on its own land");
+        PlotRules.YardSpots(width, depth, out PlotSpot cabin, out PlotSpot toilet);
+        var stacks = new List<PlotSpot>();
+        PlotRules.StackSpots(width, depth, stacks);
+        bool behind = cabin.Z > maxZ && toilet.Z > maxZ && Math.Abs(cabin.X) < width * 0.5f && Math.Abs(toilet.X) < width * 0.5f && cabin.Z < depth * 0.5f && toilet.Z < depth * 0.5f;
+        foreach (PlotSpot s in stacks)
+        {
+            behind &= s.Z > maxZ && s.Z < cabin.Z && Math.Abs(s.X) < width * 0.5f;
+        }
+        Check(behind && stacks.Count == 2, "plot, narrow: the cabin, the toilet and two stacks stand in the yard behind the frame, on its own land");
+        var spoil = new List<PlotSpot>();
+        PlotRules.SpoilSpots(width, depth, spoil);
+        bool onLand = true;
+        foreach (PlotSpot s in spoil)
+        {
+            onLand &= Math.Abs(s.X) <= width * 0.5f && Math.Abs(s.Z) <= depth * 0.5f;
+        }
+        Check(onLand, "plot, narrow: the dig's spoil is heaped on its own land");
     }
 }
