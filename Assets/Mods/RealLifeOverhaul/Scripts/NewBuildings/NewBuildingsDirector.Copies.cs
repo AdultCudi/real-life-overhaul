@@ -22,7 +22,7 @@ namespace RealLifeOverhaul.NewBuildings
             {
                 return true;
             }
-            if (BuildingCopies.Waiting.Count > 0 && !CopyGame.Ready)
+            if ((BuildingCopies.Waiting.Count > 0 || BuildingCopies.MeasureWanted) && !CopyGame.Ready)
             {
                 if (!CopyGame.Measuring && !CopyGame.BeginMeasuring())
                 {
@@ -31,6 +31,7 @@ namespace RealLifeOverhaul.NewBuildings
                 CopyGame.MeasureSlice();
                 return true;
             }
+            BuildingCopies.MeasureWanted = false;
             Change(true);
             return BuildingCopies.Pending;
         }

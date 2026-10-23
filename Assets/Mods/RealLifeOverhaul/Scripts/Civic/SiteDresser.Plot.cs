@@ -144,8 +144,11 @@ namespace RealLifeOverhaul
                     PlotRules.FrameBoxes(width, depth, standing, phase >= 4, _concrete, _metal);
                 }
                 MakeMesh(dressed, PlotMeshes.Boxes(_concrete, _metal, "RealLifeOverhaul plot frame"), SiteKit.Concrete, PlainConcrete, true);
-                PlotSpot crane = PlotRules.CraneSpot(width, depth);
-                StandCrane(dressed, PlotPoint(dressed, crane.X, crane.Z), PlotFacing(dressed, crane.Yaw), dressed.Site.Id * 13.7f);
+                if (!PlotRules.Narrow(width))
+                {
+                    PlotSpot crane = PlotRules.CraneSpot(width, depth);   // a narrow frame is lifted without one: there is no yard beside it
+                    StandCrane(dressed, PlotPoint(dressed, crane.X, crane.Z), PlotFacing(dressed, crane.Yaw), dressed.Site.Id * 13.7f);
+                }
                 _spots.Clear();
                 PlotRules.StackSpots(width, depth, _spots);
                 for (int i = 0; i < _spots.Count; i++)
@@ -156,7 +159,7 @@ namespace RealLifeOverhaul
 
             // The last stage: the clad frame in the game's scaffolding, every side, fabric on.
             SiteWrap wrap = dressed.Wrap;
-            if (phase >= 4 && SiteKit.Ready)
+            if (phase >= 4 && SiteKit.Ready && !PlotRules.Narrow(width))   // a narrow frame's scaffold would stand on its neighbours' land
             {
                 if (wrap.Plan.Pieces.Count == 0)
                 {

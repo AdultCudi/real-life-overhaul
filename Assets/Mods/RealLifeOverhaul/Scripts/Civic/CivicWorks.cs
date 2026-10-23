@@ -17,6 +17,7 @@ namespace RealLifeOverhaul
         private const string Retail = "ba:buildingtype_retail";
         private const string EmptyUnit = "ba:businesstype_empty";
         private const float SiteGap = 90f;          // metres between two sites, at least
+        private const float PlotClear = 2f;         // metres round a plot's own ground that no other site may stand in
         private const float LocalNear = 60f, LocalFar = 320f;   // metres from the player, for a local site
         private const float Earshot = 60f;          // metres: a site this near one of the player's doors is "next door"
         private const int CatchUpHours = 24 * 21;   // after a longer gap the programme simply moves on
@@ -36,6 +37,9 @@ namespace RealLifeOverhaul
         public int Late { get; private set; }
 
         public Action SitesChanged;
+
+        /// <summary>A finished building's new look was added (a rebuild or a plot handed over): the director's looks stand it.</summary>
+        public Action<SiteLook> LookAdded;
 
         public static bool Weekday(int day)
         {
@@ -101,7 +105,7 @@ namespace RealLifeOverhaul
                     site.RainHours++;
                     continue;
                 }
-                site.Done += Speed(site);
+                site.Done += SiteBuilders.WorkOn(site, Speed(site));   // a builder's site goes at its crews' pace, one out to tender waits
                 if (site.Finished)
                 {
                     HandOver(site, day);
@@ -118,6 +122,17 @@ namespace RealLifeOverhaul
         private void HandOver(SiteState site, int day)
         {
             State.Completed++;
+            if (site.Kind == SiteKind.Rebuild || site.Kind == SiteKind.Plot)
+            {
+                AddLook(site, day);
+            }
+            SiteBuilders.HandedOver(site);
+            if (SiteBuilders.IsOwned(site))
+            {
+                CivicDirector.Logger?.Info("Civic: site " + site.Id + " (" + site.Kind + ", " + PlaceText(site) + ") handed over to its builder on day " + day + " after " + site.RainHours
+                                           + " hour(s) lost to rain.");
+                return;   // a builder's own works: its builder tells the player what they need to know
+            }
             string address = CivicCity.AddressText(site.Street, site.Number);
             if (site.Mine)
             {
@@ -133,6 +148,67 @@ namespace RealLifeOverhaul
             }
             CivicDirector.Logger?.Info("Civic: site " + site.Id + " (" + site.Kind + ", " + PlaceText(site) + ") handed over on day " + day + " after " + site.RainHours + " hour(s) lost to rain and "
                                        + site.Complaints + " complaint(s).");
+        }
+
+        // A finished building's look is kept: a rebuild's design over it, a plot's building on its ground, from its builder (or one
+        // picked to fit). One look a building or a plot: a newer one takes the older's place.
+        private void AddLook(SiteState site, int day)
+        {
+            var look = new SiteLook
+            {
+                Kind = site.Kind, Street = site.Street, Number = site.Number, X = site.X, Y = site.Y, Z = site.Z,
+                Design = SiteBuilders.DesignOf(site), Tag = SiteBuilders.TagOf(site), Day = day, Mine = Shared && site.Mine
+            };
+            for (int i = State.Looks.Count - 1; i >= 0; i--)
+            {
+                if (State.Looks[i].Same(look))
+                {
+                    State.Looks.RemoveAt(i);
+                }
+            }
+            if (State.Looks.Count >= SiteLook.Most)
+            {
+                State.Looks.RemoveAt(0);   // the oldest building keeps its own look again
+            }
+            State.Looks.Add(look);
+            LookAdded?.Invoke(look);
+        }
+
+        /// <summary>The city's own sites in the programme: a builder's are not among its six.</summary>
+        public int OwnCount()
+        {
+            int count = 0;
+            for (int i = 0; i < State.Sites.Count; i++)
+            {
+                count += SiteBuilders.IsOwned(State.Sites[i]) ? 0 : 1;
+            }
+            return count;
+        }
+
+        /// <summary>A builder's site handed over now, its works done (a schedule reached its end). False for one not in the programme.</summary>
+        public bool Finish(SiteState site, int day)
+        {
+            if (site == null || !State.Sites.Contains(site))
+            {
+                return false;
+            }
+            site.Done = site.Needed;
+            HandOver(site, day);
+            State.Sites.Remove(site);
+            SitesChanged?.Invoke();
+            return true;
+        }
+
+        /// <summary>A builder's site taken out of the programme with nothing handed over (its project given up). False for one not in it.</summary>
+        public bool Drop(SiteState site)
+        {
+            if (site == null || !State.Sites.Remove(site))
+            {
+                return false;
+            }
+            CivicDirector.Logger?.Info("Civic: site " + site.Id + " (" + site.Kind + ", " + PlaceText(site) + ") taken out of the programme by its builder.");
+            SitesChanged?.Invoke();
+            return true;
         }
 
         private void NewDay(int day, bool live)
@@ -220,9 +296,9 @@ namespace RealLifeOverhaul
             int local = 0, other = 0;
             for (int i = 0; i < State.Sites.Count; i++)
             {
-                if (State.Sites[i].Mine)
+                if (State.Sites[i].Mine || SiteBuilders.IsOwned(State.Sites[i]))
                 {
-                    continue;
+                    continue;   // the player's own refit, and the builders' own works, are not the city's programme
                 }
                 if (State.Sites[i].Local)
                 {
@@ -235,7 +311,7 @@ namespace RealLifeOverhaul
             }
             bool any = false;
             int seed = SaveSeed();
-            for (int guard = 0; guard < CivicCatalogue.ActiveSites && local + other < CivicCatalogue.ActiveSites; guard++)
+            for (int guard = 0; guard < CivicCatalogue.ActiveSites && local + other < CivicCatalogue.ActiveSites && State.Sites.Count < CivicCatalogue.SitesMost; guard++)
             {
                 bool wantLocal = local < CivicCatalogue.LocalSites;
                 var random = new CivicRandom(CivicRandom.Mix(seed, State.NextId, day));
@@ -260,6 +336,7 @@ namespace RealLifeOverhaul
                 }
                 SiteState site = Start(kind, place, day, ref random);
                 site.Local = wantLocal;
+                SiteBuilders.SiteStarted(site);   // the city's own work: a builder may bid for it
                 if (wantLocal)
                 {
                     local++;
@@ -453,7 +530,7 @@ namespace RealLifeOverhaul
         /// <summary>
         /// A new building on ground given to it: whoever has the ground says where its middle is (on the ground), which way its
         /// front looks, its size and its storeys. Null with nothing started if the ground cannot take one, or a site already
-        /// stands within <see cref="SiteGap"/> of it; a Going Public guest starts none (the city's sites are the host's).
+        /// stands on its ground (and <see cref="PlotClear"/> round it); a Going Public guest starts none (the city's sites are the host's).
         /// </summary>
         public SiteState StartPlot(Vector3 middle, int yaw, int width, int depth, int storeys, int day, out string why)
         {
@@ -467,9 +544,10 @@ namespace RealLifeOverhaul
                 why = "the host of the Going Public session runs the city's sites";
                 return null;
             }
-            if (Nearest(middle, SiteGap * 0.5f) != null)
+            float clear = Mathf.Max(width, depth) * 0.5f + PlotClear;   // the plot's own ground: a district's lots stand side by side
+            if (Nearest(middle, clear) != null)
             {
-                why = "another site is already within " + (SiteGap * 0.5f) + " m";
+                why = "another site is already within " + clear + " m";
                 return null;
             }
             var random = new CivicRandom(CivicRandom.Mix(SaveSeed(), State.NextId, day + 1931));
@@ -636,7 +714,7 @@ namespace RealLifeOverhaul
 
         public static string ContractorName(SiteState site)
         {
-            return CivicText.T(CivicCatalogue.Contractors[site.Contractor % CivicCatalogue.Contractors.Length]);
+            return SiteBuilders.NameOf(site) ?? CivicText.T(CivicCatalogue.Contractors[site.Contractor % CivicCatalogue.Contractors.Length]);
         }
 
         /// <summary>The site nearest a point, within a distance; null if none.</summary>
@@ -675,7 +753,7 @@ namespace RealLifeOverhaul
             for (int i = State.Sites.Count - 1; i >= 0; i--)
             {
                 SiteState site = State.Sites[i];
-                site.Done += hours * Speed(site);
+                site.Done += SiteBuilders.WorkOn(site, hours * Speed(site));
                 if (site.Finished)
                 {
                     HandOver(site, day);

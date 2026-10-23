@@ -13,7 +13,7 @@ Every feature runs in the New York the mod knows, a New York with districts a fr
 - [The living city](city-life.md): people at work and about their day on the pavements.
 - [City events](city-events.md): fires, weather that matters and street events.
 - [Civic life](civic.md): the city's government, elections, standing for office, construction sites.
-- [Construction](construction.md): buildings going up, wrapped in the game's own scaffolding, and new buildings on given ground.
+- [Construction](construction.md): buildings going up, wrapped in the game's own scaffolding, and new buildings on given ground; a construction company of the player's: land, plans, planning permission, sites, money, tenders and the city's builders.
 - [New ground](new-ground.md): ground the mod lays itself, to walk and drive on, with parking, people and buses, for a district of the mod's own (developer tests so far).
 - [New buildings](new-buildings.md): buildings of the mod's own for its places, copied from the city's own designs, and the finished looks of the construction sites.
 - [Uptown](uptown.md): a district of the mod's own north of Manhattan, its streets, ground and lots laid at every load.

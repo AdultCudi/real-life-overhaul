@@ -66,7 +66,8 @@ namespace RealLifeOverhaul
                 || GarageDirector.TakesInteractKey || Leisure.LeisureDirector.TakesInteractKey || SocialDirector.TakesInteractKey || TravelDirector.TakesInteractKey
                 || Justice.TakesInteractKey || LicenceDirector.TakesInteractKey || CivicDirector.TakesInteractKey || Family.FamilyDirector.TakesInteractKey
                 || Law.LawDirector.TakesInteractKey || Roommates.RoommateDirector.TakesInteractKey || Ledger.LedgerDirector.TakesInteractKey
-                || Careers.CareersDirector.TakesInteractKey || Tech.TechSites.TakesInteractKey || Street.StreetDirector.TakesInteractKey)
+                || Careers.CareersDirector.TakesInteractKey || Tech.TechSites.TakesInteractKey || Street.StreetDirector.TakesInteractKey
+                || Construction.ConstructionDirector.TakesInteractKey)
             {
                 return;
             }

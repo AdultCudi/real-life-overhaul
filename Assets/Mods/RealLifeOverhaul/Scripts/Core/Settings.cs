@@ -40,6 +40,10 @@
         public const string NewBuildingsId = "new_buildings";
         public const string TradesId = "build_trades";              // the building trades (Scripts/BuildTrades)
         public const string TradesOfficeId = "build_trades_office";   // ...and their architects' practice
+        public const string ConstructionId = "construction";                      // the construction game (Scripts/Construction)
+        public const string ConstructionDevelopersId = "construction_developers";  // ...the city's developers and the tenders
+        public const string ConstructionLandTaxId = "construction_land_tax";       // ...land tax on the lots owned
+        public const string ConstructionRisksId = "construction_risks";            // ...theft, storms and faults on the sites
         public const string CameraFovId = "camera_fov";
         public const string CameraHeightId = "camera_height";
         public const string CarCameraId = "car_camera";
@@ -362,6 +366,10 @@
         public static bool MealsDance = true;    // "Dance" in the radio panel over a loudspeaker playing music
         public static bool NewBuildings = true;  // the mod's own buildings, made at each load from the city's own designs
         public static bool Trades = true, TradesOffice = true;   // the building trades at the works sites, and the architects' practice on a floor
+        public static bool Construction = true;            // a construction company of the player's: land, projects, tenders and the rival builders
+        public static bool ConstructionDevelopers = true;  // the city's developers build on the district's lots, and works are put out to tender
+        public static bool ConstructionLandTax = true;     // the lots the player owns pay land tax, and more kept empty
+        public static bool ConstructionRisks = true;       // theft, storm damage and faults coming to light on the company's works
         public static int CameraFov = 55;        // degrees, vertical
         public static bool LifeEvents = true;
         public static int EventFrequency = 5;        // about this many random events per game week
@@ -718,6 +726,10 @@
             NewBuildings = Bool(modId, NewBuildingsId, NewBuildings);
             Trades = Bool(modId, TradesId, Trades);
             TradesOffice = Bool(modId, TradesOfficeId, TradesOffice);
+            Construction = Bool(modId, ConstructionId, Construction);
+            ConstructionDevelopers = Bool(modId, ConstructionDevelopersId, ConstructionDevelopers);
+            ConstructionLandTax = Bool(modId, ConstructionLandTaxId, ConstructionLandTax);
+            ConstructionRisks = Bool(modId, ConstructionRisksId, ConstructionRisks);
             CameraFov = Int(modId, CameraFovId, CameraFov);
             CameraHeight = Int(modId, CameraHeightId, CameraHeight);
             CarCamera = Bool(modId, CarCameraId, CarCamera);

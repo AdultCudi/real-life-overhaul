@@ -84,6 +84,7 @@ namespace RealLifeOverhaul.Designs
             new DesignKind(BranchCatalogue.TypeName, Retail, DesignWay.Branch,
                 Offered("JewelryStore"), Offered("Hairdresser"), Offered("ElectronicsStore"), Offered("Bookstore"), Offered("LiquorStore"), Offered("GiftShop"),
                 Offered("Florist"), Offered("ClothingStore"), Offered("CoffeeShop"), Offered("Gym"), Offered("FruitAndVegetableStore"), Offered("Supermarket")),
+            new DesignKind("reallife:businesstype_construction", Office, DesignWay.Copy, Offered("GraphicDesigner"), Offered("LawFirm")),
             new DesignKind(DealerCatalogue.TypeName, Retail, DesignWay.Showroom,
                 new Donor(DonorRoot.Layouts, "CarDealership"), Offered("JewelryStore"), Offered("ElectronicsStore"), Offered("LiquorStore"), Offered("Bookstore"),
                 Offered("ClothingStore"), Offered("GiftShop"), Offered("Florist"), Offered("Hairdresser"), Offered("CoffeeShop"), Offered("FruitAndVegetableStore"),

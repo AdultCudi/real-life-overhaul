@@ -40,6 +40,7 @@ namespace RealLifeOverhaul
             { "RealLifeOverhaul.Calendar", "calendar" }, { "RealLifeOverhaul.Designs", "designs" }, { "RealLifeOverhaul.Meals", "meals" },
             { "RealLifeOverhaul.NewBuildings", "newbuildings" },
             { "RealLifeOverhaul.BuildTrades", "buildtrades" },
+            { "RealLifeOverhaul.Construction", "construction" },
         };
 
         // Namespaces that are the mod's own machinery, whatever a class of them is called.

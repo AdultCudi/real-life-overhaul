@@ -49,6 +49,12 @@ namespace RealLifeOverhaul
         public const int MinDepth = 16;           // metres along Z at least: the yard's cabin, toilet and crane pad in a row
         public const int MostLand = 60;           // metres of land each way at most
         public const int MostStoreys = 10;
+        public const int NarrowMin = 10;          // metres of land along X: a narrow plot, a city lot of a small shop's or home's width
+        public const int NarrowDepth = 20;        // metres along Z a narrow plot needs: the front's margin, the frame and the yard behind it
+        public const int NarrowStoreys = 6;       // a narrow frame goes up without a tower crane
+        public const float NarrowSide = 1.0f;     // metres kept each side of a narrow frame: the neighbours are close; 8 m of frame at the least
+        public const float NarrowYard = 7.5f;     // metres of land behind a narrow frame: the cabin, the toilet and the stacks
+        public const float NarrowGate = 3.5f;     // metres: a narrow plot's gate, at the +X end of its front
         public const float FencePanel = 2.5f;     // metres between the fence's posts
         public const float FenceHeight = 2.0f;    // metres
         public const float Hoarding = 2.4f;       // metres: one hoarding panel (SiteDresser.BayWidth)
@@ -73,6 +79,9 @@ namespace RealLifeOverhaul
 
         public static bool IsPlot(string street) => street != null && street.StartsWith(Prefix, StringComparison.Ordinal);
 
+        /// <summary>True for land too narrow for the yard beside the frame: its yard is behind it, with no tower crane and no wrap.</summary>
+        public static bool Narrow(int width) => width < MinWidth;
+
         /// <summary>The land back from the street field; false (and a small square) for anything that is not a plot's.</summary>
         public static bool TryRead(string street, out int width, out int depth, out int yaw, out int storeys)
         {
@@ -94,10 +103,10 @@ namespace RealLifeOverhaul
             {
                 return false;
             }
-            width = Clamp(w, MinWidth, MostLand);
-            depth = Clamp(d, MinDepth, MostLand);
+            width = Clamp(w, NarrowMin, MostLand);
+            depth = Clamp(d, Narrow(width) ? NarrowDepth : MinDepth, MostLand);
             yaw = ((y % 360) + 360) % 360;
-            storeys = Clamp(s, 1, MostStoreys);
+            storeys = Clamp(s, 1, Narrow(width) ? NarrowStoreys : MostStoreys);
             return w == width && d == depth && s == storeys;
         }
 
@@ -108,20 +117,30 @@ namespace RealLifeOverhaul
         /// <summary>Why land of a size cannot take a frame, or null if it can.</summary>
         public static string Unfit(int width, int depth, int storeys)
         {
-            if (width < MinWidth || depth < MinDepth)
+            if (width < NarrowMin || depth < (Narrow(width) ? NarrowDepth : MinDepth))
             {
-                return "the land is " + width + " by " + depth + " m; a plot needs " + MinWidth + " by " + MinDepth + " m at least";
+                return "the land is " + width + " by " + depth + " m; a plot needs " + MinWidth + " by " + MinDepth + " m at least, or " + NarrowMin + " by " + NarrowDepth
+                       + " m with its yard behind the frame";
             }
             if (width > MostLand || depth > MostLand)
             {
                 return "the land is over " + MostLand + " m one way";
             }
-            return storeys < 1 || storeys > MostStoreys ? "a plot has 1 to " + MostStoreys + " storeys" : null;
+            int most = Narrow(width) ? NarrowStoreys : MostStoreys;
+            return storeys < 1 || storeys > most ? "a plot of this land has 1 to " + most + " storeys" : null;
         }
 
         /// <summary>The frame's footprint in the land's axes.</summary>
         public static void Frame(int width, int depth, out float minX, out float maxX, out float minZ, out float maxZ)
         {
+            if (Narrow(width))
+            {
+                minX = -width * 0.5f + NarrowSide;
+                maxX = width * 0.5f - NarrowSide;
+                minZ = -depth * 0.5f + Margin;
+                maxZ = depth * 0.5f - NarrowYard;
+                return;
+            }
             minX = -width * 0.5f + Margin;
             maxX = width * 0.5f - Yard;
             minZ = -depth * 0.5f + Margin;
@@ -271,6 +290,12 @@ namespace RealLifeOverhaul
         /// <summary>The gate in the front hoarding, at the yard: its stretch along X.</summary>
         public static void Gate(int width, out float from, out float to)
         {
+            if (Narrow(width))
+            {
+                to = width * 0.5f;
+                from = to - NarrowGate;
+                return;
+            }
             from = width * 0.5f - Yard + 0.5f;
             to = from + GateWidth;
         }
@@ -305,6 +330,12 @@ namespace RealLifeOverhaul
         /// <summary>The site cabin against the yard's fence behind the hoarding, its door to the yard; the toilet beside it.</summary>
         public static void YardSpots(int width, int depth, out PlotSpot cabin, out PlotSpot toilet)
         {
+            if (Narrow(width))
+            {
+                cabin = new PlotSpot(-width * 0.5f + 3.2f, depth * 0.5f - 1.6f, 180f);   // against the back fence, its door to the frame
+                toilet = new PlotSpot(width * 0.5f - 1.0f, depth * 0.5f - 1.0f, 180f);
+                return;
+            }
             cabin = new PlotSpot(width * 0.5f - 1.4f, -depth * 0.5f + 3.6f, 270f);
             toilet = new PlotSpot(width * 0.5f - 0.8f, -depth * 0.5f + 7.4f, 270f);
         }
@@ -312,6 +343,16 @@ namespace RealLifeOverhaul
         /// <summary>The material stacks down the yard between the toilet and the crane's pad: as many as fit, at least one.</summary>
         public static void StackSpots(int width, int depth, List<PlotSpot> into)
         {
+            if (Narrow(width))
+            {
+                float z = depth * 0.5f - NarrowYard + 1.6f;   // between the frame and the cabin, across the yard
+                into.Add(new PlotSpot(-width * 0.5f + 2.2f, z, 90f));
+                if (width >= 11)
+                {
+                    into.Add(new PlotSpot(width * 0.5f - 2.2f, z, 0f));
+                }
+                return;
+            }
             float x = width * 0.5f - Yard + 2.2f;
             float from = -depth * 0.5f + 9.5f, to = depth * 0.5f - CranePad - 1.5f;
             int count = 0;
@@ -336,7 +377,8 @@ namespace RealLifeOverhaul
         public static void SpoilSpots(int width, int depth, List<PlotSpot> into)
         {
             Frame(width, depth, out float minX, out float maxX, out float minZ, out float maxZ);
-            float back = maxZ + Margin * 0.5f, left = minX - Margin * 0.5f;
+            float side = Narrow(width) ? NarrowSide : Margin;   // a narrow frame's margin is its neighbours' edge
+            float back = maxZ + Margin * 0.5f, left = minX - side * 0.5f;
             for (int i = 0; i < 3; i++)
             {
                 into.Add(new PlotSpot(minX + (maxX - minX) * (i + 0.5f) / 3f, back, i * 70f));

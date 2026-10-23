@@ -371,6 +371,10 @@ namespace RealLifeOverhaul.Meta
                     .Also("data centre data center server servers rack racks cooling headquarters hq lobby reception office cloud hyperscaler sign buildings"),
                 S("dealer").For("economy_dealer").Need("economy").Opts("economy_dealer", "economy_dealer_floor").Also("car dealership showroom auction wholesale used cars finance warranty")
                     .Also("economy_dealer_floor", "visitors customers floor salesperson bay bays camera photo"),
+                S("construction").For("construction").Opt("construction", "civic_construction").Opt("construction_developers", "construction")
+                    .Opt("construction_land_tax", "construction").Opt("construction_risks", "construction")
+                    .Also("builder builders building company land lot lots plot plots project plans architect planning permission appeal inspector inspection")
+                    .Also("crew crews foreman tender tenders developer developers rival rivals merchant materials crane yard flats loan investor ribbon"),
                 S("offices").For("office_space").Opts("office_conversion").Also("office offices shop shops empty space building buildings convert vacant"),
                 S("estate").For("economy_estate").Need("economy").Opts("economy_estate", "economy_estate_hotel", "economy_estate_hire", "economy_estate_rent")
                     .Also("buildings landlord tenant letting rent rental income").Also("economy_estate", "rent tenant landlord letting"),

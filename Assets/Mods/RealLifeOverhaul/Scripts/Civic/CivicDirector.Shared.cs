@@ -134,6 +134,10 @@ namespace RealLifeOverhaul
             Works.Shared = true;
             Works.Earshots();
             Works.SitesChanged?.Invoke();
+            if (Settings.CivicConstruction)
+            {
+                _looks.StandAll(false);   // the host's finished buildings, as the host's line has them
+            }
             return true;
         }
 

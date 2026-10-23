@@ -34,6 +34,7 @@ namespace RealLifeOverhaul.GameUi
             Work, Work, Work,
             Money, Money, Money, Money,
             Business, Business, Business, Business, Business, Business, Business,
+            Business,
             Business, Money,
             Setup, Setup
         };

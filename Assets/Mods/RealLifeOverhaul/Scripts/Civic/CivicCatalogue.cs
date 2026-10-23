@@ -291,6 +291,7 @@ namespace RealLifeOverhaul
         public const int PhasesPerKind = 5;
         public const int ActiveSites = 6;           // in the programme at once, city-wide
         public const int LocalSites = 2;            // of those, started within a walk of where the player was that day
+        public const int SitesMost = 16;            // every site at once, builders' too: what the save's line and a Going Public host's line hold
 
         /// <summary>Working hours a site of each kind needs (ten a weekday as the city came: 40 is four working days).</summary>
         public static readonly int[] SiteHours = { 50, 120, 90, 30, 160, 320 };

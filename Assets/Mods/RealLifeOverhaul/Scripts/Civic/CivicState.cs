@@ -465,7 +465,92 @@ namespace RealLifeOverhaul
         }
     }
 
-    /// <summary>The construction programme in one save: the sites in progress and what has been finished for the player.</summary>
+    /// <summary>
+    /// A finished building's new look: a rebuilt building wears a design of the city's over it, a plot's finished building
+    /// stands on its ground. Kept so it stands again at every load; a plot's goes once its lot holds a building of the
+    /// district (its tag). Written after a line's sites, where a reader of before never looks.
+    /// </summary>
+    public sealed class SiteLook
+    {
+        public const int Most = 96;      // looks kept: about one a game month of a single rebuild at a time, for years
+
+        public SiteKind Kind;            // Rebuild or Plot
+        public string Street;            // a rebuild's building, or a plot's record (PlotRules)
+        public int Number;
+        public float X, Y, Z;            // a plot's middle on its ground
+        public string Design;            // the design it wears; null for one picked to fit
+        public string Tag;               // a plot's lot in the district; null for none
+        public int Day;                  // handed over on
+        public bool Mine;                // a Going Public guest's own, kept when the host's line comes
+
+        public void Write(CivicWriter w)
+        {
+            w.Int((int)Kind).Text(Street).Int(Number).Float(X).Float(Y).Float(Z).Text(Design).Text(Tag).Int(Day).Bool(Mine);
+        }
+
+        public void Read(CivicReader r)
+        {
+            Kind = r.Int() == (int)SiteKind.Plot ? SiteKind.Plot : SiteKind.Rebuild;
+            Street = r.Text();
+            Number = r.Int();
+            X = r.Float();
+            Y = r.Float();
+            Z = r.Float();
+            Design = r.Text();
+            Tag = r.Text();
+            Day = r.Int();
+            Mine = r.Bool();
+        }
+
+        /// <summary>True when two looks are of the same building or the same ground.</summary>
+        public bool Same(SiteLook other)
+        {
+            return other != null && other.Kind == Kind && other.Street == Street && other.Number == Number && Math.Abs(other.X - X) < 0.5f && Math.Abs(other.Z - Z) < 0.5f;
+        }
+
+        internal static void WriteAll(CivicWriter w, List<SiteLook> looks, bool shared)
+        {
+            int count = 0;
+            for (int i = 0; i < looks.Count; i++)
+            {
+                count += shared && looks[i].Mine ? 0 : 1;
+            }
+            w.Int(count);
+            for (int i = 0; i < looks.Count; i++)
+            {
+                if (shared && looks[i].Mine)
+                {
+                    continue;   // a guest's own is its alone
+                }
+                bool mine = looks[i].Mine;
+                looks[i].Mine = mine && !shared;
+                looks[i].Write(w);
+                looks[i].Mine = mine;
+            }
+        }
+
+        internal static bool ReadAll(CivicReader r, List<SiteLook> into)
+        {
+            into.Clear();
+            if (!r.More)
+            {
+                return true;   // a line of before the looks: none
+            }
+            int count = Math.Min(r.Int(), Most);
+            for (int i = 0; i < count && !r.Failed; i++)
+            {
+                var look = new SiteLook();
+                look.Read(r);
+                if (!r.Failed)
+                {
+                    into.Add(look);
+                }
+            }
+            return !r.Failed;
+        }
+    }
+
+    /// <summary>The construction programme in one save: the sites in progress, the finished buildings' looks and what has been finished for the player.</summary>
     public sealed class WorksState
     {
         public const int Version = 1;
@@ -473,6 +558,7 @@ namespace RealLifeOverhaul
         public int NextId = 1;
         public long LastHour;
         public readonly List<SiteState> Sites = new List<SiteState>(CivicCatalogue.ActiveSites + 2);
+        public readonly List<SiteLook> Looks = new List<SiteLook>(8);
         public string RefreshedStreet;   // the player's shopfront that was last refitted...
         public int RefreshedNumber;
         public int RefreshedDay;         // ...and when; 0 for never
@@ -486,6 +572,7 @@ namespace RealLifeOverhaul
             {
                 Sites[i].Write(w);
             }
+            SiteLook.WriteAll(w, Looks, false);
             return w.ToString();
         }
 
@@ -504,9 +591,9 @@ namespace RealLifeOverhaul
                 RefreshedNumber = r.Int();
                 RefreshedDay = r.Int();
                 Completed = r.Int();
-                int count = Math.Min(r.Int(), 16);
+                int count = r.Int();
                 Sites.Clear();
-                for (int i = 0; i < count; i++)
+                for (int i = 0; i < count && i < 16; i++)
                 {
                     var site = new SiteState();
                     site.Read(r);
@@ -515,7 +602,11 @@ namespace RealLifeOverhaul
                         Sites.Add(site);
                     }
                 }
-                return !r.Failed;
+                if (r.Failed || count > 16)
+                {
+                    return !r.Failed;   // more sites than a line holds: what follows them is not read as looks
+                }
+                return SiteLook.ReadAll(r, Looks);
             }
             catch (Exception)
             {

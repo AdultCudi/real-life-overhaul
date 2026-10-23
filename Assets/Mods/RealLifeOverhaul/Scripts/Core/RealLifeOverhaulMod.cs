@@ -58,6 +58,8 @@ namespace RealLifeOverhaul
             Guard.Step("the training academy's business type", () => Careers.AcademyType.Register());   // before any save that holds one is loaded
             Economy.BranchType.Logger = context.Logger;
             Guard.Step("the bank branch's business type", () => Economy.BranchType.Register());   // before any save that holds one is loaded
+            Construction.ConstructionType.Logger = context.Logger;
+            Guard.Step("the construction company's business type", () => Construction.ConstructionType.Register());   // before any save that holds one is loaded
             Designs.DesignsDirector.Logger = context.Logger;
             // The installation firms' designs for the mod's business types, put in place or taken away on a worker.
             Guard.Step("the ready-made designs", () => Designs.DesignsDirector.Ask(Settings.Designs));
@@ -1159,6 +1161,7 @@ namespace RealLifeOverhaul
                 .Guarded(o => Meals.MealsOptions.AddMeals(o))
                 .Guarded(o => NewBuildings.NewBuildingsOptions.AddNewBuildings(o))   // the mod's own buildings (Scripts/NewBuildings)
                 .Guarded(o => BuildTrades.TradesOptions.AddTrades(o))   // the building trades (Scripts/BuildTrades)
+                .Guarded(o => Construction.ConstructionOptions.AddConstruction(o))   // the construction game (Scripts/Construction)
                 .Guarded(o => o.AddControls())
                 .Guarded(o => o.AddPerformance());
 
@@ -1218,6 +1221,7 @@ namespace RealLifeOverhaul
             Guard.Step("the tech sector's business types", () => Tech.TechTypes.Register());   // furnished as the game's web development agency once its type is known
             Guard.Step("the training academy's business type", () => Careers.AcademyType.Register());   // furnished as the game's recruitment office once its type is known
             Guard.Step("the bank branch's business type", () => Economy.BranchType.Register());   // dressed as the city's banks once their type is known
+            Guard.Step("the construction company's business type", () => Construction.ConstructionType.Register());   // furnished as the game's design studio once its type is known
             Guard.Step("other authors' mods", () => OtherMods.Look(context.Logger));   // one walk over the loaded assemblies
             Guard.Step("GoingPublic", () => GoingPublic.Logger = context.Logger);
             Guard.Step("GoingPublicLink", () => GoingPublicLink.Logger = context.Logger);
@@ -1519,6 +1523,10 @@ namespace RealLifeOverhaul
             Guard.Step("NewBuildings.NewBuildingsDirector", () => Guard.Add<NewBuildings.NewBuildingsDirector>(_root));
             Guard.Step("BuildTrades.TradesDirector", () => BuildTrades.TradesDirector.Logger = context.Logger);
             Guard.Step("BuildTrades.TradesDirector", () => Guard.Add<BuildTrades.TradesDirector>(_root));   // the practice's floor, its panel, the trades' line; no Update
+            Guard.Step("Construction.ConstructionDirector", () => Construction.ConstructionDirector.Logger = context.Logger);
+            Guard.Step("Construction.ConstructionApp", () => Construction.ConstructionApp.Logger = context.Logger);
+            // The company, its projects and the city's builders: a time comparison a frame.
+            Guard.Step("Construction.ConstructionDirector", () => Guard.Add<Construction.ConstructionDirector>(_root));
             Guard.Step("the wiring", () => Wiring.Connect(context.Logger, _root));   // every director is there: the bridges are filled in
             // Behind the loading screen: the two street pools' people made and dressed where the time is not seen; each
             // falls back to making them as needed.

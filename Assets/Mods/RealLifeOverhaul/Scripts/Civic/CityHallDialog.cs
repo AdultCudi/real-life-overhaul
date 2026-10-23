@@ -11,7 +11,8 @@ namespace RealLifeOverhaul
     /// <summary>The City Hall call: its topics and every page under them.</summary>
     public sealed class CityHallDialog : Dialog
     {
-        private const int Topics = 5;
+        // The fifth is running for office; a sixth, planning and building control, while the construction game gives one.
+        private static int Topics => SiteBuilders.PlanningTopic != null ? 6 : 5;
 
         public CityHallDialog()
         {
@@ -77,6 +78,8 @@ namespace RealLifeOverhaul
                     break;
                 case 4:
                     return OfficePhone.Topic(() => Topic(0));
+                case 5:
+                    return SiteBuilders.Planning(() => Topic(0)) ?? Topic(0);
                 default:
                     text = state.PetitionPolicy >= 0
                         ? CivicText.T("reallife_civic_topic_petition_open", "policy", CivicText.T(CivicCatalogue.All[state.PetitionPolicy].Name),
