@@ -38,6 +38,7 @@ What each check must cover, and when a check is owed, is in [the testing standar
 - **Search the checker's folder for the line's words** to find the check; its name and the words around it say which rule it holds the code to.
 - **A failed build of a checker** is a compile error in the mod's game-free files it links. Fix that first: a checker that does not compile would otherwise run its last good build.
 - **ContractCheck after a game update** fails on purpose until the mod is brought up to the new game; see [After a game update](after-a-game-update.md), which says how to read each of its sections.
+- **ContractCheck on new content** fails on a district, scene or DLC of the game the mod does not know, on a source that reads a DLC other than through `Core/GameDlc`, and on a feature with no line in the city table; see [New content and DLCs](after-a-game-update.md#new-content-and-dlcs).
 - **A timing check that fails while the machine is busy** (EconomyCheck's and NavCheck's micro-timing checks, such as "a budget of 1 ms") can be load. Run the checker again on an idle machine before you believe it; a pass on a busy machine never excuses a failure.
 - **"An Application Control policy has blocked this file"** is Windows refusing a freshly built DLL. Build it again with `--no-incremental -p:Deterministic=false` and run it again.
 - **`locales.py`** prints one line per fault, naming the language and the key.

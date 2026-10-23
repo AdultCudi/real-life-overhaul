@@ -320,7 +320,7 @@ namespace RealLifeOverhaul.Ledger
             }
             _candidates.Clear();
             _distances.Clear();
-            CityBuildingController[] all = city.cityBuildingControllers;
+            CityBuildingController[] all = GameDlc.Open(city);
             float nearest = LedgerCatalogue.KioskNearest * LedgerCatalogue.KioskNearest, furthest = LedgerCatalogue.KioskFurthest * LedgerCatalogue.KioskFurthest;
             for (int i = 0; i < all.Length; i++)
             {
@@ -537,7 +537,7 @@ namespace RealLifeOverhaul.Ledger
             TestBack();
             _candidates.Clear();
             _distances.Clear();
-            CityBuildingController[] all = city.cityBuildingControllers;
+            CityBuildingController[] all = GameDlc.Open(city);
             for (int i = 0; i < all.Length; i++)
             {
                 CityBuildingController b = all[i];

@@ -90,7 +90,7 @@ namespace RealLifeOverhaul.Nav
         public static CityBuildingController[] Buildings()
         {
             CityManager city = InstanceBehavior<CityManager>.Instance;
-            return city != null ? city.cityBuildingControllers : null;
+            return GameDlc.Open(city);
         }
 
         /// <summary>A building's outline from above, into arrays of 8: 8 corners for its own mesh's box, 4 for an upright box, else 0.</summary>

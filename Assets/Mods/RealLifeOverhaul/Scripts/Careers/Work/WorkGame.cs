@@ -39,7 +39,7 @@ namespace RealLifeOverhaul.Careers
             for (int i = 0; all != null && i < all.Count; i++)
             {
                 BuildingRegistration reg = all[i];
-                if (reg == null || !reg.HasValidAddress || reg.RentedByPlayer)
+                if (reg == null || !reg.HasValidAddress || reg.RentedByPlayer || GameDlc.Gated(reg))
                 {
                     continue;   // (the player's own, and in a session another player's, which Going Public shows as rented by the player: never an employer)
                 }
@@ -100,7 +100,7 @@ namespace RealLifeOverhaul.Careers
             _publicOf = city;
             Public.Clear();
             Doors.Clear();
-            CityBuildingController[] all = city != null ? city.cityBuildingControllers : null;
+            CityBuildingController[] all = GameDlc.Open(city);
             for (int i = 0; all != null && i < all.Length && Public.Count < 8; i++)
             {
                 Building b = all[i] != null ? all[i].building : null;

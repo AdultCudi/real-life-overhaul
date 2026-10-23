@@ -167,7 +167,7 @@ namespace RealLifeOverhaul.Careers
             {
                 _schoolOf = city;
                 _schoolStreet = null;
-                CityBuildingController[] all = city != null ? city.cityBuildingControllers : null;
+                CityBuildingController[] all = GameDlc.Open(city);
                 for (int i = 0; all != null && i < all.Length; i++)
                 {
                     Building b = all[i] != null ? all[i].building : null;
