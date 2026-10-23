@@ -163,53 +163,22 @@ The programme holds 16 sites at once (`CivicCatalogue.SitesMost`, the save's and
 
 ### With the new district
 
-The district's lots and buildings are Uptown's (feature/uptown-ground's `UptownLots`, feature/uptown-life's `DistrictBuildings`). Until those are merged, `ConstructionBridges.Lots` and its seven fellows keep their defaults: no land is for sale, and the rest of the game (rebuilds, tenders, the company) works. Once both are in, these lines go into `Wiring/Wiring.ConstructionLinks.cs` (`Connect`, and each set to null in `Disconnect`), and the eight leave the offline check's list of bridges wired elsewhere (`BuildersChecks.BuildSourceChecks`, `uptown`):
+The district's lots and buildings are Uptown's ([Uptown](uptown.md)), wired in `Wiring/Wiring.ConstructionLinks.cs`:
 
-```csharp
-ConstructionBridges.Lots = UptownLotsInto;
-ConstructionBridges.LotsStamp = () => Uptown.UptownLots.Stamp * 397 + Uptown.DistrictBuildings.Stamp;
-ConstructionBridges.DistrictLives = () => Uptown.DistrictBuildings.Lives;
-ConstructionBridges.LotTaken = Uptown.DistrictBuildings.Taken;
-ConstructionBridges.LotBuilt = Uptown.DistrictBuildings.Finished;
-ConstructionBridges.SizeTaken = UptownSizeTaken;
-ConstructionBridges.LandPrice = () => Uptown.DistrictBuildings.LandPricePerSqm;
-ConstructionBridges.Finish = UptownFinish;
-
-private static void UptownLotsInto(List<LotView> into)
-{
-    into.Clear();
-    IReadOnlyList<Uptown.Lot> all = Uptown.UptownLots.All;
-    for (int i = 0; all != null && i < all.Count; i++)
-    {
-        Uptown.Lot l = all[i];
-        into.Add(new LotView
-        {
-            Id = l.Id, Street = l.Street, Number = l.Number, X = l.X, Y = Uptown.UptownLots.GroundY, Z = l.Z, Yaw = l.Yaw, Width = l.Width, Depth = l.Depth,
-            Class = (int)l.Class, First = l.First, Open = Uptown.UptownLots.Open(l), Traffic = Math.Max(0, Uptown.DistrictBuildings.TrafficOf(l.Id))
-        });
-    }
-}
-
-private static bool UptownSizeTaken(string lot, string size)
-{
-    IReadOnlyList<string> sizes = Uptown.UptownLots.Get(lot)?.Sizes;
-    for (int i = 0; sizes != null && i < sizes.Count; i++)
-    {
-        if (sizes[i] == size)
-        {
-            return true;
-        }
-    }
-    return false;
-}
-
-private static bool UptownFinish(string lot, string design, string size, int version, string type, int storeys, bool player, double price, out string why)
-{
-    return Uptown.DistrictBuildings.Finish(lot, design, size, version, type, storeys, player ? Uptown.FinishOwner.Player : Uptown.FinishOwner.City, price, out why);
-}
+```
+Lots           every lot of UptownLots.All as a LotView: its id, street and number, middle (at UptownLots.GroundY), turn, size and
+               class (LotClass's number: small, office, big, warehouse), Open while UptownLots.Open(lot), and its traffic
+               (DistrictBuildings.TrafficOf)
+LotsStamp      UptownLots.Stamp and DistrictBuildings.Stamp together: the lots are read again only when either changes
+DistrictLives  DistrictBuildings.Lives
+LotTaken       DistrictBuildings.Taken: a building stands there, or one finished waits for the next load (not for sale)
+LotBuilt       DistrictBuildings.Finished: a building of the district stands there now (no look of the programme's there)
+SizeTaken      the sizes the lot's class takes (Lot.Sizes): a design of another size is never offered for the lot
+LandPrice      DistrictBuildings.LandPricePerSqm (the district's base price times its multiplier)
+Finish         DistrictBuildings.Finish(lot, design, size, version, type, 0, FinishOwner.Player or City, price, out why)
 ```
 
-(each adapter in its own try with `Fault`, as the file's others). `LotView.Class` is `LotClass`'s number (small, office, big, warehouse); the company passes 0 storeys (the design's own floor area) and the player's paid price, `FinishOwner.Player` only outside a Going Public session (the district refuses it in one).
+The company passes 0 storeys (the design's own floor area) and, for a building of the player's own, the land's price and the build's cost as its price; `FinishOwner.Player` only outside a Going Public session (the district refuses it in one), and the residents' (the city's) when a block's flats are sold. A lot the developers or the player have built on is the district's from the next load, and the finished building's look of the programme's is given up there.
 
 ### With the building trades
 
@@ -265,4 +234,4 @@ Each brings forward one thing a player would wait for, or says in a notice why i
 
 ### Not verified without the game
 
-Everything above is built and checked offline. Not seen in play: the app's pages in the game's frame, the City Hall pages, a site's pace and its notice board, the ribbon's panel at a building's front, the finished looks standing, the business type in BizMan with its staff and desks, the transactions in the game's statements, the credit file's account, and anything of the new district (its lots are wired with it).
+Everything above is built and checked offline. Not seen in play: the app's pages in the game's frame, the City Hall pages, a site's pace and its notice board, the ribbon's panel at a building's front, the finished looks standing, the business type in BizMan with its staff and desks, the transactions in the game's statements, the credit file's account, and the new district's lots for sale and its buildings handed over.

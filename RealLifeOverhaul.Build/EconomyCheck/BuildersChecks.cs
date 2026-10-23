@@ -615,19 +615,21 @@ internal static partial class Program
         Check(wire.Contains("Step(\"the construction game\", ConstructionLinks.Connect);") && wire.Contains("Step(\"the construction game\", ConstructionLinks.Disconnect);")
               && wire.IndexOf("Step(\"the construction game\", ConstructionLinks.Disconnect);", StringComparison.Ordinal) < wire.IndexOf("Step(\"the building trades\", TradesLinks.Disconnect);", StringComparison.Ordinal),
             "builders sources: the construction game is wired in last and out first (it wraps the paper and the credit accounts)");
-        // Every bridge the construction game asks is filled in the wiring and put back, but the district's (Uptown's, wired with it).
+        // Every bridge the construction game asks is filled in the wiring and put back.
         string bridges = code["ConstructionBridges.cs"];
-        string[] uptown = { "Lots", "LotsStamp", "DistrictLives", "LotTaken", "LotBuilt", "SizeTaken", "LandPrice", "Finish" };
+        int bridgeCount = 0;
         foreach (Match m in Regex.Matches(bridges, @"public static (?:[A-Za-z<>,\[\] ]+) ([A-Z][A-Za-z]+);"))
         {
             string name = m.Groups[1].Value;
+            bridgeCount++;
             Check(bridges.Contains(name + " = null;"), "builders sources: the bridge " + name + " is put back by Reset");
-            if (Array.IndexOf(uptown, name) >= 0)
-            {
-                continue;
-            }
             Check(wiring.Contains("ConstructionBridges." + name + " = ") && wiring.Contains("ConstructionBridges." + name + " = null;"), "builders sources: the bridge " + name + " is wired in and out");
         }
+        Check(bridgeCount > 30, "builders sources: the bridges are found (" + bridgeCount + ")");
+        // The new district: its lots, their sizes and traffic, its land's price and a finished building handed to it.
+        Check(wiring.Contains("Open = UptownLots.Open(l), Traffic = Math.Max(0, DistrictBuildings.TrafficOf(l.Id))") && MethodText(wiring, "private static bool SizeTaken(").Contains("l.Sizes")
+              && MethodText(wiring, "private static bool Finish(").Contains("player ? FinishOwner.Player : FinishOwner.City"),
+            "builders sources: the district's lots, the sizes a lot takes and a finished building handed to it are Uptown's own (UptownLots, DistrictBuildings)");
         foreach (Match m in Regex.Matches(ModSource(@"Civic\SiteBuilders.cs"), @"public static (?:[A-Za-z<>,\[\] ]+) ([A-Z][A-Za-z]+);"))
         {
             Check(wiring.Contains("SiteBuilders." + m.Groups[1].Value + " = "), "builders sources: the city's programme asks the builders " + m.Groups[1].Value + " through the wiring");

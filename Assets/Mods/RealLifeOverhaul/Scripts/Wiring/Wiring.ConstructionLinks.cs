@@ -7,6 +7,7 @@ using RealLifeOverhaul.Events;
 using RealLifeOverhaul.Fame;
 using RealLifeOverhaul.Flare;
 using RealLifeOverhaul.NewBuildings;
+using RealLifeOverhaul.Uptown;
 using UnityEngine;
 
 namespace RealLifeOverhaul
@@ -28,8 +29,11 @@ namespace RealLifeOverhaul
         ///   Qualified ... DesignOf    the building trades (BuildTrades/TradesBridges): the player's own qualification and design
         ///   News.Extra                the morning's City Ledger
         ///
-        /// The new district's lots and buildings (Lots ... Finish) are Uptown's, wired with it. Asked on an hour, a day, a page
-        /// or a press, never per frame; a fault is said once (<see cref="Fault"/>) and the bridge's default answered.
+        ///   Lots ... Finish           the new district (Uptown): its lots, their traffic and sizes, its land's price, and a
+        ///                             finished building handed to it (UptownLots, DistrictBuildings)
+        ///
+        /// Asked on an hour, a day, a page or a press, never per frame; a fault is said once (<see cref="Fault"/>) and the
+        /// bridge's default answered.
         /// </summary>
         public static class ConstructionLinks
         {
@@ -61,6 +65,14 @@ namespace RealLifeOverhaul
                 SiteBuilders.PlanningTopic = PlanningCall.Topic;
                 SiteBuilders.Notice = PlanningCall.Notice;
 
+                ConstructionBridges.Lots = UptownLotsInto;
+                ConstructionBridges.LotsStamp = () => UptownLots.Stamp * 397 + DistrictBuildings.Stamp;
+                ConstructionBridges.DistrictLives = () => DistrictBuildings.Lives;
+                ConstructionBridges.LotTaken = LotTaken;
+                ConstructionBridges.LotBuilt = LotBuilt;
+                ConstructionBridges.SizeTaken = SizeTaken;
+                ConstructionBridges.LandPrice = () => DistrictBuildings.LandPricePerSqm;
+                ConstructionBridges.Finish = Finish;
                 ConstructionBridges.Designs = Designs;
                 ConstructionBridges.Footprint = Footprint;
                 ConstructionBridges.StartPlot = StartPlot;
@@ -98,6 +110,14 @@ namespace RealLifeOverhaul
             internal static void Disconnect()
             {
                 SiteBuilders.Reset();
+                ConstructionBridges.Lots = null;
+                ConstructionBridges.LotsStamp = null;
+                ConstructionBridges.DistrictLives = null;
+                ConstructionBridges.LotTaken = null;
+                ConstructionBridges.LotBuilt = null;
+                ConstructionBridges.SizeTaken = null;
+                ConstructionBridges.LandPrice = null;
+                ConstructionBridges.Finish = null;
                 ConstructionBridges.Designs = null;
                 ConstructionBridges.Footprint = null;
                 ConstructionBridges.StartPlot = null;
@@ -278,6 +298,96 @@ namespace RealLifeOverhaul
                 catch (Exception e)
                 {
                     Fault("ConstructionLinks.Ground", e);
+                    return false;
+                }
+            }
+
+            // ------------------------------------------------------------------ the new district
+
+            // Every lot of the district's plan, as the construction game reads one: open while its ground stands at this load.
+            private static void UptownLotsInto(List<LotView> into)
+            {
+                into.Clear();
+                try
+                {
+                    IReadOnlyList<Lot> all = UptownLots.All;
+                    for (int i = 0; all != null && i < all.Count; i++)
+                    {
+                        Lot l = all[i];
+                        into.Add(new LotView
+                        {
+                            Id = l.Id, Street = l.Street, Number = l.Number, X = l.X, Y = UptownLots.GroundY, Z = l.Z, Yaw = l.Yaw, Width = l.Width, Depth = l.Depth,
+                            Class = (int)l.Class, First = l.First, Open = UptownLots.Open(l), Traffic = Math.Max(0, DistrictBuildings.TrafficOf(l.Id))
+                        });
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.Lots", e);
+                    into.Clear();
+                }
+            }
+
+            private static bool LotTaken(string lot)
+            {
+                try
+                {
+                    return DistrictBuildings.Taken(lot);
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.LotTaken", e);
+                    return true;   // not for sale when it cannot be told
+                }
+            }
+
+            private static bool LotBuilt(string lot)
+            {
+                try
+                {
+                    return DistrictBuildings.Finished(lot);
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.LotBuilt", e);
+                    return false;
+                }
+            }
+
+            // The district takes a building of the sizes its lot's class holds.
+            private static bool SizeTaken(string lot, string size)
+            {
+                try
+                {
+                    Lot l = UptownLots.Get(lot);
+                    IReadOnlyList<string> sizes = l != null ? l.Sizes : null;
+                    for (int i = 0; sizes != null && i < sizes.Count; i++)
+                    {
+                        if (string.Equals(sizes[i], size, StringComparison.Ordinal))
+                        {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.SizeTaken", e);
+                    return true;
+                }
+            }
+
+            private static bool Finish(string lot, string design, string size, int version, string type, int storeys, bool player, double price, out string why)
+            {
+                why = null;
+                try
+                {
+                    return DistrictBuildings.Finish(lot, design, size, version, type, storeys, player ? FinishOwner.Player : FinishOwner.City, price, out why);
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.Finish", e);
+                    why = "a fault";
                     return false;
                 }
             }
