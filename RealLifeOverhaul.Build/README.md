@@ -28,6 +28,7 @@ The code is in `Assets/Mods/RealLifeOverhaul/Scripts`, one folder per feature. E
 | [`Family`](../Assets/Mods/RealLifeOverhaul/Scripts/Family/) | A partner, a wedding, children, the wider family | [Family](../docs/features/family.md) |
 | [`Faults`](../Assets/Mods/RealLifeOverhaul/Scripts/Faults/) | Real faults in the city worth reporting: dark lamps, potholes, litter | |
 | [`FitOut`](../Assets/Mods/RealLifeOverhaul/Scripts/FitOut/) | The mod's own buildings furnished with the game's furniture | |
+| [`Floors`](../Assets/Mods/RealLifeOverhaul/Scripts/Floors/) | The mod's places on floors of the buildings it holds: the university's, the tech towers', places to come | [Floors](../docs/features/floors.md) |
 | [`Garage`](../Assets/Mods/RealLifeOverhaul/Scripts/Garage/) | The custom shop for cars, bicycles and motorbikes | [Garage](../docs/features/garage.md) |
 | [`Home`](../Assets/Mods/RealLifeOverhaul/Scripts/Home/) | Needs, cooking, illness and the doctor, the roommate | [Home life and health](../docs/features/home.md) |
 | [`Interiors`](../Assets/Mods/RealLifeOverhaul/Scripts/Interiors/) | Interiors and decor that matter to a business | [Interiors and decor](../docs/features/interiors.md) |

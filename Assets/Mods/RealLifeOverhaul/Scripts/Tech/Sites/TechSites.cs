@@ -21,9 +21,8 @@ namespace RealLifeOverhaul.Tech
         public static TechSites Instance { get; private set; }
 
         private Headquarters _hq;
-        private TowerFloors _floors;
-        private int _floorsStamp = -1;   // the headquarters' stamp the floor the player is on was laid for
-        private bool _lifting;           // the lift is under way: the screen is dark
+        private TowerFloors _floors;     // the towers on the floors core (Floors/FloorsDirector): its panels, its lift
+        private bool _laying;            // a lift has put the player on a company's floor: its lobby is laid now, under the dark screen
         private bool _censusDone;        // the city's office buildings counted in the log, once a city load
         private float _censusAt;         // real time the count is made by at the latest
         private Frontages _fronts;
@@ -49,14 +48,7 @@ namespace RealLifeOverhaul.Tech
         {
             Instance = this;
             _hq = new Headquarters(Logger);
-            _floors = new TowerFloors(Logger);
-            _floors.ChangeFloor = floor =>
-            {
-                if (!_lifting && isActiveAndEnabled)
-                {
-                    StartCoroutine(Guard.Routine(Lift(floor)));
-                }
-            };
+            _floors = new TowerFloors(Logger, this);
             _fronts = new Frontages(Logger);
             _room = new ServerRoomView(Logger);
             _lobby = new LobbyView(Logger);
@@ -179,16 +171,14 @@ namespace RealLifeOverhaul.Tech
                     else if (_hq.Picked)
                     {
                         _hq.Off();
-                        _floors.Hide("the option is off");
-                        _floors.Leave();
+                        _floors.Off("the option is off");
                     }
                 }
                 catch (Exception e)
                 {
                     Fault(ref _hqBroken, "the headquarters", e);
                     _hq.Off();
-                    _floors.Hide("the headquarters stood down");
-                    _floors.Leave();
+                    _floors.Off("the headquarters stood down");
                 }
             }
             Census();
@@ -219,7 +209,7 @@ namespace RealLifeOverhaul.Tech
         private void Inside(int day)
         {
             if (!Settings.TechSiteRooms && !Settings.TechSiteHq && !Settings.TechSiteOffices && _inside == null && _preview == null && !_testFloor
-                && !_lifting && !_room.Active && !_lobby.Active && !_hqFloor.Active && !_office.Active && _floors.In == null)
+                && !Floors.FloorsDirector.Lifting && !_room.Active && !_lobby.Active && !_hqFloor.Active && !_office.Active && _floors.In == null)
             {
                 return;   // every view off and nothing standing
             }
@@ -230,13 +220,12 @@ namespace RealLifeOverhaul.Tech
             if (key != _inside)
             {
                 EndViews();
-                _floors.Leave();
                 _inside = key;
                 _tries = 0;
             }
-            if (key == null || _lifting)
+            if (key == null || (Floors.FloorsDirector.Lifting && !_laying))
             {
-                return;
+                return;   // a lift under way: its floor is laid when the player stands on it (FloorArrived)
             }
             float now = Time.time;
             if (_testFloor)
@@ -312,7 +301,6 @@ namespace RealLifeOverhaul.Tech
                 }
                 catch (Exception e)
                 {
-                    _floors.Leave();
                     Fault(ref _lobbyBroken, "the lobby", e);
                     _lobby.End();
                     _hqFloor.End();
@@ -353,95 +341,51 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        // The company whose floor of a tower the player is on, laid again if the towers changed under them. Null outside a
-        // tower that may be walked into.
+        // The company whose floor of a tower the player is on, as the floors core has it (a tower chosen again under the player
+        // puts its new company on the floor through the place's hooks). Null outside a tower that may be walked into.
         private Headquarters.Hq OnFloor(BuildingRegistration reg)
         {
             Headquarters.Tower tower = Settings.TechSiteHq && reg != null ? _hq.At(reg.StreetName, reg.StreetNumber) : null;
-            if (tower == null || !Headquarters.Open(tower))
+            if (tower == null || !Headquarters.Open(tower) || !ReferenceEquals(_floors.In, tower))
             {
-                if (_floors.In != null)
-                {
-                    _floors.Leave();
-                }
                 return null;
-            }
-            if (!ReferenceEquals(_floors.In, tower))
-            {
-                _floorsStamp = _hq.Stamp;
-                _floors.Arrive(tower);
-            }
-            else if (_floorsStamp != _hq.Stamp)
-            {
-                // The towers were chosen again while the player was in this one: their floor is laid again only if another
-                // company is on it now, or with fewer floors the one the door would give.
-                _floorsStamp = _hq.Stamp;
-                if (_floors.Here == null)
-                {
-                    _floors.Arrive(tower);
-                }
-                if (_lobby.Active && (_floors.Here == null || _lobby.Company != _floors.Here.Company))
-                {
-                    _lobby.End();
-                    _hqFloor.End();
-                    _tries = 0;
-                }
             }
             return _floors.Here;
         }
 
-        // The lift: behind a dark screen this floor's views come down, the other company's are laid on the same room and the
-        // player stands at the entrance; light again once the floor stands, or after a few seconds.
-        private IEnumerator Lift(int floor)
+        /// <summary>The player is on a company's floor (TowerFloors' place): by a lift its lobby is laid now, behind the dark screen.</summary>
+        internal void FloorArrived()
         {
-            _lifting = true;
-            yield return UI.UiFader.Fade(0.25f);
-            bool moved = false;
+            _tries = 0;
+            if (!Floors.FloorsDirector.Lifting || Save == null)
+            {
+                return;   // in by the door: the look just after it lays the floor (Soon)
+            }
+            _laying = true;
             try
             {
-                _lobby.End();
-                _hqFloor.End();
-                _tries = 0;
-                if (_floors.In != null)
-                {
-                    _floors.Moved(floor);
-                    PlayerController player = Helpers.PlayerHelper.PlayerController;
-                    if (player != null)
-                    {
-                        player.ResetNavigation();
-                        player.Character.navmeshAgent.Warp(_floors.Spawn);
-                        player.transform.rotation = _floors.SpawnTurn;
-                    }
-                    moved = true;
-                }
+                Inside(Save.Day);
             }
             catch (Exception e)
             {
                 Logger?.Error(e);
             }
-            for (int frames = 0; frames < 10; frames++)
+            finally
             {
-                yield return null;   // what was destroyed is gone, and its cuts out of the walkable floor with it
+                _laying = false;
             }
-            _lifting = false;
-            if (moved && Save != null)
-            {
-                try
-                {
-                    Inside(Save.Day);
-                }
-                catch (Exception e)
-                {
-                    Logger?.Error(e);
-                }
-                float until = Time.realtimeSinceStartup + 6f;
-                while (_hqFloor.Active && !_hqFloor.Ready && Time.realtimeSinceStartup < until)
-                {
-                    yield return null;   // behind the dark screen the floor goes up at the hidden pace
-                }
-            }
-            yield return UI.UiFader.UnFade(0.25f);
         }
+
+        /// <summary>The player is off a company's floor: its lobby and the rest of its floor taken down.</summary>
+        internal void FloorLeft()
+        {
+            _lobby.End();
+            _hqFloor.End();
+            _tries = 0;
+        }
+
+        /// <summary>True once the floor round a company's lobby stands (a lift keeps the screen dark until then).</summary>
+        internal bool FloorReady() => !_hqFloor.Active || _hqFloor.Ready;
 
         // Once a city load: the city's office buildings counted in the log by who has them, once the mod's buildings are chosen
         // or after two minutes.
@@ -583,8 +527,7 @@ namespace RealLifeOverhaul.Tech
                 EndViews();
                 _fronts?.Clear();
                 _hq?.Off();
-                _floors?.Hide("the tech sites stopped");
-                _floors?.Leave();
+                _floors?.Off("the tech sites stopped");
             }
             catch (Exception e)
             {
