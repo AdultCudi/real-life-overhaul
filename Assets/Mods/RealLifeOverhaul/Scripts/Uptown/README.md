@@ -1,0 +1,18 @@
+# `Scripts/Uptown`
+
+Uptown: a district of the mod's own north of Manhattan, past 1st Avenue. Its ground is laid at every load and never saved: Manhattan's streets go on north through 1st Avenue's own junctions to a new avenue, over walking ground grown from Manhattan's pavements, with the game's own road modules copied along them, parking, people and a bus terminus. Its lots are where the district's buildings stand.
+
+## Read first
+
+- `LayoutRules.cs`, `LayoutPlans.cs`, `LayoutStreets.cs`: the band's streets and lots and the first block's plans (game-free, checked by NavCheck's `UptownCheck.cs`).
+- `UptownLots.cs`: the lots for the features that build on them: `UptownLots`, `Lot`, `LotClass`, `GroundRect`, `UptownExit`.
+- `GroundDirector.cs`: the load, step by step; `GroundGame.cs` and `GroundGame.Art.cs`: the only files that touch the game's scene for the ground.
+- `GroundSession.cs`: whether the district may stand at this load (its option and the Going Public session).
+
+## Documentation
+
+How it works, the lots for other features, its rules and its tests: [Uptown](../../../../../docs/features/uptown.md).
+The ground it is laid with: [New ground](../../../../../docs/features/new-ground.md).
+How the code is laid out, and how features meet: [Architecture](../../../../../docs/reference/architecture.md).
+
+Maintained by the Real Life Overhaul maintainer.
