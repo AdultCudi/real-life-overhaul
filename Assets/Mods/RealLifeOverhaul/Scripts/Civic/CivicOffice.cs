@@ -42,6 +42,10 @@ namespace RealLifeOverhaul
             government.ToAgenda = (policy, petition) => Put(policy, petition ? OfficeMotion.ByPetition : OfficeMotion.ByCity, TimeHelper.CurrentDay);
             government.ApprovalExtra = ApprovalExtra;
             government.DepartmentLevel = d => Enabled ? State.Budget[(int)d] : 0;   // the budget is the player's only with the option on
+            government.OfficeMeeting = () => State.NextMeeting;
+            government.ToPlanning = PutZoning;
+            government.OnPlanning = (lot, use) => ZoningMotion(lot, use) != null;
+            government.DecideNow = DecideZoningNow;
         }
 
         /// <summary>Running for office is on: civic life, its elections and this option.</summary>

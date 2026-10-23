@@ -103,7 +103,7 @@ namespace RealLifeOverhaul
 
         internal static string PolicyLine(PolicyDef policy)
         {
-            return "- " + CivicText.T(policy.Name) + ": " + CivicText.Effect(policy);
+            return "- " + CivicText.T(policy.Name) + ": " + CivicText.Full(policy);
         }
 
         internal static string Platform(Candidate candidate)

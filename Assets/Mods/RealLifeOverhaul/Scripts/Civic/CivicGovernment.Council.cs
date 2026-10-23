@@ -231,11 +231,11 @@ namespace RealLifeOverhaul
             Array.Copy(_salience, into, Math.Min(into.Length, _salience.Length));
         }
 
-        /// <summary>How much a district cares about an issue against the city: 0.7 to 1.3, fixed for the save.</summary>
+        /// <summary>How much a district cares about an issue against the city: 0.7 to 1.3, fixed for the save; the new district leans to growth.</summary>
         public float DistrictLean(int district, int issue)
         {
             var random = new CivicRandom(CivicRandom.Mix(State.Seed, district * 31 + 5, issue + 211));
-            return random.Range(0.7f, 1.3f);
+            return BuildingLean(district, issue, random.Range(0.7f, 1.3f));
         }
 
         public static bool Promised(Candidate candidate, int policyIndex)

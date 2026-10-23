@@ -7,12 +7,12 @@ namespace RealLifeOverhaul.Construction
 {
     /// <summary>
     /// The construction game in the save, game-free: one line under <see cref="Key"/>, "v=1^h:header^f:firm^l:lots^c:crews
-    /// ^q:plant^s:staff^p:projects^t:tenders^r:rivals^d:developments^o:offers". Parts are divided by '^', records by ';' and
-    /// fields by '|'; a text is escaped, so no divider is ever in one. A newer version adds fields at the end of a record, or
+    /// ^q:plant^s:staff^p:projects^t:tenders^r:rivals^d:developments^o:offers", then the city's parts (BuildStore.City).
+    /// Parts are divided by '^', records by ';' and fields by '|'; a text is escaped, so no divider is ever in one. A newer version adds fields at the end of a record, or
     /// a part with a new letter: this reader takes what it knows, gives a missing field its default, bounds every figure
     /// and caps every list. It names the district's lots by their ids only: nothing of the game's part of the save.
     /// </summary>
-    public static class BuildStore
+    public static partial class BuildStore
     {
         public const string Key = "reallife:construction";
         public const string TestKey = "reallife:construction_before_tests";
@@ -106,6 +106,7 @@ namespace RealLifeOverhaul.Construction
             {
                 t.Append(i > 0 ? "|" : string.Empty).Append(s.HiredOffers[i].ToString(Inv));
             }
+            WriteCity(t, s);
             return t.ToString();
         }
 
@@ -355,6 +356,9 @@ namespace RealLifeOverhaul.Construction
                             }
                             break;
                         }
+                        default:
+                            ReadCity(part[0], body, s);   // the city around the company (BuildStore.City), or a part of a newer version's: passed over
+                            break;
                     }
                 }
                 return header ? s : null;
