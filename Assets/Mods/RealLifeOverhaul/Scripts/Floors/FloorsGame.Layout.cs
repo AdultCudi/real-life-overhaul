@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using BigAmbitions.InteriorDesigner.InteriorElements;
 using BigAmbitions.Items;
 using Blueprints;
+using Buildings;
 using BusinessLayoutSets;
 using Controllers;
 using Helpers;
@@ -17,36 +18,74 @@ namespace RealLifeOverhaul.Floors
     /// </summary>
     internal static partial class FloorsGame
     {
-        /// <summary>The game's layout for a structure, read once by the game's own helper (it keeps it); null when the game has none.</summary>
+        /// <summary>
+        /// The game's layout for a structure, read once by the game's own helper (it keeps it); an installation firm's design read
+        /// by the firm's own helper, as the firm does on each order. Null when the game has none.
+        /// </summary>
         public static BusinessLayoutSet LayoutSet(FloorLayout layout, string size, int version)
         {
             if (layout == null || string.IsNullOrEmpty(size))
             {
                 return null;
             }
+            if (layout.DesignBuilding != null)
+            {
+                return InteriorInstallationFirmHelper.GetInteriorDesignLayout(layout.Name, layout.DesignBuilding, new BuildingSizeInfo(size, version));
+            }
             return BusinessLayoutSetHelper.GetOrLoadBusinessLayoutSet(layout.BusinessType, new BuildingSizeInfo(size, version), layout.Name, false);
         }
 
-        /// <summary>The layout's pieces in the order they are laid: everything but the doors first, its doors (found by name) last.</summary>
-        public static List<LayoutItem> LayOrder(BusinessLayoutSet set, string lastName)
+        /// <summary>
+        /// The layout's pieces in the order they are laid: everything but the doors first, its doors (found by name) last; with a
+        /// keep, only the pieces it keeps, and none standing on a piece left out.
+        /// </summary>
+        public static List<LayoutItem> LayOrder(BusinessLayoutSet set, string lastName, Func<string, bool> keeps)
         {
             List<LayoutItem> items = set.Items;
             var order = new List<LayoutItem>(items.Count);
+            HashSet<string> left = keeps != null ? LeftOut(items, keeps) : null;
             for (int i = 0; i < items.Count; i++)
             {
-                if (items[i].itemName != lastName)
+                if (items[i].itemName != lastName && (left == null || !left.Contains(items[i].id ?? string.Empty)))
                 {
                     order.Add(items[i]);
                 }
             }
             for (int i = 0; lastName != null && i < items.Count; i++)
             {
-                if (items[i].itemName == lastName)
+                if (items[i].itemName == lastName && (left == null || !left.Contains(items[i].id ?? string.Empty)))
                 {
                     order.Add(items[i]);
                 }
             }
             return order;
+        }
+
+        // The pieces a keep leaves out, and every piece standing on one of them (a stack's parent may come after it in the list).
+        private static HashSet<string> LeftOut(List<LayoutItem> items, Func<string, bool> keeps)
+        {
+            var left = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = 0; i < items.Count; i++)
+            {
+                if (!keeps(items[i].id ?? string.Empty))
+                {
+                    left.Add(items[i].id ?? string.Empty);
+                }
+            }
+            for (bool more = true; more;)
+            {
+                more = false;
+                for (int i = 0; i < items.Count; i++)
+                {
+                    string id = items[i].id ?? string.Empty;
+                    if (!left.Contains(id) && !string.IsNullOrEmpty(items[i].parentId) && left.Contains(items[i].parentId))
+                    {
+                        left.Add(id);
+                        more = true;
+                    }
+                }
+            }
+            return left;
         }
 
         /// <summary>The layout's walls and floors on the structure, by the game's own call.</summary>

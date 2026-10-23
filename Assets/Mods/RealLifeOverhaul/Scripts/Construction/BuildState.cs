@@ -161,14 +161,35 @@ namespace RealLifeOverhaul.Construction
         public int Tender;                           // the tender it came from; 0 for none
         public int CostPermille = 1000;              // the design's cost against the plans' budget: the player's own design sets it
         public int Units;                            // the flats the player's own design gives a block of homes; 0 for the usual
+        public int Contractor = -1;                  // a refit done by one of the city's builders (its index), paid at once; -1 for the company's own crews
+        public long ContractorPrice;                 // what that contractor was paid
+        public bool WithRefit;                       // a rebuild with the business inside refitted too: closed for the fit-out, refitted at the handover
+        public int Grade = -1;                       // a refit's new fittings at the handover (0 plain, 1 good, 2 fine); -1 before
+        public string ShowDesign = string.Empty;     // the show flat's design (Designs' ShowFlatDesigns id); empty for none
+        public int ShowSince;                        // the day the show flat opened; 0 while none is open
+        public bool ShowAgent;                       // a sales agent shows its buyers round
+        public int ShowInterior, ShowDecor, ShowStandard;   // its design's scores and the district's standard, read as it opened
+        public int ShowViewings, ShowSold;           // viewings held there and flats sold at them
+        public long ShowSpent;                       // what it has cost: its dressing, its days, the agent
+        public int ShowShown;                        // the hour (day x 24 + hour) of a viewing the player showed round; 0 for none
 
         public bool Live => Stage != ProjectStage.Finished && Stage != ProjectStage.Abandoned;
 
-        /// <summary>The rules' model of its work: a contract on a lot is built as a plot, a client's as a rebuild, the city's works as works.</summary>
+        /// <summary>True while its show flat is open.</summary>
+        public bool ShowOpen => ShowSince > 0 && !string.IsNullOrEmpty(ShowDesign);
+
+        /// <summary>
+        /// The rules' model of its work: a contract on a lot is built as a plot, a client's as a rebuild, the city's works as works;
+        /// a refit is worked as the programme's refit works.
+        /// </summary>
         public ProjectKind Model
         {
             get
             {
+                if (Kind == ProjectKind.Refit)
+                {
+                    return ProjectKind.Contract;
+                }
                 if (Kind != ProjectKind.Contract)
                 {
                     return Kind;
@@ -228,6 +249,7 @@ namespace RealLifeOverhaul.Construction
         public int FirstDay, LastDay;
         public int NextId = 1;
         public int NextClientDay, NextPublicDay;     // the days the next client's and public tenders open
+        public int NextRefitDay;                     // the day the next business's refit tender opens
         public readonly FirmFile Firm = new FirmFile();
         public readonly List<LotFile> Lots = new List<LotFile>(8);
         public readonly List<CrewFile> Crews = new List<CrewFile>(8);
@@ -386,13 +408,40 @@ namespace RealLifeOverhaul.Construction
             return n;
         }
 
-        /// <summary>The player's projects going up now.</summary>
+        /// <summary>The project whose show flat is open, or null: one at a time.</summary>
+        public ProjectFile ShowFlat()
+        {
+            for (int i = 0; i < Projects.Count; i++)
+            {
+                if (Projects[i].ShowOpen)
+                {
+                    return Projects[i];
+                }
+            }
+            return null;
+        }
+
+        /// <summary>The live refit or rebuild at a building, or null.</summary>
+        public ProjectFile AtBuilding(string street, int number)
+        {
+            for (int i = 0; street != null && i < Projects.Count; i++)
+            {
+                ProjectFile p = Projects[i];
+                if (p.Live && (p.Kind == ProjectKind.Refit || p.Kind == ProjectKind.Rebuild) && p.Number == number && string.Equals(p.Street, street, StringComparison.Ordinal))
+                {
+                    return p;
+                }
+            }
+            return null;
+        }
+
+        /// <summary>The company's projects going up now.</summary>
         public int Building()
         {
             int n = 0;
             for (int i = 0; i < Projects.Count; i++)
             {
-                n += Projects[i].Stage == ProjectStage.Building ? 1 : 0;
+                n += Projects[i].Stage == ProjectStage.Building && Projects[i].Contractor < 0 ? 1 : 0;   // a contractor's refit is not one of the company's sites
             }
             return n;
         }

@@ -181,7 +181,7 @@ namespace RealLifeOverhaul.Construction
             for (int i = 0; i < state.Projects.Count; i++)
             {
                 ProjectFile p = state.Projects[i];
-                if (p.Stage == ProjectStage.Ready || p.Stage == ProjectStage.Building)
+                if ((p.Stage == ProjectStage.Ready || p.Stage == ProjectStage.Building) && p.Contractor < 0)   // a contractor's refit has the contractor's crews
                 {
                     _workable.Add(p);
                 }

@@ -102,6 +102,8 @@ MoneyRules            the construction loan's limit, rate, draws, interest and i
 TenderRules           the works' value, the rivals' bids and the player's, the score and the winner (game-free)
 FirmRules             reputation, a speciality, cover, a week's crews to hire, a rival's offer, plant's resale (game-free)
 DevelopmentRules      the city's developers: whose lots, in what order, what use and builder, which design, on which days (game-free)
+ShowFlatRules         a show flat's viewings, a buyer's chance, the price against the plain off plan price, its costs, which blocks (game-free)
+RefitRules            a refit's hours, the fittings' grade, a contractor's quote from the eight builders' bids (game-free)
 BuildState, BuildStore   the company, its lots, crews, plant, staff, projects, tenders, the rivals and the developers' lots, in one line
 ConstructionDirector  the state and its timing: a second's look, the hour's and the day's passes (partial files below)
   .Asks               every bridge asked, its fault said once and its default answered
@@ -112,9 +114,15 @@ ConstructionDirector  the state and its timing: a second's look, the hour's and 
   .Actions            what the player does: found, the licence, land, crews, plant, staff, money, a visit, the ribbon
   .App                the app on the phone, its notices, a site's notice board, the ribbon's panel at the place
   .Tests              the options page's test entries
+  .ShowFlats          a block's show flat: its design, floor, viewings, sales and days
+  .Refits             a business's refit by the company or a contractor, its closure, its handover, businesses' refit tenders
+  .Screens            the viewing panel on the show flat's floor, the way there, a renovation from the Interior tab
+  .SalesTests         the show flats' and renovations' tests, each a public static method
+ShowFlatPlace         the show flat's place on a floor (the floors core), on its design's apartment structure
 ConstructionGame      the one file that reads or changes the game: clock, prices, money, the player's offices, buildings and staff
 ConstructionType      the Construction Company business type (ModdingAPI.RegisterModBusinessType), furnished as the game's design studio
-ConstructionApp (.*)  the app in the game's own frame (GameUi.AppShell): Overview, Land, Projects, Tenders, Crews, Company, Rivals
+ConstructionApp (.*)  the app in the game's own frame (GameUi.AppShell): Overview, Land, Projects, Tenders, Crews, Company, Rivals;
+                      .ShowFlat a block's show flat on its money page, .Refit the businesses and their refits
 PlanningCall          City Hall's planning and building control pages, its call's sixth topic and the same pages from the app
 ConstructionGuide     the feature list's entry, its facts, the options and the test entries
 ```
@@ -189,10 +197,29 @@ Agreed with the trades ([Building trades](trades.md), "With the construction com
 - `ConstructionBridges.DesignOf`: each day the company asks `TradesBridges.DesignOf("build:<n>", out DesignScore)`. Once the player has finished the design there, the plans are drawn: their quality is 30 and 70% of the design's `Total`; its `CostPermille` (bounded 600 to 1600) scales the estimate's materials, crews and contingency and every stage's loads (a dearer design costs more to build); for a block of homes its `Units` are the block's flats; its `Storeys` are written to Player.log beside the project's (the building's look stays the city's design it wears). `Construction check (own design)` says what was read.
 - The roles the company gives its office's employees (architect, engineer, estimator, site manager) and its crews' trades (labourer, mason, crane operator, electrician, plumber) are `TradeCatalogue.Roles`' ids; the offline checks hold each to it.
 
+### Show flats
+
+A block of homes sold off plan (a plot of homes at its Ready or Building stage, not handed to the district, with flats left) can open a **show flat** on its money page. One at a time.
+
+- **Its design.** The show flats' designs are the Designs feature's (`Designs/ShowFlatDesigns.cs`, `DesignsDirector.ShowFlats.cs`): made from the game's own residential designs (`StreamingAssets/InteriorDesigns/Residential/<structure>`, read by the firm's own `InteriorInstallationFirmHelper`), each **fully dressed** (the game's design whole) or **plain** (cut to `PlainKeeps`: beds, seats, tables, the kitchen, storage and the ceiling lamps, none of the art, plants, rugs, lamps or screens). Only the apartment structures (never a Hamptons house or the car park), and of those the one whose storey is nearest the block's flat (`ShowFlatRules.FlatArea`, `ShowFlatDesigns.Nearest`). Priced at the game's own prices: its pieces at `ItemHelper.GetDefaultMarketPrice` and the firm's installation fee for the structure. They are never written to the firms' folders: a show flat is no home the firm installs in.
+- **Its quality.** Interiors scores it as it scores a business: the game's interior score of the design's walls and floors (`InteriorScoreCalculator`) and the decor score of its pieces (`InteriorDirector.DecorOf`, the same arithmetic as a business's), overall six tenths and four tenths. Against the standard of the block's district (`InteriorDirector.StandardOf`; a plot's is the new district's, `DistrictValues.Id`).
+- **Where it is.** A place of the floors core (`ShowFlatPlace`), on the design's apartment structure, laid by the core with the design's pieces (`FloorLayout.Design`, a cut's keep, nothing left standing on a piece taken out). The player walks in by the building's door as to any floor; **Show me the way** puts the building on the game's destination guider (`GameUi.GuideMark`). Its id, `~construction_showflat`, sorts after every place every machine shares, so it never moves their floors.
+- **Viewings.** One a day at the district's standard, two from 10 points over it, three from 25 over (11:00, 14:00, 17:00). A viewing is decided as its hour ends: the chance (`ShowFlatRules.BuyerChance`) is 170 in 1000 at the standard, 6 more a point over it and less under, 2 more a point of the company's reputation over 50; the player showing the buyers round (the game's own panel on the floor, **Show them round**) adds 150, the sales agent 90, and with nobody there the chance is 45% of itself. A buyer takes a flat off plan at the show flat's price: the plain off plan price, 3 thousandths more for each point over the standard and less under, 900 to 1120 in 1000 (`ShowFlatRules.PricePermille`). Deposits now, the rest at completion: the one off plan sale (`OffPlanSale`), as the plain **Sell off plan** button.
+- **Costs.** The dressing once (the design's furniture and the installation), then 240 a day open and 210 a day for the agent, at today's prices. It closes at the handover, when the block is sold out or given up, or when the player closes it.
+
+### Renovations
+
+- **A refit** of a business the player runs (a shop or an office they rent or own, theirs in a session, with a door on the street): from the business's **Interior** tab in BizMan (**Renovate**) or the app's Land tab. With a licensed company it is a project of its own (`ProjectKind.Refit`): ready at once (an interior needs no permission), worked by the company's crews as the programme's refit works (`RefitRules.Works`, Civic's `SiteKind.Refit`, a hoarding at its front): its loads, trades and plant, one final inspection, the renovation speciality's. Without one, the city's best renovation contractor (the eight rivals bid as on a tender, `RefitRules.Quote`) does it at its quote, paid at once, at the city's pace.
+- **While the works go on** the business is closed: business pressure's own closure (`ClosureSource.Refit`), held three hours at a time each hour, so it opens by itself if the construction game stops; let go at the handover or when the project is given up.
+- **At the handover** Interiors refits it (`InteriorDirector.Refit`): wear to nothing and new fittings that add 6, 10 or 14 points to the decor score by the work's grade (a contractor's good; the company's by the work's quality, a grade better as a renovation company), fading as the finishes wear (`InteriorRules.RefitLift`). Kept in the save's line `reallife:interiors_refits`.
+- **An exterior refresh** is the construction game's rebuild of a building the player owns (Land, **Plan a rebuild**): the new look through the rebuild's site, where the building allows it. A rebuild can carry the interior refit too (**Refit the business inside too**): the business closes for its last stage and is refitted at the handover. The City Hall shopfront refit (Civic) stays the shopfront's: no interior, no closure.
+- **Tenders.** Businesses of the city's put their refits out to tender every 5 to 9 days (`TenderSource.Refit`), valued at the programme's refit rate; the renovation speciality's work. A rival's win puts the hoarding up at the business.
+
 ### Going Public
 
 - **Deterministic.** The city's developers are drawn from the lot plan and the day alone (`DevelopmentRules`: whose lots, in what order, their uses, builders, designs and days, never a save's seed): every machine finishes the same lots on the same days (`DistrictBuildings.Finish` with `FinishOwner.City`), and only the host sets their sites out. Rival builders are the same eight with the same figures everywhere.
 - **The player's company is theirs alone.** Its line is in their save; its offices are theirs (`GoingPublic.Mine`); its money moves through the game's own call. No land is sold in a session; a public building's tender is never put out in one, a business's only by the host; the city's works go to tender on the host. A guest's rebuild is a site of the guest's own (the programme's own-id rule); a guest starts no plot.
+- **Show flats and refits.** A show flat is the player's own: its floor is on their machine only (its place asks after every shared place, so no shared floor moves), and its viewings draw from the save's seed. A refit is only of a business that is the player's (`GoingPublic.Mine`); its closure is business pressure's own, and its site is the programme's own-id rule's, as a rebuild's. A guest puts out no refit tender.
 - **Nothing new sent.** The company sends nothing. Its sites are the programme's own records in the host's existing line (the finished looks appended after the sites, which an older reader ignores).
 - **Known limit:** a lot a player bought alone stays theirs in their save; in a session the developers pass over it on that player's machine only.
 
@@ -201,11 +228,14 @@ Agreed with the trades ([Building trades](trades.md), "With the construction com
 - One line under `reallife:construction` ("v=1^h:...^f:...^l:...^c:...^q:...^s:...^p:...^t:...^r:...^d:...^o:..."), and `reallife:construction_before_tests` while a test has changed something. Fields are appended at the end of a record, parts by a new letter; a newer line is read as far as this version knows it, a line this version cannot read is kept as it was read (`SaveLines`).
 - It names the district's lots by their ids and the game's buildings by street and number as words of its own; nothing of the game's part of the save. A finished building on a lot becomes the district's record (Uptown's own line, kept by the district save). A company is a `BuildingRegistration` with the type `reallife:businesstype_construction`, made a design studio again by "prepare this save for removing the mod".
 - A save without the line starts afresh; the sites of a line whose game is switched off wait, put away.
+- A show flat and a refit are fields at the end of their project's record (the design's id, its scores, its agent and sales; the contractor, the price, the grade, a rebuild's refit), and the next refit tender's day at the end of the header. The show flat's floor is no record of the game's: it is asked again at each load. A refit's closure is the game's own switch, as business pressure's closures are.
 
 ### Options
 
 - **Your own construction company** (on): off, the company, its land, projects and tenders are not there, its sites wait put away, and the city's programme is as without it. It needs the city's construction sites.
 - **The city's developers build on the lots, and works go out to tender** (on): off, no development, no tender, no rival's offer.
+- **Show flats for blocks sold off plan** (on): off, no show flat (an open one waits, put away, its floor let go).
+- **Refits of your businesses, and businesses' refits to tender** (on): off, no refit, no closure for one, no refit tender.
 - **Land tax on the lots you own** (on); **Theft, storms and faults on your sites** (on).
 
 ### Self-check lines (Developer diagnostics)
@@ -228,10 +258,21 @@ Each brings forward one thing a player would wait for, or says in a notice why i
 - **a rival's offer to your best crew**, **a crew on strike**, **a fault comes to light**, **a bribe comes out**, **a buyer for a flat**.
 - **put everything back as before the tests**: the state from before the first test, and the sites the tests began taken away; money moved since stays moved.
 
+### Show flats' and renovations' tests
+
+Each works from anywhere, writes one `Show flats check (...)` or `Renovation check (...)` line ending PASS or FAIL, and is a public static method of `ConstructionDirector` a runner can call: `TestShowFlatNow`, `TestShowVisitNow`, `TestViewingNow`, `TestShowBuyerNow`, `TestRefitNow`, `TestRefitStartNow`, `TestRefitTenderNow`, `TestPutBackNow`.
+
+- **Show flats: a show flat at the test project now**: the player's block sold off plan, or one made for the test (the district's nearest open lot, a block of homes with its plans and permission, ready to sell off plan); its show flat in the first design, dressed for nothing.
+- **take me into the show flat now** (opens one first if none is), **a viewing now** (decided at once, shown round by the player if they are on its floor), **a buyer at the show flat now** (a sale at the show flat's price).
+- **Renovation: renovate the nearest shop of yours now**: the player's nearest business refitted (a contractor's, for nothing) and handed over at once, the wear and decor before and after in the line; **a refit under way at your nearest business now** leaves it running, the hoarding up and the business closed; **a business's refit tender now**.
+- The construction game's **put everything back** also puts back the interiors a test refitted (`InteriorDirector.TestKeep`, `TestPutBack`), lets a closed business open and lets the show flat's floor go.
+
 ### Offline checks
 
 `RealLifeOverhaul.Build/EconomyCheck/BuildersChecks.cs` (`dotnet EconomyCheck.dll --builders` alone): the catalogue's tables; the game's own value of a building and a lot's price; zoning, the council's day, land tax, flats; the plans' hours, stages, inspections, exits, parking, height and engineer; the estimate and the player's design's cost; planning, objections, the appeal and the licence; a crew's pace, deliveries, rework, bribes, morale; the loan's draws, a year's interest and the instalments to the last unit; tenders and the winner; the developers' share, order, uses, builders and days, and that no seed is in them; the frame against `PlotRules.Frame` for every plot size; the store's line read back to the same line, a newer line's fields passed over; then the sources (no LINQ, no Update but the one, the layering, every bridge wired and put back, the trades' three lines, the shared files' lines, every test's check line) and every key in en, pt and zh-cn, What's new in all nine.
 
+`RealLifeOverhaul.Build/EconomyCheck/ShowFlatsChecks.cs` (`dotnet EconomyCheck.dll --show-flats`): the viewings, a buyer's chance, the price and the costs; which blocks may have a show flat; a refit's hours, grade and quote (the same for the same seed and day); the fittings' lift and its fade through Interiors' own working, and a room's decor by a business's arithmetic; the construction line with a show flat and refits read back, and one from before them; the interiors' refits line; a refit's closure in business pressure's line; the tenders' spacing and speciality; the designs' ids, cuts and structures, and against the installed game's residential designs; then the sources (the layering, nothing per frame, the floors core's design layout, the place's id, the wiring, the options, every test) and the texts in every language.
+
 ### Not verified without the game
 
-Everything above is built and checked offline. Not seen in play: the app's pages in the game's frame, the City Hall pages, a site's pace and its notice board, the ribbon's panel at a building's front, the finished looks standing, the business type in BizMan with its staff and desks, the transactions in the game's statements, the credit file's account, and the new district's lots for sale and its buildings handed over.
+Everything above is built and checked offline. Not seen in play: the app's pages in the game's frame, the City Hall pages, a site's pace and its notice board, the ribbon's panel at a building's front, the finished looks standing, the business type in BizMan with its staff and desks, the transactions in the game's statements, the credit file's account, and the new district's lots for sale and its buildings handed over. Of the show flats and refits: the game's residential design laid on a borrowed apartment structure on a floor (its pieces, walls and floors, and the game's own interactions with a bed or a kitchen there), the viewing panel on that floor, the guider to its building, the Interior tab's Renovate button and the question box, a business kept closed for its refit and opened at the end, the hoarding at its front, and the decor and wear in the Interior tab after a refit.

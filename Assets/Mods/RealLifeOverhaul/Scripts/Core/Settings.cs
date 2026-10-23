@@ -44,6 +44,8 @@
         public const string ConstructionDevelopersId = "construction_developers";  // ...the city's developers and the tenders
         public const string ConstructionLandTaxId = "construction_land_tax";       // ...land tax on the lots owned
         public const string ConstructionRisksId = "construction_risks";            // ...theft, storms and faults on the sites
+        public const string ConstructionShowFlatsId = "construction_show_flats";   // ...show flats for a block's off plan buyers
+        public const string ConstructionRenovationsId = "construction_renovations"; // ...refits of the player's own businesses, and businesses' refits to tender
         public const string CameraFovId = "camera_fov";
         public const string CameraHeightId = "camera_height";
         public const string CarCameraId = "car_camera";
@@ -370,6 +372,8 @@
         public static bool ConstructionDevelopers = true;  // the city's developers build on the district's lots, and works are put out to tender
         public static bool ConstructionLandTax = true;     // the lots the player owns pay land tax, and more kept empty
         public static bool ConstructionRisks = true;       // theft, storm damage and faults coming to light on the company's works
+        public static bool ConstructionShowFlats = true;   // a show flat dressed in one of the show flats' designs for a block sold off plan, with its viewings
+        public static bool ConstructionRenovations = true; // the player's businesses refitted by their company or a contractor, and businesses' refits out to tender
         public static int CameraFov = 55;        // degrees, vertical
         public static bool LifeEvents = true;
         public static int EventFrequency = 5;        // about this many random events per game week
@@ -730,6 +734,8 @@
             ConstructionDevelopers = Bool(modId, ConstructionDevelopersId, ConstructionDevelopers);
             ConstructionLandTax = Bool(modId, ConstructionLandTaxId, ConstructionLandTax);
             ConstructionRisks = Bool(modId, ConstructionRisksId, ConstructionRisks);
+            ConstructionShowFlats = Bool(modId, ConstructionShowFlatsId, ConstructionShowFlats);
+            ConstructionRenovations = Bool(modId, ConstructionRenovationsId, ConstructionRenovations);
             CameraFov = Int(modId, CameraFovId, CameraFov);
             CameraHeight = Int(modId, CameraHeightId, CameraHeight);
             CarCamera = Bool(modId, CarCameraId, CarCamera);

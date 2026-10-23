@@ -6,6 +6,53 @@ namespace RealLifeOverhaul.Interiors
     /// <summary>Interiors' test buttons on the options page.</summary>
     public sealed partial class InteriorDirector
     {
+        // Another feature's test changed these businesses' records (a refit done now): what they were, to be put back.
+        private readonly Dictionary<string, InteriorFile> _kept = new Dictionary<string, InteriorFile>(4, System.StringComparer.Ordinal);
+
+        /// <summary>Test: a business's record kept as it is now (the first time only), so a test's refit can be put back.</summary>
+        public void TestKeep(BuildingRegistration reg)
+        {
+            InteriorShop s = At(reg);
+            InteriorFile f = s != null ? _store.File(s.Place, false) : null;
+            if (f == null || _kept.ContainsKey(f.Place))
+            {
+                return;
+            }
+            _kept[f.Place] = new InteriorFile
+            {
+                Place = f.Place, Wear = f.Wear, LastInterior = f.LastInterior, LastDay = f.LastDay, StoryDay = f.StoryDay, RefreshDay = f.RefreshDay, FirstDay = f.FirstDay,
+                Refit = f.Refit, RefitDay = f.RefitDay
+            };
+        }
+
+        /// <summary>Test: every record kept put back as it was, and today's figures again; how many.</summary>
+        public int TestPutBack()
+        {
+            int back = 0;
+            foreach (KeyValuePair<string, InteriorFile> kept in _kept)
+            {
+                InteriorFile f = _store != null ? _store.File(kept.Key, false) : null;
+                if (f == null)
+                {
+                    continue;
+                }
+                InteriorFile k = kept.Value;
+                f.Wear = k.Wear;
+                f.LastInterior = k.LastInterior;
+                f.RefreshDay = k.RefreshDay;
+                f.Refit = k.Refit;
+                f.RefitDay = k.RefitDay;
+                back++;
+            }
+            _kept.Clear();
+            if (back > 0)
+            {
+                Rework(TimeHelper.CurrentDay, false);
+            }
+            Logger?.Info("Interiors: " + back + " business record(s) a test had changed put back as they were.");
+            return back;
+        }
+
         // The business the player stands in, or the first of theirs the feature looks at.
         private InteriorShop Here(out BuildingRegistration reg)
         {

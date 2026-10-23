@@ -17,6 +17,7 @@ namespace RealLifeOverhaul.Construction
 
         private double _testPrice = double.NaN;   // the district's price where a test lot was made
         private bool _testOpening;                // a test opening: the ribbon can be cut at any hour of its day
+        private bool _backDone;                   // the last "put back" put the state back
 
         internal static bool IsTestLot(string lot) => lot != null && lot.StartsWith(TestLotPrefix, StringComparison.Ordinal);
 
@@ -838,6 +839,7 @@ namespace RealLifeOverhaul.Construction
         public void TestBack()
         {
             const string test = "Construction back";
+            _backDone = false;
             if (!ModState.Loaded || SaveGameManager.Current == null || !_loaded)
             {
                 TestRefusals.Tell(Logger, test, TestRefusal.NotLoaded);
@@ -869,14 +871,17 @@ namespace RealLifeOverhaul.Construction
                     }
                 }
                 back.LastDay = Math.Max(back.LastDay, _state.LastDay);
+                BuildState was = _state;
                 _state = back;
                 _beforeTests = null;
                 _testLots.Clear();
                 _testOpening = false;
                 _devOrderStale = true;
                 HidePanels();
+                int interiors = SalesBack(was);
+                _backDone = true;
                 Logger?.Info("Construction check (back): the state from before the tests is back (" + _state.Projects.Count + " project(s), " + _state.Crews.Count + " crew(s)); " + dropped
-                             + " site(s) the tests began taken away; money moved since stays moved: PASS.");
+                             + " site(s) the tests began taken away, " + interiors + " business interior(s) a test refitted put back, the show flat as it was; money moved since stays moved: PASS.");
                 TestDone("the construction game is as it was before the tests", TabOverview, 0);
             });
         }

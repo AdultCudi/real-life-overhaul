@@ -1,11 +1,14 @@
 using System;
 using System.Collections.Generic;
+using Localizor;
 using RealLifeOverhaul.BuildTrades;
 using RealLifeOverhaul.Construction;
+using RealLifeOverhaul.Designs;
 using RealLifeOverhaul.Economy;
 using RealLifeOverhaul.Events;
 using RealLifeOverhaul.Fame;
 using RealLifeOverhaul.Flare;
+using RealLifeOverhaul.Interiors;
 using RealLifeOverhaul.NewBuildings;
 using RealLifeOverhaul.Uptown;
 using UnityEngine;
@@ -100,6 +103,18 @@ namespace RealLifeOverhaul
                 ConstructionBridges.Qualified = TradesBridges.Qualified;
                 ConstructionBridges.Commission = (project, storeys, units, budget) => TradesBridges.Commission(project, storeys, units, (int)Math.Min(int.MaxValue, Math.Max(0L, budget)));
                 ConstructionBridges.DesignOf = DesignOf;
+                ConstructionBridges.ShowDesigns = ShowDesigns;
+                ConstructionBridges.ShowDesign = ShowFind;
+                ConstructionBridges.Standard = Standard;
+                ConstructionBridges.Refitted = Refitted;
+                ConstructionBridges.CloseShop = CloseShop;
+                ConstructionBridges.OpenShop = OpenShop;
+                ConstructionBridges.Interior = Interior;
+                ConstructionBridges.KeepInterior = KeepInterior;
+                ConstructionBridges.InteriorsBack = () => InteriorDirector.Instance != null ? InteriorDirector.Instance.TestPutBack() : 0;
+                InteriorBridges.Renovate = Renovate;
+                InteriorBridges.Renovation = Renovation;
+                InteriorBridges.Renovates = () => Director != null && Director.RefitsOn;
                 _paperBefore = News.Extra;
                 News.Extra = Paper;
                 _accountsBefore = EconomyBridges.OtherAccounts;
@@ -144,6 +159,18 @@ namespace RealLifeOverhaul
                 ConstructionBridges.Qualified = null;
                 ConstructionBridges.Commission = null;
                 ConstructionBridges.DesignOf = null;
+                ConstructionBridges.ShowDesigns = null;
+                ConstructionBridges.ShowDesign = null;
+                ConstructionBridges.Standard = null;
+                ConstructionBridges.Refitted = null;
+                ConstructionBridges.CloseShop = null;
+                ConstructionBridges.OpenShop = null;
+                ConstructionBridges.Interior = null;
+                ConstructionBridges.KeepInterior = null;
+                ConstructionBridges.InteriorsBack = null;
+                InteriorBridges.Renovate = null;
+                InteriorBridges.Renovation = null;
+                InteriorBridges.Renovates = null;
                 News.Extra = _paperBefore;
                 _paperBefore = null;
                 EconomyBridges.OtherAccounts = _accountsBefore;
@@ -526,6 +553,192 @@ namespace RealLifeOverhaul
                 {
                     Fault("ConstructionLinks.DesignOf", e);
                     return false;
+                }
+            }
+
+            // ------------------------------------------------------------------ show flats: the designs and the district's standard
+
+            private static readonly List<ShowDesign> Shows = new List<ShowDesign>(8);
+
+            // The show flats' designs (Designs) for flats of a floor area, each scored by Interiors as a business's decor is.
+            private static bool ShowDesigns(int flatArea, List<ShowDesignView> into)
+            {
+                into.Clear();
+                try
+                {
+                    if (!DesignsDirector.ShowDesigns(flatArea, Shows))
+                    {
+                        return false;
+                    }
+                    for (int i = 0; i < Shows.Count; i++)
+                    {
+                        into.Add(View(Shows[i]));
+                    }
+                    return into.Count > 0;
+                }
+                catch (Exception e)
+                {
+                    into.Clear();
+                    Fault("ConstructionLinks.ShowDesigns", e);
+                    return false;
+                }
+            }
+
+            private static bool ShowFind(string id, out ShowDesignView view)
+            {
+                view = default(ShowDesignView);
+                try
+                {
+                    ShowDesign d = DesignsDirector.FindShow(id);
+                    if (d == null)
+                    {
+                        return false;
+                    }
+                    view = View(d);
+                    return true;
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.ShowDesign", e);
+                    return false;
+                }
+            }
+
+            private static ShowDesignView View(ShowDesign d)
+            {
+                string name = ConstructionText.T(d.Finish == ShowFinish.Plain ? "reallife_bld_show_design_plain" : "reallife_bld_show_design_staged", "design",
+                    ("interior_design_" + d.Design.ToLowerInvariant()).GetLocalization());
+                return new ShowDesignView
+                {
+                    Id = d.Id, Name = name, Size = d.Size, Version = d.Version, Sqm = d.Sqm, Design = d.Design, Interior = d.Interior, Decor = InteriorDirector.DecorOf(d.Names, d.Sqm),
+                    Furniture = d.Furniture, Fee = d.Fee, Pieces = d.Names.Count, Keeps = d.Keeps
+                };
+            }
+
+            // The standard a district expects of an interior; a plot's (no district of the game's) is the new district's while it lives.
+            private static int Standard(string district)
+            {
+                try
+                {
+                    string at = !string.IsNullOrEmpty(district) ? district : DistrictBuildings.Lives ? DistrictValues.Id : null;
+                    return at != null ? InteriorDirector.StandardOf(at) : -1;
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.Standard", e);
+                    return -1;
+                }
+            }
+
+            // ------------------------------------------------------------------ refits: the business, its interior, its closure
+
+            private static BuildingRegistration Shop(string street, int number)
+            {
+                return BusinessGame.Held(BusinessState.PlaceKey(street, number));
+            }
+
+            private static bool Refitted(string street, int number, int grade)
+            {
+                try
+                {
+                    BuildingRegistration reg = Shop(street, number);
+                    return reg != null && InteriorDirector.Instance != null && InteriorDirector.Instance.Running && InteriorDirector.Instance.Refit(reg, grade);
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.Refitted", e);
+                    return false;
+                }
+            }
+
+            private static bool CloseShop(string street, int number, int hours)
+            {
+                try
+                {
+                    BuildingRegistration reg = Shop(street, number);
+                    return reg != null && BusinessDirector.Instance != null && BusinessDirector.Instance.CloseFor(reg, hours, ClosureSource.Refit);
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.CloseShop", e);
+                    return false;
+                }
+            }
+
+            private static void OpenShop(string street, int number)
+            {
+                try
+                {
+                    BuildingRegistration reg = Shop(street, number);
+                    if (reg != null)
+                    {
+                        BusinessDirector.Instance?.Release(reg, ClosureSource.Refit);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.OpenShop", e);
+                }
+            }
+
+            private static bool Interior(string street, int number, out int decor, out int refit, out int wear)
+            {
+                decor = refit = wear = 0;
+                try
+                {
+                    BuildingRegistration reg = Shop(street, number);
+                    return reg != null && InteriorDirector.DecorNow(reg, out decor, out refit, out wear);
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.Interior", e);
+                    return false;
+                }
+            }
+
+            private static void KeepInterior(string street, int number)
+            {
+                try
+                {
+                    BuildingRegistration reg = Shop(street, number);
+                    if (reg != null)
+                    {
+                        InteriorDirector.Instance?.TestKeep(reg);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.KeepInterior", e);
+                }
+            }
+
+            // A renovation asked from the business's Interior tab, and the words for one under way there.
+            private static void Renovate(BuildingRegistration reg)
+            {
+                try
+                {
+                    if (reg != null && reg.Address != null)
+                    {
+                        Director?.RenovateAsk(reg.Address.streetName, reg.Address.streetNumber);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.Renovate", e);
+                }
+            }
+
+            private static string Renovation(BuildingRegistration reg)
+            {
+                try
+                {
+                    ConstructionDirector d = Director;
+                    return d != null && d.RefitsOn && reg != null && reg.Address != null ? d.RenovationWords(reg.Address.streetName, reg.Address.streetNumber) : null;
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.Renovation", e);
+                    return null;
                 }
             }
 

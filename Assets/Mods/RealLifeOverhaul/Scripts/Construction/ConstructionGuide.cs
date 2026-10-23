@@ -20,6 +20,7 @@ namespace RealLifeOverhaul.Construction
                 .Group("reallife_bld_header")
                 .About("reallife_guide_construction_about").Help("reallife_guide_construction")
                 .Owns(Settings.ConstructionId, Settings.ConstructionDevelopersId, Settings.ConstructionLandTaxId, Settings.ConstructionRisksId)
+                .Owns(Settings.ConstructionShowFlatsId, Settings.ConstructionRenovationsId)
                 .Data(BuildStore.Key, BuildStore.TestKey)
                 .ResetData(() => ConstructionDirector.Instance?.Forget())
                 .Fact("bld_licence_fee", () => Money(BuildCatalogue.LicenceFee))
@@ -58,6 +59,16 @@ namespace RealLifeOverhaul.Construction
                 .Fact("bld_cover_excess", () => Money(BuildCatalogue.CoverExcess))
                 .Fact("bld_bribe_days", () => BuildCatalogue.BribeDays.ToString(Inv))
                 .Fact("bld_speciality_rest", () => BuildCatalogue.SpecialityRest.ToString(Inv))
+                .Fact("bld_show_day", () => Money(BuildCatalogue.ShowUpkeepDay))
+                .Fact("bld_agent_day", () => Money(BuildCatalogue.AgentDay))
+                .Fact("bld_viewings_most", () => BuildCatalogue.ViewingHours.Length.ToString(Inv))
+                .Fact("bld_show_price_least", () => Share(BuildCatalogue.ShowPriceLeast))
+                .Fact("bld_show_price_most", () => Share(BuildCatalogue.ShowPriceMost))
+                .Fact("bld_refit_hours_least", () => BuildCatalogue.RefitHoursLeast.ToString(Inv))
+                .Fact("bld_refit_hours_most", () => BuildCatalogue.RefitHoursMost.ToString(Inv))
+                .Fact("bld_refit_lift_most", () => Interiors.InteriorRules.RefitMost.ToString(Inv))
+                .Test("reallife_bld_test_show_flat", "reallife_bld_test_show_visit", "reallife_bld_test_viewing", "reallife_bld_test_show_buyer", "reallife_bld_test_refit",
+                    "reallife_bld_test_refit_start", "reallife_bld_test_refit_tender")
                 .Test("reallife_bld_test_lot", "reallife_bld_test_company", "reallife_bld_test_licence", "reallife_bld_test_plans", "reallife_bld_test_planning",
                     "reallife_bld_test_council", "reallife_bld_test_stage", "reallife_bld_test_inspection", "reallife_bld_test_deliveries", "reallife_bld_test_handover",
                     "reallife_bld_test_opening", "reallife_bld_test_tender", "reallife_bld_test_award", "reallife_bld_test_developers", "reallife_bld_test_poach",
@@ -70,7 +81,7 @@ namespace RealLifeOverhaul.Construction
         private static string Share(int thousandths) => ConstructionText.Share(thousandths);
     }
 
-    /// <summary>The construction game's place on the options page: its four options and the test entries (shown with the test tools).</summary>
+    /// <summary>The construction game's place on the options page: its six options and the test entries (shown with the test tools).</summary>
     public static class ConstructionOptions
     {
         public static ModOptions AddConstruction(this ModOptions options)
@@ -81,6 +92,8 @@ namespace RealLifeOverhaul.Construction
                 .AddToggle(Settings.ConstructionDevelopersId, "reallife_bld_developers", Settings.ConstructionDevelopers, v => Settings.ConstructionDevelopers = v)
                 .AddToggle(Settings.ConstructionLandTaxId, "reallife_bld_land_tax", Settings.ConstructionLandTax, v => Settings.ConstructionLandTax = v)
                 .AddToggle(Settings.ConstructionRisksId, "reallife_bld_risks", Settings.ConstructionRisks, v => Settings.ConstructionRisks = v)
+                .AddToggle(Settings.ConstructionShowFlatsId, "reallife_bld_show_flats", Settings.ConstructionShowFlats, v => Settings.ConstructionShowFlats = v)
+                .AddToggle(Settings.ConstructionRenovationsId, "reallife_bld_renovations", Settings.ConstructionRenovations, v => Settings.ConstructionRenovations = v)
                 .AddButton("reallife_bld_test_lot", () => ConstructionDirector.Instance?.TestLot())
                 .AddButton("reallife_bld_test_company", () => ConstructionDirector.Instance?.TestCompany())
                 .AddButton("reallife_bld_test_licence", () => ConstructionDirector.Instance?.TestLicence())
@@ -100,6 +113,13 @@ namespace RealLifeOverhaul.Construction
                 .AddButton("reallife_bld_test_fault", () => ConstructionDirector.Instance?.TestFault())
                 .AddButton("reallife_bld_test_bribe", () => ConstructionDirector.Instance?.TestBribe())
                 .AddButton("reallife_bld_test_buyer", () => ConstructionDirector.Instance?.TestBuyer())
+                .AddButton("reallife_bld_test_show_flat", () => ConstructionDirector.TestShowFlatNow())
+                .AddButton("reallife_bld_test_show_visit", () => ConstructionDirector.TestShowVisitNow())
+                .AddButton("reallife_bld_test_viewing", () => ConstructionDirector.TestViewingNow())
+                .AddButton("reallife_bld_test_show_buyer", () => ConstructionDirector.TestShowBuyerNow())
+                .AddButton("reallife_bld_test_refit", () => ConstructionDirector.TestRefitNow())
+                .AddButton("reallife_bld_test_refit_start", () => ConstructionDirector.TestRefitStartNow())
+                .AddButton("reallife_bld_test_refit_tender", () => ConstructionDirector.TestRefitTenderNow())
                 .AddButton("reallife_bld_test_back", () => ConstructionDirector.Instance?.TestBack())
                 .AddSplitter();
         }

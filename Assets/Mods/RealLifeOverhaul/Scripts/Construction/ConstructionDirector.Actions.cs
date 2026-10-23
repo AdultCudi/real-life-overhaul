@@ -493,7 +493,7 @@ namespace RealLifeOverhaul.Construction
         {
             put = MoneyRules.InvestorPut(investor, Math.Max(0L, p.Estimate));
             owed = MoneyRules.InvestorOwed(investor, put);
-            return p.Kind != ProjectKind.Contract && p.Investor < 0 && put > 0 && (p.Stage == ProjectStage.Ready || p.Stage == ProjectStage.Building);
+            return p.Kind != ProjectKind.Contract && p.Kind != ProjectKind.Refit && p.Investor < 0 && put > 0 && (p.Stage == ProjectStage.Ready || p.Stage == ProjectStage.Building);
         }
 
         public string TakeInvestor(ProjectFile p, int investor)
@@ -518,27 +518,16 @@ namespace RealLifeOverhaul.Construction
                 return "reallife_bld_answer_no_off_plan";
             }
             p.Flats = FlatsOf(p);
-            int left = p.Flats - p.FlatsOffPlan - p.FlatsSold;
-            int n = Math.Min(Math.Max(0, count), left);
-            if (n <= 0)
+            if (p.Flats - p.FlatsSold <= 0 || count <= 0)
             {
                 return "reallife_bld_answer_no_flats";
             }
-            long value = ValueOf(p, out _);
-            int price = LandRules.OffPlanPrice(value, p.Flats, p.Quality);
+            int price = OffPlanPrice(p);
             if (price <= 0)
             {
                 return "reallife_bld_answer_no_price";
             }
-            int deposit = LandRules.Deposit(price);
-            p.FlatsOffPlan += n;
-            p.FlatsSold += n;
-            p.After = AfterUse.SellFlats;
-            p.Deposits += (long)deposit * n;
-            p.OffPlanBalance += (long)(price - deposit) * n;
-            ConstructionGame.Give((long)deposit * n, "reallife_transaction_bld_sales", ProjectName(p));
-            _state.Firm.Earned += (long)deposit * n;
-            Logger?.Info("Construction: project " + p.Id + " sold " + n + " flat(s) off plan at " + price + " each, " + deposit + " down.");
+            OffPlanSale(p, price, count);
             Changed();
             return "reallife_bld_answer_off_plan";
         }

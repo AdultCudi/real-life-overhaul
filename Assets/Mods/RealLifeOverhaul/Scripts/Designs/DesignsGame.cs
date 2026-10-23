@@ -4,6 +4,7 @@ using System.IO;
 using System.Text;
 using Blueprints;
 using Buildings;
+using BusinessLayoutSets;
 using Entities;
 using Helpers;
 using Newtonsoft.Json;
@@ -168,6 +169,79 @@ namespace RealLifeOverhaul.Designs
         public static void Notice(NotificationType kind, string key, Dictionary<string, string> data)
         {
             Notifications.Show(kind, key, data, 8f);
+        }
+
+        // ------------------------------------------------------------------ the show flats' designs
+
+        /// <summary>
+        /// Every show flat design the game's residential designs give (ShowFlatDesigns): each apartment structure the game lists,
+        /// each of the firm's designs for it read by the firm's own helper, staged and cut plain, with its pieces at the game's
+        /// market prices, the firm's fee and the game's interior score of its walls and floors. Main thread, on a press.
+        /// </summary>
+        public static void ShowDesigns(List<ShowDesign> into)
+        {
+            into.Clear();
+            List<BuildingSizeInfo> structures = BuildingSizeHelper.GetBuildingVersionsByBuildingType(ShowFlatDesigns.Building);
+            for (int s = 0; structures != null && s < structures.Count; s++)
+            {
+                BuildingSizeInfo info = structures[s];
+                if (info == null || !ShowFlatDesigns.Flat(info.buildingSize))
+                {
+                    continue;
+                }
+                BuildingSizeData data = BuildingSizeHelper.GetData(info.buildingSize);
+                int sqm = data != null ? Mathf.RoundToInt(data.squareMeters) : 0;
+                string[] names = InteriorInstallationFirmHelper.GetInteriorDesignsNamesForBuilding(ShowFlatDesigns.Building, info);
+                for (int n = 0; names != null && n < names.Length; n++)
+                {
+                    BusinessLayoutSet set = InteriorInstallationFirmHelper.GetInteriorDesignLayout(names[n], ShowFlatDesigns.Building, info);
+                    if (set == null || set.Items == null || set.Items.Count == 0)
+                    {
+                        continue;
+                    }
+                    for (int f = 0; f < 2; f++)
+                    {
+                        ShowDesign d = Cut(set, info, sqm, names[n], (ShowFinish)f);
+                        if (ShowFlatDesigns.Offered(d.Finish, d.Names.Count, set.Items.Count))
+                        {
+                            into.Add(d);
+                        }
+                    }
+                }
+            }
+        }
+
+        private static ShowDesign Cut(BusinessLayoutSet set, BuildingSizeInfo info, int sqm, string name, ShowFinish finish)
+        {
+            var d = new ShowDesign
+            {
+                Folder = info.ToString(), Size = info.buildingSize, Version = info.buildingVersion, Sqm = sqm, Design = name, Finish = finish,
+                Fee = (long)Mathf.Round(InteriorInstallationFirmHelper.GetInstallationFee(info.buildingSize))
+            };
+            d.Id = ShowFlatDesigns.Id(d.Folder, name, finish);
+            double furniture = 0.0;
+            for (int i = 0; i < set.Items.Count; i++)
+            {
+                BusinessLayoutSets.Item item = set.Items[i];
+                if (item == null || !ShowFlatDesigns.Keeps(finish, item.itemName))
+                {
+                    continue;
+                }
+                d.Names.Add(item.itemName);
+                d.Kept.Add(item.id ?? string.Empty);
+                furniture += ItemHelper.GetDefaultMarketPrice(item.itemName);
+            }
+            d.Furniture = (long)Math.Round(furniture);
+            try
+            {
+                d.Interior = set.interiorDesigns != null && set.interiorDesigns.Count > 0
+                    ? Mathf.Clamp(InteriorDesign.InteriorScoreCalculator.GetInteriorScorePercentage(set.interiorDesigns), 0, 100) : 0;
+            }
+            catch (Exception)
+            {
+                d.Interior = 0;   // a material the game no longer knows scores nothing, as the game's own calculator gives
+            }
+            return d;
         }
     }
 }

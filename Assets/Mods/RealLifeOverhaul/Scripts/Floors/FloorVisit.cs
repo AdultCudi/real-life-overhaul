@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Floors
@@ -15,16 +16,34 @@ namespace RealLifeOverhaul.Floors
         }
     }
 
-    /// <summary>The game's own furniture for a floor: a layout of a business type for the floor's structure, by its name (BusinessLayoutSets).</summary>
+    /// <summary>
+    /// The game's own furniture for a floor: a layout of a business type for the floor's structure, by its name (BusinessLayoutSets),
+    /// or one of the installation firms' designs for a building type (<see cref="Design"/>), with only the pieces it keeps.
+    /// </summary>
     public sealed class FloorLayout
     {
         public readonly string BusinessType;   // "ba:businesstype_school"
         public readonly string Name;           // "GarmentDistrictSchool"
+        public readonly string DesignBuilding; // an installation firm's design of this building type ("ba:buildingtype_residential"); null for a business layout
+        public readonly Func<string, bool> Keeps;   // the pieces laid, by their id in the layout; null for every piece
 
         public FloorLayout(string businessType, string name)
         {
             BusinessType = businessType;
             Name = name;
+        }
+
+        private FloorLayout(string building, string name, Func<string, bool> keeps)
+        {
+            Name = name;
+            DesignBuilding = building;
+            Keeps = keeps;
+        }
+
+        /// <summary>One of the installation firms' designs (InteriorDesigns/&lt;building&gt;/&lt;structure&gt;) as the game reads it, cut to the pieces kept.</summary>
+        public static FloorLayout Design(string building, string name, Func<string, bool> keeps)
+        {
+            return new FloorLayout(building, name, keeps);
         }
     }
 
