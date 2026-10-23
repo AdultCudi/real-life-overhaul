@@ -1,31 +1,9 @@
-0.49.0
+0.50.0
 
 New
-- More people to meet: the gym, your job, the coffee cart, your street, your shop, Flare and evenings out keep bringing new faces, one a day at most, up to 400 people in your life. With that many, only those closest to you, family, your partner and anyone you met lately get in touch on their own. Call the others whenever you like. Interviews at a place: at an employer's you walk in at the door, the screen goes black while the interview lasts and you come back out at the same door. A video interview from home sits you down at your computer, if your home has one. Managers have a directory of their own on the Company app's Managers tab: regional managers by district, with the places they look over and who they stand in for, the managers of businesses, of factories and offices and of warehouses in lists of their own, the places with no manager, and a Needs you list of what to look at. Each list sorts by any column and filters by district, a manager's panel shows their pay and leads to their regional manager, and the first page counts every group, what it costs a month and who is off sick. Meals and music: when you eat and a free seat is near, you sit down with your food in front of you, as customers do in a fast food place. A dish cooked at home is carried to the table and eaten there, and a speaker playing music at home offers Dance in its panel. Dancing to the music lifts your mood and costs no energy.
+- Big Copilot can read a report of selected RLO settings, businesses, ordinary hourly pay and credit account balances from a save or a live connection. Forecasts and changes made through Big Copilot do not yet account for RLO rules or manager decisions.
 
 Fixed
-- The Planner's badge counts your own all-day notes on their day.
-- A hold-up in your own shop empties the shop's till, a quarter of what it takes in a day, and shows in its books as theft, instead of taking a share of all your money.
-- In a Going Public session, being let out of a holding cell no longer names hours held that never passed.
-- The reward for a citizen's arrest and a passer-by's tip rise with the city's prices.
-- The late fee for a hired bicycle not brought back is always charged, as its notice says, even when it takes you below zero.
-- A spare rolled hose lies by the fire engine at a fire.
-- As a guest in a Going Public session, the weather no longer changes the speed of the host's traffic.
-- A car no longer passes through a medic, a mechanic or anyone else of the mod's kneeling in the street.
-- A smear campaign against your business can come whenever there is room for the customers it costs.
-- Refreshing the finishes says why when it cannot be done, and the interiors' wear test ages them as play does, by the wear setting and the cleaning service.
-- In a Going Public session, driving another player's car no longer gives it this mod's engine figures.
-- A payment refused at the doctor's, on the phone or at the clinic, ends the conversation with a word instead of leaving the offer on screen.
-- Staff thank you for a raise even when they first saw it on a day they texted you about something else.
-- Asked what's good around here, a stranger never names the same business twice.
-- RLO Texts keeps going when a street conversation's next answer is asked ahead just as a reply comes back.
-- A decision a regional manager makes standing in for a manager off sick is counted as theirs, so each manager's month says what they decided, and undoing it counts against whoever made it.
-- A regional manager off sick no longer looks over the district's decisions, and a manager's panel no longer says they stand in on such a day. The panel's chance of a mistake is the one that day's decisions are made with.
-- The list of who could be a regional manager says who already is one of another district, and appointing them says that district is left with none.
-- A kind of decision a place no longer has, as when a business becomes a factory, opens the manager's panel instead of a switch that does nothing.
-- With more places than the company follows, the Managers tab says how many are not listed instead of leaving them out without a word.
-- A fault in one of the mod's features no longer stops the features it works with, so the morning paper keeps the other features' pieces.
-- Switching a feature's option on or off always brings the names of its special buildings up to date.
-- If an app cannot be given more tabs, its tab bar is left as the game's own, with no stray tabs.
-- No stutter when the mod's apps are put on the phone after a load, as the game's pictures they use are found behind the loading screen.
-- The marker on a timing bar stays in the right place after the screen size or the interface scale changes.
+- The city's traffic no longer empties for good a few minutes into a session. When the game's traffic stops adding cars, it is now put right within a few seconds, and the cars already on the road drive on.
+- The Shelf stocker job now shows where the box goes as soon as you carry it in. A job's panel over a place that is off the screen, such as the shelf to stock or a spill to mop, waits at the edge of the screen on that side, so you can see which way to go.
+- A classroom door at the university and a desk at the school offer the class or exam whenever the Campus app could begin it, and otherwise say why and when the next class is, every value filled in.
