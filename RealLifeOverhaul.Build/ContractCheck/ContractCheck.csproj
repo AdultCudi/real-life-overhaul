@@ -52,6 +52,9 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\BoxClock.cs" Link="Mod\BoxClock.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\KeyRules.cs" Link="Mod\KeyRules.cs" />
     <Compile Include="..\Shared\ModLanguages.cs" Link="Shared\ModLanguages.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\CityDistricts.cs" Link="Mod\CityDistricts.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\CityRules.cs" Link="Mod\CityRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meta\FeatureCities.cs" Link="Mod\FeatureCities.cs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -417,7 +417,7 @@ namespace RealLifeOverhaul
                 var options = new List<string>(listed.Count + 8);
                 var words = new List<string>(listed.Count + 8);
                 listed.Clear();
-                CityBuildingController[] all = city.cityBuildingControllers;
+                CityBuildingController[] all = GameDlc.Open(city);
                 for (int i = 0; i < all.Length; i++)
                 {
                     CityBuildingController building = all[i];

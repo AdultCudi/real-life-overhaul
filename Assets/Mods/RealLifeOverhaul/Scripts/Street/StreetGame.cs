@@ -361,7 +361,7 @@ namespace RealLifeOverhaul.Street
             venue = default;
             metres = 0f;
             CityManager city = InstanceBehavior<CityManager>.Instance;
-            CityBuildingController[] all = city != null ? city.cityBuildingControllers : null;
+            CityBuildingController[] all = GameDlc.Open(city);
             CityBuildingController best = null;
             float bestSqr = StreetRules.FindMetres * StreetRules.FindMetres;
             for (int i = 0; all != null && i < all.Length; i++)
@@ -395,7 +395,7 @@ namespace RealLifeOverhaul.Street
         public static int Around(Vector3 from, string[] into)
         {
             CityManager city = InstanceBehavior<CityManager>.Instance;
-            CityBuildingController[] all = city != null ? city.cityBuildingControllers : null;
+            CityBuildingController[] all = GameDlc.Open(city);
             float first = float.MaxValue, second = float.MaxValue;
             into[0] = into[1] = null;
             for (int i = 0; all != null && i < all.Length; i++)
@@ -411,14 +411,14 @@ namespace RealLifeOverhaul.Street
             return into[1] != null ? 2 : into[0] != null ? 1 : 0;
         }
 
-        // A business that trades: established, not an empty unit, not behind a fence, of a part of the game the player has.
+        // A business that trades: established, not an empty unit, not behind a fence, nothing a DLC keeps.
         private static bool Business(CityBuildingController b, out BuildingRegistration reg)
         {
             reg = b != null ? b.buildingRegistration : null;
             try
             {
                 return reg != null && b.building != null && reg.HasEstablishedBusiness && !string.IsNullOrEmpty(reg.businessTypeName)
-                       && reg.businessTypeName != "ba:businesstype_empty" && !GameMembers.Fenced(b.building) && b.building.requiredDLC.DlcIsOwned();
+                       && reg.businessTypeName != "ba:businesstype_empty" && !GameMembers.Fenced(b.building) && !GameDlc.Gated(b);
             }
             catch (Exception)
             {

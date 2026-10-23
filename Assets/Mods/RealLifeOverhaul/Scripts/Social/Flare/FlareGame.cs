@@ -278,7 +278,6 @@ namespace RealLifeOverhaul.Flare
         }
 
         private static readonly List<EmployeeInstance> Staffed = new List<EmployeeInstance>(16);
-        private const string GlobalDistrict = "ba:neighborhood_global";
 
         /// <summary>The city's districts by the game's own names (not its "everywhere"), into the list given.</summary>
         public static void Districts(List<string> into)
@@ -286,14 +285,7 @@ namespace RealLifeOverhaul.Flare
             into.Clear();
             try
             {
-                var all = NeighborhoodHelper.Neighborhoods;
-                for (int i = 0; all != null && i < all.Count; i++)
-                {
-                    if (!string.IsNullOrEmpty(all[i]) && all[i] != GlobalDistrict)
-                    {
-                        into.Add(all[i]);
-                    }
-                }
+                CityCheck.NewYorkDistricts(NeighborhoodHelper.Neighborhoods, into);   // Flare's people are New York's, wherever the player is
             }
             catch (Exception)
             {

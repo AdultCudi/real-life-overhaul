@@ -177,7 +177,7 @@ namespace RealLifeOverhaul
                 {
                     CivicWorks works = Settings.Civic && CivicDirector.Instance != null ? CivicDirector.Instance.Works : null;
                     CityManager city = InstanceBehavior<CityManager>.Instance;
-                    CityBuildingController[] all = city != null ? city.cityBuildingControllers : null;
+                    CityBuildingController[] all = GameDlc.Open(city);
                     if (works == null || works.Shared || all == null || all.Length == 0 || SaveGameManager.Current == null)
                     {
                         return false;

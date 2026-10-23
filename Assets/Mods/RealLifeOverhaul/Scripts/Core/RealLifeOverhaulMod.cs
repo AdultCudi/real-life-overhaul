@@ -1290,6 +1290,7 @@ namespace RealLifeOverhaul
             Guard.Step("Careers.CareersDirector", () => Careers.CareersDirector.Logger = context.Logger);
 
             _root = new GameObject(RootName);
+            Guard.Step("the city check", () => CityCheck.Begin(_root, context.Logger));   // before any feature: New York's features stand down in another city
             Guard.Step("the start line", () => StartLine.Logger = context.Logger);
             Guard.Step("the start line", () => StartLine.Begin());   // before any director's timer starts
             Guard.Step("the guard's notices", () => Guard.Add<GuardNotices>(_root));   // once the HUD is there
@@ -1550,6 +1551,7 @@ namespace RealLifeOverhaul
             }
             Guard.Step("the map places", () => MapPlaces.Shutdown());
             Guard.Step("the modelled props", () => PropLibrary.Dispose());
+            Guard.Step("the city check", CityCheck.End);   // every feature back for the menu and the next city
             return Task.CompletedTask;
         }
     }

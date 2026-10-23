@@ -435,7 +435,7 @@ namespace RealLifeOverhaul
                 return false;
             }
             _points = data.allWaypoints;
-            _buildings = city.cityBuildingControllers;
+            _buildings = GameDlc.Open(city);
             _staticMask = LayerMask.GetMask("StreetProps", "Buildings", "BuildingsOutlined", "BuildingWalls");
             _doorMask = LayerMask.GetMask("InteractiveItems", "InteractiveItemsOutlined");
             _parkingMask = LayerMask.GetMask("ParkingArea");
