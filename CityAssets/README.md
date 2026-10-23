@@ -422,6 +422,18 @@ Dropped: `cycle_pedal` (now `cycle_ride`). The road bicycle has a drop bar and c
 | `podium_speak` | 8.0 | loop |  | upper body |  |  | not asked for by code. Leaning a little on a lectern 1.10 m up whose middle is 0.40 m ahead: the hands flat on its top 0.19 m either side with the fingers over the far edge, the elbows hanging below the shoulders; the right hand comes up as an open palm at 1.4 s, the left as an open hand on edge at 5.2 s; the head goes round the audience | adequate on the Blender sheet after the review (elbows down, flat hands, open-palm points); it still needs a lectern nobody has made, and without one the resting hands lie on air. Not seen again in Unity |
 <!-- end: site -->
 
+### Building sites (`scripts\clips_build.py`)
+
+Both are asked for by code (`Scripts\Civic\SiteDresser.Plot.cs`: the frame stage's carpenter and the slab stage's concrete
+gang), which plays `kneel_work` and `shovel_dig` in their place while the anim bundle does not have them (`ClipLibrary.Has`).
+**Not in the anim bundle yet:** the bundle could not be built when they were written (no Unity licence on the machine);
+`build.ps1` puts them in with the rest. Reach checked with `check_clips.py` (stretch 0.012 and 0.025 m).
+
+| clip | s | | m/s | made for | tool (grip) | marks (s) | what it is, and where things are | blunt |
+|---|---|---|---|---|---|---|---|---|
+| `hammer_nail` | 1.6 | loop |  |  | `hammer` of the second props bundle (right, 0.10 m up the handle) |  | on one knee, two blows a loop at a nail 0.44 m ahead, 0.08 m right and 0.32 m up (a board at the frame's foot), the left hand holding it; the hammer rises 50 degrees from the wrist and elbow and comes down onto the nail | adequate on the Blender sheet with a plain bar for the hammer, by its author only: the swing is small at street distance. Not seen in Unity |
+| `rake_asphalt` | 2.6 | loop |  |  | `rake` (right 0.95 m, left 1.30 m, as `rake_leaves`) |  | levelling: the rake pushed out flat to 0.82 m ahead and drawn back to 0.50 m, the tines on the ground throughout, the lean from the hips doing the work | adequate on the Blender sheet, by its author only. Not seen in Unity |
+
 Clips that hold the same tool share its `Grip`, so they can be cross-faded into each other with the tool in the hand.
 
 ### Where the character must be put (the numbers a clip assumes)
