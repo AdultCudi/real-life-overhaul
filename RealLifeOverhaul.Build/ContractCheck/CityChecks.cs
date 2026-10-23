@@ -36,7 +36,7 @@ internal static partial class Program
         "Family/FamilyPlaces.cs", "Family/PartnerCar.cs", "Faults/FaultGame.cs", "Garage/BikePlaces.cs", "Garage/GarageShop.cs", "Jobs/JobBoards.cs",
         "Jobs/JobSites.cs", "Jobs/JobSpots.cs", "Justice/Courthouse.cs", "Justice/LegalCounsel.cs", "Law/Precincts.Keep.cs", "Law/Precincts.cs",
         "Ledger/LedgerKiosks.cs", "Leisure/Night/NightLife.cs", "Licences/Driving/DrivingSchool.cs", "Navigation/NavBaseGame.cs", "Navigation/NavGraph.cs",
-        "Offices/ConversionGame.cs", "Offices/Conversions.cs", "Permadeath/PermadeathGame.cs", "Social/Flare/FlareLiveGame.cs", "Social/SocialPlaces.cs",
+        "NewBuildings/CopyGame.cs", "Offices/ConversionGame.cs", "Offices/Conversions.cs", "Permadeath/PermadeathGame.cs", "Social/Flare/FlareLiveGame.cs", "Social/SocialPlaces.cs",
         "Street/StreetGame.cs", "Tech/Sites/Headquarters.cs", "Transport/CarOwnership.Garage.cs", "Transport/TransitMap.cs", "Travel/Hotels.cs",
         "Utilities/UtilitiesOffice.cs", "Wiring/FlareLiveLinks.cs", "World/MapLinks.cs",
         "Floors/FloorsGame.cs",   // the building the floors take for places (FloorsGame.PickClaim)

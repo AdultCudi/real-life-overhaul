@@ -96,7 +96,8 @@ ENGLISH_OK = {
     'reallife_flare_app', 'reallife_flare_hire_percent', 'reallife_changes_003_9_title', 'reallife_changes_004_0_title',
     'reallife_fame_talk_line', 'reallife_fame_percent', 'reallife_changes_004_1_title', 'reallife_changes_004_2_title',
     'reallife_changes_004_3_title', 'reallife_changes_004_4_title', 'reallife_changes_004_5_title', 'reallife_changes_004_6_title',
-    'reallife_changes_004_7_title', 'reallife_career_food_name', 'reallife_util_provider_power', 'reallife_campus_why_closed'
+    'reallife_changes_004_7_title', 'reallife_career_food_name', 'reallife_util_provider_power', 'reallife_campus_why_closed',
+    'reallife_newbuildings_street_provinglane'
 }
 
 TAG = re.compile(r'</?[a-zA-Z][^<>]*>')
