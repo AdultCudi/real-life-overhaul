@@ -36,13 +36,37 @@ namespace RealLifeOverhaul.NewBuildings
             new MadeLot(-2115f, FrontZ - Depth * 0.5f, Facing, Width, Depth),
         };
 
-        /// <summary>The test building as a feature would declare it: a new one each time, so nothing it is given is shared.</summary>
+        public const float HereGap = 4f;   // m from where the developer stood to the front of the lot ahead of them
+
+        /// <summary>The test building on the plot's six lots alone, as when it was asked for from the main menu.</summary>
         public static MadeSpec Spec()
         {
+            return Spec(false, 0f, 0f, 0f);
+        }
+
+        /// <summary>
+        /// The test building as a feature would declare it: a new one each time, so nothing it is given is shared. With
+        /// <paramref name="here"/>, the lot ahead of where the developer stood when they asked comes first and the plot's six
+        /// after it: in a player's game the plot's ground was taken by the game's barricades (23 Oct 2026), and the ground
+        /// check still refuses any lot something stands on.
+        /// </summary>
+        public static MadeSpec Spec(bool here, float x, float z, float yaw)
+        {
+            MadeLot[] lots;
+            if (here)
+            {
+                lots = new MadeLot[Lots.Length + 1];
+                lots[0] = NewBuildingsRules.LotAhead(x, z, yaw, Width, Depth, HereGap);
+                System.Array.Copy(Lots, 0, lots, 1, Lots.Length);
+            }
+            else
+            {
+                lots = (MadeLot[])Lots.Clone();
+            }
             return new MadeSpec
             {
                 Id = Id, Street = Street, Number = Number, Size = Size, Version = Version, Type = Type, District = District,
-                Design = null, Lots = (MadeLot[])Lots.Clone(), Preferred = 0, Traffic = Traffic, Wanted = null
+                Design = null, Lots = lots, Preferred = 0, Traffic = Traffic, Wanted = null
             };
         }
     }

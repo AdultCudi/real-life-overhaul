@@ -332,6 +332,23 @@ internal static partial class Program
         Check(asked.Count == 5 && asked[0] == 4 && asked[1] == 5 && asked[2] == 0 && asked[3] == 1 && asked[4] == 2,
             "new buildings: the lots are tried in one fixed order (4, 5, 0, 1, 2), so every machine with the same ground takes the same one");
 
+        // The test building's lot ahead of the developer (the plot by the airport was found taken by the game's barricades in a
+        // player's game, 23 Oct 2026): 4 m ahead to its front, its middle on the line of sight, its front turned back to them.
+        MadeLot north = NewBuildingsRules.LotAhead(100f, 200f, 0f, 30f, 34f, 4f), east = NewBuildingsRules.LotAhead(100f, 200f, 90f, 30f, 34f, 4f);
+        MadeLot back = NewBuildingsRules.LotAhead(0f, 0f, 270f, 30f, 34f, 4f);
+        Check(Near(north.X, 100f) && Near(north.Z, 221f) && Near(north.Facing, 180f) && Near(east.X, 121f) && Near(east.Z, 200f) && Near(east.Facing, 270f)
+              && Near(back.X, -21f) && Near(back.Z, 0f) && Near(back.Facing, 90f) && Near(north.Width, 30f) && Near(north.Depth, 34f),
+            "new buildings: the test lot ahead of where the developer stands has its front 4 m ahead of them, its middle on their line of sight, its front facing them");
+        Check(NewBuildingsRules.ReadSpot(NewBuildingsRules.SpotText(-2210.25f, -915.5f, 123.75f), out float sx, out float sz, out float syaw)
+              && Near(sx, -2210.25f) && Near(sz, -915.5f) && Near(syaw, 123.75f) && !NewBuildingsRules.ReadSpot(string.Empty, out _, out _, out _)
+              && !NewBuildingsRules.ReadSpot("1;2", out _, out _, out _) && !NewBuildingsRules.ReadSpot("a;b;c", out _, out _, out _),
+            "new buildings: the developer's spot is kept as text and read back exactly, and nothing else reads as a spot");
+        MadeSpec plotOnly = NewBuildingsTestPlot.Spec(), withSpot = NewBuildingsTestPlot.Spec(true, 0f, 0f, 0f);
+        Check(plotOnly.Lots.Length == NewBuildingsTestPlot.Lots.Length && withSpot.Lots.Length == NewBuildingsTestPlot.Lots.Length + 1 && Near(withSpot.Lots[0].Z, 21f)
+              && Near(withSpot.Lots[1].X, NewBuildingsTestPlot.Lots[0].X) && Near(withSpot.Lots[withSpot.Lots.Length - 1].X, NewBuildingsTestPlot.Lots[NewBuildingsTestPlot.Lots.Length - 1].X)
+              && withSpot.Preferred == 0,
+            "new buildings: the lot ahead of the developer is tried first and the plot's six after it; without a spot, the plot alone");
+
         Check(NewBuildingsRules.CostPasses(10.4f, 10f) && !NewBuildingsRules.CostPasses(10.6f, 10f) && !NewBuildingsRules.CostPasses(10.5f, 10f) && NewBuildingsRules.CostPasses(9f, 10f),
             "new buildings: ten copies pass the frame cost test when they add under 0.5 ms");
         bool ahead = true, apart = true;
@@ -536,6 +553,10 @@ internal static partial class Program
             return File.Exists(path) ? File.ReadAllText(path) : string.Empty;
         }
         string director = Read(@"NewBuildings\NewBuildingsDirector.cs"), tests = Read(@"NewBuildings\NewBuildingsDirector.Tests.cs"), made = Read(@"NewBuildings\MadeGame.cs");
+        Check(director.Contains("_specs.Add(NewBuildingsTestPlot.Spec(here, hereX, hereZ, hereYaw));")
+              && tests.Contains("bool here = ask && !MadeGame.Loading && !MadeGame.Indoors && MadeGame.Camera(out _, out look);")
+              && tests.Contains("PlayerPrefs.SetString(TestHerePref, here ? NewBuildingsRules.SpotText(at.x, at.z, look) : string.Empty);"),
+            "new buildings: the make-test button keeps the spot out in the city (none from the main menu or indoors), and the next load tries it first");
         string save = Read(@"NewBuildings\MadeGame.Save.cs"), copy = Read(@"NewBuildings\CopyGame.cs"), ground = Read(@"NewBuildings\CopyGame.Ground.cs"), look = Read(@"NewBuildings\CopyLook.cs");
         string contract = Read(@"Core\GameContract.cs"), settings = Read(@"Core\Settings.cs"), tree = Read(@"Meta\OptionsTree.cs"), mod = Read(@"Core\RealLifeOverhaulMod.cs");
         string owners = Read(@"Core\FeatureOwners.cs"), wiring = Read(@"Wiring\Wiring.cs"), guide = Read(@"NewBuildings\NewBuildingsGuide.cs");
