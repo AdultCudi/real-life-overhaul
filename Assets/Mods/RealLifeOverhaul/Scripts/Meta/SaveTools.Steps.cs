@@ -227,7 +227,7 @@ namespace RealLifeOverhaul.Meta
             var keys = new List<string>();
             foreach (string key in save.modData.Keys)
             {
-                if (Features.OwnsData(key))
+                if (Features.OwnsData(key) && !DistrictSave.DistrictSaveDirector.Keeps(key))   // the district's records: the player's own, back with the mod
                 {
                     keys.Add(key);
                 }

@@ -360,6 +360,8 @@ namespace RealLifeOverhaul.Meta
                 .Row(new ButtonOption("reallife_meta_resetdata_button", SaveTools.AskReset))
                 .Row(new ButtonOption("reallife_meta_repair_button", SaveTools.Repair))
                 .Data(SaveTools.VersionKey, SaveTools.DevelopmentVersionKey, CompanionSnapshot.Key)
+                .Data(DistrictSave.DistrictSaveStore.Key, DistrictSave.DistrictSaveStore.UnreadKey)   // the records of the mod's places (Scripts/DistrictSave)
+                .Test("reallife_test_district_save", DistrictSave.DistrictSaveDirector.Test)
                 .Contact(GuideContact.ContactId)
                 .Repair(() => GuideContact.Setup());
 

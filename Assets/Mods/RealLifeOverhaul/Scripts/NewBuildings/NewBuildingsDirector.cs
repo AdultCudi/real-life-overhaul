@@ -16,7 +16,8 @@ namespace RealLifeOverhaul.NewBuildings
     /// measured, a design of its size is picked, the first free lot it may stand on is found, a working copy of the design
     /// stands there with the game's own controller, and its record and registration go into the game's private lookups,
     /// so the game treats it as one of its own (a door, an interior by its size, the map, the closest-building label).
-    /// Nothing of it is saved: the save guard takes out whatever names a made address while a save is written. A made
+    /// Nothing of it is saved: the district save takes out whatever names a made address while a save is written (the
+    /// buildings are named to it here; the save guard does its own only where the district save is not present). A made
     /// building is never destroyed while the city is loaded; switching the option off, or a Going Public session whose
     /// machines are not all known to run this mod in this version, hides it. Decorative copies for other features
     /// (<see cref="BuildingCopies"/>) change here, one a frame and only out of view, or all behind the loading screen.
@@ -30,6 +31,7 @@ namespace RealLifeOverhaul.NewBuildings
         private const float SlowEvery = 1f;          // s of real time between two looks
         private const float ClosestWait = 30f;       // s after the load the game's closest-building job is waited for, for the made buildings' check
         private const string TestPref = "reallife.newbuildings.test";   // not a locale key: a dot, not an underscore; the developer's ask for the test building
+        private const string PlacesOwner = "new buildings";   // its name among the district save's providers of places
 
         public static IModLogger Logger;
         public static NewBuildingsDirector Instance { get; private set; }
@@ -57,6 +59,7 @@ namespace RealLifeOverhaul.NewBuildings
             _optionWas = Settings.NewBuildings;
             _agreedWas = true;
             _loadedAt = Time.unscaledTime;
+            DistrictSave.DistrictPlaces.Add(PlacesOwner, MadeGame.NamePlaces);   // the district save keeps what names them out of every save
             ScenePrewarm.Add("new buildings: the mod's own buildings made (the city's designs measured, a search of the scene only when any is declared)", MakeAll);
             ScenePrewarm.AddLate("new buildings: the mod's own buildings found in the city's list", Listed);
         }
@@ -87,9 +90,10 @@ namespace RealLifeOverhaul.NewBuildings
             }
         }
 
-        // Preparing a save for removal stops the mod in a city that stays: no save guard from here on, so what names an
-        // address of the mod's own is taken out of the save in memory for good, and every made building stays hidden
-        // where it stands (its controller is never destroyed) until the city goes.
+        // Preparing a save for removal stops the mod in a city that stays: every made building stays hidden where it stands
+        // (its controller is never destroyed) until the city goes, and what names an address of the mod's own is taken out
+        // of the save in memory for good: by the district save, which the save tools ask before their save, or, where the
+        // district save is not present, by the save guard here.
         private void KeepOutOfSaves()
         {
             int hidden = 0;
@@ -103,10 +107,16 @@ namespace RealLifeOverhaul.NewBuildings
                     hidden++;
                 }
             }
-            int taken = MadeGame.Strip(_taken);
-            _taken.Clear();
+            bool district = DistrictSave.DistrictSaveDirector.Present;
+            int taken = 0;
+            if (!district)
+            {
+                taken = MadeGame.Strip(_taken);
+                _taken.Clear();
+            }
             Logger?.Info("Made buildings: the save tools stopped the mod: " + hidden + " made building(s) left hidden where they stand until the city goes, and "
-                         + taken + " thing(s) naming an address of the mod's own taken out of the save for good.");
+                         + (district ? "the district save takes what names their addresses out of the save for good."
+                                     : taken + " thing(s) naming an address of the mod's own taken out of the save for good (no district save in this city)."));
         }
 
         /// <summary>A copy has been asked for: the next frame looks at once.</summary>
@@ -411,9 +421,14 @@ namespace RealLifeOverhaul.NewBuildings
         // ---------------------------------------------------------------- the save guard
 
         // The game writes the save right after its event: whatever names a made address is taken out now and put back a
-        // frame later. A second save in the same frame puts the first's back first.
+        // frame later. A second save in the same frame puts the first's back first. While the district save is present it
+        // alone does this (one owner of every record), and the guard takes nothing.
         private void OnSave()
         {
+            if (DistrictSave.DistrictSaveDirector.Present)
+            {
+                return;
+            }
             if (_taken.Count > 0)
             {
                 PutBackNow("another save came in the same frame");

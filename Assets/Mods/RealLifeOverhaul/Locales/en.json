@@ -21217,5 +21217,12 @@
   "reallife_newbuildings_test_cost_room": "Only {count} of the ten copies found free ground in view. Try the open ground by the airport.",
   "reallife_newbuildings_test_off_done": "The mod's new buildings are hidden, as with the option off, and none was taken away. At the next game hour Player.log says whether their hourly work still ran.",
   "reallife_newbuildings_test_nothing_made": "No building of the mod's own stands in this city.",
-  "reallife_newbuildings_test_busy": "Another test of the new buildings is under way. Wait for it to finish."
+  "reallife_newbuildings_test_busy": "Another test of the new buildings is under way. Wait for it to finish.",
+  "reallife_test_district_save": "District save: keep a test record out of the save",
+  "reallife_test_district_save_pass": "Test: the save written for the district save test named none of the test's places, and the game's lists were put back as they were. It is kept as RealLifeOverhaul district save test, to load without the mod.",
+  "reallife_test_district_save_fail": "Test: the district save test failed (see Player.log).",
+  "reallife_test_district_save_session": "Test not started: in a Going Public session the test's business would reach the other players. Try it in a game of your own.",
+  "reallife_test_district_save_busy": "Test not started: a save is being written. Try again in a few seconds.",
+  "reallife_meta_report_district": "Records of the mod's own district kept in the mod's part of the save: {count}. Without the mod they are simply not there; with the mod they come back.",
+  "reallife_transaction_district_save_test": "District save test"
 }

@@ -21217,5 +21217,12 @@
   "reallife_newbuildings_test_cost_room": "十个复制品中只有 {count} 个在视野中找到了空地。请到机场旁的空地试试。",
   "reallife_newbuildings_test_off_done": "模组的新建筑已隐藏，与关闭选项时一样，没有被移除。下一个游戏小时，Player.log 会说明它们每小时的工作是否仍在运行。",
   "reallife_newbuildings_test_nothing_made": "这座城市中没有模组自己的建筑。",
-  "reallife_newbuildings_test_busy": "另一项新建筑测试正在进行。请等它完成。"
+  "reallife_newbuildings_test_busy": "另一项新建筑测试正在进行。请等它完成。",
+  "reallife_test_district_save": "区域存档：把一条测试记录留在存档之外",
+  "reallife_test_district_save_pass": "测试：为区域存档测试写入的存档没有提到测试的任何地点，游戏的列表也已恢复原样。该存档保存为 RealLifeOverhaul district save test，可在不启用本模组时载入。",
+  "reallife_test_district_save_fail": "测试：区域存档测试失败（参见Player.log）。",
+  "reallife_test_district_save_session": "测试未开始：在 Going Public 会话中，测试用的企业会传给其他玩家。请在你自己的游戏中尝试。",
+  "reallife_test_district_save_busy": "测试未开始：正在写入存档。请过几秒钟再试。",
+  "reallife_meta_report_district": "本模组自身区域的记录保存在存档中本模组的部分：{count}。没有本模组时它们根本不存在；有本模组时它们会回来。",
+  "reallife_transaction_district_save_test": "区域存档测试"
 }

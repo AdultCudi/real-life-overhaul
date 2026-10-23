@@ -379,6 +379,7 @@ internal static partial class Program
         CityReady();    // DLC and update readiness: the city check's table, New York's districts and their order, every table by district with one it does not know (CityReadyChecks.cs)
         FloorsCore();   // the floors of the mod's buildings: floors a building holds, spare floors and a building taken for places, the panel's pages, every way in and out given back, the sources, the words (FloorsChecks.cs)
         NewBuildingsChecks(); // the mod's own buildings: the design picked and where it stands, the lot taken, what refuses one, nothing of them saved, none destroyed in a session, the texts (NewBuildingsChecks.cs)
+        DistrictSaveChecks();   // the district save: whose a place is, what each record does, put back where it stood, the store's line, nothing at all for a game with none (DistrictSaveChecks.cs)
         Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
         return _failed == 0 ? 0 : 1;
     }
