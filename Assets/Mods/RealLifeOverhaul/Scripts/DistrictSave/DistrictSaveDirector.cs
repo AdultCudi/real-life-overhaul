@@ -513,8 +513,9 @@ namespace RealLifeOverhaul.DistrictSave
 
         /// <summary>
         /// The registration the mod's section keeps for an address and has not put back yet (it goes back into the save's
-        /// list at the city step, this same object): for a feature that makes a building of the mod's with a registration of
-        /// its own, which must take the player's instead of a new empty one. Null when none is kept for that address.
+        /// list where it stood at the city step, this same object; one a feature put there itself counts as back): for a
+        /// feature that makes a building of the mod's with a registration of its own, which must take this one instead of a
+        /// new empty one. Null when none is kept for that address.
         /// </summary>
         public static BuildingRegistration KeptRegistration(string street, int number)
         {

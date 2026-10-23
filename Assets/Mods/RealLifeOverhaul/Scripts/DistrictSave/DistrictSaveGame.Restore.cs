@@ -85,6 +85,11 @@ namespace RealLifeOverhaul.DistrictSave
                     r.Faults.Add(record.Code + " " + record.Index + ": " + e.GetType().Name + ": " + e.Message);
                     undo = null;
                 }
+                if (ReferenceEquals(undo, Already))
+                {
+                    r.Back++;
+                    continue;
+                }
                 if (ReferenceEquals(undo, Twice))
                 {
                     r.Dropped++;
@@ -195,7 +200,11 @@ namespace RealLifeOverhaul.DistrictSave
         // go, as two of one would break the game; the save was written without the mod's step, or the game made its own.
         private static readonly Action Twice = () => { };
 
-        // One record into the game: the undo that takes it out again, null when it has nowhere to go, or Twice.
+        // What Put answers for a registration the save's list holds already as this very object: a feature that makes the
+        // building put back the one KeptRegistration gave it. It is back, and nothing is added.
+        private static readonly Action Already = () => { };
+
+        // One record into the game: the undo that takes it out again, null when it has nowhere to go, Twice, or Already.
         private static Action Put(GameInstance save, StoredRecord record, object item, Return r)
         {
             switch (record.Kind)
@@ -206,9 +215,15 @@ namespace RealLifeOverhaul.DistrictSave
                     {
                         return null;
                     }
-                    if (Registration(save, KeyOf(reg.StreetName, reg.StreetNumber)) != null)
+                    BuildingRegistration there = Registration(save, KeyOf(reg.StreetName, reg.StreetNumber));
+                    if (there != null)
                     {
-                        return Twice;
+                        if (!ReferenceEquals(there, reg))
+                        {
+                            return Twice;
+                        }
+                        r.Registrations.Add(reg);
+                        return Already;
                     }
                     r.Registrations.Add(reg);
                     return Insert(save.BuildingRegistrations, record.Index, item);
