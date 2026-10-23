@@ -114,6 +114,7 @@ namespace RealLifeOverhaul
             {
                 Logger?.Error(e);
             }
+            CompanionGame.Save(SaveGameManager.Current);
             if (timed)
             {
                 Logger?.Info("Session: the mod wrote its state into the save in "

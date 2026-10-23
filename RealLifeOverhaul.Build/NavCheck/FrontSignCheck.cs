@@ -116,7 +116,9 @@ internal static partial class Program
         shapes.Add(court.Shape);
         shapes.Add(campus.Shape);
         shapes.Add(FrontSignRules.Style(SpecialKind.Other, "other_role").Shape);
-        string game = @"G:\Steam\steamapps\common\Big Ambitions\Big Ambitions_Data\StreamingAssets\LogoShapes";
+        string managed = Environment.GetEnvironmentVariable("BA_MANAGED");   // the game's Managed folder when it is elsewhere, as ContractCheck reads it
+        string game = Path.GetFullPath(Path.Combine(string.IsNullOrWhiteSpace(managed) ? @"G:\Steam\steamapps\common\Big Ambitions\Big Ambitions_Data\Managed" : managed,
+            "..", "StreamingAssets", "LogoShapes"));
         if (Directory.Exists(game))
         {
             var missing = new List<string>();

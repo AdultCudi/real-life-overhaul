@@ -174,7 +174,7 @@ namespace RealLifeOverhaul.Economy
     /// Everything running a business reads from or does to the game. It writes money only, as transactions, never a
     /// wage, a schedule or a business's figure. Runs at the start, the hour that opens a day, the day and the app's opening.
     /// </summary>
-    internal static class CompanyGame
+    internal static partial class CompanyGame
     {
         public const string RaiseKey = "reallife_transaction_co_raise";
         public const string SickKey = "reallife_transaction_co_sick";

@@ -15,7 +15,8 @@ using RealLifeOverhaul.Economy.Dealership;
 // furniture of a design of the game's, or fewer of it, at the game's market prices; the fee is the game's by floor area).
 internal static partial class Program
 {
-    private const string DesignGameFiles = @"G:\Steam\steamapps\common\Big Ambitions\Big Ambitions_Data\StreamingAssets";
+    // The game's StreamingAssets, beside the Managed folder that BA_MANAGED names when the game is elsewhere (as ContractCheck).
+    private static readonly string DesignGameFiles = System.IO.Path.GetFullPath(System.IO.Path.Combine(GameManagedFolder(), "..", "StreamingAssets"));
     private static readonly string DesignScripts = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts"));
     private static readonly string DesignLocales = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Locales"));
 
@@ -433,7 +434,7 @@ internal static partial class Program
             rooms[key] = box;
             roomVersions[key] = bsize + "|" + bversion;
         }
-        Dictionary<string, string> gameWords = LoadWords(@"G:\Steam\steamapps\common\Big Ambitions\Big Ambitions_Data\StreamingAssets\locale\en.json");
+        Dictionary<string, string> gameWords = LoadWords(System.IO.Path.Combine(DesignGameFiles, "locale", "en.json"));
         var gameKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         if (gameWords != null)
         {

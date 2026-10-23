@@ -359,7 +359,7 @@ namespace RealLifeOverhaul.Meta
                 .Row(new ButtonOption("reallife_meta_remove_button", SaveTools.AskPrepare))
                 .Row(new ButtonOption("reallife_meta_resetdata_button", SaveTools.AskReset))
                 .Row(new ButtonOption("reallife_meta_repair_button", SaveTools.Repair))
-                .Data(SaveTools.VersionKey, SaveTools.DevelopmentVersionKey)
+                .Data(SaveTools.VersionKey, SaveTools.DevelopmentVersionKey, CompanionSnapshot.Key)
                 .Contact(GuideContact.ContactId)
                 .Repair(() => GuideContact.Setup());
 

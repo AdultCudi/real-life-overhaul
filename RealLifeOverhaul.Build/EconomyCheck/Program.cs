@@ -61,6 +61,12 @@ internal static partial class Program
 
     private static int Main(string[] args)
     {
+        if (args.Length >= 1 && args[0] == "--companion")
+        {
+            CompanionChecks(args.Length == 2 ? args[1] : null);
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--stocker")
         {
             StockerFixes();
@@ -154,6 +160,7 @@ internal static partial class Program
         {
             return WriteTextsSpec(args[1]);   // (RLO Texts' contract of data v6 and its fixtures, written from the mod: TextsSpecWriter.cs)
         }
+        CompanionChecks(null);
         Catalogue();
         Start();
         CleanHistory();
