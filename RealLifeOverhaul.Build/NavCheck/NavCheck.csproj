@@ -106,6 +106,10 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Traffic\TrafficWatchRules.cs" Link="Mod\TrafficWatchRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Traffic\TrafficMendRules.cs" Link="Mod\TrafficMendRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareHourSteps.cs" Link="Mod\FlareHourSteps.cs" />
+    <!-- New ground (NewGroundCheck.cs): the road generator, the off-grid rule and the walking rules, game-free. -->
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\NewGround\RoadPlan.cs" Link="Mod\RoadPlan.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\NewGround\RoadRules.cs" Link="Mod\RoadRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\NewGround\GroundRules.cs" Link="Mod\GroundRules.cs" />
   </ItemGroup>
 
 </Project>
