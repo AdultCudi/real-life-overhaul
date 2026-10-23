@@ -11,8 +11,6 @@ namespace RealLifeOverhaul.Markets
     /// </summary>
     public sealed partial class MarketDirector
     {
-        private const string BuildersCheck = "Builders on the market check";
-
         private readonly List<BuilderMove> _builderTests = new List<BuilderMove>(16);
         private readonly List<MarketNews> _builderTestNews = new List<MarketNews>(4);
         private ulong _builderTestsOf;   // the market the moves were made in: another's are not taken back
@@ -47,13 +45,13 @@ namespace RealLifeOverhaul.Markets
         /// <summary>Test: a rival builder wins a public building's tender now; its price rises and every other listed builder's falls.</summary>
         public static void TestBuilderWins()
         {
-            Instance?.BuilderTest("a rival builder wins a tender now", BuilderNewsKind.TenderWon, BuilderMarket.WeightMost);
+            Instance?.BuilderTest("Builders on the market check (a rival builder wins a tender now)", BuilderNewsKind.TenderWon, BuilderMarket.WeightMost);
         }
 
         /// <summary>Test: a rival builder's bribe to an inspector comes out now; its price and its usual margin fall.</summary>
         public static void TestBuilderScandal()
         {
-            Instance?.BuilderTest("a bribery scandal at a rival builder now", BuilderNewsKind.Bribery, 1);
+            Instance?.BuilderTest("Builders on the market check (a bribery scandal at a rival builder now)", BuilderNewsKind.Bribery, 1);
         }
 
         /// <summary>Test: what the builder tests did to the builders' prices taken back, and their news with it.</summary>
@@ -62,10 +60,9 @@ namespace RealLifeOverhaul.Markets
             Instance?.BuildersBack();
         }
 
-        private void BuilderTest(string what, BuilderNewsKind kind, int weight)
+        private void BuilderTest(string test, BuilderNewsKind kind, int weight)
         {
             FinishMoment();
-            string test = BuildersCheck + " (" + what + ")";
             if (!BuildersTestReady(test))
             {
                 return;
@@ -211,7 +208,7 @@ namespace RealLifeOverhaul.Markets
         private void BuildersBack()
         {
             FinishMoment();
-            string test = BuildersCheck + " (put the builders back)";
+            const string test = "Builders on the market check (put the builders back)";
             if (!BuildersTestReady(test))
             {
                 return;

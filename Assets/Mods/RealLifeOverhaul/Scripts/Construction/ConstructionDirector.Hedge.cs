@@ -14,8 +14,6 @@ namespace RealLifeOverhaul.Construction
     /// </summary>
     public sealed partial class ConstructionDirector
     {
-        private const string HedgeCheck = "Hedging check";
-
         private readonly List<MaterialNeed> _needs = new List<MaterialNeed>(24);
         private readonly List<int> _opened = new List<int>(8);
         private Func<int, HedgeLook> _look;
@@ -309,7 +307,7 @@ namespace RealLifeOverhaul.Construction
 
         private void HedgeTest()
         {
-            const string test = HedgeCheck + " (hedge the test project)";
+            const string test = "Hedging check (hedge the test project)";
             if (!HedgeTestReady(test))
             {
                 return;
@@ -349,7 +347,7 @@ namespace RealLifeOverhaul.Construction
 
         private void HedgeTestEnd()
         {
-            const string test = HedgeCheck + " (the test project's end)";
+            const string test = "Hedging check (the test project's end)";
             if (!HedgeTestReady(test))
             {
                 return;
@@ -393,7 +391,7 @@ namespace RealLifeOverhaul.Construction
 
         private void HedgeTestBack()
         {
-            const string test = HedgeCheck + " (put the hedge tests back)";
+            const string test = "Hedging check (put the hedge tests back)";
             if (!TestReady(test, false))
             {
                 return;

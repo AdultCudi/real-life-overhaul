@@ -527,9 +527,16 @@ namespace RealLifeOverhaul.NewBuildings
                 _heldHidden = true;
                 BuildingCopies.RemoveAll("the switch-off test");
                 Apply("the switch-off test");
-                int hidden = 0, kept = 0;
+                // A district's building is left to its district (Apply), so only those the switch hides are counted: with
+                // Uptown's buildings standing, counting every made building failed the test whatever the switch did.
+                int hides = 0, hidden = 0, kept = 0;
                 for (int i = 0; i < _made.Count; i++)
                 {
+                    if (_made[i].Spec.Life)
+                    {
+                        continue;
+                    }
+                    hides++;
                     hidden += _made[i].Shown ? 0 : 1;
                     kept += _made[i].Controller != null ? 1 : 0;
                 }
@@ -537,8 +544,9 @@ namespace RealLifeOverhaul.NewBuildings
                 _probeSeen = null;
                 EventHold.Keep(ref GlobalEvents.onNewHour, _onProbe, ref _probeSeen);
                 bool after = MadeGame.HourAfterMade(_onProbe, out int handlers);
-                Logger?.Info("Made buildings check (switched off): " + hidden + " of " + _made.Count + " hidden, " + kept + " still there (none destroyed), the hourly check placed after their "
-                             + handlers + " hourly handler(s) in the game's list" + (hidden == _made.Count && kept == _made.Count && after ? ": PASS" : ": FAIL"));
+                Logger?.Info("Made buildings check (switched off): " + hidden + " of " + hides + " hidden, " + kept + " still there (none destroyed; " + (_made.Count - hides)
+                             + " of a district's left to their district), the hourly check placed after their " + handlers + " hourly handler(s) in the game's list"
+                             + (hidden == hides && kept == hides && after ? ": PASS" : ": FAIL"));
                 MadeGame.Tell(NewBuildingsText.OffDone, null, null);
             }
             catch (Exception e)

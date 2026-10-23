@@ -22497,5 +22497,21 @@
   "reallife_bld_row_hedge_saved": "套期保值省下",
   "reallife_bld_row_hedge_cost": "套期保值花掉",
   "reallife_bld_confirm_hedge": "为材料套期保值？",
-  "reallife_bld_confirm_hedge_body": "买入为 {name} 的材料套期保值的期货？{amount} 将存入保证金账户并支付佣金。"
+  "reallife_bld_confirm_hedge_body": "买入为 {name} 的材料套期保值的期货？{amount} 将存入保证金账户并支付佣金。",
+  "reallife_testrun_button": "城市扩展：运行全部检查",
+  "reallife_testrun_needs_tools": "完整测试需要在“故障排除”的“诊断”中打开“开发者诊断”和“显示测试工具”。",
+  "reallife_testrun_session": "完整测试不会在Going Public会话中运行：它会带你穿行城市并改变城市。",
+  "reallife_testrun_other_city": "完整测试只在纽约运行：城市扩展建立在纽约的地图上。",
+  "reallife_testrun_no_save": "完整测试没有开始：游戏此时不肯写入用于撤销测试的存档。原因见Player.log。",
+  "reallife_testrun_started": "城市扩展的完整测试已开始。存档{save}可撤销它所做的一切。关闭选项，让它自己运行；再按一次按钮即可停止。",
+  "reallife_testrun_load": "现在请保存并加载；测试会自行继续。",
+  "reallife_testrun_carried_on": "加载后，完整测试继续进行。",
+  "reallife_testrun_done": "城市扩展完整测试：{ran}项中{passed}项PASS；未通过：{failed}。每一行结果，以及需要亲眼查看的内容，都在Player.log中。",
+  "reallife_testrun_done_all": "城市扩展完整测试：{ran}项中{passed}项PASS，无一未通过。每一行结果，以及需要亲眼查看的内容，都在Player.log中。",
+  "reallife_testrun_stopped": "完整测试已停止，并已尽量恢复原状。存档{save}可撤销其余部分。",
+  "reallife_testrun_look_uptown": "请亲眼查看：在统计车辆时用按键向北走进上城。看看那里的街道、信号灯和人行横道，以及与曼哈顿的衔接处。",
+  "reallife_testrun_look_wrap": "请亲眼查看：游戏自带的脚手架正围着这栋建筑一直搭到楼顶。",
+  "reallife_testrun_look_plot": "请亲眼查看：你前方正在转动的塔吊，以及这片草地另一块地上的主体结构楼层。",
+  "reallife_testrun_look_walk": "请亲眼查看：用按键走上你身旁新的可行走地面，跨过衔接处。测试会等待一分钟。",
+  "reallife_testrun_look_building": "请亲眼查看：位于1 Proving Lane的测试建筑。用按键从它的门走进走出。随后会显示总结。"
 }

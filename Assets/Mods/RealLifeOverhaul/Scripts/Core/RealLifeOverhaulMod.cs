@@ -64,6 +64,7 @@ namespace RealLifeOverhaul
             // The installation firms' designs for the mod's business types, put in place or taken away on a worker.
             Guard.Step("the ready-made designs", () => Designs.DesignsDirector.Ask(Settings.Designs));
             Guard.Step("Uptown's places for the district save", () => Uptown.LifeDirector.Register(context.Logger));   // before any save is read: its early step runs then
+            Guard.Step("the city expansion's test run, if one waits for its load", () => TestRun.RunDirector.Begin(context.Logger));   // before any save is read: it hears the load's own lines
 
             var options = new ModOptions()
                 .AddHeader("reallife_camera_header")
@@ -876,13 +877,6 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_mkt_drv_test_open", () => Markets.MarketDirector.Instance?.TestFutures())
                 .AddButton("reallife_mkt_drv_test_settle", () => Markets.MarketDirector.Instance?.TestSettle())
                 .AddButton("reallife_mkt_drv_test_call", () => Markets.MarketDirector.Instance?.TestCall())
-                .AddButton("reallife_mkt_builders_test_win", () => Markets.MarketDirector.TestBuilderWins())
-                .AddButton("reallife_mkt_builders_test_scandal", () => Markets.MarketDirector.TestBuilderScandal())
-                .AddButton("reallife_mkt_builders_test_back", () => Markets.MarketDirector.TestBuildersBack())
-                .AddButton("reallife_mkt_hedge_test_hedge", () => Construction.ConstructionDirector.TestHedge())
-                .AddButton("reallife_mkt_hedge_test_end", () => Construction.ConstructionDirector.TestHedgeEnd())
-                .AddButton("reallife_mkt_hedge_test_back", () => Construction.ConstructionDirector.TestHedgeBack())
-                .AddButton("reallife_mkt_builders_test_listing", () => Markets.MarketDirector.TestListingBuilder())
                 .AddButton("reallife_mkt_inv_test_work", () => Markets.MarketDirector.Instance?.TestWorkedDay())
                 .AddButton("reallife_mkt_inv_test_back", () => Markets.MarketDirector.Instance?.TestPutBack())
                 .AddButton("reallife_mkt_inv_test_roll", () => Markets.MarketDirector.Instance?.TestRollover())

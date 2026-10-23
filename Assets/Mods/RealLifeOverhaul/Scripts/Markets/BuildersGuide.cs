@@ -1,5 +1,6 @@
 using System.Globalization;
 using RealLifeOverhaul.Meta;
+using RealLifeOverhaul.TestRun;
 
 namespace RealLifeOverhaul.Markets
 {
@@ -17,8 +18,13 @@ namespace RealLifeOverhaul.Markets
                 .Group("reallife_mkt_header")
                 .About("reallife_guide_markets_builders_about").Help("reallife_guide_markets_builders")
                 .Owns(Settings.MarketsBuildersId)
-                .Test("reallife_mkt_builders_test_win", "reallife_mkt_builders_test_scandal", "reallife_mkt_builders_test_back", "reallife_mkt_hedge_test_hedge",
-                    "reallife_mkt_hedge_test_end", "reallife_mkt_hedge_test_back", "reallife_mkt_builders_test_listing")
+                .Check("reallife_mkt_builders_test_win", MarketDirector.TestBuilderWins, "Builders on the market check (a rival builder wins a tender now)", RunPlace.Here)
+                .Check("reallife_mkt_builders_test_scandal", MarketDirector.TestBuilderScandal, "Builders on the market check (a bribery scandal at a rival builder now)", RunPlace.Here)
+                .Check("reallife_mkt_builders_test_listing", MarketDirector.TestListingBuilder, "Listing check (a company holding a construction business)", RunPlace.Here)
+                .Check("reallife_mkt_hedge_test_hedge", Construction.ConstructionDirector.TestHedge, "Hedging check (hedge the test project)", RunPlace.Here)
+                .Check("reallife_mkt_hedge_test_end", Construction.ConstructionDirector.TestHedgeEnd, "Hedging check (the test project's end)", RunPlace.Here)
+                .Check("reallife_mkt_builders_test_back", MarketDirector.TestBuildersBack, "Builders on the market check (put the builders back)", RunPlace.Here)
+                .Check("reallife_mkt_hedge_test_back", Construction.ConstructionDirector.TestHedgeBack, "Hedging check (put the hedge tests back)", RunPlace.Here)
                 .Fact("bm_listed", () => Whole(Listed()))
                 .Fact("bm_win", () => Bp(BuilderMarket.WinBp))
                 .Fact("bm_late", () => Bp(-BuilderMarket.SiteLateBp))

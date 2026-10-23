@@ -527,6 +527,9 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\ExposureRules.cs" Link="Mod\Construction\ExposureRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Civic\WrapRules.cs" Link="Mod\WrapRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Civic\PlotRules.cs" Link="Mod\PlotRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\TestRun\RunRules.cs" Link="Mod\TestRun\RunRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\TestRun\RunPlan.cs" Link="Mod\TestRun\RunPlan.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\TestRun\RunText.cs" Link="Mod\TestRun\RunText.cs" />
   </ItemGroup>
 
 </Project>

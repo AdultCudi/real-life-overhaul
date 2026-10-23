@@ -536,21 +536,22 @@ internal static partial class Program
               && ModSource(@"Meta\FeatureCities.cs").Contains("new Line(\"markets_builders\", CityScope.AnyCity,") && ModSource(@"Meta\FeatureList.Economy.cs").Contains("Markets.BuildersGuide.Register();")
               && mod.Contains(".AddToggle(Settings.MarketsBuildersId, \"reallife_mkt_builders_opt\", Settings.MarketsBuilders,"),
             "builders sources: the option is on by default, read, in its section, in the city table, in the feature list and on the page");
-        foreach (Match b in Regex.Matches(mod, "\\.AddButton\\(\"(reallife_mkt_(?:builders|hedge)_test_[a-z]+)\", \\(\\) => ([A-Za-z.]+)\\(\\)\\)"))
+        foreach (Match b in Regex.Matches(guide, @"\.Check\(""(reallife_mkt_(?:builders|hedge)_test_[a-z]+)"", ([A-Za-z.]+), ""([^""]+)"", RunPlace\.Here\)"))
         {
             string method = b.Groups[2].Value.Substring(b.Groups[2].Value.LastIndexOf('.') + 1);
-            string source = director + build;
-            string body = MethodText(source, "public static void " + method + "()");
-            Check(guide.Contains("\"" + b.Groups[1].Value + "\"") && body.Length > 0, "builders sources: the test " + b.Groups[1].Value + " is in the feature list and a public static method (" + method + ")");
+            string body = MethodText(director + build, "public static void " + method + "()");
+            Check(body.Length > 0 && !mod.Contains("\"" + b.Groups[1].Value + "\"") && (director + build).Contains(b.Groups[3].Value.Substring(b.Groups[3].Value.IndexOf(" (", StringComparison.Ordinal))),
+                "builders sources: the test " + b.Groups[1].Value + " is in the test run, its button, a public static method (" + method + ") writing its line");
         }
-        Check(Regex.Matches(mod, "\\.AddButton\\(\"reallife_mkt_(?:builders|hedge)_test_").Count == 7, "builders sources: the seven test entries are on the options page");
-        foreach (string check in new[] { "BuildersCheck + \" (\" + what", "\" (put the builders back)\"", "\"Listing check (a company holding a construction business)\"" })
+        Check(Regex.Matches(guide, @"\.Check\(""reallife_mkt_(?:builders|hedge)_test_").Count == 7, "builders sources: the seven test entries are in the test run");
+        foreach (string check in new[] { "Builders on the market check (a rival builder wins a tender now)", "Builders on the market check (a bribery scandal at a rival builder now)",
+                     "Builders on the market check (put the builders back)", "Listing check (a company holding a construction business)" })
         {
-            Check(director.Contains(check), "builders sources: a builder test writes its check line (" + check + ")");
+            Check(director.Contains("\"" + check + "\""), "builders sources: a builder test writes its check line (" + check + ")");
         }
-        foreach (string check in new[] { "\" (hedge the test project)\"", "\" (the test project's end)\"", "\" (put the hedge tests back)\"" })
+        foreach (string check in new[] { "Hedging check (hedge the test project)", "Hedging check (the test project's end)", "Hedging check (put the hedge tests back)" })
         {
-            Check(build.Contains("HedgeCheck + " + check), "hedging sources: a hedge test writes its check line (" + check + ")");
+            Check(build.Contains("const string test = \"" + check + "\";"), "hedging sources: a hedge test writes its check line (" + check + ")");
         }
         Check(build.Contains("GoingPublic.InSession") && director.Contains("GoingPublic.InSession") && !Regex.IsMatch(ModSource(@"Markets\MarketShare.cs"), @"BuilderMarket|BuilderNews|EventBuilder|Hedge"),
             "builders sources: the tests stay out of a Going Public session, and nothing new is sent (the builders' news is the tape's own event)");
