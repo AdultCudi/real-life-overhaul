@@ -122,6 +122,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--civic-build")
+        {
+            CivicBuild();   // (the city around the construction company alone, while working on it: CivicBuildChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--builders")
         {
             Builders();   // (the construction game alone, while working on it: BuildersChecks.cs)
@@ -409,6 +415,7 @@ internal static partial class Program
         UptownLifeChecks();   // Uptown as a district of the game: its values, its map quad, its lots, its line, the district save, every table by district (UptownLifeChecks.cs)
         LandmarksChecks();    // Uptown's landmarks: their sites, a span of lots, the timetable, the lift, the season, the stadium, the line, the sources, the texts (LandmarksChecks.cs)
         TestRunChecks();   // the city expansion's test run: its order, its registry and every check in it, the lines it reads, the lots it gives, its carry-over, the summary, the texts (TestRunChecks.cs)
+        CivicBuild();   // the city around the construction company: the building code, the one council's zoning, rigged tenders, unpaid bills, the building of the year, the lines, the sources, the texts (CivicBuildChecks.cs)
         Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
         return _failed == 0 ? 0 : 1;
     }

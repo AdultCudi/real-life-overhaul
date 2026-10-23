@@ -137,20 +137,33 @@ namespace RealLifeOverhaul.Construction
                 LotFile file = s.Lots[l];
                 for (int u = l == lot ? use : 0; u < (int)BuildUse.Count; u++)
                 {
-                    if (LandRules.Zoned(file.Zones, (BuildUse)u) || file.ZoneAsk != 0)
+                    if (LandRules.Zoned(d.ZonesNow(file), (BuildUse)u) || file.ZoneAsk != 0)
                     {
                         continue;
                     }
                     int nextLot = u + 1 < (int)BuildUse.Count ? l : l + 1, nextUse = u + 1 < (int)BuildUse.Count ? u + 1 : 0;
                     string id = file.Id;
                     var asked = (BuildUse)u;
-                    string text = ConstructionText.Fill("reallife_bld_call_zoning", "lot", d.LotWords(id), "zones", ConstructionText.ZonesWords(file.Zones),
+                    string text = ConstructionText.Fill("reallife_bld_call_zoning", "lot", d.LotWords(id), "zones", ConstructionText.ZonesWords(d.ZonesNow(file)),
                         "use", ConstructionText.T(BuildCatalogue.UseKeys[u]), "fee", ConstructionText.Money(ConstructionDirector.ZoneFee),
-                        "day", ConstructionText.Day(LandRules.CouncilDay(ConstructionGame.Day)));
+                        "day", ConstructionText.Day(ConstructionDirector.CouncilDay(ConstructionGame.Day)));
                     return Page(text, "reallife_bld_call_ask_council", () => Answer(d.AskZone(id, asked)), "reallife_bld_call_next", () => Zoning(nextLot, nextUse, back));
                 }
             }
-            return Page(ConstructionText.T("reallife_bld_call_done"), "reallife_bld_call_back", back, null, null);
+            return Code(back);
+        }
+
+        // The building code the elected government has in force, what is to change and when, and the council's next sitting.
+        private static DialogEntry Code(Func<DialogEntry> back)
+        {
+            int code = ConstructionDirector.Code;
+            bool ahead = ConstructionDirector.CodeAhead(out int position, out int day, out int election);
+            string text = Join(ConstructionText.T("reallife_bld_call_code", "code", ConstructionDirector.CodeWords(code)),
+                ahead ? ConstructionText.T("reallife_bld_code_ahead", "day", ConstructionText.Day(day), "code", ConstructionDirector.CodeWords(position)) : null,
+                election > 0 ? ConstructionText.T("reallife_bld_call_election", "day", ConstructionText.Day(election)) : null,
+                ConstructionText.T("reallife_bld_call_sitting", "day", ConstructionText.Day(ConstructionDirector.CouncilDay(ConstructionGame.Day))),
+                ConstructionText.T("reallife_bld_call_done"));
+            return Page(text, "reallife_bld_call_back", back, null, null);
         }
 
         // ------------------------------------------------------------------ a site's notice board

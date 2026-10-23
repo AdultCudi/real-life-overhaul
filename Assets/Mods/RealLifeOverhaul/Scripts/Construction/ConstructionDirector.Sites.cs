@@ -590,11 +590,19 @@ namespace RealLifeOverhaul.Construction
                 return "reallife_bld_answer_supplied";
             }
             cost = (long)Math.Round(cost * MaterialsFactor(p) / 1000.0);
+            bool account = false;
             if (!ConstructionGame.Take(cost, "reallife_transaction_bld_materials", ProjectName(p), true))
             {
-                return "reallife_bld_answer_no_money";
+                if (!OnAccount(p, m0, cost, ConstructionGame.Day))
+                {
+                    return "reallife_bld_answer_no_money";
+                }
+                account = true;   // the merchant delivers on account: the company pays in its days, or is taken to court
             }
-            Spend(p, cost);
+            else
+            {
+                Spend(p, cost);
+            }
             for (int m = 0; m < (int)Material.Count; m++)
             {
                 p.OnOrder[m] = Math.Max(0, p.Need[m] - p.Have[m]);
@@ -604,7 +612,7 @@ namespace RealLifeOverhaul.Construction
             p.OrderDay = SiteRules.DeliveryDay(ConstructionGame.Day, ConstructionGame.Hour, m0);
             Logger?.Info("Construction: project " + p.Id + " ordered " + LoadsLine(p.OnOrder) + " from merchant " + m0 + " for " + cost + ", to come on day " + p.OrderDay + ".");
             Changed();
-            return "reallife_bld_answer_ordered";
+            return account ? "reallife_bld_answer_ordered_account" : "reallife_bld_answer_ordered";
         }
 
         // The speciality's saving on materials, in thousandths.

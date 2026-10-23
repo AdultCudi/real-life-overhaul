@@ -71,6 +71,7 @@ namespace RealLifeOverhaul.Construction
                 bool ours = state.Firm.Speciality == need;
                 box.Check(ConstructionText.T("reallife_bld_tender_suits", "speciality", ConstructionText.T(BuildCatalogue.SpecialityKeys[(int)need])), ours);
             }
+            RingLines(box, state, t);
             if (t.State != TenderState.Open)
             {
                 box.Section("reallife_bld_sec_award");
@@ -103,6 +104,11 @@ namespace RealLifeOverhaul.Construction
                 _bidPermille = t.BidPermille > 0 ? t.BidPermille : 1000;
                 _bidFast = t.Fast;
             }
+            if (_director.Approach(t) != null)
+            {
+                WriteApproach(box, state, t);
+                return;
+            }
             box.Section("reallife_bld_sec_bid");
             int steps = (BuildCatalogue.BidMostPermille - BuildCatalogue.BidLeastPermille) / BuildCatalogue.BidStepPermille + 1;
             int at = Mathf.Clamp((_bidPermille - BuildCatalogue.BidLeastPermille) / BuildCatalogue.BidStepPermille, 0, steps - 1);
@@ -129,6 +135,45 @@ namespace RealLifeOverhaul.Construction
             }
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_bld_back", Back);
             Guide(box);
+        }
+
+        // A ring's approach on an open tender: cover for a cut, turn it down, or report it to the city.
+        private void WriteApproach(InfoBox box, BuildState state, TenderFile t)
+        {
+            RingFile g = _director.Approach(t);
+            box.Section("reallife_bld_sec_ring");
+            box.Line(ConstructionText.Fill("reallife_bld_ring_approach", "rival", RivalName(g.Leader), "share", ConstructionText.Share(RingRules.PlayerCoverPermille),
+                "cut", ConstructionText.Share(RingRules.CutPermille)), CellTone.Yellow);
+            box.Note(ConstructionText.T("reallife_bld_ring_note", "days", ConstructionText.N(RingRules.FoundDays)));
+            Transform buttons = box.ButtonRow();
+            int id = t.Id;
+            InfoBox.Button(buttons, InfoBox.Negative, "reallife_bld_button_ring_join", () => Answer(_director.RingJoin(state.Tender(id))));
+            InfoBox.Button(buttons, InfoBox.Additional, "reallife_bld_button_ring_refuse", () => Answer(_director.RingRefuse(state.Tender(id))));
+            InfoBox.Button(buttons, InfoBox.Positive, "reallife_bld_button_ring_report", () => Answer(_director.RingReport(state.Tender(id))));
+            Guide(box);
+        }
+
+        // What the player knows of a ring on a tender: their answer, and the inquiry's finding.
+        private void RingLines(InfoBox box, BuildState state, TenderFile t)
+        {
+            RingFile g = state.Ring(t.Id);
+            if (g == null || (!g.Asked && g.Found == 0))
+            {
+                return;
+            }
+            if (g.Answer != RingFile.NoAnswer)
+            {
+                box.Line(ConstructionText.T(g.Answer == RingFile.Joined ? "reallife_bld_ring_you_joined" : g.Answer == RingFile.Reported ? "reallife_bld_ring_you_reported"
+                    : "reallife_bld_ring_you_refused", "rival", RivalName(g.Leader)), g.Answer == RingFile.Joined ? CellTone.Red : CellTone.Plain);
+            }
+            if (g.Cut > 0)
+            {
+                box.Line(ConstructionText.T("reallife_bld_ring_cut_paid", "amount", ConstructionText.Money(g.Cut)), CellTone.Yellow);
+            }
+            if (g.Found > 0)
+            {
+                box.Line(ConstructionText.T("reallife_bld_ring_found", "names", _director.RingNames(g), "day", ConstructionText.Day(g.Found)), CellTone.Red);
+            }
         }
     }
 }

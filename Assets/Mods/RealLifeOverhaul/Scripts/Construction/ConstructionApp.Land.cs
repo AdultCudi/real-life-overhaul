@@ -26,7 +26,7 @@ namespace RealLifeOverhaul.Construction
                 row.Kind = owned != null ? ConstructionTables.LandOwned : ConstructionTables.LandForSale;
                 row.Set(0, ConstructionGame.AddressText(lot.Street, lot.Number));
                 row.Set(1, ConstructionText.T("reallife_bld_value_size", "width", lot.Width.ToString(), "depth", lot.Depth.ToString()), lot.Width * lot.Depth);
-                row.Set(2, ConstructionText.ZonesWords(owned != null ? owned.Zones : LandRules.ZonesOf(lot.Class)));
+                row.Set(2, ConstructionText.ZonesWords(owned != null ? _director.ZonesNow(owned) : _director.ClassZones(lot.Class)));
                 long price = owned != null ? owned.Paid : _director.LotPrice(lot);
                 row.Set(3, price > 0 ? ConstructionText.Money(price) : "-", price);
                 row.Set(4, LotState(state, lot, owned), owned != null ? CellTone.Green : CellTone.Plain);
@@ -130,7 +130,7 @@ namespace RealLifeOverhaul.Construction
             box.Subtitle(ConstructionText.T(BuildCatalogue.ClassKeys[BuildCatalogue.Clamp(lot.Class, 0, BuildCatalogue.ClassCount - 1)]));
             box.RowPair("reallife_bld_row_size", ConstructionText.T("reallife_bld_value_size", "width", lot.Width.ToString(), "depth", lot.Depth.ToString()),
                 "reallife_bld_row_traffic", ConstructionText.N(lot.Traffic));
-            int zones = owned != null ? owned.Zones : LandRules.ZonesOf(lot.Class);
+            int zones = owned != null ? _director.ZonesNow(owned) : _director.ClassZones(lot.Class);
             box.Row("reallife_bld_row_zoned", ConstructionText.ZonesWords(zones));
             box.Row("reallife_bld_row_usual", ConstructionText.T("reallife_bld_value_area", "area", ConstructionText.N(LandRules.UsualArea(lot.Width, lot.Depth, lot.Class))));
             if (owned == null)
@@ -140,7 +140,7 @@ namespace RealLifeOverhaul.Construction
                 if (price > 0)
                 {
                     box.Row("reallife_bld_row_land_tax", ConstructionText.T("reallife_bld_value_a_year", "amount",
-                        ConstructionText.Money(LandRules.LandTax(price, ConstructionGame.DaysPerYear, ConstructionGame.DaysPerYear, false))));
+                        ConstructionText.Money(LandRules.LandTax(price, ConstructionGame.DaysPerYear, ConstructionGame.DaysPerYear, false, ConstructionDirector.Code))));
                 }
                 string block = _director.BuyBlock(lot);
                 if (block != null)
@@ -159,7 +159,8 @@ namespace RealLifeOverhaul.Construction
             box.RowPair("reallife_bld_row_bought", ConstructionText.Day(owned.Bought), "reallife_bld_row_paid", ConstructionText.Money(owned.Paid));
             bool empty = LandRules.Empty(owned.EmptySince, ConstructionGame.Day);
             box.Row("reallife_bld_row_land_tax", ConstructionText.T("reallife_bld_value_a_year", "amount",
-                ConstructionText.Money(LandRules.LandTax(owned.Paid, ConstructionGame.DaysPerYear, ConstructionGame.DaysPerYear, empty))), empty ? CellTone.Yellow : CellTone.Plain);
+                ConstructionText.Money(LandRules.LandTax(owned.Paid, ConstructionGame.DaysPerYear, ConstructionGame.DaysPerYear, empty, ConstructionDirector.Code))),
+                empty ? CellTone.Yellow : CellTone.Plain);
             if (empty)
             {
                 box.Line(ConstructionText.T("reallife_bld_land_vacant"), CellTone.Yellow);
