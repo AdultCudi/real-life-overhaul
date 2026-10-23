@@ -601,6 +601,11 @@ namespace RealLifeOverhaul.Construction
             Prefix + "_civic_contractor_5", Prefix + "_civic_contractor_6", Prefix + "_civic_contractor_7", Prefix + "_civic_contractor_8"
         };
 
+        // Each rival's office: a business of the construction company's type in one of Uptown's leased office lots, the rival's
+        // index its lease's (Uptown's BuildingsRules.Leased, eight of them, the same number as the rivals).
+        public const int OfficeDayPerCrew = 1200;                       // dollars a day an office is valued at for each crew its builder runs: what the game's valuation of an AI business averages
+        public const string OfficeAboutKey = Prefix + "_bld_office_about";   // BizMan's description of a rival's office
+
         public const int DevSharePermille = 500;                // of the district's empty lots the city's developers build on; the rest wait for the player
         public const int DevFirstDay = 10;                      // the game day the first development may start
         public const int DevSpacing = 3;                        // days between two developments starting

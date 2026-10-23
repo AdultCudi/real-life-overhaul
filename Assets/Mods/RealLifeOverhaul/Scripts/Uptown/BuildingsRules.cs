@@ -19,6 +19,7 @@ namespace RealLifeOverhaul.Uptown
         public string Id;              // the plan's stable id, the one builders and the store know it by
         public string Street;          // a street of the mod's own (reallife:street_...)
         public int Number;             // its house number on that street, never changed between versions: saves keep records by it
+        public int Block;              // Row * 100 + Column, the plan's: the lots round one block between its streets
         public bool First;             // in the district's first block
         public bool Avenue;            // on one of its avenues (they run west to east, its main roads), not one of its streets
         public float X;                // m: the lot's middle
@@ -46,15 +47,16 @@ namespace RealLifeOverhaul.Uptown
     }
 
     /// <summary>
-    /// The rules of the district's buildings, game-free (EconomyCheck's UptownLifeChecks): which of the first block's lots
-    /// stand from the first day, which of the game's structures a lot's building is made with, its traffic index, and
-    /// what refuses a building finished by the construction game. Every answer comes from the arguments alone, picks by
-    /// FNV-1a hashes of the lot's id: the same on every machine with the same mod, in any order the lots come.
-    /// COST: nothing per frame; a sort of the first block's lots and a pass over each lot at a load.
+    /// The rules of the district's buildings, game-free (EconomyCheck's UptownLifeChecks): which of the band's lots stand
+    /// from the first day and which stay open for the construction game, the office lots leased to other features'
+    /// businesses, which of the game's structures a lot's building is made with, its traffic index, and what refuses a
+    /// building finished by the construction game. Every answer comes from the arguments alone, picks by FNV-1a hashes of
+    /// the lot's id: the same on every machine with the same mod, in any order the lots come.
+    /// COST: nothing per frame; a few sorts of the band's lots and a pass over each lot at a load.
     /// </summary>
     public static class BuildingsRules
     {
-        public const float DayOneShare = 0.25f;     // of the first block's lots built from the first day: the rest wait for the construction game
+        public const float DayOneShare = 0.25f;     // of the first block's lots built before the band was filled: those addresses stay built, as saves hold their records
         public const float AvenuePull = 30f;        // m: an avenue lot counts this much nearer Manhattan when the first buildings are placed
         public const int AvenueTraffic = 38;        // traffic index of a lot on an avenue: Midtown's buildings' median, 38.5
         public const int StreetTraffic = 22;        // on a side street: between Hell's Kitchen's first quarter (14) and its median (27.5)
@@ -68,6 +70,20 @@ namespace RealLifeOverhaul.Uptown
 
         public const string SpecialType = NewBuildingsRules.SpecialType;
         public const string HomeType = NewBuildingsRules.HomeType;
+
+        // Lots something of the game's own stands into, from the ground's scan of the game's scene (navlab/facts/band_clear.py):
+        // a building there would meet it, as the copy engine stands a design on the lot's front line. uptown_1_14_04: the crown
+        // of a tree on 1st Street's east pavement leans some 2 m over the lot's front from 3.5 m up.
+        private static readonly string[] NotClear = { "uptown_1_14_04" };
+
+        /// <summary>
+        /// False for a lot something of the game's stands into: never built from the first day, leased, counted among a
+        /// block's open lots, sold or developed (it is taken for the construction game and the landmarks), so it stays empty.
+        /// </summary>
+        public static bool Clear(string lotId)
+        {
+            return !string.IsNullOrEmpty(lotId) && Array.IndexOf(NotClear, lotId) < 0;
+        }
 
         /// <summary>How many of the first block's lots stand from the first day: a quarter, halves up, at least one when there are any.</summary>
         public static int DayOneCount(int firstBlockLots)
@@ -117,6 +133,216 @@ namespace RealLifeOverhaul.Uptown
             }
             into.Sort((a, b) => string.CompareOrdinal(lots[a].Id, lots[b].Id));
             return into;
+        }
+
+        // ---- the band built from the first day, the rest open for the construction game (the owner, 23 Oct 2026: "Mostly built")
+
+        public const float FirstBlockOpenShare = 0.25f;   // of a first-block block's lots left open: the city's developers build there first, and its land is the nearest Manhattan
+        public const float OpenShare = 0.12f;             // of every other block's lots left open for the construction game and the city's developers
+        public const int OpenLeast = 1;                   // lots left open on every block not kept open: land for sale on every block
+        public const int LeasedOffices = 8;               // office lots built for the businesses other features lease there: the construction game's eight rival builders
+        public const string OfficeType = "ba:buildingtype_office";   // the game's building type a leased office is built with
+
+        /// <summary>How many of a block's lots are left open: its share, halves up, at least <see cref="OpenLeast"/>, never more than it has.</summary>
+        public static int OpenCount(int blockLots, bool firstBlock)
+        {
+            if (blockLots <= 0)
+            {
+                return 0;
+            }
+            int share = (int)Math.Round(blockLots * (double)(firstBlock ? FirstBlockOpenShare : OpenShare), MidpointRounding.AwayFromZero);
+            return Math.Min(blockLots, Math.Max(OpenLeast, share));
+        }
+
+        /// <summary>
+        /// The office lots built for the businesses other features lease in the district, as indices into
+        /// <paramref name="lots"/> (into the caller's list, cleared), in the order of the leases (the first is the first
+        /// lessee's): of the office lots outside the first block, whose blocks the landmarks take, one a block at most, in
+        /// the order of their ids' hashes, the first <see cref="LeasedOffices"/>. Fixed data: never the save's or the options'.
+        /// </summary>
+        public static List<int> Leased(IList<BuildingsLot> lots, List<int> into)
+        {
+            into.Clear();
+            if (lots == null)
+            {
+                return into;
+            }
+            var offices = new List<int>(64);
+            for (int i = 0; i < lots.Count; i++)
+            {
+                if (lots[i].Class == BuildingsClass.Office && !lots[i].First && Clear(lots[i].Id))
+                {
+                    offices.Add(i);
+                }
+            }
+            offices.Sort((a, b) =>
+            {
+                int byHash = NewBuildingsRules.Hash(lots[a].Id + "|lease").CompareTo(NewBuildingsRules.Hash(lots[b].Id + "|lease"));
+                return byHash != 0 ? byHash : string.CompareOrdinal(lots[a].Id, lots[b].Id);
+            });
+            for (int k = 0; k < offices.Count && into.Count < LeasedOffices; k++)
+            {
+                bool blockHasOne = false;
+                for (int j = 0; j < into.Count; j++)
+                {
+                    blockHasOne |= lots[into[j]].Block == lots[offices[k]].Block;
+                }
+                if (!blockHasOne)
+                {
+                    into.Add(offices[k]);
+                }
+            }
+            return into;
+        }
+
+        /// <summary>
+        /// The lots built from the first day, as indices into <paramref name="lots"/> (into the caller's list, cleared), in
+        /// the order of their ids: every lot but those left open. Left open: every lot of a block kept open
+        /// (<paramref name="keptOpen"/>: a landmark's block) but the first block's quarter built before the band was filled
+        /// (<see cref="DayOne"/>, whose records saves hold); and on every other block its <see cref="OpenCount"/>, picked by
+        /// their ids' hashes among its lots that are neither that quarter nor leased (<see cref="Leased"/>). A lot not
+        /// <see cref="Clear"/> is neither built nor one of a block's open lots. The same on every machine with the same mod.
+        /// </summary>
+        public static List<int> Built(IList<BuildingsLot> lots, Func<int, bool> keptOpen, float awayX, float awayZ, List<int> into)
+        {
+            into.Clear();
+            if (lots == null || lots.Count == 0)
+            {
+                return into;
+            }
+            var stays = new bool[lots.Count];   // built whatever the share: the first quarter and the leases
+            List<int> fixedOnes = DayOne(lots, awayX, awayZ, new List<int>(32));
+            for (int i = 0; i < fixedOnes.Count; i++)
+            {
+                stays[fixedOnes[i]] = true;
+            }
+            Leased(lots, fixedOnes);
+            for (int i = 0; i < fixedOnes.Count; i++)
+            {
+                stays[fixedOnes[i]] = true;
+            }
+            var open = new bool[lots.Count];
+            var blocks = new List<int>(64);
+            for (int i = 0; i < lots.Count; i++)
+            {
+                if (!blocks.Contains(lots[i].Block))
+                {
+                    blocks.Add(lots[i].Block);
+                }
+            }
+            var candidates = new List<int>(32);
+            for (int b = 0; b < blocks.Count; b++)
+            {
+                int block = blocks[b], count = 0;
+                bool first = false;
+                candidates.Clear();
+                for (int i = 0; i < lots.Count; i++)
+                {
+                    if (lots[i].Block != block || string.IsNullOrEmpty(lots[i].Id))
+                    {
+                        continue;
+                    }
+                    count++;
+                    first |= lots[i].First;
+                    if (!stays[i] && Clear(lots[i].Id))
+                    {
+                        candidates.Add(i);
+                    }
+                }
+                int wanted = keptOpen != null && keptOpen(block) ? candidates.Count : Math.Min(candidates.Count, OpenCount(count, first));
+                candidates.Sort((x, y) =>
+                {
+                    int byHash = NewBuildingsRules.Hash(lots[x].Id + "|open").CompareTo(NewBuildingsRules.Hash(lots[y].Id + "|open"));
+                    return byHash != 0 ? byHash : string.CompareOrdinal(lots[x].Id, lots[y].Id);
+                });
+                for (int k = 0; k < wanted; k++)
+                {
+                    open[candidates[k]] = true;
+                }
+            }
+            for (int i = 0; i < lots.Count; i++)
+            {
+                if (!open[i] && Clear(lots[i].Id))
+                {
+                    into.Add(i);
+                }
+            }
+            into.Sort((a, b) => string.CompareOrdinal(lots[a].Id, lots[b].Id));
+            return into;
+        }
+
+        /// <summary>The structure a leased office is built with: of the options, those of the game's office type, the one its id's hash picks; -1 when the game has none.</summary>
+        public static int PickOffice(string lotId, IList<BuildingsStructure> options)
+        {
+            int offices = 0;
+            for (int i = 0; options != null && i < options.Count; i++)
+            {
+                offices += options[i].Type == OfficeType ? 1 : 0;
+            }
+            if (offices == 0 || string.IsNullOrEmpty(lotId))
+            {
+                return -1;
+            }
+            int wanted = (int)(NewBuildingsRules.Hash(lotId + "|structure") % (uint)offices);
+            for (int i = 0; i < options.Count; i++)
+            {
+                if (options[i].Type == OfficeType && wanted-- == 0)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        /// <summary>
+        /// The structures a lot's building may take instead of <paramref name="options"/>[<paramref name="pick"/>], in the order
+        /// the made buildings' engine tries them when no design of its size fits the lot: one of each other size of the options
+        /// (a design is picked by size alone, so a second of a size would fail as the first did), the sizes in the options'
+        /// order from the pick on and round again, each size's first of the pick's type where it takes that type (the
+        /// district keeps its mix of homes, shops, offices and warehouses), else its first; of the office type alone for a
+        /// leased office. Into the caller's list (cleared); empty when the pick is not one of the options.
+        /// </summary>
+        public static List<BuildingsStructure> Others(IList<BuildingsStructure> options, int pick, bool officesOnly, List<BuildingsStructure> into)
+        {
+            into.Clear();
+            if (options == null || pick < 0 || pick >= options.Count)
+            {
+                return into;
+            }
+            BuildingsStructure own = options[pick];
+            int count = options.Count;
+            for (int k = 1; k < count; k++)
+            {
+                BuildingsStructure each = options[(pick + k) % count];
+                if (each.Size == own.Size || (officesOnly && each.Type != OfficeType) || HasSize(into, each.Size))
+                {
+                    continue;
+                }
+                BuildingsStructure taken = each;
+                for (int j = k; j < count; j++)
+                {
+                    BuildingsStructure same = options[(pick + j) % count];
+                    if (same.Size == each.Size && same.Type == own.Type && (!officesOnly || same.Type == OfficeType))
+                    {
+                        taken = same;
+                        break;
+                    }
+                }
+                into.Add(taken);
+            }
+            return into;
+        }
+
+        private static bool HasSize(List<BuildingsStructure> list, string size)
+        {
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (list[i].Size == size)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         /// <summary>The least reach of any lot of the plan: where the traffic steps are counted from.</summary>

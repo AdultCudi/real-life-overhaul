@@ -15,7 +15,8 @@ namespace RealLifeOverhaul.Uptown
     /// lot, the declarations the made buildings' engine stands as buildings of the game (MadeSpec.Life), each standing one
     /// put in the game's lists (BuildingHelper.allBuildings: the city's generator, the rivals, the walkers; the district's
     /// list: the game's daily pass), a carving box over each on the walking meshes, and the district's first life (its
-    /// stats and the game's own generator for it, seeded) and a finished building's first load. Nothing here runs a frame.
+    /// stats and the game's own generator for it, seeded; for buildings new to a save it lived in, for those alone) and a
+    /// finished building's first load. Nothing here runs a frame.
     /// </summary>
     internal static partial class LifeGame
     {
@@ -23,8 +24,10 @@ namespace RealLifeOverhaul.Uptown
         public const float AwayZ = 1f;
         private const float CutInset = 0.5f;   // m inside a design's footprint on each side: a carve reaches the walker's radius beyond its box, so its edge lands at the walls
 
-        private static readonly List<Building> Entered = new List<Building>(32);   // the records this load put in the game's lists of buildings
-        private static readonly List<NavMeshObstacle> Cuts = new List<NavMeshObstacle>(32);
+        private static readonly List<Building> Entered = new List<Building>(512);   // the records this load put in the game's lists of buildings
+        private static readonly List<NavMeshObstacle> Cuts = new List<NavMeshObstacle>(512);
+        private static readonly List<Building> AllWas = new List<Building>(2048);   // the game's list of all buildings as it was, while its generator sees the new ones alone
+        private static readonly HashSet<Building> Fresh = new HashSet<Building>();
 
         /// <summary>The plan's lots as the rules read them, into the caller's list (cleared), in the plan's own order of their ids.</summary>
         public static void Lots(List<BuildingsLot> into)
@@ -40,10 +43,19 @@ namespace RealLifeOverhaul.Uptown
                 }
                 into.Add(new BuildingsLot
                 {
-                    Id = lot.Id, Street = lot.Street, Number = lot.Number, First = lot.First, Avenue = BuildingsRules.FrontsAvenue(lot.Facing),
+                    Id = lot.Id, Street = lot.Street, Number = lot.Number, Block = lot.Block, First = lot.First, Avenue = BuildingsRules.FrontsAvenue(lot.Facing),
                     X = lot.X, Z = lot.Z, Facing = lot.Facing, Width = lot.Width, Depth = lot.Depth, Class = ClassOf(lot.Class), Sizes = lot.Sizes
                 });
             }
+        }
+
+        /// <summary>
+        /// True when the save holds the records of a building at the lot's address from an earlier load (the district save
+        /// keeps its registration): a building a save has stands on, whatever a later plan leaves open there.
+        /// </summary>
+        public static bool Kept(BuildingsLot lot)
+        {
+            return DistrictSave.DistrictSaveDirector.KeptRegistration(lot.Street, lot.Number) != null;
         }
 
         private static BuildingsClass ClassOf(LotClass kind)
@@ -102,17 +114,27 @@ namespace RealLifeOverhaul.Uptown
 
         /// <summary>
         /// A lot's building declared to the made buildings' engine as one of the game's own (MadeSpec.Life): at its lot's
-        /// address, the game's structure given, filed under Uptown, its traffic index the rules', its floor area its storeys'
-        /// or (0) that of the game's building its design copies; made behind the loading screen while <paramref name="wanted"/> says so.
+        /// address, the game's structure given (or, where no design of its size fits the lot, the first of <paramref name="others"/>
+        /// with one: BuildingsRules.Others), filed under Uptown, its traffic index the rules', its floor area its storeys' or (0)
+        /// that of the game's building its design copies; made behind the loading screen while <paramref name="wanted"/> says so.
         /// </summary>
-        public static MadeSpec Spec(BuildingsLot lot, BuildingsStructure structure, string design, int storeys, int traffic, Func<bool> wanted)
+        public static MadeSpec Spec(BuildingsLot lot, BuildingsStructure structure, IList<BuildingsStructure> others, string design, int storeys, int traffic, Func<bool> wanted)
         {
+            MadeStructure[] instead = null;
+            if (others != null && others.Count > 0)
+            {
+                instead = new MadeStructure[others.Count];
+                for (int i = 0; i < others.Count; i++)
+                {
+                    instead[i] = new MadeStructure { Size = others[i].Size, Version = others[i].Version, Type = others[i].Type };
+                }
+            }
             return new MadeSpec
             {
                 Id = lot.Id, Street = lot.Street, Number = lot.Number, Size = structure.Size, Version = structure.Version, Type = structure.Type,
                 District = DistrictValues.Id, Design = string.IsNullOrEmpty(design) ? null : design,
                 Lots = new[] { new MadeLot(lot.X, lot.Z, lot.Facing, lot.Width, lot.Depth) }, Preferred = 0,
-                Traffic = traffic, Floors = Math.Max(1, storeys), DesignArea = storeys <= 0, Life = true, Wanted = wanted
+                Traffic = traffic, Floors = Math.Max(1, storeys), DesignArea = storeys <= 0, Life = true, Wanted = wanted, Others = instead
             };
         }
 
@@ -299,6 +321,59 @@ namespace RealLifeOverhaul.Uptown
             {
                 UnityEngine.Random.state = was;
             }
+        }
+
+        /// <summary>
+        /// The game's own generator for Uptown's buildings new to a save it lived in before, those alone (a lot a newer plan
+        /// builds, or one that could not stand at an earlier load): the district's other buildings are out of the game's list
+        /// of all buildings for the call, which the generator reads (CityGenerator walks allBuildings by district), and the list
+        /// is put back exactly as it was after; so their businesses, tenants and landlords are untouched, and the new ones are
+        /// let, kept empty to let or given the rivals' businesses and landlords as the game sets up a district. Seeded from the
+        /// save and the new buildings' ids, so every machine sets them up alike. How many it was run for.
+        /// </summary>
+        public static int PopulateOnly(GameInstance save, List<MadeBuilding> fresh, List<MadeBuilding> standing)
+        {
+            List<Building> all = BuildingHelper.allBuildings;
+            if (all == null || fresh == null || fresh.Count == 0)
+            {
+                return 0;
+            }
+            Fresh.Clear();
+            uint seed = NewBuildingsRules.Hash(DistrictValues.Id + "|more|" + (save != null ? save.seed : string.Empty));
+            for (int i = 0; i < fresh.Count; i++)
+            {
+                if (fresh[i] != null && fresh[i].Building != null)
+                {
+                    Fresh.Add(fresh[i].Building);
+                    seed = unchecked(seed * 16777619u ^ NewBuildingsRules.Hash(fresh[i].Spec.Id));
+                }
+            }
+            AllWas.Clear();
+            AllWas.AddRange(all);
+            for (int i = 0; i < standing.Count; i++)
+            {
+                Building record = standing[i] != null ? standing[i].Building : null;
+                if (record != null && !Fresh.Contains(record))
+                {
+                    all.Remove(record);
+                }
+            }
+            UnityEngine.Random.State was = UnityEngine.Random.state;
+            UnityEngine.Random.InitState((int)seed);
+            try
+            {
+                CityGenerator.InitializeCity(DistrictValues.Id);
+                CityGenerator.DistributeBuildingsToRivals(DistrictValues.Id);
+            }
+            finally
+            {
+                UnityEngine.Random.state = was;
+                all.Clear();
+                all.AddRange(AllWas);
+                AllWas.Clear();
+                Fresh.Clear();
+            }
+            return fresh.Count;
         }
 
         /// <summary>

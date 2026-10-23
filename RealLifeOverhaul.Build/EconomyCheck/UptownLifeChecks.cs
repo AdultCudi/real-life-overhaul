@@ -34,6 +34,7 @@ internal static partial class Program
         UptownTables();
         UptownSources();
         UptownTexts();
+        UptownFillChecks();
     }
 
     // ---------------------------------------------------------------- its values
@@ -611,9 +612,11 @@ internal static partial class Program
         string code = all.ToString();
         Check(code.Length > 0 && noLinq && noHarmony, "uptown: no LINQ and no Harmony in the district's files");
         Check(oneFrame && noSend, "uptown: of the district's files only its director has a frame method, and none sends anything over Going Public");
-        Check(noChance && Occurs(code, "UnityEngine.Random.InitState(") == 1 && code.Contains("UnityEngine.Random.state = was;")
-              && code.Contains("NewBuildingsRules.Hash(DistrictValues.Id + \"|first|\"") && code.Contains("NewBuildingsRules.Hash(DistrictValues.Id + \"|stats|\" + save.seed)"),
-            "uptown: nothing of its is chance: the game's own generator runs once with the engine's chance seeded from the save, put back after; its stats' days from the save's seed");
+        Check(noChance && Occurs(code, "UnityEngine.Random.InitState(") == 3 && Occurs(code, "UnityEngine.Random.state = was;") == 3
+              && code.Contains("NewBuildingsRules.Hash(DistrictValues.Id + \"|first|\"") && code.Contains("NewBuildingsRules.Hash(DistrictValues.Id + \"|more|\"")
+              && code.Contains("NewBuildingsRules.Hash(lease.BusinessType + \"|\" + lease.Name + \"|\"") && code.Contains("NewBuildingsRules.Hash(DistrictValues.Id + \"|stats|\" + save.seed)"),
+            "uptown: nothing of its is chance: the game's own generator (for the district, or its buildings new to a save alone) and its start of a leased business run with "
+            + "the engine's chance seeded from the save, put back after; its stats' days from the save's seed");
         Check(byContract, "uptown: every member of the game's it reads by name is a line of Core/GameContract");
         Check(!Regex.IsMatch(code, @"GetBuildingRegistration\("), "uptown: it never asks the game for its buildings' registrations (the game would make an empty one and the kept one be let go)");
 
@@ -732,7 +735,7 @@ internal static partial class Program
         {
             keys.Add(m.Groups[1].Value);
         }
-        bool there = en != null && pt != null && zh != null && keys.Count == 18 && LifeText.District == UptownId;
+        bool there = en != null && pt != null && zh != null && keys.Count == 28 && LifeText.District == UptownId;
         string missing = null;
         bool short240 = true;
         foreach (string key in keys)

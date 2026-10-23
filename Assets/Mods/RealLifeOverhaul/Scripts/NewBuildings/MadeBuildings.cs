@@ -153,6 +153,26 @@ namespace RealLifeOverhaul.NewBuildings
         /// <summary>True for an address of a building standing in this city.</summary>
         public static bool IsMade(string street, int number) => At(street, number) != null;
 
+        /// <summary>
+        /// True when a made building looks as the game's own does now: its box (the city map's stand-in) drawn only as a shadow
+        /// and its parts drawn while the map is shut, the other way round while it is open; else why not. For a check.
+        /// </summary>
+        public static bool LooksAsGame(MadeBuilding made, out string why)
+        {
+            why = null;
+            return made != null && (!made.Shown || CopyGame.LooksAsGame(made.Controller, out why));
+        }
+
+        /// <summary>
+        /// A made building's look hidden, or shown again (its door, solids, card and controller stay), as a construction site's
+        /// new look hides a building's own: for a test that measures what the look costs. False when nothing changed.
+        /// </summary>
+        public static bool HideLook(MadeBuilding made, bool hide)
+        {
+            CityBuildingController c = made != null ? made.Controller : null;
+            return c != null && (hide ? CopyGame.HideLook(c) : CopyGame.ShowLook(c));
+        }
+
         /// <summary>True for a street of the mod's own: every address on it is a made building's, and never the game's. A string test.</summary>
         public static bool IsMadeStreet(string street)
         {

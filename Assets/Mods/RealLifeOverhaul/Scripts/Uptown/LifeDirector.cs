@@ -19,12 +19,14 @@ namespace RealLifeOverhaul.Uptown
     /// without the mod at any time. A load in three steps:
     ///   1. when a save has been read, before its city's scenes are built (the district save's early step): the district
     ///      into the game's lists of districts (LifeGame.Know), so every list the game builds as the scenes load has it;
-    ///   2. in the city's load: the lots' buildings declared to the made buildings' engine as the game's own (Awake), made
-    ///      behind the loading screen, then those that stood put in the game's lists of buildings, cut into the walking
+    ///   2. in the city's load: the lots' buildings declared to the made buildings' engine as the game's own (Awake: most of
+    ///      the band from the first day, every one the construction game finished, every one a save holds the records of),
+    ///      made behind the loading screen, then those that stood put in the game's lists of buildings, cut into the walking
     ///      meshes and the district put on the city map (<see cref="Settle"/>, the step before the district save's, which
     ///      then puts back what the save kept of them);
     ///   3. in the game's late "game loaded" call: its first life where the save never had it (its stats, the game's own
-    ///      generator for it), and the first load of each building the construction game finished.
+    ///      generator for it), the game's own generator for its buildings new to a save it lived in before, the first load
+    ///      of each building the construction game finished, and the leased offices' businesses (the city's rival builders).
     /// It lives only where the ground's own verdict says (GroundSession.Agrees, UptownLots.Ready: the option, the city, a
     /// Going Public session only when every machine runs this same mod), with its buildings or not at all, and stands down
     /// for the rest of the city when none stands at the load, when the ground's feature cleans up or when a session stops
@@ -54,12 +56,14 @@ namespace RealLifeOverhaul.Uptown
         private static int _stamp;
         private static LifeState _state = new LifeState();
         private static bool _stateUnread;     // the save's line of the district could not be read: kept as it is, nothing finished meanwhile
-        private static readonly List<BuildingsLot> Plan = new List<BuildingsLot>(128);
-        private static readonly List<int> DayOne = new List<int>(32);
+        private static readonly List<BuildingsLot> Plan = new List<BuildingsLot>(512);
+        private static readonly List<int> Built = new List<int>(512);
         private static readonly List<BuildingsStructure> Options = new List<BuildingsStructure>(16);
-        private static readonly List<MadeSpec> Declared = new List<MadeSpec>(64);
-        private static readonly List<MadeBuilding> Standing = new List<MadeBuilding>(64);
-        private static readonly HashSet<string> DayOneLots = new HashSet<string>(StringComparer.Ordinal);
+        private static readonly List<BuildingsStructure> Others = new List<BuildingsStructure>(8);
+        private static readonly List<MadeSpec> Declared = new List<MadeSpec>(512);
+        private static readonly List<MadeBuilding> Standing = new List<MadeBuilding>(512);
+        private static readonly HashSet<string> BuiltLots = new HashSet<string>(StringComparer.Ordinal);   // a building declared on it at this load, from the first day or kept
+        private static readonly HashSet<string> KeptLots = new HashSet<string>(StringComparer.Ordinal);    // of those, built because the save holds their records from an earlier load
         private static float _nearest;        // the plan's nearest reach from Manhattan: where the traffic steps count from
 
         private float _nextSlow;
@@ -116,8 +120,11 @@ namespace RealLifeOverhaul.Uptown
                 MadeBuildings.Withdraw(Declared[i].Id);
             }
             Standing.Clear();
+            StandingLots.Clear();
             Declared.Clear();
-            DayOneLots.Clear();
+            BuiltLots.Clear();
+            KeptLots.Clear();
+            ForgetLeases();
             _stamp++;
         }
 
@@ -179,25 +186,37 @@ namespace RealLifeOverhaul.Uptown
             _state = read ?? new LifeState();
         }
 
-        // Every lot with a building declared to the made buildings' engine as the game's own: a quarter of the first block from
-        // the first day, and every one the construction game finished. Made behind the loading screen while the ground stands.
+        // Every lot with a building declared to the made buildings' engine as the game's own: the band's lots built from the
+        // first day (all but those left open for the construction game), every one the construction game finished, and every
+        // one whose records the save holds from an earlier load, so no building of a save is ever lost to a change of the
+        // plan. Made behind the loading screen while the ground stands.
         private static void Declare()
         {
-            BuildingsRules.DayOne(Plan, LifeGame.AwayX, LifeGame.AwayZ, DayOne);
-            for (int i = 0; i < DayOne.Count; i++)
+            BuildingsRules.Built(Plan, DistrictBuildings.KeptOpen, LifeGame.AwayX, LifeGame.AwayZ, Built);
+            for (int i = 0; i < Built.Count; i++)
             {
-                DayOneLots.Add(Plan[DayOne[i]].Id);
+                BuiltLots.Add(Plan[Built[i]].Id);
             }
-            int finished = 0, refused = 0;
+            int finished = 0, refused = 0, leased = 0;
             for (int i = 0; i < Plan.Count; i++)
             {
                 BuildingsLot lot = Plan[i];
-                FinishedBuilding f = _state.On(lot.Id);
-                if (f == null && !DayOneLots.Contains(lot.Id))
+                if (!BuildingsRules.Clear(lot.Id))
                 {
-                    continue;   // empty, for the construction game
+                    continue;   // taken from the start for every feature, so no save holds a building there
+                }
+                FinishedBuilding f = _state.On(lot.Id);
+                if (f == null && !BuiltLots.Contains(lot.Id))
+                {
+                    if (!LifeGame.Kept(lot))
+                    {
+                        continue;   // open, for the construction game
+                    }
+                    BuiltLots.Add(lot.Id);
+                    KeptLots.Add(lot.Id);
                 }
                 BuildingsStructure structure;
+                Others.Clear();   // a finished building keeps the structure and design the construction game gave it
                 if (f != null)
                 {
                     structure = new BuildingsStructure { Size = f.Size, Version = f.Version, Type = f.Type };
@@ -206,23 +225,36 @@ namespace RealLifeOverhaul.Uptown
                 else
                 {
                     LifeGame.Structures(lot, Options);
-                    int pick = BuildingsRules.PickStructure(lot.Id, Options);
+                    bool lease = LeaseOf(lot.Id) >= 0;
+                    int pick = lease ? BuildingsRules.PickOffice(lot.Id, Options) : BuildingsRules.PickStructure(lot.Id, Options);
                     if (pick < 0)
                     {
                         refused++;
-                        Logger?.Info("Uptown: lot " + lot.Id + " stays empty at this load: the game has no structure for its sizes.");
+                        BuiltLots.Remove(lot.Id);
+                        Logger?.Info("Uptown: lot " + lot.Id + " stays empty at this load: the game has no " + (lease ? "office " : string.Empty) + "structure for its sizes.");
                         continue;
                     }
+                    leased += lease ? 1 : 0;
                     structure = Options[pick];
+                    BuildingsRules.Others(Options, pick, lease, Others);
                 }
                 Lot plain = UptownLots.Get(lot.Id);
-                MadeSpec spec = LifeGame.Spec(GroundOf(lot, f), structure, f != null ? f.Design : null, f != null ? f.Storeys : 0, TrafficOf(lot.Id),
+                MadeSpec spec = LifeGame.Spec(GroundOf(lot, f), structure, Others, f != null ? f.Design : null, f != null ? f.Storeys : 0, TrafficOf(lot.Id),
                     () => _known && !_down && UptownLots.Ready && plain != null && UptownLots.Open(plain));
                 MadeBuildings.Declare(spec);
                 Declared.Add(spec);
             }
-            Logger?.Info("Uptown: " + Declared.Count + " building(s) declared for this load (" + DayOne.Count + " of the first block's lots from the first day, " + finished
-                         + " finished by the construction game" + (refused > 0 ? ", " + refused + " left empty" : string.Empty) + ") of " + Plan.Count + " lots.");
+            int open = 0, notClear = 0;
+            for (int i = 0; i < Plan.Count; i++)
+            {
+                bool clear = BuildingsRules.Clear(Plan[i].Id);
+                open += clear && !BuiltLots.Contains(Plan[i].Id) && _state.Covering(Plan[i].Id) == null ? 1 : 0;
+                notClear += clear ? 0 : 1;
+            }
+            Logger?.Info("Uptown: " + Declared.Count + " building(s) declared for this load (" + Built.Count + " of the band's lots from the first day, " + leased
+                         + " of them offices leased to the city's builders; " + KeptLots.Count + " kept from an earlier load; " + finished + " finished by the construction game"
+                         + (refused > 0 ? "; " + refused + " left empty" : string.Empty) + ") of " + Plan.Count + " lots, " + open + " open for the construction game"
+                         + (notClear > 0 ? ", " + notClear + " kept empty as something of the game's stands into it" : string.Empty) + ".");
         }
 
         /// <summary>
@@ -236,6 +268,7 @@ namespace RealLifeOverhaul.Uptown
         public static void Settle()
         {
             Standing.Clear();
+            StandingLots.Clear();
             if (!_known)
             {
                 return;
@@ -251,9 +284,11 @@ namespace RealLifeOverhaul.Uptown
                     }
                 }
                 _lives = Standing.Count > 0;
+                MarkStanding();
                 Close(FrameGuard.Away ? "its feature stands on New York's data, and this city is another" : "its feature is not running at this load", false);
                 return;
             }
+            long began = System.Diagnostics.Stopwatch.GetTimestamp();
             int cut = 0;
             for (int i = 0; i < Declared.Count; i++)
             {
@@ -267,6 +302,7 @@ namespace RealLifeOverhaul.Uptown
                 Standing.Add(made);
             }
             _lives = Standing.Count > 0;
+            MarkStanding();
             _stamp++;
             if (!_lives)
             {
@@ -280,7 +316,8 @@ namespace RealLifeOverhaul.Uptown
             {
                 Logger?.Warn("Uptown: its zone on the city map could not be made (" + why + "); the district has no row in the map's filters at this load.");
             }
-            Logger?.Info("Uptown: " + Standing.Count + " of " + Declared.Count + " building(s) standing as the game's own, " + cut + " cut into the walking meshes.");
+            Logger?.Info("Uptown: " + Standing.Count + " of " + Declared.Count + " building(s) standing as the game's own, " + cut + " cut into the walking meshes, in "
+                         + ((System.Diagnostics.Stopwatch.GetTimestamp() - began) * 1000.0 / System.Diagnostics.Stopwatch.Frequency).ToString("F0", Plain) + " ms.");
         }
 
         // The district's ground's bounds, for its zone on the city map; its lots' if the ground names none.
@@ -346,7 +383,11 @@ namespace RealLifeOverhaul.Uptown
 
         // ---------------------------------------------------------------- the game's late "game loaded" call
 
-        // Its first life where the save never had it, and each finished building's first load. The loading screen still up.
+        private static readonly List<MadeBuilding> NewOnes = new List<MadeBuilding>(512);
+
+        // Its first life where the save never had it, the game's own generator for its buildings new to a save it lived in
+        // before (as for a district the game adds to an older save, those alone), each finished building's first load, and the
+        // leased offices' businesses. The loading screen still up.
         private static bool FirstLife()
         {
             GameInstance save = SaveGameManager.Current;
@@ -360,38 +401,52 @@ namespace RealLifeOverhaul.Uptown
             {
                 LifeGame.Populate(save);   // as the game sets up a district it adds to an older save
             }
+            int populated = 0;
+            if (!fresh)
+            {
+                NewOnes.Clear();
+                for (int i = 0; i < Standing.Count; i++)
+                {
+                    if (Standing[i].NewRegistration && _state.On(Standing[i].Spec.Id) == null)
+                    {
+                        NewOnes.Add(Standing[i]);   // nothing of it was in the save: a lot built by a newer plan, or one that could not stand before
+                    }
+                }
+                populated = NewOnes.Count > 0 ? LifeGame.PopulateOnly(save, NewOnes, Standing) : 0;
+                NewOnes.Clear();
+            }
             bool stats = LifeGame.Stats(save);
             int settled = 0, failed = 0;
             for (int i = 0; i < Standing.Count; i++)
             {
                 MadeBuilding made = Standing[i];
                 FinishedBuilding f = _state.On(made.Spec.Id);
-                if (f != null && !f.Settled)
+                if (f == null || f.Settled)
                 {
-                    string why = LifeGame.Settle(made, f.Owner, f.Price, save);
-                    if (why == null)
-                    {
-                        f.Settled = true;
-                        settled++;
-                    }
-                    else
-                    {
-                        failed++;
-                        Logger?.Warn("Uptown: the finished building at " + made.Address + " could not be set up at its first load (" + why + "); it is tried again at the next load.");
-                    }
+                    continue;
                 }
-                else if (f == null && made.NewRegistration && !fresh)
+                string why = LifeGame.Settle(made, f.Owner, f.Price, save);
+                if (why == null)
                 {
-                    LifeGame.Settle(made, FinishOwner.City, 0, save);   // a day-one building new to a district that lived before: free to let
+                    f.Settled = true;
+                    settled++;
+                }
+                else
+                {
+                    failed++;
+                    Logger?.Warn("Uptown: the finished building at " + made.Address + " could not be set up at its first load (" + why + "); it is tried again at the next load.");
                 }
             }
             if (settled > 0)
             {
                 WriteState();
             }
+            int leased = Leases(save);
             Logger?.Info("Uptown: " + (fresh ? (_cityWasNew ? "set up with the rest of a new city by the game's own generator" : "set up for the first time in this save by the game's own generator")
-                                             : "lives on in this save") + (stats ? ", its stats made" : string.Empty)
-                         + (settled + failed > 0 ? "; " + settled + " finished building(s) at their first load" + (failed > 0 ? ", " + failed + " not yet" : string.Empty) : string.Empty) + ".");
+                                             : "lives on in this save" + (populated > 0 ? ", the game's own generator for its " + populated + " building(s) new to it" : string.Empty))
+                         + (stats ? ", its stats made" : string.Empty)
+                         + (settled + failed > 0 ? "; " + settled + " finished building(s) at their first load" + (failed > 0 ? ", " + failed + " not yet" : string.Empty) : string.Empty)
+                         + "; " + leased + " of " + BuildingsRules.LeasedOffices + " leased offices with their businesses.");
             Census("the load");
             return true;
         }
@@ -556,8 +611,11 @@ namespace RealLifeOverhaul.Uptown
                 UptownLots.Closing -= OnClosing;
                 _closingHooked = false;
             }
+            ShowHidden();
             LifeGame.Unload();
             Standing.Clear();
+            StandingLots.Clear();
+            ForgetLeases();
             _known = _lives = _down = false;
             _stateFor = null;
             if (Instance == this)

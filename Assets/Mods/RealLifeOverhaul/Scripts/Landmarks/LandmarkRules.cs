@@ -209,6 +209,22 @@ namespace RealLifeOverhaul.Landmarks
         public static IReadOnlyList<int> BlocksOf(LandmarkKind kind) => Blocks[Index(kind)];
 
         /// <summary>
+        /// True for a block some landmark takes first (each one's own block): Uptown keeps these open from the first day, so the
+        /// sites stand where they were planned and the rest of the district is built up. Fixed data, whatever the option says.
+        /// </summary>
+        public static bool OwnBlock(int block)
+        {
+            for (int k = 0; k < Blocks.Length; k++)
+            {
+                if (Blocks[k].Length > 0 && Blocks[k][0] == block)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
         /// The site a landmark takes: of its blocks in order, the first where every lot is in the first block, every lot not
         /// built from the first day is free (<paramref name="claimed"/> false: no building on it or finished there, nobody's
         /// land, no development, no project) and none of it is another landmark's (<paramref name="heldBlocks"/>), with lots on

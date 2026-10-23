@@ -42,6 +42,7 @@ namespace RealLifeOverhaul.NewBuildings
         private readonly List<Address> _homes = new List<Address>(2);
         private readonly SaveTaken _taken = new SaveTaken();
         private readonly StringBuilder _why = new StringBuilder(256);
+        private int _tookOther;   // made at this load with another of their structures, no design of their own size fitting their lot
         private Action _onSave;
         private float _nextLook, _nextSlow, _loadedAt;
         private bool _optionWas, _agreedWas, _checked, _heldHidden;   // _heldHidden: the switch-off test or the clean-up hid them
@@ -236,19 +237,43 @@ namespace RealLifeOverhaul.NewBuildings
                 SceneFinds.All<ToggleObjectDLC>("new buildings: the DLC content listed for the made buildings' ground (a search of the scene)", FindObjectsInactive.Include));
             _specs.Sort(NewBuildingsRules.CompareSpecs);
             _homes.Clear();
+            _tookOther = 0;
+            long measured = Stopwatch.GetTimestamp();
             int made = 0;
+            double slowest = 0;
+            string slowestId = null;
             for (int i = 0; i < _specs.Count; i++)
             {
+                long one = Stopwatch.GetTimestamp();
                 made += Make(_specs[i]) ? 1 : 0;
+                double ms = Ms(one, Stopwatch.GetTimestamp());
+                if (ms > slowest)
+                {
+                    slowest = ms;
+                    slowestId = _specs[i].Id;
+                }
             }
             if (_homes.Count > 0 && !MadeGame.LeaveOutHomes(_homes))
             {
                 Logger?.Warn("Made buildings: the food deliveries could not be told to leave the made homes alone; they are hidden.");
             }
-            Logger?.Info("Made buildings: " + made + " of " + _specs.Count + " made behind the loading screen in "
-                         + ((Stopwatch.GetTimestamp() - began) * 1000.0 / Stopwatch.Frequency).ToString("F0", Plain) + " ms (" + streets + " street(s) of the mod's own among the game's).");
+            long done = Stopwatch.GetTimestamp();
+            double each = _specs.Count > 0 ? Ms(measured, done) / _specs.Count : 0;
+            Logger?.Info("Made buildings: " + made + " of " + _specs.Count + " made behind the loading screen in " + Ms(began, done).ToString("F0", Plain) + " ms (the city's designs and "
+                         + "ground measured in " + Ms(began, measured).ToString("F0", Plain) + " ms, its three searches among them; the buildings in " + Ms(measured, done).ToString("F0", Plain)
+                         + " ms, " + each.ToString("F2", Plain) + " ms each, the slowest " + slowest.ToString("F1", Plain) + " ms ('" + slowestId + "'); " + streets
+                         + " street(s) of the mod's own among the game's" + (_tookOther > 0 ? "; " + _tookOther + " with another of their sizes, no design of their own fitting" : string.Empty)
+                         + ").");
+            if (Meta.Dev.Verbose)
+            {
+                Logger?.Info("Made buildings check (load time): " + _specs.Count + " building(s) declared, each made in " + each.ToString("F2", Plain) + " ms on average (wanted under "
+                             + NewBuildingsRules.MostMakeMs.ToString("F1", Plain) + " ms), the slowest in " + slowest.ToString("F1", Plain) + " ms: "
+                             + (each <= NewBuildingsRules.MostMakeMs ? "PASS" : "FAIL"));
+            }
             return true;
         }
+
+        private static double Ms(long from, long to) => (to - from) * 1000.0 / Stopwatch.Frequency;
 
         private bool Declares(string id)
         {
@@ -280,23 +305,51 @@ namespace RealLifeOverhaul.NewBuildings
             Vector3 root = default, door = default;
             float yaw = 0f;
             _why.Length = 0;
-            int lot = NewBuildingsRules.FirstFree(spec.Lots.Length, spec.Preferred, k =>
+            string size = spec.Size, type = spec.Type;
+            bool noDesign = true;   // every lot so far failed for want of a design of the size, none for its ground
+            int lot = -1, took = -1;
+            // Its own structure first; only where no design of its size fits any lot, the others it may take, in their order:
+            // a lot whose ground refused a design refuses the others' too, as its roads and walking mesh stay what they are.
+            for (int s = -1; lot < 0 && noDesign && s < (spec.Others != null ? spec.Others.Length : 0); s++)
             {
-                MadeLot each = spec.Lots[k];
-                int pick = NewBuildingsRules.Pick(designs, spec.Size, spec.Type, spec.Design, each.Width, each.Depth, spec.Id);
-                string ground = pick < 0 ? "no design of its size that can be copied fits the lot" : CopyGame.GroundWhy(designs[pick], each, out root, out yaw, out door);
-                if (ground != null)
+                if (s >= 0)
                 {
-                    _why.Append(_why.Length > 0 ? "; " : string.Empty).Append("lot ").Append(k).Append(": ").Append(ground);
-                    return false;
+                    if (!NewBuildingsRules.OtherTakes(spec, spec.Others[s], MadeGame.StructureTakes, MadeGame.HomesLeftOut()))
+                    {
+                        continue;
+                    }
+                    size = spec.Others[s].Size;
+                    type = spec.Others[s].Type;
                 }
-                design = pick;
-                return true;
-            });
+                lot = NewBuildingsRules.FirstFree(spec.Lots.Length, spec.Preferred, k =>
+                {
+                    MadeLot each = spec.Lots[k];
+                    int pick = NewBuildingsRules.Pick(designs, size, type, spec.Design, each.Width, each.Depth, spec.Id);
+                    noDesign &= pick < 0;
+                    string ground = pick < 0 ? "no design of size " + NewBuildingsRules.StructureName(size, 0).TrimEnd('0') + " that can be copied fits the lot"
+                        : CopyGame.GroundWhy(designs[pick], each, out root, out yaw, out door);
+                    if (ground != null)
+                    {
+                        _why.Append(_why.Length > 0 ? "; " : string.Empty).Append("lot ").Append(k).Append(": ").Append(ground);
+                        return false;
+                    }
+                    design = pick;
+                    return true;
+                });
+                took = lot >= 0 ? s : took;
+            }
             if (lot < 0)
             {
                 Logger?.Info("Made buildings: '" + spec.Id + "' stands down: none of its " + spec.Lots.Length + " lot(s) is free now (" + _why + ").");
                 return false;
+            }
+            if (took >= 0)
+            {
+                MadeStructure other = spec.Others[took];   // the design is of this structure's size: the record and the registration are made with it
+                spec.Size = other.Size;
+                spec.Version = other.Version;
+                spec.Type = other.Type;
+                _tookOther++;
             }
             Building record = MadeGame.MakeRecord(spec, spec.DesignArea ? CopyGame.SourceArea(design) : 0);
             BuildingRegistration registration = MadeGame.MakeRegistration(spec, out bool fresh);
@@ -334,10 +387,13 @@ namespace RealLifeOverhaul.NewBuildings
             }
             _made.Add(made);
             MadeBuildings.Add(made);
-            Logger?.Info("Made buildings: '" + spec.Id + "' made at " + made.Address + " on lot " + lot + " of " + spec.Lots.Length + " (the design " + chosen.Name + " of "
-                         + chosen.Uses + " building(s) of size " + chosen.Size + ", root (" + root.x.ToString("F1", Plain) + ", " + root.y.ToString("F1", Plain) + ", "
-                         + root.z.ToString("F1", Plain) + ") turned " + yaw.ToString("F0", Plain) + ", door at (" + door.x.ToString("F1", Plain) + ", " + door.z.ToString("F1", Plain) + "))"
-                         + (_why.Length > 0 ? "; lots passed by: " + _why : string.Empty) + ".");
+            if (!spec.Life || Meta.Dev.Verbose)   // a district's hundreds are counted in the load's line; each one's with Developer diagnostics on
+            {
+                Logger?.Info("Made buildings: '" + spec.Id + "' made at " + made.Address + " on lot " + lot + " of " + spec.Lots.Length + " (the design " + chosen.Name + " of "
+                             + chosen.Uses + " building(s) of size " + chosen.Size + ", root (" + root.x.ToString("F1", Plain) + ", " + root.y.ToString("F1", Plain) + ", "
+                             + root.z.ToString("F1", Plain) + ") turned " + yaw.ToString("F0", Plain) + ", door at (" + door.x.ToString("F1", Plain) + ", " + door.z.ToString("F1", Plain) + "))"
+                             + (_why.Length > 0 ? "; lots passed by: " + _why : string.Empty) + ".");
+            }
             return true;
         }
 
@@ -431,17 +487,34 @@ namespace RealLifeOverhaul.NewBuildings
                 return;   // the game makes the job on the first frame it asks which building is closest
             }
             _checked = true;
+            int districts = 0, districtsPassed = 0;
             for (int i = 0; i < _made.Count; i++)
             {
                 MadeBuilding made = _made[i];
                 bool lookup = MadeGame.InLookup(made, out bool inSave);
                 bool listed = MadeGame.InCityList(made, out int count);
                 bool sized = job == count;
+                bool pass = lookup && listed && inSave == made.Spec.Life && sized;
+                if (made.Spec.Life)
+                {
+                    districts++;
+                    districtsPassed += pass ? 1 : 0;
+                    if (pass)
+                    {
+                        continue;   // a district's hundreds are one line below; a failure is said on its own
+                    }
+                }
                 string name = made.Spec.Id == NewBuildingsTestPlot.Id ? "test building" : "'" + made.Spec.Id + "'";
                 Logger?.Info("Made buildings check (" + name + ", " + made.Address + "): in the game's building lookup " + (lookup ? "YES" : "NO") + ", in the city's list "
                              + (listed ? "YES" : "NO") + ", in the save's registrations " + (inSave ? "YES" : "NO") + ", the closest-building job sized to the list"
                              + (job < 0 ? " (not made in " + ClosestWait.ToString("F0", Plain) + " s)" : sized ? string.Empty : " (" + job + " for " + count + ")") + ": "
-                             + (lookup && listed && inSave == made.Spec.Life && sized ? "PASS" : "FAIL"));
+                             + (pass ? "PASS" : "FAIL"));
+            }
+            if (districts > 0)
+            {
+                Logger?.Info("Made buildings check (a district's buildings): " + districtsPassed + " of " + districts + " in the game's building lookup, the city's list and the save's "
+                             + "registrations, the closest-building job sized to the list" + (job < 0 ? " (not made in " + ClosestWait.ToString("F0", Plain) + " s)" : string.Empty) + ": "
+                             + (districtsPassed == districts ? "PASS" : "FAIL"));
             }
         }
 

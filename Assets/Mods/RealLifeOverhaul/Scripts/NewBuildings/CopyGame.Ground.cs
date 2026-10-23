@@ -50,6 +50,8 @@ namespace RealLifeOverhaul.NewBuildings
             MadeRects.Clear();
             MadeNames.Clear();
             _othersMeasured = false;
+            _lanesOf = null;
+            _lanesCount = 0;
         }
 
         /// <summary>True once the DLC content and the fixed obstacles have been measured in this city (a load with made buildings).</summary>
@@ -251,10 +253,13 @@ namespace RealLifeOverhaul.NewBuildings
             {
                 return street;
             }
+            // Up to some 2,900 boxes a lot: the turned test, with its trigonometry, only for those within the rectangle's reach.
+            NewBuildingsRules.Reach(facing, hw, hd, NewBuildingsRules.Gap, out float reachX, out float reachZ);
             for (int i = 0; i < GameNames.Count; i++)
             {
                 int k = i * 4;
-                if (NewBuildingsRules.Overlaps(GameBoxes[k], GameBoxes[k + 1], GameBoxes[k + 2], GameBoxes[k + 3], cx, cz, facing, hw, hd, NewBuildingsRules.Gap))
+                float x0 = GameBoxes[k], z0 = GameBoxes[k + 1], x1 = GameBoxes[k + 2], z1 = GameBoxes[k + 3];
+                if (!NewBuildingsRules.Apart(x0, z0, x1, z1, cx, cz, reachX, reachZ) && NewBuildingsRules.Overlaps(x0, z0, x1, z1, cx, cz, facing, hw, hd, NewBuildingsRules.Gap))
                 {
                     return "the game's building " + GameNames[i] + " stands there";
                 }
@@ -262,7 +267,8 @@ namespace RealLifeOverhaul.NewBuildings
             for (int i = 0; i < OtherNames.Count; i++)
             {
                 int k = i * 4;
-                if (NewBuildingsRules.Overlaps(OtherBoxes[k], OtherBoxes[k + 1], OtherBoxes[k + 2], OtherBoxes[k + 3], cx, cz, facing, hw, hd, NewBuildingsRules.Gap))
+                float x0 = OtherBoxes[k], z0 = OtherBoxes[k + 1], x1 = OtherBoxes[k + 2], z1 = OtherBoxes[k + 3];
+                if (!NewBuildingsRules.Apart(x0, z0, x1, z1, cx, cz, reachX, reachZ) && NewBuildingsRules.Overlaps(x0, z0, x1, z1, cx, cz, facing, hw, hd, NewBuildingsRules.Gap))
                 {
                     return OtherNames[i] + " stands there";
                 }
@@ -343,7 +349,9 @@ namespace RealLifeOverhaul.NewBuildings
             return null;
         }
 
-        // No traffic lane on the plot, and one near enough for it to front a street; the street's height for the samples.
+        // No traffic lane on the plot, and one near enough for it to front a street; the street's height for the samples. The
+        // lanes' points are sorted into squares once a load (LaneGrid), whose answers are a whole pass's: the lowest point
+        // inside, and the nearest within reach.
         private static string Street(float cx, float cz, float facing, float hw, float hd, out float streetY)
         {
             streetY = 0f;
@@ -352,33 +360,64 @@ namespace RealLifeOverhaul.NewBuildings
             {
                 return "the city's traffic lanes could not be read";
             }
+            IndexLanes(points);
+            int inside = Lanes.Inside(cx, cz, facing, hw, hd, NewBuildingsRules.RoadClear);
+            if (inside >= 0)
+            {
+                return "a traffic lane runs there (" + points[inside].name + ")";
+            }
+            float reach = NewBuildingsRules.StreetReach + Mathf.Max(hw, hd);
+            int near = Lanes.Nearest(cx, cz, reach, out _);
+            if (near < 0)
+            {
+                return "it fronts no street (the nearest traffic lane is " + Mathf.Sqrt(NearestAnywhere(points, cx, cz)).ToString("F0", CultureInfo.InvariantCulture) + " m from its middle)";
+            }
+            streetY = points[near].position.y;
+            return null;
+        }
+
+        private static readonly LaneGrid Lanes = new LaneGrid();
+        private static Waypoint[] _lanesOf;   // the points the squares were filled from: lanes appended at a load make a new array
+        private static int _lanesCount;
+
+        private static void IndexLanes(Waypoint[] points)
+        {
+            if (ReferenceEquals(points, _lanesOf) && points.Length == _lanesCount)
+            {
+                return;
+            }
+            int n = points.Length;
+            var xs = new float[n];
+            var zs = new float[n];
+            var present = new bool[n];
+            for (int i = 0; i < n; i++)
+            {
+                if (points[i] != null)
+                {
+                    Vector3 p = points[i].position;
+                    xs[i] = p.x;
+                    zs[i] = p.z;
+                    present[i] = true;
+                }
+            }
+            Lanes.Fill(xs, zs, present, n);
+            _lanesOf = points;
+            _lanesCount = n;
+        }
+
+        // The squared distance to the nearest lane point anywhere: only for the words of a lot that fronts no street.
+        private static float NearestAnywhere(Waypoint[] points, float cx, float cz)
+        {
             float nearest = float.MaxValue;
             for (int i = 0; i < points.Length; i++)
             {
-                Waypoint w = points[i];
-                if (w == null)
+                if (points[i] != null)
                 {
-                    continue;
-                }
-                Vector3 p = w.position;
-                if (NewBuildingsRules.Inside(p.x, p.z, cx, cz, facing, hw, hd, NewBuildingsRules.RoadClear))
-                {
-                    return "a traffic lane runs there (" + w.name + ")";
-                }
-                float dx = p.x - cx, dz = p.z - cz;
-                float sqr = dx * dx + dz * dz;
-                if (sqr < nearest)
-                {
-                    nearest = sqr;
-                    streetY = p.y;
+                    Vector3 p = points[i].position;
+                    nearest = Mathf.Min(nearest, (p.x - cx) * (p.x - cx) + (p.z - cz) * (p.z - cz));
                 }
             }
-            float reach = NewBuildingsRules.StreetReach + Mathf.Max(hw, hd);
-            if (nearest > reach * reach)
-            {
-                return "it fronts no street (the nearest traffic lane is " + Mathf.Sqrt(nearest).ToString("F0", CultureInfo.InvariantCulture) + " m from its middle)";
-            }
-            return null;
+            return nearest;
         }
 
         private static NavMeshQueryFilter Walk()

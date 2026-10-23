@@ -82,6 +82,9 @@ namespace RealLifeOverhaul
                 ConstructionBridges.SizeTaken = SizeTaken;
                 ConstructionBridges.LandPrice = () => DistrictBuildings.LandPricePerSqm;
                 ConstructionBridges.Finish = Finish;
+                DistrictBuildings.Lessee = RivalLease;   // whatever the options say: every machine leases the same offices
+                ConstructionBridges.RivalOffice = RivalOffice;
+                ConstructionBridges.RivalOfficeGo = RivalOfficeGo;
                 ConstructionBridges.Designs = Designs;
                 ConstructionBridges.Footprint = Footprint;
                 ConstructionBridges.StartPlot = StartPlot;
@@ -166,6 +169,9 @@ namespace RealLifeOverhaul
             internal static void Disconnect()
             {
                 SiteBuilders.Reset();
+                DistrictBuildings.Lessee = null;
+                ConstructionBridges.RivalOffice = null;
+                ConstructionBridges.RivalOfficeGo = null;
                 ConstructionBridges.Lots = null;
                 ConstructionBridges.LotsStamp = null;
                 ConstructionBridges.DistrictLives = null;
@@ -484,6 +490,59 @@ namespace RealLifeOverhaul
                 {
                     Fault("ConstructionLinks.Finish", e);
                     why = "a fault";
+                    return false;
+                }
+            }
+
+            // ------------------------------------------------------------------ the rival builders' offices in Uptown
+
+            private static readonly DistrictLease[] RivalLeases = new DistrictLease[BuildCatalogue.RivalCount];
+
+            // A rival builder's office (the rival's index is its lease's): a business of the construction company's type, set up as
+            // the game's design studios are, under the rival's name (a proper name, the same in every language), valued by its crews.
+            private static DistrictLease RivalLease(int rival)
+            {
+                try
+                {
+                    if (rival < 0 || rival >= RivalLeases.Length)
+                    {
+                        return null;
+                    }
+                    return RivalLeases[rival] ?? (RivalLeases[rival] = new DistrictLease
+                    {
+                        Owner = Owner, BusinessType = ConstructionType.TypeName, LayoutsFrom = ConstructionType.Template, Name = ConstructionText.T(BuildCatalogue.RivalKeys[rival]),
+                        DescriptionKey = BuildCatalogue.OfficeAboutKey, DailyIncome = BuildCatalogue.RivalCrews[rival] * BuildCatalogue.OfficeDayPerCrew
+                    });
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.RivalLease", e);
+                    return null;
+                }
+            }
+
+            private static string RivalOffice(int rival)
+            {
+                try
+                {
+                    return DistrictBuildings.LeaseStands(rival, out string address) ? address : null;
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.RivalOffice", e);
+                    return null;
+                }
+            }
+
+            private static bool RivalOfficeGo(int rival)
+            {
+                try
+                {
+                    return DistrictBuildings.LeaseDestination(rival);
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.RivalOfficeGo", e);
                     return false;
                 }
             }

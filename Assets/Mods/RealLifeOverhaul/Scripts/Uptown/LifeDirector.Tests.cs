@@ -61,23 +61,51 @@ namespace RealLifeOverhaul.Uptown
         {
             GameInstance save = SaveGameManager.Current;
             bool found = LifeGame.GetDataFinds(), listed = LifeGame.Listed();
-            int built = Standing.Count, dayOne = 0, finished = 0;
+            int built = Standing.Count, dayOne = 0, kept = 0, finished = 0, looks = 0;
+            string lookWhy = null;
             for (int i = 0; i < Standing.Count; i++)
             {
-                dayOne += DayOneLots.Contains(Standing[i].Spec.Id) ? 1 : 0;
-                finished += _state.On(Standing[i].Spec.Id) != null ? 1 : 0;
+                string id = Standing[i].Spec.Id;
+                bool keptOne = KeptLots.Contains(id);
+                kept += keptOne ? 1 : 0;
+                dayOne += BuiltLots.Contains(id) && !keptOne ? 1 : 0;
+                finished += _state.On(id) != null ? 1 : 0;
+                if (_down || MadeBuildings.LooksAsGame(Standing[i], out string why))
+                {
+                    looks++;
+                }
+                else
+                {
+                    lookWhy = lookWhy ?? Standing[i].Address + ": " + why;
+                }
+            }
+            int open = 0;
+            for (int i = 0; i < Plan.Count; i++)
+            {
+                open += !StandsOn(Plan[i].Id) && _state.Covering(Plan[i].Id) == null && BuildingsRules.Clear(Plan[i].Id) ? 1 : 0;
+            }
+            int leases = 0, leased = 0;
+            for (int i = 0; i < LeasedUp.Length; i++)
+            {
+                leases += Lessee(i) != null ? 1 : 0;
+                leased += LeasedUp[i] != null ? 1 : 0;
             }
             LifeGame.Counted(out int inCity, out int inDistrict);
             int registrations = LifeGame.InSaveList(Standing);
-            bool zone = LifeGame.Zoned, row = LifeGame.Rowed(), stats = LifeGame.HasStats(save);
+            string rowWhy = null;
+            bool zone = LifeGame.Zoned, row = LifeGame.Rowed(), placed = !row || LifeGame.RowPlaced(out rowWhy), stats = LifeGame.HasStats(save);
             bool pass = !_known ? !Lives
                         : _down ? found && !listed && inCity == 0 && inDistrict == 0 && registrations == 0   // out of the game's lists, its record kept for what holds its id
-                        : found && listed && built > 0 && zone && inCity == built && inDistrict == built && registrations == built && stats;
+                        : found && listed && built > 0 && zone && placed && inCity == built && inDistrict == built && registrations == built && stats && looks == built
+                          && leased == leases;
             string line = "Uptown check (census, " + when + "): " + (!_known
                               ? "not a district of the game at this load (" + (_notWhy ?? "not asked for") + ")"
                               : "the district " + DistrictValues.Id + " found by the game's GetData " + Yes(found) + ", in its list of districts " + Yes(listed)
-                                + ", its zone on the city map " + Yes(zone) + ", its filter row " + Yes(row) + ", " + built + " building(s) built (" + dayOne + " from the first day, "
-                                + finished + " finished by the construction game), " + Math.Max(0, Plan.Count - built) + " lot(s) empty of " + Plan.Count + ", in the game's lists "
+                                + ", its zone on the city map " + Yes(zone) + ", its filter row " + Yes(row) + (row ? " under the map's districts " + Yes(placed) : string.Empty)
+                                + (placed ? string.Empty : " (" + rowWhy + ")") + ", " + built + " building(s) built (" + dayOne + " from the first day, " + kept
+                                + " kept from an earlier load, " + finished + " finished by the construction game), " + open + " lot(s) open of " + Plan.Count + ", "
+                                + leased + " of " + leases + " leased offices with their businesses, " + looks + " of " + built + " looking as the game's own (the city map's box "
+                                + "drawn only as a shadow while the map is shut" + (lookWhy != null ? "; not: " + lookWhy : string.Empty) + "), in the game's lists "
                                 + inCity + " in allBuildings and " + inDistrict + " in the district's, " + registrations + " registration(s) in the save's list, its stats " + Yes(stats)
                                 + (_down ? ", stood down in this city" : string.Empty) + "; its figures "
                                 + (LifeGame.FiguresLive ? "Midtown's and Hell's Kitchen's as the game has them" : "Build 3682's")

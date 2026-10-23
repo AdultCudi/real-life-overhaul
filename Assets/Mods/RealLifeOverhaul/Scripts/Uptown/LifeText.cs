@@ -9,6 +9,9 @@ namespace RealLifeOverhaul.Uptown
         public const string TestBusiness = "reallife_uptown_test_business";
         public const string TestRent = "reallife_uptown_test_rent";
         public const string TestSave = "reallife_uptown_test_save";
+        public const string TestOffices = "reallife_uptown_test_offices";
+        public const string TestRow = "reallife_uptown_test_row";
+        public const string TestCost = "reallife_uptown_test_cost";
 
         public const string ClosedSession = "reallife_uptown_closed_session";     // the notice when a session stops being one of this mod
         public const string NotLiving = "reallife_uptown_test_not_living";        // the notices the tests show
@@ -23,5 +26,12 @@ namespace RealLifeOverhaul.Uptown
         public const string NotSaved = "reallife_uptown_test_not_saved";
         public const string Busy = "reallife_uptown_test_busy";
         public const string Session = "reallife_uptown_test_session";
+        public const string OfficesDone = "reallife_uptown_test_offices_done";
+        public const string OfficesNone = "reallife_uptown_test_offices_none";
+        public const string RowDone = "reallife_uptown_test_row_done";
+        public const string RowWrong = "reallife_uptown_test_row_wrong";
+        public const string CostStart = "reallife_uptown_test_cost_start";
+        public const string CostDone = "reallife_uptown_test_cost_done";
+        public const string CostNone = "reallife_uptown_test_cost_none";
     }
 }

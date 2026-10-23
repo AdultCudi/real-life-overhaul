@@ -85,6 +85,12 @@ namespace RealLifeOverhaul.Construction
 
         public delegate bool FinishCall(string lot, string design, string size, int version, string type, int storeys, bool player, double price, out string why);
 
+        /// <summary>A rival builder's office (its index among the city's contractors) as the game writes its address, or null when it has none standing at this load. Default: none.</summary>
+        public static Func<int, string> RivalOffice;
+
+        /// <summary>The game's own destination set at a rival builder's office; false when it has none standing. Default: no.</summary>
+        public static Func<int, bool> RivalOfficeGo;
+
         // ------------------------------------------------------------------ the copy engine
 
         /// <summary>A building's footprint as the copy engine measures it, with its slack round it: m along its door's side and back from it. Default: not known.</summary>
@@ -337,6 +343,8 @@ namespace RealLifeOverhaul.Construction
             SizeTaken = null;
             LandPrice = null;
             Finish = null;
+            RivalOffice = null;
+            RivalOfficeGo = null;
             Designs = null;
             Footprint = null;
             StartPlot = null;

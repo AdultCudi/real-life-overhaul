@@ -538,6 +538,58 @@ namespace RealLifeOverhaul.NewBuildings
         /// <summary>The look's root, for the log and the tests; null once gone.</summary>
         public static Transform RootOf(CopyLook look) => look != null ? look.transform : null;
 
+        /// <summary>
+        /// True when a working copy looks as the game's own building does: with the city map shut its box (the map's stand-in,
+        /// CityBuildingController.lodVersion) drawn only as a shadow and its parts drawn; with the map open the box drawn and no
+        /// part (ToggleLodMode, the only place the game switches them; every building of the game's scenes stores its box
+        /// shadow-only, and one keeps a part of its lists switched off, so the parts are judged together: none drawn with the
+        /// map shut is the box's look). A copy the camera looks through (the game's fade hides parts) is not judged. Else why
+        /// not. One pass over its lists: for a check, never a frame.
+        /// </summary>
+        public static bool LooksAsGame(CityBuildingController c, out string why)
+        {
+            why = null;
+            if (c == null)
+            {
+                why = "it has no copy";
+                return false;
+            }
+            if (!c.gameObject.activeInHierarchy || c.IsInCameraBlockMode)
+            {
+                return true;   // hidden, or faded for the camera: the game's fade has the say
+            }
+            bool map = CityMap.IsOpen;
+            MeshRenderer box = c.lodVersion;
+            if (box != null && box.shadowCastingMode != (map ? UnityEngine.Rendering.ShadowCastingMode.On : UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly))
+            {
+                why = "its box casts " + box.shadowCastingMode + " with the map " + (map ? "open" : "shut");
+                return false;
+            }
+            int drawn = 0, parts = 0;
+            CountParts(c.Renderers, box, ref drawn, ref parts);
+            CountParts(c.renderersToFade, box, ref drawn, ref parts);
+            CountParts(c.renderersToHide, box, ref drawn, ref parts);
+            if (parts > 0 && (map ? drawn == parts : drawn == 0))
+            {
+                why = (map ? "every one of its " : "none of its ") + parts + " parts drawn with the map " + (map ? "open" : "shut");
+                return false;
+            }
+            return true;
+        }
+
+        private static void CountParts(IList<Renderer> list, MeshRenderer box, ref int drawn, ref int parts)
+        {
+            for (int i = 0; list != null && i < list.Count; i++)
+            {
+                Renderer r = list[i];
+                if (r != null && (box == null || r.gameObject != box.gameObject))
+                {
+                    parts++;
+                    drawn += r.enabled ? 1 : 0;
+                }
+            }
+        }
+
         // ---------------------------------------------------------------- a building's own look hidden
 
         private static readonly Dictionary<CityBuildingController, List<Renderer>> Hidden = new Dictionary<CityBuildingController, List<Renderer>>(8);
