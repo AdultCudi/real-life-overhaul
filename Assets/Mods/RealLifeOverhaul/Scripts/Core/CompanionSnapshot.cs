@@ -13,10 +13,11 @@ namespace RealLifeOverhaul
     public static class CompanionSnapshot
     {
         public const string Key = "reallife:companion";
-        public const int SchemaVersion = 1;
-        public const int MaxBytes = 4 * 1024 * 1024;
-        public const int MaxRows = 10000;
+        public const int SchemaVersion = 1;            // the envelope's version; a reader that does not know it reads nothing
+        public const int MaxBytes = 4 * 1024 * 1024;   // bytes of UTF-8, of the whole report: a save never grows past it
+        public const int MaxRows = 10000;              // entries in one array, more than any city has businesses or staff
 
+        /// <summary>A JSON object from name and value pairs, in that order: name, value, name, value.</summary>
         public static Dictionary<string, object> Row(params object[] pairs)
         {
             var row = new Dictionary<string, object>(StringComparer.Ordinal);
@@ -27,6 +28,7 @@ namespace RealLifeOverhaul
             return row;
         }
 
+        /// <summary>The whole report as JSON. A reader that throws or gives what JSON cannot hold is "failed" alone.</summary>
         public static string Capture(string version, Dictionary<string, object> captured,
             IDictionary<string, Func<CompanionModule>> readers, Action<string, Exception> failed = null)
         {

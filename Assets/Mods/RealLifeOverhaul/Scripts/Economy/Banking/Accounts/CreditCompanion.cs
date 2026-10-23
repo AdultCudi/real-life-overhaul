@@ -6,6 +6,7 @@ namespace RealLifeOverhaul.Economy
     /// <summary>Read-only observations of additional credit. Principal never becomes a statement adjustment.</summary>
     public static class CreditCompanion
     {
+        /// <summary>One row per open account that no test made; a read, so no payment, interest or step is taken.</summary>
         public static List<object> Accounts(List<CreditAccount> accounts, int today)
         {
             var rows = new List<object>();

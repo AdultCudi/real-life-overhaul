@@ -17,9 +17,9 @@ Each feature keeps its state in the save's `modData` under keys that start `real
 | `reallife:civic_gov` | `Civic/CivicDirector.cs`, `Meta/FeatureList.cs` |
 | `reallife:civic_office` | `Civic/CivicDirector.cs` |
 | `reallife:civic_works` | `Civic/CivicDirector.cs`, `Meta/FeatureList.cs` |
+| `reallife:companion` | `Core/CompanionSnapshot.cs`, `Core/CompanionGame.cs`, `Meta/FeatureList.cs` |
 | `reallife:district_log` | `Districts/DistrictRules.cs` |
 | `reallife:economy` | `Economy/Banking/Rating/CreditFile.cs`, `Economy/Banking/Rating/CreditStore.cs` |
-| `reallife:companion` | `Core/CompanionGame.cs`, `Meta/FeatureList.cs` |
 | `reallife:economy_brands` | `Economy/Brands/BrandStore.cs` |
 | `reallife:economy_brands_before_tests` | `Economy/Brands/BrandStore.cs` |
 | `reallife:economy_city` | `Economy/City/CityStore.cs` |

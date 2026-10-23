@@ -104,6 +104,6 @@ Performance is a requirement, not a nice-to-have.
 
 `Core/Companion.CaptureV1` exposes the read-only [companion contract](../../contracts/companion/v1/README.md).
 `SaveHook` writes the same report after the ordinary save handlers. Feature owners
-provide observations through `Wiring.Companion`; consumers do not decode private
+provide observations through `Wiring.CompanionLinks`; consumers do not decode private
 save stores or become another writer of game state. The report is derived data,
 never input to RLO gameplay.

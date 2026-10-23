@@ -31,8 +31,7 @@ namespace RealLifeOverhaul.Economy
             for (int i = 0; all != null && i < all.Count; i++)
             {
                 EmployeeInstance employee = all[i];
-                if (employee == null || ReferenceEquals(employee, self) || employee.IsCandidate || employee.isBeingReplaced
-                    || employee.hourlyWage <= 0f || employee.satisfaction <= 0f || string.IsNullOrEmpty(employee.id))
+                if (!Counts(employee, self))   // the same staff the company pays and reads into its files
                 {
                     continue;
                 }

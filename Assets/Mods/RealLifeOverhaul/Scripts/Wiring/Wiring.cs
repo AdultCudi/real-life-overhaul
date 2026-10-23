@@ -75,7 +75,7 @@ namespace RealLifeOverhaul
             Step("the calendar", CalendarLinks.Connect);   // its sources read the others' schedules when it is shown
             Step("rival tycoons", RivalLinks.Connect);   // after the economy, the company, Flare and the interiors: what it wraps is theirs already
             Step("standing", StandingLinks.Connect);   // last: what it wraps of the others' is theirs already
-            Step("companion reporting", CompanionLinks.Connect);
+            Step("companion reporting", CompanionLinks.Connect);   // wraps nothing: it only reads what the others own
             Logger?.Info("Wiring: the features are connected.");
         }
 

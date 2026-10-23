@@ -4,13 +4,15 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Meets the game for companion captures. The ordinary save embeds the same report Link reads directly.
-    /// Reports are never loaded into the simulation. A capture costs one pass over the requested reporting records.
+    /// Meets the game for companion captures (contracts/companion/v1). A save carries the same report a live reader gets
+    /// from <see cref="Companion.CaptureV1"/>; RLO never loads it back into play. Nothing per frame: a capture runs on a
+    /// save or a reader's call, and costs one pass over the businesses, the employees and the credit accounts.
     /// </summary>
-    public static class CompanionGame
+    internal static class CompanionGame
     {
         private static readonly HashSet<string> Reported = new HashSet<string>(StringComparer.Ordinal);
 
+        /// <summary>The report, or null outside a loaded session or in Going Public. Throws on a fault of the envelope.</summary>
         public static string Capture(GameInstance game)
         {
             if (game == null || !ReferenceEquals(game, SaveGameManager.Current) || !ModState.Loaded
@@ -23,7 +25,21 @@ namespace RealLifeOverhaul
                 CompanionBridges.Readers, Failed);
         }
 
-        /// <summary>Called after the normal save handlers. A failed or unsupported capture removes an older report.</summary>
+        /// <summary>As <see cref="Capture"/>, but a fault is logged once and gives null: another mod's call never throws.</summary>
+        public static string CaptureSafe(GameInstance game)
+        {
+            try
+            {
+                return Capture(game);
+            }
+            catch (Exception e)
+            {
+                Failed("capture", e);
+                return null;
+            }
+        }
+
+        /// <summary>Called after the save handlers and SaveLines.PutBack. No report, or a failed one, removes an older report.</summary>
         public static void Save(GameInstance game)
         {
             if (game == null)
@@ -51,7 +67,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Owned business identities. Type ids stay opaque; a companion must declare a model separately.</summary>
+        /// <summary>The player's own established businesses. Type ids stay opaque; a reader declares its own model of them.</summary>
         public static CompanionModule Businesses()
         {
             var rows = new List<object>();
@@ -70,6 +86,7 @@ namespace RealLifeOverhaul
             return new CompanionModule("ready", rows);
         }
 
+        /// <summary>Forgets which faults were logged, so a new session says each once again.</summary>
         public static void Reset() => Reported.Clear();
 
         private static void Failed(string capability, Exception error)
