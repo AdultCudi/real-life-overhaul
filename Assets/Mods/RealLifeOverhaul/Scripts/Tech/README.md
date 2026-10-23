@@ -7,6 +7,7 @@ The tech sector and the professions: tech firms of the player's own, hiring, the
 - `TechDirector.cs`: keeps every part going; each part in partial files of its own (the apps' actions in `.Roles`, `.FirmsApp` and `.Deals`).
 - `TechBridges.cs`: what it asks of the others.
 - `Firms`: the firms, one folder a part (Hiring, Infra, People, Sites, Venture).
+- `Sites/TowerFloors.cs`: the tech companies' towers on the floors core ([Floors](../../../../../docs/features/floors.md)): a building held a tower, a company a floor, the game's own panel at its door and its lift; the lobby and the rest of a company's floor are `TechSites`' own, laid again by the core's lift.
 
 ## Documentation
 

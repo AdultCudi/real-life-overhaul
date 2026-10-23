@@ -1,14 +1,9 @@
 using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using BAModAPI;
-using BigAmbitions.InteriorDesigner.InteriorElements;
-using BigAmbitions.Items;
 using Controllers;
-using LayoutItem = BusinessLayoutSets.Item;
-using Helpers;
+using RealLifeOverhaul.Floors;
 using RealLifeOverhaul.GameUi;
 using TMPro;
 using UI.Notification;
@@ -17,138 +12,68 @@ using UnityEngine.Rendering;
 
 namespace RealLifeOverhaul.Careers
 {
-    /// <summary>A floor's furniture: the school's layout laid in, the classroom doors found, named and signed, and their marks.</summary>
+    /// <summary>A floor's classrooms: once the floors core has laid the school's layout, its doors found, named and signed, and their marks.</summary>
     internal sealed partial class CampusInterior
     {
-        // The school's layout laid in over the frames the game keeps the screen dark; the classroom doors last.
-        private IEnumerator Lay(int built, int goCourse, bool begin)
+        // The school's layout stands (the floors core laid it over the frames the game keeps the screen dark): its rooms.
+        private void Laid(FloorVisit v, FloorLaid laid)
         {
-            var watch = Stopwatch.StartNew();
-            BuildingManager manager = Manager;
-            List<LayoutItem> items = _set.Items;
-            var order = new List<LayoutItem>(items.Count);
-            for (int i = 0; i < items.Count; i++)
+            if (!ReferenceEquals(v, _visit))
             {
-                if (!IsDoor(items[i].itemName))
-                {
-                    order.Add(items[i]);
-                }
-            }
-            for (int i = 0; i < items.Count; i++)
-            {
-                if (IsDoor(items[i].itemName))
-                {
-                    order.Add(items[i]);
-                }
-            }
-            var made = new Dictionary<string, KeyValuePair<ItemController, List<AttachableChild>>>(order.Count);
-            try
-            {
-                var elements = new List<InteriorElement>(InteriorElementsHelper.InteriorElementsCache.Values);
-                BuildingManager.ApplyInteriorDesign(_set.interiorDesigns, elements.ToArray());
-            }
-            catch (Exception e)
-            {
-                _logger?.Error(e);
-            }
-            int per = (order.Count + Chunks - 1) / Chunks, at = 0, frames = 0, skipped = 0;
-            while (at < order.Count)
-            {
-                yield return null;
-                frames++;
-                if (built != _built || !BuildingManager.IsInsideBuilding)
-                {
-                    yield break;
-                }
-                long before = watch.ElapsedMilliseconds;
-                for (int n = 0; n < per && at < order.Count; n++, at++)
-                {
-                    try
-                    {
-                        ItemController made1 = Place(order[at], manager.IndoorItemContainer);
-                        if (made1 != null)
-                        {
-                            made[order[at].id] = new KeyValuePair<ItemController, List<AttachableChild>>(made1, order[at].stackedItems);
-                        }
-                        else
-                        {
-                            skipped++;
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        skipped++;
-                        _logger?.Error(e);
-                    }
-                }
-                if (Meta.Dev.Verbose)
-                {
-                    _logger?.Info("Careers check (university floor): frame " + frames + ", " + at + " of " + order.Count + " pieces, " + (watch.ElapsedMilliseconds - before) + " ms: PASS");
-                }
+                return;
             }
             try
             {
-                foreach (KeyValuePair<string, KeyValuePair<ItemController, List<AttachableChild>>> pair in made)
-                {
-                    ItemController parent = pair.Value.Key;
-                    List<AttachableChild> children = pair.Value.Value;
-                    for (int i = 0; children != null && i < children.Count; i++)
-                    {
-                        if (made.TryGetValue(children[i].childId, out KeyValuePair<ItemController, List<AttachableChild>> child) && parent.AttachmentPoints.Length > children[i].attachmentIndex)
-                        {
-                            child.Key.SetToParentPlaceableItem(parent, parent.AttachmentPoints[children[i].attachmentIndex]);
-                        }
-                    }
-                }
-                manager.ForceUpdateAvailableProducers();   // the game reads the pieces again: the classroom doors find their chairs
-                Rooms(manager);
+                Rooms(Manager);
                 Label();
             }
             catch (Exception e)
             {
                 _logger?.Error(e);
             }
-            _logger?.Info("Careers: the university's floor " + Floor + " is laid: " + made.Count + " pieces of the game's school" + (skipped > 0 ? " (" + skipped + " left out)" : string.Empty)
-                          + " over " + frames + " frames, " + watch.ElapsedMilliseconds + " ms in all; rooms: " + RoomsWords() + ".");
+            _logger?.Info("Careers: the university's floor " + Floor + " is laid: " + laid.Made + " pieces of the game's school"
+                          + (laid.Skipped > 0 ? " (" + laid.Skipped + " left out)" : string.Empty)
+                          + " over " + laid.Frames + " frames, " + laid.Ms + " ms in all; rooms: " + RoomsWords() + ".");
             Tell(NotificationType.Info, "reallife_campus_note_floor", "floor", Floor.ToString(), "courses", RoomsList());
-            if (goCourse >= 0)
+            int course = _layCourse;
+            bool begin = _layBegin;
+            _layCourse = -1;
+            _layBegin = false;
+            if (course >= 0)
             {
-                yield return null;   // the doors have found their chairs: their Start has run
-                GoToRoom(goCourse, begin);
+                _director.StartCoroutine(Guard.Routine(ToRoom(v, course, begin)));
             }
         }
 
-        // One piece of a layout, the way BuildingManager.LoadBusinessLayoutSet makes it.
-        private static ItemController Place(LayoutItem item, Transform container)
+        private IEnumerator ToRoom(FloorVisit v, int course, bool begin)
         {
-            BigAmbitions.Items.Item data = ItemsGetter.GetByName(item.itemName);
-            if (data == null || data.isSeasonalForSale || (!data.IsAvailableInCurrentSeason() && !BuildingManager.ignoreSeasons))
+            yield return null;   // the doors have found their chairs: their Start has run
+            if (ReferenceEquals(v, _visit))
             {
-                return null;
+                GoToRoom(course, begin);
             }
-            ItemController c = PrefabHelper.CreatePrefabItem(item.itemName, container);
-            if (c == null)
+        }
+
+        // The lift to another floor, under the dark screen: the same five rooms given that floor's courses.
+        private void Moved(FloorVisit v, int fromFloor)
+        {
+            Floor = v.Floor;
+            Label();
+            _logger?.Info("Careers: the player takes the lift from floor " + fromFloor + " to floor " + v.Floor + " of the university (at " + Clock() + "); rooms: " + RoomsWords() + ".");
+        }
+
+        // The lift is over and the screen light again: the floor's courses said, and on to the classroom asked for.
+        private void Shown(FloorVisit v)
+        {
+            Tell(NotificationType.Info, "reallife_campus_note_floor", "floor", Floor.ToString(), "courses", RoomsList());
+            int course = _goCourse;
+            bool begin = _goBegin;
+            _goCourse = -1;
+            _goBegin = false;
+            if (course >= 0)
             {
-                return null;
+                GoToRoom(course, begin);
             }
-            c.playerItemPurchaserSettings = new PlayerItemPurchaserSettings
-            {
-                enabled = item.playerItemPurchaserSettings != null && item.playerItemPurchaserSettings.enabled,
-                itemName = item.playerItemPurchaserSettings != null ? item.playerItemPurchaserSettings.itemName : string.Empty,
-                itemQuantity = item.playerItemPurchaserSettings != null ? item.playerItemPurchaserSettings.itemQuantity : 1
-            };
-            c.itemName = item.itemName;
-            c.customPositions = item.customPositions;
-            c.customColors = item.customColors;
-            c.customValue = item.customValue;
-            c.transform.position = item.position;
-            c.transform.rotation = item.rotation;
-            c.ItemInstance = ItemHelper.InitializeNewInstance(item.itemName);
-            c.ItemInstance.id = item.id;
-            c.ItemInstance.worldSpaceTextValue = item.worldSpaceTextValue;
-            c.ItemInstance.linkedItemName = item.linkedItemName;
-            c.gameObject.SetActive(true);
-            return c;
         }
 
         // The floor's classroom doors by room, and each room's chair found as the game's door finds its own (the first seat named like it).
@@ -156,7 +81,7 @@ namespace RealLifeOverhaul.Careers
         {
             Array.Clear(_rooms, 0, _rooms.Length);
             Array.Clear(_chairs, 0, _chairs.Length);
-            List<ItemController> all = manager.allItemControllers;
+            System.Collections.Generic.List<ItemController> all = manager != null ? manager.allItemControllers : null;
             for (int i = 0; all != null && i < all.Count; i++)
             {
                 if (all[i] is EducationDoorController door)

@@ -408,6 +408,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Study\StudyRules.Clash.cs" Link="Mod\StudyRules.Clash.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\JobCatalogue.cs" Link="Mod\JobCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Study\CampusRules.cs" Link="Mod\CampusRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Floors\FloorsRules.cs" Link="Mod\FloorsRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Floors\FloorLoan.cs" Link="Mod\FloorLoan.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Study\EducationRules.cs" Link="Mod\EducationRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Study\ClassPlayRules.cs" Link="Mod\ClassPlayRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Study\SittingRules.cs" Link="Mod\SittingRules.cs" />
