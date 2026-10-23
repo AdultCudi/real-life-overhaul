@@ -27,17 +27,19 @@ The mod's places on floors of the buildings it already holds, so a new place (Ci
 - **Core/SpecialBuildings** takes a building for places that found no spare floor (`Set` and `Remove`, its existing API); the book of special buildings tells `Core/HeldUnits` of it, which keeps the game's letting off it. The floors never touch the ignore list.
 - **Core/MapPlaces** shows a building taken for places under a row of its own ("City Offices").
 - **GameUi/DoorPanel** and `WorldPanel` are the game's own panel at the door and the lift.
+- **Core/CityCheck** and the city table (`Meta/FeatureCities`): the floors have no line of their own there; they follow their hosts. Each building and place names the feature that holds it (`FloorHost.Feature`, `FloorPlace.Feature`: the university's `careers_study`, the towers' `tech_sites`, the test's `diagnostics`). While that feature stands down in another city (or under the Diagnostics test "Stand New York's features down, as in another city"), or is switched off after its faults, its holder's code no longer runs to let it go, so the core puts the building or the place away itself, as a `Let` or a `Release` would, and takes it up again once the feature is back. A building or place held or asked for meanwhile waits the same way.
+- **Core/GameDlc**: a building a DLC keeps is never held (`Hold` refuses it with a line) and never taken for places (`FloorsGame.PickClaim` walks the city's buildings through `GameDlc.Open` and tests each with `GameDlc.Gated`). The floors read no DLC themselves.
 
 ## A building the mod holds (a host)
 
-A holder sets the building, the place outside its door, its name and its own places, then calls `FloorsDirector.Hold(host)`; again whenever its places change; `FloorsDirector.Let(host, why)` gives it back. A host needs a `CityBuildingController` with its `Building` (address, size, version, floor area) and an entrance door; its registration is found by address (`BuildingHelper.GetBuildingRegistration`, the game's private lookup first), never in the save's list or the city's list of buildings, so a building made at run time serves as well as one of the city's. While held, its doors let the player in (the game's "always open" on each, put back as found when it closes or is let go).
+A holder sets the building, the place outside its door, its name and its own places, then calls `FloorsDirector.Hold(host)`; again whenever its places change; `FloorsDirector.Let(host, why)` gives it back. A host names the feature that holds it (its constructor's second argument) and needs a `CityBuildingController` with its `Building` (address, size, version, floor area) and an entrance door, never one a DLC keeps; its registration is found by address (`BuildingHelper.GetBuildingRegistration`, the game's private lookup first), never in the save's list or the city's list of buildings, so a building made at run time serves as well as one of the city's. While held, its doors let the player in (the game's "always open" on each, put back as found when it closes or is let go).
 
 ## Which place is on which floor
 
 - **A building's floors:** its floor area over one storey's (the game's interior for its size, `BuildingSizeData.squareMeters`), never fewer than its holder's own floors and at most 12 (`FloorsRules.MostFloors`: four pages of the panel). The university's building (5,971 square metres, a 225 square metre storey) holds 12; a tower holds its storeys, never fewer than its four companies.
 - **A holder's own places** stand from floor 1: the university's four floors, a tower's companies.
 - **Spare floors** go to the places that asked: the towers' first, then the university's building, then a building taken for places (`FloorsRules.Rank*`); buildings of a turn by address, places by their id, each place the first run of free floors that holds it (`FloorsRules.Assign`). The answer depends on the buildings and places alone, never on the order they came in: every machine of a Going Public session gives the same.
-- **No spare floor anywhere:** one building is taken for all the places that found none, never one a place (`FloorsRules.ClaimsFor`): the largest office of the city's own that stands empty and that nothing holds (no feature, no reservation, no conversion, not the player's or another player's), ties by address. At most four are ever taken. One that no place needs any more is given back once the player is not in it; one that is let meanwhile goes back and another is taken.
+- **No spare floor anywhere:** one building is taken for all the places that found none, never one a place (`FloorsRules.ClaimsFor`): the largest office of the city's own that stands empty and that nothing holds (no feature, no reservation, no conversion, not the player's or another player's, never one a DLC keeps), ties by address. At most four are ever taken. One that no place needs any more is given back once the player is not in it; one that is let meanwhile goes back and another is taken. With none to take, the places wait, and the city is looked at again once a minute.
 - **Released:** a place's floor goes when its feature asks (`FloorsDirector.Release`); places after it by id move down; a holder's own floors never move.
 - **Nothing is saved.** It is worked out again at each load from what holds and asks.
 
@@ -73,6 +75,7 @@ Each of the game's steps goes through `FloorLoan`, which says what to give back;
 | A save loaded on a floor | the game loads the building's own structure; found inside on no floor, the player is taken to the door's floor through the game's door again (or out while shut); on a tower's own structure at once, the lift where the game's door brings them in |
 | A place released, its holder's option switched off midway | a going in under way gets the building's own structure; on its floor the building's registration is put back and, on a borrowed structure, the player is taken out to the street |
 | The floors stand down after a fault | as a release, for every floor |
+| The holder's feature stands down in another city, or is switched off after its faults | as a release, for every floor of its building or for its place's; taken up again once the feature is back |
 | The scene unloading | the size and version given back at once; nobody is walked out |
 
 ## Furniture
@@ -86,7 +89,7 @@ A place where something is worked or studied has the furniture for it, the game'
 ## Putting a place on a floor
 
 ```csharp
-_office = new FloorPlace("cityhall", "reallife_civic_cityhall") { Structure = new FloorStructure("ba:buildingsize_c", 1), Fit = FitKind.CivicOffice };
+_office = new FloorPlace("cityhall", "civic", "reallife-cityhall") { Structure = new FloorStructure("ba:buildingsize_c", 1), Fit = FitKind.CivicOffice };
 _office.Designs.Add("LawFirm");
 FloorsDirector.Ask(_office);                        // a floor, now or as soon as a building has one
 if (FloorsDirector.Where(_office, out FloorWhere at))   // its building, address, floor and door: for the map, the guider, the Guide
@@ -99,6 +102,7 @@ FloorsDirector.Release(_office, "its option is off");
 The rules a place keeps:
 
 - **An id of its own,** the same on every machine: spare floors go by it.
+- **Its feature,** the one of `Meta/FeatureList` that declares it (here `civic`): its floor is put away while that feature stands down in another city or is switched off, and comes back with it.
 - **A name** (a locale key in the three languages, or a proper name never translated) and its button's words (`Button`: by default "Floor {floor}: {place}").
 - **A structure the game has,** or none for the building's own.
 - **Its furniture for what is done there,** the game's own first (`Layout`, else `Fit` with `Designs`, else its own hooks).
@@ -111,7 +115,7 @@ The rules a place keeps:
 - **What the indoor tag is.** Going Public shows another player indoors only while their building tag equals this player's (`RemotePlayerManager`: `p.Bldg == MPRegisterSync.CurrentShopAddress`). Both are made of the manager's registration's number and street, `"{StreetNumber} {StreetName}"` (`GameStateReader.AddressKey`): the one sent is read live every tenth of a second while inside (`MPCanvasUI`, the player's position message), this player's own is set when entering finishes (a prefix on `BuildingManager.DelayedEnterBuildingActions`, `MPPatches`) and healed every half second (`MPRegisterSync.TickContextHeal`).
 - **What that means for floors.** The registration of the place's own carries the building's street and number, and a tower's floors keep the game's registration: every floor of a building gives the same tag. Two players on different floors of one building are shown to each other, in one room (the same structure is at the same place on both machines).
 - **Why the core does not keep them apart.** The only thing the tag is made of is the registration's number and street. A registration of the place's own with another street or number per floor would give each floor its own tag (the game reads the building through `BuildingRegistration.BuildingCached`, which can be set), but Going Public would then send, on every machine, an address no machine's game has: its interior requests, its shop context, its customer streaming and its rosters all go by that same string. That is a change to what is sent, which the mod does not make. So the floors send nothing new and change nothing of another player's; two players on different floors of a building see each other.
-- **Deterministic.** Which place is on which floor, and the building taken for places, are the same on every machine with the same options and the same mod.
+- **Deterministic.** Which place is on which floor, and the building taken for places, are the same on every machine with the same options and the same mod, in the same city (a feature switched off after its faults on one machine is there as its option off), and nothing a DLC keeps is held or taken, so a player without a DLC is never sent to a door the game refuses them.
 - **The two-machine test.** Two machines in a session, the same mod, Developer diagnostics on: player A on the university's floor 1, player B on floor 2 (the lift). Expected now: each Player.log has Going Public's "[InteriorMask] '<the other>' shown" line and the floors' "Floors: in this Going Public session another player is shown indoors by the building's address alone" line; A sees B standing in A's floor's rooms. Then B leaves by the door: A's log says "hidden".
 
 ## The cost
@@ -128,6 +132,7 @@ With Developer diagnostics on, one line per event, never per frame:
 - `Floors check (save): on floor N of <address>: the building reads as its own C2; the manager's registration is the place's own, in no list of the save: PASS`.
 - The panels' own lines, named by their holder: `Careers check (university door)`, `Careers check (university lift)`, `Tech sites check (tower door)`, `Tech sites check (tower lift)`.
 - `Floors:` lines for each going in, arrival, lift, way off, building taken and given back.
+- `Floors: <building> (<id>) is put away while its feature '<feature>' stands down in this city; it comes back with its feature.` and `Floors: <building> (<id>) is held again, its feature '<feature>' back.` (a place's: `the floor of <place> is put away`, `<place> asks for a floor again`).
 
 ## The test
 
@@ -135,7 +140,7 @@ Options > Tests > Diagnostics > "Floors: put a test place on a floor" (with "Sho
 
 ## Offline checks
 
-EconomyCheck's `FloorsChecks.cs`: the floors a building holds, the door's floor, the structure rule, the panel's pages for one to twelve floors from the door and every lift, the spare floors in the towers' and the university's turn and the same in 300 orders, a release, one building for many places and never more than four, every way in and out through the loan with each borrow given back once, and over the sources: the university and the towers on the core, a building's size and version, the manager's registration, the doors' flags, the going in and the warp written in `FloorsGame` alone, every answer of the loan acted on, every borrow followed by the settle, nothing saved, no Update, the self-check lines and the test, and the words in every language. NavCheck's `TowerCheck` checks the towers' pages on `FloorsRules.Page`, and `MapRowCheck` the row of a building taken for places.
+EconomyCheck's `FloorsChecks.cs`: the floors a building holds, the door's floor, the structure rule, the panel's pages for one to twelve floors from the door and every lift, the spare floors in the towers' and the university's turn and the same in 300 orders, a release, one building for many places and never more than four, every way in and out through the loan with each borrow given back once, and over the sources: the university and the towers on the core, each building and place going with its feature in another city (the university's and the towers' New York's in the city table, the test's any city's) and put away while it does not run, nothing a DLC keeps held or taken and no DLC read, a building's size and version, the manager's registration, the doors' flags, the going in and the warp written in `FloorsGame` alone, every answer of the loan acted on, every borrow followed by the settle, nothing saved, no Update, the self-check lines and the test, and the words in every language. NavCheck's `TowerCheck` checks the towers' pages on `FloorsRules.Page`, and `MapRowCheck` the row of a building taken for places.
 
 ## Not verified without the game
 

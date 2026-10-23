@@ -205,6 +205,7 @@ Hudson City University's building is held by the floors core (`Scripts/Floors`, 
 - **Its own refusals** come before the core's: the university closed (with its hours), the player in a vehicle, away from its door, or the game already going in.
 - **Found inside on no floor** (a save made inside, which the game loads on the building's own interior): taken to floor 1 through the game's door again, or out to the street while it is closed.
 - **Switched off while inside** (its part or study): the building's registration is put back and the player is taken out to the street, as the building's own interior is not the school's.
+- **In another city** (or under the Diagnostics test as in one), and while studying is switched off after its faults: the floors core puts the university's building away with `careers_study` (the same way out as above) and holds it again once the feature is back.
 - **Going Public:** every floor of the building gives the same indoor tag, so two players on different floors see each other (see [Floors](floors.md#going-public)); a classroom door's click and the desk's panel follow `ClassPlayRules.TakesRoomClick` and `WayToDesk` as before.
 
 ## Setting off
