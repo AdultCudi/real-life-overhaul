@@ -19,6 +19,7 @@ Start at the [front door](../RealLifeOverhaul.Build/README.md) if you are new: i
 ## Reference
 
 - [Logs and debugging](reference/logs-and-debugging.md): where `Player.log` is, what the mod writes there, and how to report a bug.
+- [The test run](reference/test-run.md): one button that runs every automatic check of the city expansion, and the one line a feature adds to join it.
 - [Architecture](reference/architecture.md): start-up, the director pattern, wiring, the save, the guard, per-frame rules.
 - [Wiring](reference/wiring.md): every bridge between features and who answers it.
 - [The game's own interface](reference/game-interface.md): how the mod builds its screens from the game's.
