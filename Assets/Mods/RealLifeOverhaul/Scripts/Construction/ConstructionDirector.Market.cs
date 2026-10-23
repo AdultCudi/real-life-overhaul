@@ -474,6 +474,8 @@ namespace RealLifeOverhaul.Construction
                 p.Stage = ProjectStage.Ready;
                 if (t.Source == TenderSource.Landmark && Lot(t.Lot, out LotView site))
                 {
+                    // The city's own project, granted with its award: the district's height limit binds the plans a company
+                    // draws (PlansRules.HeightLimit), never a landmark the council itself commissions.
                     p.Width = site.Width;
                     p.Depth = site.Depth;
                     p.Storeys = Math.Max(1, Math.Min(BuildCatalogue.UptownHeightLimit, p.Area / Math.Max(1, site.Width * site.Depth)));

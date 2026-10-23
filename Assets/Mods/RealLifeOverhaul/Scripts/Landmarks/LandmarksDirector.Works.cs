@@ -55,7 +55,7 @@ namespace RealLifeOverhaul.Landmarks
         // A lot somebody else has: a building of the district on it or finished there, the player's land, a project, a development.
         private static bool Claimed(string lot)
         {
-            if (DistrictBuildings.Taken(lot))
+            if (DistrictBuildings.Occupied(lot))
             {
                 return true;
             }
@@ -399,7 +399,7 @@ namespace RealLifeOverhaul.Landmarks
                 }
                 Unmeasured(f);
             }
-            bool anchored = DistrictBuildings.Taken(site.Address);
+            bool anchored = DistrictBuildings.Occupied(site.Address);
             if (!anchored)
             {
                 Over.Clear();
@@ -420,7 +420,7 @@ namespace RealLifeOverhaul.Landmarks
             bool shops = true;
             for (int i = 0; i < site.Units.Count; i++)
             {
-                if (!DistrictBuildings.Taken(site.Units[i]) && !Shop(site.Units[i]))
+                if (!DistrictBuildings.Occupied(site.Units[i]) && !Shop(site.Units[i]))
                 {
                     shops = false;
                 }

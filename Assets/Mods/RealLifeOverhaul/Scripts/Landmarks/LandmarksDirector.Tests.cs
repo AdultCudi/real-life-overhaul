@@ -116,7 +116,7 @@ namespace RealLifeOverhaul.Landmarks
                     }
                     if (f.Kind != LandmarkKind.Stadium && f.Built)
                     {
-                        bool stands = DistrictBuildings.Finished(site.Address), waits = DistrictBuildings.Taken(site.Address);
+                        bool stands = DistrictBuildings.Finished(site.Address), waits = DistrictBuildings.Occupied(site.Address);
                         t.Append(", its building ").Append(stands ? "standing" : waits ? "the district's from the next load" : "not the district's yet").Append(" (").Append(f.Design).Append(')');
                         pass &= waits;
                     }
@@ -202,7 +202,8 @@ namespace RealLifeOverhaul.Landmarks
                     Written();
                     bool pass = f.Stage == LandmarkStage.Tendered || f.Stage == LandmarkStage.Building;
                     Done("Landmarks check (announce): " + LandmarkRules.Name(f.Kind) + " announced on day " + day + " on block " + f.Block + ", "
-                         + (f.Stage == LandmarkStage.Tendered ? "out to tender as tender " + f.Tender : "built by the city's own works to day " + f.Due), pass, LandmarksText.TestAnnounced, NameOf(f.Kind));
+                         + (f.Stage == LandmarkStage.Tendered ? "out to tender as tender " + f.Tender : "built by the city's own works to day " + f.Due),
+                        pass, LandmarksText.TestAnnounced, NameOf(f.Kind));
                     return;
                 }
                 TestRefusals.TellKey(Logger, test, LandmarksText.TestNothing, "every landmark has been announced");
@@ -253,18 +254,17 @@ namespace RealLifeOverhaul.Landmarks
         // ---------------------------------------------------------------- finished now
 
         /// <summary>"Landmarks: Summit Tower finished now".</summary>
-        public static void TestTowerNow() => FinishNow(LandmarkKind.Tower, "tower now");
+        public static void TestTowerNow() => FinishNow(LandmarkKind.Tower, "Landmarks tower now", "Landmarks check (tower now)");
 
         /// <summary>"Landmarks: Uptown Galleria finished now".</summary>
-        public static void TestMallNow() => FinishNow(LandmarkKind.Mall, "mall now");
+        public static void TestMallNow() => FinishNow(LandmarkKind.Mall, "Landmarks mall now", "Landmarks check (mall now)");
 
         /// <summary>"Landmarks: Crest Field finished now".</summary>
-        public static void TestStadiumNow() => FinishNow(LandmarkKind.Stadium, "stadium now");
+        public static void TestStadiumNow() => FinishNow(LandmarkKind.Stadium, "Landmarks stadium now", "Landmarks check (stadium now)");
 
         // A landmark handed over today from wherever it stands: announced if it was not, its tender or works brought to an end.
-        private static void FinishNow(LandmarkKind kind, string what)
+        private static void FinishNow(LandmarkKind kind, string test, string check)
         {
-            string test = "Landmarks " + what;
             try
             {
                 if (Refused(test, true))
@@ -275,12 +275,15 @@ namespace RealLifeOverhaul.Landmarks
                 {
                     return;
                 }
-                bool district = f.Kind == LandmarkKind.Stadium || DistrictBuildings.Taken(site.Address);
+                bool district = f.Kind == LandmarkKind.Stadium || DistrictBuildings.Occupied(site.Address);
                 bool pass = f.Built && district;
-                Done("Landmarks check (" + what + "): " + LandmarkRules.Name(kind) + " handed over on day " + f.Finished + " on block " + f.Block + ", "
-                     + (f.Kind == LandmarkKind.Stadium ? "its stands " + (Instance._pieces[(int)kind] != null ? "standing now" : "standing once the props are open")
-                        : "its building " + (district ? "the district's from the next load (" + f.Design + ", " + site.Anchor.Count + " lot(s)" + (site.Units.Count > 0 ? ", " + site.Units.Count + " shops" : string.Empty) + ")"
-                            : "not the district's yet (the city's designs are being measured: it is asked again each second)")) + "; it opens on day " + f.Opening,
+                string stands = f.Kind == LandmarkKind.Stadium
+                    ? "its stands " + (Instance._pieces[(int)kind] != null ? "standing now" : "standing once the props are open")
+                    : "its building " + (district
+                        ? "the district's from the next load (" + f.Design + ", " + site.Anchor.Count + " lot(s)"
+                          + (site.Units.Count > 0 ? ", " + site.Units.Count + " shops" : string.Empty) + ")"
+                        : "not the district's yet (the city's designs are being measured: it is asked again each second)");
+                Done(check + ": " + LandmarkRules.Name(kind) + " handed over on day " + f.Finished + " on block " + f.Block + ", " + stands + "; it opens on day " + f.Opening,
                     pass, LandmarksText.TestFinished, NameOf(kind));
             }
             catch (Exception e)
@@ -345,7 +348,10 @@ namespace RealLifeOverhaul.Landmarks
 
         // ---------------------------------------------------------------- an opening and a match
 
-        /// <summary>"Landmarks: an opening day today, and you at it": the latest landmark handed over opens today (Crest Field finished first if none is), its ceremony at any hour, the player at its front.</summary>
+        /// <summary>
+        /// "Landmarks: an opening day today, and you at it": the latest landmark handed over opens today (Crest Field finished
+        /// first if none is), its ceremony at any hour, the player at its front.
+        /// </summary>
         public static void TestOpening()
         {
             const string test = "Landmarks opening";
@@ -392,7 +398,10 @@ namespace RealLifeOverhaul.Landmarks
             }
         }
 
-        /// <summary>"Landmarks: a match day now at Crest Field, and you at it": the stadium finished and opened if it is not, a home match today with its crowds now and the traffic round it, the player at its front.</summary>
+        /// <summary>
+        /// "Landmarks: a match day now at Crest Field, and you at it": the stadium finished and opened if it is not, a home
+        /// match today with its crowds now and the traffic round it, the player at its front.
+        /// </summary>
         public static void TestMatch()
         {
             const string test = "Landmarks match";
@@ -434,15 +443,15 @@ namespace RealLifeOverhaul.Landmarks
         // ---------------------------------------------------------------- take me there
 
         /// <summary>"Landmarks: take me to Crest Field".</summary>
-        public static void TestTakeStadium() => TakeMe(LandmarkKind.Stadium);
+        public static void TestTakeStadium() => TakeMe(LandmarkKind.Stadium, "Landmarks check (take me, stadium)");
 
         /// <summary>"Landmarks: take me to Summit Tower".</summary>
-        public static void TestTakeTower() => TakeMe(LandmarkKind.Tower);
+        public static void TestTakeTower() => TakeMe(LandmarkKind.Tower, "Landmarks check (take me, tower)");
 
         /// <summary>"Landmarks: take me to Uptown Galleria".</summary>
-        public static void TestTakeMall() => TakeMe(LandmarkKind.Mall);
+        public static void TestTakeMall() => TakeMe(LandmarkKind.Mall, "Landmarks check (take me, mall)");
 
-        private static void TakeMe(LandmarkKind kind)
+        private static void TakeMe(LandmarkKind kind, string check)
         {
             string test = "Landmarks take me to the " + LandmarkRules.Name(kind);
             try
@@ -459,8 +468,8 @@ namespace RealLifeOverhaul.Landmarks
                 }
                 bool there = TakeToFront(kind);
                 LandmarkRules.Front(Sites[(int)kind].Ground, out float x, out float z);
-                Done("Landmarks check (take me, " + LandmarkRules.Name(kind) + "): to (" + Mathf.RoundToInt(x) + ", " + Mathf.RoundToInt(z) + ") in front of its site on block "
-                     + Sites[(int)kind].Block + ", " + _state.Files[(int)kind].Stage + (there ? ", there now" : ", once the game has taken the player out"), true, LandmarksText.TestTaken, NameOf(kind));
+                Done(check + ": to (" + Mathf.RoundToInt(x) + ", " + Mathf.RoundToInt(z) + ") in front of its site on block " + Sites[(int)kind].Block + ", "
+                     + _state.Files[(int)kind].Stage + (there ? ", there now" : ", once the game has taken the player out"), true, LandmarksText.TestTaken, NameOf(kind));
             }
             catch (Exception e)
             {
@@ -506,7 +515,10 @@ namespace RealLifeOverhaul.Landmarks
 
         // ---------------------------------------------------------------- put back
 
-        /// <summary>"Landmarks: put everything back as before the tests": the state from before the first test, the district's buildings the tests finished taken back, their tenders and sites taken away.</summary>
+        /// <summary>
+        /// "Landmarks: put everything back as before the tests": the state from before the first test, the district's
+        /// buildings the tests finished taken back, their tenders and sites taken away.
+        /// </summary>
         public static void TestBack()
         {
             const string test = "Landmarks back";
@@ -541,7 +553,7 @@ namespace RealLifeOverhaul.Landmarks
                     {
                         taken++;
                     }
-                    else if (DistrictBuildings.Taken(TestBefore[i]))
+                    else if (DistrictBuildings.Occupied(TestBefore[i]))
                     {
                         kept++;
                         Logger?.Info("Landmarks test: the district's building on lot " + TestBefore[i] + " stays (" + why + ").");
@@ -550,7 +562,13 @@ namespace RealLifeOverhaul.Landmarks
                 TestBefore.Clear();
                 for (int k = 0; k < _state.Files.Length; k++)
                 {
-                    _state.Files[k] = before.Files[k];
+                    // A landmark whose building has stood at a load stays built: its file goes with the district's records.
+                    bool stays = !before.Files[k].Built && _state.Files[k].Built && SiteKnown[k] && Sites[k].Kind != LandmarkKind.Stadium
+                                 && DistrictBuildings.Occupied(Sites[k].Address);
+                    if (!stays)
+                    {
+                        _state.Files[k] = before.Files[k];
+                    }
                 }
                 _state.Anchor = before.Anchor;
                 _state.LastDay = before.LastDay;
@@ -569,8 +587,10 @@ namespace RealLifeOverhaul.Landmarks
                 }
                 RefreshSites();
                 Written();
+                // A building of the district that has stood at a load is named by the game's records: it and its landmark stay built
+                // (a save from before the tests undoes them), which the line says.
                 Done("Landmarks check (back): the landmarks as before the first test, " + taken + " building(s) of the district taken back" + (kept > 0 ? ", " + kept
-                     + " stood at a load and stay" : string.Empty), kept == 0, LandmarksText.TestBack, null);
+                     + " stood at a load and stay built with their landmark" : string.Empty), true, LandmarksText.TestBack, null);
             }
             catch (Exception e)
             {

@@ -61,6 +61,7 @@ namespace RealLifeOverhaul.Landmarks
             Logger = logger;
             DistrictPlaces.Add(PlacesOwner, Fill);
             DistrictBuildings.TrafficLift = LiftOf;
+            DistrictBuildings.HeldFor = Held;
         }
 
         // ---------------------------------------------------------------- the city

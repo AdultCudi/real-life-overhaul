@@ -28,10 +28,47 @@ namespace RealLifeOverhaul.Uptown
         /// </summary>
         public static Func<string, int> TrafficLift;
 
-        /// <summary>True when the lot holds a district building (from the first day, or finished) or one finished there waits for the next load: not for sale.</summary>
+        /// <summary>
+        /// Lots a feature holds for buildings of its own still to come (Scripts/Landmarks: a landmark's site), so nothing else
+        /// is put on them; set once at game start. Unset: none held.
+        /// </summary>
+        public static Func<string, bool> HeldFor;
+
+        private static bool _heldFaulted;
+
+        /// <summary>
+        /// True when the lot is not free for anything new: a district building on it (from the first day, or finished), one
+        /// finished there waiting for the next load, or the lot held for a landmark (<see cref="HeldFor"/>). Not for sale.
+        /// </summary>
         public static bool Taken(string lotId)
         {
+            return LifeDirector.Taken(lotId) || Held(lotId);
+        }
+
+        /// <summary>True when a district building stands on the lot or waits for the next load there, held or not: what a feature holding lots asks of its own.</summary>
+        public static bool Occupied(string lotId)
+        {
             return LifeDirector.Taken(lotId);
+        }
+
+        // A lot held for buildings still to come, as the feature holding it says; none after a fault (said once).
+        private static bool Held(string lotId)
+        {
+            Func<string, bool> held = HeldFor;
+            if (held == null || _heldFaulted || string.IsNullOrEmpty(lotId))
+            {
+                return false;
+            }
+            try
+            {
+                return held(lotId);
+            }
+            catch (Exception e)
+            {
+                _heldFaulted = true;
+                LifeDirector.Logger?.Error(e);
+                return false;
+            }
         }
 
         /// <summary>True when a district building stands on the lot at this load (its copy made behind the loading screen): place no look of your own there.</summary>

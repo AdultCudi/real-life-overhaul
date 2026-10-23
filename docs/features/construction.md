@@ -189,6 +189,17 @@ Agreed with the trades ([Building trades](trades.md), "With the construction com
 - `ConstructionBridges.DesignOf`: each day the company asks `TradesBridges.DesignOf("build:<n>", out DesignScore)`. Once the player has finished the design there, the plans are drawn: their quality is 30 and 70% of the design's `Total`; its `CostPermille` (bounded 600 to 1600) scales the estimate's materials, crews and contingency and every stage's loads (a dearer design costs more to build); for a block of homes its `Units` are the block's flats; its `Storeys` are written to Player.log beside the project's (the building's look stays the city's design it wears). `Construction check (own design)` says what was read.
 - The roles the company gives its office's employees (architect, engineer, estimator, site manager) and its crews' trades (labourer, mason, crane operator, electrician, plumber) are `TradeCatalogue.Roles`' ids; the offline checks hold each to it.
 
+### With the landmarks
+
+Uptown's landmarks ([Uptown's landmarks](landmarks.md)) are tendered and built through the construction game; `ConstructionBridges`' ten landmark bridges are wired to `Scripts/Landmarks` in `Wiring/Wiring.ConstructionLinks.cs`:
+
+- **A landmark's tender** (`TenderSource.Landmark`, `ConstructionDirector.LandmarkTender`): put out by the landmarks' timetable, never in a Going Public session; priced as a public building of the landmark's use, floor area and storeys with 40% more (`BuildCatalogue.LandmarkPremiumPermille`), open four days (`LandmarkTenderHours`), awarded with the others. The player's win is a project on the landmark's site (`LandmarkSites`: each site as a lot of the construction game's, its ground the works' plot), wearing the landmark's design (`LandmarkDesign`); a rival's win is told to the landmarks (`LandmarkAwarded`), whose timetable runs the rival's works.
+- **The lots a landmark holds** are taken (`LandmarkHeld`): not for sale, never a development's, never a public building's. The Land tab shows each landmark as a row of its own, its state (`LandmarkWords`) and a way to its tender.
+- **The player's handover** of a landmark goes to the landmarks (`LandmarkHanded`), which hand it to the district.
+- **The works a rival or the city runs** for a landmark (`LandmarkWorks`) are the city's megaproject: not one of its six, shown with the game off, at the timetable's pace (`LandmarkPace`), wearing the landmark's design; the programme keeps no look of its own where a landmark stands in its own right (`LandmarkBuilt`; the stadium, and a building of the district's once it stands).
+- **The height limit:** a landmark is the city's own project, granted at its award; the district's height limit (`PlansRules.HeightLimit`) is for the plans a company draws, so the tower may stand taller.
+- A public building a rival won now goes at the city's pace and is handed over when its works are done (before, its site stopped just short of the end).
+
 ### Going Public
 
 - **Deterministic.** The city's developers are drawn from the lot plan and the day alone (`DevelopmentRules`: whose lots, in what order, their uses, builders, designs and days, never a save's seed): every machine finishes the same lots on the same days (`DistrictBuildings.Finish` with `FinishOwner.City`), and only the host sets their sites out. Rival builders are the same eight with the same figures everywhere.
