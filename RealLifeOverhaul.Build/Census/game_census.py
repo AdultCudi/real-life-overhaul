@@ -7,7 +7,7 @@
 # Addressables groups other than the game's default one (where a DLC's content would come). With a baseline it prints
 # only what changed: buildings gated behind a DLC, districts and streets new or gone, buildings new or gone.
 #
-#   python -I game_census.py                          the census of the installed game, against census-3682.json
+#   python -I game_census.py                          the census of the installed game, against the newest census-NNNN.json
 #   python -I game_census.py --write census-NNNN.json  the same, written as the new baseline
 #   python -I game_census.py --game "<Big Ambitions_Data>" --baseline other.json
 #
@@ -94,6 +94,15 @@ def census(game, everything):
     }
 
 
+def newest():
+    """The census of the latest build kept beside this script: census-NNNN.json with the highest NNNN."""
+    builds = []
+    for name in os.listdir(HERE):
+        if name.startswith("census-") and name.endswith(".json") and name[7:-5].isdigit():
+            builds.append(int(name[7:-5]))
+    return os.path.join(HERE, "census-%d.json" % max(builds)) if builds else os.path.join(HERE, "census.json")
+
+
 def changed(label, old, new):
     gone = sorted(set(old) - set(new))
     added = sorted(set(new) - set(old))
@@ -107,7 +116,7 @@ def changed(label, old, new):
 def main():
     parser = argparse.ArgumentParser(description="The census of the game's buildings, districts, streets and DLC-gated content.")
     parser.add_argument("--game", default=DEFAULT_GAME, help="the game's Big Ambitions_Data folder")
-    parser.add_argument("--baseline", default=os.path.join(HERE, "census-3682.json"), help="the census to compare with")
+    parser.add_argument("--baseline", default=newest(), help="the census to compare with (default: the newest census-NNNN.json here)")
     parser.add_argument("--write", help="write this census to the file given, as the new baseline")
     parser.add_argument("--all", action="store_true", help="read every bundle, not only those of buildings, districts and streets (slow)")
     args = parser.parse_args()
