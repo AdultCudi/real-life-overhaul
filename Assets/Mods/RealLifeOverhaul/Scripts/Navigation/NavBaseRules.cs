@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace RealLifeOverhaul.Nav
@@ -223,6 +224,42 @@ namespace RealLifeOverhaul.Nav
         public int Columns, Rows;
         public float Cell;                             // metres a side
         public byte[] Cells = new byte[0];             // see NavBaseWater
+
+        /// <summary>
+        /// This city with more outlines on top (the buildings the mod stands in it), for drawing only: the same squares of
+        /// water, the outlines appended with no building of the game's list (-1). Itself when there are none.
+        /// </summary>
+        public NavBaseData With(List<float> moreX, List<float> moreZ, List<int> moreStart)
+        {
+            int more = moreStart != null ? moreStart.Count : 0;
+            if (more == 0)
+            {
+                return this;
+            }
+            int corners = HullStart[Hulls];
+            var drawn = new NavBaseData
+            {
+                Build = Build, OriginX = OriginX, OriginZ = OriginZ, WorldWidth = WorldWidth, WorldHeight = WorldHeight, Columns = Columns, Rows = Rows, Cell = Cell,
+                Cells = Cells, Hulls = Hulls + more, HullStart = new int[Hulls + more + 1], HullOf = new int[Hulls + more],
+                HullX = new float[corners + moreX.Count], HullZ = new float[corners + moreZ.Count]
+            };
+            Array.Copy(HullStart, drawn.HullStart, Hulls + 1);
+            Array.Copy(HullOf, drawn.HullOf, Hulls);
+            Array.Copy(HullX, drawn.HullX, corners);
+            Array.Copy(HullZ, drawn.HullZ, corners);
+            for (int i = 0; i < more; i++)
+            {
+                drawn.HullOf[Hulls + i] = -1;
+                drawn.HullStart[Hulls + i] = corners + moreStart[i];
+            }
+            drawn.HullStart[Hulls + more] = corners + moreX.Count;
+            for (int i = 0; i < moreX.Count; i++)
+            {
+                drawn.HullX[corners + i] = moreX[i];
+                drawn.HullZ[corners + i] = moreZ[i];
+            }
+            return drawn;
+        }
 
         /// <summary>Everything a picture is drawn from, into the print the base picture is kept by across loads.</summary>
         public void AddTo(ref InputPrint print)

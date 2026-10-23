@@ -76,6 +76,7 @@ namespace RealLifeOverhaul
             Step("rival tycoons", RivalLinks.Connect);   // after the economy, the company, Flare and the interiors: what it wraps is theirs already
             Step("standing", StandingLinks.Connect);   // last: what it wraps of the others' is theirs already
             Step("companion reporting", CompanionLinks.Connect);   // wraps nothing: it only reads what the others own
+            Step("the mod's own buildings on the minimap", NewBuildingsLinks.Connect);   // wraps nothing
             Logger?.Info("Wiring: the features are connected.");
         }
 
@@ -86,6 +87,7 @@ namespace RealLifeOverhaul
                 return;
             }
             Connected = false;
+            Step("the mod's own buildings on the minimap", NewBuildingsLinks.Disconnect);
             Step("companion reporting", CompanionLinks.Disconnect);
             Step("standing", StandingLinks.Disconnect);   // first: what it wrapped goes back before the others take theirs off
             Step("the calendar", CalendarLinks.Disconnect);

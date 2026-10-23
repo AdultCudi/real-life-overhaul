@@ -51,6 +51,7 @@ An adapter never throws into its caller: a fault is logged once per place (`Wiri
 | `FlareLinks.cs`, `FlareLiveLinks.cs`, `FlareInviteLinks.cs` | `FlareBridges`: the social life's people, the city's facts, invitations that book outings |
 | `PhotosLinks.cs` | `PhotosBridges`: a photo shared to Flare |
 | `NavLinks.cs` | `NavBridges.HudHeld`, `GuideToStation` |
+| `Wiring.NewBuildingsLinks.cs` | `NavBridges.MoreBuildings`, `MoreBuildingsStamp`, `NotMeasured`: the mod's own buildings and copies drawn on the minimap's base, the measured file kept the game's alone |
 | `TaxiLinks.cs` | `TaxiBridges` and the minimap's mark for the called taxi |
 | `OfficeLinks.cs` | empty shops made offices, once the other features' buildings are chosen; each shop made an office is held from the game's own letting (`Core/HeldUnits`), and a shop with a rival landlord may be one |
 | `StreetLinks.cs`, `StreetTexts.cs` | street talk with the rest of the mod, and its words from RLO Texts |

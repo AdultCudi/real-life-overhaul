@@ -22,6 +22,7 @@ namespace RealLifeOverhaul.Nav
         private readonly NavBase _base = new NavBase();
         private readonly int[] _three = new int[3];
         private bool _baseGiven, _baseChecked, _baseAgain;
+        private Texture2D _baseShown;   // the picture the panel was given: drawn again, the new one is given
         private float _aloneUntil, _trialUntil;
 
         // On the slow tick: begun once the roads are there, let go when its option or the minimap is switched off.
@@ -58,11 +59,16 @@ namespace RealLifeOverhaul.Nav
         // On the slow tick with a save loaded: the picture given and the checks written once, and a test's doings taken back.
         private void BaseShown(float now)
         {
+            if (_base.Stale && !_base.Busy)
+            {
+                _base.Redraw();   // the mod's own buildings changed (Scripts/NewBuildings): the same city drawn again with them
+            }
             if (_base.Picture != null)
             {
-                if (_hud != null && !_baseGiven)
+                if (_hud != null && (!_baseGiven || _baseShown != _base.Picture))
                 {
                     _baseGiven = true;
+                    _baseShown = _base.Picture;
                     _hud.SetBase(_base.Picture, _base.OriginX, _base.OriginZ, _base.WorldWidth, _base.WorldHeight);
                 }
                 if (!_baseChecked && Meta.Dev.Verbose)
