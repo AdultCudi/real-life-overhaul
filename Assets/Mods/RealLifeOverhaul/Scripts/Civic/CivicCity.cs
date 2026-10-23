@@ -79,7 +79,7 @@ namespace RealLifeOverhaul
             for (int b = 0; b < buildings.Count; b++)
             {
                 Building building = buildings[b];
-                if (building == null || GameMembers.Fenced(building))
+                if (building == null || GameMembers.Fenced(building) || GameDlc.Gated(building))
                 {
                     continue;
                 }
@@ -152,7 +152,7 @@ namespace RealLifeOverhaul
         public static CityBuildingController NearestBuilding(Vector3 point, float minDistance, float maxDistance)
         {
             CityManager city = InstanceBehavior<CityManager>.Instance;
-            CityBuildingController[] all = city != null ? city.cityBuildingControllers : null;
+            CityBuildingController[] all = GameDlc.Open(city);
             if (all == null)
             {
                 return null;

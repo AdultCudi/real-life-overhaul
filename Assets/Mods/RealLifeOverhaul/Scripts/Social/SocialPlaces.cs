@@ -100,7 +100,7 @@ namespace RealLifeOverhaul
             try
             {
                 CityManager city = InstanceBehavior<CityManager>.Instance;
-                CityBuildingController[] buildings = city != null ? city.cityBuildingControllers : null;
+                CityBuildingController[] buildings = GameDlc.Open(city);
                 CityBuildingController best = null;
                 float bestSqr = float.MaxValue;
                 for (int i = 0; buildings != null && i < buildings.Length; i++)
@@ -141,7 +141,7 @@ namespace RealLifeOverhaul
         {
             venue = default;
             CityManager city = InstanceBehavior<CityManager>.Instance;
-            CityBuildingController[] buildings = city != null ? city.cityBuildingControllers : null;
+            CityBuildingController[] buildings = GameDlc.Open(city);
             if (buildings == null)
             {
                 return false;
@@ -204,7 +204,7 @@ namespace RealLifeOverhaul
         {
             venue = default;
             CityManager city = InstanceBehavior<CityManager>.Instance;
-            CityBuildingController[] buildings = city != null ? city.cityBuildingControllers : null;
+            CityBuildingController[] buildings = GameDlc.Open(city);
             if (buildings == null || string.IsNullOrEmpty(street))
             {
                 return false;
@@ -469,7 +469,7 @@ namespace RealLifeOverhaul
                 BuildingRegistration registration = building.buildingRegistration;
                 if (registration == null || building.building == null || !registration.HasEstablishedBusiness
                     || GameMembers.Fenced(building.building) || registration.businessTypeName == null
-                    || registration.businessTypeName == "ba:businesstype_empty" || !building.building.requiredDLC.DlcIsOwned())
+                    || registration.businessTypeName == "ba:businesstype_empty" || GameDlc.Gated(building))
                 {
                     return false;
                 }

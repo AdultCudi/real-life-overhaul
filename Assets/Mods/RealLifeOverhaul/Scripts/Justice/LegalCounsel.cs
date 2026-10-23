@@ -51,7 +51,7 @@ namespace RealLifeOverhaul
             }
             foreach (BuildingRegistration registration in save.BuildingRegistrations)
             {
-                if (registration == null || registration.businessTypeName != LawFirmType || string.IsNullOrEmpty(registration.StreetName))
+                if (registration == null || registration.businessTypeName != LawFirmType || string.IsNullOrEmpty(registration.StreetName) || GameDlc.Gated(registration))
                 {
                     continue;
                 }
@@ -113,7 +113,7 @@ namespace RealLifeOverhaul
                 for (int i = 0; i < all.Count; i++)
                 {
                     Building building = all[i];
-                    if (building == null || building.BuildingType != "ba:buildingtype_office" || Offices.Conversions.Holds(building)
+                    if (building == null || building.BuildingType != "ba:buildingtype_office" || GameDlc.Gated(building) || Offices.Conversions.Holds(building)
                         || string.IsNullOrEmpty(building.StreetName) || Taken(building))
                     {
                         continue;

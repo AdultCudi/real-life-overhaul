@@ -228,7 +228,7 @@ namespace RealLifeOverhaul
         private static void ReadBuildings()
         {
             CityManager city = InstanceBehavior<CityManager>.IsInitialized ? InstanceBehavior<CityManager>.Instance : null;
-            CityBuildingController[] all = city != null ? city.cityBuildingControllers : null;
+            CityBuildingController[] all = GameDlc.Open(city);   // what a DLC keeps is not counted: the same on every machine
             if (all == null)
             {
                 return;

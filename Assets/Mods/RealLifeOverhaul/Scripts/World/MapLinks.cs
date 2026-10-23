@@ -561,7 +561,7 @@ namespace RealLifeOverhaul
             SpecialBuildings.Findable(Careers.CareersGame.SchoolType);
             SpecialBuildings.Findable(HospitalType);
             SpecialBuildings.Findable(ClinicType);
-            CityBuildingController[] all = InstanceBehavior<CityManager>.Instance.cityBuildingControllers;
+            CityBuildingController[] all = GameDlc.Open(InstanceBehavior<CityManager>.Instance);
             string school = T("reallife_study_campus_school");
             string ward = T("reallife_map_study_ward");
             for (int i = 0; i < all.Length; i++)

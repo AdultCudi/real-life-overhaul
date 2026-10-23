@@ -128,7 +128,7 @@ namespace RealLifeOverhaul.Law
                 return true;
             }
             CityManager city = InstanceBehavior<CityManager>.Instance;
-            CityBuildingController[] buildings = city != null ? city.cityBuildingControllers : null;
+            CityBuildingController[] buildings = GameDlc.Open(city);
             if (buildings == null || buildings.Length == 0)
             {
                 return false;
@@ -312,7 +312,7 @@ namespace RealLifeOverhaul.Law
             }
             try
             {
-                return building.building.requiredDLC.DlcIsOwned();
+                return !GameDlc.Gated(building);
             }
             catch (Exception)
             {

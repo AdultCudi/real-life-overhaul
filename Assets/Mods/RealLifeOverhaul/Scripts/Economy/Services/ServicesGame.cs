@@ -506,7 +506,7 @@ namespace RealLifeOverhaul.Economy
                 BuildingRegistration reg = all[i];
                 try
                 {
-                    if (reg == null || reg.RentedByPlayer || !reg.HasValidAddress || !reg.HasEstablishedBusiness || reg.businessTypeName == EmptyType)
+                    if (reg == null || reg.RentedByPlayer || !reg.HasValidAddress || !reg.HasEstablishedBusiness || reg.businessTypeName == EmptyType || GameDlc.Gated(reg))
                     {
                         continue;
                     }

@@ -26,7 +26,7 @@ namespace RealLifeOverhaul.Offices
         public static bool Usable(CityBuildingController c)
         {
             Building b = c != null ? c.building : null;
-            return b != null && b.SpecialService == null && !GameMembers.Fenced(b) && (int)b.requiredDLC == 0 && !b.IsHamptonsHouse()
+            return b != null && b.SpecialService == null && !GameMembers.Fenced(b) && !GameDlc.Gated(b) && !b.IsHamptonsHouse()
                    && c.entranceDoors != null && c.entranceDoors.Length > 0 && b.totalSqm > 0 && !string.IsNullOrEmpty(b.StreetName);
         }
 

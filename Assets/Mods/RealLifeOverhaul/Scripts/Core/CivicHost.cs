@@ -43,7 +43,7 @@ namespace RealLifeOverhaul
         public static bool Serves(CityBuildingController b)
         {
             if (b == null || b.building == null || b.entranceDoors == null || b.entranceDoors.Length == 0 || b.entranceDoors[0] == null || GameMembers.Fenced(b.building)
-                || (int)b.building.requiredDLC != 0 || b.building.IsHamptonsHouse())
+                || GameDlc.Gated(b) || b.building.IsHamptonsHouse())
             {
                 return false;
             }
