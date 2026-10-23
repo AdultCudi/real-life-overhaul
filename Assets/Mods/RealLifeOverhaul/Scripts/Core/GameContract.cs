@@ -95,6 +95,7 @@ namespace RealLifeOverhaul
         public static readonly GamePart KeyHidden = ContractBook.Part("key_hidden", "textsai", "the key typed for Your own AI shown as dots in the game's text box");
         public static readonly GamePart CarWash = ContractBook.Part("car_wash", "garage",
             "stand-ins for the spray and the sound of a car that has none, so the game's car wash in a repair bay ends on it");
+        public static readonly GamePart TrafficMend = ContractBook.Part("traffic_mend", "traffic", "putting the city's traffic right when it stops adding cars for good");
 
         // The pieces, each group under the code that reads it.
 
@@ -319,6 +320,20 @@ namespace RealLifeOverhaul
 
         // Transport/TransitBus: what a traffic car of the game's stands for (its sensor's list)
         public static readonly GameMember CarObstacles = Field(BusYield, Plugins, "GleyTrafficSystem.VehicleComponent", "obstacleList", "List<Collider>");
+
+        // Traffic/TrafficMendGame: the traffic's parts a new density manager is made from, its link to them, and the game's
+        // last traffic density (without that, the cars on the road are kept as the number wanted until the game sets it)
+        public static readonly GameMember TrafficDensity = Field(TrafficMend, Plugins, "GleyTrafficSystem.TrafficManager", "densityManager", "DensityManager");
+        public static readonly GameMember TrafficVehicles = Field(TrafficMend, Plugins, "GleyTrafficSystem.TrafficManager", "trafficVehicles", "TrafficVehicles");
+        public static readonly GameMember TrafficPoints = Field(TrafficMend, Plugins, "GleyTrafficSystem.TrafficManager", "waypointManager", "WaypointManager");
+        public static readonly GameMember TrafficCameras = Field(TrafficMend, Plugins, "GleyTrafficSystem.TrafficManager", "activeCameraPositions", "NativeArray<float3>");
+        public static readonly GameMember TrafficSquares = Field(TrafficMend, Plugins, "GleyTrafficSystem.TrafficManager", "activeSquaresLevel", "Int32");
+        public static readonly GameMember TrafficGrid = Field(TrafficMend, Plugins, "GleyUrbanAssets.UrbanManager", "gridManager", "GridManager");
+        public static readonly GameMember DensityStart = Method(TrafficMend, Plugins, "GleyTrafficSystem.DensityManager", "Initialize", "DensityManager",
+            "TrafficVehicles", "WaypointManager", "GridManager", "PositionValidator", "NativeArray<float3>", "Int32", "Vector3", "Vector3", "Int32");
+        public static readonly GameMember DensityCount = Field(TrafficMend, Plugins, "GleyTrafficSystem.DensityManager", "currentnrOfVehicles", "Int32");
+        public static readonly GameMember DensityGrid = Field(TrafficMend, Plugins, "GleyTrafficSystem.DensityManager", "gridManager", "GridManager");
+        public static readonly GameMember LastTrafficDensity = Optional(Field(TrafficMend, Game, "TimeOfDayController", "_lastTrafficDensity", "Int32"));
 
         // Careers/CampusMarks: the game's icons over items, lent to the university's classroom doors
         public static readonly GameMember IconPool = Field(ClassroomMarks, Game, "Player.HUD.ItemWarningIcons.ItemWarningIconManager", "_iconPool", "ObjectPool<ItemWarningIcon>");

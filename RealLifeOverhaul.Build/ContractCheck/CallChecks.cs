@@ -90,6 +90,7 @@ internal static partial class Program
         { "RealLifeOverhaul.Meta.OptionsLayout.Dispose", "(the same answer taken off again)" },
         { "RealLifeOverhaul.Meta.OptionsLayout.SearchBox.Build", "the options page's search box: each of its three listeners one try round all of it, its catch the box's own (Meta/OptionsLayout.Search)" },
         { "RealLifeOverhaul.Meta.BugReportGame.Listen", "the engine's log listener for 'Report a bug': one try round all of it whose catch drops the line, since the guard's catch writes to the log and would call it again (Meta/BugReportGame.Heard)" },
+        { "RealLifeOverhaul.TrafficMend.Listen", "the engine's log listener that counts the traffic's failed density passes: one try round all of it whose catch drops the line, since the guard's catch writes to the log and would call it again (Traffic/TrafficMend.OnLog)" },
     };
 
     // A type of a signature as 'assembly|full name' (the mod's own: '|full name', or '@delegate|full name' for a delegate type of its own).

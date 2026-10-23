@@ -89,6 +89,7 @@ internal static partial class Program
         Washes();         // the game's car wash in a repair bay never holding a car for good, and every way out of the custom shop (WashCheck.cs)
         Culling();        // the mod's own things drawn by distance: the game's bands, what may and may not be culled, the group's slots (CullCheck.cs)
         Bounces();        // the bounce watch still catches a bounce while moving traffic is looked at a fifth as often (BounceCheck.cs)
+        TrafficMends();   // the game's traffic that stopped adding cars for good told from its log and given a new density manager (TrafficMendCheck.cs)
         RenderLevels();   // the performance section's picture settings: the game's own until moved, their limits, the trials (RenderLevelCheck.cs)
         FlareHours();     // Flare's hour a step a frame, in its order, finished first by the save and the day (FlareHourCheck.cs)
         SlowSpots();      // the interact key's flags only on a press, the bus zones' parking laid out a lane a tick (SlowSpotCheck.cs)

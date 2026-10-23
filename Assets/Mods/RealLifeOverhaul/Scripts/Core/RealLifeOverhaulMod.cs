@@ -43,6 +43,7 @@ namespace RealLifeOverhaul
             IModLogger log = context.Logger;
             Guard.Logger = log;   // every step below is a Guard.Step: one that fails costs the mod only itself
             Guard.Step("the bug report's record of the mod's warnings", Meta.BugReportGame.Listen);   // from the first line on, for Report a bug
+            Guard.Step("the traffic mend's count of the game's failed density passes", TrafficMend.Listen);
             context = Meta.Dev.Gated(context);   // Info lines only while Developer diagnostics is on (read below)
             _context = context;
             Keys.Logger = context.Logger;
@@ -231,6 +232,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_test_drivers_park", () => CityDrivers.TestNow(CityDrivers.TestKind.Park))
                 .AddButton("reallife_test_drivers_letout", () => CityDrivers.TestNow(CityDrivers.TestKind.LetOut))
                 .AddButton("reallife_test_wave_through", TrafficAccidents.TestWaveThrough)
+                .AddButton("reallife_test_traffic_mend", TrafficMend.Test)
                 .AddSplitter()
                 .AddHeader("reallife_crime_header")
                 .AddToggle(Settings.StreetCrimeId, "reallife_crime_enabled", Settings.StreetCrime,
