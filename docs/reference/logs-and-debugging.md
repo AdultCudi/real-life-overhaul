@@ -203,6 +203,15 @@ What the graphics card's figures are (`Diagnostics/SessionWatch.Timing`): on the
 
 What the lines cannot say: which of the game's scripts, or another mod's, a long frame was spent in; how long the mod's own coroutines took (they run under "coroutines and timers" and are not timed one by one); what the graphics card spent its time on (which pass, which shader); and anything about the card at all on a build without the engine's frame timing.
 
+## Clicks and moving furniture
+
+`Diagnostics/ClickWatch` writes a line for a click, with Developer diagnostics on, at most two a second. It reads the game and changes nothing.
+
+- `Click check:` for a left click: the interface under the pointer, what the ray met, the game's target, and whether walking was blocked, the player was indoors, in a vehicle, in a menu, on the map or paused.
+- `Move check (right click):` for a right click on a piece of furniture. It says whether the game lifts it to move it. If not, it gives the first reason the game's own right click finds, in the game's order (`Diagnostics/FurnitureRules`). Only "in use", "part of the building" and a piece fixed in a flat come with a notice of the game's. The rest do nothing at all, an activity under way or a panel open among them. For "in use" it says what makes it so: somebody seated on it, a piece on it in use, something under each of its places to sit, a seat at the table kept, or its own in-use mark. Each line also says whether the building lists the piece, and whether the piece's record is the building's own.
+- `Move check (place click):` for a left click while a piece is being placed. It says whether the game puts it down there. If not, it says why: a piece of the interface selected, the pointer over the interface, no floor under the pointer, outside a house's plot, blocked floor, or it does not fit. When it does not fit, it names what stands in the way and whose it is: the game's, this mod's, or another mod's by its assembly.
+- `Move check (ended):` when a move ends: where the piece is, and whether the building's own record of it, which the save keeps, says the same. `FAIL` there means the move would not be kept, or the piece would be gone after a load. Moves in the interior designer are left out: it keeps a moved piece's place only once its own animation has played.
+
 ## Log lines by feature
 
 Each feature describes its own lines where it describes the work that writes them. Search the page for the prefix.
@@ -211,6 +220,7 @@ Each feature describes its own lines where it describes the work that writes the
 | --- | --- | --- |
 | `Game build:`, `Game contract:` | the guard | [After a game update](../contributing/after-a-game-update.md) |
 | `Session` | the session record | [The session record](#the-session-record), above |
+| `Click check:`, `Move check (...)` | clicks and moving furniture | [Clicks and moving furniture](#clicks-and-moving-furniture), above |
 | `Jobs:`, `Jobs check (...)`, `Careers:` | jobs and employers | [Jobs](../features/jobs.md): gig offers, the cleaner, the drinks cart, a shift across a save |
 | `Transit check (...)`, `Transit:` | buses and the subway | [Transport](../features/transport.md#buses): "Lines to judge a run by" |
 | `Taxi check (...)` | the taxi by phone | [Taxi by phone](../features/taxi.md) |

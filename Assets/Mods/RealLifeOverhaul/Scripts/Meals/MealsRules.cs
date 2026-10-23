@@ -48,10 +48,48 @@ namespace RealLifeOverhaul.Meals
             return path >= 0f && path <= flat * WalkSlack + WalkExtra;
         }
 
+        /// <summary>True when a seat this far above (or below) the player's feet is on the floor they stand on: one upstairs, downstairs or on a stage is never taken.</summary>
+        public static bool SameFloor(float up)
+        {
+            return up <= MostUp && up >= -MostUp;
+        }
+
         /// <summary>True when the meal may be taken to this seat at all.</summary>
         public static bool Usable(SeatOption seat)
         {
-            return seat.Free && seat.Flat <= Reach && (seat.Up <= MostUp && seat.Up >= -MostUp) && SameSpace(seat.Flat, seat.Path);
+            return seat.Free && seat.Flat <= Reach && SameFloor(seat.Up) && SameSpace(seat.Flat, seat.Path);
+        }
+
+        /// <summary>
+        /// The place a seat found while looking round the building takes in a shortlist of at most <paramref name="most"/>, so
+        /// that the nearest seats on the player's own floor are kept whatever order the building lists its furniture in. A
+        /// house with an upper floor lists the seats above among those below, and those above can never be used. The answer
+        /// is the next place while there is room, else the place of the farthest seat kept when this one is nearer. -1 leaves
+        /// it out: on another floor, beyond <see cref="Reach"/>, or no nearer than any seat kept. The first
+        /// <paramref name="count"/> places of <paramref name="kept"/> hold the seats kept so far.
+        /// </summary>
+        public static int Slot(SeatOption[] kept, int count, int most, float flat, float up)
+        {
+            if (kept == null || !SameFloor(up) || flat > Reach)
+            {
+                return -1;
+            }
+            int room = most < kept.Length ? most : kept.Length;
+            if (count < room)
+            {
+                return count;
+            }
+            int far = -1;
+            float farthest = flat;
+            for (int i = 0; i < room; i++)
+            {
+                if (kept[i].Flat > farthest)
+                {
+                    far = i;
+                    farthest = kept[i].Flat;
+                }
+            }
+            return far;
         }
 
         /// <summary>
