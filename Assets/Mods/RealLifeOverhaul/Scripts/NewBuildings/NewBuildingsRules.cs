@@ -71,6 +71,15 @@ namespace RealLifeOverhaul.NewBuildings
         public Func<bool> Wanted;  // the declaring feature's own option; null for always
         public bool Life;          // a district's building in the game's own simulation: its registration the save's (the district save keeps it), never claimed
         public bool DesignArea;    // its record's floor area that of the game's building its design copies (it is as large as it looks), not its size's times Floors
+        public MadeStructure[] Others;   // structures to take in order when no design of its own size fits a lot (a district's lot takes any of its class's); null for none
+    }
+
+    /// <summary>One of the game's structures a made building may take instead of its own: a size, a version and a type.</summary>
+    public struct MadeStructure
+    {
+        public string Size;
+        public int Version;
+        public string Type;
     }
 
     /// <summary>A street of the mod's own: its id, the locale key of its name, its short name for the game's help, avenue or not.</summary>
@@ -159,6 +168,8 @@ namespace RealLifeOverhaul.NewBuildings
         public const int CostCopies = 10;           // copies the frame cost is measured with
         public const float CostWindow = 4f;         // s of real time each side of the frame cost test is measured over
         public const float MostAddedMs = 0.5f;      // ms: what ten copies in view may add to the frame
+        public const float MostMakeMs = 5f;         // ms one made building may take at the load on average: a district of 360 in under two seconds behind the loading screen
+        public const float LaneCell = 50f;          // m: the side of the squares the traffic lanes' points are sorted into for the ground checks of one load
         public const float DoorNear = 3f;           // m: the player stands at a made building's door after leaving it when this near
         public const int MostFloors = 12;           // storeys a made building's record may have: the most floors the floors core gives a building
         public const float FillShare = 0.7f;        // of the ground the best fitting design covers: the designs a plot or a building's place is given among
@@ -623,6 +634,17 @@ namespace RealLifeOverhaul.NewBuildings
             return null;
         }
 
+        /// <summary>
+        /// True when a declaration may be made with <paramref name="other"/> instead of its own structure (one of its
+        /// <see cref="MadeSpec.Others"/>): by <see cref="Refusal"/>'s own limits, the game has that structure for its type, it is
+        /// not the special type, and a home only where the food deliveries can leave it alone (a district's home always).
+        /// </summary>
+        public static bool OtherTakes(MadeSpec spec, MadeStructure other, Func<string, int, string, bool> structureTakes, bool homesLeftOut)
+        {
+            return spec != null && !string.IsNullOrEmpty(other.Type) && other.Type != SpecialType && structureTakes != null
+                   && structureTakes(other.Size, other.Version, other.Type) && (other.Type != HomeType || homesLeftOut || spec.Life);
+        }
+
         /// <summary>True when what ten copies in view add to the frame is under <see cref="MostAddedMs"/>.</summary>
         public static bool CostPasses(float withMs, float withoutMs)
         {
@@ -642,6 +664,113 @@ namespace RealLifeOverhaul.NewBuildings
             float fx = (float)Math.Sin(f), fz = (float)Math.Cos(f);
             spotX = x + ahead * fx + across * fz;
             spotZ = z + ahead * fz - across * fx;
+        }
+    }
+
+    /// <summary>
+    /// The traffic lanes' points sorted into squares of <see cref="NewBuildingsRules.LaneCell"/> m, once a load, so a made
+    /// building's ground check looks at the points near its footprint instead of all of them (some 20,000 with Uptown's
+    /// lanes, for each of hundreds of buildings). Game-free: the points are given by x and z. Its answers are a whole pass's:
+    /// whether a point lies inside a footprint with the road's clearance, and the nearest point within a reach.
+    /// COST: a pass over the points to fill it; then a few squares a question.
+    /// </summary>
+    public sealed class LaneGrid
+    {
+        private readonly Dictionary<long, List<int>> _cells = new Dictionary<long, List<int>>(1024);
+        private float[] _x = new float[0];
+        private float[] _z = new float[0];
+
+        /// <summary>How many points it holds.</summary>
+        public int Count { get; private set; }
+
+        /// <summary>The points afresh: x and z of each, those not <paramref name="present"/> left out; indices stay the caller's.</summary>
+        public void Fill(float[] x, float[] z, bool[] present, int count)
+        {
+            _cells.Clear();
+            _x = x ?? new float[0];
+            _z = z ?? new float[0];
+            Count = 0;
+            for (int i = 0; i < count && i < _x.Length && i < _z.Length; i++)
+            {
+                if (present != null && i < present.Length && !present[i])
+                {
+                    continue;
+                }
+                long key = Key(Cell(_x[i]), Cell(_z[i]));
+                if (!_cells.TryGetValue(key, out List<int> list))
+                {
+                    list = new List<int>(16);
+                    _cells.Add(key, list);
+                }
+                list.Add(i);
+                Count++;
+            }
+        }
+
+        /// <summary>A point inside the turned rectangle grown by <paramref name="margin"/> (NewBuildingsRules.Inside), the lowest index of those; -1 for none.</summary>
+        public int Inside(float cx, float cz, float facing, float halfWidth, float halfDepth, float margin)
+        {
+            float w = halfWidth + margin, d = halfDepth + margin;
+            float reach = (float)Math.Sqrt(w * w + d * d);
+            int found = -1;
+            for (int gx = Cell(cx - reach); gx <= Cell(cx + reach); gx++)
+            {
+                for (int gz = Cell(cz - reach); gz <= Cell(cz + reach); gz++)
+                {
+                    if (!_cells.TryGetValue(Key(gx, gz), out List<int> list))
+                    {
+                        continue;
+                    }
+                    for (int k = 0; k < list.Count; k++)
+                    {
+                        int i = list[k];
+                        if ((found < 0 || i < found) && NewBuildingsRules.Inside(_x[i], _z[i], cx, cz, facing, halfWidth, halfDepth, margin))
+                        {
+                            found = i;
+                        }
+                    }
+                }
+            }
+            return found;
+        }
+
+        /// <summary>The nearest point to (x, z) within <paramref name="reach"/> m, the lowest index of equals, and its squared distance; -1 for none.</summary>
+        public int Nearest(float x, float z, float reach, out float squared)
+        {
+            squared = float.MaxValue;
+            int best = -1;
+            for (int gx = Cell(x - reach); gx <= Cell(x + reach); gx++)
+            {
+                for (int gz = Cell(z - reach); gz <= Cell(z + reach); gz++)
+                {
+                    if (!_cells.TryGetValue(Key(gx, gz), out List<int> list))
+                    {
+                        continue;
+                    }
+                    for (int k = 0; k < list.Count; k++)
+                    {
+                        int i = list[k];
+                        float dx = _x[i] - x, dz = _z[i] - z;
+                        float sqr = dx * dx + dz * dz;
+                        if (sqr <= reach * reach && (sqr < squared || (sqr == squared && i < best)))
+                        {
+                            squared = sqr;
+                            best = i;
+                        }
+                    }
+                }
+            }
+            return best;
+        }
+
+        private static int Cell(float v)
+        {
+            return (int)Math.Floor(v / NewBuildingsRules.LaneCell);
+        }
+
+        private static long Key(int gx, int gz)
+        {
+            return ((long)gx << 32) ^ (uint)gz;
         }
     }
 }

@@ -13,8 +13,10 @@ namespace RealLifeOverhaul.Uptown
     public sealed partial class LifeDirector
     {
         private static readonly HashSet<string> FirstDayLots = new HashSet<string>(StringComparer.Ordinal);   // the plan's, worked out once a run
+        private static readonly HashSet<string> StandingLots = new HashSet<string>(StringComparer.Ordinal);   // under a standing building at this load, its own lot or one it stands over
         private static readonly List<BuildingsLot> Span = new List<BuildingsLot>(BuildingsRules.SpanMost);
-        private static readonly List<int> FirstDayPick = new List<int>(32);
+        private static readonly List<int> FirstDayPick = new List<int>(512);
+        private static Func<int, bool> _firstDayFor;   // the kept-open blocks FirstDayLots were worked out with
         private static bool _liftFaulted;
 
         /// <summary>True when the lot holds a district building at this load, or one finished there (or over it) waits for the next load.</summary>
@@ -24,44 +26,48 @@ namespace RealLifeOverhaul.Uptown
             {
                 return false;
             }
-            return _state.Covering(lotId) != null || DayOneLots.Contains(lotId) || StandsOn(lotId);
+            return _state.Covering(lotId) != null || BuiltLots.Contains(lotId) || StandsOn(lotId);
         }
 
         /// <summary>True when a district building stands on the lot at this load, its own lot or one it stands over.</summary>
         public static bool StandsOn(string lotId)
         {
+            return !string.IsNullOrEmpty(lotId) && StandingLots.Contains(lotId);
+        }
+
+        // The lots under the standing buildings, made once their buildings stand: Taken is asked of every lot on a page.
+        private static void MarkStanding()
+        {
+            StandingLots.Clear();
             for (int i = 0; i < Standing.Count; i++)
             {
                 string own = Standing[i].Spec.Id;
-                if (string.Equals(own, lotId, StringComparison.Ordinal))
-                {
-                    return true;
-                }
+                StandingLots.Add(own);
                 FinishedBuilding f = _state.On(own);
                 for (int k = 0; f != null && f.Over != null && k < f.Over.Length; k++)
                 {
-                    if (string.Equals(f.Over[k], lotId, StringComparison.Ordinal))
-                    {
-                        return true;
-                    }
+                    StandingLots.Add(f.Over[k]);
                 }
             }
-            return false;
         }
 
         /// <summary>
-        /// True for a lot the plan builds from the first day (BuildingsRules.DayOne): fixed data, the same whether or not the
-        /// district lives at this load, so a feature can leave those lots out of a site of its own before the city loads.
+        /// True for a lot the plan builds from the first day (BuildingsRules.Built, with the blocks kept open for the landmarks):
+        /// fixed data, the same whether or not the district lives at this load, so a feature can leave those lots out of a site
+        /// of its own before the city loads.
         /// </summary>
         public static bool FirstDay(string lotId)
         {
-            if (FirstDayLots.Count == 0)
+            Func<int, bool> kept = DistrictBuildings.KeptOpen;
+            if (FirstDayLots.Count == 0 || !ReferenceEquals(kept, _firstDayFor))
             {
                 if (Plan.Count == 0)
                 {
                     LifeGame.Lots(Plan);
                 }
-                BuildingsRules.DayOne(Plan, LifeGame.AwayX, LifeGame.AwayZ, FirstDayPick);
+                FirstDayLots.Clear();
+                _firstDayFor = kept;
+                BuildingsRules.Built(Plan, kept, LifeGame.AwayX, LifeGame.AwayZ, FirstDayPick);
                 for (int i = 0; i < FirstDayPick.Count; i++)
                 {
                     FirstDayLots.Add(Plan[FirstDayPick[i]].Id);

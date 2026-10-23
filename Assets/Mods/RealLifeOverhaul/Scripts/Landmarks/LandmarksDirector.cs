@@ -54,7 +54,8 @@ namespace RealLifeOverhaul.Landmarks
 
         /// <summary>
         /// At game start (Core/RealLifeOverhaulMod), before any save is read: the landmarks' places named to the district save,
-        /// and the lift their crowds give the district's lots' traffic, which Uptown asks while the city loads.
+        /// the lift their crowds give the district's lots' traffic, which Uptown asks while the city loads, and their own blocks
+        /// kept open in Uptown from the first day (whatever the option says: every machine builds the same lots).
         /// </summary>
         public static void Register(IModLogger logger)
         {
@@ -62,6 +63,7 @@ namespace RealLifeOverhaul.Landmarks
             DistrictPlaces.Add(PlacesOwner, Fill);
             DistrictBuildings.TrafficLift = LiftOf;
             DistrictBuildings.HeldFor = Held;
+            DistrictBuildings.KeptOpen = LandmarkRules.OwnBlock;
         }
 
         // ---------------------------------------------------------------- the city

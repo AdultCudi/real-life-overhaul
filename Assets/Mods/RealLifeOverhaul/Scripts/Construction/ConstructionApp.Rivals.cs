@@ -1,8 +1,15 @@
+using System;
+using System.Collections.Generic;
 using RealLifeOverhaul.GameUi;
+using UI.Notification;
 
 namespace RealLifeOverhaul.Construction
 {
-    /// <summary>The Rivals tab: the city's other builders, what they are known for, their standing and what they have won and built in this save.</summary>
+    /// <summary>
+    /// The Rivals tab: the city's other builders, what they are known for, their standing, what they have won and built in
+    /// this save, and their office in Uptown (a business of the construction company's type on the map's filter and in
+    /// BizMan), which a press makes the game's destination.
+    /// </summary>
     public sealed partial class ConstructionApp
     {
         partial void WriteRivals(InfoBox box, BuildState state, ref string selected)
@@ -57,6 +64,8 @@ namespace RealLifeOverhaul.Construction
                 }
             }
             box.Row("reallife_bld_row_going_up", ConstructionText.N(going));
+            string office = ConstructionBridges.RivalOffice != null ? ConstructionBridges.RivalOffice(r) : null;
+            box.Row("reallife_bld_row_office", office ?? ConstructionText.T("reallife_bld_rival_office_none"));
             int against = 0;
             for (int i = 0; i < state.Tenders.Count; i++)
             {
@@ -68,7 +77,22 @@ namespace RealLifeOverhaul.Construction
                 box.Line(ConstructionText.T("reallife_bld_rival_beat_you", "count", against.ToString()), CellTone.Yellow);
             }
             box.Note(ConstructionText.T("reallife_bld_rival_note"));
+            if (office != null)
+            {
+                InfoBox.Button(box.ButtonRow(), InfoBox.Positive, "reallife_bld_rival_office_go", () => GoToOffice(r, office));
+            }
             BackButton(box);
+        }
+
+        // The game's own destination at the rival's office, said in a notice of the game's.
+        private void GoToOffice(int r, string office)
+        {
+            Func<int, bool> go = ConstructionBridges.RivalOfficeGo;
+            if (go != null && go(r))
+            {
+                Notifications.Show(NotificationType.Info, "reallife_bld_rival_office_set", new Dictionary<string, string> { { "rival", RivalName(r) }, { "address", office } }, 6f);
+            }
+            Refresh();
         }
     }
 }
