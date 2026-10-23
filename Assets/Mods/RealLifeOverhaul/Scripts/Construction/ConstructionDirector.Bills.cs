@@ -129,7 +129,7 @@ namespace RealLifeOverhaul.Construction
             if (b != null && ConstructionGame.Take(b.Amount, "reallife_transaction_bld_crews", ForemanWords(c), true))
             {
                 Close(b, BillFile.Settled, day);
-                _state.Firm.Spent += b.Amount;
+                _state.PayOut(b.Amount, ConstructionGame.Day);
             }
         }
 
@@ -185,7 +185,7 @@ namespace RealLifeOverhaul.Construction
             }
             else
             {
-                _state.Firm.Spent += b.Amount;
+                _state.PayOut(b.Amount, ConstructionGame.Day);
             }
         }
 
@@ -244,7 +244,7 @@ namespace RealLifeOverhaul.Construction
         // Money owed to the company comes in: the books, and the project's loan and investor take their share of a sale's.
         private void Collected(BillFile b)
         {
-            _state.Firm.Earned += b.Amount;
+            _state.TakeIn(b.Amount, ConstructionGame.Day);
             ProjectFile p = _state.Project(b.Project);
             if (p != null && b.Kind == BillKind.Client)
             {

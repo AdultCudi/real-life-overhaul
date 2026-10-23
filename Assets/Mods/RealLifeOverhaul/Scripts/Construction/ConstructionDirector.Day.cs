@@ -46,6 +46,8 @@ namespace RealLifeOverhaul.Construction
             }
             TendersHour(day, hour);
             OpeningHour(day, hour);
+            RefitHour();
+            ShowHour(day, hour);
         }
 
         // An opening day: the morning's reminder, and the opening held without the player once its hours are over.
@@ -93,6 +95,7 @@ namespace RealLifeOverhaul.Construction
             MarketDay(day);
             HedgesDay();   // what each project's futures have made (ConstructionDirector.Hedge.cs)
             OpenedDay(day);
+            ShowDay(day);
             CityDay(day);
             if (Verbose)
             {

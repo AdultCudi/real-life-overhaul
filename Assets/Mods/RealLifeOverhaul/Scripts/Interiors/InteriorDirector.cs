@@ -280,6 +280,11 @@ namespace RealLifeOverhaul.Interiors
                         f.LastInterior = s.Interior;
                     }
                     wear = p.WearScale > 0 ? f.Wear : 0;
+                    s.Refit = f.Refit;
+                }
+                else
+                {
+                    s.Refit = 0;
                 }
                 s.PhaseFrom = _store.PhaseFrom(f);
                 s.Ramp = InteriorRules.Ramp(s.PhaseFrom, day);
@@ -498,6 +503,18 @@ namespace RealLifeOverhaul.Interiors
                     {
                         save.modData[InteriorStore.RulesKey] = rules;
                     }
+                    if (!SaveLines.IsKept(save.modData, InteriorStore.RefitKey))
+                    {
+                        string refits = _store.WriteRefits();
+                        if (refits != null)
+                        {
+                            save.modData[InteriorStore.RefitKey] = refits;
+                        }
+                        else
+                        {
+                            save.modData.Remove(InteriorStore.RefitKey);
+                        }
+                    }
                 }
             }
             catch (Exception e)
@@ -589,6 +606,82 @@ namespace RealLifeOverhaul.Interiors
             {
                 f.Wear = InteriorRules.Age(f.Wear, s.Clean, cleaned, wearScale);
             }
+        }
+
+        /// <summary>
+        /// A refit of a business's interior is done (the construction game's works, the player's company or a contractor's): its
+        /// wear back to nothing and new fittings that lift the decor score by its grade's points, fading as they wear. True if done;
+        /// false (said in the log) for a business the feature keeps no record of. No money: the works were paid for.
+        /// </summary>
+        public bool Refit(BuildingRegistration reg, int grade)
+        {
+            InteriorShop s = At(reg);
+            InteriorFile f = s != null ? _store.File(s.Place, true) : null;
+            if (f == null)
+            {
+                Logger?.Info("Interiors: a refit at " + BusinessGame.Name(reg) + " was not recorded: the feature keeps no record of it (off, or not read yet).");
+                return false;
+            }
+            string name = s.Name;
+            int was = f.Wear, decor = s.DecorRaw;
+            f.Wear = 0;
+            int day = TimeHelper.CurrentDay;
+            f.RefreshDay = day;
+            f.Refit = InteriorRules.RefitPoints(grade);
+            f.RefitDay = day;
+            Rework(day, false);
+            InteriorShop now = At(reg);
+            Logger?.Info("Interiors: " + name + " refitted (grade " + grade + "): wear " + was / 10 + "% -> 0, new fittings +" + f.Refit + " decor; decor " + decor + " -> "
+                         + (now != null ? now.DecorRaw : -1) + ".");
+            return true;
+        }
+
+        /// <summary>A business's decor score now, the points a refit still gives it and its wear; false when the feature has no figures for it.</summary>
+        public static bool DecorNow(BuildingRegistration reg, out int decor, out int refit, out int wear)
+        {
+            InteriorShop s = At(reg);
+            decor = s != null ? s.DecorRaw : 0;
+            refit = s != null ? s.RefitNow : 0;
+            wear = s != null ? s.Wear : 0;
+            return s != null;
+        }
+
+        /// <summary>
+        /// The decor score of a room of the game's own items not placed in a business (a show flat's design), by the same rules, fresh
+        /// and clean. Each name is one placed item. A press's work: each kind of item is sorted once by the game's own tags and kept.
+        /// </summary>
+        public static int DecorOf(List<string> items, int sqm)
+        {
+            var copies = new Dictionary<string, int>(32, StringComparer.Ordinal);
+            for (int i = 0; items != null && i < items.Count; i++)
+            {
+                if (!string.IsNullOrEmpty(items[i]))
+                {
+                    copies.TryGetValue(items[i], out int n);
+                    copies[items[i]] = n + 1;
+                }
+            }
+            var categories = new List<int>(copies.Count);
+            var counts = new List<int>(copies.Count);
+            foreach (KeyValuePair<string, int> kind in copies)
+            {
+                categories.Add(CategoryOf(kind.Key));
+                counts.Add(kind.Value);
+            }
+            return InteriorRules.DecorOf(categories, counts, sqm);
+        }
+
+        /// <summary>An item's decor category by the game's own tags and types (the order of <see cref="DecorCategory"/>), or -1 for one not counted.</summary>
+        public static int CategoryOf(string itemName)
+        {
+            int category = InteriorGame.SortName(itemName) & 0xff;
+            return category == 0xff ? -1 : category;
+        }
+
+        /// <summary>The standard a district of the game's expects of an interior (its income level and the game's own minimum there), 0 to 100.</summary>
+        public static int StandardOf(string district)
+        {
+            return InteriorRules.Standard(InteriorGame.IncomeOf(district), InteriorGame.Minimum(district));
         }
 
         /// <summary>

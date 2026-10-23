@@ -369,6 +369,24 @@ namespace RealLifeOverhaul.Interiors
                 });
                 b.Line(InteriorText.T("reallife_interior_refresh_cost", "amount", Economy.FinanceText.Money(InteriorGame.RefreshCost(s.Sqm))));
             }
+            if (s.RefitNow > 0)
+            {
+                b.Line(InteriorText.T("reallife_interior_line_refit", "points", InteriorText.N(s.RefitNow)));
+            }
+            Action<BuildingRegistration> renovate = InteriorBridges.Renovate;
+            if (renovate != null && InteriorBridges.Renovates != null && InteriorBridges.Renovates())
+            {
+                string under = InteriorBridges.Renovation != null ? InteriorBridges.Renovation(reg) : null;
+                if (under != null)
+                {
+                    b.Line(under);
+                }
+                else
+                {
+                    InfoBox.Button(b.ButtonRow(), InfoBox.Negative, "reallife_interior_renovate_button", () => renovate(reg));
+                    b.Note("reallife_interior_renovate_note".GetLocalization());
+                }
+            }
         }
     }
 }

@@ -90,6 +90,11 @@ namespace RealLifeOverhaul.Construction
         {
             box.Title(_director.ProjectName(p));
             box.Subtitle(ConstructionText.StageWords(p));
+            if (p.Contractor >= 0)
+            {
+                WriteContracted(box, p);
+                return;
+            }
             if (_page == 1 && (p.Stage == ProjectStage.Ready || p.Stage == ProjectStage.Building || p.Stage == ProjectStage.Finished))
             {
                 WriteMoney(box, state, p);
@@ -179,6 +184,7 @@ namespace RealLifeOverhaul.Construction
                     i => Answer(_director.SetDesign(p, i)));
             }
             box.RowPair("reallife_bld_row_area", ConstructionText.T("reallife_bld_value_area", "area", ConstructionText.N(p.Area)), "reallife_bld_row_storeys", ConstructionText.N(p.Storeys));
+            WithRefitSelector(box, p);
             if (!asked && !p.PlansDone)
             {
                 ArchitectSelector(box, p);
@@ -338,6 +344,11 @@ namespace RealLifeOverhaul.Construction
             if (p.Kind == ProjectKind.Plot && p.Use == BuildUse.Homes)
             {
                 box.Selector(2, (int)p.After, i => ConstructionText.T(i == 0 ? "reallife_bld_sel_keep" : "reallife_bld_sel_sell_flats"), i => Answer(_director.SetAfter(p, (AfterUse)i)));
+            }
+            WithRefitSelector(box, p);
+            if (p.Kind == ProjectKind.Refit || (p.Kind == ProjectKind.Rebuild && p.WithRefit))
+            {
+                box.Note(ConstructionText.T(p.Kind == ProjectKind.Refit ? "reallife_bld_refit_ready_note" : "reallife_bld_refit_rebuild_note"));
             }
             ManagerRow(box, state, p);
             string block = _director.StartBlock(p);
@@ -579,6 +590,7 @@ namespace RealLifeOverhaul.Construction
                     box.Selector(room, _offPlan - 1, i => ConstructionText.T("reallife_bld_sel_off_plan", "count", (i + 1).ToString()), i => { _offPlan = i + 1; Refresh(); });
                     InfoBox.Button(box.ButtonRow(), InfoBox.Positive, "reallife_bld_button_off_plan", () => Answer(_director.SellOffPlan(p, _offPlan)));
                 }
+                WriteShowFlat(box, p);
             }
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_bld_button_site", () => { _page = 0; Refresh(); });
             Guide(box);
@@ -617,6 +629,10 @@ namespace RealLifeOverhaul.Construction
             else if (p.Kind == ProjectKind.Rebuild)
             {
                 box.Note(ConstructionText.T("reallife_bld_rebuilt_note"));
+            }
+            else if (p.Kind == ProjectKind.Refit)
+            {
+                box.Row("reallife_bld_row_refit_grade", ConstructionText.T(RefitGradeKey(p.Grade)));
             }
             else
             {

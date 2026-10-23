@@ -375,7 +375,8 @@ namespace RealLifeOverhaul.Meta
                     .Also("economy_dealer_floor", "visitors customers floor salesperson bay bays camera photo"),
                 S("construction").For("construction").Opt("construction", "civic_construction").Opt("construction_developers", "construction")
                     .Opt("construction_land_tax", "construction").Opt("construction_risks", "construction")
-                    .Opt("construction_city", "construction")
+                    .Opt("construction_show_flats", "construction").Opt("construction_renovations", "construction").Opt("construction_city", "construction")
+                    .Also("show flat flats viewing viewings buyer buyers sales agent renovation renovate refit refurbish hoarding")
                     .Also("builder builders building company land lot lots plot plots project plans architect planning permission appeal inspector inspection")
                     .Also("crew crews foreman tender tenders developer developers rival rivals merchant materials crane yard flats loan investor ribbon"),
                 S("offices").For("office_space").Opts("office_conversion").Also("office offices shop shops empty space building buildings convert vacant"),

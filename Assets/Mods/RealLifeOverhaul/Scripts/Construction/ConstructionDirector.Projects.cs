@@ -91,8 +91,10 @@ namespace RealLifeOverhaul.Construction
                     return ConstructionText.T("reallife_bld_name_rebuild", "address", where);
                 case ProjectKind.Contract:
                     return ConstructionText.T(p.Source == TenderSource.CityWorks ? "reallife_bld_name_works" : p.Source == TenderSource.Public
-                        ? "reallife_bld_name_public" : "reallife_bld_name_client",
+                        ? "reallife_bld_name_public" : p.Source == TenderSource.Refit ? "reallife_bld_name_client_refit" : "reallife_bld_name_client",
                         "address", where);
+                case ProjectKind.Refit:
+                    return ConstructionText.T("reallife_bld_name_refit", "address", where);
                 default:
                     return ConstructionText.T("reallife_bld_name_plot", "use", ConstructionText.T(BuildCatalogue.UseKeys[(int)p.Use]), "address", where);
             }
@@ -833,7 +835,10 @@ namespace RealLifeOverhaul.Construction
             {
                 return block;
             }
-            p.Hours = PlansRules.Hours(p.Use, p.Area, p.Storeys, p.Kind);
+            if (p.Model != ProjectKind.Contract || p.Hours <= 0)
+            {
+                p.Hours = PlansRules.Hours(p.Use, p.Area, p.Storeys, p.Kind);   // a refit's works keep the hours they were planned or tendered with
+            }
             string why;
             int site;
             if (p.Model == ProjectKind.Plot)
@@ -844,7 +849,12 @@ namespace RealLifeOverhaul.Construction
             }
             else
             {
-                site = StartWorksSite(p.Street, p.Number, 4, true, 0, p.Hours, out why);   // a rebuild: the game's scaffolding to the roof
+                if (p.Kind == ProjectKind.Rebuild && p.WithRefit)
+                {
+                    p.Hours = Math.Min(BuildCatalogue.HoursMost, p.Hours + RefitRules.Hours(p.Area));   // the interior's fit-out on top of the rebuild's own
+                }
+                int kind = p.Model == ProjectKind.Contract ? p.CivicKind : 4;   // a refit behind a hoarding at its front; a rebuild in the game's scaffolding to the roof
+                site = StartWorksSite(p.Street, p.Number, kind, true, 0, p.Hours, out why);
             }
             if (site <= 0)
             {
@@ -857,6 +867,10 @@ namespace RealLifeOverhaul.Construction
             p.StartDay = day;
             p.DueDay = PlanningRules.AfterWorkingDays(day, TenderRules.StandardDays(p.Hours) + 2);   // the usual pace and a day for each inspection's wait
             p.StageSeen = -1;
+            if (ClosesShop(p))
+            {
+                HoldShut(p);   // a refit closes its business as its works begin
+            }
             LoanDraw(p, 0);
             Logger?.Info("Construction: project " + p.Id + " started as site " + site + ": " + p.Hours + " working hours, due on day " + p.DueDay + ".");
             Changed();
@@ -873,6 +887,14 @@ namespace RealLifeOverhaul.Construction
             if (p.SiteId > 0)
             {
                 DropSite(p.SiteId);
+            }
+            if (ClosesShop(p))
+            {
+                LetOpen(p);   // the works stop: the business opens again
+            }
+            if (p.ShowOpen)
+            {
+                CloseShow(p, "its project is given up");
             }
             FreeProject(p);
             p.Stage = ProjectStage.Abandoned;
@@ -916,6 +938,15 @@ namespace RealLifeOverhaul.Construction
 
         private void Handover(ProjectFile p, int day)
         {
+            if (p.Contractor >= 0)
+            {
+                ContractorHandover(p, day);
+                return;
+            }
+            if (p.ShowOpen)
+            {
+                CloseShow(p, "the block is handed over");
+            }
             FreeProject(p);
             p.Stage = ProjectStage.Finished;
             p.Handed = day;
@@ -944,6 +975,11 @@ namespace RealLifeOverhaul.Construction
                 ContractPaid(p, true);
             }
             DefectAhead(p, quality, day);
+            if (p.Kind == ProjectKind.Refit || (p.Kind == ProjectKind.Rebuild && p.WithRefit))
+            {
+                Refitted(p, quality);
+                p.Opened = p.Kind == ProjectKind.Refit;   // an interior has no opening day; a rebuild still has its ribbon
+            }
             if (p.Model != ProjectKind.Contract)
             {
                 NoteFinished(AwardEntry.OfPlayer, p, p.Lot, p.Street, p.Number, p.Use, -1, quality, day - p.DueDay, day);   // a building: one of the year's, and the critic's opinion
