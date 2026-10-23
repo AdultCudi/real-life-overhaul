@@ -46,6 +46,11 @@ namespace RealLifeOverhaul.GameUi
             if (Wanted.Add(name))
             {
                 _stale = true;
+                if (Meta.Dev.Verbose && !Unseen())
+                {
+                    Logger?.Info("Game UI check (pictures): '" + name + "' was first asked for in play, not named in an Awake before the look behind the loading screen: FAIL,"
+                                 + " it is drawn without its picture until the next black screen or pause.");
+                }
             }
             if (_stale && Unseen())
             {
