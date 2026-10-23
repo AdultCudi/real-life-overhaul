@@ -149,7 +149,8 @@ namespace RealLifeOverhaul.Construction
             if (bought > 0)
             {
                 p.HedgeDay = ConstructionGame.Day;
-                Logger?.Info("Construction: project " + p.Id + " (" + ProjectName(p) + ") hedged with " + bought + " future(s) on the exchange" + (why != null ? "; the rest not: " + why : string.Empty) + ".");
+                Logger?.Info("Construction: project " + p.Id + " (" + ProjectName(p) + ") hedged with " + bought + " future(s) on the exchange"
+                             + (why != null ? "; the rest not: " + why : string.Empty) + ".");
                 Changed();
             }
             return bought > 0 ? (why != null ? "reallife_bld_hedge_bought_part" : "reallife_bld_hedge_bought") : why ?? "reallife_bld_hedge_none";

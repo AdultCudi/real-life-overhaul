@@ -22513,5 +22513,6 @@
   "reallife_testrun_look_wrap": "Para os seus olhos: os andaimes do próprio jogo subindo em volta deste prédio até o telhado.",
   "reallife_testrun_look_plot": "Para os seus olhos: o guindaste de torre girando à sua frente, e o andar da estrutura em outro lote deste gramado.",
   "reallife_testrun_look_walk": "Para os seus olhos: ande com as teclas até o novo chão ao seu lado, passando pela junção. O teste espera um minuto.",
-  "reallife_testrun_look_building": "Para os seus olhos: o prédio de teste em 1 Proving Lane. Entre e saia pela porta dele com as teclas. O resumo vem em seguida."
+  "reallife_testrun_look_building": "Para os seus olhos: o prédio de teste em 1 Proving Lane. Entre e saia pela porta dele com as teclas. O resumo vem em seguida.",
+  "reallife_opt_sec_buildersmarket": "Construtoras e hedge"
 }

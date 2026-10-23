@@ -331,17 +331,18 @@ namespace RealLifeOverhaul.Meta
                 S("banks").For("economy_banks").Need("economy").Opts("economy_banks").Also("bank app current account statement card loan apply"),
                 S("cityeco").For("economy_city").Need("economy").Main("economy_city").Opts("economy_city_level", "economy_rate_ahead").Also("prices rates boom recession inflation"),
                 S("ventures").For("ventures").Opts("ventures_investors", "ventures_level").Also("invest investor pitch deal"),
-                S("markets").For("markets", "markets_listing", "markets_bots", "markets_derivatives", "markets_builders").Main("ventures_market")
+                S("markets").For("markets", "markets_listing", "markets_bots", "markets_derivatives").Main("ventures_market")
                     .Opts("markets_margin", "markets_listing", "markets_bots", "markets_dividend_notes", "markets_bonds", "markets_bond_so_far", "markets_large", "markets_reinvest",
-                        "markets_derivatives", "markets_builders")
+                        "markets_derivatives")
                     .Also("shares stocks invest dividend broker trading candles chart margin short property trust reit")
                     .Also("markets_listing", "listing flotation offer prospectus shareholders takeover")
                     .Also("markets_bots", "bot bots robot automated algorithm strategy stop loss take profit limit order trend momentum")
                     .Also("markets_bonds", "bond bonds treasury gilt deposit certificate fixed income interest coupon reinvest savings rollover ladder")
                     .Also("markets_large", "large big block limit volume worked order algorithm vwap slice wealth investor")
                     .Also("markets_reinvest", "reinvest drip dividend reinvestment compound distribution trust")
-                    .Also("markets_derivatives", "futures future options option call put hedge hedging derivative derivatives strike premium raw materials commodity factory import")
-                    .Also("markets_builders", "builder builders construction contractor tender cement steel bricks timber hedge hedging materials project exposure")),
+                    .Also("markets_derivatives", "futures future options option call put hedge hedging derivative derivatives strike premium raw materials commodity factory import"),
+                S("buildersmarket").For("markets_builders").Opt("markets_builders", "markets")
+                    .Also("builder builders construction contractor tender shares stock cement steel bricks timber hedge hedging materials project exposure")),
 
             G("business",
                 S("company").For("economy_company").Need("economy").Main("economy_company").Opts("economy_company_staff", "economy_company_cover",

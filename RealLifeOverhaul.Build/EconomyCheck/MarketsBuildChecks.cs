@@ -532,7 +532,7 @@ internal static partial class Program
         // The shared files' lines.
         string settings = ModSource(@"Core\Settings.cs"), tree = ModSource(@"Meta\OptionsTree.cs"), mod = ModSource(@"Core\RealLifeOverhaulMod.cs"), guide = ModSource(@"Markets\BuildersGuide.cs");
         Check(settings.Contains("public static bool MarketsBuilders = true;") && settings.Contains("MarketsBuilders = Bool(modId, MarketsBuildersId, MarketsBuilders);")
-              && tree.Contains("\"markets_derivatives\", \"markets_builders\")") && tree.Contains(".Also(\"markets_builders\",")
+              && tree.Contains("S(\"buildersmarket\").For(\"markets_builders\").Opt(\"markets_builders\", \"markets\")")
               && ModSource(@"Meta\FeatureCities.cs").Contains("new Line(\"markets_builders\", CityScope.AnyCity,") && ModSource(@"Meta\FeatureList.Economy.cs").Contains("Markets.BuildersGuide.Register();")
               && mod.Contains(".AddToggle(Settings.MarketsBuildersId, \"reallife_mkt_builders_opt\", Settings.MarketsBuilders,"),
             "builders sources: the option is on by default, read, in its section, in the city table, in the feature list and on the page");

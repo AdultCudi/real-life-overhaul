@@ -22513,5 +22513,6 @@
   "reallife_testrun_look_wrap": "请亲眼查看：游戏自带的脚手架正围着这栋建筑一直搭到楼顶。",
   "reallife_testrun_look_plot": "请亲眼查看：你前方正在转动的塔吊，以及这片草地另一块地上的主体结构楼层。",
   "reallife_testrun_look_walk": "请亲眼查看：用按键走上你身旁新的可行走地面，跨过衔接处。测试会等待一分钟。",
-  "reallife_testrun_look_building": "请亲眼查看：位于1 Proving Lane的测试建筑。用按键从它的门走进走出。随后会显示总结。"
+  "reallife_testrun_look_building": "请亲眼查看：位于1 Proving Lane的测试建筑。用按键从它的门走进走出。随后会显示总结。",
+  "reallife_opt_sec_buildersmarket": "建筑商与套期保值"
 }

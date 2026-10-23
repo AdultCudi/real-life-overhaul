@@ -150,7 +150,13 @@ namespace RealLifeOverhaul.Markets
             }
             s.Mis += mood;
             s.Sent += mood;
-            s.Last = s.MidCents;
+            if (Trading)
+            {
+                // Dealt at once, inside the day's range; after the close the price follows at the next open, the day's candle as it closed.
+                s.Last = s.MidCents;
+                s.High = Math.Max(s.High, s.Last);
+                s.Low = s.Low > 0 ? Math.Min(s.Low, s.Last) : s.Last;
+            }
         }
     }
 }
