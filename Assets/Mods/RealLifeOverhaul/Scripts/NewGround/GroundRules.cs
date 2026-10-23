@@ -157,12 +157,13 @@ namespace RealLifeOverhaul.NewGround
         public const float LinkWidth = 2f;          // m: the fallback's link
         public const float StripWidth = 3f;         // m: the strip grown from the pavement into an empty tile
         public const float StripInto = 6f;          // m the strip reaches into the empty tile
-        public const float PropMost = 2f;           // m across at most for a prop at a plan's edge that its count leaves out (see IsProp)
+        public const float PropMost = 3f;           // m across at most for a prop on a plan's ground that its count leaves out (see IsProp)
 
         /// <summary>
         /// A collider a plan's count leaves out: a prop no wider than <see cref="PropMost"/> either way (a lamp, a tree,
-        /// a bin or a bench at the edge of a pavement). The offline scans hold no round colliders, so a plan cannot have
-        /// counted them, and a game update builds walls, roads and buildings, never a lone lamp.
+        /// a bin, a bench or a parked bicycle, as the game's own Prefab_Bike standing on Uptown's ground in the owner's game
+        /// of 23 Oct, 2.4 by 1.5 m). The offline scans hold no round colliders, so a plan cannot have counted them, and a
+        /// game update builds walls, roads and buildings, never a lone prop.
         /// </summary>
         public static bool IsProp(bool propLayer, float sizeX, float sizeZ)
         {

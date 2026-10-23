@@ -577,9 +577,9 @@ internal static partial class Program
             "new ground sources: a district's ground counts the game's colliders on it against the plan's before it grows anything");
         // The owner's test of 23 Oct: one collider the offline scans could not hold (they keep no round ones) stood Uptown down
         // at every load, and the line did not say what it was.
-        Check(GroundRules.IsProp(true, 0.4f, 0.4f) && GroundRules.IsProp(true, GroundRules.PropMost, GroundRules.PropMost) && !GroundRules.IsProp(true, 30f, 0.3f)
-              && !GroundRules.IsProp(true, 2.5f, 1f) && !GroundRules.IsProp(false, 0.4f, 0.4f),
-            "new ground: a lamp or a tree at a plan's edge is left out of its count, never a wall, a building or a piece of the street, however small");
+        Check(GroundRules.IsProp(true, 0.4f, 0.4f) && GroundRules.IsProp(true, 2.4f, 1.5f) && GroundRules.IsProp(true, GroundRules.PropMost, GroundRules.PropMost)
+              && !GroundRules.IsProp(true, 30f, 0.3f) && !GroundRules.IsProp(true, 3.5f, 1f) && !GroundRules.IsProp(false, 0.4f, 0.4f),
+            "new ground: a lamp, a tree or a parked bicycle on a plan's ground is left out of its count, never a wall, a building or a piece of the street, however small");
         Match built = Regex.Match(walk, @"public static int Built\([^)]*\)\s*\{(?<b>(?:[^{}]|\{(?<d>)|\}(?<-d>))*)\}");
         Check(built.Success && built.Groups["b"].Value.Contains("GroundRules.IsProp(") && built.Groups["b"].Value.Contains("seen.Add(")
               && Regex.IsMatch(ground.Groups["b"].Value, @"string\.Join\(""; "", Seen\)"),
