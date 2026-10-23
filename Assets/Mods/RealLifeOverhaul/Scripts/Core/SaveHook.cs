@@ -80,6 +80,10 @@ namespace RealLifeOverhaul
             {
                 RunHandlers();
             }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
             finally
             {
                 Saving = false;
