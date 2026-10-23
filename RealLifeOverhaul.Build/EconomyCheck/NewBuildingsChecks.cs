@@ -408,6 +408,16 @@ internal static partial class Program
         s.Traffic = -1;
         traffic &= NewBuildingsRules.Refusal(s, takes, known, true) != null;
         Check(noLots && traffic, "new buildings: a declaration with nowhere to stand, or a traffic index outside 0 to 100, is refused");
+        s = NewBuildingsTestPlot.Spec();
+        bool storeys = s.Floors == 1;
+        s.Floors = 0;
+        storeys &= NewBuildingsRules.Refusal(s, takes, known, true) != null;
+        s.Floors = NewBuildingsRules.MostFloors + 1;
+        storeys &= NewBuildingsRules.Refusal(s, takes, known, true) != null;
+        s.Floors = NewBuildingsRules.MostFloors;
+        storeys &= NewBuildingsRules.Refusal(s, takes, known, true) == null;
+        Check(storeys && NewBuildingsRules.MostFloors == RealLifeOverhaul.Floors.FloorsRules.MostFloors,
+            "new buildings: a made building has one storey of floor area unless declared with more, at most as many as the floors core gives a building");
 
         Check(MadeStreets.IsMine(MadeStreets.Prefix + "provinglane") && !MadeStreets.IsMine("ba:street_fifthavenue") && !MadeStreets.IsMine(string.Empty) && !MadeStreets.IsMine(null)
               && !MadeStreets.IsMine("REALLIFE:street_provinglane") && !MadeStreets.Prefix.StartsWith("ba:", StringComparison.Ordinal),
@@ -574,7 +584,8 @@ internal static partial class Program
               && wake.IndexOf("c.buildingRegistration = registration;", StringComparison.Ordinal) is int r && r > 0 && r < active,
             "new buildings: a working copy is given its record and registration before it wakes (the city's list can reach it before its Start)");
         Check(MemberText(made, "public static BuildingRegistration MakeRegistration(").Contains("reg.AvailableForRent = false;") && !Regex.IsMatch(all, @"AvailableForRent\s*=\s*true|ForSale\s*=\s*true|RentedByPlayer\s*=\s*true")
-              && MemberText(made, "public static Building MakeRecord(").Contains("b.SpecialService = null;") && MemberText(made, "public static Building MakeRecord(").Contains("ScriptableObject.CreateInstance<Building>()"),
+              && MemberText(made, "public static Building MakeRecord(").Contains("b.SpecialService = null;") && MemberText(made, "public static Building MakeRecord(").Contains("ScriptableObject.CreateInstance<Building>()")
+              && MemberText(made, "public static Building MakeRecord(").Contains("b.totalSqm = SquareMetres(spec.Size) * Math.Max(1, spec.Floors);"),
             "new buildings: a made building is never to let or for sale and has no special service; its record is new, so its DLC is the default, none");
         Check(MemberText(made, "public static bool Claim(").Contains("SpecialBuildings.Reserve(spec.Id, spec.Street, spec.Number, on, SpecialKind.Other)") && !all.Contains("IgnoredAddresses"),
             "new buildings: a made building is claimed through the special buildings' book, and never put on the game's ignore list here");

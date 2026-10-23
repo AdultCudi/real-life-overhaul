@@ -160,7 +160,7 @@ namespace RealLifeOverhaul.NewBuildings
             b.SpecialService = null;
             b.Neighbourhood = spec.District;
             b.trafficIndex = spec.Traffic;
-            b.totalSqm = SquareMetres(spec.Size);
+            b.totalSqm = SquareMetres(spec.Size) * Math.Max(1, spec.Floors);   // the floor area the floors core divides by one storey's
             // Its DLC stays the default, none: every player may enter it, and Core/GameDlc never takes it for gated.
             Records.Add(b);
             return b;

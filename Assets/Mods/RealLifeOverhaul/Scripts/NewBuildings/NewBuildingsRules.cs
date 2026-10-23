@@ -66,6 +66,7 @@ namespace RealLifeOverhaul.NewBuildings
         public MadeLot[] Lots;     // where it may stand, in order: the next free one after the preferred one is taken
         public int Preferred;      // the lot asked for first
         public int Traffic;        // the building's traffic index, 0 to 100, as the game's buildings have one
+        public int Floors = 1;     // storeys of floor area its record has: the floors core gives a host that many floors
         public Func<bool> Wanted;  // the declaring feature's own option; null for always
     }
 
@@ -142,6 +143,7 @@ namespace RealLifeOverhaul.NewBuildings
         public const float CostWindow = 4f;         // s of real time each side of the frame cost test is measured over
         public const float MostAddedMs = 0.5f;      // ms: what ten copies in view may add to the frame
         public const float DoorNear = 3f;           // m: the player stands at a made building's door after leaving it when this near
+        public const int MostFloors = 12;           // storeys a made building's record may have: the most floors the floors core gives a building
         public const float FillShare = 0.7f;        // of the ground the best fitting design covers: the designs a plot or a building's place is given among
 
         public const string SpecialType = "ba:buildingtype_special";   // the game's type that needs a special service
@@ -557,6 +559,10 @@ namespace RealLifeOverhaul.NewBuildings
             if (spec.Traffic < 0 || spec.Traffic > 100)
             {
                 return "its traffic index " + spec.Traffic + " is not between 0 and 100";
+            }
+            if (spec.Floors < 1 || spec.Floors > MostFloors)
+            {
+                return "its floors " + spec.Floors + " are not between 1 and " + MostFloors;
             }
             return null;
         }

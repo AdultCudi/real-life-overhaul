@@ -30,7 +30,8 @@ namespace RealLifeOverhaul.NewBuildings
     ///
     /// Declare in the feature's director's Awake or earlier: every building is made behind the loading screen once every
     /// director is there, and again at every load; nothing of it is saved. The address is the feature's own, on a street of
-    /// the mod's own, and does not move when the building has to take another lot. Costs nothing a frame.
+    /// the mod's own, and does not move when the building has to take another lot. A made building can host floors of the
+    /// floors core (docs/features/new-buildings.md, "A made building as a host of floors"). Costs nothing a frame.
     /// </summary>
     public static class MadeBuildings
     {
