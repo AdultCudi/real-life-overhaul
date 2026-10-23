@@ -566,10 +566,18 @@ internal static partial class Program
 
     // ---------------------------------------------------------------- the sources
 
+    // The folder holds the district's life too (Life*, DistrictValues, DistrictBuildings, BuildingsRules), which keeps rules
+    // of its own and is checked by EconomyCheck's UptownLifeChecks: it seeds Unity's Random and gives it back, keeps the
+    // district's own save line and touches the scene in its LifeGame files. These rules are the ground's.
+    private static bool GroundsFile(string name)
+    {
+        return name.StartsWith("Layout", StringComparison.Ordinal) || name.StartsWith("Ground", StringComparison.Ordinal) || name == "UptownLots.cs";
+    }
+
     private static void UptownSourceChecks(string scripts)
     {
         string folder = Path.Combine(scripts, "Uptown");
-        string[] files = Directory.GetFiles(folder, "*.cs");
+        string[] files = Directory.GetFiles(folder, "*.cs").Where(f => GroundsFile(Path.GetFileName(f))).ToArray();
         var code = files.ToDictionary(Path.GetFileName, f => Code(File.ReadAllText(f)));
         foreach (string name in new[] { "UptownLots.cs", "LayoutRules.cs", "LayoutPlans.cs", "LayoutStreets.cs" })
         {
@@ -592,7 +600,7 @@ internal static partial class Program
     private static void UptownGameSourceChecks(string scripts)
     {
         string folder = Path.Combine(scripts, "Uptown");
-        var code = Directory.GetFiles(folder, "*.cs").ToDictionary(Path.GetFileName, f => Code(File.ReadAllText(f)));
+        var code = Directory.GetFiles(folder, "*.cs").Where(f => GroundsFile(Path.GetFileName(f))).ToDictionary(Path.GetFileName, f => Code(File.ReadAllText(f)));
         string[] mine = { "GroundGame.cs", "GroundGame.Art.cs", "GroundDirector.cs", "GroundDirector.Tests.cs", "GroundSession.cs", "GroundGuide.cs", "GroundText.cs" };
         foreach (string name in mine)
         {

@@ -589,14 +589,14 @@ internal static partial class Program
             return File.Exists(path) ? File.ReadAllText(path).Replace("\r\n", "\n") : string.Empty;
         }
         var all = new StringBuilder(1 << 17);
-        bool noLinq = true, noChance = true, byContract = true, noHarmony = true;
+        bool noLinq = true, noChance = true, byContract = true, noHarmony = true, oneFrame = true, noSend = true;
         foreach (string path in Directory.GetFiles(System.IO.Path.Combine(scripts, "Uptown"), "*.cs"))
         {
             string name = System.IO.Path.GetFileName(path);
             if (!(name.StartsWith("Life", StringComparison.Ordinal) || name.StartsWith("District", StringComparison.Ordinal)
                   || name.StartsWith("Buildings", StringComparison.Ordinal)))
             {
-                continue;   // the ground's files, and its names stood in until its branch lands
+                continue;   // the ground's files, held to its own rules by NavCheck's UptownCheck
             }
             string text = File.ReadAllText(path).Replace("\r\n", "\n");
             all.Append(text).Append('\n');
@@ -604,9 +604,13 @@ internal static partial class Program
             noChance &= !Regex.IsMatch(text, @"new System\.Random|new Random\(|Random\.Range|Random\.value");
             byContract &= !Regex.IsMatch(text, @"GetField\(|GetMethod\(|GetProperty\(|BindingFlags");
             noHarmony &= !text.Contains("Harmony");
+            // The ground's checks hold the ground's files to these; the district's life holds its own to them here.
+            oneFrame &= !Regex.IsMatch(text, @"\bvoid\s+(?:Update|LateUpdate|FixedUpdate)\s*\(") || name == "LifeDirector.cs";
+            noSend &= !Regex.IsMatch(text, @"\bSend\(|MP(?:Server|Client|Config)");
         }
         string code = all.ToString();
         Check(code.Length > 0 && noLinq && noHarmony, "uptown: no LINQ and no Harmony in the district's files");
+        Check(oneFrame && noSend, "uptown: of the district's files only its director has a frame method, and none sends anything over Going Public");
         Check(noChance && Occurs(code, "UnityEngine.Random.InitState(") == 1 && code.Contains("UnityEngine.Random.state = was;")
               && code.Contains("NewBuildingsRules.Hash(DistrictValues.Id + \"|first|\"") && code.Contains("NewBuildingsRules.Hash(DistrictValues.Id + \"|stats|\" + save.seed)"),
             "uptown: nothing of its is chance: the game's own generator runs once with the engine's chance seeded from the save, put back after; its stats' days from the save's seed");
@@ -745,6 +749,10 @@ internal static partial class Program
         Check(en != null && en.TryGetValue(UptownId, out string name) && name == "Uptown" && zh != null && zh.TryGetValue(UptownId, out string zhName) && zhName == "上城",
             "uptown: the district's name is its id's text, as the game names its own (Uptown, 上城)");
         Check(short240, "uptown: every notice is at most 240 characters in English");
-        Check(en != null && !en.ContainsKey("reallife_meta_title_uptown"), "uptown: the feature's title is the ground's key, not this side's");
+        // The feature's title is Uptown's ground's key (GroundText.Title), shared by the district's features: this side's texts
+        // never define it, and its words are the district's name.
+        Check(en != null && en.TryGetValue("reallife_meta_title_uptown", out string title) && en.TryGetValue(UptownId, out string district) && title == district
+              && !keysText.Contains("reallife_meta_title_uptown"),
+            "uptown: the feature's title is the ground's key, not this side's, in the district's name");
     }
 }
