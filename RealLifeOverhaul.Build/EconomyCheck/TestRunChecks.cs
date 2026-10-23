@@ -307,11 +307,23 @@ internal static partial class Program
         }
         expansion.Add("reallife_floors_test_place");
         expansion.Add("reallife_test_district_save");
+        // A feature's own .Check(...) puts its test in the run as the table does; the run keeps only the first of an id met twice.
+        var registered = new List<string>();
+        bool once = true;
+        foreach (KeyValuePair<string, string> source in sources)
+        {
+            foreach (Match m in Regex.Matches(Regex.Replace(source.Value, @"^\s*//.*$", string.Empty, RegexOptions.Multiline), @"\.Check\(""(reallife_[a-z_]+)"""))
+            {
+                once &= !registered.Contains(m.Groups[1].Value) && !table.Exists(c => c.Id == m.Groups[1].Value);
+                registered.Add(m.Groups[1].Value);
+            }
+        }
+        Check(once, "test run: no test is both in the run's table and a feature's .Check(...), or in two .Check(...) lines (the run would drop the second)");
         string missing = null;
         int listed = 0;
         foreach (string key in expansion)
         {
-            bool inRun = table.Exists(c => c.Id == key);
+            bool inRun = table.Exists(c => c.Id == key) || registered.Contains(key);
             bool byStep = false, notRun = false;
             for (int i = 0; i < RunPlan.ByStep.GetLength(0); i++)
             {
