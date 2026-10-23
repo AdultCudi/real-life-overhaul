@@ -257,6 +257,7 @@ namespace RealLifeOverhaul.Meta
                     .Also("pedestrians passers-by pavement crowd"),
                 S("newbuildings").For("newbuildings").Main("new_buildings").Also("building buildings new construction copy design district ground plot land street address"),
                 S("uptown").For("uptown").Main("uptown").Also("uptown district north manhattan new streets block lots avenue map expansion"),
+                S("landmarks").For("landmarks").Main("uptown_landmarks").Also("landmark landmarks skyscraper tower mall galleria stadium football match megaproject uptown"),
                 S("events").For("events").Opts("city_fires").Opt("fire_frequency", "city_fires").Opts("weather_matters").Opt("weather_frequency", "weather_matters")
                     .Opts("street_events").Opt("street_event_frequency", "street_events").Opt("street_protest_notes", "street_events")
                     .Also("rain storm market parade protest").Also("street_protest_notes", "demonstration demonstrations notification notifications"),

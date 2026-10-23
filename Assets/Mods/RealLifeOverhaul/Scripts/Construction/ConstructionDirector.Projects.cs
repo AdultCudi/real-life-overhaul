@@ -59,7 +59,7 @@ namespace RealLifeOverhaul.Construction
             return false;
         }
 
-        /// <summary>A lot of the district (or a test's) by its id; false for one not there at this load.</summary>
+        /// <summary>A lot of the district (or a test's, or a landmark's site) by its id; false for one not there at this load.</summary>
         public bool Lot(string id, out LotView lot)
         {
             IReadOnlyList<LotView> lots = Lots;
@@ -71,8 +71,7 @@ namespace RealLifeOverhaul.Construction
                     return true;
                 }
             }
-            lot = default(LotView);
-            return false;
+            return LandmarkSite(id, out lot);
         }
 
         // ------------------------------------------------------------------ names and values
@@ -89,6 +88,8 @@ namespace RealLifeOverhaul.Construction
             {
                 case ProjectKind.Rebuild:
                     return ConstructionText.T("reallife_bld_name_rebuild", "address", where);
+                case ProjectKind.Contract when p.Source == TenderSource.Landmark:
+                    return ConstructionText.T("reallife_lmk_name_project", "landmark", LandmarkName(p.Lot) ?? ConstructionText.T("reallife_lmk_tender_unnamed"), "address", where);
                 case ProjectKind.Contract:
                     return ConstructionText.T(p.Source == TenderSource.CityWorks ? "reallife_bld_name_works" : p.Source == TenderSource.Public
                         ? "reallife_bld_name_public" : p.Source == TenderSource.Refit ? "reallife_bld_name_client_refit" : "reallife_bld_name_client",
@@ -1023,6 +1024,13 @@ namespace RealLifeOverhaul.Construction
         {
             if (p.InDistrict || string.IsNullOrEmpty(p.Lot))
             {
+                return;
+            }
+            if (p.Source == TenderSource.Landmark)
+            {
+                // A landmark's site is the landmarks' to hand to the district: its building over its block's lots, its shops, or the stadium.
+                p.InDistrict = LandmarkHanded(p.Lot);
+                Logger?.Info("Construction: project " + p.Id + " handed the landmark " + p.Lot + " over" + (p.InDistrict ? "." : "; the landmark has not taken it yet, asked again each day."));
                 return;
             }
             if (IsTestLot(p.Lot))

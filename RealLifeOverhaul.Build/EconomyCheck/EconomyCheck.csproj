@@ -525,6 +525,11 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Designs\ShowFlatDesigns.cs" Link="Mod\ShowFlatDesigns.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Civic\WrapRules.cs" Link="Mod\WrapRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Civic\PlotRules.cs" Link="Mod\PlotRules.cs" />
+    <!-- Uptown's landmarks (LandmarksChecks.cs): their rules and their line, on the plan of Uptown's lots. -->
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\LayoutRules.cs" Link="Mod\LayoutRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\UptownLots.cs" Link="Mod\UptownLots.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Landmarks\LandmarkRules.cs" Link="Mod\Landmarks\LandmarkRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Landmarks\LandmarkStore.cs" Link="Mod\Landmarks\LandmarkStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Civic\CouncilZoning.cs" Link="Mod\CouncilZoning.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\RingRules.cs" Link="Mod\Construction\RingRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BillRules.cs" Link="Mod\Construction\BillRules.cs" />

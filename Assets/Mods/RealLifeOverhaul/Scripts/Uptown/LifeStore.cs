@@ -18,6 +18,7 @@ namespace RealLifeOverhaul.Uptown
         public double Price;         // dollars the player paid in all, the deed's purchase price (the player's own only)
         public int Day;              // the game day it was finished
         public bool Settled;         // its first load's setting up is done (the deed, or let to the city): never done twice
+        public string[] Over;        // the other lots of its block it stands over too (a landmark's), or null: its own lot alone
     }
 
     /// <summary>What the district keeps in the save: the buildings the construction game finished.</summary>
@@ -37,11 +38,32 @@ namespace RealLifeOverhaul.Uptown
             }
             return null;
         }
+
+        /// <summary>The finished building on a lot or standing over it as well as its own (a landmark's), or null.</summary>
+        public FinishedBuilding Covering(string lot)
+        {
+            for (int i = 0; i < Finished.Count; i++)
+            {
+                FinishedBuilding f = Finished[i];
+                if (string.Equals(f.Lot, lot, StringComparison.Ordinal))
+                {
+                    return f;
+                }
+                for (int k = 0; f.Over != null && k < f.Over.Length; k++)
+                {
+                    if (string.Equals(f.Over[k], lot, StringComparison.Ordinal))
+                    {
+                        return f;
+                    }
+                }
+            }
+            return null;
+        }
     }
 
     /// <summary>
     /// The district's line in the save, game-free: one line under <see cref="Key"/>, "v=1^f:finished", records divided by ';'
-    /// and fields by '|' (lot, size, version, type, design, storeys, owner, price, day, settled), in the order
+    /// and fields by '|' (lot, size, version, type, design, storeys, owner, price, day, settled, the other lots it stands over joined by ','), in the order
     /// <see cref="Write"/> joins them. A newer version adds fields at the end of a record, or a part with a new letter: this
     /// reader skips what it does not know, bounds every figure and caps the list. The line names Uptown's lots, never an
     /// address of the game's part of the save, which the district save keeps clear (it is in the mod's own section). The
@@ -101,7 +123,7 @@ namespace RealLifeOverhaul.Uptown
                         break;
                     }
                     FinishedBuilding f = ReadOne(record);
-                    if (f != null && state.On(f.Lot) == null)
+                    if (f != null && state.Covering(f.Lot) == null)
                     {
                         state.Finished.Add(f);
                     }
@@ -128,8 +150,45 @@ namespace RealLifeOverhaul.Uptown
                 Owner = f[6] == "1" ? FinishOwner.Player : FinishOwner.City,   // only the player's own mark makes a deed: anything else goes to the city
                 Price = double.TryParse(f[7], NumberStyles.Float, Inv, out double price) && price >= 0 && !double.IsInfinity(price) ? price : 0,
                 Day = Whole(f[8], 0, 0, int.MaxValue),
-                Settled = f[9] == "1"
+                Settled = f[9] == "1",
+                Over = f.Length > Fields ? Lots(f[Fields]) : null
             };
+        }
+
+        // The other lots a building stands over: ids of letters, digits and underscores, at most a span's worth; null for none.
+        private static string[] Lots(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return null;
+            }
+            string[] parts = text.Split(',');
+            var kept = new List<string>(parts.Length);
+            for (int i = 0; i < parts.Length && kept.Count < BuildingsRules.SpanMost - 1; i++)
+            {
+                if (IsId(parts[i]) && !kept.Contains(parts[i]))
+                {
+                    kept.Add(parts[i]);
+                }
+            }
+            return kept.Count > 0 ? kept.ToArray() : null;
+        }
+
+        private static bool IsId(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return false;
+            }
+            for (int i = 0; i < text.Length; i++)
+            {
+                char c = text[i];
+                if (!(c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' || c == '_'))
+                {
+                    return false;
+                }
+            }
+            return true;
         }
 
         // A text without the line's separators, so a record always reads back whole.
@@ -166,6 +225,14 @@ namespace RealLifeOverhaul.Uptown
                  .Append(f.Price.ToString("R", Inv)).Append('|')
                  .Append(f.Day.ToString(Inv)).Append('|')
                  .Append(f.Settled ? '1' : '0');
+                if (f.Over != null && f.Over.Length > 0)
+                {
+                    t.Append('|');
+                    for (int k = 0; k < f.Over.Length; k++)
+                    {
+                        t.Append(k > 0 ? "," : string.Empty).Append(Clean(f.Over[k]).Replace(',', ' '));
+                    }
+                }
             }
             return t.ToString();
         }

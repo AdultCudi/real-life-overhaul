@@ -424,7 +424,7 @@ EXTRA = ["civic", "service", "events", "everyday", "garage", "family", "site", "
 _only = os.environ.get("PROPS_DEV")
 EXTRA = EXTRA + ["tech"]   # the tech sector's buildings (props_tech.py)
 # PROPS_SET=second: the second bundle (README, "The second bundle"): its own modules and nothing of the first's.
-SECOND = ["build"]
+SECOND = ["build", "landmarks"]   # the building sites, then Uptown's stadium (props_landmarks.py)
 if os.environ.get("PROPS_SET") == "second":
     PROPS = []
 for _name in (SECOND if os.environ.get("PROPS_SET") == "second" else [n.strip() for n in _only.split(",") if n.strip()] if _only else EXTRA):

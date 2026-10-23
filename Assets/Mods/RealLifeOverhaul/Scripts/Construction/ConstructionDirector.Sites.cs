@@ -19,6 +19,10 @@ namespace RealLifeOverhaul.Construction
         /// <summary>The hours a site of the programme works in one of its working hours, given what the city's pace makes it.</summary>
         public float WorkOn(int siteId, double done, double needed, float hours)
         {
+            if (LandmarkWorks(siteId) != null)
+            {
+                return LandmarkPace(siteId, done, needed, hours);   // a landmark's works keep the landmarks' timetable, the construction game on or off
+            }
             if (!Ready())
             {
                 return hours;
@@ -35,6 +39,10 @@ namespace RealLifeOverhaul.Construction
             DevFile dev = DevOnSite(siteId);
             if (dev != null)
             {
+                if (dev.Public)
+                {
+                    return Running ? hours : 0f;   // a public building a rival won goes at the city's pace and is handed over when its works are done
+                }
                 return Running ? (float)Math.Max(0.0, Math.Min(hours, needed * 0.995 - done)) : 0f;   // the schedule hands it over on its day
             }
             TenderFile t = _state.TenderFor(siteId);
@@ -48,6 +56,10 @@ namespace RealLifeOverhaul.Construction
         /// <summary>True for a site a builder started: the player's own works and the city's developers'; not the city's works won in a tender.</summary>
         public bool Owns(int siteId)
         {
+            if (LandmarkWorks(siteId) != null)
+            {
+                return true;   // a landmark's works are the city's megaproject, not one of its six sites
+            }
             if (siteId <= 0 || !Ready())
             {
                 return false;
@@ -63,7 +75,7 @@ namespace RealLifeOverhaul.Construction
         /// <summary>False for a builder's site while the construction game is off: it is put away with it.</summary>
         public bool Shown(int siteId)
         {
-            return Running || !Owns(siteId);
+            return Running || !Owns(siteId) || LandmarkWorks(siteId) != null;
         }
 
         /// <summary>The name a site's notice board gives: the player's company for its own works; null for the city's contractor.</summary>
@@ -84,6 +96,11 @@ namespace RealLifeOverhaul.Construction
         /// <summary>The design a site's finished building wears; null for one picked to fit it.</summary>
         public string DesignFor(int siteId)
         {
+            string landmark = LandmarkWorks(siteId);
+            if (landmark != null)
+            {
+                return LandmarkDesign(landmark, out DesignChoice design) && !string.IsNullOrEmpty(design.Name) ? design.Name : null;
+            }
             if (!Ready())
             {
                 return null;
@@ -100,6 +117,11 @@ namespace RealLifeOverhaul.Construction
         /// <summary>A plot's finished building's lot in the district, or null.</summary>
         public string TagFor(int siteId)
         {
+            string landmark = LandmarkWorks(siteId);
+            if (landmark != null)
+            {
+                return landmark;   // the landmark's site: its look is given up once the landmark stands in its own right
+            }
             if (!Ready())
             {
                 return null;
