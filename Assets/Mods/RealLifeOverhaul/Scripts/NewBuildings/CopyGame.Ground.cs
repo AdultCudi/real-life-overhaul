@@ -253,10 +253,13 @@ namespace RealLifeOverhaul.NewBuildings
             {
                 return street;
             }
+            // Up to some 2,900 boxes a lot: the turned test, with its trigonometry, only for those within the rectangle's reach.
+            NewBuildingsRules.Reach(facing, hw, hd, NewBuildingsRules.Gap, out float reachX, out float reachZ);
             for (int i = 0; i < GameNames.Count; i++)
             {
                 int k = i * 4;
-                if (NewBuildingsRules.Overlaps(GameBoxes[k], GameBoxes[k + 1], GameBoxes[k + 2], GameBoxes[k + 3], cx, cz, facing, hw, hd, NewBuildingsRules.Gap))
+                float x0 = GameBoxes[k], z0 = GameBoxes[k + 1], x1 = GameBoxes[k + 2], z1 = GameBoxes[k + 3];
+                if (!NewBuildingsRules.Apart(x0, z0, x1, z1, cx, cz, reachX, reachZ) && NewBuildingsRules.Overlaps(x0, z0, x1, z1, cx, cz, facing, hw, hd, NewBuildingsRules.Gap))
                 {
                     return "the game's building " + GameNames[i] + " stands there";
                 }
@@ -264,7 +267,8 @@ namespace RealLifeOverhaul.NewBuildings
             for (int i = 0; i < OtherNames.Count; i++)
             {
                 int k = i * 4;
-                if (NewBuildingsRules.Overlaps(OtherBoxes[k], OtherBoxes[k + 1], OtherBoxes[k + 2], OtherBoxes[k + 3], cx, cz, facing, hw, hd, NewBuildingsRules.Gap))
+                float x0 = OtherBoxes[k], z0 = OtherBoxes[k + 1], x1 = OtherBoxes[k + 2], z1 = OtherBoxes[k + 3];
+                if (!NewBuildingsRules.Apart(x0, z0, x1, z1, cx, cz, reachX, reachZ) && NewBuildingsRules.Overlaps(x0, z0, x1, z1, cx, cz, facing, hw, hd, NewBuildingsRules.Gap))
                 {
                     return OtherNames[i] + " stands there";
                 }

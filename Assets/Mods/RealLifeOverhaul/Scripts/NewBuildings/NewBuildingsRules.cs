@@ -480,17 +480,16 @@ namespace RealLifeOverhaul.NewBuildings
             {
                 return false;
             }
+            // The rectangle's reach along the world's axes, then the box's along the rectangle's.
+            Reach(facing, halfWidth, halfDepth, margin, out float reachX, out float reachZ);
+            if (Apart(minX, minZ, maxX, maxZ, cx, cz, reachX, reachZ))
+            {
+                return false;
+            }
             float f = facing * Deg;
             float fx = (float)Math.Sin(f), fz = (float)Math.Cos(f);
             float rx = fz, rz = -fx;
             float hw = halfWidth + margin, hd = halfDepth + margin;
-            // The rectangle's reach along the world's axes, then the box's along the rectangle's.
-            float reachX = Math.Abs(rx) * hw + Math.Abs(fx) * hd;
-            float reachZ = Math.Abs(rz) * hw + Math.Abs(fz) * hd;
-            if (cx + reachX < minX || cx - reachX > maxX || cz + reachZ < minZ || cz - reachZ > maxZ)
-            {
-                return false;
-            }
             float bx = (minX + maxX) * 0.5f - cx, bz = (minZ + maxZ) * 0.5f - cz;
             float ex = (maxX - minX) * 0.5f, ez = (maxZ - minZ) * 0.5f;
             float alongR = Math.Abs(bx * rx + bz * rz), boxR = ex * Math.Abs(rx) + ez * Math.Abs(rz);
@@ -500,6 +499,26 @@ namespace RealLifeOverhaul.NewBuildings
             }
             float alongF = Math.Abs(bx * fx + bz * fz), boxF = ex * Math.Abs(fx) + ez * Math.Abs(fz);
             return alongF <= hd + boxF;
+        }
+
+        /// <summary>
+        /// How far the turned rectangle grown by <paramref name="margin"/> reaches from its middle along the world's X and Z:
+        /// <see cref="Overlaps"/>'s first test, worked out once for a pass over many boxes (one <see cref="Apart"/> from it never overlaps).
+        /// </summary>
+        public static void Reach(float facing, float halfWidth, float halfDepth, float margin, out float reachX, out float reachZ)
+        {
+            float f = facing * Deg;
+            float fx = (float)Math.Sin(f), fz = (float)Math.Cos(f);
+            float rx = fz, rz = -fx;
+            float hw = halfWidth + margin, hd = halfDepth + margin;
+            reachX = Math.Abs(rx) * hw + Math.Abs(fx) * hd;
+            reachZ = Math.Abs(rz) * hw + Math.Abs(fz) * hd;
+        }
+
+        /// <summary>True when an upright box lies beyond a rectangle's <see cref="Reach"/> round (cx, cz): the two cannot overlap.</summary>
+        public static bool Apart(float minX, float minZ, float maxX, float maxZ, float cx, float cz, float reachX, float reachZ)
+        {
+            return cx + reachX < minX || cx - reachX > maxX || cz + reachZ < minZ || cz - reachZ > maxZ;
         }
 
         /// <summary>True when every corner of the turned rectangle lies inside the upright box shrunk by <paramref name="margin"/>.</summary>

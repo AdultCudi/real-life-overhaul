@@ -13,8 +13,8 @@ using RealLifeOverhaul.Uptown;
 // built from the first day and the open ones (the first block's old quarter kept, the landmarks' own blocks open, a share
 // open on every other block, the same in any order and on every machine), the eight offices leased to the city's rival
 // builders (office lots outside the first block, one a block, as many as the rivals), the landmarks' sites and the
-// developers' lots on the filled plan, the lanes' squares for the made buildings' ground check against a whole pass, the
-// other structures a building takes where no design of its own size fits its lot, and the sources: the load's declarations,
+// developers' lots on the filled plan, the lanes' squares and the boxes' reach for the made buildings' ground check against
+// a whole pass, the other structures a building takes where no design of its own size fits its lot, and the sources: the load's declarations,
 // the generator for new buildings alone, the leases by the game's own start of a business, the map's row placed, the look
 // check, the tests in the run, the wiring; and the texts.
 internal static partial class Program
@@ -26,6 +26,7 @@ internal static partial class Program
         UptownFillLeases(plan);
         UptownFillLandmarks(plan);
         UptownFillLanes();
+        UptownFillBoxes();
         UptownFillOthers(plan);
         UptownFillSources();
         UptownFillTexts();
@@ -322,6 +323,119 @@ internal static partial class Program
         Check(ms < 20.0 && hits > 0, "uptown fill: 360 buildings' lane checks in " + ms.ToString("F2") + " ms with the squares (wanted under 20 ms; a whole pass each is some 7 million point tests)");
     }
 
+    // ---------------------------------------------------------------- the game's boxes by the rectangle's reach
+
+    // The ground check's pass over the game's boxes (868 buildings and some 2,070 obstacles in the city's scenes, the game's
+    // files): the turned test only for a box within the rectangle's reach finds the same first box as the turned test of
+    // every box, for the band's 352 buildings, and in a fraction of the time.
+    private static void UptownFillBoxes()
+    {
+        const int Boxes = 2934, Lots = 352;
+        var box = new float[Boxes * 4];
+        uint seed = 2166136261u;
+        float Next(float from, float span)
+        {
+            seed = unchecked(seed * 1664525u + 1013904223u);
+            return from + (seed >> 8) % 1000000u / 1000000f * span;
+        }
+        for (int i = 0; i < Boxes; i++)
+        {
+            float x = Next(-4000f, 5600f), z = Next(-2500f, 3500f), w = Next(1f, 40f), d = Next(1f, 40f);
+            box[i * 4] = x;
+            box[i * 4 + 1] = z;
+            box[i * 4 + 2] = i % 211 == 0 ? x - 1f : x + w;   // now and then a box with nothing in it, as an empty mesh gives
+            box[i * 4 + 3] = z + d;
+        }
+        var cx = new float[Lots];
+        var cz = new float[Lots];
+        var facing = new float[Lots];
+        var hw = new float[Lots];
+        var hd = new float[Lots];
+        for (int q = 0; q < Lots; q++)
+        {
+            cx[q] = Next(-800f, 1700f);
+            cz[q] = Next(400f, 600f);
+            facing[q] = (q % 4) * 90f + (q % 5 == 0 ? 23f : 0f);
+            hw[q] = Next(4f, 12f);
+            hd[q] = Next(10f, 9f);
+        }
+        int[] plain = new int[Lots], reached = new int[Lots];
+        double plainMs = double.MaxValue, reachMs = double.MaxValue;
+        for (int run = 0; run < 3; run++)
+        {
+            long a = Stopwatch.GetTimestamp();
+            for (int q = 0; q < Lots; q++)
+            {
+                plain[q] = -1;
+                for (int i = 0; i < Boxes; i++)
+                {
+                    int k = i * 4;
+                    if (NewBuildingsRules.Overlaps(box[k], box[k + 1], box[k + 2], box[k + 3], cx[q], cz[q], facing[q], hw[q], hd[q], NewBuildingsRules.Gap))
+                    {
+                        plain[q] = i;
+                        break;
+                    }
+                }
+            }
+            long b = Stopwatch.GetTimestamp();
+            for (int q = 0; q < Lots; q++)
+            {
+                reached[q] = -1;
+                NewBuildingsRules.Reach(facing[q], hw[q], hd[q], NewBuildingsRules.Gap, out float reachX, out float reachZ);
+                for (int i = 0; i < Boxes; i++)
+                {
+                    int k = i * 4;
+                    if (!NewBuildingsRules.Apart(box[k], box[k + 1], box[k + 2], box[k + 3], cx[q], cz[q], reachX, reachZ)
+                        && NewBuildingsRules.Overlaps(box[k], box[k + 1], box[k + 2], box[k + 3], cx[q], cz[q], facing[q], hw[q], hd[q], NewBuildingsRules.Gap))
+                    {
+                        reached[q] = i;
+                        break;
+                    }
+                }
+            }
+            long c = Stopwatch.GetTimestamp();
+            plainMs = Math.Min(plainMs, (b - a) * 1000.0 / Stopwatch.Frequency);
+            reachMs = Math.Min(reachMs, (c - b) * 1000.0 / Stopwatch.Frequency);
+        }
+        bool same = true;
+        int met = 0;
+        for (int q = 0; q < Lots; q++)
+        {
+            int first = -1;
+            for (int i = 0; i < Boxes && first < 0; i++)
+            {
+                first = UptownMeets(box, i, cx[q], cz[q], facing[q], hw[q] + NewBuildingsRules.Gap, hd[q] + NewBuildingsRules.Gap) ? i : -1;
+            }
+            same &= plain[q] == reached[q] && reached[q] == first;
+            met += first >= 0 ? 1 : 0;
+        }
+        Check(same && met > 0 && met < Lots && reachMs < plainMs && reachMs < 10.0,
+            "uptown fill: the ground check's boxes tried by the rectangle's reach first find the same box as the turned test of every box and a test of the four axes "
+            + "written apart, for " + Lots + " lots over " + Boxes + " boxes (" + met + " meeting one), in " + reachMs.ToString("F2") + " ms against "
+            + plainMs.ToString("F2") + " ms (wanted under 10 ms)");
+    }
+
+    // An upright box and a turned rectangle (half sizes already grown) meet when no one of the four axes parts them: the
+    // world's X and Z, and the rectangle's own across and outward.
+    private static bool UptownMeets(float[] box, int i, float cx, float cz, float facing, float hw, float hd)
+    {
+        float minX = box[i * 4], minZ = box[i * 4 + 1], maxX = box[i * 4 + 2], maxZ = box[i * 4 + 3];
+        if (maxX < minX || maxZ < minZ)
+        {
+            return false;
+        }
+        float f = facing * (float)(Math.PI / 180.0);
+        float ux = (float)Math.Sin(f), uz = (float)Math.Cos(f);   // outward
+        float ax = uz, az = -ux;                                  // across
+        float spanX = Math.Abs(ax) * hw + Math.Abs(ux) * hd, spanZ = Math.Abs(az) * hw + Math.Abs(uz) * hd;
+        if (cx + spanX < minX || cx - spanX > maxX || cz + spanZ < minZ || cz - spanZ > maxZ)
+        {
+            return false;
+        }
+        float mx = (minX + maxX) * 0.5f - cx, mz = (minZ + maxZ) * 0.5f - cz, ex = (maxX - minX) * 0.5f, ez = (maxZ - minZ) * 0.5f;
+        return Math.Abs(mx * ax + mz * az) <= hw + ex * Math.Abs(ax) + ez * Math.Abs(az) && Math.Abs(mx * ux + mz * uz) <= hd + ex * Math.Abs(ux) + ez * Math.Abs(uz);
+    }
+
     // ---------------------------------------------------------------- another structure where no design of its own fits
 
     // The game's structures for the band's sizes as its BuildingSizeData has them (the game's files, 23 Oct 2026; LifeGame.Structures
@@ -534,6 +648,10 @@ internal static partial class Program
         Check(ground.Contains("Lanes.Inside(cx, cz, facing, hw, hd, NewBuildingsRules.RoadClear)") && ground.Contains("Lanes.Nearest(cx, cz, reach, out _)")
               && ground.Contains("ReferenceEquals(points, _lanesOf)"),
             "uptown fill: the made buildings' ground check reads the lanes' squares, made again when the lanes change");
+        string groundWhy = MemberText(ground, "public static string GroundWhy(DesignEntry d, MadeLot lot, out Vector3 root, out float yaw, out Vector3 door)");
+        Check(groundWhy.Contains("NewBuildingsRules.Reach(facing, hw, hd, NewBuildingsRules.Gap, out float reachX, out float reachZ);")
+              && Regex.Matches(groundWhy, @"!NewBuildingsRules\.Apart\(x0, z0, x1, z1, cx, cz, reachX, reachZ\) && NewBuildingsRules\.Overlaps\(x0, z0, x1, z1,").Count == 2,
+            "uptown fill: the ground check tries the game's buildings and obstacles by the rectangle's reach before the turned test");
         Check(newDirector.Contains("Made buildings check (load time): ") && newDirector.Contains("NewBuildingsRules.MostMakeMs") && newDirector.Contains("if (!spec.Life || Meta.Dev.Verbose)"),
             "uptown fill: the load's line says what measuring and making cost, a district's buildings are one line, each with Developer diagnostics");
         string make = MemberText(newDirector, "private bool Make(MadeSpec spec)");
