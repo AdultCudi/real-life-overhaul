@@ -171,6 +171,10 @@ namespace RealLifeOverhaul.Construction
             dev.Handed = true;
             int rival = DevelopmentRules.Rival(lot.Id, use);
             _state.Rivals[rival].Built++;
+            if (!dev.Public)
+            {
+                RivalNews(rival, RivalDeveloped, 1);   // the district grew: its builder, and a little every listed builder
+            }
             NoteFinished(dev.Public ? AwardEntry.OfCity : AwardEntry.OfDevelopers, null, lot.Id, lot.Street, lot.Number, use, rival, Math.Min(95, _state.Rivals[rival].Reputation + 10), 0,
                 ConstructionGame.Day);
             if (dev.SiteId > 0)
@@ -402,6 +406,7 @@ namespace RealLifeOverhaul.Construction
                     + won.Price + " in " + won.Days + " days (score " + won.Score + ")"
                              + (bid ? ", the player's " + t.BidPermille + " in 1000" + (t.Fast ? " fast" : string.Empty) : ", no bid of the player's") + ": PASS.");
             }
+            RivalNews(won.Bidder, RivalTenderWon, WeightOf(t));   // the stock market hears who won: the listed builders that lost move too
             if (won.Bidder < 0)
             {
                 t.State = TenderState.Won;
@@ -434,7 +439,7 @@ namespace RealLifeOverhaul.Construction
                     SetContractor(t.SiteId, won.Bidder);
                     break;
                 case TenderSource.Client:
-                    StartWorksSite(t.Street, t.Number, 1, false, won.Bidder, Math.Max(20, t.Hours / 2), out _);
+                    t.SiteId = StartWorksSite(t.Street, t.Number, 1, false, won.Bidder, Math.Max(20, t.Hours / 2), out _);   // kept: its handover is the rival's news
                     break;
                 case TenderSource.Landmark:
                     LandmarkAwarded(t.Lot, won.Bidder, won.Price, won.Days);   // the landmarks' timetable runs the rival's works and hands it over
@@ -452,6 +457,7 @@ namespace RealLifeOverhaul.Construction
                             if (dev.SiteId > 0)
                             {
                                 _state.Developments.Add(dev);
+                                t.SiteId = dev.SiteId;   // its handover is the rival's news
                             }
                         }
                     }
@@ -518,6 +524,31 @@ namespace RealLifeOverhaul.Construction
             _state.Projects.Add(p);
             Logger?.Info("Construction: tender " + t.Id + " won for " + t.WinningPrice + ": project " + p.Id + (p.Stage == ProjectStage.Building
                 ? " on the city's site " + p.SiteId : " to start") + ".");
+        }
+
+        // The stock market's kinds of builder news (Markets.BuilderNewsKind's numbers), and a tender's weight by its works.
+        private const int RivalTenderWon = 1, RivalFinished = 2, RivalLate = 3, RivalDeveloped = 4, RivalRigged = 7, RivalAward = 8;
+
+        private static int WeightOf(TenderFile t)
+        {
+            return t.Source == TenderSource.Landmark ? 4 : t.Source == TenderSource.Public ? 3 : t.Source == TenderSource.Client || t.Source == TenderSource.Refit ? 2 : 1;
+        }
+
+        // A rival's site from a tender handed over: on time or late against the days it bid, news for the stock market.
+        private void RivalHanded(int siteId, int day)
+        {
+            for (int i = 0; siteId > 0 && i < _state.Tenders.Count; i++)
+            {
+                TenderFile t = _state.Tenders[i];
+                if (t.SiteId != siteId || t.Winner < 0 || t.State == TenderState.Open || t.State == TenderState.Won)
+                {
+                    continue;
+                }
+                int due = PlanningRules.AfterWorkingDays(Math.Max(0, t.Closes) / 24, Math.Max(1, t.WinningDays));
+                RivalNews(t.Winner, day <= due ? RivalFinished : RivalLate, WeightOf(t));
+                Logger?.Info("Construction: " + ConstructionText.T(BuildCatalogue.RivalKeys[t.Winner]) + " handed over tender " + t.Id + "'s works on day " + day + " (due " + due + ").");
+                return;
+            }
         }
 
         // How busy a rival is: the city's sites with them as the contractor, and their developments going up.

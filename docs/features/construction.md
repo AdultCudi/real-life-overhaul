@@ -135,7 +135,7 @@ ConstructionGuide     the feature list's entry, its facts, the options and the t
 4. **Plans.** The use (one the lot is zoned for), a design of the city's own that fits the frame's footprint (the copy engine's measured designs, of a size the lot's class takes), the architect (a practice for a fee, an architect of the staff, or the player once qualified), parking under the building or none. The plans write in the fire exits; the parking asked, the district's height limit (12 storeys in the new district, 8 under strict permits: the elected government's building code) and an engineer's sign off (from three storeys, and for every rebuild) are requirements. An estimator of the staff narrows the estimate's error.
 5. **Planning permission** at City Hall (see below for why City Hall's call): the fee, the neighbours' objections in the City Ledger, the council's decision in six to fourteen working days, conditions with many objections, a refusal with its reasons; an appeal to the court (a lawyer of the player's own helps) or the plans drawn again.
 6. **The site.** With the licence, permission and a crew: the site starts in the city's programme, a plot on the lot's ground or the game's scaffolding round the building. It works at the crews' pace (their trades against the stage's need, skill, morale, the plant, the speciality), as far as the stage's materials allow.
-7. **Materials, plant, crews.** Each stage's loads ordered from one of three builders' merchants, priced off the raw materials exchange (`Markets.MarketDirector.MaterialFactor`), delivered at 07:00 on a working day, sometimes short. Plant hired a day, or bought and kept at a yard (a warehouse of the player's); a tower crane from three storeys. Crews hired from the week's labour market, paid each working day, their morale up and down, strikes, walking off, a rival's offer to match.
+7. **Materials, plant, crews.** Each stage's loads ordered from one of three builders' merchants, priced off the raw materials exchange's building materials (their move against the city's price level, `Markets.MarketDirector.MaterialMove`), delivered at 07:00 on a working day, sometimes short; what a project will still buy can be hedged with futures (**Materials and hedge**). Plant hired a day, or bought and kept at a yard (a warehouse of the player's); a tower crane from three storeys. Crews hired from the week's labour market, paid each working day, their morale up and down, strikes, walking off, a rival's offer to match.
 8. **Inspections.** Three visits (after the foundations, after the frame, at the end), booked, the inspector at 10:00 on the next working day; a failure means rework; a bribe waves it through and may come out for 21 days (a case of bribery, the company's reputation and Standing). A site manager of the staff books, orders, gets the plant and puts a free crew on.
 9. **Money.** A construction loan at the business loan's rate and 1.5 points, drawn in stages and on the credit file; an investor's money for a share more; a block's flats sold before they are built (a deposit now, the rest at completion). Theft, storms and faults, and insurance's share.
 10. **The handover.** The site is handed over: the building's new look stands out of view (below), a plot's building is handed to the district (from the next load one of its buildings, the player's own or its residents'), the City Ledger has it, and the next day is its opening.
@@ -197,6 +197,22 @@ Agreed with the trades ([Building trades](trades.md), "With the construction com
 - `ConstructionBridges.DesignOf`: each day the company asks `TradesBridges.DesignOf("build:<n>", out DesignScore)`. Once the player has finished the design there, the plans are drawn: their quality is 30 and 70% of the design's `Total`; its `CostPermille` (bounded 600 to 1600) scales the estimate's materials, crews and contingency and every stage's loads (a dearer design costs more to build); for a block of homes its `Units` are the block's flats; its `Storeys` are written to Player.log beside the project's (the building's look stays the city's design it wears). `Construction check (own design)` says what was read.
 - The roles the company gives its office's employees (architect, engineer, estimator, site manager) and its crews' trades (labourer, mason, crane operator, electrician, plumber) are `TradeCatalogue.Roles`' ids; the offline checks hold each to it.
 
+### With the stock market
+
+Wired in `Wiring/Wiring.ConstructionLinks.cs`, the bodies in `Wiring/Wiring.MarketsBuildLinks.cs` ([The city's builders and hedging a project](economy-markets.md#the-citys-builders-and-hedging-a-project-buildermarket-hedgerules)):
+
+```
+MaterialFactor   a material's move on the exchange against its own price at the price level (MarketDirector.MaterialMove):
+                 cement, steel, bricks and timber the exchange's own building materials, glass the game's
+RivalNews        a rival's tender won (or the player's), its works handed over on time or late against the days it bid, a
+                 development finished, a tender ring found out (each member), the building of the year's builder: the market's
+                 builder news list (Markets/BuilderMarket), by its kinds' numbers
+HedgePlan, Hedge   a project's purchases to come (ExposureRules) as futures, planned or bought (MarketDirector.HedgePlan, Hedge)
+Contract         a hedge's future on the exchange's book; SettleTest, UndoTests: the test tools'
+```
+
+A project's **Materials and hedge** page (`ConstructionApp.Hedge.cs`) shows what it will still buy of each material, from which day, and the futures that would hedge it; **Hedge** buys them; its futures are looked at each day (`HedgesDay`) and at the handover a notice says what the hedge saved or cost (`HedgeEnd`). The company's takings and costs are kept by day (`BuildState.TakeIn`, `PayOut`, `Books`) for the player's listed company's books.
+
 ### Show flats
 
 A block of homes sold off plan (a plot of homes at its Ready or Building stage, not handed to the district, with flats left) can open a **show flat** on its money page. One at a time.
@@ -249,7 +265,7 @@ Uptown's landmarks ([Uptown's landmarks](landmarks.md)) are tendered and built t
 
 ### The save
 
-- One line under `reallife:construction` ("v=1^h:...^f:...^l:...^c:...^q:...^s:...^p:...^t:...^r:...^d:...^o:..."), and `reallife:construction_before_tests` while a test has changed something. Fields are appended at the end of a record, parts by a new letter; a newer line is read as far as this version knows it, a line this version cannot read is kept as it was read (`SaveLines`).
+- One line under `reallife:construction` ("v=1^h:...^f:...^l:...^c:...^q:...^s:...^p:...^t:...^r:...^d:...^o:...^k:...", the company's books by day in `k`, a project's hedge at the end of its record), and `reallife:construction_before_tests` while a test has changed something. Fields are appended at the end of a record, parts by a new letter; a newer line is read as far as this version knows it, a line this version cannot read is kept as it was read (`SaveLines`).
 - It names the district's lots by their ids and the game's buildings by street and number as words of its own; nothing of the game's part of the save. A finished building on a lot becomes the district's record (Uptown's own line, kept by the district save). A company is a `BuildingRegistration` with the type `reallife:businesstype_construction`, made a design studio again by "prepare this save for removing the mod".
 - A save without the line starts afresh; the sites of a line whose game is switched off wait, put away.
 - A show flat and a refit are fields at the end of their project's record (the design's id, its scores, its agent and sales; the contractor, the price, the grade, a rebuild's refit), and the next refit tender's day at the end of the header. The show flat's floor is no record of the game's: it is asked again at each load. A refit's closure is the game's own switch, as business pressure's closures are.

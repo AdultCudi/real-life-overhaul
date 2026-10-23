@@ -262,6 +262,7 @@ namespace RealLifeOverhaul.Meta
             Markets.ListingGuide.Register();
             Markets.TradingGuide.Register();
             Markets.DerivGuide.Register();
+            Markets.BuildersGuide.Register();
 
             Features.Add("economy_banks", "reallife_meta_title_economy_banks")
                 .About("reallife_guide_economy_banks_about").Help("reallife_guide_economy_banks")

@@ -158,6 +158,7 @@
         public const string MarketsLargeId = "markets_large";
         public const string MarketsReinvestId = "markets_reinvest";
         public const string MarketsDerivativesId = "markets_derivatives";
+        public const string MarketsBuildersId = "markets_builders";              // the city's builders on the market, building materials and a project's hedge
         public const string VenturesLevelId = "ventures_level";
         public const string EconomyCompanyId = "economy_company";
         public const string EconomyCompanyLevelId = "economy_company_level";
@@ -487,6 +488,7 @@
         public static bool MarketsLarge = true;          // a large order is worked a slice a step, and a bond purchase may be a share of what the player is worth
         public static bool MarketsReinvest = true;       // the share of each dividend a holding is set to put back is bought into the same company at the next open
         public static bool MarketsDerivatives = true;    // the exchange prices raw materials; futures and options on the Futures tab
+        public static bool MarketsBuilders = true;       // the rival builders listed and moved by the construction game's news; a project's materials hedged
         public static int VenturesLevel = 1;             // how demanding investors are: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore
         public static bool EconomyCompany = true;        // running a business (off: none of it runs and nothing is charged)
         public static int EconomyCompanyLevel = 1;       // how strict it is: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore
@@ -858,6 +860,7 @@
             MarketsLarge = Bool(modId, MarketsLargeId, MarketsLarge);
             MarketsReinvest = Bool(modId, MarketsReinvestId, MarketsReinvest);
             MarketsDerivatives = Bool(modId, MarketsDerivativesId, MarketsDerivatives);
+            MarketsBuilders = Bool(modId, MarketsBuildersId, MarketsBuilders);
             VenturesLevel = Int(modId, VenturesLevelId, VenturesLevel);
             EconomyCompany = Bool(modId, EconomyCompanyId, EconomyCompany);
             EconomyCompanyLevel = Int(modId, EconomyCompanyLevelId, EconomyCompanyLevel);

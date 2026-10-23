@@ -54,6 +54,9 @@ namespace RealLifeOverhaul.Markets
         /// <summary>The exchange has set new prices at a close, or its option changed: the importers' prices written again.</summary>
         public static Action MaterialsFixed;
 
+        /// <summary>The player's construction company's own takings over the days from one up to, not with, another; under nothing for none.</summary>
+        public static Func<int, int, long> BuilderBooks;
+
         public static void Reset()
         {
             City = null;
@@ -71,6 +74,7 @@ namespace RealLifeOverhaul.Markets
             OwnWholesale = null;
             CityPrices = null;
             MaterialsFixed = null;
+            BuilderBooks = null;
         }
     }
 

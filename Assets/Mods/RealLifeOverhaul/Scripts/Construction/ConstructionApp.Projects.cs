@@ -100,6 +100,11 @@ namespace RealLifeOverhaul.Construction
                 WriteMoney(box, state, p);
                 return;
             }
+            if (_page == 2 && (p.Stage == ProjectStage.Ready || p.Stage == ProjectStage.Building || p.Stage == ProjectStage.Finished))
+            {
+                WriteHedge(box, p);   // ConstructionApp.Hedge.cs
+                return;
+            }
             switch (p.Stage)
             {
                 case ProjectStage.Design:
@@ -361,6 +366,7 @@ namespace RealLifeOverhaul.Construction
                 InfoBox.Button(buttons, InfoBox.Negative, "reallife_bld_button_money", () => { _page = 1; Refresh(); });
             }
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_bld_back", Back);
+            HedgeButton(box);
             AbandonRow(box, p);
             Guide(box);
         }
@@ -446,6 +452,7 @@ namespace RealLifeOverhaul.Construction
                 InfoBox.Button(more, InfoBox.Negative, "reallife_bld_button_money", () => { _page = 1; Refresh(); });
             }
             InfoBox.Button(more, InfoBox.Additional, "reallife_bld_back", Back);
+            HedgeButton(box);
             Guide(box);
         }
 
@@ -631,12 +638,17 @@ namespace RealLifeOverhaul.Construction
             {
                 box.RowPair("reallife_bld_row_contract", ConstructionText.Money(p.ClientValue), "reallife_bld_row_paid", ConstructionText.Money(p.ClientPaid));
             }
+            HedgeEndRow(box, p);   // what the hedge saved or cost
             Transform buttons = box.ButtonRow();
             if (p.LoanOwed > 0 || p.InvestorOwed > 0)
             {
                 InfoBox.Button(buttons, InfoBox.Negative, "reallife_bld_button_money", () => { _page = 1; Refresh(); });
             }
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_bld_back", Back);
+            if (p.HedgeDay > 0)
+            {
+                HedgeButton(box);
+            }
             Guide(box);
         }
     }

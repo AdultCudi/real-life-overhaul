@@ -17,7 +17,7 @@ namespace RealLifeOverhaul.Markets
             "supermarket", "fruitandvegetable", "liquorstore", "coffeeshop", "fastfood", "clothing", "electronics", "appliance", "furniture", "jewelry", "giftshop",
             "bookstore", "florist", "hairdresser", "gym", "nightclub", "cinema", "theater", "casino", "lawfirm", "webdevelopment", "graphicdesign", "marketingagency",
             "recruitment", "cardealership", "gasstation", "movingservice", "warehouse", "wholesale", "importexport", "factory", "officesupply", "travelagency",
-            "eventplanning", "hospital", "clinic", "interiorinstallation", "truckgarage", "bank"
+            "eventplanning", "hospital", "clinic", "interiorinstallation", "truckgarage", "bank", "construction"
         };
 
         /// <summary>The trade of one of the game's business types, by its id; -1 for one no listed company is in.</summary>
@@ -142,10 +142,11 @@ namespace RealLifeOverhaul.Markets
 
         /// <summary>
         /// What happened (MarketEvent.Kind); on the tape as a number, never renumber. Trade (A the company, B the move in
-        /// millionths) and Volume (B shares) are a Going Public player's; Buzz is Flare's; Company is a tech news item.
+        /// millionths) and Volume (B shares) are a Going Public player's; Buzz is Flare's; Company is a tech news item;
+        /// Builder is the construction game's news of a rival builder (A the builder, B BuilderMarket.Packed).
         /// </summary>
         public const int EventFire = 1, EventCrime = 2, EventBreakIn = 3, EventAccident = 4, EventPolicy = 5, EventElection = 6, EventStorm = 7, EventBuzz = 8, EventTrade = 9, EventVolume = 10,
-            EventOwn = 11, EventCompany = EventOwn + (int)OwnAction.Count, EventCount = EventCompany + 1;
+            EventOwn = 11, EventCompany = EventOwn + (int)OwnAction.Count, EventBuilder = EventCompany + 1, EventCount = EventBuilder + 1;
 
         public const int CompanyMicrosMost = 50000;   // millionths of the log price, either way
 

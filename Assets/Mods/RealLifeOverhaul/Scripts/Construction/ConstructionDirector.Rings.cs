@@ -161,6 +161,7 @@ namespace RealLifeOverhaul.Construction
                 if (RingRules.Member(g.Members, r))
                 {
                     _state.Rivals[r].Reputation = BuildCatalogue.Clamp(_state.Rivals[r].Reputation - RingRules.RepFined, 0, 100);
+                    RivalNews(r, RivalRigged, 1);   // the stock market hears it as the paper prints it: each listed member's shares fall
                 }
             }
             string name = t != null ? TenderName(t) : ConstructionText.T("reallife_bld_place_lot");

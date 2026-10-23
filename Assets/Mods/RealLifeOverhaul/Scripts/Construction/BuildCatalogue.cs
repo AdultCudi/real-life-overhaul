@@ -272,10 +272,14 @@ namespace RealLifeOverhaul.Construction
 
         public static readonly int[] LoadPrice = { 9000, 32000, 11000, 21000, 14000 };   // money a lorry load, by material
 
-        /// <summary>The raw material of the exchange (Scripts/Markets) each material's price follows; the game's item names.</summary>
+        /// <summary>
+        /// The raw material of the exchange (Scripts/Markets) each material's price follows, by the exchange's name: the
+        /// exchange's own building materials (no recipe of the game's has cement, steel, bricks or timber), and the game's
+        /// glass, so a project's materials can be hedged with futures on what it really buys.
+        /// </summary>
         public static readonly string[] ExchangeItem =
         {
-            "ba:itemname_clay", "ba:itemname_metalband", "ba:itemname_clay", "ba:itemname_glass", "ba:itemname_paper"
+            Prefix + "_mkt_drv_mat_cement", Prefix + "_mkt_drv_mat_steel", Prefix + "_mkt_drv_mat_bricks", "ba:itemname_glass", Prefix + "_mkt_drv_mat_timber"
         };
 
         public static readonly int[] UseMaterialsPermille = { 1000, 950, 1150, 550 };    // materials a square metre by use, against homes

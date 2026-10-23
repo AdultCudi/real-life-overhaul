@@ -36,7 +36,7 @@ namespace RealLifeOverhaul.Markets
             {
                 return;
             }
-            int joined = MarketSetup.Join(state);
+            int joined = MarketSetup.Join(state, Settings.MarketsBuilders);
             if (joined > 0)
             {
                 Logger?.Info("Stock market: " + joined + " company(ies) of the catalogue this save's market did not have joined it at today's prices (the property trusts among them).");

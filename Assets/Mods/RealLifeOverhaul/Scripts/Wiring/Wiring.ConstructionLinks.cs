@@ -28,7 +28,8 @@ namespace RealLifeOverhaul
         ///   Designs, Footprint        the copy engine's designs that fit some ground, and a building's footprint
         ///   StartPlot ... Permits     the city's programme (Civic/CivicWorks): sites started, read, handed over, dropped
         ///   BusinessRate ... Credit   the banks' business rate and the credit file (Economy)
-        ///   MaterialFactor            the raw materials exchange (Markets)
+        ///   MaterialFactor            the raw materials exchange (Markets): a material's move, its list price following the price level
+        ///   RivalNews ... UndoTests   the city's builders on the stock market and a project's hedge (Wiring.MarketsBuildLinks)
         ///   Record ... Storm          the record and the courts (Justice), Flare, Standing (Fame), the weather (Events)
         ///   Qualified ... DesignOf    the building trades (BuildTrades/TradesBridges): the player's own qualification and design
         ///   News.Extra                the morning's City Ledger
@@ -96,7 +97,7 @@ namespace RealLifeOverhaul
                 ConstructionBridges.BusinessRate = BusinessRate;
                 ConstructionBridges.BankName = () => BankTerms.House != null ? BankTerms.House.Name : null;
                 ConstructionBridges.Credit = Credit;
-                ConstructionBridges.MaterialFactor = item => Markets.MarketDirector.Instance != null ? Markets.MarketDirector.Instance.MaterialFactor(item) : double.NaN;
+                ConstructionBridges.MaterialFactor = item => Markets.MarketDirector.Instance != null ? Markets.MarketDirector.Instance.MaterialMove(item) : double.NaN;
                 ConstructionBridges.Record = () => Standing.Convictions > 0;
                 ConstructionBridges.Lawyer = () => JusticeState.Loaded && JusticeState.Lawyer == LawyerKind.Firm;
                 ConstructionBridges.Claim = BuildClaims.File;
@@ -108,6 +109,12 @@ namespace RealLifeOverhaul
                 ConstructionBridges.Qualified = TradesBridges.Qualified;
                 ConstructionBridges.Commission = (project, storeys, units, budget) => TradesBridges.Commission(project, storeys, units, (int)Math.Min(int.MaxValue, Math.Max(0L, budget)));
                 ConstructionBridges.DesignOf = DesignOf;
+                ConstructionBridges.RivalNews = MarketsBuildLinks.RivalNews;
+                ConstructionBridges.HedgePlan = MarketsBuildLinks.HedgePlan;
+                ConstructionBridges.Hedge = MarketsBuildLinks.Hedge;
+                ConstructionBridges.Contract = MarketsBuildLinks.Contract;
+                ConstructionBridges.SettleTest = MarketsBuildLinks.SettleTest;
+                ConstructionBridges.UndoTests = MarketsBuildLinks.UndoTests;
                 ConstructionBridges.LandmarkSites = LandmarkLinks.Sites;   // Uptown's landmarks (Scripts/Landmarks): their sites, tenders and works
                 ConstructionBridges.LandmarkHeld = LandmarksDirector.Held;
                 ConstructionBridges.LandmarkName = LandmarksDirector.NameOf;
@@ -193,6 +200,12 @@ namespace RealLifeOverhaul
                 ConstructionBridges.Qualified = null;
                 ConstructionBridges.Commission = null;
                 ConstructionBridges.DesignOf = null;
+                ConstructionBridges.RivalNews = null;
+                ConstructionBridges.HedgePlan = null;
+                ConstructionBridges.Hedge = null;
+                ConstructionBridges.Contract = null;
+                ConstructionBridges.SettleTest = null;
+                ConstructionBridges.UndoTests = null;
                 ConstructionBridges.LandmarkSites = null;
                 ConstructionBridges.LandmarkHeld = null;
                 ConstructionBridges.LandmarkName = null;

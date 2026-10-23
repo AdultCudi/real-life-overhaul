@@ -355,7 +355,7 @@ namespace RealLifeOverhaul.Construction
             p.Deposits += (long)deposit * n;
             p.OffPlanBalance += (long)(price - deposit) * n;
             ConstructionGame.Give((long)deposit * n, "reallife_transaction_bld_sales", ProjectName(p));
-            _state.Firm.Earned += (long)deposit * n;
+            _state.TakeIn((long)deposit * n, ConstructionGame.Day);
             Logger?.Info("Construction: project " + p.Id + " sold " + n + " flat(s) off plan at " + price + " each, " + deposit + " down.");
             return n;
         }

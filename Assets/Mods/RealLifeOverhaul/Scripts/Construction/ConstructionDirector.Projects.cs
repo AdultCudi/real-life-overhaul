@@ -998,7 +998,7 @@ namespace RealLifeOverhaul.Construction
                         long toPlayer = MoneyRules.Share(p.OffPlanBalance, p.LoanOwed, p.InvestorOwed, out long toLoan, out long toInvestor);
                         SalePaid(p, toLoan, toInvestor);
                         ConstructionGame.Give(toPlayer, "reallife_transaction_bld_sales", ProjectName(p));
-                        firm.Earned += p.OffPlanBalance;
+                        _state.TakeIn(p.OffPlanBalance, day);
                         p.OffPlanBalance = 0;
                     }
                 }
@@ -1007,6 +1007,7 @@ namespace RealLifeOverhaul.Construction
             Paper("reallife_bld_paper_finished", ProjectName(p), 0);
             Logger?.Info("Construction: project " + p.Id + " handed over on day " + day + " (due " + p.DueDay + "), quality " + quality + ", reputation " + (points >= 0 ? "+" : string.Empty) + points
                          + "; spent " + p.Spent + ".");
+            HedgeEnd(p);   // what its hedge on the exchange saved or cost
             Tell(NotificationType.Success, p.Kind == ProjectKind.Plot ? "reallife_bld_notice_handed_plot" : "reallife_bld_notice_handed", ProjectName(p), null, TabProjects, p.Id);
             if (p.Kind == ProjectKind.Contract && p.ClientValue > 0)
             {

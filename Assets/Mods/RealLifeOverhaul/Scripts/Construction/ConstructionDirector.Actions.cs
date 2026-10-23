@@ -88,7 +88,7 @@ namespace RealLifeOverhaul.Construction
             {
                 return "reallife_bld_answer_no_money";
             }
-            f.Spent += LicenceFee;
+            _state.PayOut(LicenceFee, ConstructionGame.Day);
             if (f.Licence == LicenceState.Granted)
             {
                 f.LicenceUntil = PlanningRules.LicenceUntil(f.LicenceUntil + 1, ConstructionGame.DaysPerYear);   // renewed from the day it would run out
@@ -211,7 +211,7 @@ namespace RealLifeOverhaul.Construction
             {
                 return "reallife_bld_answer_no_money";
             }
-            _state.Firm.Spent += ZoneFee;
+            _state.PayOut(ZoneFee, ConstructionGame.Day);
             l.ZoneAsk = BuildCatalogue.Zone(use);
             l.ZoneDay = CouncilDay(ConstructionGame.Day);   // the city's one council: its sitting, or the player's meeting
             Changed();

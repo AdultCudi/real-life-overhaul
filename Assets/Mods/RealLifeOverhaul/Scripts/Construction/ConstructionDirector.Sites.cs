@@ -152,6 +152,7 @@ namespace RealLifeOverhaul.Construction
                     Changed();
                     return;
                 }
+                RivalHanded(siteId, day);   // a rival's works from a tender: the stock market hears whether on time
                 DevFile dev = DevOnSite(siteId);
                 if (dev != null)
                 {
@@ -307,8 +308,7 @@ namespace RealLifeOverhaul.Construction
             p.PaceDays = 0;
             for (int m = 0; m < (int)Material.Count; m++)
             {
-                p.Need[m] = model == ProjectKind.Contract ? PlansRules.WorksLoads(p.CivicKind, p.Hours, stage, (Material)m)
-                    : PlansRules.Loads(p.Use, p.Area, p.Storeys, p.Kind, stage, (Material)m) * p.CostPermille / 1000;   // a dearer design of the player's needs more
+                p.Need[m] = ExposureRules.StageNeed(p, stage, (Material)m);   // one rule with the hedge's exposure
                 p.Have[m] = 0;   // the stage before used its own
             }
             for (int k = 0; k < (int)Plant.Count; k++)
@@ -703,7 +703,7 @@ namespace RealLifeOverhaul.Construction
                 return;
             }
             p.Spent += amount;
-            _state.Firm.Spent += amount;
+            _state.PayOut(amount, ConstructionGame.Day);
         }
     }
 }

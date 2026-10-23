@@ -181,6 +181,7 @@ namespace RealLifeOverhaul.Construction
                     if (e.Builder >= 0 && e.Builder < BuildCatalogue.RivalCount)
                     {
                         _state.Rivals[e.Builder].Reputation = BuildCatalogue.Clamp(_state.Rivals[e.Builder].Reputation + AwardRules.RepWon / 2, 0, 100);
+                        RivalNews(e.Builder, RivalAward, 1);   // the stock market hears of the building of the year: its builder's shares rise
                     }
                 }
                 Logger?.Info("Construction check (award): the building of the year " + a.Year + " is " + AwardName(e) + " by builder " + e.Builder + ", " + e.Votes + " of " + votes

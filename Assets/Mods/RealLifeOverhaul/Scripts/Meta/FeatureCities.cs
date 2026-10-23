@@ -132,6 +132,7 @@ namespace RealLifeOverhaul.Meta
             new Line("buildtrades", CityScope.NewYork, "the building trades at New York's works sites, and the practice on a floor of a building the mod holds there"),
             new Line("uptown", CityScope.NewYork, "a district north of New York's Manhattan: its ground laid against the city's streets, walking meshes and backdrop, its buildings on New York's map"),
             new Line("construction", CityScope.NewYork, "a construction company's works on the lots of the new district by New York's map, and its rebuilds at New York's buildings"),
+            new Line("markets_builders", CityScope.AnyCity, "the market's builders and building materials; a project's hedge stands down with the construction game away from New York"),
             new Line("landmarks", CityScope.NewYork, "the new district's landmarks on blocks of its first block by New York's map, built through New York's construction programme"),
         };
 
