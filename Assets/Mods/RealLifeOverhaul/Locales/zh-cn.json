@@ -21673,7 +21673,7 @@
   "reallife_meta_title_uptown": "上城",
   "reallife_opt_sec_uptown": "上城",
   "reallife_uptown_ground_enabled": "曼哈顿以北的上城",
-  "reallife_opt_tip_uptown": "每次加载时铺设上城：曼哈顿的街道越过 1st Avenue 通往一个有三条大道、十九条街道的新街区，有车流、停车位和行人。关闭：下次加载时不再铺设。",
+  "reallife_opt_tip_uptown": "每次加载时铺设上城：曼哈顿的街道越过 1st Avenue，通往三条大道和十九条街道，有车流、停车位和行人。关闭：下次加载时不再铺设。",
   "reallife_uptown_ground_terminus": "上城",
   "reallife_uptown_ground_test_census": "上城：普查",
   "reallife_uptown_ground_test_path": "上城：从曼哈顿走进上城的路",

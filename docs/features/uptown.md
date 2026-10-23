@@ -143,7 +143,7 @@ The district's streets, ground and lots must be on every machine of a session or
 
 ## On the maps
 
-- **The minimap** draws the band: its lanes are among the game's, so its streets are drawn with the city's and the picture's rectangle reaches over it (x to about 860, z to about 936); the ground is measured anew the first time (the kept measurement is for the city's own rectangle), and the rays find its ground colliders as land; the buildings the mod stands on its lots are drawn through `NavBridges.MoreBuildings`. Its buildings and water picture, 2,048 pixels at most a side, now holds about 4.3 km of city instead of 3.8 km: about 2.1 m a pixel instead of 1.9.
+- **The minimap** draws the band: its lanes are among the game's, so its streets are drawn with the city's and the picture's rectangle reaches over it (x to about 860, z to about 936); the ground is measured anew the first time (the kept measurement is for the city's own rectangle), and the rays find its ground colliders as land; the buildings the mod stands on its lots are drawn through `NavBridges.MoreBuildings`. Its buildings and water picture, 2,048 pixels at most a side, now holds about 4.05 km of city instead of 3.6 km (the city with the first block alone, at 1.77 m a pixel): about 1.98 m a pixel.
 - **The city map** pans over the band (its bounds 60 m past it). The game's fog over the city's border (`MapBorder/BorderOverlayFog`, a mesh at 46 m with the playable city cut out of it) still lies over the band: its mesh cannot be read at run time, and switching it off would clear the fog round the whole city. Left as the game has it; a choice for the owner.
 
 ## Cost

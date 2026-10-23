@@ -360,12 +360,11 @@ namespace RealLifeOverhaul.Uptown
 
         /// <summary>
         /// The player's walking ground: every street, avenue and block of the band whole, its outer edge kept off the walls;
-        /// in the first block, each street's carriageway from the old dead end and its pavements from the old corner (both
-        /// over Manhattan's own ground), keeping off the scaffolds and the building that stand there, and each block from
-        /// the backs of 1st Avenue's buildings; 1st Avenue's continuations' carriageways and north pavements from over its
-        /// own corners, the west one off the game's wall that stays at 9th Street's corner. Seeds on 1st Avenue's carriageway
-        /// between its corners: the city's ground it joins. No game collider stands on any of it
-        /// in the build it was measured on (ExpectColliders 0), the backdrop put away first; small things are walked round.
+        /// in the first block, each carriageway from the old dead end and its pavements from the old corner (over Manhattan's
+        /// own ground), off the scaffolds and the building fronts there, and each block from the backs of 1st Avenue's
+        /// buildings; 1st Avenue's continuations from over its own corners, the west one off the game's wall at 9th Street's
+        /// corner. Seeds on 1st Avenue's carriageway: the city's ground it joins. No game collider stands on any of it once
+        /// the backdrop is put away (ExpectColliders 0, the build it was measured on); small things are walked round.
         /// </summary>
         public static GroundPlan PlayerGround()
         {
