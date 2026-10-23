@@ -26,7 +26,7 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont  # noqa: E402
 WIDTH, HEIGHT = 4096, 2048        # powers of two, both: Unity leaves any other size uncompressed (RGBA32, four times the memory)
 # PROPS_SET=second: the second bundle's atlas (README, "The second bundle"): the shared swatches and its own modules only.
 SECOND_SET = os.environ.get("PROPS_SET") == "second"
-SECOND = ["build"]                 # the second bundle's modules, painted in this order
+SECOND = ["build", "landmarks"]    # the second bundle's modules, painted in this order: the sites', then the stadium's
 if SECOND_SET:
     WIDTH, HEIGHT = 1024, 512
 MASK_DIVISOR = 2          # the mask map is half the size of the colour

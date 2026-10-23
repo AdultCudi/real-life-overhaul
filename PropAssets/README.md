@@ -98,8 +98,8 @@ end of `props.py`): those props also get `previews\<id>_sides.png`, six views be
 The first bundle is full (2,814 triangles and 6 % of its atlas left), so the building sites' props (`scripts\props_build.py`,
 painted by `paint_build.py`) go in a second one, `Bundles\reallife_props_site`, with an atlas of its own: 1024 x 512 colour
 and 512 x 256 mask, BC7, holding the shared swatches of `atlas.py` and the module's own finishes only. `PROPS_SET=second`
-switches the scripts to it: `atlas.py` paints that atlas, `build_props.py` builds only the second set's modules (budget
-12 000 triangles), and they write to `PROPS_BUILD` (`build_second\`, git-ignored). Unity builds it with
+switches the scripts to it: `atlas.py` paints that atlas, `build_props.py` builds only the second set's modules, `build` then
+`landmarks` (budget 12 000 triangles; 6 350 used, the atlas 69 %), and they write to `PROPS_BUILD` (`build_second\`, git-ignored). Unity builds it with
 `build_bundle.ps1 -BuildFolder build_second -BundleName reallife_props_site`; `build.ps1` does all of it after the first
 bundle. The mod reads it beside the first (`PropLibrary`: its props have their own two materials on its atlas), and draws
 each prop's stand-in (`Scripts\Civic\CivicProps.cs`) while the bundle is not installed. Building it takes a Unity licence,
@@ -116,6 +116,12 @@ as the first does; the first bundle is not touched by it.
 | `site_stack_rebar` | 1.0 x 0.32 x 4.0 | 300 | ground centre; along Z | bundled steel bars |
 | `site_earthworks` | 10.0 x 0.37 x 10.0 | 800 | ground centre | the dig, stretched over a frame's footprint (`PlotRules.EarthSpot`) |
 | `hammer` | 0.16 x 0.34 x 0.03 | 120 | the handle's end; the handle up | the tool of the clip `hammer_nail` |
+| `stadium_stand` | 10.0 x 15.0 x 12.05 | 1 332 | ground centre; **its seats face +Z** (the pitch) | Crest Field's main stands (`props_landmarks.py`): a section of nine rows, the back wall to the street with the district's band and two gates, a roof held by two masts and their ties; sections stand side by side north and south of the pitch, stretched along X (`Scripts\Landmarks\LandmarkRules.Stadium`) |
+| `stadium_end` | 10.0 x 7.6 x 9.05 | 984 | ground centre; its seats face +Z | the end stands west and east: seven rows, open to the sky |
+| `stadium_corner` | 8.8 x 9.5 x 11.8 | 236 | ground centre; alike from every side | a stair tower in each corner of the bowl, stood unturned |
+| `stadium_floodlight` | 5.6 x 34.0 x 1.97 | 104 | ground centre; its lamp frame looks down towards +Z | a mast at each outer corner, turned to the middle of the pitch |
+| `stadium_lamps` | 5.4 x 2.84 x 1.18 (34 m up) | 144 | the mast's pivot | the frame's twelve lamps, the **glow** material, stood where the mast stands |
+| `stadium_pitch` | 52.0 x 0 x 48.0 | 2 | ground centre, 4 cm up | the field: grass in stripes, a pitch's lines and a running track (`paint_landmarks.py`'s `stadium_pitch`), stretched to the field the stands leave |
 
 ## Using a prop
 
