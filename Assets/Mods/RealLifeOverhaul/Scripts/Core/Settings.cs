@@ -37,6 +37,7 @@
         public const string MealsSeatedId = "meals_seated";
         public const string MealsCookedId = "meals_cooked";
         public const string MealsDanceId = "meals_dance";
+        public const string NewBuildingsId = "new_buildings";
         public const string CameraFovId = "camera_fov";
         public const string CameraHeightId = "camera_height";
         public const string CarCameraId = "car_camera";
@@ -355,6 +356,7 @@
         public static bool MealsSeated = true;   // a meal is eaten at a free seat nearby, with the food in front
         public static bool MealsCooked = true;   // a meal cooked at home is carried to a seat and eaten there
         public static bool MealsDance = true;    // "Dance" in the radio panel over a loudspeaker playing music
+        public static bool NewBuildings = true;  // the mod's own buildings, made at each load from the city's own designs
         public static int CameraFov = 55;        // degrees, vertical
         public static bool LifeEvents = true;
         public static int EventFrequency = 5;        // about this many random events per game week
@@ -706,6 +708,7 @@
             MealsSeated = Bool(modId, MealsSeatedId, MealsSeated);
             MealsCooked = Bool(modId, MealsCookedId, MealsCooked);
             MealsDance = Bool(modId, MealsDanceId, MealsDance);
+            NewBuildings = Bool(modId, NewBuildingsId, NewBuildings);
             CameraFov = Int(modId, CameraFovId, CameraFov);
             CameraHeight = Int(modId, CameraHeightId, CameraHeight);
             CarCamera = Bool(modId, CarCameraId, CarCamera);

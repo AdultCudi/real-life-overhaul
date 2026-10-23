@@ -97,6 +97,7 @@ namespace RealLifeOverhaul
         public static readonly GamePart CarWash = ContractBook.Part("car_wash", "garage",
             "stand-ins for the spray and the sound of a car that has none, so the game's car wash in a repair bay ends on it");
         public static readonly GamePart TrafficMend = ContractBook.Part("traffic_mend", "traffic", "putting the city's traffic right when it stops adding cars for good");
+        public static readonly GamePart OwnBuildings = ContractBook.Part("own_buildings", "newbuildings", "the mod's own buildings, made at each load from the game's designs");
 
         // The pieces, each group under the code that reads it.
 
@@ -398,6 +399,16 @@ namespace RealLifeOverhaul
         // Garage/GarageWash: what the game's wash plays and shows, given a stand-in on a car that has none
         public static readonly GameMember WashSpray = Optional(Field(CarWash, Game, "CarController", "washVfx", "GameObject"));
         public static readonly GameMember WashSound = Optional(Field(CarWash, Game, "CarController", "washAudioSource", "AudioSource"));
+
+        // NewBuildings/MadeGame: the game's private lookups of a building and of its registration by address (BuildingHelper.cs 50, 52;
+        // GetBuilding and GetBuildingRegistration read them first) and of its streets (AddressHelper.cs 13): a made building and its
+        // street go in at every load. Optional: the closest-building job's length (a self-check), and the food deliveries' addresses left
+        // out (without it no made home is made).
+        public static readonly GameMember BuildingLookup = StaticField(OwnBuildings, Game, "Helpers.BuildingHelper", "AllBuildingDictionary", "Dictionary<Address,Building>");
+        public static readonly GameMember RegistrationLookup = StaticField(OwnBuildings, Game, "Helpers.BuildingHelper", "AllBuildingRegistrationDictionary", "Dictionary<Address,BuildingRegistration>");
+        public static readonly GameMember StreetLookup = StaticField(OwnBuildings, Game, "Streets.AddressHelper", "StreetDataDictionary", "Dictionary<String,StreetData>");
+        public static readonly GameMember ClosestJob = Optional(StaticField(OwnBuildings, Game, "Buildings.ClosestBuildingFromPlayer", "ClosestCbcPositionJob", "ClosestPositionJob"));
+        public static readonly GameMember DeliveryLeftOut = Optional(Field(OwnBuildings, Game, "Player.FoodDeliveryJob.FoodDeliveryJobConfig", "excludedDeliveryAddresses", "Address[]"));
 
         /// <summary>The five pieces Build 3675 lacks (the funeral helper's two properties are one, its type).</summary>
         public static readonly GameMember[] LackedBy3675 = { PlayerDead, FuneralActive, FenceIndex, ResumeTarget, StationNameKey, ConfirmByKey };
