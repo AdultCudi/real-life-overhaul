@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using BigAmbitions.Rivals;
 using Blueprints;
 using Buildings;
 using Helpers;
@@ -13,8 +12,9 @@ namespace RealLifeOverhaul.Offices
     /// Everything the conversion reads from or does to the game. A building's type is a field of the city's building asset,
     /// never saved, that everything asks (the businesses that may start there, the map, the rent, the customers, the
     /// competition), while the interior goes by size and version alone; a shop whose size and version the game lists for
-    /// offices too stands on an office's structure. Written, and put back on every way out: the shops' BuildingType, and
-    /// the rivals' ignored addresses for an empty converted shop with no rival landlord.
+    /// offices too stands on an office's structure. Written, and put back on every way out: the shops' BuildingType. What
+    /// keeps the game's own letting off a converted shop is the held addresses' (Core/HeldUnits), as for every building
+    /// the mod holds.
     /// </summary>
     internal static class ConversionGame
     {
@@ -54,9 +54,6 @@ namespace RealLifeOverhaul.Offices
                    && (string.IsNullOrEmpty(reg.businessTypeName) || reg.businessTypeName == Empty) && reg.Layout == null
                    && (reg.itemInstances == null || reg.itemInstances.Count == 0);
         }
-
-        /// <summary>No rival is the building's landlord.</summary>
-        public static bool NoLandlord(BuildingRegistration reg) => reg != null && string.IsNullOrEmpty(reg.buildingOwnerRivalId);
 
         /// <summary>A business of a type the game puts in offices (the mod's tech firms' included).</summary>
         public static bool OfficeBusiness(BuildingRegistration reg)
@@ -101,31 +98,6 @@ namespace RealLifeOverhaul.Offices
             {
                 c.UpdatePoi();
             }
-        }
-
-        /// <summary>
-        /// On or off the game's list of addresses its rivals leave alone, by <see cref="ConversionRules.IgnoreChange"/>: only an
-        /// entry the mod added is ever taken off. <paramref name="ours"/> says whether the entry there was the mod's; returns
-        /// whether it is the mod's now.
-        /// </summary>
-        public static bool Ignore(Address address, bool on, bool ours)
-        {
-            List<Address> list = RivalsHelper.IgnoredAddresses;
-            if (address == null || list == null)
-            {
-                return false;
-            }
-            int at = list.IndexOf(address);
-            int change = ConversionRules.IgnoreChange(on, at >= 0, ref ours);
-            if (change > 0)
-            {
-                list.Add(address);
-            }
-            else if (change < 0)
-            {
-                list.RemoveAt(at);
-            }
-            return ours;
         }
 
         /// <summary>The map's filters applied again, as the game does after a building is rented.</summary>

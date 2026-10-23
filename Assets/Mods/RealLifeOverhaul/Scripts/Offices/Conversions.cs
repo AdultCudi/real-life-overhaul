@@ -35,7 +35,7 @@ namespace RealLifeOverhaul.Offices
             public Building B;      // the city's building asset: what is put back, whatever became of the scene's object
             public CityBuildingController C;
             public string Was;      // the type as the game made it
-            public bool Ignored;    // put on the game's list of addresses its rivals leave alone by the mod: only then taken off
+            public string Holder;   // its claim with the held addresses (Core/HeldUnits), so the game's own letting leaves it to the player
         }
 
         // Static, so another feature's choice can ask without a reference: the buildings that are offices because of this.
@@ -156,15 +156,6 @@ namespace RealLifeOverhaul.Offices
             {
                 return;
             }
-            // A converted shop let since the last look leaves the rivals' list at once.
-            foreach (Made m in Converted.Values)
-            {
-                if (m.Ignored && !ConversionGame.Vacant(m.C.buildingRegistration))
-                {
-                    m.Ignored = ConversionGame.Ignore(m.B.Address, false, m.Ignored);
-                    _dirty = true;
-                }
-            }
             int stamp = SpecialBuildings.Stamp;
             if (stamp != _stamp)
             {
@@ -262,7 +253,8 @@ namespace RealLifeOverhaul.Offices
                 bool foreign = GoingPublic.Foreign(reg);
                 bool held = (made && !vacant)
                             || (!foreign && reg != null && (ConversionGame.OfficeBusiness(reg) || (!vacant && _kept.Contains(ConversionRules.Key(c.building.StreetName, c.building.StreetNumber)))));
-                bool free = picks && vacant && !foreign && ConversionGame.NoLandlord(reg) && !_forSale.Contains(c.building.Address) && !SpecialBuildings.Holds(c);
+                // A rival landlord stays one: the held addresses (Core/HeldUnits) keep the game's letting off without its ignore list.
+                bool free = picks && vacant && !foreign && !_forSale.Contains(c.building.Address) && !SpecialBuildings.Holds(c);
                 _rows.Add(new ConversionRow
                 {
                     Street = c.building.StreetName, Number = c.building.StreetNumber, District = c.building.Neighbourhood, Office = false, Free = free, Held = held
@@ -289,9 +281,10 @@ namespace RealLifeOverhaul.Offices
                 bool made = Converted.TryGetValue(c.building, out Made m);
                 if (_want[i] && !made)
                 {
-                    m = new Made { B = c.building, C = c, Was = c.building.BuildingType };
+                    m = new Made { B = c.building, C = c, Was = c.building.BuildingType, Holder = HeldUnitsRules.OfficesPrefix + ConversionRules.Key(c.building.StreetName, c.building.StreetNumber) };
                     Converted[c.building] = m;
                     ConversionGame.SetType(m.B, c, ConversionGame.Office);
+                    HeldUnits.Hold(m.Holder, c.building.StreetName, c.building.StreetNumber, HeldKind.Conversions);
                     added++;
                 }
                 else if (!_want[i] && made && (!picks || ConversionGame.Vacant(c.buildingRegistration)))
@@ -303,16 +296,6 @@ namespace RealLifeOverhaul.Offices
                     Restore(m);
                     Converted.Remove(c.building);
                     removed++;
-                    continue;
-                }
-                if (_want[i])
-                {
-                    BuildingRegistration reg = c.buildingRegistration;
-                    bool ignore = ConversionGame.Vacant(reg) && ConversionGame.NoLandlord(reg);
-                    if (ignore != m.Ignored)
-                    {
-                        m.Ignored = ConversionGame.Ignore(c.building.Address, ignore, m.Ignored);   // one listed by another stays not the mod's
-                    }
                 }
             }
             if (added > 0 || removed > 0)
@@ -354,17 +337,7 @@ namespace RealLifeOverhaul.Offices
 
         private static void Restore(Made m)
         {
-            try
-            {
-                if (m.Ignored)
-                {
-                    m.Ignored = ConversionGame.Ignore(m.B.Address, false, m.Ignored);
-                }
-            }
-            catch (Exception e)
-            {
-                Logger?.Error(e);
-            }
+            HeldUnits.Release(m.Holder);   // never throws: the game's letting may take the shop again at once
             ConversionGame.SetType(m.B, m.C, m.Was);
         }
 
