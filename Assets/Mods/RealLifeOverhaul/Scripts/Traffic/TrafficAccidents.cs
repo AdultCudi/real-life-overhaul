@@ -225,6 +225,7 @@ namespace RealLifeOverhaul
         private void OnUpdate()
         {
             TrafficWatch.Tick(Time.time);   // one comparison a frame; looks at the traffic five times a second
+            TrafficMend.Tick(Time.unscaledTime);   // one comparison a frame; weighs the game's failed density passes once a second
             if (_lacking)
             {
                 return;
