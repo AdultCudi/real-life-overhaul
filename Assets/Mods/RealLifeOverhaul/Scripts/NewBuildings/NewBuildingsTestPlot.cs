@@ -1,13 +1,15 @@
 namespace RealLifeOverhaul.NewBuildings
 {
     /// <summary>
-    /// The test entries' building and its plot, and nothing else of the mod's: six lots of open ground on the south side
-    /// of the straight stretch of the road round the north of the airport between Industry City and the Hamptons
-    /// (the traffic's Road_237, its southern lane at z -903 from x -2313 to -2087), each 30 m along the road and 34 m deep,
-    /// their fronts 6 m from that lane's middle. The ground there is the player's walking mesh and nobody's building
-    /// (the feasibility study's land and road maps). That ground is very likely where a free update of the game puts its
-    /// airport, so the lots are checked at every load like any made building's, and the test building stands down or
-    /// moves along when the game's own content is there. The mod's own places are never put here.
+    /// The test entries' building and its ground, and nothing else of the mod's. The developer never has to look for a
+    /// free spot: the building is tried round where they stood when they asked, nearest first, then on six lots of the open
+    /// grass round the airport between Industry City and the Hamptons. Ground a person picks by eye is nearly always taken
+    /// (a tree's trunk, a barricade: a player's game, 23 Oct 2026), so the six were found by running a copy of the ground
+    /// check over the build's own scene data, its traffic lanes and the player's walking mesh: each lot has free ground
+    /// 16 m round it, fronts a street within reach and has its door on the city's own walking mesh. That ground is very
+    /// likely where a free update of the game puts its airport, so the lots are checked at every load like any made
+    /// building's, and the building moves along or stands down when the game's own content is there. The mod's own places
+    /// are never put here.
     /// </summary>
     public static class NewBuildingsTestPlot
     {
@@ -20,25 +22,38 @@ namespace RealLifeOverhaul.NewBuildings
         public const string District = "ba:neighborhood_industrycity";      // the district the ground is counted to now (the nearest buildings')
         public const int Traffic = 30;                                      // of 100: a quiet street's
 
-        private const float FrontZ = -909f;    // m: the lots' front line, 6 m south of the southern lane's middle
-        private const float Width = 30f;       // m along the road
-        private const float Depth = 34f;       // m back from it
-        private const float Facing = 0f;       // degrees: the road lies to the north (+Z) of every lot
+        private const float Width = 30f;   // m along the street: room for every design of its size
+        private const float Depth = 34f;   // m back from it
 
-        /// <summary>The six lots, west to east, 35 m apart (5 m between two).</summary>
+        /// <summary>
+        /// The open ground's six lots in the order they are tried, each turned with its door to its nearest street (Road_237
+        /// to the north for the first four, Road_239 for the fifth, Road_237's bend to the east for the sixth).
+        /// </summary>
         public static readonly MadeLot[] Lots =
         {
-            new MadeLot(-2290f, FrontZ - Depth * 0.5f, Facing, Width, Depth),
-            new MadeLot(-2255f, FrontZ - Depth * 0.5f, Facing, Width, Depth),
-            new MadeLot(-2220f, FrontZ - Depth * 0.5f, Facing, Width, Depth),
-            new MadeLot(-2185f, FrontZ - Depth * 0.5f, Facing, Width, Depth),
-            new MadeLot(-2150f, FrontZ - Depth * 0.5f, Facing, Width, Depth),
-            new MadeLot(-2115f, FrontZ - Depth * 0.5f, Facing, Width, Depth),
+            new MadeLot(-2087f, -957f, 0f, Width, Depth),
+            new MadeLot(-2383f, -957f, 0f, Width, Depth),
+            new MadeLot(-2159f, -957f, 0f, Width, Depth),
+            new MadeLot(-2295f, -957f, 0f, Width, Depth),
+            new MadeLot(-1943f, -1277f, 180f, Width, Depth),
+            new MadeLot(-2015f, -981f, 90f, Width, Depth),
         };
 
-        public const float HereGap = 4f;   // m from where the developer stood to the front of the lot ahead of them
+        public const float HereGap = 4f;   // m from where the developer stood to the front of the nearest lot
 
-        /// <summary>The test building on the plot's six lots alone, as when it was asked for from the main menu.</summary>
+        /// <summary>m from where the developer stood to the fronts of the lots round them, nearest first.</summary>
+        public static readonly float[] RingGaps = { HereGap, 20f, 40f };
+
+        /// <summary>
+        /// Degrees from the way the camera looked: straight ahead first, then the ways nearest to it, so the building stands
+        /// where the developer was looking whenever that ground is free.
+        /// </summary>
+        public static readonly float[] RingTurns = { 0f, 45f, -45f, 90f, -90f, 135f, -135f, 180f };
+
+        /// <summary>How many lots are tried round the developer before the open ground's.</summary>
+        public static int RingLots => RingGaps.Length * RingTurns.Length;
+
+        /// <summary>The test building on the open ground's lots alone, as when it was asked for from the main menu or indoors.</summary>
         public static MadeSpec Spec()
         {
             return Spec(false, 0f, 0f, 0f);
@@ -46,18 +61,24 @@ namespace RealLifeOverhaul.NewBuildings
 
         /// <summary>
         /// The test building as a feature would declare it: a new one each time, so nothing it is given is shared. With
-        /// <paramref name="here"/>, the lot ahead of where the developer stood when they asked comes first and the plot's six
-        /// after it: in a player's game the plot's ground was taken by the game's barricades (23 Oct 2026), and the ground
-        /// check still refuses any lot something stands on.
+        /// <paramref name="here"/>, the lots round where the developer stood (and the way the camera looked) come first,
+        /// each turned with its front to them, and the open ground's after them.
         /// </summary>
         public static MadeSpec Spec(bool here, float x, float z, float yaw)
         {
             MadeLot[] lots;
             if (here)
             {
-                lots = new MadeLot[Lots.Length + 1];
-                lots[0] = NewBuildingsRules.LotAhead(x, z, yaw, Width, Depth, HereGap);
-                System.Array.Copy(Lots, 0, lots, 1, Lots.Length);
+                lots = new MadeLot[RingLots + Lots.Length];
+                int k = 0;
+                foreach (float gap in RingGaps)
+                {
+                    foreach (float turn in RingTurns)
+                    {
+                        lots[k++] = NewBuildingsRules.LotAhead(x, z, yaw + turn, Width, Depth, gap);
+                    }
+                }
+                System.Array.Copy(Lots, 0, lots, k, Lots.Length);
             }
             else
             {
