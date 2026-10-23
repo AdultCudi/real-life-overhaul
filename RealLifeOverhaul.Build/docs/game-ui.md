@@ -272,6 +272,14 @@ OverlayUI [VerticalLayoutGroup (padding 30/30/55/40, spacing 20), ContentSizeFit
   `OverlayUI.Show(overlay)` and `OverlayUI.Hide(overlay)` are public and static.
 - `OverlayUI.Update` puts the box at `WorldToScreenPoint(GetTargetPosition())` every frame. Give it a point in front
   of the camera: a point behind it comes out mirrored.
+- The game's cameras look down from far off (`PedestrianCam`: on foot 35 m from the player, indoors 13 m with a lens of
+  49, turned only round the player; indoors that is the floor from about 5 m behind the player to 10 m ahead), and
+  indoors the game hides its guiders (`GuidersManager.ShouldGuidersBeHidden`), so a box over a place further off is
+  drawn off the screen and nothing says where to go; the box stands up from its point (pivot 0.5, 0), so one over a
+  place 5 m ahead is already mostly above the top. A `WorldPanel` with `KeepInView` (every job's panel) is handed the
+  point at the picture's edge toward such a place, low enough for the whole box, worked out in the camera's own space so
+  a place behind the lens is not mirrored (`GameUi/PanelEdgeRules.cs`, the rule; `GameUi/WorldPanel.View.cs`, the part
+  that asks the camera; a few dot products a frame while the box is up).
 - Each button's text gets the suffix `PlayerAction.AsSuffix()` (" [F]": the player's own binding), and
   `GameManager` sends Interact, SecondaryInteract, SpecialInteract and Confirm to
   `OverlayUI.OnPlayerActionPressed`, which resets the action and runs the button's `onClick` (in a vehicle

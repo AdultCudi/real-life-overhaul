@@ -36,6 +36,10 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\PanelPlacement.cs" Link="Mod\PanelPlacement.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\NoticeRoomRules.cs" Link="Mod\NoticeRoomRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\PanelPickRules.cs" Link="Mod\PanelPickRules.cs" />
+    <!-- A job's panel over a place out of the picture (PanelEdgeCheck.cs): at the screen's edge toward it with the game's
+         indoor camera, never mirrored from behind the lens, always on the screen with room for the box, and over the
+         sources every job's panel kept so. -->
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\PanelEdgeRules.cs" Link="Mod\PanelEdgeRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\BarRule.cs" Link="Mod\BarRule.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Camera\CameraWatch.cs" Link="Mod\CameraWatch.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Camera\CameraYieldRules.cs" Link="Mod\CameraYieldRules.cs" />

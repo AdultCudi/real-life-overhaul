@@ -295,7 +295,7 @@ namespace RealLifeOverhaul
             if (!Ctx.Driving && !PlayerHelper.IsUsingVehicle && JobSpots.Flat(Ctx.PlayerPosition, _client.Front) < DoorReach)
             {
                 _panel.Offer(_panelDoor, _panelTarget, Percent(100), _panel.White, ButtonEnter, true, null, false);
-                _panel.Show(_client.Front + Vector3.up * PanelUp, Ctx.Player);
+                _panel.Show(_client.Front + Vector3.up * PanelUp);
             }
             else
             {
@@ -437,7 +437,7 @@ namespace RealLifeOverhaul
             }
             Hint(full ? 4 : holding ? 2 : 5);
             _panel.Offer(full ? _panelHands : _panelDoor, _panelClean, Percent(pct), _panel.White, holding ? null : ButtonTake, !full, ButtonSkip, !full);
-            _panel.Show(Ctx.Player.transform, PanelOver, Ctx.Player);
+            _panel.Show(Ctx.Player.transform, PanelOver);
         }
 
         private void Act(string action)
