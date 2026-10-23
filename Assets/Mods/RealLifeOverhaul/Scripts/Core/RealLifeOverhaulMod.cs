@@ -1293,6 +1293,7 @@ namespace RealLifeOverhaul
             Guard.Step("Tech.HiringGame", () => Tech.HiringGame.Logger = context.Logger);
             Guard.Step("Tech.FirmsGame", () => Tech.FirmsGame.Logger = context.Logger);
             Guard.Step("Careers.CareersDirector", () => Careers.CareersDirector.Logger = context.Logger);
+            Guard.Step("Floors.FloorsDirector", () => Floors.FloorsDirector.Logger = context.Logger);
 
             _root = new GameObject(RootName);
             Guard.Step("the city check", () => CityCheck.Begin(_root, context.Logger));   // before any feature: New York's features stand down in another city
@@ -1432,6 +1433,7 @@ namespace RealLifeOverhaul
             Guard.Step("Careers.CareersDirector", () => Guard.Add<Careers.CareersDirector>(_root));   // after the tech sector, whose roles it reads
             Guard.Step("FitOut.FitOutDirector", () => FitOut.FitOutDirector.Logger = context.Logger);
             Guard.Step("FitOut.FitOutDirector", () => Guard.Add<FitOut.FitOutDirector>(_root));   // before the features whose floors it builds
+            Guard.Step("Floors.FloorsDirector", () => Guard.Add<Floors.FloorsDirector>(_root));   // a look once a second: the places on floors of the mod's buildings
             Guard.Step("Tech.TechSites", () => Tech.TechSites.Logger = context.Logger);
             Guard.Step("Offices.Conversions", () => Offices.Conversions.Logger = context.Logger);
             Guard.Step("Offices.Conversions", () => Guard.Add<Offices.Conversions>(_root));   // a look once a second

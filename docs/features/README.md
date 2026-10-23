@@ -65,6 +65,7 @@ Every feature runs in the New York the mod knows, a New York with districts a fr
 - [The Planner](planner.md): the phone's agenda.
 - [The Calendar](calendar.md): the month on the phone, as the year you chose divides it.
 - [The phone](phone.md): folders on the home screen, a dock, moving apps, and the Banks app.
+- [Floors](floors.md): the mod's places on floors of the buildings it holds: the university's classrooms, the tech companies' towers, places to come.
 
 ## Folders without a page
 

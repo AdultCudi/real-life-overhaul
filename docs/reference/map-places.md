@@ -101,8 +101,9 @@ Unverified (the game could not be run): how the name plate looks beside a marker
 | Your cloud (`tech_cloud`) | the player's data centres: the cloud's regions | Cloud | no |
 | Employers' offices (`job_offices`) | each employer's office (its help-wanted board) by the employer's name, where reviews are held and shifts clocked on to | Briefcase | no |
 | Newspaper kiosks (`newspaper_kiosks`) | the City Ledger's kiosks near the home (`LedgerDirector`) | Paper | yes |
+| City Offices (`floors`) | a building taken by the floors core for places that found no spare floor ([Floors](../features/floors.md)), registered by `Floors/FloorsDirector.Book`, there only while one is taken | Briefcase | yes |
 
-Every building the mod claims as its own (`Core/SpecialBuildings`: the university, City Utilities, the courthouse, the tech companies' towers, the hotels, the police stations) has a row of its own, as the game's special buildings have theirs. NavCheck's `MapRowCheck.cs` checks that every claimed building has its row.
+Every building the mod claims as its own (`Core/SpecialBuildings`: the university, City Utilities, the courthouse, the tech companies' towers, the hotels, the police stations, a building taken for places on floors) has a row of its own, as the game's special buildings have theirs. NavCheck's `MapRowCheck.cs` checks that every claimed building has its row.
 
 ## The game's own letting leaves them alone
 

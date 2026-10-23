@@ -64,6 +64,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Sites\RoomGrid.cs" Link="Mod\RoomGrid.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Sites\RoomPlans.cs" Link="Mod\RoomPlans.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Sites\HqTowers.cs" Link="Mod\HqTowers.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Floors\FloorsRules.cs" Link="Mod\FloorsRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\TechRandom.cs" Link="Mod\TechRandom.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\FitOut\FitRules.cs" Link="Mod\FitRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\FitOut\FitPlanner.cs" Link="Mod\FitPlanner.cs" />
