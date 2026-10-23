@@ -35,6 +35,7 @@ internal static partial class Program
         UptownSourceChecks(scripts);
         UptownGameSourceChecks(scripts);
         UptownTextChecks(scripts);
+        UptownFogChecks(scripts);   // the city map's fog cut away over the band (UptownFogCheck.cs)
     }
 
     // ---------------------------------------------------------------- the streets

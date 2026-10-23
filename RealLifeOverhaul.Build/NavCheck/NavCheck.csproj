@@ -122,6 +122,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\LayoutRules.cs" Link="Mod\Uptown\LayoutRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\LayoutPlans.cs" Link="Mod\Uptown\LayoutPlans.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\LayoutStreets.cs" Link="Mod\Uptown\LayoutStreets.cs" />
+    <!-- Uptown's cut in the city map's fog (UptownFogCheck.cs, with the game's own fog in UptownFogGame.cs): its data, game-free. -->
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\LayoutFog.cs" Link="Mod\Uptown\LayoutFog.cs" />
   </ItemGroup>
 
 </Project>

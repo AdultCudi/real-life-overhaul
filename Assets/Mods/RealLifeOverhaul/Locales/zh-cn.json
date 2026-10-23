@@ -22891,5 +22891,8 @@
   "reallife_bld_rival_office_none": "本次载入时在城里没有办公室",
   "reallife_bld_rival_office_go": "设为目的地",
   "reallife_bld_rival_office_set": "{rival} 位于 {address} 的办公室现在是你的目的地。",
-  "reallife_bld_office_about": "城里的建筑商之一。它和其他建筑商竞标市政工程，并在上城的空地块上盖新楼。"
+  "reallife_bld_office_about": "城里的建筑商之一。它和其他建筑商竞标市政工程，并在上城的空地块上盖新楼。",
+  "reallife_uptown_ground_test_fog": "上城：城市地图上的雾",
+  "reallife_uptown_ground_fog_cut": "上城：城市地图上边界的雾已从该区上方移除，其全部 {places} 块地面都不再被雾遮盖。检查结果详见 Player.log。",
+  "reallife_uptown_ground_fog_over": "上城：本次加载时，城市地图上边界的雾仍然笼罩着该区。原因详见 Player.log。"
 }

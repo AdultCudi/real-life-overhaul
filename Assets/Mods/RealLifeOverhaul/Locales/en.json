@@ -22891,5 +22891,8 @@
   "reallife_bld_rival_office_none": "No office in the city at this load",
   "reallife_bld_rival_office_go": "Set as destination",
   "reallife_bld_rival_office_set": "{rival}'s office at {address} is now your destination.",
-  "reallife_bld_office_about": "One of the city's builders. It bids for the city's works against the other builders and puts up new buildings on Uptown's open lots."
+  "reallife_bld_office_about": "One of the city's builders. It bids for the city's works against the other builders and puts up new buildings on Uptown's open lots.",
+  "reallife_uptown_ground_test_fog": "Uptown: the city map's fog",
+  "reallife_uptown_ground_fog_cut": "Uptown: on the city map the border's fog is cut away over the district, and all {places} parts of its ground are clear of it. Player.log has the check.",
+  "reallife_uptown_ground_fog_over": "Uptown: on the city map the border's fog still lies over the district at this load. Player.log says why."
 }
