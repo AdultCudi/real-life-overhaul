@@ -63,6 +63,8 @@ namespace RealLifeOverhaul.NewGround
             PeopleGame.Forget();
             ParkingGame.Forget();
             RoadsGame.Forget();
+            GroundWork.Forget();
+            TransitMap.ClearTermini();   // a district's bus termini belong to the city that is going
             if (Instance == this)
             {
                 Instance = null;

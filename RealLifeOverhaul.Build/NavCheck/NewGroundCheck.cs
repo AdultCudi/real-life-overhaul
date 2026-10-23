@@ -557,6 +557,28 @@ internal static partial class Program
             "new ground sources: every update of a walking mesh keeps the tiles beyond its bounds as they are");
         Check(code["GroundBuilder.cs"].Contains("GroundRules.TileBounds(tile"), "new ground sources: every update of the city's mesh is one tile, its bounds just inside it");
 
+        // The front door a district lays through: the game's own roads and colliders looked for first, at every load.
+        string work = code["GroundWork.cs"];
+        Match streets = Regex.Match(work, @"public static string Streets\([^)]*\)\s*\{(?<b>(?:[^{}]|\{(?<d>)|\}(?<-d>))*)\}");
+        Check(streets.Success && streets.Groups["b"].Value.IndexOf("RoadsGame.FindJoins(", StringComparison.Ordinal) >= 0
+              && streets.Groups["b"].Value.IndexOf("RoadRules.Clear(", StringComparison.Ordinal) < streets.Groups["b"].Value.IndexOf("RoadsGame.Append(", StringComparison.Ordinal)
+              && streets.Groups["b"].Value.IndexOf("RoadRules.Clear(", StringComparison.Ordinal) > 0,
+            "new ground sources: a district's streets find their joins again and stand down where the game has a road of its own, before anything is appended");
+        Match ground = Regex.Match(work, @"public static string Ground\([^)]*\)\s*\{(?<b>(?:[^{}]|\{(?<d>)|\}(?<-d>))*)\}");
+        Check(ground.Success && Regex.IsMatch(ground.Groups["b"].Value, @"WalkGame\.Built\([^;]*;[\s\S]*if \(found > plan\.ExpectColliders\)[\s\S]*Grow\("),
+            "new ground sources: a district's ground counts the game's colliders on it against the plan's before it grows anything");
+        Check(!Regex.IsMatch(work, @"\bconst\s+float\s+\w*(Corner|Cell|Origin|Side|Bounds)\w*\s*="), "new ground sources: the grid, the tiles and the map are read from the game, never kept in the code");
+
+        // The buses: lines run between the game's subway stations, then termini of the mod's own (a district has no station).
+        string transit = Code(File.ReadAllText(Path.Combine(scripts, @"Transport\TransitMap.cs")));
+        Match begin = Regex.Match(transit, @"private static bool Begin\(\)\s*\{(?<b>(?:[^{}]|\{(?<d>)|\}(?<-d>))*)\}");
+        Check(begin.Success && Regex.IsMatch(begin.Groups["b"].Value, @"Stations\.Sort\([\s\S]*Ends\.Clear\(\);[\s\S]*Ends\.Add\(new TransitEnd \{ At = Stations\[s\]\.transform\.position[\s\S]*termini\.Sort\([\s\S]*Ends\.AddRange\(termini\);"),
+            "new ground sources: the buses' ends are the game's stations in their order, then the mod's termini sorted by name (none: as before)");
+        Check(!Regex.IsMatch(transit, @"Stations\[(_pa|_pb|to|from)\]") && transit.Contains("ToKey = Ends[to].NameKey"),
+            "new ground sources: every pairing, search and line's name reads the ends, so a terminus is a station to the buses");
+        Check(Regex.IsMatch(transit, @"sx\[s\] = Stations\[s\]\.transform\.position\.x;"), "new ground sources: a change to the subway is offered only at the game's own stations");
+        Check(code["GroundDirector.cs"].Contains("TransitMap.ClearTermini();"), "new ground sources: the termini go with their city");
+
         // The texts: every key the folder names is in the three languages, the notices and refusals short.
         string locales = Path.GetFullPath(Path.Combine(scripts, @"..\Locales"));
         var named = files.SelectMany(f => Regex.Matches(File.ReadAllText(f), "\"(reallife_[a-z_]+)\"").Select(m => m.Groups[1].Value))

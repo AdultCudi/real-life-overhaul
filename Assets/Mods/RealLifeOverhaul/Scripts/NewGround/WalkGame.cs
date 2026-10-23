@@ -71,6 +71,7 @@ namespace RealLifeOverhaul.NewGround
             _missing = null;
             _groundMask = 0;
             _blockMask = 0;
+            _builtMask = 0;
         }
 
         // Once a city: the game's switched-on surfaces, the largest of each agent type.
@@ -246,6 +247,35 @@ namespace RealLifeOverhaul.NewGround
             blocker = count > 0 && Hits[0] != null ? Hits[0].name + " (" + LayerMask.LayerToName(Hits[0].gameObject.layer) + ")" : null;
             return count == 0;
         }
+
+        /// <summary>
+        /// How many of the game's colliders stand on a box's top (from a little above it to 4 m): buildings, walls, props,
+        /// parking and the street's own pieces, never the ground it lies on nor the mod's own. A plan's count is kept with
+        /// it; more at a later load means the game has built there since.
+        /// </summary>
+        public static int Built(GroundBox box)
+        {
+            if (_builtMask == 0)
+            {
+                _builtMask = LayerMask.GetMask("Buildings", "BuildingsOutlined", "BuildingWalls", "StreetProps", "InteractiveItems", "InteractiveItemsOutlined",
+                    "ParkingArea", "Sidewalk", "Crosswalk", "Roads");
+            }
+            var centre = new Vector3(box.X, box.Top + 2.2f, box.Z);
+            var half = new Vector3(box.HalfX, 1.8f, box.HalfZ);
+            int count = Physics.OverlapBoxNonAlloc(centre, half, Standing, Quaternion.Euler(0f, box.Yaw, 0f), _builtMask, QueryTriggerInteraction.Ignore);
+            int built = 0;
+            for (int i = 0; i < count; i++)
+            {
+                if (Standing[i] != null && !Standing[i].transform.root.name.StartsWith("RealLifeOverhaul", StringComparison.Ordinal))
+                {
+                    built++;
+                }
+            }
+            return built;
+        }
+
+        private static readonly Collider[] Standing = new Collider[64];
+        private static int _builtMask;
 
         /// <summary>The box as a build source: a solid of the builder's own, so no mesh of the game's need be readable.</summary>
         public static NavMeshBuildSource Box(GroundBox box, int area)
