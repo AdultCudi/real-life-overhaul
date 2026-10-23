@@ -16,7 +16,8 @@ namespace RealLifeOverhaul
     ///
     /// A handler that throws counts against its class's guard and costs the others nothing; one of a feature switched
     /// off after its faults is skipped, so its line stays as it last wrote it, unless kept with
-    /// <see cref="KeepEssential"/>. Then the lines a store could not read are put back as read (<see cref="SaveLines"/>).
+    /// <see cref="KeepEssential"/>. Then the lines a store could not read are put back as read (<see cref="SaveLines"/>), and
+    /// last the records that name the mod's own places leave the game's lists for the mod's section (Scripts/DistrictSave).
     /// </summary>
     public static class SaveHook
     {
@@ -63,7 +64,7 @@ namespace RealLifeOverhaul
                 Guards.RemoveAt(at);
                 Essential.Remove(handler);
             }
-            if (Handlers.Count == 0)
+            if (Handlers.Count == 0 && !DistrictSave.DistrictSaveDirector.Holds)   // the district's records leave every save, whatever stopped
             {
                 GlobalEvents.onSaveGame -= Relay;
                 _seen = null;
@@ -116,6 +117,14 @@ namespace RealLifeOverhaul
                 Logger?.Error(e);
             }
             CompanionGame.Save(SaveGameManager.Current);
+            try
+            {
+                DistrictSave.DistrictSaveDirector.BeforeWrite();   // last: every feature has written; the mod's places leave the game's lists
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
             if (timed)
             {
                 Logger?.Info("Session: the mod wrote its state into the save in "

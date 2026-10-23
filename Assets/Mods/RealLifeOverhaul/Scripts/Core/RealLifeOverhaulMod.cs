@@ -1507,6 +1507,8 @@ namespace RealLifeOverhaul
             // Every whole-scene search a feature would otherwise make in play, at over 100 ms each.
             Guard.Step("the scene prewarm", () => ScenePrewarm.Begin());
             Guard.Step("the options page in the city", () => Meta.MetaCity.Begin(context, _root));   // the check for leftovers, the guide's contact, the welcome panel
+            Guard.Step("DistrictSave.DistrictSaveDirector", () => DistrictSave.DistrictSaveDirector.Logger = context.Logger);
+            Guard.Step("the district save", () => DistrictSave.DistrictSaveDirector.City(_root));   // after every step that makes places of the mod's
             context.Logger.Info("City features started.");
             // The loading screen stays up while pieces that need frames of their own are done, two seconds at most.
             return LoadHold.Wait();
