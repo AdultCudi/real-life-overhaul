@@ -2,6 +2,8 @@
 
 One page per feature. Each starts with what it is in a sentence, where its code is, and how it talks to other features.
 
+Every feature runs in the New York the mod knows, a New York with districts a free update adds included. In another city (a DLC's, such as Shanghai) the features that stand on New York's data stand down until the player is back: the precincts and the courts, hotels, buses and the subway, broadband and City Utilities, the university and careers, the minimap, the city economy and the district view, the tech towers and the converted offices. The phone, money, the player's businesses and their life run everywhere. The list is `Meta/FeatureCities`; the rules are in [DLC and update readiness](../standards/dlc-and-updates.md).
+
 ## Life in the city
 
 - [Street scenes](street-scenes.md): traffic accidents, the emergency services, the tow truck, people knocked down, and the characters every scene shares.

@@ -17,7 +17,7 @@ namespace RealLifeOverhaul
         public static void Log(IModLogger logger)
         {
             CityManager city = InstanceBehavior<CityManager>.Instance;
-            CityBuildingController[] buildings = city != null ? city.cityBuildingControllers : null;
+            CityBuildingController[] buildings = GameDlc.Open(city);
             if (buildings == null || logger == null)
             {
                 return;
@@ -28,7 +28,7 @@ namespace RealLifeOverhaul
             for (int i = 0; i < buildings.Length; i++)
             {
                 CityBuildingController b = buildings[i];
-                if (b == null || b.building == null || b.building.SpecialService != null || GameMembers.Fenced(b.building) || (int)b.building.requiredDLC != 0
+                if (b == null || b.building == null || b.building.SpecialService != null || GameMembers.Fenced(b.building) || GameDlc.Gated(b)
                     || b.building.IsHamptonsHouse() || b.entranceDoors == null || b.entranceDoors.Length == 0)
                 {
                     continue;

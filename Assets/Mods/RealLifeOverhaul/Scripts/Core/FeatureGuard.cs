@@ -21,6 +21,8 @@ namespace RealLifeOverhaul
 
         private float _windowStart;
         private int _inWindow;
+        private bool _off;    // switched off for the session
+        private bool _away;   // its feature stands on New York's data and this city is another (Core/CityCheck); back in New York
 
         public FeatureGuard(string feature, string where)
         {
@@ -28,8 +30,11 @@ namespace RealLifeOverhaul
             Where = where;
         }
 
-        /// <summary>True once switched off; for the rest of the session.</summary>
-        public bool Off { get; private set; }
+        /// <summary>True once switched off, for the rest of the session, and while its feature is away in another city.</summary>
+        public bool Off => _off || _away;
+
+        /// <summary>True while its feature stands down in a city it does not know (<see cref="FeatureGuards.SetAway"/>).</summary>
+        public bool Away => _away;
 
         /// <summary>Faults this session, counted after the switch-off too.</summary>
         public int Faults { get; private set; }
@@ -38,7 +43,7 @@ namespace RealLifeOverhaul
         public bool Count(float now)
         {
             Faults++;
-            if (Off)
+            if (_off)
             {
                 return false;
             }
@@ -50,7 +55,7 @@ namespace RealLifeOverhaul
             _inWindow++;
             if (_inWindow >= Most)
             {
-                Off = true;
+                _off = true;
                 return true;
             }
             return false;
@@ -59,7 +64,13 @@ namespace RealLifeOverhaul
         /// <summary>Switched off from outside: another entry point of its feature switched the feature off.</summary>
         public void SwitchOff()
         {
-            Off = true;
+            _off = true;
+        }
+
+        /// <summary>Its feature stands down in this city, or comes back; a switch-off for faults or a missing member stays.</summary>
+        internal void SetAway(bool away)
+        {
+            _away = away;
         }
     }
 
@@ -70,6 +81,7 @@ namespace RealLifeOverhaul
     {
         private static readonly List<FeatureGuard> All = new List<FeatureGuard>(128);
         private static readonly HashSet<string> OffFeatures = new HashSet<string>(StringComparer.Ordinal);
+        private static readonly HashSet<string> AwayFeatures = new HashSet<string>(StringComparer.Ordinal);   // standing down in this city
 
         public static IReadOnlyList<FeatureGuard> Guards => All;
 
@@ -83,6 +95,10 @@ namespace RealLifeOverhaul
                 if (feature != null && OffFeatures.Contains(feature))
                 {
                     guard.SwitchOff();   // a class first used after its feature was switched off
+                }
+                if (feature != null && AwayFeatures.Contains(feature))
+                {
+                    guard.SetAway(true);   // a class first used in a city its feature stands down in
                 }
             }
             return guard;
@@ -116,6 +132,56 @@ namespace RealLifeOverhaul
                 }
             }
             return true;
+        }
+
+        /// <summary>True while the feature stands down in this city.</summary>
+        public static bool FeatureAway(string feature)
+        {
+            return feature != null && AwayFeatures.Contains(feature);
+        }
+
+        /// <summary>
+        /// The features that stand down in this city, in place of those before (<paramref name="away"/> empty or null: every
+        /// feature runs): every guard of each is away, every other guard back. The features that went away and those that
+        /// came back are added to the lists given (either may be null). Once a city load, never per frame.
+        /// </summary>
+        public static void SetAway(ICollection<string> away, List<string> wentAway, List<string> cameBack)
+        {
+            lock (All)
+            {
+                if (away != null)
+                {
+                    foreach (string feature in away)
+                    {
+                        if (feature != null && !AwayFeatures.Contains(feature))
+                        {
+                            wentAway?.Add(feature);
+                        }
+                    }
+                }
+                foreach (string feature in AwayFeatures)
+                {
+                    if (away == null || !away.Contains(feature))
+                    {
+                        cameBack?.Add(feature);
+                    }
+                }
+                AwayFeatures.Clear();
+                if (away != null)
+                {
+                    foreach (string feature in away)
+                    {
+                        if (feature != null)
+                        {
+                            AwayFeatures.Add(feature);
+                        }
+                    }
+                }
+                foreach (FeatureGuard guard in All)
+                {
+                    guard.SetAway(guard.Feature != null && AwayFeatures.Contains(guard.Feature));
+                }
+            }
         }
 
         /// <summary>For the checks: forgets the features switched off; the guards stay as they are.</summary>
