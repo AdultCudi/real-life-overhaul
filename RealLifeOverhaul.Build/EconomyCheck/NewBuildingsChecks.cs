@@ -306,6 +306,12 @@ internal static partial class Program
         Check(NewBuildingsRules.Within(0f, 0f, 0f, 5f, 5f, -10f, -10f, 10f, 10f, 4f) && !NewBuildingsRules.Within(0f, 0f, 0f, 5f, 5f, -10f, -10f, 10f, 10f, 5.5f)
               && NewBuildingsRules.Within(0f, 0f, 45f, 5f, 5f, -10f, -10f, 10f, 10f, 2.5f) && !NewBuildingsRules.Within(0f, 0f, 45f, 5f, 5f, -10f, -10f, 10f, 10f, 3f),
             "new buildings: a footprint is inside the city's limits only with every corner inside them, turned or not");
+        bool edges = true;
+        foreach ((float ex, float ez) in new[] { (-5f, 0f), (5f, 0f), (0f, -5f), (0f, 5f) })
+        {
+            edges &= !NewBuildingsRules.Within(ex, ez, 0f, 2f, 2f, -10f, -10f, 10f, 10f, 4f) && NewBuildingsRules.Within(ex, ez, 0f, 2f, 2f, -10f, -10f, 10f, 10f, 2f);
+        }
+        Check(edges, "new buildings: each of the four edges of the city's limits keeps its margin");
     }
 
     // ---------------------------------------------------------------- the lot taken

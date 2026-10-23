@@ -19,8 +19,9 @@ namespace RealLifeOverhaul.NewBuildings
     /// Nothing of it is saved: the save guard takes out whatever names a made address while a save is written. A made
     /// building is never destroyed while the city is loaded; switching the option off, or a Going Public session whose
     /// machines are not all known to run this mod in this version, hides it. Decorative copies for other features
-    /// (<see cref="BuildingCopies"/>) are made here one a frame. Cost: idle, one time comparison a frame and a look once a
-    /// second; while copies wait, one copy (or a millisecond of measuring) a frame.
+    /// (<see cref="BuildingCopies"/>) change here, one a frame and only out of view, or all behind the loading screen.
+    /// Cost: idle, one time comparison a frame and a look once a second; while a copy's change waits, the camera's planes
+    /// and a box test for each a frame, one change (or a millisecond of measuring) a frame.
     /// </summary>
     public sealed partial class NewBuildingsDirector : MonoBehaviour
     {
