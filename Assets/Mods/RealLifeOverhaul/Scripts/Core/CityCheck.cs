@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using BAModAPI;
 using UnityEngine;
+using UI.Notification;
 using UnityEngine.SceneManagement;
 
 namespace RealLifeOverhaul
@@ -27,6 +28,7 @@ namespace RealLifeOverhaul
     /// COST: per city load, a walk over the loaded scenes and the city's building list; per frame nothing (the watch is
     /// disabled unless a scene changed under the running city part, then one flag test a frame until the loading is over).
     /// </summary>
+    [Meta.DescribesFeature]
     public sealed class CityCheck : MonoBehaviour
     {
         private static readonly FeatureGuard FrameGuard = Guard.For(null, "CityCheck", typeof(CityCheck));   // its Update
@@ -46,6 +48,7 @@ namespace RealLifeOverhaul
         private static bool _settled;    // the game's late "game loaded" call has come for this city part
         private static bool _running;    // between Begin and End
         private static string _lastLine;
+        private static bool _testOther;  // Options, Tests: this city is taken for another until the test is undone or a city loads
         private static Action _late;
         private static UnityEngine.Events.UnityAction<Scene, LoadSceneMode> _loaded;
         private static UnityEngine.Events.UnityAction<Scene> _unloaded;
@@ -96,6 +99,7 @@ namespace RealLifeOverhaul
             _settled = false;
             _running = true;
             _lastLine = null;
+            _testOther = false;
             Stood.Clear();
             NotStarted.Clear();
             Decide(false);
@@ -210,8 +214,16 @@ namespace RealLifeOverhaul
                 }
             }
             CityRules.Decide(Census, Verdict);
+            if (_testOther)
+            {
+                Verdict.Kind = CityKind.Other;
+            }
             Apply(started);
             string line = CityRules.Line(Verdict, Census);
+            if (_testOther)
+            {
+                line = "City check, as the test asks: " + line.Substring("City check: ".Length);
+            }
             if (line == _lastLine)
             {
                 return;
@@ -357,6 +369,26 @@ namespace RealLifeOverhaul
                 Logger?.Warn("City check: back in New York without a new start of the mod's city part; " + string.Join(", ", later)
                              + " were not started in the other city and start when the save is next loaded.");
             }
+        }
+
+        // The two test buttons, under Diagnostics: the stand-down of another city and the way back, in this city.
+        private static void DescribeFeature()
+        {
+            Meta.Features.Add("diagnostics", "reallife_meta_title_diagnostics")
+                .Test("reallife_test_city_away", () => Test(true))
+                .Test("reallife_test_city_back", () => Test(false));
+        }
+
+        private static void Test(bool other)
+        {
+            if (!_running || !_settled || SaveGameManager.Current == null || UI.Load.LoadScene.isLoading)
+            {
+                TestRefusals.Tell(Logger, "City check", TestRefusal.NotLoaded);
+                return;
+            }
+            _testOther = other;
+            Decide(true);
+            Notifications.Show(NotificationType.Info, other ? "reallife_test_city_away_done" : "reallife_test_city_back_done", null, 10f);
         }
 
         private static readonly Comparison<string> ByCleanupOrder = (a, b) =>
