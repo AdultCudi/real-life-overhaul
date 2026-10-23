@@ -58,7 +58,7 @@ namespace RealLifeOverhaul.Uptown
                 {
                     return "no business of " + lease.LayoutsFrom + " has a layout for " + NewBuildingsRules.StructureName(record.BuildingSize, record.BuildingVersion);
                 }
-                MoveIn(reg, lease, from, save);
+                MoveIn(reg, lease, index, from, save);
                 movedIn = true;
             }
             else if (verdict == LeaseVerdict.Renamed)
@@ -79,13 +79,15 @@ namespace RealLifeOverhaul.Uptown
             Changed(reg);
         }
 
-        // The game's own start of a business in the building, seeded so every machine starts it alike, then the lessee's own:
-        // its name, BizMan's description, no rival of the game's as its owner (the card and BizMan then show neither), and its
-        // days' income, which the game's valuation averages and its daily pass never closes it for while it has fewer than 14.
-        private static void MoveIn(BuildingRegistration reg, DistrictLease lease, AiBusinessDefault from, GameInstance save)
+        // The game's own start of a business in the building, then the lessee's own: its name, BizMan's description, no rival
+        // of the game's as its owner (the card and BizMan then show neither), and its days' income, which the game's valuation
+        // averages and its daily pass never closes it for while it has fewer than 14. Seeded by who leases it and the save,
+        // never by its name, which is text in the player's language, so every machine of a session starts it alike.
+        private static void MoveIn(BuildingRegistration reg, DistrictLease lease, int index, AiBusinessDefault from, GameInstance save)
         {
             UnityEngine.Random.State was = UnityEngine.Random.state;
-            UnityEngine.Random.InitState((int)NewBuildingsRules.Hash(lease.BusinessType + "|" + lease.Name + "|" + (save != null ? save.seed : string.Empty)));
+            UnityEngine.Random.InitState((int)NewBuildingsRules.Hash(lease.BusinessType + "|" + lease.Owner + "|" + index.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                                                                     + "|" + (save != null ? save.seed : string.Empty)));
             try
             {
                 CompetitionHelper.StartNewCompetitorBusiness(lease.BusinessType, reg, impactMarket: false, from, string.Empty, setUpFirstDailyIncome: false);
@@ -116,7 +118,8 @@ namespace RealLifeOverhaul.Uptown
         }
 
         // The AI business of the lending type whose layout the game has for the building's structure (filed under the lessee's
-        // type by Borrow), in the order of their names, the one the lease's index picks: the same on every machine.
+        // type by Borrow), in the order of their names, the one the lease's index picks: the same on every machine, as those
+        // names are the game's own in its assets (its start writes one into a registration as it is), never a language's.
         private static AiBusinessDefault Lender(string type, Building record, int index)
         {
             Defaults.Clear();

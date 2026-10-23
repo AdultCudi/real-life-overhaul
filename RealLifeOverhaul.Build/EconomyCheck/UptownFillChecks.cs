@@ -285,6 +285,16 @@ internal static partial class Program
               && director.Contains("int leased = Leases(save, out int renamed);") && director.Contains(" of them given their lessees' names again"),
             "uptown fill: the load holds every lease's business off the market but a refused one's, gives a renamed one the lease's name with its sign and the game's event, "
             + "knows a standing one by its type, and says how many were renamed");
+
+        // The seed of a lease's start of a business: its type, its owner, its index and the save's seed, no text of a language.
+        string started = MemberText(game, "private static void MoveIn(BuildingRegistration reg, DistrictLease lease, int index, AiBusinessDefault from, GameInstance save)");
+        int seedAt = started.IndexOf("UnityEngine.Random.InitState(", StringComparison.Ordinal);
+        string seed = seedAt >= 0 ? started.Substring(seedAt, started.IndexOf(";", seedAt, StringComparison.Ordinal) - seedAt) : string.Empty;
+        Check(seed.Contains("lease.BusinessType") && seed.Contains("lease.Owner") && seed.Contains("index.ToString(System.Globalization.CultureInfo.InvariantCulture)")
+              && seed.Contains("save.seed") && !Regex.IsMatch(seed, @"Name|Description|GetLocalization|\.T\(|Text\.")
+              && Regex.Matches(game, @"Hash\([^;]*(?:Name|Description)").Count == 0,
+            "uptown fill: a lease's business is started with the engine's chance seeded by its type, its owner, its index and the save, never by a name, "
+            + "so every machine of a session starts it alike whatever its language (" + (seed.Length > 0 ? seed.Replace("\n", " ") : "no seed found") + ")");
     }
 
     private static void UptownFillLandmarks(List<BuildingsLot> plan)
@@ -760,7 +770,7 @@ internal static partial class Program
               && only.Contains("CityGenerator.InitializeCity(DistrictValues.Id)") && only.Contains("CityGenerator.DistributeBuildingsToRivals(DistrictValues.Id)"),
             "uptown fill: the generator sees the new buildings alone, and the game's list of all buildings and its chance are put back as they were, after a fault too");
         string lease = MemberText(gameLeases, "public static string Lease(MadeBuilding made, DistrictLease lease, int index, GameInstance save, out bool movedIn, out bool renamed)");
-        string moveIn = MemberText(gameLeases, "private static void MoveIn(BuildingRegistration reg, DistrictLease lease, AiBusinessDefault from, GameInstance save)");
+        string moveIn = MemberText(gameLeases, "private static void MoveIn(BuildingRegistration reg, DistrictLease lease, int index, AiBusinessDefault from, GameInstance save)");
         Check(lease.Contains("GoingPublic.Foreign(reg)") && lease.Contains("reg.RentedByPlayer || reg.BuildingOwnedByPlayer") && lease.Contains("made.NewRegistration")
               && moveIn.Contains("CompetitionHelper.StartNewCompetitorBusiness(lease.BusinessType, reg, impactMarket: false, from, string.Empty, setUpFirstDailyIncome: false)")
               && moveIn.Contains("UnityEngine.Random.InitState(") && moveIn.Contains("UnityEngine.Random.state = was") && moveIn.Contains("reg.dailyIncomes = new List<float>(IncomeDays)"),
