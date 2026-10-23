@@ -21107,5 +21107,15 @@
   "reallife_held_test_missing": "Esta versão do jogo não tem a escolha de imóveis vazios que o teste usa. Os prédios do mod continuam protegidos à noite; o registro tem mais detalhes.",
   "reallife_held_test_pass": "Rodada agora como à noite, a escolha de imóveis vazios para alugar do jogo oferece {units} imóveis em {districts} bairros e nenhum dos {count} prédios do mod.",
   "reallife_held_test_fail": "A escolha de imóveis vazios para alugar do jogo ofereceria {address}, um dos prédios do mod. O registro tem os detalhes; envie-o para nós, por favor.",
-  "reallife_contract_part_held_pass": "o teste dos prédios do mod contra a escolha de imóveis vazios para alugar do próprio jogo"
+  "reallife_contract_part_held_pass": "o teste dos prédios do mod contra a escolha de imóveis vazios para alugar do próprio jogo",
+  "reallife_floors_floor": "Andar {floor}: {place}",
+  "reallife_floors_lift_here": "Você está no andar {floor}, {place}",
+  "reallife_floors_host": "Escritórios da Cidade",
+  "reallife_floors_host_card_type": "Escritórios dos serviços da cidade",
+  "reallife_floors_host_door": "Andares: {count}",
+  "reallife_floors_test_place": "Andares: colocar um lugar de teste em um andar",
+  "reallife_floors_test_name": "Escritório de teste",
+  "reallife_floors_test_done": "O andar {floor} de {address} é um escritório de teste, com o interior de outro tipo de prédio. Você está sendo levado até lá agora. Clique no teste de novo para removê-lo.",
+  "reallife_floors_test_none": "Teste não iniciado: nenhum prédio tem um andar livre agora, e nenhum prédio de escritórios vazio está livre para isso.",
+  "reallife_floors_test_gone": "O escritório de teste foi removido."
 }

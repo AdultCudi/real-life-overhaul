@@ -21107,5 +21107,15 @@
   "reallife_held_test_missing": "这个版本的游戏没有可供测试运行的空置单元选择。模组的建筑在夜里仍然不会被动用；日志里有更多信息。",
   "reallife_held_test_pass": "按夜里的方式现在运行，游戏的空置单元出租选择在 {districts} 个城区提供了 {units} 个单元，模组占用的 {count} 处建筑一处也没有。",
   "reallife_held_test_fail": "游戏的空置单元出租选择会提供 {address}，这是模组的建筑之一。日志里有详细信息；请把它发给我们。",
-  "reallife_contract_part_held_pass": "用游戏自己的空置单元出租选择检查模组建筑的测试"
+  "reallife_contract_part_held_pass": "用游戏自己的空置单元出租选择检查模组建筑的测试",
+  "reallife_floors_floor": "{floor} 楼：{place}",
+  "reallife_floors_lift_here": "你在 {floor} 楼，{place}",
+  "reallife_floors_host": "城市办公楼",
+  "reallife_floors_host_card_type": "城市服务机构的办公楼",
+  "reallife_floors_host_door": "楼层：{count}",
+  "reallife_floors_test_place": "楼层：在一层楼放一个测试地点",
+  "reallife_floors_test_name": "测试办公室",
+  "reallife_floors_test_done": "{address} 的 {floor} 楼现在是一间测试办公室，用的是另一种建筑的室内。现在带你过去。再按一次测试即可撤掉。",
+  "reallife_floors_test_none": "测试未开始：现在没有建筑有空余的楼层，也没有空置的办公楼可以拿来用。",
+  "reallife_floors_test_gone": "测试办公室已撤掉。"
 }

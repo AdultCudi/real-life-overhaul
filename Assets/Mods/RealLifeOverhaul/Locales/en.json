@@ -21107,5 +21107,15 @@
   "reallife_held_test_missing": "This build of the game has no choice of empty units for the test to run. The mod's buildings are still left alone at night; the log says more.",
   "reallife_held_test_pass": "Run now as at night, the game's choice of empty units to let offers {units} units in {districts} districts, and none of the {count} buildings the mod holds.",
   "reallife_held_test_fail": "The game's choice of empty units to let would offer {address}, one of the mod's buildings. The log has the details; please send it in.",
-  "reallife_contract_part_held_pass": "the test of the mod's buildings against the game's own choice of empty units to let"
+  "reallife_contract_part_held_pass": "the test of the mod's buildings against the game's own choice of empty units to let",
+  "reallife_floors_floor": "Floor {floor}: {place}",
+  "reallife_floors_lift_here": "You are on floor {floor}, {place}",
+  "reallife_floors_host": "City Offices",
+  "reallife_floors_host_card_type": "Offices of the city's services",
+  "reallife_floors_host_door": "Floors: {count}",
+  "reallife_floors_test_place": "Floors: put a test place on a floor",
+  "reallife_floors_test_name": "Test office",
+  "reallife_floors_test_done": "Floor {floor} of {address} is a test office, on the interior of another kind of building. You are taken there now. Press the test again to take it away.",
+  "reallife_floors_test_none": "Test not started: no building has a spare floor now, and no empty office building is free to take for one.",
+  "reallife_floors_test_gone": "The test office is taken away."
 }
