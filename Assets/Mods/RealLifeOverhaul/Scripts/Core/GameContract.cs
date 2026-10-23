@@ -17,6 +17,7 @@ namespace RealLifeOverhaul
         private const string Sky = "DayNightCycle";
         private const string UnityUi = "UnityEngine.UI";
         private const string Steam = "Facepunch.Steamworks.Win64";
+        private const string Navigation = "Unity.AI.Navigation";
 
         static GameContract()
         {
@@ -97,6 +98,9 @@ namespace RealLifeOverhaul
         public static readonly GamePart CarWash = ContractBook.Part("car_wash", "garage",
             "stand-ins for the spray and the sound of a car that has none, so the game's car wash in a repair bay ends on it");
         public static readonly GamePart TrafficMend = ContractBook.Part("traffic_mend", "traffic", "putting the city's traffic right when it stops adding cars for good");
+        public static readonly GamePart SiteWrapFade = ContractBook.Part("site_wrap_fade", "civic",
+            "the game's scaffolding round a building fading with it for the camera, and leaving the city map with it");
+        public static readonly GamePart NewGroundWalk = ContractBook.Part("new_ground_walk", "newground", "the city's two walking meshes read for new ground and the walking tests");
 
         // The pieces, each group under the code that reads it.
 
@@ -398,6 +402,17 @@ namespace RealLifeOverhaul
         // Garage/GarageWash: what the game's wash plays and shows, given a stand-in on a car that has none
         public static readonly GameMember WashSpray = Optional(Field(CarWash, Game, "CarController", "washVfx", "GameObject"));
         public static readonly GameMember WashSound = Optional(Field(CarWash, Game, "CarController", "washAudioSource", "AudioSource"));
+
+        // Civic/SiteWrap: the building a wrap's pieces fade with when the camera's ray meets them, and the renderers the city map swaps for the building's box
+        public static readonly GameMember WrapFadeOwner = Optional(Field(SiteWrapFade, Game, "ViewBlockingEntityExtension", "viewBlockingEntity", "ViewBlockingEntity"));
+        public static readonly GameMember WrapMapRenderers = Optional(Field(SiteWrapFade, Game, "CityBuildingController", "_lodRenderers", "HashSet<Renderer>"));
+        // NewGround/WalkGame: the game's walking meshes (NavMeshSurface, which the mod is not built against) found and read at every load
+        public static readonly GameMember SurfacesActive = Prop(NewGroundWalk, Navigation, "Unity.AI.Navigation.NavMeshSurface", "activeSurfaces", "List<NavMeshSurface>", true);
+        public static readonly GameMember SurfaceData = Prop(NewGroundWalk, Navigation, "Unity.AI.Navigation.NavMeshSurface", "navMeshData", "NavMeshData", false);
+        public static readonly GameMember SurfaceAgent = Prop(NewGroundWalk, Navigation, "Unity.AI.Navigation.NavMeshSurface", "agentTypeID", "Int32", false);
+        public static readonly GameMember SurfaceLayers = Prop(NewGroundWalk, Navigation, "Unity.AI.Navigation.NavMeshSurface", "layerMask", "LayerMask", false);
+        public static readonly GameMember SurfaceArea = Prop(NewGroundWalk, Navigation, "Unity.AI.Navigation.NavMeshSurface", "defaultArea", "Int32", false);
+        public static readonly GameMember SurfaceSettings = Method(NewGroundWalk, Navigation, "Unity.AI.Navigation.NavMeshSurface", "GetBuildSettings", "NavMeshBuildSettings");
 
         /// <summary>The five pieces Build 3675 lacks (the funeral helper's two properties are one, its type).</summary>
         public static readonly GameMember[] LackedBy3675 = { PlayerDead, FuneralActive, FenceIndex, ResumeTarget, StationNameKey, ConfirmByKey };

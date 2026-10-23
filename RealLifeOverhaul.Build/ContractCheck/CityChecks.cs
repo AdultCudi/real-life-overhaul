@@ -39,6 +39,7 @@ internal static partial class Program
         "Offices/ConversionGame.cs", "Offices/Conversions.cs", "Permadeath/PermadeathGame.cs", "Social/Flare/FlareLiveGame.cs", "Social/SocialPlaces.cs",
         "Street/StreetGame.cs", "Tech/Sites/Headquarters.cs", "Transport/CarOwnership.Garage.cs", "Transport/TransitMap.cs", "Travel/Hotels.cs",
         "Utilities/UtilitiesOffice.cs", "Wiring/FlareLiveLinks.cs", "World/MapLinks.cs",
+        "Floors/FloorsGame.cs",   // the building the floors take for places (FloorsGame.PickClaim)
     };
 
     /// <summary>Walks of the game's building lists that pick nothing, with why: held to no helper.</summary>

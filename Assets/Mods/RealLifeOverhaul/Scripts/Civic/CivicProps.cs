@@ -378,6 +378,75 @@ namespace RealLifeOverhaul
                         B.Box(-0.05f, 0.03f, 0.13f, 0.16f, 0.05f, 0.10f, Board);
                         B.Box(0.10f, 0.012f, -0.14f, 0.12f, 0.02f, 0.09f, Yellow);
                         break;
+
+                    // The building site's second round (Civic/SiteDresser.Plot.cs, PlotRules): the second props bundle's models.
+                    case "tower_crane_mast":
+                        // 6.0 x 40.0 x 6.0: the pad, ballast either side and the 2 m lattice mast to the slewing ring 40 m up. Pivot: ground centre.
+                        B.Box(0f, 0.25f, 0f, 6.0f, 0.5f, 6.0f, Concrete);
+                        B.Box(-2.1f, 1.4f, 0f, 1.1f, 1.4f, 4.4f, Concrete);
+                        B.Box(2.1f, 1.4f, 0f, 1.1f, 1.4f, 4.4f, Concrete);
+                        for (int corner = 0; corner < 4; corner++)
+                        {
+                            B.Box(corner % 2 == 0 ? -0.95f : 0.95f, 20.25f, corner < 2 ? -0.95f : 0.95f, 0.2f, 39.5f, 0.2f, Yellow);
+                        }
+                        for (int level = 0; level < 10; level++)
+                        {
+                            B.Box(0f, 0.9f + level * 3.9f, 0f, 2.0f, 0.1f, 2.0f, Yellow);
+                        }
+                        break;
+                    case "tower_crane_jib":
+                        // The slewing part, its pivot the slewing ring's middle (40 m up the mast): the jib 30 m along +Z, the
+                        // counter-jib and its weights 10 m along -Z, the cab at +X hung below the ring, the tower top 7.5 m up.
+                        B.Box(0f, 0.42f, 0f, 2.8f, 0.85f, 2.8f, Dark);
+                        B.Box(0f, 1.12f, 0f, 2.2f, 0.55f, 2.6f, Yellow);
+                        B.Box(1.85f, 0.45f, 0.6f, 1.4f, 1.9f, 1.8f, White);
+                        B.Box(0f, 2.25f, 14.6f, 1.2f, 1.3f, 30.8f, Yellow);
+                        B.Box(0f, 1.65f, -5.4f, 1.5f, 0.12f, 9.2f, Yellow);
+                        B.Box(0f, 0.8f, -9.0f, 1.9f, 2.3f, 1.8f, Concrete);
+                        B.Box(0f, 4.5f, -0.5f, 0.3f, 6.0f, 0.3f, Yellow);
+                        B.Box(0f, 1.3f, 18f, 1.5f, 0.32f, 1.3f, Dark);
+                        B.Box(0f, -6.5f, 18f, 0.06f, 15.0f, 0.06f, Dark);
+                        B.Box(0f, -13.4f, 18f, 0.9f, 1.1f, 0.34f, Red);
+                        break;
+                    case "site_cabin":
+                        // 6.0 (X) x 2.6 x 2.4 (Z): a site welfare cabin on its skids, its door and two windows on its +Z side. Pivot: ground centre.
+                        B.Box(0f, 0.08f, 0f, 6.0f, 0.16f, 2.4f, Dark);
+                        B.Box(0f, 1.38f, 0f, 6.0f, 2.44f, 2.4f, Paper);
+                        B.Box(-1.8f, 1.1f, 1.205f, 0.9f, 1.95f, 0.01f, HoardingBlue);
+                        B.Box(0.6f, 1.6f, 1.205f, 1.2f, 0.8f, 0.01f, Dark);
+                        B.Box(2.2f, 1.6f, 1.205f, 1.2f, 0.8f, 0.01f, Dark);
+                        break;
+                    case "site_toilet":
+                        // 1.1 x 2.3 x 1.2: a portable toilet, its door on +Z. Pivot: ground centre.
+                        B.Box(0f, 1.1f, 0f, 1.1f, 2.2f, 1.2f, HoardingBlue);
+                        B.Box(0f, 2.25f, 0f, 1.16f, 0.1f, 1.26f, White);
+                        B.Box(0f, 1.05f, 0.605f, 0.8f, 1.9f, 0.01f, White);
+                        break;
+                    case "site_stack_blocks":
+                        // 1.2 x 1.05 x 1.0: concrete blocks wrapped on a pallet. Pivot: ground centre.
+                        B.Box(0f, 0.075f, 0f, 1.2f, 0.15f, 1.0f, Board);
+                        B.Box(0f, 0.6f, 0f, 1.1f, 0.9f, 0.9f, Concrete);
+                        break;
+                    case "site_stack_timber":
+                        // 1.0 x 0.6 x 3.6: sawn timber on two bearers, along Z. Pivot: ground centre.
+                        B.Box(0f, 0.05f, -1.2f, 1.0f, 0.1f, 0.1f, Board);
+                        B.Box(0f, 0.05f, 1.2f, 1.0f, 0.1f, 0.1f, Board);
+                        B.Box(0f, 0.35f, 0f, 0.95f, 0.5f, 3.6f, Board);
+                        break;
+                    case "site_stack_rebar":
+                        // 1.0 x 0.35 x 4.0: bundled steel bars on bearers, along Z. Pivot: ground centre.
+                        B.Box(0f, 0.05f, -1.4f, 1.0f, 0.1f, 0.1f, Board);
+                        B.Box(0f, 0.05f, 1.4f, 1.0f, 0.1f, 0.1f, Board);
+                        B.Box(0f, 0.22f, 0f, 0.9f, 0.25f, 4.0f, Broken);
+                        break;
+                    case "site_earthworks":
+                        // 10 x 0.4 x 10: the ground dug over, a low bank of spoil round it; stretched to the frame's footprint. Pivot: ground centre.
+                        B.Box(0f, 0.03f, 0f, 10f, 0.06f, 10f, Earth);
+                        B.Box(0f, 0.2f, 4.6f, 10f, 0.4f, 0.8f, Earth);
+                        B.Box(0f, 0.2f, -4.6f, 10f, 0.4f, 0.8f, Earth);
+                        B.Box(4.6f, 0.2f, 0f, 0.8f, 0.4f, 8.4f, Earth);
+                        B.Box(-4.6f, 0.2f, 0f, 0.8f, 0.4f, 8.4f, Earth);
+                        break;
                     default:
                         return null;
                 }

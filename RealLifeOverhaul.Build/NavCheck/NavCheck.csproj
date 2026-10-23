@@ -64,6 +64,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Sites\RoomGrid.cs" Link="Mod\RoomGrid.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Sites\RoomPlans.cs" Link="Mod\RoomPlans.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Sites\HqTowers.cs" Link="Mod\HqTowers.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Floors\FloorsRules.cs" Link="Mod\FloorsRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\TechRandom.cs" Link="Mod\TechRandom.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\FitOut\FitRules.cs" Link="Mod\FitRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\FitOut\FitPlanner.cs" Link="Mod\FitPlanner.cs" />
@@ -108,6 +109,12 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Traffic\TrafficWatchRules.cs" Link="Mod\TrafficWatchRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Traffic\TrafficMendRules.cs" Link="Mod\TrafficMendRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareHourSteps.cs" Link="Mod\FlareHourSteps.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Civic\WrapRules.cs" Link="Mod\WrapRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Civic\PlotRules.cs" Link="Mod\PlotRules.cs" />
+    <!-- New ground (NewGroundCheck.cs): the road generator, the off-grid rule and the walking rules, game-free. -->
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\NewGround\RoadPlan.cs" Link="Mod\RoadPlan.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\NewGround\RoadRules.cs" Link="Mod\RoadRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\NewGround\GroundRules.cs" Link="Mod\GroundRules.cs" />
   </ItemGroup>
 
 </Project>

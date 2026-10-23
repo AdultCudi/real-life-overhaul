@@ -13,6 +13,8 @@ Every feature runs in the New York the mod knows, a New York with districts a fr
 - [The living city](city-life.md): people at work and about their day on the pavements.
 - [City events](city-events.md): fires, weather that matters and street events.
 - [Civic life](civic.md): the city's government, elections, standing for office, construction sites.
+- [Construction](construction.md): buildings going up, wrapped in the game's own scaffolding, and new buildings on given ground.
+- [New ground](new-ground.md): ground the mod lays itself, to walk and drive on, with parking, people and buses, for a district of the mod's own (developer tests so far).
 
 ## The player's life
 
@@ -63,6 +65,7 @@ Every feature runs in the New York the mod knows, a New York with districts a fr
 - [The Planner](planner.md): the phone's agenda.
 - [The Calendar](calendar.md): the month on the phone, as the year you chose divides it.
 - [The phone](phone.md): folders on the home screen, a dock, moving apps, and the Banks app.
+- [Floors](floors.md): the mod's places on floors of the buildings it holds: the university's classrooms, the tech companies' towers, places to come.
 - [The district save](district-save.md): the records of the mod's own places kept in the mod's part of the save, so a save loads without the mod.
 
 ## Folders without a page

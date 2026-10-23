@@ -382,6 +382,7 @@ namespace RealLifeOverhaul.Meta
                 .Test("reallife_test_guard_fault", Guard.TestFault)
                 .Test("reallife_test_build_notice", GameBuild.TestNotice)
                 .Test("reallife_test_build_box", GameConfirm.TestOwnBox)
+                .Test("reallife_floors_test_place", Floors.FloorsDirector.TestPlace)
                 .Diagnostic(KeyAction.PerfProbe, KeyAction.PerfBench, KeyAction.CharacterReport);
 
             Features.Add("multiplayer", "reallife_meta_title_multiplayer")

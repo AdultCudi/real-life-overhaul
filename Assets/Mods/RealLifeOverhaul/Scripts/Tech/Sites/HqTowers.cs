@@ -17,7 +17,7 @@ namespace RealLifeOverhaul.Tech
     /// </summary>
     public static class HqTowers
     {
-        public const int PerTower = 4;   // companies to a tower, a floor each (the four buttons of the game's panel at a door)
+        public const int PerTower = 4;   // companies to a tower, a floor each (the four buttons of the game's panel at a door; more are paged, Floors/FloorsRules.Page)
 
         /// <summary>The towers wanted for so many companies.</summary>
         public static int Towers(int companies) => companies <= 0 ? 0 : (companies + PerTower - 1) / PerTower;
@@ -128,26 +128,6 @@ namespace RealLifeOverhaul.Tech
         public static int DoorFloor(int floors, int employerFloor)
         {
             return floors <= 0 ? 0 : employerFloor >= 1 && employerFloor <= floors ? employerFloor : 1;
-        }
-
-        /// <summary>The floors on a page of the game's four-button panel (three and "more floors" when they do not fit), less the player's own.</summary>
-        public static int Page(int floors, int skip, int page, int[] into)
-        {
-            int count = Math.Max(0, floors) - (skip >= 1 && skip <= floors ? 1 : 0);
-            bool paged = count > into.Length;
-            int per = paged ? into.Length - 1 : into.Length;
-            int start = paged && count > 0 ? (Math.Max(0, page) * per) % count : 0;
-            for (int slot = 0; slot < into.Length; slot++)
-            {
-                if (paged && slot == into.Length - 1)
-                {
-                    into[slot] = -1;   // "more floors"
-                    continue;
-                }
-                int i = start + slot;   // the i-th floor offered, the one the player is on left out
-                into[slot] = slot < per && i < count ? i + 1 + (skip >= 1 && i + 1 >= skip ? 1 : 0) : 0;
-            }
-            return count;
         }
     }
 }

@@ -1095,6 +1095,11 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_civic_test_office_seat", () => CivicDirector.Instance?.TestOffice(OfficeRace.Council))
                 .AddButton("reallife_civic_test_office_mayoralty", () => CivicDirector.Instance?.TestOffice(OfficeRace.Mayor))
                 .AddButton("reallife_civic_test_office_scene", () => CivicDirector.Instance?.TestScene())
+                .AddButton("reallife_construction_test_wrap", () => CivicDirector.Instance?.TestWrap())
+                .AddButton("reallife_construction_test_rebuild", () => CivicDirector.Instance?.TestRebuild())
+                .AddButton("reallife_construction_test_stage", () => CivicDirector.Instance?.TestStage())
+                .AddButton("reallife_construction_test_storey", () => CivicDirector.Instance?.TestStorey())
+                .AddButton("reallife_construction_test_crane", () => CivicDirector.Instance?.TestCrane())
                 .AddSplitter()
                 .AddHeader("reallife_util_header")
                 .AddToggle(Settings.UtilitiesId, "reallife_util_enabled", Settings.Utilities,
@@ -1288,6 +1293,7 @@ namespace RealLifeOverhaul
             Guard.Step("Tech.HiringGame", () => Tech.HiringGame.Logger = context.Logger);
             Guard.Step("Tech.FirmsGame", () => Tech.FirmsGame.Logger = context.Logger);
             Guard.Step("Careers.CareersDirector", () => Careers.CareersDirector.Logger = context.Logger);
+            Guard.Step("Floors.FloorsDirector", () => Floors.FloorsDirector.Logger = context.Logger);
 
             _root = new GameObject(RootName);
             Guard.Step("the city check", () => CityCheck.Begin(_root, context.Logger));   // before any feature: New York's features stand down in another city
@@ -1299,6 +1305,8 @@ namespace RealLifeOverhaul
             Guard.Step("GoingPublicWatch", () => Guard.Add<GoingPublicWatch>(_root));   // once a second of real time
             Guard.Step("ScenePrewarm", () => Guard.Add<ScenePrewarm>(_root));   // disabled unless a piece is waiting
             Guard.Step("LoadHold", () => Guard.Add<LoadHold>(_root));   // disabled unless a piece is waiting
+            Guard.Step("NewGround.GroundDirector", () => NewGround.GroundDirector.Logger = context.Logger);
+            Guard.Step("NewGround.GroundDirector", () => Guard.Add<NewGround.GroundDirector>(_root));   // before the traffic starts: a test road is appended here; disabled while idle
             // Pieces run last added first: this one after the road data below.
             Guard.Step("the lane grid's prewarm", () => ScenePrewarm.Add("roads: the lane points put in a grid for the nearest lane point", TrafficTools.PrewarmLaneGrid));
             Guard.Step("the roads' prewarm", () => ScenePrewarm.Add("roads: the traffic system's road data being found for the city", RoadData.Prewarm));
@@ -1425,6 +1433,7 @@ namespace RealLifeOverhaul
             Guard.Step("Careers.CareersDirector", () => Guard.Add<Careers.CareersDirector>(_root));   // after the tech sector, whose roles it reads
             Guard.Step("FitOut.FitOutDirector", () => FitOut.FitOutDirector.Logger = context.Logger);
             Guard.Step("FitOut.FitOutDirector", () => Guard.Add<FitOut.FitOutDirector>(_root));   // before the features whose floors it builds
+            Guard.Step("Floors.FloorsDirector", () => Guard.Add<Floors.FloorsDirector>(_root));   // a look once a second: the places on floors of the mod's buildings
             Guard.Step("Tech.TechSites", () => Tech.TechSites.Logger = context.Logger);
             Guard.Step("Offices.Conversions", () => Offices.Conversions.Logger = context.Logger);
             Guard.Step("Offices.Conversions", () => Guard.Add<Offices.Conversions>(_root));   // a look once a second

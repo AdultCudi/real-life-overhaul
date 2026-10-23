@@ -423,7 +423,11 @@ SIDES = {}
 EXTRA = ["civic", "service", "events", "everyday", "garage", "family", "site", "tow"]
 _only = os.environ.get("PROPS_DEV")
 EXTRA = EXTRA + ["tech"]   # the tech sector's buildings (props_tech.py)
-for _name in ([n.strip() for n in _only.split(",") if n.strip()] if _only else EXTRA):
+# PROPS_SET=second: the second bundle (README, "The second bundle"): its own modules and nothing of the first's.
+SECOND = ["build"]
+if os.environ.get("PROPS_SET") == "second":
+    PROPS = []
+for _name in (SECOND if os.environ.get("PROPS_SET") == "second" else [n.strip() for n in _only.split(",") if n.strip()] if _only else EXTRA):
     if os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), "props_" + _name + ".py")):
         _module = __import__("props_" + _name)
         PROPS = PROPS + _module.PROPS

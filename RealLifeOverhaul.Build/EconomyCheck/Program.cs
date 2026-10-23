@@ -311,6 +311,7 @@ internal static partial class Program
         BankLevels();   // the bank's levels and the owner's pay: each level's limits binding, moving up, an older save's bank fitted, the pay's split, the balance figures (BankTierChecks.cs)
         Office();
         CivicFixes();   // the player's own canvasser's leaflet, the bridges to Standing and the court, the donation cap (CivicFixChecks.cs)
+        Construction();   // the rebuild and plot kinds in the save, in the host's line and in the texts (ConstructionChecks.cs)
         SaveLinesKept();
         Morning();
         EndScale();     // the end game at scale: each venture's costs, upkeep, staff and income by size, the payback, old saves phased in, the option off (EndScaleChecks.cs)
@@ -370,6 +371,7 @@ internal static partial class Program
         Meals();        // meals and music: the seat a meal is taken to, how long it is eaten, the dance's lift and its cap, every way out, the texts (MealsChecks.cs)
         HeldUnitsChecks(); // the game leaves the mod's buildings alone: claims counted per address, the ignore list's one rule, the night's lists, every way out, nothing saved (HeldUnitsChecks.cs)
         CityReady();    // DLC and update readiness: the city check's table, New York's districts and their order, every table by district with one it does not know (CityReadyChecks.cs)
+        FloorsCore();   // the floors of the mod's buildings: floors a building holds, spare floors and a building taken for places, the panel's pages, every way in and out given back, the sources, the words (FloorsChecks.cs)
         DistrictSaveChecks();   // the district save: whose a place is, what each record does, put back where it stood, the store's line, nothing at all for a game with none (DistrictSaveChecks.cs)
         Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
         return _failed == 0 ? 0 : 1;

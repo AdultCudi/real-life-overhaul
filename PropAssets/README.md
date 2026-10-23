@@ -93,6 +93,30 @@ With both set, several people can work on a module each at the same time without
 whole. Previews of single props: `blender -b -P scriptsuild_props.py -- id id`. A module may list `SIDES` (see the
 end of `props.py`): those props also get `previews\<id>_sides.png`, six views beside what they go over or who uses them.
 
+## The second bundle
+
+The first bundle is full (2,814 triangles and 6 % of its atlas left), so the building sites' props (`scripts\props_build.py`,
+painted by `paint_build.py`) go in a second one, `Bundles\reallife_props_site`, with an atlas of its own: 1024 x 512 colour
+and 512 x 256 mask, BC7, holding the shared swatches of `atlas.py` and the module's own finishes only. `PROPS_SET=second`
+switches the scripts to it: `atlas.py` paints that atlas, `build_props.py` builds only the second set's modules (budget
+12 000 triangles), and they write to `PROPS_BUILD` (`build_second\`, git-ignored). Unity builds it with
+`build_bundle.ps1 -BuildFolder build_second -BundleName reallife_props_site`; `build.ps1` does all of it after the first
+bundle. The mod reads it beside the first (`PropLibrary`: its props have their own two materials on its atlas), and draws
+each prop's stand-in (`Scripts\Civic\CivicProps.cs`) while the bundle is not installed. Building it takes a Unity licence,
+as the first does; the first bundle is not touched by it.
+
+| id | size (m) | triangles | pivot and facing | use |
+|---|---|---|---|---|
+| `tower_crane_mast` | 6.0 x 40.0 x 6.0 | 600 | ground centre | the first bundle's `tower_crane` below its slewing ring (`props_site.crane_mast`) |
+| `tower_crane_jib` | 4.0 x 22.4 x 40.1 | 868 | **the slewing ring's middle**; the jib along +Z | the rest (`props_site.crane_slew`), let down by the ring's 40 m: SiteDresser hangs it 40 m up the mast and the engine's Animation turns it about Y (`Scripts\Civic\CraneSlew.cs`) |
+| `site_cabin` | 6.06 x 2.6 x 2.93 | 232 | ground centre; door and windows on +Z | the welfare cabin against the yard's fence (`PlotRules.YardSpots`) |
+| `site_toilet` | 1.18 x 2.28 x 1.31 | 124 | ground centre; door on +Z | beside the cabin |
+| `site_stack_blocks` | 1.2 x 1.04 x 1.0 | 336 | ground centre | concrete blocks on a pallet |
+| `site_stack_timber` | 1.0 x 0.57 x 3.6 | 168 | ground centre; along Z | sawn timber on bearers |
+| `site_stack_rebar` | 1.0 x 0.32 x 4.0 | 300 | ground centre; along Z | bundled steel bars |
+| `site_earthworks` | 10.0 x 0.37 x 10.0 | 800 | ground centre | the dig, stretched over a frame's footprint (`PlotRules.EarthSpot`) |
+| `hammer` | 0.16 x 0.34 x 0.03 | 120 | the handle's end; the handle up | the tool of the clip `hammer_nail` |
+
 ## Using a prop
 
 ```csharp
