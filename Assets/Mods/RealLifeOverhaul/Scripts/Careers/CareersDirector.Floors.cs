@@ -187,7 +187,7 @@ namespace RealLifeOverhaul.Careers
         {
             int floor = _interior != null ? _interior.Floor : 0;
             int course = CampusRules.CourseAt(floor, room);
-            string where = CareersText.T("reallife_campus_room_where", "floor", floor.ToString(), "room", room.ToString());
+            string where = RoomWhere(floor, room);
             if (course < 0)
             {
                 return new SchoolDesk.DeskOffer
@@ -202,52 +202,40 @@ namespace RealLifeOverhaul.Careers
             int grade = e == null && _studyOn ? _study.GradeOf(course) : -1;
             if (grade >= 0)
             {
-                offer.Can = false;
-                offer.Key = "reallife_campus_room_done";
+                offer.Why = "reallife_campus_room_done";
                 offer.Lines = new[] { where, CareersText.T("reallife_persona_edu_passed", "grade", CareersText.Grade(StudyCatalogue.Find(course), grade)) };
                 return offer;
             }
             if (e == null || !InRooms(e))
             {
-                offer.Can = false;
-                offer.Key = "reallife_campus_room_not_on";
+                offer.Why = "reallife_campus_room_not_on";
                 offer.Lines = new[] { where, CareersText.T(e != null ? "reallife_campus_room_distance" : "reallife_campus_room_sign_up") };
                 return offer;
             }
-            CourseDef c = e.Def;
-            string classWhy = CanAttend(e, out int minutes);
-            if (classWhy == null)
-            {
-                offer.Can = true;
-                offer.Key = "reallife_study_prompt_attend";
-                offer.Arguments = CourseArgs(course);
-                offer.Lines = new[] { where, CareersText.T("reallife_study_skip_class", "number", (e.Seen + 1).ToString(), "of", c.Sessions.ToString()),
-                    CareersText.ClassRuns(minutes) };
-                return offer;
-            }
-            string examWhy = CanSit(e);
-            if (examWhy == null)
-            {
-                offer.Kind = SittingKind.Exam;
-                offer.Can = true;
-                offer.Key = "reallife_study_prompt_exam";
-                offer.Arguments = CourseArgs(course);
-                offer.Lines = new[] { where, CareersText.T(e.Stage == (int)EnrolStage.Retake ? "reallife_study_skip_retake" : "reallife_study_skip_exam", "pass", c.Pass.ToString()) };
-                return offer;
-            }
-            offer.Can = false;
-            int at = StudyRules.NextClass(e, Save.Day, CareersGame.MinuteOfDay, SittingClass);
-            if (at >= 0)
-            {
-                offer.Key = "reallife_study_desk_next";
-                offer.Arguments = new { course = name, day = CareersText.Day(at / (24 * 60)), hour = CareersText.Hour(at % (24 * 60) / 60) };
-            }
-            else
-            {
-                offer.Key = classWhy != "reallife_study_why_no_class" ? classWhy : examWhy;
-            }
-            offer.Lines = new[] { where, CareersText.T(e.FeeLate ? "reallife_study_why_fee_owed" : examWhy != "reallife_study_why_no_exam" ? examWhy : classWhy) };
+            DeskStart start = DeskStartOf(e, false, false, false);
+            FillOffer(offer, e, start, where);
+            DoorAndApp(e, start, floor, room);
             return offer;
+        }
+
+        private static string RoomWhere(int floor, int room)
+        {
+            return CareersText.T("reallife_campus_room_where", "floor", floor.ToString(), "room", room.ToString());
+        }
+
+        // With Developer diagnostics on, one line a classroom door's panel: what the door offers against what the Campus app's
+        // Attend or Sit would begin from the same place and moment (the same decision, only being elsewhere excused there).
+        private void DoorAndApp(Enrolment e, DeskStart door, int floor, int room)
+        {
+            if (!Verbose)
+            {
+                return;
+            }
+            DeskStart app = DeskStartOf(e, false, true, false);
+            bool agree = door.Can == app.Can && (!door.Can || door.Kind == app.Kind);
+            Logger?.Info("Careers check (door and app): floor " + floor + " room " + room + ", " + e.Def.Key + ": the door offers "
+                         + (door.Can ? Words(door.Kind) : "nothing (" + door.Why + ")") + ", the Campus app would begin " + (app.Can ? Words(app.Kind) : "nothing (" + app.Why + ")")
+                         + ": " + (agree ? "PASS" : "FAIL, the door and the app decide differently here"));
         }
 
         /// <summary>True if a click on this study door is the mod's: a classroom door of the player's floor in a Going Public session (ClassPlayRules.TakesRoomClick).</summary>
@@ -287,7 +275,7 @@ namespace RealLifeOverhaul.Careers
             int soon = -1;
             if (inPerson)
             {
-                can = CanAttend(e, out _) == null || CanSit(e) == null;
+                can = DeskStartOf(e, false, false, false).On;   // its door's own decision: a class or exam on there, tired or not
                 if (!can && e.Stage == (int)EnrolStage.Studying && c.Timetabled && !e.FeeLate)
                 {
                     int now = Save.Day * 24 * 60 + CareersGame.MinuteOfDay;
@@ -325,14 +313,11 @@ namespace RealLifeOverhaul.Careers
             return CareersText.T("reallife_campus_hours_span", "from", CareersText.Hour(CampusRules.Opens(day)), "to", CareersText.Hour(CampusRules.Closes(day)));
         }
 
-        // A university class, exam or homework in person: to its floor and room, begun there (WantBegin, then GoToRoom). Null if on the way, else the reason key.
+        // A university class, exam or homework in person: to its floor and room, begun there (WantBegin, then GoToRoom), by the
+        // decision its classroom door's panel reads too (DeskStartOf). Null if on the way, else the reason key.
         private string ToRoom(Enrolment e, string why, SittingKind kind)
         {
-            if (why != null && why != "reallife_study_why_not_university")
-            {
-                return why;
-            }
-            string busy = SeatBusy();
+            string busy = kind == SittingKind.Homework ? why ?? SeatBusy() : ClassPlayRules.BeginWhy(DeskStartOf(e, false, true, true), kind, why);
             if (busy != null)
             {
                 return busy;

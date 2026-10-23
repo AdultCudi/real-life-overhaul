@@ -1,3 +1,4 @@
+using System;
 using Helpers;
 using PlayerActivity;
 using UnityEngine;
@@ -19,17 +20,103 @@ namespace RealLifeOverhaul.Careers
         private int _beginFrame = -1;        // ...and the frame its desk's panel was opened in, -1 for not yet
 
         // Why not now, as every press of a class says it: a sitting under way, the game busy, too tired.
-        private string SeatBusy()
+        private string SeatBusy() => SeatWhy(true);
+
+        // Why the player cannot sit down now, or null. game: the game's panel and clock are asked too, which a desk's own panel,
+        // being the game's panel, never is.
+        private string SeatWhy(bool game)
         {
             if (SittingNow || _book.Count > 0)
             {
                 return "reallife_study_why_busy";
             }
-            if (!CareersGame.Free())
+            if (game && !CareersGame.Free())
             {
                 return "reallife_study_why_game_busy";
             }
             return CareersGame.Energy < StudyCatalogue.TiredEnergy ? "reallife_study_why_tired" : null;
+        }
+
+        /// <summary>
+        /// The one decision for a course at its own desk (<see cref="ClassPlayRules.AtDesk"/>), read by the desk's panel at its
+        /// door and by the Campus app's Attend and Sit. school: a desk of the school, which holds only its own courses' classes
+        /// and the exams sat there; away: the Campus app walks the player to the classroom; game: the game's panel is asked too.
+        /// </summary>
+        private DeskStart DeskStartOf(Enrolment e, bool school, bool away, bool game)
+        {
+            string classWhy = !school || AtTheSchool(e, false) ? CanAttend(e, out _) : "reallife_study_why_no_class";
+            string examWhy = !school || AtTheSchool(e, true) ? CanSit(e) : "reallife_study_why_no_exam";
+            return ClassPlayRules.AtDesk(classWhy, examWhy, e.FeeLate, SeatWhy(game), away && !school);
+        }
+
+        // The words of a desk's button for a kind of sitting; none has a {placeholder}, as the game's activity panel writes a
+        // button's key alone (PlayerActivityUI.SetButton reads neither its arguments nor whether it may be pressed).
+        private static string StartKey(SittingKind kind)
+        {
+            return kind == SittingKind.Exam ? "reallife_campus_button_sit" : kind == SittingKind.Homework ? "reallife_campus_button_homework" : "reallife_campus_button_attend";
+        }
+
+        // A desk's offer for a course by the one decision: the button and the sitting's lines when it can begin, else the reason
+        // and, while nothing is on, when the next class is and from when it can be begun. first: a line before them, or null.
+        private void FillOffer(SchoolDesk.DeskOffer offer, Enrolment e, DeskStart start, string first)
+        {
+            CourseDef c = e.Def;
+            offer.Course = c.Id;
+            offer.Kind = start.Kind;
+            offer.Can = start.Can;
+            offer.Why = start.Why;
+            offer.Key = start.Can ? StartKey(start.Kind) : null;
+            offer.Title = CareersText.Course(c.Id);
+            string[] lines;
+            if (start.Can)
+            {
+                lines = (start.Kind == SittingKind.Exam ? ExamSitting(e) : ClassSitting(e, Minutes(e))).Lines;
+            }
+            else
+            {
+                string next = start.On ? null : NextLine(e);
+                lines = next != null ? new[] { CareersText.T(start.Why), next } : new[] { CareersText.T(start.Why) };
+            }
+            offer.Lines = Lined(first, lines);
+        }
+
+        // A piece of homework as a desk's offer, the Campus app having sent the player to do it there.
+        private void FillHomework(SchoolDesk.DeskOffer offer, Enrolment e, string first)
+        {
+            string why = CanHomework(e);
+            offer.Course = e.Def.Id;
+            offer.Kind = SittingKind.Homework;
+            offer.Can = why == null;
+            offer.Why = why;
+            offer.Key = why == null ? StartKey(SittingKind.Homework) : null;
+            offer.Title = CareersText.Course(e.Def.Id);
+            offer.Lines = Lined(first, why == null ? HomeworkSitting(e).Lines : new[] { CareersText.T(why) });
+        }
+
+        // When a course's next class is and the span it can be begun in, every value filled; null once every class is held.
+        private string NextLine(Enrolment e)
+        {
+            int at = StudyRules.NextClass(e, Save.Day, CareersGame.MinuteOfDay, SittingClass);
+            if (at < 0)
+            {
+                return null;
+            }
+            ClassPlayRules.BeginSpan(at, out int from, out int until);
+            const int ADay = 24 * 60;   // minutes
+            return CareersText.Fill("reallife_study_desk_next_from", "day", CareersText.Day(at / ADay), "hour", CareersText.Hour(at % ADay / 60),
+                "from", CareersText.TimeOfDay(from), "until", CareersText.TimeOfDay(until));
+        }
+
+        private static string[] Lined(string first, string[] lines)
+        {
+            if (first == null)
+            {
+                return lines;
+            }
+            var all = new string[lines.Length + 1];
+            all[0] = first;
+            Array.Copy(lines, 0, all, 1, lines.Length);
+            return all;
         }
 
         /// <summary>The Campus app sent the player to a course's desk: once its panel opens there, its class (exam, homework) is begun.</summary>
@@ -52,7 +139,9 @@ namespace RealLifeOverhaul.Careers
             return _deskWatch;
         }
 
-        // The panel just seen is the one opened for the player: the offer is made the course's sitting. course: the room's, or -1 at the school.
+        // The panel just seen is the one opened for the player: true if the sitting the Campus app asked for is begun there. The
+        // desk's offer is the one decision's (DeskStartOf), never overruled: a class whose window closed on the walk there is
+        // not begun, and the panel says why. course: the room's, or -1 at the school, whose offer is made for the course asked.
         private bool TakeBegin(int course, SchoolDesk.DeskOffer offer)
         {
             bool fresh = _beginCourse >= 0 && _beginFrame >= 0 && Time.frameCount - _beginFrame <= BeginFrames;
@@ -60,16 +149,27 @@ namespace RealLifeOverhaul.Careers
             SittingKind kind = _beginKind;
             _beginCourse = -1;
             _beginFrame = -1;
-            if (!fresh || offer == null || (course >= 0 && course != wanted))
+            Enrolment e = _studyOn ? _study.Live(wanted) : null;
+            if (!fresh || offer == null || (course >= 0 && course != wanted) || e == null || e.Def == null)
             {
                 return false;
             }
-            offer.Course = wanted;
-            offer.Kind = kind;
-            offer.Can = true;
+            string where = course >= 0 ? RoomWhere(CampusRules.FloorOf(wanted), CampusRules.RoomOf(wanted)) : null;
+            if (kind == SittingKind.Homework)
+            {
+                FillHomework(offer, e, where);   // never offered at a door of itself: the Campus app's press asked for it
+            }
+            else if (course < 0)
+            {
+                FillOffer(offer, e, DeskStartOf(e, true, false, false), null);
+            }
+            if (!offer.Can || offer.Kind != kind)
+            {
+                Logger?.Info("Careers: the Campus app sent the player to begin " + Words(kind) + " of " + e.Def.Key + " at its desk; it cannot be begun there now ("
+                             + (offer.Why ?? "the desk offers " + Words(offer.Kind)) + "), and the desk's panel says why.");
+                return false;
+            }
             offer.Due = true;   // begun for the player: the class's on the Start key
-            offer.Key = kind == SittingKind.Exam ? "reallife_study_prompt_exam" : kind == SittingKind.Homework ? "reallife_study_prompt_homework" : "reallife_study_prompt_attend";
-            offer.Arguments = CourseArgs(wanted);
             return true;
         }
 
@@ -92,16 +192,12 @@ namespace RealLifeOverhaul.Careers
                     study ? "the game's study panel is up" : refused ? "the game's door refused it in its own words (closed, or something in hand)" : null);
                 return null;
             }
-            SchoolDesk.DeskOffer offer = room > 0 ? RoomOffer(room) : new SchoolDesk.DeskOffer { Course = -1, Key = "reallife_study_why_no_class" };
-            bool begun = begin && TakeBegin(room > 0 ? offer.Course : -1, offer);
+            SchoolDesk.DeskOffer offer = room > 0 ? RoomOffer(room) : new SchoolDesk.DeskOffer { Course = -1, Why = "reallife_study_why_no_class" };
+            bool begun = begin && (room == 0 || offer.Course >= 0) && TakeBegin(room > 0 ? offer.Course : -1, offer);
             if (room == 0 && !begun)
             {
                 DeskCheck(session, way, where, begin, "no class of the school's was to be begun there", null);
                 return "reallife_study_why_no_class";   // a school desk is opened only to begin: its own click is Going Public's
-            }
-            if (room == 0)
-            {
-                SchoolOffer(offer);
             }
             if (PlayerActivityUI.IsPanelOpen)
             {
@@ -143,20 +239,6 @@ namespace RealLifeOverhaul.Careers
             return uis != null && uis.playerActivityUI != null && uis.playerActivityUI.GetCurrentActivity is StudyActivity;
         }
 
-        // A school desk's offer as its own panel shows it before it is begun: the course as its headline, the sitting's lines.
-        private void SchoolOffer(SchoolDesk.DeskOffer offer)
-        {
-            Enrolment e = _study.Live(offer.Course);
-            offer.Title = CareersText.Course(offer.Course);
-            if (e == null || e.Def == null)
-            {
-                offer.Lines = new string[0];
-                return;
-            }
-            Sitting shown = offer.Kind == SittingKind.Exam ? ExamSitting(e) : offer.Kind == SittingKind.Homework ? HomeworkSitting(e) : ClassSitting(e, Minutes(e));
-            offer.Lines = shown.Lines;
-        }
-
         // With Developer diagnostics on, one line a desk panel: the way taken against the way wanted. fail: why it failed; said: what the game did.
         private static void DeskCheck(bool session, DeskWay way, string where, bool begin, string fail, string said)
         {
@@ -178,7 +260,7 @@ namespace RealLifeOverhaul.Careers
         // A class, exam or homework at the school: its nearest desk's panel opened and begun for the player. Null if under way, else the reason key.
         private string ToSchoolDesk(Enrolment e, SittingKind kind)
         {
-            string busy = SeatBusy();
+            string busy = kind == SittingKind.Homework ? SeatBusy() : ClassPlayRules.BeginWhy(DeskStartOf(e, true, false, true), kind, null);
             if (busy != null)
             {
                 return busy;

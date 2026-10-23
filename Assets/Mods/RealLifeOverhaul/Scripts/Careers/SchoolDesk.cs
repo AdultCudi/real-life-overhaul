@@ -32,6 +32,8 @@ namespace RealLifeOverhaul.Careers
         private readonly DeskOffer _offer;
         private ButtonInfo[] _buttons;
         private LabelInfo[] _labels;
+        private LabelInfo[] _gameLabels;   // the game's own course's labels last seen, and with the class's lines after them...
+        private LabelInfo[] _withLines;    // ...made again only when the game gives new ones
 
         private bool _mine;
         private Sitting _sitting;
@@ -43,14 +45,14 @@ namespace RealLifeOverhaul.Careers
         private ButtonInfo[] _stop;
         private int _orderFrame = -1;   // the frame the walk order to the desk was given in (DeskGame.SetOffSeen)
 
-        /// <summary>What the desk offers: a course's class or exam, whether it can be done now, and the words of the button.</summary>
+        /// <summary>What the desk offers: a course's class or exam, whether it can be begun now, its button's words, and why not.</summary>
         internal sealed class DeskOffer
         {
             public int Course;
             public SittingKind Kind;   // a class, homework or an exam
-            public bool Can;
-            public string Key;
-            public object Arguments;
+            public bool Can;           // it can be begun now: only then has the panel its button, as the game's own panels do
+            public string Key;         // the button's words, a key with no {placeholder}: the game's panel writes a button's key alone
+            public string Why;         // the reason key while it cannot be begun (said in Lines too)
             public bool Only;          // the class's panel alone (a classroom of the university): no course of the game's
             public bool Due;           // a class or exam of the player's at the school is in its window: the class's button on the Start key (ClassPlayRules.ClassOnStart)
             public string Title;       // ...its headline
@@ -475,6 +477,35 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
+        // The game's own course's labels with the class's course and lines after them (a desk of the school), made again only
+        // when the game gives new ones: it makes its labels as its panel is drawn, never per frame.
+        private LabelInfo[] WithLines(LabelInfo[] game)
+        {
+            int n = _offer.Lines != null ? _offer.Lines.Length : 0;
+            if (n == 0)
+            {
+                return game;
+            }
+            if (_withLines != null && ReferenceEquals(game, _gameLabels))
+            {
+                return _withLines;
+            }
+            int g = game != null ? game.Length : 0;
+            var all = new LabelInfo[g + 1 + n];
+            for (int i = 0; i < g; i++)
+            {
+                all[i] = game[i];
+            }
+            all[g] = new LabelInfo(_offer.Title ?? string.Empty, GameUi.WorldPanel.White(), false);
+            for (int i = 0; i < n; i++)
+            {
+                all[g + 1 + i] = new LabelInfo(_offer.Lines[i] ?? string.Empty, GameUi.WorldPanel.White(), false);
+            }
+            _gameLabels = game;
+            _withLines = all;
+            return all;
+        }
+
         public LabelInfo[] GetLabels()
         {
             if (FrameGuard.Off)
@@ -498,7 +529,7 @@ namespace RealLifeOverhaul.Careers
                 }
                 if (!_mine)
                 {
-                    return _inner.GetLabels();
+                    return WithLines(_inner.GetLabels());
                 }
                 if (_sitting == null || _state != PlayerActivityState.Running)
                 {
@@ -528,12 +559,17 @@ namespace RealLifeOverhaul.Careers
                 }
                 if (_offer.Only)
                 {
-                    // on the game's Start key: no course of the game's here, and its secondary key is the panel's fast forward
-                    return _buttons ?? (_buttons = new[]
+                    // on the game's Start key: no course of the game's here, and its secondary key is the panel's fast forward. With
+                    // nothing to begin, Cancel alone, as the game's own course panel once its course is done: the game's panel
+                    // neither dims a button nor stops its key, so a button that cannot begin is not shown at all
+                    if (_buttons == null)
                     {
-                        new ButtonInfo("CancelRealLifeClass", "common_cancel", "gray", Guard.Way(Close), PlayerAction.Cancel),
-                        new ButtonInfo("RealLifeClass", _offer.Key, _offer.Arguments, "blue", Guard.Wrap(Press), PlayerAction.Confirm, _offer.Can)
-                    });
+                        var cancel = new ButtonInfo("CancelRealLifeClass", "common_cancel", "gray", Guard.Way(Close), PlayerAction.Cancel);
+                        _buttons = _offer.Can
+                            ? new[] { cancel, new ButtonInfo("RealLifeClass", _offer.Key, "blue", Guard.Wrap(Press), PlayerAction.Confirm, _offer.Can) }
+                            : new[] { cancel };
+                    }
+                    return _buttons;
                 }
                 ButtonInfo[] game = _inner.GetButtons();
                 if (_inner.GetState() != PlayerActivityState.NotStarted)
@@ -546,7 +582,7 @@ namespace RealLifeOverhaul.Careers
                     // as a classroom of the university; else the class's button on the secondary key beside the game's Start.
                     bool first = _offer.Due;
                     int n = game != null ? game.Length : 0;
-                    _buttons = new ButtonInfo[n + 1];
+                    _buttons = new ButtonInfo[n + (_offer.Can ? 1 : 0)];
                     for (int i = 0; i < n; i++)
                     {
                         ButtonInfo b = game[i];
@@ -554,7 +590,10 @@ namespace RealLifeOverhaul.Careers
                             ? new ButtonInfo(b.name, b.key, b.arguments, b.color, b.onClick, PlayerAction.SecondaryInteract, b.interactable)
                             : b;
                     }
-                    _buttons[n] = new ButtonInfo("RealLifeClass", _offer.Key, _offer.Arguments, "blue", Guard.Wrap(Press), first ? PlayerAction.Confirm : PlayerAction.SecondaryInteract, _offer.Can);
+                    if (_offer.Can)
+                    {
+                        _buttons[n] = new ButtonInfo("RealLifeClass", _offer.Key, "blue", Guard.Wrap(Press), first ? PlayerAction.Confirm : PlayerAction.SecondaryInteract, _offer.Can);
+                    }
                 }
                 return _buttons;
             }

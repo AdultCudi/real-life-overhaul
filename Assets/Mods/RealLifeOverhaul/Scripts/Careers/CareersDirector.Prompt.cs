@@ -289,11 +289,11 @@ namespace RealLifeOverhaul.Careers
                     {
                         room = _interior.RoomOf(SchoolDesk.DoorOf(game));
                         offer = room > 0 && !_roomDesksOff ? RoomOffer(room) : null;
-                        begin = offer != null && TakeBegin(offer.Course, offer);
+                        begin = offer != null && offer.Course >= 0 && TakeBegin(offer.Course, offer);   // a free classroom begins nothing
                         Logger?.Info("Careers: a classroom door of the university, floor " + _interior.Floor + " room " + room + ": " + (offer == null ? "not one of the floor's five rooms"
                                      : (offer.Course >= 0 ? StudyCatalogue.Find(offer.Course).Key : "no course")
                                        + (offer.Can ? ", " + Words(offer.Kind) + " can be begun" + (begin ? ", begun for the player (the Campus app)." : ".")
-                                           : ", nothing to begin now (" + offer.Key + ").")));
+                                           : ", nothing to begin now (" + offer.Why + ").")));
                     }
                     else
                     {
@@ -347,50 +347,49 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        // What a desk offers now: the class that can be joined, else the exam that can be sat, else the next class (greyed); on
-        // the game's Start key while a class or exam of the player's at the school is in its window.
+        // What a desk offers now, by the one decision (DeskStartOf): the first course whose class or exam is on, its button when
+        // it can be begun, else why; else the soonest next class and from when it can be begun; on the game's Start key while a
+        // class or exam of the player's at the school can be begun.
         private SchoolDesk.DeskOffer DeskOfferNow()
         {
             SchoolDesk.DeskOffer offer = DeskOfferOf();
-            offer.Due = ClassPlayRules.ClassOnStart(_study.Courses, Save.Day, CareersGame.MinuteOfDay);
+            offer.Due = offer.Can && ClassPlayRules.ClassOnStart(_study.Courses, Save.Day, CareersGame.MinuteOfDay);
             return offer;
         }
 
         private SchoolDesk.DeskOffer DeskOfferOf()
         {
-            SchoolDesk.DeskOffer next = null;
+            var offer = new SchoolDesk.DeskOffer { Course = -1, Why = "reallife_study_why_no_class" };
+            Enrolment next = null;
+            DeskStart nextStart = default;
             int nextAt = int.MaxValue;
             for (int i = 0; i < _study.Courses.Count; i++)
             {
                 Enrolment e = _study.Courses[i];
                 CourseDef c = e != null ? e.Def : null;
-                if (c == null)
+                if (c == null || (!AtTheSchool(e, false) && !AtTheSchool(e, true)))
                 {
                     continue;
                 }
-                if (AtTheSchool(e, false) && CanAttend(e, out _) == null)
+                DeskStart start = DeskStartOf(e, true, false, false);
+                if (start.On)
                 {
-                    return new SchoolDesk.DeskOffer { Course = c.Id, Can = true, Key = "reallife_study_prompt_attend", Arguments = CourseArgs(c.Id) };
+                    FillOffer(offer, e, start, null);
+                    return offer;
                 }
-                if (AtTheSchool(e, true) && CanSit(e) == null)
+                int at = AtTheSchool(e, false) ? StudyRules.NextClass(e, Save.Day, CareersGame.MinuteOfDay, SittingClass) : -1;
+                if (at >= 0 && at < nextAt)
                 {
-                    return new SchoolDesk.DeskOffer { Course = c.Id, Kind = SittingKind.Exam, Can = true, Key = "reallife_study_prompt_exam", Arguments = CourseArgs(c.Id) };
-                }
-                if (AtTheSchool(e, false) && e.Stage == (int)EnrolStage.Studying && c.Timetabled)
-                {
-                    int at = StudyRules.NextClass(e, Save.Day, CareersGame.MinuteOfDay, SittingClass);
-                    if (at >= 0 && at < nextAt)
-                    {
-                        nextAt = at;
-                        next = new SchoolDesk.DeskOffer
-                        {
-                            Course = c.Id, Can = false, Key = "reallife_study_desk_next",
-                            Arguments = new { course = CareersText.Course(c.Id), day = CareersText.Day(at / (24 * 60)), hour = CareersText.Hour(at % (24 * 60) / 60) }
-                        };
-                    }
+                    nextAt = at;
+                    next = e;
+                    nextStart = start;
                 }
             }
-            return next ?? new SchoolDesk.DeskOffer { Course = -1, Can = false, Key = "reallife_study_why_no_class", Arguments = null };
+            if (next != null)
+            {
+                FillOffer(offer, next, nextStart, null);
+            }
+            return offer;
         }
 
         /// <summary>A sitting begun at a desk of the school or the university: the Campus app's checks, the sitting made for the desk; null with it, or the reason key.</summary>

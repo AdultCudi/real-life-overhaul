@@ -139,9 +139,61 @@ namespace RealLifeOverhaul.Careers
         OwnPanel = 1     // the desk's own activity of the mod's, which is not the game's StudyActivity, on the game's panel
     }
 
+    /// <summary>What a course's own desk begins now (<see cref="ClassPlayRules.AtDesk"/>): the class or the exam, and if not, why.</summary>
+    public struct DeskStart
+    {
+        public SittingKind Kind;   // the class, or the exam
+        public bool On;            // ...it is on now: only the player's seat (busy, too tired) can stop it
+        public bool Can;           // ...and it can be begun now
+        public string Why;         // the reason key while it cannot; null when it can
+    }
+
     /// <summary>Game-free rules for classes played as the game's own studying: which button a computer shows, and where a class is held.</summary>
     public static class ClassPlayRules
     {
+        /// <summary>
+        /// The one rule for what a course's own desk (a university classroom, a desk of the school) begins now, read alike by the
+        /// desk's panel at its door and by the Campus app's Attend and Sit: the class first, then the exam. classWhy and examWhy
+        /// are the course's reasons (null when possible); seatWhy is why the player cannot sit down now (busy, too tired), or null;
+        /// away: asked by the Campus app, which walks the player to the classroom, so being elsewhere is no reason.
+        /// </summary>
+        public static DeskStart AtDesk(string classWhy, string examWhy, bool feeLate, string seatWhy, bool away)
+        {
+            bool cls = Excused(classWhy, away), exam = Excused(examWhy, away);
+            var start = new DeskStart { Kind = !cls && exam ? SittingKind.Exam : SittingKind.Class, On = cls || exam };
+            if (!start.On)
+            {
+                start.Why = feeLate ? "reallife_study_why_fee_owed" : examWhy != "reallife_study_why_no_exam" ? examWhy : classWhy;
+                return start;
+            }
+            start.Why = seatWhy;
+            start.Can = seatWhy == null;
+            return start;
+        }
+
+        /// <summary>True if a reason (null for none) leaves the sitting possible; away, being elsewhere is none, as the player is walked there.</summary>
+        public static bool Excused(string why, bool away)
+        {
+            return why == null || (away && StudyRules.Elsewhere(why));
+        }
+
+        /// <summary>Null if a press for this kind of sitting begins it by the desk's rule (<see cref="AtDesk"/>), else the reason key; kindWhy is that kind's own reason.</summary>
+        public static string BeginWhy(DeskStart start, SittingKind kind, string kindWhy)
+        {
+            if (start.Kind != kind || !start.On)
+            {
+                return kindWhy ?? start.Why ?? "reallife_study_why_no_class";
+            }
+            return start.Why;
+        }
+
+        /// <summary>The save's minutes (day * 1440 + minute) from which a class starting at <paramref name="at"/> can be begun, and until which.</summary>
+        public static void BeginSpan(int at, out int from, out int until)
+        {
+            from = at - StudyCatalogue.ArriveEarlyMinutes;
+            until = at + StudyCatalogue.LateMinutes;
+        }
+
         /// <summary>The one rule for how a desk's panel is opened: the game's study panel alone; in a Going Public session the desk's own, as Going Public takes every StudyActivity.</summary>
         public static DeskWay WayToDesk(bool inSession)
         {
