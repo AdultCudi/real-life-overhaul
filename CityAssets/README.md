@@ -424,14 +424,16 @@ Dropped: `cycle_pedal` (now `cycle_ride`). The road bicycle has a drop bar and c
 
 ### Building sites (`scripts\clips_build.py`)
 
-Both are asked for by code (`Scripts\Civic\SiteDresser.Plot.cs`: the frame stage's carpenter and the slab stage's concrete
-gang), which plays `kneel_work` and `shovel_dig` in their place while the anim bundle does not have them (`ClipLibrary.Has`).
-**Not in the anim bundle yet:** the bundle could not be built when they were written (no Unity licence on the machine);
-`build.ps1` puts them in with the rest. Reach checked with `check_clips.py` (stretch 0.012 and 0.025 m).
+All three are asked for by code: `hammer_nail` and `rake_asphalt` by `Scripts\Civic\SiteDresser.Plot.cs` (the frame stage's
+carpenter and the slab stage's concrete gang), which plays `kneel_work` and `shovel_dig` in their place while a bundle lacks
+them (`ClipLibrary.Has`); `brick_lay` by the building trades (`Scripts\BuildTrades\TradeCatalogue.cs`: the mason's working
+pose at a works site, `hammer_nail` while a bundle lacks it). All three are in the anim bundle, played back on the game's
+skeleton by `build_bundle.ps1` (23 Oct 2026, 164 clips). Reach checked with `check_clips.py` (stretch 0.012, 0.025 and 0.016 m).
 
 | clip | s | | m/s | made for | tool (grip) | marks (s) | what it is, and where things are | blunt |
 |---|---|---|---|---|---|---|---|---|
 | `hammer_nail` | 1.6 | loop |  |  | `hammer` of the second props bundle (right, 0.10 m up the handle) |  | on one knee, two blows a loop at a nail 0.44 m ahead, 0.08 m right and 0.32 m up (a board at the frame's foot), the left hand holding it; the hammer rises 50 degrees from the wrist and elbow and comes down onto the nail | adequate on the Blender sheet with a plain bar for the hammer, by its author only: the swing is small at street distance. Not seen in Unity |
+| `brick_lay` | 3.2 | loop |  |  | none: the hands' plate hold is the brick |  | standing at a wall course 0.95 m up and 0.42 m ahead: both hands take a brick off a stack on a pallet by the left thigh (0.22 m left, 0.34 m ahead, 0.74 m up), carry it round, set it on the course, and the right palm taps it level twice while the left steadies it; the lean from the hips does the reaching | read on the Unity sheet only (`previews\unity_brick_lay.jpg`): the hands work low in front, as at a waist-high course. Not seen in the game |
 | `rake_asphalt` | 2.6 | loop |  |  | `rake` (right 0.95 m, left 1.30 m, as `rake_leaves`) |  | levelling: the rake pushed out flat to 0.82 m ahead and drawn back to 0.50 m, the tines on the ground throughout, the lean from the hips doing the work | adequate on the Blender sheet, by its author only. Not seen in Unity |
 
 Clips that hold the same tool share its `Grip`, so they can be cross-faded into each other with the tool in the hand.
