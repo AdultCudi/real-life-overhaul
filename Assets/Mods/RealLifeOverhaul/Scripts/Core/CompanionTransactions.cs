@@ -10,7 +10,7 @@ namespace RealLifeOverhaul
             var rows = new List<object>();
             foreach (Transaction transaction in SaveGameManager.Current.Transactions)
             {
-                if (transaction == null || transaction.timestamp == null
+                if (transaction == null || transaction.transactionType == null || transaction.timestamp == null
                     || !categories.TryGetValue(transaction.transactionType, out string category))
                 {
                     continue;

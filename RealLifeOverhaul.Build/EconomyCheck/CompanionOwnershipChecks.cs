@@ -5,6 +5,7 @@ using RealLifeOverhaul;
 // Only the session boundary is substituted: parser, bounds and complete-target validation are production code.
 public sealed class GameInstance
 {
+    public System.Collections.Generic.List<Transaction> Transactions = new System.Collections.Generic.List<Transaction>();
     public bool Available = true;
     public int Money = 123;
     public string ModData = "unchanged";

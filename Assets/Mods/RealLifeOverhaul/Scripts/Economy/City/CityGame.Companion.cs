@@ -44,7 +44,8 @@ namespace RealLifeOverhaul.Economy
             string depositAdjustment = null;
             foreach (Transaction transaction in SaveGameManager.Current.Transactions)
             {
-                if (transaction.transactionType != "ba:transaction_deposit" || transaction.amount >= 0)
+                if (transaction == null || transaction.transactionType == null
+                    || transaction.transactionType != "ba:transaction_deposit" || transaction.amount >= 0)
                 {
                     continue;
                 }

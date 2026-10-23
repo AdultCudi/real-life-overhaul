@@ -12,6 +12,12 @@ namespace RealLifeOverhaul
             return CompanionSnapshot.Row("street", street, "number", number);
         }
 
+        internal static int CompareAddress(string leftStreet, int leftNumber, string rightStreet, int rightNumber)
+        {
+            int street = string.CompareOrdinal(leftStreet, rightStreet);
+            return street != 0 ? street : leftNumber.CompareTo(rightNumber);
+        }
+
         public static string Decimal(float amount)
         {
             if (float.IsNaN(amount) || float.IsInfinity(amount))

@@ -30,7 +30,10 @@ namespace RealLifeOverhaul.Interiors
                     "requiredScore", InteriorRules.Standard(income, district.minimumInteriorScore)));
             }
             var sites = new List<object>();
-            foreach (KeyValuePair<BuildingRegistration, InteriorShop> pair in _byReg)
+            var ordered = new List<KeyValuePair<BuildingRegistration, InteriorShop>>(_byReg);
+            ordered.Sort((left, right) => CompanionValues.CompareAddress(left.Key.StreetName, left.Key.StreetNumber,
+                right.Key.StreetName, right.Key.StreetNumber));
+            foreach (KeyValuePair<BuildingRegistration, InteriorShop> pair in ordered)
             {
                 InteriorShop shop = pair.Value;
                 sites.Add(CompanionSnapshot.Row("address", CompanionValues.Address(pair.Key.StreetName, pair.Key.StreetNumber),

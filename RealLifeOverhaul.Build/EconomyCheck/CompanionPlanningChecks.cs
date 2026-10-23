@@ -10,6 +10,7 @@ internal static partial class Program
     private static void CompanionPlanningChecks(string output)
     {
         CompanionReadOnlyChecks();
+        CompanionMalformedTransactions();
         CompanionOwnershipChecks();
         CompanionManagerChecks();
         var promotion = new CompanionPromotion();

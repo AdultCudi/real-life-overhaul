@@ -51,6 +51,7 @@
 
   <ItemGroup>
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\CompanyDirector.CompanionOwnership.cs" Link="Mod\CompanyDirector.CompanionOwnership.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\CompanionTransactions.cs" Link="Mod\CompanionTransactions.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\CompanionPromotion.cs" Link="Mod\CompanionPromotion.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\City\CityCompanion.cs" Link="Mod\CityCompanion.cs" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
