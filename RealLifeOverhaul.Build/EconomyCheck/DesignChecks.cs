@@ -15,8 +15,8 @@ using RealLifeOverhaul.Economy.Dealership;
 // furniture of a design of the game's, or fewer of it, at the game's market prices; the fee is the game's by floor area).
 internal static partial class Program
 {
-    private static readonly string DesignGameFiles = System.IO.Path.GetFullPath(System.IO.Path.Combine(Environment.GetEnvironmentVariable("BA_MANAGED")
-        ?? @"G:\Steam\steamapps\common\Big Ambitions\Big Ambitions_Data\Managed", @"..\StreamingAssets"));
+    // The game's StreamingAssets, beside the Managed folder that BA_MANAGED names when the game is elsewhere (as ContractCheck).
+    private static readonly string DesignGameFiles = System.IO.Path.GetFullPath(System.IO.Path.Combine(GameManagedFolder(), "..", "StreamingAssets"));
     private static readonly string DesignScripts = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts"));
     private static readonly string DesignLocales = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Locales"));
 

@@ -157,10 +157,15 @@ internal static partial class Program
     // The game's own data (StreamingAssets/BusinessLayouts): no office business of the game's has a layout of the home's
     // size, so neither the city's competition nor a rival can open a business there. A layout of size C2 is allowed only
     // for the shops the game's AI opens (retail buildings) and three named businesses that are no AI's.
+    private static string GameManagedFolder()
+    {
+        string managed = Environment.GetEnvironmentVariable("BA_MANAGED");
+        return string.IsNullOrWhiteSpace(managed) ? @"G:\Steam\steamapps\common\Big Ambitions\Big Ambitions_Data\Managed" : managed;
+    }
+
     private static void HomeLayouts()
     {
-        string root = System.IO.Path.Combine(Environment.GetEnvironmentVariable("BA_MANAGED")
-            ?? @"G:\Steam\steamapps\common\Big Ambitions\Big Ambitions_Data\Managed", @"..\StreamingAssets\BusinessLayouts");
+        string root = System.IO.Path.Combine(DesignGameFiles, "BusinessLayouts");
         if (!Directory.Exists(root))
         {
             Check(false, "university home: the game's business layouts are at " + root);
