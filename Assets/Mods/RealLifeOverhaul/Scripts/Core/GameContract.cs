@@ -417,9 +417,6 @@ namespace RealLifeOverhaul
         public static readonly GameMember SurfaceLayers = Prop(NewGroundWalk, Navigation, "Unity.AI.Navigation.NavMeshSurface", "layerMask", "LayerMask", false);
         public static readonly GameMember SurfaceArea = Prop(NewGroundWalk, Navigation, "Unity.AI.Navigation.NavMeshSurface", "defaultArea", "Int32", false);
         public static readonly GameMember SurfaceSettings = Method(NewGroundWalk, Navigation, "Unity.AI.Navigation.NavMeshSurface", "GetBuildSettings", "NavMeshBuildSettings");
-        // NewGround/WalkGame.Reload: the surface's live mesh read anew from its data, as when it is switched off and on.
-        public static readonly GameMember SurfaceRemoveData = Method(NewGroundWalk, Navigation, "Unity.AI.Navigation.NavMeshSurface", "RemoveData", "Void");
-        public static readonly GameMember SurfaceAddData = Method(NewGroundWalk, Navigation, "Unity.AI.Navigation.NavMeshSurface", "AddData", "Void");
         // NewBuildings/MadeGame: the game's private lookups of a building and of its registration by address (BuildingHelper.cs 50, 52;
         // GetBuilding and GetBuildingRegistration read them first) and of its streets (AddressHelper.cs 13): a made building and its
         // street go in at every load. Optional: the closest-building job's length (a self-check), and the food deliveries' addresses left

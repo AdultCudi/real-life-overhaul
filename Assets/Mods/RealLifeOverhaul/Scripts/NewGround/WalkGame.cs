@@ -354,32 +354,6 @@ namespace RealLifeOverhaul.NewGround
             return NavMesh.AddNavMeshData(data);
         }
 
-        /// <summary>A walking mesh of the mod's own added again, its live mesh read anew from its data.</summary>
-        public static void Readd(ref NavMeshDataInstance instance, NavMeshData data)
-        {
-            if (instance.valid)
-            {
-                NavMesh.RemoveNavMeshData(instance);
-            }
-            instance = data != null ? NavMesh.AddNavMeshData(data) : default;
-        }
-
-        /// <summary>
-        /// A city mesh's live walking mesh read anew from its data by the game's own surface, as when it is switched off and
-        /// on (NavMeshSurface.RemoveData, AddData). In the owner's game of 23 Oct, Unity's builder changed the data but the
-        /// live mesh did not show it, so new ground could not be walked on. True when done.
-        /// </summary>
-        public static bool Reload(CityMesh mesh)
-        {
-            if (mesh == null || mesh.Surface == null || GameContract.SurfaceRemoveData.Method == null || GameContract.SurfaceAddData.Method == null)
-            {
-                return false;
-            }
-            GameContract.SurfaceRemoveData.Method.Invoke(mesh.Surface, null);
-            GameContract.SurfaceAddData.Method.Invoke(mesh.Surface, null);
-            return true;
-        }
-
         /// <summary>How many of a plan's boxes have this mesh's walking surface at their middle now.</summary>
         public static int Walkable(CityMesh mesh, GroundPlan plan)
         {

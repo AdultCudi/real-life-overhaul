@@ -80,17 +80,11 @@ namespace RealLifeOverhaul.NewGround
         /// </summary>
         public static string ClearMiss { get; private set; }
 
-        /// <summary>True when the dry run's change reached its data but showed on the live mesh only once it was added again.</summary>
-        public static bool ReadNeeded { get; private set; }
-
-        // A box well inside a tile, of nothing walkable. Unity's builder takes an update that no source touches as nothing to
-        // do (the owner's game of 23 Oct: an update with no sources left its tile as it was), so a tile is cleared by
-        // rebuilding it from this alone.
+        // A box well inside a tile, of nothing walkable, that a tile is cleared by rebuilding it from.
         private static GroundBox Inside(long tile, TileGrid grid, float top)
         {
-            GroundRules.TileBounds(tile, grid, out float minX, out float minZ, out float maxX, out float maxZ);
-            return new GroundBox((minX + maxX) * 0.5f, (minZ + maxZ) * 0.5f, top, Math.Max(0.5f, (maxX - minX) * 0.5f - BackInset),
-                Math.Max(0.5f, (maxZ - minZ) * 0.5f - BackInset), 0f, GroundRules.PatchDepth);
+            float minX = grid.MinX(TileGrid.KeyX(tile)), minZ = grid.MinZ(TileGrid.KeyZ(tile)), half = grid.Side * 0.5f;
+            return new GroundBox(minX + half, minZ + half, top, Math.Max(0.5f, half - BackInset), Math.Max(0.5f, half - BackInset), 0f, GroundRules.PatchDepth);
         }
 
         /// <summary>
@@ -103,7 +97,6 @@ namespace RealLifeOverhaul.NewGround
             ms = 0.0;
             flatRadius = 0f;
             ClearMiss = null;
-            ReadNeeded = false;
             if (mesh == null)
             {
                 return "no walking mesh";
@@ -172,12 +165,6 @@ namespace RealLifeOverhaul.NewGround
                 WalkGame.UpdateNow(data, flat, Scratch, leftOnly);
                 ms += (Stopwatch.GetTimestamp() - began) * 1000.0 / Stopwatch.Frequency;
                 bool cleared = !WalkGame.Sample(mesh, a, 1f, out _);
-                if (!cleared)
-                {
-                    WalkGame.Readd(ref instance, data);   // did the update reach the data and not the live mesh?
-                    cleared = !WalkGame.Sample(mesh, a, 1f, out _);
-                    ReadNeeded = cleared;
-                }
                 bool beside = WalkGame.Sample(mesh, b, 1f, out _);
                 if (!beside)
                 {
@@ -185,7 +172,7 @@ namespace RealLifeOverhaul.NewGround
                 }
                 if (!cleared)
                 {
-                    ClearMiss = "Unity's builder did not clear a tile rebuilt from nothing walkable, even read anew, so ground grown at this load stays until the next load if it is given back";
+                    ClearMiss = "Unity's builder did not clear a tile rebuilt from nothing walkable, so ground grown at this load stays until the next load if it is given back";
                 }
                 return null;
             }

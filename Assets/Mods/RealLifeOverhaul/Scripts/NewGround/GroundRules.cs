@@ -177,7 +177,7 @@ namespace RealLifeOverhaul.NewGround
         public const float PrintAlike = 0.05f;      // m: a sample's hit moved less than this is unchanged
         public const float StepUp = 0.3f;           // m: ground a box's top may sit above or below the pavement it is flush with
         public const float FlatEnough = 1.5f;       // m: ground under a patch's corners may differ by this much
-        public const float TileEdge = 0.01f;        // m a one-tile build's bounds keep inside its tile (a seventh of a voxel), so the builder never takes the tile beside for its own
+        public const float TileOver = 1f;           // m a one-tile update's bounds reach past its tile on every side (see TileBounds)
 
         /// <summary>A box made smaller on every side: new ground in a tile built without the agent's own margin keeps that margin itself.</summary>
         public static GroundBox Shrunk(GroundBox box, float by)
@@ -185,13 +185,19 @@ namespace RealLifeOverhaul.NewGround
             return new GroundBox(box.X, box.Z, box.Top, Math.Max(0.05f, box.HalfX - by), Math.Max(0.05f, box.HalfZ - by), box.Yaw, box.Depth);
         }
 
-        /// <summary>One tile's ground, kept <see cref="TileEdge"/> inside its border: the bounds that rebuild that tile alone.</summary>
+        /// <summary>
+        /// One tile's ground and <see cref="TileOver"/> past its border all round: the bounds that rebuild that tile alone.
+        /// Unity's builder, with the tiles beyond the bounds kept, rebuilds only the tiles the bounds hold whole with their
+        /// border, whatever it is asked: proven in a built player of the game's Unity (2022.3.62f2) on a baked mesh of the
+        /// game's settings, where bounds just inside a tile or exactly on it rebuilt nothing (and said they had), and bounds
+        /// 0.3 to 2 m past it rebuilt it alone, the tiles beside as they were. No tile beside is held whole by a metre more.
+        /// </summary>
         public static void TileBounds(long tile, TileGrid grid, out float minX, out float minZ, out float maxX, out float maxZ)
         {
-            minX = grid.MinX(TileGrid.KeyX(tile)) + TileEdge;
-            minZ = grid.MinZ(TileGrid.KeyZ(tile)) + TileEdge;
-            maxX = minX + grid.Side - 2f * TileEdge;
-            maxZ = minZ + grid.Side - 2f * TileEdge;
+            minX = grid.MinX(TileGrid.KeyX(tile)) - TileOver;
+            minZ = grid.MinZ(TileGrid.KeyZ(tile)) - TileOver;
+            maxX = minX + grid.Side + 2f * TileOver;
+            maxZ = minZ + grid.Side + 2f * TileOver;
         }
 
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;

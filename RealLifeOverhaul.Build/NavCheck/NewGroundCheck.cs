@@ -438,9 +438,14 @@ internal static partial class Program
         var pz = new List<float>();
         GroundRules.Spread(TileGrid.Key(3, 3), grid, 5, px, pz);
         Check(px.Count == 25 && Enumerable.Range(0, 25).All(i => GroundRules.OnTile(px[i], pz[i], TileGrid.Key(3, 3), grid)), "new ground walk: 25 samples, all on their tile");
+        // Unity's builder rebuilds only the tiles an update's bounds hold whole with their border: proven in a built player of the
+        // game's Unity on a baked mesh of its settings (bounds inside a tile or exactly on it rebuilt nothing; 0.3 to 2 m past it,
+        // that tile alone). The owner's game of 23 Oct grew nothing with bounds 0.01 m inside.
         GroundRules.TileBounds(TileGrid.Key(3, 3), grid, out float b0, out float c0, out float b1, out float c1);
-        Check(grid.TileX(b0) == 3 && grid.TileX(b1) == 3 && grid.TileZ(c0) == 3 && grid.TileZ(c1) == 3 && Near(b1 - b0, grid.Side - 0.02f, 0.001f),
-            "new ground walk: a one-tile build's bounds stay just inside its tile, never reaching the next");
+        Check(Near(b0, grid.MinX(3) - GroundRules.TileOver, 0.001f) && Near(c0, grid.MinZ(3) - GroundRules.TileOver, 0.001f)
+              && Near(b1 - b0, grid.Side + 2f * GroundRules.TileOver, 0.001f) && Near(c1 - c0, grid.Side + 2f * GroundRules.TileOver, 0.001f)
+              && GroundRules.TileOver >= 0.3f && GroundRules.TileOver <= 2f,
+            "new ground walk: a one-tile update's bounds reach past its tile on every side, so Unity's builder rebuilds that tile, and no tile beside is held whole");
         GroundBox shrunk = GroundRules.Shrunk(new GroundBox(0f, 0f, 0f, 2f, 1f, 0f, 0.5f), 0.25f);
         Check(Near(shrunk.HalfX, 1.75f) && Near(shrunk.HalfZ, 0.75f), "new ground walk: new ground in an old tile keeps the agent's margin itself");
 
@@ -566,7 +571,7 @@ internal static partial class Program
         string walk = code["WalkGame.cs"];
         Check(walk.Contains("settings.preserveTilesOutsideBounds = true;") && Regex.Matches(walk, @"preserveTilesOutsideBounds = true").Count == 2,
             "new ground sources: every update of a walking mesh keeps the tiles beyond its bounds as they are");
-        Check(code["GroundBuilder.cs"].Contains("GroundRules.TileBounds(tile"), "new ground sources: every update of the city's mesh is one tile, its bounds just inside it");
+        Check(code["GroundBuilder.cs"].Contains("GroundRules.TileBounds(tile"), "new ground sources: every update of the city's mesh is one tile, its bounds a metre past it");
 
         // What a district stands along its new streets: parking that wakes where it is put, crossings tied to their road's red lamp.
         string parking = code["ParkingGame.cs"];
@@ -611,12 +616,12 @@ internal static partial class Program
         Check(Regex.IsMatch(builder, @"job\.BackSources\.Add\(WalkGame\.Box\(Inside\(job\.Fresh\[i\], grid, height\), WalkGame\.NotWalkable\)\)")
               && builder.Contains("public const float BackInset = 2f;") && walk.Contains("NavMesh.GetAreaFromName(\"Not Walkable\")"),
             "new ground sources: given back, each fresh tile is rebuilt from nothing walkable well inside it, so it is emptied and the tiles beside are not touched");
-        // The owner's game of 23 Oct: Uptown's ground was said grown, yet nothing could walk on it.
-        Check(grow.Success && Regex.IsMatch(grow.Groups["b"].Value, @"bool reloaded = job\.Problem == null && WalkGame\.Walkable\(mesh, plan\) == 0 && WalkGame\.Reload\(mesh\);[\s\S]*"
-                                                                      + @"GroundBuilder\.RoundAlike\(job\)[\s\S]*if \(job\.Problem == null && walkable == 0\)")
-              && walk.Contains("GameContract.SurfaceRemoveData.Method.Invoke(mesh.Surface, null);") && walk.Contains("GameContract.SurfaceAddData.Method.Invoke(mesh.Surface, null);")
-              && dry.Success && dry.Groups["b"].Value.Contains("WalkGame.Readd(ref instance, data);"),
-            "new ground sources: ground the live mesh does not show is read anew by the game's own surface and checked walkable, never said grown when nothing can walk on it");
+        // The owner's game of 23 Oct: Uptown's ground was said grown, yet nothing could walk on it (Unity's builder says an update
+        // was done whether or not it rebuilt anything).
+        Check(grow.Success && Regex.IsMatch(grow.Groups["b"].Value, @"GroundBuilder\.RoundAlike\(job\)[\s\S]*int walkable = job\.Problem == null \? WalkGame\.Walkable\(mesh, plan\) : 0;"
+                                                                      + @"\s*if \(job\.Problem == null && walkable == 0\)")
+              && !Regex.IsMatch(work + walk + builder, @"\bReload\(|\bReadd\(|RemoveData|AddData"),
+            "new ground sources: grown ground is checked walkable on its boxes and never said grown when nothing can walk on it");
         Check(!Regex.IsMatch(work, @"\bconst\s+float\s+\w*(Corner|Cell|Origin|Side|Bounds)\w*\s*="), "new ground sources: the grid, the tiles and the map are read from the game, never kept in the code");
 
         // The buses: lines run between the game's subway stations, then termini of the mod's own (a district has no station).

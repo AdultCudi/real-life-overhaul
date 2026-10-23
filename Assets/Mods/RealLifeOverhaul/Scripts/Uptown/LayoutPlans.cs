@@ -74,8 +74,11 @@ namespace RealLifeOverhaul.Uptown
         public const int StreetSpeed = 50;              // km/h, the game's city streets
         public const float GroundTop = 0.05f;           // m: the top of the walking ground's boxes, between the road and the pavement
         public const float GroundDepth = 0.5f;          // m below it
+        // Where the new ground starts, over the game's own walking meshes so the two join: the game's player mesh reaches
+        // z 479.4 to 480.9 over the nine streets' carriageways, and its pedestrians' mesh z 479.1 to 480.9 over their east
+        // pavements (read from the game's data, Build 3682), so each start leaves at least 0.85 m of overlap once shrunk.
         public const float ArmFrom = 476f;              // m: the walking ground begins this far north, over the old dead end's carriageway
-        public const float StripFrom = 479.5f;          // m: the pedestrians' strip up each street's east pavement begins here, on the old corner
+        public const float StripFrom = 478f;            // m: the pedestrians' strip up each street's east pavement begins here, on the old corner
         public const float StripWest = 7.1f;            // m east of a street's middle that strip runs from (clear of the trees in its pavement) ...
         public const float StripEast = 8.4f;            // ... to here (clear of the buildings beside it)
         public const float ModuleClear = 488.18f;       // m: where 1st Avenue's crossing modules end and the old arms' pavements were backdrop
