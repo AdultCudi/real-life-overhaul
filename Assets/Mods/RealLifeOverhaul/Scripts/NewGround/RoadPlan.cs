@@ -96,6 +96,7 @@ namespace RealLifeOverhaul.NewGround
         public float Green = 10f;          // s: green for one road, the game's own junctions' time
         public float Yellow = 2f;          // s: yellow, the same
         public readonly List<int> Together = new List<int>(2);   // the plan's roads whose lanes in share one way of the lights, as an avenue's two directions at the game's own crossings
+        public readonly List<int> Across = new List<int>(2);     // the plan's roads sharing a second way: a street's two arms across an avenue, as at the game's crossings
     }
 
     /// <summary>

@@ -8,10 +8,11 @@ namespace RealLifeOverhaul.Uptown
     /// Uptown's layout, the band north of Manhattan behind its old north wall, on the game's own street grid continued: its
     /// streets every 87.3 m in line with Manhattan's (whose road modules stand at those places), its avenues every 147.2 m
     /// north of 1st Avenue (a street module and a crossing, as the game's backdrop already draws them there), three rows of
-    /// eighteen blocks between them, and the lots round each block in Manhattan's mix. The first block, the eight blocks
-    /// behind 1st Avenue's north side between 9th and 1st Street, is laid now; the rest is planned. Every figure is fixed
-    /// data or worked out from it, so the plan is the same on every machine and in every version (saves keep lots by id and
-    /// address). No Unity or game types: checked offline (NavCheck, UptownCheck.cs). Built once, when first read.
+    /// eighteen blocks between them, and the lots round each block in Manhattan's mix. The whole band is laid at every load;
+    /// its first block is the eight blocks behind 1st Avenue's north side between 9th and 1st Street, where it meets
+    /// Manhattan. Every figure is fixed data or worked out from it, so the plan is the same on every machine and in every
+    /// version (saves keep lots by id and address). No Unity or game types: checked offline (NavCheck, UptownCheck.cs).
+    /// Built once, when first read.
     /// </summary>
     public static class LayoutRules
     {
@@ -63,6 +64,7 @@ namespace RealLifeOverhaul.Uptown
         private static List<Lot> _first;
         private static Dictionary<string, Lot> _byId;
         private static List<GroundRect> _firstGround;
+        private static List<GroundRect> _bandGround;
 
         // ---- the grid
 
@@ -379,6 +381,47 @@ namespace RealLifeOverhaul.Uptown
                 }
                 return _firstGround;
             }
+        }
+
+        /// <summary>
+        /// The ground the whole band lays, as rectangles: the first block's (above), the band west of 9th and east of 1st
+        /// Street from 1st Avenue's north pavement to Crest Avenue's, the rows north of Uptown Avenue between them, and 1st
+        /// Avenue's continuations west and east of its own corners. 1st Avenue's own ground and its north side's buildings
+        /// between 9th and 1st Street are never among them.
+        /// </summary>
+        public static List<GroundRect> BandGround
+        {
+            get
+            {
+                if (_bandGround == null)
+                {
+                    var rects = new List<GroundRect>(FirstGround);
+                    float west = StreetX(LayoutStreets.WestMost) - StreetHalf, east = StreetX(LayoutStreets.EastMost) + StreetHalf;
+                    float x0 = StreetX(0) - StreetHalf, x1 = StreetX(FirstColumns) + StreetHalf;
+                    float row = AvenueZ(0) + AvenueHalf, north = AvenueZ(Rows) + AvenueHalf, south = AvenueZ(0) - AvenueHalf;
+                    rects.Add(new GroundRect(west, row, x0, north));
+                    rects.Add(new GroundRect(x1, row, east, north));
+                    rects.Add(new GroundRect(x0, AvenueZ(1) - CrossingHalfZ, x1, north));
+                    rects.Add(new GroundRect(west, south, StreetX(0) - CrossingHalfX, row));
+                    rects.Add(new GroundRect(StreetX(FirstColumns) + CrossingHalfX, south, east, row));
+                    _bandGround = rects;
+                }
+                return _bandGround;
+            }
+        }
+
+        /// <summary>True for a point on the band's ground.</summary>
+        public static bool OnGround(float x, float z)
+        {
+            List<GroundRect> rects = BandGround;
+            for (int i = 0; i < rects.Count; i++)
+            {
+                if (rects[i].Holds(x, z))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         public const float OldWallZ = 480.5f;   // m: the south face of the game's old walls across the street ends; north of it was backdrop

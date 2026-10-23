@@ -6,12 +6,13 @@ namespace RealLifeOverhaul.Uptown
 {
     /// <summary>
     /// Where Uptown's ground meets the game's scene, its one Game file with its part for the street art (GroundGame.Art):
-    /// the backdrop north of 1st Avenue (the game's MapBorder) found once a load and put away where the district stands,
-    /// its block grounds kept as the lots' ground; the game's invisible walls across the old street ends switched off and
-    /// new ones built round the district's edge as the game's own; the district's ground and road colliders, as the city's
-    /// ground ends short of Uptown Avenue; the city map's bounds widened over it. The same load the district stands down,
-    /// all is given back as it was; when the city goes, what is the mod's goes and what is the game's goes with its scene.
-    /// Nothing is saved. Called at the load and by the tests, never per frame.
+    /// the backdrop round the city (the game's MapBorder) found once a load and put away where the band stands, its block
+    /// grounds kept as the lots' ground, and the one stray of the Hamptons' standing on it (a bicycle); the game's invisible
+    /// walls across the old street ends and 1st Avenue's two ends switched off and new ones built round the band's edge as
+    /// the game's own; the band's ground and road colliders, as the city's ground ends short of Uptown Avenue; the city
+    /// map's bounds widened over it. The same load the district stands down, all is given back as it was; when the city
+    /// goes, what is the mod's goes and what is the game's goes with its scene. Nothing is saved. Called at the load and by
+    /// the tests, never per frame.
     /// </summary>
     public static partial class GroundGame
     {
@@ -22,9 +23,10 @@ namespace RealLifeOverhaul.Uptown
         private const string PropsLayer = "StreetProps";                      // the layer of the game's invisible walls
         private const string GroundLayer = "Ground";                          // the layers the cars and the player stand on
         private const string RoadsLayer = "Roads";
+        private const string StrayRoot = "TheHamptons";                       // a scene whose pieces stray onto the band (its Prefab_Bike at -276, 585)
 
-        private static readonly List<GameObject> Hidden = new List<GameObject>(320);   // the backdrop's pieces put away, to be shown again
-        private static readonly List<Collider> Opened = new List<Collider>(9);         // the game's walls switched off
+        private static readonly List<GameObject> Hidden = new List<GameObject>(2048);  // the backdrop's pieces put away, to be shown again
+        private static readonly List<Collider> Opened = new List<Collider>(11);        // the game's walls switched off
         private static readonly List<GameObject> SceneRoots = new List<GameObject>(64);
         private static Transform _backdrop;
         private static Transform _walls;
@@ -139,6 +141,54 @@ namespace RealLifeOverhaul.Uptown
             }
         }
 
+        /// <summary>
+        /// Puts away what of another scene of the city's stands on the band (the Hamptons' Prefab_Bike in the first block, a
+        /// stray of the game's): every renderer or collider of that scene's root whose middle lies in the rectangles, with
+        /// its own object. Returns how many. One search of that root's children at the load.
+        /// </summary>
+        public static int HideStrays(List<GroundRect> rects)
+        {
+            int before = Hidden.Count;
+            for (int s = 0; s < SceneManager.sceneCount; s++)
+            {
+                Scene scene = SceneManager.GetSceneAt(s);
+                if (!scene.isLoaded)
+                {
+                    continue;
+                }
+                SceneRoots.Clear();
+                scene.GetRootGameObjects(SceneRoots);
+                for (int i = 0; i < SceneRoots.Count; i++)
+                {
+                    if (SceneRoots[i] == null || SceneRoots[i].name != StrayRoot)
+                    {
+                        continue;
+                    }
+                    Renderer[] shown = SceneRoots[i].GetComponentsInChildren<Renderer>(false);
+                    for (int r = 0; r < shown.Length; r++)
+                    {
+                        Stray(shown[r] != null ? shown[r].gameObject : null, shown[r] != null ? shown[r].bounds.center : Vector3.zero, rects);
+                    }
+                    Collider[] standing = SceneRoots[i].GetComponentsInChildren<Collider>(false);
+                    for (int c = 0; c < standing.Length; c++)
+                    {
+                        Stray(standing[c] != null ? standing[c].gameObject : null, standing[c] != null ? standing[c].bounds.center : Vector3.zero, rects);
+                    }
+                }
+            }
+            SceneRoots.Clear();
+            return Hidden.Count - before;
+        }
+
+        private static void Stray(GameObject piece, Vector3 middle, List<GroundRect> rects)
+        {
+            if (piece != null && piece.activeInHierarchy && On(rects, middle.x, middle.z))
+            {
+                piece.SetActive(false);
+                Hidden.Add(piece);
+            }
+        }
+
         private static bool Shows(Transform piece)
         {
             return piece.TryGetComponent(out Renderer _) || piece.TryGetComponent(out Collider _) || piece.TryGetComponent(out LODGroup _);
@@ -170,10 +220,10 @@ namespace RealLifeOverhaul.Uptown
         }
 
         /// <summary>
-        /// Switches off the game's wall across each of the given street ends: the nearest collider of its walls within
-        /// <paramref name="reach"/> of the end's middle. Returns how many were found.
+        /// Switches off the game's wall at each of the given places (the old street ends, 1st Avenue's two ends): the nearest
+        /// collider of its walls within <paramref name="reach"/> of the place. Returns how many were found.
         /// </summary>
-        public static int OpenWalls(List<float> x, float z, float reach)
+        public static int OpenWalls(List<float> x, List<float> zs, float reach)
         {
             if (_walls == null)
             {
@@ -184,6 +234,7 @@ namespace RealLifeOverhaul.Uptown
             {
                 Collider best = null;
                 float nearest = reach * reach;
+                float z = zs[k];
                 for (int i = 0; i < walls.Length; i++)
                 {
                     if (walls[i] == null || !walls[i].enabled || Opened.Contains(walls[i]))
@@ -225,7 +276,7 @@ namespace RealLifeOverhaul.Uptown
         /// district's ground (its top the city's ground) and road colliders, under one object of the mod's own in the
         /// backdrop's scene, so they go with the city.
         /// </summary>
-        public static void Build(List<PlanBox> walls, PlanBox ground, List<PlanBox> roads, float groundThick, float roadThick)
+        public static void Build(List<PlanBox> walls, List<PlanBox> grounds, List<PlanBox> roads, float groundThick, float roadThick)
         {
             if (_ground != null)
             {
@@ -236,12 +287,15 @@ namespace RealLifeOverhaul.Uptown
             {
                 SceneManager.MoveGameObjectToScene(_ground, _backdrop.gameObject.scene);
             }
-            int props = Layer(PropsLayer), grounds = Layer(GroundLayer), roadsLayer = Layer(RoadsLayer);
+            int props = Layer(PropsLayer), groundsLayer = Layer(GroundLayer), roadsLayer = Layer(RoadsLayer);
             for (int i = 0; i < walls.Count; i++)
             {
                 Box("wall", walls[i], walls[i].Top * 0.5f, walls[i].Top, props);
             }
-            Box("ground", ground, ground.Top - groundThick * 0.5f, groundThick, grounds);
+            for (int i = 0; i < grounds.Count; i++)
+            {
+                Box("ground", grounds[i], grounds[i].Top - groundThick * 0.5f, groundThick, groundsLayer);
+            }
             for (int i = 0; i < roads.Count; i++)
             {
                 Box("road", roads[i], roads[i].Top - roadThick * 0.5f, roadThick, roadsLayer);

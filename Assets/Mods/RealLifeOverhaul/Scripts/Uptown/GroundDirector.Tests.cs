@@ -55,44 +55,63 @@ namespace RealLifeOverhaul.Uptown
             Instance.Count();
         }
 
-        // "Uptown: census": whether the district stands at this load and how it was laid, piece by piece.
+        // "Uptown: census": whether the district stands at this load and how it was laid, piece by piece, against the plans.
         private void Census()
         {
             int junctions = _build != null ? _build.Junctions.Count : 0;
-            int lights = 0, crossings = 0;
-            for (int j = 0; j < junctions; j++)
+            int arms = 0, crossings = 0, modules = 0, scenery = 0;
+            var places = new List<ModulePlace>(512);
+            LayoutPlans.Modules(places);
+            for (int i = 0; i < places.Count; i++)
             {
-                int sides = (j > 0 ? 1 : 0) + (j < junctions - 1 ? 1 : 0);   // the avenue comes in from each side it goes on
-                lights += 1 + sides;
-                crossings += 1 + sides;
+                ModulePlace p = places[i];
+                if (p.Kind == ModuleKind.Ground)
+                {
+                    continue;
+                }
+                modules++;
+                scenery += p.Scenery ? 1 : 0;
+                if (p.Kind == ModuleKind.Crossing && p.Junction >= 0)
+                {
+                    crossings++;
+                    // Each arm with lanes has its approach's light and its crosswalk.
+                    arms += (LayoutPlans.HasLanes(p.Street, p.Row + 1) ? 1 : 0) + (LayoutPlans.HasLanes(p.Street, p.Row) ? 1 : 0)
+                            + (LayoutPlans.AvenueArm(p.Street, p.Row, false) ? 1 : 0) + (LayoutPlans.AvenueArm(p.Street, p.Row, true) ? 1 : 0);
+                }
             }
             int open = 0;
-            for (int i = 0; i < UptownLots.FirstBlock.Count; i++)
+            for (int i = 0; i < UptownLots.All.Count; i++)
             {
-                open += UptownLots.Open(UptownLots.FirstBlock[i]) ? 1 : 0;
+                open += UptownLots.Open(UptownLots.All[i]) ? 1 : 0;
             }
             bool map = GroundGame.MapBounds(out Bounds bounds);
+            LayoutPlans.MapBounds(out float west, out float east, out float north);
             Vector3 at = WalkGame.At;
-            bool onIt = LayoutRules.OnFirstGround(at.x, at.z);
+            bool onIt = LayoutRules.OnGround(at.x, at.z);
             int zones = _people ? LayoutPlans.ZoneCount : 0;
-            bool pass = UptownLots.Ready && _copied == LayoutPlans.ModuleCount && GroundGame.Lights == lights && GroundGame.Crossings == crossings
+            int pieces = GroundGame.Copied - GroundGame.GroundsLaid;
+            bool pass = UptownLots.Ready && pieces == modules && junctions == LayoutPlans.JunctionCount && GroundGame.Lights == arms && GroundGame.Crossings == arms
                         && _opened == LayoutPlans.OldWallCount && _hidden > 0 && GroundGame.PeopleZones == zones && GroundGame.ParkingLanes == LayoutPlans.ParkingCount
-                        && map && bounds.max.z >= LayoutPlans.MapNorth - 1f;
+                        && map && bounds.max.z >= north - 1f && bounds.min.x <= west + 1f && bounds.max.x >= east - 1f && open == UptownLots.All.Count;
             if (Meta.Dev.Verbose)
             {
-                Logger?.Info("Uptown check (census): " + (UptownLots.Ready ? "the first block stands" : "the district does not stand (" + UptownLots.Why + ")")
+                Logger?.Info("Uptown check (census): " + (UptownLots.Ready ? "the band stands" : "the district does not stand (" + UptownLots.Why + ")")
                              + (_build != null
-                                 ? "; streets: " + RoadRules.Words(_build) + "; walking ground: the player's " + (_walkable ? "in " + _playerMs.ToString("F0", Inv) + " ms" : "NOT laid")
-                                   + ", the pedestrians' " + (_people ? "in " + _peopleMs.ToString("F0", Inv) + " ms" : "not (" + _peopleWhy + ")") + "; the backdrop: " + _hidden
-                                   + " pieces put away, " + _opened + " of " + LayoutPlans.OldWallCount + " walls opened, " + GroundGame.Built + " walls and colliders built; the art: "
-                                   + _copied + " of " + LayoutPlans.ModuleCount + " modules, " + GroundGame.Lights + " of " + lights + " light poles hung, " + GroundGame.Crossings
-                                   + " of " + crossings + " crosswalks linked, " + GroundGame.SignsDown + " signs down; " + GroundGame.ParkingLanes + " of " + LayoutPlans.ParkingCount
-                                   + " parking lanes with " + GroundGame.Parked + " cars parked now, " + GroundGame.PeopleZones + " of " + zones + " pedestrians' zones; laid in "
-                                   + _layMs.ToString("F0", Inv) + " ms"
+                                 ? "; streets: " + RoadRules.Words(_build) + " (" + LayoutPlans.JunctionCount + " junctions planned) in " + _streetsMs.ToString("F0", Inv)
+                                   + " ms; walking ground: the player's "
+                                   + (_walkable ? _playerWalk + ", " + _playerMs.ToString("F0", Inv) + " ms" : "NOT laid") + "; the pedestrians' "
+                                   + (_people ? _peopleWalk + ", " + _peopleMs.ToString("F0", Inv) + " ms" : "not (" + _peopleWhy + ")") + "; the backdrop: " + _hidden
+                                   + " pieces and " + _strays + " strays put away, " + _opened + " of " + LayoutPlans.OldWallCount + " walls opened, " + GroundGame.Built
+                                   + " walls and colliders built; the art: " + pieces + " of " + modules + " modules (" + scenery + " past the walls), " + GroundGame.GroundsLaid
+                                   + " blocks' grounds where the backdrop keeps none" + (GroundGame.HasGroundTemplate ? string.Empty : " (no block's ground of the game's to copy found)")
+                                   + ", " + GroundGame.Lights + " of " + arms + " light poles hung and " + GroundGame.Crossings + " of " + arms + " crosswalks linked at " + crossings
+                                   + " crossings, " + GroundGame.SignsDown + " signs down, in " + _artMs.ToString("F0", Inv) + " ms; " + GroundGame.ParkingLanes + " of "
+                                   + LayoutPlans.ParkingCount + " parking lanes with " + GroundGame.Parked + " cars parked now, " + GroundGame.PeopleZones + " of " + zones
+                                   + " pedestrians' zones; laid in " + _layMs.ToString("F0", Inv) + " ms"
                                  : string.Empty)
-                             + "; the city map pans " + (map ? "to z " + Metres(bounds.max.z) : "nowhere (no map camera)") + "; lots: " + UptownLots.All.Count + " in all, "
-                             + UptownLots.FirstBlock.Count + " in the first block, " + open + " open; the player is " + (onIt ? "on" : "off") + " the district's ground at ("
-                             + Metres(at.x) + ", " + Metres(at.z) + "): " + (pass ? "PASS" : "FAIL"));
+                             + "; the city map pans " + (map ? "x " + Metres(bounds.min.x) + " to " + Metres(bounds.max.x) + ", to z " + Metres(bounds.max.z) : "nowhere (no map camera)")
+                             + "; lots: " + UptownLots.All.Count + " in all, " + UptownLots.FirstBlock.Count + " in the first block, " + open + " open; the player is "
+                             + (onIt ? "on" : "off") + " the district's ground at (" + Metres(at.x) + ", " + Metres(at.z) + "): " + (pass ? "PASS" : "FAIL"));
             }
             if (!UptownLots.Ready)
             {
@@ -101,7 +120,7 @@ namespace RealLifeOverhaul.Uptown
             }
             Notice(GroundText.Laid, new Dictionary<string, string>(4)
             {
-                { "streets", LayoutPlans.StreetCount.ToString(Inv) },
+                { "streets", (LayoutPlans.StreetCount + LayoutStreets.Avenues).ToString(Inv) },
                 { "junctions", junctions.ToString(Inv) },
                 { "lots", open.ToString(Inv) },
                 { "hidden", _hidden.ToString(Inv) }
@@ -117,10 +136,11 @@ namespace RealLifeOverhaul.Uptown
                 TestRefusals.TellKey(Logger, PathTest, GroundText.NotLaid, UptownLots.Why);
                 return;
             }
-            int street = LayoutPlans.NearestLanes(WalkGame.At.x);
+            int street = LayoutPlans.NearestThrough(WalkGame.At.x);
             Vector3 from = Foot(street);
-            LayoutPlans.Terminus(out float tx, out float tz);
-            var to = new Vector3(tx, UptownLots.GroundY, tz);
+            var termini = new List<PlanTerminus>(3);
+            LayoutPlans.Termini(termini);
+            var to = new Vector3(termini[0].X, UptownLots.GroundY, termini[0].Z);
             string player = Walk(WalkGame.Player, "Player", street, from, to);
             string people = _people ? Walk(WalkGame.Npc, "NPC", street, from, to) : "NOT LAID";
             Notice(player == "COMPLETE" && people == "COMPLETE" ? GroundText.PathWhole : GroundText.PathShort, null);
@@ -169,7 +189,7 @@ namespace RealLifeOverhaul.Uptown
                 TestRefusals.Tell(Logger, TrafficTest, TestRefusal.OnFootOnly);
                 return;
             }
-            int street = LayoutPlans.NearestLanes(WalkGame.At.x);
+            int street = LayoutPlans.NearestThrough(WalkGame.At.x);
             WalkGame.Warp(Foot(street));
             LayoutStreet name = LayoutStreets.Street(street);
             _drove.Clear();

@@ -127,14 +127,18 @@ namespace RealLifeOverhaul.NewGround
     }
 
     /// <summary>
-    /// New ground to walk on: boxes of the mod's own (pavements, plots' fronts, squares), and how many of the game's
-    /// colliders stood on them when the plan was made (0 for open ground). At every load the game's colliders there are
-    /// counted again and the plan stands down if there are more: a game update has built there since.
+    /// New ground to walk on: boxes of the mod's own (pavements, plots' fronts, squares), how many of the game's colliders
+    /// stood on them when the plan was made (0 for open ground), and seeds: points of the city's own walking ground the new
+    /// ground joins (where the player and the pedestrians walk today). At every load the game's colliders there are counted
+    /// again and the plan stands down if there are more: a game update has built there since. Old ground under the plan
+    /// that no seed stands on is walking mesh the game baked where nothing walks (behind its walls): it is let go.
     /// </summary>
     public sealed class GroundPlan
     {
         public string Name;
         public readonly List<GroundBox> Boxes = new List<GroundBox>(8);
+        public readonly List<GroundPoint> Seeds = new List<GroundPoint>(8);
+        public readonly List<FlatRect> Area = new List<FlatRect>(4);   // ground whose tiles are rebuilt whole with it, boxes or none: old patches there go
         public int ExpectColliders;     // the game's colliders on its boxes when the plan was made
         public bool Player = true;      // grow the player's walking mesh
         public bool Npc = true;         // grow the pedestrians'
@@ -178,6 +182,18 @@ namespace RealLifeOverhaul.NewGround
         public const float StepUp = 0.3f;           // m: ground a box's top may sit above or below the pavement it is flush with
         public const float FlatEnough = 1.5f;       // m: ground under a patch's corners may differ by this much
         public const float TileOver = 1f;           // m a one-tile update's bounds reach past its tile on every side (see TileBounds)
+
+        public const float ObstacleLeast = 0.1f;   // m: half the narrowest thing walked round, two voxels across (Unity builds a box from the voxels it holds)
+
+        /// <summary>
+        /// Something standing on new ground as a box the walking mesh is built with no surface under: from below the ground's
+        /// surface to its own top, and at least two voxels across each way, so a pole thinner than a voxel is not missed
+        /// (proven in the lab: a pole 0.08 m across stood on walking ground until it was widened).
+        /// </summary>
+        public static GroundBox Obstacle(float x, float z, float halfX, float halfZ, float top, float bottom)
+        {
+            return new GroundBox(x, z, top, Math.Max(ObstacleLeast, halfX), Math.Max(ObstacleLeast, halfZ), 0f, Math.Max(0.1f, top - bottom));
+        }
 
         /// <summary>A box made smaller on every side: new ground in a tile built without the agent's own margin keeps that margin itself.</summary>
         public static GroundBox Shrunk(GroundBox box, float by)
