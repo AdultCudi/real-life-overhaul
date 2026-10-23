@@ -376,6 +376,17 @@ internal static partial class Program
     {
         var grid = new TileGrid(-28.0077f, 34.1263f, 512 * 0.07f);
         Check(Near(grid.Side, 35.84f) && grid.Valid && !new TileGrid(0f, 0f, 0f).Valid, "new ground walk: the game's tiles are 512 voxels of 0.07 m");
+        // The owner's game of 23 Oct: a sample round the grown tiles reaches a quarter of a tile, so near a border its nearest
+        // point may become the new ground; only a round tile's own walking mesh must stay unmoved, and nothing be gained on it.
+        var alikeGrid = new TileGrid(0f, 0f, 35.84f);
+        long home = TileGrid.Key(0, 0);
+        var homes = new List<long> { home, home, home, home, home, home };
+        float none = float.NaN;
+        float[] beforePrint = { 10f, 0f, 10f, 10f, 0f, 10f, none, none, none, none, none, none, 10f, 0f, 10f, 10f, 0f, 10f };
+        float[] afterPrint = { 10f, 0.01f, 10f, 10f, 0.5f, 10f, 40f, 0f, 10f, 10f, 0f, 10f, 40f, 0f, 10f, none, none, none };
+        int roundAlike = GroundRules.RoundAlike(beforePrint, afterPrint, homes, 1, alikeGrid);
+        Check(roundAlike == 3, "new ground walk: round the grown tiles a round tile's own walking mesh is unmoved and nothing gained on it, a reach into the grown tiles "
+                               + "free to change (" + roundAlike + " of 6 alike, 3 wanted: unmoved, the new ground reached, the nearest point now across the border)");
         foreach (int tx in new[] { -96, -1, 0, 1, 37 })
         {
             foreach (int tz in new[] { -56, -1, 0, 20 })
@@ -590,6 +601,16 @@ internal static partial class Program
         Match now = Regex.Match(code["GroundBuilder.cs"], @"public static void Now\([^)]*\)\s*\{(?<b>(?:[^{}]|\{(?<d>)|\}(?<-d>))*)\}");
         Check(now.Success && Regex.IsMatch(now.Groups["b"].Value, @"if \(pass != GroundPass\.Back\)\s*\{\s*job\.Pending\.Clear\(\);"),
             "new ground sources: a pass laid now builds nothing more once the builder refuses a tile, and giving back carries on");
+        // The owner's game of 23 Oct: Unity's builder left a tile as it was when the update had no sources, and the dry run
+        // stood Uptown down for it.
+        string builder = code["GroundBuilder.cs"];
+        Match dry = Regex.Match(builder, @"public static string DryRun\([^)]*\)\s*\{(?<b>(?:[^{}]|\{(?<d>)|\}(?<-d>))*)\}");
+        Check(dry.Success && Regex.IsMatch(dry.Groups["b"].Value, @"Scratch\.Clear\(\);\s*Scratch\.Add\(WalkGame\.Box\(Inside\(left, grid, y\), WalkGame\.NotWalkable\)\);\s*began = Stopwatch\.GetTimestamp\(\);\s*WalkGame\.UpdateNow\(")
+              && Regex.IsMatch(dry.Groups["b"].Value, @"if \(!cleared\)\s*\{\s*ClearMiss = ") && !Regex.IsMatch(dry.Groups["b"].Value, @"Scratch\.Clear\(\);\s*began = Stopwatch\.GetTimestamp\(\);"),
+            "new ground sources: the dry run clears a tile from nothing walkable inside it, never from no sources, and a miss is said in the log, not a stand-down");
+        Check(Regex.IsMatch(builder, @"job\.BackSources\.Add\(WalkGame\.Box\(Inside\(job\.Fresh\[i\], grid, height\), WalkGame\.NotWalkable\)\)")
+              && builder.Contains("public const float BackInset = 2f;") && walk.Contains("NavMesh.GetAreaFromName(\"Not Walkable\")"),
+            "new ground sources: given back, each fresh tile is rebuilt from nothing walkable well inside it, so it is emptied and the tiles beside are not touched");
         Check(!Regex.IsMatch(work, @"\bconst\s+float\s+\w*(Corner|Cell|Origin|Side|Bounds)\w*\s*="), "new ground sources: the grid, the tiles and the map are read from the game, never kept in the code");
 
         // The buses: lines run between the game's subway stations, then termini of the mod's own (a district has no station).

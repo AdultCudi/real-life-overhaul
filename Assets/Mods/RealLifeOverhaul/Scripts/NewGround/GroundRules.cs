@@ -369,6 +369,45 @@ namespace RealLifeOverhaul.NewGround
         }
 
         /// <summary>
+        /// How many of the samples round the grown tiles are as they were where it matters: one whose walking mesh lay on its
+        /// own round tile still finds it, unmoved, or finds the grown tiles across the border instead (its search reaches a
+        /// quarter of a tile, and the nearest point may now be the new ground); none gains a walking mesh on its own round
+        /// tile. A round tile is never in an update's bounds, so what lies on it cannot move; this only catches an update
+        /// that took one in. Samples come <paramref name="perSide"/> squared a tile, in the order of <paramref name="round"/>.
+        /// </summary>
+        public static int RoundAlike(float[] before, float[] after, List<long> round, int perSide, TileGrid grid)
+        {
+            if (before == null || after == null || before.Length != after.Length || round == null || perSide <= 0)
+            {
+                return 0;
+            }
+            int same = 0, each = perSide * perSide;
+            for (int i = 0; i + 2 < before.Length; i += 3)
+            {
+                int t = i / 3 / each;
+                if (t >= round.Count)
+                {
+                    continue;
+                }
+                bool was = !float.IsNaN(before[i]), now = !float.IsNaN(after[i]);
+                bool wasHere = was && OnTile(before[i], before[i + 2], round[t], grid), nowHere = now && OnTile(after[i], after[i + 2], round[t], grid);
+                if (!wasHere)
+                {
+                    same += nowHere ? 0 : 1;
+                    continue;
+                }
+                if (now && !nowHere)
+                {
+                    same++;
+                    continue;
+                }
+                float dx = before[i] - after[i], dy = before[i + 1] - after[i + 1], dz = before[i + 2] - after[i + 2];
+                same += now && dx * dx + dy * dy + dz * dz <= PrintAlike * PrintAlike ? 1 : 0;
+            }
+            return same;
+        }
+
+        /// <summary>
         /// How many samples are the same before and after: the same found or not found, and where found, within
         /// <see cref="PrintAlike"/> of each other. Both prints hold x, y, z for each sample, NaN where none was found.
         /// </summary>

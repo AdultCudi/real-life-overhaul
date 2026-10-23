@@ -70,8 +70,25 @@ namespace RealLifeOverhaul.NewGround
         public const float DryLength = 20f;     // m: its strip across the border of its two tiles
         public const float DryWidth = 4f;       // m
         public const float FallbackMargin = 0.01f;   // m: the margin asked of the builder for old tiles if it refuses none (one voxel once rounded up)
+        public const float BackInset = 2f;      // m a clearing box keeps off its tile's edges: clear of the border Unity builds round the tiles beside
 
         private static readonly List<NavMeshBuildSource> Scratch = new List<NavMeshBuildSource>(4);
+
+        /// <summary>
+        /// Why the dry run's last step failed, or null: an emptied tile not cleared. Only giving back needs it, which a
+        /// district laid whole never does at its load, so it is said in the log and the ground is grown all the same.
+        /// </summary>
+        public static string ClearMiss { get; private set; }
+
+        // A box well inside a tile, of nothing walkable. Unity's builder takes an update that no source touches as nothing to
+        // do (the owner's game of 23 Oct: an update with no sources left its tile as it was), so a tile is cleared by
+        // rebuilding it from this alone.
+        private static GroundBox Inside(long tile, TileGrid grid, float top)
+        {
+            GroundRules.TileBounds(tile, grid, out float minX, out float minZ, out float maxX, out float maxZ);
+            return new GroundBox((minX + maxX) * 0.5f, (minZ + maxZ) * 0.5f, top, Math.Max(0.5f, (maxX - minX) * 0.5f - BackInset),
+                Math.Max(0.5f, (maxZ - minZ) * 0.5f - BackInset), 0f, GroundRules.PatchDepth);
+        }
 
         /// <summary>
         /// Unity's run-time builder tried on data of the mod's own, with the city mesh's settings: two tiles built together
@@ -82,6 +99,7 @@ namespace RealLifeOverhaul.NewGround
         {
             ms = 0.0;
             flatRadius = 0f;
+            ClearMiss = null;
             if (mesh == null)
             {
                 return "no walking mesh";
@@ -145,14 +163,19 @@ namespace RealLifeOverhaul.NewGround
                     return "a tile rebuilt alone lost its join to the tile beside (" + kept + ")";
                 }
                 Scratch.Clear();
+                Scratch.Add(WalkGame.Box(Inside(left, grid, y), WalkGame.NotWalkable));
                 began = Stopwatch.GetTimestamp();
                 WalkGame.UpdateNow(data, flat, Scratch, leftOnly);
                 ms += (Stopwatch.GetTimestamp() - began) * 1000.0 / Stopwatch.Frequency;
                 bool cleared = !WalkGame.Sample(mesh, a, 1f, out _);
                 bool beside = WalkGame.Sample(mesh, b, 1f, out _);
-                if (!cleared || !beside)
+                if (!beside)
                 {
-                    return cleared ? "an empty rebuild of a tile cleared the tile beside too" : "an empty rebuild did not clear its tile";
+                    return "clearing a tile cleared the tile beside too";
+                }
+                if (!cleared)
+                {
+                    ClearMiss = "Unity's builder did not clear a tile rebuilt from nothing walkable, so ground grown at this load stays until the next load if it is given back";
                 }
                 return null;
             }
@@ -227,6 +250,10 @@ namespace RealLifeOverhaul.NewGround
                 job.FreshSources.Add(source);
                 job.JoinSources.Add(source);
                 job.BackSources.Add(source);
+            }
+            for (int i = 0; i < job.Fresh.Count; i++)
+            {
+                job.BackSources.Add(WalkGame.Box(Inside(job.Fresh[i], grid, height), WalkGame.NotWalkable));   // given back, a fresh tile is emptied, not left as it is
             }
             return job;
         }
@@ -362,10 +389,11 @@ namespace RealLifeOverhaul.NewGround
             return WalkGame.Local(job.Mesh, minX, minZ, maxX, maxZ, job.Height - 200f, job.Height + 300f);
         }
 
-        /// <summary>How many of the samples round the covered tiles are as they were before.</summary>
+        /// <summary>How many of the samples round the covered tiles are as they were before, on their own tiles (GroundRules.RoundAlike).</summary>
         public static int RoundAlike(GroundJob job)
         {
-            return GroundRules.Alike(job.RoundBefore, WalkGame.Print(job.Mesh, job.RoundX, job.RoundZ, job.Height, GroundRules.SpreadReach(job.Mesh.Grid, GroundRules.PrintSamples)));
+            float[] after = WalkGame.Print(job.Mesh, job.RoundX, job.RoundZ, job.Height, GroundRules.SpreadReach(job.Mesh.Grid, GroundRules.PrintSamples));
+            return GroundRules.RoundAlike(job.RoundBefore, after, job.Round, GroundRules.PrintSamples, job.Mesh.Grid);
         }
 
         /// <summary>How many of the samples on the covered tiles are as they were before (after giving back).</summary>

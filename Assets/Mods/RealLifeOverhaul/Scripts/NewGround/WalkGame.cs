@@ -295,6 +295,22 @@ namespace RealLifeOverhaul.NewGround
         private static readonly Collider[] Standing = new Collider[64];
         private static int _builtMask, _propMask;
 
+        /// <summary>Unity's own area that nothing walks on: a source of it is built as no walking surface at all.</summary>
+        public static int NotWalkable
+        {
+            get
+            {
+                if (_notWalkable < 0)
+                {
+                    int area = NavMesh.GetAreaFromName("Not Walkable");
+                    _notWalkable = area >= 0 ? area : 1;   // the built-in index, should the name ever be another
+                }
+                return _notWalkable;
+            }
+        }
+
+        private static int _notWalkable = -1;
+
         /// <summary>The box as a build source: a solid of the builder's own, so no mesh of the game's need be readable.</summary>
         public static NavMeshBuildSource Box(GroundBox box, int area)
         {

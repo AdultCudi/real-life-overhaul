@@ -150,6 +150,10 @@ namespace RealLifeOverhaul.Uptown
                              + "); the district is laid for the cars alone, closed to the player.");
             }
             _walkable = why == null;
+            if (GroundBuilder.ClearMiss != null)
+            {
+                Logger?.Warn("Uptown: " + GroundBuilder.ClearMiss + "; the district is laid all the same, as it never gives its ground back at this load once it is grown.");
+            }
             mark = Stopwatch.GetTimestamp();
             _peopleWhy = _walkable ? GroundWork.Ground(LayoutPlans.NpcGround()) : "the player's ground was not laid";
             _peopleMs = Ms(mark);
