@@ -144,7 +144,7 @@ namespace RealLifeOverhaul.Law
             _chosen = true;
 
             // The middle of each district: the mean of its buildings' doors.
-            var districts = new SortedDictionary<string, Vector4>(StringComparer.Ordinal);
+            var districts = new SortedDictionary<string, Vector4>(CityDistricts.KnownFirst);   // a district a free update adds only takes a precinct left over
             for (int i = 0; i < buildings.Length; i++)
             {
                 if (!Usable(buildings[i], out Vector3 door))

@@ -62,6 +62,20 @@ namespace RealLifeOverhaul
         /// </summary>
         public static bool Here(string district) => Census.Here(district);
 
+        /// <summary>
+        /// New York's districts from a list of the game's (NeighborhoodHelper), into <paramref name="into"/>: in New York
+        /// those with a building in the loaded city, the seven the mod knows first and a free update's after them; in
+        /// another city the seven, for a feature whose people live in New York wherever the player is. Allocates nothing
+        /// but the list's growth.
+        /// </summary>
+        public static List<string> NewYorkDistricts(IList<string> source, List<string> into)
+        {
+            return CityDistricts.Ordered(source, NewYork ? HereCall : KnownCall, into);
+        }
+
+        private static readonly Func<string, bool> HereCall = Here;
+        private static readonly Func<string, bool> KnownCall = CityDistricts.Known;
+
         /// <summary>Called by Core/Guard when it leaves out a component of a New York feature in this city.</summary>
         internal static void LeftOut(string feature)
         {

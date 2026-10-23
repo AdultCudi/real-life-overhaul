@@ -62,6 +62,12 @@ namespace RealLifeOverhaul.Utilities
             OutagePerMille = BroadbandCatalogue.OutageBase, Mbps = BroadbandCatalogue.Mbps, MonthCents = new int[BroadbandCatalogue.Mbps.Length]
         };
 
+        /// <summary>
+        /// True for a provider that reaches every district of the city: it reaches a district the catalogue does not know
+        /// too (one a free update adds), so a business there can still be connected.
+        /// </summary>
+        public static bool ReachesNewDistricts(Provider p) => p != null && ReferenceEquals(p.Districts, Everywhere);
+
         /// <summary>The company's place among the providers: after the rivals.</summary>
         public static int OwnIndex => Providers.Length;
 

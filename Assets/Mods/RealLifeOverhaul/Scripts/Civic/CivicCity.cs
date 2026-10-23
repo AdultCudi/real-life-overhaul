@@ -29,6 +29,7 @@ namespace RealLifeOverhaul
         private static readonly string[] PollingKinds = { "ba:businesstype_school", "ba:businesstype_bank", "ba:businesstype_recruitmentagency", "ba:businesstype_clinic" };
 
         public readonly List<District> Districts = new List<District>(8);
+        private readonly List<string> _ids = new List<string>(12);   // the city's districts, New York's seven first (Core/CityCheck)
         public int Electorate { get; private set; }
         public bool Ready { get; private set; }
 
@@ -39,7 +40,7 @@ namespace RealLifeOverhaul
             Electorate = 0;
             Ready = false;
             CityManager city = InstanceBehavior<CityManager>.Instance;
-            List<string> ids = NeighborhoodHelper.Neighborhoods;
+            List<string> ids = CityCheck.NewYorkDistricts(NeighborhoodHelper.Neighborhoods, _ids);
             if (city == null || city.cityBuildingControllers == null || ids == null || ids.Count == 0 || BuildingHelper.AllNeighbourhoodBuildings == null)
             {
                 return false;

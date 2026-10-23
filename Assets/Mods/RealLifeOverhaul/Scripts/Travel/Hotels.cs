@@ -243,7 +243,7 @@ namespace RealLifeOverhaul
             for (int i = 0; i < all.Count; i++)
             {
                 Building b = all[i];
-                if (b == null || b.BuildingType != Residential || b.Neighbourhood != slot.Neighbourhood || GameMembers.Fenced(b)
+                if (b == null || b.BuildingType != Residential || b.Neighbourhood != slot.Neighbourhood || b.SpecialService != null || GameMembers.Fenced(b)
                     || GameDlc.Gated(b) || b.IsHamptonsHouse() || _taken.Contains(b) || string.IsNullOrEmpty(b.BuildingSize)
                     || SpecialBuildings.Holds(b.StreetName, b.StreetNumber))   // another feature's building
                 {
