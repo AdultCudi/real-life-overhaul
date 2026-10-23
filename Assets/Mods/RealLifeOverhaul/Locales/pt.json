@@ -21224,5 +21224,6 @@
   "reallife_test_district_save_session": "Teste não iniciado: em uma sessão do Going Public, o negócio do teste chegaria aos outros jogadores. Experimente em um jogo só seu.",
   "reallife_test_district_save_busy": "Teste não iniciado: um save está sendo gravado. Tente de novo em alguns segundos.",
   "reallife_meta_report_district": "Registros do distrito próprio do mod guardados na parte do mod no save: {count}. Sem o mod, eles simplesmente não estão lá; com o mod, eles voltam.",
-  "reallife_transaction_district_save_test": "Teste do save do distrito"
+  "reallife_transaction_district_save_test": "Teste do save do distrito",
+  "reallife_test_refused_paused": "Teste não iniciado: o jogo está pausado, então esta parte do mod ainda não começou. Deixe o jogo rodar por alguns segundos e tente de novo."
 }

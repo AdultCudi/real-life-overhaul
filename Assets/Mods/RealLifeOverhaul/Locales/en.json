@@ -21224,5 +21224,6 @@
   "reallife_test_district_save_session": "Test not started: in a Going Public session the test's business would reach the other players. Try it in a game of your own.",
   "reallife_test_district_save_busy": "Test not started: a save is being written. Try again in a few seconds.",
   "reallife_meta_report_district": "Records of the mod's own district kept in the mod's part of the save: {count}. Without the mod they are simply not there; with the mod they come back.",
-  "reallife_transaction_district_save_test": "District save test"
+  "reallife_transaction_district_save_test": "District save test",
+  "reallife_test_refused_paused": "Test not started: the game is paused, so this part of the mod has not started yet. Let the game run for a few seconds, then try again."
 }

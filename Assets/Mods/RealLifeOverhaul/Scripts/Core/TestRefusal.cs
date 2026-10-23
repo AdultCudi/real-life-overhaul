@@ -67,22 +67,38 @@ namespace RealLifeOverhaul
         /// <summary>Says why a test did not start; <paramref name="metres"/> fills {metres} in the sentences that have it.</summary>
         public static void Tell(IModLogger logger, string test, TestRefusal why, int metres = 0, string detail = null)
         {
-            logger?.Info(test + " test: not started (" + why + (metres > 0 ? ", " + metres + " m" : string.Empty)
-                         + (detail != null ? "; " + detail : string.Empty) + ").");
+            logger?.Info(test + " test: not started (" + why + (why == TestRefusal.NotLoaded && Paused ? ", the game is paused" : string.Empty)
+                         + (metres > 0 ? ", " + metres + " m" : string.Empty) + (detail != null ? "; " + detail : string.Empty) + ").");
             Dictionary<string, string> data = null;
             if (why == TestRefusal.NoMovingCar || why == TestRefusal.NobodyNear || why == TestRefusal.NoBusStop || why == TestRefusal.NoRoad
                 || why == TestRefusal.NoBin || why == TestRefusal.NoVenue || why == TestRefusal.NoCar || why == TestRefusal.NoCarNear)
             {
                 data = new Dictionary<string, string>(1) { { "metres", metres.ToString() } };   // the game keeps the toast's data
             }
-            Notifications.Show(NotificationType.Warning, Key(why), data, 8f);
+            Notifications.Show(NotificationType.Warning, Sentence(why), data, 8f);
         }
 
         /// <summary>The same for a reason of one feature with its own sentence (a locale key), such as "no bar within reach".</summary>
         public static void TellKey(IModLogger logger, string test, string sentenceKey, string detail = null)
         {
             logger?.Info(test + " test: not started (" + sentenceKey + (detail != null ? "; " + detail : string.Empty) + ").");
-            Notifications.Show(NotificationType.Warning, sentenceKey ?? "reallife_test_refused_not_loaded", null, 8f);
+            string key = sentenceKey ?? NotLoadedKey;
+            Notifications.Show(NotificationType.Warning, key == NotLoadedKey && Paused ? PausedKey : key, null, 8f);
+        }
+
+        private const string NotLoadedKey = "reallife_test_refused_not_loaded";
+        private const string PausedKey = "reallife_test_refused_paused";
+        private const float PausedBelow = 0.01f;   // time scale: the game's own pause tweens it to 0
+
+        /// <summary>
+        /// True while the game is paused. The mod's features start on game time, so a save loaded and left paused looks unready,
+        /// and a test refused then says the game is paused rather than that the save is still loading.
+        /// </summary>
+        private static bool Paused => UnityEngine.Time.timeScale < PausedBelow;
+
+        private static string Sentence(TestRefusal why)
+        {
+            return why == TestRefusal.NotLoaded && Paused ? PausedKey : Key(why);
         }
 
         private static string Key(TestRefusal why)
@@ -121,7 +137,7 @@ namespace RealLifeOverhaul
                 case TestRefusal.NotYours: return "reallife_test_refused_not_yours";
                 case TestRefusal.OnJob: return "reallife_test_refused_on_job";
                 case TestRefusal.NotOnFoot: return "reallife_test_refused_not_on_foot";
-                default: return "reallife_test_refused_not_loaded";
+                default: return NotLoadedKey;
             }
         }
     }
