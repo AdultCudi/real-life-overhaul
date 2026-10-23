@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using BAModAPI;
-using Buildings.Outdoors;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Tech
@@ -33,8 +32,6 @@ namespace RealLifeOverhaul.Tech
             public Vector3 Front;
             public readonly List<Hq> Floors = new List<Hq>(HqTowers.PerTower);   // floor 1 first
             public string[] Tenants = new string[0];
-            public bool[] DoorWas;
-            public bool DoorsOpen;
 
             /// <summary>The company on a floor (from 1), or null.</summary>
             public Hq OnFloor(int floor) => floor >= 1 && floor <= Floors.Count ? Floors[floor - 1] : null;
@@ -75,6 +72,9 @@ namespace RealLifeOverhaul.Tech
         public IReadOnlyList<Hq> All => _all;
 
         public IReadOnlyList<Tower> Towers => _towers;
+
+        /// <summary>A tower's id in Core/SpecialBuildings (and its building's in the floors core).</summary>
+        public static string TowerIdOf(int index) => TowerId + index;
 
         /// <summary>Changes whenever the headquarters do (for the map, the careers, the floors).</summary>
         public int Stamp { get; private set; }
@@ -120,10 +120,6 @@ namespace RealLifeOverhaul.Tech
                 {
                     _day = day;
                     Pick();
-                }
-                for (int i = 0; i < _towers.Count; i++)
-                {
-                    Doors(_towers[i], true);
                 }
             }
             catch (Exception e)
@@ -246,8 +242,7 @@ namespace RealLifeOverhaul.Tech
                 }
                 if (was != null)
                 {
-                    Doors(was, false);
-                    _towers.Remove(was);
+                    _towers.Remove(was);   // its doors are put back as the floors core lets its building go (TowerFloors)
                     SpecialBuildings.Remove(TowerId + t);
                     changed = true;
                 }
@@ -388,55 +383,11 @@ namespace RealLifeOverhaul.Tech
             return building.transform.position;
         }
 
-        // The game's own flag on an entrance lets the player in whatever the registration says: set on a tower's doors only
-        // while it stands empty, and put back.
-        private static void Doors(Tower tower, bool open)
-        {
-            open &= Settings.TechSiteHq && Vacant(tower.Building);
-            BuildingEntranceDoor[] doors = tower.Building != null ? tower.Building.entranceDoors : null;
-            if (tower.DoorsOpen == open || doors == null)
-            {
-                return;
-            }
-            if (open)
-            {
-                tower.DoorWas = new bool[doors.Length];
-                for (int i = 0; i < doors.Length; i++)
-                {
-                    if (doors[i] != null)
-                    {
-                        tower.DoorWas[i] = doors[i].alwaysOpen;
-                        doors[i].alwaysOpen = true;
-                    }
-                }
-            }
-            else
-            {
-                for (int i = 0; i < doors.Length; i++)
-                {
-                    if (doors[i] != null)
-                    {
-                        doors[i].alwaysOpen = tower.DoorWas != null && i < tower.DoorWas.Length && tower.DoorWas[i];
-                    }
-                }
-                tower.DoorWas = null;
-            }
-            tower.DoorsOpen = open;
-        }
-
-        /// <summary>The option is off or the city is going: the doors and names are given back, chosen afresh when it is on again.</summary>
+        /// <summary>The option is off or the city is going: the names are given back (the doors as the floors core lets the towers go), chosen afresh when it is on again.</summary>
         public void Off()
         {
             for (int i = 0; i < _towers.Count; i++)
             {
-                try
-                {
-                    Doors(_towers[i], false);
-                }
-                catch (Exception e)
-                {
-                    _logger?.Error(e);
-                }
                 SpecialBuildings.Remove(TowerId + _towers[i].Index);
             }
             if (_all.Count > 0 || _towers.Count > 0)
