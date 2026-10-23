@@ -120,13 +120,19 @@ namespace RealLifeOverhaul.Construction
             return best;
         }
 
-        /// <summary>The days until the next client's or public building's tender, from the save's seed and the day.</summary>
+        /// <summary>The days until the next client's, public building's or business's refit tender, from the save's seed and the day.</summary>
         public static int NextIn(int seed, int day, TenderSource source)
         {
             BuildRandom random = BuildRandom.Of(seed, day, 89 + (int)source);
-            return source == TenderSource.Public
-                ? random.Range(BuildCatalogue.PublicEveryLeast, BuildCatalogue.PublicEveryMost + 1)
-                : random.Range(BuildCatalogue.ClientEveryLeast, BuildCatalogue.ClientEveryMost + 1);
+            switch (source)
+            {
+                case TenderSource.Public:
+                    return random.Range(BuildCatalogue.PublicEveryLeast, BuildCatalogue.PublicEveryMost + 1);
+                case TenderSource.Refit:
+                    return random.Range(BuildCatalogue.RefitEveryLeast, BuildCatalogue.RefitEveryMost + 1);
+                default:
+                    return random.Range(BuildCatalogue.ClientEveryLeast, BuildCatalogue.ClientEveryMost + 1);
+            }
         }
     }
 }

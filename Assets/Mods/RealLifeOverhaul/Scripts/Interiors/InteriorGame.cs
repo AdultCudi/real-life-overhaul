@@ -37,6 +37,15 @@ namespace RealLifeOverhaul.Interiors
         /// <summary>The district's income level, 60 to 140, by the game's name for it; 0 if it cannot be told (then the game's class shares).</summary>
         public static Func<string, int> Income;
 
+        /// <summary>A renovation of the business asked from its Interior tab (the construction game: the player's company, or a contractor). Unset: no button.</summary>
+        public static Action<BuildingRegistration> Renovate;
+
+        /// <summary>A renovation of the business under way, in words for its tab; null for none.</summary>
+        public static Func<BuildingRegistration, string> Renovation;
+
+        /// <summary>True while renovations can be asked for (the construction game running with their option). Unset: never.</summary>
+        public static Func<bool> Renovates;
+
         public static void Reset()
         {
             Footfall = null;
@@ -45,6 +54,9 @@ namespace RealLifeOverhaul.Interiors
             Story = null;
             Striking = null;
             Income = null;
+            Renovate = null;
+            Renovation = null;
+            Renovates = null;
         }
     }
 
@@ -193,7 +205,7 @@ namespace RealLifeOverhaul.Interiors
             }
         }
 
-        private static int IncomeOf(string district)
+        public static int IncomeOf(string district)
         {
             try
             {
@@ -263,6 +275,35 @@ namespace RealLifeOverhaul.Interiors
             }
             Copies.Clear();
             s.RestCorner = (flags & (1 << (Seat - 8))) != 0 && (flags & (1 << (Table - 8))) != 0 && (flags & (1 << (Kitchen - 8))) != 0;
+        }
+
+        /// <summary>An item's sorting by its name alone (an item of a design not placed anywhere): its category in the low byte, 0xff for one not counted.</summary>
+        public static int SortName(string itemName)
+        {
+            if (string.IsNullOrEmpty(itemName))
+            {
+                return 0xff;
+            }
+            int sort;
+            if (Sorted.TryGetValue(itemName, out sort))
+            {
+                return sort;
+            }
+            sort = 0xff;
+            try
+            {
+                BigAmbitions.Items.Item item = ItemsGetter.GetByName(itemName, true);
+                if (item != null)
+                {
+                    sort = Classify(item);
+                }
+            }
+            catch (Exception)
+            {
+                sort = 0xff;
+            }
+            Sorted[itemName] = sort;
+            return sort;
         }
 
         // An item's category in the low byte (0xff: not counted), and in the next bits whether it is a seat, a table, a kitchen's.

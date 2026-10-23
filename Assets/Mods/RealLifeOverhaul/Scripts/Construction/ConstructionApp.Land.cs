@@ -76,6 +76,7 @@ namespace RealLifeOverhaul.Construction
                     pickedLandmark = site.Id;
                 }
             }
+            bool business = WriteBusinessRows(ref selected, out BusinessView pickedBusiness);
             if (pickedLot != null && _director.Lot(pickedLot, out LotView picked))
             {
                 WriteLot(box, state, picked);
@@ -89,6 +90,11 @@ namespace RealLifeOverhaul.Construction
             if (building)
             {
                 WriteBuilding(box, state, pickedBuilding);
+                return;
+            }
+            if (business)
+            {
+                WriteBusiness(box, pickedBusiness);
                 return;
             }
             box.Title(ConstructionText.T("reallife_bld_tab_land"));
@@ -261,6 +267,10 @@ namespace RealLifeOverhaul.Construction
                 });
             }
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_bld_back", Back);
+            if (live == null && ConstructionGame.Business(b.Street, b.Number, out BusinessView inside))
+            {
+                RefitButtons(box, inside);
+            }
             Guide(box);
         }
 

@@ -173,9 +173,9 @@ namespace RealLifeOverhaul.Construction
         {
             ConstructionDirector d = Director;
             ProjectFile p = d != null ? d.State.OnSite(site) : null;
-            if (p == null)
+            if (p == null || p.Contractor >= 0)
             {
-                return null;
+                return null;   // a contractor's refit: the city's own notice, its contractor named
             }
             int id = p.Id;
             string text = d.NoticeText(p);

@@ -550,7 +550,7 @@ internal static partial class Program
         Check(BuildStore.Read("not a line", out _) == null && BuildStore.Read("v=0^h:", out _) == null && BuildStore.Read("v=9^h:", out int high) != null && high == 9,
             "builders: a line that is not this feature's is not read; a newer version's is read as far as this one knows it (SaveLines notes it)");
         // A line of this version with a project written before the player's design was added: its cost stays the plans' own.
-        string older = line.Replace("|1120|19", string.Empty);
+        string older = Regex.Replace(line, @"\|1120\|19[^;^]*", string.Empty);   // the design's fields and every field written after them
         BuildState old = BuildStore.Read(older, out _);
         Check(old != null && old.Project(10) != null && old.Project(10).CostPermille == 1000 && old.Project(10).Units == 0, "builders: a project without the design's fields reads with the plans' own cost");
         // The store names the district's lots by their ids only: no address, place or registration of the game's.

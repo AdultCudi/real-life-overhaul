@@ -29,7 +29,7 @@ namespace RealLifeOverhaul.Construction
         private Func<string> _ribbonWhat;
 
         /// <summary>True while the ribbon's panel is up, and in the frame its key ran: the mod's own interact key stands aside.</summary>
-        public static bool TakesInteractKey => Instance != null && Instance._ribbon != null && Instance._ribbon.TakesKey;
+        public static bool TakesInteractKey => Instance != null && (Instance._ribbon != null && Instance._ribbon.TakesKey || Instance._viewing != null && Instance._viewing.TakesKey);
 
         private void AppSecond()
         {

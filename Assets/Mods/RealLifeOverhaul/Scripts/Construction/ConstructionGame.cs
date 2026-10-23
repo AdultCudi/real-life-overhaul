@@ -37,6 +37,19 @@ namespace RealLifeOverhaul.Construction
         public int Traffic;
     }
 
+    /// <summary>A business of the player's that can be refitted: its address, name, floor area and kind.</summary>
+    public struct BusinessView
+    {
+        public string Street;
+        public int Number;
+        public string Name;
+        public string District;
+        public int Sqm;
+        public bool Office;       // an office's, else a shop's
+        public bool Owned;        // the building is the player's own (an exterior refresh is a rebuild of it)
+        public Vector3 Door;
+    }
+
     /// <summary>An employee of the company's office: the game's id, name and main skill.</summary>
     public struct StaffView
     {
@@ -256,6 +269,57 @@ namespace RealLifeOverhaul.Construction
 
         // A street of the mod's own (a made building's): never a client.
         private static bool MadeLike(string street) => street != null && street.StartsWith("reallife", StringComparison.Ordinal);
+
+        /// <summary>
+        /// The player's businesses a refit can be done in: an established business the player runs in a shop or an office, rented or their own
+        /// (theirs in a Going Public session), with a door on the street, never a Hamptons house; in the save's order.
+        /// </summary>
+        internal static void Businesses(List<BusinessView> into)
+        {
+            into.Clear();
+            List<BuildingRegistration> all = SaveGameManager.Current != null ? SaveGameManager.Current.BuildingRegistrations : null;
+            for (int i = 0; all != null && i < all.Count; i++)
+            {
+                if (BusinessOf(all[i], out BusinessView view))
+                {
+                    into.Add(view);
+                }
+            }
+        }
+
+        /// <summary>One business of the player's by its address, as <see cref="Businesses"/> reads it; false for none.</summary>
+        internal static bool Business(string street, int number, out BusinessView view)
+        {
+            view = default(BusinessView);
+            BuildingRegistration reg = string.IsNullOrEmpty(street) ? null : BuildingHelper.GetBuildingRegistration(new Address(street, number));
+            return BusinessOf(reg, out view);
+        }
+
+        private static bool BusinessOf(BuildingRegistration reg, out BusinessView view)
+        {
+            view = default(BusinessView);
+            if (reg == null || reg.Address == null || !reg.RentedByPlayer || !GoingPublic.Mine(reg) || !reg.HasEstablishedBusiness
+                || string.IsNullOrEmpty(reg.businessTypeName) || reg.businessTypeName == "ba:businesstype_empty")
+            {
+                return false;
+            }
+            Building b = reg.BuildingCached;
+            if (b == null || b.IsHamptonsHouse() || (b.BuildingType != "ba:buildingtype_retail" && b.BuildingType != "ba:buildingtype_office"))
+            {
+                return false;
+            }
+            CityBuildingController c = CivicCity.Find(b.StreetName, b.StreetNumber);
+            if (!CivicCity.HasDoor(c))
+            {
+                return false;
+            }
+            view = new BusinessView
+            {
+                Street = b.StreetName, Number = b.StreetNumber, Name = Words(reg), District = b.Neighbourhood, Sqm = b.totalSqm, Office = b.BuildingType == "ba:buildingtype_office",
+                Owned = reg.BuildingOwnedByPlayer, Door = c.entranceDoors[0].doorTransform.position
+            };
+            return true;
+        }
 
         // ------------------------------------------------------------------ staff
 

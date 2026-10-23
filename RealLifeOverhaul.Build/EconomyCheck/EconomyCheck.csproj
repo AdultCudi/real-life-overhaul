@@ -520,6 +520,9 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\FirmRules.cs" Link="Mod\Construction\FirmRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildState.cs" Link="Mod\Construction\BuildState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildStore.cs" Link="Mod\Construction\BuildStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\ShowFlatRules.cs" Link="Mod\Construction\ShowFlatRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\RefitRules.cs" Link="Mod\Construction\RefitRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Designs\ShowFlatDesigns.cs" Link="Mod\ShowFlatDesigns.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Civic\WrapRules.cs" Link="Mod\WrapRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Civic\PlotRules.cs" Link="Mod\PlotRules.cs" />
     <!-- Uptown's landmarks (LandmarksChecks.cs): their rules and their line, on the plan of Uptown's lots. -->

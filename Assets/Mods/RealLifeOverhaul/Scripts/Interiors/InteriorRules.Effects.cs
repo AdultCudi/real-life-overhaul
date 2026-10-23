@@ -291,7 +291,8 @@ namespace RealLifeOverhaul.Interiors
             {
                 s.Capped[i] = Capped((DecorCategory)i, s.Points[i], s.Target);
             }
-            s.DecorRaw = DecorScore(s.Capped, s.Target, s.Kinds);
+            s.RefitNow = RefitLift(s.Refit, s.Wear);
+            s.DecorRaw = Clamp(DecorScore(s.Capped, s.Target, s.Kinds) + s.RefitNow, 0, 100);
             s.Decor = Effective(s.DecorRaw, s.Wear, s.Clean);
             s.InteriorNow = Effective(s.Interior, s.Wear, s.Clean);
             s.Overall = Overall(s.InteriorNow, s.Decor);

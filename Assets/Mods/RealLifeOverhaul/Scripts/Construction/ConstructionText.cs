@@ -90,7 +90,9 @@ namespace RealLifeOverhaul.Construction
                 case ProjectStage.Design: return T(p.PlansDone ? "reallife_bld_stage_plans_done" : p.PlansDay > 0 ? "reallife_bld_stage_plans_drawn" : "reallife_bld_stage_design");
                 case ProjectStage.Planning: return T(p.Planning == PlanningState.Appealed ? "reallife_bld_stage_appeal" : "reallife_bld_stage_planning");
                 case ProjectStage.Ready: return T("reallife_bld_stage_ready");
-                case ProjectStage.Building: return T(BuildCatalogue.StageKeys[System.Math.Max(0, p.StageSeen)]);
+                case ProjectStage.Building:
+                    return T(p.Contractor >= 0 ? "reallife_bld_stage_contractor"
+                        : p.Kind == ProjectKind.Refit ? "reallife_bld_stage_refit" : BuildCatalogue.StageKeys[System.Math.Max(0, p.StageSeen)]);
                 case ProjectStage.Finished: return T(p.After == AfterUse.SellFlats && p.FlatsSold < p.Flats ? "reallife_bld_stage_selling" : "reallife_bld_stage_finished");
                 default: return T("reallife_bld_stage_abandoned");
             }
