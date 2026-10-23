@@ -25,6 +25,7 @@ internal static partial class Program
         List<BuildingsLot> plan = UptownRealPlan();
         UptownFillRules(plan);
         UptownFillLeases(plan);
+        UptownFillLeaseNames();
         UptownFillLandmarks(plan);
         UptownFillLanes();
         UptownFillBoxes();
@@ -233,6 +234,68 @@ internal static partial class Program
     }
 
     // ---------------------------------------------------------------- the landmarks on the filled plan
+
+    // A lease's business is known by its type at its own lot, never by its name, which is text in the player's language: one
+    // named in another language (or with another description) still stands, is held off the market and takes the lease's
+    // name again; one of another type is still refused, and so are another player's, the player's and a building not an office.
+    private static void UptownFillLeaseNames()
+    {
+        const string Type = "reallife:businesstype_construction", Studio = "ba:businesstype_graphicdesigner", Name = "Ostrander Building Co.";
+        const string About = "reallife_bld_office_about";
+        LeaseVerdict Of(string type, string name, string about, bool fresh, bool toLet, bool foreign, bool players, string building, out string why)
+        {
+            return BuildingsRules.LeaseOf(foreign, players, building, type, name, about, fresh, toLet, Type, Name, About, out why);
+        }
+        LeaseVerdict At(string type, string name, string about) => Of(type, name, about, false, false, false, false, BuildingsRules.OfficeType, out _);
+        bool theirs = At(Type, Name, About) == LeaseVerdict.Theirs;
+        bool otherLanguage = At(Type, "Ostrander Bauunternehmen", About) == LeaseVerdict.Renamed && At(Type, Name, "reallife_bld_office_about_old") == LeaseVerdict.Renamed
+                             && At(Type, null, null) == LeaseVerdict.Renamed
+                             && Of(Type, "Ostrander Bauunternehmen", About, false, true, false, false, BuildingsRules.OfficeType, out _) == LeaseVerdict.Renamed;
+        bool otherType = Of(Studio, Name, About, false, false, false, false, BuildingsRules.OfficeType, out string why) == LeaseVerdict.Refused
+                         && why == "a business of " + Studio + " is in it";
+        bool refusals = Of(Type, Name, About, false, false, true, false, BuildingsRules.OfficeType, out string foreign) == LeaseVerdict.Refused
+                        && foreign == "it is another player's in this session"
+                        && Of(Type, Name, About, false, false, false, true, BuildingsRules.OfficeType, out string players) == LeaseVerdict.Refused
+                        && players == "the player rents or owns it"
+                        && Of(Type, Name, About, false, false, false, false, "ba:buildingtype_retail", out string retail) == LeaseVerdict.Refused
+                        && retail == "it was built as ba:buildingtype_retail, not an office";
+        bool moveIn = Of(null, null, null, true, false, false, false, BuildingsRules.OfficeType, out _) == LeaseVerdict.MoveIn
+                      && Of(BuildingsRules.EmptyBusinessType, null, null, false, true, false, false, BuildingsRules.OfficeType, out _) == LeaseVerdict.MoveIn
+                      && Of(Studio, null, null, false, true, false, false, BuildingsRules.OfficeType, out _) == LeaseVerdict.Refused
+                      && Of(string.Empty, null, null, false, false, false, false, BuildingsRules.OfficeType, out _) == LeaseVerdict.Refused;
+        bool leased = BuildingsRules.LeasedBy(Type, false, false, Type) && !BuildingsRules.LeasedBy(Studio, false, false, Type) && !BuildingsRules.LeasedBy(Type, true, false, Type)
+                      && !BuildingsRules.LeasedBy(Type, false, true, Type) && !BuildingsRules.LeasedBy(Type, false, false, null);
+        Check(theirs && otherLanguage && otherType && refusals && moveIn && leased,
+            "uptown fill: a lease's business is known by its type at its own lot whatever its name: in another language it stands and takes the lease's name again, "
+            + "and one of another type, another player's, the player's or on a building not an office is refused");
+
+        string scripts = System.IO.Path.GetFullPath(System.IO.Path.Combine(LocalesFolder(), "..", "Scripts"));
+        string game = File.ReadAllText(System.IO.Path.Combine(scripts, "Uptown", "LifeGame.Leases.cs")).Replace("\r\n", "\n");
+        string director = File.ReadAllText(System.IO.Path.Combine(scripts, "Uptown", "LifeDirector.cs")).Replace("\r\n", "\n");
+        string lease = MemberText(game, "public static string Lease(MadeBuilding made, DistrictLease lease, int index, GameInstance save, out bool movedIn, out bool renamed)");
+        string rename = MemberText(game, "private static void Rename(BuildingRegistration reg, DistrictLease lease)");
+        string changed = MemberText(game, "private static void Changed(BuildingRegistration reg)");
+        int refused = lease.IndexOf("if (verdict == LeaseVerdict.Refused)", StringComparison.Ordinal), claim = lease.IndexOf("Claim(made, lease, index);", StringComparison.Ordinal);
+        Check(refused > 0 && claim > refused && lease.Contains("BuildingsRules.LeaseOf(GoingPublic.Foreign(reg), reg.RentedByPlayer || reg.BuildingOwnedByPlayer, record.BuildingType,")
+              && lease.Contains("else if (verdict == LeaseVerdict.Renamed)") && lease.Contains("Rename(reg, lease);") && !game.Contains("reg.BusinessName == lease.Name")
+              && rename.Contains("reg.BusinessName = lease.Name;") && rename.Contains("reg.BusinessDescription = lease.DescriptionKey;") && rename.Contains("Changed(reg);")
+              && changed.Contains("UpdateSign()") && changed.Contains("GlobalEvents.onBuildingRegistrationChange?.Invoke(reg.Address);")
+              && MemberText(game, "public static bool Leased(MadeBuilding made, DistrictLease lease)")
+                     .Contains("BuildingsRules.LeasedBy(reg.businessTypeName, reg.AvailableForRent, reg.RentedByPlayer, lease.BusinessType)")
+              && director.Contains("int leased = Leases(save, out int renamed);") && director.Contains(" of them given their lessees' names again"),
+            "uptown fill: the load holds every lease's business off the market but a refused one's, gives a renamed one the lease's name with its sign and the game's event, "
+            + "knows a standing one by its type, and says how many were renamed");
+
+        // The seed of a lease's start of a business: its type, its owner, its index and the save's seed, no text of a language.
+        string started = MemberText(game, "private static void MoveIn(BuildingRegistration reg, DistrictLease lease, int index, AiBusinessDefault from, GameInstance save)");
+        int seedAt = started.IndexOf("UnityEngine.Random.InitState(", StringComparison.Ordinal);
+        string seed = seedAt >= 0 ? started.Substring(seedAt, started.IndexOf(";", seedAt, StringComparison.Ordinal) - seedAt) : string.Empty;
+        Check(seed.Contains("lease.BusinessType") && seed.Contains("lease.Owner") && seed.Contains("index.ToString(System.Globalization.CultureInfo.InvariantCulture)")
+              && seed.Contains("save.seed") && !Regex.IsMatch(seed, @"Name|Description|GetLocalization|\.T\(|Text\.")
+              && Regex.Matches(game, @"Hash\([^;]*(?:Name|Description)").Count == 0,
+            "uptown fill: a lease's business is started with the engine's chance seeded by its type, its owner, its index and the save, never by a name, "
+            + "so every machine of a session starts it alike whatever its language (" + (seed.Length > 0 ? seed.Replace("\n", " ") : "no seed found") + ")");
+    }
 
     private static void UptownFillLandmarks(List<BuildingsLot> plan)
     {
@@ -700,14 +763,14 @@ internal static partial class Program
         Check(MemberText(lots, "public static bool StandsOn(string lotId)").Contains("StandingLots.Contains(lotId)") && director.Contains("MarkStanding();"),
             "uptown fill: whether a building stands on a lot is a set's look, made once the buildings stand (the construction game asks it of every lot on a page)");
         string firstLife = MemberText(director, "private static bool FirstLife()");
-        Check(firstLife.Contains("LifeGame.PopulateOnly(save, NewOnes, Standing)") && firstLife.Contains("Leases(save)") && !firstLife.Contains("FinishOwner.City, 0, save"),
+        Check(firstLife.Contains("LifeGame.PopulateOnly(save, NewOnes, Standing)") && firstLife.Contains("Leases(save, out int renamed)") && !firstLife.Contains("FinishOwner.City, 0, save"),
             "uptown fill: buildings new to a save the district lived in are set up by the game's own generator, not left empty to let, and the leases move in after");
         string only = MemberText(gameBuildings, "public static int PopulateOnly(GameInstance save, List<MadeBuilding> fresh, List<MadeBuilding> standing)");
         Check(only.Contains("all.Remove(record)") && only.Contains("finally") && only.Contains("all.AddRange(AllWas)") && only.Contains("UnityEngine.Random.state = was")
               && only.Contains("CityGenerator.InitializeCity(DistrictValues.Id)") && only.Contains("CityGenerator.DistributeBuildingsToRivals(DistrictValues.Id)"),
             "uptown fill: the generator sees the new buildings alone, and the game's list of all buildings and its chance are put back as they were, after a fault too");
-        string lease = MemberText(gameLeases, "public static string Lease(MadeBuilding made, DistrictLease lease, int index, GameInstance save, out bool movedIn)");
-        string moveIn = MemberText(gameLeases, "private static void MoveIn(BuildingRegistration reg, DistrictLease lease, AiBusinessDefault from, GameInstance save)");
+        string lease = MemberText(gameLeases, "public static string Lease(MadeBuilding made, DistrictLease lease, int index, GameInstance save, out bool movedIn, out bool renamed)");
+        string moveIn = MemberText(gameLeases, "private static void MoveIn(BuildingRegistration reg, DistrictLease lease, int index, AiBusinessDefault from, GameInstance save)");
         Check(lease.Contains("GoingPublic.Foreign(reg)") && lease.Contains("reg.RentedByPlayer || reg.BuildingOwnedByPlayer") && lease.Contains("made.NewRegistration")
               && moveIn.Contains("CompetitionHelper.StartNewCompetitorBusiness(lease.BusinessType, reg, impactMarket: false, from, string.Empty, setUpFirstDailyIncome: false)")
               && moveIn.Contains("UnityEngine.Random.InitState(") && moveIn.Contains("UnityEngine.Random.state = was") && moveIn.Contains("reg.dailyIncomes = new List<float>(IncomeDays)"),

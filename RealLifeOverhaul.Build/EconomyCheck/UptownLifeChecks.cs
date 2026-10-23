@@ -614,7 +614,8 @@ internal static partial class Program
         Check(oneFrame && noSend, "uptown: of the district's files only its director has a frame method, and none sends anything over Going Public");
         Check(noChance && Occurs(code, "UnityEngine.Random.InitState(") == 3 && Occurs(code, "UnityEngine.Random.state = was;") == 3
               && code.Contains("NewBuildingsRules.Hash(DistrictValues.Id + \"|first|\"") && code.Contains("NewBuildingsRules.Hash(DistrictValues.Id + \"|more|\"")
-              && code.Contains("NewBuildingsRules.Hash(lease.BusinessType + \"|\" + lease.Name + \"|\"") && code.Contains("NewBuildingsRules.Hash(DistrictValues.Id + \"|stats|\" + save.seed)"),
+              && code.Contains("NewBuildingsRules.Hash(lease.BusinessType + \"|\" + lease.Owner + \"|\" + index.ToString(")
+              && code.Contains("NewBuildingsRules.Hash(DistrictValues.Id + \"|stats|\" + save.seed)"),
             "uptown: nothing of its is chance: the game's own generator (for the district, or its buildings new to a save alone) and its start of a leased business run with "
             + "the engine's chance seeded from the save, put back after; its stats' days from the save's seed");
         Check(byContract, "uptown: every member of the game's it reads by name is a line of Core/GameContract");

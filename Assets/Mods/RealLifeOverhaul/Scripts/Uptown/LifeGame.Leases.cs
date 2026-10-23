@@ -25,63 +25,69 @@ namespace RealLifeOverhaul.Uptown
         private static readonly List<string> Claims = new List<string>(BuildingsRules.LeasedOffices);   // the special buildings' entries the leases filed at this load
 
         /// <summary>
-        /// A lease's business in its building: there already (its type and its name), or moved in where the building is new at
-        /// this load or stands empty to let and nobody's; then held off the market. Never the player's, nor another player's in
-        /// a Going Public session. Null when it stands, else why not; <paramref name="movedIn"/> when it moved in now.
+        /// A lease's business in its building: there already (the lease's business type at its own lot, whatever its name says,
+        /// <paramref name="renamed"/> when its name or description was put back to the lease's), or moved in where the building
+        /// is new at this load or stands empty to let and nobody's (<see cref="BuildingsRules.LeaseOf"/>); then held off the
+        /// market. Never the player's, nor another player's in a Going Public session. Null when it stands, else why not;
+        /// <paramref name="movedIn"/> when it moved in now.
         /// </summary>
-        public static string Lease(MadeBuilding made, DistrictLease lease, int index, GameInstance save, out bool movedIn)
+        public static string Lease(MadeBuilding made, DistrictLease lease, int index, GameInstance save, out bool movedIn, out bool renamed)
         {
-            movedIn = false;
+            movedIn = renamed = false;
             BuildingRegistration reg = made != null ? made.Registration : null;
             Building record = made != null ? made.Building : null;
             if (reg == null || record == null)
             {
                 return "its records are not there";
             }
-            if (GoingPublic.Foreign(reg))
+            LeaseVerdict verdict = BuildingsRules.LeaseOf(GoingPublic.Foreign(reg), reg.RentedByPlayer || reg.BuildingOwnedByPlayer, record.BuildingType, reg.businessTypeName,
+                reg.BusinessName, reg.BusinessDescription, made.NewRegistration, reg.AvailableForRent, lease.BusinessType, lease.Name, lease.DescriptionKey, out string why);
+            if (verdict == LeaseVerdict.Refused)
             {
-                return "it is another player's in this session";
+                return why;
             }
-            if (reg.RentedByPlayer || reg.BuildingOwnedByPlayer)
-            {
-                return "the player rents or owns it";
-            }
-            if (record.BuildingType != BuildingsRules.OfficeType)
-            {
-                return "it was built as " + record.BuildingType + ", not an office";
-            }
-            string why = Borrow(lease.LayoutsFrom, lease.BusinessType);
+            why = Borrow(lease.LayoutsFrom, lease.BusinessType);
             if (why != null)
             {
                 return why;
             }
-            bool theirs = reg.businessTypeName == lease.BusinessType && reg.BusinessName == lease.Name;
-            if (!theirs)
+            if (verdict == LeaseVerdict.MoveIn)
             {
-                bool free = made.NewRegistration || (reg.AvailableForRent && (string.IsNullOrEmpty(reg.businessTypeName) || reg.businessTypeName == Empty));
-                if (!free)
-                {
-                    return "a business of " + reg.businessTypeName + " is in it";
-                }
                 AiBusinessDefault from = Lender(lease.LayoutsFrom, record, index);
                 if (from == null)
                 {
                     return "no business of " + lease.LayoutsFrom + " has a layout for " + NewBuildingsRules.StructureName(record.BuildingSize, record.BuildingVersion);
                 }
-                MoveIn(reg, lease, from, save);
+                MoveIn(reg, lease, index, from, save);
                 movedIn = true;
+            }
+            else if (verdict == LeaseVerdict.Renamed)
+            {
+                Rename(reg, lease);
+                renamed = true;
             }
             Claim(made, lease, index);
             return null;
         }
 
-        // The game's own start of a business in the building, seeded so every machine starts it alike, then the lessee's own:
-        // its name, BizMan's description, no rival of the game's as its owner (the card and BizMan then show neither), and its
-        // days' income, which the game's valuation averages and its daily pass never closes it for while it has fewer than 14.
-        private static void MoveIn(BuildingRegistration reg, DistrictLease lease, AiBusinessDefault from, GameInstance save)
+        // A lease's business whose name or description is not the lease's, as a text changed since it moved in: the lease's
+        // again, drawn and raised as MoveIn's are.
+        private static void Rename(BuildingRegistration reg, DistrictLease lease)
+        {
+            reg.BusinessName = lease.Name;
+            reg.BusinessDescription = lease.DescriptionKey;
+            Changed(reg);
+        }
+
+        // The game's own start of a business in the building, then the lessee's own: its name, BizMan's description, no rival
+        // of the game's as its owner (the card and BizMan then show neither), and its days' income, which the game's valuation
+        // averages and its daily pass never closes it for while it has fewer than 14. Seeded by who leases it and the save,
+        // never by its name, which is text in the player's language, so every machine of a session starts it alike.
+        private static void MoveIn(BuildingRegistration reg, DistrictLease lease, int index, AiBusinessDefault from, GameInstance save)
         {
             UnityEngine.Random.State was = UnityEngine.Random.state;
-            UnityEngine.Random.InitState((int)NewBuildingsRules.Hash(lease.BusinessType + "|" + lease.Name + "|" + (save != null ? save.seed : string.Empty)));
+            UnityEngine.Random.InitState((int)NewBuildingsRules.Hash(lease.BusinessType + "|" + lease.Owner + "|" + index.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                                                                     + "|" + (save != null ? save.seed : string.Empty)));
             try
             {
                 CompetitionHelper.StartNewCompetitorBusiness(lease.BusinessType, reg, impactMarket: false, from, string.Empty, setUpFirstDailyIncome: false);
@@ -99,13 +105,21 @@ namespace RealLifeOverhaul.Uptown
             {
                 reg.dailyIncomes.Add(lease.DailyIncome);
             }
+            Changed(reg);
+        }
+
+        // A registration changed under the game's own drawing of it: the sign drawn again (the game's start drew it before the
+        // name was the lessee's), and the event the game raises when a registration changes (the marker, the lights, the map's search).
+        private static void Changed(BuildingRegistration reg)
+        {
             CityManager city = InstanceBehavior<CityManager>.IsInitialized ? InstanceBehavior<CityManager>.Instance : null;
-            city?.FindCityBuildingController(reg.Address)?.UpdateSign();   // the game's start drew the sign before the name was the lessee's
-            GlobalEvents.onBuildingRegistrationChange?.Invoke(reg.Address);   // as the game raises it when a registration changes: the marker, the lights, the map's search
+            city?.FindCityBuildingController(reg.Address)?.UpdateSign();
+            GlobalEvents.onBuildingRegistrationChange?.Invoke(reg.Address);
         }
 
         // The AI business of the lending type whose layout the game has for the building's structure (filed under the lessee's
-        // type by Borrow), in the order of their names, the one the lease's index picks: the same on every machine.
+        // type by Borrow), in the order of their names, the one the lease's index picks: the same on every machine, as those
+        // names are the game's own in its assets (its start writes one into a registration as it is), never a language's.
         private static AiBusinessDefault Lender(string type, Building record, int index)
         {
             Defaults.Clear();
@@ -228,11 +242,11 @@ namespace RealLifeOverhaul.Uptown
             Claims.Clear();
         }
 
-        /// <summary>True when a building's registration is a lease's business: its type and its name the lessee's.</summary>
+        /// <summary>True when a building's registration is a lease's business: of the lessee's type, not to let and not the player's (its name is text, never asked).</summary>
         public static bool Leased(MadeBuilding made, DistrictLease lease)
         {
             BuildingRegistration reg = made != null ? made.Registration : null;
-            return reg != null && lease != null && reg.businessTypeName == lease.BusinessType && reg.BusinessName == lease.Name && !reg.AvailableForRent && !reg.RentedByPlayer;
+            return reg != null && lease != null && BuildingsRules.LeasedBy(reg.businessTypeName, reg.AvailableForRent, reg.RentedByPlayer, lease.BusinessType);
         }
     }
 }

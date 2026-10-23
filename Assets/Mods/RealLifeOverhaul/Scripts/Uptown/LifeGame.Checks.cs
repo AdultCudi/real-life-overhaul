@@ -21,7 +21,7 @@ namespace RealLifeOverhaul.Uptown
     internal static partial class LifeGame
     {
         /// <summary>
-        /// Null when a leased office's business is as a business of the game's of its type: the lessee's type and name, not to
+        /// Null when a leased office's business is as a business of the game's of its type: the lessee's type, not to
         /// let; a layout the game finds for its type and structure (its furniture and staff); the game's own valuation of it
         /// read without a fault; staff of the game's; a row for its type in the map's filters; held off the market. Else why not.
         /// </summary>
