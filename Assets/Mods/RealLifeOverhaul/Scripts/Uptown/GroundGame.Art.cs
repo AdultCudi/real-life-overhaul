@@ -8,13 +8,15 @@ using UnityEngine.SceneManagement;
 namespace RealLifeOverhaul.Uptown
 {
     /// <summary>
-    /// Uptown's street art, the game's own: its road modules copied along the district's streets (a street's 100 m, an
-    /// avenue's 50 m, an avenue crossing a street), each copy made asleep and stripped before it wakes, so nothing of the
-    /// template's own runs for it. A street's name over it is the district's; a crossing's light poles hang their red,
-    /// yellow and green under the lamps the junction's lights switch, pole by pole to the approach whose light it is (the
-    /// game hangs a light 5.7 m past the stop line); its crosswalks wait for the red of the road they cross, and those
-    /// that lead onto no walking ground go; an avenue's sign, which names 1st Avenue, comes down. Parking along the kerbs
-    /// and the pedestrians' zones come once the game is loaded, through new ground's own copies of the game's.
+    /// Uptown's street art, the game's own: its road modules copied along the band's streets and avenues (a street's 100 m,
+    /// an avenue's 50 m, an avenue crossing a street) and a block's ground on every block the backdrop keeps none, each copy
+    /// made asleep and stripped before it wakes, so nothing of the template's own runs for it; past the band's walls the
+    /// streets and avenues go on one length more and the blocks round it get their ground, as scenery, so the camera never
+    /// looks out on nothing. A street's name over it is the district's; a crossing's light poles hang their red, yellow and
+    /// green under the lamps the junction's lights switch, pole by pole to the approach whose light it is (the game hangs a
+    /// light 5.7 m past the stop line); its crosswalks wait for the red of the road they cross, and those over an arm with no
+    /// lanes go; an avenue's sign, which names 1st Avenue, comes down but on 1st Avenue's own continuations. Parking along
+    /// the kerbs and the pedestrians' zones come once the game is loaded, through new ground's own copies of the game's.
     /// </summary>
     public static partial class GroundGame
     {
@@ -22,6 +24,8 @@ namespace RealLifeOverhaul.Uptown
         private const string StreetModule = "SM_RoadModule- 120-70";         // the game's 100 m of a street
         private const string AvenueModule = "SM_RoadModule 120-160-70";      // its 50 m of an avenue
         private const string CrossingModule = "SM_RoadModule Intersection_4-2 Lanes";   // its avenue crossing a street, with lights
+        private const string GroundPlanesRoot = "AdditionalGroundPlanes";    // Manhattan's own block grounds, not in a static batch
+        private const string GroundPlane = "SM_120-70 GroundPlane";          // a block's ground, 70 by 120 m
         private const string TrafficName = "Traffic";                        // a crossing's light poles
         private const string RedName = "RedLight";                           // a pole's lights, as the game names them
         private const string YellowName = "YellowLight";
@@ -33,22 +37,29 @@ namespace RealLifeOverhaul.Uptown
         private const float LampReach = 4f;       // m: a pole's red light this near where an approach's light hangs is that approach's
         private const float LampAhead = 5.7f;     // m past its stop point the game hangs an approach's light
         private const float ArmFrom = 5f;         // m from a crossing's middle a crosswalk stands on one of its arms
+        private const float BlockWide = 70f;      // m: a block's ground across, west to east
+        private const float BlockDeep = 120f;     // m: and north to south
 
-        private static readonly Intersection[] Own = new Intersection[LayoutRules.FirstColumns + 1];   // each street's own crossing at 1st Avenue
-        private static readonly List<ModulePlace> Places = new List<ModulePlace>(32);
-        private static readonly List<GameObject> Copies = new List<GameObject>(32);
-        private static readonly List<ParkingLaneGenerator> Lanes = new List<ParkingLaneGenerator>(32);
-        private static readonly List<StationaryAiSpawner> Zones = new List<StationaryAiSpawner>(20);
-        private static readonly List<PlanBox> ZoneBoxes = new List<PlanBox>(20);
-        private static readonly float[] WayX = new float[4];      // one junction's ways: the mean heading of their stop points
+        private static readonly Intersection[] Own = new Intersection[LayoutRules.FirstColumns + 1];   // each Manhattan street's own crossing at 1st Avenue
+        private static readonly List<ModulePlace> Places = new List<ModulePlace>(512);
+        private static readonly List<GameObject> Copies = new List<GameObject>(512);
+        private static readonly List<int> CopyPlace = new List<int>(512);        // each copy's place among Places
+        private static readonly List<ParkingLaneGenerator> Lanes = new List<ParkingLaneGenerator>(256);
+        private static readonly List<StationaryAiSpawner> Zones = new List<StationaryAiSpawner>(128);
+        private static readonly List<PlanBox> ZoneBoxes = new List<PlanBox>(128);
+        private static readonly List<Bounds> KeptGrounds = new List<Bounds>(64);   // the backdrop's own block grounds, which stay
+        private static readonly float[] WayX = new float[4];      // one junction's ways: the summed heading of their stop points
         private static readonly float[] WayZ = new float[4];
         private static Road _street;
         private static Road _avenue;
         private static Intersection _anyCrossing;
+        private static GameObject _groundPlane;
         private static GameObject _art;
 
-        /// <summary>The modules copied at this load.</summary>
+        /// <summary>The pieces copied at this load, and of them the blocks' grounds and the scenery past the walls.</summary>
         public static int Copied => Copies.Count;
+        public static int GroundsLaid { get; private set; }
+        public static int SceneryLaid { get; private set; }
 
         /// <summary>The light poles hung under the junctions' lamps, the crosswalks linked to a red, the signs taken down.</summary>
         public static int Lights { get; private set; }
@@ -74,9 +85,11 @@ namespace RealLifeOverhaul.Uptown
         }
 
         /// <summary>
-        /// The game's road modules the art is copied from, found once a load before anything changes: 9th Street's 100 m
-        /// south of 1st Avenue, 1st Avenue's 50 m east of it, and each street's own crossing at 1st Avenue (a plain one;
-        /// where the game has none of the plain kind, any of them). Each must be the size of its kind. Null, or why not.
+        /// The game's pieces the art is copied from, found once a load before anything changes: 9th Street's 100 m south
+        /// of 1st Avenue, 1st Avenue's 50 m east of it, each street's own crossing at 1st Avenue (a plain one; where the game
+        /// has none of the plain kind, any of them), and a block's ground among Manhattan's own (one in no static batch).
+        /// Each must be the size of its kind. Null, or why not. A block's ground missing leaves the blocks the backdrop has
+        /// none on bare, said in the log; the district stands all the same.
         /// </summary>
         public static string FindTemplates()
         {
@@ -90,7 +103,7 @@ namespace RealLifeOverhaul.Uptown
                 return "the game's " + (_street == null ? "street" : "avenue") + " module to copy (" + (_street == null ? StreetModule : AvenueModule)
                        + ", of its size) was not found at Manhattan's north edge";
             }
-            Intersection[] crossings = SceneFinds.All<Intersection>("uptown: the game's crossings to copy along its avenue (a search of the scene, behind the loading screen)");
+            Intersection[] crossings = SceneFinds.All<Intersection>("uptown: the game's crossings to copy along its avenues (a search of the scene, behind the loading screen)");
             _anyCrossing = null;
             for (int k = 0; k <= LayoutRules.FirstColumns; k++)
             {
@@ -100,8 +113,68 @@ namespace RealLifeOverhaul.Uptown
                     _anyCrossing = Own[k];
                 }
             }
-            return _anyCrossing == null ? "none of the game's crossings to copy (" + CrossingModule + ", of its size) was found on 1st Avenue" : null;
+            if (_anyCrossing == null)
+            {
+                return "none of the game's crossings to copy (" + CrossingModule + ", of its size) was found on 1st Avenue";
+            }
+            _groundPlane = GroundTemplate();
+            KeptGrounds.Clear();
+            Transform kept = _backdrop != null ? _backdrop.Find(KeptName) : null;
+            Renderer[] planes = kept != null ? kept.GetComponentsInChildren<Renderer>(false) : new Renderer[0];
+            for (int i = 0; i < planes.Length; i++)
+            {
+                if (planes[i] != null)
+                {
+                    KeptGrounds.Add(planes[i].bounds);
+                }
+            }
+            return null;
         }
+
+        // Manhattan's own block ground nearest 9th Street's block south of 1st Avenue, of a block's size and in no static batch.
+        private static GameObject GroundTemplate()
+        {
+            GameObject best = null;
+            float nearest = float.MaxValue, x = LayoutRules.StreetX(0) + LayoutRules.StreetPitch * 0.5f, z = LayoutRules.FirstAvenueZ - LayoutRules.AvenuePitch * 0.5f;
+            for (int s = 0; s < SceneManager.sceneCount; s++)
+            {
+                Scene scene = SceneManager.GetSceneAt(s);
+                if (!scene.isLoaded)
+                {
+                    continue;
+                }
+                SceneRoots.Clear();
+                scene.GetRootGameObjects(SceneRoots);
+                for (int i = 0; i < SceneRoots.Count; i++)
+                {
+                    if (SceneRoots[i] == null || SceneRoots[i].name != GroundPlanesRoot)
+                    {
+                        continue;
+                    }
+                    Transform root = SceneRoots[i].transform;
+                    for (int c = 0; c < root.childCount; c++)
+                    {
+                        GameObject plane = root.GetChild(c).gameObject;
+                        if (!plane.activeInHierarchy || !plane.name.StartsWith(GroundPlane, System.StringComparison.Ordinal) || !Sized(plane, BlockWide, BlockDeep))
+                        {
+                            continue;
+                        }
+                        Vector3 at = plane.transform.position;
+                        float d = (at.x - x) * (at.x - x) + (at.z - z) * (at.z - z);
+                        if (d < nearest)
+                        {
+                            nearest = d;
+                            best = plane;
+                        }
+                    }
+                }
+            }
+            SceneRoots.Clear();
+            return best;
+        }
+
+        /// <summary>True when a block's ground template was found at this load.</summary>
+        public static bool HasGroundTemplate => _groundPlane != null;
 
         private static Road NearestRoad(Road[] roads, string name, float x, float z, float sizeX, float sizeZ)
         {
@@ -144,7 +217,7 @@ namespace RealLifeOverhaul.Uptown
             return null;
         }
 
-        // A module of the size of its kind: its own mesh (a mesh the game batched with others would be the batch's) and unturned.
+        // A piece of the size of its kind: its own mesh (a mesh the game batched with others would be the batch's) and unturned.
         private static bool Sized(GameObject module, float sizeX, float sizeZ)
         {
             if (!module.TryGetComponent(out MeshFilter filter) || filter.sharedMesh == null || Quaternion.Angle(module.transform.rotation, Quaternion.identity) > 1f)
@@ -156,9 +229,10 @@ namespace RealLifeOverhaul.Uptown
         }
 
         /// <summary>
-        /// Copies the game's modules along the district's streets once its streets are among the traffic's: each made asleep
-        /// under one holder in the template's scene, its parking lanes taken out (new ground's copies come later), its name,
-        /// lights, crosswalks and signs made the district's, then all woken together. Returns how many were copied.
+        /// Copies the game's pieces along the band once its streets are among the traffic's: each made asleep under one
+        /// holder in the template's scene, its parking lanes taken out (new ground's copies come later), its name, lights,
+        /// crosswalks and signs made the district's, a block's ground only where the backdrop keeps none; then all woken
+        /// together. Returns how many were copied.
         /// </summary>
         public static int CopyArt(RoadBuild build)
         {
@@ -174,28 +248,42 @@ namespace RealLifeOverhaul.Uptown
             {
                 ModulePlace place = Places[i];
                 GameObject template = Template(place);
+                if (template == null || (place.Kind == ModuleKind.Ground && Kept(place.X, place.Z)))
+                {
+                    continue;
+                }
                 GameObject copy = Object.Instantiate(template, _art.transform);
-                copy.name = ArtName + " " + place.Kind + " " + place.Street;
-                copy.transform.SetPositionAndRotation(new Vector3(place.X, template.transform.position.y, place.Z), template.transform.rotation);
+                copy.name = ArtName + " " + place.Kind + " " + place.Street + " " + place.Row;
+                Vector3 offset = place.Kind == ModuleKind.Ground ? template.transform.position - Middle(template) : Vector3.zero;   // a road module's pivot is its middle
+                copy.transform.SetPositionAndRotation(new Vector3(place.X + offset.x, template.transform.position.y, place.Z + offset.z), template.transform.rotation);
                 Strip(copy);
-                if (place.Kind == ModuleKind.Crossing)
+                switch (place.Kind)
                 {
-                    Signs(copy, Own[place.Street] != null);
-                    if (place.Junction >= 0 && place.Junction < build.Junctions.Count)
-                    {
-                        Wire(copy, build, build.Junctions[place.Junction], place.Junction);
-                    }
-                    else
-                    {
-                        Unlink(copy);
-                    }
+                    case ModuleKind.Crossing:
+                        Signs(copy, place.Street >= 0 && place.Street < Own.Length && Own[place.Street] != null, place.Row == 0);
+                        if (place.Junction >= 0 && place.Junction < build.Junctions.Count)
+                        {
+                            Wire(copy, build, build.Junctions[place.Junction], place);
+                        }
+                        else
+                        {
+                            Unlink(copy);
+                        }
+                        break;
+                    case ModuleKind.Ground:
+                        GroundsLaid++;
+                        break;
+                    default:
+                        if (place.Kind == ModuleKind.Street || place.Row > 0)
+                        {
+                            LayoutStreet street = place.Scenery ? null : place.Kind == ModuleKind.Avenue ? LayoutStreets.Avenue(place.Row) : LayoutStreets.Street(place.Street);
+                            Name(copy, street != null ? street.NameKey.GetLocalization() : null);   // 1st Avenue's continuations keep its own name
+                        }
+                        break;
                 }
-                else
-                {
-                    LayoutStreet street = place.Kind == ModuleKind.Avenue ? LayoutStreets.Avenue(1) : LayoutStreets.Street(place.Street);
-                    Name(copy, street != null ? street.NameKey.GetLocalization() : null);
-                }
+                SceneryLaid += place.Scenery ? 1 : 0;
                 Copies.Add(copy);
+                CopyPlace.Add(i);
             }
             _art.SetActive(true);
             return Copies.Count;
@@ -209,10 +297,32 @@ namespace RealLifeOverhaul.Uptown
                     return _street.gameObject;
                 case ModuleKind.Avenue:
                     return _avenue.gameObject;
+                case ModuleKind.Ground:
+                    return _groundPlane;
                 default:
                     Intersection own = place.Street >= 0 && place.Street < Own.Length ? Own[place.Street] : null;
                     return (own != null ? own : _anyCrossing).gameObject;
             }
+        }
+
+        // The middle of a piece as it is drawn: its own mesh's, where its pivot may stand elsewhere.
+        private static Vector3 Middle(GameObject template)
+        {
+            return template.TryGetComponent(out Renderer shown) ? shown.bounds.center : template.transform.position;
+        }
+
+        // True where one of the backdrop's own block grounds, which stay, already covers a block's middle.
+        private static bool Kept(float x, float z)
+        {
+            for (int i = 0; i < KeptGrounds.Count; i++)
+            {
+                Bounds b = KeptGrounds[i];
+                if (x >= b.min.x && x <= b.max.x && z >= b.min.z && z <= b.max.z)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         // The template's parking lanes go before the copy wakes: their own copies, placed by new ground, park the cars.
@@ -242,15 +352,20 @@ namespace RealLifeOverhaul.Uptown
             }
         }
 
-        // A crossing's street signs: the avenue's names 1st Avenue, so it comes down; where the template is another
-        // street's crossing, the street's comes down too.
-        private static void Signs(GameObject copy, bool own)
+        // A crossing's street signs: the avenue's names 1st Avenue, so it comes down but on 1st Avenue's continuations; where
+        // the template is another street's crossing, the street's comes down too.
+        private static void Signs(GameObject copy, bool own, bool firstAvenue)
         {
             Transform[] parts = copy.GetComponentsInChildren<Transform>(true);
             for (int i = 0; i < parts.Length; i++)
             {
                 Transform sign = parts[i];
-                if (sign.parent != null && sign.parent.name == SignsName && (!own || sign.name.Contains(AvenueSign)))
+                if (sign.parent == null || sign.parent.name != SignsName)
+                {
+                    continue;
+                }
+                bool avenue = sign.name.Contains(AvenueSign);
+                if (avenue ? !firstAvenue : !own)
                 {
                     sign.gameObject.SetActive(false);
                     SignsDown++;
@@ -259,8 +374,8 @@ namespace RealLifeOverhaul.Uptown
         }
 
         // A crossing of the district's junction: each pole's lights go under the lamps of the way whose approach they
-        // light, and each crosswalk waits for the red of the road it crosses; a crosswalk onto no walking ground goes.
-        private static void Wire(GameObject copy, RoadBuild build, BuiltJunction junction, int index)
+        // light, and each crosswalk waits for the red of the road it crosses; a crosswalk over an arm with no lanes goes.
+        private static void Wire(GameObject copy, RoadBuild build, BuiltJunction junction, ModulePlace place)
         {
             int ways = Mathf.Min(junction.Ways.Count, WayX.Length);
             int street = -1, avenue = -1;
@@ -300,19 +415,20 @@ namespace RealLifeOverhaul.Uptown
                 Hang(green, greenLamp);
                 Lights++;
             }
-            int last = build.Junctions.Count - 1;
+            bool north = LayoutPlans.HasLanes(place.Street, place.Row + 1), south = LayoutPlans.HasLanes(place.Street, place.Row);
+            bool west = LayoutPlans.AvenueArm(place.Street, place.Row, false), east = LayoutPlans.AvenueArm(place.Street, place.Row, true);
             CrosswalkToTrafficLightLink[] links = copy.GetComponentsInChildren<CrosswalkToTrafficLightLink>(true);
             for (int i = 0; i < links.Length; i++)
             {
                 Vector3 local = copy.transform.InverseTransformPoint(links[i].transform.position);
                 int way = -1;
-                if (Mathf.Abs(local.x) < ArmFrom && local.z < -ArmFrom)
+                if (Mathf.Abs(local.x) < ArmFrom && (local.z < -ArmFrom ? south : local.z > ArmFrom && north))
                 {
-                    way = street;   // over the street's arm south of the avenue
+                    way = street;   // over the street's arm north or south of the avenue, where its lanes are
                 }
-                else if (Mathf.Abs(local.z) < ArmFrom && (local.x < -ArmFrom ? index > 0 : local.x > ArmFrom && index < last))
+                else if (Mathf.Abs(local.z) < ArmFrom && (local.x < -ArmFrom ? west : local.x > ArmFrom && east))
                 {
-                    way = avenue;   // over the avenue, on a side the avenue goes on
+                    way = avenue;   // over the avenue, on a side the avenue's lanes go on
                 }
                 GameObject red = way >= 0 ? RoadsGame.RedLamp(junction, way) : null;
                 if (red == null)
@@ -411,21 +527,23 @@ namespace RealLifeOverhaul.Uptown
         }
 
         /// <summary>
-        /// Once the game is loaded: parking along the kerbs of the copied streets and avenue, each lane a copy of the
-        /// template module's own (new ground's ParkingGame) where it stood in the template, and, with the pedestrians'
-        /// ground laid, their zones on the pavements. Returns the lanes that could not be laid, said in <paramref name="why"/>.
+        /// Once the game is loaded: parking along the kerbs of the band's copied streets and avenues (never the scenery's),
+        /// each lane a copy of the template module's own (new ground's ParkingGame) where it stood in the template, and, with
+        /// the pedestrians' ground laid, their zones on the pavements. Returns the lanes that could not be laid, said in
+        /// <paramref name="why"/>.
         /// </summary>
         public static int Populate(bool people, out string why)
         {
             why = null;
             int refused = 0;
-            for (int i = 0; i < Copies.Count && i < Places.Count; i++)
+            for (int i = 0; i < Copies.Count; i++)
             {
-                if (Places[i].Kind == ModuleKind.Crossing || Copies[i] == null)
+                ModulePlace place = Places[CopyPlace[i]];
+                if (place.Scenery || (place.Kind != ModuleKind.Street && place.Kind != ModuleKind.Avenue) || Copies[i] == null)
                 {
                     continue;
                 }
-                Transform template = Places[i].Kind == ModuleKind.Street ? _street.transform : _avenue.transform;
+                Transform template = place.Kind == ModuleKind.Street ? _street.transform : _avenue.transform;
                 ParkingLaneGenerator[] lanes = template.GetComponentsInChildren<ParkingLaneGenerator>(true);
                 for (int l = 0; l < lanes.Length; l++)
                 {
@@ -487,10 +605,13 @@ namespace RealLifeOverhaul.Uptown
             }
             _art = null;
             Copies.Clear();
+            CopyPlace.Clear();
             Places.Clear();
+            KeptGrounds.Clear();
             _street = null;
             _avenue = null;
             _anyCrossing = null;
+            _groundPlane = null;
             for (int k = 0; k < Own.Length; k++)
             {
                 Own[k] = null;
@@ -498,6 +619,8 @@ namespace RealLifeOverhaul.Uptown
             Lights = 0;
             Crossings = 0;
             SignsDown = 0;
+            GroundsLaid = 0;
+            SceneryLaid = 0;
         }
     }
 }

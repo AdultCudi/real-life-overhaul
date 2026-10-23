@@ -32,6 +32,7 @@ internal static partial class Program
         GroundClearChecks();
         GroundTimingChecks();
         GroundWalkChecks();
+        GroundShapeChecks();
         GroundLineChecks();
         GroundSourceChecks(scripts);
     }
@@ -461,6 +462,125 @@ internal static partial class Program
             "new ground walk: a 20 m patch is one tile or two, as it falls");
     }
 
+    // ---------------------------------------------------------------- the shapes a district's ground is grown with
+
+    // GroundShapes: the covered tiles as rectangles (one update each), their bounds, the agent's margin kept only where the
+    // ground meets nothing (the owner's second cause of 23 Oct: every box made smaller on all sides left half a metre between
+    // a carriageway and its pavement), what stands on the ground cut out, and the old mesh's islands and seeds.
+    private static void GroundShapeChecks()
+    {
+        var grid = new TileGrid(-28.0077f, 34.1263f, 35.84f);
+        // An L of tiles and one apart, in no order: each tile in exactly one rectangle, every rectangle all covered tiles.
+        var tiles = new List<long>();
+        for (int x = 0; x < 5; x++)
+        {
+            for (int z = 0; z < 3; z++)
+            {
+                tiles.Add(TileGrid.Key(x, z));
+            }
+        }
+        for (int z = 3; z < 6; z++)
+        {
+            tiles.Add(TileGrid.Key(0, z));
+            tiles.Add(TileGrid.Key(1, z));
+        }
+        tiles.Add(TileGrid.Key(9, 9));
+        var rects = new List<TileRect>();
+        GroundShapes.Rects(tiles, rects);
+        var shuffled = tiles.OrderBy(t => (t * 7919) % 101).ToList();
+        shuffled.Add(tiles[0]);
+        var again = new List<TileRect>();
+        GroundShapes.Rects(shuffled, again);
+        bool once = tiles.All(t => rects.Count(r => r.Holds(t)) == 1) && GroundShapes.Count(rects) == tiles.Count;
+        bool inside = rects.All(r => Enumerable.Range(r.X0, r.X1 - r.X0 + 1).All(x => Enumerable.Range(r.Z0, r.Z1 - r.Z0 + 1).All(z => tiles.Contains(TileGrid.Key(x, z)))));
+        Check(once && inside && rects.Count == 3 && again.Count == rects.Count
+              && again.Select((r, i) => r.X0 == rects[i].X0 && r.Z0 == rects[i].Z0 && r.X1 == rects[i].X1 && r.Z1 == rects[i].Z1).All(b => b),
+            "new ground shapes: the covered tiles as three rectangles, each tile in one, the same for any order and a tile named twice (" + rects.Count + ")");
+        var none = new List<TileRect> { new TileRect(1, 1, 1, 1) };
+        GroundShapes.Rects(new List<long>(), none);
+        Check(none.Count == 0, "new ground shapes: no tiles, no rectangle");
+        // A rectangle's bounds hold its tiles whole, a metre past them, and no tile beside it whole.
+        GroundShapes.RectBounds(new TileRect(2, 3, 4, 5), grid, out float minX, out float minZ, out float maxX, out float maxZ);
+        Check(Near(minX, grid.MinX(2) - GroundRules.TileOver, 0.001f) && Near(maxX, grid.MinX(5) + GroundRules.TileOver, 0.001f) && Near(minZ, grid.MinZ(3) - GroundRules.TileOver, 0.001f)
+              && Near(maxZ, grid.MinZ(6) + GroundRules.TileOver, 0.001f) && maxX - minX < 4f * grid.Side && maxZ - minZ < 4f * grid.Side,
+            "new ground shapes: a rectangle's update reaches a metre past its tiles all round, so Unity's builder rebuilds them and no tile beside");
+
+        // The margin: a carriageway and its pavement side by side are one surface at the kerb, kept off only at their outer edges.
+        var road = new GroundBox(0f, 50f, 0.05f, 5f, 50f, 0f, 0.5f);
+        var pave = new GroundBox(6.8f, 50f, 0.05f, 1.8f, 50f, 0f, 0.5f);
+        var shrunk = new List<GroundBox>();
+        GroundShapes.ShrinkOutward(new List<GroundBox> { road, pave }, 0.25f, shrunk);
+        bool Covered(List<GroundBox> boxes, float x, float z) => boxes.Any(b => b.Covers(x, z, 0.0001f));
+        Check(Covered(shrunk, 4.95f, 50f) && Covered(shrunk, 5.05f, 50f) && !Covered(shrunk, -4.8f, 50f) && Covered(shrunk, -4.7f, 50f) && !Covered(shrunk, 8.5f, 50f)
+              && Covered(shrunk, 8.3f, 50f) && !Covered(shrunk, 0f, 0.2f) && Covered(shrunk, 0f, 0.3f),
+            "new ground shapes: at a kerb the carriageway and its pavement stay one surface; their outer edges keep the agent's margin");
+        var lone = new List<GroundBox>();
+        GroundShapes.ShrinkOutward(new List<GroundBox> { road }, 0.25f, lone);
+        Check(lone.Count == 1 && Near(lone[0].HalfX, 4.75f) && Near(lone[0].HalfZ, 49.75f), "new ground shapes: a box alone keeps the margin on every side");
+        // A side met along part of its length: that part stays, the rest keeps the margin.
+        var part = new List<GroundBox>();
+        var a = new GroundBox(5f, 5f, 0.05f, 5f, 5f, 0f, 0.5f);
+        var b2 = new GroundBox(15f, 2.5f, 0.05f, 5f, 2.5f, 0f, 0.5f);
+        GroundShapes.ShrinkOutward(new List<GroundBox> { a, b2 }, 0.25f, part);
+        Check(Covered(part, 9.99f, 2f) && Covered(part, 10.01f, 2f) && !Covered(part, 9.9f, 8f) && Covered(part, 9.7f, 8f),
+            "new ground shapes: a side met along part of its length is one surface there and keeps the margin beyond");
+        // Ground at another height (a deck over the road) never counts as meeting; a turned box keeps the margin all round.
+        var deck = new GroundBox(15f, 5f, 3f, 5f, 5f, 0f, 0.5f);
+        var high = new List<GroundBox>();
+        GroundShapes.ShrinkOutward(new List<GroundBox> { a, deck }, 0.25f, high);
+        var turned = new List<GroundBox>();
+        GroundShapes.ShrinkOutward(new List<GroundBox> { new GroundBox(0f, 0f, 0f, 2f, 1f, 30f, 0.5f), road }, 0.25f, turned);
+        Check(!Covered(high, 9.9f, 5f) && Near(turned[0].HalfX, 1.75f) && Near(turned[0].HalfZ, 0.75f) && Near(turned[0].Yaw, 30f),
+            "new ground shapes: ground at another height does not meet it, and a turned box keeps the margin on every side");
+        var thin = new List<GroundBox>();
+        GroundShapes.ShrinkOutward(new List<GroundBox> { new GroundBox(0f, 0f, 0f, 0.2f, 5f, 0f, 0.5f) }, 0.25f, thin);
+        Check(thin.Count == 0, "new ground shapes: a sliver the margin swallows whole is not laid");
+
+        // What stands on a pavement cut out: the whole width south and north of it, beside it only as long as it is, no sliver.
+        var strip = new GroundBox(1.8f, 50f, 0.05f, 1.8f, 50f, 0f, 0.5f);
+        var holes = new List<FlatRect> { new FlatRect(2.6f, 40f, 2.9f, 60f).Grown(0.3f) };
+        var cut = new List<GroundBox>();
+        GroundShapes.Cut(strip, holes, 1f, cut);
+        float area = cut.Sum(c => 4f * c.HalfX * c.HalfZ);
+        bool clear = cut.All(c =>
+        {
+            c.Extent(out float x0, out float z0, out float x1, out float z1);
+            return !(x1 > holes[0].MinX + 0.001f && x0 < holes[0].MaxX - 0.001f && z1 > holes[0].MinZ + 0.001f && z0 < holes[0].MaxZ - 0.001f);
+        });
+        Check(cut.Count == 3 && clear && Covered(cut, 1.8f, 39f) && Covered(cut, 1.8f, 61f) && Covered(cut, 2.2f, 50f) && !Covered(cut, 2.8f, 50f) && !Covered(cut, 3.4f, 50f)
+              && Near(area, 3.6f * 100f - 3.6f * 20.6f + 2.3f * 20.6f, 0.05f),
+            "new ground shapes: a scaffold on a pavement cut out, the strip beside it on the kerb side kept, the sliver at the wall let go (" + cut.Count + " pieces)");
+        var whole = new List<GroundBox>();
+        GroundShapes.Cut(strip, new List<FlatRect> { new FlatRect(20f, 0f, 21f, 1f) }, 1f, whole);
+        var across = new List<GroundBox>();
+        GroundShapes.Cut(strip, new List<FlatRect> { new FlatRect(-1f, 10f, 5f, 12f), new FlatRect(-1f, 70f, 5f, 75f) }, 1f, across);
+        Check(whole.Count == 1 && Near(whole[0].HalfX, strip.HalfX) && Near(whole[0].HalfZ, strip.HalfZ) && across.Count == 3 && !Covered(across, 1.8f, 11f) && !Covered(across, 1.8f, 72f)
+              && Covered(across, 1.8f, 40f), "new ground shapes: a hole off the box leaves it whole; holes across it leave the pieces between them");
+
+        // The old mesh's islands: triangles sharing a corner, or meeting along a tile's border at one height, are one.
+        float bx = grid.MinX(1), bz = grid.MinZ(1);
+        // Triangles 0 and 1 share a corner in tile (0, 1); 2 lies in tile (1, 1), its edge on the border overlapping 1's
+        // there; 3 meets the border 3 m above them (a deck); 4 stands alone.
+        float[] tx = { bx - 5f, bx - 1f, bx - 5f, bx - 1f, bx, bx, bx, bx + 4f, bx, bx, bx + 4f, bx, bx - 20f, bx - 16f, bx - 20f };
+        float[] ty = { 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 3f, 3f, 3f, 0f, 0f, 0f };
+        float[] tz = { bz + 2f, bz + 2f, bz + 6f, bz + 2f, bz + 1f, bz + 6f, bz + 0.5f, bz + 3f, bz + 5f, bz + 1f, bz + 3f, bz + 6f, bz + 20f, bz + 20f, bz + 24f };
+        var island = new int[5];
+        int count = GroundShapes.Islands(tx, ty, tz, 5, grid, island);
+        Check(count == 3 && island[0] == island[1] && island[1] == island[2] && island[3] != island[0] && island[4] != island[0] && island[4] != island[3],
+            "new ground shapes: islands of the old mesh, by a shared corner and by a tile's border at one height, never a deck above (" + count + ")");
+        var seeded = new bool[count];
+        int found = GroundShapes.Seeded(tx, ty, tz, 5, island, new List<GroundPoint> { new GroundPoint(bx - 4f, 0.05f, bz + 3f), new GroundPoint(bx - 19f, 2f, bz + 21f) }, seeded);
+        Check(found == 1 && seeded[island[0]] && !seeded[island[3]] && !seeded[island[4]],
+            "new ground shapes: the islands a seed stands on are kept, one a seed is far above is not (" + found + ")");
+
+        // A thing too thin for the voxels is walked round all the same.
+        GroundBox pole = GroundRules.Obstacle(3f, 4f, 0.04f, 0.04f, 2.2f, -0.45f);
+        GroundBox bin = GroundRules.Obstacle(3f, 4f, 0.4f, 0.3f, 1.1f, -0.45f);
+        Check(Near(pole.HalfX, GroundRules.ObstacleLeast) && Near(pole.HalfZ, GroundRules.ObstacleLeast) && Near(pole.Top, 2.2f) && Near(pole.Depth, 2.65f)
+              && Near(bin.HalfX, 0.4f) && Near(bin.HalfZ, 0.3f) && GroundRules.ObstacleLeast >= 0.07f,
+            "new ground shapes: a pole thinner than two voxels is built as two voxels across, anything larger as it stands");
+    }
+
     // ---------------------------------------------------------------- the self-check lines
 
     private static void GroundLineChecks()
@@ -492,14 +612,14 @@ internal static partial class Program
         var code = files.ToDictionary(Path.GetFileName, f => Code(File.ReadAllText(f)));
         foreach (var file in code)
         {
-            bool rules = file.Key == "RoadRules.cs" || file.Key == "RoadPlan.cs" || file.Key == "GroundRules.cs" || file.Key == "NewGroundText.cs";
+            bool rules = file.Key == "RoadRules.cs" || file.Key == "RoadPlan.cs" || file.Key == "GroundRules.cs" || file.Key == "GroundShapes.cs" || file.Key == "NewGroundText.cs";
             if (rules)
             {
                 Check(!Regex.IsMatch(file.Value, @"\busing UnityEngine|\busing Gley|\bVector3\b|\bMathf\b|\bGameObject\b"), "new ground sources: " + file.Key + " is game-free");
             }
-            if (file.Key != "WalkGame.cs")
+            if (file.Key != "WalkGame.cs" && file.Key != "WalkGame.Build.cs")
             {
-                Check(!Regex.IsMatch(file.Value, @"\bNavMesh\.|\bNavMeshBuilder\.|\.navmeshAgent\b"), "new ground sources: only WalkGame calls Unity's navigation (" + file.Key + ")");
+                Check(!Regex.IsMatch(file.Value, @"\bNavMesh\.|\bNavMeshBuilder\.|\.navmeshAgent\b"), "new ground sources: only WalkGame's two parts call Unity's navigation (" + file.Key + ")");
             }
             Check(!Regex.IsMatch(file.Value, @"\.GetField\(|\.GetProperty\(|\.GetMethod\(|BindingFlags|Activator\.|Type\.GetType\("),
                 "new ground sources: no member of the game's read by name but through the contract (" + file.Key + ")");
@@ -568,10 +688,12 @@ internal static partial class Program
         Check(update.Success && !Regex.IsMatch(update.Groups["b"].Value, @"\bnew\b|""\s*\+|\+\s*""|\$"""), "new ground sources: its look allocates nothing");
         Check(Regex.IsMatch(director2, @"private void Awake\(\)\s*\{\s*Instance = this;\s*enabled = false;"), "new ground sources: the director is disabled while nothing of its own runs");
         Check(director2.Contains("trackOnSaveGame: false"), "new ground sources: its notices stay out of the save");
-        string walk = code["WalkGame.cs"];
-        Check(walk.Contains("settings.preserveTilesOutsideBounds = true;") && Regex.Matches(walk, @"preserveTilesOutsideBounds = true").Count == 2,
+        string walk = code["WalkGame.cs"], walkBuild = code["WalkGame.Build.cs"];
+        Check(Regex.Matches(walkBuild, @"settings\.preserveTilesOutsideBounds = true;").Count == 2 && Regex.Matches(walkBuild, @"NavMeshBuilder\.UpdateNavMeshData(?:Async)?\(").Count == 2
+              && !Regex.IsMatch(walk, @"NavMeshBuilder\.|preserveTilesOutsideBounds"),
             "new ground sources: every update of a walking mesh keeps the tiles beyond its bounds as they are");
-        Check(code["GroundBuilder.cs"].Contains("GroundRules.TileBounds(tile"), "new ground sources: every update of the city's mesh is one tile, its bounds a metre past it");
+        Check(code["GroundBuilder.cs"].Contains("GroundShapes.RectBounds(rect, job.Mesh.Grid,") && Regex.IsMatch(code["GroundShapes.cs"], @"minX = grid\.MinX\(rect\.X0\) - GroundRules\.TileOver;"),
+            "new ground sources: every update of the city's mesh is a rectangle of whole tiles, its bounds a metre past them");
 
         // What a district stands along its new streets: parking that wakes where it is put, crossings tied to their road's red lamp.
         string parking = code["ParkingGame.cs"];
@@ -600,8 +722,10 @@ internal static partial class Program
         Check(built.Success && built.Groups["b"].Value.Contains("GroundRules.IsProp(") && built.Groups["b"].Value.Contains("seen.Add(")
               && Regex.IsMatch(ground.Groups["b"].Value, @"string\.Join\(""; "", Seen\)"),
             "new ground sources: a plan's count leaves the props out and its stand-down line names what it found");
-        Match grow = Regex.Match(work, @"private static string Grow\([^)]*\)\s*\{(?<b>(?:[^{}]|\{(?<d>)|\}(?<-d>))*)\}");
-        Check(grow.Success && Regex.IsMatch(grow.Groups["b"].Value, @"GroundPass\.Join\);[\s\S]*GroundBuilder\.RoundAlike\(job\)[\s\S]*GroundBuilder\.Now\(job, GroundPass\.Back\);"),
+        Match grow = Regex.Match(code["GroundBuilder.cs"], @"public static string Grow\([^)]*\)\s*\{(?<b>(?:[^{}]|\{(?<d>)|\}(?<-d>))*)\}");
+        Check(grow.Success && Regex.IsMatch(grow.Groups["b"].Value, @"Now\(job, GroundPass\.Fresh\);[\s\S]*Now\(job, GroundPass\.Join\);[\s\S]*RoundAlike\(job\)"
+                                                                      + @"[\s\S]*Now\(job, GroundPass\.Back\);[\s\S]*finally\s*\{\s*Free\(job\);")
+              && Regex.IsMatch(work, @"GroundBuilder\.Grow\(mesh, plan\.Boxes, plan\.Area, Standing, plan\.Seeds, flat, out int walkable, out GroundJob job\)"),
             "new ground sources: a district's ground compares the tiles round about after it grows, and gives its tiles back when anything failed");
         Match now = Regex.Match(code["GroundBuilder.cs"], @"public static void Now\([^)]*\)\s*\{(?<b>(?:[^{}]|\{(?<d>)|\}(?<-d>))*)\}");
         Check(now.Success && Regex.IsMatch(now.Groups["b"].Value, @"if \(pass != GroundPass\.Back\)\s*\{\s*job\.Pending\.Clear\(\);"),
@@ -613,14 +737,14 @@ internal static partial class Program
         Check(dry.Success && Regex.IsMatch(dry.Groups["b"].Value, @"Scratch\.Clear\(\);\s*Scratch\.Add\(WalkGame\.Box\(Inside\(left, grid, y\), WalkGame\.NotWalkable\)\);\s*began = Stopwatch\.GetTimestamp\(\);\s*WalkGame\.UpdateNow\(")
               && Regex.IsMatch(dry.Groups["b"].Value, @"if \(!cleared\)\s*\{\s*ClearMiss = ") && !Regex.IsMatch(dry.Groups["b"].Value, @"Scratch\.Clear\(\);\s*began = Stopwatch\.GetTimestamp\(\);"),
             "new ground sources: the dry run clears a tile from nothing walkable inside it, never from no sources, and a miss is said in the log, not a stand-down");
-        Check(Regex.IsMatch(builder, @"job\.BackSources\.Add\(WalkGame\.Box\(Inside\(job\.Fresh\[i\], grid, height\), WalkGame\.NotWalkable\)\)")
-              && builder.Contains("public const float BackInset = 2f;") && walk.Contains("NavMesh.GetAreaFromName(\"Not Walkable\")"),
-            "new ground sources: given back, each fresh tile is rebuilt from nothing walkable well inside it, so it is emptied and the tiles beside are not touched");
+        Check(Regex.IsMatch(walkBuild, @"if \(!had\.Contains\(job\.Covered\[i\]\)\)\s*\{\s*job\.BackSources\.Add\(Box\(inside\(job\.Covered\[i\], job\.Mesh\.Grid, job\.Height\), NotWalkable\)\);")
+              && builder.Contains("WalkGame.PrepareBack(job, Inside)") && builder.Contains("public const float BackInset = 2f;") && walkBuild.Contains("NavMesh.GetAreaFromName(\"Not Walkable\")"),
+            "new ground sources: given back, each tile the old mesh had nothing on is rebuilt from nothing walkable well inside it, so it is emptied and the tiles beside are not touched");
         // The owner's game of 23 Oct: Uptown's ground was said grown, yet nothing could walk on it (Unity's builder says an update
         // was done whether or not it rebuilt anything).
-        Check(grow.Success && Regex.IsMatch(grow.Groups["b"].Value, @"GroundBuilder\.RoundAlike\(job\)[\s\S]*int walkable = job\.Problem == null \? WalkGame\.Walkable\(mesh, plan\) : 0;"
+        Check(grow.Success && Regex.IsMatch(grow.Groups["b"].Value, @"RoundAlike\(job\)[\s\S]*walkable = job\.Problem == null \? WalkGame\.Walkable\(mesh, boxes\) : 0;"
                                                                       + @"\s*if \(job\.Problem == null && walkable == 0\)")
-              && !Regex.IsMatch(work + walk + builder, @"\bReload\(|\bReadd\(|RemoveData|AddData"),
+              && !Regex.IsMatch(work + walk + walkBuild + builder, @"\bReload\(|\bReadd\(|RemoveData|AddData"),
             "new ground sources: grown ground is checked walkable on its boxes and never said grown when nothing can walk on it");
         Check(!Regex.IsMatch(work, @"\bconst\s+float\s+\w*(Corner|Cell|Origin|Side|Bounds)\w*\s*="), "new ground sources: the grid, the tiles and the map are read from the game, never kept in the code");
 

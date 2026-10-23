@@ -2,15 +2,15 @@
 
 ## In a sentence
 
-Uptown is a district of the mod's own north of Manhattan: at every load Manhattan's streets go on north past 1st Avenue, through 1st Avenue's own junctions, to a new avenue, over ground both walking meshes grow over from Manhattan's pavements, with the game's own road modules, lamps, lights, crosswalks, parking, people and a bus terminus, and lots for the district's buildings; nothing of it is saved, so a save loads without it.
+Uptown is a district of the mod's own north of Manhattan: at every load the whole band of three rows of eighteen blocks is laid, Manhattan's streets going on north past 1st Avenue through its own junctions, 1st Avenue going on west and east, nineteen streets and three avenues meeting at junctions with lights, over ground both walking meshes grow into from Manhattan's, with the game's own road modules, lamps, lights, crosswalks, parking, people and three bus termini, and lots for the district's buildings; nothing of it is saved, so a save loads without it.
 
 ## What a player sees
 
-- **At the wall.** The old dead ends north of 1st Avenue are gone: their cones, barriers and closed signs, the low backdrop behind them and the invisible wall across each street. Standing on 1st Avenue's north pavement, the player looks up 9th to 1st Street as they go on north, between the backs of 1st Avenue's buildings, to Uptown Avenue 147 m on. 1st Avenue's own buildings, doors and pavements are the game's and stay as they were.
-- **Walking in.** The keys walk the player up any of the nine streets from 1st Avenue's corner, across where the wall stood, on the pavements or the carriageway, and onto the first block's lots and Uptown Avenue. Pedestrians come up the east pavements and stand and walk along Uptown Avenue.
-- **Driving in.** Cars of the game's traffic turn into eight of the streets at 1st Avenue's lights (5th Street, which 1st Avenue's traffic passes without a junction there, has no lanes, as at 1st Avenue) and meet Uptown Avenue at a junction with lights at each street. Parked cars line the streets' west kerbs and both of the avenue's.
-- **The first block.** Eight blocks between 9th and 1st Street, from the backs of 1st Avenue's buildings to Uptown Avenue: 83 lots on the city's own block grounds, open for the district's buildings. The district's edge is walled as the city's own edge is: north of Uptown Avenue's north pavement, west of 9th Street and east of 1st Street.
-- **On the map.** The city map pans over it, its streets named; the minimap draws its streets. A bus line ends at Uptown's terminus on Uptown Avenue, between 5th and 4th Street.
+- **At the old wall.** The old dead ends north of 1st Avenue are gone: their cones, barriers and closed signs, the low backdrop behind them and the invisible wall across each street. Standing on 1st Avenue's north pavement, the player looks up 9th to 1st Street as they go on north, between the backs of 1st Avenue's buildings, to Uptown Avenue 147 m on, and on to Summit and Crest Avenue. 1st Avenue's own buildings, doors and pavements are the game's and stay as they were.
+- **Walking in.** The keys walk the player straight up any of the nine streets from 1st Avenue's corner, across where the wall stood, on either pavement or the carriageway, and onto every block, street and avenue of the band; the pavements, the carriageways and the blocks are one surface, so the player steps off a kerb or onto a lot as on Manhattan's. At 1st Avenue's two ends the avenue goes on, walkable, past the walls that stood across it. Pedestrians walk every pavement of the band and cross the avenues at every junction.
+- **Driving in.** The game's traffic turns into eight of Manhattan's streets at 1st Avenue's lights (5th Street, which 1st Avenue's traffic passes without a junction, has its lanes from Uptown Avenue north), into 1st Avenue West through 9th Street's corner, and drives the whole band: every street and avenue meets at a junction with lights, the avenue's two ways on one green and the street's two arms on the other, as at the game's own crossings. 1st Avenue East begins at Hill Street: 1st Avenue's corner at 1st Street takes no new way in. Parked cars line the streets' west kerbs and both of the avenues'.
+- **The band.** Three rows of eighteen blocks from Willow to Lake Street, 422 lots round them, the first block (row 1 between 9th and 1st Street) behind the backs of 1st Avenue's buildings. Its edge is walled as the city's own edge is: north of Crest Avenue's north pavement, west of Willow Street, east of Lake Street, and south of 1st Avenue's continuations. Past the walls the streets go on north one length and the avenues one length west and east, with blocks' grounds round about, so the camera never looks out on nothing.
+- **On the maps.** The city map pans over it; the minimap draws its streets, its ground and the buildings the mod stands there. Bus lines end at its three termini, on the south pavements of Uptown Avenue (between 5th and 4th Street), Summit Avenue (between Maple and Cedar Street) and Crest Avenue (between Ridge and Grove Street).
 
 ## Where the code is
 
@@ -20,13 +20,13 @@ Uptown is a district of the mod's own north of Manhattan: at every load Manhatta
 ```
 LayoutStreets        game-free: the band's 22 streets, their ids, names, short names and first numbers
 LayoutRules          game-free: the grid on the game's own, the lots of the band and of the first block, their ground
-LayoutPlans          game-free: the first block's lanes, walking ground, modules, walls, colliders, hiding, zones, terminus
+LayoutPlans          game-free: the band's lanes, walking ground, modules, walls, colliders, hiding, zones, termini
 UptownLots           the lots for the district's features and the builders: UptownLots, Lot, LotClass, GroundRect, UptownExit
 GroundSession        whether the district may stand at this load: its option and the Going Public session
 GroundDirector       the load, the stand-downs, the late parking and people, the clean-up
   .Tests             the three test entries
-GroundGame           the Game file: the backdrop, the walls, the colliders, the map's bounds
-  .Art               the game's road modules copied: names, lights, crosswalks, signs; parking lanes and zones
+GroundGame           the Game file: the backdrop and its strays, the walls, the colliders, the map's bounds
+  .Art               the game's road modules and block grounds copied: names, lights, crosswalks, signs; parking lanes and zones
 GroundGuide          the feature's entry: its option, its tests, its clean-up
 GroundText           the locale keys
 ```
@@ -35,18 +35,19 @@ One line each elsewhere: `Core/Settings.cs` (`uptown`), `Meta/OptionsTree.cs` (i
 
 ## How it talks to other features
 
-- **New ground** ([New ground](new-ground.md)) lays it: `GroundWork.Streets`, `GroundWork.Ground` (both meshes), `GroundWork.TakeBack`, `RoadsGame.LampOf` and `RedLamp` for the lights, `ParkingGame` and `PeopleGame` for the parking and the people.
-- **The buses** (`TransitMap.AddTerminus`): Uptown's terminus is one end of the network, laid behind the loading screen.
+- **New ground** ([New ground](new-ground.md)) lays it: `GroundWork.Streets`, `GroundWork.Ground` (both meshes, grown in shared updates and joined to the city's own), `GroundWork.TakeBack`, `RoadsGame.LampOf` and `RedLamp` for the lights, `ParkingGame` and `PeopleGame` for the parking and the people.
+- **The buses** (`TransitMap.AddTerminus`): Uptown's three termini are ends of the network, laid behind the loading screen.
+- **The minimap** reads the band as it reads the city: its lanes are among the game's (so its streets are drawn and its rectangle reaches over the band), the rays that measure the ground find its ground colliders, and the buildings the mod stands there come through `NavBridges.MoreBuildings`.
 - **New buildings** ([New buildings](new-buildings.md)): Uptown's 22 streets are among the mod's own (`MadeStreets.All`), so a building on its lots has an address the game writes and finds; the lots are open before the city's buildings are made at the load.
 - **The district's life and buildings** and **the builders** read the lots (below). The district save is told the district's ground and its way out by the district's own feature, from `UptownLots.Ground` and `UptownLots.Exit`.
 
 ## The layout
 
-All of it is fixed data (`LayoutRules`, `LayoutStreets`), the same on every machine and in every version, measured from the game's scene at Manhattan's north edge (Build 3682) and checked against the game at every load.
+All of it is fixed data (`LayoutRules`, `LayoutStreets`, `LayoutPlans`), the same on every machine and in every version, measured from the game's scene at Manhattan's north edge (Build 3682) and checked against the game at every load.
 
 - **The grid** is the game's own: Manhattan's north to south streets every 87.3 m (a street's 100 m module, a crossing's 37.3 m), 9th Street's middle at x -301.67; its west to east avenues every 147.2 m, 1st Avenue's middle at z 464.58. A street is 17.3 m wide kerb to kerb with its pavements, an avenue 27.3 m.
-- **The band** is three rows of blocks north of 1st Avenue, 18 columns from five streets west of 9th Street to five east of 1st Street: nineteen streets (Manhattan's nine continued, Willow, Birch, Elm, Maple and Cedar Street west of them, Hill, Ridge, Grove, Park and Lake Street east of them) and three avenues (Uptown, Summit and Crest Avenue). Seventeen of its blocks are squares with no lots.
-- **The first block** is row 1 between 9th and 1st Street: eight blocks, laid first and the only one laid now.
+- **The band** is three rows of blocks north of 1st Avenue, 18 columns from five streets west of 9th Street to five east of 1st Street (x -746.8 to 841.9, z 450.9 to 919.8 with 1st Avenue's continuations): nineteen streets (Manhattan's nine continued, Willow, Birch, Elm, Maple and Cedar Street west of them, Hill, Ridge, Grove, Park and Lake Street east of them) and three avenues (Uptown, Summit and Crest Avenue). Seventeen of its blocks are squares with no lots.
+- **The first block** is row 1 between 9th and 1st Street: eight blocks behind the backs of 1st Avenue's buildings, where the band meets Manhattan.
 - **Streets and numbers.** Every street has an id of the mod's own (`reallife:street_uptown_<name>`), under the prefix no street of the game's can have, and a name in the texts. A street that continues one of Manhattan's shows that street's name, with numbers from 1001, which the game's (82 at most on any street) never reach; the others number from 1. Odd numbers on a street's west side and an avenue's south side, even on the other, two apart in order from the street's south end or the avenue's east end.
 - **The lots** run round each block, behind its streets' pavements: a strip along the avenue north of it, one along the avenue south of it (rows 2 and 3), and one along each street; in the first block the south strip is 1st Avenue's buildings, and the lots begin behind their backs. Each lot is of a size class with the footprint of the game's buildings of those sizes, picked so the band keeps Manhattan's mix:
 
@@ -63,10 +64,10 @@ All of it is fixed data (`LayoutRules`, `LayoutStreets`), the same on every mach
 
 ```csharp
 IReadOnlyList<Lot> all = UptownLots.All;          // the band's 422, in id order
-IReadOnlyList<Lot> first = UptownLots.FirstBlock; // the first block's 83
+IReadOnlyList<Lot> first = UptownLots.FirstBlock; // the first block's 83, where the band meets Manhattan
 Lot lot = UptownLots.Get("uptown_1_09_04");      // by its id, or null
 
-if (UptownLots.Open(lot))                         // laid and walkable at this load: Ready, and in the first block
+if (UptownLots.Open(lot))                         // laid and walkable at this load: every lot of the band while it stands
 {
     // lot.X, UptownLots.GroundY, lot.Z: its middle on the ground
     // lot.Yaw: whole degrees, as CivicWorks.StartPlot takes a plot (its front at -Z turned by it)
@@ -83,39 +84,50 @@ UptownLots.Closing += why => { };                 // raised first in the feature
 | Member | What it is |
 | --- | --- |
 | `Lot.Id` | `uptown_<row>_<column, two digits>_<n, two digits>`: letters, digits and underscores, safe in any line of a store. Never changes. |
-| `Lot.Row`, `Column`, `Block`, `First` | Its block: row 1 to 3 north of 1st Avenue, column 1 to 18 west to east (the block east of 9th Street is 6). |
+| `Lot.Row`, `Column`, `Block`, `First` | Its block: row 1 to 3 north of 1st Avenue, column 1 to 18 west to east (the block east of 9th Street is 6); `First` for the first block's. |
 | `Lot.Street`, `Number`, `Order` | Its address, and its place along its side of the street. |
 | `Lot.X`, `Z`, `Yaw`, `Facing` | Its middle and its turn: `Yaw` as `CivicWorks.StartPlot`, `Facing = (Yaw + 180) % 360` as NewBuildings' `MadeLot`. 0 or 180 faces an avenue, 90 or 270 a street. |
 | `Lot.Width`, `Depth`, `Class`, `Sizes` | Its footprint in whole metres, its class, the game's building sizes of its class. |
 | `UptownLots.Ready`, `Why` | The district stands at this load; else why not, in English for the log. |
-| `UptownLots.Open(lot)` | `Ready` and the lot is in the first block. |
+| `UptownLots.Open(lot)` | `Ready` and a lot of the plan: every lot of the band, as the whole band is laid. |
 | `UptownLots.Closed`, `Closing` | The district was closed by its feature's clean-up and stays closed until the next load; `Closing(why)` comes first. |
-| `UptownLots.Ground`, `Exit` | The district's ground as laid now (18 rectangles: the eight blocks from their backs, the nine streets past the old wall, Uptown Avenue's band) and its way out for the player and the cars: 1st Avenue's north pavement at 5th Street (91.18, 0, 473.33), heading 270, in Midtown. |
+| `UptownLots.Ground`, `Exit` | The district's ground as laid now (23 rectangles: the first block's eight blocks from their backs, its nine streets past the old wall and its stretch of Uptown Avenue; the band west of 9th and east of 1st Street; the rows north of Uptown Avenue between them; 1st Avenue's two continuations) and its way out for the player and the cars: 1st Avenue's north side at 5th Street (91.18, 0, 473.33), heading 270, in Midtown. |
 
-`Ready` is set by the ground's step in the city's load, behind the loading screen, before the city's buildings are made: a building of the mod's own that declares itself with `Wanted = () => UptownLots.Ready` stands on a lot laid at that very load. It is false again when the city goes. A handler on `Closing` subscribes once a city and leaves when the city goes.
+`Ready` is set by the ground's step in the city's load, behind the loading screen, before the city's buildings are made: a building of the mod's own that declares itself with `Wanted = () => UptownLots.Ready` stands on a lot laid at that very load. It is false again when the city goes. A handler on `Closing` subscribes once a city and leaves when the city goes. Every lot has the player's walking ground under its middle and its corners a metre in and both meshes a metre out of its door, and nothing of the game's stands on it but, at lot `uptown_1_14_04`, the crown of a tree on 1st Street's east pavement, which leans 2 m over its corner from 3.5 m up (the offline scan, below).
 
 ## At every load
 
-In the city's load (OnLoadAsync), behind the loading screen, before the traffic starts, in the director's `Awake`; the whole first block or nothing:
+In the city's load (OnLoadAsync), behind the loading screen, before the traffic starts, in the director's `Awake`; the whole band or nothing:
 
 1. **Asked.** Its option (`uptown`, on by default, read only at a load), New York (the city check leaves the director out in another city) and the session (below).
-2. **Found.** Everything of the game's it is laid against, before anything changes: the backdrop round the city (`MapBorder`) and its invisible walls, the city map's camera, and the road modules to copy: 9th Street's 100 m south of 1st Avenue, 1st Avenue's 50 m east of 9th Street, and each street's own crossing at 1st Avenue (by name, place and the size of its mesh, so a module the game batched with others is never copied). One missing, and nothing is laid.
-3. **The backdrop put away** where the district stands: every piece of it (a renderer, a collider or a level of detail) whose middle lies at an old street end or on the first block, about 300 of them; its block grounds stay, the lots' ground. 1st Avenue's own buildings are not the backdrop's and are never touched. The game's nine walls across the street ends are switched off with it: the ground's check (step 5) counts every collider of the game's left on the district's ground.
-4. **The streets** (`GroundWork.Streets`): each continued street's two lanes from 1st Avenue's junction, through it (its stop points and exits given to the game's junction, which lights the new approach from its own pole that faced the dead end), to Uptown Avenue; Uptown Avenue's four lanes between the eight junctions with lights, its two ways on one green.
-5. **The walking ground** (`GroundWork.Ground`): the player's over every carriageway from the old dead end, the pavements, the lots and Uptown Avenue; then the pedestrians' over the pavements, a strip up each east pavement from 1st Avenue's corner, and the crosswalks over the avenue. Both join Manhattan's pavements across the old wall.
-6. **The edge.** Three walls of the game's height round the first block; a ground collider under it all (the city's own ground ends at z 606, short of Uptown Avenue) and one under each carriageway. The outermost pavements keep 0.5 m off the edge, where the backdrop's buildings east of 1st Street stand onto its pavement.
-7. **The art.** The game's modules copied along the streets, made asleep and stripped before they wake: each street's 100 m named on the map with its own name; each crossing's light poles hung under the lamps its junction switches, pole by pole to the approach whose light it is, the poles no approach comes to dark as at the game's own T junctions; its crosswalks waiting for the red of the road they cross, those onto no walking ground taken away; the avenue's sign, which names 1st Avenue, taken down (a crossing copied from another street's takes its street sign down too).
-8. **The map** pans over the district, to z 700; **the bus terminus** is added before the buses' routes are laid.
+2. **Found.** Everything of the game's it is laid against, before anything changes: the backdrop round the city (`MapBorder`) and its invisible walls, the city map's camera, the road modules to copy (9th Street's 100 m south of 1st Avenue, 1st Avenue's 50 m east of 9th Street, and each street's own crossing at 1st Avenue, by name, place and the size of its mesh, so a module the game batched with others is never copied) and a block's ground (`SM_120-70 GroundPlane`). One missing, and nothing is laid.
+3. **The backdrop put away** where the band stands: every piece of it (a renderer, a collider or a level of detail) whose middle lies at an old street end, on the band, on 1st Avenue's continuations or under the scenery past the walls, about 500 of them; its block grounds stay, the lots' ground. 1st Avenue's own buildings are not the backdrop's and are never touched. The one stray of the Hamptons' scene that stands on the band (a parked bicycle in the first block) goes with it. The game's nine walls across the street ends and the two across 1st Avenue at 9th and 1st Street are switched off; the wall across 9th Street's south-west corner stays. The ground's check (step 6) counts every collider of the game's left on the district's ground.
+4. **The streets** (`GroundWork.Streets`): 119 roads, 56 lengths of street and 63 of avenue: each of eight continued streets' two lanes from 1st Avenue's junction, through it (its stop points and exits given to the game's junction, which lights the new approach from its own pole that faced the dead end), to Uptown Avenue; every street's two lanes between its avenues; every avenue's four lanes between its streets; 1st Avenue West's last length through 9th Street's corner into 1st Avenue; 67 junctions with lights, the avenue's two ways on one green and the street's two arms on the other. About 10,200 lane points, 20 given to the game's junctions.
+5. **The art.** The game's modules copied along the band, made asleep and stripped before they wake: each street's 100 m (57) and each avenue's 50 m (64) named on the map with its own name; each crossing (67) with its light poles hung under the lamps its junction switches, pole by pole to the approach whose light it is, the poles no approach comes to dark; its crosswalks waiting for the red of the road they cross, those onto no walking ground taken away; signs that name another street taken down; a block's ground on every block where the backdrop keeps none; and past the walls 19 street lengths, 8 avenue lengths and their grounds as scenery, with no parking, lights or names. The art stands before the ground grows, so what of it stands on the ground is walked round.
+6. **The walking ground** (`GroundWork.Ground`), first the player's, then the pedestrians' (below): the game's colliders on it counted against none; everything solid standing on it gathered; both of the city's meshes grown over the whole band in a few shared updates of Unity's builder and joined to the city's own.
+7. **The edge.** Five walls of the game's height round the band; three ground colliders (the city's own ground ends at z 606, short of Uptown Avenue) and one road collider under each carriageway (62).
+8. **The maps.** The city map's bounds widened over the band and 60 m round it; **the bus termini** are added before the buses' routes are laid.
 9. **The lots open** (`UptownLots.Laid`).
-10. **Once the game is loaded** (its late call, the loading screen still up): a parking lane along each copied street's west kerb and both of the avenue's kerbs, each a copy of the template module's own (new ground's `ParkingGame`), and seventeen pedestrians' zones on the pavements.
+10. **Once the game is loaded** (its late call, the loading screen still up): a parking lane along each copied street's west kerb and both of each avenue's kerbs (185), each a copy of the template module's own (new ground's `ParkingGame`), and 111 pedestrians' zones on the pavements.
+
+### The walking ground
+
+The player moves by the walking mesh itself (the keys push the player's agent with `NavMeshAgent.Move`), so the band is walkable only where the game's own meshes are: the ground is grown into the game's two meshes (`NavMeshPlayer` and `NavMeshNPC`), never laid beside them.
+
+- **The player's** (145 boxes): every street, avenue and block of the band whole; in the first block, each carriageway from z 476 and each pavement from z 478.5, over Manhattan's own ground at the old dead ends, and each block from 0.3 m behind the backs of 1st Avenue's buildings; 1st Avenue's continuations over its old corners to x -310 and 404.
+- **The pedestrians'** (239 boxes): every pavement of the band, the first block's as the player's, 1st Avenue's continuations' north pavements, and a crosswalk over each avenue on both sides of every junction. Never a carriageway nor a block.
+- **What stands there.** The ground keeps 0.3 m off the scaffolds and building fronts that stand on five of the first block's old pavements and off the game's wall that stays at 9th Street's corner; a strip narrower than a metre beside one is let go. Everything else solid on it (lamps, trees, bins, bags, meters, the copied modules' own furniture) is built as no walking surface, at least two voxels across.
+- **One surface.** The agent's margin (0.25 m) is kept only where the ground meets nothing: a kerb between a carriageway and its pavement, or a block and its street, stays one surface. (Made smaller on every side, the boxes left half a metre at every kerb: the owner's sidewalks of 23 Oct.)
+- **Joined.** Where the band meets the city the game's own mesh is kept and the new ground overlaps it: by 2.5 m or more over every carriageway, 0.5 m or more over every pavement, 1.5 m or more at 1st Avenue's corners, the agent's margin taken off (measured from the game's data; the pavements began 7 m short of it before, so nobody could walk onto them from Manhattan: the owner's sidewalks of 23 Oct). The tiles over the band's ground are rebuilt whole, so what the game baked on the backdrop there goes; in the tiles where the band meets the city, only the old ground that 1st Avenue's seeds stand on is kept.
+- **Grown.** The covered tiles go to Unity's builder as a few rectangles, each one update that builds its tiles on every core at once: 618 tiles of the player's mesh, 601 new in 4 updates and 17 joining in 10. In the lab, a player of the game's Unity on stand-ins of the game's own meshes: both meshes grown in 2.5 s (the player's 2.0 s, the pedestrians' 0.5 s), Manhattan's ground unchanged.
 
 ### The game's ground checked
 
 Each step that meets something of the game's where the district goes stands down with one log line, `Uptown: not laid at this load: ...`, and everything laid before it is given back the same load: the backdrop shown again, the old walls switched on again, the streets taken back off the traffic's data (`GroundWork.TakeBack`), the mod's own pieces taken away. So the district never covers the game's content:
 
-- **Streets:** a lane of the game's within 6 m of a new one, the joins apart; 1st Avenue's junction not found at a street end.
-- **Ground:** any collider of the game's on the walking ground, where the plan was made with none (a free update that builds north of 1st Avenue).
-- **Art:** a module to copy missing, moved, resized or batched.
+- **Streets:** a lane of the game's within 6 m of a new one, the joins apart; one of 1st Avenue's junctions or 9th Street's corner not found.
+- **Ground:** any collider of the game's on the walking ground but a small prop, where the plan was made with none (a free update that builds north of 1st Avenue). Proven offline for Build 3682: with the backdrop and the stray put away and the old walls opened, the scan of every level the city loads finds none on either plan.
+- **Art:** a module or the block's ground to copy missing, moved, resized or batched.
 
 The pedestrians' ground failing alone leaves the district standing without pedestrians.
 
@@ -129,34 +141,43 @@ The district's streets, ground and lots must be on every machine of a session or
 - **The feature's clean-up** (the options page's, five faults in a row, the save tools' removal, another city) closes the district until the next load: `UptownLots.Closing` first, then every lot closed; its parking lanes and pedestrians' zones give their cars and people back to the game's pools. Its ground, art and walls stay until the city goes: the traffic, once started, keeps its streets.
 - **When the city goes** the mod's own pieces go (the copied modules, the walls and colliders, the parking, the zones), the map's bounds are put back, and the game's own pieces go with their scene. The save tools stopping the mod in a city that stays leave what stands until it goes.
 
+## On the maps
+
+- **The minimap** draws the band: its lanes are among the game's, so its streets are drawn with the city's and the picture's rectangle reaches over it (x to about 860, z to about 936); the ground is measured anew the first time (the kept measurement is for the city's own rectangle), and the rays find its ground colliders as land; the buildings the mod stands on its lots are drawn through `NavBridges.MoreBuildings`. Its buildings and water picture, 2,048 pixels at most a side, now holds about 4.05 km of city instead of 3.6 km (the city with the first block alone, at 1.77 m a pixel): about 1.98 m a pixel.
+- **The city map** pans over the band (its bounds 60 m past it). The game's fog over the city's border (`MapBorder/BorderOverlayFog`, a mesh at 46 m with the playable city cut out of it) still lies over the band: its mesh cannot be read at run time, and switching it off would clear the fog round the whole city. Left as the game has it; a choice for the owner.
+
 ## Cost
 
-The director is disabled while no test runs: no frame cost. The load: two searches of the scene for the road modules (behind the loading screen), the backdrop's pieces walked once, the streets' build (under 100 ms offline, a timing check), the walking ground's tiles grown behind the loading screen (their time is in the load's line: it is not known until the game builds them), 26 modules copied. The traffic test looks four times a second for two game minutes.
+The director is disabled while no test runs: no frame cost. The load, behind the loading screen: two searches of the scene for the road modules, the backdrop's pieces walked once, the streets' build (the band's plans and build together under 400 ms offline, a timing check), 215 modules and up to 74 grounds copied, both walking meshes grown (2.5 s in the lab on 16 cores; the game's own line gives its time), the parking and zones once the game is loaded. The traffic test looks four times a second for two game minutes.
 
 ## Self-check lines
 
-In Player.log, the first two always, the rest with Developer diagnostics on:
+In Player.log, the first lines always, the rest with Developer diagnostics on:
 
-- `Uptown: laid behind the loading screen in N ms: N lane points (N in junctions, N where cars may start) on N road(s), 8 junction(s) (8 with lights), N join(s) to the game's lanes, 8 stop point(s) and 8 exit(s) given to the game's junctions; the player's walking ground grown in N ms, the pedestrians' in N ms; N pieces of the backdrop put away, 9 of the game's walls opened, 14 walls and colliders built, 26 road modules copied; 83 lots open.`, or `Uptown: not laid at this load: why.`
-- `Uptown: once the game was loaded, 25 parking lanes along its kerbs and 17 pedestrians' zones.`
+- `Uptown: the Player mesh walkable on 145 of the new ground's 145 boxes; 618 tiles (601 new in 4 update(s), 17 joined to the city's own ground in 10), N of the city's own triangles kept, 1 of N islands of old ground joined, N things standing on it walked round, built in N ms.` and the same for the NPC mesh.
+- `Uptown: laid behind the loading screen in N ms: N lane points (N in junctions, N where cars may start) on 119 road(s), 67 junction(s) (67 with lights), N join(s) to the game's lanes, 10 stop point(s) and 10 exit(s) given to the game's junctions in N ms; N pieces of the game's copied (N blocks' grounds, N past the walls) in N ms; the player's walking ground grown in N ms, the pedestrians' in N ms; N pieces of the backdrop and 1 strays put away, 11 of the game's walls opened, 70 walls and colliders built, 3 bus termini; 422 lots open.`, or `Uptown: not laid at this load: why.`
+- `Uptown: once the game was loaded, 185 parking lanes along its kerbs and 111 pedestrians' zones.`
 - `Uptown check (streets): Roads check (append): traffic started with ... marked by their junctions: PASS`, in the game's late call.
 - `Uptown check (census): ...: PASS`, `Uptown check (path, Player): ... COMPLETE: PASS`, `Uptown check (path, NPC): ...`, `Uptown check (traffic): cars that drove its streets: N in 2 game minutes (...): PASS`, from the tests.
+- `Minimap check (base): ... world rectangle (...) to (about 860, about 936) ...: PASS`, once the minimap's picture is made.
 
 ## Tests
 
 Under Options > Tests (each says why in a notice when it cannot run; none changes the city, so each runs in a Going Public session too, and each works from wherever the player is):
 
-- **Uptown: census**: whether the first block stands and how it was laid, piece by piece, against what the plans lay: streets, junctions, walking ground, the backdrop, walls, modules, lights, crosswalks, signs, parking, zones, the map's bounds, the lots, and whether the player stands on the district's ground.
-- **Uptown: a path from Manhattan into Uptown**: on both walking meshes, from 1st Avenue's north pavement at the foot of the continued street nearest the player to the first block's middle on Uptown Avenue; COMPLETE for both.
+- **Uptown: census**: whether the band stands and how it was laid, piece by piece, against what the plans lay: streets, junctions, walking ground, the backdrop and its strays, walls, modules, grounds, scenery, lights, crosswalks, signs, parking, zones, the map's bounds, the lots, and whether the player stands on the district's ground.
+- **Uptown: a path from Manhattan into Uptown**: on both walking meshes, from 1st Avenue's north pavement at the foot of the continued street nearest the player to Uptown Avenue's terminus in the first block; COMPLETE for both.
 - **Uptown: traffic into Uptown** (on foot): puts the player on 1st Avenue's north pavement at the foot of the continued street nearest them (the game's cars come out only round the player), then counts the cars whose next lane point is one of the district's for two game minutes. From there the player walks north with the keys, past where the wall stood, into the district.
 
 ## Offline checks
 
-NavCheck `UptownCheck.cs`: the band's streets on the game's grid (ids, names, short names, numbers that never meet the game's); the lots (about 430 in the band, 80 to 100 in the first block, Manhattan's mix within 1.5 points, ids, each class's footprint inside its block with its front on the street it names, 2 m between lots, none on a street, every address once, numbers in order, only the first block open and only while it stands); the ground and the way out (1st Avenue's north side and its doors left to the game); the streets built and joined through a model of each of 1st Avenue's junctions as the game baked them (the turns and the exits each makes, every lane point on the road grid, the same build twice, the stand-down where the game has a road, no junction found); the walking ground under every lot's middle and corners and at its door, joined to Manhattan's, the measured colliders of the game's under no box; the modules, walls, colliders, hiding, zones, terminus and map; the census's counts; the lots' life at a load (closing tells every handler first, once); the cost; the sources (the layout game-free, the scene touched in the Game files alone, the load's order, every stand-down giving back, the session asked, the contract's line, the director's place, no LINQ, nothing saved, sent or left to chance); every text in en, pt and zh-cn, and What's new's line in all nine languages. EconomyCheck's new buildings checks hold its streets to the mod's street rules.
+NavCheck `UptownCheck.cs`: the band's streets on the game's grid (ids, names, short names, numbers that never meet the game's); the lots (about 430 in the band, 80 to 100 in the first block, Manhattan's mix within 1.5 points, ids, each class's footprint inside its block with its front on the street it names, 2 m between lots, none on a street, every address once, numbers in order, every lot open while the band stands and none while it does not); the band's ground (every lot on it, 1st Avenue between its corners, its buildings and Manhattan never on it) and the way out; the streets built and joined through a model of each of 1st Avenue's junctions and 9th Street's corner as the game baked them (the 119 roads and 67 junctions, the arms, the turns and exits each junction of the game's makes, every lane point named once and on the road grid, the lanes on the band's ground, the same build twice, the stand-down where the game has a road or a junction is not found); the walking ground (every lot's middle, corners and door, each plan one surface, the pedestrians off the carriageways and blocks and over every avenue at every junction, off what stands on the old corners, the seeds on 1st Avenue's own ground, the band's tiles rebuilt whole); the joins (each street's carriageway and pavements and 1st Avenue's two corners overlapping the game's meshes as measured from its data, no gap at a kerb once the agent's margin is kept, the margin kept at the edge, no hole in the band's ground); the modules, walls (closed all round, the eleven opened the game's), colliders, hiding, zones, termini and map; the census's counts; the lots' life at a load (closing tells every handler first, once); the cost; the sources (the layout game-free, the scene touched in the Game files alone, the load's order, every stand-down giving back, the session asked, the contract's line, the director's place, the strays of one scene alone, no LINQ, nothing saved, sent or left to chance); every text in en, pt and zh-cn, and What's new's line in all nine languages. NewGroundCheck holds the shapes the ground is grown with (`GroundShapes`). EconomyCheck's new buildings checks hold its streets to the mod's street rules.
+
+The scans behind its figures (not in the repository, the navlab's facts): the game's walking meshes where the band meets them, the game's walls and colliders over the band in every level the city loads (round colliders too), what the load puts away, and the band as NavCheck lays it (`NavCheck --uptown` writes it) checked against them: no collider of the game's counted on either plan, the things walked round, and what stands on each lot.
 
 ## What only the game can tell
 
-The time the walking meshes take to grow over the first block; how the copied modules look at the old dead ends and where they meet the backdrop north of Uptown Avenue; the lights at each junction coming on with their approach; the pedestrians' use of the crosswalks; the game's cars taking the new streets; the parking lanes filling; the bus line to the terminus; the map's labels.
+The time the walking meshes take to grow over the band on the player's machine; how the copied modules and grounds look at the old dead ends, at 1st Avenue's corners and where they meet the backdrop past the walls; the lights at each junction coming on with their approach; the pedestrians' use of the crosswalks; the game's cars taking the new streets and the cost of 10,000 more lane points to its traffic; the parking lanes filling; the bus lines to the termini; the map's labels and the border's fog over the band; the minimap's picture measured anew.
 
 ## The district and its buildings
 

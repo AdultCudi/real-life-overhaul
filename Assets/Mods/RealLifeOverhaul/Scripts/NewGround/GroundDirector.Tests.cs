@@ -239,7 +239,7 @@ namespace RealLifeOverhaul.NewGround
                 _skipped[slot] = dry;
                 return null;
             }
-            GroundJob job = GroundBuilder.Plan(mesh, new List<GroundBox>(1) { chosen }, from.y, flat);
+            GroundJob job = GroundBuilder.Plan(mesh, new List<GroundBox>(1) { chosen }, null, null, new List<GroundPoint>(1) { new GroundPoint(from.x, from.y, from.z) }, from.y, flat);
             if (job.Problem != null)
             {
                 refusal = NewGroundText.Builder;

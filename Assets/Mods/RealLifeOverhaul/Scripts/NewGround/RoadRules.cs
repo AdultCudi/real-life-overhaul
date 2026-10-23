@@ -92,9 +92,12 @@ namespace RealLifeOverhaul.NewGround
             {
                 Join(plan, plan.Joins[i], build, lanes);
             }
+            // One count for every turn named after a game's lane, so two ends through one junction (a street and an avenue
+            // through 9th Street's corner) never give two turns from the same lane one name.
+            int number = ThroughNumbers;
             for (int t = 0; t < plan.Throughs.Count && build.Problem == null; t++)
             {
-                Through(plan, t, build, lanes);
+                Through(plan, t, build, lanes, ref number);
             }
             build.Roads = plan.Roads.Count;
             if (build.Problem == null)
@@ -330,24 +333,29 @@ namespace RealLifeOverhaul.NewGround
                 build.Problem = "junction " + j + " has " + ins.Count + " lanes in and " + outs.Count + " out";
                 return;
             }
-            for (int t = 0; t < junction.Together.Count; t++)
+            for (int g = 0; g < 2; g++)
             {
-                bool comesIn = false;
-                for (int i = 0; i < ins.Count && !comesIn; i++)
+                List<int> shared = g == 0 ? junction.Together : junction.Across;
+                for (int t = 0; t < shared.Count; t++)
                 {
-                    comesIn = ins[i].Road == junction.Together[t];
-                }
-                if (!comesIn)
-                {
-                    build.Problem = "junction " + j + " puts road " + junction.Together[t] + " on a shared green, but no lane of it comes in";
-                    return;
+                    bool comesIn = false;
+                    for (int i = 0; i < ins.Count && !comesIn; i++)
+                    {
+                        comesIn = ins[i].Road == shared[t];
+                    }
+                    if (!comesIn || (g == 1 && junction.Together.Contains(shared[t])))
+                    {
+                        build.Problem = "junction " + j + " puts road " + shared[t] + " on a shared green, but no lane of it comes in, or it is on both";
+                        return;
+                    }
                 }
             }
-            // One way of the lights per road in; the roads named together share one, both directions of an avenue on one green.
+            // One way of the lights per road in; the roads named together share one, both directions of an avenue on one green,
+            // and those named across another, a street's two arms on the other green.
             var roadsIn = new List<int>(4);
             for (int i = 0; i < ins.Count; i++)
             {
-                int key = junction.Together.Contains(ins[i].Road) ? int.MinValue : ins[i].Road;
+                int key = junction.Together.Contains(ins[i].Road) ? int.MinValue : junction.Across.Contains(ins[i].Road) ? int.MinValue + 1 : ins[i].Road;
                 int way = roadsIn.IndexOf(key);
                 if (way < 0)
                 {
@@ -567,7 +575,7 @@ namespace RealLifeOverhaul.NewGround
         // turned into its exits, every turn laid as the game lays its own (left from the lane nearest the middle, right kerb
         // to kerb, straight on lane by lane). A turn from the game's stop point keeps that lane's name and road id, so the
         // traffic's blinkers see the road change where it leaves the junction, as at its own crossings.
-        private static void Through(RoadPlan plan, int t, RoadBuild build, List<Lane> lanes)
+        private static void Through(RoadPlan plan, int t, RoadBuild build, List<Lane> lanes, ref int number)
         {
             PlanThrough through = plan.Throughs[t];
             if (through.Road < 0 || through.Road >= plan.Roads.Count)
@@ -586,7 +594,6 @@ namespace RealLifeOverhaul.NewGround
             var exitCount = new int[through.Exits.Count];
             Ranks(through.Stops, stopRank, stopCount);
             Ranks(through.Exits, exitRank, exitCount);
-            int number = ThroughNumbers;
             for (int i = 0; i < lanes.Count && build.Problem == null; i++)
             {
                 Lane leave = lanes[i];
