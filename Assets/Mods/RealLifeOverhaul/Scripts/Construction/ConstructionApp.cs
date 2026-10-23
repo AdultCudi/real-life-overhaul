@@ -12,8 +12,8 @@ using UnityEngine;
 namespace RealLifeOverhaul.Construction
 {
     /// <summary>
-    /// The Construction app in the game's own frame (GameUi.AppShell, copied from MyEmployees): seven tabs (the overview,
-    /// land, projects, tenders, crews, the company, the rival builders), a list in the table and the one thing picked in the
+    /// The Construction app in the game's own frame (GameUi.AppShell, copied from MyEmployees): eight tabs (the overview,
+    /// land, projects, tenders, crews, the company, the rival builders, the city), a list in the table and the one thing picked in the
     /// white box. Nothing runs while it is closed; a page is written on opening, a pick, a press or a change.
     /// </summary>
     public sealed partial class ConstructionApp
@@ -21,7 +21,7 @@ namespace RealLifeOverhaul.Construction
         private static readonly string[] TabKeys =
         {
             "reallife_bld_tab_overview", "reallife_bld_tab_land", "reallife_bld_tab_projects", "reallife_bld_tab_tenders", "reallife_bld_tab_crews", "reallife_bld_tab_company",
-            "reallife_bld_tab_rivals"
+            "reallife_bld_tab_rivals", "reallife_bld_tab_city"
         };
 
         public static IModLogger Logger;
@@ -87,7 +87,8 @@ namespace RealLifeOverhaul.Construction
             if (_wanted >= 0)
             {
                 _tab = _wanted;
-                _pick = _wantPick <= 0 ? null : _tab == ConstructionDirector.TabTenders ? "tnd:" + _wantPick : _tab == ConstructionDirector.TabProjects ? "prj:" + _wantPick : null;
+                _pick = _wantPick <= 0 ? null : _tab == ConstructionDirector.TabTenders ? "tnd:" + _wantPick : _tab == ConstructionDirector.TabProjects ? "prj:" + _wantPick
+                    : _tab == ConstructionDirector.TabCity ? "bill:" + _wantPick : null;
                 _page = _pick != null ? _wantPage : 0;
                 _wanted = -1;
                 _wantPage = 0;
@@ -179,6 +180,7 @@ namespace RealLifeOverhaul.Construction
                         case ConstructionDirector.TabCrews: WriteCrews(box, state, ref selected); break;
                         case ConstructionDirector.TabCompany: WriteCompany(box, state, ref selected); break;
                         case ConstructionDirector.TabRivals: WriteRivals(box, state, ref selected); break;
+                        case ConstructionDirector.TabCity: WriteCity(box, state, ref selected); break;
                         default: WriteOverview(box, state, ref selected); break;
                     }
                 }
@@ -209,6 +211,7 @@ namespace RealLifeOverhaul.Construction
         partial void WriteCrews(InfoBox box, BuildState state, ref string selected);
         partial void WriteCompany(InfoBox box, BuildState state, ref string selected);
         partial void WriteRivals(InfoBox box, BuildState state, ref string selected);
+        partial void WriteCity(InfoBox box, BuildState state, ref string selected);
 
         // ------------------------------------------------------------------ rows
 

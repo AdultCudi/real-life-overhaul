@@ -468,7 +468,7 @@ internal static partial class Program
         ProjectFile r = back != null ? back.Project(7) : null;
         Check(back != null && BuildStore.Write(back) == line && r != null && r.HedgeDay == 33 && r.HedgeEnded == -1234 && r.HedgeTest && r.Hedges.Count == 2 && r.Hedges[1].Contract == 42
               && r.Hedges[1].Result == -70 && back.Books.Count == s.Books.Count, "books: the line keeps a project's hedge and the company's books, read back to the same line");
-        string older = line.Substring(0, line.IndexOf("^b:", StringComparison.Ordinal));
+        string older = line.Substring(0, line.IndexOf("^k:", StringComparison.Ordinal));
         older = Regex.Replace(older, @"\|33\|-1234\|1\|41:560,42:-70", string.Empty);
         BuildState old = BuildStore.Read(older, out _);
         Check(old != null && old.Books.Count == 0 && old.Project(7) != null && old.Project(7).HedgeDay == 0 && old.Project(7).Hedges.Count == 0,
@@ -514,8 +514,10 @@ internal static partial class Program
             "builders sources: the engine plays the builders' events and draws their own news at the close");
         string market = ModSource(@"Construction\ConstructionDirector.Market.cs").Replace("\r", string.Empty), sites = ModSource(@"Construction\ConstructionDirector.Sites.cs");
         Check(market.Contains("RivalTenderWon = " + (int)BuilderNewsKind.TenderWon + ", RivalFinished = " + (int)BuilderNewsKind.Finished + ", RivalLate = " + (int)BuilderNewsKind.Late
-                              + ", RivalDeveloped = " + (int)BuilderNewsKind.Developed) && MethodText(market, "private void Award(").Contains("RivalNews(won.Bidder, RivalTenderWon, WeightOf(t));")
-              && MethodText(market, "private void FinishDevelopment(").Contains("if (!dev.Public)\n            {\n                RivalNews(rival, RivalDeveloped, 1);") && MethodText(sites, "public void SiteHanded(").Contains("RivalHanded(siteId, day);"),
+                              + ", RivalDeveloped = " + (int)BuilderNewsKind.Developed + ", RivalRigged = " + (int)BuilderNewsKind.Rigged + ", RivalAward = " + (int)BuilderNewsKind.Award) && MethodText(market, "private void Award(").Contains("RivalNews(won.Bidder, RivalTenderWon, WeightOf(t));")
+              && MethodText(market, "private void FinishDevelopment(").Contains("if (!dev.Public)\n            {\n                RivalNews(rival, RivalDeveloped, 1);") && MethodText(sites, "public void SiteHanded(").Contains("RivalHanded(siteId, day);")
+              && MethodText(ModSource(@"Construction\ConstructionDirector.Rings.cs"), "private void RingFound(").Contains("RivalNews(r, RivalRigged, 1);")
+              && ModSource(@"Construction\ConstructionDirector.Award.cs").Contains("RivalNews(e.Builder, RivalAward, 1);"),
             "builders sources: a tender's award, a rival's works handed over and a development finished tell the market, by its kinds' numbers");
         Check(sites.Contains("p.Need[m] = ExposureRules.StageNeed(p, stage, (Material)m);"), "hedging sources: a stage's loads and the exposure are one rule");
         string wiring = ModSource(@"Wiring\Wiring.ConstructionLinks.cs"), links = ModSource(@"Wiring\Wiring.MarketsBuildLinks.cs"), listing = ModSource(@"Wiring\ListingLinks.cs");

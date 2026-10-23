@@ -117,15 +117,30 @@ namespace RealLifeOverhaul.Construction
             return ((day - 1) % 7 + 7) % 7;
         }
 
-        /// <summary>The land tax on a lot for some days: a share of its price a year, and more on land kept empty.</summary>
-        public static int LandTax(long price, int days, int daysPerYear, bool empty)
+        /// <summary>
+        /// The land tax on a lot for some days: a share of its price a year, and more on land kept empty, the surcharge as the
+        /// permits policy (-1 to 1) in force sets it.
+        /// </summary>
+        public static int LandTax(long price, int days, int daysPerYear, bool empty, int permits = 0)
         {
             if (price <= 0 || days <= 0 || daysPerYear <= 0)
             {
                 return 0;
             }
-            int permille = BuildCatalogue.LandTaxPermille + (empty ? BuildCatalogue.VacantTaxPermille : 0);
+            int permille = BuildCatalogue.LandTaxPermille + (empty ? VacantTax(permits) : 0);
             return (int)Math.Min(int.MaxValue, price * permille * days / (1000L * daysPerYear));
+        }
+
+        /// <summary>The surcharge a year on land kept empty, in thousandths of its price, under the permits policy in force.</summary>
+        public static int VacantTax(int permits)
+        {
+            return BuildCatalogue.VacantTaxPermille * CivicCatalogue.VacantPermille(permits) / 1000;
+        }
+
+        /// <summary>The uses a lot may be built for: its own zoning (and changes granted for it) and what the council allowed for its whole class.</summary>
+        public static int ZonesWith(int lotZones, int classAdded)
+        {
+            return (lotZones | classAdded) & ((1 << (int)BuildUse.Count) - 1);
         }
 
         /// <summary>True when land counts as empty: held long enough with no works under way.</summary>

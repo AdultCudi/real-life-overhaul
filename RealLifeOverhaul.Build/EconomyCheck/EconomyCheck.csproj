@@ -527,6 +527,13 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\ExposureRules.cs" Link="Mod\Construction\ExposureRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Civic\WrapRules.cs" Link="Mod\WrapRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Civic\PlotRules.cs" Link="Mod\PlotRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Civic\CouncilZoning.cs" Link="Mod\CouncilZoning.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\RingRules.cs" Link="Mod\Construction\RingRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BillRules.cs" Link="Mod\Construction\BillRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\AwardRules.cs" Link="Mod\Construction\AwardRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildState.City.cs" Link="Mod\Construction\BuildState.City.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildStore.City.cs" Link="Mod\Construction\BuildStore.City.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Justice\JusticeState.Claims.cs" Link="Mod\JusticeState.Claims.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\TestRun\RunRules.cs" Link="Mod\TestRun\RunRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\TestRun\RunPlan.cs" Link="Mod\TestRun\RunPlan.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\TestRun\RunText.cs" Link="Mod\TestRun\RunText.cs" />

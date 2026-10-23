@@ -395,7 +395,7 @@ The four new rows (`BuilderMarket.OwnRows`) are catalogue companies of the const
 | Works handed over | `SiteHanded` of a rival's tender site, against the days it bid (`RivalHanded`) | on time 40 bp a weight, late minus 120 a weight |
 | A building finished in the district | `FinishDevelopment` | its builder 50 bp, every other listed builder 6 |
 | A bribe come out, a strike | drawn at the close from the day's secret (`MarketRandom.BuilderNews`), 5% and 10% a year a listed builder, only in a market that lists the builders' own rows | minus 350 bp and 6% of its usual margin for good; minus 150 bp |
-| A rigged tender, a building of the year | kinds 7 and 8, for the civic game's events (joined at the merge) | minus 450 bp and 10% of its margin; plus 220 bp and 2% |
+| A tender ring found out, a building of the year | the city's inquiry finding a ring (`ConstructionDirector.Rings`' `RingFound`, each listed member, as the City Ledger's `reallife_bld_paper_ring_found` story names them); the building of the year's builder (`ConstructionDirector.Award`) | minus 450 bp and 10% of its margin; plus 220 bp and 2% |
 
 A move's size is scaled by the company's size (60% large, 150% small) and held to 600 bp. The mood fades as the market's moods do; a margin's move is priced at once, as a crisis's. Each named move is a piece of market news (`MarketNewsKind.Builder`: A the kind, B the move in bp, C the weight), a notification for a builder the player holds or watches, and a piece in the City Ledger's markets section.
 
