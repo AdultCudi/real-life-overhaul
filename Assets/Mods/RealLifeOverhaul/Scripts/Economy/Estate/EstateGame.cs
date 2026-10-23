@@ -14,6 +14,7 @@ namespace RealLifeOverhaul.Economy
     /// <summary>What the property business asks of the rest of the mod, filled in by Wiring/EstateLinks; each is optional.</summary>
     public static class EstateBridges
     {
+
         /// <summary>The council's rent policy: -1 freed, 0 as it was, +1 controlled. Default: as it was.</summary>
         public static Func<int> RentLever;
 
@@ -58,6 +59,9 @@ namespace RealLifeOverhaul.Economy
     /// </summary>
     internal static partial class EstateGame
     {
+        /// <summary>Owner deduction labels whose mixed costs have no single portable recurrence rule.</summary>
+        internal static string[] CompanionUnclassifiedTaxLabels() => new[] { DeductKey.GetLocalization() };
+
         public const string RentKey = "ba:transaction_rentrevenue";       // the game's own, with the address
         public const string SoldKey = "ba:transaction_buildingsold";      // the game's own: a mortgage's lender looks for it
         public const string WorksKey = "reallife_transaction_estate_works";

@@ -9,6 +9,36 @@ internal static partial class Program
 {
     private static void CompanionPortableVectors(string output)
     {
+        var registeredPrices = new List<object>();
+        foreach (float multiplier in new[] { 1f, 1.3f })
+        {
+            Dictionary<string, object> row = CityCompanion.PriceRow("fixture-furniture", 8.125f, 8.125f, 10.25f, -1, 1000, double.NaN);
+            registeredPrices.Add(CompanionSnapshot.Row("marketPriceMultiplier", CompanionValues.Decimal(multiplier),
+                "wholesaleField", "8.125", "defaultMarketField", "10.25", "wholesaleBasis", CityCompanion.PriceBasis,
+                "defaultMarketBasis", CityCompanion.PriceBasis, "expected", row));
+            Check((string)row["effectiveAmount"] == "8.125" && (string)row["defaultMarketAmount"] == "10.25"
+                && (string)row["provenance"] == "registered-current", "companion: registered prices preserve raw field basis at multiplier " + multiplier);
+        }
+        // Round clears carry each morning. Book preserves it when native booking guards return early.
+        var officeSequence = new List<object>();
+        int sequenceCarry = 499;
+        foreach (string action in new[] { "book", "book", "skip", "book-capped", "book", "morning-reset", "book" })
+        {
+            int before = sequenceCarry;
+            int free = action == "book-capped" ? 0 : 100;
+            int clients = 9;
+            int extra = 0;
+            if (action == "morning-reset")
+            {
+                sequenceCarry = 0;
+            }
+            else if (action != "skip")
+            {
+                extra = InteriorRules.OfficeClients(clients, free, 157, ref sequenceCarry);
+            }
+            officeSequence.Add(CompanionSnapshot.Row("action", action, "gameClients", clients, "free", free,
+                "boost", 157, "carry", before, "expected", extra, "expectedCarry", sequenceCarry));
+        }
         var officeClients = new List<object>();
         var basketExtra = new List<object>();
         foreach (int count in new[] { 0, 1, 9, 13, 100 })
@@ -106,7 +136,7 @@ internal static partial class Program
                         "basket", InteriorRules.BasketShare(overall, standard, 750))));
             }
         }
-        string json = CompanionSnapshot.Json(CompanionSnapshot.Row("officeClients", officeClients, "basketExtra", basketExtra, "priceToleranceTerms", CityCompanion.PriceTerms(), "promotionTerms", BusinessCompanion.Terms(), "promotions", promotions, "adjustmentQuiet", MacroCatalogue.AdjustQuiet, "cityAdjust", adjustments, "interiorTerms", InteriorCompanion.Terms(new InteriorParts { StandardScale = 1500, DecorMille = 150, PriceScale = 750, Basket = true }), "companyShare", share, "priceTolerance", prices, "interiors", interiors));
+        string json = CompanionSnapshot.Json(CompanionSnapshot.Row("registeredPrices", registeredPrices, "officeSequence", officeSequence, "officeClients", officeClients, "basketExtra", basketExtra, "priceToleranceTerms", CityCompanion.PriceTerms(), "promotionTerms", BusinessCompanion.Terms(), "promotions", promotions, "adjustmentQuiet", MacroCatalogue.AdjustQuiet, "cityAdjust", adjustments, "interiorTerms", InteriorCompanion.Terms(new InteriorParts { StandardScale = 1500, DecorMille = 150, PriceScale = 750, Basket = true }), "companyShare", share, "priceTolerance", prices, "interiors", interiors));
         string directory = output ?? System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, "../../../../../contracts/companion/v1"));
         string path = System.IO.Path.Combine(directory, "planning-vectors.json");
         if (output != null)

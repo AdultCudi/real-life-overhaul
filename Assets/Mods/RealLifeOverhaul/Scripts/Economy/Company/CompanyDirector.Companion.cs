@@ -7,8 +7,8 @@ namespace RealLifeOverhaul.Economy
     {
         internal string CompanionPartStatus(CompanyPart part)
         {
-            return _broken || _partBroken[(int)part] ? "failed" : !_running ? "unavailable"
-                : !Wanted(part) ? "disabled" : "ready";
+            return !Wanted(part) ? "disabled" : _broken || _partBroken[(int)part] ? "failed"
+                : !_running ? "unavailable" : "ready";
         }
 
         /// <summary>Commitments and optional new-site policy terms; never refreshes staff or financial statements.</summary>
@@ -99,8 +99,7 @@ namespace RealLifeOverhaul.Economy
             for (int index = 0; index < (int)CompanyPart.Count; index++)
             {
                 CompanyPart part = (CompanyPart)index;
-                states[part.ToString().ToLowerInvariant()] = !Wanted(part) ? "disabled"
-                    : _partBroken[(int)part] ? "failed" : "ready";
+                states[part.ToString().ToLowerInvariant()] = CompanionPartStatus(part);
             }
             TaxFile tax = _state.Tax;
             return new CompanionModule("ready", CompanionSnapshot.Row("model", "rlo-company-v1", "sites", rows, "partStates", states,

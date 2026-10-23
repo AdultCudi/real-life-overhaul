@@ -70,10 +70,26 @@ namespace RealLifeOverhaul
                 rows.AddRange(BusinessGame.CompanionOutside());
                 var labels = (List<object>)CompanyGame.CompanionTaxLabels();
                 labels.Add(UtilitiesGame.CompanionTaxLabel());
+                labels.Add(UtilitiesGame.CompanionCompanyTaxLabel());
+                labels.AddRange((List<object>)CityGame.CompanionTaxLabels());
+                var unclassified = new SortedSet<string>(StringComparer.Ordinal);
+                foreach (string[] names in new[] { Tech.FirmsGame.CompanionUnclassifiedTaxLabels(),
+                    Tech.TalentGame.CompanionUnclassifiedTaxLabels(), Tech.InfraGame.CompanionUnclassifiedTaxLabels(),
+                    OnlineGame.CompanionUnclassifiedTaxLabels(), Economy.Brands.BrandsGame.CompanionUnclassifiedTaxLabels(),
+                    ServicesGame.CompanionUnclassifiedTaxLabels(), GameBooks.CompanionUnclassifiedTaxLabels(),
+                    EstateGame.CompanionUnclassifiedTaxLabels(), Economy.Dealership.DealerGame.CompanionUnclassifiedTaxLabels(),
+                    OwnBankGame.CompanionUnclassifiedTaxLabels(), CityGame.CompanionUnclassifiedTaxLabels() })
+                {
+                    unclassified.UnionWith(names);
+                }
+                string taxStatus = !CompanyEnabled || !Settings.EconomyCompanyTax ? "disabled"
+                    : CompanyDirector.Instance != null ? CompanyDirector.Instance.CompanionPartStatus(CompanyPart.Tax) : "unavailable";
+                string[] taxEffects = taxStatus == "disabled" ? new string[0] : taxStatus != "ready"
+                    ? new[] { "company-tax-" + taxStatus } : new[] { "hidden-cash", "accountant-rebate", "audit-penalty", "backtax" };
                 return new CompanionModule("ready", CompanionSnapshot.Row("rows", rows, "coverage", "partial",
                     "knownOmittedCategories", new[] { "cover.excess", "other" },
-                    "recurringDeductionLabels", labels, "balancesAreSeparate", true,
-                    "taxEffectsOutsideNativeForecast", new[] { "hidden-cash", "accountant-rebate", "audit-penalty", "backtax" }));
+                    "recurringDeductionLabels", labels, "unclassifiedDeductionLabels", new List<string>(unclassified), "balancesAreSeparate", true,
+                    "taxEffectsOutsideNativeForecast", taxEffects));
             }
 
             private static Dictionary<string, BuildingRegistration> Registrations()

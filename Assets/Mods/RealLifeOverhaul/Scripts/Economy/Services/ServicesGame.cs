@@ -14,6 +14,7 @@ namespace RealLifeOverhaul.Economy
     /// <summary>What the services ask of the rest of the mod, set by Wiring/ServicesLinks; each is optional, with the default named on it.</summary>
     public static class ServicesBridges
     {
+
         /// <summary>What buying every investor out of a business costs today (Ventures' own price). Default: nothing.</summary>
         public static Func<BuildingRegistration, int> InvestorsOwed;
 
@@ -65,6 +66,9 @@ namespace RealLifeOverhaul.Economy
     /// </summary>
     internal static partial class ServicesGame
     {
+        /// <summary>Owner deduction labels whose mixed costs have no single portable recurrence rule.</summary>
+        internal static string[] CompanionUnclassifiedTaxLabels() => new[] { DeductKey.GetLocalization() };
+
         public const string VanKey = "reallife_transaction_svc_van";
         public const string FeeKey = "reallife_transaction_svc_fee";
         public const string PenaltyKey = "reallife_transaction_svc_penalty";

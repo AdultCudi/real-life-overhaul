@@ -15,6 +15,11 @@ namespace RealLifeOverhaul.Utilities
             });
         }
 
+        public static object CompanionCompanyTaxLabel()
+        {
+            return CompanionSnapshot.Row("label", CompanyDeductKey.GetLocalization(), "kind", "recurring");
+        }
+
         public static object CompanionTaxLabel()
         {
             return CompanionSnapshot.Row("label", BillsDeductKey.GetLocalization(), "kind", "recurring");

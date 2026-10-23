@@ -115,3 +115,54 @@ boundary; they cover successful, malformed, missing and failed provider paths.
 Utility and education projections verify owner-store bytes before/after. The
 runtime-specific full capture and save-restore tests still require an actual game
 session; offline tests do not claim those were run.
+
+### Registered price basis and late catalogue changes
+
+A ready `prices` module covers every currently registered item, including furniture and
+unpriced services. `wholesaleBasis` and `defaultMarketBasis` are both
+`item-field-before-market-index-and-multiplier`. The SDK getter `Item.DefaultMarketPrice`
+is exactly a read of `defaultMarketPrice`; `wholesalePrice` is the public raw field.
+ContractCheck verifies the getter's IL and a multiplier of 1.3. The production PriceRow
+vectors preserve the fields at multipliers 1 and 1.3; downstream native price multipliers
+are deliberately not incorporated in these captured amounts.
+
+`registered-current` means RLO did not adjust this registered item: kind -1, factor 1000,
+no exchange factor, own and effective wholesale both the current field. It does not assert
+an original pre-registration price. Capture never writes Own, Goods, Priced or KindCount.
+`defaultMarketSource: live-registered-item` reports the current getter, including another
+mod's registration changes. In contrast, price-tolerance `marketSource:
+city-find-goods-captured-item` reports the owner's cached Goods.Market at FindGoods. Its
+`marketBasis` is also before the native market multiplier. A late catalogue patch can
+make these two observations differ; consumers must preserve that distinction.
+
+A disabled prices module permits the static baseline without RLO adjustment. Failed or
+unavailable means unknown; it does not permit a silent baseline fallback. Bank terms have
+`quoteBasis: captured-rating-and-settings`: their effective cap already includes secured
+credit, and the captured native debt must still be subtracted.
+
+### Company parts and deduction classification
+
+`partStates` uses the same owner status function as individual projections. Consumers must
+ignore stored policies unless the relevant part is ready. Disabled means no ongoing effect;
+failed or unavailable means unknown. `taxEffectsOutsideNativeForecast` is empty when the
+Tax part is disabled; failure/startup is represented by `company-tax-failed` or
+`company-tax-unavailable`, respectively. Historical paid transactions and exact deduction
+labels remain observations regardless of current feature enablement.
+
+`recurringDeductionLabels` contains only proven recurring/once semantics. The additional
+`unclassifiedDeductionLabels` lists exact owner labels with mixed or unproved recurrence:
+Tech (including relief and write-down), Online, Brands, Services vans, Empire Motors,
+Estate, Dealer, Own Bank and City Living adjustments. These projections live in their
+owners and use the actual private localization keys. A matching recorded deduction is
+unknown for future extrapolation; an unrelated native label is not thereby mod-unknown.
+City rent/wage adjustments and broadband company running costs have recurring labels.
+Material trading deliberately uses the game's existing `tax_import` label.
+
+### Office carry lifecycle
+
+InteriorDirector.Book reads and writes carry per site. BookOffice's early native eligibility
+guards leave it unchanged; InteriorRules.OfficeClients resets it when capacity binds.
+InteriorDirector.Round clears the entire carry dictionary every morning. `officeSequence`
+vectors demonstrate hourly persistence, skipped booking, a capacity bound and morning
+reset. A full-day forecast starts at zero every day. These captures do not claim an exact
+midday remainder for a partial-day forecast.

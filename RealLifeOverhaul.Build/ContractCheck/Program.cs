@@ -82,6 +82,7 @@ internal static partial class Program
         else
         {
             var files = new GameFiles(managed);
+            CompanionPriceBasisChecks(managed);
             InstalledBuild(managed);
             Contract(files);
             References(files, mod);

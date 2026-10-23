@@ -33,7 +33,7 @@ namespace RealLifeOverhaul.Economy
                     "nativeDebtAtBankCents", CompanionValues.Cents(GameLoans.OwedTo(lender.Address))));
             }
             return new CompanionModule("ready", CompanionSnapshot.Row("model", "rlo-native-bank-terms-v1",
-                "banks", rows, "additionalCreditIncluded", false, "principalIsExpense", false));
+                "quoteBasis", "captured-rating-and-settings", "banks", rows, "additionalCreditIncluded", false, "principalIsExpense", false));
         }
     }
 }

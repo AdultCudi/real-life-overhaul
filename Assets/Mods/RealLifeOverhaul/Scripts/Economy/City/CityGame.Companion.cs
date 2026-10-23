@@ -7,7 +7,7 @@ namespace RealLifeOverhaul.Economy
 {
     internal static partial class CityGame
     {
-        /// <summary>The owner's saved wholesale originals and live catalogue values; no price writes or catalogue scan.</summary>
+        /// <summary>The owner's saved wholesale originals and live catalogue values; no price writes or owner cache changes.</summary>
         public static CompanionModule CompanionPrices(IReadOnlyDictionary<string, double> materials)
         {
             if (CityEconomyDirector.Instance != null && CityEconomyDirector.Instance.CompanionFailed)
@@ -20,24 +20,24 @@ namespace RealLifeOverhaul.Economy
                 return new CompanionModule("unavailable");
             }
             var items = new List<object>();
-            var keys = new List<string>(Goods.Keys);
+            var registered = new Dictionary<string, Item>(StringComparer.Ordinal);
+            foreach (Item item in ItemsGetter.AllItems)
+            {
+                if (item != null && !string.IsNullOrEmpty(item.itemName))
+                {
+                    registered[item.itemName] = item;
+                }
+            }
+            var keys = new List<string>(registered.Keys);
             keys.Sort(StringComparer.Ordinal);
             foreach (string key in keys)
             {
-                Good good = Goods[key];
-                if (good.Item == null)
-                {
-                    continue;
-                }
-                float own = Own.TryGetValue(good.Item, out float original) ? original : good.Item.wholesalePrice;
-                double exchange = materials != null && materials.TryGetValue(key, out double factor) ? factor : double.NaN;
-                bool material = exchange > 0 && !double.IsInfinity(exchange);
-                items.Add(CompanionSnapshot.Row("itemId", key, "ownAmount", CompanionValues.Decimal(own),
-                    "effectiveAmount", CompanionValues.Decimal(good.Item.wholesalePrice), "kind", good.Kind,
-                    "factorThousandths", good.Kind < 0 ? 1000 : CityModel.Wholesale(state, good.Kind),
-                    "exchangeFactor", material ? CompanionValues.Decimal(exchange) : null,
-                    "provenance", material ? "material-exchange" : "city-kind",
-                    "defaultMarketAmount", CompanionValues.Decimal(good.Item.DefaultMarketPrice)));
+                Item item = registered[key];
+                bool adjusted = Goods.TryGetValue(key, out Good good) && good.Item == item && good.Kind >= 0;
+                float own = adjusted && Own.TryGetValue(item, out float original) ? original : item.wholesalePrice;
+                double exchange = adjusted && materials != null && materials.TryGetValue(key, out double factor) ? factor : double.NaN;
+                items.Add(CityCompanion.PriceRow(key, own, item.wholesalePrice, item.DefaultMarketPrice,
+                    adjusted ? good.Kind : -1, adjusted ? CityModel.Wholesale(state, good.Kind) : 1000, exchange));
             }
             var living = new List<string>(LivingTypes);
             living.Sort(StringComparer.Ordinal);
@@ -58,7 +58,8 @@ namespace RealLifeOverhaul.Economy
                 depositAdjustment = adjustment;
             }
             return new CompanionModule("ready", CompanionSnapshot.Row("model", "rlo-prices-v1",
-                "levelThousandths", Prices.Level, "quietBand", PriceRules.Quiet, "adjustmentQuiet", MacroCatalogue.AdjustQuiet,
+                "wholesaleBasis", CityCompanion.PriceBasis, "defaultMarketBasis", CityCompanion.PriceBasis,
+                "defaultMarketSource", "live-registered-item", "levelThousandths", Prices.Level, "quietBand", PriceRules.Quiet, "adjustmentQuiet", MacroCatalogue.AdjustQuiet,
                 "costFactorThousandths", CityModel.Costs(state),
                 "takingsFactorThousandths", CityModel.Takings(state, CityEconomy.Level), "items", items,
                 "livingTransactionTypes", living, "livingExcludesWholesalePurchases", true,
@@ -66,6 +67,17 @@ namespace RealLifeOverhaul.Economy
                 "depositAdjustment", depositAdjustment, "depositAdjustmentBasis", "observed-native-negative-transactions",
                 "depositRefundAdjustment", "none", "carriedDebtInSiteForecast", false));
         }
+
+        public static object CompanionTaxLabels()
+        {
+            return new List<object>
+            {
+                CompanionSnapshot.Row("label", RentKey, "kind", "recurring"),
+                CompanionSnapshot.Row("label", WagesKey, "kind", "recurring")
+            };
+        }
+
+        public static string[] CompanionUnclassifiedTaxLabels() => new[] { LivingKey };
 
         public static object CompanionTolerance()
         {
@@ -99,6 +111,8 @@ namespace RealLifeOverhaul.Economy
                 monopolies.Add(CompanionSnapshot.Row("itemId", pair.item, "districtId", pair.district));
             }
             Dictionary<string, object> terms = CityCompanion.PriceTerms();
+            terms["marketSource"] = "city-find-goods-captured-item";
+            terms["marketBasis"] = CityCompanion.PriceBasis;
             terms["districts"] = districts;
             terms["items"] = goods;
             terms["monopolies"] = monopolies;

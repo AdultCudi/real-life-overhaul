@@ -12,6 +12,7 @@ namespace RealLifeOverhaul.Economy
     /// <summary>What the online shops ask of the rest of the mod, filled in by Wiring/OnlineLinks. Each is optional.</summary>
     public static class OnlineBridges
     {
+
         /// <summary>The customers, in per cent, that one of the company's campaigns adds at a business today. Default: none.</summary>
         public static Func<BuildingRegistration, int> Campaign;
 
@@ -54,6 +55,9 @@ namespace RealLifeOverhaul.Economy
     /// </summary>
     internal static partial class OnlineGame
     {
+        /// <summary>Owner deduction labels whose mixed costs have no single portable recurrence rule.</summary>
+        internal static string[] CompanionUnclassifiedTaxLabels() => new[] { DeductKey.GetLocalization() };
+
         public const string TakingsKey = "reallife_transaction_online_takings";
         public const string RefundsKey = "reallife_transaction_online_refunds";
         public const string CourierKey = "reallife_transaction_online_courier";

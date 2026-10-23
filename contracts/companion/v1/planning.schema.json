@@ -644,6 +644,21 @@
                     "rlo-prices-v1"
                   ]
                 },
+                "wholesaleBasis": {
+                  "enum": [
+                    "item-field-before-market-index-and-multiplier"
+                  ]
+                },
+                "defaultMarketBasis": {
+                  "enum": [
+                    "item-field-before-market-index-and-multiplier"
+                  ]
+                },
+                "defaultMarketSource": {
+                  "enum": [
+                    "live-registered-item"
+                  ]
+                },
                 "levelThousandths": {
                   "type": "integer",
                   "minimum": -9007199254740991,
@@ -715,7 +730,8 @@
                       "provenance": {
                         "enum": [
                           "material-exchange",
-                          "city-kind"
+                          "city-kind",
+                          "registered-current"
                         ]
                       },
                       "defaultMarketAmount": {
@@ -788,6 +804,9 @@
               },
               "required": [
                 "model",
+                "wholesaleBasis",
+                "defaultMarketBasis",
+                "defaultMarketSource",
                 "levelThousandths",
                 "quietBand",
                 "adjustmentQuiet",
@@ -2259,6 +2278,16 @@
                     {
                       "type": "object",
                       "properties": {
+                        "marketSource": {
+                          "enum": [
+                            "city-find-goods-captured-item"
+                          ]
+                        },
+                        "marketBasis": {
+                          "enum": [
+                            "item-field-before-market-index-and-multiplier"
+                          ]
+                        },
                         "districts": {
                           "type": "array",
                           "maxItems": 10000,
@@ -2413,6 +2442,8 @@
                         }
                       },
                       "required": [
+                        "marketSource",
+                        "marketBasis",
                         "districts",
                         "items",
                         "monopolies",
@@ -3115,6 +3146,11 @@
                     "rlo-native-bank-terms-v1"
                   ]
                 },
+                "quoteBasis": {
+                  "enum": [
+                    "captured-rating-and-settings"
+                  ]
+                },
                 "banks": {
                   "type": "array",
                   "maxItems": 10000,
@@ -3227,6 +3263,7 @@
               },
               "required": [
                 "model",
+                "quoteBasis",
                 "banks",
                 "additionalCreditIncluded",
                 "principalIsExpense"
@@ -3412,6 +3449,15 @@
                     "additionalProperties": false
                   }
                 },
+                "unclassifiedDeductionLabels": {
+                  "type": "array",
+                  "maxItems": 10000,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1024
+                  }
+                },
                 "balancesAreSeparate": {
                   "type": "boolean"
                 },
@@ -3430,6 +3476,7 @@
                 "coverage",
                 "knownOmittedCategories",
                 "recurringDeductionLabels",
+                "unclassifiedDeductionLabels",
                 "balancesAreSeparate",
                 "taxEffectsOutsideNativeForecast"
               ],
@@ -4382,6 +4429,21 @@
             "rlo-prices-v1"
           ]
         },
+        "wholesaleBasis": {
+          "enum": [
+            "item-field-before-market-index-and-multiplier"
+          ]
+        },
+        "defaultMarketBasis": {
+          "enum": [
+            "item-field-before-market-index-and-multiplier"
+          ]
+        },
+        "defaultMarketSource": {
+          "enum": [
+            "live-registered-item"
+          ]
+        },
         "levelThousandths": {
           "type": "integer",
           "minimum": -9007199254740991,
@@ -4453,7 +4515,8 @@
               "provenance": {
                 "enum": [
                   "material-exchange",
-                  "city-kind"
+                  "city-kind",
+                  "registered-current"
                 ]
               },
               "defaultMarketAmount": {
@@ -4526,6 +4589,9 @@
       },
       "required": [
         "model",
+        "wholesaleBasis",
+        "defaultMarketBasis",
+        "defaultMarketSource",
         "levelThousandths",
         "quietBand",
         "adjustmentQuiet",
@@ -5817,6 +5883,16 @@
             {
               "type": "object",
               "properties": {
+                "marketSource": {
+                  "enum": [
+                    "city-find-goods-captured-item"
+                  ]
+                },
+                "marketBasis": {
+                  "enum": [
+                    "item-field-before-market-index-and-multiplier"
+                  ]
+                },
                 "districts": {
                   "type": "array",
                   "maxItems": 10000,
@@ -5971,6 +6047,8 @@
                 }
               },
               "required": [
+                "marketSource",
+                "marketBasis",
                 "districts",
                 "items",
                 "monopolies",
@@ -6538,6 +6616,11 @@
             "rlo-native-bank-terms-v1"
           ]
         },
+        "quoteBasis": {
+          "enum": [
+            "captured-rating-and-settings"
+          ]
+        },
         "banks": {
           "type": "array",
           "maxItems": 10000,
@@ -6650,6 +6733,7 @@
       },
       "required": [
         "model",
+        "quoteBasis",
         "banks",
         "additionalCreditIncluded",
         "principalIsExpense"
@@ -6790,6 +6874,15 @@
             "additionalProperties": false
           }
         },
+        "unclassifiedDeductionLabels": {
+          "type": "array",
+          "maxItems": 10000,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          }
+        },
         "balancesAreSeparate": {
           "type": "boolean"
         },
@@ -6808,6 +6901,7 @@
         "coverage",
         "knownOmittedCategories",
         "recurringDeductionLabels",
+        "unclassifiedDeductionLabels",
         "balancesAreSeparate",
         "taxEffectsOutsideNativeForecast"
       ],
