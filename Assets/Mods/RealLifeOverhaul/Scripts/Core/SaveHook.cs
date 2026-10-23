@@ -82,7 +82,8 @@ namespace RealLifeOverhaul
                 {
                     if (Skipped.Add(guard))
                     {
-                        Logger?.Warn("Save: " + guard.Where + " is switched off after its faults; its line in the save is left as it last wrote it.");
+                        Logger?.Warn("Save: " + guard.Where + (guard.Away ? " stands down in this city" : " is switched off after its faults")
+                                     + "; its line in the save is left as it last wrote it.");
                     }
                     continue;
                 }
