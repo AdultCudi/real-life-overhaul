@@ -498,6 +498,12 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\DistrictSave\DistrictPlaces.cs" Link="Mod\DistrictPlaces.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\DistrictSave\DistrictSaveRules.cs" Link="Mod\DistrictSaveRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\DistrictSave\DistrictSaveStore.cs" Link="Mod\DistrictSaveStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\CareerCatalogue.cs" Link="Mod\CareerCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\BuildTrades\TradeCatalogue.cs" Link="Mod\TradeCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\BuildTrades\TradeRules.cs" Link="Mod\TradeRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\BuildTrades\DesignRules.cs" Link="Mod\DesignRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\BuildTrades\TenderRules.cs" Link="Mod\TenderRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\BuildTrades\DesignBook.cs" Link="Mod\DesignBook.cs" />
   </ItemGroup>
 
 </Project>

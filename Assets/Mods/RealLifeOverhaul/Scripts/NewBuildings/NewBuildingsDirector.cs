@@ -31,6 +31,7 @@ namespace RealLifeOverhaul.NewBuildings
         private const float SlowEvery = 1f;          // s of real time between two looks
         private const float ClosestWait = 30f;       // s after the load the game's closest-building job is waited for, for the made buildings' check
         private const string TestPref = "reallife.newbuildings.test";   // not a locale key: a dot, not an underscore; the developer's ask for the test building
+        private const string TestHerePref = "reallife.newbuildings.test.here";   // not a locale key: where the developer stood when they asked
         private const string PlacesOwner = "new buildings";   // its name among the district save's providers of places
 
         public static IModLogger Logger;
@@ -47,6 +48,12 @@ namespace RealLifeOverhaul.NewBuildings
 
         /// <summary>True while the developer has asked for the test building (made at the next load with Developer diagnostics on).</summary>
         public static bool TestAsked => UnityEngine.PlayerPrefs.GetInt(TestPref, 0) != 0;
+
+        /// <summary>Where the developer stood, and the way the camera looked, when they asked for the test building; false when asked from the main menu or indoors.</summary>
+        public static bool TestHere(out float x, out float z, out float yaw)
+        {
+            return NewBuildingsRules.ReadSpot(UnityEngine.PlayerPrefs.GetString(TestHerePref, string.Empty), out x, out z, out yaw);
+        }
 
         private void Awake()
         {
@@ -205,7 +212,8 @@ namespace RealLifeOverhaul.NewBuildings
             MadeBuildings.Wanted(_specs);
             if (TestAsked && Meta.Dev.Verbose && MadeBuildings.Get(NewBuildingsTestPlot.Id) == null && !Declares(NewBuildingsTestPlot.Id))
             {
-                _specs.Add(NewBuildingsTestPlot.Spec());
+                bool here = TestHere(out float hereX, out float hereZ, out float hereYaw);
+                _specs.Add(NewBuildingsTestPlot.Spec(here, hereX, hereZ, hereYaw));
             }
             if (_specs.Count == 0)
             {

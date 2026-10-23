@@ -42,6 +42,7 @@ Every feature runs in the New York the mod knows, a New York with districts a fr
 
 - [Jobs](jobs.md): gigs from the Gig Line and the help-wanted boards.
 - [Careers](careers.md): the employers' ranks, and education and the professions.
+- [Building trades](trades.md): the trades at the city's works sites, each with a game of its own, the architects' practice on a floor (the floor plan, the facade and the frame), the trades' courses and three ladders.
 
 ## Economy
 

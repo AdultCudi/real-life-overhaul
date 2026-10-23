@@ -177,8 +177,10 @@ namespace RealLifeOverhaul
                 return;
             }
             int id = site.Id;
+            Func<int, DialogEntry> work = CivicBridges.SiteWork;   // the building trades' work at the site, when they are there
             DialogController.current.ShowEntry(Guard.Entry(CityHallPhone.Page(CityHallDialog.SiteText(director.Works, site, false),
-                "reallife_civic_button_site_actions", () => CityHallDialog.SiteAction(id, 0, -1))));
+                "reallife_civic_button_site_actions", () => CityHallDialog.SiteAction(id, 0, -1), work != null ? "reallife_trades_site_button" : null,
+                work != null ? () => work(id) : (Func<DialogEntry>)null)));
         }
     }
 

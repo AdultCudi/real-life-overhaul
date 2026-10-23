@@ -89,9 +89,11 @@ namespace RealLifeOverhaul
             int board = DepotOf(employer);
             if (boards == null || board < 0 || board >= boards.Count)
             {
+                // An employer with no board (the building trades'): its works site or its floor, nearest the player.
                 place = default;
                 address = null;
-                return false;
+                return employer >= 0 && employer < CareerCatalogue.All.Length && CareerCatalogue.All[employer].Premises.Length == 0
+                       && CareerLinks.WorkplaceOf(CareerCatalogue.All[employer], PlayerPosition(), out place, out address);
             }
             place = boards.Front(board);
             address = boards.Address(board);
@@ -449,7 +451,7 @@ namespace RealLifeOverhaul
                 reasonKey = "reallife_career_cart_no_money";
                 return false;
             }
-            JobDef def = JobCatalogue.Find(rank.Work == CareerWork.Dispatch ? JobCatalogue.Dispatch : rank.Work == CareerWork.Lead ? JobCatalogue.Lead : employer.Job);
+            JobDef def = JobCatalogue.Find(rank.Work == CareerWork.Dispatch ? JobCatalogue.Dispatch : rank.Work == CareerWork.Lead ? JobCatalogue.Lead : rank.JobId ?? employer.Job);
             if (def == null)
             {
                 reasonKey = "reallife_job_no_now";

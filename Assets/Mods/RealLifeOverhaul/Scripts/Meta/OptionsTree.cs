@@ -305,6 +305,9 @@ namespace RealLifeOverhaul.Meta
             G("work",
                 S("jobs").For("jobs").Main("jobs").Opts("job_pay").Also("gig gigs shift wage employment"),
                 S("careers").For("careers").Opt("careers", "jobs").Also("employer promotion rank review"),
+                S("buildtrades").For("buildtrades").Opt("build_trades", "jobs").Opt("build_trades_office", "build_trades")
+                    .Also("construction building site mason labourer bricks architect architecture design inspector bribe surveyor crane")
+                    .Also("security electrician plumber roofer scaffold painter estimator tender apprentice practice"),
                 S("study").For("careers_study").Main("careers_study").Opts("careers_class_start")
                     .Also("school course courses class classes diploma education study learn skill skills homework exam timetable"),
                 S("degrees").For("careers_degrees").Opt("careers_degrees", "careers_study")

@@ -332,6 +332,51 @@ internal static partial class Program
         Check(asked.Count == 5 && asked[0] == 4 && asked[1] == 5 && asked[2] == 0 && asked[3] == 1 && asked[4] == 2,
             "new buildings: the lots are tried in one fixed order (4, 5, 0, 1, 2), so every machine with the same ground takes the same one");
 
+        // The test building's lot ahead of the developer (the plot by the airport was found taken by the game's barricades in a
+        // player's game, 23 Oct 2026): 4 m ahead to its front, its middle on the line of sight, its front turned back to them.
+        MadeLot north = NewBuildingsRules.LotAhead(100f, 200f, 0f, 30f, 34f, 4f), east = NewBuildingsRules.LotAhead(100f, 200f, 90f, 30f, 34f, 4f);
+        MadeLot back = NewBuildingsRules.LotAhead(0f, 0f, 270f, 30f, 34f, 4f);
+        Check(Near(north.X, 100f) && Near(north.Z, 221f) && Near(north.Facing, 180f) && Near(east.X, 121f) && Near(east.Z, 200f) && Near(east.Facing, 270f)
+              && Near(back.X, -21f) && Near(back.Z, 0f) && Near(back.Facing, 90f) && Near(north.Width, 30f) && Near(north.Depth, 34f),
+            "new buildings: the test lot ahead of where the developer stands has its front 4 m ahead of them, its middle on their line of sight, its front facing them");
+        Check(NewBuildingsRules.ReadSpot(NewBuildingsRules.SpotText(-2210.25f, -915.5f, 123.75f), out float sx, out float sz, out float syaw)
+              && Near(sx, -2210.25f) && Near(sz, -915.5f) && Near(syaw, 123.75f) && !NewBuildingsRules.ReadSpot(string.Empty, out _, out _, out _)
+              && !NewBuildingsRules.ReadSpot("1;2", out _, out _, out _) && !NewBuildingsRules.ReadSpot("a;b;c", out _, out _, out _),
+            "new buildings: the developer's spot is kept as text and read back exactly, and nothing else reads as a spot");
+        MadeSpec plotOnly = NewBuildingsTestPlot.Spec(), withSpot = NewBuildingsTestPlot.Spec(true, 0f, 0f, 0f);
+        int ring = NewBuildingsTestPlot.RingLots, open = NewBuildingsTestPlot.Lots.Length;
+        Check(plotOnly.Lots.Length == open && Near(plotOnly.Lots[0].X, NewBuildingsTestPlot.Lots[0].X) && withSpot.Lots.Length == ring + open && ring >= 16
+              && Near(withSpot.Lots[0].X, 0f) && Near(withSpot.Lots[0].Z, 21f) && Near(withSpot.Lots[0].Facing, 180f)
+              && Near(withSpot.Lots[ring].X, NewBuildingsTestPlot.Lots[0].X) && Near(withSpot.Lots[ring + open - 1].X, NewBuildingsTestPlot.Lots[open - 1].X)
+              && withSpot.Preferred == 0,
+            "new buildings: the test building is tried on the lot ahead of the developer first, then round them, then on the open ground; without a spot, the open ground alone");
+        // Round the developer: each lot's front turned to them at its ring's distance, nearest ring first and, within a ring,
+        // the ways nearest to where the camera looked first, every way round tried.
+        bool facesThem = true, nearestFirst = true, allRound = true;
+        var ways = new HashSet<int>();
+        for (int k = 0; k < ring; k++)
+        {
+            MadeLot l = withSpot.Lots[k];
+            double f = l.Facing * Math.PI / 180.0;
+            float toThem = -(l.X * (float)Math.Sin(f) + l.Z * (float)Math.Cos(f));    // the developer's distance in front of the lot's middle
+            float gap = NewBuildingsTestPlot.RingGaps[k / NewBuildingsTestPlot.RingTurns.Length];
+            facesThem &= Near(toThem, gap + l.Depth * 0.5f) && Near(l.Width, 30f) && Near(l.Depth, 34f);
+            if (k > 0)
+            {
+                float was = NewBuildingsTestPlot.RingGaps[(k - 1) / NewBuildingsTestPlot.RingTurns.Length];
+                float turn = Math.Abs(NewBuildingsTestPlot.RingTurns[k % NewBuildingsTestPlot.RingTurns.Length]);
+                float turnWas = Math.Abs(NewBuildingsTestPlot.RingTurns[(k - 1) % NewBuildingsTestPlot.RingTurns.Length]);
+                nearestFirst &= gap > was || (Near(gap, was) && turn >= turnWas);
+            }
+            if (k < NewBuildingsTestPlot.RingTurns.Length)
+            {
+                ways.Add((int)Math.Round(NewBuildingsRules.Turn(l.Facing + 180f)) % 360);
+            }
+        }
+        allRound = ways.Count == 8 && ways.Contains(0) && ways.Contains(45) && ways.Contains(90) && ways.Contains(135) && ways.Contains(180) && ways.Contains(225) && ways.Contains(270) && ways.Contains(315);
+        Check(facesThem && nearestFirst && allRound,
+            "new buildings: the lots round the developer face them at 4, 20 and 40 m, nearest first and straight ahead first, all eight ways round");
+
         Check(NewBuildingsRules.CostPasses(10.4f, 10f) && !NewBuildingsRules.CostPasses(10.6f, 10f) && !NewBuildingsRules.CostPasses(10.5f, 10f) && NewBuildingsRules.CostPasses(9f, 10f),
             "new buildings: ten copies pass the frame cost test when they add under 0.5 ms");
         bool ahead = true, apart = true;
@@ -439,27 +484,40 @@ internal static partial class Program
     private static void NewBuildingsTestPlotChecks()
     {
         MadeLot[] lots = NewBuildingsTestPlot.Lots;
-        bool apart = lots.Length == 6, inLine = true;
+        // The open grass round the airport, the land study's largest patch of bare ground (x -2536 to -1888, z -1310 to -926).
+        bool sized = lots.Length == 6, onGrass = true, apart = true;
         for (int i = 0; i < lots.Length; i++)
         {
-            inLine &= lots[i].Facing == 0f && lots[i].Width == 30f && lots[i].Depth == 34f && Near(lots[i].Z + lots[i].Depth * 0.5f, -909f);
+            MadeLot l = lots[i];
+            sized &= Near(l.Width, 30f) && Near(l.Depth, 34f) && (Near(l.Facing, 0f) || Near(l.Facing, 90f) || Near(l.Facing, 180f) || Near(l.Facing, 270f));
+            bool across = Near(l.Facing, 90f) || Near(l.Facing, 270f);
+            float halfX = (across ? l.Depth : l.Width) * 0.5f, halfZ = (across ? l.Width : l.Depth) * 0.5f;
+            onGrass &= l.X - halfX >= -2536f && l.X + halfX <= -1888f && l.Z - halfZ >= -1310f && l.Z + halfZ <= -926f;
             for (int j = 0; j < i; j++)
             {
-                apart &= Math.Abs(lots[i].X - lots[j].X) - lots[i].Width >= 2f * NewBuildingsRules.Gap;
-            }
-            if (i > 0)
-            {
-                apart &= lots[i].X > lots[i - 1].X;   // west to east: the order they are tried in
+                float dx = l.X - lots[j].X, dz = l.Z - lots[j].Z;
+                apart &= dx * dx + dz * dz >= 70f * 70f;   // one thing standing on the grass never takes two of them
             }
         }
-        Check(apart && inLine, "new buildings: the test plot is six lots west to east along one front line, 30 by 34 m, never closer than the gap kept between two buildings");
-        // The road's southern lane runs at z -903 from x -2313 to -2087 (the traffic's Road_237).
-        float laneZ = -903f, front = lots[0].Z + lots[0].Depth * 0.5f;
-        Check(laneZ - front >= NewBuildingsRules.RoadClear && laneZ - front <= NewBuildingsRules.StreetReach && lots[0].X - 15f >= -2313f && lots[5].X + 15f <= -2087f,
-            "new buildings: the test plot fronts the road north of the airport: clear of its lane, near enough to front it, along its straight stretch");
+        Check(sized && onGrass && apart, "new buildings: the test building's open ground is six lots of 30 by 34 m on the grass round the airport, 70 m apart or more");
+        // Each lot's nearest traffic lane point in the build's lane dump (23 Oct 2026): ahead of its door, clear of the lot,
+        // near enough for it to front a street.
+        float[] laneX = { -2085f, -2389f, -2158f, -2294f, -1934f, -1982f };
+        float[] laneZ = { -904f, -904f, -903f, -903f, -1329f, -950f };
+        bool fronts = laneX.Length == lots.Length;
+        for (int i = 0; fronts && i < lots.Length; i++)
+        {
+            MadeLot l = lots[i];
+            double f = l.Facing * Math.PI / 180.0;
+            float dx = laneX[i] - l.X, dz = laneZ[i] - l.Z;
+            float ahead = dx * (float)Math.Sin(f) + dz * (float)Math.Cos(f), aside = dx * (float)Math.Cos(f) - dz * (float)Math.Sin(f);
+            fronts &= ahead > l.Depth * 0.5f + NewBuildingsRules.RoadClear && Math.Abs(aside) < 40f
+                      && dx * dx + dz * dz <= (NewBuildingsRules.StreetReach + l.Depth * 0.5f) * (NewBuildingsRules.StreetReach + l.Depth * 0.5f);
+        }
+        Check(fronts, "new buildings: each open ground lot has its door to its nearest street, clear of the lane and near enough to front it");
         MadeSpec a = NewBuildingsTestPlot.Spec(), b = NewBuildingsTestPlot.Spec();
         a.Lots[0].X = 0f;
-        Check(b.Lots[0].X == lots[0].X && NewBuildingsTestPlot.Lots[0].X == -2290f && a != b, "new buildings: each declaration of the test building is its own, its lots too");
+        Check(b.Lots[0].X == lots[0].X && NewBuildingsTestPlot.Lots[0].X == -2087f && a != b, "new buildings: each declaration of the test building is its own, its lots too");
         Check(MadeStreets.Find(NewBuildingsTestPlot.Street) != null && NewBuildingsTestPlot.Number == 1 && NewBuildingsTestPlot.Type != NewBuildingsRules.SpecialType && NewBuildingsTestPlot.Type != NewBuildingsRules.HomeType,
             "new buildings: the test building is 1 Proving Lane, a street of the mod's own, an office (no special service, no food deliveries)");
     }
@@ -536,6 +594,10 @@ internal static partial class Program
             return File.Exists(path) ? File.ReadAllText(path) : string.Empty;
         }
         string director = Read(@"NewBuildings\NewBuildingsDirector.cs"), tests = Read(@"NewBuildings\NewBuildingsDirector.Tests.cs"), made = Read(@"NewBuildings\MadeGame.cs");
+        Check(director.Contains("_specs.Add(NewBuildingsTestPlot.Spec(here, hereX, hereZ, hereYaw));")
+              && tests.Contains("bool here = ask && !MadeGame.Loading && !MadeGame.Indoors && MadeGame.Camera(out _, out look);")
+              && tests.Contains("PlayerPrefs.SetString(TestHerePref, here ? NewBuildingsRules.SpotText(at.x, at.z, look) : string.Empty);"),
+            "new buildings: the make-test button keeps the spot out in the city (none from the main menu or indoors), and the next load tries it first");
         string save = Read(@"NewBuildings\MadeGame.Save.cs"), copy = Read(@"NewBuildings\CopyGame.cs"), ground = Read(@"NewBuildings\CopyGame.Ground.cs"), look = Read(@"NewBuildings\CopyLook.cs");
         string contract = Read(@"Core\GameContract.cs"), settings = Read(@"Core\Settings.cs"), tree = Read(@"Meta\OptionsTree.cs"), mod = Read(@"Core\RealLifeOverhaulMod.cs");
         string owners = Read(@"Core\FeatureOwners.cs"), wiring = Read(@"Wiring\Wiring.cs"), guide = Read(@"NewBuildings\NewBuildingsGuide.cs");

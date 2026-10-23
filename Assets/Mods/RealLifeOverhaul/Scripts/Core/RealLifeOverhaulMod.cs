@@ -1157,6 +1157,7 @@ namespace RealLifeOverhaul
                 .Guarded(o => Walking.WalkOptions.AddWalking(o))
                 .Guarded(o => Meals.MealsOptions.AddMeals(o))
                 .Guarded(o => NewBuildings.NewBuildingsOptions.AddNewBuildings(o))   // the mod's own buildings (Scripts/NewBuildings)
+                .Guarded(o => BuildTrades.TradesOptions.AddTrades(o))   // the building trades (Scripts/BuildTrades)
                 .Guarded(o => o.AddControls())
                 .Guarded(o => o.AddPerformance());
 
@@ -1513,6 +1514,8 @@ namespace RealLifeOverhaul
             Guard.Step("NewBuildings.NewBuildingsDirector", () => NewBuildings.NewBuildingsDirector.Logger = context.Logger);
             // Its buildings are made behind the loading screen, once every director has declared its own.
             Guard.Step("NewBuildings.NewBuildingsDirector", () => Guard.Add<NewBuildings.NewBuildingsDirector>(_root));
+            Guard.Step("BuildTrades.TradesDirector", () => BuildTrades.TradesDirector.Logger = context.Logger);
+            Guard.Step("BuildTrades.TradesDirector", () => Guard.Add<BuildTrades.TradesDirector>(_root));   // the practice's floor, its panel, the trades' line; no Update
             Guard.Step("the wiring", () => Wiring.Connect(context.Logger, _root));   // every director is there: the bridges are filled in
             // Behind the loading screen: the two street pools' people made and dressed where the time is not seen; each
             // falls back to making them as needed.

@@ -10,9 +10,9 @@ internal static partial class Program
     {
         // ---------------------------------------------------------------- floors and rooms
         int[] courses = CampusRules.Courses;
-        Check(courses.Length == 17 && CampusRules.Floors == 4 && CampusRules.FloorsFor(17) == 4 && CampusRules.FloorsFor(20) == 4 && CampusRules.FloorsFor(21) == 5
+        Check(courses.Length == 18 && CampusRules.Floors == 4 && CampusRules.FloorsFor(18) == 4 && CampusRules.FloorsFor(20) == 4 && CampusRules.FloorsFor(21) == 5
               && CampusRules.FloorsFor(1) == 1 && CampusRules.FloorsFor(0) == 1,
-            "campus: the university's 17 courses held in person on 4 floors, five to a floor, rounded up");
+            "campus: the university's 18 courses held in person on 4 floors, five to a floor, rounded up (construction management the last)");
         bool all = true, once = true;
         var seen = new bool[StudyCatalogue.IdsMost];
         for (int i = 0; i < courses.Length; i++)
@@ -30,7 +30,7 @@ internal static partial class Program
             "campus: floor 1 room 1 is the first course (computer science), the last (the PGCE) is floor 4 room 2");
         Check(CampusRules.FloorOf(StudyCatalogue.Nursing) == 0 && CampusRules.FloorOf(StudyCatalogue.FirstAid) == 0 && CampusRules.FloorOf(StudyCatalogue.CloudAssociate) == 0,
             "campus: nursing (the wards), the school's courses and the certificates have no room at the university");
-        Check(CampusRules.CourseAt(4, 3) == -1 && CampusRules.CourseAt(5, 1) == -1 && CampusRules.CourseAt(0, 1) == -1 && CampusRules.CourseAt(1, 6) == -1,
+        Check(CampusRules.CourseAt(4, 3) == StudyCatalogue.ConstructionManagement && CampusRules.CourseAt(4, 4) == -1 && CampusRules.CourseAt(5, 1) == -1 && CampusRules.CourseAt(0, 1) == -1 && CampusRules.CourseAt(1, 6) == -1,
             "campus: the rooms past the last course, and floors and rooms that are none, are empty");
         Check(CampusRules.RoomDoors.Length == CampusRules.RoomsPerFloor && CampusRules.RoomOfDoor("BasicHr") == 1 && CampusRules.RoomOfDoor("ProductManufacturing") == 5
               && CampusRules.RoomOfDoor("FoodSafety") == 0 && CampusRules.RoomOfDoor(null) == 0,

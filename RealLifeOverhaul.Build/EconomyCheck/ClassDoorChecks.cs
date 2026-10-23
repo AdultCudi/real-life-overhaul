@@ -22,7 +22,7 @@ internal static partial class Program
                 if (course < 0)
                 {
                     free++;
-                    freeWhere &= floor == CampusRules.Floors && CampusRules.RoomOfDoor(game[d]) >= 3;
+                    freeWhere &= floor == CampusRules.Floors && CampusRules.RoomOfDoor(game[d]) >= 4;
                     continue;
                 }
                 held++;
@@ -34,8 +34,8 @@ internal static partial class Program
         {
             once &= seen[CampusRules.Courses[i]] == 1;
         }
-        Check(held == CampusRules.Courses.Length && once, "class doors: over the four floors the school's five doors hold each of the university's 17 courses once");
-        Check(free == 3 && freeWhere, "class doors: the only free rooms are floor 4's rooms 3 to 5");
+        Check(held == CampusRules.Courses.Length && once, "class doors: over the four floors the school's five doors hold each of the university's 18 courses once");
+        Check(free == 2 && freeWhere, "class doors: the only free rooms are floor 4's rooms 4 and 5 (room 3 is construction management's)");
         Check(CampusRules.CourseOfDoor(1, "OfficeBusinesses") == StudyCatalogue.Cybersecurity && CampusRules.CourseOfDoor(1, "BasicHr") == StudyCatalogue.ComputerScience
               && CampusRules.CourseOfDoor(1, "ProductManufacturing") == StudyCatalogue.Business && CampusRules.CourseOfDoor(4, "Headquarters") == StudyCatalogue.Pgce,
             "class doors: the game's Office Businesses door of floor 1 is room 4, BSc Cybersecurity; Basic HR room 1, computer science; floor 4 room 2 the PGCE");
@@ -109,9 +109,9 @@ internal static partial class Program
                 : c.Kind == CourseKind.Short && c.Campus == Campus.School;
         }
         Check(groups, "education box: each course is in the group of where it is taught and what it is");
-        Check(inGroup[(int)EducationGroup.Degree] == 13 && inGroup[(int)EducationGroup.Postgrad] == 4 && inGroup[(int)EducationGroup.Nursing] == 1 && inGroup[(int)EducationGroup.Short] == 8
-              && inGroup[(int)EducationGroup.Diploma] == 8 && inGroup[(int)EducationGroup.Online] == 2 && inGroup[(int)EducationGroup.Certificate] == 12,
-            "education box: 13 degrees, 4 after a degree, nursing, 8 short courses, 8 diplomas, 2 online courses and 12 certificates");
+        Check(inGroup[(int)EducationGroup.Degree] == 14 && inGroup[(int)EducationGroup.Postgrad] == 4 && inGroup[(int)EducationGroup.Nursing] == 1 && inGroup[(int)EducationGroup.Short] == 9
+              && inGroup[(int)EducationGroup.Diploma] == 9 && inGroup[(int)EducationGroup.Online] == 2 && inGroup[(int)EducationGroup.Certificate] == 13,
+            "education box: 14 degrees, 4 after a degree, nursing, 9 short courses, 9 diplomas, 2 online courses and 13 certificates (the building trades' four among them)");
         Check(EducationRules.Order.Length == 7 && EducationRules.Order[0] == EducationGroup.Degree && EducationRules.Order[6] == EducationGroup.Certificate
               && EducationRules.GroupKeys.Length == EducationRules.Order.Length,
             "education box: the university's degrees first, the certificates last, each group with its words");
@@ -164,7 +164,7 @@ internal static partial class Program
         Check(!rows[1].Heading && rows[1].Course == StudyCatalogue.ComputerScience && rows[0].Group == EducationGroup.Degree,
             "education box: nothing begun, a group keeps the catalogue's order (computer science first)");
         listed = EducationRules.Rows(fresh, c => c.Kind == CourseKind.Short || c.Kind == CourseKind.Vocational, false, 10, 0, -1, rows);
-        Check(listed == 18 && rows.Count == 18 + 3 && rows[0].Group == EducationGroup.Short,
+        Check(listed == 20 && rows.Count == 20 + 3 && rows[0].Group == EducationGroup.Short,
             "education box: the university switched off, only the school's courses and the two online ones are listed, with no empty group");
         listed = EducationRules.Rows(fresh, c => true, true, 10, 0, -1, rows);
         Check(listed == 0 && rows.Count == 0, "education box: a box that cannot scroll, nothing begun: nothing more than the game's own");
