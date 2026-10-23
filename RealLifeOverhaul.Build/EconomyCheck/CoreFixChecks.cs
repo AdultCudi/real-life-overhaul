@@ -99,6 +99,16 @@ internal static partial class Program
               && Block(ModSource(@"Core\RealLifeOverhaulMod.cs"), "private static bool FindFont()").Contains("return GameUi.GameFont.Refind();"),
             "game UI fix: a look for the game's font that found no text is not made again until a load, which looks again");
 
+        // A save loaded and left paused looks unready (the mod's features start on game time): a test refused as not loaded then
+        // says the game is paused, through both ways a refusal is told (the owner pressed a test on a paused save, 23 Oct 2026).
+        string tests = ModSource(@"Core\TestRefusal.cs");
+        Check(Block(tests, "public static void Tell(").Contains("Notifications.Show(NotificationType.Warning, Sentence(why), data, 8f);")
+              && Block(tests, "private static string Sentence(TestRefusal why)").Contains("why == TestRefusal.NotLoaded && Paused ? PausedKey : Key(why)")
+              && Block(tests, "public static void TellKey(").Contains("key == NotLoadedKey && Paused ? PausedKey : key")
+              && tests.Contains("private static bool Paused => UnityEngine.Time.timeScale < PausedBelow;")
+              && tests.Contains("private const string PausedKey = \"reallife_test_refused_paused\";"),
+            "test refusals: a test refused as not loaded while the game is paused says the game is paused, both from Tell and from TellKey");
+
         // The shared city's ask for a part again is the market's: a guest whose prices are not the host's asks for them whole.
         Check(ModSource(@"Markets\MarketDirector.GoingPublic.cs").Contains("SharedCity.AskAgain('M');") && ModSource(@"Core\SharedCity.cs").Contains("public static void AskAgain(char id)"),
             "shared city: the market's check asks for its part again through the shared city's AskAgain");
