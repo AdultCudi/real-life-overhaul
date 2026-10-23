@@ -65,7 +65,7 @@ internal static partial class Program
                 registered.Add(BranchCatalogue.TypeName);
             }
         }
-        Check(callers == 4, "designs: the business types are registered in four files (Tech/Firms/TechTypes, Careers/AcademyType, Economy/Dealer/DealerType, Economy/OwnBank/Branch/BranchType), found " + callers);
+        Check(callers == 5, "designs: the business types are registered in five files (Tech/Firms/TechTypes, Careers/AcademyType, Economy/Dealer/DealerType, Economy/OwnBank/Branch/BranchType, Construction/ConstructionType), found " + callers);
         var kinds = new HashSet<string>(StringComparer.Ordinal);
         var folders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (DesignKind kind in DesignCatalogue.Kinds)
@@ -79,7 +79,7 @@ internal static partial class Program
         {
             Check(kinds.Contains(type), "designs: the business type " + type + " the mod registers has no ready-made designs");
         }
-        Check(kinds.Count == registered.Count && kinds.Count == 8, "designs: the catalogue holds the mod's eight business types (" + kinds.Count + " in it, " + registered.Count + " registered)");
+        Check(kinds.Count == registered.Count && kinds.Count == 9, "designs: the catalogue holds the mod's nine business types (" + kinds.Count + " in it, " + registered.Count + " registered)");
         int branchKind = Array.FindIndex(DesignCatalogue.Kinds, k => k.Type == BranchCatalogue.TypeName);
         Check(branchKind >= 0 && DesignCatalogue.Kinds[branchKind].Way == DesignWay.Branch && DesignCatalogue.Kinds[branchKind].Building == BranchCatalogue.BuildingType,
             "designs: the bank branch is cut to a bank's furniture, in the building it is opened in");
@@ -644,7 +644,7 @@ internal static partial class Program
 
             DesignsReport first = DesignFiles.Put(root, SandboxRead, SandboxCut);
             DesignManifest list = DesignFiles.List(root);
-            Check(!first.Failed && first.Written > 0 && first.Written == list.Files.Count && first.Designs == list.Files.Count && first.Types == 8,
+            Check(!first.Failed && first.Written > 0 && first.Written == list.Files.Count && first.Designs == list.Files.Count && first.Types == 9,
                 "designs job: the first start writes every design and lists each (" + first.Written + " written, " + list.Files.Count + " listed, " + first.Types + " types"
                 + (first.Why != null ? ", " + first.Why : string.Empty) + ")");
             Check(File.ReadAllText(foreign) == "somebody else's" && !list.Holds("Office/C1/ailab/Modern.json") && first.Skipped == 1,

@@ -78,6 +78,7 @@ namespace RealLifeOverhaul
             Step("companion reporting", CompanionLinks.Connect);   // wraps nothing: it only reads what the others own
             Step("the mod's own buildings on the minimap", NewBuildingsLinks.Connect);   // wraps nothing
             Step("the building trades", TradesLinks.Connect);   // wraps nothing
+            Step("the construction game", ConstructionLinks.Connect);   // after the paper's and the credit side's: its piece and its account go on top of theirs
             Logger?.Info("Wiring: the features are connected.");
         }
 
@@ -88,6 +89,7 @@ namespace RealLifeOverhaul
                 return;
             }
             Connected = false;
+            Step("the construction game", ConstructionLinks.Disconnect);   // first: what it wrapped of the paper and the accounts goes back before the others take theirs off
             Step("the building trades", TradesLinks.Disconnect);
             Step("the mod's own buildings on the minimap", NewBuildingsLinks.Disconnect);
             Step("companion reporting", CompanionLinks.Disconnect);

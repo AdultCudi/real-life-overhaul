@@ -502,6 +502,20 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\BuildTrades\DesignRules.cs" Link="Mod\DesignRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\BuildTrades\TenderRules.cs" Link="Mod\TenderRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\BuildTrades\DesignBook.cs" Link="Mod\DesignBook.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildCatalogue.cs" Link="Mod\Construction\BuildCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildRandom.cs" Link="Mod\Construction\BuildRandom.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\LandRules.cs" Link="Mod\Construction\LandRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\DevelopmentRules.cs" Link="Mod\Construction\DevelopmentRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\PlansRules.cs" Link="Mod\Construction\PlansRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\PlanningRules.cs" Link="Mod\Construction\PlanningRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\SiteRules.cs" Link="Mod\Construction\SiteRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\MoneyRules.cs" Link="Mod\Construction\MoneyRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\TenderRules.cs" Link="Mod\Construction\TenderRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\FirmRules.cs" Link="Mod\Construction\FirmRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildState.cs" Link="Mod\Construction\BuildState.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildStore.cs" Link="Mod\Construction\BuildStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Civic\WrapRules.cs" Link="Mod\WrapRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Civic\PlotRules.cs" Link="Mod\PlotRules.cs" />
   </ItemGroup>
 
 </Project>

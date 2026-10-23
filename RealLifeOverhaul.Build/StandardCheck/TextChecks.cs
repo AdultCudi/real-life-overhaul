@@ -99,9 +99,9 @@ internal static partial class Program
             {
                 Hit("RLO-TXT-002", rel, 0, "new key " + key + " is not at the end: it stands before " + en[lastOld].Key);
             }
-            if (!key.StartsWith("reallife_", StringComparison.Ordinal))
+            if (!key.StartsWith("reallife_", StringComparison.Ordinal) && !key.StartsWith("reallife:businesstype_", StringComparison.Ordinal))
             {
-                Hit("RLO-TXT-002", rel, 0, "new key " + key + " does not begin reallife_");
+                Hit("RLO-TXT-002", rel, 0, "new key " + key + " does not begin reallife_ (nor names a business type of the mod's, which the game reads by its name)");
             }
         }
         int removed = was.Count - keptBefore.Count;
