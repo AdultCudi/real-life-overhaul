@@ -501,6 +501,10 @@ PlayerActivityUI [PlayerActivityUI, DraggableWindow, VerticalLayoutGroup, Conten
   `PlayerActivityUI.Show(activity)` opens it paused; the panel's `Update` reads the state every frame:
   MovingTowardsActivity (it hides itself and lets the clock run), Started (it makes it Running), Running (it calls
   `Perform(minutes)` as game minutes pass), Finished (it closes).
+- Its buttons (`SetButton`) get the `ButtonInfo`'s key alone: neither its `arguments` nor its `interactable` is read,
+  so a key with a `{placeholder}` shows the placeholder, and a button is never dimmed and its key always runs it. Give
+  an activity's button a key with no placeholder, and leave out a button that cannot be pressed now, as the game's
+  own `StudyActivity` does once its course is done (`Careers/SchoolDesk.GetButtons`). Labels do read their arguments.
 - `GameManager` sends Confirm, Interact, SecondaryInteract, Sell and SpecialInteract to it while it is open, and
   `CancelButtonHandler` sends Cancel: a button on any of those is run by its key. SpecialInteract is the time
   machine while the activity has one; SecondaryInteract is the fast-forward switch while it has one and the player
