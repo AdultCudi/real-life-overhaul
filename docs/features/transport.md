@@ -72,6 +72,7 @@ What cannot be told from the one log there is: its last transit line is the only
 
 - **The network** (`TransitMap`, `RouteSearch`) is laid out by rule in the first seconds out of doors after a city load and kept in memory only.
   The ends of the routes are the game's subway stations in the order of `SubwayStationName`: up to six times over, the first station not yet used, and the unused station furthest from it (500 m to 2.8 km) that can be driven to **and back from**.
+  After the stations come the termini of the mod's own (`TransitMap.AddTerminus`), sorted by name: a district of the mod's own has no subway station, and the game's station names are a fixed list ([New ground](new-ground.md)). With none, the network is as before.
 
   A line's end is any plain lane point within 150 m of its station (0.43.0 took the one nearest point, which is often on a lane that only leads away: that, and never changing lane, is why six directions had "no way along the road graph").
 

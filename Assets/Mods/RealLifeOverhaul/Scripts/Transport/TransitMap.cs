@@ -64,7 +64,42 @@ namespace RealLifeOverhaul
 
         private static Waypoint[] _points;
         private static readonly List<SubwayStation> Stations = new List<SubwayStation>(24);
+
+        // A place lines begin and end at: one of the game's subway stations, or a terminus of the mod's own.
+        private struct TransitEnd
+        {
+            public Vector3 At;
+            public string NameKey;   // what a line to it says it goes to
+            public string Name;      // for the log
+        }
+
+        // The game's stations in their order first, then the termini of the mod's own sorted by name: a district of the
+        // mod's own has no subway station, and the game's station names are a fixed list (EnumHelpers.ToStringFast).
+        private static readonly List<TransitEnd> Ends = new List<TransitEnd>(24);
+        private static readonly List<TransitEnd> Termini = new List<TransitEnd>(4);
         private static readonly List<List<int>> Terminals = new List<List<int>>(24);
+
+        /// <summary>
+        /// A terminus of the mod's own for the buses, where a district of the mod's own has no subway station: lines begin
+        /// and end there as at a station, with the network laid at this load. One a name; kept until the city goes.
+        /// </summary>
+        public static void AddTerminus(Vector3 at, string nameKey, string name)
+        {
+            for (int i = 0; i < Termini.Count; i++)
+            {
+                if (Termini[i].Name == name)
+                {
+                    return;
+                }
+            }
+            Termini.Add(new TransitEnd { At = at, NameKey = nameKey, Name = name });
+        }
+
+        /// <summary>The city is going: its termini go with it.</summary>
+        public static void ClearTermini()
+        {
+            Termini.Clear();
+        }
         private static readonly List<int> PathScratch = new List<int>(2048);
         private static readonly List<float> XScratch = new List<float>(2048);
         private static readonly List<float> ZScratch = new List<float>(2048);
@@ -103,6 +138,7 @@ namespace RealLifeOverhaul
             Net = null;
             Guarded.Clear();
             Stations.Clear();
+            Ends.Clear();
             Terminals.Clear();
             PathScratch.Clear();
             HostIndex.Clear();
@@ -450,16 +486,24 @@ namespace RealLifeOverhaul
                 }
             }
             Stations.Sort((a, b) => ((int)a.stationName).CompareTo((int)b.stationName));
+            Ends.Clear();
+            for (int s = 0; s < Stations.Count; s++)
+            {
+                Ends.Add(new TransitEnd { At = Stations[s].transform.position, NameKey = GameMembers.NameKey(Stations[s]), Name = Stations[s].stationName.ToString() });
+            }
+            var termini = new List<TransitEnd>(Termini);
+            termini.Sort((a, b) => string.CompareOrdinal(a.Name, b.Name));
+            Ends.AddRange(termini);
 
             // A line may start and end on any plain lane point of a road proper near its station.
             Terminals.Clear();
             int withEnds = 0;
-            var x = new float[Stations.Count];
-            var z = new float[Stations.Count];
-            var ends = new bool[Stations.Count];
-            for (int s = 0; s < Stations.Count; s++)
+            var x = new float[Ends.Count];
+            var z = new float[Ends.Count];
+            var ends = new bool[Ends.Count];
+            for (int s = 0; s < Ends.Count; s++)
             {
-                Vector3 at = Stations[s].transform.position;
+                Vector3 at = Ends[s].At;
                 x[s] = at.x;
                 z[s] = at.z;
                 var near = new List<int>(64);
@@ -564,9 +608,9 @@ namespace RealLifeOverhaul
             Corridor(line.Path);
             _pairs.Ends(_pa, _pb);
             _pairs.Done(_pa, _pb);
-            for (int s = 0; s < Stations.Count; s++)
+            for (int s = 0; s < Ends.Count; s++)
             {
-                if (Passes(_there, Stations[s].transform.position) || Passes(line, Stations[s].transform.position))
+                if (Passes(_there, Ends[s].At) || Passes(line, Ends[s].At))
                 {
                     _pairs.Serve(s);
                 }
@@ -579,7 +623,7 @@ namespace RealLifeOverhaul
         private static void Refuse(string why)
         {
             _refused++;
-            Notes.Append(' ').Append(Stations[_pa].stationName).Append(" and ").Append(Stations[_pb].stationName).Append(" (").Append(why).Append(");");
+            Notes.Append(' ').Append(Ends[_pa].Name).Append(" and ").Append(Ends[_pb].Name).Append(" (").Append(why).Append(");");
             _pairs.Done(_pa, _pb);
             _there = null;
             _trying = false;
@@ -626,7 +670,7 @@ namespace RealLifeOverhaul
             RouteSearch.Outcome outcome = RouteSearch.Outcome.NoWay;
             if (!_seeking)
             {
-                Vector3 goal = Stations[to].transform.position;
+                Vector3 goal = Ends[to].At;
                 PathScratch.Clear();
                 if (!_graph.Begin(Terminals[from], Terminals[to], goal.x, goal.y, goal.z, TerminalReach + 6f))
                 {
@@ -661,7 +705,7 @@ namespace RealLifeOverhaul
                 if (!_graph.HitLimit)
                 {
                     // What the search never got near cannot be driven to from here either: never asked for.
-                    for (int s = 0; s < Stations.Count; s++)
+                    for (int s = 0; s < Ends.Count; s++)
                     {
                         List<int> ends = Terminals[s];
                         bool near = false;
@@ -692,7 +736,7 @@ namespace RealLifeOverhaul
         {
             var line = new TransitLine
             {
-                ToKey = GameMembers.NameKey(Stations[to]),
+                ToKey = Ends[to].NameKey,
                 Path = PathScratch.ToArray(),
                 Metres = new float[PathScratch.Count]
             };

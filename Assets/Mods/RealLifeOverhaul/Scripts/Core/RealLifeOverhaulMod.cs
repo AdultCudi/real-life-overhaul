@@ -1305,6 +1305,8 @@ namespace RealLifeOverhaul
             Guard.Step("GoingPublicWatch", () => Guard.Add<GoingPublicWatch>(_root));   // once a second of real time
             Guard.Step("ScenePrewarm", () => Guard.Add<ScenePrewarm>(_root));   // disabled unless a piece is waiting
             Guard.Step("LoadHold", () => Guard.Add<LoadHold>(_root));   // disabled unless a piece is waiting
+            Guard.Step("NewGround.GroundDirector", () => NewGround.GroundDirector.Logger = context.Logger);
+            Guard.Step("NewGround.GroundDirector", () => Guard.Add<NewGround.GroundDirector>(_root));   // before the traffic starts: a test road is appended here; disabled while idle
             // Pieces run last added first: this one after the road data below.
             Guard.Step("the lane grid's prewarm", () => ScenePrewarm.Add("roads: the lane points put in a grid for the nearest lane point", TrafficTools.PrewarmLaneGrid));
             Guard.Step("the roads' prewarm", () => ScenePrewarm.Add("roads: the traffic system's road data being found for the city", RoadData.Prewarm));

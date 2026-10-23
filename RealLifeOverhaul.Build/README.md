@@ -42,6 +42,7 @@ The code is in `Assets/Mods/RealLifeOverhaul/Scripts`, one folder per feature. E
 | [`Markets`](../Assets/Mods/RealLifeOverhaul/Scripts/Markets/) | The stock market, bonds, the listed company, trading bots | [The stock market](../docs/features/economy-markets.md) |
 | [`Meta`](../Assets/Mods/RealLifeOverhaul/Scripts/Meta/) | The feature registry, the Guide, presets, the options page, save tools, bug reports | [Meta](../docs/features/meta.md) |
 | [`Navigation`](../Assets/Mods/RealLifeOverhaul/Scripts/Navigation/) | The minimap and the GPS | [Minimap and GPS](../docs/features/navigation.md) |
+| [`NewGround`](../Assets/Mods/RealLifeOverhaul/Scripts/NewGround/) | Ground the mod lays itself: walking, streets, parking, people and buses on it | [New ground](../docs/features/new-ground.md) |
 | [`Offices`](../Assets/Mods/RealLifeOverhaul/Scripts/Offices/) | Empty shops made offices where a district lacks them | |
 | [`People`](../Assets/Mods/RealLifeOverhaul/Scripts/People/) | The street's characters and the scenes they play | [Street scenes](../docs/features/street-scenes.md) |
 | [`Performance`](../Assets/Mods/RealLifeOverhaul/Scripts/Performance/) | Tweaks for the game's frame rate, and the measuring | [Performance](../docs/reference/performance.md) |

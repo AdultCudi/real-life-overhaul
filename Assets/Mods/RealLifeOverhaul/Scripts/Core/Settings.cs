@@ -323,6 +323,7 @@
         public const string InteriorsStaffId = "interiors_staff";
         public const string DesignsId = "designs";
         public const string PermadeathId = "permadeath";
+        public const string NewGroundTestRoadId = "newground_test_road";   // NewGround: a developer's test road, read at each load
 
         public static bool CameraEnabled = true;
         public static bool CameraIndoors = false;
@@ -651,6 +652,7 @@
         public static bool Designs = true;                  // the interior installation firms offer the mod's business types ready-made designs
         public static bool InteriorsStaff = true;           // plants, good light and a rest corner lift staff; a good office helps hiring and a firm's bids
         public static bool Permadeath = false;           // what the options page shows; the switch itself is kept per save, off unless switched on
+        public static bool NewGroundTestRoad = false;    // a copy of a short stretch of road added to the traffic at each load, for the developer's test
 
         private static string _modId;
 
@@ -991,6 +993,7 @@
             InteriorsStanding = Bool(modId, InteriorsStandingId, InteriorsStanding);
             InteriorsStaff = Bool(modId, InteriorsStaffId, InteriorsStaff);
             Designs = Bool(modId, DesignsId, Designs);
+            NewGroundTestRoad = Bool(modId, NewGroundTestRoadId, NewGroundTestRoad);
         }
 
         /// <summary>
