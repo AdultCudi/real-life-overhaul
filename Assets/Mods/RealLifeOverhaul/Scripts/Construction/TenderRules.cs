@@ -42,7 +42,7 @@ namespace RealLifeOverhaul.Construction
         /// <summary>The speciality a tender's work is: roads for roadworks and the utilities, renovation for scaffolding, refits and rebuilds, by use for a new building.</summary>
         public static Speciality NeedOf(TenderSource source, int civicKind, BuildUse use)
         {
-            if (source == TenderSource.Public)
+            if (source == TenderSource.Public || source == TenderSource.Landmark)
             {
                 return use == BuildUse.Homes ? Speciality.Homes : Speciality.Offices;
             }

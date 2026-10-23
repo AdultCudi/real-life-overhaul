@@ -64,6 +64,8 @@ namespace RealLifeOverhaul
             // The installation firms' designs for the mod's business types, put in place or taken away on a worker.
             Guard.Step("the ready-made designs", () => Designs.DesignsDirector.Ask(Settings.Designs));
             Guard.Step("Uptown's places for the district save", () => Uptown.LifeDirector.Register(context.Logger));   // before any save is read: its early step runs then
+            // After Uptown's: the lift is asked as the district's buildings are declared.
+            Guard.Step("the landmarks' places and their lift of Uptown's traffic", () => Landmarks.LandmarksDirector.Register(context.Logger));
             Guard.Step("the city expansion's test run, if one waits for its load", () => TestRun.RunDirector.Begin(context.Logger));   // before any save is read: it hears the load's own lines
 
             var options = new ModOptions()
@@ -1530,6 +1532,9 @@ namespace RealLifeOverhaul
             Guard.Step("Construction.ConstructionApp", () => Construction.ConstructionApp.Logger = context.Logger);
             // The company, its projects and the city's builders: a time comparison a frame.
             Guard.Step("Construction.ConstructionDirector", () => Guard.Add<Construction.ConstructionDirector>(_root));
+            Guard.Step("Landmarks.LandmarksDirector", () => Landmarks.LandmarksDirector.Logger = context.Logger);
+            // Uptown's landmarks: a time comparison a frame; their pieces stood in the game's late call.
+            Guard.Step("Landmarks.LandmarksDirector", () => Guard.Add<Landmarks.LandmarksDirector>(_root));
             Guard.Step("the wiring", () => Wiring.Connect(context.Logger, _root));   // every director is there: the bridges are filled in
             // Behind the loading screen: the two street pools' people made and dressed where the time is not seen; each
             // falls back to making them as needed.

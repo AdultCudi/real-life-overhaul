@@ -208,7 +208,8 @@ namespace RealLifeOverhaul.Markets
         {
             switch (kind)
             {
-                case BuilderNewsKind.TenderWon: return weight >= BuilderMarket.WeightMost ? "reallife_mkt_news_builder_won_public" : "reallife_mkt_news_builder_won";
+                case BuilderNewsKind.TenderWon: return weight >= BuilderMarket.WeightMost ? "reallife_mkt_news_builder_won_landmark"
+                    : weight >= BuilderMarket.PublicWeight ? "reallife_mkt_news_builder_won_public" : "reallife_mkt_news_builder_won";
                 case BuilderNewsKind.Finished: return "reallife_mkt_news_builder_finished";
                 case BuilderNewsKind.Late: return "reallife_mkt_news_builder_late";
                 case BuilderNewsKind.Developed: return "reallife_mkt_news_builder_developed";

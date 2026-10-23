@@ -255,6 +255,43 @@ namespace RealLifeOverhaul.Construction
 
         /// <summary>Test: every future the test tools bought undone, its money given back. How many. Default: none.</summary>
         public static Func<int> UndoTests;
+        // ------------------------------------------------------------------ the district's landmarks (Scripts/Landmarks)
+
+        /// <summary>
+        /// Each landmark's site with its ground settled, as a lot of the construction game's (its id the site's, its ground
+        /// the works' plot), into the caller's list (cleared). Default: none.
+        /// </summary>
+        public static Action<List<LotView>> LandmarkSites;
+
+        /// <summary>True for a lot of the district a landmark's site holds: not for sale, never a development's. Default: no.</summary>
+        public static Func<string, bool> LandmarkHeld;
+
+        /// <summary>A landmark's name by its site's id, in the player's language; null for none. Default: none.</summary>
+        public static Func<string, string> LandmarkName;
+
+        /// <summary>Where a landmark stands, in words for the Land tab (out to tender, being built by whom and when it is due, open), by its site's id; null for none. Default: none.</summary>
+        public static Func<string, string> LandmarkWords;
+
+        /// <summary>The design a landmark's main building wears, by its site's id; false for none (the stadium's is the mod's own) or not known yet. Default: none.</summary>
+        public static LandmarkDesignCall LandmarkDesign;
+
+        public delegate bool LandmarkDesignCall(string site, out DesignChoice design);
+
+        /// <summary>A landmark's tender awarded: its site, the winner (-1 the player, else a rival), the price and the days bid. Default: nothing.</summary>
+        public static Action<string, int, long, int> LandmarkAwarded;
+
+        /// <summary>The player's company handed a landmark over: its site's id. True once the landmark has it. Default: no.</summary>
+        public static Func<string, bool> LandmarkHanded;
+
+        /// <summary>The landmark's site a site of the programme shows, when its works are a rival's or the city's own; null for none. Default: none.</summary>
+        public static Func<int, string> LandmarkWorks;
+
+        /// <summary>The hours a landmark's own works site does in one of its working hours (its timetable's pace). Default: as given.</summary>
+        public static Func<int, double, double, float, float> LandmarkPace;
+
+        /// <summary>True when a landmark's site needs no look of the programme's on it now (the stadium's own, or the district's building standing). Default: no.</summary>
+        public static Func<string, bool> LandmarkBuilt;
+
         // ------------------------------------------------------------------ show flats and refits: designs, interiors, the businesses
 
         /// <summary>The show flat designs for flats of a floor area (Scripts/Designs, scored by Interiors), into the caller's list (cleared); false for none. Default: none.</summary>
@@ -343,6 +380,16 @@ namespace RealLifeOverhaul.Construction
             Contract = null;
             SettleTest = null;
             UndoTests = null;
+            LandmarkSites = null;
+            LandmarkHeld = null;
+            LandmarkName = null;
+            LandmarkWords = null;
+            LandmarkDesign = null;
+            LandmarkAwarded = null;
+            LandmarkHanded = null;
+            LandmarkWorks = null;
+            LandmarkPace = null;
+            LandmarkBuilt = null;
             ShowDesigns = null;
             ShowDesign = null;
             Standard = null;

@@ -310,6 +310,8 @@ namespace RealLifeOverhaul.Construction
                     return ConstructionText.T("reallife_bld_tender_client", "client", ConstructionText.T(BuildCatalogue.ClientKeys[t.Client % BuildCatalogue.ClientKeys.Length]), "address", where);
                 case TenderSource.Public:
                     return ConstructionText.T("reallife_bld_tender_public", "building", ConstructionText.T(BuildCatalogue.PublicKeys[t.Client % BuildCatalogue.PublicKeys.Length]), "address", where);
+                case TenderSource.Landmark:
+                    return ConstructionText.T("reallife_lmk_tender", "landmark", LandmarkName(t.Lot) ?? ConstructionText.T("reallife_lmk_tender_unnamed"), "address", where);
                 case TenderSource.Refit:
                     return ConstructionText.T("reallife_bld_tender_refit", "client", ConstructionText.T(BuildCatalogue.ClientKeys[t.Client % BuildCatalogue.ClientKeys.Length]), "address", where);
                 default:
@@ -388,7 +390,7 @@ namespace RealLifeOverhaul.Construction
             bool bid = t.BidPermille > 0 && Licensed;
             if (bid)
             {
-                bool special = FirmRules.Special(_state.Firm.Speciality, t.Source == TenderSource.Public ? ProjectKind.Plot : t.CivicKind == 4
+                bool special = FirmRules.Special(_state.Firm.Speciality, t.Source == TenderSource.Public || t.Source == TenderSource.Landmark ? ProjectKind.Plot : t.CivicKind == 4
                     ? ProjectKind.Rebuild : ProjectKind.Contract, t.Use, t.CivicKind);
                 _bids[count++] = TenderRules.PlayerBid(t.Value, t.BidPermille, t.Fast, days, _state.Firm.Reputation, special);
             }
@@ -412,6 +414,10 @@ namespace RealLifeOverhaul.Construction
                 _state.Firm.Reputation = FirmRules.Moved(_state.Firm.Reputation, BuildCatalogue.RepTenderWon);
                 FromTender(t, day);
                 Tell(NotificationType.Success, "reallife_bld_notice_tender_won", TenderName(t), null, TabProjects, t.Project);
+                if (t.Source == TenderSource.Landmark)
+                {
+                    LandmarkAwarded(t.Lot, -1, won.Price, won.Days);   // the landmark is the player's company's to build
+                }
                 return;
             }
             t.State = bid ? TenderState.Lost : TenderState.Gone;
@@ -434,6 +440,9 @@ namespace RealLifeOverhaul.Construction
                     break;
                 case TenderSource.Client:
                     t.SiteId = StartWorksSite(t.Street, t.Number, 1, false, won.Bidder, Math.Max(20, t.Hours / 2), out _);   // kept: its handover is the rival's news
+                    break;
+                case TenderSource.Landmark:
+                    LandmarkAwarded(t.Lot, won.Bidder, won.Price, won.Days);   // the landmarks' timetable runs the rival's works and hands it over
                     break;
                 case TenderSource.Refit:
                     StartWorksSite(t.Street, t.Number, RefitRules.Works, false, won.Bidder, t.Hours, out _);   // the hoarding goes up at the business's front
@@ -480,7 +489,19 @@ namespace RealLifeOverhaul.Construction
             else
             {
                 p.Stage = ProjectStage.Ready;
-                if (t.Source == TenderSource.Public && Lot(t.Lot, out LotView lot))
+                if (t.Source == TenderSource.Landmark && Lot(t.Lot, out LotView site))
+                {
+                    // The city's own project, granted with its award: the district's height limit binds the plans a company
+                    // draws (PlansRules.HeightLimit), never a landmark the council itself commissions.
+                    p.Width = site.Width;
+                    p.Depth = site.Depth;
+                    p.Storeys = Math.Max(1, Math.Min(BuildCatalogue.UptownHeightLimit, p.Area / Math.Max(1, site.Width * site.Depth)));
+                    if (LandmarkDesign(t.Lot, out DesignChoice design))
+                    {
+                        Wear(p, design);   // the city's chosen design: the tallest office, the largest shop; none for the stadium, the mod's own
+                    }
+                }
+                else if (t.Source == TenderSource.Public && Lot(t.Lot, out LotView lot))
                 {
                     p.Width = lot.Width;
                     p.Depth = lot.Depth;
@@ -510,7 +531,7 @@ namespace RealLifeOverhaul.Construction
 
         private static int WeightOf(TenderFile t)
         {
-            return t.Source == TenderSource.Public ? 3 : t.Source == TenderSource.Client || t.Source == TenderSource.Refit ? 2 : 1;
+            return t.Source == TenderSource.Landmark ? 4 : t.Source == TenderSource.Public ? 3 : t.Source == TenderSource.Client || t.Source == TenderSource.Refit ? 2 : 1;
         }
 
         // A rival's site from a tender handed over: on time or late against the days it bid, news for the stock market.

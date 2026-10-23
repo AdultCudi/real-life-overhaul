@@ -45,7 +45,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>Test: a rival builder wins a public building's tender now; its price rises and every other listed builder's falls.</summary>
         public static void TestBuilderWins()
         {
-            Instance?.BuilderTest("Builders on the market check (a rival builder wins a tender now)", BuilderNewsKind.TenderWon, BuilderMarket.WeightMost);
+            Instance?.BuilderTest("Builders on the market check (a rival builder wins a tender now)", BuilderNewsKind.TenderWon, BuilderMarket.PublicWeight);
         }
 
         /// <summary>Test: a rival builder's bribe to an inspector comes out now; its price and its usual margin fall.</summary>

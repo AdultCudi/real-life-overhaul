@@ -25,7 +25,7 @@ namespace RealLifeOverhaul.Markets
     {
         public int Rival;
         public BuilderNewsKind Kind;
-        public int Weight;   // 1 to WeightMost: a city's works, a business's building, a public building
+        public int Weight;   // 1 to WeightMost: a city's works, a business's building or refit, a public building, a landmark
     }
 
     /// <summary>
@@ -40,7 +40,8 @@ namespace RealLifeOverhaul.Markets
     public static class BuilderMarket
     {
         public const int Rivals = 8;                     // the construction game's rival builders (BuildCatalogue.RivalCount)
-        public const int WeightMost = 3;                 // a public building's tender
+        public const int PublicWeight = 3;               // a public building's tender
+        public const int WeightMost = 4;                 // a landmark's: the largest works the city puts out
         public const int QueueMost = 32;                 // news waiting for the market; the oldest goes past it
         public const int Player = -1;                    // the player's own company won the tender
 

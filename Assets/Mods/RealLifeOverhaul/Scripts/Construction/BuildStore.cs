@@ -307,7 +307,8 @@ namespace RealLifeOverhaul.Construction
                                 var r = new Fields(rec);
                                 var d = new TenderFile
                                 {
-                                    Id = r.I(0), Source = (TenderSource)BuildCatalogue.Clamp(r.I(0), 0, 3), SiteId = r.I(0), CivicKind = BuildCatalogue.Clamp(r.I(0), 0, 5), Number = r.I(0),
+                                    Id = r.I(0), Source = (TenderSource)BuildCatalogue.Clamp(r.I(0), 0, (int)TenderSource.Landmark), SiteId = r.I(0),
+                                    CivicKind = BuildCatalogue.Clamp(r.I(0), 0, 5), Number = r.I(0),
                                     Use = (BuildUse)BuildCatalogue.Clamp(r.I(0), 0, (int)BuildUse.Count - 1), Area = Math.Max(0, r.I(0)), Hours = Math.Max(1, r.I(1)), Opened = r.I(0),
                                     Closes = r.I(0), BidPermille = Math.Max(0, r.I(0)), Fast = r.I(0) == 1, State = (TenderState)BuildCatalogue.Clamp(r.I(0), 0, 3),
                                     Winner = BuildCatalogue.Clamp(r.I(-2), -2, BuildCatalogue.RivalCount - 1), WinningDays = Math.Max(0, r.I(0)), Client = Math.Max(0, r.I(0)),
@@ -439,7 +440,7 @@ namespace RealLifeOverhaul.Construction
                 Investor = BuildCatalogue.Clamp(r.I(-1), -1, BuildCatalogue.InvestorCount - 1), InvestorDue = r.I(0), Flats = Math.Max(0, r.I(0)), FlatsSold = Math.Max(0, r.I(0)),
                 FlatsOffPlan = Math.Max(0, r.I(0)), Handed = r.I(0), Opening = r.I(0), Ribbon = r.I(0) == 1, Opened = r.I(0) == 1,
                 After = (AfterUse)BuildCatalogue.Clamp(r.I(0), 0, 1), Ask = BuildCatalogue.Clamp(r.I(1), 0, BuildCatalogue.AskPermille.Length - 1), DefectDay = r.I(0),
-                Source = (TenderSource)BuildCatalogue.Clamp(r.I(0), 0, 3), CivicKind = BuildCatalogue.Clamp(r.I(-1), -1, 5), Client = Math.Max(0, r.I(0)),
+                Source = (TenderSource)BuildCatalogue.Clamp(r.I(0), 0, (int)TenderSource.Landmark), CivicKind = BuildCatalogue.Clamp(r.I(-1), -1, 5), Client = Math.Max(0, r.I(0)),
                 RainHours = Math.Max(0, r.I(0)), WaitHours = Math.Max(0, r.I(0)), StrikeDays = Math.Max(0, r.I(0)), Fails = Math.Max(0, r.I(0)), InDistrict = r.I(0) == 1,
                 Tender = Math.Max(0, r.I(0))
             };

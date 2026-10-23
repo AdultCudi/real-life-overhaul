@@ -391,7 +391,7 @@ The four new rows (`BuilderMarket.OwnRows`) are catalogue companies of the const
 
 | News | From | Its move |
 | --- | --- | --- |
-| A tender won | `ConstructionDirector.Award`, weight 1 the city's works, 2 a business's building, 3 a public building | the winner's mood up 160 bp a weight times 7/8, every other listed builder's down 160/8 a weight: they add up to nothing, as the market expects each to win its share; the player's company winning takes the 20 a weight off them all |
+| A tender won | `ConstructionDirector.Award`, weight 1 the city's works, 2 a business's building or refit, 3 a public building, 4 one of Uptown's landmarks (the largest) | the winner's mood up 160 bp a weight times 7/8, every other listed builder's down 160/8 a weight: they add up to nothing, as the market expects each to win its share; the player's company winning takes the 20 a weight off them all |
 | Works handed over | `SiteHanded` of a rival's tender site, against the days it bid (`RivalHanded`) | on time 40 bp a weight, late minus 120 a weight |
 | A building finished in the district | `FinishDevelopment` | its builder 50 bp, every other listed builder 6 |
 | A bribe come out, a strike | drawn at the close from the day's secret (`MarketRandom.BuilderNews`), 5% and 10% a year a listed builder, only in a market that lists the builders' own rows | minus 350 bp and 6% of its usual margin for good; minus 150 bp |

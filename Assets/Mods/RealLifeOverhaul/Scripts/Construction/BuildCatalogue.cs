@@ -156,7 +156,8 @@ namespace RealLifeOverhaul.Construction
         CityWorks = 0,   // one of the city's construction programme's sites
         Client = 1,      // a business of the city's that wants its building rebuilt
         Public = 2,      // a public building on an Uptown lot
-        Refit = 3        // a business of the city's that wants its interior refitted
+        Refit = 3,       // a business of the city's that wants its interior refitted
+        Landmark = 4     // one of Uptown's landmarks, the city's megaproject on a block of its own (Scripts/Landmarks)
     }
 
     /// <summary>A tender. Saved as a number.</summary>
@@ -573,6 +574,8 @@ namespace RealLifeOverhaul.Construction
         public const int ClientEveryLeast = 6, ClientEveryMost = 10;   // days between two clients' tenders
         public const int PublicEveryLeast = 15, PublicEveryMost = 25;  // days between two public buildings' tenders
         public const int PublicMarginPermille = 220;            // the city pays the cost and this much more
+        public const int LandmarkPremiumPermille = 400;         // a landmark's works cost this much more again: a signature design, its finish, its programme
+        public const int LandmarkTenderHours = 96;              // hours a landmark's tender is open: four days for so large a bid
         public const int BidLeastPermille = 850, BidMostPermille = 1300, BidStepPermille = 50;
         public const int FastPermille = 800;                    // a fast bid's time, against the usual
         public const int ScorePricePermille = 700, ScoreTimePermille = 100, ScoreRepPermille = 200;

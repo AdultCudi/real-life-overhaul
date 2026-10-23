@@ -97,9 +97,9 @@ internal static partial class Program
         BuilderMarket.Add(-1, BuilderNewsKind.Late, 1);      // the player has no site news of the market's
         BuilderMarket.Add(9, BuilderNewsKind.Finished, 1);   // no such builder
         BuilderMarket.Add(2, BuilderNewsKind.None, 1);
-        BuilderMarket.Add(6, BuilderNewsKind.Late, 9);       // a weight held to three
+        BuilderMarket.Add(6, BuilderNewsKind.Late, 9);       // a weight held to a landmark's
         Check(BuilderMarket.Waiting == 3 && BuilderMarket.Take(out BuilderItem a) && a.Rival == 3 && a.Kind == BuilderNewsKind.TenderWon && a.Weight == 3
-              && BuilderMarket.Take(out BuilderItem b) && b.Rival == -1 && BuilderMarket.Take(out BuilderItem c) && c.Rival == 6 && c.Weight == 3 && !BuilderMarket.Take(out _),
+              && BuilderMarket.Take(out BuilderItem b) && b.Rival == -1 && BuilderMarket.Take(out BuilderItem c) && c.Rival == 6 && c.Weight == BuilderMarket.WeightMost && !BuilderMarket.Take(out _),
             "builders: the news list takes what the construction game tells, oldest first, and refuses what is no builder's news");
         for (int i = 0; i < BuilderMarket.QueueMost + 5; i++)
         {
@@ -516,6 +516,7 @@ internal static partial class Program
         Check(market.Contains("RivalTenderWon = " + (int)BuilderNewsKind.TenderWon + ", RivalFinished = " + (int)BuilderNewsKind.Finished + ", RivalLate = " + (int)BuilderNewsKind.Late
                               + ", RivalDeveloped = " + (int)BuilderNewsKind.Developed + ", RivalRigged = " + (int)BuilderNewsKind.Rigged + ", RivalAward = " + (int)BuilderNewsKind.Award) && MethodText(market, "private void Award(").Contains("RivalNews(won.Bidder, RivalTenderWon, WeightOf(t));")
               && MethodText(market, "private void FinishDevelopment(").Contains("if (!dev.Public)\n            {\n                RivalNews(rival, RivalDeveloped, 1);") && MethodText(sites, "public void SiteHanded(").Contains("RivalHanded(siteId, day);")
+              && MethodText(market, "private static int WeightOf(").Contains("t.Source == TenderSource.Landmark ? 4 : t.Source == TenderSource.Public ? 3")
               && MethodText(ModSource(@"Construction\ConstructionDirector.Rings.cs"), "private void RingFound(").Contains("RivalNews(r, RivalRigged, 1);")
               && ModSource(@"Construction\ConstructionDirector.Award.cs").Contains("RivalNews(e.Builder, RivalAward, 1);"),
             "builders sources: a tender's award, a rival's works handed over and a development finished tell the market, by its kinds' numbers");

@@ -58,10 +58,33 @@ namespace RealLifeOverhaul.Construction
                     building = true;
                 }
             }
+            // The landmarks' sites: their lots held for the city's megaprojects, shown as one row each.
+            IReadOnlyList<LotView> landmarks = _director.LandmarkSites;
+            string pickedLandmark = null;
+            for (int i = 0; i < landmarks.Count; i++)
+            {
+                LotView site = landmarks[i];
+                TableRow row = Pick("lmk:" + site.Id, ref selected);
+                row.Kind = ConstructionTables.LandLandmark;
+                row.Set(0, ConstructionDirector.LandmarkName(site.Id) ?? ConstructionText.T("reallife_lmk_tender_unnamed"));
+                row.Set(1, ConstructionText.T("reallife_bld_value_size", "width", site.Width.ToString(), "depth", site.Depth.ToString()), site.Width * site.Depth);
+                row.Set(2, ConstructionText.T("reallife_lmk_land_zoned"));
+                row.Set(3, "-", 0L);
+                row.Set(4, ConstructionDirector.LandmarkWords(site.Id) ?? string.Empty);
+                if (row.Id == selected)
+                {
+                    pickedLandmark = site.Id;
+                }
+            }
             bool business = WriteBusinessRows(ref selected, out BusinessView pickedBusiness);
             if (pickedLot != null && _director.Lot(pickedLot, out LotView picked))
             {
                 WriteLot(box, state, picked);
+                return;
+            }
+            if (pickedLandmark != null && _director.Lot(pickedLandmark, out LotView landmark))
+            {
+                WriteLandmark(box, state, landmark);
                 return;
             }
             if (building)
@@ -178,6 +201,30 @@ namespace RealLifeOverhaul.Construction
             if (owned.ZoneAsk == 0 && zones != (1 << (int)BuildUse.Count) - 1)
             {
                 InfoBox.Button(buttons, InfoBox.Negative, "reallife_bld_button_rezone", () => PlanningCall.Open(0));
+            }
+            InfoBox.Button(buttons, InfoBox.Additional, "reallife_bld_back", Back);
+            Guide(box);
+        }
+
+        // A landmark's site: what it is, how far it has come, and its tender if one is open.
+        private void WriteLandmark(InfoBox box, BuildState state, LotView site)
+        {
+            box.Title(ConstructionDirector.LandmarkName(site.Id) ?? ConstructionText.T("reallife_lmk_tender_unnamed"));
+            box.Subtitle(ConstructionText.T("reallife_lmk_source"));
+            box.RowPair("reallife_bld_row_size", ConstructionText.T("reallife_bld_value_size", "width", site.Width.ToString(), "depth", site.Depth.ToString()),
+                "reallife_bld_row_traffic", ConstructionText.N(site.Traffic));
+            box.Row("reallife_bld_col_state", ConstructionDirector.LandmarkWords(site.Id) ?? string.Empty);
+            box.Note(ConstructionText.T("reallife_lmk_land_note"));
+            Transform buttons = box.ButtonRow();
+            for (int i = state.Tenders.Count - 1; i >= 0; i--)
+            {
+                TenderFile t = state.Tenders[i];
+                if (t.Source == TenderSource.Landmark && t.Lot == site.Id && t.State == TenderState.Open)
+                {
+                    int tender = t.Id;
+                    InfoBox.Button(buttons, InfoBox.Positive, "reallife_lmk_button_tender", () => Jump(ConstructionDirector.TabTenders, "tnd:" + tender));
+                    break;
+                }
             }
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_bld_back", Back);
             Guide(box);
