@@ -50,3 +50,18 @@ wrapped={k:{'oneOf':[ob(version={'const':1},status={'const':'ready'},data=v),ob(
 schema={'$schema':'https://json-schema.org/draft/2020-12/schema','$id':'https://reallifeoverhaul.dev/contracts/companion/v1/planning.schema.json','title':'RLO additive planning modules, version 1','type':'object','properties':wrapped,'additionalProperties':True,'$defs':mod}
 (out/'planning.schema.json').write_text(json.dumps(schema,indent=2)+'\n')
 (out/'ownership-response.schema.json').write_text(json.dumps({'$schema':'https://json-schema.org/draft/2020-12/schema',**decision},indent=2)+'\n')
+# Ownership is deliberately separate from advisory snapshot data.
+hour=ob(**fields('from to',{'type':'integer','minimum':0,'maximum':24}))
+shift=ob(**hour['properties'],employeeId=S,itemInstanceId=nu(S))
+week=ar(ob(day={'type':'integer','minimum':0,'maximum':6},isOpen=B,hours=ar(hour),shifts=ar(shift)))
+week.update(minItems=7,maxItems=7)
+schedule=ob(**A['properties'],week=week)
+hire=ob(**A['properties'],hiring=B,moving=B,scheduling=B,week=week)
+hire['required'].remove('week')
+hire['allOf']=[{'if':{'properties':{'scheduling':{'const':True}}},'then':{'required':['week']}}]
+wholesale=ob(**A['properties'],contractId=S,action=en('set','remove'),itemIds=ar(S))
+operations=[]
+for name,target in [('schedule',schedule),('hire',hire),('wholesale',wholesale),('rent',A)]:
+ targets=ar(target);targets.update(minItems=1,maxItems=256)
+ operations.append(ob(schemaVersion={'const':1},operation={'const':name},phase=en('review','apply','undo'),targets=targets))
+(out/'ownership-request.schema.json').write_text(json.dumps({'$schema':'https://json-schema.org/draft/2020-12/schema','oneOf':operations},indent=2)+'\n')

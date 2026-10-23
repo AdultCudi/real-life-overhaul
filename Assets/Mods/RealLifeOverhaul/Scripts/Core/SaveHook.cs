@@ -78,68 +78,59 @@ namespace RealLifeOverhaul
             Saving = true;
             try
             {
-                RunHandlers();
-            }
-            catch (Exception e)
-            {
-                Logger?.Error(e);
+                using var piece = SessionWatch.Piece("the game is saving (the mod writes its state into the save first)");
+                bool timed = Meta.Dev.Verbose;
+                float began = timed ? UnityEngine.Time.realtimeSinceStartup : 0f;
+                for (int i = 0; i < Handlers.Count; i++)
+                {
+                    FeatureGuard guard = Guards[i];
+                    if (guard != null && guard.Off && !Essential.Contains(Handlers[i]))
+                    {
+                        if (Skipped.Add(guard))
+                        {
+                            Logger?.Warn("Save: " + guard.Where + " is switched off after its faults; its line in the save is left as it last wrote it.");
+                        }
+                        continue;
+                    }
+                    try
+                    {
+                        Handlers[i]();
+                    }
+                    catch (Exception e)
+                    {
+                        if (guard != null)
+                        {
+                            Guard.Fail(guard, e);
+                        }
+                        else
+                        {
+                            Logger?.Error(e);
+                        }
+                    }
+                }
+                try
+                {
+                    int put = SaveLines.PutBack(SaveGameManager.Current != null ? SaveGameManager.Current.modData : null);
+                    if (put > 0)
+                    {
+                        Logger?.Info("Save: " + put + " line(s) the mod could not read put back as they were read.");
+                    }
+                }
+                catch (Exception e)
+                {
+                    Logger?.Error(e);
+                }
+                CompanionGame.Save(SaveGameManager.Current);
+                if (timed)
+                {
+                    Logger?.Info("Session: the mod wrote its state into the save in "
+                                 + ((UnityEngine.Time.realtimeSinceStartup - began) * 1000f).ToString("F1", CultureInfo.InvariantCulture)
+                                 + " ms (" + Handlers.Count + " features); the rest of the save is the game's.");
+                }
             }
             finally
             {
                 Saving = false;
-            }
-        }
-
-        private static void RunHandlers()
-        {
-            using var piece = SessionWatch.Piece("the game is saving (the mod writes its state into the save first)");
-            bool timed = Meta.Dev.Verbose;
-            float began = timed ? UnityEngine.Time.realtimeSinceStartup : 0f;
-            for (int i = 0; i < Handlers.Count; i++)
-            {
-                FeatureGuard guard = Guards[i];
-                if (guard != null && guard.Off && !Essential.Contains(Handlers[i]))
-                {
-                    if (Skipped.Add(guard))
-                    {
-                        Logger?.Warn("Save: " + guard.Where + " is switched off after its faults; its line in the save is left as it last wrote it.");
-                    }
-                    continue;
-                }
-                try
-                {
-                    Handlers[i]();
-                }
-                catch (Exception e)
-                {
-                    if (guard != null)
-                    {
-                        Guard.Fail(guard, e);
-                    }
-                    else
-                    {
-                        Logger?.Error(e);
-                    }
-                }
-            }
-            try
-            {
-                int put = SaveLines.PutBack(SaveGameManager.Current != null ? SaveGameManager.Current.modData : null);
-                if (put > 0)
-                {
-                    Logger?.Info("Save: " + put + " line(s) the mod could not read put back as they were read.");
-                }
-            }
-            catch (Exception e)
-            {
-                Logger?.Error(e);
-            }
-            CompanionGame.Save(SaveGameManager.Current);
-            if (timed)
-            {
-                Logger?.Info("Session: the mod wrote its state into the save in "
-                             + ((UnityEngine.Time.realtimeSinceStartup - began) * 1000f).ToString("F1", CultureInfo.InvariantCulture)
-                             + " ms (" + Handlers.Count + " features); the rest of the save is the game's.");
             }
         }
     }

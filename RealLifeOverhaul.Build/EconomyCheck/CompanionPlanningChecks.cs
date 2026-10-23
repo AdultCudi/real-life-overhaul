@@ -9,7 +9,9 @@ internal static partial class Program
 {
     private static void CompanionPlanningChecks(string output)
     {
+        CompanionReadOnlyChecks();
         CompanionOwnershipChecks();
+        CompanionManagerChecks();
         var promotion = new CompanionPromotion();
         promotion.Remember(false, 31, 45, -2, 7, 9, 0.25f);
         promotion.Remember(true, 31, 31, 0, 0, 0, 0.25f);
