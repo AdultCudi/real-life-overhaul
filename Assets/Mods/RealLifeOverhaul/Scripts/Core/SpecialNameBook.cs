@@ -54,6 +54,7 @@ namespace RealLifeOverhaul
             public string Street;
             public int Number;
             public Func<bool> On;   // the feature's own option; null for always
+            public SpecialKind Kind;   // what the feature holds it as, for the held addresses' count
         }
 
         public int Count => _byId.Count;
@@ -150,7 +151,7 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>Reserves an address for an id while <paramref name="on"/> holds (null: always); false if another id has it.</summary>
-        public bool Reserve(string id, string street, int number, Func<bool> on = null)
+        public bool Reserve(string id, string street, int number, Func<bool> on = null, SpecialKind kind = SpecialKind.Other)
         {
             if (string.IsNullOrEmpty(id))
             {
@@ -162,7 +163,7 @@ namespace RealLifeOverhaul
             {
                 return false;
             }
-            _reserved[key] = new Reservation { Id = id, Street = street, Number = number, On = on };
+            _reserved[key] = new Reservation { Id = id, Street = street, Number = number, On = on, Kind = kind };
             Stamp++;
             return true;
         }
@@ -315,6 +316,30 @@ namespace RealLifeOverhaul
             foreach (SpecialEntry entry in _byId.Values)
             {
                 into.Add(entry);
+            }
+        }
+
+        /// <summary>
+        /// What the book holds now, as claims on addresses (cleared first): every entry whose feature shows it (its option on)
+        /// and every reservation that is on. This is what keeps the game's own letting off the mod's buildings
+        /// (<see cref="HeldLedger"/>); an entry whose option is off holds nothing, as it refuses nothing.
+        /// </summary>
+        public void Holding(List<HeldClaim> into)
+        {
+            into.Clear();
+            foreach (SpecialEntry entry in _byId.Values)
+            {
+                if (IsShown(entry))
+                {
+                    into.Add(new HeldClaim { Holder = HeldUnitsRules.BookPrefix + entry.Id, Street = entry.Street, Number = entry.Number, Kind = HeldUnitsRules.KindOf(entry.Kind) });
+                }
+            }
+            foreach (Reservation r in _reserved.Values)
+            {
+                if (r.On == null || r.On())
+                {
+                    into.Add(new HeldClaim { Holder = HeldUnitsRules.ReservePrefix + r.Id, Street = r.Street, Number = r.Number, Kind = HeldUnitsRules.ReservedKind(r.Id, r.Kind) });
+                }
             }
         }
 
