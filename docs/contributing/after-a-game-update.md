@@ -104,6 +104,8 @@ A game update can bring content as well as code: districts and areas (the Hampto
    - a value of `Scenes.GameScenes` the city check's scene table does not have, or one of New York's scenes gone;
    - `Building.requiredDLC` or `BoatType.requiredDLC` gone or of another type.
 
+   Its section "the save's fields that can name a place of the mod's" fails on a field of the save the district save does not know (a new list of businesses, a second city's records, a new field that holds an address, a district or an id of someone), and on one the game no longer has: handle it and list it ([district-save.md](../features/district-save.md#after-a-game-update)).
+
    Its section "DLC and update readiness" fails when a source reads a DLC other than through `Core/GameDlc`, reads CityManager's list other than through `GameDlc.Open`, walks the game's building lists without the helper, or registers a feature with no line in the city table.
 3. **For each new district**: if it is New York's (a free update's), decide whether it joins `CityDistricts.NewYork` (then every table by district names it: precinct names in `Law/Precincts`, hotel slots in `Travel/TravelCatalogue`, broadband and internet in `Utilities`), or stays a district the mod gives its defaults. If it is another city's, leave it out.
 4. **For each new scene**: read what loads it (`UI.Load.LoadScene`, `Scenes.GameScenesHelper`) and add it to `CityRules.NewYorkScenes` or `CityRules.SharedScenes`. A new city's own scene goes in neither: the city check takes it for another city's.

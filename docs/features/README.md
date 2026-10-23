@@ -63,6 +63,7 @@ Every feature runs in the New York the mod knows, a New York with districts a fr
 - [The Planner](planner.md): the phone's agenda.
 - [The Calendar](calendar.md): the month on the phone, as the year you chose divides it.
 - [The phone](phone.md): folders on the home screen, a dock, moving apps, and the Banks app.
+- [The district save](district-save.md): the records of the mod's own places kept in the mod's part of the save, so a save loads without the mod.
 
 ## Folders without a page
 
