@@ -43,8 +43,9 @@ namespace RealLifeOverhaul.Uptown
         public static int Built => _ground != null ? _ground.transform.childCount : 0;
 
         /// <summary>
-        /// The game's own pieces the district is laid against, found before anything changes: the backdrop, its walls, the
-        /// city map's camera. Null when all are there; else why not.
+        /// The game's own pieces the district is laid against, found before anything changes: the backdrop and its walls.
+        /// Null when both are there; else why not. The city map's camera is looked for too, but only the map's bounds need
+        /// it, so the district never stands down for it.
         /// </summary>
         public static string FindBackdrop()
         {
@@ -78,9 +79,22 @@ namespace RealLifeOverhaul.Uptown
             {
                 return "the game's invisible walls round the city (" + BackdropName + "/" + WallsName + ") were not found";
             }
+            _map = MapCamera();
+            return null;
+        }
+
+        // The city map's camera found as the game's CityMap.Init finds it. CityMap itself keeps it only from the game's
+        // loaded event, which comes after the city's load steps, so it is null while the district is laid.
+        private static CityMapCam MapCamera()
+        {
+            GameManager game = InstanceBehavior<GameManager>.IsInitialized ? InstanceBehavior<GameManager>.Instance : null;
+            CityMapCam cam = game != null && game.citymapCamera != null ? game.citymapCamera.GetComponentInParent<CityMapCam>(true) : null;
+            if (cam != null)
+            {
+                return cam;
+            }
             CityManager city = InstanceBehavior<CityManager>.IsInitialized ? InstanceBehavior<CityManager>.Instance : null;
-            _map = city != null && city.cityMap != null ? city.cityMap.cityMapCam : null;
-            return _map == null ? "the city map's camera was not found" : null;
+            return city != null && city.cityMap != null ? city.cityMap.cityMapCam : null;
         }
 
         /// <summary>
@@ -254,6 +268,7 @@ namespace RealLifeOverhaul.Uptown
         /// <summary>The city map's bounds widened to take in the district's ground; false without the map's camera.</summary>
         public static bool WidenMap(float west, float east, float north)
         {
+            _map = _map != null ? _map : MapCamera();
             if (_map == null)
             {
                 return false;
@@ -273,8 +288,9 @@ namespace RealLifeOverhaul.Uptown
         /// <summary>The city map's bounds as the game has them now, for the census; false without the map's camera.</summary>
         public static bool MapBounds(out Bounds bounds)
         {
-            bounds = _map != null ? _map.bounds : default;
-            return _map != null;
+            CityMapCam cam = _map != null ? _map : MapCamera();
+            bounds = cam != null ? cam.bounds : default;
+            return cam != null;
         }
 
         /// <summary>

@@ -158,7 +158,10 @@ namespace RealLifeOverhaul.Uptown
             LayoutPlans.Colliders(out PlanBox ground, _roads);
             GroundGame.Build(_walls, ground, _roads, LayoutPlans.GroundCollider, LayoutPlans.RoadCollider);
             _copied = GroundGame.CopyArt(build);
-            GroundGame.WidenMap(ground.X - ground.HalfX, ground.X + ground.HalfX, Mathf.Max(ground.Z + ground.HalfZ, LayoutPlans.MapNorth));
+            if (!GroundGame.WidenMap(ground.X - ground.HalfX, ground.X + ground.HalfX, Mathf.Max(ground.Z + ground.HalfZ, LayoutPlans.MapNorth)))
+            {
+                Logger?.Warn("Uptown: the city map's camera was not found, so the map does not reach over the district at this load; the district stands all the same.");
+            }
             LayoutPlans.Terminus(out float tx, out float tz);
             TransitMap.AddTerminus(new Vector3(tx, UptownLots.GroundY, tz), GroundText.Terminus, TerminusName);
             _build = build;

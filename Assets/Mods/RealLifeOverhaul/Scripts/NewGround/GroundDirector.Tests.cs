@@ -161,8 +161,8 @@ namespace RealLifeOverhaul.NewGround
                 TestRefusals.TellKey(Logger, "Walk: grow the city's own mesh by one tile", NewGroundText.Busy);
                 return;
             }
-            _growPlayer = Start(player, out string playerWhy);
-            _growNpc = Start(npc, out string npcWhy);
+            _growPlayer = BeginGrow(player, out string playerWhy);
+            _growNpc = BeginGrow(npc, out string npcWhy);
             if (_growPlayer == null && _growNpc == null)
             {
                 TestRefusals.TellKey(Logger, "Walk: grow the city's own mesh by one tile", playerWhy == NewGroundText.Builder || npcWhy == NewGroundText.Builder
@@ -178,8 +178,9 @@ namespace RealLifeOverhaul.NewGround
         private static readonly List<float> TileZ = new List<float>(GroundRules.TileSamples * GroundRules.TileSamples);
         private static readonly int[] Headings = { 0, 90, 180, 270 };
 
-        // One mesh's grow begun, or null with why (in _skipped) and the refusal's key.
-        private GrowRun Start(CityMesh mesh, out string refusal)
+        // One mesh's grow begun, or null with why (in _skipped) and the refusal's key. Never named Start: on a MonoBehaviour
+        // Unity takes that name for its own message and logs a script error at every load for one with parameters.
+        private GrowRun BeginGrow(CityMesh mesh, out string refusal)
         {
             int slot = mesh == WalkGame.Player ? 0 : 1;
             refusal = NewGroundText.NoTile;

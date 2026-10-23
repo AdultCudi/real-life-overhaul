@@ -658,6 +658,11 @@ internal static partial class Program
         Check(tests.Contains("\"Uptown check (path, \"") && tests.Contains("\"Uptown check (traffic): ") && tests.Contains("\"Uptown check (census): ")
               && Regex.Matches(tests, @"TestRefusals\.(?:Tell|TellKey)\(").Count >= 6,
             "uptown tests: each says why it did not start and writes one check line");
+        // The owner's test of 23 Oct: CityMap keeps its camera only from the game's loaded event, after the load steps, so
+        // asking it there stood the whole district down at every load.
+        Check(!game.Contains("camera was not found") && Regex.IsMatch(game, @"_map = MapCamera\(\);\s*return null;")
+              && game.Contains("game.citymapCamera.GetComponentInParent<CityMapCam>(true)") && director.Contains("if (!GroundGame.WidenMap("),
+            "uptown load: the city map's camera found as the game's CityMap.Init finds it, and never a reason to stand the district down");
         string mod = Code(File.ReadAllText(Path.Combine(scripts, "Core", "RealLifeOverhaulMod.cs")));
         int uptown = Order(mod, "Guard.Add<Uptown.GroundDirector>(_root)"), buildings = Order(mod, "Guard.Add<NewBuildings.NewBuildingsDirector>(_root)"),
             prewarm = Order(mod, "ScenePrewarm.Begin()"), ground = Order(mod, "Guard.Add<NewGround.GroundDirector>(_root)");
