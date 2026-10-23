@@ -906,6 +906,7 @@ namespace RealLifeOverhaul
                 .AddToggle(Settings.OfficeConversionId, "reallife_offices_enabled", Settings.OfficeConversion,
                     v => Settings.OfficeConversion = v)
                 .AddButton("reallife_offices_test_list", () => Offices.Conversions.Instance?.TestList())
+                .AddButton("reallife_held_test", HeldUnits.Test)
                 .AddToggle(Settings.EconomyBankId, "reallife_ob_enabled", Settings.EconomyBank,
                     v => Settings.EconomyBank = v)
                 .AddToggle(Settings.EconomyBranchId, "reallife_branch_enabled", Settings.EconomyBranch,
@@ -1238,6 +1239,7 @@ namespace RealLifeOverhaul
             Guard.Step("PropLibrary", () => PropLibrary.Logger = context.Logger);
             Guard.Step("MapPlaces", () => MapPlaces.Logger = context.Logger);
             Guard.Step("SpecialBuildings", () => SpecialBuildings.Logger = context.Logger);
+            Guard.Step("HeldUnits", () => HeldUnits.Logger = context.Logger);
             Guard.Step("MapLinks", () => MapLinks.Logger = context.Logger);
             Guard.Step("Districts.DistrictView", () => Districts.DistrictView.Logger = context.Logger);
             Guard.Step("Districts.DistrictPanel", () => Districts.DistrictPanel.Logger = context.Logger);
@@ -1324,6 +1326,7 @@ namespace RealLifeOverhaul
             Guard.Step("RivalOfferGuard", () => Guard.Add<RivalOfferGuard>(_root));   // no Update
             Guard.Step("StaffLeave", () => StaffLeave.Logger = context.Logger);
             Guard.Step("SpecialNames", () => Guard.Add<SpecialNames>(_root));   // one reference comparison a frame while a building is named
+            Guard.Step("HeldUnits", () => Guard.Add<HeldUnits>(_root));   // no Update; a look once a second, two at the game's night
             Guard.Step("ClickWatch", () => Guard.Add<ClickWatch>(_root));   // one flag test a frame unless Developer diagnostics is on
             Guard.Step("ThirdPersonCamera", () => Guard.Add<ThirdPersonCamera>(_root));
             Guard.Step("VisualEnhancer", () => Guard.Add<VisualEnhancer>(_root));

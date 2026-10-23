@@ -162,6 +162,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Brands\BrandStore.cs" Link="Mod\BrandStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Brands\KeptPrices.cs" Link="Mod\KeptPrices.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\SpecialNameBook.cs" Link="Mod\SpecialNameBook.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\HeldUnitsRules.cs" Link="Mod\HeldUnitsRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\CityReserves.cs" Link="Mod\CityReserves.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\OfficeSupply.cs" Link="Mod\OfficeSupply.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareModel.cs" Link="Mod\FlareModel.cs" />

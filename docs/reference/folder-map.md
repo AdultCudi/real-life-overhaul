@@ -36,6 +36,7 @@ Entry points, settings, per-save state, shared HUD, the modelled props (PropLibr
 | `GameCalendar.cs`, `CalendarRules.cs`, `Prices.cs` | the calendar and the price level ([The calendar and the price level](calendar-and-prices.md)) |
 | `GoingPublic.cs`, `GoingPublicLink.cs`, `SharedCity.cs`, `SharedCityWire.cs` | a Going Public session, whose things are whose, and what the host shares |
 | `SpecialBuildings.cs` | the buildings the mod claims as its own |
+| `HeldUnits.cs`, `HeldUnitsGame.cs`, `HeldUnitsRules.cs` | every address the mod holds, kept out of the game's own letting ([map places](map-places.md#the-games-own-letting-leaves-them-alone)) |
 | `PropLibrary.cs`, `Shapes.cs` | the modelled props by id, and the plain shapes they fall back to |
 | `RoadData.cs`, `RoadGraph.cs`, `RouteSearch.cs` | the road data found once per city, and the shared road search |
 | `TestRefusal.cs` | why a test button could not do what was asked |

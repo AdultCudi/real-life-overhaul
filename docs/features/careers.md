@@ -23,7 +23,7 @@ What `Scripts/Careers` holds: education and careers: the city's courses and the 
 | `CareersDirector` | the one component (no Update): a one-second timer, the game's hour and day, the parts in partial files (.Study and .Coursework; .Work, .Vacancies and .Applying; .Desk and .DeskDay; .ClassPlay, .Prompt and .Floors; .Life, .Own, .Degrees, .Family, .Tests) |
 | `Sitting`, `Study/SittingRules` | a class, homework, an exam, a working day, a contract, tutoring or a ceremony left to the game's own activity panel and clock (Jobs/ShiftSkip), with its own record settled once and the book of the open ones (game-free) |
 | `CampusApp, CareerApp` | the Campus and Career apps in the game's own frame (GameUi.AppShell) |
-| `CampusBuilding` | Hudson City University: the largest office building of the city, with its sign |
+| `CampusBuilding` | Hudson City University: the largest office building of the city, with its sign; it and its reserved building are held from the game's own letting ([the game's own letting](../reference/map-places.md#the-games-own-letting-leaves-them-alone)) |
 | `AcademyType` | the player's own training academy, a business type of the game's (registered at the start, stripped for removal) |
 | `CareersBridges` | what it asks of the others (Wiring/CareersLinks fills them in) |
 
