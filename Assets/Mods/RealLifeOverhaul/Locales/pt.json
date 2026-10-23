@@ -21111,5 +21111,11 @@
   "reallife_test_city_away": "Desligar os recursos de Nova York, como em outra cidade",
   "reallife_test_city_away_done": "Os recursos de Nova York foram desligados como seriam em outra cidade, como a de uma DLC. O Player.log tem a linha da verificação da cidade. Traga-os de volta com o próximo teste quando terminar.",
   "reallife_test_city_back": "Trazer de volta os recursos de Nova York",
-  "reallife_test_city_back_done": "Os recursos de Nova York voltaram, como em Nova York. O Player.log tem a linha da verificação da cidade."
+  "reallife_test_city_back_done": "Os recursos de Nova York voltaram, como em Nova York. O Player.log tem a linha da verificação da cidade.",
+  "reallife_test_district_save": "Save do distrito: manter um registro de teste fora do save",
+  "reallife_test_district_save_pass": "Teste: o save gravado para o teste do save do distrito não nomeou nenhum dos lugares do teste, e as listas do jogo voltaram a ficar como eram.",
+  "reallife_test_district_save_fail": "Teste: o teste do save do distrito falhou (veja o Player.log).",
+  "reallife_test_district_save_session": "Teste não iniciado: em uma sessão do Going Public, o negócio do teste chegaria aos outros jogadores. Experimente em um jogo só seu.",
+  "reallife_test_district_save_busy": "Teste não iniciado: um save está sendo gravado. Tente de novo em alguns segundos.",
+  "reallife_meta_report_district": "Registros do distrito próprio do mod guardados na parte do mod no save: {count}. Sem o mod, eles simplesmente não estão lá; com o mod, eles voltam."
 }

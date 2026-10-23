@@ -270,6 +270,11 @@ namespace RealLifeOverhaul.Meta
             }
 
             AppendRemoved(report, removed);
+            int district = DistrictSave.DistrictSaveDirector.StoredRecords();
+            if (district > 0)
+            {
+                report.Add("reallife_meta_report_district".GetLocalization().Replace("{count}", district.ToString(CultureInfo.InvariantCulture)));
+            }
             if (converted.Length > 0)
             {
                 report.Add(converted.TrimStart('\n'));

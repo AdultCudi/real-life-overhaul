@@ -21111,5 +21111,11 @@
   "reallife_test_city_away": "Stand New York's features down, as in another city",
   "reallife_test_city_away_done": "New York's features stand down as they would in another city, such as a DLC's. Player.log has the city check's line. Bring them back with the next test when you are done.",
   "reallife_test_city_back": "Bring New York's features back",
-  "reallife_test_city_back_done": "New York's features are back, as in New York. Player.log has the city check's line."
+  "reallife_test_city_back_done": "New York's features are back, as in New York. Player.log has the city check's line.",
+  "reallife_test_district_save": "District save: keep a test record out of the save",
+  "reallife_test_district_save_pass": "Test: the save written for the district save test named none of the test's places, and the game's lists were put back as they were.",
+  "reallife_test_district_save_fail": "Test: the district save test failed (see Player.log).",
+  "reallife_test_district_save_session": "Test not started: in a Going Public session the test's business would reach the other players. Try it in a game of your own.",
+  "reallife_test_district_save_busy": "Test not started: a save is being written. Try again in a few seconds.",
+  "reallife_meta_report_district": "Records of the mod's own district kept in the mod's part of the save: {count}. Without the mod they are simply not there; with the mod they come back."
 }
