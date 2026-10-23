@@ -56,19 +56,19 @@ namespace RealLifeOverhaul
                              + (!SpecialNameBook.Accepts(kind) ? kind + " keeps its own name" : there != null ? "the building is already '" + there.Id + "'"
                                  : reserved != null ? "the building is reserved for '" + reserved + "'" : "nothing to name it by") + ").");
             }
-            SpecialNames.Changed();
+            Changed();
             return done;
         }
 
         /// <summary>Reserves a fixed address for a feature's id while <paramref name="on"/> holds (<see cref="SpecialNameBook.Reserve"/>).</summary>
-        public static bool Reserve(string id, string street, int number, Func<bool> on)
+        public static bool Reserve(string id, string street, int number, Func<bool> on, SpecialKind kind = SpecialKind.Other)
         {
-            bool done = Book.Reserve(id, street, number, on);
+            bool done = Book.Reserve(id, street, number, on, kind);
             if (!done)
             {
                 Logger?.Warn("Special buildings: '" + id + "' could not reserve " + street + " " + number + " (another feature reserves it).");
             }
-            SpecialNames.Changed();
+            Changed();
             return done;
         }
 
@@ -76,7 +76,7 @@ namespace RealLifeOverhaul
         {
             if (Book.Unreserve(id))
             {
-                SpecialNames.Changed();
+                Changed();
             }
         }
 
@@ -102,7 +102,7 @@ namespace RealLifeOverhaul
                 Logger?.Info("Special buildings: '" + id + "' at " + street + " " + number + " keeps the game's name ("
                              + (there != null ? "the building is already '" + there.Id + "'" : "nothing to name it by") + ").");
             }
-            SpecialNames.Changed();
+            Changed();
             return done;
         }
 
@@ -150,7 +150,7 @@ namespace RealLifeOverhaul
         {
             if (Book.Count > 0 && Book.LookShown())
             {
-                SpecialNames.Changed();
+                Changed();
             }
         }
 
@@ -159,7 +159,7 @@ namespace RealLifeOverhaul
             bool done = Book.Remove(id);
             if (done)
             {
-                SpecialNames.Changed();
+                Changed();
             }
             return done;
         }
@@ -238,7 +238,7 @@ namespace RealLifeOverhaul
         {
             if (!string.IsNullOrEmpty(businessType) && FindableTypes.Add(businessType))
             {
-                SpecialNames.Changed();
+                Changed();
             }
         }
 
@@ -262,6 +262,20 @@ namespace RealLifeOverhaul
         {
             Book.Clear();
             FindableTypes.Clear();
+            HeldUnits.BookChanged();
+        }
+
+        // Every change of the book: what is shown is written again, and what the book holds is held from the game's letting at once.
+        private static void Changed()
+        {
+            SpecialNames.Changed();
+            HeldUnits.BookChanged();
+        }
+
+        /// <summary>What the book holds now, as claims (<see cref="SpecialNameBook.Holding"/>), into the caller's list.</summary>
+        internal static void Holding(List<HeldClaim> into)
+        {
+            Book.Holding(into);
         }
 
         /// <summary>True for a building the player rents or owns (in Going Public another player's too).</summary>

@@ -322,7 +322,7 @@ namespace RealLifeOverhaul
         // A building for a site: with a street door, the right sort for the kind, not beside another site.
         private CityBuildingController Choose(SiteKind kind, bool local, Vector3 player, ref CivicRandom random)
         {
-            CityBuildingController[] all = InstanceBehavior<CityManager>.Instance.cityBuildingControllers;
+            CityBuildingController[] all = GameDlc.Open(InstanceBehavior<CityManager>.Instance);
             if (all == null || all.Length == 0)
             {
                 return null;

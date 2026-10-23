@@ -85,7 +85,7 @@ namespace RealLifeOverhaul.Faults
         private static bool ReadCity()
         {
             CityManager city = InstanceBehavior<CityManager>.Instance;
-            CityBuildingController[] all = city != null ? city.cityBuildingControllers : null;
+            CityBuildingController[] all = GameDlc.Open(city);
             if (all == null || all.Length == 0)
             {
                 return false;

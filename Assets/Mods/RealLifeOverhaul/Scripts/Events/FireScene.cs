@@ -246,7 +246,7 @@ namespace RealLifeOverhaul.Events
         {
             _door = stand + outward * 1.5f;
             var city = InstanceBehavior<CityManager>.Instance;
-            CityBuildingController[] buildings = city != null ? city.cityBuildingControllers : null;
+            CityBuildingController[] buildings = GameDlc.Open(city);
             float nearest = 14f * 14f;
             CityBuildingController owner = null;
             for (int i = 0; buildings != null && i < buildings.Length; i++)

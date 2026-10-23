@@ -369,6 +369,8 @@ internal static partial class Program
         MorningNotices(); // the morning line only from a sleep the game ended, with its hours; the city's news of the night packed into it; four notices' switches (MorningNewsChecks.cs)
         CalendarApp();  // the Calendar: the months of every year length, the grid, each schedule's days against its feature's own rule, an empty month, the sources, the texts (CalendarAppChecks.cs)
         Meals();        // meals and music: the seat a meal is taken to, how long it is eaten, the dance's lift and its cap, every way out, the texts (MealsChecks.cs)
+        HeldUnitsChecks(); // the game leaves the mod's buildings alone: claims counted per address, the ignore list's one rule, the night's lists, every way out, nothing saved (HeldUnitsChecks.cs)
+        CityReady();    // DLC and update readiness: the city check's table, New York's districts and their order, every table by district with one it does not know (CityReadyChecks.cs)
         Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
         return _failed == 0 ? 0 : 1;
     }

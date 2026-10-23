@@ -26,7 +26,7 @@ namespace RealLifeOverhaul
             internal static void Connect()
             {
                 // The university's building is held for it from the start, before any feature chooses one, while its part is on.
-                SpecialBuildings.Reserve(CampusRules.BookId, CampusRules.HomeStreet, CampusRules.HomeNumber, () => CareersDirector.UniversityOpen);
+                SpecialBuildings.Reserve(CampusRules.BookId, CampusRules.HomeStreet, CampusRules.HomeNumber, () => CareersDirector.UniversityOpen, SpecialKind.Campus);
                 CareersBridges.HomeInternet = HomeInternet;
                 CareersBridges.OthersPicked = OfficeLinks.CityOfficesPicked;   // so the university chooses none of theirs, the same on every machine
                 CareersBridges.Headquarters = (string name, out string street, out int number) =>

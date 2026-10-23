@@ -182,7 +182,7 @@ namespace RealLifeOverhaul.Economy
             for (int i = 0; all != null && i < all.Length; i++)
             {
                 NeighborhoodData data = all[i];
-                if (data == null || string.IsNullOrEmpty(data.neighbourhood) || data.neighbourhood == Global)
+                if (data == null || string.IsNullOrEmpty(data.neighbourhood) || data.neighbourhood == Global || !CityCheck.Here(data.neighbourhood))
                 {
                     continue;
                 }

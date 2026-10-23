@@ -114,7 +114,8 @@ namespace RealLifeOverhaul
 
         /// <summary>
         /// Adds a component of the city's start, unless its own FrameGuard's feature was switched off at start because the
-        /// game lacks what it stands on. A component guarded by hand (Life/LifeEvents) is always added.
+        /// game lacks what it stands on, or stands on New York's data in another city (Core/CityCheck). A component guarded
+        /// by hand (Life/LifeEvents) is always added.
         /// </summary>
         public static T Add<T>(GameObject root) where T : Component
         {
@@ -123,6 +124,12 @@ namespace RealLifeOverhaul
             if (guard != null && guard.Off && guard.Feature != null && Lacking.Contains(guard.Feature))
             {
                 Logger?.Info("Game contract: " + type.Name + " is not started: its feature '" + guard.Feature + "' is switched off until " + Until + ".");
+                return null;
+            }
+            if (guard != null && guard.Away)
+            {
+                CityCheck.LeftOut(guard.Feature);
+                Logger?.Info("City check: " + type.Name + " is not started: its feature '" + guard.Feature + "' stands on New York's data.");
                 return null;
             }
             return root.AddComponent<T>();

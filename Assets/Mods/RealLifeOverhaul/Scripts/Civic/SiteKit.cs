@@ -80,7 +80,7 @@ namespace RealLifeOverhaul
             asleep.SetActive(false);
             asleep.transform.SetParent(holder, false);
             _asleep = asleep.transform;
-            _fromScene = FromScene(city.cityBuildingControllers);
+            _fromScene = FromScene(GameDlc.Open(city));
             Material[] materials = SceneFinds.InMemory<Material>("construction: the game's concrete, metal, fence wire and scaffold materials by name");
             Concrete = Named(materials, ConcreteNames);
             Metal = Named(materials, MetalNames);

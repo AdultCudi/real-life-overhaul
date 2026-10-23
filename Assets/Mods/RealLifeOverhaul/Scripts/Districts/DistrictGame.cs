@@ -157,7 +157,7 @@ namespace RealLifeOverhaul.Districts
         public static string NearestDistrict(Vector3 point, float within)
         {
             CityManager city = InstanceBehavior<CityManager>.Instance;
-            CityBuildingController[] all = city != null ? city.cityBuildingControllers : null;
+            CityBuildingController[] all = GameDlc.Open(city);
             float best = within * within;
             string found = null;
             for (int i = 0; all != null && i < all.Length; i++)
@@ -209,7 +209,7 @@ namespace RealLifeOverhaul.Districts
                 d.Parking = data != null ? data.parkingPrice : 0f;
             }
             CityManager city = InstanceBehavior<CityManager>.Instance;
-            CityBuildingController[] all = city != null ? city.cityBuildingControllers : null;
+            CityBuildingController[] all = GameDlc.Open(city);
             for (int b = 0; all != null && b < all.Length; b++)
             {
                 CityBuildingController controller = all[b];

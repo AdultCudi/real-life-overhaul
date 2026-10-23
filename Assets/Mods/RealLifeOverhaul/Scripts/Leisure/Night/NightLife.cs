@@ -96,7 +96,7 @@ namespace RealLifeOverhaul.Leisure
             }
             CityBuildingController best = null;
             float bestSqr = LeisureReach.NightNear * LeisureReach.NightNear;
-            CityBuildingController[] all = cityManager.cityBuildingControllers;
+            CityBuildingController[] all = GameDlc.Open(cityManager);
             for (int i = 0; i < all.Length; i++)
             {
                 CityBuildingController building = all[i];

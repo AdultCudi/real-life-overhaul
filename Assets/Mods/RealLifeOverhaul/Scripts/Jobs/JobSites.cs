@@ -128,7 +128,7 @@ namespace RealLifeOverhaul
                        && !GameMembers.Fenced(building.building)
                        && BuildingHelper.CanEnterBuilding(building.building.Address)
                        && registration.GetEntranceFeeForPlayer() <= 0f          // nobody pays to get in to work
-                       && building.building.requiredDLC.DlcIsOwned()
+                       && !GameDlc.Gated(building)
                        && !BuildingManager.IsBuildingBlockedByAnyService(building.building.Address);
             }
             catch (Exception)

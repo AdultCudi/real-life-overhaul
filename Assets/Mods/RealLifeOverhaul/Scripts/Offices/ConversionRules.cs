@@ -162,27 +162,5 @@ namespace RealLifeOverhaul.Offices
             }
             return total;
         }
-
-        /// <summary>
-        /// What becomes of an address on the game's list of addresses its rivals leave alone (RivalsHelper.IgnoredAddresses),
-        /// a shared list: +1 the mod adds it, -1 the mod takes its own entry off, 0 nothing. <paramref name="ours"/> is set to
-        /// whether the entry there is the mod's. One already there that the mod did not add (the game's own, another mod's) is
-        /// never taken off, and is not the mod's after.
-        /// </summary>
-        public static int IgnoreChange(bool want, bool listed, ref bool ours)
-        {
-            if (want)
-            {
-                if (!listed)
-                {
-                    ours = true;
-                    return 1;
-                }
-                return 0;   // there already: the mod's if it put it there, else somebody else's, left as it is
-            }
-            bool mine = ours;
-            ours = false;
-            return mine && listed ? -1 : 0;
-        }
     }
 }
