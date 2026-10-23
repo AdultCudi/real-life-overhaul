@@ -70,7 +70,7 @@ namespace RealLifeOverhaul.NewBuildings
             if (Meta.Dev.Verbose)
             {
                 bool linked = look.FadeLinked(out int parts);
-                Logger?.Info("Construction check (look): " + handle.Design + " for " + (handle.Owner ?? "a feature") + " at (" + at.x.ToString("F1") + ", " + at.z.ToString("F1")
+                Logger?.Info("Construction check (look): " + handle.Design + " for " + (handle.Owner ?? "a feature") + " at (" + at.x.ToString("F1", Plain) + ", " + at.z.ToString("F1", Plain)
                              + "), " + parts + " part(s) the game's fade finds: " + (linked ? "PASS" : "FAIL, its fade is not linked"));
             }
         }

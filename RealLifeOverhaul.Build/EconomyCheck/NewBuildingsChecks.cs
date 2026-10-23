@@ -517,15 +517,34 @@ internal static partial class Program
               && wake.IndexOf("c.buildingRegistration = registration;", StringComparison.Ordinal) is int r && r > 0 && r < active,
             "new buildings: a working copy is given its record and registration before it wakes (the city's list can reach it before its Start)");
         Check(MemberText(made, "public static BuildingRegistration MakeRegistration(").Contains("reg.AvailableForRent = false;") && !Regex.IsMatch(all, @"AvailableForRent\s*=\s*true|ForSale\s*=\s*true|RentedByPlayer\s*=\s*true")
-              && MemberText(made, "public static Building MakeRecord(").Contains("b.SpecialService = null;") && MemberText(made, "public static Building MakeRecord(").Contains("b.requiredDLC = SteamAPI.DLC.None;"),
-            "new buildings: a made building is never to let or for sale, has no special service and needs no DLC");
+              && MemberText(made, "public static Building MakeRecord(").Contains("b.SpecialService = null;") && MemberText(made, "public static Building MakeRecord(").Contains("ScriptableObject.CreateInstance<Building>()"),
+            "new buildings: a made building is never to let or for sale and has no special service; its record is new, so its DLC is the default, none");
         Check(MemberText(made, "public static bool Claim(").Contains("SpecialBuildings.Reserve(spec.Id, spec.Street, spec.Number, on, SpecialKind.Other)") && !all.Contains("IgnoredAddresses"),
             "new buildings: a made building is claimed through the special buildings' book, and never put on the game's ignore list here");
 
-        // No made controller is destroyed in a session: only a decorative copy (no controller) and a sleeping template go.
-        Check(Occurs(all, "UnityEngine.Object.Destroy(") == 2 && MemberText(copy, "public static void Remove(CopyLook look)").Contains("UnityEngine.Object.Destroy(look.gameObject)")
-              && MemberText(copy, "public static void Drop(Transform template)").Contains("UnityEngine.Object.Destroy(template.gameObject)") && !Regex.IsMatch(all, @"\bDestroy\(\s*(made|c|copy|controller)\b"),
-            "new buildings: the folder destroys only a decorative copy and a sleeping template, never a made building's copy");
+        // No made controller is destroyed in a session: only a decorative copy (no controller), a sleeping template, and the
+        // records and streets the mod made, once the city goes.
+        var destroyed = new SortedSet<string>(StringComparer.Ordinal);
+        foreach (Match m in Regex.Matches(all, @"\bDestroy\(([^;]*?)\);"))
+        {
+            destroyed.Add(m.Groups[1].Value.Trim());
+        }
+        Check(string.Join(" ", destroyed) == "b data look.gameObject template.gameObject" && MemberText(copy, "public static void Remove(CopyLook look)").Contains("UnityEngine.Object.Destroy(look.gameObject)")
+              && MemberText(copy, "public static void Drop(Transform template)").Contains("UnityEngine.Object.Destroy(template.gameObject)"),
+            "new buildings: the folder destroys only a decorative copy, a sleeping template, and its own records and streets (" + string.Join(", ", destroyed) + ")");
+        string unload = MemberText(made, "public static void Unload(bool cityGoes)"), drop = MemberText(made, "private static void Drop()");
+        int left = drop.IndexOf("Leave(b);", StringComparison.Ordinal), gone = drop.IndexOf("UnityEngine.Object.Destroy(b);", StringComparison.Ordinal);
+        Check(unload.Contains("if (cityGoes)") && unload.Contains("Drop();") && left > 0 && gone > left && drop.Contains("UnityEngine.Object.Destroy(data);")
+              && drop.Contains("lookup.Remove(pair.Key);") && MemberText(made, "public static Building MakeRecord(").Contains("Records.Add(b);"),
+            "new buildings: what the mod makes by code (each record, each street) is taken out of the game's lookups and destroyed when the city goes, and only then");
+        string standing = MemberText(copy, "public static CityBuildingController MakeWorking(");
+        Check(standing.Contains("SceneManager.MoveGameObjectToScene(copy.gameObject, source.gameObject.scene)") && !standing.Contains("_standing") && !standing.Contains("_asleep"),
+            "new buildings: a made building's copy stands in the scene of the building it copies, never under the mod's own objects (the save tools' removal destroys those)");
+        string down = MemberText(director, "private void OnDestroy()"), outOf = MemberText(director, "private void KeepOutOfSaves()");
+        Check(down.Contains("bool stays = Meta.SaveTools.Dormant;") && down.Contains("KeepOutOfSaves();") && down.Contains("MadeGame.Unload(!stays);")
+              && outOf.IndexOf("MadeGame.Strip(_taken);", StringComparison.Ordinal) is int stripped && stripped > 0 && outOf.IndexOf("_taken.Clear();", StringComparison.Ordinal) > stripped
+              && outOf.Contains("CopyGame.Show(made.Controller, false);"),
+            "new buildings: when the save tools stop the mod in a city that stays, the made buildings stay hidden and the save in memory names none of their addresses for good");
         int immediate = Occurs(all, "DestroyImmediate(");
         Check(immediate == 3 && Occurs(MemberText(copy, "private static void StripWorking("), "DestroyImmediate(") == 1 && Occurs(MemberText(copy, "private static void StripLook("), "DestroyImmediate(") == 2,
             "new buildings: what is taken off at once is taken off a template asleep under a switched-off holder (its Awake never ran)");
@@ -573,9 +592,14 @@ internal static partial class Program
         Check(MemberText(director, "private void Apply(string why)").Contains("MadeGame.SessionAgrees()") && MemberText(made, "public static bool SessionAgrees()").Contains("SharedCity.Following")
               && MemberText(made, "public static bool SessionAgrees()").Contains("SharedCity.Leading") && !Regex.IsMatch(all, @"\bSend\w*\(|Network|Rpc"),
             "new buildings: in a Going Public session they stand only while every machine is known to run the mod, and nothing is sent");
-        Check(copy.Contains("private static bool OfDlc(CityBuildingController c)") && MemberText(copy, "private static bool OfDlc(").Contains("requiredDLC != SteamAPI.DLC.None")
-              && MemberText(copy, "private static bool OfDlc(").Contains("GetComponentInParent<ToggleObjectDLC>(true)") && Occurs(copy, "if (OfDlc(c))") == 2 && !Regex.IsMatch(all, @"DlcIsOwned|IsDlcInstalled|BIsDlcInstalled|OwnsDlc"),
-            "new buildings: no design of a DLC (or with a DLC's content in it or round it) is ever picked, and whether a DLC is owned is never read");
+        string ofDlc = MemberText(copy, "private static bool OfDlc(CityBuildingController c)");
+        Check(ofDlc.Contains("GameDlc.Gated(c)") && ofDlc.Contains("GetComponentInChildren<ToggleObjectDLC>(true)") && ofDlc.Contains("GetComponentInParent<ToggleObjectDLC>(true)")
+              && Occurs(copy, "if (OfDlc(c))") == 2 && !Regex.IsMatch(all, @"requiredDLC|DlcIsOwned|IsDlcInstalled|SteamAPI\.|SteamApps\."),
+            "new buildings: no design the game keeps behind a DLC, or with a DLC's content in it or round it, is ever picked (Core/GameDlc), and whether a DLC is owned is never read");
+        Check(!all.Contains(".cityBuildingControllers") && Occurs(all, "GameDlc.Open(") >= 3 && MemberText(made, "public static bool InCityList(").Contains("GameDlc.GatedInCity"),
+            "new buildings: the city's list of buildings is read only through Core/GameDlc, and the made buildings' check counts it as the game does");
+        Check(Read(@"Meta\FeatureCities.cs").Contains("new Line(\"newbuildings\", CityScope.NewYork,") && Read(@"..\..\..\..\RealLifeOverhaul.Build\ContractCheck\CityChecks.cs").Contains("\"NewBuildings/CopyGame.cs\""),
+            "new buildings: the feature stands on New York's map (the city table: another city has none of it), and its picks are in ContractCheck's census of picks");
         Check(!Regex.IsMatch(all, "\"ba:street_") && MemberText(made, "public static int AddStreets()").Contains("GameContract.StreetLookup.Field") && MemberText(made, "public static int AddStreets()").Contains("CreateInstance<StreetData>()"),
             "new buildings: no street of the game's is ever used; the mod's own are put among the game's at every load");
         Check(make.Contains("CopyGame.GroundWhy(designs[pick], each, out root, out yaw, out door)") && make.Contains("NewBuildingsRules.FirstFree(spec.Lots.Length, spec.Preferred,")
@@ -583,8 +607,8 @@ internal static partial class Program
             "new buildings: every lot's ground is checked at every load before a building is stood on it, and the next free lot is taken by the fixed rule");
         Check(make.Contains("NewBuildingsRules.Refusal(spec, MadeGame.StructureTakes, MadeGame.DistrictKnown, MadeGame.HomesLeftOut())") && make.Contains("MadeGame.GameHas(spec.Street, spec.Number)")
               && MemberText(made, "public static bool StructureTakes(").Contains("BuildingSizeHelper.GetAllBuildingSizes()") && MemberText(made, "public static bool StructureTakes(").Contains("!each.specialBuildingOnly")
-              && MemberText(made, "public static bool DistrictKnown(").Contains("NeighborhoodHelper.Neighborhoods"),
-            "new buildings: the game's sizes, versions, types and districts are read from the game at the load, and an address the game has already is left to it");
+              && MemberText(made, "public static bool DistrictKnown(").Contains("NeighborhoodHelper.Neighborhoods") && MemberText(made, "public static bool DistrictKnown(").Contains("CityCheck.Here(district)"),
+            "new buildings: the game's sizes, versions, types and districts (of the loaded city) are read from the game at the load, and an address the game has already is left to it");
         Check(MemberText(copy, "private static void Measure(CityBuildingController c)").Contains("NewBuildingsRules.MeasuredFrom(") && MemberText(copy, "private static void Finish()").Contains("Designs.Sort(NewBuildingsRules.CompareDesigns)"),
             "new buildings: the catalogue is the same on every machine: each design measured on the same building, in one order");
         Check(look.Contains("public sealed class CopyLook : ViewBlockingEntity") && MemberText(look, "public override void OnDestroy()").Contains("Delegate.Remove(GlobalEvents.onCityMapToggle, _onMap)")

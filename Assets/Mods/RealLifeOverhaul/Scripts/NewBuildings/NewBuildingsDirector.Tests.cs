@@ -46,7 +46,8 @@ namespace RealLifeOverhaul.NewBuildings
                 UnityEngine.PlayerPrefs.SetInt(TestPref, ask ? 1 : 0);
                 UnityEngine.PlayerPrefs.Save();
                 string address = MadeGame.Written(NewBuildingsTestPlot.Street, NewBuildingsTestPlot.Number);
-                Logger?.Info("New buildings test: the test building " + (ask ? "is made at " + address + " from the next load, on the test entries' plot by the airport." : "is no longer made from the next load."));
+                Logger?.Info("New buildings test: the test building "
+                             + (ask ? "is made at " + address + " from the next load, on the test entries' plot by the airport." : "is no longer made from the next load."));
                 MadeGame.Tell(ask ? NewBuildingsText.Armed : NewBuildingsText.Disarmed, "address", address);
             }
             catch (Exception e)
@@ -409,8 +410,8 @@ namespace RealLifeOverhaul.NewBuildings
                 }
                 if (_costAt.Count < NewBuildingsRules.CostCopies)
                 {
-                    Logger?.Info("Copy check (frame cost): only " + _costAt.Count + " of the " + NewBuildingsRules.CostCopies + " copies of " + d.Name + " found free ground in view (the first refused: "
-                                 + first + "): refused.");
+                    Logger?.Info("Copy check (frame cost): only " + _costAt.Count + " of the " + NewBuildingsRules.CostCopies + " copies of " + d.Name
+                                 + " found free ground in view (the first refused: " + first + "): refused.");
                     MadeGame.Tell(NewBuildingsText.CostRoom, "count", _costAt.Count.ToString(Plain));
                     return;
                 }
@@ -521,7 +522,7 @@ namespace RealLifeOverhaul.NewBuildings
                 }
                 _probeArmed = true;
                 _probeSeen = null;
-                MadeGame.KeepHour(_onProbe, ref _probeSeen);
+                EventHold.Keep(ref GlobalEvents.onNewHour, _onProbe, ref _probeSeen);
                 bool after = MadeGame.HourAfterMade(_onProbe, out int handlers);
                 Logger?.Info("Made buildings check (switched off): " + hidden + " of " + _made.Count + " hidden, " + kept + " still there (none destroyed), the hourly check placed after their "
                              + handlers + " hourly handler(s) in the game's list" + (hidden == _made.Count && kept == _made.Count && after ? ": PASS" : ": FAIL"));
@@ -541,7 +542,7 @@ namespace RealLifeOverhaul.NewBuildings
                 return;
             }
             _probeArmed = false;
-            MadeGame.DropHour(_onProbe);
+            GlobalEvents.onNewHour -= _onProbe;
             int ran = 0;
             string fault = null;
             for (int i = 0; i < _made.Count; i++)

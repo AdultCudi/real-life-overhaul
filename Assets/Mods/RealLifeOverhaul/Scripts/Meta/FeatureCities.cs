@@ -127,6 +127,7 @@ namespace RealLifeOverhaul.Meta
             new Line("markets_listing", CityScope.AnyCity, "the player's company on the market"),
             new Line("markets_bots", CityScope.AnyCity, "the market's orders"),
             new Line("meals", CityScope.AnyCity, "meals and music"),
+            new Line("newbuildings", CityScope.NewYork, "buildings of the mod's own on lots measured from New York's map"),
         };
 
         private static Dictionary<string, Line> _byFeature;

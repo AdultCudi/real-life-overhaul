@@ -122,17 +122,6 @@ namespace RealLifeOverhaul.NewBuildings
             }
         }
 
-        /// <summary>Keeps a handler on the game's hourly event, which the game empties at every load (EventHold).</summary>
-        public static void KeepHour(Action handler, ref Action seen)
-        {
-            EventHold.Keep(ref GlobalEvents.onNewHour, handler, ref seen);
-        }
-
-        public static void DropHour(Action handler)
-        {
-            GlobalEvents.onNewHour -= handler;
-        }
-
         /// <summary>
         /// True when <paramref name="handler"/> is called after every hourly handler of the made buildings' controllers (the
         /// game raises the event with a plain call, so one that threw would stop it before this one): its place against

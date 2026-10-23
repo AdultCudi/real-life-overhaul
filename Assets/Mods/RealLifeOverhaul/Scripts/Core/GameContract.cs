@@ -405,7 +405,8 @@ namespace RealLifeOverhaul
         // street go in at every load. Optional: the closest-building job's length (a self-check), and the food deliveries' addresses left
         // out (without it no made home is made).
         public static readonly GameMember BuildingLookup = StaticField(OwnBuildings, Game, "Helpers.BuildingHelper", "AllBuildingDictionary", "Dictionary<Address,Building>");
-        public static readonly GameMember RegistrationLookup = StaticField(OwnBuildings, Game, "Helpers.BuildingHelper", "AllBuildingRegistrationDictionary", "Dictionary<Address,BuildingRegistration>");
+        public static readonly GameMember RegistrationLookup = StaticField(OwnBuildings, Game, "Helpers.BuildingHelper", "AllBuildingRegistrationDictionary",
+            "Dictionary<Address,BuildingRegistration>");
         public static readonly GameMember StreetLookup = StaticField(OwnBuildings, Game, "Streets.AddressHelper", "StreetDataDictionary", "Dictionary<String,StreetData>");
         public static readonly GameMember ClosestJob = Optional(StaticField(OwnBuildings, Game, "Buildings.ClosestBuildingFromPlayer", "ClosestCbcPositionJob", "ClosestPositionJob"));
         public static readonly GameMember DeliveryLeftOut = Optional(Field(OwnBuildings, Game, "Player.FoodDeliveryJob.FoodDeliveryJobConfig", "excludedDeliveryAddresses", "Address[]"));

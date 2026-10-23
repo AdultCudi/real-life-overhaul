@@ -4,6 +4,7 @@ using BAModAPI;
 using Buildings;
 using Parking.UndergroundParking;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace RealLifeOverhaul.NewBuildings
 {
@@ -108,8 +109,8 @@ namespace RealLifeOverhaul.NewBuildings
             {
                 return true;
             }
-            CityManager city = InstanceBehavior<CityManager>.Instance;
-            if (city == null || city.cityBuildingControllers == null || city.cityBuildingControllers.Length == 0)
+            CityBuildingController[] open = GameDlc.Open(InstanceBehavior<CityManager>.Instance);   // without what a DLC keeps
+            if (open == null || open.Length == 0)
             {
                 return false;
             }
@@ -118,7 +119,7 @@ namespace RealLifeOverhaul.NewBuildings
             ByKey.Clear();
             BeginGround();
             _batched = _dlc = _skipped = _measured = 0;
-            _measuring = city.cityBuildingControllers;
+            _measuring = open;
             _cursor = 0;
             return true;
         }
@@ -218,7 +219,7 @@ namespace RealLifeOverhaul.NewBuildings
         // what a pick may be is the same for players who own different DLCs. Its flag is read, never whether a DLC is owned.
         private static bool OfDlc(CityBuildingController c)
         {
-            return c.building.requiredDLC != SteamAPI.DLC.None || c.GetComponentInChildren<ToggleObjectDLC>(true) != null || c.GetComponentInParent<ToggleObjectDLC>(true) != null;
+            return GameDlc.Gated(c) || c.GetComponentInChildren<ToggleObjectDLC>(true) != null || c.GetComponentInParent<ToggleObjectDLC>(true) != null;
         }
 
         // A building whose look is the game's own business: a taxi destination or a gas station part under it.
@@ -470,18 +471,21 @@ namespace RealLifeOverhaul.NewBuildings
         /// <summary>
         /// A working copy of a design for a made building, standing at (x, y, z) turned by <paramref name="yaw"/> degrees,
         /// with the game's record and registration set before it wakes (the city's list can reach it before its Start);
-        /// null if the design's building is gone.
+        /// null if the design's building is gone. It stands in the scene of the building it copies, which goes with the city.
         /// </summary>
         public static CityBuildingController MakeWorking(int design, Vector3 at, float yaw, Building building, BuildingRegistration registration, string name)
         {
             Transform template = Template(design, true);
-            if (template == null || _standing == null)
+            CityBuildingController source = design >= 0 && design < Designs.Count ? Sources[Designs[design].Source] : null;
+            if (template == null || source == null)
             {
                 return null;
             }
-            Transform copy = UnityEngine.Object.Instantiate(template, _standing, false);
+            // Never under the mod's own objects: the save tools' removal destroys those in a city that stays, and a made
+            // building's controller must outlive the session (its handlers on the game's events stay until the next load).
+            Transform copy = UnityEngine.Object.Instantiate(template, at, Quaternion.Euler(0f, yaw, 0f));
+            SceneManager.MoveGameObjectToScene(copy.gameObject, source.gameObject.scene);
             copy.name = name;
-            copy.SetPositionAndRotation(at, Quaternion.Euler(0f, yaw, 0f));
             CityBuildingController c = copy.GetComponent<CityBuildingController>();
             c.building = building;
             c.buildingRegistration = registration;
@@ -604,8 +608,7 @@ namespace RealLifeOverhaul.NewBuildings
         public static CityBuildingController Nearest(Vector3 from, out float metres)
         {
             metres = float.MaxValue;
-            CityManager city = InstanceBehavior<CityManager>.Instance;
-            CityBuildingController[] all = city != null ? city.cityBuildingControllers : null;
+            CityBuildingController[] all = GameDlc.Open(InstanceBehavior<CityManager>.Instance);
             CityBuildingController best = null;
             for (int i = 0; all != null && i < all.Length; i++)
             {
@@ -697,8 +700,7 @@ namespace RealLifeOverhaul.NewBuildings
         public static CityBuildingController NearestCopyable(Vector3 from, out DesignEntry design)
         {
             design = null;
-            CityManager city = InstanceBehavior<CityManager>.Instance;
-            CityBuildingController[] all = city != null ? city.cityBuildingControllers : null;
+            CityBuildingController[] all = GameDlc.Open(InstanceBehavior<CityManager>.Instance);
             if (all == null)
             {
                 return null;

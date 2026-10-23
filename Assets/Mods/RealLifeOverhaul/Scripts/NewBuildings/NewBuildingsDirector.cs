@@ -67,11 +67,16 @@ namespace RealLifeOverhaul.NewBuildings
 
         private void OnDestroy()
         {
-            PutBackNow("the city is unloading");
+            bool stays = Meta.SaveTools.Dormant;   // the save tools stopped the mod in a city that stays
+            PutBackNow(stays ? "the save tools stopped the mod" : "the city is unloading");
+            if (stays)
+            {
+                KeepOutOfSaves();
+            }
             SaveHook.Drop(_onSave);
-            MadeGame.DropHour(_onProbe);
-            BuildingCopies.RemoveAll("the city is unloading");
-            MadeGame.Unload();
+            GlobalEvents.onNewHour -= _onProbe;
+            BuildingCopies.RemoveAll(stays ? "the save tools stopped the mod" : "the city is unloading");
+            MadeGame.Unload(!stays);
             FarDistricts.Release();
             MadeBuildings.Forget();
             CopyGame.Forget();
@@ -79,6 +84,28 @@ namespace RealLifeOverhaul.NewBuildings
             {
                 Instance = null;
             }
+        }
+
+        // Preparing a save for removal stops the mod in a city that stays: no save guard from here on, so what names an
+        // address of the mod's own is taken out of the save in memory for good, and every made building stays hidden
+        // where it stands (its controller is never destroyed) until the city goes.
+        private void KeepOutOfSaves()
+        {
+            int hidden = 0;
+            for (int i = 0; i < _made.Count; i++)
+            {
+                MadeBuilding made = _made[i];
+                if (made.Controller != null)
+                {
+                    CopyGame.Show(made.Controller, false);
+                    made.Shown = false;
+                    hidden++;
+                }
+            }
+            int taken = MadeGame.Strip(_taken);
+            _taken.Clear();
+            Logger?.Info("Made buildings: the save tools stopped the mod: " + hidden + " made building(s) left hidden where they stand until the city goes, and "
+                         + taken + " thing(s) naming an address of the mod's own taken out of the save for good.");
         }
 
         /// <summary>A copy has been asked for: the next frame looks at once.</summary>
@@ -128,7 +155,7 @@ namespace RealLifeOverhaul.NewBuildings
             SaveHook.KeepEssential(_onSave);   // whatever is switched off: a player inside a hidden building still saves
             if (_probeArmed)
             {
-                MadeGame.KeepHour(_onProbe, ref _probeSeen);
+                EventHold.Keep(ref GlobalEvents.onNewHour, _onProbe, ref _probeSeen);   // the game empties its events at every load
             }
             if (MadeGame.Loading)
             {
@@ -175,9 +202,11 @@ namespace RealLifeOverhaul.NewBuildings
             }
             long began = Stopwatch.GetTimestamp();
             int streets = MadeGame.AddStreets();
-            CopyGame.MeasureAll(SceneFinds.All<CityBuildingController>("new buildings: the city's buildings measured for their designs and their ground (a search of the scene, at a load with made buildings)",
+            CopyGame.MeasureAll(SceneFinds.All<CityBuildingController>(
+                "new buildings: the city's buildings measured for their designs and their ground (a search of the scene, at a load with made buildings)",
                 FindObjectsInactive.Include));
-            CopyGame.MeasureOthers(SceneFinds.All<NavMeshObstacle>("new buildings: the game's fixed obstacles listed for the made buildings' ground (a search of the scene)", FindObjectsInactive.Include),
+            CopyGame.MeasureOthers(
+                SceneFinds.All<NavMeshObstacle>("new buildings: the game's fixed obstacles listed for the made buildings' ground (a search of the scene)", FindObjectsInactive.Include),
                 SceneFinds.All<ToggleObjectDLC>("new buildings: the DLC content listed for the made buildings' ground (a search of the scene)", FindObjectsInactive.Include));
             _specs.Sort(NewBuildingsRules.CompareSpecs);
             _homes.Clear();
@@ -191,7 +220,7 @@ namespace RealLifeOverhaul.NewBuildings
                 Logger?.Warn("Made buildings: the food deliveries could not be told to leave the made homes alone; they are hidden.");
             }
             Logger?.Info("Made buildings: " + made + " of " + _specs.Count + " made behind the loading screen in "
-                         + ((Stopwatch.GetTimestamp() - began) * 1000.0 / Stopwatch.Frequency).ToString("F0") + " ms (" + streets + " street(s) of the mod's own among the game's).");
+                         + ((Stopwatch.GetTimestamp() - began) * 1000.0 / Stopwatch.Frequency).ToString("F0", Plain) + " ms (" + streets + " street(s) of the mod's own among the game's).");
             return true;
         }
 
@@ -275,8 +304,8 @@ namespace RealLifeOverhaul.NewBuildings
             _made.Add(made);
             MadeBuildings.Add(made);
             Logger?.Info("Made buildings: '" + spec.Id + "' made at " + made.Address + " on lot " + lot + " of " + spec.Lots.Length + " (the design " + chosen.Name + " of "
-                         + chosen.Uses + " building(s) of size " + chosen.Size + ", root (" + root.x.ToString("F1") + ", " + root.y.ToString("F1") + ", " + root.z.ToString("F1")
-                         + ") turned " + yaw.ToString("F0") + ", door at (" + door.x.ToString("F1") + ", " + door.z.ToString("F1") + "))"
+                         + chosen.Uses + " building(s) of size " + chosen.Size + ", root (" + root.x.ToString("F1", Plain) + ", " + root.y.ToString("F1", Plain) + ", "
+                         + root.z.ToString("F1", Plain) + ") turned " + yaw.ToString("F0", Plain) + ", door at (" + door.x.ToString("F1", Plain) + ", " + door.z.ToString("F1", Plain) + "))"
                          + (_why.Length > 0 ? "; lots passed by: " + _why : string.Empty) + ".");
             return true;
         }
@@ -371,7 +400,7 @@ namespace RealLifeOverhaul.NewBuildings
                 string name = made.Spec.Id == NewBuildingsTestPlot.Id ? "test building" : "'" + made.Spec.Id + "'";
                 Logger?.Info("Made buildings check (" + name + ", " + made.Address + "): in the game's building lookup " + (lookup ? "YES" : "NO") + ", in the city's list "
                              + (listed ? "YES" : "NO") + ", in the save's registrations " + (inSave ? "YES" : "NO") + ", the closest-building job sized to the list"
-                             + (job < 0 ? " (not made in " + ClosestWait.ToString("F0") + " s)" : sized ? string.Empty : " (" + job + " for " + count + ")") + ": "
+                             + (job < 0 ? " (not made in " + ClosestWait.ToString("F0", Plain) + " s)" : sized ? string.Empty : " (" + job + " for " + count + ")") + ": "
                              + (lookup && listed && !inSave && sized ? "PASS" : "FAIL"));
             }
         }

@@ -494,7 +494,8 @@ namespace RealLifeOverhaul.Nav
             _stage = Stage.Done;
             Logger?.Info("Navigation: the minimap's buildings and water made: " + job.Width + " x " + job.Height + " pixels (" + (1f / job.PerMetre).ToString("F2", CultureInfo.InvariantCulture)
                          + " m a pixel, "
-                         + (job.Rgba.Length / 1048576f).ToString("F1", CultureInfo.InvariantCulture) + " MB), " + job.Outlined + " buildings (" + _moreDrawn + " of them the mod's own) and " + job.WaterCells + " squares of water of "
+                         + (job.Rgba.Length / 1048576f).ToString("F1", CultureInfo.InvariantCulture) + " MB), " + job.Outlined + " buildings (" + _moreDrawn + " of them the mod's own) and "
+                         + job.WaterCells + " squares of water of "
                          + _data.Cells.Length + ", "
                          + (_fromFile
                              ? "read from the mod's folder"

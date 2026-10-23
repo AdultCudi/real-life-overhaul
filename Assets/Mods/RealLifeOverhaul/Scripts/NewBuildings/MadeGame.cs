@@ -25,12 +25,13 @@ namespace RealLifeOverhaul.NewBuildings
     /// </summary>
     internal static partial class MadeGame
     {
-        private const string Warehouse = "ba:buildingtype_warehouse";   // the game makes a Warehouse registration for these (BuildingHelper.cs 152)
+        private const string Warehouse = "ba:buildingtype_warehouse";   // the game makes a Warehouse registration for these (BuildingHelper.GetBuildingRegistration)
 
         public static IModLogger Logger;
 
         private static readonly Dictionary<string, StreetData> Streets = new Dictionary<string, StreetData>(4, StringComparer.Ordinal);
         private static readonly List<string> Claimed = new List<string>(8);
+        private static readonly List<Building> Records = new List<Building>(8);   // the records made at this load, destroyed when the city goes
         private static Address[] _deliveryWas;   // the food deliveries' own list of addresses left out, put back when the city goes
         private static FoodDeliveryJobConfig _deliveryConfig;
 
@@ -63,11 +64,11 @@ namespace RealLifeOverhaul.NewBuildings
             return false;
         }
 
-        /// <summary>True when the game has that district.</summary>
+        /// <summary>True when the game has that district and it is in the loaded city (Core/CityCheck).</summary>
         public static bool DistrictKnown(string district)
         {
             List<string> all = NeighborhoodHelper.Neighborhoods;
-            return !string.IsNullOrEmpty(district) && all != null && all.Contains(district);
+            return !string.IsNullOrEmpty(district) && all != null && all.Contains(district) && CityCheck.Here(district);
         }
 
         /// <summary>True when a made home can be put on the food deliveries' list of addresses they leave out (the contract's field is there).</summary>
@@ -160,7 +161,8 @@ namespace RealLifeOverhaul.NewBuildings
             b.Neighbourhood = spec.District;
             b.trafficIndex = spec.Traffic;
             b.totalSqm = SquareMetres(spec.Size);
-            b.requiredDLC = SteamAPI.DLC.None;
+            // Its DLC stays the default, none: every player may enter it, and Core/GameDlc never takes it for gated.
+            Records.Add(b);
             return b;
         }
 
@@ -235,8 +237,8 @@ namespace RealLifeOverhaul.NewBuildings
         public static bool InCityList(MadeBuilding made, out int listed)
         {
             CityManager city = InstanceBehavior<CityManager>.Instance;
-            CityBuildingController[] all = city != null ? city.cityBuildingControllers : null;
-            listed = all != null ? all.Length : 0;
+            CityBuildingController[] all = GameDlc.Open(city);   // a made building is never gated, so it is in here if the game listed it
+            listed = all != null ? all.Length + GameDlc.GatedInCity : 0;   // the game's own count, as its closest-building job is made from
             bool inList = false;
             for (int i = 0; all != null && i < all.Length; i++)
             {
@@ -307,8 +309,12 @@ namespace RealLifeOverhaul.NewBuildings
             return true;
         }
 
-        /// <summary>The city is going: the claims let go, the food deliveries' list put back as the game had it.</summary>
-        public static void Unload()
+        /// <summary>
+        /// The claims let go and the food deliveries' list put back as the game had it; when the city goes, the records and
+        /// the streets destroyed too. The save tools' removal stops the mod in a city that stays: the made buildings'
+        /// controllers stand on, reading their records, until the city goes, and the engine's sweep takes the records then.
+        /// </summary>
+        public static void Unload(bool cityGoes)
         {
             for (int i = 0; i < Claimed.Count; i++)
             {
@@ -328,6 +334,39 @@ namespace RealLifeOverhaul.NewBuildings
             }
             _deliveryConfig = null;
             _deliveryWas = null;
+            if (cityGoes)
+            {
+                Drop();
+            }
+        }
+
+        // Out of the game's lookups and destroyed: what the mod made by code goes with the city.
+        private static void Drop()
+        {
+            for (int i = 0; i < Records.Count; i++)
+            {
+                Building b = Records[i];
+                if (b != null)
+                {
+                    Leave(b);
+                    UnityEngine.Object.Destroy(b);
+                }
+            }
+            Records.Clear();
+            var lookup = GameContract.StreetLookup.Field?.GetValue(null) as Dictionary<string, StreetData>;
+            foreach (KeyValuePair<string, StreetData> pair in Streets)
+            {
+                StreetData data = pair.Value;
+                if (lookup != null && lookup.TryGetValue(pair.Key, out StreetData there) && there == data)
+                {
+                    lookup.Remove(pair.Key);
+                }
+                if (data != null)
+                {
+                    UnityEngine.Object.Destroy(data);
+                }
+            }
+            Streets.Clear();
         }
 
         // ---------------------------------------------------------------- Going Public

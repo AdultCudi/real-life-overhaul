@@ -1499,7 +1499,8 @@ namespace RealLifeOverhaul
             Guard.Step("Designs.DesignsDirector", () => Designs.DesignsDirector.CityLoaded());
             Guard.Step("Interiors.InteriorDirector", () => Guard.Add<Interiors.InteriorDirector>(_root));
             Guard.Step("NewBuildings.NewBuildingsDirector", () => NewBuildings.NewBuildingsDirector.Logger = context.Logger);
-            Guard.Step("NewBuildings.NewBuildingsDirector", () => Guard.Add<NewBuildings.NewBuildingsDirector>(_root));   // its buildings made behind the loading screen, once every director has declared its own
+            // Its buildings are made behind the loading screen, once every director has declared its own.
+            Guard.Step("NewBuildings.NewBuildingsDirector", () => Guard.Add<NewBuildings.NewBuildingsDirector>(_root));
             Guard.Step("the wiring", () => Wiring.Connect(context.Logger, _root));   // every director is there: the bridges are filled in
             // Behind the loading screen: the two street pools' people made and dressed where the time is not seen; each
             // falls back to making them as needed.

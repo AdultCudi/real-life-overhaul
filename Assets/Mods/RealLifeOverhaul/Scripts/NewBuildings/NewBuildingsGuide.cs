@@ -18,7 +18,7 @@ namespace RealLifeOverhaul.NewBuildings
                 .Owns(Settings.NewBuildingsId)
                 .Test("reallife_newbuildings_test_make", "reallife_newbuildings_test_walk", "reallife_newbuildings_test_save", "reallife_newbuildings_test_copy",
                     "reallife_newbuildings_test_cost", "reallife_newbuildings_test_off")
-                .Cleanup(() => NewBuildingsDirector.Instance?.StopAll("the options page's clean-up"));
+                .Cleanup(() => NewBuildingsDirector.Instance?.StopAll("its feature's clean-up (the options page, or a city that is not New York)"));
         }
     }
 

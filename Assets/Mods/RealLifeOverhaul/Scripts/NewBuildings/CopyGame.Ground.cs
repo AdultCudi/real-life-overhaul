@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using GleyTrafficSystem;
 using GleyUrbanAssets;
 using Helpers;
@@ -283,18 +284,18 @@ namespace RealLifeOverhaul.NewBuildings
                 Corner(cx, cz, facing, a, b, out float px, out float pz);
                 if (!Ground(px, streetY, pz, walk, out float y))
                 {
-                    return "there is no ground to walk on at (" + px.ToString("F0") + ", " + pz.ToString("F0") + ")";
+                    return "there is no ground to walk on at (" + px.ToString("F0", CultureInfo.InvariantCulture) + ", " + pz.ToString("F0", CultureInfo.InvariantCulture) + ")";
                 }
                 low = Mathf.Min(low, y);
                 high = Mathf.Max(high, y);
             }
             if (high - low > NewBuildingsRules.GroundStep)
             {
-                return "the ground is not level enough (" + (high - low).ToString("F1") + " m between its highest and its lowest)";
+                return "the ground is not level enough (" + (high - low).ToString("F1", CultureInfo.InvariantCulture) + " m between its highest and its lowest)";
             }
             if (!NavMesh.SamplePosition(new Vector3(doorX, high, doorZ), out NavMeshHit atDoor, NewBuildingsRules.DoorReach, walk))
             {
-                return "the player could not walk to its door at (" + doorX.ToString("F0") + ", " + doorZ.ToString("F0") + ")";
+                return "the player could not walk to its door at (" + doorX.ToString("F0", CultureInfo.InvariantCulture) + ", " + doorZ.ToString("F0", CultureInfo.InvariantCulture) + ")";
             }
             float rootY = atDoor.position.y - d.DoorY;
             root = new Vector3(x, rootY, z);
@@ -375,7 +376,7 @@ namespace RealLifeOverhaul.NewBuildings
             float reach = NewBuildingsRules.StreetReach + Mathf.Max(hw, hd);
             if (nearest > reach * reach)
             {
-                return "it fronts no street (the nearest traffic lane is " + Mathf.Sqrt(nearest).ToString("F0") + " m from its middle)";
+                return "it fronts no street (the nearest traffic lane is " + Mathf.Sqrt(nearest).ToString("F0", CultureInfo.InvariantCulture) + " m from its middle)";
             }
             return null;
         }

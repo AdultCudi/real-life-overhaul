@@ -61,12 +61,28 @@ namespace RealLifeOverhaul
 
             private static int Stamp()
             {
-                return MadeBuildings.Stamp;
+                try
+                {
+                    return MadeBuildings.Stamp;
+                }
+                catch (System.Exception e)
+                {
+                    Fault("NewBuildingsLinks.Stamp", e);
+                    return 0;
+                }
             }
 
             private static bool NotMeasured(CityBuildingController building)
             {
-                return MadeBuildings.Count > 0 && MadeBuildings.Of(building) != null;
+                try
+                {
+                    return MadeBuildings.Count > 0 && MadeBuildings.Of(building) != null;
+                }
+                catch (System.Exception e)
+                {
+                    Fault("NewBuildingsLinks.NotMeasured", e);
+                    return false;
+                }
             }
         }
     }
