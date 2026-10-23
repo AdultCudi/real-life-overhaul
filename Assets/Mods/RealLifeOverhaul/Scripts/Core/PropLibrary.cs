@@ -15,12 +15,15 @@ namespace RealLifeOverhaul
     /// made here from the game's lit shader: "lit", and "glow" for what should still read at night. Callers ask
     /// <see cref="TryGet"/> and fall back to a plain shape. Props remade since the bundle was built may ship in
     /// Bundles/props_newer (newer_props.py), used all or none, and only beside the bundle whose SHA-256 their catalogue
-    /// names: their UVs point into that atlas. Nothing per frame, nothing made per prop or per scene.
+    /// names: their UVs point into that atlas. A second bundle (Bundles/reallife_props_site, the building sites' props:
+    /// PropAssets/README.md, "The second bundle") has its own small atlas and its own two materials; its props are asked for
+    /// by id as any other, and wait for it as they wait for the first. Nothing per frame, nothing made per prop or per scene.
     /// </summary>
     public static class PropLibrary
     {
         private const string BundlePath = "Bundles/reallife_props";
         private const string NewerPath = "Bundles/props_newer";
+        private const string SecondPath = "Bundles/reallife_props_site";
         private const string CatalogueName = "catalogue";
         private const string BaseTexture = "props_base";
         private const string MaskTexture = "props_mask";
@@ -75,6 +78,7 @@ namespace RealLifeOverhaul
         {
             public Mesh Mesh;
             public bool Glows;
+            public int Set;      // 0: the first bundle's atlas; 1: the second's
             public Vector3 Size;
         }
 
@@ -91,6 +95,10 @@ namespace RealLifeOverhaul
         private static Texture2D _mask;
         private static Material _lit;
         private static Material _glow;
+        private static Texture2D _secondBase;    // the second bundle's atlas, and its two materials
+        private static Texture2D _secondMask;
+        private static Material _secondLit;
+        private static Material _secondGlow;
         private static bool _shaderMissing;
         private static Task<Newer> _newer;
 
@@ -122,6 +130,16 @@ namespace RealLifeOverhaul
                 }
                 AssetBundleCreateRequest opening = AssetBundle.LoadFromFileAsync(path);
                 opening.completed += Guard.Way<AsyncOperation>(_ => Opened(opening));
+                string second = Path.Combine(context.ModRootPath, SecondPath);
+                if (File.Exists(second))
+                {
+                    AssetBundleCreateRequest openingSecond = AssetBundle.LoadFromFileAsync(second);
+                    openingSecond.completed += Guard.Way<AsyncOperation>(_ => OpenedSecond(openingSecond));
+                }
+                else
+                {
+                    Logger?.Info("Props: the building sites' bundle (" + SecondPath + ") is not installed; their plain shapes are used.");
+                }
             }
             catch (Exception e)
             {
@@ -152,7 +170,7 @@ namespace RealLifeOverhaul
                 }
                 return false;
             }
-            material = Material(prop.Glows);
+            material = Material(prop.Glows, prop.Set);
             if (material == null)
             {
                 return false;
@@ -170,7 +188,7 @@ namespace RealLifeOverhaul
         /// <summary>The lit material tinted, one shared per colour until <see cref="Dispose"/>; null if it cannot be made.</summary>
         public static Material Tinted(Color tint)
         {
-            Material lit = _state == State.Ready ? Material(false) : null;
+            Material lit = _state == State.Ready ? Material(false, 0) : null;
             if (lit == null)
             {
                 return null;
@@ -204,6 +222,16 @@ namespace RealLifeOverhaul
             {
                 UnityEngine.Object.Destroy(_glow);
             }
+            if (_secondLit != null)
+            {
+                UnityEngine.Object.Destroy(_secondLit);
+            }
+            if (_secondGlow != null)
+            {
+                UnityEngine.Object.Destroy(_secondGlow);
+            }
+            _secondLit = null;
+            _secondGlow = null;
             foreach (Material tinted in Tints.Values)
             {
                 if (tinted != null)
@@ -216,10 +244,10 @@ namespace RealLifeOverhaul
             _glow = null;
         }
 
-        // One material per kind, made when first asked for.
-        private static Material Material(bool glows)
+        // One material per kind and atlas, made when first asked for.
+        private static Material Material(bool glows, int set)
         {
-            Material made = glows ? _glow : _lit;
+            Material made = set == 1 ? (glows ? _secondGlow : _secondLit) : glows ? _glow : _lit;
             if (made != null || _shaderMissing)
             {
                 return made;
@@ -231,14 +259,15 @@ namespace RealLifeOverhaul
                 Logger?.Warn("Props: the game's lit shader was not found; plain shapes are used.");
                 return null;
             }
-            made = new Material(shader) { name = glows ? "RealLifeOverhaul Props (glow)" : "RealLifeOverhaul Props", renderQueue = Shapes.TakesDecalsQueue };   // Tinted's copies keep it
+            made = new Material(shader) { name = (glows ? "RealLifeOverhaul Props (glow)" : "RealLifeOverhaul Props") + (set == 1 ? " (sites)" : ""), renderQueue = Shapes.TakesDecalsQueue };   // Tinted's copies keep it
+            Texture2D atlas = set == 1 ? _secondBase : _base, mask = set == 1 ? _secondMask : _mask;
             made.SetColor(BaseColorId, Color.white);
-            made.SetTexture(BaseColorMapId, _base);
+            made.SetTexture(BaseColorMapId, atlas);
             made.SetFloat(MetallicId, 0f);
             made.SetFloat(SmoothnessId, PlainSmoothness);
-            if (_mask != null)
+            if (mask != null)
             {
-                made.SetTexture(MaskMapId, _mask);
+                made.SetTexture(MaskMapId, mask);
                 made.EnableKeyword("_MASKMAP");
             }
             if (glows)
@@ -248,7 +277,18 @@ namespace RealLifeOverhaul
                 made.SetColor(EmissiveColorId, Color.white * Glow);
             }
             made.enableInstancing = true;
-            if (glows)
+            if (set == 1)
+            {
+                if (glows)
+                {
+                    _secondGlow = made;
+                }
+                else
+                {
+                    _secondLit = made;
+                }
+            }
+            else if (glows)
             {
                 _glow = made;
             }
@@ -257,6 +297,85 @@ namespace RealLifeOverhaul
                 _lit = made;
             }
             return made;
+        }
+
+        // The second bundle: read as the first is, its props added beside the first's (the ids are its own).
+        private static void OpenedSecond(AssetBundleCreateRequest opening)
+        {
+            try
+            {
+                AssetBundle bundle = opening.assetBundle;
+                if (bundle == null)
+                {
+                    Logger?.Warn("Props: the building sites' bundle could not be read (built for another Unity version?); their plain shapes are used.");
+                    return;
+                }
+                AssetBundleRequest reading = bundle.LoadAllAssetsAsync();
+                reading.completed += Guard.Way<AsyncOperation>(_ => LoadedSecond(reading));
+            }
+            catch (Exception e)
+            {
+                Logger?.Warn("Props: the building sites' bundle could not be read; their plain shapes are used.");
+                Logger?.Error(e);
+            }
+        }
+
+        private static void LoadedSecond(AssetBundleRequest reading)
+        {
+            try
+            {
+                var meshes = new Dictionary<string, Mesh>(16);
+                TextAsset catalogueText = null;
+                foreach (UnityEngine.Object asset in reading.allAssets)
+                {
+                    if (asset is Mesh mesh)
+                    {
+                        meshes[mesh.name] = mesh;
+                    }
+                    else if (asset is Texture2D texture)
+                    {
+                        if (texture.name == BaseTexture)
+                        {
+                            _secondBase = texture;
+                        }
+                        else if (texture.name == MaskTexture)
+                        {
+                            _secondMask = texture;
+                        }
+                    }
+                    else if (asset is TextAsset text && text.name == CatalogueName)
+                    {
+                        catalogueText = text;
+                    }
+                }
+                CatalogueFile catalogue = catalogueText != null ? Newtonsoft.Json.JsonConvert.DeserializeObject<CatalogueFile>(catalogueText.text) : null;
+                if (catalogue == null || catalogue.version != SupportedVersion || catalogue.items == null || _secondBase == null)
+                {
+                    Logger?.Warn("Props: the building sites' bundle has no catalogue of this version or no atlas; their plain shapes are used.");
+                    return;
+                }
+                int added = 0, triangles = 0;
+                foreach (ItemFile file in catalogue.items)
+                {
+                    if (string.IsNullOrEmpty(file.id) || string.IsNullOrEmpty(file.mesh) || !meshes.TryGetValue(file.mesh, out Mesh mesh) || Props.ContainsKey(file.id))
+                    {
+                        Logger?.Warn("Props: '" + file.id + "' of the building sites' bundle is left out (no mesh, or an id the first bundle has).");
+                        continue;
+                    }
+                    Prop prop = MakeProp(file, mesh);
+                    prop.Set = 1;
+                    Props[file.id] = prop;
+                    MissingLogged.Remove(file.id);
+                    triangles += (int)mesh.GetIndexCount(0) / 3;
+                    added++;
+                }
+                Logger?.Info("Props: " + added + " of the building sites loaded from their own bundle (" + triangles + " triangles, one " + _secondBase.width + " x " + _secondBase.height + " atlas).");
+            }
+            catch (Exception e)
+            {
+                Logger?.Warn("Props: the building sites' catalogue could not be read; their plain shapes are used.");
+                Logger?.Error(e);
+            }
         }
 
         private static void Opened(AssetBundleCreateRequest opening)
