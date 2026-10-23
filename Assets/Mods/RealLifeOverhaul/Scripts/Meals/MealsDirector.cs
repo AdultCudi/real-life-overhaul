@@ -179,11 +179,11 @@ namespace RealLifeOverhaul.Meals
                 Say("the player ate (" + rise.ToString("0", Inv) + ") while held, seated, in a vehicle or carrying something: eaten as the game has it", true);
                 return;
             }
-            MealSeat found = MealsGame.Find(player, out int looked);
+            MealSeat found = MealsGame.Find(player, out int looked, out int elsewhere);
             if (found == null)
             {
                 Say("the player ate (" + rise.ToString("0", Inv) + "); no free seat of " + looked + " looked at is within " + MealsRules.Reach.ToString("0", Inv)
-                    + " m in the same room: eaten where they stood", true);
+                    + " m in the same room" + Elsewhere(elsewhere) + ": eaten where they stood", true);
                 return;
             }
             Begin(found, false, rise, "food of the game's");
@@ -207,10 +207,10 @@ namespace RealLifeOverhaul.Meals
                     Say("a home-cooked plate is ready but the player is held or carrying something: eaten at the cooker", true);
                     return false;
                 }
-                MealSeat seat = MealsGame.Find(player, out int looked);
+                MealSeat seat = MealsGame.Find(player, out int looked, out int elsewhere);
                 if (seat == null)
                 {
-                    Say("a home-cooked plate is ready; no free seat of " + looked + " looked at is in the same room: eaten at the cooker", true);
+                    Say("a home-cooked plate is ready; no free seat of " + looked + " looked at is in the same room" + Elsewhere(elsewhere) + ": eaten at the cooker", true);
                     return false;
                 }
                 _armed = seat;
@@ -461,6 +461,12 @@ namespace RealLifeOverhaul.Meals
 
         /// <summary>A meal is on: walking to a seat, or seated at it.</summary>
         public bool Busy => _step != Step.None;
+
+        // The seats a search left out for being upstairs or down, for its line: none said when there were none.
+        private static string Elsewhere(int seats)
+        {
+            return seats > 0 ? " (" + seats + " on another floor left out)" : string.Empty;
+        }
 
         // One self-check line, with Developer diagnostics on.
         private static void Say(string what, bool pass)

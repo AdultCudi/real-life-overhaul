@@ -116,6 +116,13 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--furniture")
+        {
+            Meals();            // (moving furniture and the seat a meal is taken to, alone, while working on them: FurnitureMoveChecks.cs, MealsChecks.cs)
+            FurnitureMoves();
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--texts-history")
         {
             CallBack();       // (a call back's and RLO Texts' shared history's checks alone, while working on them: CallBackChecks.cs, TextsHistoryChecks.cs)
@@ -368,6 +375,7 @@ internal static partial class Program
         MorningNotices(); // the morning line only from a sleep the game ended, with its hours; the city's news of the night packed into it; four notices' switches (MorningNewsChecks.cs)
         CalendarApp();  // the Calendar: the months of every year length, the grid, each schedule's days against its feature's own rule, an empty month, the sources, the texts (CalendarAppChecks.cs)
         Meals();        // meals and music: the seat a meal is taken to, how long it is eaten, the dance's lift and its cap, every way out, the texts (MealsChecks.cs)
+        FurnitureMoves(); // moving furniture: the game's own reason a right click or a place click is refused, whose a thing in the way is, the lines only reading (FurnitureMoveChecks.cs)
         Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
         return _failed == 0 ? 0 : 1;
     }
