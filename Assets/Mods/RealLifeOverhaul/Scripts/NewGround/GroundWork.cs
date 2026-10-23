@@ -19,8 +19,9 @@ namespace RealLifeOverhaul.NewGround
         private static readonly Dictionary<CityMesh, float> Proved = new Dictionary<CityMesh, float>(2);   // the dry run's margin, once a load each
 
         /// <summary>
-        /// The plan's streets appended to the traffic's data, its joins found again among the game's lanes at this load.
-        /// Null when done; else why it stood down, the road data as it was.
+        /// The plan's streets appended to the traffic's data, its joins found again among the game's lanes and its ends
+        /// through the game's junctions found again among its junctions at this load. Null when done; else why it stood
+        /// down, the road data as it was.
         /// </summary>
         public static string Streets(RoadPlan plan, out RoadBuild build)
         {
@@ -31,6 +32,7 @@ namespace RealLifeOverhaul.NewGround
                 return "the city's road data was not found";
             }
             RoadsGame.FindJoins(plan, data, grid);
+            RoadsGame.FindThroughs(plan, data);
             build = RoadRules.Build(plan, grid, data.allWaypoints.Length, RoadsGame.HighestRoadId(data) + 1);
             if (build.Problem != null)
             {
@@ -43,6 +45,15 @@ namespace RealLifeOverhaul.NewGround
                 return "the game has a road of its own where the plan's streets go (" + clash + ")";
             }
             return RoadsGame.Append(build, data);
+        }
+
+        /// <summary>
+        /// A district's streets taken back off the traffic's data in the same load, before the traffic starts: the district
+        /// stood down after its streets were appended (its ground could not be laid). Null when done; else why not.
+        /// </summary>
+        public static string TakeBack(RoadBuild build)
+        {
+            return RoadsGame.TakeBack(build, RoadData.Scene);
         }
 
         /// <summary>

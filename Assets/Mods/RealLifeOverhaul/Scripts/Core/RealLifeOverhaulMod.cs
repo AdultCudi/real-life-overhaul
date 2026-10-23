@@ -1508,6 +1508,9 @@ namespace RealLifeOverhaul
             // With Developer diagnostics on, the installation firms' lists checked against the designs written.
             Guard.Step("Designs.DesignsDirector", () => Designs.DesignsDirector.CityLoaded());
             Guard.Step("Interiors.InteriorDirector", () => Guard.Add<Interiors.InteriorDirector>(_root));
+            Guard.Step("Uptown.GroundDirector", () => Uptown.GroundDirector.Logger = context.Logger);
+            // Uptown's ground is laid in its Awake, before the traffic starts and before the city's buildings are made on its lots.
+            Guard.Step("Uptown.GroundDirector", () => Guard.Add<Uptown.GroundDirector>(_root));
             Guard.Step("NewBuildings.NewBuildingsDirector", () => NewBuildings.NewBuildingsDirector.Logger = context.Logger);
             // Its buildings are made behind the loading screen, once every director has declared its own.
             Guard.Step("NewBuildings.NewBuildingsDirector", () => Guard.Add<NewBuildings.NewBuildingsDirector>(_root));

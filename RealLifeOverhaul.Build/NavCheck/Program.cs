@@ -96,6 +96,7 @@ internal static partial class Program
         SlowSpots();      // the interact key's flags only on a press, the bus zones' parking laid out a lane a tick (SlowSpotCheck.cs)
         Wraps();          // the game's scaffolding round a building and a new plot's stages: layout, doors, stages, pace, the fade link (WrapCheck.cs)
         NewGrounds();     // new ground: the road generator never off the grid, the walking rules and lines, and the sources (NewGroundCheck.cs)
+        Uptowns(Array.IndexOf(args, "--uptown") >= 0);   // Uptown's ground: the band's lots, the first block's streets through 1st Avenue, its walking ground (UptownCheck.cs)
         HotSpotsFull();   // last of all: the session record's names once all are given, "others" a slot of its own (HotSpotsFullCheck.cs)
         if (Array.IndexOf(args, "--sites") >= 0)
         {
