@@ -92,6 +92,11 @@ namespace RealLifeOverhaul.NewGround
         // The save is loaded, the player out of doors (and on foot, for a walking test that lays ground beside them).
         private static bool Ready(string test, bool onFoot)
         {
+            if (FeatureGuards.FeatureAway("newground"))
+            {
+                TestRefusals.TellKey(Logger, test, NewGroundText.OtherCity);   // the director is not started in a city the mod does not know
+                return false;
+            }
             if (Instance == null || !ModState.Loaded || PlayerHelper.PlayerController == null || UI.Load.LoadScene.isLoading)
             {
                 TestRefusals.Tell(Logger, test, TestRefusal.NotLoaded);

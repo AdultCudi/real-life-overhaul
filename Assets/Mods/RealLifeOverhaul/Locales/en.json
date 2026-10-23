@@ -21143,5 +21143,6 @@
   "reallife_newground_refused_lane": "There is no parking lane of the game's within 40 m with room for a copy along the street.",
   "reallife_newground_refused_builder": "The game's engine did not build the walking ground here as the test needs. The log says what happened.",
   "reallife_newground_refused_busy": "The last walking test is still being given back. Press again in a moment.",
-  "reallife_contract_part_new_ground_walk": "the city's two kinds of walking ground read for new ground and its tests"
+  "reallife_contract_part_new_ground_walk": "the city's two kinds of walking ground read for new ground and its tests",
+  "reallife_newground_refused_city": "New ground is laid on New York's map only, and this is another city."
 }

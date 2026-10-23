@@ -21143,5 +21143,6 @@
   "reallife_newground_refused_lane": "Não há faixa de estacionamento do jogo a menos de 40 m com espaço para uma cópia ao longo da rua.",
   "reallife_newground_refused_builder": "O motor do jogo não criou o terreno de caminhada aqui como o teste precisa. O registro diz o que aconteceu.",
   "reallife_newground_refused_busy": "O último teste de caminhada ainda está sendo desfeito. Aperte de novo daqui a pouco.",
-  "reallife_contract_part_new_ground_walk": "os dois tipos de chão de caminhada da cidade lidos para o terreno novo e seus testes"
+  "reallife_contract_part_new_ground_walk": "os dois tipos de chão de caminhada da cidade lidos para o terreno novo e seus testes",
+  "reallife_newground_refused_city": "O terreno novo só é criado no mapa de Nova York, e esta é outra cidade."
 }

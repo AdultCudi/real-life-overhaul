@@ -34,5 +34,6 @@ namespace RealLifeOverhaul.NewGround
         public const string NoLane = "reallife_newground_refused_lane";              // no parking lane with room along it
         public const string Builder = "reallife_newground_refused_builder";          // the engine's builder did not do what the test needs
         public const string Busy = "reallife_newground_refused_busy";                // the last walking test is still being given back
+        public const string OtherCity = "reallife_newground_refused_city";           // new ground is New York's, and this is another city
     }
 }

@@ -21143,5 +21143,6 @@
   "reallife_newground_refused_lane": "40 米内没有沿街留有空间可放副本的游戏停车带。",
   "reallife_newground_refused_builder": "游戏引擎未能按测试需要在此处建出行走地面。经过见日志。",
   "reallife_newground_refused_busy": "上一个行走测试仍在恢复中。请稍后再按。",
-  "reallife_contract_part_new_ground_walk": "为新地面及其测试读取的城市两种可行走地面"
+  "reallife_contract_part_new_ground_walk": "为新地面及其测试读取的城市两种可行走地面",
+  "reallife_newground_refused_city": "新地面只铺设在纽约的地图上，而这里是另一座城市。"
 }
