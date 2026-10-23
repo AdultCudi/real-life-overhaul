@@ -115,6 +115,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\NewGround\RoadPlan.cs" Link="Mod\RoadPlan.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\NewGround\RoadRules.cs" Link="Mod\RoadRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\NewGround\GroundRules.cs" Link="Mod\GroundRules.cs" />
+    <!-- Uptown's ground (UptownCheck.cs): the band's layout, its lots and the first block's laying plans, game-free. -->
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\Lots.cs;..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\LayoutRules.cs;..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\LayoutPlans.cs;..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\LayoutStreets.cs" LinkBase="Mod\Uptown" />
   </ItemGroup>
 
 </Project>
