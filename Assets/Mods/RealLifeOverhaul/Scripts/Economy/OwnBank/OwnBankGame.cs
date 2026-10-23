@@ -10,6 +10,7 @@ namespace RealLifeOverhaul.Economy
     /// <summary>What the player's bank asks of the rest of the mod, filled in by Wiring/OwnBankLinks; each may be null.</summary>
     public static class OwnBankBridges
     {
+
         /// <summary>The player's integrity as an owner, 0 to 100 (Standing). Default: 50, a newcomer's.</summary>
         public static Func<int> Integrity;
 
@@ -50,6 +51,9 @@ namespace RealLifeOverhaul.Economy
     /// </summary>
     public static class OwnBankGame
     {
+        /// <summary>Owner deduction labels whose mixed costs have no single portable recurrence rule.</summary>
+        internal static string[] CompanionUnclassifiedTaxLabels() => new[] { DeductKey.GetLocalization() };
+
         private const string HeadquartersType = "ba:businesstype_headquarters";
         private const string DeductKey = "reallife_ob_deduct";
 

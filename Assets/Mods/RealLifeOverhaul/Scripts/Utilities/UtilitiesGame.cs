@@ -22,7 +22,7 @@ namespace RealLifeOverhaul.Utilities
     }
 
     /// <summary>Everything the utilities read from or do to the game: places, opening days, the cash and transactions.</summary>
-    public static class UtilitiesGame
+    public static partial class UtilitiesGame
     {
         private const string Residential = "ba:buildingtype_residential", HeadquartersType = "ba:businesstype_headquarters";
         private const string BillsDeductKey = "reallife_util_deduct", CompanyDeductKey = "reallife_broadband_deduct";

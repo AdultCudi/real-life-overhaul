@@ -37,6 +37,7 @@ namespace RealLifeOverhaul.Economy
         private int _eveTold;          // the day the evening notice of tomorrow's rate decision was last sent
 
         public bool Running => _running;
+        internal bool CompanionFailed => _broken;
 
         /// <summary>The state in use; null while the city's economy is not running.</summary>
         public CityState State => _running ? _state : null;
@@ -605,6 +606,12 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>What the city's economy adds to a business's footfall now, in per cent of customers; asked on every figure the business feature writes.</summary>
+        internal static int CompanionFootfallOf(BuildingRegistration reg)
+        {
+            CityEconomyDirector d = Instance;
+            return d != null && d._running && reg != null && d._byReg.TryGetValue(reg, out CityShop shop) ? shop.Wanted : 0;
+        }
+
         public static int FootfallOf(BuildingRegistration reg)
         {
             CityEconomyDirector d = Instance;

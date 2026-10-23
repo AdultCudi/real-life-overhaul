@@ -45,6 +45,9 @@ namespace RealLifeOverhaul.Economy.Brands
     /// </summary>
     internal static partial class BrandsGame
     {
+        /// <summary>Owner deduction labels whose mixed costs have no single portable recurrence rule.</summary>
+        internal static string[] CompanionUnclassifiedTaxLabels() => new[] { DeductibleKey.GetLocalization() };
+
         public const string RoyaltyKey = "reallife_transaction_brand_royalty";
         public const string LevyKey = "reallife_transaction_brand_levy";
         public const string SupportKey = "reallife_transaction_brand_support";

@@ -513,9 +513,20 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>What a district bears at one business, in thousandths: the tolerance with the business's interior on it, that kept to a tenth either way.</summary>
+        public static double PriceRatioTerm(float price, float market, float index, bool monopoly)
+        {
+            float bears = market * (index + (monopoly ? MacroCatalogue.MonopolyAllowance / 1000f : 0f));
+            return price / bears;
+        }
+
+        public static int MeanPriceRatio(double sum, int count)
+        {
+            return count == 0 ? 0 : (int)Math.Round(sum / count * 1000.0);
+        }
+
         public static int WithBears(int tolerance, int bears)
         {
-            return (int)((long)tolerance * (1000 + Math.Max(-100, Math.Min(100, bears))) / 1000);
+            return (int)((long)tolerance * (1000 + Math.Max(MacroCatalogue.BearsLeast, Math.Min(MacroCatalogue.BearsMost, bears))) / 1000);
         }
 
         /// <summary>A business's prices against what its district bears, in thousandths (1000: exactly what it bears), from its prices against the game's own.</summary>
