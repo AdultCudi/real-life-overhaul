@@ -265,6 +265,7 @@ Each works from anywhere, writes one `Show flats check (...)` or `Renovation che
 - **Show flats: a show flat at the test project now**: the player's block sold off plan, or one made for the test (the district's nearest open lot, a block of homes with its plans and permission, ready to sell off plan); its show flat in the first design, dressed for nothing.
 - **take me into the show flat now** (opens one first if none is), **a viewing now** (decided at once, shown round by the player if they are on its floor), **a buyer at the show flat now** (a sale at the show flat's price).
 - **Renovation: renovate the nearest shop of yours now**: the player's nearest business refitted (a contractor's, for nothing) and handed over at once, the wear and decor before and after in the line; **a refit under way at your nearest business now** leaves it running, the hoarding up and the business closed; **a business's refit tender now**.
+- Each joins the city expansion's test run with one `.Check(...)` in `ConstructionGuide` (its button too): all where the player stands before the load, but **into the show flat** out of doors; the construction game's own put back at the run's end undoes them.
 - The construction game's **put everything back** also puts back the interiors a test refitted (`InteriorDirector.TestKeep`, `TestPutBack`), lets a closed business open and lets the show flat's floor go.
 
 ### Offline checks

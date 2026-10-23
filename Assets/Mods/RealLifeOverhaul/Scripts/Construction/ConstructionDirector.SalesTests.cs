@@ -15,8 +15,8 @@ namespace RealLifeOverhaul.Construction
     /// </summary>
     public sealed partial class ConstructionDirector
     {
-        private const string ShowCheck = "Show flats check";
-        private const string RefitCheck = "Renovation check";
+        private const string ShowCheck = "Show flats check (";   // each line goes on with its test's name and ")"
+        private const string RefitCheck = "Renovation check (";
 
         // The director when a test may run; otherwise the refusal said and a FAIL line written.
         private static ConstructionDirector TestDirector(string check, string test, bool shows)
@@ -24,14 +24,14 @@ namespace RealLifeOverhaul.Construction
             ConstructionDirector d = Instance;
             if (d == null || !ModState.Loaded || SaveGameManager.Current == null || !d._loaded)
             {
-                TestRefusals.Tell(Logger, check + " (" + test + ")", TestRefusal.NotLoaded);
-                Logger?.Warn(check + " (" + test + "): the construction game has not read this save yet: FAIL.");
+                TestRefusals.Tell(Logger, check + test + ")", TestRefusal.NotLoaded);
+                Logger?.Warn(check + test + "): the construction game has not read this save yet: FAIL.");
                 return null;
             }
             if (!d.Running || (shows ? !Settings.ConstructionShowFlats : !Settings.ConstructionRenovations))
             {
-                TestRefusals.Tell(Logger, check + " (" + test + ")", TestRefusal.FeatureOff);
-                Logger?.Warn(check + " (" + test + "): " + (shows ? "show flats are" : "renovations are") + " off in the options: FAIL.");
+                TestRefusals.Tell(Logger, check + test + ")", TestRefusal.FeatureOff);
+                Logger?.Warn(check + test + "): " + (shows ? "show flats are" : "renovations are") + " off in the options: FAIL.");
                 return null;
             }
             return d;
@@ -39,8 +39,8 @@ namespace RealLifeOverhaul.Construction
 
         private static bool Failed(string check, string test, string key, string why)
         {
-            TestRefusals.TellKey(Logger, check + " (" + test + ")", key, why);
-            Logger?.Warn(check + " (" + test + "): " + why + ": FAIL.");
+            TestRefusals.TellKey(Logger, check + test + ")", key, why);
+            Logger?.Warn(check + test + "): " + why + ": FAIL.");
             return false;
         }
 
@@ -74,7 +74,7 @@ namespace RealLifeOverhaul.Construction
             ProjectFile p = _state.ShowFlat();
             if (p != null)
             {
-                Logger?.Warn(ShowCheck + " (" + test + "): project " + p.Id + "'s show flat is open already, in " + p.ShowDesign + ": PASS.");
+                Logger?.Warn(ShowCheck + test + "): project " + p.Id + "'s show flat is open already, in " + p.ShowDesign + ": PASS.");
                 TestDone("project " + p.Id + "'s show flat is open", TabProjects, p.Id);
                 return true;
             }
@@ -96,7 +96,7 @@ namespace RealLifeOverhaul.Construction
             }
             bool there = ShowWhere(out FloorWhere at);
             int quality = ShowQuality(p);
-            Logger?.Warn(ShowCheck + " (" + test + "): project " + p.Id + (made ? " (made for the test)" : string.Empty) + " has its show flat in " + design.Id + ", " + design.Pieces
+            Logger?.Warn(ShowCheck + test + "): project " + p.Id + (made ? " (made for the test)" : string.Empty) + " has its show flat in " + design.Id + ", " + design.Pieces
                          + " pieces, quality " + quality + " against the district's standard " + p.ShowStandard + ", " + ShowFlatRules.Viewings(quality, p.ShowStandard) + " viewing(s) a day, "
                          + (there ? "on floor " + at.Floor + " of " + ConstructionGame.AddressText(at.Street, at.Number) : "waiting for a spare floor") + ": PASS.");
             TestDone("project " + p.Id + "'s show flat opened", TabProjects, p.Id);
@@ -217,7 +217,7 @@ namespace RealLifeOverhaul.Construction
                 }
                 if (d.InShowFlat)
                 {
-                    Logger?.Warn(ShowCheck + " (" + test + "): the player is in the show flat already: PASS.");
+                    Logger?.Warn(ShowCheck + test + "): the player is in the show flat already: PASS.");
                     return true;
                 }
                 if (!d.ShowWhere(out FloorWhere at))
@@ -229,7 +229,7 @@ namespace RealLifeOverhaul.Construction
                 {
                     return Failed(ShowCheck, test, "reallife_bld_test_no_way_in", "the way in was refused: " + refused);
                 }
-                Logger?.Warn(ShowCheck + " (" + test + "): the player goes in to floor " + at.Floor + " of " + ConstructionGame.AddressText(at.Street, at.Number)
+                Logger?.Warn(ShowCheck + test + "): the player goes in to floor " + at.Floor + " of " + ConstructionGame.AddressText(at.Street, at.Number)
                              + " by the game's own door; the show flat's own lines follow as it is dressed: PASS.");
                 return true;
             }
@@ -280,7 +280,7 @@ namespace RealLifeOverhaul.Construction
                 int price = ShowFlatRules.Price(d.OffPlanPrice(p), quality, p.ShowStandard);
                 bool sold = d.Viewing(p, key, buyer);
                 bool right = sold == (p.FlatsSold == soldBefore + 1) && (!sold || p.OffPlanBalance + p.Deposits - balanceBefore == price) && (!buyer || sold);
-                Logger?.Warn(ShowCheck + " (" + test + "): project " + p.Id + "'s show flat, shown round by " + host + ", quality " + quality + " against " + p.ShowStandard
+                Logger?.Warn(ShowCheck + test + "): project " + p.Id + "'s show flat, shown round by " + host + ", quality " + quality + " against " + p.ShowStandard
                              + ", a buyer's chance " + chance + " in 1000: " + (sold ? "a flat sold at " + price + ", " + (FlatsOf(p) - p.FlatsSold) + " left" : "no buyer this time")
                              + (right ? ": PASS." : ": FAIL (the sale's figures do not add up)."));
                 d.TestDone(sold ? "a flat sold at the show flat" : "a viewing with no buyer", TabProjects, p.Id);
@@ -395,7 +395,7 @@ namespace RealLifeOverhaul.Construction
             if (!finish)
             {
                 bool under = p.Stage == ProjectStage.Building && p.SiteId > 0;
-                Logger?.Warn(RefitCheck + " (" + test + "): " + b.Name + ", " + metres.ToString("0", CultureInfo.InvariantCulture) + " m away: "
+                Logger?.Warn(RefitCheck + test + "): " + b.Name + ", " + metres.ToString("0", CultureInfo.InvariantCulture) + " m away: "
                              + (under ? (started ? "a refit started now, " : "its refit already under way, ") + "site " + p.SiteId + ", due on day " + p.DueDay
                                         + ", the business kept closed for it: PASS." : "its project is at " + p.Stage + ", not under way: FAIL."));
                 TestDone("a refit under way at " + b.Name, TabProjects, p.Id);
@@ -410,7 +410,7 @@ namespace RealLifeOverhaul.Construction
             ReadInterior(b, out int decorAfter, out int refit, out int wearAfter);
             bool interiors = Settings.Interiors;
             bool pass = handed && p.Stage == ProjectStage.Finished && (!interiors || (wearAfter == 0 && refit > 0 && decorAfter >= decorBefore));
-            Logger?.Warn(RefitCheck + " (" + test + "): " + b.Name + ", " + metres.ToString("0", CultureInfo.InvariantCulture) + " m away, refitted now by "
+            Logger?.Warn(RefitCheck + test + "): " + b.Name + ", " + metres.ToString("0", CultureInfo.InvariantCulture) + " m away, refitted now by "
                          + (p.Contractor >= 0 ? "contractor " + p.Contractor : "the company") + " (grade " + p.Grade + "): wear " + wearBefore / 10 + "% -> " + wearAfter / 10 + "%, decor "
                          + decorBefore + " -> " + decorAfter + " (the new fittings +" + refit + ")" + (interiors ? string.Empty : ", Interiors off") + "; the business open again"
                          + (pass ? ": PASS." : ": FAIL."));
@@ -472,7 +472,7 @@ namespace RealLifeOverhaul.Construction
                 {
                     return Failed(RefitCheck, test, "reallife_bld_test_nothing", "no business of the city's could be found for a refit");
                 }
-                Logger?.Warn(RefitCheck + " (" + test + "): tender " + t.Id + ", " + d.TenderName(t) + ": " + t.Hours + " working hours for " + t.Value + ", the renovation speciality's work ("
+                Logger?.Warn(RefitCheck + test + "): tender " + t.Id + ", " + d.TenderName(t) + ": " + t.Hours + " working hours for " + t.Value + ", the renovation speciality's work ("
                              + TenderRules.NeedOf(t.Source, t.CivicKind, t.Use) + "), closing at hour " + t.Closes % 24 + " of day " + t.Closes / 24 + ": PASS.");
                 d.TestDone("a business's refit out to tender", TabTenders, t.Id);
                 return true;

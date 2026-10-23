@@ -1,6 +1,7 @@
 using System.Globalization;
 using BigAmbitions.Mods;
 using RealLifeOverhaul.Meta;
+using RealLifeOverhaul.TestRun;
 
 namespace RealLifeOverhaul.Construction
 {
@@ -67,8 +68,13 @@ namespace RealLifeOverhaul.Construction
                 .Fact("bld_refit_hours_least", () => BuildCatalogue.RefitHoursLeast.ToString(Inv))
                 .Fact("bld_refit_hours_most", () => BuildCatalogue.RefitHoursMost.ToString(Inv))
                 .Fact("bld_refit_lift_most", () => Interiors.InteriorRules.RefitMost.ToString(Inv))
-                .Test("reallife_bld_test_show_flat", "reallife_bld_test_show_visit", "reallife_bld_test_viewing", "reallife_bld_test_show_buyer", "reallife_bld_test_refit",
-                    "reallife_bld_test_refit_start", "reallife_bld_test_refit_tender")
+                .Check("reallife_bld_test_show_flat", () => ConstructionDirector.TestShowFlatNow(), "Show flats check (a show flat at the test project now)", RunPlace.Here)
+                .Check("reallife_bld_test_viewing", () => ConstructionDirector.TestViewingNow(), "Show flats check (a viewing now)", RunPlace.Here)
+                .Check("reallife_bld_test_show_buyer", () => ConstructionDirector.TestShowBuyerNow(), "Show flats check (a buyer at the show flat now)", RunPlace.Here)
+                .Check("reallife_bld_test_refit_start", () => ConstructionDirector.TestRefitStartNow(), "Renovation check (a refit under way at your nearest business now)", RunPlace.Here)
+                .Check("reallife_bld_test_refit", () => ConstructionDirector.TestRefitNow(), "Renovation check (renovate the nearest shop of yours now)", RunPlace.Here)
+                .Check("reallife_bld_test_refit_tender", () => ConstructionDirector.TestRefitTenderNow(), "Renovation check (a business's refit tender now)", RunPlace.Here)
+                .Check("reallife_bld_test_show_visit", () => ConstructionDirector.TestShowVisitNow(), "Show flats check (into the show flat now)", RunPlace.Outdoors)
                 .Test("reallife_bld_test_lot", "reallife_bld_test_company", "reallife_bld_test_licence", "reallife_bld_test_plans", "reallife_bld_test_planning",
                     "reallife_bld_test_council", "reallife_bld_test_stage", "reallife_bld_test_inspection", "reallife_bld_test_deliveries", "reallife_bld_test_handover",
                     "reallife_bld_test_opening", "reallife_bld_test_tender", "reallife_bld_test_award", "reallife_bld_test_developers", "reallife_bld_test_poach",
@@ -113,13 +119,6 @@ namespace RealLifeOverhaul.Construction
                 .AddButton("reallife_bld_test_fault", () => ConstructionDirector.Instance?.TestFault())
                 .AddButton("reallife_bld_test_bribe", () => ConstructionDirector.Instance?.TestBribe())
                 .AddButton("reallife_bld_test_buyer", () => ConstructionDirector.Instance?.TestBuyer())
-                .AddButton("reallife_bld_test_show_flat", () => ConstructionDirector.TestShowFlatNow())
-                .AddButton("reallife_bld_test_show_visit", () => ConstructionDirector.TestShowVisitNow())
-                .AddButton("reallife_bld_test_viewing", () => ConstructionDirector.TestViewingNow())
-                .AddButton("reallife_bld_test_show_buyer", () => ConstructionDirector.TestShowBuyerNow())
-                .AddButton("reallife_bld_test_refit", () => ConstructionDirector.TestRefitNow())
-                .AddButton("reallife_bld_test_refit_start", () => ConstructionDirector.TestRefitStartNow())
-                .AddButton("reallife_bld_test_refit_tender", () => ConstructionDirector.TestRefitTenderNow())
                 .AddButton("reallife_bld_test_back", () => ConstructionDirector.Instance?.TestBack())
                 .AddSplitter();
         }

@@ -22543,5 +22543,21 @@
   "reallife_bld_viewing_title": "Show flat: {name}",
   "reallife_bld_viewing_line": "Buyers are here for the viewing.",
   "reallife_bld_viewing_shown": "You are showing the buyers round.",
-  "reallife_bld_viewing_show": "Show them round"
+  "reallife_bld_viewing_show": "Show them round",
+  "reallife_testrun_button": "City expansion: run every check",
+  "reallife_testrun_needs_tools": "The test run needs Developer diagnostics and Show test tools switched on, under Troubleshooting, Diagnostics.",
+  "reallife_testrun_session": "The test run does not run in a Going Public session: it moves you round the city and changes it.",
+  "reallife_testrun_other_city": "The test run only runs in New York: the city expansion stands on its map.",
+  "reallife_testrun_no_save": "The test run did not begin: the game would not write the save that undoes it here. Player.log says why.",
+  "reallife_testrun_started": "The city expansion test run has begun. The save {save} undoes everything it does. Close the options and leave it be; press its button again to stop it.",
+  "reallife_testrun_load": "Save and load now; the run carries on by itself.",
+  "reallife_testrun_carried_on": "The test run carries on after the load.",
+  "reallife_testrun_done": "City expansion test run: {passed} of {ran} PASS; failed: {failed}. Every line, and what to look at with your own eyes, is in Player.log.",
+  "reallife_testrun_done_all": "City expansion test run: {passed} of {ran} PASS, none failed. Every line, and what to look at with your own eyes, is in Player.log.",
+  "reallife_testrun_stopped": "The test run was stopped and has put back what it can. The save {save} undoes the rest.",
+  "reallife_testrun_look_uptown": "For your eyes: walk north into Uptown with the keys while the cars are counted. Look at its streets, lights and crosswalks, and the join with Manhattan.",
+  "reallife_testrun_look_wrap": "For your eyes: the game's own scaffolding going up round this building to its roof.",
+  "reallife_testrun_look_plot": "For your eyes: the tower crane turning ahead of you, and the frame storey on another lot of this grass.",
+  "reallife_testrun_look_walk": "For your eyes: walk onto the new walking ground beside you with the keys, across the join. The run waits a minute.",
+  "reallife_testrun_look_building": "For your eyes: the test building at 1 Proving Lane. Walk in and out by its door with the keys. The summary follows."
 }

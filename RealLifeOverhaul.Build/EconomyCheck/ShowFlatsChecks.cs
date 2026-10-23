@@ -423,7 +423,9 @@ internal static partial class Program
         foreach (string key in new[] { "reallife_bld_test_show_flat", "reallife_bld_test_show_visit", "reallife_bld_test_viewing", "reallife_bld_test_show_buyer", "reallife_bld_test_refit",
                      "reallife_bld_test_refit_start", "reallife_bld_test_refit_tender" })
         {
-            Check(Regex.Matches(guide, "\"" + key + "\"").Count == 2, "show flats sources: the test " + key + " is on the page and in the feature list");
+            Match joined = Regex.Match(guide, @"\.Check\(""" + key + @""", \(\) => ConstructionDirector\.Test[A-Za-z]+Now\(\), ""(Show flats|Renovation) check \(([^""]+)\)""");
+            Check(joined.Success && Regex.Matches(guide, "\"" + key + "\"").Count == 1 && tests.Contains("\"" + joined.Groups[2].Value + "\""),
+                "show flats sources: the test " + key + " joins the test run once (its button too), its line the one its method writes");
         }
         Check(MethodText(ModSource(@"Construction\ConstructionDirector.Tests.cs"), "public void TestBack()").Contains("SalesBack(was)") && MethodText(tests, "private int SalesBack(").Contains("ConstructionBridges.InteriorsBack()"),
             "show flats sources: putting the construction game back puts back the interiors a test refitted and the show flat's floor");

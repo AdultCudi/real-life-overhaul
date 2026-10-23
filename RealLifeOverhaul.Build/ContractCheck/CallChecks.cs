@@ -92,6 +92,8 @@ internal static partial class Program
         { "RealLifeOverhaul.Meta.BugReportGame.Listen", "the engine's log listener for 'Report a bug': one try round all of it whose catch drops the line, since the guard's catch writes to the log and would call it again (Meta/BugReportGame.Heard)" },
         { "RealLifeOverhaul.DistrictSave.DistrictSaveDirector.Arm", "the engine's log listener for the game's line that a save's file is written, the moment the district's records go back: one try round all of it whose catch drops the line, since the guard's catch writes to the log and would call it again (DistrictSave/DistrictSaveDirector.OnLog)" },
         { "RealLifeOverhaul.TrafficMend.Listen", "the engine's log listener that counts the traffic's failed density passes: one try round all of it whose catch drops the line, since the guard's catch writes to the log and would call it again (Traffic/TrafficMend.OnLog)" },
+        { "RealLifeOverhaul.TestRun.RunDirector.Listen", "the engine's log listener of the city expansion's test run, only while a run is under way: one try round all of it whose catch drops the line, since the guard's catch writes to the log and would call it again (TestRun/RunDirector.OnLog)" },
+        { "RealLifeOverhaul.TestRun.RunDirector.Unlisten", "(the same listener taken off again at the run's end)" },
     };
 
     // A type of a signature as 'assembly|full name' (the mod's own: '|full name', or '@delegate|full name' for a delegate type of its own).
