@@ -8,8 +8,8 @@ namespace RealLifeOverhaul
     {
         /// <summary>
         /// The city around the construction company, tested: each a public static method a runner can call without the
-        /// interface, as the options page's buttons do. Each works from anywhere at any time and brings forward what it needs,
-        /// writes one "... check (...)" line with PASS or FAIL in Player.log and returns whether it passed. The two of the
+        /// interface (the test run presses them: each is a .Check in ConstructionGuide). Each works from anywhere at any time and
+        /// brings forward what it needs, and writes one "... check (...)" line with PASS or FAIL in Player.log. The two of the
         /// city's government put it back as it was before they return; the construction game's go back with its own "put
         /// everything back as before the tests" (which takes back the court's cases and claims they filed too).
         /// </summary>
@@ -46,7 +46,9 @@ namespace RealLifeOverhaul
             /// planning fee and the surcharge on land kept empty; and the new district's voters leaning to growth. The policy
             /// is put back as it stood.
             /// </summary>
-            public static bool Code()
+            public static void Code() => RunCode();
+
+            private static bool RunCode()
             {
                 const string test = "building code";
                 CivicDirector civic = Civic(test);
@@ -100,7 +102,9 @@ namespace RealLifeOverhaul
             }
 
             /// <summary>Test: a zoning application heard by the city's one council now (the construction game's test, through Civic's council).</summary>
-            public static bool Zoning()
+            public static void Zoning() => RunZoning();
+
+            private static bool RunZoning()
             {
                 ConstructionDirector d = Builders;
                 return d != null ? d.TestCouncilZoning() : Fail("Construction", "council zoning", "not started, the construction game is not there");
@@ -113,7 +117,9 @@ namespace RealLifeOverhaul
             /// undeclared interest kept as a secret that can come out; then the city's government and the player's office are
             /// put back as they were.
             /// </summary>
-            public static bool Office()
+            public static void Office() => RunOffice();
+
+            private static bool RunOffice()
             {
                 const string test = "council motions";
                 CivicDirector civic = Civic(test);
@@ -177,21 +183,27 @@ namespace RealLifeOverhaul
             }
 
             /// <summary>Test: two rigged tenders, one covered for and found out, one reported (the construction game's test).</summary>
-            public static bool Ring()
+            public static void Ring() => RunRing();
+
+            private static bool RunRing()
             {
                 ConstructionDirector d = Builders;
                 return d != null ? d.TestRing() : Fail("Construction", "ring", "not started, the construction game is not there");
             }
 
             /// <summary>Test: a client's unpaid bill chased and taken to court, and a crew's claim for wages left unpaid (the construction game's test).</summary>
-            public static bool Bills()
+            public static void Bills() => RunBills();
+
+            private static bool RunBills()
             {
                 ConstructionDirector d = Builders;
                 return d != null ? d.TestBills() : Fail("Construction", "bills", "not started, the construction game is not there");
             }
 
             /// <summary>Test: the City Ledger's building of the year shortlisted, voted on and awarded now (the construction game's test).</summary>
-            public static bool YearAward()
+            public static void YearAward() => RunYearAward();
+
+            private static bool RunYearAward()
             {
                 ConstructionDirector d = Builders;
                 return d != null ? d.TestYearAward() : Fail("Construction", "building of the year", "not started, the construction game is not there");

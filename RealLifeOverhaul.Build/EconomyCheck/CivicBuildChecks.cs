@@ -346,15 +346,11 @@ internal static partial class Program
               && ModSource(@"Meta\OptionsTree.cs").Contains(".Opt(\"construction_city\", \"construction\")") && guide.Contains(".Owns(Settings.ConstructionCityId)")
               && guide.Contains("AddToggle(Settings.ConstructionCityId, \"reallife_bld_city_option\""), "civic build sources: the option is on by default, read, in the tree and the feature's own");
         int buttons = 0;
-        foreach (Match m in Regex.Matches(tests, @"public static bool ([A-Z][A-Za-z]+)\(\)"))
+        foreach (Match m in Regex.Matches(tests, @"public static void ([A-Z][A-Za-z]+)\(\) => Run([A-Z][A-Za-z]+)\(\);"))
         {
             buttons++;
-            Check(Regex.IsMatch(guide, "\\.AddButton\\(\"reallife_bld_test_city_[a-z]+\", \\(\\) => Wiring\\.CityTests\\." + m.Groups[1].Value + "\\(\\)\\)"),
-                "civic build sources: the test " + m.Groups[1].Value + " is a button of the options page");
-        }
-        foreach (Match m in Regex.Matches(guide, "\\.AddButton\\(\"(reallife_bld_test_city_[a-z]+)\""))
-        {
-            Check(Regex.Matches(guide, "\"" + m.Groups[1].Value + "\"").Count == 2, "civic build sources: the test " + m.Groups[1].Value + " is on the page and in the feature list");
+            Check(m.Groups[1].Value == m.Groups[2].Value && Regex.IsMatch(guide, "\\.Check\\(\"reallife_bld_test_city_[a-z]+\", Wiring\\.CityTests\\." + m.Groups[1].Value + ", \"(Civic|Construction) check \\("),
+                "civic build sources: the test " + m.Groups[1].Value + " is in the test run, and its button");
         }
         Check(buttons == 6, "civic build sources: six tests of the city around the company (" + buttons + ")");
         string cityTests = code["ConstructionDirector.CityTests.cs"];
@@ -366,7 +362,7 @@ internal static partial class Program
         }
         foreach (string test in new[] { "Code", "Office" })
         {
-            string body = MethodText(tests, "public static bool " + test + "()");
+            string body = MethodText(tests, "private static bool Run" + test + "()");
             Check(body.Contains("Civic check (") && body.Contains("PASS") && body.Contains("FAIL") && (body.Contains("g.Set(Lever.Permits, was, false);") || body.Contains("o.State.Read(officeBefore);")),
                 "civic build sources: " + test + " writes its check line and puts the government back as it was");
         }

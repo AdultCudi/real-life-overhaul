@@ -1,6 +1,7 @@
 using System.Globalization;
 using BigAmbitions.Mods;
 using RealLifeOverhaul.Meta;
+using RealLifeOverhaul.TestRun;
 
 namespace RealLifeOverhaul.Construction
 {
@@ -69,9 +70,13 @@ namespace RealLifeOverhaul.Construction
                 .Test("reallife_bld_test_lot", "reallife_bld_test_company", "reallife_bld_test_licence", "reallife_bld_test_plans", "reallife_bld_test_planning",
                     "reallife_bld_test_council", "reallife_bld_test_stage", "reallife_bld_test_inspection", "reallife_bld_test_deliveries", "reallife_bld_test_handover",
                     "reallife_bld_test_opening", "reallife_bld_test_tender", "reallife_bld_test_award", "reallife_bld_test_developers", "reallife_bld_test_poach",
-                    "reallife_bld_test_strike", "reallife_bld_test_fault", "reallife_bld_test_bribe", "reallife_bld_test_buyer", "reallife_bld_test_city_code",
-                    "reallife_bld_test_city_zoning", "reallife_bld_test_city_motions", "reallife_bld_test_city_ring", "reallife_bld_test_city_bills", "reallife_bld_test_city_award",
-                    "reallife_bld_test_back")
+                    "reallife_bld_test_strike", "reallife_bld_test_fault", "reallife_bld_test_bribe", "reallife_bld_test_buyer", "reallife_bld_test_back")
+                .Check("reallife_bld_test_city_code", Wiring.CityTests.Code, "Civic check (building code)", RunPlace.Here)
+                .Check("reallife_bld_test_city_zoning", Wiring.CityTests.Zoning, "Construction check (council zoning)", RunPlace.Here)
+                .Check("reallife_bld_test_city_motions", Wiring.CityTests.Office, "Civic check (council motions)", RunPlace.Here)
+                .Check("reallife_bld_test_city_ring", Wiring.CityTests.Ring, "Construction check (ring)", RunPlace.Here)
+                .Check("reallife_bld_test_city_bills", Wiring.CityTests.Bills, "Construction check (bills)", RunPlace.Here)
+                .Check("reallife_bld_test_city_award", Wiring.CityTests.YearAward, "Construction check (building of the year)", RunPlace.Here)
                 .Cleanup(() => ConstructionDirector.Instance?.StandDown("its things were put away"));
         }
 
@@ -111,12 +116,6 @@ namespace RealLifeOverhaul.Construction
                 .AddButton("reallife_bld_test_fault", () => ConstructionDirector.Instance?.TestFault())
                 .AddButton("reallife_bld_test_bribe", () => ConstructionDirector.Instance?.TestBribe())
                 .AddButton("reallife_bld_test_buyer", () => ConstructionDirector.Instance?.TestBuyer())
-                .AddButton("reallife_bld_test_city_code", () => Wiring.CityTests.Code())
-                .AddButton("reallife_bld_test_city_zoning", () => Wiring.CityTests.Zoning())
-                .AddButton("reallife_bld_test_city_motions", () => Wiring.CityTests.Office())
-                .AddButton("reallife_bld_test_city_ring", () => Wiring.CityTests.Ring())
-                .AddButton("reallife_bld_test_city_bills", () => Wiring.CityTests.Bills())
-                .AddButton("reallife_bld_test_city_award", () => Wiring.CityTests.YearAward())
                 .AddButton("reallife_bld_test_back", () => ConstructionDirector.Instance?.TestBack())
                 .AddSplitter();
         }

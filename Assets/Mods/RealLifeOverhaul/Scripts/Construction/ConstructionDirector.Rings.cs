@@ -165,7 +165,7 @@ namespace RealLifeOverhaul.Construction
             }
             string name = t != null ? TenderName(t) : ConstructionText.T("reallife_bld_place_lot");
             Paper("reallife_bld_paper_ring_found", RingNames(g), RingRules.Count(g.Members));
-            Logger?.Info("Construction check (ring): the ring on tender " + g.Tender + " was found out on day " + day + " (answer " + g.Answer + ", cut " + g.Cut + "): PASS.");
+            Logger?.Info("Construction check (inquiry): the ring on tender " + g.Tender + " was found out on day " + day + " (answer " + g.Answer + ", cut " + g.Cut + "): PASS.");
             switch (g.Answer)
             {
                 case RingFile.Joined:

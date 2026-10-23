@@ -22598,5 +22598,21 @@
   "reallife_transaction_court_claim_fee": "Taxa judicial de uma ação",
   "reallife_bld_call_code": "O código de obras em vigor, como o governo eleito o definiu com a sua política de alvarás: {code}",
   "reallife_bld_call_election": "A próxima eleição é em {day}: o que o vencedor prometer sobre alvarás entra em vigor depois dela.",
-  "reallife_bld_call_sitting": "Próxima sessão de planejamento da câmara: {day}."
+  "reallife_bld_call_sitting": "Próxima sessão de planejamento da câmara: {day}.",
+  "reallife_testrun_button": "Expansão da cidade: rodar todas as verificações",
+  "reallife_testrun_needs_tools": "O teste completo precisa de Diagnóstico de desenvolvedor e Mostrar ferramentas de teste ligados, em Solução de problemas, Diagnóstico.",
+  "reallife_testrun_session": "O teste completo não roda numa sessão do Going Public: ele leva você pela cidade e a modifica.",
+  "reallife_testrun_other_city": "O teste completo só roda em Nova York: a expansão da cidade fica sobre o mapa dela.",
+  "reallife_testrun_no_save": "O teste completo não começou: o jogo não quis gravar aqui o save que desfaz tudo. O Player.log diz por quê.",
+  "reallife_testrun_started": "O teste completo da expansão da cidade começou. O save {save} desfaz tudo o que ele fizer. Feche as opções e deixe rodar; aperte o botão de novo para parar.",
+  "reallife_testrun_load": "Salve e carregue agora; o teste continua sozinho.",
+  "reallife_testrun_carried_on": "O teste completo continua depois do carregamento.",
+  "reallife_testrun_done": "Teste completo da expansão da cidade: {passed} de {ran} PASS; falharam: {failed}. Cada linha, e o que conferir com os próprios olhos, está no Player.log.",
+  "reallife_testrun_done_all": "Teste completo da expansão da cidade: {passed} de {ran} PASS, nenhum falhou. Cada linha, e o que conferir com os próprios olhos, está no Player.log.",
+  "reallife_testrun_stopped": "O teste completo foi parado e desfez o que pôde. O save {save} desfaz o resto.",
+  "reallife_testrun_look_uptown": "Para os seus olhos: ande para o norte até o Uptown com as teclas enquanto os carros são contados. Veja as ruas, os semáforos, as faixas de pedestre e a junção com Manhattan.",
+  "reallife_testrun_look_wrap": "Para os seus olhos: os andaimes do próprio jogo subindo em volta deste prédio até o telhado.",
+  "reallife_testrun_look_plot": "Para os seus olhos: o guindaste de torre girando à sua frente, e o andar da estrutura em outro lote deste gramado.",
+  "reallife_testrun_look_walk": "Para os seus olhos: ande com as teclas até o novo chão ao seu lado, passando pela junção. O teste espera um minuto.",
+  "reallife_testrun_look_building": "Para os seus olhos: o prédio de teste em 1 Proving Lane. Entre e saia pela porta dele com as teclas. O resumo vem em seguida."
 }
