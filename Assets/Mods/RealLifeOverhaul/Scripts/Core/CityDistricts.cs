@@ -30,6 +30,16 @@ namespace RealLifeOverhaul
             return IndexOf(district) >= 0;
         }
 
+        /// <summary>
+        /// True for a district of the mod's own (Uptown, Scripts/Uptown): its id has the mod's prefix, which no district of
+        /// the game's, a free update's or a DLC's can have. Never one a free update added, never another city's; each table
+        /// by district decides for itself whether it takes part (docs/features/uptown.md, "The mod's own tables").
+        /// </summary>
+        public static bool Mine(string district)
+        {
+            return DistrictSave.DistrictSaveRules.IsModId(district);
+        }
+
         /// <summary>The district's place in <see cref="NewYork"/>; -1 for any other id, null and the global one included.</summary>
         public static int IndexOf(string district)
         {

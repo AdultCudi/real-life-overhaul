@@ -331,6 +331,7 @@
         public const string DesignsId = "designs";
         public const string PermadeathId = "permadeath";
         public const string NewGroundTestRoadId = "newground_test_road";   // NewGround: a developer's test road, read at each load
+        public const string UptownId = "uptown";   // Uptown, north of Manhattan: its ground laid at each load
 
         public static bool CameraEnabled = true;
         public static bool CameraIndoors = false;
@@ -666,6 +667,7 @@
         public static bool InteriorsStaff = true;           // plants, good light and a rest corner lift staff; a good office helps hiring and a firm's bids
         public static bool Permadeath = false;           // what the options page shows; the switch itself is kept per save, off unless switched on
         public static bool NewGroundTestRoad = false;    // a copy of a short stretch of road added to the traffic at each load, for the developer's test
+        public static bool Uptown = true;                // the district north of Manhattan laid at each load; read only then
 
         private static string _modId;
 
@@ -1014,6 +1016,7 @@
             InteriorsStaff = Bool(modId, InteriorsStaffId, InteriorsStaff);
             Designs = Bool(modId, DesignsId, Designs);
             NewGroundTestRoad = Bool(modId, NewGroundTestRoadId, NewGroundTestRoad);
+            Uptown = Bool(modId, UptownId, Uptown);
         }
 
         /// <summary>

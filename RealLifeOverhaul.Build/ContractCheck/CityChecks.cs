@@ -46,6 +46,9 @@ internal static partial class Program
     private static readonly Dictionary<string, string> NotPicks = new Dictionary<string, string>(StringComparer.Ordinal)
     {
         { "Core/HeldUnitsGame.cs", "takes the mod's own held units, picked through GameDlc, out of the game's district lists for the night, and counts them" },
+        { "Uptown/LifeGame.cs", "gives Uptown an empty list of its own buildings among the game's district lists; never picks one of the game's" },
+        { "Uptown/LifeGame.Buildings.cs", "puts Uptown's own buildings, the mod's made ones, into the game's lists and takes them out, and counts them; never picks one of the game's" },
+        { "Uptown/LifeGame.Tests.cs", "hands the game's start of a business Uptown's own list, the mod's made buildings alone" },
     };
 
     private static readonly Regex FeatureAdd = new Regex("Features\\.Add\\(\"([a-z_]+)\"", RegexOptions.Compiled);

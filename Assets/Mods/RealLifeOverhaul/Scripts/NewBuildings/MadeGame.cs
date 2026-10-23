@@ -147,8 +147,12 @@ namespace RealLifeOverhaul.NewBuildings
 
         // ---------------------------------------------------------------- a made building in the game's lookups
 
-        /// <summary>The game's record of a made building, made now and never saved (its fields are all the game reads).</summary>
-        public static Building MakeRecord(MadeSpec spec)
+        /// <summary>
+        /// The game's record of a made building, made now and never saved (its fields are all the game reads). Its floor area
+        /// is its size's times its storeys, or with <see cref="MadeSpec.DesignArea"/> <paramref name="designArea"/>, that of the
+        /// game's building its design copies (a district's building is as large as it looks, as the game's are).
+        /// </summary>
+        public static Building MakeRecord(MadeSpec spec, int designArea)
         {
             Building b = ScriptableObject.CreateInstance<Building>();
             b.name = "RealLife Made " + spec.Id;
@@ -160,7 +164,7 @@ namespace RealLifeOverhaul.NewBuildings
             b.SpecialService = null;
             b.Neighbourhood = spec.District;
             b.trafficIndex = spec.Traffic;
-            b.totalSqm = SquareMetres(spec.Size) * Math.Max(1, spec.Floors);   // the floor area the floors core divides by one storey's
+            b.totalSqm = spec.DesignArea && designArea > 0 ? designArea : SquareMetres(spec.Size) * Math.Max(1, spec.Floors);   // the floor area the floors core divides by one storey's
             // Its DLC stays the default, none: every player may enter it, and Core/GameDlc never takes it for gated.
             Records.Add(b);
             return b;
@@ -169,15 +173,56 @@ namespace RealLifeOverhaul.NewBuildings
         /// <summary>
         /// Its registration as the game would make one (BuildingHelper.GetBuildingRegistration): empty, not to let, not for
         /// sale, closed, no business, so a click on its door gives the game's own "business closed" and no delivery picks it.
+        /// A district's building (<see cref="MadeSpec.Life"/>) takes the save's own instead: the one in the save's list, else the
+        /// one the district save keeps for its address (that very object goes back into the list at its city step), else a new
+        /// one put in the save's list as the game's own lookup would; <paramref name="made"/> says it is new at this load.
         /// </summary>
-        public static BuildingRegistration MakeRegistration(MadeSpec spec)
+        public static BuildingRegistration MakeRegistration(MadeSpec spec, out bool made)
         {
+            made = false;
+            if (spec.Life)
+            {
+                BuildingRegistration own = InSave(spec.Street, spec.Number) ?? DistrictSave.DistrictSaveDirector.KeptRegistration(spec.Street, spec.Number);
+                if (own != null)
+                {
+                    return own;
+                }
+            }
             BuildingRegistration reg = spec.Type == Warehouse ? new Warehouse() : new BuildingRegistration();
             reg.StreetName = spec.Street;
             reg.StreetNumber = spec.Number;
-            reg.AvailableForRent = false;
-            reg.RentedByPlayer = false;
+            if (!spec.Life)
+            {
+                reg.AvailableForRent = false;
+                reg.RentedByPlayer = false;
+                return reg;
+            }
+            made = true;
+            SaveGameManager.Current?.BuildingRegistrations?.Add(reg);   // as BuildingHelper.GetBuildingRegistration adds one it makes
             return reg;
+        }
+
+        /// <summary>A district's building that could not stand after all: the registration made for it at this load out of the save's list again.</summary>
+        public static void Forsake(BuildingRegistration registration, bool made)
+        {
+            if (made && registration != null)
+            {
+                SaveGameManager.Current?.BuildingRegistrations?.Remove(registration);
+            }
+        }
+
+        /// <summary>The registration of the save's list at that address, or null.</summary>
+        private static BuildingRegistration InSave(string street, int number)
+        {
+            List<BuildingRegistration> all = SaveGameManager.Current != null ? SaveGameManager.Current.BuildingRegistrations : null;
+            for (int i = 0; all != null && i < all.Count; i++)
+            {
+                if (all[i] != null && all[i].StreetNumber == number && all[i].StreetName == street)
+                {
+                    return all[i];
+                }
+            }
+            return null;
         }
 
         /// <summary>

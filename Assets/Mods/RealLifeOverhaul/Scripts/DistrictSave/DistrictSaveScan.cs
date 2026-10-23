@@ -27,7 +27,8 @@ namespace RealLifeOverhaul.DistrictSave
             Number,      // a street's number, read with its street
             District,    // a district's id
             Id,          // an id of someone or a plan
-            Ids          // a list of such ids
+            Ids,         // a list of such ids
+            Districts    // a list of texts that may each be a district's id (the city map's ticked rows: a district's row is its id)
         }
 
         private sealed class Plan
@@ -144,6 +145,20 @@ namespace RealLifeOverhaul.DistrictSave
                             Id(f.GetValue(o) as string, plan.Pieces[i]);
                             break;
                         case Role.Number:
+                            break;
+                        case Role.Districts:
+                            if (f.GetValue(o) is IEnumerable rows)
+                            {
+                                int k = 0;
+                                foreach (object row in rows)
+                                {
+                                    if (Places.NamesDistrict(row as string))
+                                    {
+                                        Hit(plan.Pieces[i] + "[" + k.ToString(System.Globalization.CultureInfo.InvariantCulture) + "]", row as string);
+                                    }
+                                    k++;
+                                }
+                            }
                             break;
                         case Role.Ids:
                             if (f.GetValue(o) is IEnumerable ids)
@@ -326,6 +341,11 @@ namespace RealLifeOverhaul.DistrictSave
             role = Role.Descend;
             Type t = f.FieldType;
             string n = f.Name.ToLowerInvariant();
+            if (owner == typeof(GameInstance) && f.Name == "SelectedCitymapFilters")
+            {
+                role = Role.Districts;   // by what it holds, not its name (ContractCheck's ByMeaning)
+                return true;
+            }
             if (t == typeof(Address))
             {
                 role = Role.Address;

@@ -158,7 +158,7 @@ namespace RealLifeOverhaul.NewBuildings
                 into.Add(new DesignFit
                 {
                     Name = d.Name, Size = d.Size, Version = d.Version, Type = d.Type, Height = d.Height, Width = uMax - uMin, Depth = vMax - vMin,
-                    TotalSqm = CopyGame.SourceSqm(d.Source)
+                    TotalSqm = CopyGame.SourceArea(Fits[i])
                 });
             }
             return true;

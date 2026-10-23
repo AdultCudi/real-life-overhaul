@@ -32,7 +32,11 @@ namespace RealLifeOverhaul.NewBuildings
         private readonly List<Vector3> _costAt = new List<Vector3>(NewBuildingsRules.CostCopies);
         private readonly List<float> _costYaw = new List<float>(NewBuildingsRules.CostCopies);
 
-        /// <summary>"New buildings: make the test building at the next load": asks for it, or stops asking (a developer's choice kept for the next load); works from the main menu too.</summary>
+        /// <summary>
+        /// "New buildings: make the test building near you at the next load": asks for it, or stops asking (a developer's
+        /// choice kept for the next load). Out in the city it also keeps where the player stands and the way the camera looks, so
+        /// the ground round them is tried first; from the main menu, the open ground by the airport alone.
+        /// </summary>
         public static void TestMake()
         {
             try
@@ -44,10 +48,19 @@ namespace RealLifeOverhaul.NewBuildings
                 }
                 bool ask = !TestAsked;
                 UnityEngine.PlayerPrefs.SetInt(TestPref, ask ? 1 : 0);
+                // Out in the city, the ground round the player (up the screen first) is tried at the next load, so the building
+                // stands where the developer is looking whenever that ground is free.
+                float look = 0f;
+                bool here = ask && !MadeGame.Loading && !MadeGame.Indoors && MadeGame.Camera(out _, out look);
+                Vector3 at = here ? MadeGame.PlayerAt() : Vector3.zero;
+                UnityEngine.PlayerPrefs.SetString(TestHerePref, here ? NewBuildingsRules.SpotText(at.x, at.z, look) : string.Empty);
                 UnityEngine.PlayerPrefs.Save();
                 string address = MadeGame.Written(NewBuildingsTestPlot.Street, NewBuildingsTestPlot.Number);
-                Logger?.Info("New buildings test: the test building "
-                             + (ask ? "is made at " + address + " from the next load, on the test entries' plot by the airport." : "is no longer made from the next load."));
+                string where = here ? "on the first free ground of " + NewBuildingsTestPlot.RingLots + " lots round where the player stands ("
+                                      + at.x.ToString("F0", CultureInfo.InvariantCulture) + ", "
+                                      + at.z.ToString("F0", CultureInfo.InvariantCulture) + ", looking " + look.ToString("F0", CultureInfo.InvariantCulture)
+                                      + " degrees), else on the open ground by the airport." : "on the open ground by the airport.";
+                Logger?.Info("New buildings test: the test building " + (ask ? "is made at " + address + " from the next load, " + where : "is no longer made from the next load."));
                 MadeGame.Tell(ask ? NewBuildingsText.Armed : NewBuildingsText.Disarmed, "address", address);
             }
             catch (Exception e)

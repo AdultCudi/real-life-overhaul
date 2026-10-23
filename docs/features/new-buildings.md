@@ -14,7 +14,7 @@ A player sees nothing of it yet: no feature declares a building today. The test 
 ```
 NewBuildingsRules        game-free: a design's name and the building it is measured on, the pick, where a design stands on its
                          lot, the ground's sums, the lot taken when the one asked for is not, what refuses a declaration
-NewBuildingsTestPlot     the test building and its six lots north of the airport
+NewBuildingsTestPlot     the test building and its ground: round the developer, then six lots on the airport grass
 MadeBuildings            declare a building of the mod's own, find it after the load, list them and their addresses
 BuildingCopies           decorative copies for other features (CopyHandle), and a building's own look hidden and shown
 CopyGame                 the copy engine's Game file: the catalogue, the templates asleep, working and decorative copies
@@ -67,6 +67,15 @@ MadeBuilding hall = MadeBuildings.Get("city_hall");    // after the load; null i
 - **What is refused,** with one log line each (`NewBuildingsRules.Refusal`): a street that is not the mod's own; a house number under 1; the game's special building type (its towing reads a special service of the game's); a size, version and type the game has no structure for (`BuildingSizeHelper`, read at the load, never assumed; a structure kept for the game's special buildings does not count); a district the game does not have, or one not in the loaded city (`Core/CityCheck.Here`); a home, unless the game's food deliveries can be told to leave it alone; no lots; a traffic index outside 0 to 100; storeys (`Floors`) outside 1 to 12; an address the game, or another mod, has already.
 - **The design.** One asked for by name is given if it can be copied and fits the lot; otherwise one that buildings of its size wear, those of its type first if any, picked by its id. A design drawn in a static batch, of a DLC or of a kind never copied (a special building, a Hamptons house, a taxi destination, a gas station) is never picked.
 - **What the game does with it.** The copy keeps the game's own `CityBuildingController`: its door takes the player in through the game's own `EnterBuilding` to the game's structure of its size and version; its card names its address; the closest-building label and the city map know it. Its registration is empty, not to let and not for sale, so its door gives the game's own "business closed", and no delivery picks it.
+
+### A building of a district's own
+
+A district of the mod's whose buildings take part in the game's simulation ([Uptown](uptown.md)) declares them with `Life = true`:
+
+- **Its registration is the save's own:** the one already in the save's list at its address, else the one the district save keeps for it (`DistrictSaveDirector.KeptRegistration`), else a new one put in the save's list. The district save is the one owner of what names it, and the district names its places itself (`MadeGame.NamePlaces` passes it by).
+- **Never claimed in the special buildings' book**, so the game lets it, starts businesses in it and lists it as its own; a home may be one.
+- **Its floor area** is that of the game's building its design copies when `DesignArea` is set (`Floors` storeys of its size's area otherwise).
+- **Its own switch:** the new buildings' option leaves it alone; its district's `Wanted` decides.
 
 ### A made building as a host of floors
 
@@ -193,7 +202,7 @@ Idle: one time comparison a frame and a look once a second. A load with building
 
 The six entries are on the options page with the test tools shown. The test building is made only with Developer diagnostics on (under Troubleshooting), so the entries that use it need that too; the two copy tests do not. Each says why not in a notice when it cannot run, and writes its check lines in Player.log.
 
-1. **Make the test building at the next load.** Load a save: `Made buildings check (test building, 1 Proving Lane): in the game's building lookup YES, in the city's list YES, in the save's registrations NO, the closest-building job sized to the list: PASS`.
+1. **Make the test building at the next load.** Press it anywhere in the city: at the next load the building stands on the first free lot of 24 round where you stood (ahead first, nearest first), else on one of six lots of open grass round the airport, found free with a copy of the ground check over the build's scene data. Nobody looks for a spot, and the walk-in test takes you to it wherever it stands. Load a save: `Made buildings check (test building, 1 Proving Lane): in the game's building lookup YES, in the city's list YES, in the save's registrations NO, the closest-building job sized to the list: PASS`.
 2. **Walk into the test building and out.** `Made buildings check (way in): entered on structure C1 (...), exit zone found: PASS`, then `Made buildings check (way out): the player is at its door: PASS`.
 3. **Save inside the test building and read the file back.** A recovery save is written and read back by the game's own reader: `Save check: the written save names no made address (registrations 0, current address empty, mission none ...): PASS`, and with Developer diagnostics on the district save's own lines, `District save check: the written save names none of the mod's ... (... 1 stand-in(s) ...): PASS` and `District save: put back after the write (the game's line that the file is written): ... PASS`. Loading that save with the mod switched off puts the player outside, at the door, and so does loading it with the mod.
 4. **Copy the nearest building.** A copy of it stands 40 m ahead until the next load: `Construction check (copy): <design>, 0 in a static batch, fade linked: PASS`. A building drawn in a static batch is refused with its reason.

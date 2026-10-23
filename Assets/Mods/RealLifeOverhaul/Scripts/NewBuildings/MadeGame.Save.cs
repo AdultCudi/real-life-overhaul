@@ -74,6 +74,7 @@ namespace RealLifeOverhaul.NewBuildings
         /// The made buildings for the district save: each one standing in this city, shown or hidden, with the spot outside
         /// its door where a save made inside puts the player, facing out, and the game's district it stands in. Read at
         /// every load once the buildings are made; the district save keeps the set as the city had it until the next load.
+        /// A district's buildings are named by their district (Scripts/Uptown), with a game district for the spot outside.
         /// </summary>
         public static void NamePlaces(DistrictSave.PlaceSet set)
         {
@@ -82,6 +83,10 @@ namespace RealLifeOverhaul.NewBuildings
             for (int i = 0; i < all.Count; i++)
             {
                 MadeBuilding made = all[i];
+                if (made.Spec.Life)
+                {
+                    continue;
+                }
                 float turn = made.DoorFacing * Mathf.Deg2Rad;   // the door's outward way, as Quaternion.Euler(0, facing, 0) turns forward
                 set.Door(made.Spec.Street, made.Spec.Number, made.DoorX + Mathf.Sin(turn) * OutsideDoor, made.DoorY, made.DoorZ + Mathf.Cos(turn) * OutsideDoor,
                     made.DoorFacing, made.Spec.District);

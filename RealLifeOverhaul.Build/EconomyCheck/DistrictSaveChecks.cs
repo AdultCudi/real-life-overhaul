@@ -24,6 +24,46 @@ internal static partial class Program
         DistrictSaveWritten();
         DistrictSaveIdle();
         DistrictSaveTwoOwners();
+        DistrictSaveScoped();
+    }
+
+    // One feature's places alone (DistrictPlaces.Of, for DistrictSaveDirector.KeepOut): only what its fill names, never another
+    // feature's buildings nor any other id with the mod's prefix; the full set keeps the prefix rule.
+    private static void DistrictSaveScoped()
+    {
+        DistrictPlaces.Reset();
+        DistrictPlaces.Add("uptown", set => set.District("reallife_neighborhood_uptown").Street("reallife:street_uptown_first_avenue")
+            .Door("reallife:street_uptown_first_avenue", 3, 90f, 0f, 520f, 180f, "ba:neighborhood_midtown").Ground(-100f, 480f, 300f, 640f)
+            .Exit(91f, 0f, 473.3f, 270f, "ba:neighborhood_midtown"));
+        DistrictPlaces.Add("newbuildings", set => set.Door("reallife:street_provinglane", 1, -2400f, 0f, -1400f, 90f, "ba:neighborhood_thehamptons"));
+        PlaceSet scoped = DistrictPlaces.Of("uptown");
+        Check(scoped != null && scoped.IsScoped && scoped.Names("reallife:street_uptown_first_avenue", 1007) && scoped.Names("reallife:street_uptown_first_avenue", 3)
+              && scoped.NamesDistrict("reallife_neighborhood_uptown") && scoped.DoorOf("reallife:street_uptown_first_avenue", 3, out PlaceExit _) && scoped.OnGround(100f, 500f),
+            "district save: one feature's places alone name its streets, doors, district and ground");
+        Check(scoped != null && !scoped.Names("reallife:street_provinglane", 1) && !scoped.Names("reallife:street_elsewhere", 4) && !scoped.NamesDistrict("reallife:district_elsewhere")
+              && !scoped.Names("ba:street_broadway", 12) && !scoped.NamesDistrict("ba:neighborhood_midtown"),
+            "district save: one feature's places alone never name another feature's building, another id of the mod's, or the game's own");
+        Check(DistrictPlaces.Of("nobody") == null && DistrictPlaces.Of(null) == null, "district save: a feature that registered no places has none to take out");
+        DistrictPlaces.Add("thrower", set => throw new InvalidOperationException("its data is missing"));
+        Check(DistrictPlaces.Of("thrower") == null && LineHolds(DistrictPlaces.LastFaults, "thrower (scoped): InvalidOperationException"),
+            "district save: a fill that throws gives no places to take out, and is named for the log");
+        PlaceSet all = DistrictPlaces.Build();
+        Check(!all.IsScoped && !DistrictPlaces.Current.IsScoped && all.Names("reallife:street_elsewhere", 4) && all.Names("reallife:street_provinglane", 1)
+              && all.NamesDistrict("reallife:district_elsewhere"),
+            "district save: the whole set keeps the prefix rule: every id of the mod's leaves every save");
+        DistrictPlaces.Reset();
+    }
+
+    private static bool LineHolds(IList<string> lines, string part)
+    {
+        for (int i = 0; i < lines.Count; i++)
+        {
+            if (lines[i] != null && lines[i].Contains(part))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static void DistrictSaveIds()
@@ -428,6 +468,9 @@ internal static partial class Program
               && DistrictSaveRules.Way(SaveKind.DriverVehicle) == SaveWay.StandsIn && DistrictSaveRules.Way(SaveKind.ContactAddress) == SaveWay.StandsIn,
             "district save: the player and the player's cars and contacts are never lost: they stand in");
         Check(DistrictSaveRules.Kept(false) && !DistrictSaveRules.Kept(true), "district save: the player's own records are kept; another player's are put back after the write, never kept");
+        Check(DistrictSaveRules.Code(SaveKind.MapFilter) == "filter" && (int)SaveKind.MapFilter == DistrictSaveRules.KindCount - 1
+              && DistrictSaveRules.Way(SaveKind.MapFilter) == SaveWay.Leaves,
+            "district save: a ticked row of the city map that is a district of the mod's leaves the save's list and comes back, its code added after every other");
     }
 
     private static void DistrictSaveWritten()

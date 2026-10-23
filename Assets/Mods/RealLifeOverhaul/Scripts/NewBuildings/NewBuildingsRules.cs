@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 
 namespace RealLifeOverhaul.NewBuildings
 {
@@ -68,6 +69,8 @@ namespace RealLifeOverhaul.NewBuildings
         public int Traffic;        // the building's traffic index, 0 to 100, as the game's buildings have one
         public int Floors = 1;     // storeys of floor area its record has: the floors core gives a host that many floors
         public Func<bool> Wanted;  // the declaring feature's own option; null for always
+        public bool Life;          // a district's building in the game's own simulation: its registration the save's (the district save keeps it), never claimed
+        public bool DesignArea;    // its record's floor area that of the game's building its design copies (it is as large as it looks), not its size's times Floors
     }
 
     /// <summary>A street of the mod's own: its id, the locale key of its name, its short name for the game's help, avenue or not.</summary>
@@ -97,10 +100,24 @@ namespace RealLifeOverhaul.NewBuildings
     {
         public const string Prefix = "reallife:street_";   // the game's own begin "ba:street_"
 
-        public static readonly MadeStreet[] All =
+        public static readonly MadeStreet[] All = WithDistricts(new[]
         {
             new MadeStreet(Prefix + "provinglane", NewBuildingsText.StreetProvingLane, "PRL", false),
-        };
+        });
+
+        // The mod's own streets, then those of its districts (Uptown's, Scripts/Uptown/LayoutStreets.cs), so a building on a
+        // district's lot has an address the game writes and finds.
+        private static MadeStreet[] WithDistricts(MadeStreet[] own)
+        {
+            Uptown.LayoutStreet[] uptown = Uptown.LayoutStreets.All;
+            var all = new MadeStreet[own.Length + uptown.Length];
+            own.CopyTo(all, 0);
+            for (int i = 0; i < uptown.Length; i++)
+            {
+                all[own.Length + i] = new MadeStreet(uptown[i].Id, uptown[i].NameKey, uptown[i].Abbreviation, uptown[i].Avenue);
+            }
+            return all;
+        }
 
         /// <summary>True for a street of the mod's own, whether or not a building of it stands in this city. A string test.</summary>
         public static bool IsMine(string street)
@@ -517,6 +534,44 @@ namespace RealLifeOverhaul.NewBuildings
         }
 
         /// <summary>
+        /// The lot ahead of someone standing at (<paramref name="x"/>, <paramref name="z"/>) and looking along
+        /// <paramref name="yaw"/> (degrees round the vertical, as the game turns things): its front line <paramref name="gap"/>
+        /// metres ahead of them, its middle on their line of sight, its front turned back towards them. The test building's lot
+        /// where the developer stood when they asked for it, so a plot found taken in the game can be swapped for ground they see.
+        /// </summary>
+        public static MadeLot LotAhead(float x, float z, float yaw, float width, float depth, float gap)
+        {
+            double turn = yaw * Math.PI / 180.0;
+            float ahead = gap + depth * 0.5f;
+            float facing = yaw + 180f;
+            facing -= 360f * (float)Math.Floor(facing / 360f);
+            return new MadeLot(x + (float)Math.Sin(turn) * ahead, z + (float)Math.Cos(turn) * ahead, facing, width, depth);
+        }
+
+        /// <summary>Where someone stood and the way they looked, as text kept until the next load: "x;z;yaw", the invariant culture's.</summary>
+        public static string SpotText(float x, float z, float yaw)
+        {
+            return x.ToString("R", CultureInfo.InvariantCulture) + ";" + z.ToString("R", CultureInfo.InvariantCulture) + ";"
+                   + yaw.ToString("R", CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>The spot back from <see cref="SpotText"/>; false for anything else (nothing kept, or text of another form).</summary>
+        public static bool ReadSpot(string text, out float x, out float z, out float yaw)
+        {
+            x = 0f;
+            z = 0f;
+            yaw = 0f;
+            if (string.IsNullOrEmpty(text))
+            {
+                return false;
+            }
+            string[] parts = text.Split(';');
+            return parts.Length == 3 && float.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out x)
+                   && float.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out z)
+                   && float.TryParse(parts[2], NumberStyles.Float, CultureInfo.InvariantCulture, out yaw);
+        }
+
+        /// <summary>
         /// Why a declaration cannot be made at all (English, for the log), or null when it can. The game's own limits are
         /// asked, never assumed: <paramref name="structureTakes"/> whether the game has a structure of that size and version
         /// for that type, <paramref name="districtKnown"/> whether it has that district, <paramref name="homesLeftOut"/>
@@ -548,8 +603,9 @@ namespace RealLifeOverhaul.NewBuildings
             {
                 return "the game has no district " + (spec.District ?? "(none)");
             }
-            if (spec.Type == HomeType && !homesLeftOut)
+            if (spec.Type == HomeType && !homesLeftOut && !spec.Life)
             {
+                // A district's home takes the game's food deliveries as any home does: what names it leaves every save with the district's records.
                 return "a home would be sent the game's food deliveries, and the game's list of addresses those leave out could not be reached";
             }
             if (spec.Lots == null || spec.Lots.Length == 0)

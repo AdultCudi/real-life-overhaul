@@ -12,9 +12,12 @@ namespace RealLifeOverhaul.NewGround
     /// change is a point a step ahead on the lane beside, the same way (otherLanes); a car may be put on the road on any
     /// plain point that is not a junction's stop or exit; points stand about 4.8 m apart. The plan's new points come after
     /// the game's own (indices it has are never changed), with road ids above the game's, inside the road grid as the game
-    /// has it at this load. Every build is checked (<see cref="Check"/>) before the game's side appends it, and refused if
-    /// the game has put a road of its own there since (<see cref="Clear"/>). No Unity or game types: checked offline
-    /// (NavCheck, NewGroundCheck.cs). Runs once at a load; nothing per frame.
+    /// has it at this load. A road may also continue one of the game's streets through one of its junctions with lights
+    /// (a through end): its lanes become that junction's own stop points and exits, its turns laid as the game lays its
+    /// own, a turn from the game's stop point keeping that lane's name and road id. Every build is checked
+    /// (<see cref="Check"/>) before the game's side appends it, and refused if the game has put a road of its own there
+    /// since (<see cref="Clear"/>). No Unity or game types: checked offline (NavCheck, NewGroundCheck.cs). Runs once at a
+    /// load; nothing per frame.
     /// </summary>
     public static class RoadRules
     {
@@ -28,6 +31,9 @@ namespace RealLifeOverhaul.NewGround
         public const int MostPriorityWays = 4;   // roads into a priority junction: the game's weighs four at most (PriorityIntersection.IsPathFree)
         public const int SlowestSpeed = 10;      // km/h: the range a lane's speed is held to
         public const int FastestSpeed = 130;
+        public const float ThroughReach = 30f;   // m from a through end's place the middle of a game junction's stop points may be
+        public const float LampAhead = 5.7f;     // m past a stop point the game hangs the light for that approach (measured at its crossings)
+        public const int ThroughNumbers = 50;    // turns named after one of the game's lanes are numbered from here, clear of the game's own (under ten a lane)
 
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
@@ -43,6 +49,8 @@ namespace RealLifeOverhaul.NewGround
             public int Last;
             public int StartJunction;  // -1 when it starts at an open end
             public int EndJunction;
+            public int StartThrough = -1;   // the plan's through end its first point meets, or -1
+            public int EndThrough = -1;     // ... its last point
             public float StartDx, StartDz;   // its heading at its first and last point
             public float EndDx, EndDz;
             public int Connectors;     // turn points named after it so far
@@ -83,6 +91,10 @@ namespace RealLifeOverhaul.NewGround
             for (int i = 0; i < plan.Joins.Count && build.Problem == null; i++)
             {
                 Join(plan, plan.Joins[i], build, lanes);
+            }
+            for (int t = 0; t < plan.Throughs.Count && build.Problem == null; t++)
+            {
+                Through(plan, t, build, lanes);
             }
             build.Roads = plan.Roads.Count;
             if (build.Problem == null)
@@ -180,9 +192,15 @@ namespace RealLifeOverhaul.NewGround
                 build.Problem = "road " + r + " names a junction the plan does not have";
                 return;
             }
+            int throughStart = ThroughAt(plan, r, true), throughEnd = ThroughAt(plan, r, false);
+            if (throughStart == -2 || throughEnd == -2 || (throughStart >= 0 && road.Start >= 0) || (throughEnd >= 0 && road.End >= 0))
+            {
+                build.Problem = "road " + r + " meets two junctions at one end (the plan's and the game's, or the game's twice)";
+                return;
+            }
             float length = Length(road);
-            float from = road.Start >= 0 ? plan.Junctions[road.Start].Inset : 0f;
-            float to = length - (road.End >= 0 ? plan.Junctions[road.End].Inset : 0f);
+            float from = road.Start >= 0 ? (road.StartInset >= 0f ? road.StartInset : plan.Junctions[road.Start].Inset) : 0f;
+            float to = length - (road.End >= 0 ? (road.EndInset >= 0f ? road.EndInset : plan.Junctions[road.End].Inset) : 0f);
             if (to - from < Step)
             {
                 build.Problem = "road " + r + " is " + length.ToString("0.0", Inv) + " m long, too short for its junctions";
@@ -203,7 +221,9 @@ namespace RealLifeOverhaul.NewGround
                     Count = forward ? road.Ahead : road.Back,
                     First = build.Points.Count,
                     StartJunction = forward ? road.Start : road.End,
-                    EndJunction = forward ? road.End : road.Start
+                    EndJunction = forward ? road.End : road.Start,
+                    StartThrough = forward ? throughStart : throughEnd,
+                    EndThrough = forward ? throughEnd : throughStart
                 };
                 for (int i = 0; i < count; i++)
                 {
@@ -215,8 +235,8 @@ namespace RealLifeOverhaul.NewGround
                         dz = -dz;
                     }
                     // The lane's own right: (dz, -dx) with x east and z north.
-                    string what = i == 0 && made.StartJunction >= 0 ? "In"
-                        : i == count - 1 && made.EndJunction >= 0 ? "Out"
+                    string what = i == 0 && (made.StartJunction >= 0 || made.StartThrough >= 0) ? "In"
+                        : i == count - 1 && (made.EndJunction >= 0 || made.EndThrough >= 0) ? "Out"
                         : "Waypoint_" + i.ToString(Inv);
                     var point = new LanePoint
                     {
@@ -310,13 +330,28 @@ namespace RealLifeOverhaul.NewGround
                 build.Problem = "junction " + j + " has " + ins.Count + " lanes in and " + outs.Count + " out";
                 return;
             }
+            for (int t = 0; t < junction.Together.Count; t++)
+            {
+                bool comesIn = false;
+                for (int i = 0; i < ins.Count && !comesIn; i++)
+                {
+                    comesIn = ins[i].Road == junction.Together[t];
+                }
+                if (!comesIn)
+                {
+                    build.Problem = "junction " + j + " puts road " + junction.Together[t] + " on a shared green, but no lane of it comes in";
+                    return;
+                }
+            }
+            // One way of the lights per road in; the roads named together share one, both directions of an avenue on one green.
             var roadsIn = new List<int>(4);
             for (int i = 0; i < ins.Count; i++)
             {
-                int way = roadsIn.IndexOf(ins[i].Road);
+                int key = junction.Together.Contains(ins[i].Road) ? int.MinValue : ins[i].Road;
+                int way = roadsIn.IndexOf(key);
                 if (way < 0)
                 {
-                    roadsIn.Add(ins[i].Road);
+                    roadsIn.Add(key);
                     built.Ways.Add(new List<int>(2));
                     way = built.Ways.Count - 1;
                 }
@@ -355,12 +390,38 @@ namespace RealLifeOverhaul.NewGround
                 }
                 if (turns == 0)
                 {
+                    // A corner gives this lane no way by the rule (a road of two lanes that may only turn one way): it is
+                    // led into the lane of nearest rank of a road it may take, as the game leads both lanes round its corners.
+                    int o = Nearest(build, outs, lane, false);
+                    if (o >= 0)
+                    {
+                        Lane leave = outs[o];
+                        LanePoint a = build.Points[lane.Last], b = build.Points[leave.First];
+                        Connect(build, lane, leave, a.Cars && b.Cars, a.Trucks && b.Trucks);
+                        reached[o] = true;
+                        turns++;
+                    }
+                }
+                if (turns == 0)
+                {
                     build.Problem = "a lane of road " + lane.Road + " into junction " + j + " leads nowhere";
                     return;
                 }
             }
             for (int o = 0; o < outs.Count; o++)
             {
+                if (!reached[o])
+                {
+                    // The same the other way: a lane leaving that no turn by the rule reaches is reached from the lane of nearest rank.
+                    int i = Nearest(build, ins, outs[o], true);
+                    if (i >= 0)
+                    {
+                        Lane lane = ins[i];
+                        LanePoint a = build.Points[lane.Last], b = build.Points[outs[o].First];
+                        Connect(build, lane, outs[o], a.Cars && b.Cars, a.Trucks && b.Trucks);
+                        reached[o] = true;
+                    }
+                }
                 if (!reached[o])
                 {
                     build.Problem = "a lane of road " + outs[o].Road + " out of junction " + j + " cannot be reached";
@@ -370,20 +431,54 @@ namespace RealLifeOverhaul.NewGround
             build.Junctions.Add(built);
         }
 
+        // Of the lanes of the other roads (leaving the junction, or coming into it when <paramref name="into"/>), the one
+        // whose rank lies nearest a lane's, that some vehicle may drive from one to the other; -1 for none. Never a turn back
+        // onto the road it is on.
+        private static int Nearest(RoadBuild build, List<Lane> candidates, Lane lane, bool into)
+        {
+            int best = -1, gap = int.MaxValue;
+            for (int c = 0; c < candidates.Count; c++)
+            {
+                Lane other = candidates[c];
+                if (other.Road == lane.Road)
+                {
+                    continue;
+                }
+                LanePoint a = build.Points[into ? other.Last : lane.Last], b = build.Points[into ? lane.First : other.First];
+                if (!(a.Cars && b.Cars) && !(a.Trucks && b.Trucks))
+                {
+                    continue;
+                }
+                int d = Math.Abs(Math.Min(lane.Rank, other.Count - 1) - other.Rank);
+                if (d < gap)
+                {
+                    gap = d;
+                    best = c;
+                }
+            }
+            return best;
+        }
+
         // Which lane of the road coming in may take which lane of the road leaving.
         private static bool Turns(Lane lane, Lane leave)
         {
-            float angle = Angle(lane.EndDx, lane.EndDz, leave.StartDx, leave.StartDz);
+            return Turns(lane.EndDx, lane.EndDz, lane.Rank, lane.Count, leave.StartDx, leave.StartDz, leave.Rank, leave.Count);
+        }
+
+        // The same for any two lanes by their headings and their ranks (0 nearest the middle) among the lanes running their way.
+        private static bool Turns(float inDx, float inDz, int inRank, int inCount, float outDx, float outDz, int outRank, int outCount)
+        {
+            float angle = Angle(inDx, inDz, outDx, outDz);
             if (angle > TurnAngle)
             {
-                return lane.Rank == 0 && leave.Rank == 0;   // a left turn: the middle lane into the middle lane
+                return inRank == 0 && outRank == 0;   // a left turn: the middle lane into the middle lane
             }
             if (angle < -TurnAngle)
             {
-                return lane.Rank == lane.Count - 1 && leave.Rank == leave.Count - 1;   // right: kerb lane into kerb lane
+                return inRank == inCount - 1 && outRank == outCount - 1;   // right: kerb lane into kerb lane
             }
             // Straight on lane by lane; where the road beyond has more lanes, the kerb lane also feeds the extra ones.
-            return leave.Rank == Math.Min(lane.Rank, leave.Count - 1) || (lane.Rank == lane.Count - 1 && leave.Rank > lane.Rank);
+            return outRank == Math.Min(inRank, outCount - 1) || (inRank == inCount - 1 && outRank > inRank);
         }
 
         // The turn through the junction: a curve from the stop point to the exit point, its own points named after the lane coming in.
@@ -448,7 +543,7 @@ namespace RealLifeOverhaul.NewGround
                 build.Problem = "a join of road " + join.Road + " found no lane of the game's within " + JoinReach.ToString("0", Inv) + " m of its place";
                 return;
             }
-            if (join.Fork ? lane.StartJunction >= 0 : lane.EndJunction >= 0)
+            if (join.Fork ? lane.StartJunction >= 0 || lane.StartThrough >= 0 : lane.EndJunction >= 0 || lane.EndThrough >= 0)
             {
                 build.Problem = "a join of road " + join.Road + " is at an end that meets a junction";
                 return;
@@ -467,10 +562,273 @@ namespace RealLifeOverhaul.NewGround
             }
         }
 
+        // An open end of a road through one of the game's junctions with lights: each lane leaving made one of its exits and
+        // reached from its stop points, each lane coming in made a stop point of the way whose lanes run against it and
+        // turned into its exits, every turn laid as the game lays its own (left from the lane nearest the middle, right kerb
+        // to kerb, straight on lane by lane). A turn from the game's stop point keeps that lane's name and road id, so the
+        // traffic's blinkers see the road change where it leaves the junction, as at its own crossings.
+        private static void Through(RoadPlan plan, int t, RoadBuild build, List<Lane> lanes)
+        {
+            PlanThrough through = plan.Throughs[t];
+            if (through.Road < 0 || through.Road >= plan.Roads.Count)
+            {
+                build.Problem = "a through end names road " + through.Road + ", which the plan does not have";
+                return;
+            }
+            if (through.Existing < 0 || through.Stops.Count == 0 || through.Exits.Count == 0)
+            {
+                build.Problem = "road " + through.Road + " found no junction of the game's with lights within " + ThroughReach.ToString("0", Inv) + " m of its end";
+                return;
+            }
+            var stopRank = new int[through.Stops.Count];
+            var stopCount = new int[through.Stops.Count];
+            var exitRank = new int[through.Exits.Count];
+            var exitCount = new int[through.Exits.Count];
+            Ranks(through.Stops, stopRank, stopCount);
+            Ranks(through.Exits, exitRank, exitCount);
+            int number = ThroughNumbers;
+            for (int i = 0; i < lanes.Count && build.Problem == null; i++)
+            {
+                Lane leave = lanes[i];
+                if (leave.StartThrough != t)
+                {
+                    continue;
+                }
+                LanePoint first = build.Points[leave.First];
+                build.Through.Add(new ThroughEdit(through.Existing, -1, build.First + leave.First, 0f, 0f));
+                int reached = 0;
+                for (int s = 0; s < through.Stops.Count; s++)
+                {
+                    GamePoint stop = through.Stops[s];
+                    bool cars = stop.Cars && first.Cars, trucks = stop.Trucks && first.Trucks;
+                    if ((!cars && !trucks) || !Turns(stop.Dx, stop.Dz, stopRank[s], stopCount[s], leave.StartDx, leave.StartDz, leave.Rank, leave.Count))
+                    {
+                        continue;
+                    }
+                    FromGame(build, stop, leave, cars, trucks, ref number);
+                    reached++;
+                }
+                if (reached == 0)
+                {
+                    build.Problem = "a lane of road " + through.Road + " out of the game's junction cannot be reached from any of its stop points";
+                }
+            }
+            for (int i = 0; i < lanes.Count && build.Problem == null; i++)
+            {
+                Lane lane = lanes[i];
+                if (lane.EndThrough != t)
+                {
+                    continue;
+                }
+                int way = Against(through, lane.EndDx, lane.EndDz);
+                if (way < 0)
+                {
+                    build.Problem = "no way of the game's junction at road " + through.Road + "'s end runs against its lane coming in";
+                    return;
+                }
+                LanePoint last = build.Points[lane.Last];
+                build.Through.Add(new ThroughEdit(through.Existing, way, build.First + lane.Last, last.X + lane.EndDx * LampAhead, last.Z + lane.EndDz * LampAhead));
+                int turns = 0;
+                for (int e = 0; e < through.Exits.Count; e++)
+                {
+                    GamePoint exit = through.Exits[e];
+                    bool cars = last.Cars && exit.Cars, trucks = last.Trucks && exit.Trucks;
+                    if ((!cars && !trucks) || !Turns(lane.EndDx, lane.EndDz, lane.Rank, lane.Count, exit.Dx, exit.Dz, exitRank[e], exitCount[e]))
+                    {
+                        continue;
+                    }
+                    ToGame(build, lane, exit, cars, trucks);
+                    turns++;
+                }
+                if (turns == 0)
+                {
+                    build.Problem = "a lane of road " + through.Road + " into the game's junction leads to none of its exits";
+                }
+            }
+        }
+
+        // The through end of road r at its start or its end: its index in the plan's list, -1 for none, -2 for more than one.
+        private static int ThroughAt(RoadPlan plan, int r, bool start)
+        {
+            int found = -1;
+            for (int t = 0; t < plan.Throughs.Count; t++)
+            {
+                if (plan.Throughs[t].Road == r && plan.Throughs[t].AtStart == start)
+                {
+                    if (found >= 0)
+                    {
+                        return -2;
+                    }
+                    found = t;
+                }
+            }
+            return found;
+        }
+
+        // The game's lanes at a junction grouped by the way they run (within the turn angle of one another), each ranked
+        // among its group by how far toward the middle it lies (traffic keeps right, so the middle is on its left): 0 nearest.
+        private static void Ranks(List<GamePoint> points, int[] rank, int[] count)
+        {
+            for (int i = 0; i < points.Count; i++)
+            {
+                GamePoint p = points[i];
+                float length = (float)Math.Sqrt(p.Dx * p.Dx + p.Dz * p.Dz);
+                float hx = length > 0.0001f ? p.Dx / length : 0f, hz = length > 0.0001f ? p.Dz / length : 1f;
+                float mine = -hz * p.X + hx * p.Z;   // along the left of the way it runs
+                int before = 0, alike = 0;
+                for (int k = 0; k < points.Count; k++)
+                {
+                    GamePoint q = points[k];
+                    if (Math.Abs(Angle(p.Dx, p.Dz, q.Dx, q.Dz)) > TurnAngle)
+                    {
+                        continue;
+                    }
+                    alike++;
+                    float theirs = -hz * q.X + hx * q.Z;
+                    before += theirs > mine + 0.01f || (Math.Abs(theirs - mine) <= 0.01f && k < i) ? 1 : 0;
+                }
+                rank[i] = before;
+                count[i] = alike;
+            }
+        }
+
+        // The way of the game's junction whose stop points run against a lane coming in (the other direction of its street), or -1.
+        private static int Against(PlanThrough through, float dx, float dz)
+        {
+            for (int s = 0; s < through.Stops.Count; s++)
+            {
+                GamePoint stop = through.Stops[s];
+                if (Math.Abs(Angle(stop.Dx, stop.Dz, dx, dz)) > 180f - TurnAngle)
+                {
+                    return stop.Way;
+                }
+            }
+            return -1;
+        }
+
+        // A turn from one of the game's stop points into a lane leaving: named after the game's lane and keeping its road id.
+        private static void FromGame(RoadBuild build, GamePoint stop, Lane leave, bool cars, bool trucks, ref int number)
+        {
+            LanePoint b = build.Points[leave.First];
+            int inner = Bend(stop.X, stop.Z, stop.Dx, stop.Dz, b.X, b.Z, leave.StartDx, leave.StartDz, out float cx, out float cz);
+            int previous = stop.Index;
+            for (int i = 0; i < inner; i++)
+            {
+                float t = (i + 1f) / (inner + 1f);
+                float u = 1f - t;
+                number++;
+                var point = new LanePoint
+                {
+                    Name = stop.Lane + "-" + (i == 0 || i == inner - 1 ? "CConnect" : "Connector") + number.ToString(Inv),
+                    X = u * u * stop.X + 2f * u * t * cx + t * t * b.X,
+                    Y = u * stop.Y + t * b.Y,
+                    Z = u * u * stop.Z + 2f * u * t * cz + t * t * b.Z,
+                    Cars = cars,
+                    Trucks = trucks,
+                    Speed = Math.Max(SlowestSpeed, Math.Min(FastestSpeed, stop.Speed)),
+                    RoadId = stop.RoadId,
+                    Keeps = stop.RoadId,
+                    Through = true
+                };
+                int index = build.First + build.Points.Count;
+                point.Prev.Add(previous);
+                if (previous == stop.Index)
+                {
+                    build.Edits.Add(new LinkEdit(stop.Index, index, true));
+                }
+                else
+                {
+                    Point(build, previous).Next.Add(index);
+                }
+                build.Points.Add(point);
+                previous = index;
+            }
+            int exit = build.First + leave.First;
+            if (previous == stop.Index)
+            {
+                build.Edits.Add(new LinkEdit(stop.Index, exit, true));
+            }
+            else
+            {
+                Point(build, previous).Next.Add(exit);
+            }
+            b.Prev.Add(previous);
+        }
+
+        // A turn from a lane coming in to one of the game's exits: named after the lane it comes from, as every turn.
+        private static void ToGame(RoadBuild build, Lane lane, GamePoint exit, bool cars, bool trucks)
+        {
+            LanePoint a = build.Points[lane.Last];
+            int inner = Bend(a.X, a.Z, lane.EndDx, lane.EndDz, exit.X, exit.Z, exit.Dx, exit.Dz, out float cx, out float cz);
+            int previous = build.First + lane.Last;
+            for (int i = 0; i < inner; i++)
+            {
+                float t = (i + 1f) / (inner + 1f);
+                float u = 1f - t;
+                lane.Connectors++;
+                var point = new LanePoint
+                {
+                    Name = Name(a.RoadId, lane.Index, (i == 0 || i == inner - 1 ? "CConnect" : "Connector") + lane.Connectors.ToString(Inv)),
+                    X = u * u * a.X + 2f * u * t * cx + t * t * exit.X,
+                    Y = u * a.Y + t * exit.Y,
+                    Z = u * u * a.Z + 2f * u * t * cz + t * t * exit.Z,
+                    Cars = cars,
+                    Trucks = trucks,
+                    Speed = a.Speed,
+                    RoadId = a.RoadId,
+                    Through = true
+                };
+                int index = build.First + build.Points.Count;
+                point.Prev.Add(previous);
+                Point(build, previous).Next.Add(index);
+                build.Points.Add(point);
+                previous = index;
+            }
+            Point(build, previous).Next.Add(exit.Index);
+            build.Edits.Add(new LinkEdit(exit.Index, previous, false));
+        }
+
+        // A turn's curve from a point and its heading to another and its: the corner where the two ways meet, or the middle
+        // for going straight; the turn points it takes a step apart.
+        private static int Bend(float ax, float az, float adx, float adz, float bx, float bz, float bdx, float bdz, out float cx, out float cz)
+        {
+            if (!Meet(ax, az, adx, adz, bx, bz, -bdx, -bdz, out cx, out cz))
+            {
+                cx = (ax + bx) * 0.5f;
+                cz = (az + bz) * 0.5f;
+            }
+            float span = Distance(ax, az, cx, cz) + Distance(cx, cz, bx, bz);
+            return Math.Max(0, (int)Math.Round(span / Step) - 1);
+        }
+
+        /// <summary>
+        /// The game's junction with lights a through end meets: the one whose stop points' middle (<paramref name="x"/>,
+        /// <paramref name="z"/>, one per junction) lies nearest its place, within <see cref="ThroughReach"/>; -1 for none.
+        /// </summary>
+        public static int FindThrough(PlanThrough through, float[] x, float[] z)
+        {
+            int best = -1;
+            float nearest = ThroughReach * ThroughReach;
+            for (int j = 0; x != null && z != null && j < x.Length && j < z.Length; j++)
+            {
+                float d = Square(x[j] - through.X, z[j] - through.Z);
+                if (d <= nearest)
+                {
+                    nearest = d;
+                    best = j;
+                }
+            }
+            return best;
+        }
+
         // Cells and spawn places, once every point is laid.
         private static void Finish(RoadBuild build, RoadGrid grid)
         {
             var stopsAndExits = new HashSet<int>();
+            for (int t = 0; t < build.Through.Count; t++)
+            {
+                stopsAndExits.Add(build.Through[t].Point);
+            }
             for (int j = 0; j < build.Junctions.Count; j++)
             {
                 BuiltJunction junction = build.Junctions[j];
@@ -575,9 +933,11 @@ namespace RealLifeOverhaul.NewGround
                 {
                     return "the lane point " + point.Name + " has a speed of " + point.Speed + " km/h";
                 }
-                if (point.RoadId <= highestRoadId)
+                if (point.Keeps >= 0 ? point.RoadId != point.Keeps || !point.Through : point.RoadId <= highestRoadId)
                 {
-                    return "the lane point " + point.Name + " has road id " + point.RoadId + ", which the game's roads may use (its highest is " + highestRoadId + ")";
+                    return point.Keeps >= 0
+                        ? "the turn " + point.Name + " does not keep the road id of the game's lane it comes from"
+                        : "the lane point " + point.Name + " has road id " + point.RoadId + ", which the game's roads may use (its highest is " + highestRoadId + ")";
                 }
                 bool connector = point.Name.IndexOf("Connect", StringComparison.Ordinal) >= 0;
                 bool plain = point.Name.IndexOf("Waypoint_", StringComparison.Ordinal) >= 0;
@@ -622,6 +982,20 @@ namespace RealLifeOverhaul.NewGround
                 if (edit.AsNext ? !added.Prev.Contains(edit.Existing) : !added.Next.Contains(edit.Existing))
                 {
                     return "the join at " + added.Name + " is one way only";
+                }
+            }
+            for (int t = 0; t < build.Through.Count; t++)
+            {
+                ThroughEdit edit = build.Through[t];
+                LanePoint point = build.At(edit.Point);
+                if (point == null || edit.Junction < 0)
+                {
+                    return "a lane point made one of a game junction's own is not one of the build's (" + edit.Point + ")";
+                }
+                bool stop = edit.Way >= 0;
+                if (!point.Name.EndsWith(stop ? "-Out" : "-In", StringComparison.Ordinal))
+                {
+                    return "the " + (stop ? "stop point " : "exit ") + point.Name + " of the game's junction is not named as one";
                 }
             }
             for (int j = 0; j < build.Junctions.Count; j++)
@@ -695,11 +1069,16 @@ namespace RealLifeOverhaul.NewGround
             for (int i = 0; i < build.Points.Count; i++)
             {
                 LanePoint point = build.Points[i];
-                bool nearJoin = false;
+                bool nearJoin = point.Through;   // a turn through one of the game's junctions lies among its lanes by design
                 for (int e = 0; e < build.Edits.Count && !nearJoin; e++)
                 {
                     LanePoint joined = build.At(build.Edits[e].Added);
                     nearJoin = joined != null && Square(point.X - joined.X, point.Z - joined.Z) <= room;
+                }
+                for (int t = 0; t < build.Through.Count && !nearJoin; t++)
+                {
+                    LanePoint end = build.At(build.Through[t].Point);
+                    nearJoin = end != null && Square(point.X - end.X, point.Z - end.Z) <= room;
                 }
                 if (nearJoin)
                 {
@@ -775,8 +1154,14 @@ namespace RealLifeOverhaul.NewGround
             {
                 lights += build.Junctions[j].Lights ? 1 : 0;
             }
+            int stops = 0;
+            for (int t = 0; t < build.Through.Count; t++)
+            {
+                stops += build.Through[t].Way >= 0 ? 1 : 0;
+            }
             return build.Points.Count + " lane points (" + connectors + " in junctions, " + spawns + " where cars may start) on " + build.Roads + " road(s), "
-                   + build.Junctions.Count + " junction(s) (" + lights + " with lights), " + build.Edits.Count + " join(s) to the game's lanes";
+                   + build.Junctions.Count + " junction(s) (" + lights + " with lights), " + build.Edits.Count + " join(s) to the game's lanes, "
+                   + stops + " stop point(s) and " + (build.Through.Count - stops) + " exit(s) given to the game's junctions";
         }
 
         private static LanePoint Point(RoadBuild build, int index)

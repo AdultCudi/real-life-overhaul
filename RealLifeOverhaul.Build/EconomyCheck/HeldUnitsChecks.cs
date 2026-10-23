@@ -201,7 +201,9 @@ internal static partial class Program
                     onlyAsks = false;
                     where = System.IO.Path.GetFileName(path) + " (the ignore list)";
                 }
-                if (Regex.IsMatch(code, @"AllNeighbourhoodBuildings(?!\.TryGetValue\(|\)| == null)"))
+                // Uptown's game files write its own district's list alone, which no held unit is ever in (UptownLifeChecks holds them to it).
+                bool uptown = path.Replace('\\', '/').Contains("/Uptown/LifeGame");
+                if (!uptown && Regex.IsMatch(code, @"AllNeighbourhoodBuildings(?!\.TryGetValue\(|\)| == null)"))
                 {
                     onlyAsks = false;
                     where = System.IO.Path.GetFileName(path) + " (the district lists)";
