@@ -44,6 +44,11 @@ namespace RealLifeOverhaul.Nav
         private readonly List<float> _hullZ = new List<float>(8192);
         private readonly float[] _cornerX = new float[8], _cornerZ = new float[8];
         private readonly float[] _outX = new float[17], _outZ = new float[17];
+        private readonly List<MeshRenderer> _more = new List<MeshRenderer>(16);   // the mod's own buildings' boxes, asked for at each drawing
+        private readonly List<float> _moreX = new List<float>(128), _moreZ = new List<float>(128);
+        private readonly List<int> _moreStart = new List<int>(16);
+        private int _moreStamp;     // NavBridges.MoreBuildingsStamp when the picture was drawn
+        private int _moreDrawn;     // outlines of the mod's own on the picture
 
         // The session's picture and the print of what it was drawn from. It survives the city: a texture made by the mod is
         // no scene's, and it is marked to stay through the engine's sweep of unused assets.
@@ -79,6 +84,7 @@ namespace RealLifeOverhaul.Nav
         private sealed class Job
         {
             public NavBaseData Data;
+            public NavBaseData Drawn;   // Data with the mod's own buildings on top, made on the main thread; Data itself with none
             public ulong Print;     // of what was drawn, made on the thread once the water is settled
             public bool Settle;
             public string SaveTo;
@@ -90,7 +96,7 @@ namespace RealLifeOverhaul.Nav
             public volatile string Fault;
             public string SaveFault;
             public double Milliseconds;
-            public int Drawn, WaterCells;
+            public int Outlined, WaterCells;
 
             public void Run(object state)
             {
@@ -114,11 +120,12 @@ namespace RealLifeOverhaul.Nav
                     {
                         WaterCells += Data.Cells[i] == NavBaseWater.Water ? 1 : 0;
                     }
-                    Print = PrintOf(Data, Width, Height, OriginX, OriginZ, PerMetre, Building, Water);
+                    NavBaseData drawn = Drawn ?? Data;
+                    Print = PrintOf(drawn, Width, Height, OriginX, OriginZ, PerMetre, Building, Water);
                     var cover = new byte[Width * Height];
-                    Drawn = NavBaseRaster.Buildings(cover, Width, Height, OriginX, OriginZ, PerMetre, Data);
+                    Outlined = NavBaseRaster.Buildings(cover, Width, Height, OriginX, OriginZ, PerMetre, drawn);
                     Rgba = new byte[Width * Height * 4];
-                    NavBaseRaster.Compose(Rgba, cover, Width, Height, OriginX, OriginZ, PerMetre, Data,
+                    NavBaseRaster.Compose(Rgba, cover, Width, Height, OriginX, OriginZ, PerMetre, drawn,
                                           Building.r, Building.g, Building.b, Building.a, Water.r, Water.g, Water.b, Water.a);
                     Milliseconds = watch.Elapsed.TotalMilliseconds;
                 }
@@ -169,7 +176,7 @@ namespace RealLifeOverhaul.Nav
                 {
                     _data = kept;
                     _fromFile = true;
-                    if (_kept != null && _keptPrint == PrintOf(kept, Width, Height, OriginX, OriginZ, PerMetre, _building, _water))
+                    if (_kept != null && _keptPrint == PrintOf(WithMore(kept), Width, Height, OriginX, OriginZ, PerMetre, _building, _water))
                     {
                         Picture = _kept;   // the same city drawn the same way as at an earlier load
                         _stage = Stage.Done;
@@ -243,7 +250,7 @@ namespace RealLifeOverhaul.Nav
             double took = 0.0;
             while (_cursor < buildings.Length)
             {
-                int corners = NavBaseGame.Outline(buildings[_cursor], _cornerX, _cornerZ);
+                int corners = NotMeasured(buildings[_cursor]) ? 0 : NavBaseGame.Outline(buildings[_cursor], _cornerX, _cornerZ);
                 int outline = corners >= 3 ? NavBaseMath.Hull(_cornerX, _cornerZ, corners, _outX, _outZ, 0) : 0;
                 if (outline >= 3)
                 {
@@ -381,11 +388,67 @@ namespace RealLifeOverhaul.Nav
             _longestSlice = Math.Max(_longestSlice, took);
         }
 
+        // A building the mod made is left out of the measured city: the kept file is the game's city alone.
+        private static bool NotMeasured(CityBuildingController building)
+        {
+            Func<CityBuildingController, bool> made = NavBridges.NotMeasured;
+            return made != null && made(building);
+        }
+
+        /// <summary>True when the buildings the mod stands in the city have changed since the picture was drawn.</summary>
+        public bool Stale => _stage == Stage.Done && _data != null && MoreStamp() != _moreStamp;
+
+        /// <summary>The picture drawn again from the same city, with the mod's own buildings as they are now; nothing measured again.</summary>
+        public void Redraw()
+        {
+            if (_stage == Stage.Done && _data != null)
+            {
+                Draw(false);
+            }
+        }
+
+        private static int MoreStamp()
+        {
+            Func<int> stamp = NavBridges.MoreBuildingsStamp;
+            return stamp != null ? stamp() : 0;
+        }
+
+        // The city with the outlines of the mod's own buildings on top, as they stand now (their boxes, read on the main thread).
+        private NavBaseData WithMore(NavBaseData city)
+        {
+            _more.Clear();
+            _moreX.Clear();
+            _moreZ.Clear();
+            _moreStart.Clear();
+            NavBridges.MoreBuildings?.Invoke(_more);
+            for (int i = 0; i < _more.Count; i++)
+            {
+                int corners = NavBaseGame.Outline(_more[i], _cornerX, _cornerZ);
+                int outline = corners >= 3 ? NavBaseMath.Hull(_cornerX, _cornerZ, corners, _outX, _outZ, 0) : 0;
+                if (outline < 3)
+                {
+                    continue;
+                }
+                _moreStart.Add(_moreX.Count);
+                for (int k = 0; k < outline; k++)
+                {
+                    _moreX.Add(_outX[k]);
+                    _moreZ.Add(_outZ[k]);
+                }
+            }
+            _more.Clear();
+            return city.With(_moreX, _moreZ, _moreStart);
+        }
+
         private void Draw(bool settle)
         {
+            _moreStamp = MoreStamp();
+            NavBaseData drawn = WithMore(_data);
+            _moreDrawn = _moreStart.Count;
             _job = new Job
             {
                 Data = _data,
+                Drawn = drawn,
                 Settle = settle,
                 SaveTo = _file,
                 Width = Width,
@@ -431,7 +494,7 @@ namespace RealLifeOverhaul.Nav
             _stage = Stage.Done;
             Logger?.Info("Navigation: the minimap's buildings and water made: " + job.Width + " x " + job.Height + " pixels (" + (1f / job.PerMetre).ToString("F2", CultureInfo.InvariantCulture)
                          + " m a pixel, "
-                         + (job.Rgba.Length / 1048576f).ToString("F1", CultureInfo.InvariantCulture) + " MB), " + job.Drawn + " buildings and " + job.WaterCells + " squares of water of "
+                         + (job.Rgba.Length / 1048576f).ToString("F1", CultureInfo.InvariantCulture) + " MB), " + job.Outlined + " buildings (" + _moreDrawn + " of them the mod's own) and " + job.WaterCells + " squares of water of "
                          + _data.Cells.Length + ", "
                          + (_fromFile
                              ? "read from the mod's folder"

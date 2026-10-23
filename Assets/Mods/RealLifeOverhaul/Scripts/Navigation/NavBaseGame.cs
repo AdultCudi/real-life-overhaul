@@ -100,7 +100,41 @@ namespace RealLifeOverhaul.Nav
             {
                 return 0;
             }
-            MeshRenderer simple = building.lodVersion;
+            int boxed = Outline(building.lodVersion, x, z);
+            if (boxed > 0)
+            {
+                return boxed;
+            }
+            Renderer[] all = building.Renderers;
+            if (all == null)
+            {
+                return 0;
+            }
+            bool any = false;
+            Bounds whole = default;
+            for (int i = 0; i < all.Length; i++)
+            {
+                Renderer renderer = all[i];
+                if (renderer == null || renderer.bounds.size.sqrMagnitude < 0.01f)
+                {
+                    continue;
+                }
+                if (!any)
+                {
+                    whole = renderer.bounds;
+                    any = true;
+                }
+                else
+                {
+                    whole.Encapsulate(renderer.bounds);
+                }
+            }
+            return any && Upright(whole, x, z) ? 4 : 0;
+        }
+
+        /// <summary>The outline of a building's box (the game's LOD box of it) from above, as <see cref="Outline(CityBuildingController, float[], float[])"/> reads it; 0 with none.</summary>
+        public static int Outline(MeshRenderer simple, float[] x, float[] z)
+        {
             if (simple != null)
             {
                 // A mesh not in a static batch still has its own box, which keeps the building's turn.
@@ -130,31 +164,7 @@ namespace RealLifeOverhaul.Nav
                     return 4;
                 }
             }
-            Renderer[] all = building.Renderers;
-            if (all == null)
-            {
-                return 0;
-            }
-            bool any = false;
-            Bounds whole = default;
-            for (int i = 0; i < all.Length; i++)
-            {
-                Renderer renderer = all[i];
-                if (renderer == null || renderer.bounds.size.sqrMagnitude < 0.01f)
-                {
-                    continue;
-                }
-                if (!any)
-                {
-                    whole = renderer.bounds;
-                    any = true;
-                }
-                else
-                {
-                    whole.Encapsulate(renderer.bounds);
-                }
-            }
-            return any && Upright(whole, x, z) ? 4 : 0;
+            return 0;
         }
 
         private static bool Upright(Bounds box, float[] x, float[] z)

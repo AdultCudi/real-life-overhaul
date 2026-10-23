@@ -61,6 +61,7 @@ namespace RealLifeOverhaul
         private Type[] _switcherTypes;
 
         private int _surveyCursor;
+        private int _handedTaken;   // how many of Handed this instance has put in its survey
         private Cell _working;   // a square half-way through being held
         private bool _stale;
         private bool _settled;   // the last look found every square as it should be
@@ -69,6 +70,85 @@ namespace RealLifeOverhaul
         private Vector3 _lastChecked;
         private bool _hooked, _alarmed;
         private int _heldRenderers, _heldCells, _scenery, _leftAlone, _movingMask;
+
+        // The buildings the mod stands in the city (Scripts/NewBuildings) live in no scene of scenery, so they are handed in;
+        // each instance takes what was handed in since it last looked into its survey at its next tick.
+        private static readonly List<MeshRenderer> Handed = new List<MeshRenderer>(512);
+        private static readonly List<MeshRenderer> HandedNow = new List<MeshRenderer>(64);
+        // Renderers whose drawing the mod holds itself (a building's look hidden under a copy): never taken or given back here.
+        private static readonly HashSet<int> LeftAlone = new HashSet<int>();
+
+        /// <summary>Hands in the mesh renderers of a building the mod stood in the city; each instance sorts them into its squares at its next tick.</summary>
+        public static void Include(Transform root)
+        {
+            if (root == null)
+            {
+                return;
+            }
+            root.GetComponentsInChildren(true, HandedNow);
+            Handed.AddRange(HandedNow);
+            HandedNow.Clear();
+        }
+
+        /// <summary>
+        /// Leaves a renderer's drawing to the mod (<paramref name="leave"/>), or gives it back; true when a square held now
+        /// has it, so it is to be out of the picture. A pass over the held squares: for a look hidden or shown, not per frame.
+        /// </summary>
+        public static bool LeaveAlone(Renderer renderer, bool leave)
+        {
+            if (renderer == null)
+            {
+                return false;
+            }
+            if (leave)
+            {
+                LeftAlone.Add(renderer.GetInstanceID());
+                return false;
+            }
+            LeftAlone.Remove(renderer.GetInstanceID());
+            foreach (PerfTweak tweak in PerfTweaks.All)
+            {
+                if (tweak is FarDistricts far && far.Active && far.HoldsNow(renderer))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>The city is going: what the mod handed in and left alone is forgotten.</summary>
+        public static void Release()
+        {
+            Handed.Clear();
+            LeftAlone.Clear();
+        }
+
+        private bool HoldsNow(Renderer renderer)
+        {
+            foreach (Cell cell in _cells)
+            {
+                if (cell.Held && (cell.Taken.Contains(renderer as MeshRenderer) || cell.TakenOff.Contains(renderer as MeshRenderer)))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // What the mod handed in since this instance last looked, into the survey (a city gone forgets it all).
+        private void TakeHanded()
+        {
+            if (_handedTaken > Handed.Count)
+            {
+                _handedTaken = 0;
+            }
+            while (_handedTaken < Handed.Count)
+            {
+                _survey.Add(Handed[_handedTaken++]);
+            }
+        }
+
+        private static bool Kept(Renderer renderer) => LeftAlone.Count > 0 && LeftAlone.Contains(renderer.GetInstanceID());
 
         /// <param name="byEnabled">False: forceRenderingOff on every mesh renderer. True: the benchmark trial, by enabled.</param>
         public FarDistricts(bool byEnabled)
@@ -152,6 +232,7 @@ namespace RealLifeOverhaul
         // the timer only takes squares out; OnCameraRendering gives them back the moment it is needed
         protected override void Tick(float now)
         {
+            TakeHanded();
             if (_surveyCursor < _survey.Count)
             {
                 Survey();
@@ -337,9 +418,9 @@ namespace RealLifeOverhaul
             for (; cell.Cursor < cell.Scenery.Count && slice.More(); cell.Cursor++)
             {
                 MeshRenderer renderer = cell.Scenery[cell.Cursor];
-                if (renderer == null || !cell.Bounds.Contains(renderer.transform.position))
+                if (renderer == null || !cell.Bounds.Contains(renderer.transform.position) || Kept(renderer))
                 {
-                    continue;   // gone, or moved since it was sorted: it may stand in view
+                    continue;   // gone, moved since it was sorted (it may stand in view), or its drawing is the mod's
                 }
                 if (_byEnabled)
                 {
@@ -433,7 +514,7 @@ namespace RealLifeOverhaul
         {
             foreach (MeshRenderer renderer in taken)
             {
-                if (renderer == null)
+                if (renderer == null || Kept(renderer))
                 {
                     continue;
                 }
