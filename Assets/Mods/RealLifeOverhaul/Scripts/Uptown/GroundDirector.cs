@@ -16,8 +16,9 @@ namespace RealLifeOverhaul.Uptown
     /// block's ground to copy); then the backdrop is put away where the band stands, its streets go into the traffic through
     /// 1st Avenue's own junctions and its corner at 9th Street, its street art is copied, both walking meshes grow over its
     /// ground from Manhattan's carriageways and pavements (walking round whatever stands on it), the old walls open and new
-    /// ones close its edge, its ground and road colliders, the map's bounds and its bus termini are laid; once the game is
-    /// loaded, its parking and its pedestrians' zones. Where the game has put something of its own there (a free update),
+    /// ones close its edge, its ground and road colliders, the map's bounds, its fog cut away (GroundDirector.Fog) and its
+    /// bus termini are laid; once the game is loaded, its parking and its pedestrians' zones. Where the game has put
+    /// something of its own there (a free update),
     /// the step that finds it stands down with one line and everything laid before it is given back the same load, so the
     /// district never covers the game's. Its option, the city check and the session (<see cref="GroundSession"/>) decide
     /// first; nothing is saved or sent. The lots open when it stands (<see cref="UptownLots"/>), before the city's
@@ -63,6 +64,7 @@ namespace RealLifeOverhaul.Uptown
 
         private void OnDestroy()
         {
+            GroundGame.UncutFog();   // the fog is the game's object: its own mesh back on every way out, what stands staying or not
             bool stays = Meta.SaveTools.Dormant;   // the save tools stopped the mod in a city that stays: what stands stays until it goes
             if (!stays)
             {
@@ -187,6 +189,7 @@ namespace RealLifeOverhaul.Uptown
             {
                 Logger?.Warn("Uptown: the city map's camera was not found, so the map does not reach over the district at this load; the district stands all the same.");
             }
+            LayFog();
             LayoutPlans.Termini(_termini);
             for (int i = 0; i < _termini.Count; i++)
             {
@@ -251,6 +254,7 @@ namespace RealLifeOverhaul.Uptown
             StopCount();
             UptownLots.Close(why, e => Logger?.Error(e));
             GroundGame.Unpopulate();
+            GroundGame.UncutFog();
             Logger?.Info("Uptown: closed until the next load (" + why + "); its ground stays until the city goes.");
         }
 

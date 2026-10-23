@@ -22891,5 +22891,8 @@
   "reallife_bld_rival_office_none": "Sem escritório na cidade neste carregamento",
   "reallife_bld_rival_office_go": "Definir como destino",
   "reallife_bld_rival_office_set": "O escritório da {rival} em {address} agora é o seu destino.",
-  "reallife_bld_office_about": "Uma das construtoras da cidade. Disputa as obras da cidade com as outras construtoras e ergue prédios novos nos lotes livres do Uptown."
+  "reallife_bld_office_about": "Uma das construtoras da cidade. Disputa as obras da cidade com as outras construtoras e ergue prédios novos nos lotes livres do Uptown.",
+  "reallife_uptown_ground_test_fog": "Uptown: a neblina do mapa da cidade",
+  "reallife_uptown_ground_fog_cut": "Uptown: no mapa da cidade, a neblina da borda foi retirada de cima do distrito, e todas as {places} partes do terreno dele estão livres dela. O Player.log tem a verificação.",
+  "reallife_uptown_ground_fog_over": "Uptown: no mapa da cidade, a neblina da borda ainda cobre o distrito neste carregamento. O Player.log diz por quê."
 }

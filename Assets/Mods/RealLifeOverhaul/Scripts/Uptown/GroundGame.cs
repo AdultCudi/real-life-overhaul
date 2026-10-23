@@ -5,12 +5,14 @@ using UnityEngine.SceneManagement;
 namespace RealLifeOverhaul.Uptown
 {
     /// <summary>
-    /// Where Uptown's ground meets the game's scene, its one Game file with its part for the street art (GroundGame.Art):
-    /// the backdrop round the city (the game's MapBorder) found once a load and put away where the band stands, its block
+    /// Where Uptown's ground meets the game's scene, its one Game file with its parts for the street art (GroundGame.Art)
+    /// and the city map's fog (GroundGame.Fog): the backdrop round the city (the game's MapBorder) found once a load and
+    /// put away where the band stands, its block
     /// grounds kept as the lots' ground, and the one stray of the Hamptons' standing on it (a bicycle); the game's invisible
     /// walls across the old street ends and 1st Avenue's two ends switched off and new ones built round the band's edge as
     /// the game's own; the band's ground and road colliders, as the city's ground ends short of Uptown Avenue; the city
-    /// map's bounds widened over it. The same load the district stands down, all is given back as it was; when the city
+    /// map's bounds widened over it and its fog cut away over it. The same load the district stands down, all is given
+    /// back as it was; when the city
     /// goes, what is the mod's goes and what is the game's goes with its scene. Nothing is saved. Called at the load and by
     /// the tests, never per frame.
     /// </summary>
@@ -365,6 +367,7 @@ namespace RealLifeOverhaul.Uptown
         public static void Forget()
         {
             DropArt();
+            UncutFog();
             if (_ground != null)
             {
                 Object.Destroy(_ground);
