@@ -167,7 +167,7 @@ namespace RealLifeOverhaul
                 {
                     promised |= state.Mayor.Platform[i] == CivicCatalogue.IndexOf(policy);
                 }
-                string text = CivicText.T(promised ? "reallife_civic_policy_page_promised" : "reallife_civic_policy_page", "policy", CivicText.T(policy.Name), "effect", CivicText.Effect(policy));
+                string text = CivicText.T(promised ? "reallife_civic_policy_page_promised" : "reallife_civic_policy_page", "policy", CivicText.T(policy.Name), "effect", CivicText.Full(policy));
                 int next = index + 1;
                 return CityHallPhone.Page(text, "reallife_civic_button_next", () => Policies(next), "reallife_civic_button_back", () => Topic(0));
             }
@@ -188,7 +188,7 @@ namespace RealLifeOverhaul
                         PolicyDef policy = CivicCatalogue.Find((Lever)change.Lever, change.Position);
                         PolicyDef old = CivicCatalogue.Find((Lever)change.Lever, state.Levers[change.Lever]);
                         text.Append('\n').Append(policy != null
-                            ? CivicText.T("reallife_civic_pending_line", "days", Mathf.Max(0, change.Day - Day).ToString(), "policy", CivicText.T(policy.Name), "effect", CivicText.Effect(policy))
+                            ? CivicText.T("reallife_civic_pending_line", "days", Mathf.Max(0, change.Day - Day).ToString(), "policy", CivicText.T(policy.Name), "effect", CivicText.Full(policy))
                             : CivicText.T("reallife_civic_pending_ends", "days", Mathf.Max(0, change.Day - Day).ToString(), "policy", old != null ? CivicText.T(old.Name) : string.Empty));
                     }
                 }
@@ -567,7 +567,7 @@ namespace RealLifeOverhaul
             GovState state = gov.State;
             PolicyDef policy = CivicCatalogue.All[state.PetitionPolicy];
             string text = CivicText.T(state.PetitionMine ? "reallife_civic_petition_page_mine" : "reallife_civic_petition_page")
-                .Replace("{policy}", CivicText.T(policy.Name)).Replace("{effect}", CivicText.Effect(policy))
+                .Replace("{policy}", CivicText.T(policy.Name)).Replace("{effect}", CivicText.Full(policy))
                 .Replace("{signed}", state.PetitionSigned.ToString("N0")).Replace("{needed}", state.PetitionNeeded.ToString("N0"))
                 .Replace("{days}", Mathf.Max(0, state.PetitionEnds - Day).ToString());
             if (state.PetitionISigned)
@@ -603,7 +603,7 @@ namespace RealLifeOverhaul
                     continue;
                 }
                 int next = index + 1;
-                return CityHallPhone.Page(CivicText.T("reallife_civic_petition_propose", "policy", CivicText.T(policy.Name), "effect", CivicText.Effect(policy)),
+                return CityHallPhone.Page(CivicText.T("reallife_civic_petition_propose", "policy", CivicText.T(policy.Name), "effect", CivicText.Full(policy)),
                     "reallife_civic_button_start_this", () =>
                     {
                         string result = Gov != null ? Gov.StartPetition(index, Day) : "reallife_civic_closed";

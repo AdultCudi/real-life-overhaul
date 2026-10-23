@@ -95,6 +95,7 @@ namespace RealLifeOverhaul.Construction
             MarketDay(day);
             OpenedDay(day);
             ShowDay(day);
+            CityDay(day);
             if (Verbose)
             {
                 double ms = (System.Diagnostics.Stopwatch.GetTimestamp() - began) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
@@ -125,6 +126,14 @@ namespace RealLifeOverhaul.Construction
                     else if (paid)
                     {
                         _state.Firm.Spent += c.Rate;
+                    }
+                    if (paid)
+                    {
+                        PayArrears(c, day);   // what the crew was owed from before, now the cash is there
+                    }
+                    else
+                    {
+                        OweWages(c, day);     // owed: paid when the cash is there, or the crew goes to court
                     }
                 }
                 c.IdleDays = atWork ? 0 : c.IdleDays + 1;
@@ -274,7 +283,7 @@ namespace RealLifeOverhaul.Construction
                         continue;
                     }
                     bool empty = _state.OnLot(l.Id) == null && LandRules.Empty(l.EmptySince, day);
-                    int tax = LandRules.LandTax(l.Paid, day - l.TaxedTo, year, empty);
+                    int tax = LandRules.LandTax(l.Paid, day - l.TaxedTo, year, empty, Permits());
                     ConstructionGame.Force(tax, empty ? "reallife_transaction_bld_vacant_tax" : "reallife_transaction_bld_land_tax", LotWords(l.Id), true);
                     _state.Firm.Spent += tax;
                     l.TaxedTo = day;
@@ -366,6 +375,10 @@ namespace RealLifeOverhaul.Construction
             {
                 return;
             }
+            if (final && LateClient(p, pay, ConstructionGame.Day))
+            {
+                return;   // the client's bill: paid late, or chased and taken to court (ConstructionDirector.Bills)
+            }
             p.ClientPaid += pay;
             _state.Firm.Earned += pay;
             ConstructionGame.Give(pay, "reallife_transaction_bld_contract", ProjectName(p));
@@ -424,7 +437,7 @@ namespace RealLifeOverhaul.Construction
                 LotFile l = _state.Lots[i];
                 if (l.ZoneAsk != 0 && day >= l.ZoneDay)
                 {
-                    ZoneVote(l);
+                    HearZoning(l, false);
                 }
             }
         }
@@ -464,29 +477,6 @@ namespace RealLifeOverhaul.Construction
                     }
                     break;
             }
-        }
-
-        private void ZoneVote(LotFile l)
-        {
-            BuildUse use = BuildUse.Homes;
-            for (int u = 0; u < (int)BuildUse.Count; u++)
-            {
-                if ((l.ZoneAsk & BuildCatalogue.Zone((BuildUse)u)) != 0)
-                {
-                    use = (BuildUse)u;
-                }
-            }
-            Lot(l.Id, out LotView lot);
-            int odds = LandRules.ZoneOdds(use, lot.Class, Permits(), _state.Firm.Reputation);
-            bool yes = PlanningRules.ZoneVote(_state.Seed, l.Id, use, odds);
-            if (yes)
-            {
-                l.Zones |= l.ZoneAsk;
-            }
-            l.ZoneAsk = 0;
-            Logger?.Info("Construction: the council voted on " + use + " for lot " + l.Id + " (odds " + odds + " in 1000): " + (yes ? "agreed" : "refused") + ".");
-            Tell(yes ? NotificationType.Success : NotificationType.Warning, yes ? "reallife_bld_notice_zone_yes" : "reallife_bld_notice_zone_no", LotWords(l.Id), BuildCatalogue.UseKeys[(int)use],
-                TabLand, 0);
         }
 
         // ------------------------------------------------------------------ risks

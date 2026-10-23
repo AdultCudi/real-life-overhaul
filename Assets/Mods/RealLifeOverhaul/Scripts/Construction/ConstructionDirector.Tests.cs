@@ -343,7 +343,7 @@ namespace RealLifeOverhaul.Construction
                     if (_state.Lots[i].ZoneAsk != 0)
                     {
                         BeforeTest();
-                        ZoneVote(_state.Lots[i]);
+                        HearZoning(_state.Lots[i], true);
                         votes++;
                     }
                 }
@@ -872,6 +872,7 @@ namespace RealLifeOverhaul.Construction
                 }
                 back.LastDay = Math.Max(back.LastDay, _state.LastDay);
                 BuildState was = _state;
+                int withdrawn = CityBack(back);   // the court's cases and claims the tests filed, taken back unheard
                 _state = back;
                 _beforeTests = null;
                 _testLots.Clear();
@@ -881,7 +882,8 @@ namespace RealLifeOverhaul.Construction
                 int interiors = SalesBack(was);
                 _backDone = true;
                 Logger?.Info("Construction check (back): the state from before the tests is back (" + _state.Projects.Count + " project(s), " + _state.Crews.Count + " crew(s)); " + dropped
-                             + " site(s) the tests began taken away, " + interiors + " business interior(s) a test refitted put back, the show flat as it was; money moved since stays moved: PASS.");
+                             + " site(s) the tests began taken away, " + withdrawn + " case(s) and claim(s) of theirs taken back, " + interiors
+                             + " business interior(s) a test refitted put back, the show flat as it was; money moved since stays moved: PASS.");
                 TestDone("the construction game is as it was before the tests", TabOverview, 0);
             });
         }

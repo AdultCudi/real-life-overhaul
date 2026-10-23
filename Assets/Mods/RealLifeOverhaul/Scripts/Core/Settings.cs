@@ -46,6 +46,7 @@
         public const string ConstructionRisksId = "construction_risks";            // ...theft, storms and faults on the sites
         public const string ConstructionShowFlatsId = "construction_show_flats";   // ...show flats for a block's off plan buyers
         public const string ConstructionRenovationsId = "construction_renovations"; // ...refits of the player's own businesses, and businesses' refits to tender
+        public const string ConstructionCityId = "construction_city";              // ...the city around it: rigged tenders, unpaid bills, the building of the year
         public const string CameraFovId = "camera_fov";
         public const string CameraHeightId = "camera_height";
         public const string CarCameraId = "car_camera";
@@ -374,6 +375,7 @@
         public static bool ConstructionRisks = true;       // theft, storm damage and faults coming to light on the company's works
         public static bool ConstructionShowFlats = true;   // a show flat dressed in one of the show flats' designs for a block sold off plan, with its viewings
         public static bool ConstructionRenovations = true; // the player's businesses refitted by their company or a contractor, and businesses' refits out to tender
+        public static bool ConstructionCity = true;        // rigged tenders, unpaid bills taken to court, and the City Ledger's building of the year
         public static int CameraFov = 55;        // degrees, vertical
         public static bool LifeEvents = true;
         public static int EventFrequency = 5;        // about this many random events per game week
@@ -736,6 +738,7 @@
             ConstructionRisks = Bool(modId, ConstructionRisksId, ConstructionRisks);
             ConstructionShowFlats = Bool(modId, ConstructionShowFlatsId, ConstructionShowFlats);
             ConstructionRenovations = Bool(modId, ConstructionRenovationsId, ConstructionRenovations);
+            ConstructionCity = Bool(modId, ConstructionCityId, ConstructionCity);
             CameraFov = Int(modId, CameraFovId, CameraFov);
             CameraHeight = Int(modId, CameraHeightId, CameraHeight);
             CarCamera = Bool(modId, CarCameraId, CarCamera);

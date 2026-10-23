@@ -243,7 +243,7 @@ namespace RealLifeOverhaul.Construction
     }
 
     /// <summary>The construction game in one save. Game-free: the director tells it the day and the game's figures.</summary>
-    public sealed class BuildState
+    public sealed partial class BuildState
     {
         public int Seed;
         public int FirstDay, LastDay;

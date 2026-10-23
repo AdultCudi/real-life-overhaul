@@ -135,6 +135,45 @@ namespace RealLifeOverhaul.Construction
         /// <summary>Where the council's permits policy stands, -1 to 1. Default: 0.</summary>
         public static Func<int> Permits;
 
+        // ------------------------------------------------------------------ the city's council and its courts
+
+        /// <summary>A change of the permits policy on its way (its position and day) and the next election's day; false for no change. Default: none.</summary>
+        public static CodeChange CodeAhead;
+
+        public delegate bool CodeChange(out int position, out int day, out int election);
+
+        /// <summary>The day the city's one council next hears planning business, from a day. Default: a Thursday's sitting (LandRules.CouncilDay).</summary>
+        public static Func<int, int> CouncilDay;
+
+        /// <summary>The council hears a zoning application: 1 carried, 0 refused, -1 before it still (a meeting the player sits in). Default: the planners' own odds.</summary>
+        public static CouncilHearing Council;
+
+        public delegate int CouncilHearing(string lot, int lotClass, int use, int suit, int reputation, bool now, out int ayes, out int noes);
+
+        /// <summary>A civil claim the company brings for a debt: the amount, the defendant in words, its strength in thousandths. Its number, or 0. Default: none.</summary>
+        public static Func<long, string, int, int> Sue;
+
+        /// <summary>Where a claim the company brought stands: -1 before the court, 1 won (paid), 0 lost, -2 not known. Default: not known.</summary>
+        public static Func<int, int> SuitResult;
+
+        /// <summary>A civil claim against the player for a debt of the company's: the amount, the claimant, what it is for. Its number, or 0. Default: none.</summary>
+        public static Func<long, string, string, int> Unpaid;
+
+        /// <summary>A case opened for bid rigging that came out: the cut taken. Its number, or 0. Default: none.</summary>
+        public static Func<long, int> BidRigging;
+
+        /// <summary>Test: a case (0), a claim against the player (1) or a claim of the company's (2) taken back unheard. Default: no.</summary>
+        public static Func<int, int, bool> Withdraw;
+
+        /// <summary>The player's followers on Flare, for the city's vote on the building of the year. Default: none.</summary>
+        public static Func<int> Followers;
+
+        /// <summary>True while the courts take cases and claims (the justice system running). Default: no.</summary>
+        public static Func<bool> CourtOpen;
+
+        /// <summary>Test: the court hears one claim of the company's now; false for none to hear. Default: no.</summary>
+        public static Func<int, bool> HearClaim;
+
         // ------------------------------------------------------------------ money
 
         /// <summary>The business loan's rate at the player's rating, per cent a year; NaN for none. Default: none.</summary>
@@ -242,6 +281,17 @@ namespace RealLifeOverhaul.Construction
             AdvanceSite = null;
             Ground = null;
             Permits = null;
+            CodeAhead = null;
+            CouncilDay = null;
+            Council = null;
+            Sue = null;
+            SuitResult = null;
+            Unpaid = null;
+            BidRigging = null;
+            Withdraw = null;
+            Followers = null;
+            CourtOpen = null;
+            HearClaim = null;
             BusinessRate = null;
             BankName = null;
             Credit = null;

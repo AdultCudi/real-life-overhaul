@@ -14,7 +14,7 @@ namespace RealLifeOverhaul.Construction
     /// </summary>
     public sealed partial class ConstructionDirector
     {
-        public const int TabOverview = 0, TabLand = 1, TabProjects = 2, TabTenders = 3, TabCrews = 4, TabCompany = 5, TabRivals = 6;
+        public const int TabOverview = 0, TabLand = 1, TabProjects = 2, TabTenders = 3, TabCrews = 4, TabCompany = 5, TabRivals = 6, TabCity = 7;
 
         private static readonly string[] AppGlyphs = { "Icon-Building", "Icon-Edit", "Icon-Info" };
         private const float RibbonReach = 4f;   // m from the opening's place: the panel offers the ribbon

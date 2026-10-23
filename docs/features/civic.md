@@ -88,7 +88,7 @@ Nothing the game saves is written by a policy.
 | Transit | subway +1 a ride; buses x1.3 as often (bus fares do not change) | subway -1; buses x0.75 as often |
 | Cleaning | sweepers x2.5, mood +3, levy +30 | sweepers x0.3, mood -3, 25 returned |
 | Night life | licensed until 04:00 (bridge), crime x1.1 | until midnight (bridge), crime x0.92 |
-| Permits | sites x1.35 and until 19:00; complaints only noted | sites x0.75, 08:00 to 16:00; one complaint brings quiet hours |
+| Permits | sites x1.35 and until 19:00; complaints only noted; the building code: the new district's 12 storeys and a third more elsewhere, a third fewer parking spaces, the planning fee 40 % lower, the surcharge on land kept empty doubled | sites x0.75, 08:00 to 16:00; one complaint brings quiet hours; the building code: 8 storeys in the new district and a third fewer elsewhere, half as many parking spaces again, the planning fee half as much again, the surcharge halved |
 | Events | street events x1.5 (bridge), mood +2, levy +40 | x0.5, 30 returned |
 | Wages | floor of 16 an hour, against the wage at today's prices with any raise, billed as a top-up | the city pays 5 % of the wage bill |
 
@@ -161,6 +161,7 @@ Police and streets take 8 % a step off the crime and accidents the city counts, 
 A deficit runs the reserve down and costs up to ten points (with the option off the budget is kept as data and does nothing).
 
 A vote on a lever that touches the player's businesses or property is a conflict of interest: declared, the player stands aside.
+The permits policy is the building code, and touches a builder: a vote on it, or on zoning, is a conflict for a player with a construction company or land in the new district (`ZoningBridges.Interest`), declared or not as any other.
 
 Not declared, it can come out within 21 days (4 % a day, 7 % if the vote decided it, more for somebody well known, twice as likely while no register of interests is filed; the register is due in the first 7 days): a scandal, and a summons for misconduct in public office if it decided the motion (`TaxCases.FileMisconduct`).
 
@@ -174,6 +175,15 @@ Standing hears of it (`FameCause.Office`: integrity and the papers' notice).
 The Planner has the last day to file, the debate, result night, an attack to answer, the meetings, the register, the budget and a recall vote.
 
 While the option is off nothing new begins and nothing is offered; papers already filed stay on the ballot and are counted, and an office held lasts to the next count with the council voting by itself.
+
+## The building rules and the one council (`CouncilZoning`, `CivicGovernment.Planning`, `CivicOffice.Planning`)
+
+- **The building code is the permits lever's.** The construction game's height limits, parking asked, planning fee and surcharge on land kept empty move with it (`CivicCatalogue.HeightPermille`, `UptownStoreys`, `ParkingPermille`, `PlanningFeePermille`, `VacantPermille`, read by Construction's `PlansRules` and `LandRules`): fast-track permits speak to growth, strict ones to living, as candidates promise, the winner phases them in and the council votes. `CivicText.Full` shows a policy with the code it carries wherever it is read at leisure (City Hall's policy and pending pages, the platform, the agenda, the meetings); a toast keeps to `Effect`.
+- **Voters react.** The new district's voters lean to growth at least 1.25 and to living at most 0.85 (`CouncilZoning.BuildingLean`, in `DistrictLean`, so in every count and every vote's record), where the city's wards know it (Uptown is the eighth).
+- **One council hears zoning.** The construction game's zoning applications (`ConstructionBridges.CouncilDay`, `Council`) are heard by the city's five: on a Thursday's planning sitting while the player is not on the council, each member for it by the planners' view of the land, the permits policy, the city's wish for growth against living, the mayor's line for their party and the applicant's standing (`CouncilZoning.MemberOdds`); with the player sitting, the application is on the agenda of their next meeting (`OfficeMotion.KindZoning`, `ToPlanning`), voted there with the player's vote and decided without them if they miss it; the result goes back to the builders (`ZoningBridges.Decided`).
+- **Running for office to change them.** A councillor or mayor tables the permits motion as any policy, and from City Hall's agenda pages (after the policies) a change of the new district's zoning: to allow a use on every lot of a class, or to stop allowing one the council allowed before (`TableZoning`, `ZoningBridges.Rezoned`). The office's line keeps zoning matters after everything an older version reads.
+- Going Public: the votes draw from the government's seed (the same on every machine); running for office is not offered in a session, so zoning there is always the council's own sitting; nothing is sent.
+- Tests (Options > Tests, in the construction section): "the building code under each permits policy" (`Wiring.CityTests.Code`, the policy put back as it stood) and "on the council, table the building code and zoning, and vote" (`Wiring.CityTests.Office`, the government and the office put back); their lines are `Civic check (building code)` and `Civic check (council motions)`.
 
 ## Construction sites
 

@@ -77,10 +77,23 @@ namespace RealLifeOverhaul.Construction
             .Column("reallife_bld_col_built", 220f, TableSort.Number, right: true)
             .Order(2, false);
 
+        // What a row of the City tab is: a rule of the building code, a matter before the council, a bill, the building of the year.
+        public const int CityRule = 0, CityCouncil = 1, CityBill = 2, CityAward = 3;
+        private static readonly string[] CityKinds = { "reallife_bld_kind_rule", "reallife_bld_kind_council", "reallife_bld_kind_bill", "reallife_bld_kind_award" };
+
+        /// <summary>City: 0 what, 1 how it stands, 2 amount, 3 when.</summary>
+        public static readonly TableSpec City = new TableSpec("Construction", "City")
+            .Column("reallife_bld_col_what", 620f, TableSort.Text, flexible: true)
+            .Column("reallife_bld_col_state", 520f, TableSort.Text)
+            .Column("reallife_bld_col_value", 300f, TableSort.Money)
+            .Column("reallife_bld_col_when", 260f, TableSort.Text, right: true)
+            .Filter("reallife_bld_all_city", CityKinds);
+
         public static TableSpec For(int tab)
         {
             switch (tab)
             {
+                case ConstructionDirector.TabCity: return City;
                 case ConstructionDirector.TabLand: return Land;
                 case ConstructionDirector.TabProjects: return Projects;
                 case ConstructionDirector.TabTenders: return Tenders;

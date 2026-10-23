@@ -234,28 +234,32 @@ namespace RealLifeOverhaul.Construction
             return Math.Min(exits, 6);
         }
 
-        /// <summary>Parking spaces the council asks of a building of a use and floor area.</summary>
-        public static int ParkingNeeded(BuildUse use, int area)
+        /// <summary>Parking spaces the council asks of a building of a use and floor area, under the permits policy (-1 to 1) in force.</summary>
+        public static int ParkingNeeded(BuildUse use, int area, int permits = 0)
         {
             int u = BuildCatalogue.Clamp((int)use, 0, (int)BuildUse.Count - 1);
-            return Math.Max(0, area) / BuildCatalogue.ParkingPerSpace[u];
+            return (int)((long)(Math.Max(0, area) / BuildCatalogue.ParkingPerSpace[u]) * CivicCatalogue.ParkingPermille(permits) / 1000L);
         }
 
-        /// <summary>The storeys a district allows; a district the table does not know has the default (a free update's).</summary>
-        public static int HeightLimit(string district, bool uptown)
+        /// <summary>
+        /// The storeys a district allows under the permits policy in force (the elected government's building code); a district
+        /// the table does not know has the default (a free update's). The new district never allows more than its buildings take.
+        /// </summary>
+        public static int HeightLimit(string district, bool uptown, int permits = 0)
         {
             if (uptown)
             {
-                return BuildCatalogue.UptownHeightLimit;
+                return Math.Min(BuildCatalogue.UptownHeightLimit, CivicCatalogue.UptownStoreys(permits));
             }
+            int limit = BuildCatalogue.DefaultHeightLimit;
             for (int i = 0; i < BuildCatalogue.HeightDistricts.Length; i++)
             {
                 if (string.Equals(BuildCatalogue.HeightDistricts[i], district, StringComparison.Ordinal))
                 {
-                    return BuildCatalogue.HeightLimits[i];
+                    limit = BuildCatalogue.HeightLimits[i];
                 }
             }
-            return BuildCatalogue.DefaultHeightLimit;
+            return Math.Max(1, limit * CivicCatalogue.HeightPermille(permits) / 1000);
         }
 
         /// <summary>True when the plans need an engineer's sign off: a tall frame, or a rebuild's work on a standing one.</summary>
@@ -347,17 +351,18 @@ namespace RealLifeOverhaul.Construction
         /// <summary>
         /// What a building costs: its materials stage by stage (at the exchange's prices, by the usual merchant), the usual crews'
         /// days, the plant hired, the inspections and the planning fee, the parking under it, the fire exits after the first,
-        /// and the contingency. <paramref name="exchange"/> is each material's factor in thousandths (1000 where it has none).
+        /// and the contingency. <paramref name="exchange"/> is each material's factor in thousandths (1000 where it has none);
+        /// the fee and the parking are the building code's under the permits policy (-1 to 1) in force.
         /// </summary>
-        public static CostSheet Estimate(ProjectKind kind, BuildUse use, int area, int storeys, bool parkingUnder, int exits, int prices, int[] exchange)
+        public static CostSheet Estimate(ProjectKind kind, BuildUse use, int area, int storeys, bool parkingUnder, int exits, int prices, int[] exchange, int permits = 0)
         {
             int hours = Hours(use, area, storeys, kind);
             CostSheet sheet = Works(kind, hours, storeys, prices, exchange, -1, use, area);
             long build = sheet.Materials + sheet.Labour + sheet.Plant;
-            sheet.Fees += PlanningFee(build, prices);
+            sheet.Fees += PlanningFee(build, prices, permits);
             if (parkingUnder)
             {
-                sheet.Parking = (long)ParkingNeeded(use, area) * BuildCatalogue.ParkingSpaceCost * prices / 1000L;
+                sheet.Parking = (long)ParkingNeeded(use, area, permits) * BuildCatalogue.ParkingSpaceCost * prices / 1000L;
             }
             if (exits > 1)
             {
@@ -409,10 +414,11 @@ namespace RealLifeOverhaul.Construction
             return sheet;
         }
 
-        /// <summary>The planning fee on a build of this cost.</summary>
-        public static long PlanningFee(long build, int prices)
+        /// <summary>The planning fee on a build of this cost, under the permits policy (-1 to 1) in force.</summary>
+        public static long PlanningFee(long build, int prices, int permits = 0)
         {
-            return (long)BuildCatalogue.PlanningFee * prices / 1000L + Math.Max(0L, build) * BuildCatalogue.PlanningFeePermille / 1000L;
+            long fee = (long)BuildCatalogue.PlanningFee * prices / 1000L + Math.Max(0L, build) * BuildCatalogue.PlanningFeePermille / 1000L;
+            return fee * CivicCatalogue.PlanningFeePermille(permits) / 1000L;
         }
 
         /// <summary>How far an estimate may be out, in thousandths either way: an estimator on the staff, a practice's own, or none.</summary>

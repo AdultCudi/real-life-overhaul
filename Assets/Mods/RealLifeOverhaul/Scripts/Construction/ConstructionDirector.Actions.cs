@@ -199,7 +199,7 @@ namespace RealLifeOverhaul.Construction
             {
                 return "reallife_bld_answer_no_lot";
             }
-            if (LandRules.Zoned(l.Zones, use))
+            if (LandRules.Zoned(ZonesNow(l), use))
             {
                 return "reallife_bld_answer_zoned_already";
             }
@@ -213,7 +213,7 @@ namespace RealLifeOverhaul.Construction
             }
             _state.Firm.Spent += ZoneFee;
             l.ZoneAsk = BuildCatalogue.Zone(use);
-            l.ZoneDay = LandRules.CouncilDay(ConstructionGame.Day);
+            l.ZoneDay = CouncilDay(ConstructionGame.Day);   // the city's one council: its sitting, or the player's meeting
             Changed();
             return "reallife_bld_answer_zone_asked";
         }

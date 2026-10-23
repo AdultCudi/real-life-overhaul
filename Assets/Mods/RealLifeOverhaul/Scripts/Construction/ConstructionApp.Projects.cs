@@ -133,7 +133,7 @@ namespace RealLifeOverhaul.Construction
             if (p.Kind == ProjectKind.Plot && !asked && !p.PlansDone)
             {
                 LotFile lot = state.Lot(p.Lot);
-                int zones = lot != null ? lot.Zones : 15;
+                int zones = lot != null ? _director.ZonesNow(lot) : 15;
                 var uses = new List<BuildUse>(4);
                 for (int u = 0; u < (int)BuildUse.Count; u++)
                 {

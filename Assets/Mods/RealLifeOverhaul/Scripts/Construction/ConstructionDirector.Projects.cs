@@ -179,7 +179,7 @@ namespace RealLifeOverhaul.Construction
             {
                 return 0;
             }
-            BuildUse use = FirstZoned(owned.Zones, BuildCatalogue.ClassUse[BuildCatalogue.Clamp(lot.Class, 0, BuildCatalogue.ClassCount - 1)]);
+            BuildUse use = FirstZoned(_state.ZonesOf(owned, lot.Class), BuildCatalogue.ClassUse[BuildCatalogue.Clamp(lot.Class, 0, BuildCatalogue.ClassCount - 1)]);
             var p = new ProjectFile
             {
                 Id = _state.NewId(), Kind = ProjectKind.Plot, Stage = ProjectStage.Design, Created = ConstructionGame.Day, Lot = lotId, Use = use, Width = lot.Width, Depth = lot.Depth,
@@ -409,7 +409,7 @@ namespace RealLifeOverhaul.Construction
                 return "reallife_bld_answer_not_design";
             }
             LotFile lot = _state.Lot(p.Lot);
-            if (lot != null && !LandRules.Zoned(lot.Zones, use))
+            if (lot != null && !LandRules.Zoned(ZonesNow(lot), use))
             {
                 return "reallife_bld_answer_not_zoned";
             }
@@ -471,12 +471,13 @@ namespace RealLifeOverhaul.Construction
         /// <summary>What a project's plans come to: the estimate as the plans would show it, the requirements and the limit.</summary>
         public CostSheet Preview(ProjectFile p, out int exitsNeeded, out int parkingNeeded, out int limit, out bool engineer)
         {
+            int code = Permits();   // the building code the elected government has in force
             exitsNeeded = PlansRules.ExitsNeeded(p.Storeys, p.Area);
-            parkingNeeded = PlansRules.ParkingNeeded(p.Use, p.Area);
-            limit = PlansRules.HeightLimit(p.District, !string.IsNullOrEmpty(p.Lot));
+            parkingNeeded = PlansRules.ParkingNeeded(p.Use, p.Area, code);
+            limit = PlansRules.HeightLimit(p.District, !string.IsNullOrEmpty(p.Lot), code);
             engineer = PlansRules.NeedsEngineer(p.Storeys, p.Kind);
             Exchange(_exchange);
-            return PlansRules.Costed(PlansRules.Estimate(p.Model, p.Use, p.Area, p.Storeys, p.ParkingUnder, exitsNeeded, ConstructionGame.Prices, _exchange), p.CostPermille);
+            return PlansRules.Costed(PlansRules.Estimate(p.Model, p.Use, p.Area, p.Storeys, p.ParkingUnder, exitsNeeded, ConstructionGame.Prices, _exchange, code), p.CostPermille);
         }
 
         /// <summary>The architect's terms for a project's plans as chosen now.</summary>
@@ -644,7 +645,7 @@ namespace RealLifeOverhaul.Construction
         /// <summary>The fee City Hall asks for a project's application now.</summary>
         public long PlanningFee(ProjectFile p)
         {
-            return PlansRules.PlanningFee(Math.Max(0L, p.Estimate), ConstructionGame.Prices);
+            return PlansRules.PlanningFee(Math.Max(0L, p.Estimate), ConstructionGame.Prices, Permits());
         }
 
         /// <summary>A planning application made at City Hall: its fee, a decision in its working days. Returns a text key.</summary>
@@ -683,7 +684,7 @@ namespace RealLifeOverhaul.Construction
         {
             p.Consulted = true;
             int norm = Mathf.Max(2, p.Kind == ProjectKind.Rebuild ? p.Storeys : 4);
-            bool zoned = p.Kind != ProjectKind.Plot || (_state.Lot(p.Lot) is LotFile l && LandRules.Zoned(l.Zones, p.Use));
+            bool zoned = p.Kind != ProjectKind.Plot || (_state.Lot(p.Lot) is LotFile l && LandRules.Zoned(ZonesNow(l), p.Use));
             int parkingShort = p.ParkingUnder ? 0 : p.ParkingNeeded;
             p.Objections = PlanningRules.Objections(_state.Seed, p.Id * 13 + p.Applications, p.Storeys, norm, zoned, parkingShort, _state.Firm.Reputation, p.Quality);
             if (p.Objections > 0)
@@ -701,9 +702,11 @@ namespace RealLifeOverhaul.Construction
             {
                 Consult(p);
             }
-            int limit = PlansRules.HeightLimit(p.District, !string.IsNullOrEmpty(p.Lot));
+            // The code in force on the day decides: the height limit and the parking asked are the elected government's now.
+            int limit = HeightLimitOf(p);
+            p.ParkingNeeded = PlansRules.ParkingNeeded(p.Use, p.Area, Permits());
             bool engineerNeeded = PlansRules.NeedsEngineer(p.Storeys, p.Kind);
-            bool zoned = p.Kind != ProjectKind.Plot || (_state.Lot(p.Lot) is LotFile l && LandRules.Zoned(l.Zones, p.Use));
+            bool zoned = p.Kind != ProjectKind.Plot || (_state.Lot(p.Lot) is LotFile l && LandRules.Zoned(ZonesNow(l), p.Use));
             PlansRules.Unmet(p.Exits, p.ExitsNeeded, p.ParkingUnder, p.ParkingNeeded, p.Storeys, limit, engineerNeeded, p.Engineered, out int reasons);
             bool granted = PlanningRules.Decide(_state.Seed, p.Id, p.Applications, zoned, reasons, p.Quality, _state.Firm.Reputation, p.Objections, Permits(), out Refusal why);
             if (Verbose)
@@ -977,6 +980,10 @@ namespace RealLifeOverhaul.Construction
                 Refitted(p, quality);
                 p.Opened = p.Kind == ProjectKind.Refit;   // an interior has no opening day; a rebuild still has its ribbon
             }
+            if (p.Model != ProjectKind.Contract)
+            {
+                NoteFinished(AwardEntry.OfPlayer, p, p.Lot, p.Street, p.Number, p.Use, -1, quality, day - p.DueDay, day);   // a building: one of the year's, and the critic's opinion
+            }
             if (p.Model == ProjectKind.Plot && !string.IsNullOrEmpty(p.Lot))
             {
                 p.Value = ValueOf(p, out _);
@@ -984,6 +991,7 @@ namespace RealLifeOverhaul.Construction
                 {
                     p.After = AfterUse.SellFlats;
                     p.Flats = FlatsOf(p);
+                    LateBuyers(p, day);   // buyers who pay late keep their balance back, a bill of the company's
                     if (p.OffPlanBalance > 0)
                     {
                         long toPlayer = MoneyRules.Share(p.OffPlanBalance, p.LoanOwed, p.InvestorOwed, out long toLoan, out long toInvestor);

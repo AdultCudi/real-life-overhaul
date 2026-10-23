@@ -171,6 +171,8 @@ namespace RealLifeOverhaul.Construction
             dev.Handed = true;
             int rival = DevelopmentRules.Rival(lot.Id, use);
             _state.Rivals[rival].Built++;
+            NoteFinished(dev.Public ? AwardEntry.OfCity : AwardEntry.OfDevelopers, null, lot.Id, lot.Street, lot.Number, use, rival, Math.Min(95, _state.Rivals[rival].Reputation + 10), 0,
+                ConstructionGame.Day);
             if (dev.SiteId > 0)
             {
                 FinishSite(dev.SiteId);   // the frame comes down and the building's look stands, out of view
@@ -291,6 +293,7 @@ namespace RealLifeOverhaul.Construction
             }
             _state.Tenders.Add(t);
             Logger?.Info("Construction: tender " + t.Id + " (" + t.Source + ", kind " + t.CivicKind + ") opened for " + t.Value + ", closing at hour " + t.Closes + ".");
+            RingFor(t);
         }
 
         /// <summary>A tender in words: what the works are and where.</summary>
@@ -377,6 +380,7 @@ namespace RealLifeOverhaul.Construction
             {
                 _bids[count++] = TenderRules.RivalBid(_state.Seed, t.Id, r, t.Value, days, need, Busy(r));
             }
+            count = RingBids(t, days, need, count);   // a ring's bids are its own, or struck out when it was reported
             bool bid = t.BidPermille > 0 && Licensed;
             if (bid)
             {
@@ -389,6 +393,7 @@ namespace RealLifeOverhaul.Construction
             t.Winner = won.Bidder;
             t.WinningPrice = won.Price;
             t.WinningDays = won.Days;
+            RingAwarded(t, won, day);
             if (Verbose)
             {
                 Logger?.Info("Construction check (tender " + t.Id + "): " + count + " bids for " + t.Value + ", the best " + won.Bidder + " at "

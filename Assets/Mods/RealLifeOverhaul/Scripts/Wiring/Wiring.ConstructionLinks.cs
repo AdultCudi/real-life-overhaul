@@ -31,6 +31,10 @@ namespace RealLifeOverhaul
         ///   Record ... Storm          the record and the courts (Justice), Flare, Standing (Fame), the weather (Events)
         ///   Qualified ... DesignOf    the building trades (BuildTrades/TradesBridges): the player's own qualification and design
         ///   News.Extra                the morning's City Ledger
+        ///   CodeAhead ... Followers   the city around the company: the building code's change and the next election, the
+        ///                             one council's planning sitting and vote (Civic), the courts for a debt either way and a
+        ///                             ring found out (Justice), the player's following (Flare)
+        ///   ZoningBridges.*           what the council's planning business asks of the builders (Civic/ZoningBridges)
         ///
         ///   Lots ... Finish           the new district (Uptown): its lots, their traffic and sizes, its land's price, and a
         ///                             finished building handed to it (UptownLots, DistrictBuildings)
@@ -115,6 +119,25 @@ namespace RealLifeOverhaul
                 InteriorBridges.Renovate = Renovate;
                 InteriorBridges.Renovation = Renovation;
                 InteriorBridges.Renovates = () => Director != null && Director.RefitsOn;
+                ConstructionBridges.CodeAhead = CodeAhead;
+                ConstructionBridges.CouncilDay = CouncilDay;
+                ConstructionBridges.Council = Council;
+                ConstructionBridges.Sue = OwnClaims.File;
+                ConstructionBridges.SuitResult = OwnClaims.Result;
+                ConstructionBridges.Unpaid = BuildClaims.FileUnpaid;
+                ConstructionBridges.BidRigging = TaxCases.FileBidRigging;
+                ConstructionBridges.Withdraw = (kind, number) => kind == 0 ? TaxCases.Withdraw(number) : kind == 1 ? BuildClaims.Withdraw(number) : OwnClaims.Withdraw(number);
+                ConstructionBridges.Followers = Followers;
+                ConstructionBridges.CourtOpen = () => DebtClaims.Available;
+                ConstructionBridges.HearClaim = number => OwnClaims.HearNow(number, TimeHelper.CurrentDay);
+                ZoningBridges.Decided = (lot, use, carried, ayes, noes) => Director?.ZoneDecided(lot, use, carried, ayes, noes);
+                ZoningBridges.Rezoned = (lotClass, use, add) => Director?.ClassRezoned(lotClass, use, add);
+                ZoningBridges.Interest = () => Director != null && Director.Loaded && Director.Interest;
+                ZoningBridges.LotWords = lot => Director != null && Director.Loaded ? Director.LotWords(lot) : null;
+                ZoningBridges.ClassZones = lotClass => Director != null && Director.Loaded ? Director.ClassZones(lotClass) : LandRules.ZonesOf(lotClass);
+                ZoningBridges.FirstZonesOf = LandRules.ZonesOf;
+                ZoningBridges.Suit = (lotClass, use) => BuildCatalogue.ZoneOdds[Mathf.Clamp(use, 0, (int)BuildUse.Count - 1)][Mathf.Clamp(lotClass, 0, BuildCatalogue.ClassCount - 1)];
+                ZoningBridges.District = ConstructionDirector.DistrictLives;
                 _paperBefore = News.Extra;
                 News.Extra = Paper;
                 _accountsBefore = EconomyBridges.OtherAccounts;
@@ -171,6 +194,18 @@ namespace RealLifeOverhaul
                 InteriorBridges.Renovate = null;
                 InteriorBridges.Renovation = null;
                 InteriorBridges.Renovates = null;
+                ConstructionBridges.CodeAhead = null;
+                ConstructionBridges.CouncilDay = null;
+                ConstructionBridges.Council = null;
+                ConstructionBridges.Sue = null;
+                ConstructionBridges.SuitResult = null;
+                ConstructionBridges.Unpaid = null;
+                ConstructionBridges.BidRigging = null;
+                ConstructionBridges.Withdraw = null;
+                ConstructionBridges.Followers = null;
+                ConstructionBridges.CourtOpen = null;
+                ConstructionBridges.HearClaim = null;
+                ZoningBridges.Reset();
                 News.Extra = _paperBefore;
                 _paperBefore = null;
                 EconomyBridges.OtherAccounts = _accountsBefore;
@@ -584,6 +619,45 @@ namespace RealLifeOverhaul
                 }
             }
 
+            // ------------------------------------------------------------------ the city around the company
+
+            // The city's government while its elections run: the one council that hears planning business.
+            private static CivicGovernment Government()
+            {
+                CivicDirector civic = CivicDirector.Instance;
+                return civic != null && civic.Running && Settings.CivicElections ? civic.Government : null;
+            }
+
+            private static bool CodeAhead(out int position, out int day, out int election)
+            {
+                position = day = election = 0;
+                try
+                {
+                    CivicGovernment g = Government();
+                    if (g == null)
+                    {
+                        return false;
+                    }
+                    election = g.State.ElectionDay;
+                    for (int i = 0; i < g.State.Pending.Count; i++)
+                    {
+                        PendingChange change = g.State.Pending[i];
+                        if (change.Lever == (int)Lever.Permits)
+                        {
+                            position = change.Position;
+                            day = change.Day;
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.CodeAhead", e);
+                    return false;
+                }
+            }
+
             private static bool ShowFind(string id, out ShowDesignView view)
             {
                 view = default(ShowDesignView);
@@ -739,6 +813,49 @@ namespace RealLifeOverhaul
                 {
                     Fault("ConstructionLinks.Renovation", e);
                     return null;
+                }
+            }
+
+            private static int CouncilDay(int day)
+            {
+                try
+                {
+                    CivicGovernment g = Government();
+                    return g != null ? g.PlanningDay(day) : LandRules.CouncilDay(day);
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.CouncilDay", e);
+                    return LandRules.CouncilDay(day);
+                }
+            }
+
+            private static int Council(string lot, int lotClass, int use, int suit, int reputation, bool now, out int ayes, out int noes)
+            {
+                ayes = noes = 0;
+                try
+                {
+                    CivicGovernment g = Government();
+                    return g != null ? g.Hear(lot, lotClass, use, suit, reputation, now, TimeHelper.CurrentDay, out ayes, out noes) : -2;
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.Council", e);
+                    return -2;
+                }
+            }
+
+            private static int Followers()
+            {
+                try
+                {
+                    FlareFile file = FlareDirector.Instance != null ? FlareDirector.Instance.File : null;
+                    return file != null ? file.Followers : 0;
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.Followers", e);
+                    return 0;
                 }
             }
 
