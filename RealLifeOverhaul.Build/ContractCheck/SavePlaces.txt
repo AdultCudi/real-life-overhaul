@@ -1,0 +1,146 @@
+# The save's fields that can name a place of the mod's, and what the district save does with each (Scripts/DistrictSave,
+# docs/features/district-save.md). ContractCheck walks every type reachable from GameInstance in the game's assemblies on
+# disk and fails, naming the field, while this list is not exactly what it finds: a field a game update or a DLC adds.
+#
+#   path | what it holds | what the district save does
+#
+# What it holds: an address, a street's id and its number, a district's id, a position, or an id of someone or a plan
+# that leaves with a business; "(obsolete)": the game's binary save leaves it out (a JSON save would write it, and the
+# current game never sets it). What the district save does: a kind's code (Scripts/DistrictSave/DistrictSaveRules.cs),
+# where "a+b" is a inside a record that leaves (it goes with it) and b inside a record of the game's that stays; "display:"
+# a text read only for show, through lookups that are safe when nothing is found; "obsolete".
+
+GameInstance.CurrentStreetName | street | player
+GameInstance.CurrentStreetNumber | number | player
+GameInstance.LastPlayerPosition | position | player
+GameInstance.BuildingRegistrations[].StreetName | street | reg
+GameInstance.BuildingRegistrations[].StreetNumber | number | reg
+GameInstance.BuildingRegistrations[].scheduleDays[].workShifts[].employeeId | id | reg+shift
+GameInstance.BuildingRegistrations[].marketingCampaigns[].agencyAddress | address | reg+camp
+GameInstance.BuildingRegistrations[].aiEmployees[].aiAddress | address | reg+ai
+GameInstance.BuildingRegistrations[].poachedEmployees[].assignedAddress | address | reg+poach
+GameInstance.BuildingRegistrations[].poachedEmployees[].assignedHrManagerPlanId | id | reg+poach
+GameInstance.BuildingRegistrations[].poachedEmployees[].candidateInfo.sourceAddress | address | reg+poach
+GameInstance.BuildingRegistrations[].poachedEmployees[].candidateInfo.sourceHeadhunterId | id | display: where a candidate was found, read through null-safe lookups for its text alone (CandidateInfo.GetSource, MyEmployeeCandidateSection)
+GameInstance.BuildingRegistrations[].poachedEmployees[]<Entities.HRManager>.assignedEmployees[] | id (obsolete) | obsolete
+GameInstance.BuildingRegistrations[].poachedEmployees[]<Entities.LogisticsManager>.assignedWarehouseAddress | address (obsolete) | obsolete
+GameInstance.BuildingRegistrations[].poachedEmployees[]<Entities.LogisticsManager>.deliveryPlans[].deliveryTargetAddress | address (obsolete) | obsolete
+GameInstance.BuildingRegistrations[]<Entities.Warehouse>.vehicleSlots[].employeeDriverId | id | reg+slot
+GameInstance.JobInstances[].address | address | job
+GameInstance.Contacts[].messagesQueue[].contextAction.employeeInstanceId | id | msg
+GameInstance.Contacts[].messagesQueue[].contextAction.healthPlanOfferId | id | msg
+GameInstance.Contacts[].messagesQueue[].contextAction.salaryNegotiationId | id | msg
+GameInstance.Contacts[].messagesQueue[].data.address | address (obsolete) | obsolete
+GameInstance.Contacts[].streetName | street | contact
+GameInstance.Contacts[].streetNumber | number | contact
+GameInstance.VehicleInstances[].position | position | veh
+GameInstance.VehicleInstances[].streetName | street | veh
+GameInstance.VehicleInstances[].streetNumber | number | veh
+GameInstance.VehicleInstances[].parkingNeighbourhood | district | veh
+GameInstance.NeighbourhoodStats[].name | district | stat
+GameInstance.EmployeeInstances[].assignedAddress | address | emp
+GameInstance.EmployeeInstances[].assignedHrManagerPlanId | id | ehr
+GameInstance.EmployeeInstances[].candidateInfo.sourceAddress | address | emp+esrc
+GameInstance.EmployeeInstances[].candidateInfo.sourceHeadhunterId | id | display: where a candidate was found, read through null-safe lookups for its text alone (CandidateInfo.GetSource, MyEmployeeCandidateSection)
+GameInstance.EmployeeInstances[]<Entities.HRManager>.assignedEmployees[] | id (obsolete) | obsolete
+GameInstance.EmployeeInstances[]<Entities.LogisticsManager>.assignedWarehouseAddress | address (obsolete) | obsolete
+GameInstance.EmployeeInstances[]<Entities.LogisticsManager>.deliveryPlans[].deliveryTargetAddress | address (obsolete) | obsolete
+GameInstance.CandidateEmployeeInstances[].assignedAddress | address | cand
+GameInstance.CandidateEmployeeInstances[].assignedHrManagerPlanId | id | ehr
+GameInstance.CandidateEmployeeInstances[].candidateInfo.sourceAddress | address | cand
+GameInstance.CandidateEmployeeInstances[].candidateInfo.sourceHeadhunterId | id | display: where a candidate was found, read through null-safe lookups for its text alone (CandidateInfo.GetSource, MyEmployeeCandidateSection)
+GameInstance.CandidateEmployeeInstances[]<Entities.HRManager>.assignedEmployees[] | id (obsolete) | obsolete
+GameInstance.CandidateEmployeeInstances[]<Entities.LogisticsManager>.assignedWarehouseAddress | address (obsolete) | obsolete
+GameInstance.CandidateEmployeeInstances[]<Entities.LogisticsManager>.deliveryPlans[].deliveryTargetAddress | address (obsolete) | obsolete
+GameInstance.Loans[].bankAddress | address | loan
+GameInstance.Transactions[].address | address | tx
+GameInstance.Transactions[].data.address | address (obsolete) | obsolete
+GameInstance.customDestination | address | guide
+GameInstance.RecruitmentCampaigns[].agencyAddress | address | recr
+GameInstance.RecruitmentCampaigns[].businessAddress | address | recr
+GameInstance.RecruitmentCampaigns[].candidateEmployeeInstanceIds[] | id (obsolete) | obsolete
+GameInstance.DeliveryContracts[].wholesaleAddress | address | dlv
+GameInstance.DeliveryContracts[].businessAddress | address | dlv
+GameInstance.FurnitureDeliveryContracts[].fromAddress | address | furn
+GameInstance.FurnitureDeliveryContracts[].toAddress | address | furn
+GameInstance.FoodDeliveryContracts[].toAddress | address | food
+GameInstance.TodoTasks[].address | address | todo
+GameInstance.TodoTasks[].employeeId | id | todo
+GameInstance.marketEvents[].neighbourhood | district | mkt
+GameInstance.marketEvents[].address | address | mkt
+GameInstance.financialSummaries[].businessIncomeStatements[].Address | address | stmtb
+GameInstance.financialSummaries[].residentialStatements[].Address | address | stmth
+GameInstance.financialSummaries[].realEstateStatements[].Address | address | stmte
+GameInstance.productMarketEntries[].demandValues[].neighborhood | district | dem
+GameInstance.buildingsForSale[].address | address | sale
+GameInstance.realEstate[].address | address | deed
+GameInstance.notifications[].data.address | address text (obsolete) | obsolete
+GameInstance.notifications[].data.towAddress | address text (obsolete) | obsolete
+GameInstance.healthInsurancePlanOffers[].hrManagerPlanId | id | ins
+GameInstance.healthInsurancePlanOffers[].hrManagerId | id (obsolete) | obsolete
+GameInstance.candidateSalaryNegotiations[].employeeInstance.assignedAddress | address | nego
+GameInstance.candidateSalaryNegotiations[].employeeInstance.assignedHrManagerPlanId | id | nego+ehr
+GameInstance.candidateSalaryNegotiations[].employeeInstance.candidateInfo.sourceAddress | address | nego
+GameInstance.candidateSalaryNegotiations[].employeeInstance.candidateInfo.sourceHeadhunterId | id | display: where a candidate was found, read through null-safe lookups for its text alone (CandidateInfo.GetSource, MyEmployeeCandidateSection)
+GameInstance.candidateSalaryNegotiations[].employeeInstance<Entities.HRManager>.assignedEmployees[] | id (obsolete) | obsolete
+GameInstance.candidateSalaryNegotiations[].employeeInstance<Entities.LogisticsManager>.assignedWarehouseAddress | address (obsolete) | obsolete
+GameInstance.candidateSalaryNegotiations[].employeeInstance<Entities.LogisticsManager>.deliveryPlans[].deliveryTargetAddress | address (obsolete) | obsolete
+GameInstance.interiorInstallationFirmContracts[].interiorInstallationFirmAddress | address | inst
+GameInstance.interiorInstallationFirmContracts[].addressToDoTheInstallation | address | inst
+GameInstance.movingServiceContracts[].movingCompanyRegistration.StreetName | street | move
+GameInstance.movingServiceContracts[].movingCompanyRegistration.StreetNumber | number | move
+GameInstance.movingServiceContracts[].movingCompanyRegistration.scheduleDays[].workShifts[].employeeId | id | move
+GameInstance.movingServiceContracts[].movingCompanyRegistration.marketingCampaigns[].agencyAddress | address | move
+GameInstance.movingServiceContracts[].movingCompanyRegistration.aiEmployees[].aiAddress | address | move
+GameInstance.movingServiceContracts[].movingCompanyRegistration.poachedEmployees[].assignedAddress | address | move
+GameInstance.movingServiceContracts[].movingCompanyRegistration.poachedEmployees[].assignedHrManagerPlanId | id | move
+GameInstance.movingServiceContracts[].movingCompanyRegistration.poachedEmployees[].candidateInfo.sourceAddress | address | move
+GameInstance.movingServiceContracts[].movingCompanyRegistration.poachedEmployees[].candidateInfo.sourceHeadhunterId | id | display: where a candidate was found, read through null-safe lookups for its text alone (CandidateInfo.GetSource, MyEmployeeCandidateSection)
+GameInstance.movingServiceContracts[].movingCompanyRegistration.poachedEmployees[]<Entities.HRManager>.assignedEmployees[] | id (obsolete) | obsolete
+GameInstance.movingServiceContracts[].movingCompanyRegistration.poachedEmployees[]<Entities.LogisticsManager>.assignedWarehouseAddress | address (obsolete) | obsolete
+GameInstance.movingServiceContracts[].movingCompanyRegistration.poachedEmployees[]<Entities.LogisticsManager>.deliveryPlans[].deliveryTargetAddress | address (obsolete) | obsolete
+GameInstance.movingServiceContracts[].movingCompanyRegistration<Entities.Warehouse>.vehicleSlots[].employeeDriverId | id | move
+GameInstance.movingServiceContracts[].originMovingAddress | address | move
+GameInstance.movingServiceContracts[].destinationMovingAddress | address | move
+GameInstance.specialRivalStates[].defenseStates[].affectedEmployeeIds[] | id | def
+GameInstance.importPartnerships[].headquartersAddress | address | imp
+GameInstance.importPartnerships[].importAddress | address | imp
+GameInstance.importPartnerships[].employeeInstanceId | id | imp
+GameInstance.importPartnerships[].products[].assignedWarehouse | address | imp+prod
+GameInstance.itemsOrderedThisWeekByImporter{key} | address | ord
+GameInstance.logisticsManagerPlans[].assignedEmployeeId | id | logi
+GameInstance.logisticsManagerPlans[].headquartersAddress | address | logi
+GameInstance.logisticsManagerPlans[].targetAddress | address | logi
+GameInstance.logisticsManagerPlans[].destinations[].deliveryTargetAddress | address | logi+dest
+GameInstance.headhunterPlans[].assignedEmployeeId | id | head
+GameInstance.headhunterPlans[].headquartersAddress | address | head
+GameInstance.headhunterPlans[].assignedHrPlans[] | id | headhr
+GameInstance.headhunterPlans[].headhunterReplacementDataList[].employeeInstance.assignedAddress | address | head+repl
+GameInstance.headhunterPlans[].headhunterReplacementDataList[].employeeInstance.assignedHrManagerPlanId | id | head+repl
+GameInstance.headhunterPlans[].headhunterReplacementDataList[].employeeInstance.candidateInfo.sourceAddress | address | head+repl
+GameInstance.headhunterPlans[].headhunterReplacementDataList[].employeeInstance.candidateInfo.sourceHeadhunterId | id | display: where a candidate was found, read through null-safe lookups for its text alone (CandidateInfo.GetSource, MyEmployeeCandidateSection)
+GameInstance.headhunterPlans[].headhunterReplacementDataList[].employeeInstance<Entities.HRManager>.assignedEmployees[] | id (obsolete) | obsolete
+GameInstance.headhunterPlans[].headhunterReplacementDataList[].employeeInstance<Entities.LogisticsManager>.assignedWarehouseAddress | address (obsolete) | obsolete
+GameInstance.headhunterPlans[].headhunterReplacementDataList[].employeeInstance<Entities.LogisticsManager>.deliveryPlans[].deliveryTargetAddress | address (obsolete) | obsolete
+GameInstance.hrManagerPlans[].assignedEmployeeId | id | hr
+GameInstance.hrManagerPlans[].headquartersAddress | address | hr
+GameInstance.hrManagerPlans[].assignedEmployees[] | id | hr+hrid
+GameInstance.pricingManagerPlans[].assignedEmployeeId | id | price
+GameInstance.pricingManagerPlans[].headquartersAddress | address | price
+GameInstance.pricingManagerPlans[].supervisedNeighborhood | district | price
+GameInstance.pricingManagerPlans[].originalStorePrices[].storeAddress | address | price+store
+GameInstance.currentPlayerMission<Player.PlayerMissions.DeliveryDriverMission>.startAddress | address | mission
+GameInstance.currentPlayerMission<Player.PlayerMissions.DeliveryDriverMission>.destinations[].address | address | mission
+GameInstance.currentPlayerMission<Player.PlayerMissions.DeliveryDriverMission>.pinnedAddress | address | mission
+GameInstance.currentPlayerMission<Player.PlayerMissions.FoodDeliveryMission>.destinationAddress | address | mission
+GameInstance.foodDeliveryOffers[].pickupAddress | address | offer
+GameInstance.foodDeliveryOffers[].destinationAddress | address | offer
+GameInstance.deliveryJobLocationsDoneToday[] | address | done
+GameInstance.vehicleDeliveryContracts[].deliveryAddress | address | vdc
+GameInstance.vehicleDeliveryContracts[].vehicleStoreAddress | address | vdc
+GameInstance.privateDriverVehicleInstances[].position | position | pdv
+GameInstance.privateDriverVehicleInstances[].streetName | street | pdv
+GameInstance.privateDriverVehicleInstances[].streetNumber | number | pdv
+GameInstance.privateDriverVehicleInstances[].parkingNeighbourhood | district | pdv
+GameInstance.disabledLicensingFees[].address | address | feeoff
+GameInstance.paidLicensingFeesToday[].Item1 | address | feepaid

@@ -91,6 +91,7 @@ internal static partial class Program
             KeyClashes(files, mod);   // the walk key against every key of the game's, the mod's and the system's (KeyClashChecks.cs)
             Languages(managed, root);
             CityGame(files, locale);   // the game's districts, DLCs and scenes against what the mod knows (CityChecks.cs)
+            SavePlaces(files, scripts);   // every field of the save that can name a place, against what the district save handles (SavePlaceChecks.cs)
         }
         Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
         return _failed == 0 ? 0 : 1;
