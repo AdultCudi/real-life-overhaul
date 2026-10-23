@@ -97,10 +97,24 @@ namespace RealLifeOverhaul.NewBuildings
     {
         public const string Prefix = "reallife:street_";   // the game's own begin "ba:street_"
 
-        public static readonly MadeStreet[] All =
+        public static readonly MadeStreet[] All = WithDistricts(new[]
         {
             new MadeStreet(Prefix + "provinglane", NewBuildingsText.StreetProvingLane, "PRL", false),
-        };
+        });
+
+        // The mod's own streets, then those of its districts (Uptown's, Scripts/Uptown/LayoutStreets.cs), so a building on a
+        // district's lot has an address the game writes and finds.
+        private static MadeStreet[] WithDistricts(MadeStreet[] own)
+        {
+            Uptown.LayoutStreet[] uptown = Uptown.LayoutStreets.All;
+            var all = new MadeStreet[own.Length + uptown.Length];
+            own.CopyTo(all, 0);
+            for (int i = 0; i < uptown.Length; i++)
+            {
+                all[own.Length + i] = new MadeStreet(uptown[i].Id, uptown[i].NameKey, uptown[i].Abbreviation, uptown[i].Avenue);
+            }
+            return all;
+        }
 
         /// <summary>True for a street of the mod's own, whether or not a building of it stands in this city. A string test.</summary>
         public static bool IsMine(string street)

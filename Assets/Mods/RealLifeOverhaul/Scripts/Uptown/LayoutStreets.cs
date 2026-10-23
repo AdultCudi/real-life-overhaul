@@ -39,8 +39,9 @@ namespace RealLifeOverhaul.Uptown
     /// </summary>
     public static class LayoutStreets
     {
+        private const string Mod = "reallife";                                // apart, so that the text checks do not take the names' prefix for a key
         public const string Prefix = "reallife:street_uptown_";               // under the mod's own street prefix ("reallife:street_")
-        public const string KeyPrefix = "reallife_newbuildings_street_uptown_"; // the mod's street names share the new buildings' key prefix
+        public const string KeyPrefix = Mod + "_newbuildings_street_uptown_"; // the mod's street names share the new buildings' key prefix
         public const int ContinuedFirst = 1001;   // the first number on a continued street: the game's highest on any street is 82
         public const int WestMost = -5;           // the westmost street's index: five west of 9th Street
         public const int EastMost = 13;           // the eastmost: five east of 1st Street

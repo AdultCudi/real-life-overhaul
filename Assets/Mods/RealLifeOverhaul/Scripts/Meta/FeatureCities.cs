@@ -129,6 +129,7 @@ namespace RealLifeOverhaul.Meta
             new Line("meals", CityScope.AnyCity, "meals and music"),
             new Line("newground", CityScope.NewYork, "new ground laid on New York's map, against its walking meshes, road grid and lanes"),
             new Line("newbuildings", CityScope.NewYork, "buildings of the mod's own on lots measured from New York's map"),
+            new Line("uptown", CityScope.NewYork, "a district north of New York's Manhattan, laid against its streets, walking meshes and backdrop"),
         };
 
         private static Dictionary<string, Line> _byFeature;

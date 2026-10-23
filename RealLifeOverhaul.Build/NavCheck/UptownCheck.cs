@@ -8,7 +8,7 @@ using System.Text.RegularExpressions;
 using RealLifeOverhaul.NewGround;
 using RealLifeOverhaul.Uptown;
 
-// Uptown's ground (Uptown/LayoutRules.cs, LayoutPlans.cs, LayoutStreets.cs, Lots.cs and the folder's sources): the band's
+// Uptown's ground (Uptown/LayoutRules.cs, LayoutPlans.cs, LayoutStreets.cs, UptownLots.cs and the folder's sources): the band's
 // streets on the game's own grid, the lots round its blocks in Manhattan's mix with their classes' footprints, clear of
 // the streets and of one another, their ids, streets and numbers fixed; the first block's 80 to 100 lots on the ground
 // it lays; its streets built as lanes and joined through 1st Avenue's own junctions (a model of each, from the game's
@@ -26,8 +26,12 @@ internal static partial class Program
         UptownRoadChecks(print);
         UptownWalkChecks();
         UptownPlaceChecks();
+        UptownCountChecks();
+        UptownLifeChecks();
         UptownTimingChecks();
         UptownSourceChecks(scripts);
+        UptownGameSourceChecks(scripts);
+        UptownTextChecks(scripts);
     }
 
     // ---------------------------------------------------------------- the streets
@@ -421,13 +425,14 @@ internal static partial class Program
         Check(player.Boxes.Concat(npc.Boxes).All(b => { b.Extent(out _, out float bz0, out _, out float bz1); return bz0 >= LayoutPlans.ArmFrom - 0.01f && bz1 <= 626f; }),
             "uptown walking: every box north of 1st Avenue's road, none past Uptown Avenue's north pavement");
         Check(player.Boxes.Concat(npc.Boxes).All(b => Near(b.Top, LayoutPlans.GroundTop) && b.HalfX > 0.2f && b.HalfZ > 0.2f), "uptown walking: every box flat at the ground's height, none a sliver");
-        // The game's own colliders measured on the north arms' pavements (Build 3682) are never under a box.
+        // The game's own colliders measured on the north arms' pavements (Build 3682) are never under a box, nor the
+        // backdrop's buildings east of 1st Street, which stay (their walls stand 0.3 m onto its east pavement).
         float[][] game =
         {
             new[] { -309.0f, -307.8f, 478.9f, 479.9f }, new[] { -47.3f, -46.7f, 480.9f, 503.7f }, new[] { 127.4f, 128.8f, 479.0f, 480.2f }, new[] { 140.0f, 141.8f, 482.1f, 483.4f },
             new[] { 127.3f, 127.8f, 485.2f, 508.9f }, new[] { 214.3f, 214.5f, 480.0f, 506.8f }, new[] { 215.2f, 217.0f, 482.2f, 483.5f }, new[] { 227.3f, 229.1f, 484.5f, 485.8f },
             new[] { 302.5f, 304.3f, 484.6f, 485.9f }, new[] { 314.6f, 316.4f, 482.1f, 483.4f }, new[] { 386.7f, 389.6f, 478.2f, 508.9f }, new[] { 401.9f, 403.7f, 482.1f, 483.4f },
-            new[] { -205.8f, -155.8f, 478.5f, 508.5f }
+            new[] { -205.8f, -155.8f, 478.5f, 508.5f }, new[] { 405.2f, 431.4f, 478.0f, 500.2f }, new[] { 405.1f, 434.0f, 500.0f, 523.9f }
         };
         foreach (float[] g in game)
         {
@@ -489,6 +494,63 @@ internal static partial class Program
         Check(LayoutRules.FirstLots.All(l => l.Z + 40f <= LayoutPlans.MapNorth), "uptown map: the city map's bounds reach 40 m past every first lot, as a made building needs");
     }
 
+    // ---------------------------------------------------------------- what the census counts, and the lots' life at a load
+
+    private static void UptownCountChecks()
+    {
+        var modules = new List<ModulePlace>();
+        LayoutPlans.Modules(modules);
+        var old = new List<float>();
+        LayoutPlans.OldWalls(old, out _);
+        var zones = new List<PlanBox>();
+        LayoutPlans.Zones(zones);
+        Check(LayoutPlans.StreetCount == 9 && LayoutPlans.ModuleCount == modules.Count && LayoutPlans.OldWallCount == old.Count && LayoutPlans.ZoneCount == zones.Count,
+            "uptown census: it expects the modules, walls and zones the plans lay (" + LayoutPlans.ModuleCount + ", " + LayoutPlans.OldWallCount + ", " + LayoutPlans.ZoneCount + ")");
+        int streets = modules.Count(m => m.Kind == ModuleKind.Street), avenues = modules.Count(m => m.Kind == ModuleKind.Avenue);
+        Check(LayoutPlans.ParkingCount == streets * LayoutPlans.StreetParking + avenues * LayoutPlans.AvenueParking && LayoutPlans.ParkingCount == 25,
+            "uptown census: a parking lane along each copied street and two along each length of avenue (" + LayoutPlans.ParkingCount + ")");
+        bool nearest = true;
+        for (float x = -400f; x <= 500f; x += 2.5f)
+        {
+            int k = LayoutPlans.NearestLanes(x);
+            float best = Enumerable.Range(0, 9).Where(LayoutPlans.HasLanes).Min(s => Math.Abs(LayoutRules.StreetX(s) - x));
+            nearest &= LayoutPlans.HasLanes(k) && Near(Math.Abs(LayoutRules.StreetX(k) - x), best, 0.001f);
+        }
+        Check(nearest && LayoutPlans.NearestLanes(LayoutRules.StreetX(4)) != 4, "uptown census: a walk from Manhattan starts at the nearest street with lanes, never 5th Street");
+    }
+
+    private static void UptownLifeChecks()
+    {
+        int stamp = UptownLots.Stamp;
+        UptownLots.Begin("the city is loading");
+        Check(!UptownLots.Ready && !UptownLots.Closed && UptownLots.Why == "the city is loading" && !UptownLots.Open(LayoutRules.FirstLots[0]),
+            "uptown lots: a load begins with nothing open and why");
+        UptownLots.Laid(true, null);
+        Check(UptownLots.Ready && UptownLots.Why == null && UptownLots.Stamp == stamp + 1 && UptownLots.Open(LayoutRules.FirstLots[0]) && !UptownLots.Open(LayoutRules.Lots.First(l => !l.First)),
+            "uptown lots: laid, the first block opens and the stamp moves once");
+        var heard = new List<string>();
+        Action<string> first = why => heard.Add("first " + UptownLots.Ready);
+        Action<string> faulty = why => throw new InvalidOperationException("a handler's fault");
+        Action<string> last = why => heard.Add("last " + why);
+        UptownLots.Closing += first;
+        UptownLots.Closing += faulty;
+        UptownLots.Closing += last;
+        int faults = 0;
+        UptownLots.Close("the test's clean-up", e => faults++);
+        UptownLots.Close("again", e => faults++);
+        UptownLots.Closing -= first;
+        UptownLots.Closing -= faulty;
+        UptownLots.Closing -= last;
+        Check(heard.Count == 2 && heard[0] == "first True" && heard[1] == "last the test's clean-up" && faults == 1,
+            "uptown lots: closing tells every handler first, while the lots are still open, a faulty one apart, and only once");
+        Check(UptownLots.Closed && !UptownLots.Ready && UptownLots.Why.Contains("the test's clean-up") && UptownLots.Stamp == stamp + 2 && !UptownLots.Open(LayoutRules.FirstLots[0]),
+            "uptown lots: closed until the next load, with why, the stamp moved again");
+        UptownLots.Begin("the city is loading");
+        Check(!UptownLots.Closed && !UptownLots.Ready, "uptown lots: the next load opens the way again");
+        UptownLots.Laid(false, null);
+        Check(!UptownLots.Ready && UptownLots.Why != null, "uptown lots: a step that stood down without a reason still says something");
+    }
+
     // ---------------------------------------------------------------- the cost
 
     private static void UptownTimingChecks()
@@ -509,7 +571,7 @@ internal static partial class Program
         string folder = Path.Combine(scripts, "Uptown");
         string[] files = Directory.GetFiles(folder, "*.cs");
         var code = files.ToDictionary(Path.GetFileName, f => Code(File.ReadAllText(f)));
-        foreach (string name in new[] { "Lots.cs", "LayoutRules.cs", "LayoutPlans.cs", "LayoutStreets.cs" })
+        foreach (string name in new[] { "UptownLots.cs", "LayoutRules.cs", "LayoutPlans.cs", "LayoutStreets.cs" })
         {
             Check(code.ContainsKey(name), "uptown sources: " + name + " is there");
             if (code.TryGetValue(name, out string text))
@@ -522,6 +584,131 @@ internal static partial class Program
             Check(!Regex.IsMatch(file.Value, @"\bSystem\.Linq\b|using System\.Linq"), "uptown sources: no LINQ (" + file.Key + ")");
             Check(!Regex.IsMatch(file.Value, @"new System\.Random\(\)|\bUnityEngine\.Random\b|\bRandom\.Range\b|DateTime\.Now"), "uptown sources: nothing left to chance or the clock (" + file.Key + ")");
             Check(!Regex.IsMatch(file.Value, @"\bmodData\b|\bSaveHook\b|\bSend\("), "uptown sources: nothing saved or sent (" + file.Key + ")");
+        }
+    }
+
+    // The game's side: the scene touched in the Game files alone, the load's order, what stands down gives back, the
+    // session asked, the contract's line, the director's place in the city's load, the shared lines.
+    private static void UptownGameSourceChecks(string scripts)
+    {
+        string folder = Path.Combine(scripts, "Uptown");
+        var code = Directory.GetFiles(folder, "*.cs").ToDictionary(Path.GetFileName, f => Code(File.ReadAllText(f)));
+        string[] mine = { "GroundGame.cs", "GroundGame.Art.cs", "GroundDirector.cs", "GroundDirector.Tests.cs", "GroundSession.cs", "GroundGuide.cs", "GroundText.cs" };
+        foreach (string name in mine)
+        {
+            Check(code.ContainsKey(name), "uptown sources: " + name + " is there");
+        }
+        if (!mine.All(code.ContainsKey))
+        {
+            return;
+        }
+        var scene = new Regex(@"\b(?:Object\.Instantiate|Instantiate\(|SetActive\(|AddComponent<|GetComponentsInChildren<|SceneManager\.|DestroyImmediate|\.enabled = |\.bounds = |redTrafficLight)");
+        foreach (var file in code)
+        {
+            bool gameFile = file.Key.StartsWith("GroundGame", StringComparison.Ordinal);
+            Check(gameFile || !scene.IsMatch(file.Value), "uptown sources: " + file.Key + (gameFile ? " is a Game file" : " leaves the scene to the Game files"));
+            Check(!Regex.IsMatch(file.Value, @"\bGetField\(|\bGetProperty\(|\bGetMethod\(|BindingFlags|MP(?:Server|Client|Config)"),
+                "uptown sources: " + file.Key + " reads nothing by name; the game through the contract, Going Public through GoingPublic");
+            Check(!Regex.IsMatch(file.Value, @"\bvoid\s+(?:Update|LateUpdate|FixedUpdate)\s*\(") || file.Key == "GroundDirector.cs",
+                "uptown sources: only the director has a frame method (" + file.Key + ")");
+        }
+        string director = code["GroundDirector.cs"], tests = code["GroundDirector.Tests.cs"], art = code["GroundGame.Art.cs"], game = code["GroundGame.cs"];
+        string session = code["GroundSession.cs"];
+        int Order(string text, string what) => text.IndexOf(what, StringComparison.Ordinal);
+        string[] steps =
+        {
+            "GroundSession.Agrees(", "GroundGame.FindBackdrop()", "GroundGame.FindTemplates()", "GroundGame.HideBackdrop(", "GroundGame.OpenWalls(",
+            "GroundWork.Streets(", "GroundWork.Ground(LayoutPlans.PlayerGround())", "GroundWork.TakeBack(", "GroundWork.Ground(LayoutPlans.NpcGround())",
+            "GroundGame.Build(", "GroundGame.CopyArt(", "GroundGame.WidenMap(", "TransitMap.AddTerminus(", "ScenePrewarm.AddLate(", "UptownLots.Laid(_walkable"
+        };
+        bool ordered = true;
+        for (int i = 0; i < steps.Length; i++)
+        {
+            ordered &= Order(director, steps[i]) >= 0 && (i == 0 || Order(director, steps[i]) > Order(director, steps[i - 1]));
+        }
+        Check(ordered, "uptown load: asked, found, the backdrop and the old walls put away (the ground's check counts what is left), the streets, the player's ground "
+                       + "(or the streets taken back), the pedestrians', the new walls and colliders, the art, the map, the terminus, the late parking and people, "
+                       + "then the lots open; in that order");
+        Check(Regex.Matches(director, @"StandDown\(""its streets: "" \+ why, true\)|StandDown\(""its ground for the player: "" \+ why, true\)").Count == 2
+              && Regex.IsMatch(director, @"StandDown\(why, false\)") && Regex.IsMatch(director, @"if \(laid\)\s*\{\s*GroundGame\.GiveBack\(\);"),
+            "uptown load: every step that stands down after the backdrop was put away gives it all back the same load, with one line");
+        Check(Regex.IsMatch(director, @"private void Awake\(\)\s*\{[^}]*UptownLots\.Begin\([^}]*Lay\(\);") && director.Contains("UptownLots.Laid(false, stays ?"),
+            "uptown lots: closed as a load begins, opened by the ground's step alone, closed again when the city goes");
+        Check(Regex.IsMatch(session, @"if \(!Settings\.Uptown\)") && session.Contains("GoingPublic.RefusesOtherMods") && session.Contains("GoingPublic.ModsAsHost")
+              && Order(session, "Settings.Uptown") < Order(session, "GoingPublic.IsHost"),
+            "uptown session: the option first, then a session's host that refuses other mods and a guest whose mods are the host's");
+        Check(code.Where(f => f.Key != "GroundSession.cs" && f.Key != "GroundGuide.cs").All(f => !f.Value.Contains("Settings.Uptown")),
+            "uptown session: the option is read through the session's one question");
+        Check(art.Contains("GameContract.RoadStreetName.Ok") && art.Contains("GameContract.RoadStreetName.Field.SetValue(") && code.Where(f => f.Key != "GroundGame.Art.cs").All(f => !f.Value.Contains("RoadStreetName")),
+            "uptown sources: the street's label written through the contract's line, in the Game file");
+        Check(Regex.IsMatch(art, @"_art = new GameObject\(ArtName\);\s*_art\.SetActive\(false\);") && Order(art, "_art.SetActive(true);") > Order(art, "Strip(copy);")
+              && Order(art, "_art.SetActive(true);") > Order(art, "Wire(copy, build"),
+            "uptown art: the copies made asleep and woken together once stripped and wired");
+        Check(Regex.Matches(art, @"SceneFinds\.All<").Count == 2 && !Regex.IsMatch(game + art, @"FindObjects|GameObject\.Find\("), "uptown art: two searches of the scene, behind the loading screen, through SceneFinds");
+        Check(game.Contains("ShowBackdrop();") && game.Contains("CloseWalls();") && Regex.IsMatch(game, @"public static void Forget\(\)\s*\{\s*DropArt\(\);"),
+            "uptown sources: the backdrop and the walls given back on a stand-down, the mod's own pieces when the city goes");
+        Check(tests.Contains("\"Uptown check (path, \"") && tests.Contains("\"Uptown check (traffic): ") && tests.Contains("\"Uptown check (census): ")
+              && Regex.Matches(tests, @"TestRefusals\.(?:Tell|TellKey)\(").Count >= 6,
+            "uptown tests: each says why it did not start and writes one check line");
+        string mod = Code(File.ReadAllText(Path.Combine(scripts, "Core", "RealLifeOverhaulMod.cs")));
+        int uptown = Order(mod, "Guard.Add<Uptown.GroundDirector>(_root)"), buildings = Order(mod, "Guard.Add<NewBuildings.NewBuildingsDirector>(_root)"),
+            prewarm = Order(mod, "ScenePrewarm.Begin()"), ground = Order(mod, "Guard.Add<NewGround.GroundDirector>(_root)");
+        Check(uptown > ground && uptown < buildings && buildings < prewarm, "uptown load: the director added after new ground's, before the new buildings' and the scene's prewarm");
+        string cities = Code(File.ReadAllText(Path.Combine(scripts, "Meta", "FeatureCities.cs")));
+        string tree = Code(File.ReadAllText(Path.Combine(scripts, "Meta", "OptionsTree.cs")));
+        string streets = Code(File.ReadAllText(Path.Combine(scripts, "NewBuildings", "NewBuildingsRules.cs")));
+        string contract = Code(File.ReadAllText(Path.Combine(scripts, "Core", "GameContract.cs")));
+        Check(cities.Contains("new Line(\"uptown\", CityScope.NewYork,") && tree.Contains("S(\"uptown\").For(\"uptown\").Main(\"uptown\")") && streets.Contains("Uptown.LayoutStreets.All")
+              && Regex.IsMatch(contract, @"RoadStreetName = Optional\(Field\(UptownLabels, Game, ""Road"", ""streetName"", ""String""\)\)"),
+            "uptown sources: New York's alone, its section on the options page, its streets among the mod's own, the label's field an optional line of the contract");
+    }
+
+    // The texts: every key the folder names in the three languages, short, without dashes or exclamation marks; the street
+    // names fixed words in every language; and What's new's line in all nine, before the first fix.
+    private static void UptownTextChecks(string scripts)
+    {
+        string folder = Path.Combine(scripts, "Uptown");
+        string locales = Path.GetFullPath(Path.Combine(scripts, @"..\Locales"));
+        var named = Directory.GetFiles(folder, "Ground*.cs").SelectMany(f => Regex.Matches(File.ReadAllText(f), "\"(reallife_[a-z_]+)\"").Select(m => m.Groups[1].Value))
+                             .Concat(new[] { "reallife_opt_sec_uptown", "reallife_opt_tip_uptown" }).Concat(LayoutStreets.All.Select(s => s.NameKey)).Distinct().ToList();
+        Check(named.Count >= 35, "uptown texts: its texts are found: " + named.Count);
+        foreach (string language in new[] { "en", "pt", "zh-cn" })
+        {
+            using JsonDocument doc = JsonDocument.Parse(File.ReadAllText(Path.Combine(locales, language + ".json")));
+            foreach (string key in named)
+            {
+                Check(doc.RootElement.TryGetProperty(key, out JsonElement value) && value.GetString().Length > 0, "uptown texts: " + key + " is in " + language + ".json");
+                if (language == "en" && doc.RootElement.TryGetProperty(key, out JsonElement en) && key != "reallife_opt_tip_uptown")
+                {
+                    Check(en.GetString().Length <= 240, "uptown texts: " + key + " is at most 240 characters");
+                    Check(!Regex.IsMatch(en.GetString(), "[–—!]| - "), "uptown texts: " + key + " has no dash and no exclamation mark");
+                }
+            }
+            foreach (LayoutStreet s in LayoutStreets.All)
+            {
+                Check(doc.RootElement.TryGetProperty(s.NameKey, out JsonElement name) && Regex.IsMatch(name.GetString(), @"^(?:\d+(?:st|nd|rd|th)|[A-Z][a-z]+) (?:Street|Avenue)$"),
+                    "uptown texts: " + s.Id + " is named as the game names its own streets, in " + language);
+            }
+        }
+        var fixMark = new Dictionary<string, string>
+        {
+            { "en", "Fixed: " }, { "pt", "Corrigido: " }, { "zh-cn", "已修复：" }, { "de", "Behoben: " }, { "fr", "Corrigé : " }, { "es", "Corregido: " },
+            { "ru", "Исправлено: " }, { "nl", "Opgelost: " }, { "tr", "Düzeltildi: " }
+        };
+        var piece = new Dictionary<string, string>
+        {
+            { "en", "Manhattan now goes on north past 1st Avenue into Uptown" }, { "pt", "Manhattan agora segue para o norte depois da 1st Avenue" },
+            { "zh-cn", "曼哈顿现在越过 1st Avenue 继续向北延伸" }, { "de", "Manhattan geht jetzt hinter der 1st Avenue nach Norden weiter" },
+            { "fr", "Manhattan se prolonge désormais vers le nord après la 1st Avenue" }, { "es", "Manhattan ahora sigue hacia el norte más allá de la 1st Avenue" },
+            { "ru", "Манхэттен теперь продолжается на север за 1st Avenue" }, { "nl", "Manhattan loopt nu door naar het noorden, voorbij 1st Avenue" },
+            { "tr", "Manhattan artık 1st Avenue'nun ötesinde kuzeye" }
+        };
+        foreach (var language in piece)
+        {
+            using JsonDocument doc = JsonDocument.Parse(File.ReadAllText(Path.Combine(locales, language.Key + ".json")));
+            string next = doc.RootElement.TryGetProperty("reallife_changes_next", out JsonElement row) ? row.GetString() : string.Empty;
+            int at = next.IndexOf(language.Value, StringComparison.Ordinal), fix = next.IndexOf(fixMark[language.Key], StringComparison.Ordinal);
+            Check(at >= 0 && (fix < 0 || at < fix), "uptown texts: What's new's next row tells of Uptown in " + language.Key + ", before its fixes");
         }
     }
 }

@@ -80,6 +80,7 @@ namespace RealLifeOverhaul.Uptown
         public const float StripEast = 8.4f;            // ... to here (clear of the buildings beside it)
         public const float ModuleClear = 488.18f;       // m: where 1st Avenue's crossing modules end and the old arms' pavements were backdrop
         public const float BackClear = 0.3f;            // m kept from the backs of 1st Avenue's buildings and their scaffolds
+        public const float EdgeClear = 0.5f;            // m the outermost pavements keep off the district's edge: the backdrop's buildings east of 1st Street stand 0.3 m onto its pavement
         public const float WallHigh = 4.76f;            // m: the game's own invisible walls' height
         public const float WallThick = 5f;              // m: and their depth
         public const float WallFrom = 478.3f;           // m: the new side walls and the ground begin just north of 1st Avenue's north pavement
@@ -194,8 +195,8 @@ namespace RealLifeOverhaul.Uptown
             {
                 float c = LayoutRules.StreetX(k);
                 plan.Boxes.Add(Box(c - LayoutRules.StreetKerbWest, ArmFrom, c + LayoutRules.StreetKerbEast, avenue - LayoutRules.AvenueKerb));
-                plan.Boxes.Add(Box(c - LayoutRules.StreetHalf, PavementFrom(k, false), c - LayoutRules.StreetKerbWest, south));
-                plan.Boxes.Add(Box(c + LayoutRules.StreetKerbEast, PavementFrom(k, true), c + LayoutRules.StreetHalf, south));
+                plan.Boxes.Add(Box(Outer(k, false), PavementFrom(k, false), c - LayoutRules.StreetKerbWest, south));
+                plan.Boxes.Add(Box(c + LayoutRules.StreetKerbEast, PavementFrom(k, true), Outer(k, true), south));
             }
             for (int b = 0; b < LayoutRules.FirstColumns; b++)
             {
@@ -221,8 +222,8 @@ namespace RealLifeOverhaul.Uptown
             for (int k = 0; k <= LayoutRules.FirstColumns; k++)
             {
                 float c = LayoutRules.StreetX(k);
-                plan.Boxes.Add(Box(c - LayoutRules.StreetHalf, PavementFrom(k, false), c - LayoutRules.StreetKerbWest, southKerb));
-                plan.Boxes.Add(Box(c + LayoutRules.StreetKerbEast, PavementFrom(k, true), c + LayoutRules.StreetHalf, southKerb));
+                plan.Boxes.Add(Box(Outer(k, false), PavementFrom(k, false), c - LayoutRules.StreetKerbWest, southKerb));
+                plan.Boxes.Add(Box(c + LayoutRules.StreetKerbEast, PavementFrom(k, true), Outer(k, true), southKerb));
                 plan.Boxes.Add(Box(c + StripWest, StripFrom, c + StripEast, PavementFrom(k, true) + 0.5f));
             }
             float west = LayoutRules.StreetX(0) - LayoutRules.StreetHalf, east = LayoutRules.StreetX(LayoutRules.FirstColumns) + LayoutRules.StreetHalf;
@@ -241,6 +242,17 @@ namespace RealLifeOverhaul.Uptown
                 }
             }
             return plan;
+        }
+
+        // A street's pavement's outer edge: its own, but for the district's outermost two, which keep off its edge.
+        private static float Outer(int street, bool east)
+        {
+            float c = LayoutRules.StreetX(street);
+            if (east)
+            {
+                return c + LayoutRules.StreetHalf - (street == LayoutRules.FirstColumns ? EdgeClear : 0f);
+            }
+            return c - LayoutRules.StreetHalf + (street == 0 ? EdgeClear : 0f);
         }
 
         private static GroundBox Box(float x0, float z0, float x1, float z1)
@@ -337,7 +349,7 @@ namespace RealLifeOverhaul.Uptown
             float middle = (ModuleClear + avenue - LayoutRules.AvenueHalf) * 0.5f;
             for (int k = 0; k <= LayoutRules.FirstColumns; k++)
             {
-                float x = LayoutRules.StreetX(k) + (LayoutRules.StreetKerbEast + LayoutRules.StreetHalf) * 0.5f;
+                float x = (LayoutRules.StreetX(k) + LayoutRules.StreetKerbEast + Outer(k, true)) * 0.5f;   // the middle of the pavement as laid
                 into.Add(new PlanBox(x - ZoneWidth * 0.5f, middle - ZoneLength * 0.5f, x + ZoneWidth * 0.5f, middle + ZoneLength * 0.5f, GroundTop));
             }
             float z = avenue - (LayoutRules.AvenueHalf + LayoutRules.AvenueKerb) * 0.5f;
@@ -353,6 +365,43 @@ namespace RealLifeOverhaul.Uptown
         {
             x = LayoutRules.StreetX(4) + LayoutRules.StreetPitch * 0.5f;
             z = LayoutRules.AvenueZ(1) - TerminusInset;
+        }
+
+        // ---- what the load lays, counted, for the census
+
+        public const int StreetParking = 1;   // parking lanes in the game's street module (along its west kerb), Build 3682
+        public const int AvenueParking = 2;   // ... and in its avenue module (along both kerbs)
+
+        /// <summary>The first block's streets, 9th to 1st Street.</summary>
+        public static int StreetCount => LayoutRules.FirstColumns + 1;
+
+        /// <summary>The road modules its art copies: each street's, each crossing with the avenue, the avenue between them.</summary>
+        public static int ModuleCount => StreetCount * 2 + LayoutRules.FirstColumns;
+
+        /// <summary>The game's walls across the old street ends that open, one a street.</summary>
+        public static int OldWallCount => StreetCount;
+
+        /// <summary>The pedestrians' zones: one along each street, one along each stretch of the avenue.</summary>
+        public static int ZoneCount => StreetCount + LayoutRules.FirstColumns;
+
+        /// <summary>The parking lanes along the copied streets and the avenue.</summary>
+        public static int ParkingCount => StreetCount * StreetParking + LayoutRules.FirstColumns * AvenueParking;
+
+        /// <summary>The street with lanes nearest a place west to east (5th Street has none), 9th Street first where two are as near.</summary>
+        public static int NearestLanes(float x)
+        {
+            int best = Lanes[0];
+            float nearest = float.MaxValue;
+            for (int i = 0; i < Lanes.Length; i++)
+            {
+                float d = System.Math.Abs(LayoutRules.StreetX(Lanes[i]) - x);
+                if (d < nearest)
+                {
+                    nearest = d;
+                    best = Lanes[i];
+                }
+            }
+            return best;
         }
     }
 }
