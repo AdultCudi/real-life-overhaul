@@ -664,6 +664,12 @@ internal static partial class Program
             Check(body.Contains("Construction check (") || m.Groups[1].Value == "TestBack" && body.Contains("Construction check (back)"), "builders sources: " + m.Groups[1].Value + " writes its check line");
             Check(guide.Contains("ConstructionDirector.Instance?." + m.Groups[1].Value + "()"), "builders sources: " + m.Groups[1].Value + " is a button of the options page");
         }
+        // Ground a person picks by eye is nearly always taken, so the lot test needs no spot while the district has a lot.
+        string lotTest = MethodText(tests, "public void TestLot()");
+        string nearestLot = MethodText(tests, "private bool NearestOpenLot(");
+        int district = lotTest.IndexOf("NearestOpenLot(", StringComparison.Ordinal), ahead = lotTest.IndexOf("GroundClear(", StringComparison.Ordinal);
+        Check(district >= 0 && ahead > district && nearestLot.Contains("!lot.Open") && nearestLot.Contains("_state.Lot(lot.Id) != null") && nearestLot.Contains("DeveloperOn(lot.Id)")
+              && nearestLot.Contains("LotTaken(lot.Id)"), "builders sources: the lot test gives the district's nearest open lot nobody has first, the ground ahead only without one");
         // The app and the City Hall call: the game's own frame and conversation.
         Check(code["ConstructionApp.cs"].Contains("AppShell.Make(menu, dormant, ConstructionDirector.AppId)") && code["ConstructionDirector.App.cs"].Contains("PhoneApp.Install(new PhoneAppDef"),
             "builders sources: the app is the game's own frame on the phone");

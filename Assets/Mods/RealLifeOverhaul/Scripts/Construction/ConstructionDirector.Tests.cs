@@ -86,11 +86,15 @@ namespace RealLifeOverhaul.Construction
 
         // ------------------------------------------------------------------ the company and its land
 
-        /// <summary>Test: a lot of the player's ahead of them, 24 by 30 m and zoned for every use, for the loop without the district's lots.</summary>
+        /// <summary>
+        /// Test: a lot of the player's for nothing. The new district's open lot nearest to them first, so no spot has to be
+        /// looked for and the building goes to the district when it is done; with no district, 24 by 30 m of open ground
+        /// ahead of them, zoned for every use.
+        /// </summary>
         public void TestLot()
         {
             const string test = "Construction lot";
-            if (!TestReady(test, true))
+            if (!TestReady(test, false))
             {
                 return;
             }
@@ -101,6 +105,27 @@ namespace RealLifeOverhaul.Construction
             }
             TestGuard(test, () =>
             {
+                if (_state.Lots.Count >= BuildCatalogue.LotsMost)
+                {
+                    TestRefusals.TellKey(Logger, test, "reallife_bld_answer_too_many_lots");
+                    return;
+                }
+                if (NearestOpenLot(ConstructionGame.Player, out LotView open, out float metres))
+                {
+                    BeforeTest();
+                    int today = ConstructionGame.Day;
+                    _state.Lots.Add(new LotFile { Id = open.Id, Bought = today, Zones = LandRules.ZonesOf(open.Class), TaxedTo = today, EmptySince = today });
+                    Logger?.Info("Construction check (test lot): the new district's open lot " + open.Id + " (" + open.Street + " " + open.Number + ", " + open.Width + " by "
+                                 + open.Depth + " m, class " + open.Class + "), " + metres.ToString("0", System.Globalization.CultureInfo.InvariantCulture)
+                                 + " m from the player, theirs for nothing: PASS.");
+                    TestDone("the district's lot " + open.Id + " the player's, for nothing", TabLand, 0);
+                    return;
+                }
+                if (!ConstructionGame.Outdoors)
+                {
+                    TestRefusals.Tell(Logger, test, TestRefusal.Indoors);
+                    return;
+                }
                 Vector3 ahead = ConstructionGame.Ahead;
                 int yaw = Mathf.RoundToInt(Quaternion.LookRotation(ahead).eulerAngles.y);
                 Vector3 middle = ConstructionGame.Player + ahead * (TestLotDepth * 0.5f + 2f);
@@ -123,6 +148,36 @@ namespace RealLifeOverhaul.Construction
                              + (double.IsNaN(_testPrice) ? "not known" : _testPrice.ToString("0", System.Globalization.CultureInfo.InvariantCulture)) + ": PASS.");
                 TestDone("a lot of the player's ahead of them (" + id + "), for nothing", TabLand, 0);
             });
+        }
+
+        // The district's lot nearest to a place that could be bought now, whatever its price: open, empty, nobody's.
+        private bool NearestOpenLot(Vector3 near, out LotView nearest, out float metres)
+        {
+            nearest = default(LotView);
+            metres = 0f;
+            if (!DistrictLives())
+            {
+                return false;   // its lots would never become its buildings
+            }
+            float best = float.MaxValue;
+            IReadOnlyList<LotView> lots = Lots;
+            for (int i = 0; i < lots.Count; i++)
+            {
+                LotView lot = lots[i];
+                if (!lot.Open || IsTestLot(lot.Id) || _state.Lot(lot.Id) != null || DeveloperOn(lot.Id) || LotTaken(lot.Id))
+                {
+                    continue;
+                }
+                float dx = lot.X - near.x, dz = lot.Z - near.z;
+                float sqr = dx * dx + dz * dz;
+                if (sqr < best)
+                {
+                    best = sqr;
+                    nearest = lot;
+                }
+            }
+            metres = best < float.MaxValue ? Mathf.Sqrt(best) : 0f;
+            return best < float.MaxValue;
         }
 
         /// <summary>Test: the company founded at the player's office of its type, its licence granted at once.</summary>

@@ -221,7 +221,7 @@ Agreed with the trades ([Building trades](trades.md), "With the construction com
 
 Each brings forward one thing a player would wait for, or says in a notice why it cannot, and writes its `Construction check (...)` line; the state from before the first test is kept for the last.
 
-- **Construction: a lot of yours ahead of you**: 24 by 30 m of open ground ahead, the player's, zoned for every use (no district needed); priced at the nearest building's district.
+- **Construction: a lot of yours, in the new district or ahead of you**: the new district's open lot nearest to the player, theirs for nothing, from anywhere and indoors too (no spot to look for, and its building goes to the district when it is done); with no district, 24 by 30 m of open ground ahead, zoned for every use and priced at the nearest building's district.
 - **Construction: found the company, with its licence**; **City Hall decides the licence**; **every set of plans drawn** (a design of the player's own is read if the practice has it, else drawn at 70); **every planning decision and appeal**; **the council votes on zoning**.
 - **every site on to its next stage**, **every inspection held**, **every delivery arrives**, **every site handed over**, **an opening day today** (the ribbon at any hour of the day).
 - **a business's tender opens** (closing in two hours), **every open tender awarded**, **the developers start or finish a building** (not in a session).
