@@ -134,7 +134,9 @@ namespace RealLifeOverhaul.NewBuildings
             {
                 design = h.Size != null ? CopyGame.Find(h.Design, h.Size) : CopyGame.Find(h.Design);
                 why = design < 0 ? "no design " + h.Design + " can be copied (unknown, of a kind never copied, or of a DLC)"
-                    : designs[design].Batched ? "the design " + h.Design + " is drawn only in static batches: a copy would draw at the original's place" : null;
+                    : designs[design].Batched ? "the design " + h.Design + " is drawn only in static batches: a copy would draw at the original's place"
+                    : !NewBuildingsRules.Copyable(designs[design]) ? "the design " + h.Design + " has a part of another place under it, or its door stands more than "
+                                                                   + NewBuildingsRules.DoorBackMost.ToString("F0", Plain) + " m behind its front" : null;
             }
             else
             {

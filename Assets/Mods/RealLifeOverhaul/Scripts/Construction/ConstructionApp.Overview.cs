@@ -45,17 +45,27 @@ namespace RealLifeOverhaul.Construction
             FirmFile f = state.Firm;
             bool office = _director.Office(out PlaceView place);
             box.Title(office && f.Founded > 0 ? place.Name : ConstructionText.T("reallife_bld_glance_title"));
-            if (!office)
+            if (f.Founded <= 0)
             {
-                box.Note(ConstructionText.T("reallife_bld_glance_no_office"));
+                if (office)
+                {
+                    box.Subtitle(ConstructionGame.AddressText(place.Street, place.Number));
+                }
+                box.Note(ConstructionText.T("reallife_bld_glance_client"));   // no company is needed to build: the city's builders are hired
+                box.Note(office ? ConstructionText.T("reallife_bld_glance_found", "name", place.Name) : ConstructionText.T("reallife_bld_glance_no_office"));
+                Transform client = box.ButtonRow();
+                InfoBox.Button(client, InfoBox.Positive, "reallife_bld_button_land", () => ShowTab(ConstructionDirector.TabLand));
+                InfoBox.Button(client, InfoBox.Additional, "reallife_bld_button_rivals", () => ShowTab(ConstructionDirector.TabRivals));
+                if (office)
+                {
+                    InfoBox.Button(box.ButtonRow(), InfoBox.Negative, "reallife_bld_button_found", () => Answer(_director.Found()));
+                }
                 Guide(box);
                 return;
             }
-            if (f.Founded <= 0)
+            if (!office)
             {
-                box.Subtitle(ConstructionGame.AddressText(place.Street, place.Number));
-                box.Note(ConstructionText.T("reallife_bld_glance_found", "name", place.Name));
-                InfoBox.Button(box.ButtonRow(), InfoBox.Positive, "reallife_bld_button_found", () => Answer(_director.Found()));
+                box.Note(ConstructionText.T("reallife_bld_glance_no_office"));
                 Guide(box);
                 return;
             }

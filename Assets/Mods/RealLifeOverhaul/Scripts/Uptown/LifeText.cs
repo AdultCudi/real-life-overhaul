@@ -12,6 +12,8 @@ namespace RealLifeOverhaul.Uptown
         public const string TestOffices = "reallife_uptown_test_offices";
         public const string TestRow = "reallife_uptown_test_row";
         public const string TestCost = "reallife_uptown_test_cost";
+        public const string TestOfficeCensus = "reallife_uptown_test_office_census";
+        public const string TestOfficeJob = "reallife_uptown_test_office_job";
 
         public const string ClosedSession = "reallife_uptown_closed_session";     // the notice when a session stops being one of this mod
         public const string NotLiving = "reallife_uptown_test_not_living";        // the notices the tests show
@@ -33,6 +35,10 @@ namespace RealLifeOverhaul.Uptown
         public const string CostStart = "reallife_uptown_test_cost_start";
         public const string CostDone = "reallife_uptown_test_cost_done";
         public const string CostNone = "reallife_uptown_test_cost_none";
+        public const string OfficeCensusDone = "reallife_uptown_test_office_census_done";
+        public const string OfficeJobDone = "reallife_uptown_test_office_job_done";
+        public const string OfficeJobNone = "reallife_uptown_test_office_job_none";
+        public const string OfficeJobNoWork = "reallife_uptown_test_office_job_no_work";
         public const string TestSpecials = "reallife_uptown_test_specials";        // the special places' tests and their notices
         public const string TestSpecialGo = "reallife_uptown_test_special_go";
         public const string SpecialsDone = "reallife_uptown_test_specials_done";

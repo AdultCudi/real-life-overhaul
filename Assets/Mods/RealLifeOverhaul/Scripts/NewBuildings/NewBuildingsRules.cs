@@ -8,7 +8,9 @@ namespace RealLifeOverhaul.NewBuildings
     /// One of the game's building designs as the copy engine knows it: a building of the city as it was placed in the
     /// scenes, measured round its own root in the root's own turn (metres), and the building of the game's it was copied
     /// from (by the caller's index). One entry per design and size, so that a made building of a size gets a design a
-    /// building of that size wears.
+    /// building of that size wears. Its footprint is all the ground it takes: its box (the game's shadow and map look) and
+    /// every solid part and every drawn part reaching below head height round it (steps, porches, bays, scaffolding), as
+    /// <see cref="NewBuildingsRules.Begin"/> and <see cref="NewBuildingsRules.Part"/> measure it.
     /// </summary>
     public sealed class DesignEntry
     {
@@ -23,8 +25,10 @@ namespace RealLifeOverhaul.NewBuildings
         public float Height;        // m: from its root up to its highest point
         public float DoorX, DoorZ;  // m: its first door round its root
         public float DoorY;         // m: that door's height above its root: the root stands this far below the ground at the door
-        public float DoorFacing;    // degrees: the way its first door faces out, from its root's forward
+        public float DoorFacing;    // degrees: the way its first door faces out, from its root's forward, squared to the root's nearest right angle
         public int Source;          // the caller's index of the game's building it is copied from
+        public float BoxMinX, BoxMaxX, BoxMinZ, BoxMaxZ;   // m: its box alone, round its root: what a part straying from it is measured against
+        public bool Strays;         // a part of it stands more than StrayMost outside its box (a collider of another place under its root): never copied
     }
 
     /// <summary>
@@ -188,6 +192,11 @@ namespace RealLifeOverhaul.NewBuildings
         public const float DoorNear = 3f;           // m: the player stands at a made building's door after leaving it when this near
         public const int MostFloors = 12;           // storeys a made building's record may have: the most floors the floors core gives a building
         public const float FillShare = 0.7f;        // of the ground the best fitting design covers: the designs a plot or a building's place is given among
+        public const float WidthShare = 0.7f;       // of the widest fitting design's front: the designs a made building of a size is given among, so its lot's frontage is built
+        public const float HeadClear = 2.5f;        // m above its door: a drawn part reaching lower takes ground (a step, a porch); one wholly above may hang over the pavement, as the game's signs do
+        public const float StrayMost = 5f;          // m outside its box a part of a design may stand (the game's scaffolding reaches 3.7): further, it is of another place under the same root
+        public const float DoorBackMost = 2f;       // m a door may stand behind its front: the game sends a pedestrian 0.5 m out of it to their mesh within 2 m, which ends at the lot's front
+        public const float SquareTie = 10f;         // degrees from halfway between two right angles within which a door's facing goes to the box face nearer the door
 
         public const string SpecialType = "ba:buildingtype_special";   // the game's type that needs a special service
         public const string HomeType = "ba:buildingtype_residential";  // the game's type its food deliveries are brought to
@@ -269,6 +278,96 @@ namespace RealLifeOverhaul.NewBuildings
             return upY >= Math.Cos(UprightMost * Deg);
         }
 
+        /// <summary>
+        /// A design's measures begun from its box, round its root (m): its footprint and its height the box's, nothing
+        /// straying yet. Its door (<see cref="DesignEntry.DoorY"/>) is set first: what reaches below head height is told from it.
+        /// </summary>
+        public static void Begin(DesignEntry into, float minX, float maxX, float minZ, float maxZ, float top)
+        {
+            into.MinX = into.BoxMinX = minX;
+            into.MaxX = into.BoxMaxX = maxX;
+            into.MinZ = into.BoxMinZ = minZ;
+            into.MaxZ = into.BoxMaxZ = maxZ;
+            into.Height = top;
+            into.Strays = false;
+        }
+
+        /// <summary>
+        /// One part of a design, round its root (m; <paramref name="bottom"/> and <paramref name="top"/> its lowest and highest
+        /// points above the root): the box measures only the building's bulk, so the steps, porches, bays and scaffolding the
+        /// game stands before it would stand on a lot's pavement. A solid part, or a drawn one reaching below
+        /// <see cref="HeadClear"/> above the door, takes ground; one more than <see cref="StrayMost"/> outside the box is of
+        /// another place, left out, and the design is never copied.
+        /// </summary>
+        public static void Part(DesignEntry into, bool solid, float minX, float maxX, float minZ, float maxZ, float bottom, float top)
+        {
+            float outside = Math.Max(Math.Max(into.BoxMinX - minX, maxX - into.BoxMaxX), Math.Max(into.BoxMinZ - minZ, maxZ - into.BoxMaxZ));
+            if (outside > StrayMost)
+            {
+                into.Strays = true;
+                return;
+            }
+            into.Height = Math.Max(into.Height, top);
+            if (!solid && bottom - into.DoorY >= HeadClear)
+            {
+                return;
+            }
+            into.MinX = Math.Min(into.MinX, minX);
+            into.MaxX = Math.Max(into.MaxX, maxX);
+            into.MinZ = Math.Min(into.MinZ, minZ);
+            into.MaxZ = Math.Max(into.MaxZ, maxZ);
+        }
+
+        /// <summary>
+        /// A door's facing (degrees from its root's forward) turned to the root's nearest right angle, so a copy stands square
+        /// to its street as the box is square to its root: some of the game's doors are turned across a corner (45 degrees).
+        /// Within <see cref="SquareTie"/> of halfway, the right angle whose box face is nearer the door.
+        /// </summary>
+        public static float SquareFacing(float facing, float doorX, float doorZ, float minX, float maxX, float minZ, float maxZ)
+        {
+            float t = Turn(facing);
+            float low = 90f * (float)Math.Floor(t / 90f), high = low + 90f;
+            float toLow = t - low, toHigh = high - t;
+            if (Math.Abs(toLow - toHigh) >= SquareTie)
+            {
+                return Turn(toLow < toHigh ? low : high);
+            }
+            return Turn(FaceGap(low, doorX, doorZ, minX, maxX, minZ, maxZ) <= FaceGap(high, doorX, doorZ, minX, maxX, minZ, maxZ) ? low : high);
+        }
+
+        // m from the door to the box face looking that way (0 forward, 90 right, 180 back, 270 left).
+        private static float FaceGap(float facing, float doorX, float doorZ, float minX, float maxX, float minZ, float maxZ)
+        {
+            switch ((int)Math.Round(Turn(facing)) % 360)
+            {
+                case 0:
+                    return Math.Abs(doorZ - maxZ);
+                case 90:
+                    return Math.Abs(doorX - maxX);
+                case 180:
+                    return Math.Abs(doorZ - minZ);
+                default:
+                    return Math.Abs(doorX - minX);
+            }
+        }
+
+        /// <summary>How far (m) a design's door stands behind its front (its footprint's side the door faces); below 0 before it.</summary>
+        public static float DoorBehind(DesignEntry d)
+        {
+            DoorFrame(d, out _, out _, out _, out float vMax);
+            float s = (float)Math.Sin(d.DoorFacing * Deg), c = (float)Math.Cos(d.DoorFacing * Deg);
+            return vMax - (d.DoorX * s + d.DoorZ * c);
+        }
+
+        /// <summary>
+        /// True for a design a copy may be made of: drawn in no static batch, no part of another place under its root, and
+        /// its door at most <see cref="DoorBackMost"/> behind its front, so the pavement reaches it.
+        /// </summary>
+        public static bool Copyable(DesignEntry d)
+        {
+            return d != null && !d.Batched && !d.Strays && DoorBehind(d) <= DoorBackMost;
+        }
+
         /// <summary>A design's footprint in the frame of its door: u across it (to the door's right), v the way it faces out.</summary>
         public static void DoorFrame(DesignEntry d, out float uMin, out float uMax, out float vMin, out float vMax)
         {
@@ -297,8 +396,9 @@ namespace RealLifeOverhaul.NewBuildings
 
         /// <summary>
         /// The design a made building wears: the one named if it can be copied and fits; else, of the designs buildings of
-        /// its size wear that can be copied and fit, those of its type if any, one picked by its id. -1 when none.
-        /// <paramref name="designs"/> is in <see cref="CompareDesigns"/> order.
+        /// its size wear that can be copied and fit, those of its type if any, and of those the ones at least
+        /// <see cref="WidthShare"/> as wide as the widest (a narrow design on a wide lot leaves its frontage half empty), one
+        /// picked by its id. -1 when none. <paramref name="designs"/> is in <see cref="CompareDesigns"/> order.
         /// </summary>
         public static int Pick(IList<DesignEntry> designs, string size, string type, string named, float width, float depth, string id)
         {
@@ -310,35 +410,43 @@ namespace RealLifeOverhaul.NewBuildings
             {
                 for (int i = 0; i < designs.Count; i++)
                 {
-                    if (string.Equals(designs[i].Name, named, StringComparison.Ordinal) && !designs[i].Batched && Fits(designs[i], width, depth))
+                    if (string.Equals(designs[i].Name, named, StringComparison.Ordinal) && Copyable(designs[i]) && Fits(designs[i], width, depth))
                     {
                         return i;
                     }
                 }
                 return -1;
             }
-            int sized = 0, typed = 0;
+            int typed = 0;
+            float widest = 0f, widestTyped = 0f;
             for (int i = 0; i < designs.Count; i++)
             {
                 if (Candidate(designs[i], size, width, depth))
                 {
-                    sized++;
-                    typed += string.Equals(designs[i].Type, type, StringComparison.Ordinal) ? 1 : 0;
+                    float across = Across(designs[i]);
+                    widest = Math.Max(widest, across);
+                    if (string.Equals(designs[i].Type, type, StringComparison.Ordinal))
+                    {
+                        typed++;
+                        widestTyped = Math.Max(widestTyped, across);
+                    }
                 }
             }
-            if (sized == 0)
+            if (widest <= 0f)
             {
                 return -1;
             }
             bool byType = typed > 0;
-            int wanted = (int)(Hash(id) % (uint)(byType ? typed : sized));
+            float least = (byType ? widestTyped : widest) * WidthShare;
+            int pool = 0;
             for (int i = 0; i < designs.Count; i++)
             {
-                if (!Candidate(designs[i], size, width, depth) || (byType && !string.Equals(designs[i].Type, type, StringComparison.Ordinal)))
-                {
-                    continue;
-                }
-                if (wanted-- == 0)
+                pool += Pooled(designs[i], size, type, byType, least, width, depth) ? 1 : 0;
+            }
+            int wanted = (int)(Hash(id) % (uint)pool);
+            for (int i = 0; i < designs.Count; i++)
+            {
+                if (Pooled(designs[i], size, type, byType, least, width, depth) && wanted-- == 0)
                 {
                     return i;
                 }
@@ -348,7 +456,19 @@ namespace RealLifeOverhaul.NewBuildings
 
         private static bool Candidate(DesignEntry d, string size, float width, float depth)
         {
-            return string.Equals(d.Size, size, StringComparison.Ordinal) && !d.Batched && Fits(d, width, depth);
+            return string.Equals(d.Size, size, StringComparison.Ordinal) && Copyable(d) && Fits(d, width, depth);
+        }
+
+        private static bool Pooled(DesignEntry d, string size, string type, bool byType, float least, float width, float depth)
+        {
+            return Candidate(d, size, width, depth) && (!byType || string.Equals(d.Type, type, StringComparison.Ordinal)) && Across(d) >= least;
+        }
+
+        // m: a design's front, across its door's side.
+        private static float Across(DesignEntry d)
+        {
+            DoorFrame(d, out float uMin, out float uMax, out _, out _);
+            return uMax - uMin;
         }
 
         /// <summary>
@@ -390,7 +510,7 @@ namespace RealLifeOverhaul.NewBuildings
 
         private static bool Fitting(DesignEntry d, float width, float depth, string other)
         {
-            return d != null && !d.Batched && Fits(d, width, depth) && !string.Equals(d.Name, other, StringComparison.Ordinal);
+            return Copyable(d) && Fits(d, width, depth) && !string.Equals(d.Name, other, StringComparison.Ordinal);
         }
 
         // m2: the ground a design takes, measured from its door.
@@ -401,8 +521,9 @@ namespace RealLifeOverhaul.NewBuildings
         }
 
         /// <summary>
-        /// Where a design's root stands on a lot and its turn (degrees): its door to the street, its front on the lot's front
-        /// line, in the middle of the lot's width.
+        /// Where a design's root stands on a lot and its turn (degrees): its door to the street, its footprint's front (its
+        /// box, steps, porches and anything solid: <see cref="Part"/>) on the lot's front line, the back of the street's
+        /// pavement, so nothing of it stands on the pavement; in the middle of the lot's width.
         /// </summary>
         public static void Place(DesignEntry d, MadeLot lot, out float x, out float z, out float yaw)
         {

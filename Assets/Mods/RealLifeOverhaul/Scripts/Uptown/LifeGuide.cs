@@ -11,8 +11,9 @@ namespace RealLifeOverhaul.Uptown
     /// tests join the ground's entry whichever registers first; should this one come first, the feature is named by the
     /// district's own name, the same words, until the ground's entry adds the rest. It registers itself
     /// (<see cref="DescribesFeatureAttribute"/>); its keys are written out whole as the options checks read them. Each test
-    /// works when pressed or says why not in a notice; the offices, the map row and the frame cost join the city expansion's
-    /// test run (the census, the business, the rent, the save and the special places are in its own table).
+    /// works when pressed or says why not in a notice; the offices, the map row, the frame cost and the offices' census join
+    /// the city expansion's test run (the census, the business, the rent, the save and the special places are in its own
+    /// table); the job at an office is left out of it, as it changes the player's job.
     /// </summary>
     [DescribesFeature]
     public static class LifeGuide
@@ -28,7 +29,9 @@ namespace RealLifeOverhaul.Uptown
                 .Test("reallife_uptown_test_special_go", LifeDirector.TestSpecialGo)
                 .Check("reallife_uptown_test_offices", LifeDirector.TestOffices, "Uptown check (builders' offices)")
                 .Check("reallife_uptown_test_row", LifeDirector.TestRow, "Uptown check (map row)")
-                .Check("reallife_uptown_test_cost", LifeDirector.TestCost, "Uptown check (frame cost)", RunPlace.UptownLot);
+                .Check("reallife_uptown_test_cost", LifeDirector.TestCost, "Uptown check (frame cost)", RunPlace.UptownLot)
+                .Check("reallife_uptown_test_office_census", LifeDirector.TestOfficeCensus, "Uptown check (offices)")
+                .Test("reallife_uptown_test_office_job", LifeDirector.TestOfficeJob);
         }
     }
 }
