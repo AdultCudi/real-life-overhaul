@@ -713,6 +713,20 @@ internal static partial class Program
         Match ground = Regex.Match(work, @"public static string Ground\([^)]*\)\s*\{(?<b>(?:[^{}]|\{(?<d>)|\}(?<-d>))*)\}");
         Check(ground.Success && Regex.IsMatch(ground.Groups["b"].Value, @"WalkGame\.Built\([^;]*;[\s\S]*if \(found > plan\.ExpectColliders\)[\s\S]*Grow\("),
             "new ground sources: a district's ground counts the game's colliders on it against the plan's before it grows anything");
+        // The owner's test of 24 Oct: a sample Unity put on the walking mesh's outer edge, at (405.0, 439.1) where Manhattan's
+        // pavement meets a building, failed a point-in-triangle test with no slack and stood Uptown down.
+        Check(GroundRules.InTriangle(405.00003f, 439.1f, 405.0f, 434.7f, 405.0f, 448.6f, 402.1f, 435.6f) && GroundRules.InTriangle(405.015f, 439.1f, 405.0f, 434.7f, 405.0f, 448.6f, 402.1f, 435.6f)
+              && !GroundRules.InTriangle(405.05f, 439.1f, 405.0f, 434.7f, 405.0f, 448.6f, 402.1f, 435.6f) && !GroundRules.InTriangle(1f, 0f, 0f, 0f, 2f, 0f, 4f, 0f)
+              && GroundRules.InTriangle(404f, 440f, 405.0f, 448.6f, 405.0f, 434.7f, 402.1f, 435.6f),
+            "new ground: a point on a triangle's edge far from the origin is on it, within 2 cm, either way round; past that or on a flat triangle it is not");
+        Check(Math.Abs(GroundRules.HeightIn(9f, 1f, 0f, 0f, 0f, 10f, 2f, 0f, 0f, 0f, 10f) - 1.8f) < 1e-4f && Math.Abs(GroundRules.HeightIn(1f, 1f, 0f, 0.5f, 0f, 10f, 0.5f, 0f, 0f, 0.5f, 10f) - 0.5f) < 1e-4f,
+            "new ground: a triangle's height is read at the point on a ramp, not at its middle");
+        Match planBody = Regex.Match(code["GroundBuilder.cs"], @"public static string Grow\([^)]*\)\s*\{(?<b>(?:[^{}]|\{(?<d>)|\}(?<-d>))*)\}");
+        Check(!ground.Groups["b"].Value.Contains("return \"the game has ") && ground.Groups["b"].Value.Contains("LastNote = \"the game has ")
+              && code["GroundBuilder.cs"].Contains("job.Note = WalkGame.Whole(job);") && !code["GroundBuilder.cs"].Contains("job.Problem = WalkGame.Whole(")
+              && planBody.Success && !planBody.Groups["b"].Value.Contains("job.Problem = \"the \" + mesh.Label + \" mesh changed beyond")
+              && Code(File.ReadAllText(Path.Combine(scripts, "Uptown", "GroundDirector.cs"))).Contains("noted (laid all the same): \" + GroundWork.LastNote"),
+            "new ground sources: the self-checks that only measure (the game's colliders counted, the old mesh read whole, the samples round about) are noted in the log, never a reason to stand a district down");
         // The owner's test of 23 Oct: one collider the offline scans could not hold (they keep no round ones) stood Uptown down
         // at every load, and the line did not say what it was.
         Check(GroundRules.IsProp(true, false, 0.4f, 0.4f) && GroundRules.IsProp(true, false, 2.4f, 1.5f) && GroundRules.IsProp(true, false, GroundRules.PropMost, GroundRules.PropMost)

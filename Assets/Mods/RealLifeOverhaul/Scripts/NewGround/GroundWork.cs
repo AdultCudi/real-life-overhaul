@@ -24,6 +24,9 @@ namespace RealLifeOverhaul.NewGround
         /// <summary>How the last ground grown can be walked on, for the caller's log line; null before any.</summary>
         public static string LastWalk { get; private set; }
 
+        /// <summary>What the last ground's self-checks measured amiss, for a warning in the log; null when nothing was.</summary>
+        public static string LastNote { get; private set; }
+
         /// <summary>
         /// The plan's streets appended to the traffic's data, its joins found again among the game's lanes and its ends
         /// through the game's junctions found again among its junctions at this load. Null when done; else why it stood
@@ -78,10 +81,12 @@ namespace RealLifeOverhaul.NewGround
             {
                 found += WalkGame.Built(plan.Boxes[b], Seen);
             }
+            // Noted, never a reason to stand down: what stands on the ground is walked round (Obstacles), and the count has
+            // twice taken the game's own street furniture for a building and cost the owner the whole district (23 and 24 Oct).
+            LastNote = null;
             if (found > plan.ExpectColliders)
             {
-                return "the game has " + found + " colliders of its own on the plan's ground, " + plan.ExpectColliders + " when it was made (a game update has built there): "
-                       + string.Join("; ", Seen);
+                LastNote = "the game has " + found + " colliders of its own on the plan's ground, " + plan.ExpectColliders + " when it was made: " + string.Join("; ", Seen);
             }
             Standing.Clear();
             Counted.Clear();
@@ -117,6 +122,10 @@ namespace RealLifeOverhaul.NewGround
                 Proved[mesh] = flat;
             }
             string why = GroundBuilder.Grow(mesh, plan.Boxes, plan.Area, Standing, plan.Seeds, flat, out int walkable, out GroundJob job);
+            if (job != null && job.Note != null)
+            {
+                LastNote = LastNote == null ? job.Note : LastNote + "; " + job.Note;
+            }
             if (why == null && job != null)
             {
                 LastWalk = "the " + mesh.Label + " mesh walkable on " + walkable + " of the new ground's " + plan.Boxes.Count + " boxes; " + job.Covered.Count + " tiles ("

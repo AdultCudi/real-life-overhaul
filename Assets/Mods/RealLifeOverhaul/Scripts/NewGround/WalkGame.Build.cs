@@ -355,6 +355,8 @@ namespace RealLifeOverhaul.NewGround
         /// <summary>
         /// Null when every sample of the old mesh on a tile to be rebuilt lies on a triangle read from the world's walking
         /// meshes; else where one does not (a mesh the triangulation did not give whole would lose ground in the rebuild).
+        /// A note for the log, never a stand-down: what it measures is a few samples' worth of ground at most, and a false
+        /// miss on the mesh's edge cost the owner the whole district (24 Oct).
         /// </summary>
         public static string Whole(GroundJob job)
         {
@@ -375,8 +377,9 @@ namespace RealLifeOverhaul.NewGround
                 for (int n = 0; near != null && n < near.Count && !on; n++)
                 {
                     int a = near[n] * 3;
-                    on = Math.Abs((job.CandY[a] + job.CandY[a + 1] + job.CandY[a + 2]) / 3f - print[i + 1]) <= 0.6f
-                         && GroundRules.InTriangle(print[i], print[i + 2], job.CandX[a], job.CandZ[a], job.CandX[a + 1], job.CandZ[a + 1], job.CandX[a + 2], job.CandZ[a + 2]);
+                    on = GroundRules.InTriangle(print[i], print[i + 2], job.CandX[a], job.CandZ[a], job.CandX[a + 1], job.CandZ[a + 1], job.CandX[a + 2], job.CandZ[a + 2])
+                         && Math.Abs(GroundRules.HeightIn(print[i], print[i + 2], job.CandX[a], job.CandY[a], job.CandZ[a], job.CandX[a + 1], job.CandY[a + 1], job.CandZ[a + 1],
+                                                          job.CandX[a + 2], job.CandY[a + 2], job.CandZ[a + 2]) - print[i + 1]) <= 0.6f;
                 }
                 if (!on)
                 {
