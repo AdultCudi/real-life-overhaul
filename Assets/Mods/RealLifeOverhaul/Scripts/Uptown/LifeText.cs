@@ -33,5 +33,10 @@ namespace RealLifeOverhaul.Uptown
         public const string CostStart = "reallife_uptown_test_cost_start";
         public const string CostDone = "reallife_uptown_test_cost_done";
         public const string CostNone = "reallife_uptown_test_cost_none";
+        public const string TestSpecials = "reallife_uptown_test_specials";        // the special places' tests and their notices
+        public const string TestSpecialGo = "reallife_uptown_test_special_go";
+        public const string SpecialsDone = "reallife_uptown_test_specials_done";
+        public const string SpecialsNone = "reallife_uptown_test_specials_none";
+        public const string SpecialGo = "reallife_uptown_test_special_go_done";
     }
 }

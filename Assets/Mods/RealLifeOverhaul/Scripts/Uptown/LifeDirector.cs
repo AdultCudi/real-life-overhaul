@@ -125,6 +125,7 @@ namespace RealLifeOverhaul.Uptown
             BuiltLots.Clear();
             KeptLots.Clear();
             ForgetLeases();
+            ForgetSpecials();
             _stamp++;
         }
 
@@ -197,7 +198,7 @@ namespace RealLifeOverhaul.Uptown
             {
                 BuiltLots.Add(Plan[Built[i]].Id);
             }
-            int finished = 0, refused = 0, leased = 0;
+            int finished = 0, refused = 0, leased = 0, special = 0;
             for (int i = 0; i < Plan.Count; i++)
             {
                 BuildingsLot lot = Plan[i];
@@ -216,11 +217,16 @@ namespace RealLifeOverhaul.Uptown
                     KeptLots.Add(lot.Id);
                 }
                 BuildingsStructure structure;
+                SpecialPlace place = null;
                 Others.Clear();   // a finished building keeps the structure and design the construction game gave it
                 if (f != null)
                 {
                     structure = new BuildingsStructure { Size = f.Size, Version = f.Version, Type = f.Type };
                     finished++;
+                }
+                else if (SpecialStructure(lot, out structure, out place))
+                {
+                    special++;
                 }
                 else
                 {
@@ -241,6 +247,10 @@ namespace RealLifeOverhaul.Uptown
                 Lot plain = UptownLots.Get(lot.Id);
                 MadeSpec spec = LifeGame.Spec(GroundOf(lot, f), structure, Others, f != null ? f.Design : null, f != null ? f.Storeys : 0, TrafficOf(lot.Id),
                     () => _known && !_down && UptownLots.Ready && plain != null && UptownLots.Open(plain));
+                if (place != null)
+                {
+                    LifeGame.Serve(spec, place);
+                }
                 MadeBuildings.Declare(spec);
                 Declared.Add(spec);
             }
@@ -252,7 +262,7 @@ namespace RealLifeOverhaul.Uptown
                 notClear += clear ? 0 : 1;
             }
             Logger?.Info("Uptown: " + Declared.Count + " building(s) declared for this load (" + Built.Count + " of the band's lots from the first day, " + leased
-                         + " of them offices leased to the city's builders; " + KeptLots.Count + " kept from an earlier load; " + finished + " finished by the construction game"
+                         + " of them offices leased to the city's builders, " + special + " the district's special places; " + KeptLots.Count + " kept from an earlier load; " + finished + " finished by the construction game"
                          + (refused > 0 ? "; " + refused + " left empty" : string.Empty) + ") of " + Plan.Count + " lots, " + open + " open for the construction game"
                          + (notClear > 0 ? ", " + notClear + " kept empty as something of the game's stands into it" : string.Empty) + ".");
         }
@@ -442,13 +452,16 @@ namespace RealLifeOverhaul.Uptown
                 WriteState();
             }
             int leased = Leases(save, out int renamed);
+            int specials = Specials();
             Logger?.Info("Uptown: " + (fresh ? (_cityWasNew ? "set up with the rest of a new city by the game's own generator" : "set up for the first time in this save by the game's own generator")
                                              : "lives on in this save" + (populated > 0 ? ", the game's own generator for its " + populated + " building(s) new to it" : string.Empty))
                          + (stats ? ", its stats made" : string.Empty)
                          + (settled + failed > 0 ? "; " + settled + " finished building(s) at their first load" + (failed > 0 ? ", " + failed + " not yet" : string.Empty) : string.Empty)
                          + "; " + leased + " of " + BuildingsRules.LeasedOffices + " leased offices with their businesses"
-                         + (renamed > 0 ? ", " + renamed + " of them given their lessees' names again" : string.Empty) + ".");
+                         + (renamed > 0 ? ", " + renamed + " of them given their lessees' names again" : string.Empty)
+                         + "; " + specials + " of " + SpecialsRules.All.Length + " special places with the game's services.");
             Census("the load");
+            SpecialsCensus("the load", false, out int _);
             return true;
         }
 
@@ -618,6 +631,7 @@ namespace RealLifeOverhaul.Uptown
             Standing.Clear();
             StandingLots.Clear();
             ForgetLeases();
+            ForgetSpecials();
             _known = _lives = _down = false;
             _stateFor = null;
             if (Instance == this)
