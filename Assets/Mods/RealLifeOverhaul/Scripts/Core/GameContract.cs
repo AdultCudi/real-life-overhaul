@@ -17,6 +17,7 @@ namespace RealLifeOverhaul
         private const string Sky = "DayNightCycle";
         private const string UnityUi = "UnityEngine.UI";
         private const string Steam = "Facepunch.Steamworks.Win64";
+        private const string Hg = "HGPlugins";
 
         static GameContract()
         {
@@ -96,6 +97,7 @@ namespace RealLifeOverhaul
         public static readonly GamePart CarWash = ContractBook.Part("car_wash", "garage",
             "stand-ins for the spray and the sound of a car that has none, so the game's car wash in a repair bay ends on it");
         public static readonly GamePart TrafficMend = ContractBook.Part("traffic_mend", "traffic", "putting the city's traffic right when it stops adding cars for good");
+        public static readonly GamePart ShopHelp = ContractBook.Part("shop_help", "newshops", "the new kinds of shop's pages in the game's help");
 
         // The pieces, each group under the code that reads it.
 
@@ -395,6 +397,10 @@ namespace RealLifeOverhaul
         // Garage/GarageWash: what the game's wash plays and shows, given a stand-in on a car that has none
         public static readonly GameMember WashSpray = Optional(Field(CarWash, Game, "CarController", "washVfx", "GameObject"));
         public static readonly GameMember WashSound = Optional(Field(CarWash, Game, "CarController", "washAudioSource", "AudioSource"));
+
+        // Shops/ShopsGame: the language tables the game's texts are read from, given each new kind of shop's help page
+        // under the keys the game's help reads (else BizMan's requirement link opens a page of bare keys)
+        public static readonly GameMember LocaleTables = Optional(StaticField(ShopHelp, Hg, "Localizor.LocalizorManager", "LocalizationDictionary", "Dictionary<String,Dictionary<String,String>>"));
 
         /// <summary>The five pieces Build 3675 lacks (the funeral helper's two properties are one, its type).</summary>
         public static readonly GameMember[] LackedBy3675 = { PlayerDead, FuneralActive, FenceIndex, ResumeTarget, StationNameKey, ConfirmByKey };

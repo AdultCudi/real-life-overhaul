@@ -170,7 +170,7 @@ namespace RealLifeOverhaul
         {
             string type = reg.businessTypeName ?? string.Empty;
             return type.Contains("fastfood") || type.Contains("coffeeshop") || type.Contains("supermarket") || type.Contains("fruitandvegetable")
-                   || type.Contains("liquorstore") || type.Contains("nightclub");
+                   || type.Contains("liquorstore") || type.Contains("nightclub") || type.Contains("icecreamparlour") || type.Contains("teabar");   // the last two: Scripts/Shops
         }
 
         public static bool AllowsTheft(BuildingRegistration reg)

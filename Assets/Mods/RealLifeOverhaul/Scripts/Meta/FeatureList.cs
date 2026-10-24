@@ -34,6 +34,7 @@ namespace RealLifeOverhaul.Meta
             Calendar.CalendarGuide.Register();
             Designs.DesignsGuide.Register();
             Meals.MealsGuide.Register();
+            Shops.ShopsGuide.Register();
         }
 
         private static void RegisterGameplay()

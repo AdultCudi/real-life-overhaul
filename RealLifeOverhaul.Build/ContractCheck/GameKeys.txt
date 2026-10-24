@@ -7,6 +7,8 @@ ba:buildingtype_residential
 ba:buildingtype_retail
 ba:buildingtype_special
 ba:buildingtype_warehouse
+ba:businessproductsource_importer
+ba:businessproductsource_wholesaler
 ba:businesstype_appliancestore
 ba:businesstype_bank
 ba:businesstype_cardealership
@@ -32,6 +34,7 @@ ba:businesstype_importexport
 ba:businesstype_interiorinstallationfirm
 ba:businesstype_irs
 ba:businesstype_lawfirm
+ba:businesstype_liquorstore
 ba:businesstype_marketingagency
 ba:businesstype_movingservice
 ba:businesstype_nightclub

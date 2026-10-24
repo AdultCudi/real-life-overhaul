@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using RealLifeOverhaul.Economy.Dealership;
+using RealLifeOverhaul.Shops;
 
 namespace RealLifeOverhaul.Designs
 {
@@ -62,7 +63,7 @@ namespace RealLifeOverhaul.Designs
         public long Ticks;                   // last written, UTC: only to see that it changed
     }
 
-    /// <summary>What a Car Showroom keeps of one design, and what that comes to.</summary>
+    /// <summary>What a Car Showroom, bank branch or new kind of shop keeps of one design, and what that comes to.</summary>
     public sealed class ShowroomCut
     {
         public readonly HashSet<string> Kept = new HashSet<string>(StringComparer.Ordinal);
@@ -72,11 +73,18 @@ namespace RealLifeOverhaul.Designs
         public int Toilets;
         public int InLot;                    // pieces left out because they stood where the cars go
         public int Seats;                    // kept seats to wait on (DesignCatalogue.BranchSeats)
+        public int Points;                   // kept points of sale a shop's customers pay at (DesignCatalogue.ShopTills)
+        public int Leads;                    // kept furniture that shows a shop's primary goods (ShopKind.Leads)
+        public int Dropped;                  // shelves left out because they show none of a shop's goods
+        public string[] Restock = new string[0];   // pairs of item names, with "ba:itemname_": a kept shelf set to stock the first stocks the second
 
         public bool Valid => Furniture >= DesignCatalogue.ShowroomLeast && Toilets > 0;
 
         /// <summary>A bank branch's design: valid, and a till on a counter for its teller.</summary>
         public bool ValidBranch => Valid && Tills > 0;
+
+        /// <summary>A new kind of shop's design: valid, a point of sale, and something that shows a primary good.</summary>
+        public bool ValidShop => Valid && Points > 0 && Leads > 0;
     }
 
     /// <summary>
@@ -89,6 +97,8 @@ namespace RealLifeOverhaul.Designs
         private static readonly HashSet<string> Keeps = Build(DesignCatalogue.ShowroomKeeps);
         private static readonly HashSet<string> BranchKeeps = Build(DesignCatalogue.ShowroomKeeps, DesignCatalogue.BranchExtras);
         private static readonly HashSet<string> Seats = Build(DesignCatalogue.BranchSeats);
+        private static readonly HashSet<string> ShopShelves = Build(DesignCatalogue.ShopShelves);
+        private static readonly HashSet<string> ShopTills = Build(DesignCatalogue.ShopTills);
 
         private static HashSet<string> Build(params string[][] lists)
         {
@@ -280,18 +290,63 @@ namespace RealLifeOverhaul.Designs
         /// <summary>What a Car Showroom keeps: <see cref="DesignCatalogue.ShowroomKeeps"/> clear of the lot or above <see cref="DesignCatalogue.FloorTop"/>.</summary>
         public static ShowroomCut Cut(List<DesignItem> items, List<FloorBox> lot)
         {
-            return Cut(items, lot, Keeps);
+            return Cut(items, lot, Keeps.Contains);
         }
 
         /// <summary>What a bank branch keeps: the showroom's furniture and <see cref="DesignCatalogue.BranchExtras"/>, with no lot.</summary>
         public static ShowroomCut BranchCut(List<DesignItem> items)
         {
-            return Cut(items, NoLot, BranchKeeps);
+            return Cut(items, NoLot, BranchKeeps.Contains);
+        }
+
+        /// <summary>
+        /// What a new kind of shop keeps of a design of the game's shop it works as: everything but the shelves that show
+        /// none of its goods (<see cref="DesignCatalogue.ShopShelves"/> not in its own), and what stood on them. A null kind keeps nothing.
+        /// </summary>
+        public static ShowroomCut StockCut(List<DesignItem> items, ShopKind shop)
+        {
+            if (shop == null)
+            {
+                return new ShowroomCut();
+            }
+            HashSet<string> own = Build(shop.Shelves), leads = Build(shop.Leads);
+            ShowroomCut cut = Cut(items, NoLot, name => !ShopShelves.Contains(name) || own.Contains(name));
+            for (int i = 0; i < items.Count; i++)
+            {
+                if (cut.Keep[i])
+                {
+                    cut.Points += ShopTills.Contains(items[i].Name) ? 1 : 0;
+                    cut.Leads += leads.Contains(items[i].Name) ? 1 : 0;
+                }
+                else if (items[i].Name != null && ShopShelves.Contains(items[i].Name) && !own.Contains(items[i].Name))
+                {
+                    cut.Dropped++;
+                }
+            }
+            cut.Restock = new string[shop.Restock.Length];
+            for (int i = 0; i < shop.Restock.Length; i++)
+            {
+                cut.Restock[i] = DesignCatalogue.ItemPrefix + shop.Restock[i];
+            }
+            return cut;
+        }
+
+        /// <summary>What a shelf set to stock <paramref name="item"/> stocks in a cut design: its restocked good, or the same.</summary>
+        public static string Restocked(ShowroomCut cut, string item)
+        {
+            for (int i = 0; cut != null && i + 1 < cut.Restock.Length; i += 2)
+            {
+                if (cut.Restock[i] == item)
+                {
+                    return cut.Restock[i + 1];
+                }
+            }
+            return item;
         }
 
         private static readonly List<FloorBox> NoLot = new List<FloorBox>(0);
 
-        private static ShowroomCut Cut(List<DesignItem> items, List<FloorBox> lot, HashSet<string> keeps)
+        private static ShowroomCut Cut(List<DesignItem> items, List<FloorBox> lot, Func<string, bool> keeps)
         {
             var cut = new ShowroomCut();
             var byId = new Dictionary<string, DesignItem>(items.Count, StringComparer.Ordinal);
@@ -305,7 +360,7 @@ namespace RealLifeOverhaul.Designs
             for (int i = 0; i < items.Count; i++)
             {
                 DesignItem item = items[i];
-                if (string.IsNullOrEmpty(item.Id) || byId[item.Id] != item || !keeps.Contains(item.Name ?? string.Empty) || Stray(item))
+                if (string.IsNullOrEmpty(item.Id) || byId[item.Id] != item || string.IsNullOrEmpty(item.Name) || !keeps(item.Name) || Stray(item))
                 {
                     continue;
                 }
@@ -340,7 +395,7 @@ namespace RealLifeOverhaul.Designs
                     continue;
                 }
                 cut.Keep[i] = true;
-                string bare = item.Name.Substring(DesignCatalogue.ItemPrefix.Length);
+                string bare = item.Name.StartsWith(DesignCatalogue.ItemPrefix, StringComparison.Ordinal) ? item.Name.Substring(DesignCatalogue.ItemPrefix.Length) : item.Name;
                 cut.Furniture += bare.IndexOf(DesignCatalogue.LampMark, StringComparison.Ordinal) < 0 ? 1 : 0;
                 cut.Tills += bare == DesignCatalogue.Till ? 1 : 0;
                 cut.Toilets += bare == DesignCatalogue.Toilet ? 1 : 0;
@@ -406,6 +461,26 @@ namespace RealLifeOverhaul.Designs
                     named.Add(sources[i]);
                     into.Add(i);
                 }
+            }
+        }
+
+        /// <summary>
+        /// A new kind of shop's designs for one size, as places in <paramref name="sources"/>: each with a point of sale and
+        /// something showing a primary good, one of each name, at most <see cref="DesignCatalogue.ShopMost"/>, in the donors' order.
+        /// </summary>
+        public static void Stocks(List<DesignSource> sources, List<ShowroomCut> cuts, List<int> into)
+        {
+            into.Clear();
+            var named = new List<DesignSource>(DesignCatalogue.ShopMost);
+            for (int i = 0; i < sources.Count && into.Count < DesignCatalogue.ShopMost; i++)
+            {
+                ShowroomCut cut = cuts[i];
+                if (cut == null || !cut.ValidShop || Named(named, sources[i].Name))
+                {
+                    continue;
+                }
+                named.Add(sources[i]);
+                into.Add(i);
             }
         }
 

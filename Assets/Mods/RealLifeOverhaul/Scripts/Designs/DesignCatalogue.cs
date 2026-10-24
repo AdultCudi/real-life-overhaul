@@ -1,5 +1,6 @@
 using RealLifeOverhaul.Economy;
 using RealLifeOverhaul.Economy.Dealership;
+using RealLifeOverhaul.Shops;
 
 namespace RealLifeOverhaul.Designs
 {
@@ -8,7 +9,8 @@ namespace RealLifeOverhaul.Designs
     {
         Copy,       // the game's own designs of a business that works as this one does, whole
         Showroom,   // the game's own designs with the middle of the floor cleared for the Car Showroom's lot
-        Branch      // the game's own shop designs cut to a bank's furniture: a till on a counter, seats to wait on
+        Branch,     // the game's own shop designs cut to a bank's furniture: a till on a counter, seats to wait on
+        Stock       // the game's own designs of the shop it works as, without the shelves for goods it does not sell (Scripts/Shops)
     }
 
     /// <summary>Where the game keeps a kind of design it ships.</summary>
@@ -54,7 +56,7 @@ namespace RealLifeOverhaul.Designs
     /// </summary>
     public static class DesignCatalogue
     {
-        public const int RulesVersion = 2;          // raise when what a design is made of changes: every design is made again
+        public const int RulesVersion = 3;          // raise when what a design is made of changes: every design is made again
         public const string Office = "ba:buildingtype_office";
         public const string Retail = "ba:buildingtype_retail";
         public const string Installer = "InteriorDesigns";   // under StreamingAssets: the installation firms' designs
@@ -84,6 +86,9 @@ namespace RealLifeOverhaul.Designs
             new DesignKind(BranchCatalogue.TypeName, Retail, DesignWay.Branch,
                 Offered("JewelryStore"), Offered("Hairdresser"), Offered("ElectronicsStore"), Offered("Bookstore"), Offered("LiquorStore"), Offered("GiftShop"),
                 Offered("Florist"), Offered("ClothingStore"), Offered("CoffeeShop"), Offered("Gym"), Offered("FruitAndVegetableStore"), Offered("Supermarket")),
+            new DesignKind(ShopsCatalogue.IceCream, Retail, DesignWay.Stock, Offered("CoffeeShop"), Offered("FastFoodRestaurant")),
+            new DesignKind(ShopsCatalogue.TeaBar, Retail, DesignWay.Stock, Offered("CoffeeShop")),
+            new DesignKind(ShopsCatalogue.Tobacconist, Retail, DesignWay.Stock, Offered("LiquorStore")),
             new DesignKind(DealerCatalogue.TypeName, Retail, DesignWay.Showroom,
                 new Donor(DonorRoot.Layouts, "CarDealership"), Offered("JewelryStore"), Offered("ElectronicsStore"), Offered("LiquorStore"), Offered("Bookstore"),
                 Offered("ClothingStore"), Offered("GiftShop"), Offered("Florist"), Offered("Hairdresser"), Offered("CoffeeShop"), Offered("FruitAndVegetableStore"),
@@ -135,6 +140,24 @@ namespace RealLifeOverhaul.Designs
         };
 
         public const int BranchMost = 4;            // designs a bank branch is offered for a size at most
+        public const int ShopMost = 6;              // designs a new kind of shop is offered for a size at most
+
+        /// <summary>
+        /// Every piece of the game's furniture that shows goods to customers (its ShowcaseShelf items), without "ba:itemname_":
+        /// a new kind of shop's design keeps only those of them that show its own goods (ShopKind.Shelves).
+        /// </summary>
+        public static readonly string[] ShopShelves =
+        {
+            "bakeryshowcase", "clothingrack", "clothingrackangled", "cocktailbarbeershelf", "cocktailbardrinkscounter", "concessionsdisplaycase",
+            "drinksfridge", "drinksshelf", "fruitpallet", "hairdressershelf", "hotdoggrill", "icecreamcounter", "industrialcoffeemachine",
+            "industrialfreezer", "industrialfridge", "industrialfryermachine", "industrialgrill", "jewelryfloorshowcase", "largebookshelf",
+            "largedrinksfridge", "pizzaoven", "productdisplaystandtiered", "productdisplaytable", "productpanel", "roundedshelf", "saladbar",
+            "singlebookshelf", "slushimachine", "smallindustrialfreezer", "tobaccoshelf1", "tobaccoshelf2", "tobaccoshelf3", "wineshelf",
+            "woodencocktailbarbeershelf", "woodencocktailbardrinkscounter", "woodenproductcrate", "woodensaladbar"
+        };
+
+        /// <summary>The game's points of sale a shop's customers pay at, without "ba:itemname_".</summary>
+        public static readonly string[] ShopTills = { "cashregister", "checkoutcounterleft", "checkoutcounterright" };
 
         public const string Till = "cashregister";       // the showroom's salesperson waits by it
         public const string Toilet = "toiletstall";
