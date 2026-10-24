@@ -78,18 +78,40 @@ namespace RealLifeOverhaul.Rivals
             return amount * RivalCatalogue.Clamp(level, 500, 4000) / 1000L;
         }
 
-        /// <summary>The player's tier by their worth, the thresholds at today's prices.</summary>
+        /// <summary>The player's tier by their worth, the thresholds at today's prices, the first at its default.</summary>
         public static int Tier(long worth, int level)
+        {
+            return Tier(worth, level, RivalCatalogue.TierFrom[1]);
+        }
+
+        /// <summary>The player's tier by their worth with the first tier from <paramref name="firstFrom"/> (the option, at the start's prices).</summary>
+        public static int Tier(long worth, int level, long firstFrom)
         {
             int tier = 0;
             for (int i = 1; i < RivalCatalogue.Tiers; i++)
             {
-                if (worth >= At(RivalCatalogue.TierFrom[i], level))
+                if (worth >= At(From(i, firstFrom), level))
                 {
                     tier = i;
                 }
             }
             return tier;
+        }
+
+        /// <summary>
+        /// Where a tier starts at the start's prices: the first from the option's amount, kept between today's threshold and the
+        /// second tier's, so a hand edited setting can neither bring the tycoons sooner nor skip a tier.
+        /// </summary>
+        public static long From(int tier, long firstFrom)
+        {
+            tier = RivalCatalogue.Clamp(tier, 0, RivalCatalogue.Tiers - 1);
+            return tier == 1 ? Math.Max(RivalCatalogue.TierFrom[1], Math.Min(firstFrom, RivalCatalogue.TierFrom[2] - 1L)) : RivalCatalogue.TierFrom[tier];
+        }
+
+        /// <summary>The option's amount for a step (its index in <see cref="RivalCatalogue.FirstFromSteps"/>); an unknown step is the default.</summary>
+        public static long FirstFrom(int step)
+        {
+            return step >= 0 && step < RivalCatalogue.FirstFromSteps.Length ? RivalCatalogue.FirstFromSteps[step] : RivalCatalogue.FirstFromSteps[0];
         }
 
         /// <summary>Days between two moves for a tier and a strength, before the drawn jitter.</summary>
@@ -159,7 +181,7 @@ namespace RealLifeOverhaul.Rivals
             {
                 return r;
             }
-            int tier = Tier(w.Worth, w.Level);
+            int tier = Tier(w.Worth, w.Level, w.FirstFrom);
             int from = f.SettledDay < 0 ? day : Math.Max(f.SettledDay + 1, day - CatchUpMost + 1);
             for (int d = from; d <= day; d++)
             {

@@ -70,6 +70,8 @@ Pay is multiplied by 1 + 0.08 per level above the first (a level every 40 flyers
 Deductions only ever reduce what a job pays; a slip never goes below zero.
 Three failed shifts in a job and it lets the player go for three days; a good shift takes a strike off.
 
+A ride-hail fare's comfort starts at 100 and is judged by a table of `Kinds/TaxiComfortRules`, picked once as the passenger gets in. As always (the option "Ride fares: easier passengers" off): a hard stop, swerve or bump costs 8, at most once every 3 seconds, a hard stop is the car's own (`TaxiJob.Tune`), a bump 5.5 m/s2 more in a tick, speeding above 26 m/s costs 4 a second. Easier passengers: 4, once every 6 seconds, 1.35 times the car's hard stop (never past the 9.5 m/s2 of an emergency stop), a bump 8 m/s2 more, speeding 1.5 a second. Crashes (40, or 22 at 8 m/s or less), police stops (20), the tip by comfort and the slip's cut of 30 % under 30 comfort are the same in both. Options > Tests, "Ride fares: the passengers' table in effect", writes both tables and the one in effect to Player.log with PASS or FAIL. `EconomyCheck` TaxiComfortChecks checks the tables, a rough minute under each and that the gig reads only the table.
+
 Work spends energy and trains a skill through the game's own systems, and never takes energy below 12.
 
 ## Pay against the game's
