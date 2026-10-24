@@ -133,7 +133,7 @@ namespace RealLifeOverhaul.NewBuildings
             for (int i = 0; i < designs.Count; i++)
             {
                 DesignEntry d = designs[i];
-                if (d != null && !d.Batched && (type == null || string.Equals(d.Type, type, System.StringComparison.Ordinal)) && NewBuildingsRules.Fits(d, width, depth))
+                if (NewBuildingsRules.Copyable(d) && (type == null || string.Equals(d.Type, type, System.StringComparison.Ordinal)) && NewBuildingsRules.Fits(d, width, depth))
                 {
                     Fits.Add(i);
                 }

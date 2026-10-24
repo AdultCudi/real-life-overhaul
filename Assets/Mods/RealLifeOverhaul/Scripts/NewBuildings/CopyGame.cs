@@ -35,6 +35,7 @@ namespace RealLifeOverhaul.NewBuildings
         private static readonly Dictionary<string, int> ByKey = new Dictionary<string, int>(512, StringComparer.Ordinal);   // "name|size": its design
         private static readonly Dictionary<int, Transform> Templates = new Dictionary<int, Transform>(32);   // a design's template, working ones at -1 - index
         private static readonly List<Renderer> Drawn = new List<Renderer>(128);
+        private static readonly List<Collider> Solids = new List<Collider>(64);
         private static readonly List<Component> Parts = new List<Component>(256);
         private static readonly List<MeshFilter> Meshes = new List<MeshFilter>(64);
 
@@ -157,15 +158,22 @@ namespace RealLifeOverhaul.NewBuildings
             Designs.Sort(NewBuildingsRules.CompareDesigns);
             ByKey.Clear();
             _batched = 0;
+            int strays = 0, doorsBack = 0, copyable = 0;
             for (int i = 0; i < Designs.Count; i++)
             {
-                ByKey[Designs[i].Name + "|" + Designs[i].Size] = i;
-                _batched += Designs[i].Batched ? 1 : 0;
+                DesignEntry d = Designs[i];
+                ByKey[d.Name + "|" + d.Size] = i;
+                _batched += d.Batched ? 1 : 0;
+                strays += !d.Batched && d.Strays ? 1 : 0;
+                doorsBack += !d.Batched && !d.Strays && NewBuildingsRules.DoorBehind(d) > NewBuildingsRules.DoorBackMost ? 1 : 0;
+                copyable += NewBuildingsRules.Copyable(d) ? 1 : 0;
             }
             _ready = true;
             Logger?.Info("Copy check (catalogue): " + _measured + " of the city's buildings measured, " + Designs.Count + " designs by size (" + _batched
-                         + " of them drawn in a static batch, never copied); " + _dlc + " buildings for a DLC left out, " + _skipped + " of a kind never copied (special, a Hamptons house, "
-                         + "another controller, no door, leaning): " + (Designs.Count > _batched ? "PASS" : "FAIL, no design can be copied"));
+                         + " of them drawn in a static batch, " + strays + " with a part of another place under them, " + doorsBack + " with their door more than "
+                         + NewBuildingsRules.DoorBackMost.ToString("F0", System.Globalization.CultureInfo.InvariantCulture) + " m behind their front: never copied); " + _dlc
+                         + " buildings for a DLC left out, " + _skipped + " of a kind never copied (special, a Hamptons house, another controller, no door, leaning): "
+                         + (copyable > 0 ? "PASS" : "FAIL, no design can be copied"));
         }
 
         // One building: its ground for the checks, and a design entry if it can be copied.
@@ -255,8 +263,9 @@ namespace RealLifeOverhaul.NewBuildings
         }
 
         /// <summary>
-        /// A building's measures round its root, in its root's own turn: the footprint and height from its box (the game's
-        /// shadow and map look), else its renderers; its first door and the way that door faces out. False for a leaning one.
+        /// A building's measures round its root, in its root's own turn: its box (the game's shadow and map look, else its
+        /// renderers), then every part that shows or stands round it (<see cref="MeasureParts"/>), so the footprint is all the
+        /// ground it takes; its first door and the way that door faces out, squared to the root. False for a leaning one.
         /// </summary>
         public static bool Describe(CityBuildingController c, DesignEntry into)
         {
@@ -310,16 +319,75 @@ namespace RealLifeOverhaul.NewBuildings
             Transform door = c.entranceDoors[0].doorTransform;
             Vector3 at = unturn * (door.position - origin);
             Vector3 outward = Vector3.ProjectOnPlane(door.forward, Vector3.up);
-            into.MinX = minX;
-            into.MaxX = maxX;
-            into.MinZ = minZ;
-            into.MaxZ = maxZ;
-            into.Height = Mathf.Max(1f, top);
             into.DoorX = at.x;
             into.DoorZ = at.z;
             into.DoorY = at.y;
-            into.DoorFacing = NewBuildingsRules.Turn((outward.sqrMagnitude > 0.0001f ? Quaternion.LookRotation(outward).eulerAngles.y : yaw) - yaw);
+            NewBuildingsRules.Begin(into, minX, maxX, minZ, maxZ, Mathf.Max(1f, top));
+            MeasureParts(c, box, unturn, origin, into);
+            float facing = NewBuildingsRules.Turn((outward.sqrMagnitude > 0.0001f ? Quaternion.LookRotation(outward).eulerAngles.y : yaw) - yaw);
+            into.DoorFacing = NewBuildingsRules.SquareFacing(facing, at.x, at.z, minX, maxX, minZ, maxZ);
             return true;
+        }
+
+        // Every drawn part (a mesh switched on, not only a shadow, the box apart) and every solid one (a collider switched on,
+        // not a trigger) of a building, as the copy keeps them (StripWorking and StripLook keep meshes and solid colliders).
+        private static void MeasureParts(CityBuildingController c, MeshRenderer box, Quaternion unturn, Vector3 origin, DesignEntry into)
+        {
+            Drawn.Clear();
+            c.GetComponentsInChildren(false, Drawn);
+            for (int i = 0; i < Drawn.Count; i++)
+            {
+                Renderer r = Drawn[i];
+                if (!(r is MeshRenderer) || r == box || !r.enabled || r.shadowCastingMode == UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly)
+                {
+                    continue;
+                }
+                if (r.isPartOfStaticBatch)
+                {
+                    Measured(r.bounds, Matrix4x4.identity, false, unturn, origin, into);   // a batch's mesh is the batch's: its own box is the world's
+                }
+                else if (r.TryGetComponent(out MeshFilter filter) && filter.sharedMesh != null)
+                {
+                    Measured(filter.sharedMesh.bounds, r.transform.localToWorldMatrix, false, unturn, origin, into);
+                }
+            }
+            Drawn.Clear();
+            Solids.Clear();
+            c.GetComponentsInChildren(false, Solids);
+            for (int i = 0; i < Solids.Count; i++)
+            {
+                Collider k = Solids[i];
+                if (k == null || !k.enabled || k.isTrigger)
+                {
+                    continue;
+                }
+                if (k is BoxCollider cube)
+                {
+                    Measured(new Bounds(cube.center, cube.size), cube.transform.localToWorldMatrix, true, unturn, origin, into);
+                }
+                else if (k is MeshCollider mesh && mesh.sharedMesh != null)
+                {
+                    Measured(mesh.sharedMesh.bounds, mesh.transform.localToWorldMatrix, true, unturn, origin, into);
+                }
+                else
+                {
+                    Measured(k.bounds, Matrix4x4.identity, true, unturn, origin, into);
+                }
+            }
+            Solids.Clear();
+        }
+
+        // One part: its box's eight corners taken to the root's frame, then the rules' say on it.
+        private static void Measured(Bounds b, Matrix4x4 toWorld, bool solid, Quaternion unturn, Vector3 origin, DesignEntry into)
+        {
+            float minX = float.MaxValue, minZ = float.MaxValue, maxX = float.MinValue, maxZ = float.MinValue, top = float.MinValue, bottom = float.MaxValue;
+            for (int i = 0; i < 8; i++)
+            {
+                Vector3 p = unturn * (toWorld.MultiplyPoint3x4(new Vector3((i & 1) == 0 ? b.min.x : b.max.x, (i & 2) == 0 ? b.min.y : b.max.y, (i & 4) == 0 ? b.min.z : b.max.z)) - origin);
+                Grow(p, ref minX, ref minZ, ref maxX, ref maxZ, ref top);
+                bottom = Mathf.Min(bottom, p.y);
+            }
+            NewBuildingsRules.Part(into, solid, minX, maxX, minZ, maxZ, bottom, top);
         }
 
         private static void Grow(Vector3 p, ref float minX, ref float minZ, ref float maxX, ref float maxZ, ref float top)
@@ -894,7 +962,7 @@ namespace RealLifeOverhaul.NewBuildings
             for (int k = 0; k < NearestKept; k++)
             {
                 DesignEntry entry = Near[k] != null ? DescribeOne(Near[k], out _) : null;
-                if (entry != null && !entry.Batched)
+                if (NewBuildingsRules.Copyable(entry))
                 {
                     design = entry;
                     return Near[k];

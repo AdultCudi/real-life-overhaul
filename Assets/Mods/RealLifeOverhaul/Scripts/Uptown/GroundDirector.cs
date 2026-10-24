@@ -209,7 +209,8 @@ namespace RealLifeOverhaul.Uptown
             UptownLots.Laid(_walkable, _laidWhy);
             _layMs = Ms(began);
             Logger?.Info("Uptown: laid behind the loading screen in " + _layMs.ToString("F0", Inv) + " ms: " + RoadRules.Words(build) + " in " + _streetsMs.ToString("F0", Inv)
-                         + " ms; " + _copied + " pieces of the game's copied (" + GroundGame.GroundsLaid + " blocks' grounds, " + GroundGame.SceneryLaid + " past the walls) in "
+                         + " ms; " + _copied + " pieces of the game's copied (" + GroundGame.GroundsLaid + " blocks' grounds, " + GroundGame.SceneryLaid + " past the walls; "
+                         + GroundGame.Unpaved + " block grounds' slab edges laid as their middles) in "
                          + _artMs.ToString("F0", Inv) + " ms; the player's walking ground " + (_walkable ? "grown in " + _playerMs.ToString("F0", Inv) + " ms" : "NOT laid")
                          + ", the pedestrians' " + (_people ? "in " + _peopleMs.ToString("F0", Inv) + " ms" : "not (" + _peopleWhy + "), so no one walks there") + "; " + _hidden
                          + " pieces of the backdrop and " + _strays + " strays put away, " + _opened + " of the game's walls opened, " + GroundGame.Built
