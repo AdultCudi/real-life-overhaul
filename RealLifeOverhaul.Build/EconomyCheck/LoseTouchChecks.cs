@@ -269,7 +269,8 @@ internal static partial class Program
         for (int l = 0; l < codes.Length; l++)
         {
             Dictionary<string, string> words = LoadWords(System.IO.Path.Combine(folder, codes[l] + ".json"));
-            Check(words != null && words.TryGetValue("reallife_changes_next", out string next) && next.Contains(news[l]) && next.IndexOf(news[l], StringComparison.Ordinal) < FixAt(next),
+            string next = words != null ? NewsRow(words, news[l]) : null;
+            Check(next != null && next.IndexOf(news[l], StringComparison.Ordinal) < FixAt(next),
                 "lose touch: What's new's next row says so in " + codes[l] + ", before the fixes");
             Check(words != null && !words.ContainsKey("reallife_social_people_all_met"), "lose touch: the People page's old last line is gone in " + codes[l]);
             if (l >= 3)
@@ -303,6 +304,24 @@ internal static partial class Program
             Check(page.Contains(guide[l]) && page.Contains("{social_lose_days}") && page.Contains("{social_cast}"), "lose touch: the Guide's People page says how, in " + codes[l]);
             Check(words.TryGetValue("reallife_street_note_full", out string note) && note.Length <= 240, "lose touch: the street's notice is a notification's length in " + codes[l]);
         }
+    }
+
+    // The What's new row that holds a line: the next row while it is unreleased, the version's own row once the version
+    // script has numbered it (a check on the next row alone fails on every release's versioned tree). Null when none has it.
+    internal static string NewsRow(Dictionary<string, string> words, string line)
+    {
+        if (words.TryGetValue("reallife_changes_next", out string next) && next.Contains(line))
+        {
+            return next;
+        }
+        foreach (KeyValuePair<string, string> kv in words)
+        {
+            if (kv.Key.StartsWith("reallife_changes_", StringComparison.Ordinal) && !kv.Key.EndsWith("_title", StringComparison.Ordinal) && kv.Value.Contains(line))
+            {
+                return kv.Value;
+            }
+        }
+        return null;
     }
 
     // Where a next row's fixes begin, or its length when it has none.

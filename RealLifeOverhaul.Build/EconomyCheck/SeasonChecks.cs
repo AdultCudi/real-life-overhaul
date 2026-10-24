@@ -344,7 +344,8 @@ internal static partial class Program
         bool next = true;
         for (int l = 0; l < codes.Length; l++)
         {
-            next &= words[l].TryGetValue("reallife_changes_next", out string row) && FixMarks.TryGetValue(codes[l], out string mark)
+            string row = NewsRow(words[l], Lead(codes[l]));
+            next &= row != null && FixMarks.TryGetValue(codes[l], out string mark)
                     && (row.IndexOf(mark, StringComparison.Ordinal) < 0 || row.IndexOf(Lead(codes[l]), StringComparison.Ordinal) < row.IndexOf(mark, StringComparison.Ordinal))
                     && row.IndexOf(Lead(codes[l]), StringComparison.Ordinal) >= 0;
         }

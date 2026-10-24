@@ -400,7 +400,8 @@ internal static partial class Program
         {
             Check(en.TryGetValue(key, out string said) && said.Length <= 240, "shops: the notice " + key + " is at most 240 characters (" + (said ?? string.Empty).Length + ")");
         }
-        Check(en.TryGetValue("reallife_changes_next", out string next) && next.Contains("ice cream parlour") && next.Contains("tobacconist"), "shops: What's new's next row has the new kinds of shop");
+        string next = NewsRow(en, "ice cream parlour");
+        Check(next != null && next.Contains("tobacconist"), "shops: What's new's next row (or its version's row) has the new kinds of shop");
     }
 
     // Where the feature is wired in, and the other features that sort a business by kind know the new ones.
