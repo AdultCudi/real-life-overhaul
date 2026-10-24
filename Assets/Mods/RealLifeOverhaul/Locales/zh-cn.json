@@ -22948,5 +22948,6 @@
   "reallife_uptown_test_office_job_done": "你现在在上城 {address} 的办公楼上班，目的地已设在那里。进去后点击你的办公桌，开始工作日。",
   "reallife_uptown_test_office_job_none": "上城目前没有哪栋办公楼里有能让你找到工作的企业。Player.log 里写明了原因。",
   "reallife_uptown_test_office_job_no_work": "专业职位已关闭，所以没有工作可给。请在选项中打开。",
-  "reallife_work_place_district": "{district}，{address}"
+  "reallife_work_place_district": "{district}，{address}",
+  "reallife_transaction_bld_land_back": "土地退还：{name}"
 }

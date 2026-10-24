@@ -98,6 +98,7 @@ namespace RealLifeOverhaul.Uptown
         private static void Early()
         {
             Begin();
+            RetireEarlierPlan(SaveGameManager.Current);
             _earlyFor = SaveGameManager.Current;
             Know("before the city's scenes are built");
         }
@@ -158,6 +159,7 @@ namespace RealLifeOverhaul.Uptown
             if (SaveGameManager.Current == null || SaveGameManager.Current != _earlyFor)
             {
                 Begin();   // a load that did not pass the main menu (a funeral's backup) had no early step
+                RetireEarlierPlan(SaveGameManager.Current);   // before the district save's city step reads what it keeps
             }
             Know("at the city load");
             _cityWasNew = SaveGameManager.Current != null && !SaveGameManager.Current.CityInitialized;
@@ -184,6 +186,25 @@ namespace RealLifeOverhaul.Uptown
             LifeState read = LifeStore.Load(save != null ? save.modData : null, out int _);
             _stateUnread = read == null;
             _state = read ?? new LifeState();
+            if (_state.Plan < LayoutRules.PlanGeneration)
+            {
+                // Its finished buildings and opened lots name the first plan's lots, which are no more: the district starts afresh.
+                Logger?.Info("Uptown: this save's lots are of the district's plan " + _state.Plan + "; they were planned again, so its " + _state.Finished.Count
+                             + " finished building(s) and its opening pass are retired with the district's records, and the district is set up afresh.");
+                _state = new LifeState();
+            }
+            WriteState();   // the line says the plan's generation from this load on, whatever else happens
+        }
+
+        // A save of an earlier plan of Uptown's lots: its district's records name addresses that are now other buildings, of
+        // other sizes, so the district save lets them go before they go back (DistrictSaveDirector.Retire).
+        private static void RetireEarlierPlan(GameInstance save)
+        {
+            int plan = save != null ? LifeStore.PlanOf(save.modData) : LayoutRules.PlanGeneration;
+            if (plan < LayoutRules.PlanGeneration)
+            {
+                DistrictSaveDirector.Retire(save, LayoutStreets.Prefix, "Uptown's lots were planned again; this save's are of plan " + plan);
+            }
         }
 
         // Every lot with a building declared to the made buildings' engine as the game's own: the band's lots built from the

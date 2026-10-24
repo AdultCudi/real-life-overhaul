@@ -85,9 +85,9 @@ internal static partial class Program
         Check(plan.Count == 422 && built.Count == 351 && legacy.Count == 21 && first == 83 && firstBuilt == 44 && notClear == 1,
             "uptown fill: of the band's 422 lots, 351 are built from the first day, 70 left open and one kept empty; 44 of the first block's 83 (" + plan.Count + ", "
             + built.Count + ", " + legacy.Count + ", " + firstBuilt + " of " + first + ", " + notClear + " not clear)");
-        bool treeLot = plan.Exists(l => l.Id == "uptown_1_14_04") && !BuildingsRules.Clear("uptown_1_14_04") && !builtIds.Contains("uptown_1_14_04")
-                       && !leased.Contains("uptown_1_14_04") && BuildingsRules.Clear("uptown_1_14_05") && !BuildingsRules.Clear(null) && !BuildingsRules.Clear(string.Empty);
-        Check(treeLot, "uptown fill: the lot a tree of the game's leans over (uptown_1_14_04, the ground's scan) is neither built nor leased, and its neighbours are clear");
+        bool treeLot = plan.Exists(l => l.Id == "uptown_1_14_004") && !BuildingsRules.Clear("uptown_1_14_004") && !builtIds.Contains("uptown_1_14_004")
+                       && !leased.Contains("uptown_1_14_004") && BuildingsRules.Clear("uptown_1_14_005") && !BuildingsRules.Clear(null) && !BuildingsRules.Clear(string.Empty);
+        Check(treeLot, "uptown fill: the lot a tree of the game's leans over (uptown_1_14_004, the ground's scan) is neither built nor leased, and its neighbours are clear");
         bool keepsOld = legacy.IsSubsetOf(builtIds) && leased.IsSubsetOf(builtIds);
         Check(keepsOld, "uptown fill: the first block's quarter built before the band was filled stays built (saves hold their records), and every leased office is built");
 

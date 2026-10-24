@@ -157,6 +157,7 @@ namespace RealLifeOverhaul.Construction
                 state.NextClientDay = save.Day + TenderRules.NextIn(state.Seed, save.Day, TenderSource.Client);
                 state.NextPublicDay = save.Day + TenderRules.NextIn(state.Seed, save.Day, TenderSource.Public);
             }
+            Retire(state);
             if (state.NextRefitDay <= 0)
             {
                 state.NextRefitDay = save.Day + TenderRules.NextIn(state.Seed, save.Day, TenderSource.Refit);   // a line from before the refits' tenders too
@@ -172,6 +173,52 @@ namespace RealLifeOverhaul.Construction
             Logger?.Info("Construction: " + (version > 0 ? "read (line version " + version + ")" : "a new save for the construction game") + ": " + state.Projects.Count + " project(s), "
                          + state.Crews.Count + " crew(s), " + state.Lots.Count + " lot(s) owned, " + state.Developments.Count + " development(s) known; the company "
                          + (state.Firm.Founded > 0 ? "founded on day " + state.Firm.Founded : "not founded") + ".");
+        }
+
+        // Uptown's lots were planned again (the owner's "Like Manhattan", 24 Oct 2026): land on a lot of the first plan, which
+        // is no more, is given back at the price paid, and the developments and open tenders there let go. A project there
+        // stays to its end, as a project's site is the city's own.
+        private void Retire(BuildState state)
+        {
+            Func<string, bool> retired = ConstructionBridges.LotRetired;
+            if (retired == null)
+            {
+                return;
+            }
+            long back = 0;
+            int lots = 0, developments = 0, tenders = 0;
+            for (int i = state.Lots.Count - 1; i >= 0; i--)
+            {
+                if (retired(state.Lots[i].Id))
+                {
+                    back += Math.Max(0L, state.Lots[i].Paid);
+                    state.Lots.RemoveAt(i);
+                    lots++;
+                }
+            }
+            for (int i = state.Developments.Count - 1; i >= 0; i--)
+            {
+                if (retired(state.Developments[i].Lot))
+                {
+                    state.Developments.RemoveAt(i);
+                    developments++;
+                }
+            }
+            for (int i = state.Tenders.Count - 1; i >= 0; i--)
+            {
+                if (state.Tenders[i].State == TenderState.Open && retired(state.Tenders[i].Lot))
+                {
+                    state.Tenders.RemoveAt(i);
+                    tenders++;
+                }
+            }
+            if (lots + developments + tenders == 0)
+            {
+                return;
+            }
+            ConstructionGame.Give(back, "reallife_transaction_bld_land_back", ConstructionText.T("reallife_neighborhood_uptown"));
+            Logger?.Info("Construction: Uptown's lots were planned again: " + lots + " lot(s) of the first plan given back for " + back + ", " + developments
+                         + " development(s) and " + tenders + " open tender(s) there let go.");
         }
 
         // The state read now if the city's programme asks before the second's look has read it: a site's first hour after a

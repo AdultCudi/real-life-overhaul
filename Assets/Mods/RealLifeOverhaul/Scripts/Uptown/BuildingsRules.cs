@@ -81,9 +81,9 @@ namespace RealLifeOverhaul.Uptown
         public const string HomeType = NewBuildingsRules.HomeType;
 
         // Lots something of the game's own stands into, from the ground's scan of the game's scene (navlab/facts/band_clear.py):
-        // a building there would meet it, as the copy engine stands a design on the lot's front line. uptown_1_14_04: the crown
+        // a building there would meet it, as the copy engine stands a design on the lot's front line. uptown_1_14_004: the crown
         // of a tree on 1st Street's east pavement leans some 2 m over the lot's front from 3.5 m up.
-        private static readonly string[] NotClear = { "uptown_1_14_04" };
+        private static readonly string[] NotClear = { "uptown_1_14_004" };
 
         /// <summary>
         /// False for a lot something of the game's stands into: never built from the first day, leased, counted among a

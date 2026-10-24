@@ -22948,5 +22948,6 @@
   "reallife_uptown_test_office_job_done": "You now work at the office at {address} in Uptown, and your destination is set there. Go in, click your desk and start the working day.",
   "reallife_uptown_test_office_job_none": "No office in Uptown has a business where you can get a job just now. Player.log says why.",
   "reallife_uptown_test_office_job_no_work": "Professional jobs are switched off, so there is no job to give. Switch them on in the options.",
-  "reallife_work_place_district": "{address}, {district}"
+  "reallife_work_place_district": "{address}, {district}",
+  "reallife_transaction_bld_land_back": "Land given back: {name}"
 }

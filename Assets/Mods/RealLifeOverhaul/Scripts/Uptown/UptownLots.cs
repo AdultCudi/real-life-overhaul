@@ -132,6 +132,19 @@ namespace RealLifeOverhaul.Uptown
             return id != null && LayoutRules.ById.TryGetValue(id, out Lot lot) ? lot : null;
         }
 
+        /// <summary>
+        /// True for a lot id of the district's first plan ("uptown_1_02_01": two digits in its block), which the plan of
+        /// generation 2 replaced (its ids have three): a save's land, developments and tenders on one are retired. A string test.
+        /// </summary>
+        public static bool OfEarlierPlan(string id)
+        {
+            if (id == null || id.Length != 14 || !id.StartsWith("uptown_", StringComparison.Ordinal) || id[8] != '_' || id[11] != '_')
+            {
+                return false;
+            }
+            return char.IsDigit(id[7]) && char.IsDigit(id[9]) && char.IsDigit(id[10]) && char.IsDigit(id[12]) && char.IsDigit(id[13]) && Get(id) == null;
+        }
+
         /// <summary>The district's own ground as it is laid at every load (the whole band's), for the district save's Ground entries.</summary>
         public static IReadOnlyList<GroundRect> Ground => LayoutRules.BandGround;
 

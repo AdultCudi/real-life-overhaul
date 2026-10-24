@@ -58,6 +58,40 @@ namespace RealLifeOverhaul.DistrictSave
             return next == '_' || next == '-' || next == ':';
         }
 
+        /// <summary>
+        /// Lets go every kept record (and its item, at the same index) that names an address on a street whose id starts with
+        /// <paramref name="streetPrefix"/>: a feature's places of an earlier plan (DistrictSaveDirector.Retire). Returns how
+        /// many. The others stay in their order.
+        /// </summary>
+        public static int Retire(List<StoredRecord> records, List<object> items, string streetPrefix)
+        {
+            if (records == null || string.IsNullOrEmpty(streetPrefix))
+            {
+                return 0;
+            }
+            int gone = 0;
+            for (int i = records.Count - 1; i >= 0; i--)
+            {
+                StoredRecord r = records[i];
+                bool named = false;
+                for (int k = 0; r != null && k < r.Addresses.Count && !named; k++)
+                {
+                    named = r.Addresses[k].Street.StartsWith(streetPrefix, StringComparison.Ordinal);
+                }
+                if (!named)
+                {
+                    continue;
+                }
+                records.RemoveAt(i);
+                if (items != null && i < items.Count)
+                {
+                    items.RemoveAt(i);
+                }
+                gone++;
+            }
+            return gone;
+        }
+
         private static readonly string[] Codes =
         {
             "reg", "job", "stat", "emp", "cand", "loan", "tx", "recr", "dlv", "furn",

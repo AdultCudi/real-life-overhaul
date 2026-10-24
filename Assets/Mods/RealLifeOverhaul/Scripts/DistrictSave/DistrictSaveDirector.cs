@@ -467,6 +467,7 @@ namespace RealLifeOverhaul.DistrictSave
         // A pass over what is kept: what the game knows the places of goes back; the city's pass is the last of the load.
         private static void Pass(GameInstance save, PlaceSet places, bool city)
         {
+            Retired(save);
             if (KeptRecords.Count == 0)
             {
                 return;
