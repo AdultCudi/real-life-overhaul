@@ -296,11 +296,11 @@ namespace RealLifeOverhaul.Uptown
                     }
                 }
             }
+            t.Append("^g:").Append(s.Plan.ToString(Inv));
             if (s.Opened)
             {
                 t.Append("^o:1");
             }
-            t.Append("^g:").Append(s.Plan.ToString(Inv));
             if (s.OpenedLots.Count > 0)
             {
                 t.Append("^n:");

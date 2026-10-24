@@ -82,8 +82,8 @@ internal static partial class Program
         {
             notClear += BuildingsRules.Clear(lot.Id) ? 0 : 1;
         }
-        Check(plan.Count == 422 && built.Count == 351 && legacy.Count == 21 && first == 83 && firstBuilt == 44 && notClear == 1,
-            "uptown fill: of the band's 422 lots, 351 are built from the first day, 70 left open and one kept empty; 44 of the first block's 83 (" + plan.Count + ", "
+        Check(plan.Count == 555 && built.Count == 454 && legacy.Count == 20 && first == 79 && firstBuilt == 42 && notClear == 1,
+            "uptown fill: of the band's 555 lots, 454 are built from the first day, 100 left open and one kept empty; 42 of the first block's 79 (" + plan.Count + ", "
             + built.Count + ", " + legacy.Count + ", " + firstBuilt + " of " + first + ", " + notClear + " not clear)");
         bool treeLot = plan.Exists(l => l.Id == "uptown_1_14_004") && !BuildingsRules.Clear("uptown_1_14_004") && !builtIds.Contains("uptown_1_14_004")
                        && !leased.Contains("uptown_1_14_004") && BuildingsRules.Clear("uptown_1_14_005") && !BuildingsRules.Clear(null) && !BuildingsRules.Clear(string.Empty);
@@ -125,8 +125,8 @@ internal static partial class Program
             someOpen &= open >= 1;
             wrong = open == wanted ? wrong : wrong ?? "block " + block.Key + " has " + open + " open, wanted " + wanted;
         }
-        Check(blocks.Count == 37 && landmarksOpen && shares && someOpen,
-            "uptown fill: each landmark's own block open but for the old quarter's lots, every other block its share open and at least one, in each of the 37 blocks with lots"
+        Check(blocks.Count == 45 && landmarksOpen && shares && someOpen,
+            "uptown fill: each landmark's own block open but for the old quarter's lots, every other block its share open and at least one, in each of the 45 blocks with lots"
             + (wrong != null ? " (" + wrong + ")" : string.Empty));
         Check(LandmarkRules.OwnBlock(111) && LandmarkRules.OwnBlock(113) && LandmarkRules.OwnBlock(110) && !LandmarkRules.OwnBlock(106) && !LandmarkRules.OwnBlock(112)
               && !LandmarkRules.OwnBlock(201),
@@ -637,7 +637,7 @@ internal static partial class Program
             groundMs = Math.Min(groundMs, (d - c) * 1000.0 / Stopwatch.Frequency);
         }
         double all = rulesMs + lanesMs + groundMs;
-        Check(built == 351 && others > 0 && hits > 0 && all < 30.0,
+        Check(built == 454 && others > 0 && hits > 0 && all < 30.0,
             "uptown fill: the fill's own load work without the game's code, on the real plan: the built and leased lots and each one's structures and others in "
             + rulesMs.ToString("F2") + " ms, " + LanePoints + " lane points into squares in " + lanesMs.ToString("F2") + " ms, " + built + " buildings' lane and box checks in "
             + groundMs.ToString("F2") + " ms; " + all.ToString("F2") + " ms in all (wanted under 30 ms)");

@@ -343,6 +343,7 @@ namespace RealLifeOverhaul.Construction
             DistrictLives = null;
             LotTaken = null;
             LotBuilt = null;
+            LotRetired = null;
             SizeTaken = null;
             LandPrice = null;
             Finish = null;
