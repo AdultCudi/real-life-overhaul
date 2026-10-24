@@ -43,6 +43,7 @@ namespace RealLifeOverhaul.TestRun
         public static readonly string[,] NotRun =
         {
             { "reallife_uptown_test_office_job", "it gives the player a job at an Uptown office, ending the one they hold" },
+            { "reallife_uptown_test_special_go", "it only sets the destination at one special place a press; the special places' census is in the run" },
             { "reallife_trades_test_mason", "a mason's shift is a game of the player's hands: the bar waits on the keys" },
             { "reallife_trades_test_electrician", "an electrician's shift waits on the player's picks" },
             { "reallife_trades_test_crane", "a crane operator's shift waits on the player's keys" },
