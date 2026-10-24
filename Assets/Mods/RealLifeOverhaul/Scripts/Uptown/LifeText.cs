@@ -39,5 +39,10 @@ namespace RealLifeOverhaul.Uptown
         public const string OfficeJobDone = "reallife_uptown_test_office_job_done";
         public const string OfficeJobNone = "reallife_uptown_test_office_job_none";
         public const string OfficeJobNoWork = "reallife_uptown_test_office_job_no_work";
+        public const string TestSpecials = "reallife_uptown_test_specials";        // the special places' tests and their notices
+        public const string TestSpecialGo = "reallife_uptown_test_special_go";
+        public const string SpecialsDone = "reallife_uptown_test_specials_done";
+        public const string SpecialsNone = "reallife_uptown_test_specials_none";
+        public const string SpecialGo = "reallife_uptown_test_special_go_done";
     }
 }

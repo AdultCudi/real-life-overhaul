@@ -65,7 +65,7 @@ namespace RealLifeOverhaul.NewBuildings
         public int Number;         // its number in that street
         public string Size;        // the game's size id: the interior is the game's own structure of this size and version
         public int Version;
-        public string Type;        // the game's building type id, never the special one
+        public string Type;        // the game's building type id; the special one only with a Service (its towing reads one on every special-type building)
         public string District;    // the game's district id it is filed under
         public string Design;      // a design by name (DesignEntry.Name), or null for one a building of its size wears
         public MadeLot[] Lots;     // where it may stand, in order: the next free one after the preferred one is taken
@@ -76,6 +76,21 @@ namespace RealLifeOverhaul.NewBuildings
         public bool Life;          // a district's building in the game's own simulation: its registration the save's (the district save keeps it), never claimed
         public bool DesignArea;    // its record's floor area that of the game's building its design copies (it is as large as it looks), not its size's times Floors
         public MadeStructure[] Others;   // structures to take in order when no design of its own size fits a lot (a district's lot takes any of its class's); null for none
+        // A place of the game's own kind (a bank, an agency, a store, an importer): a copy of one of the game's special services
+        // on its record, as the game's special buildings have theirs. Only a district's building (Life) takes one.
+        public string Service;         // the asset name of the game's SpecialService copied (its own buildings carry the original); null for none
+        public string ServiceName;     // the copy's business name, its contact's key with its type; null keeps the game's own: a branch of that business
+        public string ServiceEmployer; // the boss's name of a job the service offers (its contact's key with the type): the game's own boss is another place's
+        public string[] ServiceGoods;  // an importer's own goods, its own settings with this list; null shares the game's settings
+        public string PlainType;       // the type it stands as where it may not take the service (a player holds its lot); null: it then stands down
+    }
+
+    /// <summary>What a district building's registration is to the game's service its declaration copies (<see cref="NewBuildingsRules.ServiceOf"/>).</summary>
+    public enum ServiceVerdict
+    {
+        Held,     // the player's (rented or owned), so another player's in a session too: it stays an ordinary building
+        Theirs,   // the service's already: its type and name the copy's
+        Fill      // new at this load, empty, or an AI business of the game's: filled as the game fills a special building's
     }
 
     /// <summary>One of the game's structures a made building may take instead of its own: a size, a version and a type.</summary>
@@ -742,9 +757,10 @@ namespace RealLifeOverhaul.NewBuildings
             {
                 return "its number " + spec.Number + " is not a house number";
             }
-            if (string.IsNullOrEmpty(spec.Type) || spec.Type == SpecialType)
+            string served = ServiceRefusal(spec, structureTakes);
+            if (served != null)
             {
-                return "the game's special building type needs a special service of the game's (its towing reads one), so it is never made";
+                return served;
             }
             if (structureTakes == null || !structureTakes(spec.Size, spec.Version, spec.Type))
             {
@@ -781,8 +797,57 @@ namespace RealLifeOverhaul.NewBuildings
         /// </summary>
         public static bool OtherTakes(MadeSpec spec, MadeStructure other, Func<string, int, string, bool> structureTakes, bool homesLeftOut)
         {
-            return spec != null && !string.IsNullOrEmpty(other.Type) && other.Type != SpecialType && structureTakes != null
+            // A service's layout is the game's for its own size and version alone (BusinessLayoutSetHelper), so it takes no other.
+            return spec != null && string.IsNullOrEmpty(spec.Service) && !string.IsNullOrEmpty(other.Type) && other.Type != SpecialType && structureTakes != null
                    && structureTakes(other.Size, other.Version, other.Type) && (other.Type != HomeType || homesLeftOut || spec.Life);
+        }
+
+        /// <summary>
+        /// Why a declaration's type and service cannot go together (English, for the log), or null. The game's special type
+        /// is made only with a service of the game's attached, as its towing reads the service's settings on every
+        /// special-type building (VehicleHelper); a service only on a district's building (its registration the save's, as
+        /// the game's special buildings' are), and the type it falls back to where a player holds its lot is an ordinary one
+        /// the game has that structure for.
+        /// </summary>
+        public static string ServiceRefusal(MadeSpec spec, Func<string, int, string, bool> structureTakes)
+        {
+            bool service = !string.IsNullOrEmpty(spec.Service);
+            if (string.IsNullOrEmpty(spec.Type) || (spec.Type == SpecialType && !service))
+            {
+                return "the game's special building type needs a special service of the game's (its towing reads one), so it is made only with one";
+            }
+            if (!service)
+            {
+                return null;
+            }
+            if (!spec.Life)
+            {
+                return "a special service of the game's stands only in a district's building, whose registration is the save's";
+            }
+            if (spec.PlainType == SpecialType || (spec.PlainType != null && (structureTakes == null || !structureTakes(spec.Size, spec.Version, spec.PlainType))))
+            {
+                return "the type it stands as without its service, " + spec.PlainType + ", is not one the game has size " + spec.Size + " version " + spec.Version + " for";
+            }
+            if (spec.ServiceGoods != null && spec.ServiceGoods.Length == 0)
+            {
+                return "an importer of its own goods has none";
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// What a district building's registration is to the service its declaration copies: the player's (rented or owned,
+        /// which in a Going Public session is also another player's) stays an ordinary building; of the service's type with
+        /// the copy's name it is the service's already; anything else (new at this load, empty, an AI business the game's
+        /// generator put there before the place was the service's) is filled as the game fills a special building's.
+        /// </summary>
+        public static ServiceVerdict ServiceOf(bool players, string type, string name, string serviceType, string serviceName)
+        {
+            if (players)
+            {
+                return ServiceVerdict.Held;
+            }
+            return !string.IsNullOrEmpty(serviceType) && type == serviceType && name == serviceName ? ServiceVerdict.Theirs : ServiceVerdict.Fill;
         }
 
         /// <summary>True when what ten copies in view add to the frame is under <see cref="MostAddedMs"/>.</summary>
