@@ -86,12 +86,14 @@ namespace RealLifeOverhaul.Uptown
         private static readonly string[] NotClear = { "uptown_1_14_04" };
 
         /// <summary>
-        /// False for a lot something of the game's stands into: never built from the first day, leased, counted among a
-        /// block's open lots, sold or developed (it is taken for the construction game and the landmarks), so it stays empty.
+        /// False for a lot something of the game's stands into, or one of the district's big special places stands on, spans
+        /// or keeps clear (BigPlacesRules.Holds): never built from the first day as one of the plan's ordinary buildings,
+        /// leased, counted among a block's open lots, sold or developed (it is taken for the construction game and the
+        /// landmarks), so it stays empty or the place's.
         /// </summary>
         public static bool Clear(string lotId)
         {
-            return !string.IsNullOrEmpty(lotId) && Array.IndexOf(NotClear, lotId) < 0;
+            return !string.IsNullOrEmpty(lotId) && Array.IndexOf(NotClear, lotId) < 0 && !BigPlacesRules.Holds(lotId);
         }
 
         /// <summary>How many of the first block's lots stand from the first day: a quarter, halves up, at least one when there are any.</summary>

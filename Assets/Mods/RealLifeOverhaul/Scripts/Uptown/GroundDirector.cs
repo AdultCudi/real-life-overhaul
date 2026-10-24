@@ -248,6 +248,7 @@ namespace RealLifeOverhaul.Uptown
                 Logger?.Info("Uptown check (streets): " + line);
             }
             Logger?.Info("Uptown: once the game was loaded, " + GroundGame.ParkingLanes + " parking lanes along its kerbs" + (refused > 0 ? " (" + refused + " not laid: " + why + ")" : string.Empty)
+                         + (GroundGame.LanesKeptOff > 0 ? " (" + GroundGame.LanesKeptOff + " kept off the big special places' mouths)" : string.Empty)
                          + " and " + GroundGame.PeopleZones + " pedestrians' zones" + (_people ? string.Empty : " (no pedestrians' ground)") + ".");
             return true;
         }

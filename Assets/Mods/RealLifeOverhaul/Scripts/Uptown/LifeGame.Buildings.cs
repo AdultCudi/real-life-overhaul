@@ -58,6 +58,16 @@ namespace RealLifeOverhaul.Uptown
             return DistrictSave.DistrictSaveDirector.KeptRegistration(lot.Street, lot.Number) != null;
         }
 
+        /// <summary>
+        /// True when the registration the district save keeps for a lot's address is someone's: the player's, rented or
+        /// owned, or another player's in a Going Public session. A big special place never takes such a lot.
+        /// </summary>
+        public static bool Someones(BuildingsLot lot)
+        {
+            BuildingRegistration reg = DistrictSave.DistrictSaveDirector.KeptRegistration(lot.Street, lot.Number);
+            return reg != null && (reg.RentedByPlayer || reg.BuildingOwnedByPlayer || GoingPublic.Foreign(reg));
+        }
+
         private static BuildingsClass ClassOf(LotClass kind)
         {
             switch (kind)
@@ -139,6 +149,23 @@ namespace RealLifeOverhaul.Uptown
         }
 
         /// <summary>
+        /// One of the district's big special places declared to the made buildings' engine as one of the game's own
+        /// (MadeSpec.Life): at its own lot's address, the game's special structure of the building it copies whole, filed
+        /// under Uptown, on its ground (its lot and the lots it spans), standing where BigPlacesRules puts it on that ground;
+        /// its floor area that of the game's building it copies. Made behind the loading screen while <paramref name="wanted"/> says so.
+        /// </summary>
+        public static MadeSpec BigSpec(BigPlace place, BuildingsLot ground, int traffic, Func<bool> wanted)
+        {
+            var lot = new MadeLot(ground.X, ground.Z, ground.Facing, ground.Width, ground.Depth) { Inset = place.Inset, Side = place.Side, SideGap = place.SideGap };
+            return new MadeSpec
+            {
+                Id = place.Lot, Street = ground.Street, Number = ground.Number, Size = place.Size, Version = place.Version, Type = BigPlacesRules.SpecialType,
+                District = DistrictValues.Id, Design = place.Design, Whole = true, Lots = new[] { lot }, Preferred = 0,
+                Traffic = traffic, Floors = 1, DesignArea = true, Life = true, Wanted = wanted
+            };
+        }
+
+        /// <summary>
         /// A district building that stands, into the game's lists of buildings: the city's (its generator, its rivals, its
         /// citizens' wishes) and the district's (its daily pass of businesses). Its record and registration are in the game's
         /// lookups already (the made buildings' engine put them there, the registration first).
@@ -211,6 +238,10 @@ namespace RealLifeOverhaul.Uptown
             }
             DesignEntry d = designs[made.DesignIndex];
             Transform root = made.Controller.transform;
+            if (d.Whole)
+            {
+                return CutWalls(root);
+            }
             if (!root.TryGetComponent(out NavMeshObstacle cut))
             {
                 cut = root.gameObject.AddComponent<NavMeshObstacle>();
@@ -227,6 +258,88 @@ namespace RealLifeOverhaul.Uptown
             if (!Cuts.Contains(cut))
             {
                 Cuts.Add(cut);
+            }
+            return true;
+        }
+
+        private static readonly List<Collider> Walls = new List<Collider>(8);
+        private const string WallCut = "RealLife walls cut";   // a whole copy's carving boxes stand under it, one a wall
+        private const float WallLeast = 1f;                    // m: a collider lower than this is ground (a forecourt, a car park), never carved
+
+        // A building copied whole carves its solid parts alone, the walls the game bakes its holes for: every collider under
+        // it that is no trigger and stands at least WallLeast high (a shop's shell, a garage's walls and doors, a pump
+        // island). Its car park, forecourt and yard are flat ground its people and cars use, and stay walkable. One carving
+        // box a part, under one holder made once a copy; the copy is never destroyed in a session.
+        private static bool CutWalls(Transform root)
+        {
+            Transform holder = root.Find(WallCut);
+            if (holder != null)
+            {
+                return true;
+            }
+            Walls.Clear();
+            root.GetComponentsInChildren(true, Walls);
+            var made = new GameObject(WallCut);
+            made.transform.SetParent(root, false);
+            int boxes = 0;
+            for (int i = 0; i < Walls.Count; i++)
+            {
+                Collider wall = Walls[i];
+                Bounds local;
+                if (wall == null || wall.isTrigger || !Local(wall, root, out local) || local.size.y < WallLeast)
+                {
+                    continue;
+                }
+                var piece = new GameObject(WallCut + " " + boxes);
+                piece.transform.SetParent(made.transform, false);
+                NavMeshObstacle cut = piece.AddComponent<NavMeshObstacle>();
+                cut.shape = NavMeshObstacleShape.Box;
+                cut.center = local.center;
+                cut.size = new Vector3(Mathf.Max(0.5f, local.size.x - 2f * CutInset), Mathf.Max(2f, local.size.y), Mathf.Max(0.5f, local.size.z - 2f * CutInset));
+                cut.carveOnlyStationary = true;
+                cut.carving = true;
+                cut.enabled = true;
+                if (boxes == 0)
+                {
+                    Cuts.Add(cut);   // one a building, as Carved counts buildings
+                }
+                boxes++;
+            }
+            Walls.Clear();
+            return boxes > 0;
+        }
+
+        // A collider's box in the copy's root's space: a box's own or a mesh's bounds, its eight corners carried over from
+        // the collider's object (an upright box round them where that object is turned).
+        private static bool Local(Collider wall, Transform root, out Bounds local)
+        {
+            local = default;
+            Bounds own;
+            if (wall is BoxCollider box)
+            {
+                own = new Bounds(box.center, box.size);
+            }
+            else if (wall is MeshCollider mesh && mesh.sharedMesh != null)
+            {
+                own = mesh.sharedMesh.bounds;
+            }
+            else
+            {
+                return false;
+            }
+            Transform at = wall.transform;
+            for (int k = 0; k < 8; k++)
+            {
+                Vector3 corner = new Vector3((k & 1) == 0 ? own.min.x : own.max.x, (k & 2) == 0 ? own.min.y : own.max.y, (k & 4) == 0 ? own.min.z : own.max.z);
+                Vector3 p = root.InverseTransformPoint(at.TransformPoint(corner));
+                if (k == 0)
+                {
+                    local = new Bounds(p, Vector3.zero);
+                }
+                else
+                {
+                    local.Encapsulate(p);
+                }
             }
             return true;
         }

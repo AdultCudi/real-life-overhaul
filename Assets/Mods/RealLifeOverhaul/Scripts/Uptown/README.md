@@ -9,6 +9,7 @@ Uptown: a district of the mod's own north of Manhattan, past 1st Avenue. Its gro
 - `GroundDirector.cs`: the load, step by step; `GroundGame.cs`, `GroundGame.Art.cs` and `GroundGame.Fog.cs` (the city map's fog, cut away over the band from `LayoutFog.cs`, data made offline from the game's own mesh): the only files that touch the game's scene for the ground.
 - `GroundSession.cs`: whether the district may stand at this load (its option and the Going Public session).
 - `BuildingsRules.cs`, then `LifeDirector.cs`: the district of the game on those lots: which lots are built from the first day and which stay open for the construction game, the offices leased to the city's rival builders, and the load step by step (`LifeGame*.cs` the only files of the district's life that touch the game).
+- `BigPlacesRules.cs`, then `LifeDirector.BigPlaces.cs`: its wholesale store and gas station, copies of the game's own whole, the lots they hold and where each stands (game-free, checked by EconomyCheck's `UptownBigChecks.cs`); their tests in `LifeDirector.BigTests.cs` and `LifeGame.BigPlaces.cs`.
 
 ## Documentation
 

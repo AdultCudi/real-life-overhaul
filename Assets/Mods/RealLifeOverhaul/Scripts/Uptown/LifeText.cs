@@ -33,5 +33,19 @@ namespace RealLifeOverhaul.Uptown
         public const string CostStart = "reallife_uptown_test_cost_start";
         public const string CostDone = "reallife_uptown_test_cost_done";
         public const string CostNone = "reallife_uptown_test_cost_none";
+
+        public const string TestStore = "reallife_uptown_test_store";            // the big special places' test buttons
+        public const string TestOrder = "reallife_uptown_test_store_order";
+        public const string TestStation = "reallife_uptown_test_station";
+        public const string TestFill = "reallife_uptown_test_station_fill";
+        public const string BigHere = "reallife_uptown_test_big_here";           // and their notices
+        public const string BigWrong = "reallife_uptown_test_big_wrong";
+        public const string BigNone = "reallife_uptown_test_big_none";
+        public const string OrderDone = "reallife_uptown_test_order_done";
+        public const string OrderNone = "reallife_uptown_test_order_none";
+        public const string OrderFailed = "reallife_uptown_test_order_failed";
+        public const string FillDone = "reallife_uptown_test_fill_done";
+        public const string FillCar = "reallife_uptown_test_fill_car";
+        public const string FillFailed = "reallife_uptown_test_fill_failed";
     }
 }

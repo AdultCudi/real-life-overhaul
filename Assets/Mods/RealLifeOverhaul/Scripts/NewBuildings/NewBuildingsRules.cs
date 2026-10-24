@@ -25,11 +25,15 @@ namespace RealLifeOverhaul.NewBuildings
         public float DoorY;         // m: that door's height above its root: the root stands this far below the ground at the door
         public float DoorFacing;    // degrees: the way its first door faces out, from its root's forward
         public int Source;          // the caller's index of the game's building it is copied from
+        public bool Whole;          // one of the game's special buildings copied whole, its workings with it (NewBuildingsRules.Whole): only ever named, never picked by size
+        public float Front = -1f;   // degrees from its root's forward of the side stood to the street; below 0, its door's (NewBuildingsRules.FrontOf)
     }
 
     /// <summary>
     /// A place a made building may stand: a rectangle of open ground with one side on a street. A design is stood in it
-    /// with its door on that side, in the middle of it and its front on the lot's front line.
+    /// with its door on that side, in the middle of it and its front on the lot's front line; a lot may instead stand it
+    /// <see cref="Inset"/> back from that line and against one of its sides (<see cref="Side"/>), as a special place copied
+    /// whole keeps the forecourt or car park the game's own has in front of it or beside it.
     /// </summary>
     public struct MadeLot
     {
@@ -38,6 +42,9 @@ namespace RealLifeOverhaul.NewBuildings
         public float Facing;   // degrees round the vertical, as the game turns things (0 = +Z): the way the street lies from the lot
         public float Width;    // m: along the street
         public float Depth;    // m: back from the street
+        public float Inset;    // m the design's front stands back from the lot's front line; 0 on it
+        public int Side;       // where across the lot it stands, looking out to the street: 0 in the middle, -1 against its left side, +1 its right
+        public float SideGap;  // m between that side of the lot and the design's (with Side not 0)
 
         public MadeLot(float x, float z, float facing, float width, float depth)
         {
@@ -46,6 +53,28 @@ namespace RealLifeOverhaul.NewBuildings
             Facing = facing;
             Width = width;
             Depth = depth;
+            Inset = 0f;
+            Side = 0;
+            SideGap = 0f;
+        }
+    }
+
+    /// <summary>
+    /// One of the game's special buildings whose workings are part of its look (a drive-in store's garage doors and their
+    /// triggers, a filling station's pumps, triggers and repair bays, all under its own controller), so that a special
+    /// place copies it whole: its design's name and size, and the side of it a place stands to its street.
+    /// </summary>
+    public struct WholeDesign
+    {
+        public readonly string Name;
+        public readonly string Size;
+        public readonly float Front;   // degrees from its root's forward; below 0, its door's side
+
+        public WholeDesign(string name, string size, float front)
+        {
+            Name = name;
+            Size = size;
+            Front = front;
         }
     }
 
@@ -72,6 +101,7 @@ namespace RealLifeOverhaul.NewBuildings
         public bool Life;          // a district's building in the game's own simulation: its registration the save's (the district save keeps it), never claimed
         public bool DesignArea;    // its record's floor area that of the game's building its design copies (it is as large as it looks), not its size's times Floors
         public MadeStructure[] Others;   // structures to take in order when no design of its own size fits a lot (a district's lot takes any of its class's); null for none
+        public bool Whole;         // its Design is one of the game's special buildings copied whole, its workings with it (NewBuildingsRules.Whole)
     }
 
     /// <summary>One of the game's structures a made building may take instead of its own: a size, a version and a type.</summary>
@@ -179,6 +209,37 @@ namespace RealLifeOverhaul.NewBuildings
 
         private const float Deg = (float)(Math.PI / 180.0);
 
+        /// <summary>
+        /// The game's special buildings the copy engine copies whole for a special place, Build 3682's, measured from the
+        /// city's scenes (not-in-repo filllab/facts/specials_scan.py): every part of each, its controller's garage doors,
+        /// pumps, triggers and parking spots, stands under its own root and names only it, so one Instantiate carries the
+        /// workings over to the copy's own controller.
+        /// </summary>
+        public static readonly WholeDesign[] Whole =
+        {
+            new WholeDesign("DriveInMurrayHill", "ba:buildingsize_e", -1f),   // Total Produce Trading's drive-in store: its door to the street, its two garage doors on its right
+            new WholeDesign("GasStationBuilding", "ba:buildingsize_a", 0f),   // the game's filling stations: the pumps' open end (+Z) to the street, as United Gasoline stands to 1st Avenue
+        };
+
+        /// <summary>The design's place in <see cref="Whole"/>, or -1 for a design never copied whole.</summary>
+        public static int WholeOf(string name, string size)
+        {
+            for (int i = 0; i < Whole.Length; i++)
+            {
+                if (string.Equals(Whole[i].Name, name, StringComparison.Ordinal) && string.Equals(Whole[i].Size, size, StringComparison.Ordinal))
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        /// <summary>The side of a design stood to its street, degrees from its root's forward: its door's, or a whole design's front.</summary>
+        public static float FrontOf(DesignEntry d)
+        {
+            return d.Front >= 0f ? d.Front : d.DoorFacing;
+        }
+
         /// <summary>A design's name: the scene object's name with Unity's copy numbers (" (1)") taken off the end.</summary>
         public static string DesignName(string objectName)
         {
@@ -254,10 +315,14 @@ namespace RealLifeOverhaul.NewBuildings
             return upY >= Math.Cos(UprightMost * Deg);
         }
 
-        /// <summary>A design's footprint in the frame of its door: u across it (to the door's right), v the way it faces out.</summary>
+        /// <summary>
+        /// A design's footprint in the frame of the side it stands to the street (<see cref="FrontOf"/>: its door's but for a
+        /// whole design's own front): u across it (to that side's right, looking out), v the way it faces out.
+        /// </summary>
         public static void DoorFrame(DesignEntry d, out float uMin, out float uMax, out float vMin, out float vMax)
         {
-            float s = (float)Math.Sin(d.DoorFacing * Deg), c = (float)Math.Cos(d.DoorFacing * Deg);
+            float front = FrontOf(d);
+            float s = (float)Math.Sin(front * Deg), c = (float)Math.Cos(front * Deg);
             uMin = vMin = float.MaxValue;
             uMax = vMax = float.MinValue;
             for (int i = 0; i < 4; i++)
@@ -287,7 +352,21 @@ namespace RealLifeOverhaul.NewBuildings
         /// </summary>
         public static int Pick(IList<DesignEntry> designs, string size, string type, string named, float width, float depth, string id)
         {
+            return Pick(designs, size, type, named, width, depth, id, false);
+        }
+
+        /// <summary>
+        /// As above; with <paramref name="whole"/> the named design must be one of the game's special buildings copied whole
+        /// (<see cref="Whole"/>), and without it never one: such a design is only ever named by a special place, never picked
+        /// by size, as its workings belong to the service it copies.
+        /// </summary>
+        public static int Pick(IList<DesignEntry> designs, string size, string type, string named, float width, float depth, string id, bool whole)
+        {
             if (designs == null)
+            {
+                return -1;
+            }
+            if (whole && string.IsNullOrEmpty(named))
             {
                 return -1;
             }
@@ -295,7 +374,7 @@ namespace RealLifeOverhaul.NewBuildings
             {
                 for (int i = 0; i < designs.Count; i++)
                 {
-                    if (string.Equals(designs[i].Name, named, StringComparison.Ordinal) && !designs[i].Batched && Fits(designs[i], width, depth))
+                    if (string.Equals(designs[i].Name, named, StringComparison.Ordinal) && designs[i].Whole == whole && !designs[i].Batched && Fits(designs[i], width, depth))
                     {
                         return i;
                     }
@@ -333,7 +412,7 @@ namespace RealLifeOverhaul.NewBuildings
 
         private static bool Candidate(DesignEntry d, string size, float width, float depth)
         {
-            return string.Equals(d.Size, size, StringComparison.Ordinal) && !d.Batched && Fits(d, width, depth);
+            return string.Equals(d.Size, size, StringComparison.Ordinal) && !d.Whole && !d.Batched && Fits(d, width, depth);
         }
 
         /// <summary>
@@ -375,7 +454,7 @@ namespace RealLifeOverhaul.NewBuildings
 
         private static bool Fitting(DesignEntry d, float width, float depth, string other)
         {
-            return d != null && !d.Batched && Fits(d, width, depth) && !string.Equals(d.Name, other, StringComparison.Ordinal);
+            return d != null && !d.Whole && !d.Batched && Fits(d, width, depth) && !string.Equals(d.Name, other, StringComparison.Ordinal);
         }
 
         // m2: the ground a design takes, measured from its door.
@@ -386,19 +465,28 @@ namespace RealLifeOverhaul.NewBuildings
         }
 
         /// <summary>
-        /// Where a design's root stands on a lot and its turn (degrees): its door to the street, its front on the lot's front
-        /// line, in the middle of the lot's width.
+        /// Where a design's root stands on a lot and its turn (degrees): its door (a whole design's front) to the street, its
+        /// front on the lot's front line, or <see cref="MadeLot.Inset"/> back from it, in the middle of the lot's width or
+        /// against the side <see cref="MadeLot.Side"/> names.
         /// </summary>
         public static void Place(DesignEntry d, MadeLot lot, out float x, out float z, out float yaw)
         {
             DoorFrame(d, out float uMin, out float uMax, out _, out float vMax);
-            yaw = Turn(lot.Facing - d.DoorFacing);
+            yaw = Turn(lot.Facing - FrontOf(d));
             float f = lot.Facing * Deg;
             float fx = (float)Math.Sin(f), fz = (float)Math.Cos(f);    // the way the street lies
             float rx = (float)Math.Cos(f), rz = -(float)Math.Sin(f);   // along the street, to the right of it
-            float across = (uMin + uMax) * 0.5f, toFront = lot.Depth * 0.5f - vMax;
-            x = lot.X + toFront * fx - across * rx;
-            z = lot.Z + toFront * fz - across * rz;
+            float across = (uMin + uMax) * 0.5f, toFront = lot.Depth * 0.5f - lot.Inset - vMax;
+            float aside = Aside(lot, uMax - uMin);
+            x = lot.X + toFront * fx + (aside - across) * rx;
+            z = lot.Z + toFront * fz + (aside - across) * rz;
+        }
+
+        // m from the lot's middle to the footprint's, to the right along the street: none in the middle, else against the side named.
+        private static float Aside(MadeLot lot, float wide)
+        {
+            float room = Math.Max(0f, lot.Width * 0.5f - lot.SideGap - wide * 0.5f);
+            return lot.Side > 0 ? room : lot.Side < 0 ? -room : 0f;
         }
 
         /// <summary>
@@ -430,9 +518,11 @@ namespace RealLifeOverhaul.NewBuildings
             halfDepth = (vMax - vMin) * 0.5f;
             float f = lot.Facing * Deg;
             float fx = (float)Math.Sin(f), fz = (float)Math.Cos(f);
-            float toMiddle = lot.Depth * 0.5f - halfDepth;
-            cx = lot.X + toMiddle * fx;
-            cz = lot.Z + toMiddle * fz;
+            float rx = (float)Math.Cos(f), rz = -(float)Math.Sin(f);
+            float toMiddle = lot.Depth * 0.5f - lot.Inset - halfDepth;
+            float aside = Aside(lot, uMax - uMin);
+            cx = lot.X + toMiddle * fx + aside * rx;
+            cz = lot.Z + toMiddle * fz + aside * rz;
         }
 
         /// <summary>Where a design's door stands in the world when its root is at (x, z) turned by <paramref name="yaw"/> degrees.</summary>
@@ -621,6 +711,10 @@ namespace RealLifeOverhaul.NewBuildings
             {
                 return "its number " + spec.Number + " is not a house number";
             }
+            if (spec.Whole && WholeNamed(spec.Design) < 0)
+            {
+                return "a building copied whole names one of the game's special buildings the copy engine copies whole, not " + (spec.Design ?? "(none)");
+            }
             if (string.IsNullOrEmpty(spec.Type) || spec.Type == SpecialType)
             {
                 return "the game's special building type needs a special service of the game's (its towing reads one), so it is never made";
@@ -651,6 +745,19 @@ namespace RealLifeOverhaul.NewBuildings
                 return "its floors " + spec.Floors + " are not between 1 and " + MostFloors;
             }
             return null;
+        }
+
+        // A whole design by its name alone, any size: -1 for none.
+        private static int WholeNamed(string name)
+        {
+            for (int i = 0; name != null && i < Whole.Length; i++)
+            {
+                if (string.Equals(Whole[i].Name, name, StringComparison.Ordinal))
+                {
+                    return i;
+                }
+            }
+            return -1;
         }
 
         /// <summary>

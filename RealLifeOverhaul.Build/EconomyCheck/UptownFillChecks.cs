@@ -82,8 +82,8 @@ internal static partial class Program
         {
             notClear += BuildingsRules.Clear(lot.Id) ? 0 : 1;
         }
-        Check(plan.Count == 422 && built.Count == 351 && legacy.Count == 21 && first == 83 && firstBuilt == 44 && notClear == 1,
-            "uptown fill: of the band's 422 lots, 351 are built from the first day, 70 left open and one kept empty; 44 of the first block's 83 (" + plan.Count + ", "
+        Check(plan.Count == 422 && built.Count == 347 && legacy.Count == 21 && first == 83 && firstBuilt == 41 && notClear == 5,
+            "uptown fill: of the band's 422 lots, 347 are built from the first day, 70 left open, one kept empty and four the big special places'; 41 of the first block's 83 (" + plan.Count + ", "
             + built.Count + ", " + legacy.Count + ", " + firstBuilt + " of " + first + ", " + notClear + " not clear)");
         bool treeLot = plan.Exists(l => l.Id == "uptown_1_14_04") && !BuildingsRules.Clear("uptown_1_14_04") && !builtIds.Contains("uptown_1_14_04")
                        && !leased.Contains("uptown_1_14_04") && BuildingsRules.Clear("uptown_1_14_05") && !BuildingsRules.Clear(null) && !BuildingsRules.Clear(string.Empty);
@@ -637,7 +637,7 @@ internal static partial class Program
             groundMs = Math.Min(groundMs, (d - c) * 1000.0 / Stopwatch.Frequency);
         }
         double all = rulesMs + lanesMs + groundMs;
-        Check(built == 351 && others > 0 && hits > 0 && all < 30.0,
+        Check(built == 347 && others > 0 && hits > 0 && all < 30.0,
             "uptown fill: the fill's own load work without the game's code, on the real plan: the built and leased lots and each one's structures and others in "
             + rulesMs.ToString("F2") + " ms, " + LanePoints + " lane points into squares in " + lanesMs.ToString("F2") + " ms, " + built + " buildings' lane and box checks in "
             + groundMs.ToString("F2") + " ms; " + all.ToString("F2") + " ms in all (wanted under 30 ms)");
@@ -815,8 +815,8 @@ internal static partial class Program
         Check(tries > 0 && make.Contains("noDesign &= pick < 0;") && make.Contains("NewBuildingsRules.OtherTakes(spec, spec.Others[s], MadeGame.StructureTakes, MadeGame.HomesLeftOut())")
               && takes > tries && record > takes && make.Contains("spec.Version = other.Version;") && make.Contains("spec.Type = other.Type;"),
             "new buildings: where no design of its size fits any lot, a building tries its other structures in order (never for a lot its ground refused), its record made with the one taken");
-        Check(declare.IndexOf("if (!BuildingsRules.Clear(lot.Id))", StringComparison.Ordinal) >= 0
-              && declare.IndexOf("if (!BuildingsRules.Clear(lot.Id))", StringComparison.Ordinal) < declare.IndexOf("FinishedBuilding f = _state.On(lot.Id);", StringComparison.Ordinal)
+        Check(declare.IndexOf("if (!BuildingsRules.Clear(lot.Id) && !BigDown.Contains(lot.Id))", StringComparison.Ordinal) >= 0
+              && declare.IndexOf("if (!BuildingsRules.Clear(lot.Id) && !BigDown.Contains(lot.Id))", StringComparison.Ordinal) < declare.IndexOf("FinishedBuilding f = _state.On(lot.Id);", StringComparison.Ordinal)
               && MemberText(lots, "public static bool Taken(string lotId)").Contains("!BuildingsRules.Clear(lotId) ||")
               && MemberText(Read("Uptown/LifeDirector.Tests.cs"), "private static bool Census(string when, bool asked = false)").Contains("BuildingsRules.Clear(Plan[i].Id)"),
             "uptown fill: a lot not clear is declared nothing at a load, taken for the construction game and the landmarks, and never counted open");

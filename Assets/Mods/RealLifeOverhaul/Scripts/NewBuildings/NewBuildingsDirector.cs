@@ -324,7 +324,7 @@ namespace RealLifeOverhaul.NewBuildings
                 lot = NewBuildingsRules.FirstFree(spec.Lots.Length, spec.Preferred, k =>
                 {
                     MadeLot each = spec.Lots[k];
-                    int pick = NewBuildingsRules.Pick(designs, size, type, spec.Design, each.Width, each.Depth, spec.Id);
+                    int pick = NewBuildingsRules.Pick(designs, size, type, spec.Design, each.Width, each.Depth, spec.Id, spec.Whole);
                     noDesign &= pick < 0;
                     string ground = pick < 0 ? "no design of size " + NewBuildingsRules.StructureName(size, 0).TrimEnd('0') + " that can be copied fits the lot"
                         : CopyGame.GroundWhy(designs[pick], each, out root, out yaw, out door);
@@ -378,7 +378,7 @@ namespace RealLifeOverhaul.NewBuildings
             var made = new MadeBuilding
             {
                 Spec = spec, Design = chosen.Name, Lot = lot, Controller = copy, Building = record, Registration = registration,
-                X = root.x, Z = root.z, Yaw = yaw, DoorX = door.x, DoorY = door.y, DoorZ = door.z, DoorFacing = spec.Lots[lot].Facing, Shown = true,
+                X = root.x, Z = root.z, Yaw = yaw, DoorX = door.x, DoorY = door.y, DoorZ = door.z, DoorFacing = NewBuildingsRules.Turn(yaw + chosen.DoorFacing), Shown = true,
                 Address = MadeGame.Written(spec.Street, spec.Number), DesignIndex = design, NewRegistration = fresh
             };
             if (spec.Type == NewBuildingsRules.HomeType && !spec.Life)

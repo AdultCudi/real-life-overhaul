@@ -105,6 +105,8 @@ namespace RealLifeOverhaul
         public static readonly GamePart UptownLabels = ContractBook.Part("uptown_labels", "uptown", "the names over Uptown's streets, on road modules copied from the game's own");
         public static readonly GamePart UptownDistrict = ContractBook.Part("uptown_district", "uptown",
             "Uptown as a district of the game: in its lists of districts, its people's tables and its city map");
+        public static readonly GamePart UptownBigTests = ContractBook.Part("uptown_big_tests", "uptown",
+            "the tests of Uptown's wholesale store and filling station: a delivery and a fill-up the game's own way");
 
         // The pieces, each group under the code that reads it.
 
@@ -441,6 +443,11 @@ namespace RealLifeOverhaul
             "Dictionary<String,HashSet<String>>");
         public static readonly GameMember DistrictZones = Field(UptownDistrict, Game, "CityMapNeighborhoodZones", "zones", "CityMapNeighborhoodZones.CityMapNeighborhoodZone[]");
         public static readonly GameMember StartBusiness = Optional(StaticMethod(UptownDistrict, Game, "Helpers.CompetitionHelper", "StartNewBusiness", "Int32", "List<Building>", "String"));
+        // Uptown/LifeGame.BigPlaces, for two tests alone: the game's own delivery of one wholesale contract (BusinessHelper.cs 324, which its 8 o'clock pass
+        // calls), and the filling station overlay's station and its fill-up (GasStationOverlay.cs 27, 202). Optional: without them the tests say so.
+        public static readonly GameMember WholesaleDeliver = Optional(StaticMethod(UptownBigTests, Game, "Helpers.BusinessHelper", "DeliverWholesaleContract", "Boolean", "DeliveryContract"));
+        public static readonly GameMember StationTrigger = Optional(Field(UptownBigTests, Game, "UI.Overlays.GasStationOverlay", "_currentStationTrigger", "GasStationTrigger"));
+        public static readonly GameMember StationRefuel = Optional(Method(UptownBigTests, Game, "UI.Overlays.GasStationOverlay", "Refuel", "Void"));
 
         /// <summary>The five pieces Build 3675 lacks (the funeral helper's two properties are one, its type).</summary>
         public static readonly GameMember[] LackedBy3675 = { PlayerDead, FuneralActive, FenceIndex, ResumeTarget, StationNameKey, ConfirmByKey };

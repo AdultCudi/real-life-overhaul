@@ -39,6 +39,7 @@ namespace RealLifeOverhaul.Uptown
         private const float ArmFrom = 5f;         // m from a crossing's middle a crosswalk stands on one of its arms
         private const float BlockWide = 70f;      // m: a block's ground across, west to east
         private const float BlockDeep = 120f;     // m: and north to south
+        private const string LitterName = "TrashDecoration";   // a module's litter: bags, cans, papers; the bags are solid
 
         private static readonly Intersection[] Own = new Intersection[LayoutRules.FirstColumns + 1];   // each Manhattan street's own crossing at 1st Avenue
         private static readonly List<ModulePlace> Places = new List<ModulePlace>(512);
@@ -48,6 +49,7 @@ namespace RealLifeOverhaul.Uptown
         private static readonly List<StationaryAiSpawner> Zones = new List<StationaryAiSpawner>(128);
         private static readonly List<PlanBox> ZoneBoxes = new List<PlanBox>(128);
         private static readonly List<Bounds> KeptGrounds = new List<Bounds>(64);   // the backdrop's own block grounds, which stay
+        private static readonly List<GroundRect> Mouths = new List<GroundRect>(4);  // where a car crosses into a big special place (BigPlacesRules.Mouths)
         private static readonly float[] WayX = new float[4];      // one junction's ways: the summed heading of their stop points
         private static readonly float[] WayZ = new float[4];
         private static Road _street;
@@ -68,6 +70,10 @@ namespace RealLifeOverhaul.Uptown
 
         /// <summary>The parking lanes and the pedestrians' zones made once the game was loaded.</summary>
         public static int ParkingLanes => Lanes.Count;
+
+        /// <summary>The parking lanes not laid at this load as they meet a big special place's mouth, and the bags of litter put away from them.</summary>
+        public static int LanesKeptOff { get; private set; }
+        public static int LitterAway { get; private set; }
         public static int PeopleZones => Zones.Count;
 
         /// <summary>The game's cars parked along Uptown's kerbs now.</summary>
@@ -243,6 +249,7 @@ namespace RealLifeOverhaul.Uptown
             _art = new GameObject(ArtName);
             _art.SetActive(false);
             SceneManager.MoveGameObjectToScene(_art, _street.gameObject.scene);
+            FindMouths();
             LayoutPlans.Modules(Places);
             for (int i = 0; i < Places.Count; i++)
             {
@@ -257,6 +264,7 @@ namespace RealLifeOverhaul.Uptown
                 Vector3 offset = place.Kind == ModuleKind.Ground ? template.transform.position - Middle(template) : Vector3.zero;   // a road module's pivot is its middle
                 copy.transform.SetPositionAndRotation(new Vector3(place.X + offset.x, template.transform.position.y, place.Z + offset.z), template.transform.rotation);
                 Strip(copy);
+                ClearMouths(copy);
                 switch (place.Kind)
                 {
                     case ModuleKind.Crossing:
@@ -323,6 +331,60 @@ namespace RealLifeOverhaul.Uptown
                 }
             }
             return false;
+        }
+
+        // The big special places' mouths, from fixed data once a load: whether or not a place stands at this load (the
+        // district decides that later, from the save), its mouth is kept clear, which costs a lane of parking at most.
+        private static void FindMouths()
+        {
+            Mouths.Clear();
+            LitterAway = 0;
+            var plan = new List<BuildingsLot>(512);
+            LifeGame.Lots(plan);
+            for (int i = 0; i < BigPlacesRules.All.Length; i++)
+            {
+                if (BigPlacesRules.Ground(BigPlacesRules.All[i], plan, out BuildingsLot ground))
+                {
+                    BigPlacesRules.Mouths(BigPlacesRules.All[i], ground, Mouths);
+                }
+            }
+        }
+
+        // A module's bags of litter lying in a big place's mouth go before the copy wakes, so the ground grows over that
+        // pavement whole and a car crosses it into the place; the lamps, signs and lights stay.
+        private static void ClearMouths(GameObject copy)
+        {
+            Transform litter = Mouths.Count > 0 ? copy.transform.Find(LitterName) : null;
+            if (litter == null)
+            {
+                return;
+            }
+            Collider[] solid = litter.GetComponentsInChildren<Collider>(true);
+            for (int i = 0; i < solid.Length; i++)
+            {
+                Vector3 at = solid[i].transform.position;
+                if (BigPlacesRules.In(Mouths, at.x, at.z))
+                {
+                    solid[i].gameObject.SetActive(false);
+                    LitterAway++;
+                }
+            }
+        }
+
+        // True when a parking lane laid there would meet a big place's mouth: its box's reach along the world's axes.
+        private static bool InMouth(ParkingLaneGenerator lane, Vector3 at, Quaternion turn)
+        {
+            BoxCollider box = Mouths.Count > 0 ? lane.GetComponent<BoxCollider>() : null;
+            if (box == null)
+            {
+                return false;
+            }
+            Vector3 scale = lane.transform.lossyScale;
+            Vector3 centre = at + turn * Vector3.Scale(box.center, scale);
+            Vector3 across = turn * Vector3.right * (box.size.x * Mathf.Abs(scale.x) * 0.5f);
+            Vector3 along = turn * Vector3.forward * (box.size.z * Mathf.Abs(scale.z) * 0.5f);
+            float reachX = Mathf.Abs(across.x) + Mathf.Abs(along.x), reachZ = Mathf.Abs(across.z) + Mathf.Abs(along.z);
+            return BigPlacesRules.Meets(Mouths, centre.x - reachX, centre.z - reachZ, centre.x + reachX, centre.z + reachZ);
         }
 
         // The template's parking lanes go before the copy wakes: their own copies, placed by new ground, park the cars.
@@ -536,6 +598,7 @@ namespace RealLifeOverhaul.Uptown
         {
             why = null;
             int refused = 0;
+            LanesKeptOff = 0;
             for (int i = 0; i < Copies.Count; i++)
             {
                 ModulePlace place = Places[CopyPlace[i]];
@@ -549,6 +612,11 @@ namespace RealLifeOverhaul.Uptown
                 {
                     Vector3 at = Copies[i].transform.position + (lanes[l].transform.position - template.position);
                     Quaternion turn = lanes[l].transform.rotation;
+                    if (InMouth(lanes[l], at, turn))
+                    {
+                        LanesKeptOff++;   // a car crosses that kerb into a big special place
+                        continue;
+                    }
                     string refusal = null;
                     ParkingLaneGenerator made = ParkingGame.Room(lanes[l], at, turn, out refusal) ? ParkingGame.Copy(lanes[l], at, turn, out refusal) : null;
                     if (made != null)
