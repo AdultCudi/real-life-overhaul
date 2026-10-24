@@ -8,7 +8,7 @@ namespace RealLifeOverhaul.Careers
     ///
     ///   w  next id|last day|vacancies day|recruitment office until|earned|days worked|pension|benefit until|benefit a week|retired|search firm day|benefit paid|retired early|first step told|recruitment office end told
     ///   o  each vacancy, a each application, j the job now (one), y each job before
-    ///      a vacancy: id|profession|rank|kind|employer|street|number|rival|pay|mode|from|to|via|family|level
+    ///      a vacancy: id|profession|rank|kind|employer|street|number|rival|pay|mode|from|to|via|family|level|lead (who passed it on; only here, not in a or j)
     ///      an application: the vacancy, then day|stage|answer|interview day|interview hour|score|offer|asks|lapse|start|turned down on
     ///      the job: the vacancy, then hired|rank day|pay|mode|boss|settled|today|today's minutes|clocked in|due|worked|late|absent|week|week's
     ///      minutes|overtime|burnout|rating|review day|low runs|warnings|raises|politics|politics day|favour|options|vest day|restraint|exclusive|
@@ -27,7 +27,7 @@ namespace RealLifeOverhaul.Careers
             w.Part('o');
             for (int i = 0; i < f.Openings.Count && i < WorkFile.OpeningsMost; i++)
             {
-                Post(w.Record(), f.Openings[i]);
+                Post(w.Record(), f.Openings[i]).Add(f.Openings[i].Lead);
             }
             w.Part('a');
             for (int i = 0; i < f.Applications.Count && i < WorkFile.ApplicationsMost; i++)
@@ -116,6 +116,7 @@ namespace RealLifeOverhaul.Careers
                 var o = new Opening();
                 if (Post(x, o) && f.Openings.Count < WorkFile.OpeningsMost)
                 {
+                    o.Lead = x.Text();   // (a save from before leads: empty)
                     f.Openings.Add(o);
                 }
             }

@@ -176,6 +176,11 @@ namespace RealLifeOverhaul
             _typing = null;
             _actions.Clear();
             int day = SocialLife.Day;
+            string favour = SocialPhone.NetworkLabel != null && SocialPhone.NetworkAsk != null ? SocialPhone.NetworkLabel(_p) : null;
+            if (favour != null)
+            {
+                _actions.Add("network");   // first: they texted to say they could help
+            }
             _actions.Add("plans");
             if (SocialTalk.BirthdayIn(_p) == 0 && _p.BirthdayYear != Year(day))
             {
@@ -242,6 +247,10 @@ namespace RealLifeOverhaul
                 case "introduce":
                     entry.ConfirmTextOverride = "reallife_social_btn_introduce".Localize();
                     entry.OnConfirm = Introduce;
+                    break;
+                case "network":
+                    entry.ConfirmTextOverride = favour.Localize();
+                    entry.OnConfirm = () => SocialPhone.NetworkAsk(_p);
                     break;
                 case "family":
                     entry.ConfirmTextOverride = "reallife_social_btn_family".Localize();

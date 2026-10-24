@@ -54,6 +54,7 @@ namespace RealLifeOverhaul
             Step("online shops", OnlineLinks.Connect);
             Step("the tech sector", TechLinks.Connect);
             Step("education and careers", CareersLinks.Connect);
+            Step("networking", NetworkLinks.Connect);   // after the careers and the investors: the favours are theirs
             Step("the cleaning service and selling a business", ServicesLinks.Connect);
             Step("brands and franchises", BrandLinks.Connect);
             Step("the roommate", RoommateLinks.Connect);
@@ -115,6 +116,7 @@ namespace RealLifeOverhaul
             Step("meals and music", MealsLinks.Disconnect);
             Step("the roommate", RoommateLinks.Disconnect);
             Step("running a business", CompanyLinks.Disconnect);
+            Step("networking", NetworkLinks.Disconnect);
             Step("education and careers", CareersLinks.Disconnect);
             Step("the tech sector", TechLinks.Disconnect);
             Step("online shops", OnlineLinks.Disconnect);

@@ -562,6 +562,11 @@ namespace RealLifeOverhaul
                     v => Settings.SocialTextsMax = v, Meta.SettingsTable.SliderValue)
                 .AddToggle(Settings.SocialComposerId, "reallife_social_composer", Settings.SocialComposer,
                     v => Settings.SocialComposer = v)
+                .AddToggle(Settings.SocialNetworkingId, "reallife_social_networking", Settings.SocialNetworking,
+                    v => Settings.SocialNetworking = v)
+                .AddButton("reallife_social_net_test_intro", Networking.NetworkDirector.TestIntro)
+                .AddButton("reallife_social_net_test_favour", Networking.NetworkDirector.TestFavour)
+                .AddButton("reallife_social_net_test_each", Networking.NetworkDirector.TestEach)
                 .AddButton("reallife_social_test_meet", () => SocialDirector.Instance?.TestMeet())
                 .AddButton("reallife_social_test_person", () => SocialDirector.Instance?.TestPerson())
                 .AddButton("reallife_social_test_advance", () => SocialDirector.Instance?.TestAdvance())
@@ -1269,6 +1274,7 @@ namespace RealLifeOverhaul
             Guard.Step("CityDrivers", () => CityDrivers.Logger = context.Logger);
             Guard.Step("Walking.WalkDirector", () => Walking.WalkDirector.Logger = context.Logger);
             Guard.Step("Meals.MealsDirector", () => Meals.MealsDirector.Logger = context.Logger);
+            Guard.Step("Networking.NetworkDirector", () => Networking.NetworkDirector.Logger = context.Logger);
             Guard.Step("DriverGame", () => DriverGame.Logger = context.Logger);
             Guard.Step("Jaywalker", () => Jaywalker.Logger = context.Logger);
             Guard.Step("PlayerKnockdown", () => PlayerKnockdown.Logger = context.Logger);

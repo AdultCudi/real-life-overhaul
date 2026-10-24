@@ -16,6 +16,7 @@ One page per feature. Each starts with what it is in a sentence, where its code 
 ## The player's life
 
 - [Social life](social.md): the people the player knows, outings, texts and the morning paper.
+- [Networking](networking.md): people the player knows who hold a position, and the favours they do as the relationship grows.
 - [Family](family.md): a partner, a wedding, children, the wider family.
 - [Home life and health](home.md): needs, cooking, illness and the doctor.
 - [Leisure](leisure.md): things to do for fun, the mod's clothes, night life, sound, photo mode.

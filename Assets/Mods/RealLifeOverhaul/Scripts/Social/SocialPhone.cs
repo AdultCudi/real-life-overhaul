@@ -32,6 +32,11 @@ namespace RealLifeOverhaul
         public static Func<SocialPerson, bool> HasFamilyMatters;
         public static Func<DialogEntry> FamilyMatters;
 
+        /// <summary>Set by Wiring/NetworkLinks: the call's button for a favour this person would do now (null for none), what it opens, and the People page's lines about their position.</summary>
+        public static Func<SocialPerson, string> NetworkLabel;
+        public static Func<SocialPerson, DialogEntry> NetworkAsk;
+        public static Func<SocialPerson, string> NetworkLine;
+
         public static string IdOf(SocialPerson person)
         {
             return person.Origin == SocialOrigin.Family ? MomId : person.Origin == SocialOrigin.OldFriend ? FriendId : person.Name;

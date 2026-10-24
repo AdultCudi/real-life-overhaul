@@ -261,6 +261,7 @@
         public const string SocialTextsId = "social_texts";
         public const string SocialTextsMaxId = "social_texts_max";
         public const string SocialComposerId = "social_composer";
+        public const string SocialNetworkingId = "social_networking";
         public const string StreetTalkId = "street_talk";
         public const string StreetBrushId = "street_brush";
         public const string SocialNewspaperId = "social_newspaper";
@@ -601,6 +602,7 @@
         public static bool SocialTexts = true;           // text messages from people (off: only what must be said is shown, as a notification)
         public static int SocialTextsMax = 3;            // texts a day from everybody together, 1 to 6
         public static bool SocialComposer = true;        // with an RLO Texts pack, a call's chat is answered in the player's own typed words
+        public static bool SocialNetworking = true;      // some people met hold a position and, as they grow closer, do the player a favour each
         public static bool StreetTalk = true;            // talk to anybody in the street: the game's panel over a passer-by offers Talk
         public static int StreetBrush = 1;               // how often people in the street have no time: 0 rarely, 1 sometimes, 2 often (StreetRules.BrushFactor)
         public static bool SocialMedia = true;           // Flare, the city's social media app
@@ -944,6 +946,7 @@
             SocialTexts = Bool(modId, SocialTextsId, SocialTexts);
             SocialTextsMax = Int(modId, SocialTextsMaxId, SocialTextsMax);
             SocialComposer = Bool(modId, SocialComposerId, SocialComposer);
+            SocialNetworking = Bool(modId, SocialNetworkingId, SocialNetworking);
             StreetTalk = Bool(modId, StreetTalkId, StreetTalk);
             StreetBrush = Int(modId, StreetBrushId, StreetBrush);
             SocialNewspaper = Bool(modId, SocialNewspaperId, SocialNewspaper);

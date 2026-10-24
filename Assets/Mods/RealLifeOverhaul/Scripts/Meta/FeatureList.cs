@@ -36,6 +36,7 @@ namespace RealLifeOverhaul.Meta
             Seasons.SeasonGuide.Register();
             Designs.DesignsGuide.Register();
             Meals.MealsGuide.Register();
+            Networking.NetworkGuide.Register();
         }
 
         private static void RegisterGameplay()
