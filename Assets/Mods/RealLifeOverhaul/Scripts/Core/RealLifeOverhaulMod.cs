@@ -726,12 +726,18 @@ namespace RealLifeOverhaul
                     v => Settings.GaragePolice = v)
                 .AddToggle(Settings.GarageSoundsId, "reallife_garage_sounds", Settings.GarageSounds,
                     v => Settings.GarageSounds = v)
+                .AddToggle(Settings.GarageResaleId, "reallife_garage_resale", Settings.GarageResale,
+                    v => Settings.GarageResale = v)
                 .AddToggle(Settings.TwoWheelersId, "reallife_garage_two_wheelers", Settings.TwoWheelers,
                     v => Settings.TwoWheelers = v)
                 .AddButton("reallife_garage_test_shop", () => GarageDirector.Instance?.TestShop())
                 .AddButton("reallife_garage_test_random", () => GarageDirector.Instance?.TestRandomBuild())
                 .AddButton("reallife_garage_test_restore", () => GarageDirector.Instance?.TestStock())
                 .AddButton("reallife_garage_test_sounds", () => CarSoundDirector.Instance?.TestReport())
+                .AddButton("reallife_tuning_test_figures", () => GarageDirector.Instance?.TestFigures())
+                .AddButton("reallife_tuning_test_car", () => GarageDirector.Instance?.TestTuning())
+                .AddButton("reallife_tuning_test_sale", () => GarageDirector.Instance?.TestSale())
+
                 .AddButton("reallife_garage_test_vehicles", () => { if (GarageDirector.Instance != null) { GarageSummary.Toggle(); } })
                 .AddButton("reallife_garage_test_bicycle", () => GarageDirector.Instance?.TestBike(BikeKind.CityBicycle))
                 .AddButton("reallife_garage_test_road_bicycle", () => GarageDirector.Instance?.TestBike(BikeKind.RoadBicycle))

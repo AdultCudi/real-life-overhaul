@@ -370,7 +370,9 @@ namespace RealLifeOverhaul.Meta
                 .Fact("moto_sport", () => Guide.Money(BikeCatalogue.All[3].Cost))
                 .Fact("helmet_price", () => Guide.Money(BikeCatalogue.HelmetPrice))
                 .Fact("fine_helmet", () => Guide.Money(BikeCatalogue.HelmetFine))
-                .Owns(Settings.GarageId, Settings.GarageCosmeticsId, Settings.GarageTuningId, Settings.GarageUnderglowId, Settings.TwoWheelersId, Settings.GarageSoundsId)
+                .Owns(Settings.GarageId, Settings.GarageCosmeticsId, Settings.GarageTuningId, Settings.GarageUnderglowId, Settings.TwoWheelersId, Settings.GarageSoundsId,
+                    Settings.GarageResaleId)
+
                 .OnFrom(Settings.GaragePoliceId, Intensity.Standard)
                 .Rows("reallife_garage_test_vehicles")   // the player's list of vehicles, not a test
                 .Data("reallife:garage_*")

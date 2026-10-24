@@ -200,6 +200,7 @@
         public const string GarageUnderglowId = "garage_underglow";
         public const string GaragePoliceId = "garage_police";
         public const string GarageSoundsId = "garage_sounds";
+        public const string GarageResaleId = "garage_resale";
         public const string TwoWheelersId = "two_wheelers";
         public const string HomeLifeId = "home_life";
         public const string HomeNeedsId = "home_needs";
@@ -536,6 +537,7 @@
         public static bool GarageUnderglow = true;       // underglow kits light up after dark
         public static bool GaragePolice = true;          // a straight-through exhaust or riding without a helmet can be fined
         public static bool GarageSounds = true;          // recorded engine, exhaust, turbo and tyre sounds on the car the player drives
+        public static bool GarageResale = true;          // a car sold with custom shop work on it fetches the work's worth on top of the game's price
         public static bool TwoWheelers = true;           // bicycles and motorbikes: docks, racks, stands, and the ones already out
         public static bool HomeLife = true;              // home life and health as a whole
         public static bool HomeNeeds = true;             // hygiene, stress and how tidy the flat is
@@ -875,6 +877,8 @@
             GarageUnderglow = Bool(modId, GarageUnderglowId, GarageUnderglow);
             GaragePolice = Bool(modId, GaragePoliceId, GaragePolice);
             GarageSounds = Bool(modId, GarageSoundsId, GarageSounds);
+            GarageResale = Bool(modId, GarageResaleId, GarageResale);
+
             TwoWheelers = Bool(modId, TwoWheelersId, TwoWheelers);
             HomeLife = Bool(modId, HomeLifeId, HomeLife);
             HomeNeeds = Bool(modId, HomeNeedsId, HomeNeeds);

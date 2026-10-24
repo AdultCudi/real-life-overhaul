@@ -30,6 +30,7 @@ namespace RealLifeOverhaul
         private float _nextPoliceLook;
         private bool _wet;
         private VehicleController _shopWanted;   // pressed on the options page: the shop opens when the menus are closed
+        private bool _figuresWanted;             // ...on its figures page
         private int _offStamp = -1;              // with the Garage off: the stamp a whole walk last left every car at (-1: none since it was on)
 
         public GarageShop Shop => _shop;
@@ -55,6 +56,8 @@ namespace RealLifeOverhaul
             TravelList.Logger = Logger;
             GuideMark.Logger = Logger;
             gameObject.AddComponent<GarageTuning>();
+            GarageSaleGame.Logger = Logger;
+            GarageSaleGame.Start();
         }
 
         private static readonly int HotUpdate = HotSpots.Slot("Garage: GarageDirector.Update");
@@ -103,8 +106,14 @@ namespace RealLifeOverhaul
                             _shopWanted = null;
                             if (!_shop.IsOpen && !_shop.Open(wanted))
                             {
+                                _figuresWanted = false;
                                 TestRefusals.Tell(Logger, "Custom shop", TestRefusal.NothingFits, 0, "the shop could not be opened on " + wanted.name);
                             }
+                            else if (_figuresWanted)
+                            {
+                                Figures();
+                            }
+
                         }
                         _shop.Tick(gm);
                         _bikes.Quick(gm);
@@ -265,6 +274,7 @@ namespace RealLifeOverhaul
         private void OnDestroy()
         {
             SaveHook.Drop(_onSave);
+            GarageSaleGame.Stop();
             PutEverythingBack(true);
             GarageList.Destroy();
             if (Instance == this)

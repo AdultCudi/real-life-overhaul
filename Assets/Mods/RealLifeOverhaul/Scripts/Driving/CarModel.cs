@@ -300,8 +300,8 @@ namespace RealLifeOverhaul
             return force > car.TractionForce ? car.TractionForce : force;
         }
 
-        // The engine's best torque at full throttle, in newton metres, from where the clutch bites to the limit.
-        private static float PeakTorque(CarPhysics car, float powerKw)
+        /// <summary>The engine's best torque at full throttle, in newton metres, from where the clutch bites to the limit.</summary>
+        public static float PeakTorque(CarPhysics car, float powerKw)
         {
             float best = 0f;
             float from = car.LaunchRpm / car.RevLimitRpm;
@@ -316,6 +316,17 @@ namespace RealLifeOverhaul
                 best = torque > best ? torque : best;
             }
             return best * powerKw * car.Boost * 1000f;
+        }
+
+        /// <summary>The engine's best power at full throttle and full boost, in kilowatts, as the game's own engine reckons its peak.</summary>
+        public static float PeakPower(CarPhysics car, float powerKw)
+        {
+            float best = 0f;
+            for (int i = 0; i < CarPhysics.CurveSamples; i++)
+            {
+                best = car.Curve[i] > best ? car.Curve[i] : best;
+            }
+            return best * powerKw * car.Boost;
         }
 
         private static float Pow(float value, float power)
