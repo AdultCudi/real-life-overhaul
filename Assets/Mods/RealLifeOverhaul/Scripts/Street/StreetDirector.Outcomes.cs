@@ -27,6 +27,12 @@ namespace RealLifeOverhaul.Street
             StreetMemo m = _chat.Memo;
             bool canMeet = StreetBridges.CanMeet != null && StreetBridges.CanMeet();
             StreetLine line = StreetRules.Number(_chat, _facts, !canMeet);
+            if (line == StreetLine.NumberFull)
+            {
+                // The game's notification says what the line cannot: the way to make room.
+                StreetGame.Notice(NotificationType.Info, "reallife_street_note_full", null, 12f);
+                Logger?.Info("Street talk: " + _chat.Who.Name + " would swap numbers, but every place in the player's life is taken: told to lose touch with somebody first.");
+            }
             if (line != StreetLine.NumberYes)
             {
                 return line;

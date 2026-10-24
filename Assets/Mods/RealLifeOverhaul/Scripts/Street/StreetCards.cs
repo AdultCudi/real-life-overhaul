@@ -185,16 +185,19 @@ namespace RealLifeOverhaul.Street
         /// <summary>The lines no card of data v4 words: the v4 model's nearest cards answered them wrongly.</summary>
         public static bool Written(StreetLine line) => Written(line, Texts.TextIntents.DataV4);
 
-        /// <summary>The lines always written for a pack of this data version.</summary>
+        /// <summary>
+        /// The lines always written for a pack of this data version. A full life's refusal is written in every one: no pack
+        /// has a card that says why, and a model's "maybe next time" is the very line it replaces.
+        /// </summary>
         public static bool Written(StreetLine line, int data)
         {
             if (data >= Texts.TextIntents.DataV5)
             {
-                return line == StreetLine.Waiting || line == StreetLine.DirAsk;
+                return line == StreetLine.Waiting || line == StreetLine.DirAsk || line == StreetLine.NumberFull;
             }
             switch (line)
             {
-                case StreetLine.Waiting: case StreetLine.DirAsk:
+                case StreetLine.Waiting: case StreetLine.DirAsk: case StreetLine.NumberFull:
                 case StreetLine.DayGood: case StreetLine.DayFine: case StreetLine.DayLow: case StreetLine.EventGoing: case StreetLine.EventNot:
                 case StreetLine.WorkLikes: case StreetLine.WorkMixed: case StreetLine.WorkRetired: case StreetLine.Welcome: case StreetLine.GreetBack:
                     return true;

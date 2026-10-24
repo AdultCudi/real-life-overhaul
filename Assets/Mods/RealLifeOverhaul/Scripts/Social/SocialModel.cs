@@ -39,6 +39,12 @@ namespace RealLifeOverhaul
         Posted     // tagged in a post of the player's on Flare
     }
 
+    /// <summary>
+    /// Why the player cannot lose touch with somebody, the first reason that holds (<see cref="SocialRules.LoseBlockOf"/>);
+    /// None: they can. Never saved, so a reason may be added anywhere.
+    /// </summary>
+    public enum LoseBlock { None, NotKnown, Family, OldFriend, Together, LivesWith, Plan, Money, Flare }
+
     /// <summary>One entry of a person's memories: what, and on which game day.</summary>
     public struct SocialMemory
     {

@@ -23,6 +23,7 @@ namespace RealLifeOverhaul
                 SocialLinks.ComposerWhyNot = WhyNot;
                 SocialLinks.CleanTyped = Clean;
                 SocialLinks.AnswerTyped = Answer;
+                SocialLinks.TextsForget = Forget;
             }
 
             internal static void Disconnect()
@@ -30,6 +31,20 @@ namespace RealLifeOverhaul
                 SocialLinks.ComposerWhyNot = null;
                 SocialLinks.CleanTyped = null;
                 SocialLinks.AnswerTyped = null;
+                SocialLinks.TextsForget = null;
+            }
+
+            // Lost touch: what they remembered of the player is not handed to whoever takes their slot (the key is "s:" and the slot).
+            private static void Forget(int index)
+            {
+                try
+                {
+                    TextsDirector.ForgetPerson("s:" + index.ToString(Inv));
+                }
+                catch (Exception e)
+                {
+                    Fault("RLO Texts, a person forgotten", e);
+                }
             }
 
             // Null when the model can answer this person on a call now; otherwise why not.

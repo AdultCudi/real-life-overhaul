@@ -93,6 +93,32 @@ namespace RealLifeOverhaul
             return true;
         }
 
+        /// <summary>
+        /// Somebody new in a slot already taken, its <see cref="SocialPerson.Index"/> theirs: whoever had it is let go. A
+        /// plan or a question of the one who leaves is let go with them. False, and nothing changed, outside the cast.
+        /// </summary>
+        public static bool Replace(SocialPerson person)
+        {
+            if (!Loaded || person == null || person.Index < 0 || person.Index >= Count)
+            {
+                return false;
+            }
+            People[person.Index] = person;
+            if (Plan.Person == person.Index)
+            {
+                Plan.Clear();
+            }
+            if (Offer.Person == person.Index)
+            {
+                Offer.Clear();
+            }
+            if (TestPerson == person.Index)
+            {
+                TestPerson = 0;
+            }
+            return true;
+        }
+
         /// <summary>The first person of that origin, met or not, or null.</summary>
         public static SocialPerson ByOrigin(SocialOrigin origin)
         {

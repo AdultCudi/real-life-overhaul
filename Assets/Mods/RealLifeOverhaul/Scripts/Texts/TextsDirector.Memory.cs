@@ -47,6 +47,15 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
+        /// <summary>
+        /// Lets go of everything remembered of a person, whatever pack runs: the player lost touch with them, and somebody new
+        /// takes their key. The save's line is written again at the next save.
+        /// </summary>
+        public static void ForgetPerson(string person)
+        {
+            MemoryStore.Forget(person);
+        }
+
         /// <summary>Notes a life event of the player's the city hears of, for the life's texts and gossip.</summary>
         public static void Heard(string kind, string value)
         {

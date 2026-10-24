@@ -60,6 +60,18 @@ namespace RealLifeOverhaul
         /// <summary>RLO Texts: asks for a person's answer to the player's typed words on a call (see <see cref="SocialAnswerAsk"/>).</summary>
         public static SocialAnswerAsk AnswerTyped;
 
+        /// <summary>Roommates: whether the person in this slot lives with the player, or is asked to move in. They stay while so.</summary>
+        public static Func<int, bool> LivesWith;
+
+        /// <summary>Flare: whether the person in this slot is one of its influencers, whose account Flare keeps. They stay while so.</summary>
+        public static Func<int, bool> OnFlare;
+
+        /// <summary>Flare: the player lost touch with the person in this slot; its posts, tags and follows let them go, before somebody new takes the slot.</summary>
+        public static Action<int> FlareForget;
+
+        /// <summary>RLO Texts: the player lost touch with the person in this slot; what they remembered of the player goes with them.</summary>
+        public static Action<int> TextsForget;
+
         public const string WordsKey = SocialFollowRules.WordsKey;   // RLO Texts' line for a model's words: "{text}"
     }
 
