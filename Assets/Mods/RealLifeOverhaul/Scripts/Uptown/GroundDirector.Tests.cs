@@ -91,7 +91,7 @@ namespace RealLifeOverhaul.Uptown
             int zones = _people ? LayoutPlans.ZoneCount : 0;
             int pieces = GroundGame.Copied - GroundGame.GroundsLaid;
             bool pass = UptownLots.Ready && pieces == modules && junctions == LayoutPlans.JunctionCount && GroundGame.Lights == arms && GroundGame.Crossings == arms
-                        && _opened == LayoutPlans.OldWallCount && _hidden > 0 && GroundGame.PeopleZones == zones && GroundGame.ParkingLanes == LayoutPlans.ParkingCount
+                        && _opened == LayoutPlans.OldWallCount && _hidden > 0 && GroundGame.PeopleZones == zones && GroundGame.ParkingLanes + GroundGame.LanesKeptOff == LayoutPlans.ParkingCount
                         && map && bounds.max.z >= north - 1f && bounds.min.x <= west + 1f && bounds.max.x >= east - 1f && open == UptownLots.All.Count;
             if (Meta.Dev.Verbose)
             {
@@ -106,7 +106,8 @@ namespace RealLifeOverhaul.Uptown
                                    + " blocks' grounds where the backdrop keeps none" + (GroundGame.HasGroundTemplate ? string.Empty : " (no block's ground of the game's to copy found)")
                                    + ", " + GroundGame.Lights + " of " + arms + " light poles hung and " + GroundGame.Crossings + " of " + arms + " crosswalks linked at " + crossings
                                    + " crossings, " + GroundGame.SignsDown + " signs down, in " + _artMs.ToString("F0", Inv) + " ms; " + GroundGame.ParkingLanes + " of "
-                                   + LayoutPlans.ParkingCount + " parking lanes with " + GroundGame.Parked + " cars parked now, " + GroundGame.PeopleZones + " of " + zones
+                                   + LayoutPlans.ParkingCount + " parking lanes (" + GroundGame.LanesKeptOff + " kept off the big special places' mouths, " + GroundGame.LitterAway
+                                   + " bags of litter put away from them) with " + GroundGame.Parked + " cars parked now, " + GroundGame.PeopleZones + " of " + zones
                                    + " pedestrians' zones; laid in " + _layMs.ToString("F0", Inv) + " ms"
                                  : string.Empty)
                              + "; the city map pans " + (map ? "x " + Metres(bounds.min.x) + " to " + Metres(bounds.max.x) + ", to z " + Metres(bounds.max.z) : "nowhere (no map camera)")

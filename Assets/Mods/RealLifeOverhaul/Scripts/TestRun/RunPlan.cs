@@ -54,6 +54,8 @@ namespace RealLifeOverhaul.TestRun
             { "reallife_trades_test_design", "a design at the practice's desk is drawn by the player" },
             { "reallife_trades_test_tender", "a tender at the practice's desk is priced by the player" },
             { "reallife_uptown_test_rent", "the player rents the unit in BizMan with the game's own button" },
+            { "reallife_uptown_test_store_order", "it needs a business of the player's that takes wholesale deliveries" },
+            { "reallife_uptown_test_station_fill", "it needs the player at the wheel of a car of their own" },
         };
 
         /// <summary>The expansion's test buttons the run presses through a step of its own (it asks for exactly what it needs), and that step.</summary>
