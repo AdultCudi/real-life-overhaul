@@ -9,9 +9,10 @@ namespace RealLifeOverhaul
     public enum LicenceClass
     {
         Car = 0,          // cars, SUVs, pickups
-        Commercial = 1,   // vans and trucks
+        Commercial = 1,   // vans and trucks (the heaviest need Heavy as well, while its option is on)
         Taxi = 2,         // carrying passengers for hire
-        Motorcycle = 3    // motorbikes; bicycles need no licence
+        Motorcycle = 3,   // motorbikes; bicycles need no licence
+        Heavy = 4         // heavy goods: the game's heaviest trucks (HeavyRules), on top of a commercial licence
     }
 
     /// <summary>Where a licence stands on a given day.</summary>
@@ -117,7 +118,7 @@ namespace RealLifeOverhaul
             public PointCode Code;
         }
 
-        private static readonly Card[] Cards = new Card[4];
+        private static readonly Card[] Cards = new Card[5];
         private static readonly List<Entry> Record = new List<Entry>(16);
 
         public static bool Loaded { get; private set; }
@@ -140,6 +141,9 @@ namespace RealLifeOverhaul
         public static int TestsPassed;
         public static int TestsFailed;
 
+        /// <summary>The heavy class's paper, lessons and retest, and whether the save was looked at for a heavy truck.</summary>
+        public static HeavyRules.Record Heavy;
+
         public static IReadOnlyList<Entry> Entries => Record;
 
         public static void Reset()
@@ -157,6 +161,7 @@ namespace RealLifeOverhaul
             TheoryRetryDay = 0;
             TestsPassed = 0;
             TestsFailed = 0;
+            Heavy = default;
             Array.Clear(TheoryPassedDay, 0, TheoryPassedDay.Length);
             Array.Clear(RetestDay, 0, RetestDay.Length);
             Array.Clear(RetestDue, 0, RetestDue.Length);
@@ -193,6 +198,57 @@ namespace RealLifeOverhaul
         }
 
         public static bool Valid(LicenceClass kind, int day) => Standing(kind, day) == LicenceStanding.Valid;
+
+        /// <summary>What a driver may show for a class: its own standing, or valid when a valid heavy licence covers a van or a box truck.</summary>
+        public static LicenceStanding Entitled(LicenceClass kind, int day)
+        {
+            LicenceStanding own = Standing(kind, day);
+            return own != LicenceStanding.Valid && kind == LicenceClass.Commercial && Valid(LicenceClass.Heavy, day) ? LicenceStanding.Valid : own;
+        }
+
+        public static bool Covered(LicenceClass kind, int day) => Entitled(kind, day) == LicenceStanding.Valid;
+
+        /// <summary>A lesson finished, for the class it was driven for.</summary>
+        public static void LessonDone(LicenceClass kind)
+        {
+            if (kind == LicenceClass.Heavy)
+            {
+                Heavy.Lessons++;
+            }
+            else
+            {
+                Lessons[kind == LicenceClass.Commercial ? 1 : 0]++;
+            }
+        }
+
+        /// <summary>A driven test marked: the licence on a pass, the retest's fee and wait on a fail.</summary>
+        public static void DriveMarked(LicenceClass kind, bool passed, int day)
+        {
+            if (passed)
+            {
+                Grant(kind, day);
+                TestsPassed++;
+            }
+            else
+            {
+                TestsFailed++;
+            }
+            if (kind == LicenceClass.Heavy)
+            {
+                if (passed)
+                {
+                    Heavy.Passed();
+                }
+                else
+                {
+                    Heavy.Failed(day);
+                }
+                return;
+            }
+            int index = kind == LicenceClass.Commercial ? 1 : 0;
+            RetestDue[index] = !passed;
+            RetestDay[index] = passed ? 0 : day + LicenceLaw.RetestWaitDays;
+        }
 
         public static void Grant(LicenceClass kind, int day)
         {
@@ -337,6 +393,8 @@ namespace RealLifeOverhaul
                     case "retest": RetestDay[0] = Int(v, 0); RetestDay[1] = Int(v, 1); RetestDue[0] = Int(v, 2) != 0; RetestDue[1] = Int(v, 3) != 0; break;
                     case "lessons": Lessons[0] = Int(v, 0); Lessons[1] = Int(v, 1); break;
                     case "tests": TestsPassed = Int(v, 0); TestsFailed = Int(v, 1); break;
+                    case "heavy": Cards[4] = new Card { Issued = Int(v, 0), Expires = Int(v, 1) }; break;
+                    case "hgv": Heavy = HeavyRules.Read(v); break;
                     case "pts":
                         for (int i = 0; i < v.Length; i++)
                         {
@@ -383,6 +441,9 @@ namespace RealLifeOverhaul
                     .Append(Record[i].Points.ToString(CultureInfo.InvariantCulture)).Append(':')
                     .Append(((int)Record[i].Code).ToString(CultureInfo.InvariantCulture));
             }
+            // After the record, so an older RLO reads everything before and passes over both parts.
+            Pair(text, "heavy", Cards[4].Issued, Cards[4].Expires);
+            HeavyRules.Write(text, Heavy);
             data[Key] = text.ToString();
         }
 

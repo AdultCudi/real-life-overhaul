@@ -304,8 +304,8 @@ namespace RealLifeOverhaul.Meta
                 S("districtview").For("districtview").Opts("district_view")
                     .Also("district districts neighbourhood neighbourhoods neighborhood map layer layers stats statistics wealth rent prices footfall crime standing coverage "
                         + "internet competition council"),
-                S("licences").For("licences").Main("driving_licence").Opts("licence_start_with", "driving_school", "licence_points", "roadside_checks")
-                    .Also("driving test theory examiner points"),
+                S("licences").For("licences").Main("driving_licence").Opts("licence_start_with", "driving_school", "licence_points", "roadside_checks", "heavy_licence")
+                    .Also("driving test theory examiner points heavy goods truck lorry cdl hgv"),
                 S("travel").For("travel").Opts("travel_hotels", "travel_holidays", "travel_extras").Also("holiday trip hotel stay")),
 
             G("work",
@@ -390,7 +390,9 @@ namespace RealLifeOverhaul.Meta
                     .Also("district standard minimum complaints basket products reward strength slider income customers"),
                 S("interiordecor").For("interiors_decor").Need("interiors").Opts("interiors_decor_strength").Also("decor ambience customers footfall clients office strength slider"),
                 S("designs").For("designs").Opts("designs")
-                    .Also("ready made design designs interior installation installer firm layout furniture fit out showroom studio academy office shop")),
+                    .Also("ready made design designs interior installation installer firm layout furniture fit out showroom studio academy office shop"),
+                S("newshops").For("newshops").Opts("new_shops")
+                    .Also("new shops kinds business types ice cream parlour gelato tea bar bubble tea slush tobacconist tobacco vape cigarettes cigars bizman start")),
 
             G("controls",
                 S("keys").For("keys").Buttons("reallife_keys_reset", "reallife_keys_camera_toggle", "reallife_keys_interact", "reallife_keys_interact_alt",

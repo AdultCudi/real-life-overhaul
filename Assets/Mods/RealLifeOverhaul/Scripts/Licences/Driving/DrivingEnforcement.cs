@@ -214,7 +214,7 @@ namespace RealLifeOverhaul
                     Points(PointCode.EvadedCheck);
                 }
             }
-            LicenceStanding standing = LicenceState.Standing(kind, day);
+            LicenceStanding standing = LicenceState.Entitled(kind, day);
             if (standing == LicenceStanding.Valid)
             {
                 if (fine > 0)
@@ -282,7 +282,8 @@ namespace RealLifeOverhaul
         {
             return (kind != LicenceClass.Car && LicenceState.Valid(LicenceClass.Car, day))
                    || (kind != LicenceClass.Commercial && LicenceState.Valid(LicenceClass.Commercial, day))
-                   || (kind != LicenceClass.Motorcycle && LicenceState.Valid(LicenceClass.Motorcycle, day));
+                   || (kind != LicenceClass.Motorcycle && LicenceState.Valid(LicenceClass.Motorcycle, day))
+                   || (kind != LicenceClass.Heavy && LicenceState.Valid(LicenceClass.Heavy, day));
         }
 
         // Once the officer is at the window: out of the car, the car away, and for a repeat offender the cuffs.

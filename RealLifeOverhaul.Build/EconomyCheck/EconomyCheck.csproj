@@ -500,6 +500,9 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Designs\DesignPlan.cs" Link="Mod\DesignPlan.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Designs\DesignFiles.cs" Link="Mod\DesignFiles.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Designs\DesignsText.cs" Link="Mod\DesignsText.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Shops\ShopsCatalogue.cs" Link="Mod\ShopsCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Shops\ShopsRules.cs" Link="Mod\ShopsRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Shops\ShopsText.cs" Link="Mod\ShopsText.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\RedrawRules.cs" Link="Mod\RedrawRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\LookupRules.cs" Link="Mod\LookupRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Finance\CashTable.cs" Link="Mod\CashTable.cs" />
@@ -516,6 +519,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meta\BugReportRules.cs" Link="Mod\BugReportRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Family\HardTimesRules.cs" Link="Mod\HardTimesRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Family\TalkRules.cs" Link="Mod\TalkRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Licences\HeavyRules.cs" Link="Mod\HeavyRules.cs" />
   </ItemGroup>
 
 </Project>

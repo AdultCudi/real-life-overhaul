@@ -196,6 +196,7 @@
         public const string MinimapZoomId = "nav_zoom";
         public const string MinimapBaseId = "nav_base";
         public const string RoadsideChecksId = "roadside_checks";
+        public const string HeavyLicenceId = "heavy_licence";
         public const string ShowTestToolsId = "show_test_tools";       // Meta: the "Test tools" section of the options page
         public const string DevDiagnosticsId = "dev_diagnostics";      // Meta: the diagnostic keys (F7, Shift+F7, F9) and the Info lines in the log
         public const string GarageId = "garage";
@@ -331,6 +332,7 @@
         public const string InteriorsStandingId = "interiors_standing";
         public const string InteriorsStaffId = "interiors_staff";
         public const string DesignsId = "designs";
+        public const string NewShopsId = "new_shops";
         public const string PermadeathId = "permadeath";
 
         public static bool CameraEnabled = true;
@@ -522,6 +524,7 @@
         public static int MinimapZoom = 100;             // per cent: more is closer
         public static bool MinimapBase = true;           // buildings and water on the minimap, under the roads (off: roads only, as before)
         public static bool RoadsideChecks = true;        // now and then a patrol car pulls the player over only to see the licence
+        public static bool HeavyLicence = true;          // the heaviest trucks need a heavy goods licence, and it opens heavy loads (off: the commercial licence covers them, as before)
         public static bool ShowTestTools = false;        // the test buttons are on the options page
         public static bool DevDiagnostics = false;       // the diagnostic keys work and Info lines go to the log
 
@@ -667,6 +670,7 @@
         public static bool InteriorsBasket = true;          // over the standard each customer takes more of the shop's stock (off with Meaningful Interiors)
         public static bool InteriorsStanding = true;        // a well kept place lifts its brand's standards and Standing's customers, and makes the news; a shabby one the other way
         public static bool Designs = true;                  // the interior installation firms offer the mod's business types ready-made designs
+        public static bool NewShops = true;                 // the ice cream parlour, tea bar and tobacconist are offered when a business is started
         public static bool InteriorsStaff = true;           // plants, good light and a rest corner lift staff; a good office helps hiring and a firm's bids
         public static bool Permadeath = false;           // what the options page shows; the switch itself is kept per save, off unless switched on
 
@@ -889,6 +893,7 @@
             MinimapZoom = Int(modId, MinimapZoomId, MinimapZoom);
             MinimapBase = Bool(modId, MinimapBaseId, MinimapBase);
             RoadsideChecks = Bool(modId, RoadsideChecksId, RoadsideChecks);
+            HeavyLicence = Bool(modId, HeavyLicenceId, HeavyLicence);
             ShowTestTools = Bool(modId, ShowTestToolsId, ShowTestTools);
             DevDiagnostics = Bool(modId, DevDiagnosticsId, DevDiagnostics);
             Garage = Bool(modId, GarageId, Garage);
@@ -1019,6 +1024,7 @@
             InteriorsStanding = Bool(modId, InteriorsStandingId, InteriorsStanding);
             InteriorsStaff = Bool(modId, InteriorsStaffId, InteriorsStaff);
             Designs = Bool(modId, DesignsId, Designs);
+            NewShops = Bool(modId, NewShopsId, NewShops);
         }
 
         /// <summary>

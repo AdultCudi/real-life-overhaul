@@ -85,6 +85,8 @@ namespace RealLifeOverhaul.Utilities
                 case "ba:businesstype_fastfoodrestaurant":
                 case "ba:businesstype_supermarket":
                 case "ba:businesstype_fruitandvegetablestore":
+                case "reallife_icecreamparlour":   // Scripts/Shops: freezers and machines, as a coffee shop's
+                case "reallife_teabar":
                     return PlaceKind.FoodAndDrink;
                 case "ba:businesstype_hairdresser":
                 case "ba:businesstype_clinic":

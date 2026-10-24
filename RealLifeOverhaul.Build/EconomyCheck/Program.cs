@@ -67,6 +67,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--heavy-licence")
+        {
+            HeavyLicence();
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--stocker")
         {
             StockerFixes();
@@ -170,6 +176,14 @@ internal static partial class Program
         if (args.Length == 1 && args[0] == "--seasons")
         {
             Seasons();   // (the seasons' checks alone, while working on them: SeasonChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+
+        if (args.Length == 1 && args[0] == "--shops")
+        {
+            Shops();     // (the new kinds of shop and their designs alone, while working on them: ShopChecks.cs, DesignChecks.cs)
+            Designs();
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
@@ -350,6 +364,7 @@ internal static partial class Program
         Districts();
         Interiors();
         Designs();      // the ready-made designs: the firms' folders, the names, the showroom's lot, and the plan from the game's own design files (DesignChecks.cs)
+        Shops();        // the new kinds of shop: the catalogue against the game's goods and furniture, hours, help pages, icons, texts, wiring (ShopChecks.cs)
         BusRide();
         PlayerBank();
         Branches();     // the bank branches: an hour's customers, visits in the bank's books, the reach over many branches, a branch that pays, the save, the option off (BranchChecks.cs)
@@ -423,6 +438,7 @@ internal static partial class Program
         FurnitureMoves(); // moving furniture: the game's own reason a right click or a place click is refused, whose a thing in the way is, the lines only reading (FurnitureMoveChecks.cs)
         Networking();   // networking: who holds a position (an introduction more often), each position's two favours once, when they are ready, the save, a job lead's name, the texts (NetworkChecks.cs)
         Household();    // household staff: the kinds and their hours, wages from the going rate, the cook's dishes, candidates, unpaid visits, the save, money only through the game's call, the texts (HouseholdChecks.cs)
+        HeavyLicence(); // the heavy goods licence: which trucks need it, the school's steps and waits, its save part, heavy loads on the courier round, the sources and texts (HeavyLicenceChecks.cs)
         Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
         return _failed == 0 ? 0 : 1;
     }

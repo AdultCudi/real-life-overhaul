@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using RealLifeOverhaul.Shops;
 
 namespace RealLifeOverhaul.Designs
 {
@@ -128,7 +129,7 @@ namespace RealLifeOverhaul.Designs
             }
         }
 
-        /// <summary>Every kind's designs for every size; a showroom or branch reads (<paramref name="read"/>, null if unreadable) and cuts each.</summary>
+        /// <summary>Every kind's designs for every size; a showroom, branch or shop reads (<paramref name="read"/>, null if unreadable) and cuts each.</summary>
         public static List<PlannedDesign> Make(List<DesignSource> sources, Dictionary<int, List<string>> sizes, Dictionary<int, string> buildings,
             Func<DesignSource, List<DesignItem>> read)
         {
@@ -171,17 +172,22 @@ namespace RealLifeOverhaul.Designs
                     {
                         read1.Add(read(group[i]));
                     }
-                    bool branch = kind.Way == DesignWay.Branch;
-                    if (!branch)
+                    bool branch = kind.Way == DesignWay.Branch, shop = kind.Way == DesignWay.Stock;
+                    if (!branch && !shop)
                     {
                         DesignRules.Lot(DesignRules.Room(read1), lot);
                     }
                     cuts.Clear();
+                    ShopKind stock = shop ? ShopsCatalogue.Of(kind.Type) : null;
                     for (int i = 0; i < group.Count; i++)
                     {
-                        cuts.Add(read1[i] == null ? null : branch ? DesignRules.BranchCut(read1[i]) : DesignRules.Cut(read1[i], lot));
+                        cuts.Add(read1[i] == null ? null : shop ? DesignRules.StockCut(read1[i], stock) : branch ? DesignRules.BranchCut(read1[i]) : DesignRules.Cut(read1[i], lot));
                     }
-                    if (branch)
+                    if (shop)
+                    {
+                        DesignRules.Stocks(group, cuts, picks);
+                    }
+                    else if (branch)
                     {
                         DesignRules.Branches(group, cuts, picks);
                     }

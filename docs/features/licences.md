@@ -21,6 +21,7 @@ Nothing unknown to the base game goes into a save: licences and points live in t
 Licences/
   Licences          the one door for the rest of the mod: Licences.Driving.Has(LicenceClass), Licences.Law (ILawBridge), listeners
   LicenceState      classes, validity, points, suspension, retests: game-free rules and the modData line (LicenceLaw has every figure)
+  HeavyRules        the heavy goods class: which trucks need it, the school's steps and waits, its figures, heavy loads, its part of the line (game-free, EconomyCheck)
   LicenceDirector   loads/saves, the first-run grant, the desks' panel, the one test that is on, enforcement's tick, the test buttons
   SchoolDesk        the game's panel at a desk and the school's list (services, the licence card as a second page)
   SchoolScreens     the school's one list window (a GameUi.DeskList) and the plain report page
@@ -30,6 +31,7 @@ Licences/
     DrivingSchool      what the school offers and when (DrivingSchool), the desks at the school buildings (LicenceDesks),
                        the Licensing Office contact (LicencePhone) and the conversation both use (DrivingSchoolDialog)
     DrivingQuestions   the 66 theory questions in seven subjects
+    HeavyQuestions     the heavy goods paper's pool: 24 questions in four subjects (keys in HeavyRules)
     PracticalTest      a lesson or test, driven: examiner, checkpoints, what is marked, the bay, the result page
     TestRoute          five to seven checkpoints along real lanes and a marked bay at the kerb
     TestContactRules   what the examiner marks for a contact the shared rule (Traffic/CarContactRules) calls a hit
@@ -42,13 +44,32 @@ Licences/
 | class | covers | how it is got |
 |---|---|---|
 | Car | every car, SUV and pickup (`CarKind` Economy, Saloon, Luxury, Sports, Utility) | theory test (60; 10 of 66 questions, 8 to pass, a pass counts 30 days), one lesson (90), the driven test (220) |
-| Commercial | vans and trucks (`CarKind.Van`, `CarKind.Truck`) | a valid car licence, one van lesson (90), the driven test in the school's van with the bay reversed into (380) |
+| Commercial | vans and trucks (`CarKind.Van`, `CarKind.Truck`), but for the heavy ones below while the heavy class is on | a valid car licence, one van lesson (90), the driven test in the school's van with the bay reversed into (380) |
+| Heavy goods | the game's heaviest trucks: the Freight Truck T1 (`freighttruckt1`), and another mod's truck in the game's slowest speed tier, 50 or under (`HeavyRules.IsHeavy`); the Vord Courier D500 box truck stays commercial | a valid commercial licence, its own paper (90; 10 of 24 questions, 8 to pass, counts 30 days), one lesson in the school's truck (150), the driven test in the Freight Truck with the bay reversed into (560), bookable 2 days after the paper; a failed drive can be sat again after 2 days (200) |
 | Taxi endorsement | carrying passengers for hire | a car licence held 7 days with at most 5 points, 180 |
 | Motorcycle | every motorbike of the Garage (`Licences.Driving.TwoWheelerOf` says what a vehicle of the save is; a bicycle is none) | stands alone: the theory test, then 180 at the desk for the ride assessment. The school has no motorbike to lend, so nothing is driven: the assessment is recorded as passed at the desk (`SchoolService.Motorcycle`) |
 | none needed | bicycle, electric scooter, hand truck, flatbed trolley, anything without an engine (`CarKind.Untouched`) | |
 
 A licence runs 120 days; it can be renewed (90 each, at a desk or by phone) from 14 days before it runs out until 30 days after, and after that it is the tests again.
 A failed driven test can be sat again from the next day for 120.
+
+### The heavy goods licence
+
+A player asked for a licence after the commercial one for the bigger trucks (Discord #suggestions, 24 Oct 2026).
+The game has two trucks: the Vord Courier D500 (`deliverytruck`, a 7.4 m box truck, speed tier 55) and the Freight Truck T1 (`freighttruckt1`, 11 m long and 4 m tall, tier 50), its largest vehicle.
+The heavy class is for the Freight Truck; a box truck is what a commercial licence already covers.
+
+- **The gate** is the same as every class's: `Licences.Driving.ClassOf` names `LicenceClass.Heavy` for a heavy truck while "Heavy trucks need a heavy goods licence" is on (else `Commercial`, as before), getting in without it gives the same warning, and only a stop finds out (`DrivingEnforcement.AskForLicence`: none, the wrong class, expired or suspended, with the same fines).
+  A valid heavy licence also covers what the commercial one does (`LicenceState.Entitled`).
+  With "Driving needs a licence" off nothing is asked, as for every class.
+- **The school** lists three more services after the van's (`SchoolService.TheoryHeavy`, `LessonHeavy`, `TestHeavy`), only while the option is on; `HeavyRules.Refusal` says what each still needs.
+  The paper is its own question pool (`HeavyQuestions`: size and height, weight and loads, braking, turning, mirrors and people).
+  The lesson and the test are the driven test as it is, in the school's Freight Truck (`TestCar.Lend` with the class: the truck's room at the kerb is checked at 3 by 11.8 m, 8 m from the desk), with the bay reversed into as for the van (`PracticalTest.Reverses`) and the stop box grown to the truck where there is no bay.
+  A game without the truck refuses the heavy class only (`reallife_lic_no_truck`).
+- **Renewal** is the school's one renewal: the heavy card is renewed with the others.
+- **A save that already owns a Freight Truck** when the class first applies is given it once (`LicenceDirector.GrandfatherHeavy`, `Decided` in the record), never for a dealer's stock, a job van or the partner's car.
+- **The save**: the card is `heavy=issued,expires` and the record `hgv=theory,retry,lessons,retest,due,decided`, both after the points, so an older RLO reads the rest of the line and passes over them; a save without them starts the class from nothing.
+- **Heavy loads**: a courier round driven in a heavy truck by a driver the rules let drive it (`HeavyRules.IsLoad`) pays each drop and the distance 1.8 times a parcel round, with 1.35 times the time on the clock; see [Jobs](jobs.md#heavy-loads).
 
 The first time the rules run on a save, a player who owns a car is given a car licence (and a commercial one if they own a van or truck, and a motorcycle one if the Garage lists a motorbike they own: `MotorcycleDecided` is saved with the line `moto=issued,expires,decided`, absent in an older save, and asked of `Licences.Driving.OwnsMotorbike` once a second until the Garage has read its list).
 
@@ -124,6 +145,13 @@ Pass: no serious fault and at most six minor ones.
 A lesson is the same drive with each fault said as it happens.
 Where no kerb within 150 m has room for a bay the test ends with a stop at a marker.
 Signalling and stop signs are not modelled (the road data has traffic lights only).
+
+## Tests (Options, Test tools, Licences)
+
+- "Grant or revoke the heavy goods licence" (the car and commercial ones too if missing).
+- "Heavy goods theory test, once this page is closed": the paper with nothing charged; a pass counts, and the wait and the lesson are waived so the driven test can follow.
+- "Practical driving test (truck, reversing)": the drive in the school's Freight Truck from where the player stands.
+- "Courier round as a heavy load (a truck free of charge)" (Jobs).
 
 ## Bridges and hooks
 

@@ -66,6 +66,7 @@ namespace RealLifeOverhaul
         private float _recipientTried = -1f;
         private ItemInstance _box;          // in the player's hands; null when it is in the car
         private bool _hired;                // the round is driven in a hired van
+        private bool _heavy;                // a heavy load: in a heavy truck, each drop and the distance paid HeavyRules.LoadPay times a parcel's
         private int _target = -1;
         private int _shownTarget = -2;
         private int _shownDelivered = -1;
@@ -112,14 +113,23 @@ namespace RealLifeOverhaul
                 Refusal = "reallife_job_no_here";
                 return false;
             }
-            // Last of all, once nothing else can refuse: the player's own car, or a van hired for the day.
-            CarController wheels = Ctx.Director.CarFor(Ctx.Test || Ctx.Perk(CareerPerk.CompanyVan), out string noCar);   // the firm's van costs a senior courier nothing
+            // Last of all, once nothing else can refuse: the player's own car, or a van hired for the day; for a heavy load a heavy truck.
+            string noCar;
+            CarController wheels = Ctx.HeavyLoad ? Ctx.Director.HeavyFor(Ctx.Test, out noCar)
+                : Ctx.Director.CarFor(Ctx.Test || Ctx.Perk(CareerPerk.CompanyVan), out noCar);   // the firm's van costs a senior courier nothing
             if (wheels == null)
             {
                 Refusal = noCar ?? "reallife_job_no_car";
                 return false;
             }
             _hired = ReferenceEquals(Ctx.Rental.Car, wheels);
+            // Any courier round driven in a heavy truck by a licensed driver is a heavy load, the Gig Line's or an employer's.
+            _heavy = HeavyRules.IsLoad(JobDirector.IsHeavyTruck(wheels), Ctx.Test || Licences.Driving.Has(LicenceClass.Heavy));
+            if (_heavy)
+            {
+                _window *= HeavyRules.LoadTime;
+                JobText.Toast(UI.Notification.NotificationType.Info, "reallife_job_heavy_start", "pay", JobText.Money(DropPay()), 9f);
+            }
             _depotLabel = JobText.T("reallife_job_courier_marker_depot");
             _carLabel = JobText.T("reallife_job_courier_marker_car");
             _doorLabel = JobText.T("reallife_job_courier_marker_door");
@@ -132,11 +142,12 @@ namespace RealLifeOverhaul
             Show(JobText.T("reallife_job_courier_obj_depot", "count", _count.ToString(), "place", _depot.Name));
             Mark(_depot.Front, _depotLabel);
             Figures(now);
-            Ctx.Logger?.Info("Jobs: courier round of " + _count + " from " + _depot.Name + ", " + _route.ToString("F0") + " m, " + _window.ToString("F0") + " s.");
+            Ctx.Logger?.Info("Jobs: courier round of " + _count + " from " + _depot.Name + ", " + _route.ToString("F0") + " m, " + _window.ToString("F0") + " s"
+                             + (_heavy ? ", a heavy load at " + DropPay() + " a drop." : "."));
             if (Meta.Dev.Verbose)
             {
                 Ctx.Logger?.Info("Jobs: courier: the depot is " + JobSpots.Flat(Ctx.PlayerPosition, _depot.Front).ToString("F0") + " m from the player, "
-                                 + (_hired ? "in a hired van" : "in the player's own car")
+                                 + (_hired ? (_heavy ? "in a hired truck" : "in a hired van") : _heavy ? "in the player's own heavy truck" : "in the player's own car")
                                  + "; shown in the game's own interface: job panel " + (_figures.Shown ? "copied" : "NOT copied (the panels over the places are all there is)")
                                  + ", no clock offered (the car would have to be moved).");
             }
@@ -241,7 +252,7 @@ namespace RealLifeOverhaul
                 _shownSeconds = seconds;
                 _figures.Limit(seconds < 0 ? null : JobText.T("reallife_job_card_time_left", "time", ShiftFigures.Clock(seconds)), seconds >= 0 && seconds <= 60 ? WorldPanel.Yellow() : _panel.White);
             }
-            _figures.Money(_delivered * UnitPay() + (_count > 0 ? DistancePay(_route * _delivered / _count) : 0), Mathf.RoundToInt(_tips * Ctx.TipFactor));
+            _figures.Money(_delivered * DropPay() + (_count > 0 ? RoundPay(_route * _delivered / _count) : 0), Mathf.RoundToInt(_tips * Ctx.TipFactor));
             _figures.Time(-1);
         }
 
@@ -479,7 +490,7 @@ namespace RealLifeOverhaul
             TakeBox();   // out of the player's hands first, so the arm is free to reach
             _drops[_target].Done = true;
             _delivered++;
-            UnitDone(_delivered, UnitPay());   // the round's big tipper, if the offer drew one
+            UnitDone(_delivered, DropPay());   // the round's big tipper, if the offer drew one
             if (Meta.Dev.Verbose)
             {
                 Ctx.Logger?.Info("Jobs: courier: parcel " + _delivered + " of " + _count + " " + (toSomeone && _recipient != null ? "handed to someone at the door" : "left at the door")
@@ -628,12 +639,12 @@ namespace RealLifeOverhaul
             {
                 return false;
             }
-            int each = UnitPay();
+            int each = DropPay();
             slip = new PaySlip
             {
                 Units = _delivered,
                 Base = _delivered * each,
-                Distance = DistancePay(_route * _delivered / _count),
+                Distance = RoundPay(_route * _delivered / _count),
                 Tips = Mathf.RoundToInt(_tips * Ctx.TipFactor),
                 Bonus = beatTheClock ? Mathf.RoundToInt(_delivered * each * 0.15f) : 0,
                 // A crash shakes every parcel aboard and a stop holds the round up: each costs two doors' pay.
@@ -641,6 +652,11 @@ namespace RealLifeOverhaul
             };
             return true;
         }
+
+        // A drop's pay and the distance's: a parcel's, or a heavy load's (HeavyRules.LoadPay times as much).
+        private int DropPay() => _heavy ? HeavyRules.LoadPayFor(UnitPay()) : UnitPay();
+
+        private int RoundPay(float metres) => _heavy ? HeavyRules.LoadPayFor(DistancePay(metres)) : DistancePay(metres);
 
         public override void End(JobEnd why)
         {

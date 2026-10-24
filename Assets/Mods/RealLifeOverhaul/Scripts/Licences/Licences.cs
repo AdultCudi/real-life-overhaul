@@ -63,8 +63,11 @@ namespace RealLifeOverhaul
             /// <summary>Always true with the requirement off or before the save is ready.</summary>
             public static bool Has(LicenceClass kind)
             {
-                return !Required || !LicenceState.Loaded || LicenceState.Valid(kind, TimeHelper.CurrentDay);
+                return !Required || !LicenceState.Loaded || LicenceState.Covered(kind, TimeHelper.CurrentDay);
             }
+
+            /// <summary>Whether the heaviest trucks need a class of their own; off, the commercial licence covers them as before.</summary>
+            public static bool HeavyClass => Settings.HeavyLicence;
 
             public static bool Suspended => LicenceState.Loaded && LicenceState.SuspendedUntil > TimeHelper.CurrentDay;
 
@@ -97,6 +100,10 @@ namespace RealLifeOverhaul
                     return false;
                 }
                 kind = car == CarKind.Van || car == CarKind.Truck ? LicenceClass.Commercial : LicenceClass.Car;
+                if (car == CarKind.Truck && HeavyClass && HeavyRules.IsHeavy(type.vehicleTypeName, true, type.maxSpeed))
+                {
+                    kind = LicenceClass.Heavy;
+                }
                 return true;
             }
 
@@ -180,6 +187,7 @@ namespace RealLifeOverhaul
                 case LicenceClass.Commercial: return "reallife_lic_class_commercial".GetLocalization();
                 case LicenceClass.Taxi: return "reallife_lic_class_taxi".GetLocalization();
                 case LicenceClass.Motorcycle: return "reallife_lic_class_motorcycle".GetLocalization();
+                case LicenceClass.Heavy: return "reallife_lic_class_heavy".GetLocalization();
                 default: return "reallife_lic_class_car".GetLocalization();
             }
         }
