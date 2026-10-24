@@ -460,15 +460,47 @@ namespace RealLifeOverhaul.NewGround
             return same;
         }
 
-        /// <summary>True when a point (x, z) is inside a triangle seen from above, its edges counted in.</summary>
+        public const float EdgeSlack = 0.02f;   // m a point may lie past a triangle's edge and still be on it (see InTriangle)
+
+        /// <summary>
+        /// True when a point (x, z) is inside a triangle seen from above, or within <see cref="EdgeSlack"/> of it. A point
+        /// Unity samples on the walking mesh's outer edge lies on that edge only to a float's precision: at 400 m from the
+        /// origin a float is 0.03 mm apart, and a test with no slack stood Uptown down at (405.0, 439.1), where Manhattan's
+        /// pavement meets a building's face (the owner's game of 24 Oct). A degenerate triangle holds nothing.
+        /// </summary>
         public static bool InTriangle(float x, float z, float ax, float az, float bx, float bz, float cx, float cz)
         {
-            float d1 = (x - bx) * (az - bz) - (ax - bx) * (z - bz);
-            float d2 = (x - cx) * (bz - cz) - (bx - cx) * (z - cz);
-            float d3 = (x - ax) * (cz - az) - (cx - ax) * (z - az);
-            bool negative = d1 < -1e-4f || d2 < -1e-4f || d3 < -1e-4f;
-            bool positive = d1 > 1e-4f || d2 > 1e-4f || d3 > 1e-4f;
-            return !(negative && positive);
+            float area = (bx - ax) * (cz - az) - (bz - az) * (cx - ax);
+            if (Math.Abs(area) < 1e-6f)
+            {
+                return false;
+            }
+            float turn = area > 0f ? 1f : -1f;
+            return Inside(x, z, ax, az, bx, bz, turn) && Inside(x, z, bx, bz, cx, cz, turn) && Inside(x, z, cx, cz, ax, az, turn);
+        }
+
+        // On the triangle's side of one edge, or within the slack of it: the point's distance from the edge's line.
+        private static bool Inside(float x, float z, float ax, float az, float bx, float bz, float turn)
+        {
+            float ex = bx - ax, ez = bz - az;
+            float length = (float)Math.Sqrt(ex * ex + ez * ez);
+            return length < 1e-6f || (ex * (z - az) - ez * (x - ax)) * turn / length >= -EdgeSlack;
+        }
+
+        /// <summary>
+        /// A triangle's height at a point seen from above, on the plane through its corners: on a ramp or a stair the
+        /// middle's height can be a metre off a corner's. The middle's height for a degenerate triangle.
+        /// </summary>
+        public static float HeightIn(float x, float z, float ax, float ay, float az, float bx, float by, float bz, float cx, float cy, float cz)
+        {
+            float area = (bx - ax) * (cz - az) - (bz - az) * (cx - ax);
+            if (Math.Abs(area) < 1e-6f)
+            {
+                return (ay + by + cy) / 3f;
+            }
+            float u = ((x - ax) * (cz - az) - (z - az) * (cx - ax)) / area;   // towards b
+            float v = ((bx - ax) * (z - az) - (bz - az) * (x - ax)) / area;   // towards c
+            return ay + u * (by - ay) + v * (cy - ay);
         }
 
         /// <summary>Tiles a side of a square of ground covers on a grid, both ways: the build's size in tiles.</summary>

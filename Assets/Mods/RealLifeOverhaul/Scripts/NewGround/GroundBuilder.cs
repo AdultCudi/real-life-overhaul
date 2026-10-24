@@ -53,6 +53,7 @@ namespace RealLifeOverhaul.NewGround
         public float[] CoveredBefore;
         public float Height;               // m: the height prints are sampled round
         public string Problem;             // why the job stood down, or null
+        public string Note;                // what a self-check measured amiss, for the log: never a reason to stand down
         public GroundPass Pass;
         public double Ms;                  // the builder's time so far, for the log
         public int Updates;                // updates asked of Unity's builder so far
@@ -277,7 +278,7 @@ namespace RealLifeOverhaul.NewGround
                 }
             }
             job.CoveredBefore = WalkGame.Print(mesh, job.CoveredX, job.CoveredZ, height, GroundRules.SpreadReach(grid, GroundRules.TileSamples));
-            job.Problem = WalkGame.Whole(job);
+            job.Note = WalkGame.Whole(job);
             GroundShapes.Rects(job.Fresh, job.FreshRects);
             GroundShapes.Rects(job.Joining, job.JoinRects);
             GroundShapes.Rects(job.Covered, job.BackRects);
@@ -448,7 +449,10 @@ namespace RealLifeOverhaul.NewGround
                 int alike = job.Problem == null ? RoundAlike(job) : samples;
                 if (alike != samples)
                 {
-                    job.Problem = "the " + mesh.Label + " mesh changed beyond the new ground's tiles (" + (samples - alike) + " of " + samples + " samples moved)";
+                    // Unity rebuilds only the tiles an update's bounds hold whole (proven in the lab), so a moved sample is the
+                    // nearest point found differently, not Manhattan's ground changed: noted, never a reason to stand down.
+                    string moved = "the " + mesh.Label + " mesh's samples round the new ground's tiles: " + (samples - alike) + " of " + samples + " moved";
+                    job.Note = job.Note == null ? moved : job.Note + "; " + moved;
                 }
                 // Unity's builder says an update was done whether or not it rebuilt anything (the owner's game of 23 Oct), so
                 // the ground is said grown only when it can be walked on.

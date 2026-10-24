@@ -168,6 +168,10 @@ namespace RealLifeOverhaul.Uptown
                 Logger?.Warn("Uptown: " + GroundBuilder.ClearMiss + "; the district is laid all the same, as it never gives its ground back at this load once it is grown.");
             }
             _playerWalk = _walkable ? GroundWork.LastWalk : null;
+            if (GroundWork.LastNote != null)
+            {
+                Logger?.Warn("Uptown: the player's ground noted (laid all the same): " + GroundWork.LastNote + ".");
+            }
             if (_walkable)
             {
                 Logger?.Info("Uptown: " + _playerWalk + ".");
@@ -177,6 +181,10 @@ namespace RealLifeOverhaul.Uptown
             _peopleMs = Ms(mark);
             _people = _peopleWhy == null;
             _peopleWalk = _people ? GroundWork.LastWalk : null;
+            if (GroundWork.LastNote != null)
+            {
+                Logger?.Warn("Uptown: the pedestrians' ground noted (laid all the same): " + GroundWork.LastNote + ".");
+            }
             if (_people)
             {
                 Logger?.Info("Uptown: " + _peopleWalk + ".");
