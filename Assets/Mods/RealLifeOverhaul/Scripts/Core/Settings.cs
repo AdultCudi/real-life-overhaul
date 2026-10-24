@@ -37,6 +37,7 @@
         public const string MealsSeatedId = "meals_seated";
         public const string MealsCookedId = "meals_cooked";
         public const string MealsDanceId = "meals_dance";
+        public const string HouseholdStaffId = "home_household";
         public const string CameraFovId = "camera_fov";
         public const string CameraHeightId = "camera_height";
         public const string CarCameraId = "car_camera";
@@ -363,6 +364,7 @@
         public static bool MealsSeated = true;   // a meal is eaten at a free seat nearby, with the food in front
         public static bool MealsCooked = true;   // a meal cooked at home is carried to a seat and eaten there
         public static bool MealsDance = true;    // "Dance" in the radio panel over a loudspeaker playing music
+        public static bool HouseholdStaff = true;   // a cleaner, a cook, a butler or a mechanic taken on for the home through the phone
         public static int CameraFov = 55;        // degrees, vertical
         public static bool LifeEvents = true;
         public static int EventFrequency = 5;        // about this many random events per game week
@@ -722,6 +724,7 @@
             MealsSeated = Bool(modId, MealsSeatedId, MealsSeated);
             MealsCooked = Bool(modId, MealsCookedId, MealsCooked);
             MealsDance = Bool(modId, MealsDanceId, MealsDance);
+            HouseholdStaff = Bool(modId, HouseholdStaffId, HouseholdStaff);
             CameraFov = Int(modId, CameraFovId, CameraFov);
             CameraHeight = Int(modId, CameraHeightId, CameraHeight);
             CarCamera = Bool(modId, CarCameraId, CarCamera);

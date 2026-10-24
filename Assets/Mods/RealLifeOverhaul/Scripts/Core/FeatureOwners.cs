@@ -41,6 +41,7 @@ namespace RealLifeOverhaul
             { "RealLifeOverhaul.Hustles", "hustles" },
             { "RealLifeOverhaul.Seasons", "seasons" },
             { "RealLifeOverhaul.Networking", "networking" },
+            { "RealLifeOverhaul.Household", "home_household" },
         };
 
         // Namespaces that are the mod's own machinery, whatever a class of them is called.

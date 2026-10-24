@@ -57,7 +57,7 @@ namespace RealLifeOverhaul
         public static readonly string[] Shapes =
         {
             "lawfirm1", "lawfirm2", "lawfirm3", "headquarter1", "headquarter3", "bank2", "marketing2", "marketing3", "furniture1", "furniture3", "gym3",
-            "recruitment1", "recruitment2", "recruitment3", "school1", "bookstore1", "wholesale3", "cardealer2", "calendar2", "planeticket", "plane"
+            "recruitment1", "recruitment2", "recruitment3", "school1", "bookstore1", "wholesale3", "cardealer2", "calendar2", "planeticket", "plane", "furniture2"
         };
 
         public static readonly ContactLook[] All =
@@ -83,6 +83,7 @@ namespace RealLifeOverhaul
             ContactLook.Person("reallife-partner", true, 30),
             ContactLook.Person("reallife-inlaws", true, 62),
             ContactLook.Logo("reallife-roommate", "furniture3", 202, 132, 62),
+            ContactLook.Logo("reallife-household", "furniture2", 64, 112, 150),
             ContactLook.Logo("reallife-health", "gym3", 40, 140, 112),
             ContactLook.Logo("reallife-people", "recruitment3", 220, 104, 92),
             // Work

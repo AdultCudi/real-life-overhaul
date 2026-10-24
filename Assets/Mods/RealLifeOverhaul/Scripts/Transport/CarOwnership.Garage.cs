@@ -125,21 +125,89 @@ namespace RealLifeOverhaul
 
         private void Quote()
         {
-            float since = _record.Km - _record.ServicedKm;
-            float every = CarRules.ServiceEvery(_kind);
-            _dueService = _record.Broken || since >= every * 0.6f;
-            _dueTyres = _record.Tyres < CarRules.ReplaceBelow;
-            _dueBrakes = _record.Brakes < CarRules.ReplaceBelow;
-            _registrationLeft = RegistrationLeft(_record);
-            _dueRegistration = _registrationLeft <= CarRules.RegistrationEarly;
+            _serviceTotal = Due(_record, _kind, _price, out _dueService, out _dueTyres, out _dueBrakes, out _dueRegistration, out _registrationLeft);
             _serviceItems = (_dueService ? 1 : 0) + (_dueTyres ? 1 : 0) + (_dueBrakes ? 1 : 0) + (_dueRegistration ? 1 : 0);
-            _serviceTotal = (_dueService ? CarRules.Service(_price) : 0f) + (_dueTyres ? CarRules.TyreSet(_price) : 0f) + (_dueBrakes ? CarRules.BrakeSet(_price) : 0f)
-                            + (_dueRegistration ? RegistrationCost() : 0f);
+        }
+
+        // What a car's workshop service is due and comes to: one rule for the repair bay and for a mechanic who comes to the home.
+        private static float Due(CarRecord record, CarKind kind, float price, out bool service, out bool tyres, out bool brakes, out bool registration, out int left)
+        {
+            float since = record.Km - record.ServicedKm;
+            service = record.Broken || since >= CarRules.ServiceEvery(kind) * 0.6f;
+            tyres = record.Tyres < CarRules.ReplaceBelow;
+            brakes = record.Brakes < CarRules.ReplaceBelow;
+            left = RegistrationLeft(record);
+            registration = left <= CarRules.RegistrationEarly;
+            return (service ? CarRules.Service(price) : 0f) + (tyres ? CarRules.TyreSet(price) : 0f) + (brakes ? CarRules.BrakeSet(price) : 0f)
+                   + (registration ? RegistrationCost(price, left) : 0f);
         }
 
         private float RegistrationCost()
         {
-            return CarRules.Registration(_price) + (_registrationLeft < 0 ? CarRules.RegistrationLateFee : 0f);
+            return RegistrationCost(_price, _registrationLeft);
+        }
+
+        private static float RegistrationCost(float price, int left)
+        {
+            return CarRules.Registration(price) + (left < 0 ? CarRules.RegistrationLateFee : 0f);
+        }
+
+        // The work a service does on the record: whatever Due found due, done.
+        private static void Done(CarRecord record, CarKind kind)
+        {
+            float since = record.Km - record.ServicedKm;
+            if (record.Broken || since >= CarRules.ServiceEvery(kind) * 0.6f)
+            {
+                record.ServicedKm = record.Km;
+                record.Broken = false;
+                record.GraceKm = 0f;
+            }
+            if (record.Tyres < CarRules.ReplaceBelow)
+            {
+                record.Tyres = 1f;
+            }
+            if (record.Brakes < CarRules.ReplaceBelow)
+            {
+                record.Brakes = 1f;
+            }
+            if (RegistrationLeft(record) <= CarRules.RegistrationEarly)
+            {
+                record.RegisteredDay = TimeHelper.CurrentDay;
+                record.RemindedDay = 0;
+            }
+        }
+
+        /// <summary>
+        /// A car's service where it stands, as a mechanic who comes to the player's home does it: what the bay's workshop
+        /// would do and charge, and with <paramref name="doIt"/> done. 0 with nothing due, car ownership off, or the car the
+        /// player sits in (that one is the bay's). The caller pays.
+        /// </summary>
+        public static float ServiceWhereItStands(VehicleInstance car, bool doIt)
+        {
+            if (!Settings.CarOwnership || !CarGarage.Loaded || car == null || car.VehicleType == null || !car.VehicleType.IsMotorVehicle)
+            {
+                return 0f;
+            }
+            CarOwnership self = Instance;
+            if (self != null && (self._servicing || (self._car != null && ReferenceEquals(self._car.vehicleInstance, car))))
+            {
+                return 0f;
+            }
+            Vehicles.VehicleTypes.VehicleType type = car.VehicleType;
+            var traits = new CarTraits(true, type.spawnInPlayerObject, type.maxSpeed, type.maxCargoCapacity, type.isLuxuryCar, 1400f);
+            CarKind kind = CarCatalogue.For(type.vehicleTypeName, traits).Kind;
+            if (kind == CarKind.Untouched)
+            {
+                return 0f;
+            }
+            CarRecord record = CarGarage.For(car.id, TimeHelper.CurrentDay);
+            float total = Due(record, kind, type.price, out _, out _, out _, out _, out _);
+            if (doIt && total > 0f)
+            {
+                Done(record, kind);
+                Logger?.Info("Car ownership: serviced where it stands for " + total.ToString("F0") + " at " + record.Km.ToString("F1", CultureInfo.InvariantCulture) + " km.");
+            }
+            return total;
         }
 
         /// <summary>The game's repair bay panel's second line: what is due and what it comes to; null for a car without a record.</summary>
@@ -275,26 +343,7 @@ namespace RealLifeOverhaul
                     }
                 }
                 bool wasBroken = record.Broken;
-                float since = record.Km - record.ServicedKm;
-                if (record.Broken || since >= CarRules.ServiceEvery(kind) * 0.6f)
-                {
-                    record.ServicedKm = record.Km;
-                    record.Broken = false;
-                    record.GraceKm = 0f;
-                }
-                if (record.Tyres < CarRules.ReplaceBelow)
-                {
-                    record.Tyres = 1f;
-                }
-                if (record.Brakes < CarRules.ReplaceBelow)
-                {
-                    record.Brakes = 1f;
-                }
-                if (RegistrationLeft(record) <= CarRules.RegistrationEarly)
-                {
-                    record.RegisteredDay = TimeHelper.CurrentDay;
-                    record.RemindedDay = 0;
-                }
+                Done(record, kind);
                 Logger?.Info("Car ownership: serviced for " + total.ToString("F0") + " at " + record.Km.ToString("F1", CultureInfo.InvariantCulture) + " km"
                     + (wasBroken ? " (it had broken down)" : "") + ".");
                 _faded = false;

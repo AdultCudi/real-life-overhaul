@@ -58,6 +58,7 @@ namespace RealLifeOverhaul
             Step("the cleaning service and selling a business", ServicesLinks.Connect);
             Step("brands and franchises", BrandLinks.Connect);
             Step("the roommate", RoommateLinks.Connect);
+            Step("household staff", HouseholdLinks.Connect);
             Step("meals and music", MealsLinks.Connect);
             Step("power and water", UtilityLinks.Connect);
             Step("the social media app", FlareLinks.Connect);
@@ -114,6 +115,7 @@ namespace RealLifeOverhaul
             Step("brands and franchises", BrandLinks.Disconnect);
             Step("power and water", UtilityLinks.Disconnect);
             Step("meals and music", MealsLinks.Disconnect);
+            Step("household staff", HouseholdLinks.Disconnect);
             Step("the roommate", RoommateLinks.Disconnect);
             Step("running a business", CompanyLinks.Disconnect);
             Step("networking", NetworkLinks.Disconnect);

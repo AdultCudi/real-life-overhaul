@@ -19,6 +19,7 @@ One page per feature. Each starts with what it is in a sentence, where its code 
 - [Networking](networking.md): people the player knows who hold a position, and the favours they do as the relationship grows.
 - [Family](family.md): a partner, a wedding, children, the wider family.
 - [Home life and health](home.md): needs, cooking, illness and the doctor.
+- [Household staff](household.md): a cleaner, a cook, a live-in butler and a mobile mechanic for the home.
 - [Leisure](leisure.md): things to do for fun, the mod's clothes, night life, sound, photo mode.
 - [Travel and lodging](travel.md): hotels and holidays.
 - [Permadeath](permadeath.md): an ending the player chooses.
