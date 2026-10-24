@@ -133,8 +133,11 @@ internal static partial class Program
         Check(enter.Contains("ServiceListed(record, true);") && leave.Contains("ServiceListed(record, false);") && listed.Contains("BuildingHelper.SpecialServiceBuildings[address] = record;")
               && listed.Contains("BuildingHelper.SpecialServiceBuildings.Remove(address);") && listed.Contains("there == record"),
             "special services: a made special place is in the game's list of special buildings while it is in the game's lookups, and out of it with them");
-        string leaveLists = MemberText(life, "public static void LeaveLists()");
-        Check(leaveLists.Contains("MadeGame.ServiceListed(Entered[i], false);") && leaveLists.Contains("MadeGame.ImporterListed(Entered[i], BuildingHelper.GetBuildingRegistration(Entered[i].Address), false);"),
+        string leaveSpecials = MemberText(life, "public static void LeaveSpecials(List<MadeBuilding> standing)");
+        string close = MemberText(Read(@"Uptown\LifeDirector.cs"), "private static void Close(string why, bool sessionChanged)");
+        Check(leaveSpecials.Contains("MadeGame.ServiceListed(made.Building, false);") && leaveSpecials.Contains("MadeGame.ImporterListed(made.Building, made.Registration, false);")
+              && close.IndexOf("LifeGame.LeaveSpecials(Standing);", StringComparison.Ordinal) > close.IndexOf("LifeGame.LeaveLists();", StringComparison.Ordinal)
+              && close.IndexOf("LifeGame.LeaveLists();", StringComparison.Ordinal) > 0,
             "special services: when Uptown stands down its special places leave the game's list of special buildings and its importers");
         string drop = MemberText(made, "private static void Drop()"), drops = MemberText(served, "private static void DropServices()");
         Check(drop.Contains("DropServices();") && drops.Contains("UnityEngine.Object.Destroy(Served[i]);") && drops.Contains("Branches.Clear();"),

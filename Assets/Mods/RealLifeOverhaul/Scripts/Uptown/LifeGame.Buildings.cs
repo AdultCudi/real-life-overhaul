@@ -190,20 +190,28 @@ namespace RealLifeOverhaul.Uptown
             {
                 BuildingHelper.allBuildings.Remove(Entered[i]);
             }
-            for (int i = 0; i < Entered.Count; i++)
-            {
-                if (Entered[i] != null && Entered[i].SpecialService != null)
-                {
-                    // Its special place out of the game's lists of them too: the nearest clinic, the importers and the banks are found there.
-                    MadeGame.ImporterListed(Entered[i], BuildingHelper.GetBuildingRegistration(Entered[i].Address), false);
-                    MadeGame.ServiceListed(Entered[i], false);
-                }
-            }
             if (BuildingHelper.AllNeighbourhoodBuildings.TryGetValue(DistrictValues.Id, out List<Building> district) && district != null)
             {
                 district.Clear();
             }
             Entered.Clear();
+        }
+
+        /// <summary>
+        /// Uptown stood down in play: its special places out of the game's lists of them too (the nearest clinic, the
+        /// importers and the banks are found there), each with the registration it stood with.
+        /// </summary>
+        public static void LeaveSpecials(List<MadeBuilding> standing)
+        {
+            for (int i = 0; i < standing.Count; i++)
+            {
+                MadeBuilding made = standing[i];
+                if (made != null && made.Building != null && made.Building.SpecialService != null)
+                {
+                    MadeGame.ImporterListed(made.Building, made.Registration, false);
+                    MadeGame.ServiceListed(made.Building, false);
+                }
+            }
         }
 
         /// <summary>

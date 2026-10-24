@@ -213,13 +213,14 @@ namespace RealLifeOverhaul.NewBuildings
         /// An importer among the game's importers, or out of them: the game keeps its list of them once made
         /// (BuildingHelper.GetImportExportBuildingRegistrations, from its list of all buildings, until the next load), so one
         /// made before the district's buildings were in that list lacks it. Asked once the district's buildings are in the
-        /// game's lists. True when the importer is in the list (or, <paramref name="listed"/> false, out of it).
+        /// game's lists. True when the importer is in the list (or, <paramref name="listed"/> false, out of it), and for a
+        /// building that is no importer, which has nothing to do there.
         /// </summary>
         public static bool ImporterListed(Building record, BuildingRegistration registration, bool listed)
         {
             if (record == null || registration == null || record.SpecialService == null || record.SpecialService.businessTypeName != ImportType)
             {
-                return !listed;
+                return true;
             }
             List<BuildingRegistration> all = BuildingHelper.GetImportExportBuildingRegistrations();
             if (all == null)
