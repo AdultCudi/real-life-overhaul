@@ -39,7 +39,9 @@ internal static partial class Program
     private static List<BuildingsLot> UptownRealPlan()
     {
         var plan = new List<BuildingsLot>(512);
-        foreach (Lot l in UptownLots.All)
+        var all = new List<Lot>(UptownLots.All);
+        all.AddRange(UptownLots.Places);   // as LifeGame.Lots reads the plan: the big places' ground after the lots
+        foreach (Lot l in all)
         {
             plan.Add(new BuildingsLot
             {
@@ -82,8 +84,8 @@ internal static partial class Program
         {
             notClear += BuildingsRules.Clear(lot.Id) ? 0 : 1;
         }
-        Check(plan.Count == 555 && built.Count == 454 && legacy.Count == 20 && first == 79 && firstBuilt == 42 && notClear == 1,
-            "uptown fill: of the band's 555 lots, 454 are built from the first day, 100 left open and one kept empty; 42 of the first block's 79 (" + plan.Count + ", "
+        Check(plan.Count == 557 && built.Count == 454 && legacy.Count == 20 && first == 80 && firstBuilt == 42 && notClear == 3,
+            "uptown fill: of the band's 555 lots and two big places' ground, 454 lots are built from the first day, 100 left open and one kept empty; 42 of the first block's 80 (" + plan.Count + ", "
             + built.Count + ", " + legacy.Count + ", " + firstBuilt + " of " + first + ", " + notClear + " not clear)");
         bool treeLot = plan.Exists(l => l.Id == "uptown_1_14_004") && !BuildingsRules.Clear("uptown_1_14_004") && !builtIds.Contains("uptown_1_14_004")
                        && !leased.Contains("uptown_1_14_004") && BuildingsRules.Clear("uptown_1_14_005") && !BuildingsRules.Clear(null) && !BuildingsRules.Clear(string.Empty);

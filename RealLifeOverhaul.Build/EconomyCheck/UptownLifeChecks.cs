@@ -36,6 +36,7 @@ internal static partial class Program
         UptownTexts();
         UptownFillChecks();
         UptownPlaceChecks();
+        UptownDenseChecks();
         UptownWorkChecks();
     }
 
@@ -670,7 +671,7 @@ internal static partial class Program
         string map = MemberText(lifeGame, "public static bool Map(float x1, float z1, float x2, float z2, out string why)");
         Check(map.Contains("DistrictValues.SouthClear(") && map.IndexOf("SouthClear(", StringComparison.Ordinal) < map.IndexOf("DistrictValues.ZoneOver(", StringComparison.Ordinal),
             "uptown: its quad is cleared of the game's zones before it is laid");
-        string plan = MemberText(lifeGame, "public static void Lots(List<BuildingsLot> into)");
+        string plan = MemberText(lifeGame, "private static void Add(IReadOnlyList<Lot> all, List<BuildingsLot> into)");
         Check(plan.Contains("Avenue = BuildingsRules.FrontsAvenue(lot.Facing)") && !plan.Contains("MadeStreets"),
             "uptown: a lot's avenue told from its own facing, never from streets another step may not have made yet");
 

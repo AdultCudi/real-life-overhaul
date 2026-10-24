@@ -350,7 +350,7 @@ namespace RealLifeOverhaul.Uptown
         // A place's ground laid as one entry of its strip, to be numbered with its lots.
         private static void Place(PlaceGround g, int row, int column, List<Laid> laid, float front, int facing, string street)
         {
-            float depth = g.Depth(front), along = (g.From + g.To) * 0.5f, half = depth * 0.5f;
+            float depth = (float)Math.Round(g.Depth(front)), along = (g.From + g.To) * 0.5f, half = depth * 0.5f;   // whole metres, its front on the street's line
             var l = new Laid { Row = row, Column = column, Class = g.Class, Street = street, Place = g.Id, Width = (int)Math.Round(g.To - g.From), Depth = (int)Math.Round(depth) };
             l.X = facing == 0 || facing == 180 ? along : facing == 270 ? front + half : front - half;
             l.Z = facing == 0 ? front - half : facing == 180 ? front + half : along;

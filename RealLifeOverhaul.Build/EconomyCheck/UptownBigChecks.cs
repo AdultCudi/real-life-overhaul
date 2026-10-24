@@ -49,7 +49,7 @@ internal static partial class Program
     private static void UptownBigLots(List<BuildingsLot> plan)
     {
         BigPlace store = BigPlacesRules.Of(BigKind.Wholesale), station = BigPlacesRules.Of(BigKind.GasStation);
-        Check(BigPlacesRules.All.Length == 2 && store != null && station != null && store.Lot == "uptown_1_08_01" && station.Lot == "uptown_2_06_04"
+        Check(BigPlacesRules.All.Length == 2 && store != null && station != null && store.Lot == "uptown_place_wholesale" && station.Lot == "uptown_place_fuel"
               && store.Service == "MurrayHillWholesaleStore" && station.Service == "UnitedGasoline" && store.Name == "Northgate Wholesale" && station.Name == "Summit Fuel"
               && store.Design == "DriveInMurrayHill" && station.Design == "GasStationBuilding" && store.Version == 1 && station.Version == 2,
             "uptown big: two places, Total Produce Trading's drive-in store on block 108's Uptown Avenue front and United Gasoline's station on the corner of 9th Street and Uptown Avenue, each with a name of its own");
@@ -76,17 +76,18 @@ internal static partial class Program
             }
             sizes &= own.Class == (p.Kind == BigKind.Wholesale ? BuildingsClass.Warehouse : BuildingsClass.Office);
         }
-        Check(known && oneBlock && held.Count == 4 && new HashSet<string>(held).Count == 4 && sizes,
-            "uptown big: every lot a place holds is in the plan, in its own lot's block, held once; the store's on a warehouse lot, the station's on an office lot");
+        Check(known && oneBlock && held.Count == 2 && new HashSet<string>(held).Count == 2 && sizes && BigPlacesRules.All[0].Over.Length + BigPlacesRules.All[0].KeptClear.Length
+              + BigPlacesRules.All[1].Over.Length + BigPlacesRules.All[1].KeptClear.Length == 0 && UptownLots.Places.Count == 2,
+            "uptown big: each place stands on the ground the plan keeps for it (UptownLots.Places), in the plan, held once and no lot besides; the store's of the warehouse class, the station's an office's");
         bool clear = true, holds = true;
         foreach (string id in held)
         {
             clear &= !BuildingsRules.Clear(id);
             holds &= BigPlacesRules.Holds(id) && BigPlacesRules.HolderOf(id) != null;
         }
-        bool neighbours = BuildingsRules.Clear("uptown_1_08_03") && BuildingsRules.Clear("uptown_1_08_05") && BuildingsRules.Clear("uptown_1_08_10") && BuildingsRules.Clear("uptown_2_06_05")
-                          && !BigPlacesRules.Holds("uptown_1_08_03") && !BigPlacesRules.Holds(null) && BigPlacesRules.On("uptown_1_08_02") == null
-                          && BigPlacesRules.On("uptown_1_08_01") == store && BigPlacesRules.HolderOf("uptown_1_08_06") == store;
+        bool neighbours = plan.TrueForAll(l => held.Contains(l.Id) || l.Id == "uptown_1_14_004" || (BuildingsRules.Clear(l.Id) && !BigPlacesRules.Holds(l.Id)))
+                          && !BigPlacesRules.Holds(null) && BigPlacesRules.On("uptown_1_08_001") == null
+                          && BigPlacesRules.On("uptown_place_wholesale") == store && BigPlacesRules.On("uptown_place_fuel") == station;
         Check(clear && holds && neighbours, "uptown big: a place's lots are none of the plan's ordinary buildings (BuildingsRules.Clear), its neighbours are");
         var built = UptownIds(plan, BuildingsRules.Built(plan, LandmarkRules.OwnBlock, 0f, 1f, new List<int>()));
         var leased = UptownIds(plan, BuildingsRules.Leased(plan, new List<int>()));
@@ -110,10 +111,10 @@ internal static partial class Program
     {
         BigPlace store = BigPlacesRules.Of(BigKind.Wholesale), station = BigPlacesRules.Of(BigKind.GasStation);
         bool g1 = BigPlacesRules.Ground(store, plan, out BuildingsLot storeGround), g2 = BigPlacesRules.Ground(station, plan, out BuildingsLot stationGround);
-        Check(g1 && g2 && storeGround.Id == store.Lot && storeGround.Street == UptownLotOf(plan, store.Lot).Street && Near(storeGround.X, -83.42f, 0.05f) && Near(storeGround.Z, 578.6f, 0.1f)
-              && storeGround.Width == 60 && storeGround.Depth == 39 && Near(storeGround.Facing, 0f, 0.01f)
-              && stationGround.Width == 23 && stationGround.Depth == 32 && Near(stationGround.Facing, 180f, 0.01f) && Near(stationGround.X, -280.02f, 0.05f),
-            "uptown big: the store's ground is its lot and the next, 60 by 39 m along Uptown Avenue at its own address; the station's its own lot, 23 by 32 m ("
+        Check(g1 && g2 && storeGround.Id == store.Lot && storeGround.Street == UptownLotOf(plan, store.Lot).Street && Near(storeGround.X, -83.4f, 0.05f) && Near(storeGround.Z, 577.63f, 0.05f)
+              && storeGround.Width == 60 && storeGround.Depth == 41 && Near(storeGround.Facing, 0f, 0.01f)
+              && stationGround.Width == 23 && stationGround.Depth == 32 && Near(stationGround.Facing, 180f, 0.01f) && Near(stationGround.X, -280.0f, 0.05f),
+            "uptown big: the store's ground is the plan's 60 by 41 m along Uptown Avenue at its own address; the station's 23 by 32 m on its corner ("
             + storeGround.X + ", " + storeGround.Z + ", " + storeGround.Width + " by " + storeGround.Depth + ")");
         var shuffled = new List<BuildingsLot>(plan);
         shuffled.Reverse();
@@ -200,7 +201,7 @@ internal static partial class Program
         var station = UptownStationDesign();
         var designs = new List<DesignEntry> { station, plain };
         designs.Sort(NewBuildingsRules.CompareDesigns);
-        int byName = NewBuildingsRules.Pick(designs, "ba:buildingsize_a", BuildingsRules.SpecialType, "GasStationBuilding", 23f, 32f, "uptown_2_06_04", true);
+        int byName = NewBuildingsRules.Pick(designs, "ba:buildingsize_a", BuildingsRules.SpecialType, "GasStationBuilding", 23f, 32f, "uptown_place_fuel", true);
         int notWhole = NewBuildingsRules.Pick(designs, "ba:buildingsize_a", "ba:buildingtype_retail", "GasStationBuilding", 23f, 32f, "x", false);
         bool neverBySize = true;
         for (int i = 0; i < 64; i++)

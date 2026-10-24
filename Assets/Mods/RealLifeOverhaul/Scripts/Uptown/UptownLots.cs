@@ -123,6 +123,9 @@ namespace RealLifeOverhaul.Uptown
         /// <summary>Every lot of the band, in id order (row, column, then each block's own order).</summary>
         public static IReadOnlyList<Lot> All => LayoutRules.Lots;
 
+        /// <summary>The ground the plan keeps for the big special places (BigPlacesRules), with their ids and addresses: never among <see cref="All"/>.</summary>
+        public static IReadOnlyList<Lot> Places => LayoutRules.Places;
+
         /// <summary>The first block's lots, between 1st Avenue's buildings and Uptown Avenue, where the band meets Manhattan.</summary>
         public static IReadOnlyList<Lot> FirstBlock => LayoutRules.FirstLots;
 

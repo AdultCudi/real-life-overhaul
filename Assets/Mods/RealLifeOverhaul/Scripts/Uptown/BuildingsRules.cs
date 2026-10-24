@@ -127,7 +127,7 @@ namespace RealLifeOverhaul.Uptown
             var first = new List<int>(lots.Count);
             for (int i = 0; i < lots.Count; i++)
             {
-                if (lots[i].First && !string.IsNullOrEmpty(lots[i].Id))
+                if (lots[i].First && !string.IsNullOrEmpty(lots[i].Id) && Clear(lots[i].Id))   // never a big place's ground or a lot something stands into
                 {
                     first.Add(i);
                 }

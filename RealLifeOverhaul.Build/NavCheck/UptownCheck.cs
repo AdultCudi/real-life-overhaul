@@ -234,7 +234,7 @@ internal static partial class Program
             "uptown lots: each class holds the game's sizes places.md counts in it");
         if (print)
         {
-            var rows = lots.Select(l => new { l.Id, l.Row, l.Column, l.First, l.Street, l.Number, l.X, l.Z, l.Yaw, l.Width, l.Depth, Class = l.Class.ToString() });
+            var rows = lots.Concat(LayoutRules.Places).Select(l => new { l.Id, l.Row, l.Column, l.First, l.Street, l.Number, l.X, l.Z, l.Yaw, l.Width, l.Depth, Class = l.Class.ToString(), Place = UptownLots.Get(l.Id) == null });
             File.WriteAllText(Path.Combine(AppContext.BaseDirectory, "uptown_lots.json"), JsonSerializer.Serialize(rows));
             Console.WriteLine("uptown lots written to " + Path.Combine(AppContext.BaseDirectory, "uptown_lots.json"));
         }
