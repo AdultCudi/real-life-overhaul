@@ -110,6 +110,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--hustles")
+        {
+            Hustles();   // (the Marketplace and freelance visits alone, while working on them: HustleChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--meals")
         {
             Meals();   // (meals and music alone, while working on them: MealsChecks.cs)
@@ -381,6 +387,7 @@ internal static partial class Program
         StaffLeaving(); // an employee the mod lets go leaves once, with one wage and one notice; one rival's offer to an employee at a time (StaffLeaveChecks.cs)
         HardTimesTriggers(); // a difficult moment at home comes of what is going on: each one's causes, nothing when all is well, a cause gone, the options, the save, the same state (HardTimesChecks.cs)
         MorningNotices(); // the morning line only from a sleep the game ended, with its hours; the city's news of the night packed into it; four notices' switches (MorningNewsChecks.cs)
+        Hustles();      // the Marketplace: listings, worth, haggling, repairs, buyers, visits and their stars, helpers, the save, a year of it, the texts (HustleChecks.cs)
         CalendarApp();  // the Calendar: the months of every year length, the grid, each schedule's days against its feature's own rule, an empty month, the sources, the texts (CalendarAppChecks.cs)
         Meals();        // meals and music: the seat a meal is taken to, how long it is eaten, the dance's lift and its cap, every way out, the texts (MealsChecks.cs)
         FurnitureMoves(); // moving furniture: the game's own reason a right click or a place click is refused, whose a thing in the way is, the lines only reading (FurnitureMoveChecks.cs)

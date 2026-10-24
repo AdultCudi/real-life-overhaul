@@ -317,7 +317,9 @@ namespace RealLifeOverhaul.Meta
                 S("ownwork").For("careers_own").Opt("careers_own", "careers_jobs").Opt("careers_own_offer_notes", "careers_own")
                     .Also("freelance freelancing contract contracts client clients practice self employed startup found founder spin out colleagues restraint clause non compete side work"),
                 S("planner").For("planner").Main("planner").Opts("planner_reminders", "planner_morning").Also("diary notes to do"),
-                S("calendar").For("calendar").Main("calendar").Also("calendar month months year date dates payday bills due birthday birthdays")),
+                S("calendar").For("calendar").Main("calendar").Also("calendar month months year date dates payday bills due birthday birthdays"),
+                S("hustles").For("hustles").Main("hustles")
+                    .Also("marketplace market flip flipping second hand used goods sell buy haggle haggling repair fix clean freelance detailing junk removal moving handyman helper rating")),
 
             G("money",
                 S("credit").For("economy").Opts("economy").Opt("economy_grade_up_notes", "economy").Also("bank borrow score finance"),

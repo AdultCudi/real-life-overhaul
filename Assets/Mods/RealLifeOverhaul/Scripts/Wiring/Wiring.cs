@@ -73,6 +73,7 @@ namespace RealLifeOverhaul
             Step("the player's bank", OwnBankLinks.Connect);   // after running a business: its pieces of the paper follow the company's
             Step("the end game at scale", EndScaleLinks.Connect);
             Step("the calendar", CalendarLinks.Connect);   // its sources read the others' schedules when it is shown
+            Step("the Marketplace", HustleLinks.Connect);
             Step("rival tycoons", RivalLinks.Connect);   // after the economy, the company, Flare and the interiors: what it wraps is theirs already
             Step("standing", StandingLinks.Connect);   // last: what it wraps of the others' is theirs already
             Step("companion reporting", CompanionLinks.Connect);   // wraps nothing: it only reads what the others own
@@ -89,6 +90,7 @@ namespace RealLifeOverhaul
             Step("companion reporting", CompanionLinks.Disconnect);
             Step("standing", StandingLinks.Disconnect);   // first: what it wrapped goes back before the others take theirs off
             Step("the calendar", CalendarLinks.Disconnect);
+            Step("the Marketplace", HustleLinks.Disconnect);
             Step("rival tycoons", RivalLinks.Disconnect);   // next, for the same reason
             Step("the player's bank", OwnBankLinks.Disconnect);   // before running a business: what it wrapped of the paper goes back first
             Step("the end game at scale", EndScaleLinks.Disconnect);

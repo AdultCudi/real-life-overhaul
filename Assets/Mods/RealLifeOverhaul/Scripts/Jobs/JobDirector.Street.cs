@@ -154,6 +154,29 @@ namespace RealLifeOverhaul
             return _rental.Hire(gm.playerController.transform.position, test, out reasonKey);
         }
 
+        /// <summary>
+        /// The jobs' hired van for work that is not a gig (the Marketplace's junk runs and moves, through Wiring/HustleLinks):
+        /// the same van and the same day's fee. Refused while a gig is on, since the shift's van is the shift's.
+        /// </summary>
+        public CarController HireVan(Vector3 near, out string reasonKey)
+        {
+            if (_job != null || _broken)
+            {
+                reasonKey = _broken ? "reallife_job_no_off" : "reallife_job_no_busy";
+                return null;
+            }
+            return _rental.Hire(near, false, out reasonKey);
+        }
+
+        /// <summary>Work that hired the van is over: it goes back once the player is out of it. A gig's van is left to the gig.</summary>
+        public void ReturnVan()
+        {
+            if (_job == null)
+            {
+                _rental.Return();
+            }
+        }
+
         /// <summary>The car being driven, else the player's own nearest within a distance (no scooter or game job van; a hired van counts), or null.</summary>
         public static CarController NearestCar(float within)
         {
