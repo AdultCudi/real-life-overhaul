@@ -12,6 +12,9 @@ namespace RealLifeOverhaul.Tech
     /// </summary>
     internal static class InfraGame
     {
+        /// <summary>Owner deduction labels whose mixed costs have no single portable recurrence rule.</summary>
+        internal static string[] CompanionUnclassifiedTaxLabels() => new[] { "reallife_tech_deduct".GetLocalization(), WriteDownDeduct.GetLocalization() };
+
         public const string Warehouse = "ba:businesstype_warehouse";
         public const string WarehouseBuilding = "ba:buildingtype_warehouse";
         public const string TakingsKey = "reallife_transaction_tech_cloud_takings";

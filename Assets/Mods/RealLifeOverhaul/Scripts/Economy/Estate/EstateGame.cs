@@ -58,6 +58,9 @@ namespace RealLifeOverhaul.Economy
     /// </summary>
     internal static partial class EstateGame
     {
+        /// <summary>Owner deduction labels whose mixed costs have no single portable recurrence rule.</summary>
+        internal static string[] CompanionUnclassifiedTaxLabels() => new[] { DeductKey.GetLocalization() };
+
         public const string RentKey = "ba:transaction_rentrevenue";       // the game's own, with the address
         public const string SoldKey = "ba:transaction_buildingsold";      // the game's own: a mortgage's lender looks for it
         public const string WorksKey = "reallife_transaction_estate_works";

@@ -193,6 +193,9 @@ namespace RealLifeOverhaul.Interiors
             }
         }
 
+        /// <summary>A district's income level for the report, as the interiors judge it.</summary>
+        internal static int CompanionIncome(string district) => IncomeOf(district);
+
         private static int IncomeOf(string district)
         {
             try
