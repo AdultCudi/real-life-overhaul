@@ -328,6 +328,15 @@ namespace RealLifeOverhaul.Uptown
             return !string.IsNullOrEmpty(leaseType) && type == leaseType && !toLet && !rentedByPlayer;
         }
 
+        /// <summary>
+        /// True when a lease's business may receive the player as a visitor (the construction game's builders at their front
+        /// desks): its lessee's business standing there, and never a unit the player rents or owns, nor another player's.
+        /// </summary>
+        public static bool Visitable(bool leased, bool rentedByPlayer, bool ownedByPlayer, bool anotherPlayers)
+        {
+            return leased && !rentedByPlayer && !ownedByPlayer && !anotherPlayers;
+        }
+
         /// <summary>The structure a leased office is built with: of the options, those of the game's office type, the one its id's hash picks; -1 when the game has none.</summary>
         public static int PickOffice(string lotId, IList<BuildingsStructure> options)
         {

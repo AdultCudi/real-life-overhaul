@@ -71,6 +71,44 @@ namespace RealLifeOverhaul.Uptown
             return true;
         }
 
+        /// <summary>
+        /// The lease whose business the player is inside now, while it may receive them (LifeGame.Visitable: its lessee's,
+        /// never a unit the player or another player rents or owns); -1 anywhere else. A pass over eight records.
+        /// </summary>
+        public static int LeaseHere()
+        {
+            for (int i = 0; Lives && i < LeasedUp.Length; i++)
+            {
+                if (LeasedUp[i] != null && LifeGame.PlayerIn(LeasedUp[i]) && LifeGame.Visitable(LeasedUp[i], Lessee(i)))
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        /// <summary>The standing lease whose door is nearest a point on the ground (m), the first of equal ones; -1 when none stands.</summary>
+        public static int LeaseNearest(float x, float z)
+        {
+            int best = -1;
+            float bestDistance = float.MaxValue;
+            for (int i = 0; Lives && i < LeasedUp.Length; i++)
+            {
+                MadeBuilding made = LeasedUp[i];
+                if (made == null)
+                {
+                    continue;
+                }
+                float dx = made.DoorX - x, dz = made.DoorZ - z, distance = dx * dx + dz * dz;
+                if (distance < bestDistance)
+                {
+                    best = i;
+                    bestDistance = distance;
+                }
+            }
+            return best;
+        }
+
         private static void ForgetLeases()
         {
             for (int i = 0; i < LeasedUp.Length; i++)

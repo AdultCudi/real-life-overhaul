@@ -231,6 +231,7 @@ businessschool_holding_item
 change_character_clothes_unsaved_changes_warning
 citymap_category_special_buildings
 click_to_learn
+click_to_talk
 click_to_work
 common_available_for_rent
 common_cancel

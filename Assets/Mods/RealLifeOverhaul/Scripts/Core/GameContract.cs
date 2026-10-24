@@ -55,6 +55,7 @@ namespace RealLifeOverhaul
         public static readonly GamePart ClickLedger = ContractBook.Part("click_ledger", "ledger", "clicking the City Ledger at home");
         public static readonly GamePart ClickBusStop = ContractBook.Part("click_bus_stop", "transport", "clicking a bus stop");
         public static readonly GamePart ClickDesk = ContractBook.Part("click_desk", "careers_study", "clicking your desk at work");
+        public static readonly GamePart ClickBuilderDesk = ContractBook.Part("click_builder_desk", "construction", "talking to the person at a builder's front desk");
         public static readonly GamePart Mop = ContractBook.Part("mop", "jobs", "the cleaner's mop");
         public static readonly GamePart SchoolCar = ContractBook.Part("school_car", "licences", "the driving school's car");
         public static readonly GamePart SaveCheck = ContractBook.Part("save_check", "savetools", "the save tools' test of whether the game may save here");
@@ -190,8 +191,8 @@ namespace RealLifeOverhaul
         // Events/Weather
         public static readonly GameMember RainIntensity = StaticField(Thunder, Sky, "BigAmbitions.DayNightCycle.RainHelper", "NextRainMaxIntensity", "Single");
 
-        // Home/HomeOffers, Ledger/LedgerPointer, Transport/TransitPointer: the game's list of what a click does
-        public static readonly GameMember CtaBehaviours = StaticField(On(ClickHome, ClickLedger, ClickBusStop, ClickDesk), Game, "Player.HUD.ItemInfoOverlays.CtaManager", "CtaBehaviors", "List<ICtaBehavior>");
+        // Home/HomeOffers, Ledger/LedgerPointer, Transport/TransitPointer, Careers/DeskGame, Construction/BuilderDeskGame: the game's list of what a click does
+        public static readonly GameMember CtaBehaviours = StaticField(On(ClickHome, ClickLedger, ClickBusStop, ClickDesk, ClickBuilderDesk), Game, "Player.HUD.ItemInfoOverlays.CtaManager", "CtaBehaviors", "List<ICtaBehavior>");
 
         // Jobs/JobMop
         public static readonly GameMember MopClick = Optional(Method(Mop, Game, "MopController", "OnFloorCellClick", "Void", "DirtSpotObject"));   // else the cell under the player

@@ -63,6 +63,18 @@ namespace RealLifeOverhaul.Uptown
             return LifeDirector.LeaseDestination(lease);
         }
 
+        /// <summary>The leased business of that index the player is inside now, while it may receive them (its lessee's, nobody's to rent or own); -1 elsewhere.</summary>
+        public static int LeaseHere()
+        {
+            return LifeDirector.LeaseHere();
+        }
+
+        /// <summary>The standing leased business whose door is nearest a point on the ground (m); -1 when none stands.</summary>
+        public static int LeaseNearest(float x, float z)
+        {
+            return LifeDirector.LeaseNearest(x, z);
+        }
+
         /// <summary>True while Uptown is a district of the game with its buildings standing at this load.</summary>
         public static bool Lives => LifeDirector.Lives;
 
