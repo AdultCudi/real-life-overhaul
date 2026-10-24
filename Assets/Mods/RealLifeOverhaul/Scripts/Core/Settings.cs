@@ -248,6 +248,8 @@
         public const string FireFrequencyId = "fire_frequency";
         public const string WeatherMattersId = "weather_matters";
         public const string WeatherFrequencyId = "weather_frequency";
+        public const string SeasonsId = "seasons";
+        public const string SnowLookId = "snow_look";
         public const string StreetEventsId = "street_events";
         public const string StreetEventFrequencyId = "street_event_frequency";
         public const string StreetProtestNotesId = "street_protest_notes";
@@ -586,6 +588,8 @@
         public static int FireFrequency = 2;             // 1 = rare, 10 = one every few minutes
         public static bool WeatherMatters = true;        // wet roads, mist, storms, heat and cold change grip, traffic, accidents, crime and energy
         public static int WeatherFrequency = 5;          // how often a summer day is a heat wave and a winter day a cold snap: 1 = hardly ever, 10 = nearly half of them
+        public static bool Seasons = true;               // what customers buy follows the season, and some winter days it snows (traffic and walkers slower on snow with the weather on)
+        public static bool SnowLook = true;              // ...the snow is seen: flakes falling and the ground white (off: felt and forecast only, for slower machines)
         public static bool StreetEvents = true;          // markets, parades, protests, fun runs, film shoots, fireworks
         public static int StreetEventFrequency = 4;      // 1 = one day in twelve has one, 10 = four in five (the Saturday market and the fireworks nights are fixed)
         public static bool StreetProtestNotes = true;    // the notifications of a protest
@@ -927,6 +931,8 @@
             FireFrequency = Int(modId, FireFrequencyId, FireFrequency);
             WeatherMatters = Bool(modId, WeatherMattersId, WeatherMatters);
             WeatherFrequency = Int(modId, WeatherFrequencyId, WeatherFrequency);
+            Seasons = Bool(modId, SeasonsId, Seasons);
+            SnowLook = Bool(modId, SnowLookId, SnowLook);
             StreetEvents = Bool(modId, StreetEventsId, StreetEvents);
             StreetEventFrequency = Int(modId, StreetEventFrequencyId, StreetEventFrequency);
             StreetProtestNotes = Bool(modId, StreetProtestNotesId, StreetProtestNotes);

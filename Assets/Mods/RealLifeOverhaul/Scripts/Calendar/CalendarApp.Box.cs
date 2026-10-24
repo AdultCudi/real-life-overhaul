@@ -132,6 +132,11 @@ namespace RealLifeOverhaul.Calendar
                 ends = CalendarText.T("reallife_calendar_ends_left", "ends", ends, "days", left.ToString());
             }
             box.Row("reallife_calendar_row_ends", ends, today >= first && left == 0 ? CellTone.Yellow : CellTone.Plain);
+            string season = CalendarDirector.SeasonWords != null ? CalendarDirector.SeasonWords(_chosen) : null;
+            if (!string.IsNullOrEmpty(season))
+            {
+                box.Note(season);
+            }
             float moneyIn = 0f, moneyOut = 0f;
             List<CalendarEntry> items = _director.List.Items;
             for (int i = 0; i < items.Count; i++)

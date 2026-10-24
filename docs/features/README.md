@@ -10,6 +10,7 @@ One page per feature. Each starts with what it is in a sentence, where its code 
 - [Justice](justice.md): cases, bail, lawyers, the courthouse, sentences and prison.
 - [The living city](city-life.md): people at work and about their day on the pavements.
 - [City events](city-events.md): fires, weather that matters and street events.
+- [Seasons](seasons.md): what customers buy through the year, and snow on some winter days.
 - [Civic life](civic.md): the city's government, elections, standing for office, construction sites.
 
 ## The player's life

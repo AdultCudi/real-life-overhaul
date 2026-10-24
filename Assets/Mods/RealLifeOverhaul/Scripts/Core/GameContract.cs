@@ -90,6 +90,8 @@ namespace RealLifeOverhaul
         public static readonly GamePart StartCompetitors = ContractBook.Part("start_competitors", "tech_sector", "the competitors in the city on BizMan's start screen, for the mod's own kinds of business");
         public static readonly GamePart ChatFilter = ContractBook.Part("chat_filter", "flare", "Steam's own filter of what other players of a Going Public session type on Flare (the mod's own word list without it)");
         public static readonly GamePart PhotoHolds = ContractBook.Part("photo_holds", "photos", "the Camera telling its own hold on the player from the game's, and putting the world's clicks back as they were (the mop's floor)");
+        public static readonly GamePart SnowFall = ContractBook.Part("snow_fall", "seasons", "falling snow around the player, where the game's rain falls");
+        public static readonly GamePart SnowWalkers = ContractBook.Part("snow_walkers", "seasons", "people in the street walking more slowly on snow");
         public static readonly GamePart RivalOffers = ContractBook.Part("rival_offers", null, "taking the buttons off a rival's offer that is over");
         public static readonly GamePart StaffLeaving = ContractBook.Part("staff_leaving", null, "paying an employee the mod lets go at the turn of a day only once");
         public static readonly GamePart KeyHidden = ContractBook.Part("key_hidden", "textsai", "the key typed for Your own AI shown as dots in the game's text box");
@@ -178,6 +180,10 @@ namespace RealLifeOverhaul
 
         // Events/Weather
         public static readonly GameMember RainIntensity = StaticField(Thunder, Sky, "BigAmbitions.DayNightCycle.RainHelper", "NextRainMaxIntensity", "Single");
+
+        // Seasons/SeasonGame: the rain's place by the player, which the snow falls around; the people's paces, narrowed on snow
+        public static readonly GameMember RainPlace = StaticField(SnowFall, Sky, "BigAmbitions.DayNightCycle.RainHelper", "RainEffect", "RainEffect");
+        public static readonly GameMember WalkerPaces = Field(SnowWalkers, Game, "PedestrianPool", "animatorOverrides", "List<PedestrianPool.AnimatorOverride>");
 
         // Home/HomeOffers, Ledger/LedgerPointer, Transport/TransitPointer: the game's list of what a click does
         public static readonly GameMember CtaBehaviours = StaticField(On(ClickHome, ClickLedger, ClickBusStop, ClickDesk), Game, "Player.HUD.ItemInfoOverlays.CtaManager", "CtaBehaviors", "List<ICtaBehavior>");

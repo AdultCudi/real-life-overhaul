@@ -23,6 +23,9 @@ namespace RealLifeOverhaul.Calendar
         public static IModLogger Logger;
         public static CalendarDirector Instance { get; private set; }
 
+        /// <summary>The season's line for a day's page: the season and what sells more and less in it (wired in Scripts/Wiring); null: none.</summary>
+        public static Func<int, string> SeasonWords;
+
         private ICalendarSource[] _sources = { CalendarGame.Source };   // the game's own, then each feature's from Scripts/Wiring
         private int[] _counts = new int[1];
         private bool[] _failed = new bool[1];
