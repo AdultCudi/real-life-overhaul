@@ -25,7 +25,7 @@ namespace RealLifeOverhaul.Uptown
                 .Test("reallife_uptown_test_business", LifeDirector.TestBusiness)
                 .Test("reallife_uptown_test_rent", LifeDirector.TestRent)
                 .Test("reallife_uptown_test_save", LifeDirector.TestSave)
-                .Test("reallife_uptown_test_specials", LifeDirector.TestSpecials)
+                .Check("reallife_uptown_test_specials", LifeDirector.TestSpecials, "Uptown check (special places)")
                 .Test("reallife_uptown_test_special_go", LifeDirector.TestSpecialGo)
                 .Check("reallife_uptown_test_offices", LifeDirector.TestOffices, "Uptown check (builders' offices)")
                 .Check("reallife_uptown_test_row", LifeDirector.TestRow, "Uptown check (map row)")

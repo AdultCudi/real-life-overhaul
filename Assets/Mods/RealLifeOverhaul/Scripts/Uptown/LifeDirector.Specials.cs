@@ -104,7 +104,7 @@ namespace RealLifeOverhaul.Uptown
                     .Append(why == null ? ": standing, its service, registered, listed, laid out, staffed" : ": " + why);
             }
             bool pass = whole == SpecialsRules.All.Length;
-            string text = "Uptown check (special places, " + when + "): " + whole + " of " + SpecialsRules.All.Length + " whole: " + line + ": " + (pass ? "PASS" : "FAIL");
+            string text = "Uptown check (special places): at " + when + ", " + whole + " of " + SpecialsRules.All.Length + " whole: " + line + ": " + (pass ? "PASS" : "FAIL");
             if (!pass)
             {
                 Logger?.Warn(text);

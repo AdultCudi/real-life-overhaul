@@ -251,10 +251,10 @@ internal static partial class Program
         string forget = MemberText(director, "private static void Begin()");
         Check(forget.Contains("ForgetSpecials();") && MemberText(director, "private void OnDestroy()").Contains("ForgetSpecials();"),
             "uptown specials: nothing of a place carries over from one load to the next");
-        Check(guide.Contains(".Test(\"reallife_uptown_test_specials\", LifeDirector.TestSpecials)") && guide.Contains(".Test(\"reallife_uptown_test_special_go\", LifeDirector.TestSpecialGo)"),
+        Check(guide.Contains(".Check(\"reallife_uptown_test_specials\", LifeDirector.TestSpecials, \"Uptown check (special places)\")") && guide.Contains(".Test(\"reallife_uptown_test_special_go\", LifeDirector.TestSpecialGo)"),
             "uptown specials: the census and the destination test are in the options' tests, each working when pressed");
         string census = MemberText(specials, "private static bool SpecialsCensus(string when, bool asked, out int whole)");
-        Check(census.Contains("LifeGame.SpecialWhy(made, place)") && census.Contains("Logger?.Warn(text);") && census.Contains("\"Uptown check (special places, \""),
+        Check(census.Contains("LifeGame.SpecialWhy(made, place)") && census.Contains("Logger?.Warn(text);") && census.Contains("\"Uptown check (special places): at \""),
             "uptown specials: the census writes one line with every place's verdict, a FAIL always");
         Check(!Regex.IsMatch(rules + specials + game, @"\bRandom\b|DateTime\.Now|Time\.time\b") && !Regex.IsMatch(specials + game, @"void Update\(|LateUpdate\("),
             "uptown specials: nothing is left to chance or to a machine's clock, and nothing runs a frame");
