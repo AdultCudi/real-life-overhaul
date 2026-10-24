@@ -166,12 +166,14 @@ namespace RealLifeOverhaul.NewGround
         /// <summary>
         /// A collider a plan's count leaves out: a prop no wider than <see cref="PropMost"/> either way (a lamp, a tree,
         /// a bin, a bench or a parked bicycle, as the game's own Prefab_Bike standing on Uptown's ground in the owner's game
-        /// of 23 Oct, 2.4 by 1.5 m). The offline scans hold no round colliders, so a plan cannot have counted them, and a
-        /// game update builds walls, roads and buildings, never a lone prop.
+        /// of 23 Oct, 2.4 by 1.5 m). A game update builds walls, roads and buildings, never a lone prop. A prop is told by
+        /// the layer the scene was saved with, or by being one of the game's entities: an entity puts itself on a layer of
+        /// its own choosing when it wakes (EntityController.Awake), so the street trees, saved as street props, stand on
+        /// the Roads layer in a running game (ViewBlockingEntity) and stood Uptown down in the owner's game of 24 Oct.
         /// </summary>
-        public static bool IsProp(bool propLayer, float sizeX, float sizeZ)
+        public static bool IsProp(bool propLayer, bool entity, float sizeX, float sizeZ)
         {
-            return propLayer && sizeX <= PropMost && sizeZ <= PropMost;
+            return (propLayer || entity) && sizeX <= PropMost && sizeZ <= PropMost;
         }
         public const float JoinOverlap = 0.5f;      // m new ground reaches back onto old ground, past where the old mesh stops short of the kerb
         public const float OldMargin = 0.5f;        // m of the old mesh kept round rebuilt tiles, so their borders build as before
