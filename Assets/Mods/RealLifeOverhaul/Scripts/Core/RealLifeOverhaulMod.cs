@@ -294,6 +294,7 @@ namespace RealLifeOverhaul
                     v => Settings.CareersStudy = v)
                 .AddButton("reallife_study_test_class", () => Careers.CareersDirector.Instance?.TestClass())
                 .AddButton("reallife_study_test_computer", () => Careers.CareersDirector.Instance?.TestComputer())
+                .AddButton("reallife_study_test_session_desk", () => Careers.CareersDirector.Instance?.TestSessionDesk())
                 .AddButton("reallife_study_test_outage", () => Careers.CareersDirector.Instance?.TestOutage())
                 .AddButton("reallife_study_test_exam", () => Careers.CareersDirector.Instance?.TestExam())
                 .AddButton("reallife_study_test_skills", () => Careers.CareersDirector.Instance?.TestSkills())

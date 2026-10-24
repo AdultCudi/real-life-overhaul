@@ -57,6 +57,7 @@ namespace RealLifeOverhaul.Careers
             public bool Due;           // a class or exam of the player's at the school is in its window: the class's button on the Start key (ClassPlayRules.ClassOnStart)
             public string Title;       // ...its headline
             public string[] Lines;     // ...and its lines
+            public Sitting Test;       // a test's class, begun as it is outside its course's hours (Options > Tests), or null
         }
 
         private SchoolDesk(StudyActivity inner, EntityController door, StudyDiploma place, CareersDirector director, DeskOffer offer)
@@ -196,7 +197,8 @@ namespace RealLifeOverhaul.Careers
             {
                 return;
             }
-            string why = _director.DeskSitting(_offer.Course, _offer.Kind, this, out Sitting sitting);
+            Sitting sitting = _offer.Test;
+            string why = sitting != null ? _director.HoldTest(sitting, this) : _director.DeskSitting(_offer.Course, _offer.Kind, this, out sitting);
             if (why != null)
             {
                 Notifications.Show(NotificationType.Warning, why, null, 8f);
@@ -554,7 +556,7 @@ namespace RealLifeOverhaul.Careers
                 if (_mine)
                 {
                     return _state == PlayerActivityState.Running
-                        ? _stop ?? (_stop = new[] { new ButtonInfo("StopRealLifeClass", "reallife_job_skip_stop", "gray", Guard.Way(Finish), PlayerAction.Cancel) })
+                        ? _stop ?? (_stop = new[] { new ButtonInfo(ClassPlayRules.DeskStopName, "reallife_job_skip_stop", "gray", Guard.Way(Finish), PlayerAction.Cancel) })
                         : null;
                 }
                 if (_offer.Only)
@@ -564,9 +566,9 @@ namespace RealLifeOverhaul.Careers
                     // neither dims a button nor stops its key, so a button that cannot begin is not shown at all
                     if (_buttons == null)
                     {
-                        var cancel = new ButtonInfo("CancelRealLifeClass", "common_cancel", "gray", Guard.Way(Close), PlayerAction.Cancel);
+                        var cancel = new ButtonInfo(ClassPlayRules.DeskCancelName, "common_cancel", "gray", Guard.Way(Close), PlayerAction.Cancel);
                         _buttons = _offer.Can
-                            ? new[] { cancel, new ButtonInfo("RealLifeClass", _offer.Key, "blue", Guard.Wrap(Press), PlayerAction.Confirm, _offer.Can) }
+                            ? new[] { cancel, new ButtonInfo(ClassPlayRules.DeskStartName, _offer.Key, "blue", Guard.Wrap(Press), PlayerAction.Confirm, _offer.Can) }
                             : new[] { cancel };
                     }
                     return _buttons;
@@ -592,7 +594,7 @@ namespace RealLifeOverhaul.Careers
                     }
                     if (_offer.Can)
                     {
-                        _buttons[n] = new ButtonInfo("RealLifeClass", _offer.Key, "blue", Guard.Wrap(Press), first ? PlayerAction.Confirm : PlayerAction.SecondaryInteract, _offer.Can);
+                        _buttons[n] = new ButtonInfo(ClassPlayRules.DeskStartName, _offer.Key, "blue", Guard.Wrap(Press), first ? PlayerAction.Confirm : PlayerAction.SecondaryInteract, _offer.Can);
                     }
                 }
                 return _buttons;

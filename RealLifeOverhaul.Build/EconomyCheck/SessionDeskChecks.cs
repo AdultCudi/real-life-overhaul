@@ -139,7 +139,9 @@ internal static partial class Program
         Check(play.Length > 0 && school.Length > 0 && interior.Length > 0 && floors.Length > 0 && prompt.Length > 0 && game.Length > 0,
             "session desks: the director's desks, the desk, the university's floors, the panel in place and the desk's game side are read");
 
-        string open = MethodText(play, "internal string OpenDesk(EducationDoorController door, int room, bool begin)");
+        // OpenDesk and the desk's own panel it hands on to (OwnDesk), read as one way in.
+        string open = MethodText(play, "internal string OpenDesk(EducationDoorController door, int room, bool begin)")
+                      + MethodText(play, "private string OwnDesk(EducationDoorController door, SchoolDesk.DeskOffer offer, bool begun, bool session, string where, bool begin)");
         int session = open.IndexOf("bool session = GoingPublic.InSession;", StringComparison.Ordinal);
         int way = open.IndexOf("DeskWay way = ClassPlayRules.WayToDesk(session);", StringComparison.Ordinal);
         int alone = open.IndexOf("if (way == DeskWay.GameStudy)", StringComparison.Ordinal);
@@ -175,7 +177,7 @@ internal static partial class Program
             "session desks: the panel in place offers the school's class in a session by the rule, and the class's notice says to press the key there, not Study at a desk");
 
         // One self-check line a desk's panel opened: every way out of OpenDesk says it first.
-        int returns = Occurrences(open, "return ");
+        int returns = Occurrences(open, "return ") - Occurrences(open, "return OwnDesk(");
         int checks = Occurrences(open, "DeskCheck(");
         string line = MethodText(play, "private static void DeskCheck(bool session, DeskWay way, string where, bool begin, string fail, string said)");
         Check(returns > 0 && checks == returns && line.Contains("Meta.Dev.Verbose") && line.Contains("Careers check (desk panel): ")

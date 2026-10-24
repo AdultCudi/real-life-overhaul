@@ -200,6 +200,57 @@ namespace RealLifeOverhaul.Careers
             return inSession ? DeskWay.OwnPanel : DeskWay.GameStudy;
         }
 
+        /// <summary>
+        /// The names of a desk's own buttons. Going Public hides the game's activity panel in a session and, for the player,
+        /// presses the first button whose name holds "start" as the activity opens, and takes one holding "stop" or "cancel"
+        /// for its own stand up (<see cref="SessionPick"/>), as the game names its own (StartStudy, CancelStudy). A begin
+        /// button named otherwise is never pressed there, so a class or exam at a desk would never begin in a session.
+        /// </summary>
+        public const string DeskStartName = "StartRealLifeClass";
+        public const string DeskCancelName = "CancelRealLifeClass";
+        public const string DeskStopName = "StopRealLifeClass";
+
+        /// <summary>The most buttons of an activity Going Public reads in a session (its dock's four).</summary>
+        public const int SessionButtons = 4;
+
+        /// <summary>
+        /// Which of an activity's buttons Going Public presses for the player in a session (start, or -1) and which its stand up
+        /// presses (cancel, or -1), as its Rest dock reads them: the first four that can be pressed, by name, whatever the case.
+        /// on: whether each can be pressed (null for all).
+        /// </summary>
+        public static void SessionPick(IList<string> names, IList<bool> on, out int start, out int cancel)
+        {
+            start = -1;
+            cancel = -1;
+            int read = 0;
+            for (int i = 0; names != null && i < names.Count && read < SessionButtons; i++)
+            {
+                if (on != null && i < on.Count && !on[i])
+                {
+                    continue;   // Going Public leaves out a button that cannot be pressed
+                }
+                read++;
+                string name = names[i] ?? string.Empty;
+                if (start < 0 && name.IndexOf("start", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    start = i;
+                }
+                else if (cancel < 0 && (name.IndexOf("stop", StringComparison.OrdinalIgnoreCase) >= 0 || name.IndexOf("cancel", StringComparison.OrdinalIgnoreCase) >= 0))
+                {
+                    cancel = i;
+                }
+            }
+        }
+
+        /// <summary>
+        /// True if a desk opened shows its panel: alone always; in a Going Public session only when it can begin, as Going
+        /// Public hides the panel and the reasons on it, so a notice says why instead.
+        /// </summary>
+        public static bool ShowsDesk(bool inSession, bool can)
+        {
+            return !inSession || can;
+        }
+
         /// <summary>True if a click on a university classroom door (room from 1) is the mod's: in a Going Public session only.</summary>
         public static bool TakesRoomClick(bool inSession, int room)
         {

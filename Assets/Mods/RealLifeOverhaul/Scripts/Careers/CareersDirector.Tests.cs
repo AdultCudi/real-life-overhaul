@@ -1,4 +1,7 @@
 using System;
+using System.Collections;
+using PlayerActivity;
+using UI.Elements;
 using UI.Notification;
 
 namespace RealLifeOverhaul.Careers
@@ -723,6 +726,95 @@ namespace RealLifeOverhaul.Careers
             {
                 Fault("a test", ex);
             }
+        }
+
+        /// <summary>
+        /// A class of the first course under way (first aid, enrolled on free, if none) at the nearest study desk, begun as a
+        /// Going Public session begins it on either machine: the desk's own panel opened as the walk to a classroom ends, then
+        /// Going Public's press for the player, which hides the game's panel and presses the first button named Start
+        /// (ClassPlayRules.SessionPick), then one check line, PASS once the class is under way. Only this player's class: no
+        /// session is pretended, nothing is sent, and the clock and the other players are not touched.
+        /// </summary>
+        public void TestSessionDesk()
+        {
+            if (!TestReady())
+            {
+                return;
+            }
+            try
+            {
+                EducationDoorController door = DeskGame.NearestStudyDoor();
+                string why = door == null ? "reallife_study_test_session_desk_none" : SeatBusy();
+                Enrolment e = null;
+                for (int i = 0; why == null && i < _study.Courses.Count && e == null; i++)
+                {
+                    Enrolment o = _study.Courses[i];
+                    e = o.Stage == (int)EnrolStage.Studying && o.Def != null && o.Def.Timetabled ? o : null;
+                }
+                if (why == null && e == null)
+                {
+                    e = new Enrolment { Course = StudyCatalogue.FirstAid, Start = Save.Day, Instalments = 1 };
+                    _study.Courses.Add(e);
+                }
+                if (why == null)
+                {
+                    e.SettledDay = Math.Min(e.SettledDay, Save.Day - 1);
+                    CourseDef c = e.Def;
+                    Sitting sitting = ClassSitting(e, c.Hours * 60);
+                    var offer = new SchoolDesk.DeskOffer
+                    {
+                        Course = c.Id, Kind = SittingKind.Class, Can = true, Key = StartKey(SittingKind.Class), Title = CareersText.Course(c.Id), Lines = sitting.Lines, Test = sitting
+                    };
+                    why = OwnDesk(door, offer, false, true, "the nearest study desk (a test)", false) ?? (_desk != null && DeskGame.Shows(_desk) ? null : "reallife_study_why_game_busy");
+                    if (why == null)
+                    {
+                        StartCoroutine(Guard.Routine(SessionPress(_desk, c.Key)));
+                        Changed();
+                    }
+                }
+                Logger?.Info("Careers test: a class at the nearest desk as in a Going Public session " + (why == null ? "opened; Going Public's press follows." : "not opened (" + why + ")."));
+                if (why != null)
+                {
+                    Notifications.Show(NotificationType.Warning, why, null, 8f);
+                }
+            }
+            catch (Exception ex)
+            {
+                Fault("a test", ex);
+            }
+        }
+
+        // Going Public's press for the player, a frame after the panel opened (it looks every half second), then the check.
+        private IEnumerator SessionPress(SchoolDesk desk, string course)
+        {
+            yield return null;
+            ButtonInfo[] buttons = desk.GetButtons();
+            int n = buttons != null ? buttons.Length : 0;
+            var names = new string[n];
+            var on = new bool[n];
+            for (int i = 0; i < n; i++)
+            {
+                names[i] = buttons[i] != null ? buttons[i].name : null;
+                on[i] = buttons[i] != null && buttons[i].interactable;
+            }
+            ClassPlayRules.SessionPick(names, on, out int start, out int cancel);
+            if (start >= 0)
+            {
+                buttons[start].onClick();
+            }
+            for (int f = 0; f < 4; f++)
+            {
+                yield return null;   // the desk sets off two frames after its press
+            }
+            PlayerActivityState state = desk.GetState();
+            bool going = desk.Open && (state == PlayerActivityState.MovingTowardsActivity || state == PlayerActivityState.Started || state == PlayerActivityState.Running);
+            string fail = start < 0 ? "no button of the desk's is named for Going Public to press (" + string.Join(", ", names) + ")"
+                : cancel < 0 ? "Going Public's stand up finds no Cancel" : !going ? "the class did not begin after Going Public's press (" + state + ")" : null;
+            Logger?.Info("Careers check (session desk): a class of " + course + " at the nearest study desk, as in a Going Public session: Going Public presses "
+                         + (start >= 0 ? "'" + names[start] + "'" : "nothing") + ", its stand up " + (cancel >= 0 ? "'" + names[cancel] + "'" : "nothing")
+                         + "; the class is " + (going ? "under way (" + state + ")" : "not under way") + ": " + (fail == null ? "PASS" : "FAIL, " + fail));
+            Notifications.Show(fail == null ? NotificationType.Info : NotificationType.Warning,
+                fail == null ? "reallife_study_test_session_desk_pass" : "reallife_study_test_session_desk_fail", null, 8f);
         }
 
         /// <summary>With the home's internet in an outage now, today's online class and a day from home not yet worked go by now, each excused.</summary>
