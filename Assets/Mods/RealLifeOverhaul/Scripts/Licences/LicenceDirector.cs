@@ -243,7 +243,8 @@ namespace RealLifeOverhaul
                 ForgetFirearms(SaveGameManager.Current);
                 _lastDay = TimeHelper.CurrentDay;
                 Logger?.Info("Licences: ready. Car " + LicenceState.Standing(LicenceClass.Car, _lastDay) + ", commercial " + LicenceState.Standing(LicenceClass.Commercial, _lastDay)
-                             + ", taxi " + LicenceState.Standing(LicenceClass.Taxi, _lastDay) + ", " + LicenceState.PointsOn(_lastDay) + " points.");
+                             + ", taxi " + LicenceState.Standing(LicenceClass.Taxi, _lastDay) + ", heavy " + LicenceState.Standing(LicenceClass.Heavy, _lastDay)
+                             + ", " + LicenceState.PointsOn(_lastDay) + " points.");
             }
 
             // The game clears its event hub on every load, so the save hook is kept attached.
@@ -252,6 +253,10 @@ namespace RealLifeOverhaul
             if (!LicenceState.MotorcycleDecided)
             {
                 GrandfatherMotorbike();
+            }
+            if (!LicenceState.Heavy.Decided && Settings.HeavyLicence)
+            {
+                GrandfatherHeavy();
             }
 
             int day = TimeHelper.CurrentDay;
@@ -270,10 +275,10 @@ namespace RealLifeOverhaul
             {
                 _lastDriven = driven;
                 if (driven != null && Settings.DrivingLicence && now >= _nextWarning && !IsSchoolCar(driven)
-                    && Licences.Driving.ClassOf(driven, out LicenceClass needs) && !LicenceState.Valid(needs, day))
+                    && Licences.Driving.ClassOf(driven, out LicenceClass needs) && !LicenceState.Covered(needs, day))
                 {
                     _nextWarning = now + 90f;
-                    LicenceStanding standing = LicenceState.Standing(needs, day);
+                    LicenceStanding standing = LicenceState.Entitled(needs, day);
                     Licences.Toast(NotificationType.Warning,
                         standing == LicenceStanding.Suspended ? "reallife_lic_warn_suspended"
                         : standing == LicenceStanding.Expired ? "reallife_lic_warn_expired" : "reallife_lic_warn_none",
@@ -415,6 +420,41 @@ namespace RealLifeOverhaul
             }
         }
 
+        // A save that already owns a heavy truck when the class first applies keeps driving it lawfully. Once a save: one
+        // pass over the save's vehicle list, the same that the first run makes.
+        private void GrandfatherHeavy()
+        {
+            LicenceState.Heavy.Decided = true;
+            bool owns = false;
+            List<VehicleInstance> all = SaveGameManager.Current.VehicleInstances;
+            for (int i = 0; all != null && i < all.Count && !owns; i++)
+            {
+                VehicleInstance instance = all[i];
+                if (instance == null || instance is DeliveryVehicleInstance || Dealerships.Stock(instance) || Family.PartnerCar.Is(instance))
+                {
+                    continue;
+                }
+                VehicleType type = SafeType(instance.vehicleTypeName);
+                if (type == null || !type.IsMotorVehicle || type.spawnInPlayerObject)
+                {
+                    continue;
+                }
+                CarKind kind = CarCatalogue.For(type.vehicleTypeName, new CarTraits(true, false, type.maxSpeed, type.maxCargoCapacity, type.isLuxuryCar, 1400f)).Kind;
+                owns = kind == CarKind.Truck && HeavyRules.IsHeavy(type.vehicleTypeName, true, type.maxSpeed);
+            }
+            if (!owns || LicenceState.Of(LicenceClass.Heavy).Held)
+            {
+                return;
+            }
+            int day = Mathf.Max(1, TimeHelper.CurrentDay);
+            LicenceState.Grant(LicenceClass.Heavy, day);
+            if (Settings.DrivingLicence)
+            {
+                Licences.Toast(NotificationType.Success, "reallife_lic_grandfather_heavy", "days", LicenceLaw.ValidDays.ToString(), 14f);
+            }
+            Logger?.Info("Licences: the save owns a heavy truck: heavy goods licence granted.");
+        }
+
         // A save may still hold the retired firearms feature's data line and phone contact.
         private static void ForgetFirearms(GameInstance save)
         {
@@ -509,11 +549,12 @@ namespace RealLifeOverhaul
         {
             int day = TimeHelper.CurrentDay;
             int fee = DrivingSchool.Fee(service);
+            _testPaper = false;   // a paper booked at the desk is the player's own, whatever a test button left
             if (Drives(service))
             {
                 // Before the fee: a place for the school's car and a route from it, so a closed road is said with nothing paid.
                 Vector3 desk = _desks.At >= 0 ? _desks.Front(_desks.At) : _pendingDesk;
-                if (!CanDrive(out string why) || !_practical.CanStage(desk, out why))
+                if (!CanDrive(out string why) || !_practical.CanStage(DrivenClass(service), desk, out why))
                 {
                     Logger?.Info("Licences: '" + service + "' not booked (" + why + "); nothing was paid.");
                     return why;
@@ -556,7 +597,9 @@ namespace RealLifeOverhaul
                     {
                         _pendingDesk = _desks.Front(_desks.At);
                     }
-                    return service == SchoolService.Theory ? "reallife_school_go_theory" : "reallife_school_go_drive";
+                    return service == SchoolService.Theory || service == SchoolService.TheoryHeavy ? "reallife_school_go_theory"
+                        : service == SchoolService.LessonHeavy || service == SchoolService.TestHeavy ? "reallife_school_go_truck"
+                        : "reallife_school_go_drive";
             }
         }
 
@@ -580,12 +623,15 @@ namespace RealLifeOverhaul
             {
                 started = _theory.Begin(DrivingQuestions.Pool, LicenceLaw.TheoryQuestions, LicenceLaw.TheoryPass, "reallife_lic_theory_headline", OnTheoryMarked);
             }
+            else if (_pendingService == SchoolService.TheoryHeavy)
+            {
+                started = _theory.Begin(HeavyQuestions.Pool, HeavyRules.TheoryQuestions, HeavyRules.TheoryPass, "reallife_lic_theory_heavy_headline", OnHeavyTheoryMarked);
+            }
             else
             {
-                bool van = _pendingService == SchoolService.LessonVan || _pendingService == SchoolService.TestVan;
-                bool lesson = _pendingService == SchoolService.LessonCar || _pendingService == SchoolService.LessonVan;
+                bool lesson = _pendingService == SchoolService.LessonCar || _pendingService == SchoolService.LessonVan || _pendingService == SchoolService.LessonHeavy;
                 started = CanDrive(out reason)
-                          && _practical.Begin(van ? LicenceClass.Commercial : LicenceClass.Car, lesson, false, _pendingFee, _pendingDesk, out reason);
+                          && _practical.Begin(DrivenClass(_pendingService), lesson, false, _pendingFee, _pendingDesk, out reason);
                 if (started)
                 {
                     _pendingFee = 0;   // the test refunds it itself from here
@@ -601,14 +647,22 @@ namespace RealLifeOverhaul
 
         private static bool Drives(SchoolService service)
         {
-            return service == SchoolService.LessonCar || service == SchoolService.TestCar || service == SchoolService.LessonVan || service == SchoolService.TestVan;
+            return service == SchoolService.LessonCar || service == SchoolService.TestCar || service == SchoolService.LessonVan || service == SchoolService.TestVan
+                   || service == SchoolService.LessonHeavy || service == SchoolService.TestHeavy;
+        }
+
+        private static LicenceClass DrivenClass(SchoolService service)
+        {
+            return service == SchoolService.LessonVan || service == SchoolService.TestVan ? LicenceClass.Commercial
+                : service == SchoolService.LessonHeavy || service == SchoolService.TestHeavy ? LicenceClass.Heavy
+                : LicenceClass.Car;
         }
 
         // What Take answers when nothing was paid.
         private static readonly string[] RefusalKeys =
         {
             "reallife_school_no_money", "reallife_lic_no_busy", "reallife_lic_no_on_foot", "reallife_lic_no_roads",
-            TestRouteRules.NoSpotKey, TestRouteRules.NoRouteKey, TestRouteRules.ClosedKey
+            TestRouteRules.NoSpotKey, TestRouteRules.NoRouteKey, TestRouteRules.ClosedKey, TestCar.NoTruckKey
         };
 
         /// <summary>Whether <see cref="Take"/>'s answer is a refusal, with nothing paid or done.</summary>
@@ -648,6 +702,22 @@ namespace RealLifeOverhaul
             else
             {
                 LicenceState.TheoryRetryDay = day + LicenceLaw.RetestWaitDays;
+            }
+        }
+
+        private void OnHeavyTheoryMarked(bool passed)
+        {
+            _pendingFee = 0;
+            LicenceState.Heavy.PaperMarked(passed, TimeHelper.CurrentDay);
+            if (passed && _testPaper)
+            {
+                LicenceState.Heavy.TheoryDay = Mathf.Max(1, LicenceState.Heavy.TheoryDay - HeavyRules.WaitDays);   // the test button's pass: the drive may follow at once
+                LicenceState.Heavy.Lessons = System.Math.Max(1, LicenceState.Heavy.Lessons);
+            }
+            _testPaper = false;
+            if (passed)
+            {
+                ModState.AddModifier(ModState.MoodUp);
             }
         }
     }

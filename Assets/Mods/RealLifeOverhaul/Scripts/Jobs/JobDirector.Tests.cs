@@ -36,6 +36,34 @@ namespace RealLifeOverhaul
             }
         }
 
+        /// <summary>
+        /// Options-page test button: a courier round as a heavy load where the player stands, in their own heavy truck if one is
+        /// near or a hired one free of charge, whatever their licence. Says why when it cannot start.
+        /// </summary>
+        public void TestHeavyLoad()
+        {
+            JobDef def = JobCatalogue.Find(JobCatalogue.Courier);
+            if (def == null || _broken || !JobState.Loaded)
+            {
+                TestRefusals.Tell(Logger, "Heavy load", TestRefusal.NotLoaded);
+                return;
+            }
+            if (!Settings.HeavyLicence || !Settings.Jobs)
+            {
+                TestRefusals.Tell(Logger, "Heavy load", TestRefusal.FeatureOff, 0, !Settings.Jobs ? "jobs are off" : "the heavy goods licence is off");
+                return;
+            }
+            if (_job != null)
+            {
+                EndJob(JobEnd.Interrupted, null);
+            }
+            if (!Free(out string reason) || !StartJob(def, true, out reason, heavy: true))
+            {
+                Logger?.Info("Jobs: test of a heavy load could not start (" + reason + ").");
+                JobText.Toast(NotificationType.Warning, reason ?? "reallife_job_no_now");
+            }
+        }
+
         private int _testEmployer = -1;
 
         /// <summary>Options page: signs on with the next employer in turn (leaving the current one with no mark), on the first rota that works tomorrow.</summary>

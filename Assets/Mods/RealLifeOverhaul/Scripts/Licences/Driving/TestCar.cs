@@ -21,8 +21,15 @@ namespace RealLifeOverhaul
         private const string CarType = "ba:vehicletype_honzamimic";
         private const string VanType = "ba:vehicletype_mersaididash";
         private const string VanFallback = "ba:vehicletype_umcdesert";
-        private const float HalfWidth = 1.05f;   // metres
+        private const string TruckType = "ba:vehicletype_" + HeavyRules.FreightTruck;
+        private const float HalfWidth = 1.05f;   // metres: the car's and the van's room at the kerb
         private const float HalfLength = 2.7f;
+        private const float TruckHalfWidth = 1.5f;    // metres: the Freight Truck's 2.89 by 10.98 body (GarageFit) and a little more
+        private const float TruckHalfLength = 5.9f;
+        private const float TruckFromDesk = 8f;       // metres: the truck's middle kept further from the desk than a car's 5
+
+        /// <summary>The refusal when the game has no Freight Truck to lend: the heavy class only; cars and vans are still lent.</summary>
+        public const string NoTruckKey = "reallife_lic_no_truck";
         private const float NearReach = 70f;     // metres of lane from the desk the car is looked for along first...
         private const float FarReach = 160f;     // ...then this far, past a stretch an accident has closed
         private const int WalkPoints = 96;       // lane points walked along each lane at most
@@ -58,17 +65,25 @@ namespace RealLifeOverhaul
         public bool Driven => _instance != null && SaveGameManager.Current != null && SaveGameManager.Current.ActiveVehicleId == _instance.id;
 
         /// <summary>
-        /// Puts the car, or a van for the commercial class, at the roadside near a point where <paramref name="route"/>
-        /// plans a drive from. Null, with nothing left behind and a locale key why, if it cannot.
+        /// Puts the car, a van for the commercial class or the truck for the heavy one, at the roadside near a point where
+        /// <paramref name="route"/> plans a drive from. Null, with nothing left behind and a locale key why, if it cannot.
         /// </summary>
-        public CarController Lend(Vector3 near, bool van, Func<Waypoint, bool, RouteOutcome> route, out string refusal)
+        public CarController Lend(Vector3 near, LicenceClass kind, Func<Waypoint, bool, RouteOutcome> route, out string refusal)
         {
+            bool van = kind == LicenceClass.Commercial;
+            bool truck = kind == LicenceClass.Heavy;
             refusal = TestRouteRules.NoSpotKey;
             if (_failed || _car != null)
             {
                 return null;
             }
-            refusal = FindSpot(near, route, out Vector3 spot, out Quaternion heading);
+            if (truck && VehicleTypeHelper.GetVehicleType(TruckType) == null)
+            {
+                _logger?.Warn("Licences: the game has no vehicle type '" + TruckType + "'; the school has no truck to lend, cars and vans still go out.");
+                refusal = NoTruckKey;
+                return null;
+            }
+            refusal = FindSpot(near, truck, route, out Vector3 spot, out Quaternion heading);
             if (refusal != null)
             {
                 return null;
@@ -78,7 +93,7 @@ namespace RealLifeOverhaul
             VehicleInstance instance = null;
             try
             {
-                string type = van ? VanType : CarType;
+                string type = truck ? TruckType : van ? VanType : CarType;
                 VehicleType known = VehicleTypeHelper.GetVehicleType(type);
                 if (known == null && van)
                 {
@@ -114,7 +129,7 @@ namespace RealLifeOverhaul
                 _haveSpot = false;
                 _freed = 0;
                 SpawnedAt = Time.time;
-                _logger?.Info("Licences: the school's " + (van ? "van" : "car") + " ('" + type + "', id " + instance.id + ") stands "
+                _logger?.Info("Licences: the school's " + (truck ? "truck" : van ? "van" : "car") + " ('" + type + "', id " + instance.id + ") stands "
                               + Vector3.Distance(near, spot).ToString("F0") + " m from the desk.");
                 refusal = null;
                 return car;
@@ -374,14 +389,18 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>Whether the car could be set out near a point now, without making it. Null if so, else the reason.</summary>
-        public string Placeable(Vector3 near, Func<Waypoint, bool, RouteOutcome> route)
+        public string Placeable(Vector3 near, LicenceClass kind, Func<Waypoint, bool, RouteOutcome> route)
         {
-            return _failed ? TestRouteRules.NoSpotKey : FindSpot(near, route, out _, out _);
+            if (kind == LicenceClass.Heavy && VehicleTypeHelper.GetVehicleType(TruckType) == null)
+            {
+                return NoTruckKey;
+            }
+            return _failed ? TestRouteRules.NoSpotKey : FindSpot(near, kind == LicenceClass.Heavy, route, out _, out _);
         }
 
         // A place by a lane near the desk that a drive can be planned from: the nearest lane, then the other way (a road
         // closed on one side may be open on the other), near first. Null when found, else why not. A few ms at worst.
-        private string FindSpot(Vector3 near, Func<Waypoint, bool, RouteOutcome> route, out Vector3 spot, out Quaternion heading)
+        private string FindSpot(Vector3 near, bool truck, Func<Waypoint, bool, RouteOutcome> route, out Vector3 spot, out Quaternion heading)
         {
             spot = default;
             heading = Quaternion.identity;
@@ -433,7 +452,7 @@ namespace RealLifeOverhaul
                             continue;
                         }
                         rooms++;
-                        if (!Room(near, point, walk[i + 1], out Vector3 at, out Quaternion facing))
+                        if (!Room(near, truck, point, walk[i + 1], out Vector3 at, out Quaternion facing))
                         {
                             continue;
                         }
@@ -456,7 +475,7 @@ namespace RealLifeOverhaul
         }
 
         // The car's place at one lane point, kerb side first: on the ground, clear of the desk, with nothing standing there.
-        private static bool Room(Vector3 near, Waypoint point, Waypoint next, out Vector3 spot, out Quaternion heading)
+        private static bool Room(Vector3 near, bool truck, Waypoint point, Waypoint next, out Vector3 spot, out Quaternion heading)
         {
             spot = default;
             heading = Quaternion.identity;
@@ -483,7 +502,9 @@ namespace RealLifeOverhaul
                 at.y = ground + 0.05f;
                 Vector3 flat = at - near;
                 flat.y = 0f;
-                if (flat.sqrMagnitude > 25f && SceneParking.IsFree(at, along, HalfWidth, HalfLength, 0.5f))
+                float apart = truck ? TruckFromDesk : 5f;
+                if (flat.sqrMagnitude > apart * apart
+                    && SceneParking.IsFree(at, along, truck ? TruckHalfWidth : HalfWidth, truck ? TruckHalfLength : HalfLength, 0.5f))
                 {
                     spot = at;
                     heading = along;

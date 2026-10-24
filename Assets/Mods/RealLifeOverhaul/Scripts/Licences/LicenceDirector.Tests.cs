@@ -37,9 +37,13 @@ namespace RealLifeOverhaul
             }
             else
             {
-                if ((kind == LicenceClass.Commercial || kind == LicenceClass.Taxi) && !LicenceState.Valid(LicenceClass.Car, day))
+                if ((kind == LicenceClass.Commercial || kind == LicenceClass.Taxi || kind == LicenceClass.Heavy) && !LicenceState.Valid(LicenceClass.Car, day))
                 {
-                    LicenceState.Grant(LicenceClass.Car, day);   // the van and the taxi need a car licence
+                    LicenceState.Grant(LicenceClass.Car, day);   // the van, the taxi and the truck need a car licence
+                }
+                if (kind == LicenceClass.Heavy && !LicenceState.Valid(LicenceClass.Commercial, day))
+                {
+                    LicenceState.Grant(LicenceClass.Commercial, day);   // and the truck a commercial one
                 }
                 LicenceState.SuspendedUntil = 0;
                 LicenceState.Grant(kind, day);
@@ -69,6 +73,43 @@ namespace RealLifeOverhaul
             _pendingSince = Time.unscaledTime;   // starts once the options page closes
         }
 
+        /// <summary>
+        /// Test button: the heavy goods paper, here and now, with nothing charged; a pass counts and the wait for the drive is
+        /// waived, so the driven test can follow at once. The commercial licence it needs is given if it is not held.
+        /// </summary>
+        public void TestHeavyTheory()
+        {
+            if (!Ready("Heavy theory test"))
+            {
+                return;
+            }
+            TestRefusal why = IsActive || _pending ? TestRefusal.SceneActive
+                : !Settings.DrivingLicence || !Settings.DrivingSchool || !Settings.HeavyLicence ? TestRefusal.FeatureOff
+                : PlayerHelper.IsUsingVehicle ? TestRefusal.NotOnFoot
+                : TestRefusal.None;
+            if (why != TestRefusal.None)
+            {
+                TestRefusals.Tell(Logger, "Heavy theory test", why);
+                return;
+            }
+            int day = TimeHelper.CurrentDay;
+            if (!LicenceState.Valid(LicenceClass.Car, day))
+            {
+                LicenceState.Grant(LicenceClass.Car, day);
+            }
+            if (!LicenceState.Valid(LicenceClass.Commercial, day))
+            {
+                LicenceState.Grant(LicenceClass.Commercial, day);
+            }
+            _testPaper = true;
+            _pendingFee = 0;
+            _pending = true;
+            _pendingService = SchoolService.TheoryHeavy;
+            _pendingSince = Time.unscaledTime;   // starts once the options page closes
+        }
+
+        private bool _testPaper;   // the heavy paper being sat is the test button's: its wait is waived
+
         /// <summary>Test button: a practical test from where the player stands, with nothing charged. A pass counts.</summary>
         public void TestPractical(LicenceClass kind)
         {
@@ -89,6 +130,11 @@ namespace RealLifeOverhaul
             if (why != TestRefusal.None)
             {
                 TestRefusals.Tell(Logger, "Practical test", why);
+                return;
+            }
+            if (kind == LicenceClass.Heavy && !Settings.HeavyLicence)
+            {
+                TestRefusals.Tell(Logger, "Practical test", TestRefusal.FeatureOff, 0, "heavy trucks need no heavy licence with its option off");
                 return;
             }
             if (!_practical.Begin(kind, false, true, 0, PlayerHelper.GetPosition(), out string reason))

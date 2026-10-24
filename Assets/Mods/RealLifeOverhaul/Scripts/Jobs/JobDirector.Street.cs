@@ -154,6 +154,62 @@ namespace RealLifeOverhaul
             return _rental.Hire(gm.playerController.transform.position, test, out reasonKey);
         }
 
+        /// <summary>The truck a heavy load goes in: the player's own heavy truck if one is near, else one hired for the day. Null if neither.</summary>
+        public CarController HeavyFor(bool test, out string reasonKey)
+        {
+            reasonKey = null;
+            CarController own = NearestHeavy(60f);
+            if (own != null)
+            {
+                return own;
+            }
+            var gm = InstanceBehavior<GameManager>.Instance;
+            if (gm == null || gm.playerController == null)
+            {
+                reasonKey = "reallife_job_no_car";
+                return null;
+            }
+            return _rental.Hire(gm.playerController.transform.position, test, true, out reasonKey);
+        }
+
+        /// <summary>Whether a car is a truck the heavy class is needed for (never while that class is off).</summary>
+        public static bool IsHeavyTruck(CarController car)
+        {
+            return car != null && Licences.Driving.ClassOf(car, out LicenceClass kind) && kind == LicenceClass.Heavy;
+        }
+
+        /// <summary>As <see cref="NearestCar"/>, only a heavy truck: the one being driven, else the player's own nearest, a hired one counting.</summary>
+        public static CarController NearestHeavy(float within)
+        {
+            var gm = InstanceBehavior<GameManager>.Instance;
+            if (gm == null || gm.playerController == null)
+            {
+                return null;
+            }
+            if (gm.selectedVehicle is CarController driven && Usable(driven))
+            {
+                return IsHeavyTruck(driven) ? driven : null;   // at the wheel of something else: that is the vehicle they have
+            }
+            Vector3 from = gm.playerController.transform.position;
+            CarController best = null;
+            float bestSqr = within * within;
+            List<VehicleController> own = VehicleHelper.AllPlayerVehicles;
+            for (int i = 0; i < own.Count; i++)
+            {
+                if (!(own[i] is CarController car) || !car.isActiveAndEnabled || car.vehicleInstance == null || !GoingPublic.MineVehicle(car) || !Usable(car))
+                {
+                    continue;
+                }
+                float sqr = (car.transform.position - from).sqrMagnitude;
+                if (sqr < bestSqr && IsHeavyTruck(car))
+                {
+                    bestSqr = sqr;
+                    best = car;
+                }
+            }
+            return best;
+        }
+
         /// <summary>The car being driven, else the player's own nearest within a distance (no scooter or game job van; a hired van counts), or null.</summary>
         public static CarController NearestCar(float within)
         {

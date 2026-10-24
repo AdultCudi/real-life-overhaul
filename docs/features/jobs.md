@@ -363,6 +363,17 @@ Log lines: `Jobs check (saved shift): '<job>' is on at the save: paid so far N f
 
 Not checked in the game: any of it; in particular that the game's save event reaches the hook during each kind of shift (the cleaner's own hook shows it does for one), and what the figures are at a real midnight autosave.
 
+## Heavy loads
+
+With a heavy goods licence ([Driving licences](licences.md#the-heavy-goods-licence)) the Gig Line's courier page has "Got anything heavier?": the same round as a heavy load, freight in a heavy truck, each drop and the distance paid 1.8 times a parcel's (`HeavyRules.LoadPay`), with 1.35 times the time on the clock (`LoadTime`).
+The truck is the player's own heavy truck within 60 m (`JobDirector.NearestHeavy`), else one hired for the day (`JobRental` with `heavy`: 260, less a van's fee already paid that day).
+Any courier round, an employer's too, that is driven in a heavy truck by a licensed driver is a heavy load.
+Nothing is drawn: the pay follows the offer as every gig's does.
+
+The hired truck is the game's Freight Truck made as the driving school makes its car (`DeliveryVehicleInstance`, `VehicleHelper.CreateAndSpawnVehicle`); it has no clean-up of the game's, so `JobRental.Save` takes it off the save's vehicle list for each serialisation and puts it back a frame later, and it goes back by the game's own delete once the player is out of it.
+A save loaded without the mod has no truck in it; the hire's line keeps its id, so a copy that reached a save is taken back after a load.
+With "Heavy trucks need a heavy goods licence" off there are no heavy loads.
+
 ## The hired van
 
 A driving job taken with no car of the player's own within 60 m is given a hired van (`JobRental`, 125 once a day).
