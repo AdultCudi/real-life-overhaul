@@ -33,7 +33,12 @@ namespace RealLifeOverhaul.Uptown
         public static void Lots(List<BuildingsLot> into)
         {
             into.Clear();
-            IReadOnlyList<Lot> all = UptownLots.All;
+            Add(UptownLots.All, into);
+            Add(UptownLots.Places, into);   // the big places' ground, after the lots: BigPlacesRules.Holds keeps it from every ordinary building
+        }
+
+        private static void Add(IReadOnlyList<Lot> all, List<BuildingsLot> into)
+        {
             for (int i = 0; all != null && i < all.Count; i++)
             {
                 Lot lot = all[i];

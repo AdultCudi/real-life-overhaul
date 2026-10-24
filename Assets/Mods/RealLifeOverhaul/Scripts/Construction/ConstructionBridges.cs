@@ -74,6 +74,9 @@ namespace RealLifeOverhaul.Construction
         /// <summary>True when a building of the district stands on a lot at this load. Default: no.</summary>
         public static Func<string, bool> LotBuilt;
 
+        /// <summary>True for a lot of an earlier plan of the district's, which is no more: what a save holds on it is retired. Default: none.</summary>
+        public static Func<string, bool> LotRetired;
+
         /// <summary>True when a lot of the district takes a building of one of the game's sizes (its class's sizes). Default: any size.</summary>
         public static Func<string, string, bool> SizeTaken;
 
@@ -340,6 +343,7 @@ namespace RealLifeOverhaul.Construction
             DistrictLives = null;
             LotTaken = null;
             LotBuilt = null;
+            LotRetired = null;
             SizeTaken = null;
             LandPrice = null;
             Finish = null;

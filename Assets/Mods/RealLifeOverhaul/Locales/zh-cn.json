@@ -22967,5 +22967,6 @@
   "reallife_uptown_test_fill_done": "已在 {name}（{address}）加满油：在加油泵付了 {money}。Player.log 里有检查结果。",
   "reallife_uptown_test_fill_car": "请先坐进你的车：加油泵只给你驾驶的车加油。",
   "reallife_uptown_test_fill_failed": "在 {name} 加油没有成功。Player.log 里写明了原因。",
-  "reallife_contract_part_uptown_big_tests": "上城批发商店和加油站的测试：按游戏自己的方式送货和加油"
+  "reallife_contract_part_uptown_big_tests": "上城批发商店和加油站的测试：按游戏自己的方式送货和加油",
+  "reallife_transaction_bld_land_back": "土地退还：{name}"
 }

@@ -39,7 +39,9 @@ internal static partial class Program
     private static List<BuildingsLot> UptownRealPlan()
     {
         var plan = new List<BuildingsLot>(512);
-        foreach (Lot l in UptownLots.All)
+        var all = new List<Lot>(UptownLots.All);
+        all.AddRange(UptownLots.Places);   // as LifeGame.Lots reads the plan: the big places' ground after the lots
+        foreach (Lot l in all)
         {
             plan.Add(new BuildingsLot
             {
@@ -82,12 +84,12 @@ internal static partial class Program
         {
             notClear += BuildingsRules.Clear(lot.Id) ? 0 : 1;
         }
-        Check(plan.Count == 422 && built.Count == 347 && legacy.Count == 21 && first == 83 && firstBuilt == 41 && notClear == 5,
-            "uptown fill: of the band's 422 lots, 347 are built from the first day, 70 left open, one kept empty and four the big special places'; 41 of the first block's 83 (" + plan.Count + ", "
+        Check(plan.Count == 557 && built.Count == 454 && legacy.Count == 20 && first == 80 && firstBuilt == 42 && notClear == 3,
+            "uptown fill: of the band's 555 lots and two big places' ground, 454 lots are built from the first day, 100 left open and one kept empty; 42 of the first block's 80 (" + plan.Count + ", "
             + built.Count + ", " + legacy.Count + ", " + firstBuilt + " of " + first + ", " + notClear + " not clear)");
-        bool treeLot = plan.Exists(l => l.Id == "uptown_1_14_04") && !BuildingsRules.Clear("uptown_1_14_04") && !builtIds.Contains("uptown_1_14_04")
-                       && !leased.Contains("uptown_1_14_04") && BuildingsRules.Clear("uptown_1_14_05") && !BuildingsRules.Clear(null) && !BuildingsRules.Clear(string.Empty);
-        Check(treeLot, "uptown fill: the lot a tree of the game's leans over (uptown_1_14_04, the ground's scan) is neither built nor leased, and its neighbours are clear");
+        bool treeLot = plan.Exists(l => l.Id == "uptown_1_14_004") && !BuildingsRules.Clear("uptown_1_14_004") && !builtIds.Contains("uptown_1_14_004")
+                       && !leased.Contains("uptown_1_14_004") && BuildingsRules.Clear("uptown_1_14_005") && !BuildingsRules.Clear(null) && !BuildingsRules.Clear(string.Empty);
+        Check(treeLot, "uptown fill: the lot a tree of the game's leans over (uptown_1_14_004, the ground's scan) is neither built nor leased, and its neighbours are clear");
         bool keepsOld = legacy.IsSubsetOf(builtIds) && leased.IsSubsetOf(builtIds);
         Check(keepsOld, "uptown fill: the first block's quarter built before the band was filled stays built (saves hold their records), and every leased office is built");
 
@@ -125,8 +127,8 @@ internal static partial class Program
             someOpen &= open >= 1;
             wrong = open == wanted ? wrong : wrong ?? "block " + block.Key + " has " + open + " open, wanted " + wanted;
         }
-        Check(blocks.Count == 37 && landmarksOpen && shares && someOpen,
-            "uptown fill: each landmark's own block open but for the old quarter's lots, every other block its share open and at least one, in each of the 37 blocks with lots"
+        Check(blocks.Count == 45 && landmarksOpen && shares && someOpen,
+            "uptown fill: each landmark's own block open but for the old quarter's lots, every other block its share open and at least one, in each of the 45 blocks with lots"
             + (wrong != null ? " (" + wrong + ")" : string.Empty));
         Check(LandmarkRules.OwnBlock(111) && LandmarkRules.OwnBlock(113) && LandmarkRules.OwnBlock(110) && !LandmarkRules.OwnBlock(106) && !LandmarkRules.OwnBlock(112)
               && !LandmarkRules.OwnBlock(201),
@@ -637,7 +639,7 @@ internal static partial class Program
             groundMs = Math.Min(groundMs, (d - c) * 1000.0 / Stopwatch.Frequency);
         }
         double all = rulesMs + lanesMs + groundMs;
-        Check(built == 347 && others > 0 && hits > 0 && all < 30.0,
+        Check(built == 454 && others > 0 && hits > 0 && all < 30.0,
             "uptown fill: the fill's own load work without the game's code, on the real plan: the built and leased lots and each one's structures and others in "
             + rulesMs.ToString("F2") + " ms, " + LanePoints + " lane points into squares in " + lanesMs.ToString("F2") + " ms, " + built + " buildings' lane and box checks in "
             + groundMs.ToString("F2") + " ms; " + all.ToString("F2") + " ms in all (wanted under 30 ms)");

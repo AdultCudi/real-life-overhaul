@@ -72,18 +72,19 @@ namespace RealLifeOverhaul.Uptown
         public const string SpecialType = BuildingsRules.SpecialType;
         public const float MouthIntoRoad = 3f;   // m a mouth reaches past the kerb: over the kerb's parking lane, which the game lays 1.3 m in and 2.5 m wide
 
-        // The one place Uptown's big places are chosen: a re-plan of the lots changes these rows alone. The store, Total
+        // The one place Uptown's big places are chosen: each stands on the ground the plan keeps for it (LayoutRules.Places,
+        // its id and address the plan's), the lots round it kept 1.5 m off by the plan itself. The store, Total
         // Produce Trading's drive-in, over block 108's whole Uptown Avenue front (7th to 6th Street): 10.5 m back so its car
         // park lines (10.47 m past its walls) end at the pavement, against the west end so its garage doors open east onto a
-        // yard about 22 m wide; 7th Street 1008 behind it kept empty (its back wall 1.2 m off that lot). The station, United
+        // yard about 22 m wide; the lots behind it end 1.5 m short of its ground. The station, United
         // Gasoline's, on the north-east corner of 9th Street and Uptown Avenue as United Gasoline stands on 2nd Street and 1st
         // Avenue: the pumps' open end 1.87 m behind the avenue's pavement, its forecourt and repair bays 5.11 m from the street's.
         /// <summary>The two places, in a fixed order.</summary>
         public static readonly BigPlace[] All =
         {
-            new BigPlace(BigKind.Wholesale, "uptown_1_08_01", new[] { "uptown_1_08_02" }, new[] { "uptown_1_08_06" }, "MurrayHillWholesaleStore",
+            new BigPlace(BigKind.Wholesale, "uptown_place_wholesale", new string[0], new string[0], "MurrayHillWholesaleStore",
                 "Northgate Wholesale", "DriveInMurrayHill", "ba:buildingsize_e", 1, 10.5f, -1, 0.5f, BigMouth.Front),
-            new BigPlace(BigKind.GasStation, "uptown_2_06_04", new string[0], new string[0], "UnitedGasoline",
+            new BigPlace(BigKind.GasStation, "uptown_place_fuel", new string[0], new string[0], "UnitedGasoline",
                 "Summit Fuel", "GasStationBuilding", "ba:buildingsize_a", 2, 1.87f, 1, 3.61f, BigMouth.Front | BigMouth.Right),
         };
 

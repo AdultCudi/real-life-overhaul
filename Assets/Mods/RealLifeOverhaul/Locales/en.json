@@ -22967,5 +22967,6 @@
   "reallife_uptown_test_fill_done": "Filled up at {name}, {address}: {money} paid at its pump. Player.log has the check.",
   "reallife_uptown_test_fill_car": "Get in your car first: the pumps fill the car you drive.",
   "reallife_uptown_test_fill_failed": "Filling up at {name} did not go through. Player.log says why.",
-  "reallife_contract_part_uptown_big_tests": "Uptown's wholesale store and petrol station tested: a delivery and a fill up the game's own way"
+  "reallife_contract_part_uptown_big_tests": "Uptown's wholesale store and petrol station tested: a delivery and a fill up the game's own way",
+  "reallife_transaction_bld_land_back": "Land given back: {name}"
 }

@@ -79,6 +79,7 @@ namespace RealLifeOverhaul
                 ConstructionBridges.DistrictLives = () => DistrictBuildings.Lives;
                 ConstructionBridges.LotTaken = LotTaken;
                 ConstructionBridges.LotBuilt = LotBuilt;
+                ConstructionBridges.LotRetired = UptownLots.OfEarlierPlan;
                 ConstructionBridges.SizeTaken = SizeTaken;
                 ConstructionBridges.LandPrice = () => DistrictBuildings.LandPricePerSqm;
                 ConstructionBridges.Finish = Finish;
@@ -177,6 +178,7 @@ namespace RealLifeOverhaul
                 ConstructionBridges.DistrictLives = null;
                 ConstructionBridges.LotTaken = null;
                 ConstructionBridges.LotBuilt = null;
+                ConstructionBridges.LotRetired = null;
                 ConstructionBridges.SizeTaken = null;
                 ConstructionBridges.LandPrice = null;
                 ConstructionBridges.Finish = null;

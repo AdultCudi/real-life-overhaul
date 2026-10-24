@@ -100,23 +100,27 @@ internal static partial class Program
         {
             Console.WriteLine("uptown lots: " + lots.Count + " in all (" + string.Join(", ", all) + "), the first block " + first.Count + " (" + string.Join(", ", firstMix) + ")");
         }
-        Check(lots.Count >= 400 && lots.Count <= 460, "uptown lots: about 430 in the band (" + lots.Count + ")");
-        Check(first.Count >= 80 && first.Count <= 100, "uptown lots: a first block of 80 to 100 (" + first.Count + ")");
+        Check(lots.Count >= 520 && lots.Count <= 620, "uptown lots: about 560 in the band, built up as Manhattan (" + lots.Count + ")");
+        Check(first.Count >= 75 && first.Count <= 100, "uptown lots: a first block of 75 to 100 (" + first.Count + ")");
         for (int c = 0; c < 4; c++)
         {
             float share = 100f * all[c] / lots.Count, want = 100f * LayoutRules.Share((LotClass)c) / 98f;
             Check(Math.Abs(share - want) <= 1.5f, "uptown lots: " + (LotClass)c + " " + share.ToString("0.0") + "% of the band, Manhattan's " + want.ToString("0.0") + "%");
         }
         Check(firstMix[0] < first.Count && firstMix[1] + firstMix[2] + firstMix[3] >= first.Count / 8, "uptown lots: the first block holds offices, big stores and a warehouse as well as small lots");
-        var id = new Regex(@"^uptown_[1-3]_(0[1-9]|1[0-8])_\d\d$");
-        Check(lots.All(l => id.IsMatch(l.Id)) && lots.Select(l => l.Id).Distinct().Count() == lots.Count, "uptown lots: every id of the form uptown_<row>_<column>_<n>, letters, digits and underscores, none twice");
+        var id = new Regex(@"^uptown_[1-3]_(0[1-9]|1[0-8])_\d\d\d$");
+        Check(lots.All(l => id.IsMatch(l.Id)) && lots.Select(l => l.Id).Distinct().Count() == lots.Count && lots.All(l => !UptownLots.OfEarlierPlan(l.Id)),
+            "uptown lots: every id of the form uptown_<row>_<column>_<nnn>, letters, digits and underscores, none twice, none an id of the first plan's");
+        Check(UptownLots.OfEarlierPlan("uptown_1_14_04") && UptownLots.OfEarlierPlan("uptown_3_18_12") && !UptownLots.OfEarlierPlan(lots[0].Id) && !UptownLots.OfEarlierPlan("uptown_1_14_4")
+              && !UptownLots.OfEarlierPlan("uptown_x_14_04") && !UptownLots.OfEarlierPlan(null) && !UptownLots.OfEarlierPlan("uptown_1_14_004"),
+            "uptown lots: an id of the first plan (two digits in its block) is told apart from this plan's, so a save's land there is retired");
         Check(lots.All(l => UptownLots.Get(l.Id) == l) && UptownLots.Get("uptown_9_99_99") == null && UptownLots.Get(null) == null, "uptown lots: each found by its id, nothing else");
         Check(lots.SequenceEqual(lots.OrderBy(l => l.Row).ThenBy(l => l.Column)) && lots.All(l => l.Block == l.Row * 100 + l.Column), "uptown lots: in id order, row by row, the block its row and column");
         Check(first.All(l => l.First && l.Row == 1 && l.Column >= 6 && l.Column <= 13) && lots.Count(l => l.First) == first.Count, "uptown lots: the first block is row 1 between 9th and 1st Street");
         foreach (Lot l in lots)
         {
             LayoutRules.Footprint(l.Class, out int w, out int d);
-            bool ok = l.Width == w && l.Depth == d && l.Yaw % 90 == 0 && Near(l.Facing, (l.Yaw + 180) % 360);
+            bool ok = l.Width >= w && l.Width <= w + 10 && l.Depth >= d && l.Yaw % 90 == 0 && Near(l.Facing, (l.Yaw + 180) % 360);
             LayoutRules.Block(l.Row, l.Column, out float x0, out float z0, out float x1, out float z1);
             Corners(l, out float lx0, out float lz0, out float lx1, out float lz1);
             ok &= lx0 >= x0 - 0.01f && lx1 <= x1 + 0.01f && lz0 >= z0 - 0.01f && lz1 <= z1 + 0.01f;
@@ -127,9 +131,55 @@ internal static partial class Program
             LayoutStreet street = LayoutStreets.Find(l.Street);
             ok &= street != null && (l.Facing == 0f || l.Facing == 180f ? street.Avenue && street.Index == (l.Facing == 0f ? l.Row : l.Row - 1)
                 : !street.Avenue && street.Index == LayoutRules.WestStreet(l.Column) + (l.Facing == 90f ? 1 : 0));
-            Check(ok, "uptown lots: " + l.Id + " (" + l.Class + ") has its class's footprint, inside its block, its front on the street it names");
+            Check(ok, "uptown lots: " + l.Id + " (" + l.Class + ") has at least its class's footprint, inside its block, its front on the street it names");
         }
-        // Clear of one another: two lots never closer than the gap a made building keeps.
+        // Side by side, as Manhattan's: every laid block's edge is the lots' fronts and the corner lots' sides, but for what
+        // a strip has over its lots' whole metres (under a metre each end) and the strips' ends.
+        float worstEdge = 1f;
+        string thinBlock = null;
+        foreach (var block in lots.Where(l => !LayoutRules.Places.Any(p => p.Block == l.Block)).GroupBy(l => l.Block))
+        {
+            Lot one = block.First();
+            LayoutRules.Block(one.Row, one.Column, out float bx0, out float bz0, out float bx1, out float bz1);
+            float edge = (one.First ? 1f : 2f) * (bx1 - bx0) + 2f * (bz1 - bz0), covered = 0f;
+            foreach (Lot l in block)
+            {
+                Corners(l, out float lx0, out float lz0, out float lx1, out float lz1);
+                covered += Math.Abs(lz1 - bz1) < 0.55f ? lx1 - lx0 : 0f;
+                covered += Math.Abs(lz0 - bz0) < 0.55f && !one.First ? lx1 - lx0 : 0f;
+                covered += Math.Abs(lx0 - bx0) < 0.55f ? lz1 - lz0 : 0f;
+                covered += Math.Abs(lx1 - bx1) < 0.55f ? lz1 - lz0 : 0f;
+            }
+            float share = covered / edge;
+            if (share < worstEdge)
+            {
+                worstEdge = share;
+                thinBlock = one.Block.ToString();
+            }
+        }
+        Check(worstEdge >= 0.93f, "uptown lots: every block's edge is lots side by side, the corners its avenues', a place's two blocks apart (the least " + (100f * worstEdge).ToString("0") + "%, block " + thinBlock + ")");
+        // Half the squares built (the owner, 24 Oct 2026), the parks left spread along every row and never a landmark's block.
+        int planned = 0, kept = 0;
+        var keptRows = new HashSet<int>();
+        for (int row = 1; row <= LayoutRules.Rows; row++)
+        {
+            for (int column = 1; column <= LayoutRules.Columns; column++)
+            {
+                planned += LayoutRules.PlannedSquare(row, column) ? 1 : 0;
+                if (LayoutRules.IsSquare(row, column))
+                {
+                    kept++;
+                    keptRows.Add(row);
+                }
+                if (LayoutRules.IsSquare(row, column) == lots.Any(l => l.Row == row && l.Column == column))
+                {
+                    kept = -99;   // a kept square with lots, or a laid block with none
+                }
+            }
+        }
+        Check(planned == 17 && kept == 9 && keptRows.Count == LayoutRules.Rows && lots.Select(l => l.Block).Distinct().Count() == LayoutRules.Rows * LayoutRules.Columns - kept,
+            "uptown lots: of the plan's 17 squares 8 are built and " + kept + " stay parks and plazas, some in every row, the rest of the 54 blocks laid with lots");
+        // Clear of one another: two lots side by side, never one over another.
         var byBlock = lots.GroupBy(l => l.Block).ToList();
         int clashes = 0;
         foreach (var block in byBlock)
@@ -139,16 +189,35 @@ internal static partial class Program
             {
                 for (int j = i + 1; j < b.Length; j++)
                 {
-                    clashes += Gap(b[i], b[j]) < LayoutRules.LotGap - 0.01f ? 1 : 0;
+                    clashes += Overlap(b[i], b[j]) ? 1 : 0;
                 }
             }
         }
-        Check(clashes == 0, "uptown lots: no two lots of a block closer than " + LayoutRules.LotGap + " m (" + clashes + ")");
+        Check(clashes == 0 && LayoutRules.LotGap == 0f, "uptown lots: the lots of a block stand side by side, none over another (" + clashes + ")");
         // Clear of the streets: inside a block, so off every street, avenue and crossing module.
         Check(lots.All(l => OffStreets(l)), "uptown lots: none on a street, an avenue or a crossing");
-        // Numbers: odd on one side, even on the other, from the street's first, along it; every address once.
-        Check(lots.Select(l => l.Street + "#" + l.Number).Distinct().Count() == lots.Count, "uptown lots: every address once");
-        foreach (var side in lots.GroupBy(l => l.Street + (l.Number % 2)))
+        // The big places' ground: as the plan's table gives it, its own id and address, never a lot, the lots round it clear.
+        List<Lot> places = LayoutRules.Places;
+        Lot store = places.FirstOrDefault(l => l.Id == "uptown_place_wholesale"), fuel = places.FirstOrDefault(l => l.Id == "uptown_place_fuel");
+        bool placesOk = places.Count == 2 && store != null && fuel != null && places.All(l => UptownLots.Get(l.Id) == null && LayoutStreets.Find(l.Street) != null);
+        if (placesOk)
+        {
+            Corners(store, out float sx0, out float sz0, out float sx1, out float sz1);
+            Corners(fuel, out float fx0, out float fz0, out float fx1, out float fz1);
+            placesOk &= Near(sx0, -113.4f, 0.02f) && Near(sx1, -53.4f, 0.02f) && sz0 <= 557.2f && Near(sz1, LayoutRules.AvenueZ(1) - LayoutRules.AvenueHalf, 0.1f) && store.Facing == 0f
+                        && Near(fx0, -291.5f, 0.02f) && Near(fx1, -268.5f, 0.02f) && Near(fz0, LayoutRules.AvenueZ(1) + LayoutRules.AvenueHalf, 0.02f) && Near(fz1 - fz0, 32f, 0.02f) && fuel.Facing == 180f
+                        && store.Block == 108 && fuel.Block == 206;
+            foreach (Lot place in places)
+            {
+                placesOk &= lots.All(l => l.Block != place.Block || Gap(l, place) >= LayoutRules.PlaceClear - 0.02f);
+            }
+        }
+        Check(placesOk, "uptown places: the wholesale store's ground over block 108's Uptown Avenue front (x -113.4 to -53.4, back to z 557) and the filling station's on block 206's corner "
+              + "of 9th Street and Uptown Avenue (x -291.5 to -268.5, 32 m back), each with its own id and address, never a lot, every lot " + LayoutRules.PlaceClear + " m off");
+        // Numbers: odd on one side, even on the other, from the street's first, along it, a place's among them; every address once.
+        var numbered = lots.Concat(places).ToList();
+        Check(numbered.Select(l => l.Street + "#" + l.Number).Distinct().Count() == numbered.Count, "uptown lots: every address once, the places' too");
+        foreach (var side in numbered.GroupBy(l => l.Street + (l.Number % 2)))
         {
             Lot[] s = side.OrderBy(l => l.Order).ToArray();
             LayoutStreet street = LayoutStreets.Find(s[0].Street);
@@ -165,7 +234,7 @@ internal static partial class Program
             "uptown lots: each class holds the game's sizes places.md counts in it");
         if (print)
         {
-            var rows = lots.Select(l => new { l.Id, l.Row, l.Column, l.First, l.Street, l.Number, l.X, l.Z, l.Yaw, l.Width, l.Depth, Class = l.Class.ToString() });
+            var rows = lots.Concat(LayoutRules.Places).Select(l => new { l.Id, l.Row, l.Column, l.First, l.Street, l.Number, l.X, l.Z, l.Yaw, l.Width, l.Depth, Class = l.Class.ToString(), Place = UptownLots.Get(l.Id) == null });
             File.WriteAllText(Path.Combine(AppContext.BaseDirectory, "uptown_lots.json"), JsonSerializer.Serialize(rows));
             Console.WriteLine("uptown lots written to " + Path.Combine(AppContext.BaseDirectory, "uptown_lots.json"));
         }
@@ -180,6 +249,14 @@ internal static partial class Program
         x1 = l.X + hx;
         z0 = l.Z - hz;
         z1 = l.Z + hz;
+    }
+
+    // True when two lots share more than a centimetre of ground each way: side by side they share an edge alone.
+    private static bool Overlap(Lot a, Lot b)
+    {
+        Corners(a, out float ax0, out float az0, out float ax1, out float az1);
+        Corners(b, out float bx0, out float bz0, out float bx1, out float bz1);
+        return Math.Min(ax1, bx1) - Math.Max(ax0, bx0) > 0.01f && Math.Min(az1, bz1) - Math.Max(az0, bz0) > 0.01f;
     }
 
     private static float Gap(Lot a, Lot b)

@@ -315,6 +315,7 @@ internal static partial class Program
         int nowMade = 0, wasMade = 0, nowOnPavement = 0, wasOnPavement = 0, nowGaps = 0, wasGaps = 0, avenues = 0, streets = 0, first = 0;
         string wasWorst = null, nowWorst = null, wasStrayAt = null;
         var into = new List<BuildingsStructure>();
+        var fronts = new Dictionary<int, List<float[]>>();   // each block's buildings' footprints, along the world's axes
         foreach (int i in built)
         {
             BuildingsLot lot = plan[i];
@@ -343,6 +344,14 @@ internal static partial class Program
                 float across = Across(now[n]);
                 nowFill += across / lot.Width;
                 nowGaps += lot.Width - across > 6f ? 1 : 0;
+                NewBuildingsRules.Footprint(now[n], made, out float fcx, out float fcz, out float fhw, out float fhd);
+                bool alongX = lot.Facing == 0f || lot.Facing == 180f;
+                if (!fronts.TryGetValue(lot.Block, out List<float[]> boxes))
+                {
+                    boxes = new List<float[]>();
+                    fronts.Add(lot.Block, boxes);
+                }
+                boxes.Add(alongX ? new[] { fcx - fhw, fcz - fhd, fcx + fhw, fcz + fhd } : new[] { fcx - fhd, fcz - fhw, fcx + fhd, fcz + fhw });
                 avenues += lot.Avenue ? 1 : 0;
                 streets += lot.Avenue ? 0 : 1;
                 first += lot.First ? 1 : 0;
@@ -378,6 +387,54 @@ internal static partial class Program
         Check(nowMade > 0 && wasMade > 0 && nowFill / nowMade >= 0.8f && nowFill / nowMade > wasFill / wasMade + 0.05f && nowGaps < wasGaps,
             "uptown place: a building takes " + (100f * nowFill / Math.Max(1, nowMade)).ToString("F0") + "% of its lot's frontage on average (before " + (100f * wasFill / Math.Max(1, wasMade)).ToString("F0")
             + "%), " + nowGaps + " lots more than 6 m short across (before " + wasGaps + ")");
+
+        // Built up as Manhattan is (the owner, 24 Oct 2026: "Like Manhattan"): the share of each block's edge with a building's
+        // face within 3 m of it, measured as Manhattan's own were (median 71% over 16 blocks south of 1st Avenue, the game's
+        // buildings' boxes, Build 3682); the first plan's band, as the owner's load of 24 Oct made it, was at 34%.
+        var shares = new List<float>();
+        for (int row = 1; row <= LayoutRules.Rows; row++)
+        {
+            for (int column = 1; column <= LayoutRules.Columns; column++)
+            {
+                if (LayoutRules.IsSquare(row, column) || LayoutRules.IsFirst(row, column))
+                {
+                    continue;
+                }
+                LayoutRules.Block(row, column, out float x0, out float z0, out float x1, out float z1);
+                List<float[]> b = fronts.TryGetValue(row * 100 + column, out List<float[]> got) ? got : new List<float[]>();
+                float covered = Covered(b, x0, x1, f => f[3] > z1 - 3f, 0, 2) + Covered(b, x0, x1, f => f[1] < z0 + 3f, 0, 2)
+                                + Covered(b, z0, z1, f => f[0] < x0 + 3f, 1, 3) + Covered(b, z0, z1, f => f[2] > x1 - 3f, 1, 3);
+                shares.Add(covered / (2f * (x1 - x0) + 2f * (z1 - z0)));
+            }
+        }
+        shares.Sort();
+        float median = shares.Count > 0 ? shares[shares.Count / 2] : 0f;
+        Check(shares.Count >= 30 && median >= 0.6f, "uptown place: the band's blocks are built along " + (100f * median).ToString("F0") + "% of their edges (the median of " + shares.Count
+              + " blocks beyond the first, the open lots among them), Manhattan's own 71%, the first plan's 34%");
+    }
+
+    // m of the run from a to b under the boxes that pass the test, each taken from its axis's two ends (0 and 2 for x, 1 and 3 for z).
+    private static float Covered(List<float[]> boxes, float a, float b, Func<float[], bool> near, int lo, int hi)
+    {
+        var runs = new List<(float, float)>();
+        foreach (float[] f in boxes)
+        {
+            if (near(f) && f[hi] > a && f[lo] < b)
+            {
+                runs.Add((Math.Max(a, f[lo]), Math.Min(b, f[hi])));
+            }
+        }
+        runs.Sort((p, q) => p.Item1.CompareTo(q.Item1));
+        float total = 0f, at = a;
+        foreach ((float s, float e) in runs)
+        {
+            if (e > at)
+            {
+                total += e - Math.Max(s, at);
+                at = e;
+            }
+        }
+        return total;
     }
 
     // m from a lot's front line to the back of its street's pavement (0 when on it; above 0 when the front is on the pavement).

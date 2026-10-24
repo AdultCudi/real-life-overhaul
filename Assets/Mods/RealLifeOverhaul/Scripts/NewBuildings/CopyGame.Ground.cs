@@ -314,7 +314,7 @@ namespace RealLifeOverhaul.NewBuildings
             for (int i = 0; i < found; i++)
             {
                 Collider hit = Hits[i];
-                if (hit != null && !(hit is TerrainCollider))
+                if (hit != null && !(hit is TerrainCollider) && !OfMade(hit))
                 {
                     Hits[i] = null;
                     return "something solid stands there (" + hit.name + ")";
@@ -445,22 +445,32 @@ namespace RealLifeOverhaul.NewBuildings
             z = cz - across * fx + outward * fz;
         }
 
-        // Two turned rectangles meet if any corner of one lies in the other, or their middles do (the one inside the other).
+        // A collider of one of the mod's own buildings: the made buildings keep apart by their footprints (RectsMeet), so a
+        // district's side by side never stand each other down by a wall shared to the centimetre.
+        private static bool OfMade(Collider hit)
+        {
+            CityBuildingController c = hit.GetComponentInParent<CityBuildingController>();
+            return c != null && MadeBuildings.Of(c) != null;
+        }
+
+        // Two turned rectangles meet if any corner of one lies more than Touch inside the other, or their middles do (the one
+        // inside the other): two buildings side by side, as a district's stand, share an edge and do not meet.
         private static bool RectsMeet(float ax, float az, float af, float ahw, float ahd, float bx, float bz, float bf, float bhw, float bhd)
         {
-            if (NewBuildingsRules.Inside(ax, az, bx, bz, bf, bhw, bhd, NewBuildingsRules.Gap) || NewBuildingsRules.Inside(bx, bz, ax, az, af, ahw, ahd, NewBuildingsRules.Gap))
+            const float In = -NewBuildingsRules.Touch;
+            if (NewBuildingsRules.Inside(ax, az, bx, bz, bf, bhw, bhd, In) || NewBuildingsRules.Inside(bx, bz, ax, az, af, ahw, ahd, In))
             {
                 return true;
             }
             for (int i = 0; i < 4; i++)
             {
                 Corner(ax, az, af, (i & 1) == 0 ? -ahw : ahw, (i & 2) == 0 ? -ahd : ahd, out float px, out float pz);
-                if (NewBuildingsRules.Inside(px, pz, bx, bz, bf, bhw, bhd, NewBuildingsRules.Gap))
+                if (NewBuildingsRules.Inside(px, pz, bx, bz, bf, bhw, bhd, In))
                 {
                     return true;
                 }
                 Corner(bx, bz, bf, (i & 1) == 0 ? -bhw : bhw, (i & 2) == 0 ? -bhd : bhd, out px, out pz);
-                if (NewBuildingsRules.Inside(px, pz, ax, az, af, ahw, ahd, NewBuildingsRules.Gap))
+                if (NewBuildingsRules.Inside(px, pz, ax, az, af, ahw, ahd, In))
                 {
                     return true;
                 }

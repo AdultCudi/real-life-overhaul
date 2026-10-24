@@ -32,6 +32,9 @@ namespace RealLifeOverhaul.Uptown
         /// <summary>Lots new to the save after the first pass that a later pass has been over: each is filled once.</summary>
         public readonly List<string> OpenedLots = new List<string>(8);
 
+        /// <summary>The generation of Uptown's plan its lots are of (LayoutRules.PlanGeneration); a line without one is of the first plan.</summary>
+        public int Plan = LayoutRules.PlanGeneration;
+
         /// <summary>True when a later opening pass has been over the lot.</summary>
         public bool OpenedLot(string lot)
         {
@@ -84,7 +87,8 @@ namespace RealLifeOverhaul.Uptown
 
     /// <summary>
     /// The district's line in the save, game-free: one line under <see cref="Key"/>, "v=1^f:finished" and "^o:1" once the
-    /// opening pass has run and "^n:lot,lot" for the lots a later pass has been over, records divided by ';'
+    /// opening pass has run, "^n:lot,lot" for the lots a later pass has been over and "^g:2" the plan's generation its
+    /// lots are of (none: the first plan, LifeStore.PlanOf), records divided by ';'
     /// and fields by '|' (lot, size, version, type, design, storeys, owner, price, day, settled, the other lots it stands over joined by ','), in the order
     /// <see cref="Write"/> joins them. A newer version adds fields at the end of a record, or a part with a new letter: this
     /// reader skips what it does not know, bounds every figure and caps the list. The line names Uptown's lots, never an
@@ -113,6 +117,20 @@ namespace RealLifeOverhaul.Uptown
             return SaveLines.Checked(data, Key, Read(text, out version), version, Version);
         }
 
+        /// <summary>
+        /// The generation of Uptown's plan a save's lots are of: its line's, or the first plan's when its line has none or the
+        /// save has no line (the first plan wrote one only once a building was finished or its units opened).
+        /// </summary>
+        public static int PlanOf(Dictionary<string, string> data)
+        {
+            if (data == null || !data.TryGetValue(Key, out string text) || string.IsNullOrEmpty(text))
+            {
+                return 1;
+            }
+            LifeState read = Read(text, out int _);
+            return read != null ? read.Plan : 1;
+        }
+
         /// <summary>The line read; null when it is not a line of this store.</summary>
         public static LifeState Read(string text, out int version)
         {
@@ -126,10 +144,15 @@ namespace RealLifeOverhaul.Uptown
             {
                 return null;
             }
-            var state = new LifeState();
+            var state = new LifeState { Plan = 1 };
             for (int p = 1; p < parts.Length; p++)
             {
                 string part = parts[p];
+                if (part.StartsWith("g:", StringComparison.Ordinal))
+                {
+                    state.Plan = Whole(part.Substring(2), 1, 1, 99);
+                    continue;
+                }
                 if (part == "o:1")
                 {
                     state.Opened = true;
@@ -273,6 +296,7 @@ namespace RealLifeOverhaul.Uptown
                     }
                 }
             }
+            t.Append("^g:").Append(s.Plan.ToString(Inv));
             if (s.Opened)
             {
                 t.Append("^o:1");

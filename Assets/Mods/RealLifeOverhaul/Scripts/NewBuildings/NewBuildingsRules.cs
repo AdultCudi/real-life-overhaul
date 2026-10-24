@@ -206,6 +206,7 @@ namespace RealLifeOverhaul.NewBuildings
     public static class NewBuildingsRules
     {
         public const float Gap = 1.5f;              // m kept clear round a footprint: the game's buildings, obstacles and anything standing
+        public const float Touch = 0.05f;           // m one made building's footprint may reach into another's and still stand beside it: a district's stand side by side, as Manhattan's
         public const float RoadClear = 3.5f;        // m from a footprint to the middle of the nearest traffic lane: a lane and its kerb
         public const float StreetReach = 60f;       // m: a lot with no traffic lane this near fronts no street
         public const float GroundLift = 0.4f;       // m above the highest walkable ground under a footprint where the check for anything standing begins

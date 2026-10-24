@@ -56,7 +56,7 @@ internal static partial class Program
                 Width = l.Width, Depth = l.Depth, Class = (int)l.Class
             });
         }
-        Check(lots.Count == 83 && firstDay.Count == 21, "landmarks: the first block's 83 lots read, 21 of them built from the first day (" + lots.Count + ", " + firstDay.Count + ")");
+        Check(lots.Count == 79 && firstDay.Count == 20, "landmarks: the first block's 79 lots read, 20 of them built from the first day (" + lots.Count + ", " + firstDay.Count + ")");
         return lots;
     }
 
@@ -112,7 +112,7 @@ internal static partial class Program
             Check(anchored == s.Anchor.Count && s.Anchor[0] == s.Address && s.Anchor.Count + s.Units.Count == s.Lots.Count,
                 "landmarks: " + s.Kind + "'s main building stands over lots of its own site, its address first, and every other lot is a shop of its");
         }
-        Check(tower.Units.Count == 0 && stadium.Units.Count == 0 && mall.Units.Count >= 4 && mall.Anchor.Count >= 4,
+        Check(tower.Units.Count == 0 && stadium.Units.Count == 0 && mall.Units.Count >= 2 && mall.Anchor.Count >= 4,
             "landmarks: the mall alone has shops of its own round its main building (" + mall.Units.Count + " shops, its main building over " + mall.Anchor.Count + " lots)");
         Check(stadium.Ground.Depth >= LandmarkRules.StadiumLeastDepth && stadium.Ground.Width >= 60f, "landmarks: the stadium's ground is deep enough for its bowl (" + stadium.Ground.Width + " by " + stadium.Ground.Depth + " m)");
         // The main building's design must fit both the works' frame and its own ground: the game's largest offices (K, about 28 by 38 m) and stores (M, 26 by 33).
