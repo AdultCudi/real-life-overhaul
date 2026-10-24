@@ -225,6 +225,23 @@ namespace RealLifeOverhaul.Uptown
         }
 
         /// <summary>
+        /// Uptown stood down in play: its special places out of the game's lists of them too (the nearest clinic, the
+        /// importers and the banks are found there), each with the registration it stood with.
+        /// </summary>
+        public static void LeaveSpecials(List<MadeBuilding> standing)
+        {
+            for (int i = 0; i < standing.Count; i++)
+            {
+                MadeBuilding made = standing[i];
+                if (made != null && made.Building != null && made.Building.SpecialService != null)
+                {
+                    MadeGame.ImporterListed(made.Building, made.Registration, false);
+                    MadeGame.ServiceListed(made.Building, false);
+                }
+            }
+        }
+
+        /// <summary>
         /// A carving box over a district building's footprint on the walking meshes, so nobody walks through its walls: the
         /// game's own buildings stand in holes baked into its meshes, and Uptown's ground is grown with none. Stationary, so it
         /// carves once.

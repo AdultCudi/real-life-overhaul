@@ -626,6 +626,7 @@ namespace RealLifeOverhaul.Uptown
                 int kept = DistrictSaveDirector.KeepOut(PlacesOwner, why);
                 ListBig(false);
                 LifeGame.LeaveLists();
+                LifeGame.LeaveSpecials(Standing);
                 for (int i = 0; i < Standing.Count; i++)
                 {
                     CopyGame.Show(Standing[i].Controller, false);

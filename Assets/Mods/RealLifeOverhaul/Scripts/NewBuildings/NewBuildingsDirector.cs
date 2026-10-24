@@ -5,8 +5,10 @@ using System.Diagnostics;
 using System.Text;
 using BAModAPI;
 using Buildings;
+using UI.Smartphone.Apps.Contacts;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.Events;
 
 namespace RealLifeOverhaul.NewBuildings
 {
@@ -44,6 +46,8 @@ namespace RealLifeOverhaul.NewBuildings
         private readonly StringBuilder _why = new StringBuilder(256);
         private int _tookOther;   // made at this load with another of their structures, no design of their own size fitting their lot
         private Action _onSave;
+        private UnityAction _contactAdded;   // a branch's contact put back to its head office's address, on the game's own contact event
+        private bool _contactsHooked;
         private float _nextLook, _nextSlow, _loadedAt;
         private bool _optionWas, _agreedWas, _checked, _heldHidden;   // _heldHidden: the switch-off test or the clean-up hid them
 
@@ -64,6 +68,7 @@ namespace RealLifeOverhaul.NewBuildings
             CopyGame.Begin(transform);
             _onSave = OnSave;
             _onProbe = Guard.Wrap(FrameGuard, OnProbe);
+            _contactAdded = Guard.Listener(OnContactAdded);
             _optionWas = Settings.NewBuildings;
             _agreedWas = true;
             _loadedAt = Time.unscaledTime;
@@ -87,6 +92,7 @@ namespace RealLifeOverhaul.NewBuildings
             }
             SaveHook.Drop(_onSave);
             GlobalEvents.onNewHour -= _onProbe;
+            UnhookContacts();
             BuildingCopies.RemoveAll(stays ? "the save tools stopped the mod" : "the city is unloading");
             MadeGame.Unload(!stays);
             FarDistricts.Release();
@@ -172,6 +178,10 @@ namespace RealLifeOverhaul.NewBuildings
         private void Slow(float now)
         {
             SaveHook.KeepEssential(_onSave);   // whatever is switched off: a player inside a hidden building still saves
+            if (!_contactsHooked && MadeGame.HasBranches)
+            {
+                HookContacts();   // the phone's contacts app makes the game's event when it first wakes
+            }
             if (_probeArmed)
             {
                 EventHold.Keep(ref GlobalEvents.onNewHour, _onProbe, ref _probeSeen);   // the game empties its events at every load
@@ -305,7 +315,8 @@ namespace RealLifeOverhaul.NewBuildings
             Vector3 root = default, door = default;
             float yaw = 0f;
             _why.Length = 0;
-            string size = spec.Size, type = spec.Type;
+            // A special-type place wears the look of the ordinary type it stands as without its service: the copy engine never copies a special building's look.
+            string size = spec.Size, type = spec.Type == NewBuildingsRules.SpecialType && !string.IsNullOrEmpty(spec.PlainType) ? spec.PlainType : spec.Type;
             bool noDesign = true;   // every lot so far failed for want of a design of the size, none for its ground
             int lot = -1, took = -1;
             // Its own structure first; only where no design of its size fits any lot, the others it may take, in their order:
@@ -351,8 +362,15 @@ namespace RealLifeOverhaul.NewBuildings
                 spec.Type = other.Type;
                 _tookOther++;
             }
-            Building record = MadeGame.MakeRecord(spec, spec.DesignArea ? CopyGame.SourceArea(design) : 0);
+            // The registration first: whether the record may carry its service depends on whose the save says the lot is.
             BuildingRegistration registration = MadeGame.MakeRegistration(spec, out bool fresh);
+            Building record = MadeGame.MakeRecord(spec, spec.DesignArea ? CopyGame.SourceArea(design) : 0, registration, fresh, out why);
+            if (record == null)
+            {
+                MadeGame.Forsake(registration, fresh);
+                Logger?.Info("Made buildings: '" + spec.Id + "' stands down: " + why + ".");
+                return false;
+            }
             if (!MadeGame.Enter(record, registration, out why))
             {
                 MadeGame.Forsake(registration, fresh);
@@ -411,7 +429,47 @@ namespace RealLifeOverhaul.NewBuildings
             }
             Apply("the city has loaded");
             CopiesNow();
+            if (MadeGame.HasBranches)
+            {
+                int moved = MadeGame.Rebranch();
+                HookContacts();
+                if (moved > 0)
+                {
+                    Logger?.Info("Made buildings: " + moved + " contact(s) met at a branch given their head office's address again.");
+                }
+            }
             return true;
+        }
+
+        // ---------------------------------------------------------------- a branch's contact
+
+        private void HookContacts()
+        {
+            if (_contactsHooked || ContactsApp.onContactAdded == null)
+            {
+                return;
+            }
+            ContactsApp.onContactAdded.AddListener(_contactAdded);
+            _contactsHooked = true;
+        }
+
+        private void UnhookContacts()
+        {
+            if (_contactsHooked && ContactsApp.onContactAdded != null)
+            {
+                ContactsApp.onContactAdded.RemoveListener(_contactAdded);
+            }
+            _contactsHooked = false;
+        }
+
+        // The game raises it as a contact is made, before the counter that made it opens its dialog with it (Contact.CreateContact).
+        private void OnContactAdded()
+        {
+            int moved = MadeGame.Rebranch();
+            if (moved > 0)
+            {
+                Logger?.Info("Made buildings: a contact met at a branch keeps its head office's address, as the game's own bank does (" + moved + ").");
+            }
         }
 
         // ---------------------------------------------------------------- shown or hidden
