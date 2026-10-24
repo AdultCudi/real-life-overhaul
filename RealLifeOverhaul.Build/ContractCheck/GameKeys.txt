@@ -35,6 +35,7 @@ ba:businesstype_lawfirm
 ba:businesstype_marketingagency
 ba:businesstype_movingservice
 ba:businesstype_nightclub
+ba:businesstype_officesupplystore
 ba:businesstype_recruitmentagency
 ba:businesstype_school
 ba:businesstype_supermarket
