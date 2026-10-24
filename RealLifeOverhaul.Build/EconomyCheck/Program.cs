@@ -283,6 +283,7 @@ internal static partial class Program
         TextsStreetFixes();   // a raise thanked though first seen on another text's look, never "X and X", web requests let go, the packs said found by a barrier, a Done that asks again safe in the hub's look (TextsFixChecks.cs)
         LogNumbers();   // no number in a log line written in the machine's culture: decimals and groupings invariant (LogNumberChecks.cs)
         JusticeSaveRoundTrip();   // Justice's save line: names with %XXXX escapes come back as written, one at the very end too (JusticeSaveChecks.cs)
+        CameraBills();   // a getaway's camera bill taken by its court case: nothing beside a summons, nothing after a dismissal, damages with a conviction (CameraBillChecks.cs)
         TravelPrices();   // travel's extras, dinners, splurges, events and loyalty night at today's prices, and what the room shows is what it charges (TravelPriceChecks.cs)
         Leftovers();   // every object a feature lists for clean-up is made, every text of leisure and photo mode is read (LeftoverChecks.cs)
         Endings();

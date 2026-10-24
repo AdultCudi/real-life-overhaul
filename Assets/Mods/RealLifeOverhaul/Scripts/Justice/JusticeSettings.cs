@@ -62,6 +62,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_justice_test_case_serious", () => JusticeDirector.Instance?.TestCase(1))
                 .AddButton("reallife_justice_test_case_grave", () => JusticeDirector.Instance?.TestCase(2))
                 .AddButton("reallife_justice_test_case_weak", () => JusticeDirector.Instance?.TestCase(3))
+                .AddButton("reallife_justice_test_camera", () => JusticeDirector.Instance?.TestCameraDismissed())
                 .AddButton("reallife_justice_test_court_date", () => JusticeDirector.Instance?.TestCourtDate())
                 .AddButton("reallife_justice_test_hearing", () => JusticeDirector.Instance?.TestHearing())
                 .AddButton("reallife_justice_test_prison_short", () => JusticeDirector.Instance?.TestPrison(JusticeLaw.PrisonCapMin))

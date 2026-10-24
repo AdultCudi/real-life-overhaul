@@ -72,6 +72,7 @@ namespace RealLifeOverhaul
         public bool Appealed;
         public float LawyerQuality; // as at the hearing: the appeal is argued by the same counsel
         public int Postponed;       // times the date was moved because the player could not have come
+        public int Damages;         // a getaway's damages the case took from the later bill: paid with a conviction, dropped otherwise
 
         public bool Open => Stage != CaseStage.Closed;
 
