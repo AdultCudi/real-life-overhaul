@@ -347,7 +347,8 @@ namespace RealLifeOverhaul.Careers
                             if (_canLate)
                             {
                                 PlayerAction key = _canStart ? PlayerAction.SecondaryInteract : PlayerAction.Confirm;   // beside Start, the other key
-                                _offer[k] = new ButtonInfo("LateRealLifeWork", "reallife_life_button_late", "blue", Guard.Wrap(StartLate), key);
+                                // named Start: in a Going Public session the panel is hidden and only a button so named is pressed (ClassPlayRules.SessionPick)
+                                _offer[k] = new ButtonInfo("StartLateRealLifeWork", "reallife_life_button_late", "blue", Guard.Wrap(StartLate), key);
                             }
                         }
                         return _offer;

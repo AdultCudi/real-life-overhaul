@@ -97,6 +97,12 @@ Read in its decompiled code (`evidence/othermods/GoingPublic`), never run. What 
   not a `StudyActivity` (`Careers/CareersDirector.OpenDesk`, `ClassPlayRules.WayToDesk`). A click on a desk of the school
   stays Going Public's; the school's class is offered where the player stands inside it, and a classroom door of the
   university opens the room's own panel (see [Careers](../../docs/features/careers.md)).
+- **The game's activity panel is hidden in a session.** A prefix on `PlayerActivityUI.HidePanel` keeps the panel invisible
+  and unclickable for every activity, and Going Public's own dock (`MPRestSync.UpdateSeated`, every half second) reads the
+  activity's first four buttons that can be pressed and presses, for the player, the first whose name holds "start"; one
+  holding "stop" or "cancel" is its stand up. So every button that begins an activity of this mod's is named Start...
+  (`ClassPlayRules.SessionPick` says which is pressed, and EconomyCheck's HiddenPanelChecks reads every one in the source),
+  and a desk with nothing to begin in a session opens no panel at all but says why in a notice (`ClassPlayRules.ShowsDesk`).
 - **Closing a business.** `BuildingRegistration.TemporarilyClose` has a postfix that sends the player's own shop's state to
   everyone at once, and a prefix that routes a merged company's shop to its owner. This mod closes only the player's own
   (through `Mine`), so its closures reach the others.
