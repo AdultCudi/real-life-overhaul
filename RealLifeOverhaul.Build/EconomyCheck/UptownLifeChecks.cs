@@ -35,6 +35,7 @@ internal static partial class Program
         UptownSources();
         UptownTexts();
         UptownFillChecks();
+        UptownPlaceChecks();
     }
 
     // ---------------------------------------------------------------- its values

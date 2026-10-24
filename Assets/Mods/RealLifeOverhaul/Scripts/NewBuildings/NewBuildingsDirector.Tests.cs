@@ -312,6 +312,13 @@ namespace RealLifeOverhaul.NewBuildings
                     TestRefusals.TellKey(Logger, TestName, NewBuildingsText.Batched, d.Name + " is in a static batch");
                     return;
                 }
+                if (!NewBuildingsRules.Copyable(d))
+                {
+                    Logger?.Info("Construction check (copy): " + d.Name + " has a part of another place under it, or its door stands " + NewBuildingsRules.DoorBehind(d).ToString("F1", Plain)
+                                 + " m behind its front: a copy would carry it or stand off the pavement, so none is made: refused.");
+                    TestRefusals.Tell(Logger, TestName, TestRefusal.NothingFits);
+                    return;
+                }
                 float facing = MadeGame.PlayerFacing();
                 Vector3 ahead = player + Quaternion.Euler(0f, facing, 0f) * Vector3.forward * NewBuildingsRules.CopyAhead;
                 MadeLot lot = LotOf(d, ahead.x, ahead.z, facing + 180f);
