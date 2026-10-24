@@ -11,8 +11,9 @@ namespace RealLifeOverhaul.Construction
     /// projects from the plans to the keys, tenders, the rival builders and the city's developers. This owns the state and
     /// its timing; every site goes up in the city's construction programme (Scripts/Civic), which asks this how fast. The
     /// state is read at a load whatever the option says (the programme's sites must be known as the builders'), and runs
-    /// only while the option is on. Cost: one time comparison a frame; once a second, a look at the clock, the save hook and
-    /// the panels at the player's sites; an hour's and a day's passes over the projects, crews and tenders when they come.
+    /// only while the option is on. Cost: one time comparison a frame; once a second, a look at the clock, the save hook,
+    /// the panels at the player's sites and the building the player is in (its front desk); an hour's and a day's passes
+    /// over the projects, crews and tenders when they come.
     /// </summary>
     public sealed partial class ConstructionDirector : MonoBehaviour
     {
@@ -137,6 +138,7 @@ namespace RealLifeOverhaul.Construction
             AppSecond();
             SitesSecond();
             ShowSecond();
+            DeskSecond();
         }
 
         // ------------------------------------------------------------------ the state
@@ -305,6 +307,7 @@ namespace RealLifeOverhaul.Construction
             _running = false;
             RemoveApp();
             HidePanels();
+            DesksDown();
             DropShowPlace("the construction game stood down");
             if (was)
             {

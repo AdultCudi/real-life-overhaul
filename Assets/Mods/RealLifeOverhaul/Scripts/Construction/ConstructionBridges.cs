@@ -94,6 +94,12 @@ namespace RealLifeOverhaul.Construction
         /// <summary>The game's own destination set at a rival builder's office; false when it has none standing. Default: no.</summary>
         public static Func<int, bool> RivalOfficeGo;
 
+        /// <summary>The rival builder whose office the player is inside now, while it may receive them (its own, nobody's to rent or own); -1 elsewhere. Default: none.</summary>
+        public static Func<int> RivalHere;
+
+        /// <summary>The rival builder whose standing office's door is nearest a point on the ground (m); -1 when none stands. Default: none.</summary>
+        public static Func<float, float, int> RivalNearest;
+
         // ------------------------------------------------------------------ the copy engine
 
         /// <summary>A building's footprint as the copy engine measures it, with its slack round it: m along its door's side and back from it. Default: not known.</summary>
@@ -349,6 +355,8 @@ namespace RealLifeOverhaul.Construction
             Finish = null;
             RivalOffice = null;
             RivalOfficeGo = null;
+            RivalHere = null;
+            RivalNearest = null;
             Designs = null;
             Footprint = null;
             StartPlot = null;

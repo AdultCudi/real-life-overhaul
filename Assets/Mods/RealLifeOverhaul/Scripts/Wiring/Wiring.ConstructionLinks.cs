@@ -86,6 +86,8 @@ namespace RealLifeOverhaul
                 DistrictBuildings.Lessee = RivalLease;   // whatever the options say: every machine leases the same offices
                 ConstructionBridges.RivalOffice = RivalOffice;
                 ConstructionBridges.RivalOfficeGo = RivalOfficeGo;
+                ConstructionBridges.RivalHere = RivalHere;
+                ConstructionBridges.RivalNearest = RivalNearest;
                 ConstructionBridges.Designs = Designs;
                 ConstructionBridges.Footprint = Footprint;
                 ConstructionBridges.StartPlot = StartPlot;
@@ -173,6 +175,8 @@ namespace RealLifeOverhaul
                 DistrictBuildings.Lessee = null;
                 ConstructionBridges.RivalOffice = null;
                 ConstructionBridges.RivalOfficeGo = null;
+                ConstructionBridges.RivalHere = null;
+                ConstructionBridges.RivalNearest = null;
                 ConstructionBridges.Lots = null;
                 ConstructionBridges.LotsStamp = null;
                 ConstructionBridges.DistrictLives = null;
@@ -546,6 +550,33 @@ namespace RealLifeOverhaul
                 {
                     Fault("ConstructionLinks.RivalOfficeGo", e);
                     return false;
+                }
+            }
+
+            // The rival whose office the player is inside, while it may receive them; asked once a second by the front desk.
+            private static int RivalHere()
+            {
+                try
+                {
+                    return DistrictBuildings.LeaseHere();
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.RivalHere", e);
+                    return -1;
+                }
+            }
+
+            private static int RivalNearest(float x, float z)
+            {
+                try
+                {
+                    return DistrictBuildings.LeaseNearest(x, z);
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.RivalNearest", e);
+                    return -1;
                 }
             }
 
