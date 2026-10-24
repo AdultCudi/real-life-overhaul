@@ -22961,5 +22961,6 @@
   "reallife_uptown_test_order_failed": "O pedido de {name} não chegou. O Player.log diz por quê.",
   "reallife_uptown_test_fill_done": "Tanque cheio em {name}, {address}: {money} pagos na bomba. O Player.log tem a verificação.",
   "reallife_uptown_test_fill_car": "Entre no seu carro primeiro: as bombas abastecem o carro que você dirige.",
-  "reallife_uptown_test_fill_failed": "O abastecimento em {name} não deu certo. O Player.log diz por quê."
+  "reallife_uptown_test_fill_failed": "O abastecimento em {name} não deu certo. O Player.log diz por quê.",
+  "reallife_contract_part_uptown_big_tests": "Os testes do atacadista e do posto de gasolina de Uptown: uma entrega e um abastecimento do jeito do próprio jogo"
 }

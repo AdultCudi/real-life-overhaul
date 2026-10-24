@@ -72,16 +72,13 @@ namespace RealLifeOverhaul.Uptown
         public const string SpecialType = BuildingsRules.SpecialType;
         public const float MouthIntoRoad = 3f;   // m a mouth reaches past the kerb: over the kerb's parking lane, which the game lays 1.3 m in and 2.5 m wide
 
-        /// <summary>
-        /// The two places. The store is Total Produce Trading's drive-in (Murray Hill), its goods and its layout the game's
-        /// for it, over block 108's whole Uptown Avenue front, between 7th and 6th Street in the first block: it stands back
-        /// 10.5 m so the car park lines in front of it (10.47 m past its walls) end at the pavement, against the block's west
-        /// end so its two garage doors open east onto a yard 26 m wide, open to Uptown Avenue; 7th Street 1008 behind it is
-        /// kept empty, as its back wall comes within 1.2 m of that lot. The station is United Gasoline's (Hell's Kitchen) on
-        /// the north-east corner of 9th Street and Uptown Avenue, as United Gasoline stands on the south-west corner of 2nd
-        /// Street and 1st Avenue: the pumps' open end 1.87 m behind the avenue's pavement, its forecourt and repair bays 5.11 m
-        /// from the street's.
-        /// </summary>
+        // The one place Uptown's big places are chosen: a re-plan of the lots changes these rows alone. The store, Total
+        // Produce Trading's drive-in, over block 108's whole Uptown Avenue front (7th to 6th Street): 10.5 m back so its car
+        // park lines (10.47 m past its walls) end at the pavement, against the west end so its garage doors open east onto a
+        // yard about 22 m wide; 7th Street 1008 behind it kept empty (its back wall 1.2 m off that lot). The station, United
+        // Gasoline's, on the north-east corner of 9th Street and Uptown Avenue as United Gasoline stands on 2nd Street and 1st
+        // Avenue: the pumps' open end 1.87 m behind the avenue's pavement, its forecourt and repair bays 5.11 m from the street's.
+        /// <summary>The two places, in a fixed order.</summary>
         public static readonly BigPlace[] All =
         {
             new BigPlace(BigKind.Wholesale, "uptown_1_08_01", new[] { "uptown_1_08_02" }, new[] { "uptown_1_08_06" }, "MurrayHillWholesaleStore",

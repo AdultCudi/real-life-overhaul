@@ -22,6 +22,7 @@ ba:businesstype_factory
 ba:businesstype_fastfoodrestaurant
 ba:businesstype_fruitandvegetablestore
 ba:businesstype_furniturestore
+ba:businesstype_gasstation
 ba:businesstype_giftshop
 ba:businesstype_graphicdesigner
 ba:businesstype_gym

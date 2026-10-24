@@ -683,7 +683,8 @@ internal static partial class Program
             "new buildings: when the save tools stop the mod in a city that stays, the made buildings stay hidden, and the save in memory names none of their addresses for good "
             + "(the district save takes them out, which the tools ask before their save; this guard only where it is not present)");
         int immediate = Occurs(all, "DestroyImmediate(");
-        Check(immediate == 3 && Occurs(MemberText(copy, "private static void StripWorking("), "DestroyImmediate(") == 1 && Occurs(MemberText(copy, "private static void StripLook("), "DestroyImmediate(") == 2,
+        Check(immediate == 5 && Occurs(MemberText(copy, "private static void StripWorking("), "DestroyImmediate(") == 1 && Occurs(MemberText(copy, "private static void StripLook("), "DestroyImmediate(") == 2
+              && Occurs(MemberText(copy, "private static void StripWhole("), "DestroyImmediate(") == 2,
             "new buildings: what is taken off at once is taken off a template asleep under a switched-off holder (its Awake never ran)");
         Check(MemberText(copy, "public static void Show(CityBuildingController c, bool shown)").Contains("c.gameObject.SetActive(shown)") && MemberText(director, "private void Apply(string why)").Contains("CopyGame.Show(made.Controller, want)")
               && MemberText(director, "public void StopAll(string why)").Contains("Apply(why)") && !MemberText(director, "private void OptionChanged(bool on)").Contains("Remove("),

@@ -152,7 +152,8 @@ namespace RealLifeOverhaul.Uptown
         /// One of the district's big special places declared to the made buildings' engine as one of the game's own
         /// (MadeSpec.Life): at its own lot's address, the game's special structure of the building it copies whole, filed
         /// under Uptown, on its ground (its lot and the lots it spans), standing where BigPlacesRules puts it on that ground;
-        /// its floor area that of the game's building it copies. Made behind the loading screen while <paramref name="wanted"/> says so.
+        /// its floor area that of the game's building it copies, the game's service copied under the place's own name (with no
+        /// ordinary type to fall back to: where a player holds the lot it stands down). Made behind the loading screen while <paramref name="wanted"/> says so.
         /// </summary>
         public static MadeSpec BigSpec(BigPlace place, BuildingsLot ground, int traffic, Func<bool> wanted)
         {
@@ -160,7 +161,7 @@ namespace RealLifeOverhaul.Uptown
             return new MadeSpec
             {
                 Id = place.Lot, Street = ground.Street, Number = ground.Number, Size = place.Size, Version = place.Version, Type = BigPlacesRules.SpecialType,
-                District = DistrictValues.Id, Design = place.Design, Whole = true, Lots = new[] { lot }, Preferred = 0,
+                District = DistrictValues.Id, Design = place.Design, Whole = true, Lots = new[] { lot }, Preferred = 0, Service = place.Service, ServiceName = place.Name, PlainType = null,
                 Traffic = traffic, Floors = 1, DesignArea = true, Life = true, Wanted = wanted
             };
         }
