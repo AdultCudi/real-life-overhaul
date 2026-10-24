@@ -215,6 +215,11 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Home\Roommates\RoommateRules.cs" Link="Mod\RoommateRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Home\Roommates\RoommateState.cs" Link="Mod\RoommateState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Home\Roommates\RoommateStore.cs" Link="Mod\RoommateStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Home\HomeBalance.cs" Link="Mod\HomeBalance.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Home\HomeState.cs" Link="Mod\HomeState.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Home\Household\HouseholdRules.cs" Link="Mod\HouseholdRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Home\Household\HouseholdState.cs" Link="Mod\HouseholdState.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Home\Household\HouseholdStore.cs" Link="Mod\HouseholdStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaLedger.cs" Link="Mod\RotaLedger.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaLadder.cs" Link="Mod\RotaLadder.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaStock.cs" Link="Mod\RotaStock.cs" />

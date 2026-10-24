@@ -1148,6 +1148,7 @@ namespace RealLifeOverhaul
                 .AddSplitter()
                 .Guarded(o => o.AddPermadeath())   // an ending the player chooses, off unless switched on (Scripts/Permadeath)
                 .Guarded(o => o.AddRoommates())
+                .Guarded(o => Household.HouseholdOptions.AddHousehold(o))
                 .Guarded(o => Walking.WalkOptions.AddWalking(o))
                 .Guarded(o => Meals.MealsOptions.AddMeals(o))
                 .Guarded(o => o.AddControls())
@@ -1454,6 +1455,7 @@ namespace RealLifeOverhaul
             Guard.Step("Utilities.UtilitiesDirector", () => Guard.Add<Utilities.UtilitiesDirector>(_root));
             Guard.Step("Family.FamilyDirector", () => Guard.Add<Family.FamilyDirector>(_root));
             Guard.Step("the roommate", () => Roommates.RoommateDirector.Attach(_root, context.Logger));
+            Guard.Step("household staff", () => Household.HouseholdDirector.Attach(_root, context.Logger));
             Guard.Step("Flare.FlareDirector", () => Flare.FlareDirector.Logger = context.Logger);
             Guard.Step("Flare.FlareApp", () => Flare.FlareApp.Logger = context.Logger);
             Guard.Step("Flare.FlareDirector", () => Guard.Add<Flare.FlareDirector>(_root));   // after the company and the brands, so that its day follows theirs
