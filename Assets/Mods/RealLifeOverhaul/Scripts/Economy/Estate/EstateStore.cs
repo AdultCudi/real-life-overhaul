@@ -8,16 +8,17 @@ namespace RealLifeOverhaul.Economy
     /// <summary>
     /// The property business's line in the save's modData. Game-free. "v=" and the version, then parts divided by '^',
     /// each a letter and a colon (h header, p buildings, u other units, g agency, d districts, i instructions, t hotels,
-    /// c car hire, v cars, s buildings sold), records by ';' and fields by '|' as <see cref="Write"/> writes them. A later version only
+    /// c car hire, v cars, s buildings sold, l a landlord's duties at each unit, m at each building), records by ';' and
+    /// fields by '|' as <see cref="Write"/> writes them. A later version only
     /// adds fields at a record's end or new parts. <see cref="TestKey"/> holds the line from before the first test tool.
     /// </summary>
     public static class EstateStore
     {
         public const string Key = "reallife:economy_estate";
         public const string TestKey = "reallife:economy_estate_before_tests";
-        public const int Version = 3;   // 2: part u, the units after the first; 3: part s, the buildings sold
+        public const int Version = 4;   // 2: part u, the units after the first; 3: part s, the buildings sold; 4: parts l and m, a landlord's duties
 
-        private const int HoldingFields = 36, UnitFields = 15, ApplicantFields = 6;
+        private const int HoldingFields = 36, UnitFields = 15, ApplicantFields = 6, DutyFields = 14, DutyBuildingFields = 8;
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
         /// <summary>The state of this save; null if the save has none or it cannot be read.</summary>
@@ -116,7 +117,43 @@ namespace RealLifeOverhaul.Economy
                 Join(t, b.SoldDay, b.BoughtDay, b.Told ? 1 : 0);
                 t.Append('|').Append(Clean(b.Rival));
             }
+            Duties(t, s);
             return t.ToString();
+        }
+
+        // Parts l and m: only units and buildings with something of a landlord's duties to keep, so a save without them is as before.
+        private static void Duties(StringBuilder t, EstateState s)
+        {
+            t.Append("^l:");
+            bool first = true;
+            for (int i = 0; i < s.Holdings.Count && i < EstateCatalogue.HoldingsMost; i++)
+            {
+                EstateHolding h = s.Holdings[i];
+                for (int n = 0; n < h.Units.Count && n < EstateCatalogue.UnitsMost; n++)
+                {
+                    EstateUnit u = h.Units[n];
+                    if (!u.Let || (u.Happy < 0 && u.Call == 0 && u.Moans == 0 && !u.Reminded && !u.PlanAsked && u.QuitDay == 0))
+                    {
+                        continue;
+                    }
+                    t.Append(first ? string.Empty : ";").Append(Clean(h.Place)).Append('|');
+                    first = false;
+                    Join(t, n, u.Happy, u.Call, u.CallDay, u.CallCost, u.CallAnswer, u.CallDue, u.Moans, u.Reminded ? 1 : 0, u.PlanAsked ? 1 : 0, u.OnPlan ? 1 : 0, u.PlanEach, u.QuitDay);
+                }
+            }
+            t.Append("^m:");
+            first = true;
+            for (int i = 0; i < s.Holdings.Count && i < EstateCatalogue.HoldingsMost; i++)
+            {
+                EstateHolding h = s.Holdings[i];
+                if (h.Manager == 0 && h.InspectDay == 0 && h.OrderDay == 0 && h.Strikes == 0 && h.CallsYear == 0 && h.FeesYear == 0 && h.FinesYear == 0)
+                {
+                    continue;
+                }
+                t.Append(first ? string.Empty : ";").Append(Clean(h.Place)).Append('|');
+                first = false;
+                Join(t, h.Manager, h.InspectDay, h.OrderDay, h.Strikes, h.CallsYear, h.FeesYear, h.FinesYear);
+            }
         }
 
         /// <summary>Reads a line. Null for one that is not this feature's at all.</summary>
@@ -269,6 +306,35 @@ namespace RealLifeOverhaul.Economy
                                 }
                             }
                             break;
+                        case 'l':
+                            foreach (string record in Records(body))
+                            {
+                                string[] c = record.Split('|');
+                                EstateHolding h = c.Length >= DutyFields ? s.Holding(c[0]) : null;
+                                EstateUnit u = h != null ? h.Unit(I(c, 1, -1)) : null;
+                                if (u != null && u.Let)
+                                {
+                                    ReadDuty(u, c);
+                                }
+                            }
+                            break;
+                        case 'm':
+                            foreach (string record in Records(body))
+                            {
+                                string[] c = record.Split('|');
+                                EstateHolding h = c.Length >= DutyBuildingFields ? s.Holding(c[0]) : null;
+                                if (h != null)
+                                {
+                                    h.Manager = EstateCatalogue.Clamp(I(c, 1), 0, EstateCatalogue.Managers - 1);
+                                    h.InspectDay = Math.Max(0, I(c, 2));
+                                    h.OrderDay = Math.Max(0, I(c, 3));
+                                    h.Strikes = EstateCatalogue.Clamp(I(c, 4), 0, 9);
+                                    h.CallsYear = Math.Max(0, I(c, 5));
+                                    h.FeesYear = Math.Max(0, I(c, 6));
+                                    h.FinesYear = Math.Max(0, I(c, 7));
+                                }
+                            }
+                            break;
                     }
                 }
                 return header ? s : null;
@@ -349,6 +415,27 @@ namespace RealLifeOverhaul.Economy
                     Id = I(c, from), Kind = EstateCatalogue.Clamp(I(c, from + 1), 0, EstateCatalogue.TenantKinds - 1), Offer = Math.Max(1, I(c, from + 2, 1)),
                     Record = EstateCatalogue.Clamp(I(c, from + 3), 0, 100), Term = Math.Max(1, I(c, from + 4, 1)), Lapse = Math.Max(0, I(c, from + 5))
                 });
+            }
+        }
+
+        // A unit's duties (part l): satisfaction, its repair call, complaints, the arrears tools and a tenant's notice to go.
+        private static void ReadDuty(EstateUnit u, string[] c)
+        {
+            u.Happy = EstateCatalogue.Clamp(I(c, 2, -1), -1, 1000);
+            u.Call = EstateCatalogue.Clamp(I(c, 3), 0, EstateCatalogue.CallKinds);
+            u.CallDay = Math.Max(0, I(c, 4));
+            u.CallCost = Math.Max(0, I(c, 5));
+            u.CallAnswer = EstateCatalogue.Clamp(I(c, 6), 0, (int)CallAnswer.Yourself);
+            u.CallDue = Math.Max(0, I(c, 7));
+            u.Moans = Math.Max(0, I(c, 8));
+            u.Reminded = I(c, 9) != 0;
+            u.PlanAsked = I(c, 10) != 0;
+            u.OnPlan = I(c, 11) != 0 && u.Arrears > 0;
+            u.PlanEach = u.OnPlan ? Math.Max(1, I(c, 12, 1)) : 0;
+            u.QuitDay = Math.Max(0, I(c, 13));
+            if (u.Call == 0)
+            {
+                u.CallClosed();
             }
         }
 

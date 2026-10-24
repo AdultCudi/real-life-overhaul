@@ -52,7 +52,8 @@ namespace RealLifeOverhaul.Economy
             _state.YearFrom = EstateRules.TaxYearFirst(day, _climate.DaysPerYear);
             for (int i = 0; i < _state.Holdings.Count; i++)
             {
-                _state.Holdings[i].RentYear = _state.Holdings[i].CostYear = 0;
+                EstateHolding h = _state.Holdings[i];
+                h.RentYear = h.CostYear = h.CallsYear = h.FeesYear = h.FinesYear = 0;
             }
             for (int i = 0; i < _state.Hotels.Count; i++)
             {

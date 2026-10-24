@@ -371,6 +371,8 @@ namespace RealLifeOverhaul.Meta
                 S("offices").For("office_space").Opts("office_conversion").Also("office offices shop shops empty space building buildings convert vacant"),
                 S("estate").For("economy_estate").Need("economy").Opts("economy_estate", "economy_estate_hotel", "economy_estate_hire", "economy_estate_rent")
                     .Also("buildings landlord tenant letting rent rental income").Also("economy_estate", "rent tenant landlord letting"),
+                S("estateduties").For("economy_estate_duties").Opt("economy_estate_duties", "economy_estate")
+                    .Also("landlord tenants satisfaction repairs repair maintenance complaints inspection inspector fine arrears payment plan reminder eviction letting agent property manager flip"),
                 S("bizevents").For("business").Main("business_pressure").Opts("business_frequency", "business_easy").Also("trouble pressure competition"),
                 S("bizkinds").Guide("business").Need("business_pressure").Opts("business_rivals", "business_racket", "business_inspections", "business_staff",
                     "business_suppliers", "business_customers", "business_audit", "business_opportunities").Also("trouble competition"),

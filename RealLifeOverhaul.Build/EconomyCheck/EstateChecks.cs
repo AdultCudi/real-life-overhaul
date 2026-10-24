@@ -8,7 +8,7 @@ using RealLifeOverhaul.Economy;
 // tenancy's days, arrears, notice and the court; wear, repairs and cover; works in a boom and in a slump; a sale, its
 // fee and the tax on a gain; the agency's pipeline; a hotel's night, monotonic in every input and never above its
 // rooms; car hire; the yearly returns the catalogue promises; the save's line; a building let unit by unit
-// (EstateUnitChecks.cs); and that the same seed gives the same
+// (EstateUnitChecks.cs); a landlord's duties (EstateDutyChecks.cs); and that the same seed gives the same
 // history, with a month of the whole city inside a millisecond.
 internal static partial class Program
 {
@@ -33,6 +33,7 @@ internal static partial class Program
         EstateReturns();
         EstateSaveAndLoad();
         EstateUnits();
+        EstateDuties();
         EstateDeterminismAndTiming();
     }
 
@@ -1105,8 +1106,8 @@ internal static partial class Program
         var data = new Dictionary<string, string> { { EstateStore.Key, line } };
         Check(EstateStore.Load(data, EstateStore.Key, out version) != null && EstateStore.Load(data, EstateStore.TestKey, out version) == null && EstateStore.Load(null, EstateStore.Key, out version) == null,
             "a save without the feature's line, or with no data of the mod's at all, has no state: the feature starts afresh");
-        Check(EstateStore.Key == "reallife:economy_estate" && EstateStore.Version == 3, "the save key is the documented one, with a version: 3 since the buildings sold (2 since the units)");
-        Check(EstateStore.Write(new EstateState { Seed = 3 }) == "v=3^h:3|0|0|1000|0|0|0|0|0^p:^u:^g:|1|0|0|0^d:^i:^t:^c:|600|0|0|0^v:^s:", "an empty state writes every part, empty");
+        Check(EstateStore.Key == "reallife:economy_estate" && EstateStore.Version == 4, "the save key is the documented one, with a version: 4 since a landlord's duties (3 since the buildings sold, 2 since the units)");
+        Check(EstateStore.Write(new EstateState { Seed = 3 }) == "v=4^h:3|0|0|1000|0|0|0|0|0^p:^u:^g:|1|0|0|0^d:^i:^t:^c:|600|0|0|0^v:^s:^l:^m:", "an empty state writes every part, empty");
     }
 
     // A history of the whole business from a seed, as one line of text.

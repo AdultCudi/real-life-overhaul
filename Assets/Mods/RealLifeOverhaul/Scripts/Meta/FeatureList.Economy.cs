@@ -302,6 +302,12 @@ namespace RealLifeOverhaul.Meta
                 .Data(Economy.EstateStore.Key, Economy.EstateStore.TestKey)
                 .Cleanup(() => Economy.EstateDirector.Instance?.StopAll(), -2)
                 .ResetData(() => Economy.EstateDirector.Instance?.Forget()));   // the director opens the feature afresh from the (now empty) save on its next second
+            // A landlord's duties: a part of the property business, with its own switch and Guide page; its state is the property's line.
+            Economy.EstateGuide.AddDutyFacts(Features.Add("economy_estate_duties", "reallife_meta_title_economy_estate_duties")
+                .Group("reallife_estate_header")
+                .About("reallife_guide_economy_estate_duties_about").Help("reallife_guide_economy_estate_duties")
+                .Owns(Settings.EstateDutiesId)
+                .Test("reallife_estate_test_call", "reallife_estate_test_complaint", "reallife_estate_test_inspection", "reallife_estate_test_manager"));
             // Its rows stand under the company's header.
             Economy.OnlineGuide.AddFacts(Features.Add("economy_online", "reallife_meta_title_economy_online")
                 .About("reallife_guide_economy_online_about").Help("reallife_guide_economy_online")
