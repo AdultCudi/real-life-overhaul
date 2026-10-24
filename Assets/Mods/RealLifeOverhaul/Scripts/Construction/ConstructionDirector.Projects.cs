@@ -836,27 +836,7 @@ namespace RealLifeOverhaul.Construction
             {
                 return block;
             }
-            if (p.Model != ProjectKind.Contract || p.Hours <= 0)
-            {
-                p.Hours = PlansRules.Hours(p.Use, p.Area, p.Storeys, p.Kind);   // a refit's works keep the hours they were planned or tendered with
-            }
-            string why;
-            int site;
-            if (p.Model == ProjectKind.Plot)
-            {
-                Lot(p.Lot, out LotView lot);
-                int storeys = LandRules.FrameStoreys(lot.Width, p.Storeys);   // the frame the site shows
-                site = StartPlotSite(new Vector3(lot.X, lot.Y, lot.Z), lot.Yaw, lot.Width, lot.Depth, storeys, 0, p.Hours, out why);
-            }
-            else
-            {
-                if (p.Kind == ProjectKind.Rebuild && p.WithRefit)
-                {
-                    p.Hours = Math.Min(BuildCatalogue.HoursMost, p.Hours + RefitRules.Hours(p.Area));   // the interior's fit-out on top of the rebuild's own
-                }
-                int kind = p.Model == ProjectKind.Contract ? p.CivicKind : 4;   // a refit behind a hoarding at its front; a rebuild in the game's scaffolding to the roof
-                site = StartWorksSite(p.Street, p.Number, kind, true, 0, p.Hours, out why);
-            }
+            int site = StartSite(p, 0, out string why);
             if (site <= 0)
             {
                 Logger?.Info("Construction: project " + p.Id + "'s site could not be started: " + why + ".");
@@ -876,6 +856,32 @@ namespace RealLifeOverhaul.Construction
             Logger?.Info("Construction: project " + p.Id + " started as site " + site + ": " + p.Hours + " working hours, due on day " + p.DueDay + ".");
             Changed();
             return "reallife_bld_answer_started";
+        }
+
+        /// <summary>The working hours a project's site is set out for: a refit's or a tender's as planned, a building's by its plans, a rebuild's fit-out on top.</summary>
+        internal int SiteHours(ProjectFile p)
+        {
+            int hours = p.Model != ProjectKind.Contract || p.Hours <= 0 ? PlansRules.Hours(p.Use, p.Area, p.Storeys, p.Kind) : p.Hours;
+            if (p.Kind == ProjectKind.Rebuild && p.WithRefit)
+            {
+                hours = Math.Min(BuildCatalogue.HoursMost, hours + RefitRules.Hours(p.Area));   // the interior's fit-out on top of the rebuild's own
+            }
+            return hours;
+        }
+
+        // The project's site set out in the city's programme, for the company's crews (contractor 0) or a builder it hired:
+        // a plot's frame on its lot, a refit behind a hoarding at its front, a rebuild in the game's scaffolding to the roof.
+        private int StartSite(ProjectFile p, int contractor, out string why)
+        {
+            p.Hours = SiteHours(p);
+            if (p.Model == ProjectKind.Plot)
+            {
+                Lot(p.Lot, out LotView lot);
+                int storeys = LandRules.FrameStoreys(lot.Width, p.Storeys);   // the frame the site shows
+                return StartPlotSite(new Vector3(lot.X, lot.Y, lot.Z), lot.Yaw, lot.Width, lot.Depth, storeys, contractor, p.Hours, out why);
+            }
+            int kind = p.Model == ProjectKind.Contract ? p.CivicKind : 4;
+            return StartWorksSite(p.Street, p.Number, kind, true, contractor, p.Hours, out why);
         }
 
         /// <summary>A project given up: its site taken down, its crews and plant freed, its land kept. Returns a text key.</summary>
@@ -939,11 +945,12 @@ namespace RealLifeOverhaul.Construction
 
         private void Handover(ProjectFile p, int day)
         {
-            if (p.Contractor >= 0)
+            if (p.Contractor >= 0 && !p.Hired)
             {
                 ContractorHandover(p, day);
                 return;
             }
+            bool hired = p.Hired;
             if (p.ShowOpen)
             {
                 CloseShow(p, "the block is handed over");
@@ -952,18 +959,27 @@ namespace RealLifeOverhaul.Construction
             p.Stage = ProjectStage.Finished;
             p.Handed = day;
             p.Opening = day + 1;
-            FirmFile firm = _state.Firm;
-            firm.Finished++;
-            int quality = SiteRules.WorkQuality(CrewSkillLast(p), 50, p.Quality);
-            int points = FirmRules.HandoverPoints(p.StartDay, p.DueDay, day, quality);
-            firm.Reputation = FirmRules.Moved(firm.Reputation, points);
-            if (day <= p.DueDay)
+            int quality, points = 0;
+            if (hired)
             {
-                firm.OnTime++;
+                quality = CommissionRules.Quality(_state.Rivals[p.Contractor].Reputation);
+                HireSettled(p, day);   // the retention less any penalty for lateness; the builder's record, not the company's (ConstructionDirector.Hire.cs)
             }
             else
             {
-                firm.Late++;
+                FirmFile firm = _state.Firm;
+                firm.Finished++;
+                quality = SiteRules.WorkQuality(CrewSkillLast(p), 50, p.Quality);
+                points = FirmRules.HandoverPoints(p.StartDay, p.DueDay, day, quality);
+                firm.Reputation = FirmRules.Moved(firm.Reputation, points);
+                if (day <= p.DueDay)
+                {
+                    firm.OnTime++;
+                }
+                else
+                {
+                    firm.Late++;
+                }
             }
             LoanDraw(p, 3);
             p.LoanFrom = day;
@@ -975,7 +991,10 @@ namespace RealLifeOverhaul.Construction
             {
                 ContractPaid(p, true);
             }
-            DefectAhead(p, quality, day);
+            if (!hired)
+            {
+                DefectAhead(p, quality, day);   // a hired builder's faults are its own to put right, never a claim on the company
+            }
             if (p.Kind == ProjectKind.Refit || (p.Kind == ProjectKind.Rebuild && p.WithRefit))
             {
                 Refitted(p, quality);
@@ -983,7 +1002,8 @@ namespace RealLifeOverhaul.Construction
             }
             if (p.Model != ProjectKind.Contract)
             {
-                NoteFinished(AwardEntry.OfPlayer, p, p.Lot, p.Street, p.Number, p.Use, -1, quality, day - p.DueDay, day);   // a building: one of the year's, and the critic's opinion
+                // A building: one of the year's, and the critic's opinion; a hired builder is named as its builder.
+                NoteFinished(AwardEntry.OfPlayer, p, p.Lot, p.Street, p.Number, p.Use, hired ? p.Contractor : -1, quality, day - p.DueDay, day);
             }
             if (p.Model == ProjectKind.Plot && !string.IsNullOrEmpty(p.Lot))
             {
@@ -1008,6 +1028,11 @@ namespace RealLifeOverhaul.Construction
             Logger?.Info("Construction: project " + p.Id + " handed over on day " + day + " (due " + p.DueDay + "), quality " + quality + ", reputation " + (points >= 0 ? "+" : string.Empty) + points
                          + "; spent " + p.Spent + ".");
             HedgeEnd(p);   // what its hedge on the exchange saved or cost
+            if (hired)
+            {
+                TellHire(NotificationType.Success, p.HirePenalty > 0 ? "reallife_bld_notice_hire_late" : "reallife_bld_notice_hire_handed", p, p.HirePenalty);
+                return;
+            }
             Tell(NotificationType.Success, p.Kind == ProjectKind.Plot ? "reallife_bld_notice_handed_plot" : "reallife_bld_notice_handed", ProjectName(p), null, TabProjects, p.Id);
             if (p.Kind == ProjectKind.Contract && p.ClientValue > 0)
             {

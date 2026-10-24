@@ -63,7 +63,10 @@ namespace RealLifeOverhaul.Construction
                     return ConstructionText.T(p.Planning == PlanningState.Refused ? "reallife_bld_next_refused"
                         : p.Planning == PlanningState.AppealLost ? "reallife_bld_next_redraw" : "reallife_bld_next_wait_decision");
                 case ProjectStage.Ready:
-                    return ConstructionText.T(_director.StartBlock(p) == null ? "reallife_bld_next_start" : "reallife_bld_next_prepare");
+                    return ConstructionText.T(_director.StartBlock(p) == null ? "reallife_bld_next_start" : ConstructionDirector.HireKind(p) && _director.HireBlock(p) == null
+                        ? "reallife_bld_next_hire" : "reallife_bld_next_prepare");
+                case ProjectStage.Building when p.Hired:
+                    return ConstructionText.T("reallife_bld_next_builder");
                 case ProjectStage.Building:
                 {
                     int due = ConstructionDirector.DueInspection(p), failed = ConstructionDirector.FailedInspection(p);
@@ -90,9 +93,14 @@ namespace RealLifeOverhaul.Construction
         {
             box.Title(_director.ProjectName(p));
             box.Subtitle(ConstructionText.StageWords(p));
-            if (p.Contractor >= 0)
+            if (p.Contractor >= 0 && !p.Hired)
             {
                 WriteContracted(box, p);
+                return;
+            }
+            if (_page == 3 && p.Stage == ProjectStage.Ready && ConstructionDirector.HireKind(p))
+            {
+                WriteQuotes(box, p);   // ConstructionApp.Hire.cs
                 return;
             }
             if (_page == 1 && (p.Stage == ProjectStage.Ready || p.Stage == ProjectStage.Building || p.Stage == ProjectStage.Finished))
@@ -115,6 +123,9 @@ namespace RealLifeOverhaul.Construction
                     break;
                 case ProjectStage.Ready:
                     WriteReady(box, state, p);
+                    break;
+                case ProjectStage.Building when p.Hired:
+                    WriteHired(box, p);   // ConstructionApp.Hire.cs
                     break;
                 case ProjectStage.Building:
                     WriteSite(box, state, p);
@@ -340,7 +351,12 @@ namespace RealLifeOverhaul.Construction
             {
                 box.Row("reallife_bld_row_contract", ConstructionText.Money(p.ClientValue));
             }
-            box.Row("reallife_bld_row_crews", state.CrewsOn(p.Id).ToString());
+            bool company = state.Firm.Founded > 0;
+            bool hire = ConstructionDirector.HireKind(p);
+            if (company)
+            {
+                box.Row("reallife_bld_row_crews", state.CrewsOn(p.Id).ToString());
+            }
             if (p.Kind == ProjectKind.Plot && p.Use == BuildUse.Homes)
             {
                 box.Selector(2, (int)p.After, i => ConstructionText.T(i == 0 ? "reallife_bld_sel_keep" : "reallife_bld_sel_sell_flats"), i => Answer(_director.SetAfter(p, (AfterUse)i)));
@@ -350,11 +366,22 @@ namespace RealLifeOverhaul.Construction
             {
                 box.Note(ConstructionText.T(p.Kind == ProjectKind.Refit ? "reallife_bld_refit_ready_note" : "reallife_bld_refit_rebuild_note"));
             }
-            ManagerRow(box, state, p);
             string block = _director.StartBlock(p);
-            if (block != null)
+            if (company)
             {
-                box.Line(ConstructionText.T(block), CellTone.Yellow);
+                ManagerRow(box, state, p);
+                if (block != null)
+                {
+                    box.Line(ConstructionText.T(block), CellTone.Yellow);
+                }
+            }
+            if (hire)
+            {
+                box.Note(ConstructionText.T(company ? "reallife_bld_hire_or_build_note" : "reallife_bld_hire_ready_note"));   // build it yourself, or put it out to the city's builders
+            }
+            if (hire)
+            {
+                InfoBox.Button(box.ButtonRow(), InfoBox.Positive, "reallife_bld_button_hire_builder", () => { _page = 3; Refresh(); });   // a row of its own: the client's way, company or not
             }
             Transform buttons = box.ButtonRow();
             if (block == null)
@@ -637,6 +664,10 @@ namespace RealLifeOverhaul.Construction
             else
             {
                 box.RowPair("reallife_bld_row_contract", ConstructionText.Money(p.ClientValue), "reallife_bld_row_paid", ConstructionText.Money(p.ClientPaid));
+            }
+            if (p.Hired)
+            {
+                HiredRows(box, p);   // the builder, the contract and what it paid back (ConstructionApp.Hire.cs)
             }
             HedgeEndRow(box, p);   // what the hedge saved or cost
             Transform buttons = box.ButtonRow();

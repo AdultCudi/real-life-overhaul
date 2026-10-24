@@ -231,7 +231,7 @@ namespace RealLifeOverhaul.Construction
             for (int i = 0; i < _state.Projects.Count; i++)
             {
                 ProjectFile p = _state.Projects[i];
-                if (p.Stage == ProjectStage.Building)
+                if (p.Stage == ProjectStage.Building && !p.Hired)   // a hired builder's site is on its own insurance
                 {
                     underWay += Math.Max(p.Estimate, p.ClientValue);
                 }

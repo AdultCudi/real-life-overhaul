@@ -384,6 +384,7 @@ namespace RealLifeOverhaul.Uptown
         // ---------------------------------------------------------------- the game's late "game loaded" call
 
         private static readonly List<MadeBuilding> NewOnes = new List<MadeBuilding>(512);
+        private static readonly List<MadeBuilding> LaterOnes = new List<MadeBuilding>(64);   // buildings new to a save the district lived in, for the opening pass
 
         // Its first life where the save never had it, the game's own generator for its buildings new to a save it lived in
         // before (as for a district the game adds to an older save, those alone), each finished building's first load, and the
@@ -413,6 +414,8 @@ namespace RealLifeOverhaul.Uptown
                     }
                 }
                 populated = NewOnes.Count > 0 ? LifeGame.PopulateOnly(save, NewOnes, Standing) : 0;
+                LaterOnes.Clear();
+                LaterOnes.AddRange(NewOnes);
                 NewOnes.Clear();
             }
             bool stats = LifeGame.Stats(save);
@@ -449,6 +452,11 @@ namespace RealLifeOverhaul.Uptown
                 WriteState();
                 Logger?.Info("Uptown: the opening pass after the game's generator gave " + opened + " empty unit(s) businesses of the game's (" + openSaid + ").");
             }
+            else if (!_stateUnread)
+            {
+                OpenLater(save);
+            }
+            LaterOnes.Clear();
             Logger?.Info("Uptown: " + (fresh ? (_cityWasNew ? "set up with the rest of a new city by the game's own generator" : "set up for the first time in this save by the game's own generator")
                                              : "lives on in this save" + (populated > 0 ? ", the game's own generator for its " + populated + " building(s) new to it" : string.Empty))
                          + (stats ? ", its stats made" : string.Empty)
@@ -457,6 +465,33 @@ namespace RealLifeOverhaul.Uptown
                          + (renamed > 0 ? ", " + renamed + " of them given their lessees' names again" : string.Empty) + ".");
             Census("the load");
             return true;
+        }
+
+        // The opening pass for the buildings new to a save the district lived in, those alone (the game's generator ran for
+        // them alone), each lot's share of units kept to let worked out among them, every one marked so it is filled once;
+        // the businesses already in the district stay as they are.
+        private static void OpenLater(GameInstance save)
+        {
+            NewOnes.Clear();
+            for (int i = 0; i < LaterOnes.Count; i++)
+            {
+                if (!_state.OpenedLot(LaterOnes[i].Spec.Id))
+                {
+                    NewOnes.Add(LaterOnes[i]);
+                }
+            }
+            if (NewOnes.Count == 0)
+            {
+                return;
+            }
+            int opened = LifeGame.OpenUnits(NewOnes, Another, save, out string openSaid);
+            for (int i = 0; i < NewOnes.Count; i++)
+            {
+                _state.MarkOpened(NewOnes[i].Spec.Id);
+            }
+            Logger?.Info("Uptown: the opening pass for its " + NewOnes.Count + " building(s) new to this save gave " + opened + " empty unit(s) businesses of the game's (" + openSaid + ").");
+            NewOnes.Clear();
+            WriteState();
         }
 
         // A building the opening pass leaves alone: a lease's lot (its business moves in by the lease), or one the mod holds

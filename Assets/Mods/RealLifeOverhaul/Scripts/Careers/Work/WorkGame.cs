@@ -207,10 +207,37 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        /// <summary>The address the game writes for a place.</summary>
+        /// <summary>
+        /// The address the game writes for a place; in a district of the mod's own (Uptown), its name after it, as the game
+        /// names its districts (by the district's id in the locales), since the mod's streets do not say which district they
+        /// are in. A dictionary look in the game's buildings.
+        /// </summary>
         public static string Address(string street, int number)
         {
-            return CivicCity.AddressText(street, number);
+            string at = CivicCity.AddressText(street, number);
+            string district = ModDistrict(street, number);
+            return district == null ? at : CareersText.T(DistrictKey, "address", at, "district", district);
+        }
+
+        private const string DistrictKey = "reallife_work_place_district";   // "{address}, {district}"
+
+        // The name of the mod's own district a place of the mod's streets stands in, or null (the game's own places read as before).
+        private static string ModDistrict(string street, int number)
+        {
+            if (!DistrictSave.DistrictSaveRules.IsModId(street))
+            {
+                return null;
+            }
+            try
+            {
+                Building b = BuildingHelper.GetBuilding(new Address(street, number));
+                string district = b != null ? b.Neighbourhood : null;
+                return DistrictSave.DistrictSaveRules.IsModId(district) ? CareersText.T(district) : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         /// <summary>True if the player is at work: inside the post's building or by its door (any hospital or the school for a post without an address).</summary>

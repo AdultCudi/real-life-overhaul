@@ -111,6 +111,32 @@ internal static partial class Program
         }
         Check(missing == null, "uptown work: the working life employs at every office type the game opens in Uptown (" + (missing ?? "all five") + ")");
         Check(ProCatalogue.Employs(ProCatalogue.Find(ProCatalogue.Sales), "ba:businesstype_travelagency"), "uptown work: travel agencies take on sales staff");
+        // The tech mark matches the tech sector's own five types alone: the mod's other types share their prefix (the old
+        // match on a part of the name had the builders' offices, the academy and a dealer's showroom hire developers).
+        Profession dev = ProCatalogue.Find(ProCatalogue.Developer), data = ProCatalogue.Find(ProCatalogue.DataPro);
+        bool sector = true;
+        foreach (string type in ProCatalogue.TechSector)
+        {
+            sector &= ProCatalogue.Employs(dev, type) && ProCatalogue.Employs(data, type);
+        }
+        string[] others = { "reallife:businesstype_construction", "reallife:businesstype_academy", "reallife:businesstype_branch", "reallife:businesstype_showroom", "reallife:businesstype_" };
+        bool none = true;
+        foreach (string type in others)
+        {
+            for (int p = 0; p < ProCatalogue.All.Length; p++)
+            {
+                none &= ProCatalogue.All[p].Family < 0 || Array.IndexOf(ProCatalogue.All[p].Types, ProCatalogue.TechTypes) < 0 || !ProCatalogue.Employs(ProCatalogue.All[p], type);
+            }
+        }
+        Check(sector && none && !ProCatalogue.AnyEmploys("reallife:businesstype_construction"),
+            "uptown work: the tech professions work at the tech sector's own types alone, never at the builders' offices or the mod's other businesses");
+        string techTypes = File.ReadAllText(System.IO.Path.GetFullPath(System.IO.Path.Combine(LocalesFolder(), "..", "Scripts", "Tech", "Firms", "TechTypes.cs")));
+        bool same = ProCatalogue.TechSector.Length == Regex.Matches(techTypes, @"public const string \w+ = Prefix \+ ""[a-z]+"";").Count;
+        foreach (string type in ProCatalogue.TechSector)
+        {
+            same &= techTypes.Contains("Prefix + \"" + type.Substring(ProCatalogue.TechTypes.Length) + "\"");
+        }
+        Check(same, "uptown work: the careers' list of the tech sector's types is the sector's own (Tech/Firms/TechTypes.All)");
     }
 
     private static void UptownWorkStore()
@@ -120,8 +146,15 @@ internal static partial class Program
         LifeState back = LifeStore.Read(line, out int v);
         Check(back != null && back.Opened && v == LifeStore.Version && line.EndsWith("^o:1", StringComparison.Ordinal),
             "uptown open: the save's line says the opening pass has run, and reads it back");
+        s.MarkOpened("uptown_3_02_01");
+        s.MarkOpened("uptown_3_02_01");
+        s.MarkOpened("bad id;");
+        back = LifeStore.Read(LifeStore.Write(s), out int _);
+        Check(back != null && back.Opened && back.OpenedLots.Count == 1 && back.OpenedLot("uptown_3_02_01") && !back.OpenedLot("uptown_3_02_02"),
+            "uptown open: each lot a later pass has been over is kept once, and read back");
         LifeState old = LifeStore.Read("v=1^f:", out int _);
-        Check(old != null && !old.Opened && !LifeStore.Write(old).Contains("^o:"), "uptown open: a line from before the pass reads as not run, and writes as before");
+        Check(old != null && !old.Opened && old.OpenedLots.Count == 0 && !LifeStore.Write(old).Contains("^o:") && !LifeStore.Write(old).Contains("^n:"),
+            "uptown open: a line from before the pass reads as not run, and writes as before");
     }
 
     private static void UptownWorkSources()
@@ -141,6 +174,13 @@ internal static partial class Program
               && firstLife.IndexOf("LifeGame.OpenUnits(Standing, Another, save", StringComparison.Ordinal) > firstLife.IndexOf("Leases(save, out int renamed)", StringComparison.Ordinal)
               && firstLife.Contains("!_state.Opened && !_stateUnread") && firstLife.Contains("_state.Opened = true") && firstLife.Contains("WriteState()"),
             "uptown open: the opening pass runs once a save, after the generator and the leases, and its mark is written with the district's line");
+        string later = MemberText(director, "private static void OpenLater(GameInstance save)");
+        Check(firstLife.Contains("LaterOnes.AddRange(NewOnes)") && firstLife.Contains("OpenLater(save)") && later.Contains("_state.OpenedLot(")
+              && later.Contains("LifeGame.OpenUnits(NewOnes, Another, save") && later.Contains("_state.MarkOpened(") && later.Contains("WriteState()"),
+            "uptown open: buildings new to a save the district lived in get the pass for themselves alone, each lot once");
+        string address = MemberText(work, "public static string Address(string street, int number)");
+        Check(address.Contains("ModDistrict(street, number)") && address.Contains("CareersText.T(DistrictKey,") && work.Contains("DistrictKey = \"reallife_work_place_district\"") && work.Contains("DistrictSave.DistrictSaveRules.IsModId(district) ? CareersText.T(district)"),
+            "uptown work: a workplace in the mod's own district names it after its address, by its id's text as the game names districts");
         string another = MemberText(director, "private static bool Another(MadeBuilding made)");
         Check(another.Contains("LeaseOf(made.Spec.Id)") && another.Contains("SpecialBuildings.TakenBy("), "uptown open: the pass leaves a lease's lot and a place the mod holds alone");
         string units = MemberText(opening, "public static int OpenUnits(List<MadeBuilding> standing, Func<MadeBuilding, bool> skip, GameInstance save, out string said)");
@@ -181,7 +221,7 @@ internal static partial class Program
         string[] keys =
         {
             "reallife_uptown_test_office_census", "reallife_uptown_test_office_job", "reallife_uptown_test_office_census_done", "reallife_uptown_test_office_job_done",
-            "reallife_uptown_test_office_job_none", "reallife_uptown_test_office_job_no_work"
+            "reallife_uptown_test_office_job_none", "reallife_uptown_test_office_job_no_work", "reallife_work_place_district"
         };
         bool all = en != null && pt != null && zh != null, short240 = true;
         string missing = null;

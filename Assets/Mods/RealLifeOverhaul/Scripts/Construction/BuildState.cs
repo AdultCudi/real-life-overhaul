@@ -161,8 +161,8 @@ namespace RealLifeOverhaul.Construction
         public int Tender;                           // the tender it came from; 0 for none
         public int CostPermille = 1000;              // the design's cost against the plans' budget: the player's own design sets it
         public int Units;                            // the flats the player's own design gives a block of homes; 0 for the usual
-        public int Contractor = -1;                  // a refit done by one of the city's builders (its index), paid at once; -1 for the company's own crews
-        public long ContractorPrice;                 // what that contractor was paid
+        public int Contractor = -1;                  // one of the city's builders (its index) doing the works: a refit paid at once, or a building hired under contract; -1 for the company's own crews
+        public long ContractorPrice;                 // what that contractor was paid, or the contract's price
         public bool WithRefit;                       // a rebuild with the business inside refitted too: closed for the fit-out, refitted at the handover
         public int Grade = -1;                       // a refit's new fittings at the handover (0 plain, 1 good, 2 fine); -1 before
         public string ShowDesign = string.Empty;     // the show flat's design (Designs' ShowFlatDesigns id); empty for none
@@ -178,7 +178,17 @@ namespace RealLifeOverhaul.Construction
         public bool HedgeTest;                       // the test tools' project, put back by their put back
         public readonly List<HedgeHold> Hedges = new List<HedgeHold>(4);   // its futures still on the exchange's book
 
+        public int HireDays;                         // a hired builder's: the working days it quoted
+        public int HirePace;                         // thousandths of the city's pace its crews keep
+        public int HireStages;                       // bits: the inspections whose payment it has had
+        public long HirePaid;                        // what it has been paid so far: the deposit and the stages
+        public long HirePenalty;                     // what it paid back at the handover for being late
+        public bool HireFree;                        // a test's contract: nothing is paid either way
+
         public bool Live => Stage != ProjectStage.Finished && Stage != ProjectStage.Abandoned;
+
+        /// <summary>True for the player's own building put up by one of the city's builders under contract (a refit by one is not).</summary>
+        public bool Hired => Contractor >= 0 && Kind != ProjectKind.Refit;
 
         /// <summary>True while its show flat is open.</summary>
         public bool ShowOpen => ShowSince > 0 && !string.IsNullOrEmpty(ShowDesign);

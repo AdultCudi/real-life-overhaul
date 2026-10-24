@@ -29,6 +29,24 @@ namespace RealLifeOverhaul.Uptown
         /// <summary>The opening pass has run in this save (LifeGame.OpenUnits): once, so the units the game's own days empty later stay its own.</summary>
         public bool Opened;
 
+        /// <summary>Lots new to the save after the first pass that a later pass has been over: each is filled once.</summary>
+        public readonly List<string> OpenedLots = new List<string>(8);
+
+        /// <summary>True when a later opening pass has been over the lot.</summary>
+        public bool OpenedLot(string lot)
+        {
+            return !string.IsNullOrEmpty(lot) && OpenedLots.Contains(lot);
+        }
+
+        /// <summary>The lot marked as gone over by a later pass (at most <see cref="LifeStore.OpenedMost"/> kept).</summary>
+        public void MarkOpened(string lot)
+        {
+            if (!string.IsNullOrEmpty(lot) && !OpenedLots.Contains(lot) && OpenedLots.Count < LifeStore.OpenedMost)
+            {
+                OpenedLots.Add(lot);
+            }
+        }
+
         /// <summary>The finished building on a lot, or null.</summary>
         public FinishedBuilding On(string lot)
         {
@@ -66,7 +84,7 @@ namespace RealLifeOverhaul.Uptown
 
     /// <summary>
     /// The district's line in the save, game-free: one line under <see cref="Key"/>, "v=1^f:finished" and "^o:1" once the
-    /// opening pass has run, records divided by ';'
+    /// opening pass has run and "^n:lot,lot" for the lots a later pass has been over, records divided by ';'
     /// and fields by '|' (lot, size, version, type, design, storeys, owner, price, day, settled, the other lots it stands over joined by ','), in the order
     /// <see cref="Write"/> joins them. A newer version adds fields at the end of a record, or a part with a new letter: this
     /// reader skips what it does not know, bounds every figure and caps the list. The line names Uptown's lots, never an
@@ -79,6 +97,7 @@ namespace RealLifeOverhaul.Uptown
         public const string Key = "reallife:uptown";
         public const int Version = 1;
         public const int FinishedMost = 512;   // records read at most: more lots than the whole band north of Manhattan holds
+        public const int OpenedMost = 512;     // lots a later opening pass is marked for at most: more than the band holds
 
         private const int Fields = 10;
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
@@ -114,6 +133,17 @@ namespace RealLifeOverhaul.Uptown
                 if (part == "o:1")
                 {
                     state.Opened = true;
+                    continue;
+                }
+                if (part.StartsWith("n:", StringComparison.Ordinal))
+                {
+                    foreach (string lot in part.Substring(2).Split(','))
+                    {
+                        if (IsId(lot))
+                        {
+                            state.MarkOpened(lot);
+                        }
+                    }
                     continue;
                 }
                 if (!part.StartsWith("f:", StringComparison.Ordinal))
@@ -246,6 +276,14 @@ namespace RealLifeOverhaul.Uptown
             if (s.Opened)
             {
                 t.Append("^o:1");
+            }
+            if (s.OpenedLots.Count > 0)
+            {
+                t.Append("^n:");
+                for (int i = 0; i < s.OpenedLots.Count; i++)
+                {
+                    t.Append(i > 0 ? "," : string.Empty).Append(Clean(s.OpenedLots[i]).Replace(',', ' '));
+                }
             }
             return t.ToString();
         }
