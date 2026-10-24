@@ -33,7 +33,7 @@ namespace RealLifeOverhaul.NewGround
         private static readonly List<Pedestrian> Walkers = new List<Pedestrian>(32);
         private static int _groundMask;
         private static int _blockMask;
-        private static int _obstacleMask;
+        private static int _obstacleMask, _roadsLayer;
 
         /// <summary>The player's walking mesh at this load, or null (see <see cref="Missing"/>).</summary>
         public static CityMesh Player => Found() ? _player : null;
@@ -228,7 +228,7 @@ namespace RealLifeOverhaul.NewGround
                     continue;
                 }
                 Bounds b = c.bounds;
-                if (GroundRules.IsProp((_propMask & (1 << c.gameObject.layer)) != 0, b.size.x, b.size.z))
+                if (GroundRules.IsProp((_propMask & (1 << c.gameObject.layer)) != 0, c.GetComponent<EntityController>() != null, b.size.x, b.size.z))
                 {
                     continue;
                 }
@@ -255,7 +255,8 @@ namespace RealLifeOverhaul.NewGround
         {
             if (_obstacleMask == 0)
             {
-                _obstacleMask = LayerMask.GetMask("Default", "Buildings", "BuildingsOutlined", "BuildingWalls", "StreetProps", "InteractiveItems", "InteractiveItemsOutlined", "Water");
+                _obstacleMask = LayerMask.GetMask("Default", "Buildings", "BuildingsOutlined", "BuildingWalls", "StreetProps", "InteractiveItems", "InteractiveItemsOutlined", "Water", "Roads");
+                _roadsLayer = LayerMask.NameToLayer("Roads");
             }
             var centre = new Vector3(box.X, box.Top + HeadHeight * 0.5f, box.Z);
             var half = new Vector3(box.HalfX, HeadHeight * 0.5f, box.HalfZ);
@@ -266,6 +267,11 @@ namespace RealLifeOverhaul.NewGround
                 Collider c = Many[i];
                 Many[i] = null;
                 if (c == null || !c.enabled || !seen.Add(c.GetInstanceID()))
+                {
+                    continue;
+                }
+                // On the Roads layer only an entity is walked round: a street tree is put there when it wakes, the road itself never is.
+                if (c.gameObject.layer == _roadsLayer && c.GetComponent<EntityController>() == null)
                 {
                     continue;
                 }
@@ -281,7 +287,7 @@ namespace RealLifeOverhaul.NewGround
             return added;
         }
 
-        private const int SeenMost = 3;   // colliders named in a stand-down's line
+        private const int SeenMost = 12;   // colliders named in a stand-down's line
         private static readonly Collider[] Standing = new Collider[64];
         private static int _builtMask, _propMask;
 

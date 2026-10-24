@@ -715,11 +715,19 @@ internal static partial class Program
             "new ground sources: a district's ground counts the game's colliders on it against the plan's before it grows anything");
         // The owner's test of 23 Oct: one collider the offline scans could not hold (they keep no round ones) stood Uptown down
         // at every load, and the line did not say what it was.
-        Check(GroundRules.IsProp(true, 0.4f, 0.4f) && GroundRules.IsProp(true, 2.4f, 1.5f) && GroundRules.IsProp(true, GroundRules.PropMost, GroundRules.PropMost)
-              && !GroundRules.IsProp(true, 30f, 0.3f) && !GroundRules.IsProp(true, 3.5f, 1f) && !GroundRules.IsProp(false, 0.4f, 0.4f),
+        Check(GroundRules.IsProp(true, false, 0.4f, 0.4f) && GroundRules.IsProp(true, false, 2.4f, 1.5f) && GroundRules.IsProp(true, false, GroundRules.PropMost, GroundRules.PropMost)
+              && !GroundRules.IsProp(true, false, 30f, 0.3f) && !GroundRules.IsProp(true, false, 3.5f, 1f) && !GroundRules.IsProp(false, false, 0.4f, 0.4f),
             "new ground: a lamp, a tree or a parked bicycle on a plan's ground is left out of its count, never a wall, a building or a piece of the street, however small");
+        // The owner's test of 24 Oct: the eight street trees on 1st Avenue's north pavement, saved as street props, are on the
+        // Roads layer in a running game (an entity sets its own layer when it wakes) and stood Uptown down at every load.
+        Check(GroundRules.IsProp(false, true, 1.13f, 1.13f) && GroundRules.IsProp(false, true, 0.6f, 0.6f) && !GroundRules.IsProp(false, true, 30f, 0.3f) && !GroundRules.IsProp(false, true, 3.5f, 1f),
+            "new ground: one of the game's entities on a plan's ground (a street tree the game has put on the Roads layer) is a prop when it is small, on whatever layer it stands");
+        string obstacles = Regex.Match(walk, @"public static int Obstacles\([^)]*\)\s*\{(?<b>(?:[^{}]|\{(?<d>)|\}(?<-d>))*)\}").Groups["b"].Value;
+        Check(Regex.IsMatch(walk, @"_obstacleMask = LayerMask\.GetMask\([^;]*""Roads""\);") && Regex.IsMatch(walk, @"_roadsLayer = LayerMask\.NameToLayer\(""Roads""\);")
+              && Regex.IsMatch(obstacles, @"c\.gameObject\.layer == _roadsLayer && c\.GetComponent<EntityController>\(\) == null\)\s*\{\s*continue;"),
+            "new ground sources: a street tree the game has put on the Roads layer is walked round, the road itself never");
         Match built = Regex.Match(walk, @"public static int Built\([^)]*\)\s*\{(?<b>(?:[^{}]|\{(?<d>)|\}(?<-d>))*)\}");
-        Check(built.Success && built.Groups["b"].Value.Contains("GroundRules.IsProp(") && built.Groups["b"].Value.Contains("seen.Add(")
+        Check(built.Success && built.Groups["b"].Value.Contains("GroundRules.IsProp(") && built.Groups["b"].Value.Contains("c.GetComponent<EntityController>() != null") && built.Groups["b"].Value.Contains("seen.Add(")
               && Regex.IsMatch(ground.Groups["b"].Value, @"string\.Join\(""; "", Seen\)"),
             "new ground sources: a plan's count leaves the props out and its stand-down line names what it found");
         Match grow = Regex.Match(code["GroundBuilder.cs"], @"public static string Grow\([^)]*\)\s*\{(?<b>(?:[^{}]|\{(?<d>)|\}(?<-d>))*)\}");
