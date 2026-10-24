@@ -35,9 +35,9 @@ internal static partial class Program
             Of("reallife:street_uptown_mapleavenue"), Of("reallife:street_provinglane"), Of("reallife:street_provinglane", "reallife:street_uptown_sixth"), Of(), Of("ba:street_firstavenue")
         };
         var items = new List<object> { "a", "b", "c", "d", "e" };
-        int gone = DistrictSaveRules.Retire(records, items, LayoutStreets.Prefix);
+        int gone = DistrictSaveStore.Retire(records, items, LayoutStreets.Prefix);
         Check(gone == 2 && records.Count == 3 && items.Count == 3 && (string)items[0] == "b" && (string)items[1] == "d" && (string)items[2] == "e"
-              && DistrictSaveRules.Retire(records, items, LayoutStreets.Prefix) == 0 && DistrictSaveRules.Retire(null, items, "x") == 0 && DistrictSaveRules.Retire(records, items, null) == 0,
+              && DistrictSaveStore.Retire(records, items, LayoutStreets.Prefix) == 0 && DistrictSaveStore.Retire(null, items, "x") == 0 && DistrictSaveStore.Retire(records, items, null) == 0,
             "uptown dense: the district save lets go every kept record naming one of Uptown's streets, its item with it, the others kept in their order");
     }
 
@@ -72,7 +72,7 @@ internal static partial class Program
               && MemberText(life, "private static void RetireEarlierPlan(GameInstance save)").Contains("DistrictSaveDirector.Retire(save, LayoutStreets.Prefix,")
               && state.Contains("_state.Plan < LayoutRules.PlanGeneration") && state.Contains("_state = new LifeState();") && state.TrimEnd().EndsWith("WriteState();   // the line says the plan's generation from this load on, whatever else happens\n        }", StringComparison.Ordinal),
             "uptown dense: Uptown retires a save's records of an earlier plan before they go back (its early step, or a load without one), starts its own line afresh and writes its plan at once");
-        Check(MemberText(save, "private static void Pass(GameInstance save, PlaceSet places, bool city)").Contains("Retired(save);") && retire.Contains("DistrictSaveRules.Retire(KeptRecords, KeptItems, _retirePrefix)")
+        Check(MemberText(save, "private static void Pass(GameInstance save, PlaceSet places, bool city)").Contains("Retired(save);") && retire.Contains("DistrictSaveStore.Retire(KeptRecords, KeptItems, _retirePrefix)")
               && retire.Contains("!DistrictSaveRules.IsModId(streetPrefix)"),
             "uptown dense: the district save lets them go at the pass over what it keeps, for that save alone, and never for one of the game's streets");
         Check(MemberText(construction, "private void Load()").Contains("Retire(state);") && MemberText(construction, "private void Retire(BuildState state)").Contains("ConstructionGame.Give(back, \"reallife_transaction_bld_land_back\"")

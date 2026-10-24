@@ -42,7 +42,7 @@ namespace RealLifeOverhaul.DistrictSave
             {
                 return;
             }
-            int gone = DistrictSaveRules.Retire(KeptRecords, KeptItems, _retirePrefix);
+            int gone = DistrictSaveStore.Retire(KeptRecords, KeptItems, _retirePrefix);
             Logger?.Info("District save: " + gone + " record(s) kept for " + _retirePrefix + "* let go (" + _retireWhy + "); " + KeptRecords.Count + " kept still.");
             _retirePrefix = null;
             _retireFor = null;
