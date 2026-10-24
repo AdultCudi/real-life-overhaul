@@ -149,6 +149,46 @@ namespace RealLifeOverhaul.Economy
             return CompanyText.District(district);
         }
 
+        private static readonly string[] FaultKeys =
+        {
+            "reallife_estate_fault_0", "reallife_estate_fault_1", "reallife_estate_fault_2", "reallife_estate_fault_3", "reallife_estate_fault_4", "reallife_estate_fault_5",
+            "reallife_estate_fault_6"
+        };
+        private static readonly string[] GrievanceKeys =
+        {
+            "reallife_estate_grievance_rent", "reallife_estate_grievance_building", "reallife_estate_grievance_repair", "reallife_estate_grievance_notice", "reallife_estate_grievance_order"
+        };
+        public static readonly string[] ManagerKeys = { "reallife_estate_manager_self", "reallife_estate_manager_agent", "reallife_estate_manager_manager" };
+
+        /// <summary>A repair call's fault, by its kind.</summary>
+        public static string Fault(int kind)
+        {
+            return T(FaultKeys[EstateCatalogue.Clamp(kind, 0, FaultKeys.Length - 1)]);
+        }
+
+        /// <summary>What a tenant complains of (EstateRules.Grievance).</summary>
+        public static string Complaint(int grievance)
+        {
+            return T(GrievanceKeys[EstateCatalogue.Clamp(grievance, 0, GrievanceKeys.Length - 1)]);
+        }
+
+        public static string Manager(int manager)
+        {
+            return T(ManagerKeys[EstateCatalogue.Clamp(manager, 0, ManagerKeys.Length - 1)]);
+        }
+
+        /// <summary>A tenant's satisfaction in a word and a per cent; "not known yet" before its first morning.</summary>
+        public static string Happy(int happy)
+        {
+            if (happy < 0)
+            {
+                return T("reallife_estate_happy_unknown");
+            }
+            string word = T(happy >= EstateCatalogue.HappyGood ? "reallife_estate_happy_good" : happy >= EstateCatalogue.HappyFair ? "reallife_estate_happy_fair"
+                : happy >= EstateCatalogue.HappyPoor ? "reallife_estate_happy_poor" : "reallife_estate_happy_bad");
+            return T("reallife_estate_happy_level", "word", word, "level", Level(happy));
+        }
+
         public static string Stars(int rating)
         {
             return T("reallife_estate_stars", "stars", HotelRules.Stars(rating).ToString(Inv));

@@ -163,6 +163,7 @@
         public const string EstateHotelId = "economy_estate_hotel";
         public const string EstateHireId = "economy_estate_hire";
         public const string EstateRentId = "economy_estate_rent";
+        public const string EstateDutiesId = "economy_estate_duties";
         public const string EconomyOnlineId = "economy_online";
         public const string EconomyOnlineWaitNotesId = "economy_online_wait_notes";
         public const string TechPeopleId = "tech_people";
@@ -480,6 +481,7 @@
         public static bool EstateHotel = true;           // owning a hotel of the city's as a business
         public static int EstateRent = 100;              // rental income: percent of the market's rent of a unit the player lets himself, and so of what is asked, offered and renewed at (50 to 300)
         public static bool EstateHire = true;            // car hire (off: no car goes out, and one that is out is called back)
+        public static bool EstateDuties = true;          // a landlord's duties: satisfaction, repair calls, inspections, managers (off: letting as before)
         public static bool TechPeople = true;            // professionals (off: the game's own staff alone; files are kept)
         public static bool TechJobs = true;              // the jobs board and the labour market (off: the game's own hiring alone)
         public static bool TechSector = true;            // the tech sector (off: those businesses earn nothing of their own; their files are kept)
@@ -838,6 +840,7 @@
             EstateHotel = Bool(modId, EstateHotelId, EstateHotel);
             EstateHire = Bool(modId, EstateHireId, EstateHire);
             EstateRent = Int(modId, EstateRentId, EstateRent);
+            EstateDuties = Bool(modId, EstateDutiesId, EstateDuties);
             EconomyOnline = Bool(modId, EconomyOnlineId, EconomyOnline);
             EconomyOnlineWaitNotes = Bool(modId, EconomyOnlineWaitNotesId, EconomyOnlineWaitNotes);
             TechPeople = Bool(modId, TechPeopleId, TechPeople);

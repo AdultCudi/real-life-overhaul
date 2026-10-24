@@ -15,7 +15,8 @@ namespace RealLifeOverhaul.Economy
         Property = 0,   // the market, letting, works, selling and the agency
         Hotel = 1,
         Hire = 2,
-        Count = 3
+        Duties = 3,     // a landlord's duties over the property part: satisfaction, repair calls, inspections, managers
+        Count = 4
     }
 
     /// <summary>One row for the Planner, made on the day event and when the player changes something.</summary>
@@ -37,7 +38,7 @@ namespace RealLifeOverhaul.Economy
         public const string AppId = "RealLifeEstate";
         public const int TabMarket = 0, TabMine = 1, TabTenants = 2, TabWorks = 3, TabAgency = 4, TabHotel = 5, TabHire = 6;
 
-        private static readonly string[] PartNames = { "property", "the hotel", "car hire" };
+        private static readonly string[] PartNames = { "property", "the hotel", "car hire", "a landlord's duties" };
         private static readonly string[] AppGlyphs = { "Icon-Building", "Icon-Neighborhood", "Icon-Shop" };
 
         public static IModLogger Logger;
@@ -115,7 +116,7 @@ namespace RealLifeOverhaul.Economy
         /// <summary>Whether a part runs: the feature is running, the part's option is on and no fault has stopped it.</summary>
         public bool On(EstatePart part)
         {
-            return _running && !_broken && !_partBroken[(int)part] && Wanted(part);
+            return _running && !_broken && !_partBroken[(int)part] && Wanted(part) && (part != EstatePart.Duties || !_partBroken[(int)EstatePart.Property]);
         }
 
         private static bool Wanted(EstatePart part)
@@ -125,6 +126,7 @@ namespace RealLifeOverhaul.Economy
                 case EstatePart.Property: return Settings.Estate;
                 case EstatePart.Hotel: return Settings.EstateHotel;
                 case EstatePart.Hire: return Settings.EstateHire;
+                case EstatePart.Duties: return Settings.Estate && Settings.EstateDuties;
                 default: return false;
             }
         }
@@ -196,6 +198,10 @@ namespace RealLifeOverhaul.Economy
             {
                 Install();
             }
+            if (_visitPlace != null)
+            {
+                VisitSecond();   // only while the player has a repair of their own to go and do
+            }
             int scale = EstateGame.RentScale;
             if (scale != _climate.RentScale)
             {
@@ -242,6 +248,11 @@ namespace RealLifeOverhaul.Economy
             if ((now & (1 << (int)EstatePart.Hire)) != 0)
             {
                 HireReconcile();
+            }
+            int duties = 1 << (int)EstatePart.Duties;
+            if ((now & duties) == 0 && (before & duties) != 0)
+            {
+                DutiesWithdrawn(day);
             }
         }
 
@@ -290,6 +301,7 @@ namespace RealLifeOverhaul.Economy
             {
                 HireReconcile();
             }
+            FindVisit();
             BuildAlerts(today);
             Logger?.Info("Estate: " + (fresh ? "opened for this save" : "state loaded (version " + version + ")") + " on day " + today + ". " + EstateGame.Buildings + " building(s) in the city, "
                          + _state.Holdings.Count + " the player's" + (added > 0 ? " (" + added + " new to the books)" : string.Empty)
@@ -352,6 +364,7 @@ namespace RealLifeOverhaul.Economy
             _running = false;
             _holding = false;
             _alerts.Clear();
+            CloseVisit();
             if (!unloading)
             {
                 RemoveApp();

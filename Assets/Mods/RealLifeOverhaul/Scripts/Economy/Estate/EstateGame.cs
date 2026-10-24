@@ -77,6 +77,9 @@ namespace RealLifeOverhaul.Economy
         public const string HireCostsKey = "reallife_transaction_estate_hire_costs";
         public const string HireClaimKey = "reallife_transaction_estate_hire_claim";
         public const string TradingTaxKey = "reallife_transaction_estate_trading_tax";
+        public const string RepairsKey = "reallife_transaction_estate_repairs";   // a tenant's repair call, by a contractor or the player's materials
+        public const string ManagerKey = "reallife_transaction_estate_manager";   // a letting agent's or a property manager's fee
+        public const string FineKey = "reallife_transaction_estate_fine";         // the city's fine after a failed inspection
         private const string DeductKey = "reallife_estate_deduct";
         private const string CustomerService = "ba:skill_customerservice";
         private const string OfficeType = "ba:buildingtype_office";

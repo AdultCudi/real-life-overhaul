@@ -1,3 +1,4 @@
+using System;
 using System.Globalization;
 using RealLifeOverhaul.Meta;
 
@@ -77,6 +78,41 @@ namespace RealLifeOverhaul.Economy
                 .Fact("est_return_shop", () => EstateText.Yield(EstateBalance.ShopYearlyBp(1)));
         }
 
+        /// <summary>The figures the Guide's page "A landlord's duties" prints.</summary>
+        public static void AddDutyFacts(Feature f)
+        {
+            f.Fact("duty_grace", () => Whole(EstateCatalogue.CallGraceDays))
+                .Fact("duty_call_least", () => EstateText.Share(Month(EstateRules.CallChance(1000))))
+                .Fact("duty_call_poor", () => EstateText.Share(Month(EstateRules.CallChance(EstateCatalogue.ConditionPoor))))
+                .Fact("duty_call_share", () => EstateText.Share(EstateCatalogue.CallShare))
+                .Fact("duty_diy", () => EstateText.Share(EstateCatalogue.DiyShare))
+                .Fact("duty_diy_days", () => Whole(EstateCatalogue.DiyDays))
+                .Fact("duty_lapse", () => Whole(EstateCatalogue.CallLapseDays))
+                .Fact("duty_complain", () => EstateText.Level(EstateCatalogue.ComplainBelow))
+                .Fact("duty_quit", () => EstateText.Level(EstateCatalogue.QuitBelow))
+                .Fact("duty_stay", () => EstateText.Level(EstateCatalogue.QuitBelow + EstateCatalogue.StayAbove))
+                .Fact("duty_quit_days", () => Whole(EstateCatalogue.QuitDays))
+                .Fact("duty_renew_low", () => EstateText.Share(EstateRules.RenewChance(EstateCatalogue.HappyPoor)))
+                .Fact("duty_renew_high", () => EstateText.Share(EstateRules.RenewChance(EstateCatalogue.HappyGood + 150)))
+                .Fact("duty_to_city", () => Whole(EstateCatalogue.ComplaintsToCity))
+                .Fact("duty_city_days", () => Whole(EstateCatalogue.CityCallDays))
+                .Fact("duty_inspect", () => Whole(EstateCatalogue.InspectEvery))
+                .Fact("duty_pass", () => EstateText.Level(EstateCatalogue.InspectPass))
+                .Fact("duty_old", () => Whole(EstateCatalogue.InspectCallOld))
+                .Fact("duty_fine", () => Guide.Money(EstateRules.InspectFine(1, Prices.Level)))
+                .Fact("duty_fine_again", () => Guide.Money(EstateRules.InspectFine(EstateCatalogue.StrikesBarred, Prices.Level)))
+                .Fact("duty_order", () => Whole(EstateCatalogue.OrderDays))
+                .Fact("duty_reinspect", () => Whole(EstateCatalogue.ReinspectDays))
+                .Fact("duty_plan_low", () => Whole(EstateCatalogue.PlanDaysLeast))
+                .Fact("duty_plan_high", () => Whole(EstateCatalogue.PlanDaysMost))
+                .Fact("duty_plan_poor", () => EstateText.Share(EstateRules.PlanAcceptChance(EstateCatalogue.RecordLeast)))
+                .Fact("duty_plan_good", () => EstateText.Share(EstateRules.PlanAcceptChance(EstateCatalogue.RecordMost)))
+                .Fact("duty_agent_days", () => Whole(EstateCatalogue.AgentLetDays))
+                .Fact("duty_manager", () => EstateText.Share(EstateCatalogue.ManagerShare))
+                .Fact("duty_more", () => EstateText.Share(EstateCatalogue.ManagedApplicants - 1000))
+                .Fact("duty_record", () => Whole(EstateCatalogue.ManagerRecordLeast));
+        }
+
         // A shop building let in a steady economy, averaged over the seeds.
         private static int Let(int income)
         {
@@ -96,6 +132,12 @@ namespace RealLifeOverhaul.Economy
                 sum += EstateBalance.HireYearlyBp(25000, 1, Seeds[s]);
             }
             return (int)(sum / Seeds.Length);
+        }
+
+        // The chance in thousandths of at least one fault in thirty days at a chance a day.
+        private static int Month(int perDay)
+        {
+            return (int)Math.Round(1000.0 * (1.0 - Math.Pow(1.0 - perDay / 1000.0, 30)));
         }
 
         private static string Whole(int value)

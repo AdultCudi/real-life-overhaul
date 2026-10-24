@@ -11,6 +11,7 @@ The property business: buying, letting, improving and selling buildings, an esta
 ## Documentation
 
 How it works, its rules and its tests: [the game's daily statement (how its hotels and hire lot pay tax)](../../../../../../docs/features/economy-city.md#the-games-daily-statement-economygamebookscs).
+A landlord's duties (tenants' satisfaction, repair calls, inspections, rent owed, agents and managers): [A landlord's duties](../../../../../../docs/features/landlord.md).
 How the code is laid out, and how features meet: [Architecture](../../../../../../docs/reference/architecture.md).
 
 Maintained by the Real Life Overhaul maintainer.

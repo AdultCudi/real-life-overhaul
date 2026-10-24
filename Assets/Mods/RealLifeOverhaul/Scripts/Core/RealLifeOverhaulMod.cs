@@ -952,6 +952,8 @@ namespace RealLifeOverhaul
                 .AddToggle(Settings.EstateHireId, "reallife_estate_opt_hire", Settings.EstateHire,
                     v => Settings.EstateHire = v)
                 .AddSlider(Settings.EstateRentId, "reallife_estate_opt_rent", 50, 300, Settings.EstateRent, v => Settings.EstateRent = v, Meta.SettingsTable.SliderPercent)
+                .AddToggle(Settings.EstateDutiesId, "reallife_estate_opt_duties", Settings.EstateDuties,
+                    v => Settings.EstateDuties = v)
                 .AddButton("reallife_estate_test_applicant", () => Economy.EstateDirector.Instance?.TestApplicant())
                 .AddButton("reallife_estate_test_arrears", () => Economy.EstateDirector.Instance?.TestArrears())
                 .AddButton("reallife_estate_test_works", () => Economy.EstateDirector.Instance?.TestWorks())
@@ -961,6 +963,10 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_estate_test_group", () => Economy.EstateDirector.Instance?.TestGroup())
                 .AddButton("reallife_estate_test_hire", () => Economy.EstateDirector.Instance?.TestHire())
                 .AddButton("reallife_estate_test_month", () => Economy.EstateDirector.Instance?.TestMonth())
+                .AddButton("reallife_estate_test_call", () => Economy.EstateDirector.Instance?.TestCall())
+                .AddButton("reallife_estate_test_complaint", () => Economy.EstateDirector.Instance?.TestComplaint())
+                .AddButton("reallife_estate_test_inspection", () => Economy.EstateDirector.Instance?.TestInspection())
+                .AddButton("reallife_estate_test_manager", () => Economy.EstateDirector.Instance?.TestManager())
                 .AddButton("reallife_estate_test_back", () => Economy.EstateDirector.Instance?.TestBack())
                 .AddHeader("reallife_talent_header")
                 .AddToggle(Settings.TechPeopleId, "reallife_talent_enabled", Settings.TechPeople,
