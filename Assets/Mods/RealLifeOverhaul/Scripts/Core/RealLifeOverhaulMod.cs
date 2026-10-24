@@ -762,6 +762,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_test_lic_check", () => LicenceDirector.Instance?.TestCheck())
                 .AddButton("reallife_test_lic_points", () => LicenceDirector.Instance?.TestPoints())
                 .AddSplitter()
+                .Guarded(o => Seasons.SeasonOptions.AddSeasons(o))   // what sells in each season, and the snow (Scripts/Seasons)
                 .AddHeader("reallife_planner_header")
                 .AddToggle(Settings.PlannerId, "reallife_planner_enabled", Settings.Planner,
                     v => Settings.Planner = v)
@@ -1384,6 +1385,8 @@ namespace RealLifeOverhaul
             Guard.Step("Calendar.CalendarDirector", () => Calendar.CalendarDirector.Logger = context.Logger);
             Guard.Step("Calendar.CalendarApp", () => Calendar.CalendarApp.Logger = context.Logger);
             Guard.Step("Calendar.CalendarDirector", () => Guard.Add<Calendar.CalendarDirector>(_root));
+            Guard.Step("Seasons.SeasonDirector", () => Seasons.SeasonDirector.Logger = context.Logger);
+            Guard.Step("Seasons.SeasonDirector", () => Guard.Add<Seasons.SeasonDirector>(_root));
             Guard.Step("Planner.PlannerDirector", () => Guard.Add<Planner.PlannerDirector>(_root));
             Guard.Step("Economy.EconomyDirector", () => Economy.EconomyDirector.Logger = context.Logger);
             Guard.Step("Economy.FinanceApp", () => Economy.FinanceApp.Logger = context.Logger);

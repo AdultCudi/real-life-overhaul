@@ -88,6 +88,7 @@ The game has rain and nothing else: no snow, fog, wind, temperature or forecast.
 | heat wave | a summer day, by the day's roll | | x1.3 | | x0.85 | | |
 | cold snap | a winter day, by the day's roll | | x0.85 | | x0.8 | | |
 | ice | one cold-snap day in three | x1.4 | | | x0.7 | x0.75 | x0.9 |
+| snow in patches, covered | the snow on the roads, from [Seasons](seasons.md) (`Weather.SnowNow`), on top of the rest | x1.2, x1.45 | | covered x0.9 | x0.9, x0.8 | x0.88, x0.72 | x0.93, x0.85 |
 
 Seasons are quarters of the game's year (`gameVariables.daysPerYear`, 60 by default), starting in midwinter.
 

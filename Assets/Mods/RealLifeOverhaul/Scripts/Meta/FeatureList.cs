@@ -32,6 +32,7 @@ namespace RealLifeOverhaul.Meta
             Photos.PhotosGuide.Register();
             Walking.WalkGuide.Register();
             Calendar.CalendarGuide.Register();
+            Seasons.SeasonGuide.Register();
             Designs.DesignsGuide.Register();
             Meals.MealsGuide.Register();
         }

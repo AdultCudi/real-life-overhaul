@@ -10,7 +10,7 @@ namespace RealLifeOverhaul
     {
         /// <summary>
         /// The Calendar's sources: the Planner's dated sources (its alerts are left to the Planner), what each night takes
-        /// and pays, and each feature's schedule of money and days (CalendarMoney, CalendarWork, CalendarPeople). Each reads
+        /// and pays, and each feature's schedule of money and days (CalendarMoney, CalendarWork, CalendarPeople, CalendarSeasons). Each reads
         /// what its feature keeps and changes nothing; asked only when the calendar is shown.
         /// </summary>
         public static class CalendarLinks
@@ -27,6 +27,7 @@ namespace RealLifeOverhaul
                 CalendarMoney.Add(calendar);
                 CalendarWork.Add(calendar);
                 CalendarPeople.Add(calendar);
+                CalendarSeasons.Add(calendar);
             }
 
             internal static void Disconnect()
