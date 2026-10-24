@@ -79,6 +79,10 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\City\CityEconomy.cs" Link="Mod\CityEconomy.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\CalendarRules.cs" Link="Mod\CalendarRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Calendar\CalendarList.cs" Link="Mod\CalendarList.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Hustles\HustleCatalogue.cs" Link="Mod\HustleCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Hustles\HustleState.cs" Link="Mod\HustleState.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Hustles\HustleStore.cs" Link="Mod\HustleStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Hustles\HustleRules.cs" Link="Mod\HustleRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Calendar\MonthViewRules.cs" Link="Mod\MonthViewRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meals\MealsRules.cs" Link="Mod\MealsRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meals\MealsText.cs" Link="Mod\MealsText.cs" />

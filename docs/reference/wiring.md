@@ -57,6 +57,7 @@ An adapter never throws into its caller: a fault is logged once per place (`Wiri
 | `TextsLinks.cs`, `TextsPhone.cs`, `Wiring.TextsCalls.cs` | RLO Texts with Flare, the phone's texts and the answers to what the player types on a call; a text worded by RLO Texts keeps its written line's key beside the words (`t_key`), so a call back knows what it was about |
 | `Wiring.TextsMemory.cs`, `Wiring.TextsMemoryFacts.cs` | RLO Texts data v6: what people remember of the player, from street talk, texts, calls, Flare messages, the social life's own memories and what a person last texted about, read from their thread in the game's phone (the game-free part: `TextsMemoryFacts`) |
 | `Wiring.CompanionLinks.cs` | `CompanionBridges`: the companion report's capabilities (settings, businesses, ordinary hourly pay, credit accounts, the statements' source), each read from the feature that owns it (contracts/companion/v1) |
+| `Wiring.HustleLinks.cs` | `HustleBridges`: the Marketplace's car handed over at a free stretch of kerb (`EconomyBridges.KerbSpot`), the jobs' van hired for a junk run or a move (`JobDirector.HireVan`, `ReturnVan`), and no visit begun while a gig is on |
 | `Wiring.TextsCity.cs` | RLO Texts: the city's new talk with the features it reads (the staff's files, family life, a graduation, the court, the stock market, the books, the social life's people and texts); the people's last text is the newest in their thread, from any feature |
 
 ## Who does what at an arrest

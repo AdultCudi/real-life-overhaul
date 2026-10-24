@@ -128,6 +128,7 @@
         public const string PlannerRemindersId = "planner_reminders";
         public const string PlannerMorningId = "planner_morning";
         public const string CalendarId = "calendar";
+        public const string HustlesId = "hustles";
         public const string EconomyId = "economy";
         public const string EconomyGradeUpNotesId = "economy_grade_up_notes";
         public const string EconomyProductsId = "economy_products";
@@ -444,6 +445,7 @@
         public static bool Planner = true;               // the Planner app on the phone: everything to do in one agenda
         public static bool PlannerReminders = true;      // ...and its reminders, sent as the game's own notifications
         public static bool Calendar = true;              // the Calendar app
+        public static bool Hustles = true;               // the Marketplace app: used goods and cars to flip, and freelance visits
         public static bool PlannerMorning = true;        // ...and one line of the day on waking (off: none)
         public static bool Economy = true;               // the credit rating, the banks' terms by it, loans from the phone and the Finance app
         public static bool EconomyGradeUpNotes = true;   // ...a notification when the rating rises a grade
@@ -803,6 +805,7 @@
             PlannerReminders = Bool(modId, PlannerRemindersId, PlannerReminders);
             PlannerMorning = Bool(modId, PlannerMorningId, PlannerMorning);
             Calendar = Bool(modId, CalendarId, Calendar);
+            Hustles = Bool(modId, HustlesId, Hustles);
             Economy = Bool(modId, EconomyId, Economy);
             EconomyGradeUpNotes = Bool(modId, EconomyGradeUpNotesId, EconomyGradeUpNotes);
             EconomyProducts = Bool(modId, EconomyProductsId, EconomyProducts);

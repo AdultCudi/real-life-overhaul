@@ -47,6 +47,7 @@ Gigs the player takes from the **Gig Line** contact or a help-wanted board (flye
 - The employer ladder's optional doors are in `Jobs/CareerLinks.cs`, filled in by [`Wiring/LifeLinks.cs`](../reference/wiring.md) (the record on a CV, a doctor's sick note).
 - Shared pieces other features use: `ShiftCard` (the copied job panel), `ShiftSkip` (the rest of a shift left to the game's clock), `JobStand` and `JobUniform`.
 - A shift in progress at a save is settled on load: see [A shift across a save](#a-shift-across-a-save-jobsave-payslip).
+- The hired van is lent to the Marketplace's junk runs and moves while no gig is on (`JobDirector.HireVan`, `ReturnVan`, through `Wiring/Wiring.HustleLinks.cs`): see [Legal hustles](hustles.md). Its visits are worked on `ShiftSkip`.
 - To add a job, see [Adding a job](../contributing/adding-things.md#adding-a-job).
 
 The game has its own work: employer jobs (stand at a station in someone's shop while time is skipped, paid by the hour), the delivery van (a company van, a hand truck, boxes of stock to three shops, 100 a drop) and food delivery (accepted at a restaurant's till, 25 plus 0.05 a metre).

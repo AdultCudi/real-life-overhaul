@@ -36,6 +36,7 @@ One page per feature. Each starts with what it is in a sentence, where its code 
 
 - [Jobs](jobs.md): gigs from the Gig Line and the help-wanted boards.
 - [Careers](careers.md): the employers' ranks, and education and the professions.
+- [Legal hustles](hustles.md): the Marketplace, used goods and cars to fix up and sell on, and freelance visits for clients.
 
 ## Economy
 

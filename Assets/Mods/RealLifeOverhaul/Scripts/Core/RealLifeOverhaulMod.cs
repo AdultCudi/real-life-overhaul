@@ -773,6 +773,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_planner_test_clear", () => Planner.PlannerDirector.Instance?.TestClear())
                 .AddSplitter()
                 .Guarded(o => Calendar.CalendarOptions.AddCalendar(o))   // the month on the phone (Scripts/Calendar)
+                .Guarded(o => Hustles.HustleOptions.AddHustles(o))   // the Marketplace and freelance visits (Scripts/Hustles)
                 .AddHeader("reallife_econ_header")
                 .AddToggle(Settings.EconomyId, "reallife_econ_enabled", Settings.Economy,
                     v => Settings.Economy = v)
@@ -1384,6 +1385,9 @@ namespace RealLifeOverhaul
             Guard.Step("Calendar.CalendarDirector", () => Calendar.CalendarDirector.Logger = context.Logger);
             Guard.Step("Calendar.CalendarApp", () => Calendar.CalendarApp.Logger = context.Logger);
             Guard.Step("Calendar.CalendarDirector", () => Guard.Add<Calendar.CalendarDirector>(_root));
+            Guard.Step("Hustles.HustleDirector", () => Hustles.HustleDirector.Logger = context.Logger);
+            Guard.Step("Hustles.HustleApp", () => Hustles.HustleApp.Logger = context.Logger);
+            Guard.Step("Hustles.HustleDirector", () => Guard.Add<Hustles.HustleDirector>(_root));   // the Marketplace: used goods and cars, freelance visits (Scripts/Hustles)
             Guard.Step("Planner.PlannerDirector", () => Guard.Add<Planner.PlannerDirector>(_root));
             Guard.Step("Economy.EconomyDirector", () => Economy.EconomyDirector.Logger = context.Logger);
             Guard.Step("Economy.FinanceApp", () => Economy.FinanceApp.Logger = context.Logger);
