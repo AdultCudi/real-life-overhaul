@@ -262,7 +262,8 @@ namespace RealLifeOverhaul.Uptown
                 notClear += clear ? 0 : 1;
             }
             Logger?.Info("Uptown: " + Declared.Count + " building(s) declared for this load (" + Built.Count + " of the band's lots from the first day, " + leased
-                         + " of them offices leased to the city's builders, " + special + " the district's special places; " + KeptLots.Count + " kept from an earlier load; " + finished + " finished by the construction game"
+                         + " of them offices leased to the city's builders, " + special + " the district's special places; " + KeptLots.Count + " kept from an earlier load; "
+                         + finished + " finished by the construction game"
                          + (refused > 0 ? "; " + refused + " left empty" : string.Empty) + ") of " + Plan.Count + " lots, " + open + " open for the construction game"
                          + (notClear > 0 ? ", " + notClear + " kept empty as something of the game's stands into it" : string.Empty) + ".");
         }
