@@ -63,7 +63,7 @@ namespace RealLifeOverhaul.Construction
                     going += DevelopmentRules.Rival(lot.Id, DevelopmentRules.Use(lot.Id, lot.Class)) == r ? 1 : 0;
                 }
             }
-            box.Row("reallife_bld_row_going_up", ConstructionText.N(going));
+            box.RowPair("reallife_bld_row_going_up", ConstructionText.N(going), "reallife_bld_row_for_you", ConstructionText.N(_director.HiredBy(r)));
             string office = ConstructionBridges.RivalOffice != null ? ConstructionBridges.RivalOffice(r) : null;
             box.Row("reallife_bld_row_office", office ?? ConstructionText.T("reallife_bld_rival_office_none"));
             int against = 0;
@@ -77,6 +77,7 @@ namespace RealLifeOverhaul.Construction
                 box.Line(ConstructionText.T("reallife_bld_rival_beat_you", "count", against.ToString()), CellTone.Yellow);
             }
             box.Note(ConstructionText.T("reallife_bld_rival_note"));
+            box.Note(ConstructionText.T("reallife_bld_rival_hire_note"));
             if (office != null)
             {
                 InfoBox.Button(box.ButtonRow(), InfoBox.Positive, "reallife_bld_rival_office_go", () => GoToOffice(r, office));

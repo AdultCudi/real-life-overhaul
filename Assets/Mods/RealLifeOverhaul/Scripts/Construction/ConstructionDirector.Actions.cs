@@ -572,7 +572,10 @@ namespace RealLifeOverhaul.Construction
             Standing(ribbon ? 3 : 1, false);
             if (ribbon)
             {
-                _state.Firm.Reputation = FirmRules.Moved(_state.Firm.Reputation, 1);
+                if (!p.Hired)
+                {
+                    _state.Firm.Reputation = FirmRules.Moved(_state.Firm.Reputation, 1);   // a hired builder's work lifts the client's standing, not the company's
+                }
                 FlareOpened(PlaceWords(p), ProjectName(p));
                 Paper("reallife_bld_paper_opening", ProjectName(p), 0);
                 Tell(NotificationType.Success, "reallife_bld_notice_ribbon", ProjectName(p), null, TabProjects, p.Id);
