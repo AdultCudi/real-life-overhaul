@@ -646,11 +646,12 @@ internal static partial class Program
               && wake.IndexOf("c.buildingRegistration = registration;", StringComparison.Ordinal) is int r && r > 0 && r < active,
             "new buildings: a working copy is given its record and registration before it wakes (the city's list can reach it before its Start)");
         Check(MemberText(made, "public static BuildingRegistration MakeRegistration(").Contains("reg.AvailableForRent = false;") && !Regex.IsMatch(all, @"AvailableForRent\s*=\s*true|ForSale\s*=\s*true|RentedByPlayer\s*=\s*true")
-              && MemberText(made, "public static Building MakeRecord(").Contains("b.SpecialService = null;") && MemberText(made, "public static Building MakeRecord(").Contains("ScriptableObject.CreateInstance<Building>()")
+              && MemberText(made, "public static Building MakeRecord(").Contains("b.SpecialService = service;") && MemberText(made, "public static Building MakeRecord(").Contains("if (!string.IsNullOrEmpty(spec.Service))")
+              && MemberText(made, "public static Building MakeRecord(").Contains("ScriptableObject.CreateInstance<Building>()")
               && MemberText(made, "public static Building MakeRecord(").Contains("b.totalSqm = spec.DesignArea && designArea > 0 ? designArea : SquareMetres(spec.Size) * Math.Max(1, spec.Floors);")
               && MemberText(made, "public static BuildingRegistration MakeRegistration(").Contains("if (!spec.Life)")
               && MemberText(made, "public static BuildingRegistration MakeRegistration(").Contains("InSave(spec.Street, spec.Number) ?? DistrictSave.DistrictSaveDirector.KeptRegistration(spec.Street, spec.Number)"),
-            "new buildings: a made building of the mod's own is never to let or for sale and has no special service, and its record is new, so its DLC is the default, "
+            "new buildings: a made building of the mod's own is never to let or for sale and has a special service only where its declaration copies one (a district's, SpecialServiceChecks), and its record is new, so its DLC is the default, "
             + "none; a district's building takes the save's own registration (the game lets it as its own)");
         Check(MemberText(made, "public static bool Claim(").Contains("SpecialBuildings.Reserve(spec.Id, spec.Street, spec.Number, on, SpecialKind.Other)") && !all.Contains("IgnoredAddresses"),
             "new buildings: a made building is claimed through the special buildings' book, and never put on the game's ignore list here");
@@ -662,9 +663,9 @@ internal static partial class Program
         {
             destroyed.Add(m.Groups[1].Value.Trim());
         }
-        Check(string.Join(" ", destroyed) == "b data look.gameObject template.gameObject" && MemberText(copy, "public static void Remove(CopyLook look)").Contains("UnityEngine.Object.Destroy(look.gameObject)")
+        Check(string.Join(" ", destroyed) == "Served[i] b copy data look.gameObject own template.gameObject" && MemberText(copy, "public static void Remove(CopyLook look)").Contains("UnityEngine.Object.Destroy(look.gameObject)")
               && MemberText(copy, "public static void Drop(Transform template)").Contains("UnityEngine.Object.Destroy(template.gameObject)"),
-            "new buildings: the folder destroys only a decorative copy, a sleeping template, and its own records and streets (" + string.Join(", ", destroyed) + ")");
+            "new buildings: the folder destroys only a decorative copy, a sleeping template, and its own records, streets and copied services (" + string.Join(", ", destroyed) + ")");
         string unload = MemberText(made, "public static void Unload(bool cityGoes)"), drop = MemberText(made, "private static void Drop()");
         int left = drop.IndexOf("Leave(b);", StringComparison.Ordinal), gone = drop.IndexOf("UnityEngine.Object.Destroy(b);", StringComparison.Ordinal);
         Check(unload.Contains("if (cityGoes)") && unload.Contains("Drop();") && left > 0 && gone > left && drop.Contains("UnityEngine.Object.Destroy(data);")

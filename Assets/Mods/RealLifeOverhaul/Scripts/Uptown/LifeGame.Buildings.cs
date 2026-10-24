@@ -190,6 +190,15 @@ namespace RealLifeOverhaul.Uptown
             {
                 BuildingHelper.allBuildings.Remove(Entered[i]);
             }
+            for (int i = 0; i < Entered.Count; i++)
+            {
+                if (Entered[i] != null && Entered[i].SpecialService != null)
+                {
+                    // Its special place out of the game's lists of them too: the nearest clinic, the importers and the banks are found there.
+                    MadeGame.ImporterListed(Entered[i], BuildingHelper.GetBuildingRegistration(Entered[i].Address), false);
+                    MadeGame.ServiceListed(Entered[i], false);
+                }
+            }
             if (BuildingHelper.AllNeighbourhoodBuildings.TryGetValue(DistrictValues.Id, out List<Building> district) && district != null)
             {
                 district.Clear();
