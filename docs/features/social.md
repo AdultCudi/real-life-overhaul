@@ -37,6 +37,7 @@ Up to 400 people the player knows (Mom, an old friend, and everybody met in the 
 
 - Any feature reports to the paper with `News.Report(kind, where, detail, amount)`; see [The City Ledger](#the-city-ledger-news).
 - The social life asks the law and the home through `ISocialLaw` and `ISocialWellbeing` (`SocialLinks`), filled in by `Wiring/LifeLinks.cs`.
+- Networking ([networking.md](networking.md)) is told who is met and by whom (`SocialLinks.Met`), says what somebody does as they are met (`SocialLinks.Position`), hears of the day's round (`SocialLinks.DayDone`) and puts its favour first under Something else on a call and its lines on the People page (`SocialPhone.Network*`), through `Wiring/Wiring.NetworkLinks.cs`.
 - Family takes the partner from here (`Wiring/FamilyLinks.cs`), Justice a close friend for court and prison visits, Travel a companion for a trip.
 - Flare's links are `Wiring/FlareLinks.cs`, `FlareLiveLinks.cs` and `FlareInviteLinks.cs`; see [Wiring](../reference/wiring.md).
 

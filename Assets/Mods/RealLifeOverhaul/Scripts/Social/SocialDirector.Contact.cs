@@ -458,6 +458,14 @@ namespace RealLifeOverhaul
                 }
             }
             SocialState.WealthTier = tier;
+            try
+            {
+                SocialLinks.DayDone?.Invoke();
+            }
+            catch (System.Exception e)
+            {
+                Logger?.Error(e);   // the round stands whatever the networking life made of it
+            }
         }
     }
 }

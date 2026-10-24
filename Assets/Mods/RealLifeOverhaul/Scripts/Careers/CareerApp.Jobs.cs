@@ -151,7 +151,7 @@ namespace RealLifeOverhaul.Careers
             }
             if (o.Via == (int)Via.Referral)
             {
-                box.Line(CareersText.T("reallife_career_post_referral"), CellTone.Green);
+                box.Line(string.IsNullOrEmpty(o.Lead) ? CareersText.T("reallife_career_post_referral") : CareersText.T("reallife_career_post_lead", "name", o.Lead), CellTone.Green);
             }
 
             box.Section("reallife_ibox_sec_dates");

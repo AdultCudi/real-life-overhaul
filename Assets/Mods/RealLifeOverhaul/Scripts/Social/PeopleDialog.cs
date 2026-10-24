@@ -91,7 +91,14 @@ namespace RealLifeOverhaul
             int birthday = SocialTalk.BirthdayIn(p);
             data["birthday"] = birthday == 0 ? SocialLife.T("reallife_social_people_birthday_today")
                 : SocialLife.T("reallife_social_people_birthday_in").Replace("{days}", birthday.ToString());
-            var entry = new DialogEntry { messageData = "reallife_social_people_page".Localize(data), OnCancel = PhoneContacts.HangUp };
+            string network = SocialPhone.NetworkLine != null ? SocialPhone.NetworkLine(p) : null;   // their position, and what they could do next
+            var entry = new DialogEntry
+            {
+                messageData = network != null
+                    ? SocialLinks.WordsKey.Localize(new Dictionary<string, string> { { "text", SocialLife.T("reallife_social_people_page", data) + "\n" + network } })
+                    : "reallife_social_people_page".Localize(data),
+                OnCancel = PhoneContacts.HangUp
+            };
             entry.ConfirmTextOverride = "reallife_social_btn_next".Localize();
             entry.OnConfirm = () => Page(at + 1);
             entry.SecondOptionTextOverride = "reallife_social_btn_history";

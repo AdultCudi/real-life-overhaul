@@ -46,6 +46,7 @@ namespace RealLifeOverhaul.Careers
         public int From, To;                  // the days it is open
         public int Via;
         public int Family = -1, Level = -1;   // the jobs board's ad it is, if it is one
+        public string Lead = string.Empty;    // who of the people the player knows passed it on (Network's job lead); empty for none
 
         public bool Open(int day) => day >= From && day <= To;
 
@@ -68,6 +69,7 @@ namespace RealLifeOverhaul.Careers
             o.Via = Via;
             o.Family = Family;
             o.Level = Level;
+            o.Lead = Lead;
         }
 
         /// <summary>True for the same post at the same place.</summary>
