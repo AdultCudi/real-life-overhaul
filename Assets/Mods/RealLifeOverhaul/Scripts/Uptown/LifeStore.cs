@@ -26,6 +26,9 @@ namespace RealLifeOverhaul.Uptown
     {
         public readonly List<FinishedBuilding> Finished = new List<FinishedBuilding>(8);
 
+        /// <summary>The opening pass has run in this save (LifeGame.OpenUnits): once, so the units the game's own days empty later stay its own.</summary>
+        public bool Opened;
+
         /// <summary>The finished building on a lot, or null.</summary>
         public FinishedBuilding On(string lot)
         {
@@ -62,7 +65,8 @@ namespace RealLifeOverhaul.Uptown
     }
 
     /// <summary>
-    /// The district's line in the save, game-free: one line under <see cref="Key"/>, "v=1^f:finished", records divided by ';'
+    /// The district's line in the save, game-free: one line under <see cref="Key"/>, "v=1^f:finished" and "^o:1" once the
+    /// opening pass has run, records divided by ';'
     /// and fields by '|' (lot, size, version, type, design, storeys, owner, price, day, settled, the other lots it stands over joined by ','), in the order
     /// <see cref="Write"/> joins them. A newer version adds fields at the end of a record, or a part with a new letter: this
     /// reader skips what it does not know, bounds every figure and caps the list. The line names Uptown's lots, never an
@@ -107,6 +111,11 @@ namespace RealLifeOverhaul.Uptown
             for (int p = 1; p < parts.Length; p++)
             {
                 string part = parts[p];
+                if (part == "o:1")
+                {
+                    state.Opened = true;
+                    continue;
+                }
                 if (!part.StartsWith("f:", StringComparison.Ordinal))
                 {
                     continue;   // a part a later version added
@@ -233,6 +242,10 @@ namespace RealLifeOverhaul.Uptown
                         t.Append(k > 0 ? "," : string.Empty).Append(Clean(f.Over[k]).Replace(',', ' '));
                     }
                 }
+            }
+            if (s.Opened)
+            {
+                t.Append("^o:1");
             }
             return t.ToString();
         }

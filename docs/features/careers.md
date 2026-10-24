@@ -160,6 +160,10 @@ The clips are already asked for by id, before today's stand-in, so they drop in 
 | prop `dispatch_desk` | a lectern-height desk with a wall map, 1.2 x 1.4 x 0.5 m, read from +Z | (needs placement code) stood by the board on a dispatcher shift |
 | prop `employer_sign` | a small wall plaque (0.6 x 0.3 m), six variants, one per employer name | (needs placement code) above each office's board |
 
+## Where the professions work
+
+The city's vacancies (`CareersDirector.Vacancies`) are drawn each game day from every business of the save's list that employs a profession (`WorkGame.Employers`, `ProCatalogue.EmployedBy`, its type matched against each profession's types), not the player's own, and the public sector's buildings. A company of the jobs board with no office business of its own and no headquarters works at one of the city's office buildings by its name's hash; that list once kept the first 64 of the save's list, all Manhattan's, so Uptown's offices, whose registrations come after the game's own, were never one; it holds every office now. The office types the game opens businesses of in its offices are law firms (lawyers, accountants, IT support), web agencies (developers, designers, IT support), design studios (designers), event planners (marketing) and travel agencies, which now take on sales staff. "Uptown: a job at an Uptown office" ([Uptown](uptown.md#offices-to-work-at-and-a-district-lived-in-from-the-first-day)) hires the player at one through `CareersDirector.TestJobAt`, wired by `Wiring/CareersLinks` through `Uptown/DistrictWork`.
+
 ## The professions: pay and pace
 
 `Work/ProCatalogue` pays a first rung by what it asks, set against the gigs, which ask no course (`EconomyCheck`, `CareerPayChecks.cs`, works the gigs' own figures out of `Jobs/JobCatalogue`):

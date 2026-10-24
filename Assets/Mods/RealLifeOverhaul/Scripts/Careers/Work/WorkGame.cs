@@ -44,8 +44,10 @@ namespace RealLifeOverhaul.Careers
                     continue;   // (the player's own, and in a session another player's, which Going Public shows as rented by the player: never an employer)
                 }
                 string type = reg.businessTypeName ?? string.Empty;
+                // Every office of the city, in the save's order: a cap here once kept the first 64, Manhattan's alone, so no
+                // office further down the list (Uptown's, appended after the game's own) was ever a firm's.
                 bool office = SafeType(reg) == Office;
-                if (office && offices.Count < 64)
+                if (office)
                 {
                     offices.Add(Ref(reg, EmployerKind.TechFirm));
                 }
@@ -55,6 +57,36 @@ namespace RealLifeOverhaul.Careers
                 }
                 into.Add(Ref(reg, string.IsNullOrEmpty(reg.businessOwnerRivalId) ? EmployerKind.City : EmployerKind.Rival));
             }
+        }
+
+        /// <summary>
+        /// The employer at an address as <see cref="Employers"/> would list it (a new object, kept by the caller), or null where
+        /// no business that employs a profession stands, or the business is the player's (in a session, another player's).
+        /// One pass over the save's buildings: for a test, never a frame.
+        /// </summary>
+        public static EmployerRef EmployerAt(string street, int number)
+        {
+            List<BuildingRegistration> all = Save != null ? Save.BuildingRegistrations : null;
+            for (int i = 0; all != null && !string.IsNullOrEmpty(street) && i < all.Count; i++)
+            {
+                BuildingRegistration reg = all[i];
+                if (reg == null || reg.StreetName != street || reg.StreetNumber != number)
+                {
+                    continue;
+                }
+                string type = reg.businessTypeName ?? string.Empty;
+                if (reg.RentedByPlayer || !reg.HasEstablishedBusiness || !ProCatalogue.AnyEmploys(type) || GameDlc.Gated(reg))
+                {
+                    return null;
+                }
+                bool rival = !string.IsNullOrEmpty(reg.businessOwnerRivalId);
+                return new EmployerRef
+                {
+                    Name = TalentGame.NameOf(reg), Street = street, Number = number, Type = type, Rival = rival ? reg.businessOwnerRivalId : string.Empty,
+                    Kind = rival ? EmployerKind.Rival : EmployerKind.City, Professions = ProCatalogue.EmployedBy(type)
+                };
+            }
+            return null;
         }
 
         private static string SafeType(BuildingRegistration reg)

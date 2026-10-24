@@ -442,6 +442,13 @@ namespace RealLifeOverhaul.Uptown
                 WriteState();
             }
             int leased = Leases(save, out int renamed);
+            if (!_state.Opened && !_stateUnread)
+            {
+                int opened = LifeGame.OpenUnits(Standing, Another, save, out string openSaid);
+                _state.Opened = true;   // once a save: the units the game's own days empty later are the game's to let or fill
+                WriteState();
+                Logger?.Info("Uptown: the opening pass after the game's generator gave " + opened + " empty unit(s) businesses of the game's (" + openSaid + ").");
+            }
             Logger?.Info("Uptown: " + (fresh ? (_cityWasNew ? "set up with the rest of a new city by the game's own generator" : "set up for the first time in this save by the game's own generator")
                                              : "lives on in this save" + (populated > 0 ? ", the game's own generator for its " + populated + " building(s) new to it" : string.Empty))
                          + (stats ? ", its stats made" : string.Empty)
@@ -450,6 +457,13 @@ namespace RealLifeOverhaul.Uptown
                          + (renamed > 0 ? ", " + renamed + " of them given their lessees' names again" : string.Empty) + ".");
             Census("the load");
             return true;
+        }
+
+        // A building the opening pass leaves alone: a lease's lot (its business moves in by the lease), or one the mod holds
+        // in the special buildings' book for a place of its own.
+        private static bool Another(MadeBuilding made)
+        {
+            return made == null || LeaseOf(made.Spec.Id) >= 0 || Array.IndexOf(LeasedUp, made) >= 0 || SpecialBuildings.TakenBy(made.Registration) != null;
         }
 
         // The district's own line into the save in memory (the game writes it with the save).

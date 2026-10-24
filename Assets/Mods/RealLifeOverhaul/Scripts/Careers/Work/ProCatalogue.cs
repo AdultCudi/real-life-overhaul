@@ -265,7 +265,7 @@ namespace RealLifeOverhaul.Careers
                 new ProRank(TalentCatalogue.ItSupport, TalentCatalogue.Mid, 130, 35, 60),
                 new ProRank(TalentCatalogue.NetworkEngineer, TalentCatalogue.Senior, 205, 52, 90)),
             new Profession(Sales, "sales", Commercial, TalentCatalogue.Selling, TalentCatalogue.Relationships,
-                new[] { "cardealership", "electronics", "furniture", "appliance", "wholesale", "headquarters", TechTypes }, Workplace.Business, false, Weekdays, 9, 8,
+                new[] { "cardealership", "electronics", "furniture", "appliance", "wholesale", "headquarters", "travelagency", TechTypes }, Workplace.Business, false, Weekdays, 9, 8,
                 new ProRank(TalentCatalogue.SalesExecutive, TalentCatalogue.Junior, 55, 10, 0),
                 new ProRank(TalentCatalogue.SalesExecutive, TalentCatalogue.Mid, 85, 32, 60),
                 new ProRank(TalentCatalogue.AccountManager, TalentCatalogue.Senior, 120, 48, 90),
