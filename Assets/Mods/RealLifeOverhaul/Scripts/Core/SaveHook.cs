@@ -29,6 +29,9 @@ namespace RealLifeOverhaul
 
         public static IModLogger Logger;
 
+        /// <summary>True only while save handlers put live projections back for serialization.</summary>
+        internal static bool Saving { get; private set; }
+
         public static void Keep(Action handler)
         {
             if (handler != null && !Handlers.Contains(handler))
@@ -72,54 +75,62 @@ namespace RealLifeOverhaul
 
         private static void Run()
         {
-            using var piece = SessionWatch.Piece("the game is saving (the mod writes its state into the save first)");
-            bool timed = Meta.Dev.Verbose;
-            float began = timed ? UnityEngine.Time.realtimeSinceStartup : 0f;
-            for (int i = 0; i < Handlers.Count; i++)
+            Saving = true;
+            try
             {
-                FeatureGuard guard = Guards[i];
-                if (guard != null && guard.Off && !Essential.Contains(Handlers[i]))
+                using var piece = SessionWatch.Piece("the game is saving (the mod writes its state into the save first)");
+                bool timed = Meta.Dev.Verbose;
+                float began = timed ? UnityEngine.Time.realtimeSinceStartup : 0f;
+                for (int i = 0; i < Handlers.Count; i++)
                 {
-                    if (Skipped.Add(guard))
+                    FeatureGuard guard = Guards[i];
+                    if (guard != null && guard.Off && !Essential.Contains(Handlers[i]))
                     {
-                        Logger?.Warn("Save: " + guard.Where + " is switched off after its faults; its line in the save is left as it last wrote it.");
+                        if (Skipped.Add(guard))
+                        {
+                            Logger?.Warn("Save: " + guard.Where + " is switched off after its faults; its line in the save is left as it last wrote it.");
+                        }
+                        continue;
                     }
-                    continue;
+                    try
+                    {
+                        Handlers[i]();
+                    }
+                    catch (Exception e)
+                    {
+                        if (guard != null)
+                        {
+                            Guard.Fail(guard, e);
+                        }
+                        else
+                        {
+                            Logger?.Error(e);
+                        }
+                    }
                 }
                 try
                 {
-                    Handlers[i]();
+                    int put = SaveLines.PutBack(SaveGameManager.Current != null ? SaveGameManager.Current.modData : null);
+                    if (put > 0)
+                    {
+                        Logger?.Info("Save: " + put + " line(s) the mod could not read put back as they were read.");
+                    }
                 }
                 catch (Exception e)
                 {
-                    if (guard != null)
-                    {
-                        Guard.Fail(guard, e);
-                    }
-                    else
-                    {
-                        Logger?.Error(e);
-                    }
+                    Logger?.Error(e);
                 }
-            }
-            try
-            {
-                int put = SaveLines.PutBack(SaveGameManager.Current != null ? SaveGameManager.Current.modData : null);
-                if (put > 0)
+                CompanionGame.Save(SaveGameManager.Current);
+                if (timed)
                 {
-                    Logger?.Info("Save: " + put + " line(s) the mod could not read put back as they were read.");
+                    Logger?.Info("Session: the mod wrote its state into the save in "
+                                 + ((UnityEngine.Time.realtimeSinceStartup - began) * 1000f).ToString("F1", CultureInfo.InvariantCulture)
+                                 + " ms (" + Handlers.Count + " features); the rest of the save is the game's.");
                 }
             }
-            catch (Exception e)
+            finally
             {
-                Logger?.Error(e);
-            }
-            CompanionGame.Save(SaveGameManager.Current);
-            if (timed)
-            {
-                Logger?.Info("Session: the mod wrote its state into the save in "
-                             + ((UnityEngine.Time.realtimeSinceStartup - began) * 1000f).ToString("F1", CultureInfo.InvariantCulture)
-                             + " ms (" + Handlers.Count + " features); the rest of the save is the game's.");
+                Saving = false;
             }
         }
     }

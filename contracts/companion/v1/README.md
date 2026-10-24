@@ -57,10 +57,9 @@ row identities and the wage sum, which JSON Schema alone cannot express.
 | `credit` | RLO's additional open non-test accounts. `id` is scoped to the company; `kind` is opaque. `balanceCents` is outstanding debt, and `paymentTomorrowCents` comes directly from `AccountRules.DueTomorrow`. Frozen debts retain their balance and have no payment due. All have `includedInGameLoans: false`. The ordinary game's loan principal, private-lender debt (`Shark`) and debts recorded by other RLO features are excluded. A zero balance covers only these reported credit accounts. |
 | `accounting` | `game.financialSummaries` is the source for recorded statements; coverage is only `statement-backed-only`, with `adjustment: none`. RLO already updates these statements. Never add reported wages or debt principal to profit again. This does not claim every RLO cash flow is represented in the statements. |
 
-This version deliberately supplies no forecasts, manager ownership permissions or
-write API. A consumer must disclose that its base-game suggestions may not reflect
-RLO. Later capabilities should report effective rules or ownership from their
-existing feature owners, through `Wiring`, without exposing internal stores.
+The independently versioned [planning modules](PLANNING.md) add effective terms,
+forecast inputs and live ownership decisions. Their exact shapes are in
+`planning.schema.json`; old producers with only these five modules remain valid.
 
 ## Fixtures and checks
 

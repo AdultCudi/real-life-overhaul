@@ -172,6 +172,7 @@ ba:transaction_boatyearlymaintenance
 ba:transaction_buildingbought
 ba:transaction_buildingsold
 ba:transaction_casinoboatticket
+ba:transaction_deposit
 ba:transaction_depositreturn
 ba:transaction_doctorappointment
 ba:transaction_electricscooterfee
