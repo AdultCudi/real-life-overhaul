@@ -24,7 +24,8 @@ namespace RealLifeOverhaul
         private static readonly string[] NameKeys =
         {
             "reallife_school_name_card", "reallife_school_name_theory", "reallife_school_name_lesson_car", "reallife_school_name_test_car",
-            "reallife_school_name_lesson_van", "reallife_school_name_test_van", "reallife_school_name_taxi", "reallife_school_name_renew", "reallife_school_name_motorcycle"
+            "reallife_school_name_lesson_van", "reallife_school_name_test_van", "reallife_school_name_taxi", "reallife_school_name_renew", "reallife_school_name_motorcycle",
+            "reallife_school_name_theory_heavy", "reallife_school_name_lesson_heavy", "reallife_school_name_test_heavy"
         };
 
         private readonly LicenceDirector _director;
@@ -228,6 +229,10 @@ namespace RealLifeOverhaul
             for (int i = 0; i < DrivingSchool.Classes; i++)
             {
                 var kind = (LicenceClass)i;
+                if (!DrivingSchool.OnCard(kind))
+                {
+                    continue;
+                }
                 list.AddNote(Licences.ClassName(kind), DrivingSchool.CardLine(kind, day), 0f);
             }
             _text.Length = 0;

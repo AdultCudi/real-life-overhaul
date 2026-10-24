@@ -157,7 +157,23 @@ namespace RealLifeOverhaul
                 }),
                 OnCancel = PhoneContacts.HangUp
             };
-            if (available)
+            if (def.Id == JobCatalogue.Courier && JobDirector.HeavyOffered)
+            {
+                // A heavy goods licence opens heavy loads: the round's own page first, then the heavy one, then the next gig.
+                if (available)
+                {
+                    entry.ConfirmTextOverride = "reallife_jobline_take".Localize();
+                    entry.OnConfirm = () => Take(def);
+                }
+                else
+                {
+                    entry.ConfirmTextOverride = "reallife_jobline_next".Localize();
+                    entry.OnConfirm = () => Offer(next);
+                }
+                entry.SecondOptionTextOverride = "reallife_jobline_heavy";
+                entry.OnSecondOption = () => Heavy(def, rate, size, next);
+            }
+            else if (available)
             {
                 entry.ConfirmTextOverride = "reallife_jobline_take".Localize();
                 entry.OnConfirm = () => Take(def);
@@ -170,6 +186,53 @@ namespace RealLifeOverhaul
                 entry.OnConfirm = () => Offer(next);
             }
             return entry;
+        }
+
+        // The courier round as a heavy load: its pay a drop and for the round, the truck, and take it or the next gig.
+        private static DialogEntry Heavy(JobDef def, float rate, int size, int next)
+        {
+            JobDirector director = JobDirector.Instance;
+            string reason = null;
+            bool available = director != null && director.HeavyAvailable(def, out reason);
+            bool own = JobDirector.NearestHeavy(60f) != null;
+            var entry = new DialogEntry
+            {
+                messageData = "reallife_jobline_heavy_pitch".Localize(new
+                {
+                    pay = ((float)HeavyRules.LoadPayFor(UnityEngine.Mathf.RoundToInt(def.UnitPay * rate))).ToCurrencyFormat(),
+                    shift = ((float)HeavyRules.LoadPayFor(UnityEngine.Mathf.RoundToInt(def.UnitPay * rate)) * size).ToCurrencyFormat(),
+                    count = size.ToString(),
+                    truck = own ? "reallife_jobline_heavy_own".GetLocalization()
+                        : "reallife_jobline_heavy_hire".GetLocalization().Replace("{fee}", ((float)JobRental.TruckFee).ToCurrencyFormat()),
+                    status = (available ? "reallife_jobline_ready" : reason ?? "reallife_job_no_now").GetLocalization()
+                }),
+                OnCancel = PhoneContacts.HangUp
+            };
+            if (available)
+            {
+                entry.ConfirmTextOverride = "reallife_jobline_heavy_take".Localize();
+                entry.OnConfirm = () => TakeHeavy(def);
+                entry.SecondOptionTextOverride = "reallife_jobline_next";
+                entry.OnSecondOption = () => Offer(next);
+            }
+            else
+            {
+                entry.ConfirmTextOverride = "reallife_jobline_next".Localize();
+                entry.OnConfirm = () => Offer(next);
+            }
+            return entry;
+        }
+
+        private static DialogEntry TakeHeavy(JobDef def)
+        {
+            JobDirector director = JobDirector.Instance;
+            if (director == null)
+            {
+                return PhoneContacts.Closing("reallife_job_no_off");
+            }
+            return director.TakeHeavy(def, out string reason)
+                ? PhoneContacts.Closing("reallife_jobline_heavy_go")
+                : PhoneContacts.Closing(reason ?? "reallife_jobline_failed");
         }
 
         private static DialogEntry Take(JobDef def)

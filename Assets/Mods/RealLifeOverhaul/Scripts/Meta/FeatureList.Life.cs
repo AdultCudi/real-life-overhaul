@@ -408,6 +408,7 @@ namespace RealLifeOverhaul.Meta
                 .Preset(Settings.StartWithLicenceId, 1, 0, 0)
                 .OnFrom(Settings.LicencePointsId, Intensity.Standard)
                 .OnFrom(Settings.RoadsideChecksId, Intensity.Standard)
+                .OnFrom(Settings.HeavyLicenceId, Intensity.Standard)
                 .Data(LicenceState.Key, TestCar.Key)
                 .Contact(LicencePhone.ContactId)
                 .Fact("lic_theory_fee", () => Guide.Money(LicenceLaw.TheoryFee))
@@ -419,6 +420,9 @@ namespace RealLifeOverhaul.Meta
                 .Fact("lic_points_limit", () => LicenceLaw.PointsLimit.ToString(CultureInfo.InvariantCulture))
                 .Fact("lic_suspension_days", () => LicenceLaw.SuspensionDays.ToString(CultureInfo.InvariantCulture))
                 .Fact("lic_no_licence_fine", () => Guide.Money(LicenceLaw.NoLicenceFine))
+                .Fact("lic_heavy_test_fee", () => Guide.Money(HeavyRules.TestFee))
+                .Fact("lic_heavy_wait_days", () => HeavyRules.WaitDays.ToString(CultureInfo.InvariantCulture))
+                .Fact("lic_heavy_load_pay", () => Guide.Percent(HeavyRules.LoadPay - 1f))
                 .ResetData(LicenceState.Reset)   // the director reads the (now empty) save again on its next second
                 .Repair(LicencePhone.Setup);
 
