@@ -30,11 +30,11 @@ namespace RealLifeOverhaul.Construction
             ProjectFile p = _state.OnSite(siteId);
             if (p != null)
             {
-                if (p.Contractor >= 0)
+                if (p.Contractor >= 0 && !p.Hired)
                 {
                     return Running ? hours : 0f;   // a contractor's refit goes at the city's own pace, its crews and materials the contractor's
                 }
-                return Running ? Work(p, done, needed, hours) : 0f;
+                return Running ? Work(p, done, needed, hours) : 0f;   // the company's crews, or a hired builder's at its own pace through the same inspections
             }
             DevFile dev = DevOnSite(siteId);
             if (dev != null)
@@ -194,7 +194,14 @@ namespace RealLifeOverhaul.Construction
             WorkStage stage = PlansRules.StageAt(model, Math.Max(0.0, progress - 1e-7));   // a stage's end still counts as that stage
             if ((int)stage != p.StageSeen)
             {
-                EnterStage(p, stage);
+                if (p.Hired)
+                {
+                    HiredStage(p, stage);   // its materials, plant and crews are the builder's own (ConstructionDirector.Hire.cs)
+                }
+                else
+                {
+                    EnterStage(p, stage);
+                }
             }
             PlansRules.Span(model, stage, out double from, out double to);
             int inspection = PlansRules.InspectionAfter(model, stage);
@@ -216,7 +223,7 @@ namespace RealLifeOverhaul.Construction
                 }
             }
             int day = ConstructionGame.Day;
-            int pace = Pace(p, stage, day);
+            int pace = p.Hired ? p.HirePace : Pace(p, stage, day);
             if (pace <= 0)
             {
                 return 0f;
@@ -230,7 +237,7 @@ namespace RealLifeOverhaul.Construction
                 }
                 return 0f;
             }
-            double share = SiteRules.MaterialsShare(p.Have, p.Need);
+            double share = p.Hired ? 1.0 : SiteRules.MaterialsShare(p.Have, p.Need);
             double cap = Math.Min(end, from + (to - from) * share);
             double allowed = cap * needed - done;
             if (allowed <= 1e-6)
@@ -342,6 +349,11 @@ namespace RealLifeOverhaul.Construction
         {
             p.Insp[inspection] = InspectionState.Due;
             Logger?.Info("Construction: project " + p.Id + " is ready for its " + (Inspection)inspection + " inspection.");
+            if (p.Hired)
+            {
+                HiredBooks(p, inspection);   // the builder books the inspector and pays the fee itself
+                return;
+            }
             if (!ManagerBooks(p, inspection))
             {
                 Tell(NotificationType.Info, "reallife_bld_notice_inspection_due", ProjectName(p), BuildCatalogue.InspectionKeys[inspection], TabProjects, p.Id);
@@ -387,10 +399,13 @@ namespace RealLifeOverhaul.Construction
         private void Inspect(ProjectFile p, int inspection, int day)
         {
             int tries = p.InspTries[inspection]++;
-            int crewSkill = CrewSkill(p);
-            int managerSkill = ManagerSkill(p, out bool manager);
+            bool hired = p.Hired;
+            int builder = hired ? CommissionRules.Quality(_state.Rivals[p.Contractor].Reputation) : 0;
+            int crewSkill = hired ? builder : CrewSkill(p);
+            bool manager = true;   // a builder of the city's runs its sites with a manager of its own
+            int managerSkill = hired ? builder : ManagerSkill(p, out manager);
             int quality = SiteRules.WorkQuality(crewSkill, managerSkill, p.Quality);
-            bool rushed = p.PaceDays > 0 && SiteRules.Rushed(p.PaceSum / p.PaceDays);
+            bool rushed = !hired && p.PaceDays > 0 && SiteRules.Rushed(p.PaceSum / p.PaceDays);
             int odds = SiteRules.PassOdds(quality, rushed, p.Visited, manager && managerSkill >= 60);
             bool passed = SiteRules.Passes(_state.Seed, p.Id, inspection, tries, odds);
             if (Verbose)
@@ -408,6 +423,11 @@ namespace RealLifeOverhaul.Construction
             p.Fails++;
             WorkStage stage = (WorkStage)Math.Max(0, p.StageSeen);
             p.Rework = SiteRules.Rework(PlansRules.StageHours(p.Hours, p.Model, stage));
+            if (hired)
+            {
+                TellHire(NotificationType.Warning, "reallife_bld_notice_hire_failed", p, 0L, BuildCatalogue.InspectionKeys[inspection]);   // the builder puts it right in its own time
+                return;
+            }
             _state.Firm.Reputation = FirmRules.Moved(_state.Firm.Reputation, -BuildCatalogue.RepFailed);
             for (int i = 0; i < _state.Crews.Count; i++)
             {
@@ -422,6 +442,12 @@ namespace RealLifeOverhaul.Construction
         private void Passed(ProjectFile p, int inspection, bool first, int day)
         {
             p.Insp[inspection] = InspectionState.Passed;
+            if (p.Hired)
+            {
+                LoanDraw(p, inspection + 1);   // the client's loan pays out as the company's would, before the builder's stage is paid
+                HireStagePaid(p, inspection);
+                return;
+            }
             if (first)
             {
                 _state.Firm.Reputation = FirmRules.Moved(_state.Firm.Reputation, BuildCatalogue.RepPassed);

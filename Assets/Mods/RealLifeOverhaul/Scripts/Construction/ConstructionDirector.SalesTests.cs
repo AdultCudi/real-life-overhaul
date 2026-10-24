@@ -119,9 +119,27 @@ namespace RealLifeOverhaul.Construction
                     return p;
                 }
             }
+            ProjectFile block = TestPlot(BuildUse.Homes, "a block", out why);
+            if (block == null)
+            {
+                return null;
+            }
+            block.After = AfterUse.SellFlats;
+            block.Flats = FlatsOf(block);
+            made = true;
+            Logger?.Info("Construction: project " + block.Id + " made for the show flats' test on lot " + block.Lot + ": " + block.Flats + " flats, ready to sell off plan.");
+            return block;
+        }
+
+        /// <summary>
+        /// A building of a use made for a test, ready to start: on the player's empty lot, the new district's nearest open lot or
+        /// ground ahead, its plans drawn (and estimated) and its permission granted. Null, with why, in a Going Public session.
+        /// </summary>
+        private ProjectFile TestPlot(BuildUse use, string what, out string why)
+        {
             if (GoingPublic.InSession)
             {
-                why = "no land is sold in a Going Public session, so no block can be made for the test";
+                why = "no land is sold in a Going Public session, so no " + what + " can be made for the test";
                 return null;
             }
             BeforeTest();
@@ -131,8 +149,8 @@ namespace RealLifeOverhaul.Construction
                 return null;
             }
             int id = NewPlot(lot, out string refused);
-            ProjectFile block = _state.Project(id);
-            if (block == null)
+            ProjectFile p = _state.Project(id);
+            if (p == null)
             {
                 why = "no project could be made on lot " + lot + " (" + refused + ")";
                 return null;
@@ -140,24 +158,22 @@ namespace RealLifeOverhaul.Construction
             LotFile owned = _state.Lot(lot);
             if (owned != null)
             {
-                owned.Zones |= BuildCatalogue.Zone(BuildUse.Homes);   // a test's block of homes whatever the lot was zoned for
+                owned.Zones |= BuildCatalogue.Zone(use);   // the test's use whatever the lot was zoned for
             }
-            block.Use = BuildUse.Homes;
-            DefaultDesign(block);
-            if (block.Area <= 0 && Lot(lot, out LotView view))
+            p.Use = use;
+            DefaultDesign(p);
+            if (p.Area <= 0 && Lot(lot, out LotView view))
             {
-                block.Area = Math.Max(BuildCatalogue.FlatArea * BuildCatalogue.FlatsLeast, LandRules.UsualArea(view.Width, view.Depth, view.Class));
+                p.Area = Math.Max(BuildCatalogue.FlatArea * BuildCatalogue.FlatsLeast, LandRules.UsualArea(view.Width, view.Depth, view.Class));
             }
-            block.PlansDone = true;
-            block.Quality = 70;
-            block.Engineered = true;
-            block.Planning = PlanningState.Granted;
-            block.Stage = ProjectStage.Ready;
-            block.After = AfterUse.SellFlats;
-            block.Flats = FlatsOf(block);
-            made = true;
-            Logger?.Info("Construction: project " + block.Id + " made for the show flats' test on lot " + lot + ": " + block.Flats + " flats, ready to sell off plan.");
-            return block;
+            p.Storeys = Math.Max(1, p.Storeys);
+            p.PlansDone = true;
+            p.Quality = 70;
+            p.Engineered = true;
+            p.Planning = PlanningState.Granted;
+            p.Stage = ProjectStage.Ready;
+            p.Estimate = Math.Max(1L, Preview(p, out _, out _, out _, out _).Total);   // the plans' estimate, which a builder's quote is priced off
+            return p;
         }
 
         // A lot of the player's for a test's block: one they hold with nothing on it, else the district's nearest open lot, else ground ahead.

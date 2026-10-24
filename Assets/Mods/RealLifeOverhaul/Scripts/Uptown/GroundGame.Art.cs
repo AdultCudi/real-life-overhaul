@@ -9,7 +9,8 @@ namespace RealLifeOverhaul.Uptown
 {
     /// <summary>
     /// Uptown's street art, the game's own: its road modules copied along the band's streets and avenues (a street's 100 m,
-    /// an avenue's 50 m, an avenue crossing a street) and a block's ground on every block the backdrop keeps none, each copy
+    /// an avenue's 50 m, an avenue crossing a street) and a block's ground on every block the backdrop keeps none (its ring of
+    /// slabs laid as its middle, as the backdrop's own over the band: GroundGame.Paving.cs), each copy
     /// made asleep and stripped before it wakes, so nothing of the template's own runs for it; past the band's walls the
     /// streets and avenues go on one length more and the blocks round it get their ground, as scenery, so the camera never
     /// looks out on nothing. A street's name over it is the district's; a crossing's light poles hang their red, yellow and
@@ -125,6 +126,7 @@ namespace RealLifeOverhaul.Uptown
             }
             _groundPlane = GroundTemplate();
             KeptGrounds.Clear();
+            KeptPlanes.Clear();
             Transform kept = _backdrop != null ? _backdrop.Find(KeptName) : null;
             Renderer[] planes = kept != null ? kept.GetComponentsInChildren<Renderer>(false) : new Renderer[0];
             for (int i = 0; i < planes.Length; i++)
@@ -132,6 +134,7 @@ namespace RealLifeOverhaul.Uptown
                 if (planes[i] != null)
                 {
                     KeptGrounds.Add(planes[i].bounds);
+                    KeptPlanes.Add(planes[i]);
                 }
             }
             return null;
@@ -280,6 +283,7 @@ namespace RealLifeOverhaul.Uptown
                         break;
                     case ModuleKind.Ground:
                         GroundsLaid++;
+                        Unpave(copy.GetComponent<Renderer>(), false);   // a copy goes with the art: nothing to give back
                         break;
                     default:
                         if (place.Kind == ModuleKind.Street || place.Row > 0)
@@ -293,6 +297,7 @@ namespace RealLifeOverhaul.Uptown
                 Copies.Add(copy);
                 CopyPlace.Add(i);
             }
+            UnpaveKept();
             _art.SetActive(true);
             return Copies.Count;
         }
@@ -663,10 +668,12 @@ namespace RealLifeOverhaul.Uptown
             Zones.Clear();
         }
 
-        // The art goes with the city: the parking and zones first, so their cars and people go back to the game's pools.
+        // The art goes with the city: the parking and zones first, so their cars and people go back to the game's pools; the
+        // backdrop's block grounds get their own materials back.
         private static void DropArt()
         {
             Unpopulate();
+            Repaved();
             if (_art != null)
             {
                 Object.Destroy(_art);
