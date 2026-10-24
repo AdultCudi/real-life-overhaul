@@ -105,6 +105,13 @@ namespace RealLifeOverhaul.Rivals
 
         public const int Tiers = 5;
 
+        /// <summary>
+        /// The steps of the option for when the first rival comes forward, at the start's prices: today's threshold first (the
+        /// default), up to 50 million for a player who wants to grow rich in peace. Every step is under the second tier's, so the
+        /// second and third tycoons still come at hundreds of millions and billions.
+        /// </summary>
+        public static readonly long[] FirstFromSteps = { 5000000L, 10000000L, 20000000L, 30000000L, 50000000L };
+
         /// <summary>How many tycoons have come forward by each tier (they stay once they have).</summary>
         public static readonly int[] ActiveAt = { 0, 1, 2, 3, 3 };
 

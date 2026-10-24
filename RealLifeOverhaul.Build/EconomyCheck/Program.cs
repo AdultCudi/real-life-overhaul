@@ -410,6 +410,8 @@ internal static partial class Program
         CalendarApp();  // the Calendar: the months of every year length, the grid, each schedule's days against its feature's own rule, an empty month, the sources, the texts (CalendarAppChecks.cs)
         Meals();        // meals and music: the seat a meal is taken to, how long it is eaten, the dance's lift and its cap, every way out, the texts (MealsChecks.cs)
         Seasons();      // the seasons: the goods' table, the season of a day, the snow of a winter day and how much lies, the cost, the sources, the texts (SeasonChecks.cs)
+        RivalFirst();   // when the first rival tycoon comes forward, by the option: the steps, the tiers, a season at each, every reader, the texts (RivalFirstChecks.cs)
+        TaxiComfort();  // ride fares' easier passengers: the two tables, the arithmetic, a rough ride under each, the gig reading only the table, the texts (TaxiComfortChecks.cs)
         FurnitureMoves(); // moving furniture: the game's own reason a right click or a place click is refused, whose a thing in the way is, the lines only reading (FurnitureMoveChecks.cs)
         Networking();   // networking: who holds a position (an introduction more often), each position's two favours once, when they are ready, the save, a job lead's name, the texts (NetworkChecks.cs)
         Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");

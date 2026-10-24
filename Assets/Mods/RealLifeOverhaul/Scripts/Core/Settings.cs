@@ -104,6 +104,7 @@
         public const string CityInteractionsId = "city_interactions";
         public const string JobsId = "jobs";
         public const string JobPayId = "job_pay";
+        public const string JobTaxiEasyId = "job_taxi_easy";
         public const string FamilyId = "family";
         public const string UtilitiesId = "utilities";
         public const string FamilyAtHomeId = "family_at_home";
@@ -282,6 +283,7 @@
         public const string StandingRequestNotesId = "standing_request_notes";
         public const string RivalsId = "rivals";
         public const string RivalsStrengthId = "rivals_strength";
+        public const string RivalsFirstId = "rivals_first";
         public const string LedgerKiosksId = "ledger_kiosks";
         public const string LedgerOnlineId = "ledger_online";
         public const string LedgerOnlineNotesId = "ledger_online_notes";
@@ -426,6 +428,7 @@
         public static bool CityInteractions = true;      // the player can buy a coffee at the cart
         public static bool Jobs = true;                  // jobs the player can take themselves, from the Gig Line contact on the phone
         public static int JobPay = 100;                  // percent of what the job catalogue pays
+        public static bool JobTaxiEasy = false;          // ride-hail passengers who mind braking, bumps and speeding less (TaxiComfortRules.Easier); off, the ride is judged as it always was
         public static bool Family = true;                // a partner who moves in, engagement and wedding, children, relatives
         public static bool Utilities = true;             // power and water bills, the utilities office and the Utilities app
         public static bool FamilyAtHome = true;          // the partner is shown as a character in the home
@@ -620,6 +623,7 @@
         public static bool StandingPress = true;         // ...reporters, the night show, magazines and the papers' pieces about the player
         public static bool Rivals = true;                // rival tycoons (off: they stand still and do nothing; the save keeps them)
         public static int RivalsStrength = 1;            // how hard they push: 0 Gentle, 1 Normal, 2 Hard, 3 Ruthless
+        public static int RivalsFirst = 0;               // the worth the first rival comes forward at, a step of RivalCatalogue.FirstFromSteps: 0 is 5 million, as before, up to 4, 50 million
         public static bool StandingCorruption = true;    // ...officials who offer to speed things up for a bribe, and what comes of it
         public static bool StandingRequestNotes = true;  // ...a notification when the city asks something of the player
         public static bool SocialNewspaper = true;       // the City Ledger: a morning newspaper, delivered to subscribers' homes and sold at kiosks
@@ -789,6 +793,7 @@
             RoommateOptions.Load(modId);   // sharing the flat (Scripts/Home/Roommates)
             Jobs = Bool(modId, JobsId, Jobs);
             JobPay = Int(modId, JobPayId, JobPay);
+            JobTaxiEasy = Bool(modId, JobTaxiEasyId, JobTaxiEasy);
             Family = Bool(modId, FamilyId, Family);
             Utilities = Bool(modId, UtilitiesId, Utilities);
             FamilyAtHome = Bool(modId, FamilyAtHomeId, FamilyAtHome);
@@ -967,6 +972,7 @@
             StandingRequestNotes = Bool(modId, StandingRequestNotesId, StandingRequestNotes);
             Rivals = Bool(modId, RivalsId, Rivals);
             RivalsStrength = Int(modId, RivalsStrengthId, RivalsStrength);
+            RivalsFirst = Int(modId, RivalsFirstId, RivalsFirst);
             LedgerKiosks = Bool(modId, LedgerKiosksId, LedgerKiosks);
             LedgerOnline = Bool(modId, LedgerOnlineId, LedgerOnline);
             LedgerOnlineNotes = Bool(modId, LedgerOnlineNotesId, LedgerOnlineNotes);

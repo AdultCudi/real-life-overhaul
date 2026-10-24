@@ -305,7 +305,7 @@ namespace RealLifeOverhaul.Meta
                 S("travel").For("travel").Opts("travel_hotels", "travel_holidays", "travel_extras").Also("holiday trip hotel stay")),
 
             G("work",
-                S("jobs").For("jobs").Main("jobs").Opts("job_pay").Also("gig gigs shift wage employment"),
+                S("jobs").For("jobs").Main("jobs").Opts("job_pay", "job_taxi_easy").Also("gig gigs shift wage employment ride hail taxi fare passenger passengers comfort easier"),
                 S("careers").For("careers").Opt("careers", "jobs").Also("employer promotion rank review"),
                 S("study").For("careers_study").Main("careers_study").Opts("careers_class_start")
                     .Also("school course courses class classes diploma education study learn skill skills homework exam timetable"),
@@ -358,7 +358,7 @@ namespace RealLifeOverhaul.Meta
                 S("endscale").For("economy_endscale").Opts("economy_endscale")
                     .Also("end game late scale billions hyperscaler cloud data centre racks broadband network fibre bank maintenance upkeep crews staff payback"),
                 S("brands").For("economy_brands").Need("economy").Opts("economy_brands").Also("chain franchise"),
-                S("rivals").For("rivals").Main("rivals").Opts("rivals_strength")
+                S("rivals").For("rivals").Main("rivals").Opts("rivals_strength", "rivals_first")
                     .Also("rival rivals tycoon tycoons competitor competitors rich list richest takeover outbid poach lobby lawsuit sue press end game late game pressure"),
                 S("online").For("economy_online").Need("economy").Opts("economy_online").Opt("economy_online_wait_notes", "economy_online").Also("web shop orders delivery internet"),
                 S("people").For("tech_people").Opts("tech_people").Also("professionals staff employees skills skill percent role promotion review course certificate notice severance lay off poach"),

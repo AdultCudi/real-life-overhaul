@@ -32,6 +32,7 @@
        haggling and the trade auction, customers and their offers, the dealership's finance and warranties, the books and the save's line, and a month of a reference dealership, and
        (ShowroomFloorChecks.cs) the Car Showroom's floor: the visitors an hour shows, the bays and their save line, the camera's limits and the texts, and
        (CartQueueChecks.cs) the pavement drinks cart's queue: a customer who cannot get to the cart, or is no longer its own, leaves the queue at once, is no walk-off and is replaced, and
+       (TaxiComfortChecks.cs) ride fares' easier passengers: the two tables, a rough ride under each and the gig reading only the table, and (RivalFirstChecks.cs) when the first rival tycoon comes forward by the option, and
        (RivalChecks.cs, RivalReviewChecks.cs) the rival tycoons: their holdings, growth by the player's thresholds, the pace of their moves, each move's bounds, the counters and a takeover, the same moves from a seed, the save's line and the texts, and
        (EndScaleChecks.cs) the end game at scale: each late venture's costs, upkeep, crews and income by size, its payback, an old save phased in, the option off and its texts, and (OfficeChecks.cs) running for office: who may stand and when, the law on donors, the vote model by district, the campaign's doings, the council's odds, the city's budget, approval, recall and the save's lines, and (PhotoChecks.cs) the Camera and the Gallery: a photo's name and folder, the cap,
        deleted saves, the order from a folder, the photo and its small copy handed to Flare, the camera's rules and the restore of what it borrows, and (GalleryChecks.cs)
@@ -438,6 +439,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\DeskRules.cs" Link="Mod\DeskRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\InterviewRules.cs" Link="Mod\InterviewRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\Kinds\CartQueueRules.cs" Link="Mod\CartQueueRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\Kinds\TaxiComfortRules.cs" Link="Mod\TaxiComfortRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\ClockRules.cs" Link="Mod\ClockRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\ProPath.cs" Link="Mod\ProPath.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\WorkModel.cs" Link="Mod\WorkModel.cs" />

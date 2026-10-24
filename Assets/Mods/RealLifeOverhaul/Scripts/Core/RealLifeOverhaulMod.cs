@@ -273,9 +273,12 @@ namespace RealLifeOverhaul
                     v => Settings.Jobs = v)
                 .AddSlider(Settings.JobPayId, "reallife_jobs_pay", 50, 200, Settings.JobPay,
                     v => Settings.JobPay = v, Meta.SettingsTable.SliderPercent)
+                .AddToggle(Settings.JobTaxiEasyId, "reallife_jobs_taxi_easy", Settings.JobTaxiEasy,
+                    v => Settings.JobTaxiEasy = v)
                 .AddButton("reallife_test_job_flyers", () => JobDirector.Instance?.TestStart(JobCatalogue.Flyers))
                 .AddButton("reallife_test_job_courier", () => JobDirector.Instance?.TestStart(JobCatalogue.Courier))
                 .AddButton("reallife_test_job_taxi",() => JobDirector.Instance?.TestStart(JobCatalogue.Taxi))
+                .AddButton("reallife_test_job_taxi_table", () => JobDirector.Instance?.TestTaxiTable())
                 .AddButton("reallife_test_job_cleaner", () => JobDirector.Instance?.TestStart(JobCatalogue.Cleaner))
                 .AddButton("reallife_test_job_stocker", () => JobDirector.Instance?.TestStart(JobCatalogue.Stocker))
                 .AddButton("reallife_test_job_vendor", () => JobDirector.Instance?.TestStart(JobCatalogue.Vendor))
@@ -686,6 +689,9 @@ namespace RealLifeOverhaul
                 .AddDropdown(Settings.RivalsStrengthId, "reallife_rival_strength",
                     new[] { "reallife_rival_strength_gentle", "reallife_rival_strength_normal", "reallife_rival_strength_hard", "reallife_rival_strength_ruthless" }, Settings.RivalsStrength,
                     v => Settings.RivalsStrength = v)
+                .AddDropdown(Settings.RivalsFirstId, "reallife_rival_first",
+                    new[] { "reallife_rival_first_5", "reallife_rival_first_10", "reallife_rival_first_20", "reallife_rival_first_30", "reallife_rival_first_50" }, Settings.RivalsFirst,
+                    v => Settings.RivalsFirst = v)
                 .AddButton("reallife_rival_test_property", () => Rivals.RivalDirector.Instance?.TestMove(Rivals.RivalMoveKind.Property))
                 .AddButton("reallife_rival_test_outlet", () => Rivals.RivalDirector.Instance?.TestMove(Rivals.RivalMoveKind.Outlet))
                 .AddButton("reallife_rival_test_poach", () => Rivals.RivalDirector.Instance?.TestMove(Rivals.RivalMoveKind.Poach))
@@ -696,6 +702,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_rival_test_press", () => Rivals.RivalDirector.Instance?.TestMove(Rivals.RivalMoveKind.Press))
                 .AddButton("reallife_rival_test_next", () => Rivals.RivalDirector.Instance?.TestAnnounce())
                 .AddButton("reallife_rival_test_forward", () => Rivals.RivalDirector.Instance?.TestForward())
+                .AddButton("reallife_rival_test_first", () => Rivals.RivalDirector.Instance?.TestFirst())
                 .AddButton("reallife_rival_test_list", () => Rivals.RivalDirector.Instance?.TestList())
                 .AddButton("reallife_rival_test_takeover", () => Rivals.RivalDirector.Instance?.TestTakeover())
                 .AddButton("reallife_rival_test_back", () => Rivals.RivalDirector.Instance?.TestBack())

@@ -16,13 +16,13 @@ namespace RealLifeOverhaul.Rivals
             Features.Add("rivals", "reallife_meta_title_rivals")
                 .Group("reallife_rival_header")
                 .About("reallife_guide_rivals_about").Help("reallife_guide_rivals")
-                .Owns(Settings.RivalsId, Settings.RivalsStrengthId)
+                .Owns(Settings.RivalsId, Settings.RivalsStrengthId, Settings.RivalsFirstId)
                 .Preset(Settings.RivalsStrengthId, RivalCatalogue.Gentle, RivalCatalogue.Hard, RivalCatalogue.Ruthless)   // (Normal is its default)
                 .Data(RivalStore.Key, RivalStore.TestKey)
                 .Test("reallife_rival_test_property", "reallife_rival_test_outlet", "reallife_rival_test_poach", "reallife_rival_test_stake", "reallife_rival_test_bid",
                     "reallife_rival_test_lobby", "reallife_rival_test_suit", "reallife_rival_test_press", "reallife_rival_test_next", "reallife_rival_test_forward",
-                    "reallife_rival_test_list", "reallife_rival_test_takeover", "reallife_rival_test_back")
-                .Fact("rival_tens", () => Money(RivalCatalogue.TierFrom[1]))
+                    "reallife_rival_test_list", "reallife_rival_test_takeover", "reallife_rival_test_back", "reallife_rival_test_first")
+                .Fact("rival_tens", () => Money(RivalRules.FirstFrom(Settings.RivalsFirst)))   // (the option's amount: the Guide says when they come in this game)
                 .Fact("rival_hundreds", () => Money(RivalCatalogue.TierFrom[2]))
                 .Fact("rival_billions", () => Money(RivalCatalogue.TierFrom[3]))
                 .Fact("rival_ten_billions", () => Money(RivalCatalogue.TierFrom[4]))

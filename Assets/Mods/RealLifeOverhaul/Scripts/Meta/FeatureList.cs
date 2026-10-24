@@ -141,7 +141,7 @@ namespace RealLifeOverhaul.Meta
             Features.Add("jobs", "reallife_meta_title_jobs")
                 .Group("reallife_jobs_header")
                 .About("reallife_guide_jobs_about").Help("reallife_guide_jobs")
-                .Owns(Settings.JobsId)
+                .Owns(Settings.JobsId, Settings.JobTaxiEasyId)
                 .Preset(Settings.JobPayId, 125, 100, 80)
                 .Data("reallife:jobs", "reallife:job_rental", "reallife:job_live")
                 .Contact(JobPhone.ContactId)

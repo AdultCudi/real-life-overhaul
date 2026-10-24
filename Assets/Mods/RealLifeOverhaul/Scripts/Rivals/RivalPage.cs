@@ -133,7 +133,7 @@ namespace RealLifeOverhaul.Rivals
         private static void WriteSummary(RivalDirector director, RivalFile f, InfoBox box, long worth, int level, int day, Action back)
         {
             box.Title(RivalText.T("reallife_rival_title"));
-            int tier = RivalRules.Tier(worth, level);
+            int tier = RivalRules.Tier(worth, level, RivalDirector.FirstFrom);
             box.Chip(RivalText.Tier(tier), tier >= RivalCatalogue.BidTier ? CellTone.Red : tier >= 1 ? CellTone.Yellow : CellTone.Plain);
             if (director.Resting)
             {
@@ -157,7 +157,7 @@ namespace RealLifeOverhaul.Rivals
             }
             else if (tier == 0)
             {
-                box.Note(RivalText.Fill("reallife_rival_quiet_note", "amount", RivalText.Money(RivalRules.At(RivalCatalogue.TierFrom[1], level))));
+                box.Note(RivalText.Fill("reallife_rival_quiet_note", "amount", RivalText.Money(RivalRules.At(RivalDirector.FirstFrom, level))));
             }
             else
             {

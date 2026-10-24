@@ -141,7 +141,7 @@ namespace RealLifeOverhaul.Rivals
                         return;
                     }
                 }
-                int tier = Math.Max(RivalCatalogue.BidTier, RivalRules.Tier(_world.Worth, _world.Level));
+                int tier = Math.Max(RivalCatalogue.BidTier, RivalRules.Tier(_world.Worth, _world.Level, _world.FirstFrom));
                 RivalMove m = RivalRules.Make(_file, t, kind, _world, day, tier, Strength);
                 if (m == null)
                 {
@@ -295,6 +295,43 @@ namespace RealLifeOverhaul.Rivals
                 Released(null);
                 RivalGame.Tell(NotificationType.Info, "reallife_rival_test_back_done", null, _openPage);
                 TestDone("put back as before the tests, " + withdrawn + " test claim(s) withdrawn");
+            });
+        }
+
+        /// <summary>
+        /// "Test: when the first rival comes" prints the threshold in effect: the option's step, its amount at the start's
+        /// prices and at today's, the player's worth and tier, and whether the rules put the first tier exactly there and leave
+        /// the second where it was. Changes nothing.
+        /// </summary>
+        public void TestFirst()
+        {
+            const string Test = "When the first rival comes";
+            if (!TestReady(Test))
+            {
+                return;
+            }
+            TestGuard(Test, () =>
+            {
+                RivalGame.Read(_world);
+                int step = Settings.RivalsFirst;
+                long first = FirstFrom;
+                int level = _world.Level;
+                long at = RivalRules.At(first, level);
+                bool known = step >= 0 && step < RivalCatalogue.FirstFromSteps.Length;
+                bool read = _world.FirstFrom == first;
+                bool under = RivalRules.Tier(at - 1L, level, first) == 0;
+                bool on = RivalRules.Tier(at, level, first) == 1;
+                bool second = RivalRules.Tier(RivalRules.At(RivalCatalogue.TierFrom[2], level), level, first) == 2;
+                int tier = RivalRules.Tier(_world.Worth, level, first);
+                string why = (known ? string.Empty : " step " + step + " is not one of the option's, read as the default;")
+                             + (read ? string.Empty : " the day's world holds " + _world.FirstFrom + ";")
+                             + (under ? string.Empty : " just under it is not tier 0;") + (on ? string.Empty : " at it is not tier 1;")
+                             + (second ? string.Empty : " the second tier moved;");
+                Logger?.Warn("Rivals check (first rival): option step " + step + ", " + first + " at the start's prices, " + at + " at today's level " + level
+                             + "; the player is worth " + _world.Worth + ", tier " + tier + " (the file says " + _file.Tier + "); the second still at "
+                             + RivalRules.At(RivalCatalogue.TierFrom[2], level) + ": " + (why.Length == 0 && known ? "PASS" : "FAIL (" + why.Trim() + ")") + ".");
+                RivalGame.Tell(NotificationType.Info, "reallife_rival_test_first_done",
+                    RivalText.Data("amount", RivalText.Money(at), "worth", RivalText.Money(_world.Worth)), _openPage);
             });
         }
     }
