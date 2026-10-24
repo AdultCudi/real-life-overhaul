@@ -16,7 +16,7 @@ Up to 400 people the player knows (Mom, an old friend, and everybody met in the 
 | `SocialState` | the social part of the save: game-free |
 | `SocialCatalogue` | names, jobs, traits, outings, every line anybody says: game-free |
 | `SocialLife` | what happens between the player and a person, with its consequences in the game; the optional links (ISocialLaw, ISocialWellbeing) |
-| `SocialDirector` | load and save, the one scene; its parts `.Contact` (who gets in touch, the day's round), `.Meetings` (people on their way), `.Plan` (the plan, the phone ringing), `.Scene`, `.Ui` (the card, the prompt, the marker) and `.Tests` |
+| `SocialDirector` | load and save, the one scene; its parts `.Contact` (who gets in touch, the day's round), `.Meetings` (people on their way), `.Lose` (losing touch, a full cast making room), `.Plan` (the plan, the phone ringing), `.Scene`, `.Ui` (the card, the prompt, the marker) and `.Tests` |
 | `SocialHooks` | the calls other features make into the social life |
 | `SocialScene` | the base of a scene: talking face to face, walking off |
 | `MeetScene` | somebody walks up |
@@ -69,6 +69,30 @@ Whoever comes walks in from pavement out of view, stops in front of the player, 
 
 The conversation is the game's own dialogue panel with both of them facing and talking (`talk_a` / `talk_b` in turn); "Swap numbers" puts them in the phone as a contact whose id is their name.
 A look is the game's own appearance system run from the person's seed (`AppearanceSetter.RandomizeElements(gender, skin, casual, seed)`), so Dana looks like Dana every time; `SocialCast` has two bodies at most and rebuilds one only when it is needed for somebody else.
+
+## Losing touch (`SocialDirector.Lose`)
+
+A player who met everybody early asked for a way to lose an acquaintance; with every slot taken, asking for a number in the street only ever got "maybe next time".
+A person's page in People has Lose touch under More about them (`PeopleDialog.LoseTouch`).
+When somebody cannot go, the page says why, the first reason that holds (`SocialRules.LoseBlockOf`, its lines `SocialCatalogue.LoseBlocks`):
+
+| reason | why |
+|---|---|
+| family (Mom) | family stays, however long it has been |
+| the old friend (Alex) | the phone's own friend contact, which the mod had before the social life |
+| dating or a partner | that ends with a talk (`SocialRules.BrokenUp`), not by drifting apart |
+| lives with the player | a roommate, somebody answering the roommate notice (`SocialLinks.LivesWith`), or a partner who moved in |
+| a plan | a plan with them, or them out with the player, dropping by or bringing somebody along now |
+| money | the player owes them, or they owe the player |
+| Flare | one of Flare's influencers is one of the cast (`SocialLinks.OnFlare`, `FlareCast.IsOne`) |
+
+No feature makes a social person an employee or a boss, so neither is a reason.
+Otherwise the call ends and the game's own question box asks (`SocialDirector.AskLoseTouch`, through `Core/GameConfirm`, as the game's Contacts app asks before it deletes a contact).
+A yes (`SocialDirector.LoseTouch`) takes their contact and thread off the phone as the game's own delete does (`SocialPhone.Remove`), lets Flare go of them (`FlareRules.Forget`: their posts and replies and the player's replies to them, drafts about them, tags, likes and the follow) and RLO Texts of what they remembered, and puts somebody new into their slot, rolled from the one who leaves (`SocialRules.ReplaceSeed`, `SocialCatalogue.MakeRolled`), not met yet, to be met where they would have been.
+The slot keeps its number, so nothing else of the save changes shape: the first eight stay in the record every version reads, and an older version reads the newcomer as somebody still to meet.
+
+Once all `SocialRules.MaxCast` (400) slots are taken and everybody is met, the acquaintance longest without a word who drifted away at least `SocialRules.DriftLoseDays` (60) days ago, and whom nothing holds, goes by themselves when somebody new is wanted (`SocialDirector.MakeRoom`, `SocialRules.LongestDrifted`), with a notification; not with "Relationships fade" off.
+With nobody to make room, the cast is full: a street talk that went well ends with "You seem to know half the city already" (`StreetLine.NumberFull`) and the game's notification says to lose touch with somebody first, and People says the life is full.
 
 ## The relationship model (`SocialRules`)
 
@@ -299,6 +323,8 @@ Its label is `reallife_social_test_mom`, and its row is in the chain in `Core/Re
 
 "The chosen person texts me about yesterday's outing" (`reallife_social_test_nextday`, `SocialDirector.TestNextDay`) sends the day after's text now, in turn as if the outing went well and as if it went badly; no outing is recorded.
 
+"Lose touch with the newest acquaintance and check the place is free" (`reallife_social_test_lose`, `SocialDirector.TestLoseTouch`) lets go of the newest acquaintance nothing holds (`SocialRules.NewestLoseable`), without the question, and checks that their slot holds somebody new and not met, that their contact is gone and that somebody is left to meet: the notice and the log line `Social check (lose touch)` say PASS or FAIL. It says why when nobody can go.
+
 ## On screen: the game's own interface (Social)
 
 The mod draws nothing of its own for the social life (`SocialHud` is gone).
@@ -326,6 +352,8 @@ How the marker on somebody looks beside an incident's marker (they are separate 
 The wording and length of the new notifications on screen.
 
 Typing on a call has not been seen in the game: that the game's text box opens over a call in the contacts app and hands its words back while the call is open, how "You: ..." and the model's answer look in the call's thread, and how long a pack takes to answer on the owner's machine (the hold is 6 s, then the written answer).
+
+Losing touch has not been seen in the game: that the game's question box comes up over the phone once the People call ends, and that the Contacts app's list drops the contact at once while it is open.
 
 A call back has not been seen in the game: that the person's thread in the game's phone holds every feature's texts as read here, how their line about a text reads in the contacts app's call, and the texts the day after an outing.
 

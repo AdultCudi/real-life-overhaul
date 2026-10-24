@@ -554,6 +554,24 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
+        /// <summary>The player lost touch with the social life's person in this slot: Flare lets them go (FlareRules.Forget).</summary>
+        public void Forget(int index)
+        {
+            if (_file == null)
+            {
+                return;
+            }
+            int posts = FlareRules.Forget(_file, index);
+            for (int i = _people.Count - 1; i >= 0; i--)
+            {
+                if (_people[i].Index == index)
+                {
+                    _people.RemoveAt(i);   // until the next round reads the social life again
+                }
+            }
+            Logger?.Info("Flare: person " + (index + 1) + " of the social life let go; " + posts + " of their posts and the replies to them taken down.");
+        }
+
         public string PersonName(int index)
         {
             FlarePerson p;

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Text;
 using Dialogs;
@@ -43,7 +44,7 @@ namespace RealLifeOverhaul
         {
             // Every place while somebody new can still come from it; once the cast is full, the places with somebody left.
             var text = new StringBuilder(256);
-            bool room = SocialState.Count < SocialRules.MaxCast;
+            bool room = SocialState.Count < SocialRules.MaxCast || SocialDirector.RoomToMake();
             for (int o = 0; o < Hints.Length; o++)
             {
                 if (Hints[o] != null && (room || SocialState.Unmet((SocialOrigin)o) != null))
@@ -64,7 +65,10 @@ namespace RealLifeOverhaul
             {
                 { "count", _known.Count.ToString() },
                 { "plan", planLine },
-                { "hints", text.Length > 0 ? SocialLife.T("reallife_social_people_hints").Replace("{list}", text.ToString()) : SocialLife.T("reallife_social_people_all_met") }
+                {
+                    "hints", text.Length > 0 ? SocialLife.T("reallife_social_people_hints").Replace("{list}", text.ToString())
+                        : SocialLife.T("reallife_social_people_full").Replace("{cast}", SocialRules.MaxCast.ToString())
+                }
             };
             var entry = new DialogEntry { messageData = "reallife_social_people_overview".Localize(data), OnCancel = PhoneContacts.HangUp };
             if (_known.Count > 0)
@@ -129,7 +133,33 @@ namespace RealLifeOverhaul
             var entry = new DialogEntry { messageData = "reallife_social_people_history".Localize(data), OnCancel = PhoneContacts.HangUp };
             entry.ConfirmTextOverride = "reallife_social_btn_next".Localize();
             entry.OnConfirm = () => Page(at + 1);
+            entry.SecondOptionTextOverride = "reallife_social_lose_btn";
+            entry.OnSecondOption = () => LoseTouch(at);
             return entry;
+        }
+
+        // Losing touch: why not, on the page, or the call ends and the game's question box asks, as its Contacts app does before
+        // it deletes a contact.
+        private DialogEntry LoseTouch(int at)
+        {
+            SocialPerson p = _known[at % _known.Count];
+            LoseBlock block = SocialDirector.LoseBlockOf(p);
+            string whyNot = (int)block < SocialCatalogue.LoseBlocks.Length ? SocialCatalogue.LoseBlocks[(int)block] : null;
+            if (block != LoseBlock.None && whyNot != null)
+            {
+                var refused = new DialogEntry { messageData = whyNot.Localize(SocialLife.Data(p)), OnCancel = PhoneContacts.HangUp };
+                refused.ConfirmTextOverride = "reallife_social_btn_next".Localize();
+                refused.OnConfirm = () => Page(at + 1);
+                return refused;
+            }
+            DialogEntry closing = PhoneContacts.Closing("reallife_social_lose_closing", SocialLife.Data(p));
+            Action finish = closing.OnVisible;
+            closing.OnVisible = () =>
+            {
+                finish?.Invoke();
+                SocialDirector.AskLoseTouch(p);
+            };
+            return closing;
         }
     }
 }

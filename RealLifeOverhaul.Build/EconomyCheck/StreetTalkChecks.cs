@@ -272,9 +272,10 @@ internal static partial class Program
         c.Approach.Warmth = 0;
         c.Rapport = 3;
         Check(StreetRules.Number(c, f, false) == StreetLine.NumberYes, "street talk: after a good talk they give the player their number");
-        Check(StreetRules.Number(c, f, true) == StreetLine.NumberLater, "street talk: nobody of the social life left to meet: they would rather bump into the player again");
+        Check(StreetRules.Number(c, f, true) == StreetLine.NumberFull, "street talk: a good talk, but the player's life has no room for anybody new: they say so, not maybe next time");
         f.SocialOn = false;
         Check(StreetRules.Number(c, f, false) == StreetLine.NumberLater, "street talk: without the social life, no number");
+        Check(StreetRules.Number(c, f, true) == StreetLine.NumberLater, "street talk: without the social life, no number, and never the full life's line");
         f.SocialOn = true;
         c.Rapport = 1;
         Check(StreetRules.Number(c, f, false) == StreetLine.NumberLater, "street talk: a talk that went only a little way: maybe next time");
