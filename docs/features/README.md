@@ -55,6 +55,7 @@ One page per feature. Each starts with what it is in a sentence, where its code 
 - [Business pressure](business-pressure.md): rivals, inspections, the racket and more.
 - [Interiors and decor](interiors.md).
 - [Ready-made designs](designs.md): the interior installation firms' designs for the mod's own businesses.
+- [New kinds of shop](shops.md): an ice cream parlour, a tea bar and a tobacconist to start in BizMan.
 - [Districts](districts.md): the district view on the city map.
 - [A landlord's duties](landlord.md): tenants' satisfaction, repair calls, the city's inspections, rent owed, lettings agencies and property managers, for the buildings you let.
 

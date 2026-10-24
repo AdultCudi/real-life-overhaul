@@ -173,6 +173,14 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+
+        if (args.Length == 1 && args[0] == "--shops")
+        {
+            Shops();     // (the new kinds of shop and their designs alone, while working on them: ShopChecks.cs, DesignChecks.cs)
+            Designs();
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--designs")
         {
             Designs();   // (the ready-made designs' checks alone, while working on them: DesignChecks.cs)
@@ -350,6 +358,7 @@ internal static partial class Program
         Districts();
         Interiors();
         Designs();      // the ready-made designs: the firms' folders, the names, the showroom's lot, and the plan from the game's own design files (DesignChecks.cs)
+        Shops();        // the new kinds of shop: the catalogue against the game's goods and furniture, hours, help pages, icons, texts, wiring (ShopChecks.cs)
         BusRide();
         PlayerBank();
         Branches();     // the bank branches: an hour's customers, visits in the bank's books, the reach over many branches, a branch that pays, the save, the option off (BranchChecks.cs)

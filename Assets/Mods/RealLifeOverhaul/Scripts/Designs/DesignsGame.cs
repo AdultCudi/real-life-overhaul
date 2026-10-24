@@ -107,6 +107,14 @@ namespace RealLifeOverhaul.Designs
                     items.RemoveAt(i);
                     continue;
                 }
+                if (items[i] is JObject shelf && shelf["playerItemPurchaserSettings"] is JObject stock && stock["itemName"] is JValue good)
+                {
+                    string now = (string)good, then = DesignRules.Restocked(cut, now);
+                    if (now != null && then != now)
+                    {
+                        stock["itemName"] = then;   // a tea bar's machines pour tea
+                    }
+                }
                 if (items[i] is JObject item && item["stackedItems"] is JArray stacked)
                 {
                     for (int c = stacked.Count - 1; c >= 0; c--)

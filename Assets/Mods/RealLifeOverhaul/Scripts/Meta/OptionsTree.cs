@@ -390,7 +390,9 @@ namespace RealLifeOverhaul.Meta
                     .Also("district standard minimum complaints basket products reward strength slider income customers"),
                 S("interiordecor").For("interiors_decor").Need("interiors").Opts("interiors_decor_strength").Also("decor ambience customers footfall clients office strength slider"),
                 S("designs").For("designs").Opts("designs")
-                    .Also("ready made design designs interior installation installer firm layout furniture fit out showroom studio academy office shop")),
+                    .Also("ready made design designs interior installation installer firm layout furniture fit out showroom studio academy office shop"),
+                S("newshops").For("newshops").Opts("new_shops")
+                    .Also("new shops kinds business types ice cream parlour gelato tea bar bubble tea slush tobacconist tobacco vape cigarettes cigars bizman start")),
 
             G("controls",
                 S("keys").For("keys").Buttons("reallife_keys_reset", "reallife_keys_camera_toggle", "reallife_keys_interact", "reallife_keys_interact_alt",

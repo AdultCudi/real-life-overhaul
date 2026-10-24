@@ -58,6 +58,8 @@ namespace RealLifeOverhaul
             Guard.Step("the training academy's business type", () => Careers.AcademyType.Register());   // before any save that holds one is loaded
             Economy.BranchType.Logger = context.Logger;
             Guard.Step("the bank branch's business type", () => Economy.BranchType.Register());   // before any save that holds one is loaded
+            Shops.ShopsDirector.Logger = context.Logger;
+            Guard.Step("the new kinds of shop", Shops.ShopsDirector.Start);   // before any save that holds one is loaded
             Designs.DesignsDirector.Logger = context.Logger;
             // The installation firms' designs for the mod's business types, put in place or taken away on a worker.
             Guard.Step("the ready-made designs", () => Designs.DesignsDirector.Ask(Settings.Designs));
@@ -372,6 +374,7 @@ namespace RealLifeOverhaul
                 .AddSplitter()
                 .Guarded(o => o.AddInteriors())   // interiors and decor that matter (Scripts/Interiors)
                 .Guarded(o => Designs.DesignsOptions.AddDesigns(o))   // the installation firms' designs for the mod's types (Scripts/Designs)
+                .Guarded(o => Shops.ShopsOptions.AddShops(o))   // the ice cream parlour, tea bar and tobacconist (Scripts/Shops)
                 .AddHeader("reallife_home_header")
                 .AddToggle(Settings.HomeLifeId, "reallife_home_enabled", Settings.HomeLife,
                     v => Settings.HomeLife = v)
@@ -1205,6 +1208,7 @@ namespace RealLifeOverhaul
             Keys.Dispose();
             EmpireView.Release();   // Empire Motors' driver's seat view as it was without this mod
             Economy.Dealership.DealerType.Unregister();
+            Shops.ShopsDirector.Stop();   // the help pages' handler off the game's language event
             return Task.CompletedTask;
         }
     }
@@ -1238,6 +1242,7 @@ namespace RealLifeOverhaul
             Guard.Step("the tech sector's business types", () => Tech.TechTypes.Register());   // furnished as the game's web development agency once its type is known
             Guard.Step("the training academy's business type", () => Careers.AcademyType.Register());   // furnished as the game's recruitment office once its type is known
             Guard.Step("the bank branch's business type", () => Economy.BranchType.Register());   // dressed as the city's banks once their type is known
+            Guard.Step("the new kinds of shop", Shops.ShopsDirector.CityLoaded);   // trading as the game's shops they are made like once those are loaded
             Guard.Step("other authors' mods", () => OtherMods.Look(context.Logger));   // one walk over the loaded assemblies
             Guard.Step("GoingPublic", () => GoingPublic.Logger = context.Logger);
             Guard.Step("GoingPublicLink", () => GoingPublicLink.Logger = context.Logger);
