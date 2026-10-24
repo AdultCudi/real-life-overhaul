@@ -14,7 +14,6 @@ namespace RealLifeOverhaul.Economy
     /// <summary>What the services ask of the rest of the mod, set by Wiring/ServicesLinks; each is optional, with the default named on it.</summary>
     public static class ServicesBridges
     {
-
         /// <summary>What buying every investor out of a business costs today (Ventures' own price). Default: nothing.</summary>
         public static Func<BuildingRegistration, int> InvestorsOwed;
 

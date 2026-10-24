@@ -6,6 +6,10 @@ namespace RealLifeOverhaul.Interiors
 {
     public sealed partial class InteriorDirector
     {
+        /// <summary>
+        /// The districts' standards, each business's interior effects and the catalogue's classification. Read only
+        /// during a capture, nothing per frame.
+        /// </summary>
         public CompanionModule CompanionInteriors()
         {
             if (_broken)

@@ -10,7 +10,6 @@ namespace RealLifeOverhaul.Economy
     /// <summary>What the player's bank asks of the rest of the mod, filled in by Wiring/OwnBankLinks; each may be null.</summary>
     public static class OwnBankBridges
     {
-
         /// <summary>The player's integrity as an owner, 0 to 100 (Standing). Default: 50, a newcomer's.</summary>
         public static Func<int> Integrity;
 

@@ -6,6 +6,7 @@ namespace RealLifeOverhaul.Utilities
     /// <summary>Portable tariff terms from the same catalogue and rules that bill the player's accounts.</summary>
     public static class UtilitiesCompanion
     {
+        /// <summary>The tariff terms for a price level and a year of the given length.</summary>
         public static Dictionary<string, object> Terms(int level, int year)
         {
             var seasons = new List<object>();
@@ -34,6 +35,7 @@ namespace RealLifeOverhaul.Utilities
                 "extraPersonShareThousandths", UtilitiesCatalogue.ExtraPersonShare);
         }
 
+        /// <summary>One utility account as the contract writes it.</summary>
         public static object AccountRow(Account account, object address, UtilitiesState state)
         {
             return CompanionSnapshot.Row("address", address, "service", account.Service.ToString().ToLowerInvariant(),
@@ -48,6 +50,7 @@ namespace RealLifeOverhaul.Utilities
                 "outageUntilHour", account.OutageUntil);
         }
 
+        /// <summary>The internet providers' plans and prices at a price level.</summary>
         public static object Internet(int level, int monthDays, UtilitiesState state)
         {
             var providers = new List<object>();

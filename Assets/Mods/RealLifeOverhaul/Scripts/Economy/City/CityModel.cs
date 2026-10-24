@@ -512,18 +512,22 @@ namespace RealLifeOverhaul.Economy
             return income * Spend(state.Cycle, level) / 1000;
         }
 
-        /// <summary>What a district bears at one business, in thousandths: the tolerance with the business's interior on it, that kept to a tenth either way.</summary>
+        /// <summary>
+        /// One price against what its district bears for it, in float32 as the city's daily run computes it.
+        /// </summary>
         public static double PriceRatioTerm(float price, float market, float index, bool monopoly)
         {
             float bears = market * (index + (monopoly ? MacroCatalogue.MonopolyAllowance / 1000f : 0f));
             return price / bears;
         }
 
+        /// <summary>The mean of the price terms, in thousandths; 0 with none.</summary>
         public static int MeanPriceRatio(double sum, int count)
         {
             return count == 0 ? 0 : (int)Math.Round(sum / count * 1000.0);
         }
 
+        /// <summary>What a district bears at one business, in thousandths: the tolerance with the business's interior on it, that kept to a tenth either way.</summary>
         public static int WithBears(int tolerance, int bears)
         {
             return (int)((long)tolerance * (1000 + Math.Max(MacroCatalogue.BearsLeast, Math.Min(MacroCatalogue.BearsMost, bears))) / 1000);

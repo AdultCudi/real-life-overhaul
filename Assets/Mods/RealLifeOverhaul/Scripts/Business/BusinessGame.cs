@@ -350,6 +350,10 @@ namespace RealLifeOverhaul
             public Promotion Promotion;
             public int Total, Own, Percent, Ambient, Interior;
             public float Multiplier;
+            /// <summary>
+            /// The figures of active play, kept while a save puts the game's own back; a few copies each time a figure
+            /// is written.
+            /// </summary>
             public readonly CompanionPromotion Play = new CompanionPromotion();
         }
 

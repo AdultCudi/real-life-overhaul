@@ -12,7 +12,6 @@ namespace RealLifeOverhaul.Economy
     /// <summary>What the online shops ask of the rest of the mod, filled in by Wiring/OnlineLinks. Each is optional.</summary>
     public static class OnlineBridges
     {
-
         /// <summary>The customers, in per cent, that one of the company's campaigns adds at a business today. Default: none.</summary>
         public static Func<BuildingRegistration, int> Campaign;
 

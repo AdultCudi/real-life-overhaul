@@ -57,7 +57,7 @@ publishing separately writes the reporting key after the owner's save handlers.
   decor. `InteriorRules` owns target, diminishing copies, category caps, variety,
   overall score, standard, footfall, basket, price tolerance and officeBoost. Site
   values are the current owner effects. A new-site model must explicitly assume
-  cleanliness/wear and an opening day for grace and ramp; outcomes aren't promises.
+  cleanliness/wear and an opening day for grace and ramp; outcomes are not promises.
 * `education`: catalogue includes injected definitions. Quotes use detached candidate
   enrollments with `StudyRules`; held/enrolled courses never receive a second new
   course fee. feeNowCents is the first installment, totalFeeCents sums all rounded
@@ -86,10 +86,10 @@ publishing separately writes the reporting key after the owner's save handlers.
 ## Ownership request
 
 `OwnershipV1` accepts schemaVersion 1, operation schedule/hire/wholesale/rent,
-phase review/apply/undo and 1–256 targets. Each target contains street and number.
-Schedule targets carry a full seven-day week of unique day indices 0–6:
+phase review/apply/undo and 1 to 256 targets. Each target contains street and number.
+Schedule targets carry a full seven-day week of unique day indices 0 to 6:
 `{day,isOpen,hours:[{from,to}],shifts:[{from,to,employeeId,itemInstanceId}]}`.
-Hours use integers 0–24; closed days have empty hours. A null itemInstanceId is
+Hours use integers 0 to 24; closed days have empty hours. A null itemInstanceId is
 allowed. Hire targets add boolean hiring/moving/scheduling; at least one is true,
 and scheduling requires the full week. Wholesale targets add contractId,
 action set/remove and unique itemIds. Set requires items; remove may be empty.

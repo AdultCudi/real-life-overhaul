@@ -35,6 +35,10 @@ namespace RealLifeOverhaul
                 "terms", BusinessCompanion.Terms(), "priceTolerance", tolerance, "futureAssumption", "captured-city-settings-held-constant"));
         }
 
+        /// <summary>
+        /// The business feature's own cash rows outside the statements, by category. Read only during a capture,
+        /// nothing per frame.
+        /// </summary>
         public static List<object> CompanionOutside()
         {
             return CompanionTransactions.Rows(new Dictionary<string, string>
@@ -49,6 +53,9 @@ namespace RealLifeOverhaul
             });
         }
 
+        /// <summary>
+        /// The business holds now in force, each with its end. Read only during a capture, nothing per frame.
+        /// </summary>
         public static CompanionModule CompanionClosures()
         {
             if (!BusinessState.Loaded)

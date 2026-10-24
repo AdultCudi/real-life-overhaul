@@ -7,7 +7,9 @@ namespace RealLifeOverhaul.Economy
 {
     internal static partial class CityGame
     {
-        /// <summary>The owner's saved wholesale originals and live catalogue values; no price writes or owner cache changes.</summary>
+        /// <summary>
+        /// The owner's saved wholesale originals and live catalogue values; no price writes or owner cache changes.
+        /// </summary>
         public static CompanionModule CompanionPrices(IReadOnlyDictionary<string, double> materials)
         {
             if (CityEconomyDirector.Instance != null && CityEconomyDirector.Instance.CompanionFailed)
@@ -69,6 +71,7 @@ namespace RealLifeOverhaul.Economy
                 "depositRefundAdjustment", "none", "carriedDebtInSiteForecast", false));
         }
 
+        /// <summary>The city's deduction labels that recur. Read only during a capture, nothing per frame.</summary>
         public static object CompanionTaxLabels()
         {
             return new List<object>
@@ -78,8 +81,16 @@ namespace RealLifeOverhaul.Economy
             };
         }
 
+        /// <summary>
+        /// The city's deduction label whose recurrence no single rule gives. Read only during a capture, nothing per
+        /// frame.
+        /// </summary>
         public static string[] CompanionUnclassifiedTaxLabels() => new[] { LivingKey };
 
+        /// <summary>
+        /// What each district bears now, and the goods and monopolies it is judged on; null while the city's economy is
+        /// not running. Read only during a capture, nothing per frame.
+        /// </summary>
         public static object CompanionTolerance()
         {
             CityState state = CityEconomy.Live;

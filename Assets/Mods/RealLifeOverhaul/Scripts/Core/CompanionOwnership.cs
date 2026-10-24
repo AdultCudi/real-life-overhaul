@@ -7,9 +7,16 @@ using Newtonsoft.Json.Linq;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>Bounded, read-only ownership requests. Every target is validated before any owner is queried.</summary>
+    /// <summary>
+    /// Bounded, read-only ownership requests. Every target is validated before any owner is queried. Runs only on a
+    /// reader's query, nothing per frame; a fault answers "unknown" and is logged once.
+    /// </summary>
     internal static class CompanionOwnership
     {
+        /// <summary>
+        /// The answer to one ownership request, as JSON; a malformed request or a fault answers "unknown". Read only
+        /// during an ownership query, nothing per frame.
+        /// </summary>
         public static string Query(GameInstance game, string json)
         {
             try
@@ -51,12 +58,14 @@ namespace RealLifeOverhaul
                 }
                 return CompanionSnapshot.Json(CompanionBridges.Ownership(operation, targets));
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                CompanionGame.Failed("ownership", e);
                 return Result("unknown", "rlo", "request", "ownership-invalid-or-failed");
             }
         }
 
+        /// <summary>One decision in the response's shape, with at most one reason and one effect.</summary>
         internal static object Decision(string decision, string owner, string task, string reason, string effect = null)
         {
             return CompanionSnapshot.Row("schemaVersion", 1, "decision", decision, "owner", owner, "task", task,

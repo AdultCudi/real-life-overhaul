@@ -605,13 +605,17 @@ namespace RealLifeOverhaul.Economy
             shop.Applied = shop.HasFigure && _running && !_holding && shop.Wanted != 0;
         }
 
-        /// <summary>What the city's economy adds to a business's footfall now, in per cent of customers; asked on every figure the business feature writes.</summary>
+        /// <summary>
+        /// What the city's economy adds at a business for the report, even while its figures are held for a save. A
+        /// lookup, read only during a capture.
+        /// </summary>
         internal static int CompanionFootfallOf(BuildingRegistration reg)
         {
             CityEconomyDirector d = Instance;
             return d != null && d._running && reg != null && d._byReg.TryGetValue(reg, out CityShop shop) ? shop.Wanted : 0;
         }
 
+        /// <summary>What the city's economy adds to a business's footfall now, in per cent of customers; asked on every figure the business feature writes.</summary>
         public static int FootfallOf(BuildingRegistration reg)
         {
             CityEconomyDirector d = Instance;

@@ -10,11 +10,18 @@ namespace RealLifeOverhaul
 {
     public static partial class Wiring
     {
+        /// <summary>
+        /// The companion's planning modules and its live ownership query, each read from the feature that owns
+        /// it, so no feature meets another. Called only during a capture or a reader's query: nothing per frame.
+        /// A fault is said once (<see cref="Fault"/>) and only that module reads "failed", or the query
+        /// answers "unknown".
+        /// </summary>
         private static class PlanningCompanionLinks
         {
             private static bool CompanyEnabled => Settings.Economy && Settings.EconomyCompany;
             private static bool ManagersEnabled => CompanyEnabled && Settings.EconomyManagers;
 
+            /// <summary>Fills the planning readers and the ownership query; once, when the mod connects.</summary>
             internal static void Connect()
             {
                 CompanionBridges.Readers["prices"] = () => !Settings.Economy || !Settings.EconomyCity
@@ -46,8 +53,9 @@ namespace RealLifeOverhaul
                     return BusinessGame.CompanionFootfall(CityGame.CompanionTolerance(), CityEconomyDirector.CompanionFootfallOf,
                         reg => company.TryGetValue(reg, out int value) ? value : 0);
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
+                    Fault("PlanningCompanionLinks.Footfall", e);
                     return new CompanionModule("failed");
                 }
             }
@@ -71,8 +79,9 @@ namespace RealLifeOverhaul
                     data["internetNeeds"] = Settings.Utilities ? InternetCatalogue.Needs : new string[0];
                     return module;
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
+                    Fault("PlanningCompanionLinks.Requirements", e);
                     return new CompanionModule("failed");
                 }
             }
@@ -107,8 +116,9 @@ namespace RealLifeOverhaul
                         "recurringDeductionLabels", labels, "unclassifiedDeductionLabels", new List<string>(unclassified), "balancesAreSeparate", true,
                         "taxEffectsOutsideNativeForecast", taxEffects));
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
+                    Fault("PlanningCompanionLinks.Outside", e);
                     return new CompanionModule("failed");
                 }
             }
@@ -132,8 +142,9 @@ namespace RealLifeOverhaul
                 {
                     return Ownership(operation, targets, Registrations());
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
+                    Fault("PlanningCompanionLinks.Ownership", e);
                     return CompanionOwnership.Decision("unknown", "rlo", "request", "ownership-invalid-or-failed");
                 }
             }
@@ -190,8 +201,9 @@ namespace RealLifeOverhaul
                     }
                     return CompanionOwnership.Decision("allowed", "rlo", operation, null);
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
+                    Fault("PlanningCompanionLinks.Ownership", e);
                     return CompanionOwnership.Decision("unknown", "rlo", "request", "ownership-invalid-or-failed");
                 }
             }
@@ -222,8 +234,9 @@ namespace RealLifeOverhaul
                         "authorization", "live-query-required", "managersEnabled", ManagersEnabled,
                         "estateEnabled", Settings.Economy && Settings.Estate));
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
+                    Fault("PlanningCompanionLinks.OwnershipSnapshot", e);
                     return new CompanionModule("failed");
                 }
             }

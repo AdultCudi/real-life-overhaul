@@ -19,6 +19,7 @@ namespace RealLifeOverhaul.Economy
                 "defaultMarketAmount", CompanionValues.Decimal(market));
         }
 
+        /// <summary>The price tolerance terms from the city's catalogue.</summary>
         public static Dictionary<string, object> PriceTerms()
         {
             return CompanionSnapshot.Row("bearsMinThousandths", MacroCatalogue.BearsLeast, "bearsMaxThousandths", MacroCatalogue.BearsMost,

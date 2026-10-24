@@ -3,6 +3,7 @@ namespace RealLifeOverhaul.Interiors
     /// <summary>Portable terms from the exact production constants, shared by live capture and fixtures.</summary>
     public static class InteriorCompanion
     {
+        /// <summary>The interior terms from the production constants and the parts in use.</summary>
         public static object Terms(InteriorParts parts)
         {
             return CompanionSnapshot.Row("standardScaleThousandths", parts.StandardScale,

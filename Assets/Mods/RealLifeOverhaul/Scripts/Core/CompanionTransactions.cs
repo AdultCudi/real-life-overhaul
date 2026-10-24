@@ -2,9 +2,15 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>Projects explicitly owner-classified transaction rows. Native statement amounts are never rewritten.</summary>
+    /// <summary>
+    /// Projects explicitly owner-classified transaction rows. Native statement amounts are never rewritten.
+    /// </summary>
     internal static class CompanionTransactions
     {
+        /// <summary>
+        /// The paid rows of the given transaction types, one pass over the game's transactions. Read only during a
+        /// capture, nothing per frame.
+        /// </summary>
         public static List<object> Rows(Dictionary<string, string> categories)
         {
             var rows = new List<object>();

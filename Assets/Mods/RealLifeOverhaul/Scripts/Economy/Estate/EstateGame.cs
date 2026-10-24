@@ -14,7 +14,6 @@ namespace RealLifeOverhaul.Economy
     /// <summary>What the property business asks of the rest of the mod, filled in by Wiring/EstateLinks; each is optional.</summary>
     public static class EstateBridges
     {
-
         /// <summary>The council's rent policy: -1 freed, 0 as it was, +1 controlled. Default: as it was.</summary>
         public static Func<int> RentLever;
 

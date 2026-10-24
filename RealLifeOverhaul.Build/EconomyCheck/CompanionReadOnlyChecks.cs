@@ -21,7 +21,7 @@ internal static partial class Program
         Check(round.IndexOf("_carry.Clear();") < round.IndexOf("Rework(day, true)"),
             "companion: office sequence begins every morning with zero carry");
         string[] forbidden = { "GameBooks.Refresh(", "CompanyGame.Offers(", "CompanyGame.NoteHours(",
-            "UtilitiesRules.AddDay(", "BankTerms.Find(", ".MaterialFactor(", "GameManager.ChangeMoney", "Fault(",
+            "UtilitiesRules.AddDay(", "BankTerms.Find(", ".MaterialFactor(", "GameManager.ChangeMoney",
             "GameLoans.MeansLimit(", "BusinessHelper.UpdatePromotion(", "SaveHook.Keep(", "CompanionGame.Save(" };
         foreach (string file in Directory.EnumerateFiles(root, "*.cs", SearchOption.AllDirectories))
         {
@@ -36,5 +36,18 @@ internal static partial class Program
                 Check(!code.Contains(call), "companion: read-only " + name + " never invokes " + call);
             }
         }
+        // A fault stays local but is still said once in Player.log, so a broken module can be found.
+        foreach (string links in new[] { "Wiring/Wiring.CompanionLinks.cs", "Wiring/Wiring.PlanningCompanionLinks.cs" })
+        {
+            string code = File.ReadAllText(System.IO.Path.Combine(root, links));
+            Check(!Regex.IsMatch(code, @"catch \(Exception\)") && Regex.Matches(code, @"catch \(Exception e\)\s*\{\s*Fault\(""").Count
+                == Regex.Matches(code, @"catch \(Exception e\)").Count, "companion: every fault in " + links + " is logged once through Fault");
+        }
+        string game = File.ReadAllText(System.IO.Path.Combine(root, "Core/CompanionGame.cs"));
+        Check(game.Contains("CompanionBridges.Readers, Failed);") && Regex.IsMatch(game, @"catch \(Exception e\)\s*\{\s*Failed\(""capture"", e\);\s*return null;")
+            && game.Contains("if (Reported.Add(capability))"), "companion: a module's or a capture's fault is logged once a session");
+        string ownership = File.ReadAllText(System.IO.Path.Combine(root, "Core/CompanionOwnership.cs"));
+        Check(Regex.IsMatch(ownership, @"catch \(Exception e\)\s*\{\s*CompanionGame\.Failed\(""ownership"", e\);"),
+            "companion: an ownership query's fault is logged once a session");
     }
 }

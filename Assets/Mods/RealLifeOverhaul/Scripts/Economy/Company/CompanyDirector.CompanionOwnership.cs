@@ -51,6 +51,10 @@ namespace RealLifeOverhaul.Economy
             return null;
         }
 
+        /// <summary>
+        /// Refuses proposed late hours without a valid late opening permit; null when nothing stands in the way. Read
+        /// only during an ownership query, nothing per frame.
+        /// </summary>
         internal object CompanionPermit(BuildingRegistration reg, JArray week)
         {
             if (!On(CompanyPart.Licences) || _state == null)

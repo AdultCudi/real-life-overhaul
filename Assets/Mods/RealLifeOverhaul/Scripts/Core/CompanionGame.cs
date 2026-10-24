@@ -12,13 +12,17 @@ namespace RealLifeOverhaul
     {
         private static readonly HashSet<string> Reported = new HashSet<string>(StringComparer.Ordinal);
 
-        /// <summary>The report, or null outside a loaded session or in Going Public. Throws on a fault of the envelope.</summary>
+        /// <summary>
+        /// Whether a capture or an ownership query may run: this save loaded and wired, outside Going Public. One
+        /// comparison or so, nothing per frame.
+        /// </summary>
         internal static bool Available(GameInstance game)
         {
             return game != null && ReferenceEquals(game, SaveGameManager.Current) && ModState.Loaded
                 && Wiring.Connected && !GoingPublic.InSession;
         }
 
+        /// <summary>The report, or null outside a loaded session or in Going Public. Throws on a fault of the envelope.</summary>
         public static string Capture(GameInstance game)
         {
             if (!Available(game))
@@ -27,18 +31,19 @@ namespace RealLifeOverhaul
             }
             return CompanionSnapshot.Capture(Meta.Changelog.Latest,
                 CompanionSnapshot.Row("character", game.characterId, "day", game.Day, "hour", game.Hour, "minute", (int)game.Minute),
-                CompanionBridges.Readers);
+                CompanionBridges.Readers, Failed);
         }
 
-        /// <summary>As <see cref="Capture"/>, but a fault gives null without diagnostics or latch changes: another mod's call never throws.</summary>
+        /// <summary>As <see cref="Capture"/>, but a fault is logged once and gives null: another mod's call never throws.</summary>
         public static string CaptureSafe(GameInstance game)
         {
             try
             {
                 return Capture(game);
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                Failed("capture", e);
                 return null;
             }
         }
@@ -93,7 +98,11 @@ namespace RealLifeOverhaul
         /// <summary>Forgets which faults were logged, so a new session says each once again.</summary>
         public static void Reset() => Reported.Clear();
 
-        private static void Failed(string capability, Exception error)
+        /// <summary>
+        /// Says a capability's, a capture's or an ownership query's fault once a session in Player.log; it changes no
+        /// state the features read.
+        /// </summary>
+        internal static void Failed(string capability, Exception error)
         {
             if (Reported.Add(capability))
             {

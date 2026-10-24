@@ -6,6 +6,7 @@ namespace RealLifeOverhaul.Economy
 {
     internal static partial class CompanyGame
     {
+        /// <summary>Which statement category each company cost is booked under.</summary>
         public static object CompanionStatementCategories()
         {
             var rows = new List<object>();
@@ -16,7 +17,9 @@ namespace RealLifeOverhaul.Economy
             return rows;
         }
 
-        /// <summary>The owning type predicates and permit rules, with optional late hours separate from mandatory types.</summary>
+        /// <summary>
+        /// The owning type predicates and permit rules, with optional late hours separate from mandatory types.
+        /// </summary>
         public static CompanionModule CompanionRequirements(int index)
         {
             var types = new List<object>();
@@ -40,6 +43,9 @@ namespace RealLifeOverhaul.Economy
                 "paymentBasis", "startup-then-term-renewal"));
         }
 
+        /// <summary>
+        /// The company's deduction labels, each recurring or once. Read only during a capture, nothing per frame.
+        /// </summary>
         public static object CompanionTaxLabels()
         {
             var rows = new List<object>();

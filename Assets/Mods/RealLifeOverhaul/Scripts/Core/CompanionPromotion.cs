@@ -7,6 +7,9 @@ namespace RealLifeOverhaul
         public int Own, Total, Percent, Ambient, Interior;
         public float Multiplier;
 
+        /// <summary>
+        /// Keeps the figures of active play; a save's put back is ignored. A few copies, no allocation.
+        /// </summary>
         public void Remember(bool saving, int own, int total, int percent, int ambient, int interior, float multiplier)
         {
             if (saving)

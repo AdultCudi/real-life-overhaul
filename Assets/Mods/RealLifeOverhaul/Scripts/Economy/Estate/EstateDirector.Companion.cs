@@ -2,6 +2,10 @@ namespace RealLifeOverhaul.Economy
 {
     public sealed partial class EstateDirector
     {
+        /// <summary>
+        /// Refuses a rent change where the property business holds the building; null when it does not. Read only
+        /// during an ownership query, nothing per frame.
+        /// </summary>
         public object CompanionRentOwnership(BuildingRegistration reg)
         {
             if (!_running || _broken || _state == null || !On(EstatePart.Property))

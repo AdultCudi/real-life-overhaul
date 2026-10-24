@@ -5,13 +5,16 @@ namespace RealLifeOverhaul.Economy
 {
     public sealed partial class CompanyDirector
     {
+        /// <summary>A company part's state for the report: disabled, failed, unavailable or ready.</summary>
         internal string CompanionPartStatus(CompanyPart part)
         {
             return !Wanted(part) ? "disabled" : _broken || _partBroken[(int)part] ? "failed"
                 : !_running ? "unavailable" : "ready";
         }
 
-        /// <summary>Commitments and optional new-site policy terms; never refreshes staff or financial statements.</summary>
+        /// <summary>
+        /// Commitments and optional new-site policy terms; never refreshes staff or financial statements.
+        /// </summary>
         public CompanionModule CompanionCompany()
         {
             if (_broken)

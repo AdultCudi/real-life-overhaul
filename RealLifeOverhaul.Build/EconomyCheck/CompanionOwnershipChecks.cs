@@ -17,6 +17,8 @@ namespace RealLifeOverhaul
     internal static class CompanionGame
     {
         public static bool Available(GameInstance game) => game != null && game.Available;
+        public static int Logged;
+        public static void Failed(string capability, Exception error) => Logged++;
     }
 }
 
@@ -45,7 +47,9 @@ internal static partial class Program
         Check(calls == 1, "ownership: duplicate, trailing, missing and oversized JSON never reaches owner");
         ((JArray)request["targets"]).RemoveAt(1);
         CompanionBridges.Ownership = (operation, targets) => throw new InvalidOperationException("synthetic owner failure");
-        Check(JObject.Parse(CompanionOwnership.Query(game, request.ToString()))["decision"].ToString() == "unknown", "ownership: failed owner is unknown");
+        int logged = CompanionGame.Logged;
+        Check(JObject.Parse(CompanionOwnership.Query(game, request.ToString()))["decision"].ToString() == "unknown"
+            && CompanionGame.Logged == logged + 1, "ownership: failed owner is unknown, and its fault goes to the log");
         Check(game.Money == 123 && game.ModData == "unchanged", "ownership: failure path leaves money and save data unchanged");
         CompanionBridges.Ownership = null;
         Check(JObject.Parse(CompanionOwnership.Query(game, request.ToString()))["decision"].ToString() == "unknown", "ownership: missing provider is unknown");

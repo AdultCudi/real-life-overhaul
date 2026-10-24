@@ -4,6 +4,10 @@ namespace RealLifeOverhaul.Economy
 {
     internal static partial class CompanyGame
     {
+        /// <summary>
+        /// The company's cover and tax rows outside the statements, by category. Read only during a capture, nothing
+        /// per frame.
+        /// </summary>
         public static List<object> CompanionOutside()
         {
             return CompanionTransactions.Rows(new Dictionary<string, string>

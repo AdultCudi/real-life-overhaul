@@ -3,9 +3,15 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Careers
 {
-    /// <summary>Current enrollment quotes on detached candidate records, shared by the live owner and offline fixtures.</summary>
+    /// <summary>
+    /// Current enrollment quotes on detached candidate records, shared by the live owner and offline fixtures.
+    /// </summary>
     public static class EducationCompanion
     {
+        /// <summary>
+        /// Every course's quotes and enrolment, from the study rules on detached records. Read only during a capture,
+        /// nothing per frame.
+        /// </summary>
         public static CompanionModule Capture(StudyFile study, int day, int level, int cash, int council,
             bool loanOn, Func<CourseDef, bool> offered)
         {
