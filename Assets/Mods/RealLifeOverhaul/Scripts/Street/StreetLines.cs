@@ -98,6 +98,7 @@ namespace RealLifeOverhaul.Street
             new[] { "reallife_street_work_retired_1", "reallife_street_work_retired_2", "reallife_street_work_retired_3", "reallife_street_work_retired_4" },   // WorkRetired
             new[] { "reallife_street_welcome_1", "reallife_street_welcome_2", "reallife_street_welcome_3", "reallife_street_welcome_4", "reallife_street_welcome_5" },   // Welcome
             new[] { "reallife_street_greet_back_1", "reallife_street_greet_back_2", "reallife_street_greet_back_3", "reallife_street_greet_back_4" },   // GreetBack
+            new[] { "reallife_street_number_full_1", "reallife_street_number_full_2", "reallife_street_number_full_3" },   // NumberFull
         };
 
         /// <summary>What the player says for each choice, by StreetAsk: the button's words and the player's line on the card.</summary>

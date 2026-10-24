@@ -301,7 +301,10 @@ namespace RealLifeOverhaul.Street
             return o;
         }
 
-        /// <summary>Whether they give their number: a good enough talk, and never when the social life has nobody left to meet.</summary>
+        /// <summary>
+        /// Whether they give their number: a good enough talk, and never when the social life is off or the player's life has
+        /// no room for anybody new. That last says so (NumberFull), so the player knows a talk that went well was not the trouble.
+        /// </summary>
         public static StreetLine Number(StreetChat c, StreetFacts f, bool nobodyNew)
         {
             if (c.Memo != null && c.Memo.Swapped)
@@ -310,9 +313,13 @@ namespace RealLifeOverhaul.Street
             }
             int score = Score(c);
             bool yes = score >= NumberAt || (f.Standing >= LikedFrom && score >= NumberLiked);
-            if (yes && (nobodyNew || !f.SocialOn))
+            if (yes && !f.SocialOn)
             {
                 return StreetLine.NumberLater;
+            }
+            if (yes && nobodyNew)
+            {
+                return StreetLine.NumberFull;
             }
             if (yes)
             {

@@ -46,6 +46,7 @@ namespace RealLifeOverhaul.Careers
         public int From, To;                  // the days it is open
         public int Via;
         public int Family = -1, Level = -1;   // the jobs board's ad it is, if it is one
+        public string Lead = string.Empty;    // who of the people the player knows passed it on (Network's job lead); empty for none
         public int Shift;                     // its working week fitted to the workplace's opening hours (OpenHoursRules.Pack); 0 not fitted yet: the profession's own
 
         private Profession _fitted;           // the profession on that week, made again only when the week changes
@@ -89,6 +90,7 @@ namespace RealLifeOverhaul.Careers
             o.Via = Via;
             o.Family = Family;
             o.Level = Level;
+            o.Lead = Lead;
             o.Shift = Shift;
         }
 

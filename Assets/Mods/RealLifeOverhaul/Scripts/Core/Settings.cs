@@ -37,6 +37,7 @@
         public const string MealsSeatedId = "meals_seated";
         public const string MealsCookedId = "meals_cooked";
         public const string MealsDanceId = "meals_dance";
+        public const string HouseholdStaffId = "home_household";
         public const string CameraFovId = "camera_fov";
         public const string CameraHeightId = "camera_height";
         public const string CarCameraId = "car_camera";
@@ -104,6 +105,7 @@
         public const string CityInteractionsId = "city_interactions";
         public const string JobsId = "jobs";
         public const string JobPayId = "job_pay";
+        public const string JobTaxiEasyId = "job_taxi_easy";
         public const string FamilyId = "family";
         public const string UtilitiesId = "utilities";
         public const string FamilyAtHomeId = "family_at_home";
@@ -128,6 +130,7 @@
         public const string PlannerRemindersId = "planner_reminders";
         public const string PlannerMorningId = "planner_morning";
         public const string CalendarId = "calendar";
+        public const string HustlesId = "hustles";
         public const string EconomyId = "economy";
         public const string EconomyGradeUpNotesId = "economy_grade_up_notes";
         public const string EconomyProductsId = "economy_products";
@@ -163,6 +166,7 @@
         public const string EstateHotelId = "economy_estate_hotel";
         public const string EstateHireId = "economy_estate_hire";
         public const string EstateRentId = "economy_estate_rent";
+        public const string EstateDutiesId = "economy_estate_duties";
         public const string EconomyOnlineId = "economy_online";
         public const string EconomyOnlineWaitNotesId = "economy_online_wait_notes";
         public const string TechPeopleId = "tech_people";
@@ -200,6 +204,7 @@
         public const string GarageUnderglowId = "garage_underglow";
         public const string GaragePoliceId = "garage_police";
         public const string GarageSoundsId = "garage_sounds";
+        public const string GarageResaleId = "garage_resale";
         public const string TwoWheelersId = "two_wheelers";
         public const string HomeLifeId = "home_life";
         public const string HomeNeedsId = "home_needs";
@@ -246,6 +251,8 @@
         public const string FireFrequencyId = "fire_frequency";
         public const string WeatherMattersId = "weather_matters";
         public const string WeatherFrequencyId = "weather_frequency";
+        public const string SeasonsId = "seasons";
+        public const string SnowLookId = "snow_look";
         public const string StreetEventsId = "street_events";
         public const string StreetEventFrequencyId = "street_event_frequency";
         public const string StreetProtestNotesId = "street_protest_notes";
@@ -257,6 +264,7 @@
         public const string SocialTextsId = "social_texts";
         public const string SocialTextsMaxId = "social_texts_max";
         public const string SocialComposerId = "social_composer";
+        public const string SocialNetworkingId = "social_networking";
         public const string StreetTalkId = "street_talk";
         public const string StreetBrushId = "street_brush";
         public const string SocialNewspaperId = "social_newspaper";
@@ -277,6 +285,7 @@
         public const string StandingRequestNotesId = "standing_request_notes";
         public const string RivalsId = "rivals";
         public const string RivalsStrengthId = "rivals_strength";
+        public const string RivalsFirstId = "rivals_first";
         public const string LedgerKiosksId = "ledger_kiosks";
         public const string LedgerOnlineId = "ledger_online";
         public const string LedgerOnlineNotesId = "ledger_online_notes";
@@ -355,6 +364,7 @@
         public static bool MealsSeated = true;   // a meal is eaten at a free seat nearby, with the food in front
         public static bool MealsCooked = true;   // a meal cooked at home is carried to a seat and eaten there
         public static bool MealsDance = true;    // "Dance" in the radio panel over a loudspeaker playing music
+        public static bool HouseholdStaff = true;   // a cleaner, a cook, a butler or a mechanic taken on for the home through the phone
         public static int CameraFov = 55;        // degrees, vertical
         public static bool LifeEvents = true;
         public static int EventFrequency = 5;        // about this many random events per game week
@@ -421,6 +431,7 @@
         public static bool CityInteractions = true;      // the player can buy a coffee at the cart
         public static bool Jobs = true;                  // jobs the player can take themselves, from the Gig Line contact on the phone
         public static int JobPay = 100;                  // percent of what the job catalogue pays
+        public static bool JobTaxiEasy = false;          // ride-hail passengers who mind braking, bumps and speeding less (TaxiComfortRules.Easier); off, the ride is judged as it always was
         public static bool Family = true;                // a partner who moves in, engagement and wedding, children, relatives
         public static bool Utilities = true;             // power and water bills, the utilities office and the Utilities app
         public static bool FamilyAtHome = true;          // the partner is shown as a character in the home
@@ -444,6 +455,7 @@
         public static bool Planner = true;               // the Planner app on the phone: everything to do in one agenda
         public static bool PlannerReminders = true;      // ...and its reminders, sent as the game's own notifications
         public static bool Calendar = true;              // the Calendar app
+        public static bool Hustles = true;               // the Marketplace app: used goods and cars to flip, and freelance visits
         public static bool PlannerMorning = true;        // ...and one line of the day on waking (off: none)
         public static bool Economy = true;               // the credit rating, the banks' terms by it, loans from the phone and the Finance app
         public static bool EconomyGradeUpNotes = true;   // ...a notification when the rating rises a grade
@@ -480,6 +492,7 @@
         public static bool EstateHotel = true;           // owning a hotel of the city's as a business
         public static int EstateRent = 100;              // rental income: percent of the market's rent of a unit the player lets himself, and so of what is asked, offered and renewed at (50 to 300)
         public static bool EstateHire = true;            // car hire (off: no car goes out, and one that is out is called back)
+        public static bool EstateDuties = true;          // a landlord's duties: satisfaction, repair calls, inspections, managers (off: letting as before)
         public static bool TechPeople = true;            // professionals (off: the game's own staff alone; files are kept)
         public static bool TechJobs = true;              // the jobs board and the labour market (off: the game's own hiring alone)
         public static bool TechSector = true;            // the tech sector (off: those businesses earn nothing of their own; their files are kept)
@@ -536,6 +549,7 @@
         public static bool GarageUnderglow = true;       // underglow kits light up after dark
         public static bool GaragePolice = true;          // a straight-through exhaust or riding without a helmet can be fined
         public static bool GarageSounds = true;          // recorded engine, exhaust, turbo and tyre sounds on the car the player drives
+        public static bool GarageResale = true;          // a car sold with custom shop work on it fetches the work's worth on top of the game's price
         public static bool TwoWheelers = true;           // bicycles and motorbikes: docks, racks, stands, and the ones already out
         public static bool HomeLife = true;              // home life and health as a whole
         public static bool HomeNeeds = true;             // hygiene, stress and how tidy the flat is
@@ -582,6 +596,8 @@
         public static int FireFrequency = 2;             // 1 = rare, 10 = one every few minutes
         public static bool WeatherMatters = true;        // wet roads, mist, storms, heat and cold change grip, traffic, accidents, crime and energy
         public static int WeatherFrequency = 5;          // how often a summer day is a heat wave and a winter day a cold snap: 1 = hardly ever, 10 = nearly half of them
+        public static bool Seasons = true;               // what customers buy follows the season, and some winter days it snows (traffic and walkers slower on snow with the weather on)
+        public static bool SnowLook = true;              // ...the snow is seen: flakes falling and the ground white (off: felt and forecast only, for slower machines)
         public static bool StreetEvents = true;          // markets, parades, protests, fun runs, film shoots, fireworks
         public static int StreetEventFrequency = 4;      // 1 = one day in twelve has one, 10 = four in five (the Saturday market and the fireworks nights are fixed)
         public static bool StreetProtestNotes = true;    // the notifications of a protest
@@ -593,6 +609,7 @@
         public static bool SocialTexts = true;           // text messages from people (off: only what must be said is shown, as a notification)
         public static int SocialTextsMax = 3;            // texts a day from everybody together, 1 to 6
         public static bool SocialComposer = true;        // with an RLO Texts pack, a call's chat is answered in the player's own typed words
+        public static bool SocialNetworking = true;      // some people met hold a position and, as they grow closer, do the player a favour each
         public static bool StreetTalk = true;            // talk to anybody in the street: the game's panel over a passer-by offers Talk
         public static int StreetBrush = 1;               // how often people in the street have no time: 0 rarely, 1 sometimes, 2 often (StreetRules.BrushFactor)
         public static bool SocialMedia = true;           // Flare, the city's social media app
@@ -610,6 +627,7 @@
         public static bool StandingPress = true;         // ...reporters, the night show, magazines and the papers' pieces about the player
         public static bool Rivals = true;                // rival tycoons (off: they stand still and do nothing; the save keeps them)
         public static int RivalsStrength = 1;            // how hard they push: 0 Gentle, 1 Normal, 2 Hard, 3 Ruthless
+        public static int RivalsFirst = 0;               // the worth the first rival comes forward at, a step of RivalCatalogue.FirstFromSteps: 0 is 5 million, as before, up to 4, 50 million
         public static bool StandingCorruption = true;    // ...officials who offer to speed things up for a bribe, and what comes of it
         public static bool StandingRequestNotes = true;  // ...a notification when the city asks something of the player
         public static bool SocialNewspaper = true;       // the City Ledger: a morning newspaper, delivered to subscribers' homes and sold at kiosks
@@ -706,6 +724,7 @@
             MealsSeated = Bool(modId, MealsSeatedId, MealsSeated);
             MealsCooked = Bool(modId, MealsCookedId, MealsCooked);
             MealsDance = Bool(modId, MealsDanceId, MealsDance);
+            HouseholdStaff = Bool(modId, HouseholdStaffId, HouseholdStaff);
             CameraFov = Int(modId, CameraFovId, CameraFov);
             CameraHeight = Int(modId, CameraHeightId, CameraHeight);
             CarCamera = Bool(modId, CarCameraId, CarCamera);
@@ -779,6 +798,7 @@
             RoommateOptions.Load(modId);   // sharing the flat (Scripts/Home/Roommates)
             Jobs = Bool(modId, JobsId, Jobs);
             JobPay = Int(modId, JobPayId, JobPay);
+            JobTaxiEasy = Bool(modId, JobTaxiEasyId, JobTaxiEasy);
             Family = Bool(modId, FamilyId, Family);
             Utilities = Bool(modId, UtilitiesId, Utilities);
             FamilyAtHome = Bool(modId, FamilyAtHomeId, FamilyAtHome);
@@ -803,6 +823,7 @@
             PlannerReminders = Bool(modId, PlannerRemindersId, PlannerReminders);
             PlannerMorning = Bool(modId, PlannerMorningId, PlannerMorning);
             Calendar = Bool(modId, CalendarId, Calendar);
+            Hustles = Bool(modId, HustlesId, Hustles);
             Economy = Bool(modId, EconomyId, Economy);
             EconomyGradeUpNotes = Bool(modId, EconomyGradeUpNotesId, EconomyGradeUpNotes);
             EconomyProducts = Bool(modId, EconomyProductsId, EconomyProducts);
@@ -838,6 +859,7 @@
             EstateHotel = Bool(modId, EstateHotelId, EstateHotel);
             EstateHire = Bool(modId, EstateHireId, EstateHire);
             EstateRent = Int(modId, EstateRentId, EstateRent);
+            EstateDuties = Bool(modId, EstateDutiesId, EstateDuties);
             EconomyOnline = Bool(modId, EconomyOnlineId, EconomyOnline);
             EconomyOnlineWaitNotes = Bool(modId, EconomyOnlineWaitNotesId, EconomyOnlineWaitNotes);
             TechPeople = Bool(modId, TechPeopleId, TechPeople);
@@ -875,6 +897,8 @@
             GarageUnderglow = Bool(modId, GarageUnderglowId, GarageUnderglow);
             GaragePolice = Bool(modId, GaragePoliceId, GaragePolice);
             GarageSounds = Bool(modId, GarageSoundsId, GarageSounds);
+            GarageResale = Bool(modId, GarageResaleId, GarageResale);
+
             TwoWheelers = Bool(modId, TwoWheelersId, TwoWheelers);
             HomeLife = Bool(modId, HomeLifeId, HomeLife);
             HomeNeeds = Bool(modId, HomeNeedsId, HomeNeeds);
@@ -921,6 +945,8 @@
             FireFrequency = Int(modId, FireFrequencyId, FireFrequency);
             WeatherMatters = Bool(modId, WeatherMattersId, WeatherMatters);
             WeatherFrequency = Int(modId, WeatherFrequencyId, WeatherFrequency);
+            Seasons = Bool(modId, SeasonsId, Seasons);
+            SnowLook = Bool(modId, SnowLookId, SnowLook);
             StreetEvents = Bool(modId, StreetEventsId, StreetEvents);
             StreetEventFrequency = Int(modId, StreetEventFrequencyId, StreetEventFrequency);
             StreetProtestNotes = Bool(modId, StreetProtestNotesId, StreetProtestNotes);
@@ -932,6 +958,7 @@
             SocialTexts = Bool(modId, SocialTextsId, SocialTexts);
             SocialTextsMax = Int(modId, SocialTextsMaxId, SocialTextsMax);
             SocialComposer = Bool(modId, SocialComposerId, SocialComposer);
+            SocialNetworking = Bool(modId, SocialNetworkingId, SocialNetworking);
             StreetTalk = Bool(modId, StreetTalkId, StreetTalk);
             StreetBrush = Int(modId, StreetBrushId, StreetBrush);
             SocialNewspaper = Bool(modId, SocialNewspaperId, SocialNewspaper);
@@ -952,6 +979,7 @@
             StandingRequestNotes = Bool(modId, StandingRequestNotesId, StandingRequestNotes);
             Rivals = Bool(modId, RivalsId, Rivals);
             RivalsStrength = Int(modId, RivalsStrengthId, RivalsStrength);
+            RivalsFirst = Int(modId, RivalsFirstId, RivalsFirst);
             LedgerKiosks = Bool(modId, LedgerKiosksId, LedgerKiosks);
             LedgerOnline = Bool(modId, LedgerOnlineId, LedgerOnline);
             LedgerOnlineNotes = Bool(modId, LedgerOnlineNotesId, LedgerOnlineNotes);

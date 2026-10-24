@@ -39,6 +39,7 @@ namespace RealLifeOverhaul.Economy
                 }
                 h.RentYear += rent;
                 paid += rent;
+                ManagerCut(h, rent, "a night's rent");
                 wrong += h.Managed && rent - agreed > Math.Max(2, agreed / 12) ? 1 : 0;
             }
             if (Verbose)
@@ -109,6 +110,7 @@ namespace RealLifeOverhaul.Economy
             {
                 EstateRules.Lapse(h, day);
                 int lost = EstateRules.Wear(h);
+                bool duties = Duties;
                 int missed = 0, missedRent = 0, firstMissed = -1;
                 for (int u = 0; u < h.Units.Count; u++)
                 {
@@ -129,11 +131,17 @@ namespace RealLifeOverhaul.Economy
                 {
                     Tell(NotificationType.Warning, "reallife_estate_note_missed_many", Data("building", h.Name, "count", missed.ToString(), "amount", EstateText.Money(missedRent)), TabTenants, null);
                 }
+                if (duties)
+                {
+                    DutiesMorning(h, day);
+                }
                 int applied = 0, firstApplied = -1;
                 RentApplicant one = null;
-                for (int u = 0; u < h.Units.Count; u++)
+                bool barred = duties && EstateRules.Barred(h);   // the city keeps new tenants out until an inspection passes
+                int lift = duties ? EstateRules.ApplicantLift(h) : 1000;
+                for (int u = 0; !barred && u < h.Units.Count; u++)
                 {
-                    RentApplicant a = EstateRules.Apply(h, u, s.Seed, day, c);
+                    RentApplicant a = EstateRules.Apply(h, u, s.Seed, day, c, false, lift);
                     if (a != null)
                     {
                         applied++;
@@ -150,6 +158,10 @@ namespace RealLifeOverhaul.Economy
                 else if (applied > 1)
                 {
                     Tell(NotificationType.Info, "reallife_estate_note_applied_many", Data("building", h.Name, "count", applied.ToString()), TabTenants, null);
+                }
+                if (duties && h.Manager != (int)EstateManager.Self)
+                {
+                    AgentLets(h, day);
                 }
                 if (Verbose && h.Units.Count > 1)
                 {
@@ -225,14 +237,32 @@ namespace RealLifeOverhaul.Economy
         {
             EstateUnit u = h.Units[unit];
             int days = u.ArrearsDays, rent = u.Rent;
-            TenancyDay d = EstateRules.Day(h, unit, _state.Seed, day, _climate);
+            bool onPlan = u.OnPlan;
+            TenancyDay d = EstateRules.Day(h, unit, _state.Seed, day, _climate, Duties);
             string name = EstateText.UnitName(h, unit), pick = UnitPick(h, unit);
             if (d.Lump > 0)
             {
                 EstateGame.BookRent(d.Lump, h);
                 h.RentYear += d.Lump;
+                ManagerCut(h, d.Lump, "arrears paid");
             }
-            if (d.Evicted)
+            if (d.Quit)
+            {
+                Tell(NotificationType.Warning, "reallife_estate_note_quit_gone", Data("building", name, "amount", EstateText.Money(d.Lump)), TabTenants, pick);
+            }
+            else if (d.PlanBroken)
+            {
+                Tell(NotificationType.Warning, "reallife_estate_note_plan_broken", Data("building", name, "amount", EstateText.Money(u.Arrears)), TabTenants, pick);
+            }
+            else if (d.PlanDone)
+            {
+                Tell(NotificationType.Success, "reallife_estate_note_plan_done", Data("building", name), TabTenants, pick);
+            }
+            else if (onPlan && d.Lump > 0 && !d.Left && !d.Evicted)
+            {
+                // an instalment of a plan that goes on: the lease page shows it, no notice each morning
+            }
+            else if (d.Evicted)
             {
                 Tell(NotificationType.Info, "reallife_estate_note_evicted", Data("building", name, "amount", EstateText.Money(d.Lump), "lost", EstateText.Money(d.WrittenOff)), TabTenants, pick);
             }
@@ -250,11 +280,12 @@ namespace RealLifeOverhaul.Economy
             }
             if (Verbose && (d.Missed || d.Lump > 0 || d.Left || d.Evicted || d.Renewed))
             {
-                string what = d.Evicted ? "put out by the court" : d.Left ? "gone" : d.Missed ? "a day's rent of " + rent + " missed" : d.Renewed ? "the lease renewed" : "paid up";
+                string what = d.Evicted ? "put out by the court" : d.Quit ? "gone, unhappy, on the day they said" : d.Left ? "gone" : d.PlanBroken ? "a plan's instalment missed, the plan over"
+                    : d.Missed ? "a day's rent of " + rent + " missed" : d.Renewed ? "the lease renewed" : d.PlanDone ? "the plan paid off" : onPlan ? "a plan's instalment paid" : "paid up";
                 Logger?.Info("Estate check (tenancy, " + name + ", day " + day + "): " + what + "; " + d.Lump + " came in, " + d.WrittenOff + " written off, arrears now " + u.Arrears
                              + " over " + u.ArrearsDays + " day(s): PASS");
             }
-            return d.Missed && days == 0 && !d.Left && !d.Evicted;
+            return d.Missed && days == 0 && !d.Left && !d.Evicted && !d.PlanBroken;
         }
 
         // What a notice about a unit picks: its lease on the Tenants tab.
@@ -436,6 +467,7 @@ namespace RealLifeOverhaul.Economy
                 return -1;
             }
             EstateUnit u = h.Units[unit];
+            AgentFee(h, unit);
             if (Verbose)
             {
                 Logger?.Info("Estate check (letting, " + EstateText.UnitName(h, unit) + "): a tenant with a record of " + u.Record + " at " + u.Rent + " a day against the unit's market rent of "
@@ -501,6 +533,10 @@ namespace RealLifeOverhaul.Economy
             }
             h.CostYear += cost;
             EstateRules.Start(h, work, toUse, Save.Day, _climate);
+            if (work == EstateWork.Repair)
+            {
+                ClearCalls(h);   // the builders put every unit's fault right with the rest
+            }
             Touched(h);
         }
 
@@ -600,6 +636,10 @@ namespace RealLifeOverhaul.Economy
                 {
                     Alert(7, id, Math.Max(day, h.SaleDay), EstateText.T("reallife_estate_plan_sale_title", "building", h.Name), EstateText.T("reallife_estate_plan_sale_what"),
                         EstateText.T("reallife_planner_pays", "amount", EstateText.Money(h.SalePrice)), null);
+                }
+                if (Duties && h.Managed)
+                {
+                    DutyAlerts(h, id, day);
                 }
             }
             for (int i = 0; i < _state.Agency.Open.Count; i++)

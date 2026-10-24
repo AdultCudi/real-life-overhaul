@@ -20,6 +20,7 @@ namespace RealLifeOverhaul.Meta
             RegisterLife();
             RegisterEconomy();
             Roommates.RoommateGuide.Register();
+            Household.HouseholdGuide.Register();
             Permadeath.PermadeathGuide.Register();
             Faults.FaultGuide.Register();
             Texts.TextsGuide.Register();
@@ -32,8 +33,11 @@ namespace RealLifeOverhaul.Meta
             Photos.PhotosGuide.Register();
             Walking.WalkGuide.Register();
             Calendar.CalendarGuide.Register();
+            Hustles.HustleGuide.Register();
+            Seasons.SeasonGuide.Register();
             Designs.DesignsGuide.Register();
             Meals.MealsGuide.Register();
+            Networking.NetworkGuide.Register();
         }
 
         private static void RegisterGameplay()
@@ -138,7 +142,7 @@ namespace RealLifeOverhaul.Meta
             Features.Add("jobs", "reallife_meta_title_jobs")
                 .Group("reallife_jobs_header")
                 .About("reallife_guide_jobs_about").Help("reallife_guide_jobs")
-                .Owns(Settings.JobsId)
+                .Owns(Settings.JobsId, Settings.JobTaxiEasyId)
                 .Preset(Settings.JobPayId, 125, 100, 80)
                 .Data("reallife:jobs", "reallife:job_rental", "reallife:job_live")
                 .Contact(JobPhone.ContactId)

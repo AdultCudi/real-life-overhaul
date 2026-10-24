@@ -56,6 +56,7 @@ namespace RealLifeOverhaul.Street
         EventGoing, EventNot,
         WorkLikes, WorkMixed, WorkRetired,
         Welcome, GreetBack,
+        NumberFull,   // they would give it, but the player's life has no room for anybody new (StreetRules.Number)
         Count
     }
 

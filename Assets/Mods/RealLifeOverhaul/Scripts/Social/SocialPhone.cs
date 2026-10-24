@@ -32,6 +32,11 @@ namespace RealLifeOverhaul
         public static Func<SocialPerson, bool> HasFamilyMatters;
         public static Func<DialogEntry> FamilyMatters;
 
+        /// <summary>Set by Wiring/NetworkLinks: the call's button for a favour this person would do now (null for none), what it opens, and the People page's lines about their position.</summary>
+        public static Func<SocialPerson, string> NetworkLabel;
+        public static Func<SocialPerson, DialogEntry> NetworkAsk;
+        public static Func<SocialPerson, string> NetworkLine;
+
         public static string IdOf(SocialPerson person)
         {
             return person.Origin == SocialOrigin.Family ? MomId : person.Origin == SocialOrigin.OldFriend ? FriendId : person.Name;
@@ -175,6 +180,46 @@ namespace RealLifeOverhaul
             }
             return first;
         }
+
+        /// <summary>
+        /// Their contact and its thread taken off the phone, as the game's own delete does (ContactsApp.RemoveContact, without its
+        /// question: the player answered the mod's), and the Contacts app's list drawn again if it is open. How many went.
+        /// COST: a pass over the save's contacts; once, when the player loses touch with somebody.
+        /// </summary>
+        public static int Remove(SocialPerson person)
+        {
+            GameInstance save = SaveGameManager.Current;
+            int removed = 0;
+            for (Contact c = Existing(person); c != null && removed < 4; c = Existing(person))
+            {
+                ContactsApp.RemoveContextRelatedDataFromMessages(c);
+                save.Contacts.Remove(c);
+                removed++;
+            }
+            if (removed == 0)
+            {
+                return 0;
+            }
+            if (save.PlayerDefaults != null && save.PlayerDefaults.contactsLastName == IdOf(person))
+            {
+                save.PlayerDefaults.contactsLastName = null;   // the Contacts app opens on its list, not on a contact that is gone
+            }
+            var uis = InstanceBehavior<UI.UIs>.Instance;
+            if (uis != null && uis.smartphoneUI != null)
+            {
+                uis.smartphoneUI.UpdateBadgeCount(AppName.Contacts, playSound: false);
+            }
+            ContactsApp.onContactRemoved?.Invoke();
+            ContactsApp app = uis != null && uis.fullMenu != null ? uis.fullMenu.contactsApp : null;
+            if (app != null && app.isActiveAndEnabled)
+            {
+                app.LoadContactsList(ContactCategorySelection.SelectedCategory, false);
+            }
+            return removed;
+        }
+
+        /// <summary>Whether the save has no contact of theirs: for the lose touch test. A pass over the save's contacts.</summary>
+        public static bool ContactGone(SocialPerson person) => Existing(person) == null;
 
         /// <summary>Callable, with the first message of their thread if it is empty.</summary>
         public static Contact Add(SocialPerson person, bool welcome)

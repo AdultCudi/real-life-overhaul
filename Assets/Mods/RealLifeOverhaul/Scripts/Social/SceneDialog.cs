@@ -13,6 +13,7 @@ namespace RealLifeOverhaul
 
         public SocialPerson Person;
         public SocialPerson Introducer;
+        public SocialPerson Via;        // who brought them along, here or not (an introduction); null for nobody
         public int Mode;
         public string Opener;
         public Dictionary<string, string> OpenerData;
@@ -67,7 +68,12 @@ namespace RealLifeOverhaul
             SocialPerson friend = _talk.Introducer;
             Dictionary<string, string> data = SocialLife.Data(_p);
             data["friend"] = friend != null ? SocialLife.First(friend) : string.Empty;
-            DialogEntry entry = new DialogEntry { messageData = SocialLines.Pick(SocialCatalogue.Introduces).Localize(data) };
+            string said = SocialLinks.Position != null ? SocialLinks.Position(_p, _talk.Via ?? friend, true) : null;   // what they do, as the friend puts it
+            string intro = SocialLines.Pick(SocialCatalogue.Introduces);
+            DialogEntry entry = new DialogEntry
+            {
+                messageData = said != null ? SocialLinks.WordsKey.Localize(new Dictionary<string, string> { { "text", SocialLife.T(intro, data) + " " + said } }) : intro.Localize(data)
+            };
             entry.ConfirmTextOverride = "reallife_social_btn_hello".Localize();
             entry.OnConfirm = MeetFirst;
             return entry;
@@ -77,6 +83,12 @@ namespace RealLifeOverhaul
         {
             _talk.PersonSpeaks = true;
             DialogEntry entry = Say(_talk.Opener, _talk.OpenerData);
+            string said = _talk.Mode != SceneTalk.Introduction && SocialLinks.Position != null ? SocialLinks.Position(_p, _talk.Via, false) : null;   // nobody here to say it for them
+            if (said != null)
+            {
+                string opener = SocialLife.T(_talk.Opener, _talk.OpenerData ?? SocialLife.Data(_p));
+                entry.messageData = SocialLinks.WordsKey.Localize(new Dictionary<string, string> { { "text", opener + " " + said } });
+            }
             entry.ConfirmTextOverride = "reallife_social_meet_reply_warm".Localize();
             entry.OnConfirm = () => MeetSecond(true);
             entry.SecondOptionTextOverride = "reallife_social_meet_reply_cool";

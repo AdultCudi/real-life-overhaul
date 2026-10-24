@@ -146,6 +146,7 @@ namespace RealLifeOverhaul.Economy
             box.Row("reallife_ibox_worth", EstateText.Money(value));
             box.Note(EstateText.T("reallife_estate_own_worth", "amount", EstateText.Money(value), "paid", EstateText.Money(h.Paid), "day", h.BoughtDay.ToString()));
             box.Line(EstateText.T("reallife_estate_own_year", "rent", EstateText.Money(h.RentYear), "costs", EstateText.Money(h.CostYear), "spent", EstateText.Money(h.Spent)));
+            WriteFlip(box, h, value, c);
             box.Section("reallife_ibox_sec_letting");
             if (h.Self)
             {
@@ -172,6 +173,7 @@ namespace RealLifeOverhaul.Economy
             {
                 box.Line(EstateText.T(h.Cover ? "reallife_estate_own_cover_on" : "reallife_estate_own_cover_off"), h.Cover ? CellTone.Green : CellTone.Yellow);
             }
+            WriteRentRoll(box, h, c, SaveGameManager.Current != null ? SaveGameManager.Current.Day : 0);
 
             box.Headline("reallife_estate_own_selling");
             if (h.SaleDay > 0)
@@ -310,6 +312,10 @@ namespace RealLifeOverhaul.Economy
                         row.Set(3, EstateText.Money(u.Arrears), u.Arrears);
                         row.Set(4, EstateText.Record(u.Record), u.Record);
                         row.Set(5, EstateText.T("reallife_estate_row_until", "day", u.Until.ToString()), u.Until);
+                        if (DutiesOn && u.Happy >= 0)
+                        {
+                            row.Set(7, EstateText.Level(u.Happy), u.Happy, u.Happy < EstateCatalogue.HappyPoor ? TableRow.Red : u.Happy < EstateCatalogue.HappyFair ? TableRow.Yellow : TableRow.Plain);
+                        }
                     }
                     for (int a = 0; a < u.Applicants.Count; a++)
                     {
@@ -421,6 +427,7 @@ namespace RealLifeOverhaul.Economy
                 box.Section("reallife_ibox_sec_tenant");
                 box.Line(EstateText.T("reallife_estate_ten_who", "who", EstateText.Tenant(h.Use, u.Tenant), "amount", EstateText.Money(u.Rent), "day", u.Until.ToString()));
                 box.Line(EstateText.T("reallife_estate_ten_record", "record", EstateText.Record(u.Record), "deposit", EstateText.Money(u.Deposit)));
+                WriteTenantDuties(box, h, unit, day, c);
             }
             else
             {
@@ -447,6 +454,7 @@ namespace RealLifeOverhaul.Economy
                 }
             }
             Transform buttons = box.ButtonRow();
+            TenantDutyButtons(buttons, h, unit);
             if (u.Let && EstateRules.MayServeNotice(h, unit, day))
             {
                 InfoBox.Button(buttons, InfoBox.Negative, "reallife_estate_btn_notice", () => _director.ServeNotice(place, unit));
@@ -456,13 +464,16 @@ namespace RealLifeOverhaul.Economy
                 InfoBox.Button(buttons, InfoBox.Negative, "reallife_estate_btn_court", () => _director.GoToCourt(place, unit));
             }
             BackButton(buttons);
-            Meta.Guide.Point(box, GuideTitle);
+            TenantDutyNote(box, h, unit);
+            Meta.Guide.Point(box, DutiesOn ? DutiesGuideTitle : GuideTitle);
         }
 
         private void WriteWorks(InfoBox box, EstateState state, ref string selected)
         {
             EstateClimate c = _director.Climate;
-            EstateHolding picked = null;
+            EstateHolding picked = null, called;
+            int calledUnit;
+            bool call = CallRows(state, ref selected, out called, out calledUnit);
             for (int i = 0; i < state.Holdings.Count; i++)
             {
                 EstateHolding h = state.Holdings[i];
@@ -487,6 +498,11 @@ namespace RealLifeOverhaul.Economy
             if (_rows.Count == 0)
             {
                 Say("none", EstateText.T("reallife_estate_row_nothing_owned"));
+            }
+            if (call)
+            {
+                WriteCall(box, called, calledUnit, SaveGameManager.Current != null ? SaveGameManager.Current.Day : 0);
+                return;
             }
             if (picked == null)
             {

@@ -267,6 +267,13 @@ namespace RealLifeOverhaul
                 Note(typeName, "Car tuning: " + typeName + " is left as the game made it (no engine power gets it to 100 km/h).");
                 return;
             }
+            if (garage.Shift != 1f)
+            {
+                // The power was found with the kind's own change time; the quicker gearbox's gain is on top, and the
+                // expected figures are driven again with it so the log says what the car will do.
+                _setup.ShiftSeconds = TuningRules.ShiftSeconds(_setup.ShiftSeconds, garage.Shift);
+                run = CarModel.Run(_physics, _setup, eased);
+            }
 
             EngineComponent engine = vehicle.powertrain.engine;
             TransmissionComponent box = vehicle.powertrain.transmission;

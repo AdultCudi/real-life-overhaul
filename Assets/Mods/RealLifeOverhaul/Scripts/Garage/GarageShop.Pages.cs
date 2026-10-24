@@ -52,6 +52,7 @@ namespace RealLifeOverhaul
             bool tuning = Settings.GarageTuning;
             Row(list, GarageText.T("reallife_garage_tab_parts"), !tuning ? GarageText.T("reallife_garage_parts_off") : _text.Length > 0 ? _text.ToString() : GarageText.T("reallife_garage_part_stock"),
                 "reallife_garage_list_choose", tuning, _toParts);
+            Row(list, GarageText.T("reallife_tuning_tab_figures"), GarageText.T("reallife_tuning_tab_figures_detail"), "reallife_tuning_list_read", true, _toFigures);
 
             Row(list, GarageText.T("reallife_garage_stock"), GarageText.T("reallife_garage_list_stock_detail"), "reallife_garage_list_reset", !_cart.IsStock, _stock);
         }
@@ -321,7 +322,104 @@ namespace RealLifeOverhaul
             Changed((PartSlot)slot + " " + (_cart.Parts[slot] ?? "stock"));
         }
 
+        // The figures page: each figure as standard, as the car came in, and with this visit's work, by the same model
+        // that drives it. Three runs of the sums, on opening the page and on each click there.
+        private void FillFigures(TravelList list)
+        {
+            var car = _car as CarController;
+            GarageFigures standard = GarageTuning.Figures(car, Standard);
+            GarageFigures now = GarageTuning.Figures(car, _saved);
+            GarageFigures after = GarageTuning.Figures(car, _cart);
+            string note = GarageText.T("reallife_tuning_fig_note");
+            list.AddNote(GarageText.T("reallife_tuning_tab_figures"), note, list.HeightFor(note.Length, false));
+
+            Figure(list, "reallife_tuning_fig_power", TuningRules.Compare(standard.PowerKw, now.PowerKw, after.PowerKw, 0.5f),
+                Power(standard.PowerKw), Power(now.PowerKw), Power(after.PowerKw));
+            Figure(list, "reallife_tuning_fig_torque", TuningRules.Compare(standard.TorqueNm, now.TorqueNm, after.TorqueNm, 0.5f),
+                Unit("reallife_tuning_unit_nm", standard.TorqueNm, "F0"), Unit("reallife_tuning_unit_nm", now.TorqueNm, "F0"), Unit("reallife_tuning_unit_nm", after.TorqueNm, "F0"));
+            Figure(list, "reallife_tuning_fig_to100", TuningRules.Compare(standard.To100, now.To100, after.To100, 0.05f),
+                Unit("reallife_tuning_unit_s", standard.To100, "F1"), Unit("reallife_tuning_unit_s", now.To100, "F1"), Unit("reallife_tuning_unit_s", after.To100, "F1"));
+            Figure(list, "reallife_tuning_fig_top", TuningRules.Compare(standard.TopKmh, now.TopKmh, after.TopKmh, 0.5f),
+                Unit("reallife_tuning_unit_kmh", standard.TopKmh, "F0"), Unit("reallife_tuning_unit_kmh", now.TopKmh, "F0"), Unit("reallife_tuning_unit_kmh", after.TopKmh, "F0"));
+            Figure(list, "reallife_tuning_fig_shift", TuningRules.Compare(standard.ShiftSeconds, now.ShiftSeconds, after.ShiftSeconds, 0.005f),
+                Unit("reallife_tuning_unit_s", standard.ShiftSeconds, "F2"), Unit("reallife_tuning_unit_s", now.ShiftSeconds, "F2"), Unit("reallife_tuning_unit_s", after.ShiftSeconds, "F2"));
+            Figure(list, "reallife_tuning_fig_stop", TuningRules.Compare(standard.StopMetres, now.StopMetres, after.StopMetres, 0.5f),
+                Unit("reallife_tuning_unit_m", standard.StopMetres, "F0"), Unit("reallife_tuning_unit_m", now.StopMetres, "F0"), Unit("reallife_tuning_unit_m", after.StopMetres, "F0"));
+            Figure(list, "reallife_tuning_fig_weight", TuningRules.Compare(standard.MassKg, now.MassKg, after.MassKg, 0.5f),
+                Unit("reallife_tuning_unit_kg", standard.MassKg, "F0"), Unit("reallife_tuning_unit_kg", now.MassKg, "F0"), Unit("reallife_tuning_unit_kg", after.MassKg, "F0"));
+            Figure(list, "reallife_tuning_fig_ride", TuningRules.CompareAny(0f, now.RideMetres, after.RideMetres, 0.005f),
+                Ride(0f), Ride(now.RideMetres), Ride(after.RideMetres));
+            Figure(list, "reallife_tuning_fig_grip", TuningRules.Compare(Grip(standard), Grip(now), Grip(after), 0.005f),
+                GripText(standard), GripText(now), GripText(after));
+
+            GarageModifiers was = _saved.Modifiers();
+            GarageModifiers will = _cart.Modifiers();
+            Figure(list, "reallife_tuning_fig_costs", TuningRules.CompareAny(0f, was.Wear + was.Insurance, will.Wear + will.Insurance, 0.001f),
+                Costs(0f, 0f), Costs(was.Wear, was.Insurance), Costs(will.Wear, will.Insurance));
+            if (Settings.GarageResale)
+            {
+                int worthNow = GarageBridges.ValueAdded(_car.vehicleInstance.id);
+                int worthAfter = _cart.IsStock ? 0 : Mathf.RoundToInt((_saved.Spent + Bill()) * GarageCatalogue.Resale);   // as Pay keeps it
+                Figure(list, "reallife_tuning_fig_worth", TuningRules.Compare(0f, worthNow, worthAfter, 0.5f),
+                    GarageText.Money(0), GarageText.Money(worthNow), GarageText.Money(worthAfter));
+            }
+            else
+            {
+                string off = GarageText.T("reallife_tuning_fig_worth_off");
+                list.AddNote(GarageText.T("reallife_tuning_fig_worth"), off, list.HeightFor(off.Length, false));
+            }
+        }
+
+        private static void Figure(TravelList list, string nameKey, FigureChange change, string standard, string now, string after)
+        {
+            string detail;
+            switch (change)
+            {
+                case FigureChange.Standard: detail = GarageText.T("reallife_tuning_fig_standard", "now", now); break;
+                case FigureChange.Kept: detail = GarageText.T("reallife_tuning_fig_kept", "now", now, "standard", standard); break;
+                case FigureChange.Changed: detail = GarageText.T("reallife_tuning_fig_changed", "now", now, "after", after, "standard", standard); break;
+                default: detail = GarageText.T("reallife_tuning_fig_unknown"); break;
+            }
+            list.AddNote(GarageText.T(nameKey), detail, list.HeightFor(detail.Length, false));
+        }
+
+        private static string Power(float kilowatts)
+        {
+            return kilowatts < 0f ? string.Empty
+                : GarageText.T("reallife_tuning_unit_power", "kw", Mathf.RoundToInt(kilowatts).ToString(), "hp", TuningRules.Horsepower(kilowatts).ToString());
+        }
+
+        private static string Unit(string key, float value, string format)
+        {
+            return value < 0f ? string.Empty : GarageText.T(key, "n", value.ToString(format));
+        }
+
+        private static string Ride(float metres)
+        {
+            int cm = Mathf.RoundToInt(metres * 100f);
+            return cm == 0 ? GarageText.T("reallife_tuning_ride_standard")
+                : GarageText.T(cm < 0 ? "reallife_tuning_ride_lower" : "reallife_tuning_ride_higher", "n", Mathf.Abs(cm).ToString());
+        }
+
+        // Dry and wet grip as one reading, for whether either changed: a part moves either by 0.1 at least, the sum by under 10.
+        private static float Grip(GarageFigures f)
+        {
+            return f.Grip * 10f + f.WetGrip;
+        }
+
+        private static string GripText(GarageFigures f)
+        {
+            return GarageText.T("reallife_tuning_unit_grip", "dry", Mathf.RoundToInt(f.Grip * 100f).ToString(), "wet", Mathf.RoundToInt(f.WetGrip * 100f).ToString());
+        }
+
+        private static string Costs(float wear, float insurance)
+        {
+            return wear <= 0f && insurance <= 0f ? GarageText.T("reallife_tuning_costs_standard")
+                : GarageText.T("reallife_tuning_unit_costs", "wear", Mathf.RoundToInt(wear * 100f).ToString(), "insurance", Mathf.RoundToInt(insurance * 100f).ToString());
+        }
+
         /// <summary>What a part does and costs to run, in a line: "acceleration +12 %, top speed +4 %, wears 12 % faster".</summary>
+
         public static string Effects(PartDef part)
         {
             var text = new System.Text.StringBuilder(96);
@@ -332,6 +430,8 @@ namespace RealLifeOverhaul
             Effect(text, part.WetGrip, "reallife_garage_fx_wet");
             Effect(text, part.Stiff, "reallife_garage_fx_stiff");
             Effect(text, part.Mass, "reallife_garage_fx_mass");
+            Effect(text, part.Shift, "reallife_tuning_fx_shift");
+
             if (part.Ride != 0f)
             {
                 int cm = Mathf.RoundToInt(part.Ride * 100f);

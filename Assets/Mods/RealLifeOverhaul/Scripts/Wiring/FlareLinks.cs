@@ -42,6 +42,8 @@ namespace RealLifeOverhaul
                 FlareBridges.Graduated = () => Careers.CareersDirector.Instance != null ? Careers.CareersDirector.Instance.GraduatedToday() : null;
                 PhotoMode.Saved += PictureSaved;
                 SocialLinks.OutingDone = OutingDone;
+                SocialLinks.OnFlare = OnFlare;
+                SocialLinks.FlareForget = FlareForget;
                 Reputation.Deed += Deed;
                 News.Reported += Reported;
                 _ambientBefore = BusinessGame.Ambient;
@@ -97,6 +99,8 @@ namespace RealLifeOverhaul
                 FlareBridges.Reset();
                 PhotoMode.Saved -= PictureSaved;
                 SocialLinks.OutingDone = null;
+                SocialLinks.OnFlare = null;
+                SocialLinks.FlareForget = null;
                 Reputation.Deed -= Deed;
                 News.Reported -= Reported;
                 BusinessGame.Ambient = _ambientBefore;   // the brands', the company's and the city's pairings take theirs off next
@@ -148,6 +152,33 @@ namespace RealLifeOverhaul
                 {
                     Fault("FlareLinks.Footfall", e);
                     return false;
+                }
+            }
+
+            // An influencer who is one of the social life's people: Flare's deals and posts are theirs, so they stay.
+            private static bool OnFlare(int person)
+            {
+                try
+                {
+                    FlareFile file = FlareDirector.Instance != null ? FlareDirector.Instance.File : null;
+                    return file != null && FlareCast.IsOne(file, person);
+                }
+                catch (Exception e)
+                {
+                    Fault("FlareLinks.OnFlare", e);
+                    return true;   // when in doubt, nobody Flare may need is let go
+                }
+            }
+
+            private static void FlareForget(int person)
+            {
+                try
+                {
+                    FlareDirector.Instance?.Forget(person);
+                }
+                catch (Exception e)
+                {
+                    Fault("FlareLinks.FlareForget", e);
                 }
             }
 

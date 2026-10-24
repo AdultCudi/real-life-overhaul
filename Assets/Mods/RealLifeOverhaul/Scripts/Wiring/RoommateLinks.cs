@@ -53,12 +53,44 @@ namespace RealLifeOverhaul
                 RoommateBridges.MakeFriend = MakeFriend;
                 RoommateBridges.Introduce = Introduce;
                 RoommateBridges.IsPartner = IsPartner;
+                SocialLinks.LivesWith = LivesWith;
                 PlannerDirector.Instance?.AddSource(Source);
             }
 
             internal static void Disconnect()
             {
                 RoommateBridges.Reset();
+                SocialLinks.LivesWith = null;
+            }
+
+            // The roommate, or somebody answering the notice, who is one of the social life's people: their slot is the roommate's.
+            private static bool LivesWith(int person)
+            {
+                try
+                {
+                    RoommateState s = RoommateDirector.Instance != null ? RoommateDirector.Instance.State : null;
+                    if (s == null || person < 0)
+                    {
+                        return false;
+                    }
+                    if (s.Mate != null && s.Mate.Friend == person)
+                    {
+                        return true;
+                    }
+                    for (int i = 0; i < s.Candidates.Count; i++)
+                    {
+                        if (s.Candidates[i] != null && s.Candidates[i].Friend == person)
+                        {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+                catch (Exception e)
+                {
+                    Fault("RoommateLinks.LivesWith", e);
+                    return true;   // when in doubt, the roommate stays
+                }
             }
 
             private static bool PartnerLivesIn()

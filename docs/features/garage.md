@@ -18,7 +18,9 @@ A custom shop for cars in the game's repair bays (paint, finishes, fitted parts 
 | `GarageState` | the save's part: builds by vehicle id, which scooters are two-wheelers; GarageBridges (what other features may set or ask) |
 | `GarageFit` | every car body as measured (roof, boot deck, nose) and which fitted part goes on which car |
 | `GarageCar` | one car wearing its build: paint through the game's own property blocks, lamps, underglow, fitted parts, brakes, tyres, springs, weight; puts all of it back |
-| `GarageTuning` | power, gearing and drag for a build through CarModel; the hook for Driving/CarTuning; the shop's before-and-after figures |
+| `GarageTuning` | power, gearing and drag for a build through CarModel; the hook for Driving/CarTuning; the shop's before-and-after figures, the figures page's numbers |
+| `TuningRules` | the gear change parts' sums, the figures page's units and how a figure stands, what a build fetches when its car is sold (game-free; NavCheck's TuningCheck) |
+| `GarageSaleGame` | a car with work on it sold through the game's item panel: the work's worth paid on top of the game's price |
 | `GarageShop` | the repair bays, the turntable camera, the shop's pages in the game's list, the game's colour picker, the bill; GarageDragArea (the invisible drag surface of the turntable view) |
 | `GarageText` | a locale key in, the line out |
 | `Driving/Sound/*` | the recorded car sounds: engines by kind, the exhausts' and turbos' sounds, the turntable's revving (see "Recorded car sounds") |
@@ -89,7 +91,8 @@ Work is instant: the game has no notion of a car that is away being worked on, a
 | Finish | gloss, satin, matte, metallic, pearl | 150 / 300 / 500 / 700 / 1 200, times the body factor |
 | Lights | lamp tint: standard, warm white, ice blue, rally yellow; underglow kit in seven colours | 150; 400 (another colour later 100) |
 | Body | boot spoiler, roof bars, bull bar: each only on the bodies it fits; other wheels when the prop bundle has them | 450, 350, 600; wheels 1 200 |
-| Parts | one part in each of eight slots (below); an entry's button steps to the slot's next part | a multiple of the part base |
+| Parts | one part in each of nine slots (below); an entry's button steps to the slot's next part | a multiple of the part base |
+| Figures | the dyno sheet: every figure as standard, as the car came in and with this visit's work (below) | |
 
 Body factor: economy 1, saloon 1.2, utility 1.4, van 1.5, luxury, sports and trucks 2.
 Taking a fitted thing off costs 50.
@@ -120,6 +123,9 @@ Part base by kind: economy 1 000, saloon 1 800, utility 2 500, van 2 000, truck 
 | Tyres | All-weather / Sports / Semi-slick | 0.7 / 0.6 / 1.2 | wet grip +15 % / dry +10 %, wet -10 % / dry +20 %, wet -25 % | semi-slick: wears 8 % faster |
 | Suspension | Sports springs / Coilovers / Lift kit (SUVs, pickups, vans) | 0.9 / 1.8 / 1.0 | stiffness and anti-roll +25 % and 2 cm lower / +50 % and 4 cm lower / +10 % and 4 cm higher | |
 | Weight | Lightened interior / Stripped out | 1.0 / 2.5 | weight -5 / -10 % (as much quicker) | stripped out: insurance +5 % |
+| Gear change | Quick shift gearbox / Sequential gearbox | 0.8 / 2.0 | each change of gear takes 0.6 / 0.35 of its time | sequential: wears 4 % faster |
+
+The gear change parts are the NWH gearbox's `shiftDuration` (no drive while a change is under way), and claim no gain of their own: car performance finds the power for the build's targets with its kind's own change (0.12 s for sports cars to 0.45 s for trucks) and then gives the car the quicker change (`TuningRules.ShiftSeconds`: never longer than standard, never under a quarter of it, never under 0.05 s, an instant box left instant), so what the quicker change saves is what the model and the car do with it. A car whose first gear already reaches 100 km/h (a strong sports car on the tyres it has) gains nothing to 100 km/h, only between gears above it. With car performance off, the Garage writes the change itself on the game's own gearbox and puts it back only while the value is still its own, as it does the ratios and the limiter. A build line gives the slot the number 8, after the eight before it, so a line written before it reads as before and an older version of the mod passes the field over.
 
 However the parts stack, a build is never asked for more than 1.6 times the acceleration or 1.25 times the top speed.
 A car is lowered only inside the travel its own suspension already uses (at most a quarter of what is left of the spring at rest, never more than 5 cm), and never into the 12 cm of bump travel a kerb needs.
@@ -142,6 +148,16 @@ The first call of `Claim` makes `GarageTuning` stand down for good, so the two n
 
 A straight-through exhaust driven above 36 km/h is noticed by the police now and then (a look every 30 s, 8 %, once a day at most): `GarageBridges.PoliceNotice("exhaust", 120)` if a Crime feature has set it, otherwise a fine of 120 through `Crime.Fine`.
 For a Transport feature: `GarageBridges.WearOf(id)`, `InsuranceOf(id)`, `ValueAdded(id)`, `LoudnessOf(id)`, `IsTwoWheeler(id)`, and `GarageSummary.Lines` for a garage page of its own.
+
+### The figures page
+
+"Figures", under the parts on the shop's first page, is the dyno sheet: one entry per figure, each saying what it is as standard (the factory's car with no work), now (the build paid for) and with this visit's work (the cart), or only what has changed: power and torque at their peaks (`CarModel.PeakPower`, `PeakTorque`: the model's own engine, as the game's engine reckons its peak, at full boost; kW and hp), 0 to 100 km/h and top speed (the model's run), the gear change, the stop from 100 km/h (as below), the weight, the ride height against standard (`GarageCar.RideChange`: the same spring fit the parts make, over the car's wheels, so a car the kerb's travel holds up says so), the tyres' dry and wet grip, the running costs, and what the work adds to the car's price when sold. Readings within the model's rounding count as one (`TuningRules.Compare`). Power and acceleration need the player at the wheel with car performance on, as the headline's figures do, and say so otherwise; with car performance off, power and torque are the game's own engine times the parts' power factor. Three runs of the sums when the page is opened or clicked, never per frame.
+
+### Selling a car with work on it
+
+The game buys a car back through its item panel at its own price (`VehicleInstance.GetSellingPrice`: the type's price times the difficulty's selling share, less its repair cost, plus its paid cargo) and knows nothing of the work on it. With the option "Custom shop work counts when a car is sold" (`garage_resale`, on by default) the buyer pays the work's worth on top: half of what was spent on the car (`GarageCatalogue.Resale`), in the car's condition as the game priced it (what it pays for the car itself, its cargo apart, against a perfect one), as its own transaction ("Custom shop work sold with a car") with a notice.
+
+The game books its sale, then removes the car through `VehicleHelper.Delete`, which tells `VehicleHelper.onVehicleDestroyed` first (`ItemPanelUI.ClickSell`). `GarageSaleGame` listens there once (one guarded delegate, on as the Garage starts, off as it goes) and pays only when the game's newest transaction is the sale of that very car (`TuningRules.IsSale`: the game's own sale type, the car's type name, its price within a unit): a tow, a hire out, a car taken back by a lender or another mod's sale books no such line and fetches nothing. The build is forgotten before the money is given, so it is never paid twice. Only the player's own car (`GoingPublic.MineVehicle`): another Going Public player's car is sold on their own machine, by their own mod. Nothing is sent; the money is the game's own transaction on the player's own account, as the shop's bill is.
 
 ## Recorded car sounds
 
@@ -317,7 +333,8 @@ Sounds: a freewheel tick and a bell for bicycles, an air tool for the shop.
 
 ## Testing
 
-Options, "Custom shop and two-wheelers": open the custom shop on the current or nearest car wherever it stands; a random full build (free); restore to stock; "My vehicles"; a city bicycle, road bicycle, motorbike or sport motorbike 2.2 m ahead, side on, with the marker on it.
+Options, "Custom shop and two-wheelers": open the custom shop on the current or nearest car wherever it stands; a random full build (free); restore to stock; "Read the tuning figures of my nearest car" (the shop on its figures page, and `Tuning check (figures): ...: PASS` in Player.log: every figure read is a number, the build's change never slower and its weight never heavier than standard, the ride inside the shop's limits); "Check the tuning on the car I drive" (`Tuning check (car driven)`: the gear change the physics has against the one the build asks, and the engine's peak); "What the work on my nearest car fetches if sold" (`Tuning check (sale)`: the game's price, the work's worth within its share, the sale listened for; nothing is sold); "My vehicles";
+ a city bicycle, road bicycle, motorbike or sport motorbike 2.2 m ahead, side on, with the marker on it.
 
 A button that cannot do it says why (`Core/TestRefusal`: not loaded, option off, no car of yours within 20 m, not a car, a job's or hire company's vehicle, shop already open, in a vehicle, no clear ground, indoors, traffic not running).
 `Player.log` has one line for each thing applied.

@@ -337,29 +337,52 @@ namespace RealLifeOverhaul.Careers
             OfferContract(day, 0, false);
         }
 
+        /// <summary>
+        /// A client passed on by somebody the player knows (Network's freelance work, through Wiring/NetworkLinks): a contract
+        /// offered at once, as the day's roll would make it, from the same seed and the salt. Null, and why, when no contract
+        /// can come: working for oneself switched off, retired, the contracts full, or no profession to do it in.
+        /// </summary>
+        public Contract Referred(int salt, out string why)
+        {
+            why = "reallife_social_net_why_no_contract";
+            if (!_workOn || !OwnOn || _study == null || _study.Work == null || Save == null)
+            {
+                return null;
+            }
+            Contract c = OfferContract(Save.Day, ReferredDraws + salt, true);
+            if (c != null)
+            {
+                why = null;
+                Changed();
+            }
+            return c;
+        }
+
+        private const int ReferredDraws = 700;   // salt offset of contracts passed on by a contact, clear of the day's own (0) and the tests' (under 100)
+
         /// <summary>A contract offered by a client of the city, on the day's roll (or at once, for a test).</summary>
-        private void OfferContract(int day, int salt, bool force)
+        private Contract OfferContract(int day, int salt, bool force)
         {
             WorkFile w = _study.Work;
             if (w.Retired > 0 || OwnRules.Live(w.Contracts) >= OwnRules.ContractsMost)
             {
-                return;
+                return null;
             }
             if (!force && TechRandom.Mille(StudySeed, 8702, day, salt) >= OwnRules.OfferChanceOf(w.Practice))
             {
-                return;
+                return null;
             }
             int prof = FreelanceProf();
             Profession p = ProCatalogue.Find(prof);
             if (p == null)
             {
-                return;
+                return null;
             }
             int rank = Math.Max(0, ProRules.BestRank(_study, p, ProRules.Experience(w, prof, day, Year)));
             ReadEmployers(day);
             if (_employers.Count == 0)
             {
-                return;
+                return null;
             }
             EmployerRef client = _employers[TechRandom.Range(StudySeed, 8703, day, salt, 0, _employers.Count - 1)];
             int hours = OwnRules.HoursOf[TechRandom.Range(StudySeed, 8704, day, salt, 0, OwnRules.HoursOf.Length - 1)];
@@ -377,6 +400,7 @@ namespace RealLifeOverhaul.Careers
                 Tell2(NotificationType.Info, "reallife_own_note_offer", Data("client", c2.Client, "fee", CareersText.Money(Prices.At((int)c2.Fee)), "hours", hours.ToString()),
                     TabOwn, CareerApp.ContractRow + c2.Id);
             }
+            return c2;
         }
 
         /// <summary>A business of the player's own where a profession's desk work can be done (an office, or the practice's own kind), or null.</summary>

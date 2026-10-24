@@ -273,9 +273,12 @@ namespace RealLifeOverhaul
                     v => Settings.Jobs = v)
                 .AddSlider(Settings.JobPayId, "reallife_jobs_pay", 50, 200, Settings.JobPay,
                     v => Settings.JobPay = v, Meta.SettingsTable.SliderPercent)
+                .AddToggle(Settings.JobTaxiEasyId, "reallife_jobs_taxi_easy", Settings.JobTaxiEasy,
+                    v => Settings.JobTaxiEasy = v)
                 .AddButton("reallife_test_job_flyers", () => JobDirector.Instance?.TestStart(JobCatalogue.Flyers))
                 .AddButton("reallife_test_job_courier", () => JobDirector.Instance?.TestStart(JobCatalogue.Courier))
                 .AddButton("reallife_test_job_taxi",() => JobDirector.Instance?.TestStart(JobCatalogue.Taxi))
+                .AddButton("reallife_test_job_taxi_table", () => JobDirector.Instance?.TestTaxiTable())
                 .AddButton("reallife_test_job_cleaner", () => JobDirector.Instance?.TestStart(JobCatalogue.Cleaner))
                 .AddButton("reallife_test_job_stocker", () => JobDirector.Instance?.TestStart(JobCatalogue.Stocker))
                 .AddButton("reallife_test_job_vendor", () => JobDirector.Instance?.TestStart(JobCatalogue.Vendor))
@@ -564,6 +567,11 @@ namespace RealLifeOverhaul
                     v => Settings.SocialTextsMax = v, Meta.SettingsTable.SliderValue)
                 .AddToggle(Settings.SocialComposerId, "reallife_social_composer", Settings.SocialComposer,
                     v => Settings.SocialComposer = v)
+                .AddToggle(Settings.SocialNetworkingId, "reallife_social_networking", Settings.SocialNetworking,
+                    v => Settings.SocialNetworking = v)
+                .AddButton("reallife_social_net_test_intro", Networking.NetworkDirector.TestIntro)
+                .AddButton("reallife_social_net_test_favour", Networking.NetworkDirector.TestFavour)
+                .AddButton("reallife_social_net_test_each", Networking.NetworkDirector.TestEach)
                 .AddButton("reallife_social_test_meet", () => SocialDirector.Instance?.TestMeet())
                 .AddButton("reallife_social_test_person", () => SocialDirector.Instance?.TestPerson())
                 .AddButton("reallife_social_test_advance", () => SocialDirector.Instance?.TestAdvance())
@@ -586,6 +594,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_social_test_lift", () => SocialDirector.Instance?.TestOuting(PlanKind.Lift))
                 .AddButton("reallife_social_test_moving", () => SocialDirector.Instance?.TestOuting(PlanKind.Moving))
                 .AddButton("reallife_social_test_stop", () => SocialDirector.Instance?.TestStop())
+                .AddButton("reallife_social_test_lose", () => SocialDirector.Instance?.TestLoseTouch())
                 .AddSplitter()
                 .AddHeader("reallife_ledger_header")
                 .AddToggle(Settings.SocialNewspaperId, "reallife_social_newspaper", Settings.SocialNewspaper,
@@ -682,6 +691,9 @@ namespace RealLifeOverhaul
                 .AddDropdown(Settings.RivalsStrengthId, "reallife_rival_strength",
                     new[] { "reallife_rival_strength_gentle", "reallife_rival_strength_normal", "reallife_rival_strength_hard", "reallife_rival_strength_ruthless" }, Settings.RivalsStrength,
                     v => Settings.RivalsStrength = v)
+                .AddDropdown(Settings.RivalsFirstId, "reallife_rival_first",
+                    new[] { "reallife_rival_first_5", "reallife_rival_first_10", "reallife_rival_first_20", "reallife_rival_first_30", "reallife_rival_first_50" }, Settings.RivalsFirst,
+                    v => Settings.RivalsFirst = v)
                 .AddButton("reallife_rival_test_property", () => Rivals.RivalDirector.Instance?.TestMove(Rivals.RivalMoveKind.Property))
                 .AddButton("reallife_rival_test_outlet", () => Rivals.RivalDirector.Instance?.TestMove(Rivals.RivalMoveKind.Outlet))
                 .AddButton("reallife_rival_test_poach", () => Rivals.RivalDirector.Instance?.TestMove(Rivals.RivalMoveKind.Poach))
@@ -692,6 +704,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_rival_test_press", () => Rivals.RivalDirector.Instance?.TestMove(Rivals.RivalMoveKind.Press))
                 .AddButton("reallife_rival_test_next", () => Rivals.RivalDirector.Instance?.TestAnnounce())
                 .AddButton("reallife_rival_test_forward", () => Rivals.RivalDirector.Instance?.TestForward())
+                .AddButton("reallife_rival_test_first", () => Rivals.RivalDirector.Instance?.TestFirst())
                 .AddButton("reallife_rival_test_list", () => Rivals.RivalDirector.Instance?.TestList())
                 .AddButton("reallife_rival_test_takeover", () => Rivals.RivalDirector.Instance?.TestTakeover())
                 .AddButton("reallife_rival_test_back", () => Rivals.RivalDirector.Instance?.TestBack())
@@ -729,12 +742,18 @@ namespace RealLifeOverhaul
                     v => Settings.GaragePolice = v)
                 .AddToggle(Settings.GarageSoundsId, "reallife_garage_sounds", Settings.GarageSounds,
                     v => Settings.GarageSounds = v)
+                .AddToggle(Settings.GarageResaleId, "reallife_garage_resale", Settings.GarageResale,
+                    v => Settings.GarageResale = v)
                 .AddToggle(Settings.TwoWheelersId, "reallife_garage_two_wheelers", Settings.TwoWheelers,
                     v => Settings.TwoWheelers = v)
                 .AddButton("reallife_garage_test_shop", () => GarageDirector.Instance?.TestShop())
                 .AddButton("reallife_garage_test_random", () => GarageDirector.Instance?.TestRandomBuild())
                 .AddButton("reallife_garage_test_restore", () => GarageDirector.Instance?.TestStock())
                 .AddButton("reallife_garage_test_sounds", () => CarSoundDirector.Instance?.TestReport())
+                .AddButton("reallife_tuning_test_figures", () => GarageDirector.Instance?.TestFigures())
+                .AddButton("reallife_tuning_test_car", () => GarageDirector.Instance?.TestTuning())
+                .AddButton("reallife_tuning_test_sale", () => GarageDirector.Instance?.TestSale())
+
                 .AddButton("reallife_garage_test_vehicles", () => { if (GarageDirector.Instance != null) { GarageSummary.Toggle(); } })
                 .AddButton("reallife_garage_test_bicycle", () => GarageDirector.Instance?.TestBike(BikeKind.CityBicycle))
                 .AddButton("reallife_garage_test_road_bicycle", () => GarageDirector.Instance?.TestBike(BikeKind.RoadBicycle))
@@ -765,6 +784,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_test_lic_check", () => LicenceDirector.Instance?.TestCheck())
                 .AddButton("reallife_test_lic_points", () => LicenceDirector.Instance?.TestPoints())
                 .AddSplitter()
+                .Guarded(o => Seasons.SeasonOptions.AddSeasons(o))   // what sells in each season, and the snow (Scripts/Seasons)
                 .AddHeader("reallife_planner_header")
                 .AddToggle(Settings.PlannerId, "reallife_planner_enabled", Settings.Planner,
                     v => Settings.Planner = v)
@@ -776,6 +796,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_planner_test_clear", () => Planner.PlannerDirector.Instance?.TestClear())
                 .AddSplitter()
                 .Guarded(o => Calendar.CalendarOptions.AddCalendar(o))   // the month on the phone (Scripts/Calendar)
+                .Guarded(o => Hustles.HustleOptions.AddHustles(o))   // the Marketplace and freelance visits (Scripts/Hustles)
                 .AddHeader("reallife_econ_header")
                 .AddToggle(Settings.EconomyId, "reallife_econ_enabled", Settings.Economy,
                     v => Settings.Economy = v)
@@ -955,6 +976,8 @@ namespace RealLifeOverhaul
                 .AddToggle(Settings.EstateHireId, "reallife_estate_opt_hire", Settings.EstateHire,
                     v => Settings.EstateHire = v)
                 .AddSlider(Settings.EstateRentId, "reallife_estate_opt_rent", 50, 300, Settings.EstateRent, v => Settings.EstateRent = v, Meta.SettingsTable.SliderPercent)
+                .AddToggle(Settings.EstateDutiesId, "reallife_estate_opt_duties", Settings.EstateDuties,
+                    v => Settings.EstateDuties = v)
                 .AddButton("reallife_estate_test_applicant", () => Economy.EstateDirector.Instance?.TestApplicant())
                 .AddButton("reallife_estate_test_arrears", () => Economy.EstateDirector.Instance?.TestArrears())
                 .AddButton("reallife_estate_test_works", () => Economy.EstateDirector.Instance?.TestWorks())
@@ -964,6 +987,10 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_estate_test_group", () => Economy.EstateDirector.Instance?.TestGroup())
                 .AddButton("reallife_estate_test_hire", () => Economy.EstateDirector.Instance?.TestHire())
                 .AddButton("reallife_estate_test_month", () => Economy.EstateDirector.Instance?.TestMonth())
+                .AddButton("reallife_estate_test_call", () => Economy.EstateDirector.Instance?.TestCall())
+                .AddButton("reallife_estate_test_complaint", () => Economy.EstateDirector.Instance?.TestComplaint())
+                .AddButton("reallife_estate_test_inspection", () => Economy.EstateDirector.Instance?.TestInspection())
+                .AddButton("reallife_estate_test_manager", () => Economy.EstateDirector.Instance?.TestManager())
                 .AddButton("reallife_estate_test_back", () => Economy.EstateDirector.Instance?.TestBack())
                 .AddHeader("reallife_talent_header")
                 .AddToggle(Settings.TechPeopleId, "reallife_talent_enabled", Settings.TechPeople,
@@ -1151,6 +1178,7 @@ namespace RealLifeOverhaul
                 .AddSplitter()
                 .Guarded(o => o.AddPermadeath())   // an ending the player chooses, off unless switched on (Scripts/Permadeath)
                 .Guarded(o => o.AddRoommates())
+                .Guarded(o => Household.HouseholdOptions.AddHousehold(o))
                 .Guarded(o => Walking.WalkOptions.AddWalking(o))
                 .Guarded(o => Meals.MealsOptions.AddMeals(o))
                 .Guarded(o => o.AddControls())
@@ -1262,6 +1290,7 @@ namespace RealLifeOverhaul
             Guard.Step("CityDrivers", () => CityDrivers.Logger = context.Logger);
             Guard.Step("Walking.WalkDirector", () => Walking.WalkDirector.Logger = context.Logger);
             Guard.Step("Meals.MealsDirector", () => Meals.MealsDirector.Logger = context.Logger);
+            Guard.Step("Networking.NetworkDirector", () => Networking.NetworkDirector.Logger = context.Logger);
             Guard.Step("DriverGame", () => DriverGame.Logger = context.Logger);
             Guard.Step("Jaywalker", () => Jaywalker.Logger = context.Logger);
             Guard.Step("PlayerKnockdown", () => PlayerKnockdown.Logger = context.Logger);
@@ -1387,6 +1416,11 @@ namespace RealLifeOverhaul
             Guard.Step("Calendar.CalendarDirector", () => Calendar.CalendarDirector.Logger = context.Logger);
             Guard.Step("Calendar.CalendarApp", () => Calendar.CalendarApp.Logger = context.Logger);
             Guard.Step("Calendar.CalendarDirector", () => Guard.Add<Calendar.CalendarDirector>(_root));
+            Guard.Step("Hustles.HustleDirector", () => Hustles.HustleDirector.Logger = context.Logger);
+            Guard.Step("Hustles.HustleApp", () => Hustles.HustleApp.Logger = context.Logger);
+            Guard.Step("Hustles.HustleDirector", () => Guard.Add<Hustles.HustleDirector>(_root));   // the Marketplace: used goods and cars, freelance visits (Scripts/Hustles)
+            Guard.Step("Seasons.SeasonDirector", () => Seasons.SeasonDirector.Logger = context.Logger);
+            Guard.Step("Seasons.SeasonDirector", () => Guard.Add<Seasons.SeasonDirector>(_root));
             Guard.Step("Planner.PlannerDirector", () => Guard.Add<Planner.PlannerDirector>(_root));
             Guard.Step("Economy.EconomyDirector", () => Economy.EconomyDirector.Logger = context.Logger);
             Guard.Step("Economy.FinanceApp", () => Economy.FinanceApp.Logger = context.Logger);
@@ -1457,6 +1491,7 @@ namespace RealLifeOverhaul
             Guard.Step("Utilities.UtilitiesDirector", () => Guard.Add<Utilities.UtilitiesDirector>(_root));
             Guard.Step("Family.FamilyDirector", () => Guard.Add<Family.FamilyDirector>(_root));
             Guard.Step("the roommate", () => Roommates.RoommateDirector.Attach(_root, context.Logger));
+            Guard.Step("household staff", () => Household.HouseholdDirector.Attach(_root, context.Logger));
             Guard.Step("Flare.FlareDirector", () => Flare.FlareDirector.Logger = context.Logger);
             Guard.Step("Flare.FlareApp", () => Flare.FlareApp.Logger = context.Logger);
             Guard.Step("Flare.FlareDirector", () => Guard.Add<Flare.FlareDirector>(_root));   // after the company and the brands, so that its day follows theirs

@@ -103,6 +103,10 @@ namespace RealLifeOverhaul
                 {
                     _text.Append(' ').Append(JusticeText.T("reallife_justice_file_case_deal"));
                 }
+                if (c.Damages > 0)
+                {
+                    _text.Append(' ').Append(JusticeText.T("reallife_justice_file_case_damages", "amount", JusticeText.Money(c.Damages)));
+                }
                 _text.Append('\n');
             }
             if (!any)

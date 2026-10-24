@@ -9,7 +9,7 @@ namespace RealLifeOverhaul.Rivals
         /// <summary>A move announced today if one is due, or null. With <paramref name="any"/> (a test) tier and gap are not asked.</summary>
         public static RivalMove Announce(RivalFile f, RivalWorld w, int day, int strength, bool any)
         {
-            int tier = Tier(w.Worth, w.Level);
+            int tier = Tier(w.Worth, w.Level, w.FirstFrom);
             if (f.Pending() != null || (!any && (tier < 1 || day < f.NextMoveDay)))
             {
                 return null;

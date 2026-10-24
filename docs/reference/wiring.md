@@ -25,7 +25,7 @@ An adapter never throws into its caller: a fault is logged once per place (`Wiri
 | `Wiring.DrivingLinks.cs` | `DrivingBridges`: the custom shop's parts lifted off the driven car and laid back on top of its handling |
 | `EconomyLinks.cs` | `Economy.EconomyBridges` (the record the credit rating reads, the fines and court debts the Finance app lists), the Finance rows of the Planner, and the banks' own terms put back on unload |
 | `FamilyLinks.cs` | `FamilyBridges.Social`, `Home`, `Law` and `SocialLinks.PartnerChanged` |
-| `RoommateLinks.cs` | `RoommateBridges`: whether the partner lives in, the friends who could move in |
+| `RoommateLinks.cs` | `RoommateBridges`: whether the partner lives in, the friends who could move in; `SocialLinks.LivesWith`: a roommate, or somebody answering the notice, is not let go when the player loses touch |
 | `DebtLinks.cs` | the credit desk and the private lender: a lender's claim as one of Justice's civil suits, whether the player is held, a free stretch of kerb |
 | `CityLinks.cs` | `CityBridges`: the season and weather, business pressure's footfall, copycat rivals and morning roll |
 | `CompanyLinks.cs` | `CompanyBridges`: business pressure's footfall, closures, disputes, rivals, resignations (once, `Core/StaffLeave`), audits and inspections; a tax case with Justice; one rival's offer to an employee at a time: `CompanyBridges.Held` (the tech sector's offers and notices) and `BusinessDirector.Held` (the company's and the tech sector's, for business pressure's poaching) |
@@ -48,15 +48,16 @@ An adapter never throws into its caller: a fault is logged once per place (`Wiri
 | `FaultLinks.cs` | `FaultBridges`: Flare's City Office and the crews, crime and litter in the street |
 | `PermadeathLinks.cs` | `PermadeathBridges`: the life an obituary tells, the businesses, the City Ledger's page |
 | `LedgerLinks.cs` | `LedgerBridges`: what the City Ledger prints, read once a morning |
-| `FlareLinks.cs`, `FlareLiveLinks.cs`, `FlareInviteLinks.cs` | `FlareBridges`: the social life's people, the city's facts, invitations that book outings |
+| `FlareLinks.cs`, `FlareLiveLinks.cs`, `FlareInviteLinks.cs` | `FlareBridges`: the social life's people, the city's facts, invitations that book outings; `SocialLinks.OnFlare` (an influencer who is one of the cast stays) and `SocialLinks.FlareForget` (somebody the player lost touch with: `FlareRules.Forget`) |
 | `PhotosLinks.cs` | `PhotosBridges`: a photo shared to Flare |
 | `NavLinks.cs` | `NavBridges.HudHeld`, `GuideToStation` |
 | `TaxiLinks.cs` | `TaxiBridges` and the minimap's mark for the called taxi |
 | `OfficeLinks.cs` | empty shops made offices, once the other features' buildings are chosen |
 | `StreetLinks.cs`, `StreetTexts.cs` | street talk with the rest of the mod, and its words from RLO Texts |
-| `TextsLinks.cs`, `TextsPhone.cs`, `Wiring.TextsCalls.cs` | RLO Texts with Flare, the phone's texts and the answers to what the player types on a call; a text worded by RLO Texts keeps its written line's key beside the words (`t_key`), so a call back knows what it was about |
+| `TextsLinks.cs`, `TextsPhone.cs`, `Wiring.TextsCalls.cs` | RLO Texts with Flare, the phone's texts and the answers to what the player types on a call; `SocialLinks.TextsForget`: what a person the player lost touch with remembered (`s:` and their slot) goes with them; a text worded by RLO Texts keeps its written line's key beside the words (`t_key`), so a call back knows what it was about |
 | `Wiring.TextsMemory.cs`, `Wiring.TextsMemoryFacts.cs` | RLO Texts data v6: what people remember of the player, from street talk, texts, calls, Flare messages, the social life's own memories and what a person last texted about, read from their thread in the game's phone (the game-free part: `TextsMemoryFacts`) |
 | `Wiring.CompanionLinks.cs` | `CompanionBridges`: the companion report's capabilities (settings, businesses, ordinary hourly pay, credit accounts, the statements' source), each read from the feature that owns it (contracts/companion/v1) |
+| `Wiring.HustleLinks.cs` | `HustleBridges`: the Marketplace's car handed over at a free stretch of kerb (`EconomyBridges.KerbSpot`), the jobs' van hired for a junk run or a move (`JobDirector.HireVan`, `ReturnVan`), and no visit begun while a gig is on |
 | `Wiring.TextsCity.cs` | RLO Texts: the city's new talk with the features it reads (the staff's files, family life, a graduation, the court, the stock market, the books, the social life's people and texts); the people's last text is the newest in their thread, from any feature |
 
 ## Who does what at an arrest

@@ -47,6 +47,15 @@ namespace RealLifeOverhaul.Events
         public static Spell Spell { get; private set; }
         public static Season Season { get; private set; }
 
+        /// <summary>Snow on the roads: 0 none, 1 in patches, 2 covered (Seasons/SeasonRules.Step).</summary>
+        public static int Snow { get; private set; }
+
+        /// <summary>True when the last change was the snow's alone: the sky's warning is not given again for it.</summary>
+        public static bool SnowOnlyChanged { get; private set; }
+
+        /// <summary>The snow on the roads now, from the seasons (wired in Scripts/Wiring); null while nobody says: none.</summary>
+        public static Func<int> SnowNow;
+
         /// <summary>Set by whoever knows what the player wears (optional).</summary>
         public static IWardrobe Wardrobe;
 
@@ -83,7 +92,7 @@ namespace RealLifeOverhaul.Events
         internal static void Force(Sky sky, Spell spell)
         {
             Forced = true;
-            Set(sky, spell, SeasonOf(TimeHelper.CurrentDay));
+            Set(sky, spell, SeasonOf(TimeHelper.CurrentDay), Snow);
         }
 
         internal static void Release()
@@ -95,7 +104,7 @@ namespace RealLifeOverhaul.Events
         internal static void Reset()
         {
             Forced = false;
-            Set(Sky.Dry, Spell.None, Season.Spring);
+            Set(Sky.Dry, Spell.None, Season.Spring, 0);
         }
 
         /// <summary>Reads the game's weather and today's spell. True if anything changed.</summary>
@@ -107,7 +116,7 @@ namespace RealLifeOverhaul.Events
             }
             if (!Settings.WeatherMatters)
             {
-                return Set(Sky.Dry, Spell.None, Season);
+                return Set(Sky.Dry, Spell.None, Season, 0);
             }
             Sky sky = Sky.Dry;
             if (RainHelper.isRaining)
@@ -115,15 +124,17 @@ namespace RealLifeOverhaul.Events
                 sky = !RainHelper.AreRainDropsFalling ? Sky.Mist : Intensity() >= 0.8f ? Sky.Storm : Sky.Rain;
             }
             int day = TimeHelper.CurrentDay;
-            return Set(sky, SpellOf(day), SeasonOf(day));
+            return Set(sky, SpellOf(day), SeasonOf(day), SnowNow != null ? SnowNow() : 0);
         }
 
-        private static bool Set(Sky sky, Spell spell, Season season)
+        private static bool Set(Sky sky, Spell spell, Season season, int snow)
         {
-            if (sky == Sky && spell == Spell && season == Season)
+            if (sky == Sky && spell == Spell && season == Season && snow == Snow)
             {
                 return false;
             }
+            SnowOnlyChanged = sky == Sky && spell == Spell && season == Season;
+            Snow = snow;
             Sky = sky;
             Spell = spell;
             Season = season;
@@ -139,6 +150,12 @@ namespace RealLifeOverhaul.Events
                 case Spell.HeatWave: crime *= 1.3f; life *= 0.85f; break;
                 case Spell.ColdSnap: crime *= 0.85f; life *= 0.8f; break;
                 case Spell.Ice: accident *= 1.4f; grip *= 0.75f; speed *= 0.9f; life *= 0.7f; break;
+            }
+            // Snow on top of whatever else: drivers take it slowly and fewer people are out.
+            switch (snow)
+            {
+                case 1: accident *= 1.2f; grip *= 0.88f; speed *= 0.93f; life *= 0.9f; break;
+                case 2: accident *= 1.45f; grip *= 0.72f; speed *= 0.85f; life *= 0.8f; sight *= 0.9f; break;
             }
             AccidentFactor = accident;
             CrimeFactor = crime;
@@ -228,9 +245,12 @@ namespace RealLifeOverhaul.Events
         /// <summary>The weather's numbers have just changed: said once, and traffic's pace follows.</summary>
         public void Changed()
         {
-            Announce();
+            if (!Weather.SnowOnlyChanged)
+            {
+                Announce();   // the seasons say the snow's own news
+            }
             ApplySpeed();
-            EventDirector.Logger?.Info(FormattableString.Invariant($"Weather: {Weather.Sky}, {Weather.Spell}, {Weather.Season}: accidents x{Weather.AccidentFactor:F2}, ")
+            EventDirector.Logger?.Info(FormattableString.Invariant($"Weather: {Weather.Sky}, {Weather.Spell}, {Weather.Season}, snow {Weather.Snow}: accidents x{Weather.AccidentFactor:F2}, ")
                                        + FormattableString.Invariant($"crime x{Weather.CrimeFactor:F2}, sight x{Weather.SightFactor:F2}, ")
                                        + FormattableString.Invariant($"street life x{Weather.StreetLifeFactor:F2}, grip x{Weather.GripFactor:F2}, traffic speed x{Weather.TrafficSpeedFactor:F2}."));
         }

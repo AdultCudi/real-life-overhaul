@@ -14,6 +14,7 @@ namespace RealLifeOverhaul
         public const int MeetGapDays = 1;             // game days at least between two new faces
         public const int CircleSize = 12;             // the closest people who get in touch of their own accord
         public const int CircleNewDays = 14;          // game days somebody new stays keen, however many are closer
+        public const int DriftLoseDays = 60;          // game days without a word before a drifted acquaintance can go by themselves, once the cast is full
 
         public const float CallFamiliarity = 3f, CallAffection = 2f, CallTrust = 0.5f;
         public const float WarmReply = 1.5f, BluntReply = -2f;
@@ -432,6 +433,98 @@ namespace RealLifeOverhaul
                 h ^= h >> 13;
                 return (int)(h & 0x7FFFFFFF) | 1;
             }
+        }
+
+        /// <summary>
+        /// The seed of whoever takes the slot of somebody the player lost touch with: from the one who leaves, so the slot never
+        /// rolls the same face again, and the same on every machine for the same cast.
+        /// </summary>
+        public static int ReplaceSeed(int castSeed, int index, int goneSeed)
+        {
+            return SlotSeed(unchecked(castSeed ^ (goneSeed * 16777619)), index);
+        }
+
+        /// <summary>
+        /// Whether the player can lose touch with somebody, and if not the first reason: family and the old friend stay, a
+        /// partner ends it with a talk (<see cref="BrokenUp"/>), and nobody another part of their life still needs goes: who
+        /// lives with the player or is asked to, a plan with them, money between them, a Flare influencer's account.
+        /// </summary>
+        public static LoseBlock LoseBlockOf(SocialPerson person, bool planWith, bool livesWith, bool onFlare)
+        {
+            if (person == null || !person.Met)
+            {
+                return LoseBlock.NotKnown;
+            }
+            if (person.IsFamily)
+            {
+                return LoseBlock.Family;
+            }
+            if (person.Origin == SocialOrigin.OldFriend)
+            {
+                return LoseBlock.OldFriend;   // the phone's own friend contact, which the mod had before the social life
+            }
+            if (person.Together)
+            {
+                return LoseBlock.Together;
+            }
+            if (livesWith || person.MovedIn)
+            {
+                return LoseBlock.LivesWith;
+            }
+            if (planWith)
+            {
+                return LoseBlock.Plan;
+            }
+            if (person.Debt > 0 || person.Loan > 0)
+            {
+                return LoseBlock.Money;
+            }
+            return onFlare ? LoseBlock.Flare : LoseBlock.None;
+        }
+
+        /// <summary>
+        /// Whether somebody may be let go by themselves to make room once every slot of the cast is taken: an acquaintance
+        /// who drifted away and has had no word for <see cref="DriftLoseDays"/> days. The others wait for the player.
+        /// </summary>
+        public static bool DriftedAway(SocialPerson person, int day)
+        {
+            return person != null && person.Met && person.Drifted && person.Stage == SocialStage.Acquaintance && day - person.LastContactDay >= DriftLoseDays;
+        }
+
+        /// <summary>
+        /// Of the people who may be let go by themselves (<see cref="DriftedAway"/>, and nothing holding them, as
+        /// <paramref name="held"/> says), the one longest without a word, the lowest slot on a tie; -1 for nobody. One pass.
+        /// </summary>
+        public static int LongestDrifted(SocialPerson[] people, int count, int day, Func<SocialPerson, bool> held)
+        {
+            int best = -1;
+            for (int i = 0; i < count; i++)
+            {
+                SocialPerson p = people[i];
+                if (DriftedAway(p, day) && (held == null || !held(p)) && (best < 0 || p.LastContactDay < people[best].LastContactDay))
+                {
+                    best = i;
+                }
+            }
+            return best;
+        }
+
+        /// <summary>
+        /// The newest acquaintance the player could lose touch with, by the day they were met and then the slot; -1 for
+        /// nobody. For the test button. One pass.
+        /// </summary>
+        public static int NewestLoseable(SocialPerson[] people, int count, Func<SocialPerson, LoseBlock> block)
+        {
+            int best = -1;
+            for (int i = 0; i < count; i++)
+            {
+                SocialPerson p = people[i];
+                if (p != null && p.Met && p.Stage == SocialStage.Acquaintance && block(p) == LoseBlock.None && (best < 0 || p.MetDay >= people[best].MetDay))
+                {
+                    best = i;
+                }
+            }
+            return best;
         }
     }
 

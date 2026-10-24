@@ -182,7 +182,7 @@ internal static partial class Program
         int week = OpenHoursRules.Pack(Weekdays, 8, 8);   // 526367: a number found nowhere else in the line
         var f = new StudyFile { Seed = 9 };
         WorkFile w = f.Work;
-        w.Openings.Add(new Opening { Id = 1, Prof = ProCatalogue.Warehouse, Employer = "Wholesale", Street = "1st Avenue", Number = 4, Pay = 7000, To = 30, Shift = week });
+        w.Openings.Add(new Opening { Id = 1, Prof = ProCatalogue.Warehouse, Employer = "Wholesale", Street = "1st Avenue", Number = 4, Pay = 7000, To = 30, Lead = "lead-7", Shift = week });
         var a = new Application { Day = 3, Stage = (int)ApplyStep.Sent };
         w.Openings[0].CopyTo(a.Post);
         w.Applications.Add(a);
@@ -192,21 +192,27 @@ internal static partial class Program
         string line = CareersStore.Write(f);
         StudyFile back = CareersStore.Read(line, out _);
         WorkFile b = back.Work;
-        Check(b.Openings.Count == 1 && b.Openings[0].Shift == week && b.Applications.Count == 1 && b.Applications[0].Post.Shift == week
+        Check(line.Contains("|lead-7|" + week + "~") && b.Openings.Count == 1 && b.Openings[0].Lead == "lead-7" && b.Openings[0].Shift == week
+              && b.Applications.Count == 1 && b.Applications[0].Post.Shift == week
               && b.Job != null && b.Job.Post.Shift == week && b.Job.ShutDay == 777 && b.Job.Def.Hour == 8 && CareersStore.Write(back) == line,
-            "shift open: the fitted week of a vacancy, an application and the job, and the job's shut day, are saved and read back the same");
-        string old = line.Replace("|" + week + "~", "~").Replace("|" + week + "|777", string.Empty);
+            "shift open: a vacancy's lead and then its week, an application's and the job's week, and the job's shut day, are saved and read back the same");
+        string old = line.Replace("|lead-7|" + week + "~", "~").Replace("|" + week + "~", "~").Replace("|" + week + "|777", string.Empty);
         StudyFile before = CareersStore.Read(old, out _);
-        Check(old.IndexOf(week.ToString(), StringComparison.Ordinal) < 0 && before.Work.Openings.Count == 1 && before.Work.Openings[0].Shift == 0
+        Check(old.IndexOf(week.ToString(), StringComparison.Ordinal) < 0 && old.IndexOf("lead-7", StringComparison.Ordinal) < 0 && before.Work.Openings.Count == 1
+              && before.Work.Openings[0].Shift == 0 && before.Work.Openings[0].Lead.Length == 0 && before.Work.Openings[0].Pay == 7000 && before.Work.Openings[0].Level == -1
               && before.Work.Applications.Count == 1 && before.Work.Applications[0].Post.Shift == 0 && before.Work.Job != null && before.Work.Job.Post.Shift == 0
               && before.Work.Job.ShutDay == -1 && before.Work.Job.Def.Hour == 6 && before.Work.Job.Pay == 7000,
-            "shift open: a save from before the fit loads, its posts on the profession's own week (fitted again at load) and no shut day");
+            "shift open: a save from before both the lead and the week loads, its vacancy with no lead, its posts on the profession's own week (fitted again at load), no shut day");
+        string leadOnly = line.Replace("|lead-7|" + week + "~", "|lead-7~");
+        StudyFile led = CareersStore.Read(leadOnly, out _);
+        Check(led.Work.Openings.Count == 1 && led.Work.Openings[0].Lead == "lead-7" && led.Work.Openings[0].Shift == 0 && led.Work.Applications[0].Post.Shift == week,
+            "shift open: a vacancy with its lead and no week reads its lead and is fitted again; the application after it parses whole");
         int at = line.IndexOf("|" + week + "~", StringComparison.Ordinal);
         string bad = at < 0 ? line : line.Substring(0, at) + "|" + OpenHoursRules.Pack(Weekdays, 20, 8) + line.Substring(at + 1 + week.ToString().Length);
         Check(CareersStore.Read(bad, out _).Work.Openings[0].Shift == 0, "shift open: a saved week past midnight is not read: the post is fitted again");
         var copy = new Opening();
         w.Openings[0].CopyTo(copy);
-        Check(copy.Shift == week && copy.Same(w.Openings[0]), "shift open: a post copied to an application or a job carries its week");
+        Check(copy.Shift == week && copy.Lead == "lead-7" && copy.Same(w.Openings[0]), "shift open: a post copied to an application or a job carries its week and its lead");
     }
 
     // ---------------------------------------------------------------- the street careers

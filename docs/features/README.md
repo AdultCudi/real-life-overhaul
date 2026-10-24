@@ -10,13 +10,16 @@ One page per feature. Each starts with what it is in a sentence, where its code 
 - [Justice](justice.md): cases, bail, lawyers, the courthouse, sentences and prison.
 - [The living city](city-life.md): people at work and about their day on the pavements.
 - [City events](city-events.md): fires, weather that matters and street events.
+- [Seasons](seasons.md): what customers buy through the year, and snow on some winter days.
 - [Civic life](civic.md): the city's government, elections, standing for office, construction sites.
 
 ## The player's life
 
 - [Social life](social.md): the people the player knows, outings, texts and the morning paper.
+- [Networking](networking.md): people the player knows who hold a position, and the favours they do as the relationship grows.
 - [Family](family.md): a partner, a wedding, children, the wider family.
 - [Home life and health](home.md): needs, cooking, illness and the doctor.
+- [Household staff](household.md): a cleaner, a cook, a live-in butler and a mobile mechanic for the home.
 - [Leisure](leisure.md): things to do for fun, the mod's clothes, night life, sound, photo mode.
 - [Travel and lodging](travel.md): hotels and holidays.
 - [Permadeath](permadeath.md): an ending the player chooses.
@@ -36,6 +39,7 @@ One page per feature. Each starts with what it is in a sentence, where its code 
 
 - [Jobs](jobs.md): gigs from the Gig Line and the help-wanted boards.
 - [Careers](careers.md): the employers' ranks, and education and the professions.
+- [Legal hustles](hustles.md): the Marketplace, used goods and cars to fix up and sell on, and freelance visits for clients.
 
 ## Economy
 
@@ -52,6 +56,7 @@ One page per feature. Each starts with what it is in a sentence, where its code 
 - [Interiors and decor](interiors.md).
 - [Ready-made designs](designs.md): the interior installation firms' designs for the mod's own businesses.
 - [Districts](districts.md): the district view on the city map.
+- [A landlord's duties](landlord.md): tenants' satisfaction, repair calls, the city's inspections, rent owed, lettings agencies and property managers, for the buildings you let.
 
 `Scripts/Economy` also has `Brands`, `Dealer` (the Car Showroom), `Estate` (property), `Online` and `Services`, each with a `README.md` in its folder.
 
