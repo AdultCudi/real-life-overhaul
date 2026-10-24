@@ -58,11 +58,8 @@ namespace RealLifeOverhaul.Construction
             long value = Value(hours, prices);
             int days = TenderRules.StandardDays(hours);
             var bids = new TenderBid[BuildCatalogue.RivalCount];
-            for (int r = 0; r < bids.Length; r++)
-            {
-                bids[r] = TenderRules.RivalBid(seed, day * 31 + 7, r, value, days, Speciality.Renovation, 0);
-            }
-            TenderBid won = bids[Math.Max(0, TenderRules.Winner(bids, bids.Length))];
+            int count = CommissionRules.Bids(seed, day * 31 + 7, value, days, Speciality.Renovation, null, bids);   // the one way the city's builders quote a client
+            TenderBid won = bids[Math.Max(0, TenderRules.Winner(bids, count))];
             return new RefitQuote { Rival = won.Bidder, Price = won.Price / 10L * 10L, Days = Math.Max(1, won.Days), Hours = hours };
         }
     }

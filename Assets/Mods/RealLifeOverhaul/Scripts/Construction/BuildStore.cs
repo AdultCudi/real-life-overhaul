@@ -158,6 +158,9 @@ namespace RealLifeOverhaul.Construction
             {
                 t.Append(i > 0 ? "," : string.Empty).Append(p.Hedges[i].Contract.ToString(Inv)).Append(':').Append(p.Hedges[i].Result.ToString(Inv));
             }
+            t.Append('|');
+            Join(t, p.HireDays, p.HirePace, p.HireStages, p.HireFree ? 1 : 0);   // a hired builder's contract, after every field an older reader knows
+            t.Append('|').Append(p.HirePaid.ToString(Inv)).Append('|').Append(p.HirePenalty.ToString(Inv));
         }
 
         /// <summary>Reads a line; null for one that is not this feature's.</summary>
@@ -511,6 +514,16 @@ namespace RealLifeOverhaul.Construction
                 {
                     p.Hedges.Add(new HedgeHold { Contract = id, Result = result });
                 }
+            }
+            p.HireDays = BuildCatalogue.Clamp(r.I(0), 0, 2000);
+            p.HirePace = BuildCatalogue.Clamp(r.I(0), 0, BuildCatalogue.HirePaceMost);
+            p.HireStages = r.I(0) & 7;
+            p.HireFree = r.I(0) == 1;
+            p.HirePaid = Math.Max(0L, r.L(0L));
+            p.HirePenalty = Math.Max(0L, r.L(0L));
+            if (p.Hired && p.HirePace < BuildCatalogue.HirePaceLeast)
+            {
+                p.HirePace = 1000;   // a contract whose pace was lost goes at the city's own
             }
             if (p.FlatsSold > p.Flats)
             {

@@ -527,6 +527,15 @@ namespace RealLifeOverhaul.Construction
         public const int ContractorGrade = 1;                   // a contractor's refit: good
         public const int RefitEveryLeast = 5, RefitEveryMost = 9;      // days between two businesses' refit tenders
 
+        // ------------------------------------------------------------------ a builder hired by the player
+
+        public const int HireDepositPermille = 100;             // of the contract's price, paid as it is signed
+        public static readonly int[] HireStagePermille = { 250, 300, 300 };   // paid as each inspection passes: the foundations, the frame, the final
+        public const int HirePenaltyDayPermille = 5;            // of the price the builder pays back for each day it hands over late
+        public const int HirePenaltyMostPermille = 100;         // the most it pays back: a tenth of the price, the usual cap on such damages
+        public const int HirePaceLeast = 400, HirePaceMost = 1600;   // thousandths of the city's pace a hired builder's crews work at
+        public const int HireLuckLeast = 850, HireLuckMost = 1050;   // thousandths of its quoted pace its crews really keep, before its standing
+
         public const int LandTaxPermille = 12;                  // of the land's price a year
         public const int VacantTaxPermille = 25;                // more a year, on land kept empty
         public const int VacantAfter = 30;                      // days without works before land counts as empty
