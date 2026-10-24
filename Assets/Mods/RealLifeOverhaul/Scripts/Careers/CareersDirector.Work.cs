@@ -35,6 +35,7 @@ namespace RealLifeOverhaul.Careers
             _workOn = true;
             _employersDay = -1;
             WorkFile w = _study.Work;
+            KeepShifts(Save.Day, true);   // a save from before the weeks were fitted, or a place whose hours changed while it was away
             Logger?.Info("Careers: the working life " + (w.LastDay < 0 ? "opened" : "loaded") + " on day " + Save.Day + ": " + w.Openings.Count + " vacancies, " + w.Applications.Count
                          + " application(s), " + (w.Job != null ? "a job at " + w.Job.Post.Employer : "no job") + ".");
         }
@@ -76,6 +77,7 @@ namespace RealLifeOverhaul.Careers
                     SettleDay(j, day);
                 }
                 DeskHour(j, day, hour);
+                ShutAtStart(j, day, hour);
                 if (ProRules.WorkDay(p, day) && p.Hour == hour + 1 && day >= j.Hired && j.SettledDay < day && _workReminded != day)
                 {
                     _workReminded = day;
@@ -139,6 +141,7 @@ namespace RealLifeOverhaul.Careers
                     EndJob((LeaveReason)Math.Max(1, j.Leaving), day, true);
                 }
             }
+            KeepShifts(day, false);   // after the days gone by are settled on the week they were worked on
             Applications(day);
             Vacancies(day);
             WorkDayMore(day);
@@ -172,6 +175,18 @@ namespace RealLifeOverhaul.Careers
             if (Excused(day) || j.OffUntil >= day)
             {
                 ProRules.Excuse(j);
+                return;
+            }
+            if (ShutExcused(j, day))
+            {
+                // the door was shut at the day's start: never the player's absence
+                ProRules.Excuse(j);
+                if (j.ShutDay != day)
+                {
+                    j.ShutDay = day;
+                    Tell2(NotificationType.Info, "reallife_work_note_shut", Data("employer", CareersText.Employer(j.Post.Employer), "day", CareersText.Day(day)), TabJob, null);
+                }
+                Logger?.Info("Careers: the working day " + day + " at " + j.Post.Employer + " was not worked; its place was shut at the start, so it is excused.");
                 return;
             }
             if (OutageExcused(j, day, from, to))

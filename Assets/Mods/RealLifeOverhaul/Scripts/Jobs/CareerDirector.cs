@@ -325,6 +325,13 @@ namespace RealLifeOverhaul
                 _logger?.Info("Careers: the shift of day " + day + " was excused (sick).");
                 return;
             }
+            if (Careers.OpenHoursRules.RotaShutExcuses(CareerState.ShutDay, day))
+            {
+                CareerState.Excused(day);
+                Notifications.Show(NotificationType.Info, "reallife_career_shut_excused", data, 10f);
+                _logger?.Info("Careers: the shift of day " + day + " was excused (nobody near was open to work for).");
+                return;
+            }
             bool last = CareerState.Missed(day);
             data["marks"] = CareerState.Marks.ToString();
             data["most"] = CareerCatalogue.MarksToDismiss.ToString();
@@ -395,9 +402,16 @@ namespace RealLifeOverhaul
                 return false;
             }
             int day = TimeHelper.CurrentDay;
-            bool late = TimeHelper.CurrentHour >= CareerState.RotaHour + CareerCatalogue.OnTimeHours;
+            bool late = Careers.OpenHoursRules.RotaLateMarks(TimeHelper.CurrentHour >= CareerState.RotaHour + CareerCatalogue.OnTimeHours, CareerState.ShutDay, day);
             if (!Begin(CareerState.Employer, CareerState.CurrentRank, CareerState.Hourly, CareerState.Piece, late, true, out reasonKey))
             {
+                if (reasonKey == "reallife_job_no_client" && CareerState.ShutDay != day)
+                {
+                    // the shift waits on the clients' doors, not on the player: neither a later start nor the day missed is held against them
+                    CareerState.ShutDay = day;
+                    _logger?.Info("Careers: turned away from the shift of day " + day + " at " + TimeHelper.CurrentHour.ToString("00")
+                                  + ":00, nobody near open to work for; a later start is on time and the day missed is excused.");
+                }
                 return false;
             }
             Employer employer = CareerState.Employer;

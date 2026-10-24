@@ -8,11 +8,13 @@ namespace RealLifeOverhaul.Careers
     ///
     ///   w  next id|last day|vacancies day|recruitment office until|earned|days worked|pension|benefit until|benefit a week|retired|search firm day|benefit paid|retired early|first step told|recruitment office end told
     ///   o  each vacancy, a each application, j the job now (one), y each job before
-    ///      a vacancy: id|profession|rank|kind|employer|street|number|rival|pay|mode|from|to|via|family|level|lead (who passed it on; only here, not in a or j)
-    ///      an application: the vacancy, then day|stage|answer|interview day|interview hour|score|offer|asks|lapse|start|turned down on
+    ///      a vacancy: id|profession|rank|kind|employer|street|number|rival|pay|mode|from|to|via|family|level|lead (who passed it on; only here, not in a or j)|its week
+    ///      an application: the vacancy, then day|stage|answer|interview day|interview hour|score|offer|asks|lapse|start|turned down on|its week
     ///      the job: the vacancy, then hired|rank day|pay|mode|boss|settled|today|today's minutes|clocked in|due|worked|late|absent|week|week's
     ///      minutes|overtime|burnout|rating|review day|low runs|warnings|raises|politics|politics day|favour|options|vest day|restraint|exclusive|
-    ///      notice end|leaving|declared|conflict seen|earned|bonus|rise asked|signed off until
+    ///      notice end|leaving|declared|conflict seen|earned|bonus|rise asked|signed off until|its week|shut day
+    ///      a week: the post's working week fitted to its workplace's opening hours (OpenHoursRules.Pack), at the end of each record so a
+    ///      save from before it loads (0: fitted again at load) and an older build reads the rest
     ///   y  profession|top rank|kind|employer|from|to|reference|leaving|earned
     ///   f  founder day|profession|top rank|from|restraint until|profession|colleagues|employer|week's pay|claim|tested|colleagues until|count|profession|level|
     ///      practice profession|opened|name|served|late|practice to open
@@ -27,13 +29,15 @@ namespace RealLifeOverhaul.Careers
             w.Part('o');
             for (int i = 0; i < f.Openings.Count && i < WorkFile.OpeningsMost; i++)
             {
-                Post(w.Record(), f.Openings[i]).Add(f.Openings[i].Lead);
+                Opening o = f.Openings[i];
+                Post(w.Record(), o).Add(o.Lead).Add(o.Shift);   // the lead first, then the week: each read in that order
             }
             w.Part('a');
             for (int i = 0; i < f.Applications.Count && i < WorkFile.ApplicationsMost; i++)
             {
                 Application a = f.Applications[i];
-                Post(w.Record(), a.Post).Add(a.Day).Add(a.Stage).Add(a.Answer).Add(a.InterviewDay).Add(a.InterviewHour).Add(a.Score).Add(a.Offer).Add(a.Asks).Add(a.Lapse).Add(a.StartDay).Add(a.Refused);
+                Post(w.Record(), a.Post).Add(a.Day).Add(a.Stage).Add(a.Answer).Add(a.InterviewDay).Add(a.InterviewHour).Add(a.Score).Add(a.Offer).Add(a.Asks).Add(a.Lapse).Add(a.StartDay).Add(a.Refused)
+                    .Add(a.Post.Shift);
             }
             w.Part('j');
             Job j = f.Job;
@@ -42,7 +46,7 @@ namespace RealLifeOverhaul.Careers
                 Post(w.Record(), j.Post).Add(j.Hired).Add(j.RankDay).Add(j.Pay).Add(j.Work).Add(j.Boss).Add(j.SettledDay).Add(j.TodayDay).Add(j.TodayMinutes).Add(j.ClockIn)
                     .Add(j.Due).Add(j.Worked).Add(j.Late).Add(j.Absent).Add(j.WeekOf).Add(j.WeekMinutes).Add(j.Overtime).Add(j.Burnout).Add(j.Rating).Add(j.ReviewDay).Add(j.LowRuns)
                     .Add(j.Warnings).Add(j.Raises).Add(j.Politics).Add(j.PoliticsDay).Add(j.Favour).Add(j.Options).Add(j.VestDay).Add(j.NonCompete).Add(j.Exclusive).Add(j.NoticeEnd)
-                    .Add(j.Leaving).Add(j.Declared).Add(j.ConflictSeen).Add(j.Earned).Add(j.Bonus).Add(j.AskDay).Add(j.OffUntil);
+                    .Add(j.Leaving).Add(j.Declared).Add(j.ConflictSeen).Add(j.Earned).Add(j.Bonus).Add(j.AskDay).Add(j.OffUntil).Add(j.Post.Shift).Add(j.ShutDay);
             }
             w.Part('y');
             for (int i = 0; i < f.History.Count; i++)
@@ -93,6 +97,14 @@ namespace RealLifeOverhaul.Careers
             return true;
         }
 
+        // A post's week as saved; 0 for a save from before it, or one this build cannot work (fitted again at load).
+        private static int Week(Fields x)
+        {
+            int shift = x.Int();
+            int hours = OpenHoursRules.HoursOf(shift);
+            return OpenHoursRules.DaysOf(shift) != 0 && hours > 0 && OpenHoursRules.HourOf(shift) + hours <= 24 ? shift : 0;
+        }
+
         public static void Read(TechReader r, WorkFile f)
         {
             Fields h = r.One('w');
@@ -117,6 +129,7 @@ namespace RealLifeOverhaul.Careers
                 if (Post(x, o) && f.Openings.Count < WorkFile.OpeningsMost)
                 {
                     o.Lead = x.Text();   // (a save from before leads: empty)
+                    o.Shift = Week(x);   // (a save from before the weeks: 0, fitted again at load)
                     f.Openings.Add(o);
                 }
             }
@@ -139,6 +152,7 @@ namespace RealLifeOverhaul.Careers
                 a.StartDay = x.Int();
                 int refused = x.Int(int.MinValue);
                 a.Refused = refused != int.MinValue ? Math.Max(-1, refused) : ProRules.RefusedDay(a);   // (a save from before the day was kept: told from what it holds, else no bar)
+                a.Post.Shift = Week(x);
                 if (f.Applications.Count < WorkFile.ApplicationsMost)
                 {
                     f.Applications.Add(a);
@@ -188,6 +202,8 @@ namespace RealLifeOverhaul.Careers
                 j.Bonus = Math.Max(0, x.Int());
                 j.AskDay = x.Int(-1000);
                 j.OffUntil = x.Int();
+                j.Post.Shift = Week(x);
+                j.ShutDay = x.Int(-1);
                 f.Job = j;
                 break;
             }
