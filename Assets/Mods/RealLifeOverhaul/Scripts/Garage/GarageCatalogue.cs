@@ -13,7 +13,8 @@ namespace RealLifeOverhaul
         Brakes,
         Tyres,
         Suspension,
-        Weight
+        Weight,
+        Shift       // how quickly the gearbox changes gear; last, so a build line of an older version reads as before
     }
 
     /// <summary>How the paint catches the light. Set through the vehicle shader's own gloss and edge-colour properties.</summary>
@@ -60,6 +61,7 @@ namespace RealLifeOverhaul
         public bool UtilityOnly;     // a lift kit is for SUVs, pickups and vans
         public int Boost;            // a turbo's size for its sound: 1 a turbocharger, 2 a big turbo (Driving/Sound/CarSoundRules.Turbo)
         public string Sound;         // locale key: how the part sounds, on the shop's parts page
+        public float Shift = 1f;     // times the time a gear change takes
     }
 
     /// <summary>Everything fitted to one car, added up. Neutral when nothing is.</summary>
@@ -77,13 +79,14 @@ namespace RealLifeOverhaul
         public float Insurance;      // 0 = as stock; 0.10 = a tenth dearer
         public int Loudness;         // 0 stock, 1 sporty, 2 not street legal
         public float Pitch;
+        public float Shift;          // multiplies the time a gear change takes
 
         public static GarageModifiers None => new GarageModifiers
         {
-            Acceleration = 1f, TopSpeed = 1f, Brakes = 1f, Grip = 1f, WetGrip = 1f, Stiffness = 1f, Mass = 1f
+            Acceleration = 1f, TopSpeed = 1f, Brakes = 1f, Grip = 1f, WetGrip = 1f, Stiffness = 1f, Mass = 1f, Shift = 1f
         };
 
-        public bool ChangesPerformance => Acceleration != 1f || TopSpeed != 1f;
+        public bool ChangesPerformance => Acceleration != 1f || TopSpeed != 1f || Shift != 1f;
     }
 
     /// <summary>What one car carries from the custom shop, one line in the save's modData; the vehicle itself is never changed.</summary>
@@ -164,6 +167,7 @@ namespace RealLifeOverhaul
                 m.Insurance += part.Insurance;
                 m.Loudness = part.Loud > m.Loudness ? part.Loud : m.Loudness;
                 m.Pitch += part.Pitch;
+                m.Shift *= part.Shift;
             }
             // Weight is asked of the model as a quicker time: it finds the power for a target, so weight would cancel out.
             m.Acceleration /= m.Mass;
@@ -278,7 +282,7 @@ namespace RealLifeOverhaul
     /// <summary>What the custom shop sells, with each part's effects and trade-offs and its price for each kind of car. Game-free.</summary>
     public static class GarageCatalogue
     {
-        public const int Slots = 8;                    // PartSlot values
+        public const int Slots = 9;                    // PartSlot values
         public const float MaxAcceleration = 1.6f;     // the quickest a fully built car is asked to be, against stock
         public const float MaxTopSpeed = 1.25f;        // times stock
         public const float Resale = 0.5f;              // the share of what was spent that a build adds to the car's worth
@@ -330,7 +334,11 @@ namespace RealLifeOverhaul
             new PartDef { Id = "susp_lift", Slot = PartSlot.Suspension, Name = "reallife_garage_part_susp_lift", Price = 1.0f, Stiff = 1.10f, Ride = 0.04f, UtilityOnly = true },
 
             new PartDef { Id = "weight_1", Slot = PartSlot.Weight, Name = "reallife_garage_part_weight_1", Price = 1.0f, Mass = 0.95f },
-            new PartDef { Id = "weight_2", Slot = PartSlot.Weight, Name = "reallife_garage_part_weight_2", Price = 2.5f, Mass = 0.90f, Insurance = 0.05f }
+            new PartDef { Id = "weight_2", Slot = PartSlot.Weight, Name = "reallife_garage_part_weight_2", Price = 2.5f, Mass = 0.90f, Insurance = 0.05f },
+
+            // No claimed gain: the model drives the car with the quicker change, so what it saves is measured, not asked for.
+            new PartDef { Id = "shift_quick", Slot = PartSlot.Shift, Name = "reallife_tuning_part_shift_quick", Price = 0.8f, Shift = 0.6f },
+            new PartDef { Id = "shift_seq", Slot = PartSlot.Shift, Name = "reallife_tuning_part_shift_seq", Price = 2.0f, Shift = 0.35f, Wear = 0.04f }
         };
 
         public static PartDef Part(string id)
@@ -360,6 +368,7 @@ namespace RealLifeOverhaul
                 case PartSlot.Brakes: return "reallife_garage_slot_brakes";
                 case PartSlot.Tyres: return "reallife_garage_slot_tyres";
                 case PartSlot.Suspension: return "reallife_garage_slot_suspension";
+                case PartSlot.Shift: return "reallife_tuning_slot_shift";
                 default: return "reallife_garage_slot_weight";
             }
         }

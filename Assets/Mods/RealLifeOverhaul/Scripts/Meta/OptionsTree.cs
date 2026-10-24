@@ -288,8 +288,11 @@ namespace RealLifeOverhaul.Meta
                 S("handling").Guide("driving").Opts("car_handling")
                     .Also("weight heavy suspension springs bounce body roll lean dive brakes abs grip slide sliding tyres tires steering"),
                 S("owning").Guide("transport").Main("car_ownership").Opts("car_easy").Also("fuel petrol service insurance breakdown wear"),
-                S("garage").For("garage").Main("garage").Opts("garage_cosmetics", "garage_tuning", "garage_underglow", "garage_police", "garage_sounds").Buttons("reallife_garage_test_vehicles")
-                    .Also("tuning paint parts custom"),
+                S("garage").For("garage").Main("garage").Opts("garage_cosmetics", "garage_tuning", "garage_underglow", "garage_police", "garage_sounds", "garage_resale")
+                    .Buttons("reallife_garage_test_vehicles")
+
+                    .Also("tuning paint parts custom dyno figures gearbox resale sell"),
+
                 S("bikes").Guide("garage").Opt("two_wheelers", "garage").Also("bicycle bicycles motorbike motorbikes motorcycle scooter two-wheelers"),
                 S("traffic").For("streets").Opts("horn_reactions", "natural_accidents", "solid_streets", "city_drivers").Opt("tow_trucks", "traffic_accidents")
                     .Also("pedestrians cars road tow truck wreck recovery braking parking park pull out drivers"),

@@ -12,19 +12,33 @@ namespace RealLifeOverhaul
     /// <summary>What a car does by the model, for the shop's before-and-after figures; below zero: cannot be told.</summary>
     public struct GarageFigures
     {
-        public float To100;        // seconds
-        public float TopKmh;       // km/h
-        public float StopMetres;   // from 100 km/h
+        public float To100;          // seconds
+        public float TopKmh;         // km/h
+        public float StopMetres;     // from 100 km/h
+        public float PowerKw;        // the engine's peak, at full boost
+        public float TorqueNm;       // the engine's peak
+        public float MassKg;
+        public float ShiftSeconds;   // one gear change, no drive meanwhile
+        public float RideMetres;     // the height at rest against standard, + up; 0 when it cannot be told
+        public float Grip;           // the tyres' dry grip against standard
+        public float WetGrip;
+
+        public static GarageFigures Unknown => new GarageFigures
+        {
+            To100 = -1f, TopKmh = -1f, StopMetres = -1f, PowerKw = -1f, TorqueNm = -1f, MassKg = -1f, ShiftSeconds = -1f, Grip = 1f, WetGrip = 1f
+        };
     }
 
     /// <summary>
     /// The performance parts on the car driven: <see cref="CarModel"/>'s sums find the power, gearing and drag for the
     /// build's 0-100 km/h time and top speed. Driving/CarTuning applies them once it calls <see cref="Claim"/>; until then
-    /// this writes them itself. A few comparisons a frame while driving; the sums run once per car and build.
+    /// this writes them itself, after every Update of the frame, so car tuning has claimed a car it takes before this
+    /// looks and neither records the other's values as the game's. A few comparisons a frame while driving; the sums
+    /// run once per car and build.
     /// </summary>
     public sealed class GarageTuning : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("garage", "GarageTuning", typeof(GarageTuning));   // its Update and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("garage", "GarageTuning", typeof(GarageTuning));   // its LateUpdate and FixedUpdate (Core/Guard)
 
         private const float MaxTopKmh = 350f;   // km/h, as Driving/CarTuning
 
@@ -51,7 +65,12 @@ namespace RealLifeOverhaul
         private Rigidbody _body;
         private SpeedLimiterModule _limiter;
         private float _limitBefore, _limitWritten;
+        private TransmissionComponent _shiftBox;
+        private float _shiftBefore, _shiftWritten;
+        private bool _carTuning;
         private bool _failed;
+
+        private static GarageTuning _live;   // for the figures: the gear change it wrote, to read the standard one under it
 
         /// <summary>The hook for Driving/CarTuning: the car's modifiers, neutral when stock or off; from then CarTuning applies them.</summary>
         public static GarageModifiers Claim(VehicleInstance vehicle)
@@ -73,17 +92,21 @@ namespace RealLifeOverhaul
         private void Awake()
         {
             _modifier = PowerFactor;
+            _live = this;
         }
+
+        // Car tuning carries the parts only while it is on: switched off later in the session, this applies them again.
+        private static bool Claimed => _claimed && Settings.CarTuning;
 
         private float PowerFactor()
         {
             return _powerFactor;
         }
 
-        private static readonly int HotUpdate = HotSpots.Slot("Garage: GarageTuning.Update");
-        private void Update()
+        private static readonly int HotLateUpdate = HotSpots.Slot("Garage: GarageTuning.LateUpdate");
+        private void LateUpdate()
         {
-            using var hotSpot = HotSpots.Time(HotUpdate);
+            using var hotSpot = HotSpots.Time(HotLateUpdate);
             if (FrameGuard.Off)
             {
                 enabled = false;   // switched off after its faults (Core/Guard)
@@ -91,7 +114,7 @@ namespace RealLifeOverhaul
             }
             try
             {
-                OnUpdate();
+                OnLateUpdate();
             }
             catch (Exception e)
             {
@@ -99,9 +122,10 @@ namespace RealLifeOverhaul
             }
         }
 
-        private void OnUpdate()
+        private void OnLateUpdate()
+
         {
-            if (_claimed || _failed)
+            if (Claimed || _failed)
             {
                 if (_applied != null)
                 {
@@ -116,7 +140,7 @@ namespace RealLifeOverhaul
             NwhVehicle tuned = tuning != null ? tuning.Tuned : null;
             bool option = Settings.Garage && Settings.GarageTuning;
             bool overwritten = _applied != null && _gearsWritten && _applied.powertrain.transmission.finalGearRatio != _finalWritten;
-            if (vehicle == _seen && tuned == _seenTuned && GarageState.Version == _version && option == _option && !overwritten)
+            if (vehicle == _seen && tuned == _seenTuned && GarageState.Version == _version && option == _option && Settings.CarTuning == _carTuning && !overwritten)
             {
                 return;
             }
@@ -125,6 +149,7 @@ namespace RealLifeOverhaul
             _seenTuned = tuned;
             _version = GarageState.Version;
             _option = option;
+            _carTuning = Settings.CarTuning;
             if (vehicle == null || !option)
             {
                 return;
@@ -177,6 +202,35 @@ namespace RealLifeOverhaul
         private void OnDestroy()
         {
             Restore();
+            if (_live == this)
+            {
+                _live = null;
+            }
+        }
+
+        // A quicker gearbox: the change the car has now (the game's own, or car tuning's for its kind) times the build's.
+        private void WriteShift(TransmissionComponent box, float factor)
+        {
+            if (box == null || factor == 1f || !(box.shiftDuration > 0f))
+            {
+                return;
+            }
+            _shiftBox = box;
+            _shiftBefore = box.shiftDuration;
+            _shiftWritten = TuningRules.ShiftSeconds(_shiftBefore, factor);
+            box.shiftDuration = _shiftWritten;
+        }
+
+        /// <summary>The time a gear change takes on this car without the build, or -1 if it has no gearbox to read.</summary>
+        public static float StandardShift(NwhVehicle vehicle)
+        {
+            TransmissionComponent box = vehicle != null && vehicle.powertrain != null ? vehicle.powertrain.transmission : null;
+            if (box == null)
+            {
+                return -1f;
+            }
+            GarageTuning live = _live;
+            return live != null && live._shiftBox == box && box.shiftDuration == live._shiftWritten ? live._shiftBefore : box.shiftDuration;
         }
 
         private void Apply(CarController car, NwhVehicle vehicle, CarTuning tuning, bool tuned)
@@ -226,6 +280,7 @@ namespace RealLifeOverhaul
                             _gearsWritten = true;
                             _dragDelta = Setup.Drag - stockDrag;
                             engine.powerModifiers.Add(_modifier);
+                            WriteShift(box, m.Shift);
                             Note(id, FormattableString.Invariant($"Garage: {typeName}: 0-100 {stock.To100:F1} -> {run.To100:F1} s, top {stock.TopKmh:F0} -> {run.TopKmh:F0} km/h ")
                                      + FormattableString.Invariant(
                                          $"(power x{_powerFactor:F2} to {Setup.PowerKw:F0} kW, final drive {_finalBefore:F2} -> {final:F2}, drag {stockDrag:F3} -> {Setup.Drag:F3})."));
@@ -246,8 +301,11 @@ namespace RealLifeOverhaul
                 _limitWritten = _limitBefore * m.TopSpeed;
                 _limiter.speedLimit = _limitWritten;
             }
+            WriteShift(box, m.Shift);
             Note(id, FormattableString.Invariant($"Garage: {typeName}: engine power x{_powerFactor:F2}")
-                     + (_limiter != null ? $", speed limiter {_limitBefore:F0} -> {_limitWritten:F0}" : string.Empty) + " (the car model is not driving this car).");
+                     + (_limiter != null ? $", speed limiter {_limitBefore:F0} -> {_limitWritten:F0}" : string.Empty)
+                     + (_shiftBox != null ? FormattableString.Invariant($", gear change {_shiftBefore:F2} -> {_shiftWritten:F2} s") : string.Empty)
+                     + " (the car model is not driving this car).");
         }
 
         private void Restore()
@@ -260,6 +318,8 @@ namespace RealLifeOverhaul
             _gearsWritten = false;
             SpeedLimiterModule limiter = _limiter;
             _limiter = null;
+            TransmissionComponent shiftBox = _shiftBox;
+            _shiftBox = null;
             if (vehicle == null)
             {
                 return;   // nothing of ours anywhere, or the car is gone with its numbers
@@ -284,6 +344,12 @@ namespace RealLifeOverhaul
                 {
                     limiter.speedLimit = _limitBefore;
                 }
+                // Only if the change time is still ours, as the ratios above.
+                if (shiftBox != null && shiftBox.shiftDuration == _shiftWritten)
+                {
+                    shiftBox.shiftDuration = _shiftBefore;
+                }
+
             }
             catch (Exception e)
             {
@@ -301,23 +367,27 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>What this car does with a build by the model: 0-100, top speed, the stop. Runs the sums: never per frame.</summary>
+        /// <summary>What this car does with a build by the model: the engine, 0-100, top speed, the stop, the gear change, weight and height. Runs the sums: never per frame.</summary>
         public static GarageFigures Figures(CarController car, GarageBuild build)
         {
-            var figures = new GarageFigures { To100 = -1f, TopKmh = -1f, StopMetres = -1f };
+            GarageFigures figures = GarageFigures.Unknown;
             NwhVehicle vehicle = car != null ? car.vehicleController : null;
             if (vehicle == null || vehicle.vehicleRigidbody == null || vehicle.powertrain == null || build == null)
             {
                 return figures;
             }
             GarageModifiers m = build.Modifiers();
+            figures.Grip = m.Grip;
+            figures.WetGrip = m.WetGrip;
             GarageCar fitted = GarageCar.Of(car, false);
             float mass = vehicle.vehicleRigidbody.mass;
             float torque = vehicle.brakes != null ? vehicle.brakes.maxTorque : 0f;
             if (fitted != null)
             {
                 fitted.StockFigures(out mass, out torque);
+                figures.RideMetres = fitted.RideChange(m);
             }
+            figures.MassKg = mass > 1f ? mass * m.Mass : -1f;
             try
             {
                 CarTuning tuning = CarTuning.Instance;
@@ -326,15 +396,25 @@ namespace RealLifeOverhaul
                     // CarTuning's targets are the stock car's, unless the hook has taken this car's build into them.
                     float seconds = tuning.TargetSeconds;
                     float stockTop = tuning.TargetTopKmh;
-                    if (_claimed)
+                    if (Claimed)
                     {
                         GarageModifiers own = Of(car.vehicleInstance != null ? car.vehicleInstance.id : null);
                         seconds *= own.Acceleration;
                         stockTop /= own.TopSpeed;
                     }
                     float top = Mathf.Min(stockTop * m.TopSpeed, MaxTopKmh);
-                    if (CarModel.Solve(Physics, GarageShop.KindOf(car), seconds / m.Acceleration, top, Settings.SmoothThrottle, Setup, out CarRun run))
+                    bool eased = Settings.SmoothThrottle;
+                    if (CarModel.Solve(Physics, GarageShop.KindOf(car), seconds / m.Acceleration, top, eased, Setup, out CarRun run))
                     {
+                        figures.PowerKw = CarModel.PeakPower(Physics, Setup.PowerKw);
+                        figures.TorqueNm = CarModel.PeakTorque(Physics, Setup.PowerKw);
+                        if (m.Shift != 1f)
+                        {
+                            // As car tuning drives it: the power found with the kind's own change, the quicker one on top.
+                            Setup.ShiftSeconds = TuningRules.ShiftSeconds(Setup.ShiftSeconds, m.Shift);
+                            run = CarModel.Run(Physics, Setup, eased);
+                        }
+                        figures.ShiftSeconds = Setup.ShiftSeconds;
                         figures.To100 = run.To100;
                         figures.TopKmh = run.TopKmh;
                     }
@@ -346,7 +426,20 @@ namespace RealLifeOverhaul
                     {
                         figures.TopKmh = (car.vehicleType != null ? car.vehicleType.maxSpeed : limiter.module.speedLimit) * m.TopSpeed;
                     }
+                    if (!Settings.CarTuning)
+                    {
+                        // The game's own engine and gearbox drive it, with the parts' power factor and change on top.
+                        EngineComponent engine = vehicle.powertrain.engine;
+                        if (engine != null && engine.EstimatedPeakPower > 0f)
+                        {
+                            figures.PowerKw = engine.EstimatedPeakPower * m.Acceleration;
+                            figures.TorqueNm = engine.EstimatedPeakTorque * m.Acceleration;
+                        }
+                        float standard = StandardShift(vehicle);
+                        figures.ShiftSeconds = standard >= 0f ? TuningRules.ShiftSeconds(standard, m.Shift) : -1f;
+                    }
                 }
+
 
                 // As the handling stops this car; else the brakes' torque at the tyre or what the tyres hold, the lesser.
                 float handled = CarTuning.HandlingStop(car, m.Brakes, m.Mass, m.Grip);

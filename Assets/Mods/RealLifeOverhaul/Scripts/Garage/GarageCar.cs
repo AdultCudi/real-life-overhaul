@@ -576,6 +576,52 @@ namespace RealLifeOverhaul
             brakeTorque = _handling ? _brakeTorque : nwh != null && nwh.brakes != null ? nwh.brakes.maxTorque : 0f;
         }
 
+        /// <summary>
+        /// For the figures page: how much higher (below zero, lower) these parts stand the car at rest than it stands
+        /// without them, over its wheels, by the same fit <see cref="Handling"/> makes; 0 when it cannot be told. On a click.
+        /// </summary>
+        public float RideChange(GarageModifiers m)
+        {
+            NwhVehicle nwh = Nwh();
+            if ((m.Ride == 0f && m.Mass == 1f && m.Stiffness == 1f) || nwh == null || nwh.powertrain == null || nwh.powertrain.wheels == null || nwh.vehicleRigidbody == null)
+            {
+                return 0f;
+            }
+            Rigidbody body = nwh.vehicleRigidbody;
+            float unweighted = _handling && body.mass > 1f && _mass > 1f ? _mass / body.mass : 1f;   // the loads as before a weight part on the car now
+            float stiffness = m.Stiffness > 0.1f ? m.Stiffness : 1f;
+            float weight = m.Mass > 0.1f ? m.Mass : 1f;
+            float sum = 0f;
+            int counted = 0;
+            foreach (WheelComponent component in nwh.powertrain.wheels)
+            {
+                WheelUAPI wheel = component != null ? component.wheelUAPI : null;
+                if (wheel == null)
+                {
+                    continue;
+                }
+                float force = wheel.SpringMaxForce;
+                float length = wheel.SpringMaxLength;
+                for (int i = 0; _handling && i < _wheels.Count; i++)
+                {
+                    if (_wheels[i].Wheel == wheel)
+                    {
+                        force = _wheels[i].SpringForce;   // the spring under the parts on the car now
+                        length = _wheels[i].SpringLength;
+                    }
+                }
+                if (!(length > 0.05f) || !(force > 1f))
+                {
+                    continue;
+                }
+                HandlingModel.FitSpring(CurveOf(wheel), force, length, WheelLoad(nwh, wheel, body) * unweighted, weight, stiffness, m.Ride, GarageCatalogue.MaxLower,
+                    GarageCatalogue.MaxRaise, out _, out _, out float change);
+                sum += change;
+                counted++;
+            }
+            return counted > 0 ? sum / counted : 0f;
+        }
+
         private static bool Same(in GarageModifiers a, in GarageModifiers b)
         {
             return a.Brakes == b.Brakes && a.Grip == b.Grip && a.WetGrip == b.WetGrip && a.Stiffness == b.Stiffness
