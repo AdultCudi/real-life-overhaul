@@ -83,6 +83,12 @@ namespace RealLifeOverhaul.Careers
 
         public bool Public => Types.Length == 0;
 
+        /// <summary>The same profession worked on another week: a post's, fitted to its workplace's opening hours (OpenHoursRules). Made once per post and week, never per call.</summary>
+        public Profession WithShift(int days, int hour, int hours)
+        {
+            return new Profession(Id, Key, Family, SkillA, SkillB, Types, Place, Remote, days, hour, hours, Ranks);
+        }
+
         public ProRank Rank(int rank) => Ranks[rank < 0 ? 0 : rank >= Ranks.Length ? Ranks.Length - 1 : rank];
 
         /// <summary>The two skills a rank is judged on: its role's, or the profession's own.</summary>

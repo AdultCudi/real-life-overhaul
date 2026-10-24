@@ -870,5 +870,176 @@ namespace RealLifeOverhaul.Careers
                 Fault("a test", ex);
             }
         }
+
+        /// <summary>
+        /// The player's next working days, and every vacancy's and application's week, against their places' opening hours as the
+        /// game keeps them: PASS when none starts or runs while its place is shut. A line each in the log, one notice.
+        /// </summary>
+        public void TestShiftHours()
+        {
+            if (!WorkReady())
+            {
+                return;
+            }
+            try
+            {
+                int day = Save.Day, days = 0, shut = 0;
+                WorkFile w = _study.Work;
+                Job j = w.Job;
+                if (j != null && j.Post.Work != (int)WorkMode.Remote && WorkGame.OpenWeek(j.Post.Street, j.Post.Number, _week))
+                {
+                    Profession p = j.Def;
+                    for (int d = day, n = 0; n < 7; d++, n++)
+                    {
+                        if (!ProRules.WorkDay(p, d) || d < j.Hired || ProRules.FromHome((WorkMode)j.Work, d))
+                        {
+                            continue;
+                        }
+                        int open = _week[OpenHoursRules.Weekday(d)];
+                        bool ok = OpenHoursRules.Covers(open, p.Hour, p.Hours);
+                        days++;
+                        shut += ok ? 0 : 1;
+                        Logger?.Info("Careers check (shift hours): the job at " + j.Post.Employer + ", day " + d + " " + Span(p.Hour, p.Hours) + ", open " + OpenText(open) + ": "
+                                     + (ok ? "PASS" : "FAIL, it starts or runs while the place is shut"));
+                    }
+                }
+                for (int i = 0; i < w.Openings.Count + w.Applications.Count; i++)
+                {
+                    Opening o = i < w.Openings.Count ? w.Openings[i] : w.Applications[i - w.Openings.Count].Post;
+                    if (o.Work == (int)WorkMode.Remote || !WorkGame.OpenWeek(o.Street, o.Number, _week))
+                    {
+                        continue;
+                    }
+                    Profession p = o.Def;
+                    int week = OpenHoursRules.Pack(p.Days, p.Hour, p.Hours);
+                    int wrong = OpenHoursRules.Count(p.Days & ~OpenHoursRules.DaysCovered(p.Days, p.Hour, p.Hours, _week));
+                    days += OpenHoursRules.Count(p.Days);
+                    shut += wrong;
+                    Logger?.Info("Careers check (shift hours): " + (i < w.Openings.Count ? "the vacancy" : "the application") + " for " + p.Key + " at " + o.Employer + ", " + Week(week)
+                                 + ": " + (wrong == 0 ? "PASS" : "FAIL, " + wrong + " of its days start or run while the place is shut"));
+                }
+                if (days == 0)
+                {
+                    Notifications.Show(NotificationType.Info, "reallife_work_test_shift_hours_none", null, 8f);
+                    return;
+                }
+                Notifications.Show(shut == 0 ? NotificationType.Success : NotificationType.Error, shut == 0 ? "reallife_work_test_shift_hours_pass" : "reallife_work_test_shift_hours_fail",
+                    Data("count", days.ToString(), "shut", shut.ToString()), 10f);
+                Logger?.Info("Careers check (shift hours): " + days + " working days against their places' opening hours, " + shut + " while shut: " + (shut == 0 ? "PASS" : "FAIL"));
+            }
+            catch (Exception e)
+            {
+                Fault("a test", e);
+            }
+        }
+
+        /// <summary>
+        /// The owner's case made again: a warehouse job as a save from before the fit holds it, on the profession's 06:00 at a
+        /// business of the city that opens later, with the two warnings its shut mornings gave. The load's pass is run on it:
+        /// PASS when its week moves inside the opening hours, the warnings are taken back, and a morning shut at the old start
+        /// is excused. Given as the job if the player has none, so it can be gone to and worked; otherwise checked on a copy.
+        /// </summary>
+        public void TestForklift()
+        {
+            if (!WorkReady())
+            {
+                return;
+            }
+            try
+            {
+                int day = Save.Day;
+                ReadEmployers(day);
+                Profession own = ProCatalogue.Find(ProCatalogue.Warehouse);
+                int oldWeek = OpenHoursRules.Pack(own.Days, own.Hour, own.Hours);
+                EmployerRef at = null;
+                for (int pass = 0; pass < 2 && at == null; pass++)
+                {
+                    for (int i = 0; i < _employers.Count && at == null; i++)
+                    {
+                        EmployerRef e = _employers[i];
+                        bool employs = ProCatalogue.Holds(e.Professions, own, e.Type);
+                        if ((pass == 0) == employs && WorkGame.OpenWeek(e.Street, e.Number, _week) && OpenHoursRules.AnyShut(oldWeek, _week)
+                            && OpenHoursRules.Fit(own.Days, own.Hour, own.Hours, _week) != 0)
+                        {
+                            at = e;   // a place that employs warehouse staff first, else any business shut at the old start
+                        }
+                    }
+                }
+                if (at == null)
+                {
+                    Notifications.Show(NotificationType.Warning, "reallife_work_test_forklift_none", Data("start", CareersText.Hour(own.Hour)), 8f);
+                    Logger?.Info("Careers check (forklift case): no business of the city keeps hours shut at " + own.Hour.ToString("00") + ":00 on a working day; not set up.");
+                    return;
+                }
+                WorkFile w = _study.Work;
+                bool given = w.Job == null;
+                var j = new Job { Hired = day - 7, RankDay = day - 7, ReviewDay = day - 7, Work = (int)WorkMode.OnSite, SettledDay = day - 1, Due = 2, Absent = 2, Warnings = 2 };
+                j.Post.Id = given ? w.Next() : 0;
+                j.Post.Prof = ProCatalogue.Warehouse;
+                j.Post.Kind = (int)at.Kind;
+                j.Post.Employer = at.Name;
+                j.Post.Street = at.Street;
+                j.Post.Number = at.Number;
+                j.Post.Rival = at.Rival;
+                j.Post.Pay = j.Pay = ProRules.PostPay(own, 0, at.Kind, 0);
+                j.Post.Work = (int)WorkMode.OnSite;
+                j.Post.From = j.Post.To = day;
+                j.Post.Shift = 0;   // as a save from before the fit holds it: the profession's own 06:00
+                if (given)
+                {
+                    w.Job = j;
+                }
+                KeepJobShift(j, day, true);
+                WorkGame.OpenWeek(at.Street, at.Number, _week);
+                bool moved = j.Post.Shift != 0 && j.Post.Shift != oldWeek && !OpenHoursRules.AnyShut(j.Post.Shift, _week);
+                bool righted = j.Warnings == 0 && j.Absent == 0;
+                var old = new Job { Hired = j.Hired, Work = j.Work };
+                j.Post.CopyTo(old.Post);
+                old.Post.Shift = oldWeek;
+                int shutMorning = -1;
+                for (int d = day; d < day + 7 && shutMorning < 0; d++)
+                {
+                    shutMorning = ProRules.WorkDay(old.Def, d) && OpenHoursRules.StartsShut(oldWeek, _week, OpenHoursRules.Weekday(d)) ? d : -1;
+                }
+                bool excused = shutMorning >= 0 && ShutExcused(old, shutMorning);
+                bool ok = moved && righted && excused;
+                Logger?.Info("Careers check (forklift case): a warehouse job at " + at.Name + " (" + at.Street + " " + at.Number + "), open on Monday " + OpenText(_week[0])
+                             + "; the old week " + Week(oldWeek) + " now " + Week(j.Post.Shift) + " (" + (moved ? "inside its hours" : "NOT inside its hours") + "), warnings "
+                             + j.Warnings + " and missed days " + j.Absent + " after the load's pass, a morning shut at the old start " + (excused ? "excused" : "NOT excused")
+                             + (given ? "; given as the player's job" : "; checked on a copy, the player's own job kept") + ": " + (ok ? "PASS" : "FAIL"));
+                Notifications.Show(ok ? NotificationType.Success : NotificationType.Error, ok ? "reallife_work_test_forklift_pass" : "reallife_work_test_forklift_fail",
+                    Data("employer", CareersText.Employer(at.Name), "hours", CareersText.Hours(j.Def), "start", CareersText.Hour(own.Hour)), 12f);
+                if (given)
+                {
+                    Changed();
+                }
+            }
+            catch (Exception e)
+            {
+                Fault("a test", e);
+            }
+        }
+
+        private static string Span(int hour, int hours) => hour.ToString("00") + ":00 to " + ((hour + hours) % 24).ToString("00") + ":00";
+
+        // A day's opening hours as runs of hours for the log: "08-20", or "shut".
+        private static string OpenText(int mask)
+        {
+            var b = new System.Text.StringBuilder(24);
+            for (int h = 0; h < 24; h++)
+            {
+                if ((mask >> h & 1) == 0 || (h > 0 && (mask >> (h - 1) & 1) != 0))
+                {
+                    continue;
+                }
+                int end = h;
+                while (end < 24 && (mask >> end & 1) != 0)
+                {
+                    end++;
+                }
+                b.Append(b.Length > 0 ? ", " : string.Empty).Append(h.ToString("00")).Append('-').Append(end.ToString("00"));
+            }
+            return b.Length > 0 ? b.ToString() : "shut";
+        }
     }
 }

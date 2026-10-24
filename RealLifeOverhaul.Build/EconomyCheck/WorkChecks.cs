@@ -317,7 +317,7 @@ internal static partial class Program
             "work: a no's day comes back from the save");
         Check(back.Work.TurnedDown(first, 33) != null && back.Work.TurnedDown(first, 34) == null, "work: a no read back from the save still bars its post for the rest of the 14 days");
         screened.Refused = interviewed.Refused = withdrawn.Refused = 98765;
-        string old = CareersStore.Write(g).Replace("|98765", string.Empty);
+        string old = CareersStore.Write(g).Replace("|98765|0", string.Empty);   // a save from before the day held neither it nor the post's week after it (ShiftOpenChecks)
         Check(old.IndexOf("98765", StringComparison.Ordinal) < 0, "work: the old save's line has no day of a no");
         StudyFile was = CareersStore.Read(old, out version);
         WorkFile ow = was.Work;
