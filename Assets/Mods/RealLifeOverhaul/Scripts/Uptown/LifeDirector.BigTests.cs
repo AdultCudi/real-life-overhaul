@@ -87,7 +87,8 @@ namespace RealLifeOverhaul.Uptown
                 bool done = LifeGame.DeliverNow(store, business, out string item, out int arrived, out float paid, out string why);
                 bool pass = standing == null && done && arrived > 0 && paid > 0f;
                 Say(pass, "Uptown check (wholesale delivery): an order of 1 " + (item ?? "(none)") + " from " + place.Name + " at " + store.Address + " for " + business.BusinessName
-                          + " at " + MadeGame.Written(business.StreetName, business.StreetNumber) + " by the game's own delivery of a wholesale contract: " + (why ?? (arrived + " arrived in its stock, "
+                          + " at " + MadeGame.Written(business.StreetName, business.StreetNumber) + " by the game's own delivery of a wholesale contract: "
+                          + (why ?? (arrived + " arrived in its stock, "
                           + paid.ToString("F2", Plain) + " paid with the delivery fee")) + (standing != null ? "; the store: " + standing : string.Empty) + ": " + (pass ? "PASS" : "FAIL"));
                 if (pass)
                 {
