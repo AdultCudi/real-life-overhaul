@@ -42,6 +42,7 @@ namespace RealLifeOverhaul.TestRun
         /// <summary>The expansion's test buttons the run does not press, each with the reason (the owner's journeys cover them).</summary>
         public static readonly string[,] NotRun =
         {
+            { "reallife_uptown_test_office_job", "it gives the player a job at an Uptown office, ending the one they hold" },
             { "reallife_trades_test_mason", "a mason's shift is a game of the player's hands: the bar waits on the keys" },
             { "reallife_trades_test_electrician", "an electrician's shift waits on the player's picks" },
             { "reallife_trades_test_crane", "a crane operator's shift waits on the player's keys" },
