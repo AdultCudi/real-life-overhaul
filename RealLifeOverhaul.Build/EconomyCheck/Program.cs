@@ -113,6 +113,7 @@ internal static partial class Program
         if (args.Length == 1 && args[0] == "--new-buildings")
         {
             NewBuildingsChecks();   // (the mod's own buildings alone, while working on them: NewBuildingsChecks.cs)
+            SpecialServiceChecks();
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
@@ -125,6 +126,7 @@ internal static partial class Program
         if (args.Length == 1 && args[0] == "--uptown-fill")
         {
             UptownLifeChecks();   // (Uptown's life and its filled band alone, while working on them: UptownLifeChecks.cs, UptownFillChecks.cs, UptownPlaceChecks.cs)
+            UptownSpecialsChecks();
             LandmarksChecks();
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
@@ -435,11 +437,13 @@ internal static partial class Program
         FloorsCore();   // the floors of the mod's buildings: floors a building holds, spare floors and a building taken for places, the panel's pages, every way in and out given back, the sources, the words (FloorsChecks.cs)
         BuildTrades();  // the building trades: the trades and what each asks, the courses and ladders, the bar, the match, the inspection and its bribe, the design game and its score, the tender, the book, the sources, the texts (BuildTradesChecks.cs)
         NewBuildingsChecks(); // the mod's own buildings: the design picked and where it stands, the lot taken, what refuses one, nothing of them saved, none destroyed in a session, the texts (NewBuildingsChecks.cs)
+        SpecialServiceChecks(); // a made building with one of the game's special services: the special type only with one, the registration as the game fills one, the lists in and out, a branch's contact (SpecialServiceChecks.cs)
         Builders();     // the construction game: the catalogue, the land, the plans and planning, a site, the money, tenders and rivals, the developers, the frame, the store's line, the sources and wiring, the texts (BuildersChecks.cs)
         Hire();         // a builder of the city's hired by the player: the quotes, the contract's money, the penalty, the pace, the line, the sources, the texts (HireChecks.cs)
         ShowFlats();    // show flats and renovations: viewings, buyers and prices, a refit's hours, grade and quote, the fittings' decor, the lines, the game's residential designs, the sources, the texts (ShowFlatsChecks.cs)
         DistrictSaveChecks();   // the district save: whose a place is, what each record does, put back where it stood, the store's line, nothing at all for a game with none (DistrictSaveChecks.cs)
         UptownLifeChecks();   // Uptown as a district of the game: its values, its map quad, its lots, its line, the district save, every table by district (UptownLifeChecks.cs)
+        UptownSpecialsChecks();   // Uptown's special places: the table on the plan, its refusals, the importer's goods, the save's records, the sources, the texts (UptownSpecialsChecks.cs)
         MarketsBuild();   // the city's builders on the market and a project's hedge: who is listed, the news and its moves, two machines alike, the building materials, the hedge's rules and money, a project's exposure, the books, the sources, the texts (MarketsBuildChecks.cs)
         LandmarksChecks();    // Uptown's landmarks: their sites, a span of lots, the timetable, the lift, the season, the stadium, the line, the sources, the texts (LandmarksChecks.cs)
         TestRunChecks();   // the city expansion's test run: its order, its registry and every check in it, the lines it reads, the lots it gives, its carry-over, the summary, the texts (TestRunChecks.cs)

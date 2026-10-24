@@ -35,6 +35,7 @@ ba:businesstype_lawfirm
 ba:businesstype_marketingagency
 ba:businesstype_movingservice
 ba:businesstype_nightclub
+ba:businesstype_officesupplystore
 ba:businesstype_recruitmentagency
 ba:businesstype_school
 ba:businesstype_supermarket
@@ -64,9 +65,12 @@ ba:itemname_capacitors
 ba:itemname_carbondioxide
 ba:itemname_carrot
 ba:itemname_carrotseeds
+ba:itemname_cheapflower
+ba:itemname_cheapjewelry
 ba:itemname_cheese
 ba:itemname_cheeseplatter
 ba:itemname_chickenbreast
+ba:itemname_cigar
 ba:itemname_cigarettepaper
 ba:itemname_cigarpaper
 ba:itemname_clay
@@ -81,6 +85,8 @@ ba:itemname_cupoftea
 ba:itemname_donut
 ba:itemname_dough
 ba:itemname_energydrink
+ba:itemname_expensiveflower
+ba:itemname_expensivegift
 ba:itemname_fabriccheap
 ba:itemname_fabricexpensive
 ba:itemname_flavorsyrup
@@ -94,6 +100,7 @@ ba:itemname_grapes
 ba:itemname_groundbeef
 ba:itemname_groundcoffeebeans
 ba:itemname_haircareformula
+ba:itemname_headphones01
 ba:itemname_hops
 ba:itemname_hotdog
 ba:itemname_icecream
@@ -103,6 +110,7 @@ ba:itemname_kabob
 ba:itemname_lettuce
 ba:itemname_lettuceseeds
 ba:itemname_limejuice
+ba:itemname_limitededitionbook
 ba:itemname_margarita
 ba:itemname_martini
 ba:itemname_metalband
@@ -112,6 +120,7 @@ ba:itemname_milk
 ba:itemname_mop
 ba:itemname_onion
 ba:itemname_paper
+ba:itemname_paperbag
 ba:itemname_pear
 ba:itemname_pearseeds
 ba:itemname_pepper
@@ -129,12 +138,14 @@ ba:itemname_slicedonions
 ba:itemname_slushi
 ba:itemname_sodacan
 ba:itemname_speaker
+ba:itemname_specialemployeedesk
 ba:itemname_sugar
 ba:itemname_tealeaves
 ba:itemname_tobacco
 ba:itemname_tomato
 ba:itemname_tomatoseeds
 ba:itemname_transistors
+ba:itemname_umbrella
 ba:itemname_uncutgemscheap
 ba:itemname_uncutgemsexpensive
 ba:itemname_vermouth

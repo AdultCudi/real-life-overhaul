@@ -193,6 +193,8 @@ DistrictValues       game-free: Uptown's figures from Midtown's and Hell's Kitch
                      class table and price index as the game makes them, its quad on the city map, its land's price
 BuildingsRules       game-free: the lots built from the first day and the open ones, the offices leased to other features,
                      a lot's traffic, the game's structure a lot is built with, what refuses a finished building
+SpecialsRules        game-free: the special places' table (lot, the game's service copied, name, structure, staff) and
+                     what refuses it
 OfficesRules         game-free: the census of its offices and its verdict, the office a test sends the player to, and the
                      opening pass's count of units past the share to let and its order
 LifeStore            game-free: the district's line in the save (the buildings the construction game finished, whether
@@ -203,7 +205,7 @@ LifeGame             the one part that touches the game: the district in the gam
                      office's business; .Opening the opening pass; .Map the city map; .Tests, .Checks, .Offices and .Player
                      what the tests and the stand-down read and ask)
 LifeDirector         the load, the stand-down, the district save's view of it (.Lots the construction game's side, .Leases
-                     the leased offices, .Tests, .Checks and .Offices the tests)
+                     the leased offices, .Specials the special places, .Tests, .Checks and .Offices the tests)
 DistrictBuildings    the construction game's and the landmarks' way in, and DistrictLease, a business leased there
 DistrictWork         what the offices' tests ask of the working life (set by Wiring/CareersLinks)
 LifeGuide            the tests in the feature's entry (the ground's entry owns the option and the clean-up)
@@ -260,6 +262,35 @@ Eight office lots of the band are leased to businesses other features run there 
 - **Held off the market** in the special buildings' book (refused for rent, sale and takeover in the game's pages while Uptown lives), its own sign kept. Never the player's unit, nor another player's in a Going Public session.
 - **On the map and in BizMan:** the map's row for the construction company's type (its "active businesses" row) outlines the eight; BizMan presents each as a business of the game's.
 - **In the Construction app:** the Rivals tab gives each rival's office address, and its button makes it the game's destination (`DistrictBuildings.LeaseStands`, `LeaseDestination`).
+
+### Special places
+
+The owner, 24 Oct 2026: "Need more special working buildings ... Make it a new proper district." Eleven of Uptown's lots built from the first day are the game's own kind of special place, each a copy of one of the game's special services on its building's record, as the game's special buildings carry theirs ([New buildings](new-buildings.md), "A special place of the game's own kind"). The table is fixed data (`SpecialsRules.All`), the same on every machine:
+
+| Place | Lot (address) | The game's service copied | Structure | Staff |
+| --- | --- | --- | --- | --- |
+| Vantander Bank, a branch | `uptown_2_07_05` (48 Uptown Avenue) | Vantander Bank | D2 office | 5 desks |
+| Summit Talent Partners, recruitment agency | `uptown_2_09_03` (37 Summit Avenue) | City Workforce Inc. | C2 retail | 2 desks |
+| Northline Media, marketing agency | `uptown_2_09_06` (40 Uptown Avenue) | McCain's eMarketing | C2 retail | 2 desks |
+| Crestwork Interiors, interior installation firm | `uptown_2_10_07` (1010 5th Street) | Kingdom Office | D2 retail | 2 desks |
+| Paper Trail Office Supply | `uptown_3_10_04` (44 Summit Avenue) | Mr. Scott's Office Supplies | D2 retail | a desk |
+| Uptown Appliance Hall | `uptown_2_12_06` (28 Uptown Avenue) | Square Appliances | C1 retail | a desk |
+| Hearth and Oak Furniture | `uptown_2_09_05` (42 Uptown Avenue) | Marquis Living | M1 retail | a desk |
+| Corner Basket Market, supermarket | `uptown_3_10_03` (31 Crest Avenue) | El Gato Food Market | C1 retail | the tills, the player's cashier job |
+| Summit Care Clinic | `uptown_3_08_05` (48 Summit Avenue) | Industry City Intensive Care Unit | C2 retail | none, as the game's |
+| Crest Motors, car dealership | `uptown_2_10_02` (33 Summit Avenue) | Manhattan Luxury Cars | M1 retail | the showroom's cars |
+| Northgate Trading, importer | `uptown_3_13_02` (21 Crest Avenue) | BlueStone Imports | H1 special | a desk |
+
+- **Where:** the shops, the bank and the dealership on the avenues; the agencies, the interior firm and the office supplies among the second row's offices, where the city's builders lease theirs; the dealership on a big store's lot and the importer on a warehouse lot of the far row; the supermarket on Crest Avenue among the homes. Never a lot left open for the construction game, a leased office, a landmark's block, the first block (whose old quarter saves hold) or the lot kept empty (`SpecialsRules.TableRefusal`, checked on the real plan).
+- **Its structure** is one the game has its service's layout for (StreamingAssets/BusinessLayouts), so the game furnishes it when the player goes in, with the desks, tills, cars or nothing its layout has, and dresses its staff in the service's uniforms. It takes no other structure.
+- **Its name** is its own (the contact's key with its type), but the bank's: a branch of Vantander Bank keeps the head office's name, so its contact, its calls and its loans are the head office's at 6 2nd Avenue and nothing of a loan names Uptown. The owner chose a branch over a new bank. The supermarket's cashier job has its own boss (Corner Basket Manager), as the boss's contact is keyed by name and type too. The game's job works by the building's address (`JobHelper.GetJob`), and the mod's own job lists count an hour at its till as they count one at El Gato's (`CareerDirector.CountCashierHour` reads whether the player is at work, wherever).
+- **The importer** is special-type H1, as the game's are (the game's daily swap of warehouses would put a warehouse-type one up for rent), with goods of its own: twelve finished goods from the shelves of the game's importers (wine, whisky, cheese platters, cigars, flowers, gifts, limited edition books, jewellery, umbrellas, headphones and paper bags), no more than half of any one importer's, as the game caps an importer's goods a week at each importer. The game has no goods of the kind that no importer carries, so every one is a second source of a good the game imports (the game itself sells some from four).
+- **The dealership** has a spot on the pavement in front of it, along the street, where a car bought on its floor stands (the game puts it at a showroom building's first custom position, which a copied ordinary building lacks). Its cars are the game's showroom of Manhattan Luxury Cars; it delivers none, as that showroom does not.
+- **The clinic** is the game's: a player who faints is taken to the nearest clinic or hospital, now possibly this one, and wakes inside it.
+- **In the game's lists:** each is in the game's list of special buildings while Uptown lives, so the game finds it by kind as its own (the nearest clinic, the banks, BizMan's sources); the importer is among the game's importers (the purchasing agents' and logistics plans' lists); the city map's special rows show each under its type; BizMan shows each as the game shows its special buildings, run by the city, not to be taken over. When Uptown stands down they leave those lists too.
+- **A lot a player holds** (rents or owns, so another player's in a Going Public session too) is never made a special place: its building stands as the ordinary one it was. A registration of the save's that is empty or an AI business the game's generator put there before the table is filled as the game fills a special building's. Uptown is not released, so no player's save has one yet.
+- **Saves:** every record a special place makes names its address (its contact, a recruitment or marketing campaign, an interior or furniture contract, a job, a car bought there or ordered, an import partnership and its weekly orders, a market event) and leaves every save with Uptown's (`SavePlaces.txt`, checked), so a save loads without the mod; without it those records are gone and come back with it. The branch's loans name the head office and stay.
+- **Going Public:** the table is fixed data, the service is the game's own, nothing is random and nothing is sent.
 
 ### Offices to work at, and a district lived in from the first day
 
@@ -333,6 +364,8 @@ Uptown's landmarks ([Uptown's landmarks](landmarks.md)) stand on whole blocks of
   - "Uptown: district census": the district found by the game's own `GetData`, in its list, its zone and its filter row (and that row among the game's district rows), its buildings built from the first day, kept and finished, its open lots, its leased offices with their businesses, every building looking as the game's own, its buildings in the game's lists and their registrations in the save's.
   - "Uptown: a business opens there": the game's own daily pass for a new business, run for Uptown alone.
   - "Uptown: rent a unit there": the nearest unit to let made the destination; renting it in BizMan is the player's, with the game's own button.
+  - "Uptown: the special places": the census line of every place: standing, its service, registered as the service's, in the game's list of special buildings (the importer among its importers), laid out by the game's layout for its structure, with what its staff work at, on the map's rows, the branch's contact the head office's, the dealership's kerb spot; and a notice of how many are whole.
+  - "Uptown: take me to the next special place": the game's destination set at each place in turn, round again, with a notice of its name, its kind and its address.
   - "Uptown: save and read back": a recovery save written and read back by the game's own reader, gone through for anything of Uptown, the save in memory as before; the save is kept, to load with the mod switched off.
   - "Uptown: the city's builders' offices" (in the test run): each leased office's business there, laid out (the game finds its layout), staffed and valued (the game's own valuation reads it) as the game's office businesses are, on the map's row of its type and held off the market; the nearest made the destination.
   - "Uptown: its row on the city map" (in the test run): its row among the game's district rows, named in the player's language, its zone among the game's zones and the row's data naming the district.

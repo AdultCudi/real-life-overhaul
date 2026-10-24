@@ -37,7 +37,11 @@ namespace RealLifeOverhaul.NewBuildings
 
         // ---------------------------------------------------------------- the game's own limits, read now
 
-        /// <summary>True when the game has a structure of that size and version for that type, not one kept for its special buildings.</summary>
+        /// <summary>
+        /// True when the game has a structure of that size and version for that type, not one kept for its special buildings.
+        /// The special type takes any version the game has of a size: the game stands its own special buildings on ordinary
+        /// structures too (its importers on the warehouses' H1), and the type is only made with a service attached (NewBuildingsRules.ServiceRefusal).
+        /// </summary>
         public static bool StructureTakes(string size, int version, string type)
         {
             if (string.IsNullOrEmpty(size) || string.IsNullOrEmpty(type))
@@ -55,7 +59,8 @@ namespace RealLifeOverhaul.NewBuildings
                 for (int v = 0; v < data.buildingVersions.Length; v++)
                 {
                     BuildingVersion each = data.buildingVersions[v];
-                    if (each != null && each.number == version && !each.specialBuildingOnly && each.supportedBuildingTypes != null && each.supportedBuildingTypes.Contains(type))
+                    if (each != null && each.number == version
+                        && (type == NewBuildingsRules.SpecialType || (!each.specialBuildingOnly && each.supportedBuildingTypes != null && each.supportedBuildingTypes.Contains(type))))
                     {
                         return true;
                     }
@@ -150,18 +155,40 @@ namespace RealLifeOverhaul.NewBuildings
         /// <summary>
         /// The game's record of a made building, made now and never saved (its fields are all the game reads). Its floor area
         /// is its size's times its storeys, or with <see cref="MadeSpec.DesignArea"/> <paramref name="designArea"/>, that of the
-        /// game's building its design copies (a district's building is as large as it looks, as the game's are).
+        /// game's building its design copies (a district's building is as large as it looks, as the game's are). A declaration
+        /// with a service carries a copy of the game's own, its registration filled as the game fills a special building's
+        /// (<see cref="Serve"/>), or none where a player holds the lot. Null, with why, when it cannot stand at all: a service
+        /// of the special type it may not take and no ordinary type to stand as.
         /// </summary>
-        public static Building MakeRecord(MadeSpec spec, int designArea)
+        public static Building MakeRecord(MadeSpec spec, int designArea, BuildingRegistration registration, bool fresh, out string why)
         {
+            why = null;
+            SpecialService service = null;
+            string type = spec.Type;
+            if (!string.IsNullOrEmpty(spec.Service))
+            {
+                service = Serve(spec, registration, fresh, out why, out bool held);
+                if (service == null)
+                {
+                    // Without its service a special-type place stands only where a player holds it, as the ordinary building
+                    // it was, its registration the save's of that type; without the game's service at all it stands down.
+                    if (spec.Type == NewBuildingsRules.SpecialType && (!held || string.IsNullOrEmpty(spec.PlainType)))
+                    {
+                        return null;
+                    }
+                    type = spec.Type == NewBuildingsRules.SpecialType ? spec.PlainType : spec.Type;
+                    Logger?.Info("Made buildings: '" + spec.Id + "' stands as an ordinary building of " + type + ": " + why + ".");
+                    why = null;
+                }
+            }
             Building b = ScriptableObject.CreateInstance<Building>();
             b.name = "RealLife Made " + spec.Id;
             b.StreetName = spec.Street;
             b.StreetNumber = spec.Number;
             b.BuildingSize = spec.Size;
             b.BuildingVersion = spec.Version;
-            b.BuildingType = spec.Type;
-            b.SpecialService = null;
+            b.BuildingType = type;
+            b.SpecialService = service;
             b.Neighbourhood = spec.District;
             b.trafficIndex = spec.Traffic;
             b.totalSqm = spec.DesignArea && designArea > 0 ? designArea : SquareMetres(spec.Size) * Math.Max(1, spec.Floors);   // the floor area the floors core divides by one storey's
@@ -242,6 +269,7 @@ namespace RealLifeOverhaul.NewBuildings
             Address address = record.Address;
             registrations[address] = registration;
             buildings[address] = record;
+            ServiceListed(record, true);
             return true;
         }
 
@@ -256,6 +284,7 @@ namespace RealLifeOverhaul.NewBuildings
                 buildings.Remove(address);
                 registrations?.Remove(address);
             }
+            ServiceListed(record, false);
         }
 
         /// <summary>True when the game's lookup finds the made record at its address, and nothing in the save's list stands for it.</summary>
@@ -398,6 +427,7 @@ namespace RealLifeOverhaul.NewBuildings
                 }
             }
             Records.Clear();
+            DropServices();
             var lookup = GameContract.StreetLookup.Field?.GetValue(null) as Dictionary<string, StreetData>;
             foreach (KeyValuePair<string, StreetData> pair in Streets)
             {
