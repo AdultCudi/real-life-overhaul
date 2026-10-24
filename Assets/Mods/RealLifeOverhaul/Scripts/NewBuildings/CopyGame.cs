@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using BAModAPI;
 using Buildings;
+using Helpers;
 using Parking.UndergroundParking;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -191,8 +192,10 @@ namespace RealLifeOverhaul.NewBuildings
             Building b = c.building;
             bool batched = Batched(c, out _, out _);
             KeepGround(c);
-            if (b.BuildingType == SpecialType || b.BuildingSize == HamptonsHouseSize || c.GetType() != typeof(CityBuildingController) || c.entranceDoors == null
-                || c.entranceDoors.Length == 0 || c.entranceDoors[0] == null || c.entranceDoors[0].doorTransform == null || TakenElsewhere(c))
+            string name = NewBuildingsRules.DesignName(c.name);
+            int whole = NewBuildingsRules.WholeOf(name, b.BuildingSize);   // a special building copied whole: its type and its workings are what it is copied for
+            if ((whole < 0 && (b.BuildingType == SpecialType || b.BuildingSize == HamptonsHouseSize || TakenElsewhere(c))) || c.GetType() != typeof(CityBuildingController)
+                || c.entranceDoors == null || c.entranceDoors.Length == 0 || c.entranceDoors[0] == null || c.entranceDoors[0].doorTransform == null)
             {
                 _skipped++;
                 return;
@@ -202,7 +205,6 @@ namespace RealLifeOverhaul.NewBuildings
                 _dlc++;   // never a pick a player without the DLC could not have (the shared helper for this rule is another part's)
                 return;
             }
-            string name = NewBuildingsRules.DesignName(c.name);
             string key = name + "|" + b.BuildingSize;
             if (ByKey.TryGetValue(key, out int known))
             {
@@ -218,7 +220,11 @@ namespace RealLifeOverhaul.NewBuildings
                 }
                 return;
             }
-            var entry = new DesignEntry { Name = name, Size = b.BuildingSize, Version = b.BuildingVersion, Type = b.BuildingType, Uses = 1, Batched = batched };
+            var entry = new DesignEntry
+            {
+                Name = name, Size = b.BuildingSize, Version = b.BuildingVersion, Type = b.BuildingType, Uses = 1, Batched = batched,
+                Whole = whole >= 0, Front = whole >= 0 ? NewBuildingsRules.Whole[whole].Front : -1f
+            };
             if (!Describe(c, entry))
             {
                 _skipped++;
@@ -323,7 +329,10 @@ namespace RealLifeOverhaul.NewBuildings
             into.DoorZ = at.z;
             into.DoorY = at.y;
             NewBuildingsRules.Begin(into, minX, maxX, minZ, maxZ, Mathf.Max(1f, top));
-            MeasureParts(c, box, unturn, origin, into);
+            if (!into.Whole)
+            {
+                MeasureParts(c, box, unturn, origin, into);   // a whole design's car park or forecourt lies outside its box by design: its place says where it goes
+            }
             float facing = NewBuildingsRules.Turn((outward.sqrMagnitude > 0.0001f ? Quaternion.LookRotation(outward).eulerAngles.y : yaw) - yaw);
             into.DoorFacing = NewBuildingsRules.SquareFacing(facing, at.x, at.z, minX, maxX, minZ, maxZ);
             return true;
@@ -432,12 +441,12 @@ namespace RealLifeOverhaul.NewBuildings
                 return made;
             }
             CityBuildingController source = design >= 0 && design < Designs.Count ? Sources[Designs[design].Source] : null;
-            made = source != null ? MakeTemplate(source, working) : null;
+            made = source != null ? MakeTemplate(source, working, working && Designs[design].Whole) : null;
             Templates[key] = made;
             return made;
         }
 
-        private static Transform MakeTemplate(CityBuildingController source, bool working)
+        private static Transform MakeTemplate(CityBuildingController source, bool working, bool whole = false)
         {
             if (_asleep == null)
             {
@@ -450,7 +459,11 @@ namespace RealLifeOverhaul.NewBuildings
             t.localPosition = Vector3.zero;
             t.localRotation = Quaternion.identity;
             t.localScale = source.transform.lossyScale;
-            if (working)
+            if (whole)
+            {
+                StripWhole(copy.GetComponent<CityBuildingController>());
+            }
+            else if (working)
             {
                 StripWorking(copy.GetComponent<CityBuildingController>());
             }
@@ -478,6 +491,39 @@ namespace RealLifeOverhaul.NewBuildings
             Parts.Clear();
             c.driveInEntrances = new DriveInEntrance[0];
             c.undergroundParkingEntrance = null;
+        }
+
+        // A special building copied whole keeps its drive-ins, pumps and triggers, which are what it is copied for: they name
+        // its own controller, which the copy has. Only what the game finds by a number or holds once in the city goes: an
+        // underground car park, and the parked cars and spots the scene keeps under a parking lane of it (copies the game's
+        // pool never handed out; the lane parks its own once it wakes), as new ground's lanes lose them.
+        private static void StripWhole(CityBuildingController c)
+        {
+            Parts.Clear();
+            c.GetComponentsInChildren(true, Parts);
+            for (int i = Parts.Count - 1; i >= 0; i--)
+            {
+                if (Parts[i] is UndergroundParkingEntrance)
+                {
+                    UnityEngine.Object.DestroyImmediate(Parts[i]);
+                }
+            }
+            Parts.Clear();
+            c.undergroundParkingEntrance = null;
+            ParkingLaneGenerator[] lanes = c.GetComponentsInChildren<ParkingLaneGenerator>(true);
+            for (int i = 0; i < lanes.Length; i++)
+            {
+                lanes[i].designatedDeliveryVanSpot = false;   // the game keeps one van's spot a building, by its record
+                lanes[i].autoParkSpots.Clear();
+                for (int k = lanes[i].transform.childCount - 1; k >= 0; k--)
+                {
+                    GameObject child = lanes[i].transform.GetChild(k).gameObject;
+                    if (child.layer == LayerHelper.ParkedVehiclesLayerIndex || child.layer == LayerHelper.AutoParkSpotsLayerIndex)
+                    {
+                        UnityEngine.Object.DestroyImmediate(child);
+                    }
+                }
+            }
         }
 
         // A decorative copy keeps what is drawn, what is solid and what the game's fade finds; its signs are put away (as
@@ -564,9 +610,27 @@ namespace RealLifeOverhaul.NewBuildings
             CityBuildingController c = copy.GetComponent<CityBuildingController>();
             c.building = building;
             c.buildingRegistration = registration;
+            if (Designs[design].Whole)
+            {
+                Rebind(copy, source.building, building);
+            }
             copy.gameObject.SetActive(true);
             FarDistricts.Include(copy);
             return c;
+        }
+
+        // A whole copy's parking lanes name a building by its record, not by the controller (an asset, which Instantiate
+        // keeps): the original's becomes the copy's, before anything of it wakes, so its hours and its deliveries are its own.
+        private static void Rebind(Transform copy, Building original, Building record)
+        {
+            ParkingLaneGenerator[] lanes = copy.GetComponentsInChildren<ParkingLaneGenerator>(true);
+            for (int i = 0; i < lanes.Length; i++)
+            {
+                if (lanes[i].building != null && lanes[i].building == original)
+                {
+                    lanes[i].building = record;
+                }
+            }
         }
 
         /// <summary>A decorative copy of a design standing at (x, y, z) turned by <paramref name="yaw"/> degrees; null if the design's building is gone.</summary>

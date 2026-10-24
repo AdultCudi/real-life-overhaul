@@ -214,6 +214,7 @@ namespace RealLifeOverhaul.Uptown
         // plan. Made behind the loading screen while the ground stands.
         private static void Declare()
         {
+            DecideBig();
             BuildingsRules.Built(Plan, DistrictBuildings.KeptOpen, LifeGame.AwayX, LifeGame.AwayZ, Built);
             for (int i = 0; i < Built.Count; i++)
             {
@@ -223,9 +224,9 @@ namespace RealLifeOverhaul.Uptown
             for (int i = 0; i < Plan.Count; i++)
             {
                 BuildingsLot lot = Plan[i];
-                if (!BuildingsRules.Clear(lot.Id))
+                if (!BuildingsRules.Clear(lot.Id) && !BigDown.Contains(lot.Id))
                 {
-                    continue;   // taken from the start for every feature, so no save holds a building there
+                    continue;   // taken from the start for every feature, so no save holds a building there (a big place's whose place stands)
                 }
                 FinishedBuilding f = _state.On(lot.Id);
                 if (f == null && !BuiltLots.Contains(lot.Id))
@@ -275,16 +276,18 @@ namespace RealLifeOverhaul.Uptown
                 MadeBuildings.Declare(spec);
                 Declared.Add(spec);
             }
-            int open = 0, notClear = 0;
+            int big = DeclareBig();
+            int open = 0, notClear = 0, held = 0;
             for (int i = 0; i < Plan.Count; i++)
             {
-                bool clear = BuildingsRules.Clear(Plan[i].Id);
+                bool clear = BuildingsRules.Clear(Plan[i].Id), place = BigPlacesRules.Holds(Plan[i].Id);
                 open += clear && !BuiltLots.Contains(Plan[i].Id) && _state.Covering(Plan[i].Id) == null ? 1 : 0;
-                notClear += clear ? 0 : 1;
+                notClear += clear || place ? 0 : 1;
+                held += place ? 1 : 0;
             }
             Logger?.Info("Uptown: " + Declared.Count + " building(s) declared for this load (" + Built.Count + " of the band's lots from the first day, " + leased
                          + " of them offices leased to the city's builders, " + special + " the district's special places; " + KeptLots.Count + " kept from an earlier load; "
-                         + finished + " finished by the construction game"
+                         + finished + " finished by the construction game; " + big + " of the game's special services copied whole over " + held + " lots"
                          + (refused > 0 ? "; " + refused + " left empty" : string.Empty) + ") of " + Plan.Count + " lots, " + open + " open for the construction game"
                          + (notClear > 0 ? ", " + notClear + " kept empty as something of the game's stands into it" : string.Empty) + ".");
         }
@@ -336,6 +339,7 @@ namespace RealLifeOverhaul.Uptown
             _lives = Standing.Count > 0;
             MarkStanding();
             _stamp++;
+            ListBig(true);
             if (!_lives)
             {
                 _notWhy = !UptownLots.Ready ? UptownLots.Why ?? "its ground is not laid"
@@ -655,6 +659,7 @@ namespace RealLifeOverhaul.Uptown
             try
             {
                 int kept = DistrictSaveDirector.KeepOut(PlacesOwner, why);
+                ListBig(false);
                 LifeGame.LeaveLists();
                 LifeGame.LeaveSpecials(Standing);
                 for (int i = 0; i < Standing.Count; i++)

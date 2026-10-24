@@ -815,8 +815,8 @@ internal static partial class Program
         Check(tries > 0 && make.Contains("noDesign &= pick < 0;") && make.Contains("NewBuildingsRules.OtherTakes(spec, spec.Others[s], MadeGame.StructureTakes, MadeGame.HomesLeftOut())")
               && takes > tries && record > takes && make.Contains("spec.Version = other.Version;") && make.Contains("spec.Type = other.Type;"),
             "new buildings: where no design of its size fits any lot, a building tries its other structures in order (never for a lot its ground refused), its record made with the one taken");
-        Check(declare.IndexOf("if (!BuildingsRules.Clear(lot.Id))", StringComparison.Ordinal) >= 0
-              && declare.IndexOf("if (!BuildingsRules.Clear(lot.Id))", StringComparison.Ordinal) < declare.IndexOf("FinishedBuilding f = _state.On(lot.Id);", StringComparison.Ordinal)
+        Check(declare.IndexOf("if (!BuildingsRules.Clear(lot.Id) && !BigDown.Contains(lot.Id))", StringComparison.Ordinal) >= 0
+              && declare.IndexOf("if (!BuildingsRules.Clear(lot.Id) && !BigDown.Contains(lot.Id))", StringComparison.Ordinal) < declare.IndexOf("FinishedBuilding f = _state.On(lot.Id);", StringComparison.Ordinal)
               && MemberText(lots, "public static bool Taken(string lotId)").Contains("!BuildingsRules.Clear(lotId) ||")
               && MemberText(Read("Uptown/LifeDirector.Tests.cs"), "private static bool Census(string when, bool asked = false)").Contains("BuildingsRules.Clear(Plan[i].Id)"),
             "uptown fill: a lot not clear is declared nothing at a load, taken for the construction game and the landmarks, and never counted open");
