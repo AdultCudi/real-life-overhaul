@@ -16,8 +16,8 @@ namespace RealLifeOverhaul
     {
         private static readonly FeatureGuard FrameGuard = Guard.For("camera", "NearbyInteraction", typeof(NearbyInteraction));
 
-        private const float DoorRange = 5f;               // metres
-        private const float VehicleRange = 4.5f;          // metres
+        internal const float DoorRange = 5f;               // metres
+        internal const float VehicleRange = 4.5f;          // metres
         private const float BuildingSearchRadius = 14f;   // metres
 
         private static readonly Collider[] Nearby = new Collider[48];

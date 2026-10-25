@@ -19,7 +19,7 @@ namespace RealLifeOverhaul
 
         internal const float LiabilityLeast = 150f, LiabilityMost = 3000f;   // damages to another car, at the start's prices
         // Impact speeds in m/s along the contact's normal (CarContacts: only the car hitting something, never the road or a kerb).
-        private const float LiabilitySpeed = 7f;    // ~25 km/h
+        internal const float LiabilitySpeed = 7f;    // ~25 km/h
         private const float InjurySpeed = 10f;      // ~36 km/h
         private const float SeriousSpeed = 14f;     // ~50 km/h: may put the player in hospital
         private const float HospitalSpeed = 17f;    // ~61 km/h: always does

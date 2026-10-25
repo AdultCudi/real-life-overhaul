@@ -46,6 +46,8 @@ namespace RealLifeOverhaul.Meta
             Features.Add("camera", "reallife_meta_title_camera")
                 .Group("reallife_camera_header")
                 .About("reallife_guide_camera_about").Help("reallife_guide_camera")
+                .Fact("enter_car", () => Guide.Number(NearbyInteraction.VehicleRange))
+                .Fact("enter_door", () => Guide.Number(NearbyInteraction.DoorRange))
                 .Owns(Settings.CameraEnabledId, Settings.MouseLookId, Settings.MouseSensitivityId, Settings.EnterWithKeyId, Settings.CameraIndoorsId,
                     Settings.CameraPitchId, Settings.CameraDistanceId, Settings.CameraFovId, Settings.CameraHeightId, Settings.CarCameraId,
                     Settings.CarCameraDistanceId, Settings.CameraFollowId)
@@ -62,6 +64,7 @@ namespace RealLifeOverhaul.Meta
             Features.Add("character", "reallife_meta_title_character")
                 .Group("reallife_looks_header")
                 .About("reallife_guide_character_about").Help("reallife_guide_character")
+                .Fact("clothes_colours", () => CharacterCatalogue.Palette.Length.ToString(CultureInfo.InvariantCulture))
                 .Fact("clothes_least", () => Guide.Money(CharacterCatalogue.CheapestPiece))
                 .Fact("clothes_most", () => Guide.Money(CharacterCatalogue.DearestPiece))
                 .Owns(Settings.CharacterHighDetailId, Settings.CharacterHairId, Settings.CharacterLightingId, Settings.CharacterNewLooksId)
@@ -85,12 +88,26 @@ namespace RealLifeOverhaul.Meta
                 .Fact("coffee_price", () => Guide.Money(StallActivity.Price))
                 .Fact("city_people", () => CityPeople.MaxPeople.ToString(CultureInfo.InvariantCulture))
                 .Fact("city_sites", () => CityLifeDirector.MaxSites.ToString(CultureInfo.InvariantCulture))
-                .Fact("city_count", () => CityCatalogue.All.Length.ToString(CultureInfo.InvariantCulture))
+                .Fact("city_count", CityActivities)
+                .Fact("city_coffee_from", () => CityHour(CityActivity("coffee_cart").From))
+                .Fact("city_coffee_to", () => CityHour(CityActivity("coffee_cart").To))
+                .Fact("city_hotdog_from", () => CityHour(CityActivity("hot_dog_cart").From))
+                .Fact("city_hotdog_to", () => CityHour(CityActivity("hot_dog_cart").To))
                 .Cleanup(() => CityLifeDirector.Instance?.EndAll());
 
             Features.Add("crime", "reallife_meta_title_crime")
                 .Group("reallife_crime_header")
                 .About("reallife_guide_crime_about").Help("reallife_guide_crime")
+                .Fact("pursuit_far", () => Guide.Number(PoliceAttention.LostDistance))
+                .Fact("stop_seconds", () => Guide.Number(PoliceAttention.ComplyWindow))
+                .Fact("pursuit_unseen", () => Guide.Number(PursuitSight.OutOfSight))
+                .Fact("jaywalk_chance", () => Guide.Percent(CrimeLaw.JaywalkFineChance))
+                .Fact("holdup_share", () => Guide.Percent(CrimeRules.HoldUpTillShare))
+                .Fact("mug_refused_share", () => Guide.Percent(PlayerMuggingScene.Share * 0.5f))
+                .Fact("mug_share", () => Guide.Percent(PlayerMuggingScene.Share))
+                .Fact("pick_share", () => Guide.Percent(PlayerPickpocketScene.Share))
+                .Fact("crime_reward_most", () => Guide.Money(Prices.At(CrimeRules.RewardMost)))
+                .Fact("crime_reward_least", () => Guide.Money(Prices.At(CrimeRules.RewardLeast)))
                 .Fact("pick_least", () => Guide.Money(Prices.At(PlayerPickpocketScene.Least)))
                 .Fact("pick_most", () => Guide.Money(Prices.At(PlayerPickpocketScene.Most)))
                 .Fact("mug_least", () => Guide.Money(Prices.At(PlayerMuggingScene.Least)))
@@ -130,6 +147,7 @@ namespace RealLifeOverhaul.Meta
 
             Features.Add("driving", "reallife_meta_title_driving")
                 .About("reallife_guide_driving_about").Help("reallife_guide_driving")
+                .Fact("car_examples", () => CarExamples())
                 .Owns(Settings.CarTuningId, Settings.CarTopSpeedId, Settings.CarAccelerationId, Settings.SmoothThrottleId, Settings.SpeedometerId)
                 .Rows("reallife_car_measure")
                 .Fact("throttle_rise", () => Guide.Number(CarModel.ThrottleRise))
@@ -144,6 +162,8 @@ namespace RealLifeOverhaul.Meta
             Features.Add("jobs", "reallife_meta_title_jobs")
                 .Group("reallife_jobs_header")
                 .About("reallife_guide_jobs_about").Help("reallife_guide_jobs")
+                .Fact("preset_pay_hardcore", () => Features.RuleFor(Settings.JobPayId).Hardcore.ToString(CultureInfo.InvariantCulture) + "%")
+                .Fact("preset_pay_relaxed", () => Features.RuleFor(Settings.JobPayId).Relaxed.ToString(CultureInfo.InvariantCulture) + "%")
                 .Owns(Settings.JobsId, Settings.JobTaxiEasyId)
                 .Preset(Settings.JobPayId, 125, 100, 80)
                 .Data("reallife:jobs", "reallife:job_rental", "reallife:job_live")
@@ -169,6 +189,13 @@ namespace RealLifeOverhaul.Meta
                 .Fact("vendor_hawk_fade", () => Guide.Number(VendorJob.HawkHeatFade))
                 .Fact("job_table", JobTable)
                 .Fact("job_van_fee", () => Guide.Money(JobRental.DailyFee))
+                .Fact("job_truck_fee", () => Guide.Money(JobRental.TruckFee))
+                .Fact("job_heavy_time", () => Guide.Percent(HeavyRules.LoadTime - 1f))
+                .Fact("job_owner_cut", () => Guide.Percent(1f - CareerCatalogue.OwnerFactor(1)))
+                .Fact("job_owner_floor", () => Guide.Percent(CareerCatalogue.OwnerFactor(1000)))
+                .Fact("job_cart_wait", () => Guide.Number(CartQueueRules.WaitMost))
+                .Fact("gig_set_level", () => CareerCatalogue.GigNeedsLevel.ToString(CultureInfo.InvariantCulture))
+                .Fact("gig_set_tips", () => Guide.Percent(CareerCatalogue.GigTipFactor - 1f))
                 .Fact("job_levels", () => JobCatalogue.MaxLevel.ToString(CultureInfo.InvariantCulture))
                 .Fact("job_level_bonus", () => Guide.Percent(JobCatalogue.LevelBonus))
                 .Fact("job_reference_level", () => JobCatalogue.ReferenceLevel.ToString(CultureInfo.InvariantCulture))
@@ -262,6 +289,12 @@ namespace RealLifeOverhaul.Meta
 
             Features.Add("ragdoll", "reallife_meta_title_ragdoll")
                 .About("reallife_guide_ragdoll_about").Help("reallife_guide_ragdoll")
+                .Fact("fine_cash_share", () => Guide.Percent(JusticeLaw.FineShareOfCash))
+                .Fact("knock_hospital", () => Guide.Number((float)System.Math.Round(PlayerKnockdown.HospitalSpeed * 3.6f)))
+                .Fact("knock_injury", () => Guide.Number((float)System.Math.Round(PlayerKnockdown.InjurySpeed * 3.6f)))
+                .Fact("hit_deadly", () => Guide.Number((float)System.Math.Round(PedestrianIncidents.DeadlySpeed * 3.6f)))
+                .Fact("hit_injury", () => Guide.Number((float)System.Math.Round(PedestrianIncidents.InjurySpeed * 3.6f)))
+                .Fact("hit_knock", () => Guide.Number((float)System.Math.Round(PedestrianIncidents.KnockSpeed * 3.6f)))
                 .Fact("roadside_least", () => Guide.Money(JusticeLaw.FineFloor))
                 .Owns(Settings.RagdollsId)
                 .Preset(Settings.PlayerKnockdownId, 0, 1, 1)
@@ -272,6 +305,12 @@ namespace RealLifeOverhaul.Meta
 
             Features.Add("traffic", "reallife_meta_title_traffic")
                 .About("reallife_guide_traffic_about").Help("reallife_guide_traffic")
+                .Fact("ped_share", () => Guide.Percent(StreetRules.PeopleShare))
+                .Fact("law_hitrun_most", () => Law.LawBook.Of(Law.Charge.HitAndRun).HoursMax.ToString(CultureInfo.InvariantCulture))
+                .Fact("law_hitrun_least", () => Law.LawBook.Of(Law.Charge.HitAndRun).HoursMin.ToString(CultureInfo.InvariantCulture))
+                .Fact("pursuit_stock", () => Guide.Number((float)System.Math.Round(PursuitPace.Stock * 3.6f)))
+                .Fact("crash_stop_seconds", () => Guide.Number(PolicePursuit.StopWindow))
+                .Fact("crash_from", () => Guide.Number((float)System.Math.Round(CrashConsequences.LiabilitySpeed * 3.6f)))
                 .Fact("crash_least", () => Guide.Money(Prices.At(CrashConsequences.LiabilityLeast)))
                 .Fact("crash_most", () => Guide.Money(Prices.At(CrashConsequences.LiabilityMost)))
                 .Owns(Settings.TrafficAccidentsId, Settings.AccidentNoticesId, Settings.AccidentMarkerId, Settings.TowTrucksId, Settings.SirenId, Settings.PoliceId)
@@ -305,6 +344,9 @@ namespace RealLifeOverhaul.Meta
 
             Features.Add("streets", "reallife_meta_title_streets")
                 .About("reallife_guide_streets_about").Help("reallife_guide_streets")
+                .Fact("horn_warned_minutes", () => Guide.Number(StreetRules.WarnedFor / 60f))
+                .Fact("horn_warn_seconds", () => Guide.Number(StreetRules.RageWindow))
+                .Fact("horn_warn_blasts", () => StreetRules.RagesForWarning.ToString(CultureInfo.InvariantCulture))
                 .Owns(Settings.HornReactionsId, Settings.NaturalAccidentsId, Settings.SolidStreetsId, Settings.CityDriversId)
                 .StandsAside(GoingPublic.TrafficSentence, Settings.HornReactionsId, Settings.NaturalAccidentsId, Settings.SolidStreetsId, Settings.CityDriversId)
                 .Test("reallife_test_streets_speeder", "reallife_test_streets_redlight", "reallife_test_streets_drunk", "reallife_test_streets_jaywalker",
@@ -351,7 +393,10 @@ namespace RealLifeOverhaul.Meta
                 .About("reallife_guide_performance_about").Help("reallife_guide_performance")
                 .Owns(Settings.ShadowReachId, Settings.ShadowCascadesId, Settings.LodReachId)
                 .Test("reallife_perf_test_session", SessionWatch.TestSay)
-                .Test("reallife_perf_test_daywarm", DayWarm.TestNow);
+                .Test("reallife_perf_test_daywarm", DayWarm.TestNow)
+                .Fact("perf_warm_after", () => Guide.Number(DayWarm.StartAfter))
+                .Fact("session_long_ms", () => Guide.Number(SessionWatch.LongFrame * 1000f))
+                .Fact("session_long_most", () => Whole(SessionWatch.LongFramesPerMinute));
             foreach (PerfTweak tweak in PerfTweaks.All)
             {
                 if (!tweak.Trial && !tweak.BySetting)
@@ -383,6 +428,7 @@ namespace RealLifeOverhaul.Meta
                     OptionsLayout.ApplyAll();
                 }))
                 .Row(new ButtonOption("reallife_meta_check_button", OptionsLayout.CheckSetup))
+                .Fact("game_build", () => Whole(GameBuild.MadeFor))
                 .Test("reallife_test_block_say", BlockTests.Say)
                 .Test("reallife_test_guard_fault", Guard.TestFault)
                 .Test("reallife_test_build_notice", GameBuild.TestNotice)
@@ -426,6 +472,48 @@ namespace RealLifeOverhaul.Meta
         private static string MarketsTime(int minute)
         {
             return (minute / 60).GetFormattedTime(minute % 60);
+        }
+
+        // The different activities of city life: two entries that share a name (the umbrella walkers, alone or two) are one.
+        private static string CityActivities()
+        {
+            int n = 0;
+            for (int i = 0; i < CityCatalogue.All.Length; i++)
+            {
+                bool seen = false;
+                for (int k = 0; k < i && !seen; k++)
+                {
+                    seen = CityCatalogue.All[k].Name == CityCatalogue.All[i].Name;
+                }
+                n += seen ? 0 : 1;
+            }
+            return n.ToString(CultureInfo.InvariantCulture);
+        }
+
+        private static CityEntry CityActivity(string id) => System.Array.Find(CityCatalogue.All, e => e.Id == id);
+
+        // An hour of city life's day as a time, past midnight as the next day's (26 is 02:00).
+        private static string CityHour(int hour) => (hour % 24).GetFormattedTime(0);
+
+        // The driving page's examples: each car's 0 to 100 km/h time and top speed from the table the car is tuned by, named as the game names it.
+        private static readonly string[] ExampleCars =
+        {
+            "honzamimic", "vordtiaravic", "bima320", "mersaidis500", "vordpony", "ferdinand112", "anselmoaf90", "umcnunavut", "umcdesert", "freighttruckt1"
+        };
+
+        private static string CarExamples()
+        {
+            var text = new StringBuilder();
+            foreach (string car in ExampleCars)
+            {
+                CarSpec spec = CarCatalogue.For(car, default(CarTraits));
+                if (text.Length > 0)
+                {
+                    text.Append("; ");
+                }
+                text.Append(("ba:vehicletype_" + car).GetLocalization()).Append(' ').Append(Guide.Number(spec.Seconds)).Append(" s, ").Append(Guide.Number(spec.TopKmh));
+            }
+            return text.ToString();
         }
 
         // One line per job, from the catalogue the jobs themselves pay by.

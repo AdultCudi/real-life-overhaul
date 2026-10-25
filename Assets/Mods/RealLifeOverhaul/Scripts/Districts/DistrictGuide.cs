@@ -17,6 +17,7 @@ namespace RealLifeOverhaul.Districts
             Features.Add("districtview", "reallife_meta_title_districtview")
                 .Group("reallife_dv_header")
                 .About("reallife_guide_districtview_about").Help("reallife_guide_districtview")
+                .Fact("dv_layers", () => DistrictRules.Layers.ToString(Inv))
                 .Owns(Settings.DistrictViewId)
                 .Data(DistrictLog.Key)
                 .Objects(DistrictPanel.ObjectName)

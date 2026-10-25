@@ -143,13 +143,15 @@ internal static partial class Program
             "family home: a bed they could not lie in is tried again after a while, not a partner put there and let go each second");
         Dictionary<string, string>[] words = LanguageWords(out string[] codes);
         bool guide = codes.Length == ModLanguages.All.Length;
+        int english = System.Array.IndexOf(codes, "en");
+        int lines = english >= 0 && words[english].TryGetValue("reallife_guide_family", out string en) ? en.Split('\n').Length : -1;
         for (int l = 0; guide && l < codes.Length; l++)
         {
             string page = words[l].TryGetValue("reallife_guide_family", out string g) ? g : string.Empty;
-            guide &= page.Split('\n').Length == 26 && (codes[l] != "en" || (page.Contains("At night they sleep in your bed") && page.Contains("asks for a chore only when it is needed")
+            guide &= lines > 1 && page.Split('\n').Length == lines && (codes[l] != "en" || (page.Contains("At night they sleep in your bed") && page.Contains("asks for a chore only when it is needed")
                      && !page.Contains("They never lie down") && !page.Contains("they stand in the kitchen or the living room")));
         }
-        Check(guide, "family home: the Guide's family page tells of the partner's routine, nights in bed and real chores, its 26 lines in every language");
+        Check(guide, "family home: the Guide's family page tells of the partner's routine, nights in bed and real chores, as many lines in every language as in English (" + lines + ")");
         Check(at.Contains("case Mode.Sleeping:") && MemberText(at, "private static void WakeUp(FamilyDirector director, float now, Vector3 player)").Contains("_partner.Rise();"),
             "family home: in the morning the partner gets up out of bed");
         Check(ModSource(@"Family\FamilyBalance.cs").Contains("public const float HarmonyWaitedInVain = -2f;"),

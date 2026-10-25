@@ -16,7 +16,7 @@ namespace RealLifeOverhaul.Events
     internal static class FireDamage
     {
         internal const float RepairLeast = 350f, RepairMost = 1800f;   // a fire's repair bill, at the start's prices
-        private const int GraceDays = 10;                               // days
+        internal const int GraceDays = 10;                               // days
 
         /// <summary>The business a fire closed, as "street|number", and the game minute it reopens; null when none. Saved in modData.</summary>
         internal static string ClosedKey;

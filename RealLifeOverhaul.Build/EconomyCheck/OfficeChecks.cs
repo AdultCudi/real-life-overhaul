@@ -553,8 +553,9 @@ internal static partial class Program
         bool dept = en.TryGetValue("reallife_civic_office_dept_about_0", out string about) && about.Contains((int)Math.Round(OfficeRules.DepartmentStep * 100) + "%")
                     && about.Contains((int)Math.Round((1f - OfficeRules.HeatScale(1)) * 100) + "%");
         Check(dept, "office: what a step of the budget does, in the text, is the rules'");
-        bool guide = en.TryGetValue("reallife_guide_civic", out string g) && g.Contains("{office_open}") && g.Contains("{office_limit_mayor}") && g.Contains(OfficeRules.MeetingHour + ":00")
-                     && g.Contains((int)OfficeRules.RecallBelow + "%");
+        bool guide = en.TryGetValue("reallife_guide_civic", out string g) && g.Contains("{office_open}") && g.Contains("{office_limit_mayor}")
+                     && (g.Contains("{office_meeting_hour}") || g.Contains(OfficeRules.MeetingHour + ":00"))
+                     && (g.Contains("{office_recall_below}") || g.Contains((int)OfficeRules.RecallBelow + "%"));   // a Guide fact is the rule's own figure
         Check(guide, "office: the Guide's numbers are the rules' (meetings at " + OfficeRules.MeetingHour + ":00, recall under " + OfficeRules.RecallBelow + "%)");
     }
 }
