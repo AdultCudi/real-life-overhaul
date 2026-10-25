@@ -307,6 +307,7 @@
         public const string CareersLifeId = "careers_life";
         public const string CareersOwnId = "careers_own";
         public const string CareersOwnOfferNotesId = "careers_own_offer_notes";
+        public const string CareersLadderId = "careers_ladder";
         public const string CareersFamilyId = "careers_family";
         public const string CareersAgencyNoteId = "careers_agency_note";
         public const string CareersClassStartId = "careers_class_start";
@@ -665,6 +666,7 @@
         public static bool CareersAgencyNote = true;     // a notification on the last day of a registration with the recruitment office
         public static bool CareersOwn = true;            // working for oneself (off: no contracts come; a practice is kept)
         public static bool CareersOwnOfferNotes = true;  // ...a notification for each contract a client offers
+        public static bool CareersLadder = true;         // the management ladder at a city company's stores (off: a job there is the profession's ranks alone; the record is kept)
         public static bool Business = true;              // rival moves, inspections, staff and supplier trouble, opportunities for the player's businesses
         public static int BusinessFrequency = 4;         // 1 = something every couple of weeks, 10 = most days (never more than two open at once)
         public static bool BusinessEasy = false;         // "easy business": only the opportunities are left
@@ -1031,6 +1033,7 @@
             CareersLife = Bool(modId, CareersLifeId, CareersLife);
             CareersOwn = Bool(modId, CareersOwnId, CareersOwn);
             CareersOwnOfferNotes = Bool(modId, CareersOwnOfferNotesId, CareersOwnOfferNotes);
+            CareersLadder = Bool(modId, CareersLadderId, CareersLadder);
             CareersFamily = Bool(modId, CareersFamilyId, CareersFamily);
             CareersAgencyNote = Bool(modId, CareersAgencyNoteId, CareersAgencyNote);
             CareersClassStart = Bool(modId, CareersClassStartId, CareersClassStart);

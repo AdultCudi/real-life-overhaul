@@ -89,6 +89,10 @@ namespace RealLifeOverhaul.Careers
             if (_study != null && _studyOn)
             {
                 data[CareersStore.Key] = CareersStore.Write(_study);
+                if (_workOn)
+                {
+                    LadderWrite(data);
+                }
             }
         }
 
