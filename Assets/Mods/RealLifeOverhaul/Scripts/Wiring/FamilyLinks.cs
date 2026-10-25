@@ -33,6 +33,8 @@ namespace RealLifeOverhaul
                 SocialPerson.FreeOf = (p, hour, weekend) => p != null && PeopleOn && p == SocialState.Partner ? FamilyApi.PartnerFree(hour, weekend) : null;
                 SocialPhone.HasFamilyMatters = p => p != null && PeopleOn && p == SocialState.Partner && FamilyPhone.HasCallMatters;
                 SocialPhone.FamilyMatters = FamilyPhone.CallMatters;
+                SocialPhone.FamilyKeepsMoveIn = p => p != null && PeopleOn && p == SocialState.Partner && FamilyPhone.KeepsMoveIn;
+                SocialPhone.FamilyMoveIn = MoveIn;
                 HomeFridgeButton.FamilyShown = () => FamilyPhone.BoardShown;
                 HomeFridgeButton.FamilyClicked = FamilyPhone.Board;
             }
@@ -43,9 +45,27 @@ namespace RealLifeOverhaul
                 SocialPerson.FreeOf = null;
                 SocialPhone.HasFamilyMatters = null;
                 SocialPhone.FamilyMatters = null;
+                SocialPhone.FamilyKeepsMoveIn = null;
+                SocialPhone.FamilyMoveIn = null;
                 HomeFridgeButton.FamilyShown = null;
                 HomeFridgeButton.FamilyClicked = null;
                 FamilyBridges.Reset();
+            }
+
+            // Moving the partner in from People: family life's own move in (null if they did), and what they say if it could not be.
+            private static string MoveIn()
+            {
+                try
+                {
+                    string why = FamilyPhone.MoveInFromPeople();
+                    return why == null ? null : why == "reallife_family_no_room" ? "reallife_social_movein_room"
+                        : why == "reallife_family_no_home" ? "reallife_social_movein_home" : "reallife_social_movein_no";
+                }
+                catch (Exception e)
+                {
+                    Fault("FamilyLinks.MoveIn", e);
+                    return "reallife_social_movein_no";
+                }
             }
 
             // Social lost its partner or has a new one.

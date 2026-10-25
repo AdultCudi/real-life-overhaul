@@ -10,8 +10,8 @@ namespace RealLifeOverhaul
     /// <summary>
     /// "Cook a meal" as a button in the game's own fridge panel: a copy of its ChangeClothesButton, made once per city. This
     /// component sits on the panel, which leaves children it does not know alone, and shows the button at each opening for
-    /// a fridge of the player's home. A second copy, "Family", opens the family's board while there is no Family contact
-    /// (Family/FamilyPhone.Hides, through Wiring/FamilyLinks). Nothing runs per frame.
+    /// a fridge of the player's home. A second copy, "Family", opens the family's board, a way in beside the Family contact
+    /// (Family/FamilyPhone.BoardShown, through Wiring/FamilyLinks). Nothing runs per frame.
     /// </summary>
     public sealed class HomeFridgeButton : MonoBehaviour
     {

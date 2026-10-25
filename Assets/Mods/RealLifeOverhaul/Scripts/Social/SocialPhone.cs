@@ -32,6 +32,13 @@ namespace RealLifeOverhaul
         public static Func<SocialPerson, bool> HasFamilyMatters;
         public static Func<DialogEntry> FamilyMatters;
 
+        /// <summary>
+        /// Set by Wiring/FamilyLinks: whether family life keeps this person's moving in (they are its partner), and moving them in:
+        /// null when they did, else the key of what they say instead. Without it Social only marks them as moved in.
+        /// </summary>
+        public static Func<SocialPerson, bool> FamilyKeepsMoveIn;
+        public static Func<string> FamilyMoveIn;
+
         /// <summary>Set by Wiring/NetworkLinks: the call's button for a favour this person would do now (null for none), what it opens, and the People page's lines about their position.</summary>
         public static Func<SocialPerson, string> NetworkLabel;
         public static Func<SocialPerson, DialogEntry> NetworkAsk;

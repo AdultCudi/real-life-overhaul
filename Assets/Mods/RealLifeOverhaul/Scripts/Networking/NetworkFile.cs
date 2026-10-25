@@ -18,6 +18,7 @@ namespace RealLifeOverhaul.Networking
     public struct NetPerson
     {
         public int Index;
+        public int Seed;         // the person's own (their look's), 0 if not known: whoever takes a slot rolls differently from who held it
         public string Name;
         public int Origin;       // SocialOrigin's number
         public int Stage;        // SocialStage's number: 2 a friend, 3 a close friend, 4 and 5 dating and a partner
@@ -62,6 +63,20 @@ namespace RealLifeOverhaul.Networking
                 }
             }
             return null;
+        }
+
+        /// <summary>Lets go of whoever held this slot of the cast, with the position and the favours done: whoever takes the slot is rolled afresh. False if there was none.</summary>
+        public bool Forget(int person)
+        {
+            for (int i = 0; i < Contacts.Count; i++)
+            {
+                if (Contacts[i].Person == person)
+                {
+                    Contacts.RemoveAt(i);
+                    return true;
+                }
+            }
+            return false;
         }
     }
 

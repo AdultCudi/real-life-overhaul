@@ -153,7 +153,7 @@ namespace RealLifeOverhaul.Family
                 FamilyText.Toast(NotificationType.Success, "reallife_family_birthday_quiet", fill);
                 return;
             }
-            Relatives.MomGift(40, "reallife_family_mom_birthday", fill);
+            Relatives.MomGift(Prices.At(40), "reallife_family_mom_birthday", fill);
             FamilyDirector director = FamilyDirector.Instance;
             director.Ask("reallife_family_birthday_header", "reallife_family_birthday_body", fill, "reallife_family_birthday_party", "reallife_family_birthday_cake",
                 () => director.Ask("reallife_family_birthday_header", "reallife_family_birthday_where", fill.Cost(FamilyBalance.PartyHomePrice).With(FamilyText.Money(FamilyBalance.PartyVenuePrice)),

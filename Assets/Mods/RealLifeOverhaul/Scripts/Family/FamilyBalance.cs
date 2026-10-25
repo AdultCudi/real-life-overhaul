@@ -51,7 +51,7 @@ namespace RealLifeOverhaul.Family
         public static readonly float[] TierFactor = { 1f, 1.8f, 3.2f };            // simple, classic, grand
         public static int FlowersPrice => Prices.At(800);
         public static int MusicPrice => Prices.At(1200);
-        public const int CateringPerGuest = 85;
+        public static int CateringPerGuest => Prices.At(85);
         public const float PlannerFee = 0.15f;          // of the whole, for an event planning agency
         public const float Deposit = 0.25f;             // of the whole, paid when the plan is made, kept if it is called off
         public const float PostponeFee = 0.10f;         // of the whole
@@ -82,7 +82,9 @@ namespace RealLifeOverhaul.Family
         public static int PrivateSchoolPerMonth => GameCalendar.Monthly(PrivateSchoolPerDay);
         public static int PartyHomePrice => Prices.At(150);
         public static int PartyVenuePrice => Prices.At(600);
-        public static readonly int[] PocketMoney = { 0, 10, 25, 50 };   // a week
+        private static readonly int[] PocketBase = { 0, 10, 25, 50 };   // a week, at the start's prices
+        public static int PocketLevels => PocketBase.Length;
+        public static int PocketMoney(int level) => Prices.At(PocketBase[System.Math.Max(0, System.Math.Min(level, PocketBase.Length - 1))]);
         public const int FundStep = 500;
         public const int FundFull = 40000;
         public const float PushchairUntil = 3f;         // years

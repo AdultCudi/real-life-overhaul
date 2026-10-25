@@ -117,7 +117,7 @@ namespace RealLifeOverhaul.Family
                 int child = i;
                 list.Add(new Choice(() => Has(child) && s().Children[child].Age >= FamilyBalance.PocketFrom,
                     () => FamilyText.Say("reallife_family_do_pocket",
-                        Args.Us.Kid(s().Children[child].Name).Cost(FamilyBalance.PocketMoney[Mathf.Clamp(s().Children[child].Pocket, 0, 3)])),
+                        Args.Us.Kid(s().Children[child].Name).Cost(FamilyBalance.PocketMoney(s().Children[child].Pocket))),
                     "reallife_family_pocket_change", () => Children.PocketStep(child)));
                 list.Add(new Choice(() => Has(child),
                     () => FamilyText.Say("reallife_family_do_fund",
