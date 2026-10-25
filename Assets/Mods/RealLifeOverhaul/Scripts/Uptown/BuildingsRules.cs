@@ -502,6 +502,16 @@ namespace RealLifeOverhaul.Uptown
         public static string FinishRefusal(BuildingsLot lot, bool known, bool taken, string size, int version, string type, int storeys, FinishOwner owner,
                                            double price, bool structure, bool lives, bool inSession, bool spanned)
         {
+            return FinishRefusal(lot, known, taken, size, version, type, storeys, owner, price, structure, lives, inSession, spanned, false);
+        }
+
+        /// <summary>
+        /// As above; <paramref name="cleared"/>: the lot's building was knocked down (a demolition), so its spaces are free ground
+        /// and take a building of any size of the grid that stands on no more of them than the lot holds, not only its plan's.
+        /// </summary>
+        public static string FinishRefusal(BuildingsLot lot, bool known, bool taken, string size, int version, string type, int storeys, FinishOwner owner,
+                                           double price, bool structure, bool lives, bool inSession, bool spanned, bool cleared)
+        {
             if (!lives)
             {
                 return "Uptown is not a district of the game at this load";
@@ -519,7 +529,8 @@ namespace RealLifeOverhaul.Uptown
                 return "the game's special building type needs a special service of the game's";
             }
             // An open run's space takes any size of the grid that stands on one space; a site of several spans its others.
-            if (!spanned && !(lot.Open ? SpacesRules.SpacesOf(size, version) == 1 : TakesSize(lot, size)))
+            int spaces = SpacesRules.SpacesOf(size, version);
+            if (!spanned && !(lot.Open ? spaces == 1 : cleared ? spaces >= 1 && spaces <= Math.Max(1, lot.Spaces) : TakesSize(lot, size)))
             {
                 return "the size " + (size ?? "(none)") + " is not one the lot takes";
             }

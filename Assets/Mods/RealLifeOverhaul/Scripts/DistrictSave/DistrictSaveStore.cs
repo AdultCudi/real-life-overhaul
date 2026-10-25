@@ -89,6 +89,35 @@ namespace RealLifeOverhaul.DistrictSave
             return gone;
         }
 
+        /// <summary>
+        /// Lets go every kept record (and its item, at the same index) that names one address: a building of the mod's that was
+        /// knocked down (DistrictSaveDirector.Clear). Returns how many. The others stay in their order.
+        /// </summary>
+        public static int RetireAddress(List<StoredRecord> records, List<object> items, string street, int number)
+        {
+            if (records == null || string.IsNullOrEmpty(street))
+            {
+                return 0;
+            }
+            var key = new PlaceKey(street, number);
+            int gone = 0;
+            for (int i = records.Count - 1; i >= 0; i--)
+            {
+                StoredRecord r = records[i];
+                if (r == null || !r.Addresses.Contains(key))
+                {
+                    continue;
+                }
+                records.RemoveAt(i);
+                if (items != null && i < items.Count)
+                {
+                    items.RemoveAt(i);
+                }
+                gone++;
+            }
+            return gone;
+        }
+
         public const string Key = "reallife:district_save";
         public const string UnreadKey = "reallife:district_save_unread";
         public const int Version = 1;

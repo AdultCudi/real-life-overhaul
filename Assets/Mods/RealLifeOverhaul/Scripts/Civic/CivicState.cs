@@ -427,6 +427,7 @@ namespace RealLifeOverhaul
                     case SiteKind.Refit: return phase == 1 || phase == 2;
                     case SiteKind.Rebuild: return phase == 1 || phase == 2 || phase == 4;
                     case SiteKind.Plot: return phase >= 1 && phase <= 3;
+                    case SiteKind.Demolition: return phase >= 1;   // the machines, the rubble and the dust from the scaffold going up to the ground cleared
                     default: return phase == 1;
                 }
             }
@@ -442,7 +443,7 @@ namespace RealLifeOverhaul
         public void Read(CivicReader r)
         {
             Id = r.Int();
-            Kind = (SiteKind)Math.Max(0, Math.Min((int)SiteKind.Plot, r.Int()));
+            Kind = (SiteKind)Math.Max(0, Math.Min((int)SiteKind.Demolition, r.Int()));
             Street = r.Text();
             Number = r.Int();
             X = r.Float();

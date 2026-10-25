@@ -97,6 +97,7 @@ namespace RealLifeOverhaul.Construction
             OpenedDay(day);
             ShowDay(day);
             CityDay(day);
+            RedevelopDay(day);   // notices run out, buildings kept empty, handovers the district could not take yet (ConstructionDirector.Demolish.cs)
             if (Verbose)
             {
                 double ms = (System.Diagnostics.Stopwatch.GetTimestamp() - began) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
@@ -568,6 +569,10 @@ namespace RealLifeOverhaul.Construction
 
         private void DefectAhead(ProjectFile p, int quality, int day)
         {
+            if (p.Kind == ProjectKind.Demolition)
+            {
+                return;   // ground cleared has no building to show a fault later
+            }
             BuildRandom random = BuildRandom.Of(_state.Seed, p.Id, 223);
             if (!random.Chance((100 - BuildCatalogue.Clamp(quality, 0, 100)) * 4))
             {

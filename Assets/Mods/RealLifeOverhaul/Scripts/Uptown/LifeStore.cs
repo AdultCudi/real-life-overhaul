@@ -38,6 +38,27 @@ namespace RealLifeOverhaul.Uptown
         /// <summary>The generation of Uptown's plan its lots are of (LayoutRules.PlanGeneration); a line without one is of the first plan.</summary>
         public int Plan = LayoutRules.PlanGeneration;
 
+        /// <summary>
+        /// Lots whose building was knocked down (Scripts/Construction's demolitions, the player's and the city's): no building
+        /// stands there from the next load, whatever the plan builds from the first day, until one is finished there again.
+        /// </summary>
+        public readonly List<string> Cleared = new List<string>(8);
+
+        /// <summary>True for a lot whose building was knocked down and on which nothing has been finished since.</summary>
+        public bool IsCleared(string lot)
+        {
+            return !string.IsNullOrEmpty(lot) && Cleared.Contains(lot);
+        }
+
+        /// <summary>The lot marked cleared (at most <see cref="LifeStore.ClearedMost"/> kept).</summary>
+        public void MarkCleared(string lot)
+        {
+            if (!string.IsNullOrEmpty(lot) && !Cleared.Contains(lot) && Cleared.Count < LifeStore.ClearedMost)
+            {
+                Cleared.Add(lot);
+            }
+        }
+
         /// <summary>True when a later opening pass has been over the lot.</summary>
         public bool OpenedLot(string lot)
         {
@@ -90,8 +111,9 @@ namespace RealLifeOverhaul.Uptown
 
     /// <summary>
     /// The district's line in the save, game-free: one line under <see cref="Key"/>, "v=1^f:finished" and "^o:1" once the
-    /// opening pass has run, "^x:1" once the mix pass has, "^n:lot,lot" for the lots a later pass has been over and "^g:2" the plan's generation its
-    /// lots are of (none: the first plan, LifeStore.PlanOf), records divided by ';'
+    /// opening pass has run, "^x:1" once the mix pass has, "^n:lot,lot" for the lots a later pass has been over, "^c:lot,lot" for
+    /// the lots whose building was knocked down, and "^g:2" the plan's generation its lots are of (none: the first plan,
+    /// LifeStore.PlanOf), records divided by ';'
     /// and fields by '|' (lot, size, version, type, design, storeys, owner, price, day, settled, the other lots it stands over joined by ','), in the order
     /// <see cref="Write"/> joins them. A newer version adds fields at the end of a record, or a part with a new letter: this
     /// reader skips what it does not know, bounds every figure and caps the list. The line names Uptown's lots, never an
@@ -105,6 +127,7 @@ namespace RealLifeOverhaul.Uptown
         public const int Version = 1;
         public const int FinishedMost = 512;   // records read at most: more lots than the whole band north of Manhattan holds
         public const int OpenedMost = 512;     // lots a later opening pass is marked for at most: more than the band holds
+        public const int ClearedMost = 512;    // lots marked cleared at most: more than the band holds
 
         private const int Fields = 10;
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
@@ -173,6 +196,17 @@ namespace RealLifeOverhaul.Uptown
                         if (IsId(lot))
                         {
                             state.MarkOpened(lot);
+                        }
+                    }
+                    continue;
+                }
+                if (part.StartsWith("c:", StringComparison.Ordinal))
+                {
+                    foreach (string lot in part.Substring(2).Split(','))
+                    {
+                        if (IsId(lot))
+                        {
+                            state.MarkCleared(lot);
                         }
                     }
                     continue;
@@ -319,6 +353,14 @@ namespace RealLifeOverhaul.Uptown
                 for (int i = 0; i < s.OpenedLots.Count; i++)
                 {
                     t.Append(i > 0 ? "," : string.Empty).Append(Clean(s.OpenedLots[i]).Replace(',', ' '));
+                }
+            }
+            if (s.Cleared.Count > 0)
+            {
+                t.Append("^c:");
+                for (int i = 0; i < s.Cleared.Count && i < ClearedMost; i++)
+                {
+                    t.Append(i > 0 ? "," : string.Empty).Append(Clean(s.Cleared[i]).Replace(',', ' '));
                 }
             }
             return t.ToString();

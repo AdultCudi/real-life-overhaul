@@ -340,6 +340,10 @@ namespace RealLifeOverhaul.Construction
                 });
             }
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_bld_back", Back);
+            if (live == null)
+            {
+                RedevelopButtons(box, b);   // a building of Uptown's: knocked down to its ground (ConstructionApp.Redevelop.cs)
+            }
             if (live == null && ConstructionGame.Unit(b.Street, b.Number, out UnitView inside))
             {
                 RefitButtons(box, inside);

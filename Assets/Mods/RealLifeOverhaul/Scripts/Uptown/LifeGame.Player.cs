@@ -47,6 +47,14 @@ namespace RealLifeOverhaul.Uptown
                    && !manager.enteringBuilding && !manager.exitingBuilding;
         }
 
+        /// <summary>True while the player is inside that building, or the game is taking them in or out of it.</summary>
+        public static bool Inside(MadeBuilding made)
+        {
+            BuildingManager manager = InstanceBehavior<BuildingManager>.IsInitialized ? InstanceBehavior<BuildingManager>.Instance : null;
+            return made != null && made.Building != null && manager != null && manager.building == made.Building
+                   && (BuildingManager.IsInsideBuilding || manager.enteringBuilding || manager.exitingBuilding);
+        }
+
         /// <summary>True when a lease's business there may receive the player (BuildingsRules.Visitable): its lessee's, nobody's to rent or own.</summary>
         public static bool Visitable(MadeBuilding made, DistrictLease lease)
         {

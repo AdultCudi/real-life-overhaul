@@ -55,6 +55,8 @@ namespace RealLifeOverhaul.Construction
         {
             switch (p.Stage)
             {
+                case ProjectStage.Design when p.Kind == ProjectKind.Demolition:
+                    return ConstructionText.T("reallife_bld_next_permit");
                 case ProjectStage.Design:
                     return ConstructionText.T(!p.PlansDone ? p.PlansDay > 0 ? "reallife_bld_next_wait_plans" : "reallife_bld_next_plans"
                         : !p.Engineered && PlansRules.NeedsEngineer(p.Storeys, p.Kind) ? p.EngineerDay > 0 ? "reallife_bld_next_wait_engineer" : "reallife_bld_next_engineer"
@@ -96,6 +98,11 @@ namespace RealLifeOverhaul.Construction
             if (p.Contractor >= 0 && !p.Hired)
             {
                 WriteContracted(box, p);
+                return;
+            }
+            if (p.Kind == ProjectKind.Demolition && (p.Stage == ProjectStage.Design || p.Stage == ProjectStage.Ready))
+            {
+                WriteDemolition(box, state, p);   // ConstructionApp.Redevelop.cs: the notice, the permit, who knocks it down
                 return;
             }
             if (_page == 3 && p.Stage == ProjectStage.Ready && ConstructionDirector.HireKind(p))

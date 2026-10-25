@@ -85,6 +85,11 @@ namespace RealLifeOverhaul
                 ConstructionBridges.Finish = Finish;
                 ConstructionBridges.FinishOver = FinishOver;
                 ConstructionBridges.SpacesOf = SpacesRules.SpacesOf;
+                ConstructionBridges.StandingAt = StandingAt;
+                ConstructionBridges.StandingOn = StandingOn;
+                ConstructionBridges.Demolish = Demolish;
+                ConstructionBridges.Cleared = Cleared;
+                ConstructionBridges.HideLook = HideLook;
                 DistrictBuildings.Lessee = RivalLease;   // whatever the options say: every machine leases the same offices
                 ConstructionBridges.RivalOffice = RivalOffice;
                 ConstructionBridges.RivalOfficeGo = RivalOfficeGo;
@@ -190,6 +195,11 @@ namespace RealLifeOverhaul
                 ConstructionBridges.Finish = null;
                 ConstructionBridges.FinishOver = null;
                 ConstructionBridges.SpacesOf = null;
+                ConstructionBridges.StandingAt = null;
+                ConstructionBridges.StandingOn = null;
+                ConstructionBridges.Demolish = null;
+                ConstructionBridges.Cleared = null;
+                ConstructionBridges.HideLook = null;
                 ConstructionBridges.Designs = null;
                 ConstructionBridges.Footprint = null;
                 ConstructionBridges.StartPlot = null;
@@ -361,7 +371,9 @@ namespace RealLifeOverhaul
                         why = "no building at " + street + " " + number;
                         return 0;
                     }
-                    SiteState site = works.StartAt((SiteKind)Mathf.Clamp(kind, 0, (int)SiteKind.Rebuild), place, TimeHelper.CurrentDay, mine, hours);
+                    // A plot is set out on its ground, never at a building; a demolition is the one kind after it asked for at one.
+                    SiteKind asked = kind == (int)SiteKind.Demolition ? SiteKind.Demolition : (SiteKind)Mathf.Clamp(kind, 0, (int)SiteKind.Rebuild);
+                    SiteState site = works.StartAt(asked, place, TimeHelper.CurrentDay, mine, hours);
                     if (site == null)
                     {
                         why = "a site is there already, or the building has no street door";
@@ -518,6 +530,85 @@ namespace RealLifeOverhaul
                 {
                     Fault("ConstructionLinks.Finish", e);
                     why = "a fault";
+                    return false;
+                }
+            }
+
+            // ------------------------------------------------------------------ redevelopment: the district's buildings
+
+            private static bool StandingAt(string street, int number, out StandingView view)
+            {
+                view = default(StandingView);
+                try
+                {
+                    return DistrictBuildings.StandingAt(street, number, out DistrictBuilding b) && View(b, out view);
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.StandingAt", e);
+                    return false;
+                }
+            }
+
+            private static bool StandingOn(string lot, out StandingView view)
+            {
+                view = default(StandingView);
+                try
+                {
+                    return DistrictBuildings.StandingOn(lot, out DistrictBuilding b) && View(b, out view);
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.StandingOn", e);
+                    return false;
+                }
+            }
+
+            private static bool View(DistrictBuilding b, out StandingView view)
+            {
+                view = new StandingView
+                {
+                    Lot = b.Lot, Street = b.Street, Number = b.Number, Size = b.Size, Version = b.Version, Type = b.Type, Design = b.Design, Storeys = b.Storeys,
+                    SizeSqm = b.SizeSqm, Sqm = b.Sqm, Height = b.Height, Over = b.Over, Finished = b.Finished, Kept = b.Kept
+                };
+                return true;
+            }
+
+            private static string Demolish(string lot)
+            {
+                try
+                {
+                    return DistrictBuildings.Demolish(lot, out string why) ? null : why ?? "refused";
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.Demolish", e);
+                    return "a fault";
+                }
+            }
+
+            private static bool Cleared(string lot)
+            {
+                try
+                {
+                    return DistrictBuildings.Cleared(lot);
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.Cleared", e);
+                    return false;
+                }
+            }
+
+            private static bool HideLook(string lot, bool hide)
+            {
+                try
+                {
+                    return DistrictBuildings.HideLook(lot, hide);
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.HideLook", e);
                     return false;
                 }
             }

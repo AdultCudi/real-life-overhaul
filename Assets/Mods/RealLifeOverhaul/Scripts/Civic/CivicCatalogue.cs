@@ -297,7 +297,8 @@ namespace RealLifeOverhaul
             "reallife_civic_project_refit_1", "reallife_civic_project_refit_2", "reallife_civic_project_refit_3",
             "reallife_civic_project_utility_1", "reallife_civic_project_utility_2", "reallife_civic_project_utility_3",
             "reallife_construction_project_rebuild_1", "reallife_construction_project_rebuild_2", "reallife_construction_project_rebuild_3",
-            "reallife_construction_project_plot_1", "reallife_construction_project_plot_2", "reallife_construction_project_plot_3"
+            "reallife_construction_project_plot_1", "reallife_construction_project_plot_2", "reallife_construction_project_plot_3",
+            "reallife_construction_project_demolition_1", "reallife_construction_project_demolition_2", "reallife_construction_project_demolition_3"
         };
 
         /// <summary>The phases of each kind of site, five each (in the order of <see cref="SiteKind"/>).</summary>
@@ -310,7 +311,9 @@ namespace RealLifeOverhaul
             "reallife_construction_phase_rebuild_1", "reallife_construction_phase_rebuild_2", "reallife_construction_phase_rebuild_3",
             "reallife_construction_phase_rebuild_4", "reallife_construction_phase_rebuild_5",
             "reallife_construction_phase_plot_1", "reallife_construction_phase_plot_2", "reallife_construction_phase_plot_3",
-            "reallife_construction_phase_plot_4", "reallife_construction_phase_plot_5"
+            "reallife_construction_phase_plot_4", "reallife_construction_phase_plot_5",
+            "reallife_construction_phase_demolition_1", "reallife_construction_phase_demolition_2", "reallife_construction_phase_demolition_3",
+            "reallife_construction_phase_demolition_4", "reallife_construction_phase_demolition_5"
         };
 
         public const int PhasesPerKind = 5;
@@ -319,7 +322,7 @@ namespace RealLifeOverhaul
         public const int SitesMost = 16;            // every site at once, builders' too: what the save's line and a Going Public host's line hold
 
         /// <summary>Working hours a site of each kind needs (ten a weekday as the city came: 40 is four working days).</summary>
-        public static readonly int[] SiteHours = { 50, 120, 90, 30, 160, 320 };
+        public static readonly int[] SiteHours = { 50, 120, 90, 30, 160, 320, 120 };
 
         /// <summary>Rebuild sites in the programme at once, at most: a whole building wrapped is a sight, not the street's every day.</summary>
         public const int MostRebuilds = 1;
@@ -331,9 +334,10 @@ namespace RealLifeOverhaul
 
     /// <summary>
     /// The kinds of building site. Saved as a number: an older version reads a number it does not know as the last it has
-    /// (a utility site), so a save with a rebuild or a plot still loads there.
+    /// (a utility site, or a plot), so a save with a rebuild, a plot or a demolition still loads there. A demolition is only
+    /// ever a builder's, in Uptown, where every machine of a Going Public session runs this same mod.
     /// </summary>
-    public enum SiteKind { Roadworks, Scaffold, Refit, Utility, Rebuild, Plot }
+    public enum SiteKind { Roadworks, Scaffold, Refit, Utility, Rebuild, Plot, Demolition }
 
     /// <summary>A small repeatable random source (xorshift): what is drawn from a save's seed is the same every time it is asked for.</summary>
     public struct CivicRandom

@@ -417,13 +417,18 @@ namespace RealLifeOverhaul.Construction
             }
         }
 
-        // A contractor's refit handed over: nothing of the company's in it, no opening day; the player is told.
+        // A contractor's refit or demolition handed over: nothing of the company's in it, no opening day; the player is told.
         private void ContractorHandover(ProjectFile p, int day)
         {
             p.Stage = ProjectStage.Finished;
             p.Handed = day;
             p.SiteId = 0;
-            p.Opened = true;   // no ribbon for an interior
+            p.Opened = true;   // no ribbon for an interior, nor for ground cleared
+            if (p.Kind == ProjectKind.Demolition)
+            {
+                Demolished(p);   // its ground the player's land; asked again each day while the district cannot take it
+                return;
+            }
             Refitted(p, 70);
             Tell(NotificationType.Success, "reallife_bld_notice_refitted", ProjectName(p), BuildCatalogue.RivalKeys[BuildCatalogue.Clamp(p.Contractor, 0, BuildCatalogue.RivalCount - 1)],
                 TabProjects, p.Id);

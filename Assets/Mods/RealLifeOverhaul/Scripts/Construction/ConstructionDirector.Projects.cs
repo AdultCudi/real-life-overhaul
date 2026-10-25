@@ -100,6 +100,8 @@ namespace RealLifeOverhaul.Construction
                         "address", where);
                 case ProjectKind.Refit:
                     return ConstructionText.T("reallife_bld_name_refit", "address", where);
+                case ProjectKind.Demolition:
+                    return ConstructionText.T("reallife_bld_name_demolition", "address", where);
                 default:
                     return ConstructionText.T("reallife_bld_name_plot", "use", ConstructionText.T(BuildCatalogue.UseKeys[(int)p.Use]), "address", where);
             }
@@ -662,6 +664,10 @@ namespace RealLifeOverhaul.Construction
         /// <summary>The fee City Hall asks for a project's application now.</summary>
         public long PlanningFee(ProjectFile p)
         {
+            if (p.Kind == ProjectKind.Demolition)
+            {
+                return RedevelopRules.PermitFeeOf(ValueOf(p, out _), ConstructionGame.Prices);   // a demolition permit's fee
+            }
             return PlansRules.PlanningFee(Math.Max(0L, p.Estimate), ConstructionGame.Prices, Permits());
         }
 
@@ -687,8 +693,12 @@ namespace RealLifeOverhaul.Construction
             p.Planning = PlanningState.Submitted;
             p.Applications++;
             p.PlanningDay = day;
-            p.DecideDay = PlanningRules.AfterWorkingDays(day, PlanningRules.WorkingDays(p.Area));
+            p.DecideDay = PlanningRules.AfterWorkingDays(day, p.Kind == ProjectKind.Demolition ? RedevelopRules.PermitDays(p.Area) : PlanningRules.WorkingDays(p.Area));
             p.Consulted = false;
+            if (p.Kind == ProjectKind.Demolition)
+            {
+                GiveNotice(p, day);   // the tenants and the business are told as the permit is asked for
+            }
             p.Objections = 0;
             p.Reasons = 0;
             Logger?.Info("Construction: project " + p.Id + " applied for planning permission (fee " + fee + "), the decision on day " + p.DecideDay + ".");
@@ -724,7 +734,11 @@ namespace RealLifeOverhaul.Construction
             p.ParkingNeeded = PlansRules.ParkingNeeded(p.Use, p.Area, Permits());
             bool engineerNeeded = PlansRules.NeedsEngineer(p.Storeys, p.Kind);
             bool zoned = p.Kind != ProjectKind.Plot || (_state.Lot(p.Lot) is LotFile l && LandRules.Zoned(ZonesNow(l), p.Use));
-            PlansRules.Unmet(p.Exits, p.ExitsNeeded, p.ParkingUnder, p.ParkingNeeded, p.Storeys, limit, engineerNeeded, p.Engineered, out int reasons);
+            int reasons = 0;
+            if (p.Kind != ProjectKind.Demolition)
+            {
+                PlansRules.Unmet(p.Exits, p.ExitsNeeded, p.ParkingUnder, p.ParkingNeeded, p.Storeys, limit, engineerNeeded, p.Engineered, out reasons);   // a demolition builds nothing to meet them
+            }
             bool granted = PlanningRules.Decide(_state.Seed, p.Id, p.Applications, zoned, reasons, p.Quality, _state.Firm.Reputation, p.Objections, Permits(), out Refusal why);
             if (Verbose)
             {
@@ -804,6 +818,11 @@ namespace RealLifeOverhaul.Construction
             }
             p.Stage = ProjectStage.Design;
             p.Planning = PlanningState.None;
+            if (p.Kind == ProjectKind.Demolition)
+            {
+                Changed();
+                return "reallife_bld_answer_redraw";   // a demolition has no plans to draw again: it asks for the permit afresh
+            }
             p.PlansDone = false;
             p.PlansDay = 0;
             p.Engineered = false;
@@ -840,6 +859,10 @@ namespace RealLifeOverhaul.Construction
             if (p.Model == ProjectKind.Plot && !Lot(p.Lot, out _))
             {
                 return "reallife_bld_answer_no_lot";
+            }
+            if (p.Kind == ProjectKind.Demolition && !Emptied(p))
+            {
+                return "reallife_bld_answer_notice_running";   // the tenants and the business leave first
             }
             return null;
         }
@@ -918,6 +941,10 @@ namespace RealLifeOverhaul.Construction
             if (p.ShowOpen)
             {
                 CloseShow(p, "its project is given up");
+            }
+            if (p.Kind == ProjectKind.Demolition)
+            {
+                DemolitionGivenUp(p);   // a building coming down stands again as it was
             }
             FreeProject(p);
             p.Stage = ProjectStage.Abandoned;
@@ -1015,6 +1042,11 @@ namespace RealLifeOverhaul.Construction
             {
                 DefectAhead(p, quality, day);   // a hired builder's faults are its own to put right, never a claim on the company
             }
+            if (p.Kind == ProjectKind.Demolition)
+            {
+                p.Opened = true;   // no ribbon for ground cleared
+                Demolished(p);     // its ground the player's land; asked again each day while the district cannot take it
+            }
             if (p.Kind == ProjectKind.Refit || (p.Kind == ProjectKind.Rebuild && p.WithRefit))
             {
                 Refitted(p, quality);
@@ -1044,7 +1076,10 @@ namespace RealLifeOverhaul.Construction
                 }
                 HandToDistrict(p);
             }
-            Paper("reallife_bld_paper_finished", ProjectName(p), 0);
+            if (p.Kind != ProjectKind.Demolition)
+            {
+                Paper("reallife_bld_paper_finished", ProjectName(p), 0);   // a demolition has its own story as its building comes down
+            }
             Logger?.Info("Construction: project " + p.Id + " handed over on day " + day + " (due " + p.DueDay + "), quality " + quality + ", reputation " + (points >= 0 ? "+" : string.Empty) + points
                          + "; spent " + p.Spent + ".");
             HedgeEnd(p);   // what its hedge on the exchange saved or cost
@@ -1053,7 +1088,10 @@ namespace RealLifeOverhaul.Construction
                 TellHire(NotificationType.Success, p.HirePenalty > 0 ? "reallife_bld_notice_hire_late" : "reallife_bld_notice_hire_handed", p, p.HirePenalty);
                 return;
             }
-            Tell(NotificationType.Success, p.Kind == ProjectKind.Plot ? "reallife_bld_notice_handed_plot" : "reallife_bld_notice_handed", ProjectName(p), null, TabProjects, p.Id);
+            if (p.Kind != ProjectKind.Demolition)
+            {
+                Tell(NotificationType.Success, p.Kind == ProjectKind.Plot ? "reallife_bld_notice_handed_plot" : "reallife_bld_notice_handed", ProjectName(p), null, TabProjects, p.Id);
+            }
             if (p.Kind == ProjectKind.Contract && p.ClientValue > 0)
             {
                 _state.Firm.Reputation = FirmRules.Moved(_state.Firm.Reputation, day <= p.DueDay ? BuildCatalogue.RepContractOnTime : 0);

@@ -393,6 +393,7 @@ namespace RealLifeOverhaul
                     case SiteKind.Refit: BuildRefit(dressed); break;
                     case SiteKind.Rebuild: BuildRebuild(dressed); break;
                     case SiteKind.Plot: BuildPlot(dressed); break;
+                    case SiteKind.Demolition: BuildDemolition(dressed); break;
                     default: BuildUtility(dressed); break;
                 }
                 if (dressed.HasNotice)

@@ -220,5 +220,129 @@ namespace RealLifeOverhaul.Construction
                    + before + " -> " + after, TabTenders, t.Id);
             return true;
         }
+
+        // ------------------------------------------------------------------ demolition
+
+        private readonly List<BuildingView> _testOwned = new List<BuildingView>(8);
+
+        /// <summary>
+        /// Test: the player's nearest building in Uptown knocked down now, for good: a demolition made, its permit granted and its
+        /// notice run at once (its tenants and business gone, nothing paid), the city's demolition contractor's works for nothing,
+        /// handed over at once; its lots cleared and its ground the player's land.
+        /// </summary>
+        public static bool TestDemolitionNow()
+        {
+            const string test = "knock down your nearest Uptown building now, for good";
+            ConstructionDirector d = RedoDirector(test, false);
+            if (d == null)
+            {
+                return false;
+            }
+            try
+            {
+                return d.DemolitionNow(test);
+            }
+            catch (Exception e)
+            {
+                d.Fault("a test (" + test + ")", e);
+                return false;
+            }
+        }
+
+        private bool DemolitionNow(string test)
+        {
+            if (GoingPublic.InSession)
+            {
+                return Failed(RedoCheck, test, "reallife_bld_test_session_city", "in a Going Public session the district's buildings stay as they are on every machine");
+            }
+            if (!Settings.ConstructionRedevelop)
+            {
+                return Failed(RedoCheck, test, "reallife_bld_answer_redevelop_off", "redevelopment is off in the options");
+            }
+            if (!NearestUptownBuilding(out BuildingView b, out float metres))
+            {
+                return Failed(RedoCheck, test, "reallife_bld_test_no_uptown", "the player owns no building of Uptown's that redevelopment may take (buy one in BizMan first)");
+            }
+            string block = DemolishBlock(b.Street, b.Number);
+            if (block != null)
+            {
+                return Failed(RedoCheck, test, block, b.Name + " cannot be knocked down now (" + block + ")");
+            }
+            BeforeTest();
+            int id = NewDemolition(b.Street, b.Number, out string why);
+            ProjectFile p = _state.Project(id);
+            if (p == null)
+            {
+                return Failed(RedoCheck, test, why ?? "reallife_bld_test_failed_log", "no demolition could be made at " + b.Name + " (" + why + ")");
+            }
+            StandingOnLot(p.Lot, out StandingView before);
+            int lots = 1 + (before.Over != null ? before.Over.Length : 0);
+            p.Planning = PlanningState.Granted;   // the permit at once, as City Hall would grant it
+            p.Stage = ProjectStage.Ready;
+            p.NoticeUntil = ConstructionGame.Day;
+            ConstructionGame.Evict(p.Street, p.Number);   // the notice run at once: the business closed and the tenants gone, nothing paid for a test
+            p.BuyOut = -1L;
+            string ordered = ContractorDemolition(p, true);
+            bool handed = p.SiteId > 0 && FinishSite(p.SiteId);
+            if (!handed && p.Stage == ProjectStage.Building)
+            {
+                Handover(p, ConstructionGame.Day);   // the site was gone from the programme: handed over all the same
+                handed = true;
+            }
+            bool cleared = AskCleared(p.Lot);
+            LotFile land = _state.Lot(p.Lot);
+            string where = b.Name + ", " + metres.ToString("0", CultureInfo.InvariantCulture) + " m away, " + before.Sqm + " m2 on " + lots + " lot(s)";
+            if (!(handed && p.InDistrict && cleared && land != null && land.Spaces == Math.Min(lots, BuildCatalogue.SiteSpacesMost)))
+            {
+                Logger?.Warn(RedoCheck + test + "): " + where + ": project " + p.Id + " at " + p.Stage + " (" + ordered + "), down in the district " + p.InDistrict + ", lot cleared " + cleared
+                             + ", the player's land " + (land != null ? land.Spaces + " lot(s)" : "none") + ": FAIL.");
+                return Failed(RedoCheck, test, "reallife_bld_test_failed_log", "the building did not come down");
+            }
+            Passed(test, "reallife_bld_test_demolish", where + ": permit granted, notice run, knocked down now by contractor " + p.Contractor + "; its lot(s) cleared and the player's land, a site of "
+                   + land.Spaces + " lot(s) worth " + land.Paid + " as land", TabLand, 0);
+            return true;
+        }
+
+        // The player's building of Uptown's nearest to them that redevelopment may take, or false.
+        private bool NearestUptownBuilding(out BuildingView nearest, out float metres)
+        {
+            nearest = default(BuildingView);
+            metres = 0f;
+            ConstructionGame.Owned(_testOwned);
+            Vector3 player = ConstructionGame.Player;
+            float best = float.MaxValue;
+            for (int i = 0; i < _testOwned.Count; i++)
+            {
+                BuildingView b = _testOwned[i];
+                if (!Standing(b.Street, b.Number, out StandingView s) || s.Kept || !ConstructionGame.Door(b.Street, b.Number, out Vector3 door, out _))
+                {
+                    continue;
+                }
+                Vector3 d = door - player;
+                d.y = 0f;
+                if (d.sqrMagnitude < best)
+                {
+                    best = d.sqrMagnitude;
+                    nearest = b;
+                }
+            }
+            _testOwned.Clear();
+            metres = best < float.MaxValue ? Mathf.Sqrt(best) : 0f;
+            return best < float.MaxValue;
+        }
+
+        // Whether the district has a lot cleared, as the bridge says.
+        private static bool AskCleared(string lot)
+        {
+            try
+            {
+                return !Down("Cleared") && ConstructionBridges.Cleared != null && ConstructionBridges.Cleared(lot);
+            }
+            catch (Exception e)
+            {
+                Faulty("Cleared", e);
+                return false;
+            }
+        }
     }
 }

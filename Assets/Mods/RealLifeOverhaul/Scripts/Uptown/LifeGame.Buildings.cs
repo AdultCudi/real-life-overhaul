@@ -237,6 +237,33 @@ namespace RealLifeOverhaul.Uptown
         }
 
         /// <summary>
+        /// One district building knocked down in play: its record out of the game's lists of buildings (nothing of the game's
+        /// walks it from now on), its carving box off so its ground is walked on again, and every filler standing on its lots'
+        /// ground hidden. Its record stays in the game's lookup by address until the next load. Returns the fillers hidden.
+        /// </summary>
+        public static int Leave(MadeBuilding made, List<BuildingsLot> lots)
+        {
+            Building record = made != null ? made.Building : null;
+            if (record == null)
+            {
+                return 0;
+            }
+            BuildingHelper.allBuildings.Remove(record);
+            if (BuildingHelper.AllNeighbourhoodBuildings.TryGetValue(DistrictValues.Id, out List<Building> district) && district != null)
+            {
+                district.Remove(record);
+            }
+            Entered.Remove(record);
+            if (made.Controller != null && made.Controller.TryGetComponent(out NavMeshObstacle cut))
+            {
+                cut.carving = false;
+                cut.enabled = false;
+                Cuts.Remove(cut);
+            }
+            return HideFillersOn(lots);
+        }
+
+        /// <summary>
         /// Uptown stood down in play: its special places out of the game's lists of them too (the nearest clinic, the
         /// importers and the banks are found there), each with the registration it stood with.
         /// </summary>

@@ -18,7 +18,8 @@ namespace RealLifeOverhaul.Construction
         Plot = 0,       // a new building on an Uptown lot the player owns
         Rebuild = 1,    // an old building of the player's, rebuilt behind the game's scaffolding
         Contract = 2,   // works won in a tender: the city's, a business's or a public building
-        Refit = 3       // the interior of a unit of the player's refitted, by their crews or a contractor of the city's, furnished anew or not
+        Refit = 3,      // the interior of a unit of the player's refitted, by their crews or a contractor of the city's, furnished anew or not
+        Demolition = 4  // an Uptown building knocked down to its ground, which is then free ground of whoever knocked it down
     }
 
     /// <summary>Where a project stands, from the plans to the keys. Saved as a number.</summary>
@@ -555,8 +556,8 @@ namespace RealLifeOverhaul.Construction
 
         // ------------------------------------------------------------------ tenders
 
-        /// <summary>Money a working hour of the city's sites pays, by the programme's kind (roadworks, scaffold, refit, utility, rebuild, plot).</summary>
-        public static readonly int[] WorksRate = { 1900, 1500, 1700, 2200, 3800, 4200 };
+        /// <summary>Money a working hour of the city's sites pays, by the programme's kind (roadworks, scaffold, refit, utility, rebuild, plot, demolition).</summary>
+        public static readonly int[] WorksRate = { 1900, 1500, 1700, 2200, 3800, 4200, 3000 };
 
         /// <summary>Materials a working hour of those sites takes, by material, in thousandths of a load.</summary>
         public static readonly int[][] WorksLoads =
@@ -566,7 +567,8 @@ namespace RealLifeOverhaul.Construction
             new[] { 0, 0, 0, 20, 30 },
             new[] { 0, 20, 0, 0, 0 },
             new[] { 0, 0, 30, 20, 20 },
-            new[] { 30, 20, 20, 10, 10 }
+            new[] { 30, 20, 20, 10, 10 },
+            new[] { 0, 0, 0, 0, 0 }      // a demolition takes nothing in: its rubble goes out (RedevelopRules.RubbleCost)
         };
 
         /// <summary>People of each trade the city's works need at their usual pace, by the programme's kind (roadworks to plot).</summary>
@@ -577,7 +579,8 @@ namespace RealLifeOverhaul.Construction
             new[] { 1, 2, 0, 1, 1 },
             new[] { 2, 0, 0, 1, 2 },
             new[] { 2, 3, 0, 1, 1 },
-            new[] { 2, 3, 1, 1, 1 }
+            new[] { 2, 3, 1, 1, 1 },
+            new[] { 4, 1, 1, 0, 0 }      // labourers, a mason for the walls, a crane operator for the machines and the skip
         };
 
         /// <summary>Plant the city's works need the whole time, by the programme's kind (crane, digger, mixer, scaffold).</summary>
@@ -588,7 +591,8 @@ namespace RealLifeOverhaul.Construction
             new[] { 0, 0, 0, 1 },
             new[] { 0, 1, 0, 0 },
             new[] { 0, 0, 1, 1 },
-            new[] { 1, 1, 1, 1 }
+            new[] { 1, 1, 1, 1 },
+            new[] { 0, 1, 0, 1 }         // the digger and the scaffold the building is wrapped in
         };
 
         public const int TenderHours = 30;                      // hours a tender is open: bids close the next day

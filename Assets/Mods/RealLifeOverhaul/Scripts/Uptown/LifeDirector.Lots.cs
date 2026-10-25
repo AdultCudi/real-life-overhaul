@@ -122,7 +122,7 @@ namespace RealLifeOverhaul.Uptown
             bool known = FindLot(lotId, out BuildingsLot lot);
             bool structure = known && MadeGame.StructureTakes(size, version, type);
             bool spanned = over != null && over.Count > 0;
-            why = BuildingsRules.FinishRefusal(lot, known, Taken(lotId), size, version, type, storeys, owner, price, structure, Lives, GoingPublic.InSession, spanned);
+            why = BuildingsRules.FinishRefusal(lot, known, Taken(lotId), size, version, type, storeys, owner, price, structure, Lives, GoingPublic.InSession, spanned, Cleared(lotId));
             if (why == null && spanned)
             {
                 why = SpanWhy(lotId, over);

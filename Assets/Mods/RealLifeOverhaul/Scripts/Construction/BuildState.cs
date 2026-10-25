@@ -188,11 +188,13 @@ namespace RealLifeOverhaul.Construction
 
         public string FitDesign = string.Empty;      // a refit's new furnishing: one of the game's interior designs for the unit, installed at the handover; empty keeps the furniture
         public string FitType = string.Empty;        // the firm's folder of that design: the business's type, or the game's empty business for a home or an empty unit
+        public int NoticeUntil;                      // the last day of the notice given to a building's tenants and business before its works; 0 for none
+        public long BuyOut;                          // what buying its tenants and business out cost, paid as the notice ran out; -1 when nothing was due, 0 before
 
         public bool Live => Stage != ProjectStage.Finished && Stage != ProjectStage.Abandoned;
 
-        /// <summary>True for the player's own building put up by one of the city's builders under contract (a refit by one is not).</summary>
-        public bool Hired => Contractor >= 0 && Kind != ProjectKind.Refit;
+        /// <summary>True for the player's own building put up by one of the city's builders under contract (a refit or a demolition paid at once by one is not).</summary>
+        public bool Hired => Contractor >= 0 && Kind != ProjectKind.Refit && Kind != ProjectKind.Demolition;
 
         /// <summary>True while its show flat is open.</summary>
         public bool ShowOpen => ShowSince > 0 && !string.IsNullOrEmpty(ShowDesign);
@@ -219,9 +221,9 @@ namespace RealLifeOverhaul.Construction
         {
             get
             {
-                if (Kind == ProjectKind.Refit)
+                if (Kind == ProjectKind.Refit || Kind == ProjectKind.Demolition)
                 {
-                    return ProjectKind.Contract;
+                    return ProjectKind.Contract;   // worked as the programme's works of its kind: their crews, plant, hours and one final inspection
                 }
                 if (Kind != ProjectKind.Contract)
                 {

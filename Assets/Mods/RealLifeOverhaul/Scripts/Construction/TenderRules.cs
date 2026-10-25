@@ -53,6 +53,8 @@ namespace RealLifeOverhaul.Construction
                     return Speciality.Roads;
                 case 5:
                     return use == BuildUse.Homes ? Speciality.Homes : Speciality.Offices;
+                case RedevelopRules.DemolitionWorks:
+                    return Speciality.Demolition;
                 default:
                     return Speciality.Renovation;
             }

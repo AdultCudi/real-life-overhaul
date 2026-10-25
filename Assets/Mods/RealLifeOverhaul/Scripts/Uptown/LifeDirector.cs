@@ -219,7 +219,10 @@ namespace RealLifeOverhaul.Uptown
             BuildingsRules.Built(Plan, DistrictBuildings.KeptOpen, LifeGame.AwayX, LifeGame.AwayZ, Built);
             for (int i = 0; i < Built.Count; i++)
             {
-                BuiltLots.Add(Plan[Built[i]].Id);
+                if (!Unbuilt(Plan[Built[i]].Id))
+                {
+                    BuiltLots.Add(Plan[Built[i]].Id);   // a lot knocked down, or under a building finished over it, stands nothing of its own
+                }
             }
             int finished = 0, refused = 0, leased = 0, special = 0;
             for (int i = 0; i < Plan.Count; i++)
@@ -230,6 +233,10 @@ namespace RealLifeOverhaul.Uptown
                     continue;   // taken from the start for every feature, so no save holds a building there (a big place's whose place stands)
                 }
                 FinishedBuilding f = _state.On(lot.Id);
+                if (f == null && Unbuilt(lot.Id))
+                {
+                    continue;   // knocked down and not built on again, or under another building: its records were let go with its building
+                }
                 if (f == null && !BuiltLots.Contains(lot.Id))
                 {
                     if (!LifeGame.Kept(lot))
