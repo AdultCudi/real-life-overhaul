@@ -66,6 +66,10 @@ namespace RealLifeOverhaul.Uptown
                 Rename(reg, lease);
                 renamed = true;
             }
+            if (verdict != LeaseVerdict.MoveIn)
+            {
+                LentLayout(reg, record);
+            }
             Claim(made, lease, index);
             return null;
         }
@@ -90,7 +94,7 @@ namespace RealLifeOverhaul.Uptown
                                                                      + "|" + (save != null ? save.seed : string.Empty)));
             try
             {
-                CompetitionHelper.StartNewCompetitorBusiness(lease.BusinessType, reg, impactMarket: false, from, string.Empty, setUpFirstDailyIncome: false);
+                CompetitionHelper.StartNewCompetitorBusiness(lease.BusinessType, reg, impactMarket: false, Lent(from, lease.BusinessType), string.Empty, setUpFirstDailyIncome: false);
             }
             finally
             {
@@ -106,6 +110,42 @@ namespace RealLifeOverhaul.Uptown
                 reg.dailyIncomes.Add(lease.DailyIncome);
             }
             Changed(reg);
+        }
+
+        // A copy of the lending AI business naming the lessee's type and the lent layout's name (Borrow's), kept for the session:
+        // the game's own AI businesses never name a lent layout, so its generator and daily pass, which pick a layout only
+        // where one of them names it, never meet one and never start a business of the lessee's type from none.
+        private static AiBusinessDefault Lent(AiBusinessDefault from, string type)
+        {
+            string name = LentPrefix + from.buildingLayout;
+            for (int i = 0; i < LentDefaults.Count; i++)
+            {
+                if (LentDefaults[i] != null && LentDefaults[i].businessTypeName == type && LentDefaults[i].buildingLayout == name && LentDefaults[i].businessName == from.businessName)
+                {
+                    return LentDefaults[i];
+                }
+            }
+            AiBusinessDefault copy = UnityEngine.Object.Instantiate(from);
+            copy.hideFlags = UnityEngine.HideFlags.DontUnloadUnusedAsset;
+            copy.businessTypeName = type;
+            copy.buildingLayout = name;
+            LentDefaults.Add(copy);
+            return copy;
+        }
+
+        // A lease's office from before the lent layouts' names (the design studio's own, filed under the lessee's type) given the
+        // lent one, so the game still finds its furniture, staff and valuation.
+        private static void LentLayout(BuildingRegistration reg, Building record)
+        {
+            string layout = reg.Layout;
+            if (string.IsNullOrEmpty(layout) || layout.StartsWith(LentPrefix, StringComparison.Ordinal))
+            {
+                return;
+            }
+            if (BusinessLayoutSetHelper.GetOrLoadBusinessLayoutSet(reg.businessTypeName, new BuildingSizeInfo(record), LentPrefix + layout, warnIfNotFound: false) != null)
+            {
+                reg.Layout = LentPrefix + layout;
+            }
         }
 
         // A registration changed under the game's own drawing of it: the sign drawn again (the game's start drew it before the
@@ -151,8 +191,9 @@ namespace RealLifeOverhaul.Uptown
         /// The business type <paramref name="to"/> laid out as <paramref name="from"/>: each of the game's layout sets of
         /// <paramref name="from"/> filed under <paramref name="to"/> as well, in the game's own cache of them, so the game finds a
         /// layout for an AI business of <paramref name="to"/> (its furniture when the player goes in, its staff, its valuation).
-        /// The game makes no business of <paramref name="to"/> itself, having no AI business of that type, so its own picks are
-        /// as before. Looked at once a load; null when every set is there, else why not.
+        /// Each is filed by a name of the mod's (<see cref="LentPrefix"/> and the set's own), which no AI business of the game's
+        /// names: the game's generator and daily pass pick a layout only where one of its AI businesses names it, so they never
+        /// meet a lent one and never start a business of <paramref name="to"/>. Looked at once a load; null when every set is there.
         /// </summary>
         private static string Borrow(string from, string to)
         {
@@ -186,18 +227,19 @@ namespace RealLifeOverhaul.Uptown
             {
                 BusinessLayoutSet set = Borrowed[i];
                 var size = new BuildingSizeInfo(set);
-                if (BusinessLayoutSetHelper.GetOrLoadBusinessLayoutSet(to, size, set.LayoutName, warnIfNotFound: false) != null)
+                string name = LentPrefix + set.LayoutName;   // a name no AI business of the game's has (Lent)
+                if (BusinessLayoutSetHelper.GetOrLoadBusinessLayoutSet(to, size, name, warnIfNotFound: false) != null)
                 {
                     continue;   // filed at an earlier load of this run
                 }
                 var lent = new BusinessLayoutSet
                 {
                     Items = set.Items, interiorDesigns = set.interiorDesigns, BusinessType = to, BuildingSize = set.BuildingSize, BuildingVersion = set.BuildingVersion,
-                    LayoutName = set.LayoutName, buildNumber = set.buildNumber, requiredModIds = set.requiredModIds
+                    LayoutName = name, buildNumber = set.buildNumber, requiredModIds = set.requiredModIds
                 };
-                string key = LayoutKey(to, set.BuildingSize, set.BuildingVersion, set.LayoutName);
+                string key = LayoutKey(to, set.BuildingSize, set.BuildingVersion, name);
                 all[key] = lent;
-                if (BusinessLayoutSetHelper.GetOrLoadBusinessLayoutSet(to, size, set.LayoutName, warnIfNotFound: false) != lent)
+                if (BusinessLayoutSetHelper.GetOrLoadBusinessLayoutSet(to, size, name, warnIfNotFound: false) != lent)
                 {
                     all.Remove(key);
                     Borrowed.Clear();

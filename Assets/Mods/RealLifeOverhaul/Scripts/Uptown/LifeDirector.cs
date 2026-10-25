@@ -486,12 +486,12 @@ namespace RealLifeOverhaul.Uptown
             }
             int leased = Leases(save, out int renamed);
             int specials = Specials();
-            if (!_state.Opened && !_stateUnread)
+            if (!_state.Mixed && !_stateUnread)
             {
-                int opened = LifeGame.OpenUnits(Standing, Another, save, out string openSaid);
-                _state.Opened = true;   // once a save: the units the game's own days empty later are the game's to let or fill
+                int changed = LifeGame.Mix(Standing, Standing, Another, save, out string mixSaid);
+                _state.Mixed = _state.Opened = true;   // once a save: the units the game's own days change later are the game's to let or fill
                 WriteState();
-                Logger?.Info("Uptown: the opening pass after the game's generator gave " + opened + " empty unit(s) businesses of the game's (" + openSaid + ").");
+                Logger?.Info("Uptown: the mix pass after the game's generator changed " + changed + " unit(s) (" + mixSaid + ").");
             }
             else if (!_stateUnread)
             {
@@ -510,7 +510,7 @@ namespace RealLifeOverhaul.Uptown
             return true;
         }
 
-        // The opening pass for the buildings new to a save the district lived in, those alone (the game's generator ran for
+        // The mix pass for the buildings new to a save the district lived in, those alone (the game's generator ran for
         // them alone), each lot's share of units kept to let worked out among them, every one marked so it is filled once;
         // the businesses already in the district stay as they are.
         private static void OpenLater(GameInstance save)
@@ -527,17 +527,17 @@ namespace RealLifeOverhaul.Uptown
             {
                 return;
             }
-            int opened = LifeGame.OpenUnits(NewOnes, Another, save, out string openSaid);
+            int changed = LifeGame.Mix(NewOnes, Standing, Another, save, out string mixSaid);
             for (int i = 0; i < NewOnes.Count; i++)
             {
                 _state.MarkOpened(NewOnes[i].Spec.Id);
             }
-            Logger?.Info("Uptown: the opening pass for its " + NewOnes.Count + " building(s) new to this save gave " + opened + " empty unit(s) businesses of the game's (" + openSaid + ").");
+            Logger?.Info("Uptown: the mix pass for its " + NewOnes.Count + " building(s) new to this save changed " + changed + " unit(s) (" + mixSaid + ").");
             NewOnes.Clear();
             WriteState();
         }
 
-        // A building the opening pass leaves alone: a lease's lot (its business moves in by the lease), or one the mod holds
+        // A building the mix pass leaves alone: a lease's lot (its business moves in by the lease), or one the mod holds
         // in the special buildings' book for a place of its own.
         private static bool Another(MadeBuilding made)
         {

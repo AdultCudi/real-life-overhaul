@@ -26,8 +26,11 @@ namespace RealLifeOverhaul.Uptown
     {
         public readonly List<FinishedBuilding> Finished = new List<FinishedBuilding>(8);
 
-        /// <summary>The opening pass has run in this save (LifeGame.OpenUnits): once, so the units the game's own days empty later stay its own.</summary>
+        /// <summary>The opening pass has run in this save (an earlier build's, its work now the mix pass's, LifeGame.Mix): once, so the units the game's own days empty later stay its own.</summary>
         public bool Opened;
+
+        /// <summary>The mix pass has run in this save (LifeGame.Mix: a third free to rent, a street's kinds): once, after the opening pass it takes the place of.</summary>
+        public bool Mixed;
 
         /// <summary>Lots new to the save after the first pass that a later pass has been over: each is filled once.</summary>
         public readonly List<string> OpenedLots = new List<string>(8);
@@ -87,7 +90,7 @@ namespace RealLifeOverhaul.Uptown
 
     /// <summary>
     /// The district's line in the save, game-free: one line under <see cref="Key"/>, "v=1^f:finished" and "^o:1" once the
-    /// opening pass has run, "^n:lot,lot" for the lots a later pass has been over and "^g:2" the plan's generation its
+    /// opening pass has run, "^x:1" once the mix pass has, "^n:lot,lot" for the lots a later pass has been over and "^g:2" the plan's generation its
     /// lots are of (none: the first plan, LifeStore.PlanOf), records divided by ';'
     /// and fields by '|' (lot, size, version, type, design, storeys, owner, price, day, settled, the other lots it stands over joined by ','), in the order
     /// <see cref="Write"/> joins them. A newer version adds fields at the end of a record, or a part with a new letter: this
@@ -156,6 +159,11 @@ namespace RealLifeOverhaul.Uptown
                 if (part == "o:1")
                 {
                     state.Opened = true;
+                    continue;
+                }
+                if (part == "x:1")
+                {
+                    state.Mixed = true;
                     continue;
                 }
                 if (part.StartsWith("n:", StringComparison.Ordinal))
@@ -300,6 +308,10 @@ namespace RealLifeOverhaul.Uptown
             if (s.Opened)
             {
                 t.Append("^o:1");
+            }
+            if (s.Mixed)
+            {
+                t.Append("^x:1");
             }
             if (s.OpenedLots.Count > 0)
             {
