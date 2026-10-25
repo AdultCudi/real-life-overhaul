@@ -531,10 +531,10 @@
         /// <summary>Raised after the options were read again (a preset, an import, a reset): anything that caches a value looks again.</summary>
         public static event System.Action Changed;
 
-        /// <summary>The mod's id once the options were read; null before.</summary>
+        /// <summary>The id the options are kept under once they were read (the mod's own, never the copy's); null before.</summary>
         public static string ModId => _modId;
 
-        /// <summary>The PlayerPrefs key of one of the mod's options, in the game's own format.</summary>
+        /// <summary>The PlayerPrefs key of one of the mod's options, in the game's own format, under the mod's own id.</summary>
         public static string PrefsKey(string id) => _modId == null ? null : Key(_modId, id);
 
         /// <summary>Reads every option again from PlayerPrefs and tells whoever listens. Never called per frame.</summary>
@@ -686,7 +686,19 @@
             }
         }
 
-        public static void Load(string modId)
+        /// <summary>
+        /// Once at game start. The game names each copy of the mod differently (<paramref name="running"/>: the Workshop item's
+        /// number, or a ModsLocal folder's path), so the options are kept under the mod's own id instead, and what an older
+        /// version kept under a copy's id is brought over first (Core/OptionKeys).
+        /// </summary>
+        public static void Start(string running)
+        {
+            OptionKeys.Bring(running);
+            Load(OptionKeysRules.FixedId);
+        }
+
+        // modId is always OptionKeysRules.FixedId: from Start, and from Reload as _modId.
+        private static void Load(string modId)
         {
             Meta.SettingsTable.CaptureDefaults();   // the shipped values, before the first saved one replaces them
             bool starting = _modId == null;   // the first read in this run of the game: no save is loaded yet
@@ -766,7 +778,7 @@
             SmoothThrottle = Bool(modId, SmoothThrottleId, SmoothThrottle);
             // The old single slider's value means nothing to the two per-car sliders: dropped, so they start at 100.
             UnityEngine.PlayerPrefs.DeleteKey(Key(modId, CarSpeedId));
-            Keys.Load(modId);
+            Keys.Load();
             Speedometer = Bool(modId, SpeedometerId, Speedometer);
             Handling = Int(modId, HandlingId, Handling);
             HandlingSoftness = Int(modId, HandlingSoftnessId, HandlingSoftness);
@@ -788,7 +800,7 @@
             CharacterLighting = Bool(modId, CharacterLightingId, CharacterLighting);
             CharacterNewLooks = Bool(modId, CharacterNewLooksId, CharacterNewLooks);
             CharacterSkin = Bool(modId, CharacterSkinId, CharacterSkin);
-            CharacterCatalogue.Load(modId);
+            CharacterCatalogue.Load();
             CrimeAgainstPlayer = Bool(modId, CrimeAgainstPlayerId, CrimeAgainstPlayer);
             PlayerOffences = Bool(modId, PlayerOffencesId, PlayerOffences);
             PolicePresence = Int(modId, PolicePresenceId, PolicePresence);
@@ -797,9 +809,9 @@
             CityWorkers = Bool(modId, CityWorkersId, CityWorkers);
             CityEveryday = Bool(modId, CityEverydayId, CityEveryday);
             CityInteractions = Bool(modId, CityInteractionsId, CityInteractions);
-            PerfTweaks.Load(modId);
-            JusticeSettings.Load(modId);   // courts and prison (Scripts/Justice)
-            RoommateOptions.Load(modId);   // sharing the flat (Scripts/Home/Roommates)
+            PerfTweaks.Load();
+            JusticeSettings.Load();   // courts and prison (Scripts/Justice)
+            RoommateOptions.Load();   // sharing the flat (Scripts/Home/Roommates)
             Jobs = Bool(modId, JobsId, Jobs);
             JobPay = Int(modId, JobPayId, JobPay);
             JobTaxiEasy = Bool(modId, JobTaxiEasyId, JobTaxiEasy);

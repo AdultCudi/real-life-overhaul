@@ -47,7 +47,7 @@ namespace RealLifeOverhaul
             context = Meta.Dev.Gated(context);   // Info lines only while Developer diagnostics is on (read below)
             _context = context;
             Keys.Logger = context.Logger;
-            Settings.Load(context.ModId);
+            Settings.Start(context.ModId);   // the copy's id only says where older versions kept the options
             Economy.Dealership.DealerType.Logger = log;
             Guard.Step("the car dealership's business type", () => Economy.Dealership.DealerType.Register());   // before any save is read
             Meta.Dev.Gated(context);   // the option has been read now
@@ -1193,8 +1193,13 @@ namespace RealLifeOverhaul
                 .Guarded(o => o.AddControls())
                 .Guarded(o => o.AddPerformance());
 
-            // Meta puts the finished page in order (sections, presets, guide, test tools).
-            OptionsService.Register(context.ModId, Guard.Rows(Guard.Organised(context, options)));   // the page as added, if putting it in order fails
+            if (OptionKeys.Finish(options, log))
+            {
+                Settings.Reload();   // a row's value was found only now: everything reads it before the page is put in order
+            }
+            // Meta puts the finished page in order (sections, presets, guide, test tools). Under the mod's own id, so the game's own
+            // controls save where the mod reads, whatever the game calls this copy.
+            OptionsService.Register(OptionKeysRules.FixedId, Guard.Rows(Guard.Organised(context, options)));   // the page as added, if putting it in order fails
             log.Info("Real Life Overhaul " + Meta.Changelog.Version + " initialised.");
             return Task.CompletedTask;
         }
@@ -1212,7 +1217,7 @@ namespace RealLifeOverhaul
                 return Task.CompletedTask;   // the load did not get as far as registering anything
             }
             Meta.OptionsLayout.Dispose();
-            OptionsService.RemoveModOptions(_context.ModId);
+            OptionsService.RemoveModOptions(OptionKeysRules.FixedId);
             Keys.Dispose();
             EmpireView.Release();   // Empire Motors' driver's seat view as it was without this mod
             Economy.Dealership.DealerType.Unregister();

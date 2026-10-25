@@ -179,7 +179,7 @@ Every phone contact the mod adds has an id that starts `reallife-`. The save too
 ## Key bindings
 
 Every key the mod acts on is an action in `Core/Keys.cs` (`KeyAction`): an id, a default key and an optional Shift/Ctrl/Alt.
-Saved bindings are read at game start from PlayerPrefs (`m:<mod id>:key_<action id>`), and changed under "Controls" on the options page: a button per action that takes the next key pressed (hold a modifier with it for a combination; Esc cancels; the left mouse button and gamepads are not offered), and a reset button.
+Saved bindings are read at game start from PlayerPrefs (`m:RealLifeOverhaul:key_<action id>`, the same for every copy of the mod), and changed under "Controls" on the options page: a button per action that takes the next key pressed (hold a modifier with it for a combination; Esc cancels; the left mouse button and gamepads are not offered), and a reset button.
 
 A key the game itself has bound is allowed and named beside the button (read from the game's live bindings, its defaults if those cannot be read).
 

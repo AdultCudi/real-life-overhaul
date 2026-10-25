@@ -13,9 +13,9 @@ namespace RealLifeOverhaul.Roommates
 
         public static bool Enabled = true;
 
-        public static void Load(string modId)
+        public static void Load()
         {
-            Enabled = UnityEngine.PlayerPrefs.GetInt("m:" + modId + ":" + EnabledId, Enabled ? 1 : 0) != 0;   // (the key format the game saves mod options under, as Core/Settings)
+            Enabled = UnityEngine.PlayerPrefs.GetInt(OptionKeysRules.Key(EnabledId), Enabled ? 1 : 0) != 0;
         }
     }
 
@@ -98,9 +98,9 @@ namespace RealLifeOverhaul
     /// <summary>The roommate's place on the options page and in the mod's start-up, under the mod's own namespace so that each is one line there.</summary>
     public static class RoommateOptions
     {
-        public static void Load(string modId)
+        public static void Load()
         {
-            Roommates.RoommateSettings.Load(modId);
+            Roommates.RoommateSettings.Load();
         }
 
         public static ModOptions AddRoommates(this ModOptions options)
