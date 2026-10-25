@@ -101,6 +101,7 @@ namespace RealLifeOverhaul.Economy
                 RemoveApp();
                 return;   // another city's director has started since: the state and the figures are its own
             }
+            PickedRaiseGame.Keep(false);   // the game's lists outlive the city: the action goes with the director that answers it
             // The city is unloading: nothing is written to the save here, only when the game saves.
             try
             {
@@ -230,6 +231,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     StandDown(!Settings.EconomyCompany ? "the option is off" : "the credit side is not running", true, true, false);
                 }
+                PickedRaiseGame.Keep(false);
                 return;
             }
             if (!_running)
@@ -237,6 +239,7 @@ namespace RealLifeOverhaul.Economy
                 StartUp();
             }
             SaveHook.Keep(_onSave);
+            PickedRaiseGame.Keep(On(CompanyPart.Staff));   // "Give a raise" among My Employees' actions while raises can be given
             if (_app == null && !_gaveUp)
             {
                 Install();

@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using BAModAPI;
+using Streets;
 using UI.Load;
 using UI.Notification;
 using UnityEngine;
@@ -21,6 +22,7 @@ namespace RealLifeOverhaul.Tech
         public static TechDirector Instance { get; private set; }
 
         private Action _onSave, _onHour, _onDay, _hourSeen, _daySeen;
+        private Action<Address> _onRegChange, _regChangeSeen;   // a building's record changed: a warehouse may have been taken
         private bool _broken;
         private TechNews _news;
         private GameInstance _newsOf;   // the save _news was read from
@@ -41,6 +43,7 @@ namespace RealLifeOverhaul.Tech
             _onSave = OnSave;
             _onHour = Guard.Wrap(OnHour);
             _onDay = Guard.Wrap(OnDay);
+            _onRegChange = Guard.Wrap<Address>(OnRegistrationChange);
             StartCoroutine(Guard.Routine(Tick()));
         }
 
@@ -49,6 +52,7 @@ namespace RealLifeOverhaul.Tech
             SaveHook.Drop(_onSave);
             GlobalEvents.onNewHour -= _onHour;
             GlobalEvents.onNewDay -= _onDay;
+            GlobalEvents.onBuildingRegistrationChange -= _onRegChange;
             try
             {
                 StopParts(false, true);
@@ -156,6 +160,10 @@ namespace RealLifeOverhaul.Tech
             if (_firmsOn && _techApp == null && !_techGaveUp)
             {
                 InstallTech();
+            }
+            if (_firmsOn)
+            {
+                KeepWarehouses();
             }
         }
 

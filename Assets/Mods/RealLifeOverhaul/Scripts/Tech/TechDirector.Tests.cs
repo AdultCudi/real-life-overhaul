@@ -155,7 +155,7 @@ namespace RealLifeOverhaul.Tech
             for (int i = 0; i < _hiring.Ads.Count; i++)
             {
                 JobAd ad = _hiring.Ads[i];
-                if (ad.Search && ad.Came == 0)
+                if (ad.Search && !ad.CrewSearch && ad.Came == 0)
                 {
                     ad.Due = Save.Day;
                     HiringRules.Deliver(_hiring, ad, Save.Day, _rate, ShortageOf(TalentCatalogue.Role(ad.Role).Family), _districts);
@@ -166,6 +166,46 @@ namespace RealLifeOverhaul.Tech
                 }
             }
             Notifications.ShowError("reallife_hire_test_no_search");
+        }
+
+        /// <summary>
+        /// Test: the oldest data centre crew search not yet delivered delivers now, by the day's own rule. PASS when it brings the
+        /// candidates its brief asks for, of its role, junior to staff level, shortlisted for it, and nothing is charged.
+        /// </summary>
+        public void TestCrewSearch()
+        {
+            if (!_hiringOn || Save == null)
+            {
+                Notifications.ShowError("reallife_hire_test_off");
+                return;
+            }
+            for (int i = 0; i < _hiring.Ads.Count; i++)
+            {
+                JobAd ad = _hiring.Ads[i];
+                if (!ad.CrewSearch || ad.Came > 0)
+                {
+                    continue;
+                }
+                int paid = ad.FeePaid, before = _hiring.Applicants.Count;
+                ad.Due = Save.Day;
+                int found = HiringRules.DeliverCrew(_hiring, ad, Save.Day, _rate, ShortageOf(TalentCatalogue.Role(ad.Role).Family), _districts);
+                NameSeekers();
+                int fit = 0;
+                for (int k = before; k < _hiring.Applicants.Count; k++)
+                {
+                    Applicant a = _hiring.Applicants[k];
+                    Seeker s = _hiring.SeekerOf(a.Seeker);
+                    fit += a.Ad == ad.Id && a.Stage == (int)ApplyStage.Shortlisted && s != null && s.P.Role == ad.Role && s.P.Level >= HiringCatalogue.CrewLeastLevel
+                           && s.P.Level <= HiringCatalogue.CrewMostLevel && s.Passive ? 1 : 0;
+                }
+                bool ok = found == HiringRules.CrewCandidates(ad.Crew) && fit == found && ad.FeePaid == paid && ad.Hired == 0;
+                Logger?.Info("Tech check (a crew search for " + ad.Crew + " at " + ad.Place + "): " + found + " candidate(s) of " + HiringRules.CrewCandidates(ad.Crew) + " wanted, "
+                             + fit + " of the role and level shortlisted for it, nothing more charged (" + paid + " to " + ad.FeePaid + " cents): " + (ok ? "PASS" : "FAIL"));
+                Notifications.Show(ok ? NotificationType.Success : NotificationType.Error, ok ? "reallife_crew_test_pass" : "reallife_crew_test_fail", null, 10f);
+                Changed();
+                return;
+            }
+            Notifications.ShowError("reallife_crew_test_none");
         }
 
         private Product TestLive()

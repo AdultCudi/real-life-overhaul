@@ -58,6 +58,13 @@ namespace RealLifeOverhaul.Tech
             return null;
         }
 
+        /// <summary>Open Roles on the page that briefs a search firm for a data centre's crew, that centre chosen.</summary>
+        internal void BriefCrew(string centre)
+        {
+            _rolesView?.WantCrew(centre);
+            OpenRoles(TabSearch, RolesApp.NewCrewRow);
+        }
+
         public void OpenRoles(int tab, string pick)
         {
             if (_rolesApp != null && _rolesView != null)

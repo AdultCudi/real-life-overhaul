@@ -174,6 +174,7 @@
         public const string TechJobsId = "tech_jobs";
         public const string TechSectorId = "tech_sector";
         public const string TechOfferNotesId = "tech_offer_notes";
+        public const string TechInfraOfferId = "tech_infra_offer";
         public const string TechStartupsId = "tech_startups";
         public const string TechSiteRoomsId = "tech_site_rooms";
         public const string TechSiteHqId = "tech_site_hq";
@@ -509,6 +510,7 @@
         public static bool TechJobs = true;              // the jobs board and the labour market (off: the game's own hiring alone)
         public static bool TechSector = true;            // the tech sector (off: those businesses earn nothing of their own; their files are kept)
         public static bool TechOfferNotes = true;        // ...a notification for each client's contract offer and each council tender
+        public static bool TechInfraOffer = true;        // ...asked whether a warehouse just taken is to be a data centre
         public static bool TechSiteRooms = true;         // a data centre's server room furnished while the player is inside
         public static bool TechSiteHq = true;            // the city's tech companies each given an empty office building as their headquarters
         public static bool TechSiteCloud = true;         // the player's data centres signed with the cloud's name, a booth and a barrier, "Your cloud" on the map
@@ -901,6 +903,7 @@
             TechJobs = Bool(modId, TechJobsId, TechJobs);
             TechSector = Bool(modId, TechSectorId, TechSector);
             TechOfferNotes = Bool(modId, TechOfferNotesId, TechOfferNotes);
+            TechInfraOffer = Bool(modId, TechInfraOfferId, TechInfraOffer);
             TechStartups = Bool(modId, TechStartupsId, TechStartups);
             TechSiteRooms = Bool(modId, TechSiteRoomsId, TechSiteRooms);
             TechSiteHq = Bool(modId, TechSiteHqId, TechSiteHq);

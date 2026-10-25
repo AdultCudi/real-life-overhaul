@@ -336,14 +336,15 @@ namespace RealLifeOverhaul.Meta
             Tech.TechGuide.AddHiringFacts(Features.Add("tech_jobs", "reallife_meta_title_tech_jobs")
                 .About("reallife_guide_tech_jobs_about").Help("reallife_guide_tech_jobs")
                 .Owns(Settings.TechJobsId)
-                .Test("reallife_hire_test_applicants", "reallife_hire_test_market", "reallife_hire_test_search", "reallife_hire_test_orphan")
+                .Test("reallife_hire_test_applicants", "reallife_hire_test_market", "reallife_hire_test_search", "reallife_hire_test_orphan", "reallife_crew_test")
                 .Data(Tech.HiringStore.Key)
                 .Cleanup(() => Tech.TechDirector.Instance?.StopAll(), -2)
                 .ResetData(() => Tech.TechDirector.Instance?.Forget()));
             Tech.TechGuide.AddSectorFacts(Features.Add("tech_sector", "reallife_meta_title_tech_sector")
                 .About("reallife_guide_tech_sector_about").Help("reallife_guide_tech_sector")
-                .Owns(Settings.TechSectorId, Settings.TechOfferNotesId)
-                .Test("reallife_tech_test_offer", "reallife_tech_test_tender", "reallife_tech_test_outage", "reallife_tech_test_breach", "reallife_infra_test_down", "reallife_infra_test_price_war")
+                .Owns(Settings.TechSectorId, Settings.TechOfferNotesId, Settings.TechInfraOfferId)
+                .Test("reallife_tech_test_offer", "reallife_tech_test_tender", "reallife_tech_test_outage", "reallife_tech_test_breach", "reallife_infra_test_down",
+                    "reallife_infra_test_price_war", "reallife_infra_test_offer")
                 .Data(Tech.FirmsStore.Key, Tech.InfraStore.Key)
                 .Cleanup(() => Tech.TechDirector.Instance?.StopAll(), -2)
                 .ResetData(() => Tech.TechDirector.Instance?.Forget()));

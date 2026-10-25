@@ -108,6 +108,7 @@ namespace RealLifeOverhaul.Economy
                 box.Note(CompanyText.T("reallife_co_staff_sick_what", "share", CompanyText.Share(CompanyCatalogue.SickShare[state.SickPolicy]),
                     "standing", CompanyText.Percent(CompanyCatalogue.SickStanding[state.SickPolicy]).TrimEnd('%')));
                 box.Note(CompanyText.T("reallife_co_staff_market"));
+                box.Note(CompanyText.T("reallife_co_staff_picked"));   // several at once go through the game's own list, where people are picked
                 Guide(box);
             }
         }
