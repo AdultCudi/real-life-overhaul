@@ -59,7 +59,8 @@ namespace RealLifeOverhaul.Roommates
             return null;
         }
 
-        private static bool IsHome(BuildingRegistration r)
+        /// <summary>True for a home: a residential building, the city's flats and the Hamptons houses alike (both are the game's residential type).</summary>
+        public static bool IsHome(BuildingRegistration r)
         {
             try
             {
