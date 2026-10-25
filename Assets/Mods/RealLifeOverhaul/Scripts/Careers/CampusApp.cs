@@ -15,7 +15,8 @@ namespace RealLifeOverhaul.Careers
 
         private static readonly string[] TabKeys =
         {
-            "reallife_campus_tab_courses", "reallife_campus_tab_studying", "reallife_campus_tab_results", "reallife_campus_tab_skills", "reallife_campus_tab_family"
+            "reallife_campus_tab_courses", "reallife_campus_tab_studying", "reallife_campus_tab_results", "reallife_campus_tab_skills", "reallife_campus_tab_family",
+            "reallife_schools_tab"
         };
 
         private readonly CareersDirector _director;
@@ -148,6 +149,7 @@ namespace RealLifeOverhaul.Careers
                         case CareersDirector.TabResults: table = WriteResults(box, f); break;
                         case CareersDirector.TabSkills: table = WriteSkills(box, f, day); break;
                         case CareersDirector.TabFamily: table = WriteFamily(box); break;
+                        case TabSchools: table = WriteSchools(box); break;
                         default: table = WriteCourses(box, f); break;
                     }
                 }

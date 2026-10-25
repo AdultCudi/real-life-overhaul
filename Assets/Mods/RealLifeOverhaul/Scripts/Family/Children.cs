@@ -300,7 +300,7 @@ namespace RealLifeOverhaul.Family
                         ChildRecord c = s.Children[i];
                         if (!c.Grown && c.School > 0 && c.Age < 12f)
                         {
-                            Errands.Add(Errands.SchoolRun, day, hour, 10, i);
+                            AtSchool(Errands.Add(Errands.SchoolRun, day, hour, 10, i), c);
                             break;
                         }
                     }
@@ -345,7 +345,7 @@ namespace RealLifeOverhaul.Family
         internal static int WeekCharges(out int care, out int school, out int pocket)
         {
             FamilySave s = FamilyState.S;
-            int small = 0, privateSchool = 0;
+            int small = 0, privateSchool = 0, campusDay = 0;
             pocket = 0;
             for (int i = 0; i < s.Children.Count; i++)
             {
@@ -360,7 +360,15 @@ namespace RealLifeOverhaul.Family
                 }
                 if (c.School == 2)
                 {
-                    privateSchool++;
+                    int fee = CampusFee(c);
+                    if (fee >= 0)
+                    {
+                        campusDay += fee;   // at the schools' campus: its own fee, none at the player's own school
+                    }
+                    else
+                    {
+                        privateSchool++;
+                    }
                 }
                 if (c.Age >= FamilyBalance.PocketFrom && c.Pocket > 0)
                 {
@@ -377,8 +385,34 @@ namespace RealLifeOverhaul.Family
                 care = FamilyBalance.NannyPerDay * 7;
             }
             care = Mathf.RoundToInt(care * Share);
-            school = Mathf.RoundToInt(FamilyBalance.PrivateSchoolPerDay * 7 * privateSchool * Share);
+            school = Mathf.RoundToInt((FamilyBalance.PrivateSchoolPerDay * privateSchool + campusDay) * 7 * Share);
             return care + school + pocket;
+        }
+
+        // A child's day of fees at the schools' campus, or -1 when they are not there (or the schools are not wired).
+        private static int CampusFee(ChildRecord c)
+        {
+            ISchoolBridge school = FamilyBridges.School;
+            return school != null ? school.FeeFor(c.Name) : -1;
+        }
+
+        /// <summary>How a child's school lifts their reports and a parents' evening: the campus's results, else a private school's twelve points.</summary>
+        internal static float SchoolStanding(ChildRecord c)
+        {
+            ISchoolBridge school = FamilyBridges.School;
+            float campus = school != null ? school.StandingOf(c.Name) : float.NaN;
+            return !float.IsNaN(campus) ? campus : c.School == 2 ? 12f : 0f;
+        }
+
+        /// <summary>An errand of a child's schooling sent to the schools' campus when they are there; else the nearest school, as before.</summary>
+        internal static void AtSchool(Errand errand, ChildRecord c)
+        {
+            ISchoolBridge school = FamilyBridges.School;
+            if (errand != null && school != null && school.AddressFor(c.Name, out string street, out int number))
+            {
+                errand.Street = street;
+                errand.Number = number;
+            }
         }
 
         // Once a week: seven days of what the children cost.
