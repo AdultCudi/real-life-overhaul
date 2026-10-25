@@ -269,6 +269,7 @@ internal static partial class Program
         Banks();
         Calendar();
         Utilities();
+        UtilitiesPhone();   // no office to visit: the app takes the desk's work by phone, each office text has its twin for the app, and the office comes back (UtilitiesPhoneChecks.cs)
         SpecialNames();
         StudyPrompts();
         OutageExcuses();   // what the home's internet down for an outage excuses: an online class, a day from home, a video interview (OutageExcuseChecks.cs)

@@ -1161,6 +1161,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_util_test_due", () => Utilities.UtilitiesDirector.Instance?.TestDue())
                 .AddButton("reallife_util_test_cut", () => Utilities.UtilitiesDirector.Instance?.TestCutHome())
                 .AddButton("reallife_util_test_restore", () => Utilities.UtilitiesDirector.Instance?.TestRestore())
+                .AddButton("reallife_util_test_phone", () => Utilities.UtilitiesDirector.Instance?.TestByPhone())
                 .AddButton("reallife_util_test_outage", () => Utilities.UtilitiesDirector.Instance?.TestOutage())
                 .AddButton("reallife_util_test_network_month", () => Utilities.UtilitiesDirector.Instance?.TestNetworkMonth())
                 .AddButton("reallife_util_test_network_built", () => Utilities.UtilitiesDirector.Instance?.TestNetworkBuilt())

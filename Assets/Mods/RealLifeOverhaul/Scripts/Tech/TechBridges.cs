@@ -57,6 +57,9 @@ namespace RealLifeOverhaul.Tech
         /// <summary>Opens the Company app's rota with a business (its place) picked; false if it cannot be. Default: none.</summary>
         public static Func<string, bool> OpenRota;
 
+        /// <summary>True while the utilities have no office to visit, so power is applied for in the Utilities app. Default: none (the office).</summary>
+        public static Func<bool> UtilitiesByPhone;
+
         /// <summary>The days a new internet plan takes to be installed (the utilities). Default: 2.</summary>
         public static Func<int> NetDays;
 
@@ -246,6 +249,7 @@ namespace RealLifeOverhaul.Tech
 
         public static void Reset()
         {
+            UtilitiesByPhone = null;
             Esteem = null;
             Comfort = null;
             Office = null;

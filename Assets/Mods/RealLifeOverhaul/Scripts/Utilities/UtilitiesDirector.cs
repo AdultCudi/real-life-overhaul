@@ -43,6 +43,8 @@ namespace RealLifeOverhaul.Utilities
         private float _nextSecond, _nextHook;
         private int _hour = -1;
         private int _graceSeen = -1;   // the day the internet's grace last saw
+        private bool _phoneKnown, _phoneSeen;   // whether the office was last seen open or by phone: a change is told once
+        private int _heldUntil = -1;   // the hour (day * 24 + hour) a test's hold on the office ends; -1: none
         private Action _onSave;
         private Action _onDesk;
         private readonly List<PlaceInfo> _places = new List<PlaceInfo>(16);
@@ -65,6 +67,12 @@ namespace RealLifeOverhaul.Utilities
         public BroadbandCompany Company => _loaded ? _company : null;
 
         public UtilitiesOffice Office => _office;
+
+        /// <summary>
+        /// True while there is no office to visit (every building that could hold it is a player's, its door has no
+        /// pavement, or it failed): the app then applies for accounts and reconnects them by phone, on the desk's rules.
+        /// </summary>
+        public bool ByPhone => _office == null || _office.ByPhone;
         public DeskList Window => _window;
 
         /// <summary>The player holds a supplied power account of their own (Life: the electricity company's events).</summary>
@@ -259,6 +267,7 @@ namespace RealLifeOverhaul.Utilities
             _loaded = true;
             _hour = save.Hour;
             _office = new UtilitiesOffice(Logger);
+            _office.Tick();   // looked for before the first notices, so they send the player to the office or to the app as it is
             _desk = new UtilitiesDesk(this);
             Sync(today, fresh);
             _graceSeen = today;
@@ -283,6 +292,8 @@ namespace RealLifeOverhaul.Utilities
             _window.Destroy(e => Logger?.Error(e));
             _office?.Dispose();
             _office = null;
+            _phoneKnown = false;
+            _heldUntil = -1;
             if (_app != null)
             {
                 _app.Remove();
@@ -383,7 +394,7 @@ namespace RealLifeOverhaul.Utilities
             CloseGivenUp(today);
             if (newOwned > 0)
             {
-                UtilitiesText.Toast(NotificationType.Warning, UtilitiesText.T(fresh ? "reallife_util_toast_first_owned" : "reallife_util_toast_bought",
+                UtilitiesText.Toast(NotificationType.Warning, UtilitiesText.T(UtilitiesRules.Where(fresh ? "reallife_util_toast_first_owned" : "reallife_util_toast_bought", ByPhone),
                     "count", newOwned.ToString(), "days", UtilitiesCatalogue.TemporaryDays.ToString(), "office", OfficeName()), 12f);
             }
         }
@@ -529,6 +540,12 @@ namespace RealLifeOverhaul.Utilities
             }
             Refresh();   // a place given up since the morning closes now, never closed or billed again
             Effects();
+            if (_heldUntil >= 0 && UtilitiesGame.Today * 24 + SaveGameManager.Current.Hour >= _heldUntil)
+            {
+                _heldUntil = -1;
+                _office?.Hold(false);
+                Logger?.Info("Utilities: the test's hold on the office has ended; the desk is as the city has it again.");
+            }
         }
 
         private void Effects()
@@ -605,6 +622,10 @@ namespace RealLifeOverhaul.Utilities
                     : account.State == SupplyState.Pending ? "reallife_util_closed_connecting"
                     : "reallife_util_closed_apply";
             }
+            if (key == "reallife_util_closed_apply")
+            {
+                key = UtilitiesRules.Where(key, ByPhone);
+            }
             if (_toldClosed.TryGetValue(place.Place, out string said) && said == key)
             {
                 return;
@@ -639,7 +660,32 @@ namespace RealLifeOverhaul.Utilities
                 Install();
             }
             _office?.Tick();
+            OfficeWatch();
             OfficePanel();
+        }
+
+        // the office opening again after a spell by phone, or closing to the phone, told once and shown in the app at once
+        private void OfficeWatch()
+        {
+            if (_office == null || !_office.Searched)
+            {
+                return;   // between a move off a building and the next pick: nothing has changed for the player yet
+            }
+            bool phone = _office.ByPhone;
+            if (_phoneKnown && phone == _phoneSeen)
+            {
+                return;
+            }
+            bool change = _phoneKnown;
+            _phoneKnown = true;
+            _phoneSeen = phone;
+            if (change)
+            {
+                UtilitiesText.Toast(NotificationType.Info, UtilitiesText.T(phone ? "reallife_util_toast_office_none" : "reallife_util_toast_office_back", "office", OfficeName()), 12f);
+                Logger?.Info("Utilities: " + (phone ? "no office to visit now; the Utilities app takes applications by phone."
+                    : "the office is open again at " + OfficeName() + "; applications are in person again."));
+            }
+            _view?.Changed();
         }
 
         private void OfficePanel()

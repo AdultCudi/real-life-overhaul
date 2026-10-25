@@ -36,6 +36,8 @@ namespace RealLifeOverhaul
                 TechBridges.Net = Net;
                 TechBridges.NetDays = () => Utilities.InternetCatalogue.InstallDays;
                 TechBridges.OpenInternet = () => Utilities.UtilitiesDirector.Instance != null && Utilities.UtilitiesDirector.Instance.OpenInternet();
+                TechBridges.UtilitiesByPhone = () => Utilities.UtilitiesDirector.Instance != null && Utilities.UtilitiesDirector.Instance.State != null
+                                                     && Utilities.UtilitiesDirector.Instance.ByPhone;
                 TechBridges.OpenRota = OpenRota;
                 TechBridges.OthersPicked = OthersPicked;
                 TechBridges.Employer = Employer;
