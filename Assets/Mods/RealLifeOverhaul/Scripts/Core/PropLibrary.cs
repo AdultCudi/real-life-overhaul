@@ -412,6 +412,7 @@ namespace RealLifeOverhaul
                 }
             }
             var said = new System.Text.StringBuilder(160);
+            var counted = new HashSet<Mesh>();      // an alias shares its mesh: counted once
             int triangles = 0;
             foreach (Bundle bundle in _bundles)
             {
@@ -433,7 +434,7 @@ namespace RealLifeOverhaul
                         continue;
                     }
                     Props[file.id] = MakeProp(file, mesh, bundle);
-                    triangles += (int)mesh.GetIndexCount(0) / 3;
+                    triangles += counted.Add(mesh) ? (int)mesh.GetIndexCount(0) / 3 : 0;
                     added++;
                 }
                 said.Append(said.Length > 0 ? ", " : string.Empty).Append(bundle.Name).Append(' ').Append(added)
