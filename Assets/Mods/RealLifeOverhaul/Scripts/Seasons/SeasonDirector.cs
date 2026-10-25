@@ -336,7 +336,7 @@ namespace RealLifeOverhaul.Seasons
         /// <summary>The seasons' line for the Calendar's day page: the season and what sells more and less in it; null while off.</summary>
         public static string CalendarWords(int day)
         {
-            if (!Settings.Seasons || Instance == null || SeasonGame.Loading())
+            if (!Settings.Seasons || StandingDown || Instance == null || SeasonGame.Loading())
             {
                 return null;
             }

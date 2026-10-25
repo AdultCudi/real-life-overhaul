@@ -90,6 +90,8 @@ The game has rain and nothing else: no snow, fog, wind, temperature or forecast.
 | ice | one cold-snap day in three | x1.4 | | | x0.7 | x0.75 | x0.9 |
 | snow in patches, covered | the snow on the roads, from [Seasons](seasons.md) (`Weather.SnowNow`), on top of the rest | x1.2, x1.45 | | covered x0.9 | x0.9, x0.8 | x0.88, x0.72 | x0.93, x0.85 |
 
+The street life factor thins the city life's sites (`StreetLifeRules.Sites`, asked in `CityLifeDirector.Wanted`): at least one site while it is above 0, none in a storm.
+
 Seasons are quarters of the game's year (`gameVariables.daysPerYear`, 60 by default), starting in midwinter.
 
 `WeatherEffects` applies grip to the driven car's `LateralFrictionGrip` and `LongitudinalFrictionGrip` (the values `Driving/CarTuning` reads; recorded per wheel and written back exactly).

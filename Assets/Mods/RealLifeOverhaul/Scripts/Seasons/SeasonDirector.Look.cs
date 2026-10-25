@@ -37,12 +37,18 @@ namespace RealLifeOverhaul.Seasons
         public bool Showing => _showSeason >= 0 && _showUntil > Time.unscaledTime;
 
         /// <summary>
+        /// Whether these seasons stand down for Alcware - Seasons: what the calendar lists and says of them stays off with the rest. Asks nothing of
+        /// the game and tells nobody; <see cref="StandDown"/> is the one that says so, once.
+        /// </summary>
+        public static bool StandingDown => SeasonRules.StandsDown(OtherMods.AlcwareSeasons.Loaded, Settings.SeasonBesideAlcware);
+
+        /// <summary>
         /// True while Alcware - Seasons is switched on and these seasons are not kept beside it: everything of theirs stays
         /// off, said once in a notice and the log.
         /// </summary>
         private bool StandDown()
         {
-            if (!OtherMods.AlcwareSeasons.Loaded || Settings.SeasonBesideAlcware)
+            if (!StandingDown)
             {
                 return false;
             }

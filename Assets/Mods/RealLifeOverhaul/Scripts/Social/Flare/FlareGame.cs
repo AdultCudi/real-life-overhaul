@@ -367,7 +367,7 @@ namespace RealLifeOverhaul.Flare
                 into.Add(new FlareShop
                 {
                     Place = place, Name = Name(all[i]), Niche = FlareCast.NicheOf(all[i].businessTypeName), District = GameRegistrations.District(all[i]),
-                    OpenedDay = seen != null ? seen.FirstDay : f.StartDay
+                    OpenedDay = FlareRules.OpenedOn(all[i].creationDay, seen != null ? seen.FirstDay : f.StartDay)
                 });
             }
         }

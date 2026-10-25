@@ -27,6 +27,7 @@ namespace RealLifeOverhaul.Texts
                 return;
             }
             bool first = _hour < 0;
+            int steps = first ? 0 : TextsCityRules.HourSteps(_hourDay, _hour, save.Day, save.Hour);
             _hour = save.Hour;
             _hourDay = save.Day;
             if (first)
@@ -43,13 +44,20 @@ namespace RealLifeOverhaul.Texts
             }
             if (Settings.TextsCity)
             {
-                try
+                // Fast forward skips hours between two looks, and a piece of gossip comes at one exact hour, the net worth is read at another:
+                // the pass is made for each hour that went by, oldest first, so none is missed.
+                for (int back = steps - 1; back >= 0; back--)
                 {
-                    City(save.Day, save.Hour, Six);
-                }
-                catch (Exception e)
-                {
-                    Logger?.Error(e);   // the next hour tries again
+                    TextsCityRules.HourBack(save.Day, save.Hour, back, out int day, out int hour);
+                    try
+                    {
+                        City(day, hour, Six);
+                    }
+                    catch (Exception e)
+                    {
+                        Logger?.Error(e);   // the next hour tries again
+                        break;
+                    }
                 }
             }
         }
@@ -74,6 +82,7 @@ namespace RealLifeOverhaul.Texts
             if (TextsBridges.Life != null)
             {
                 Views.Life.Day = day;
+                Views.Life.Hour = hour;
                 TextsBridges.Life(Views.Life);
                 NewEvents.Clear();
                 TextsCityRules.Life(Views.Life, CityStore.Mark, TextsBridges.BigFloor != null ? TextsBridges.BigFloor() : 25000, NewEvents);

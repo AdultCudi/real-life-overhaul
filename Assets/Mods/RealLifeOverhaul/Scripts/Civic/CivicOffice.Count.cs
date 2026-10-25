@@ -158,7 +158,11 @@ namespace RealLifeOverhaul
             }
             else if (State.Holds == OfficeRace.Council)
             {
-                State.Approval = Mathf.Min(95f, State.Approval + Mathf.Min(1.5f, worth * 3f));
+                State.Approval = OfficeRules.PostedApproval(State.Approval, weight);
+            }
+            else if (State.Holds == OfficeRace.Mayor && Gov.MayorIsPlayer)
+            {
+                Gov.Approval = OfficeRules.PostedApproval(Gov.Approval, weight);   // the mayor's approval is the city's, not the office file's
             }
         }
 

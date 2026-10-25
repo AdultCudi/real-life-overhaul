@@ -37,6 +37,7 @@ namespace RealLifeOverhaul.Texts
     public sealed class TextLife
     {
         public int Day;
+        public int Hour;             // the game hour the pass is for: the net worth is read for the hour of 06:00, which fast forward may skip over
         public int Children;         // children of the family life, adopted or born
         public string ChildName;     // the newest
         public bool Adopted;         // ...adopted

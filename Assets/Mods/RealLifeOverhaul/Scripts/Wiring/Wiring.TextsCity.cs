@@ -104,8 +104,7 @@ namespace RealLifeOverhaul
                             v.BusinessDay = reg.creationDay;
                         }
                     }
-                    GameInstance save = SaveGameManager.Current;
-                    if (save != null && save.Hour == WorthHour)
+                    if (v.Hour == WorthHour)
                     {
                         v.Worth = Books.NetWorth();
                         v.HasWorth = true;

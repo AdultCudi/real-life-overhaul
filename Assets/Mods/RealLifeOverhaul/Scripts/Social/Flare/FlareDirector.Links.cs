@@ -120,7 +120,7 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        /// <summary>What Flare's talk adds to a business's customers now, per cent, a point more where the cleaners go; 0 while not running.</summary>
+        /// <summary>What Flare's talk adds to a business's customers now, per cent, a point more where the cleaners go, together inside the cap; 0 while not running.</summary>
         public static int FootfallOf(BuildingRegistration reg)
         {
             FlareDirector d = Instance;
@@ -131,7 +131,7 @@ namespace RealLifeOverhaul.Flare
             int day = SaveGameManager.Current.Day;
             string district = d._file.Net.Watches.Count > 0 ? GameRegistrations.District(reg) : null;
             int clean = district != null && d._file.Net.WatchIn(district, day, FlareOrder.Cleanup) != FlareOrder.None ? FlareLiveRules.CleanFootfall : 0;
-            return (d._file.Buzz.Count > 0 ? d._file.BuzzAt(FlareGame.Place(reg), day) : 0) + clean;
+            return FlareRules.Footfall(d._file.Buzz.Count > 0 ? d._file.BuzzAt(FlareGame.Place(reg), day) : 0, clean);
         }
 
         /// <summary>For brands: how a scandal at a shop spreads, thousandths of its loss, by the account's reputation.</summary>
