@@ -18,6 +18,7 @@ Character quality: detailed player in the city, a scalp under its hair, characte
 | `ModLooks` | puts the scalp underlay (and any picked look) on the characters that show the player; undoes itself |
 | `PlayerDouble` | the player drawn with the game's detailed character set, posed from the player's skeleton |
 | `HairLook` | puts the hair finish on the hair and beard of the characters that show the player; undoes itself |
+| `HairWearers` | whose a drawn renderer of strand hair is, for the search behind the black screen at a door; game-free, checked by NavCheck |
 | `HairFinish` | what a finished hair layer is (depth prepass, strand maps, gloss from the colour); game-free, the HDRP preview compiles it too |
 | `CharacterLighting` | fill and rim light for character creation and the shop preview; undoes itself |
 | `CharacterTools` | telling the two character sets apart, copying one inertly, sharper textures |
