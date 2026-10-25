@@ -156,9 +156,9 @@ internal static partial class Program
         Check(q != null && q.Hired && q.Contractor == 6 && q.ContractorPrice == 7654320 && q.HireDays == 34 && q.HirePace == 1012 && q.HireStages == 3 && q.HirePaid == 5358020
               && q.HireFree && q.Insp[2] == InspectionState.Booked && back.Project(22) != null && !back.Project(22).Hired && back.Project(22).HirePace == 0,
             "hire store: the contract comes back whole; a contractor's refit is still a refit");
-        // A line from before the contract's fields: each record's last six fields gone; it reads as no contract.
-        string older = Regex.Replace(line, @"\|34\|1012\|3\|1\|5358020\|0(?=;|\^|$)", string.Empty);
-        older = Regex.Replace(older, @"\|0\|0\|0\|0\|0\|0(?=;|\^|$)", string.Empty);
+        // A line from before the contract's fields: each record's last six fields gone, and the claim's after them; it reads as no contract.
+        string older = Regex.Replace(line, @"\|34\|1012\|3\|1\|5358020\|0\|0(?=;|\^|$)", string.Empty);
+        older = Regex.Replace(older, @"\|0\|0\|0\|0\|0\|0\|0(?=;|\^|$)", string.Empty);
         BuildState old = BuildStore.Read(older, out _);
         Check(older != line && old != null && old.Project(21) != null && old.Project(21).HireDays == 0 && old.Project(21).HirePaid == 0 && old.Project(21).HirePace == 1000
               && old.Project(22) != null && old.Project(22).HirePace == 0, "hire store: a line written before the contract's fields reads, a hired site with no pace going at the city's");

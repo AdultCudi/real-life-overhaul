@@ -93,6 +93,10 @@ namespace RealLifeOverhaul.Construction
         {
             box.Title(_director.ProjectName(p));
             box.Subtitle(ConstructionText.StageWords(p));
+            if (_director.HasPlace(p))
+            {
+                MapRow(box, () => _director.ShowProject(p));   // on every page of a project: where it is, whatever stage it is at
+            }
             if (p.Contractor >= 0 && !p.Hired)
             {
                 WriteContracted(box, p);

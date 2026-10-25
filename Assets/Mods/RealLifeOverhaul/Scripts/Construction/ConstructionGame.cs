@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using BAModAPI;
@@ -7,8 +7,12 @@ using Buildings;
 using Entities;
 using Helpers;
 using Localizor;
+using Streets;
+using UI;
+using UI.Guiders;
 using UI.Load;
 using UI.Notification;
+using UI.Smartphone;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Construction
@@ -62,11 +66,12 @@ namespace RealLifeOverhaul.Construction
     /// <summary>
     /// The only part of the construction game that reads or changes the game: the clock and prices, money through the game's
     /// own transaction call, the player's offices of the company's type, warehouses and buildings, the office's staff, a
-    /// building type's value multiplier, addresses and doors, and the game's notifications. Nothing here keeps state.
+    /// building type's value multiplier, addresses and doors, the game's destination, and the game's notifications. Nothing here keeps state.
     /// </summary>
     internal static class ConstructionGame
     {
         private const string Warehouse = "ba:buildingtype_warehouse";
+        private const float SpotLift = 1.5f;   // m over the ground: a spot's marker stands where the map's own double click puts one
 
         internal static bool Loading => LoadScene.isLoading || !ModState.Loaded || SaveGameManager.Current == null;
 
@@ -436,6 +441,57 @@ namespace RealLifeOverhaul.Construction
             outward = t.forward;
             return true;
         }
+
+        /// <summary>True while one of the city's buildings stands at the address (the game knows its controller).</summary>
+        internal static bool Stands(string street, int number) => CivicCity.Find(street, number) != null;
+
+        /// <summary>
+        /// The game's own destination at a place, as its Set destination does (BizManBusiness.SetDestination): a standing
+        /// building's address, which the save keeps as the player's destination, or a spot with no building on it (an empty
+        /// lot's front on its street), which the save does not keep, marked with the destination guider's own icon. The menu
+        /// is closed so the marker and its arrow show at once. False when the guider is not there or did not take the place.
+        /// </summary>
+        internal static bool Destination(string street, int number, Vector3 spot, string name, bool building)
+        {
+            GameInstance save = SaveGameManager.Current;
+            GuidersManager guiders = InstanceBehavior<GuidersManager>.Instance;
+            if (save == null || guiders == null || guiders.destinationGuider == null)
+            {
+                return false;
+            }
+            if (building)
+            {
+                if (!Stands(street, number))
+                {
+                    return false;   // the game's call does nothing for an address with no building: said, never silently
+                }
+                var address = new Address(street, number);
+                save.customDestination = address;
+                GuidersManager.SetGuiderTarget(address, DirectionGuiderType.Destination);
+            }
+            else
+            {
+                save.customDestination = null;   // a spot is not an address: the save keeps none, as the map's own spot does
+                DirectionGuider look = guiders.destinationGuider;
+                GuidersManager.SetGuiderTarget(spot + Vector3.up * SpotLift, name ?? string.Empty, look.poiICon, look.poiBackgroundColor, DirectionGuiderType.Destination);
+            }
+            UIs uis = InstanceBehavior<UIs>.Instance;
+            if (FullMenu.IsOpen && uis != null && uis.fullMenu != null)
+            {
+                uis.fullMenu.Toggle(false);
+            }
+            return guiders.destinationGuider.target != null;
+        }
+
+        /// <summary>Where the game's destination stands now; false while it marks nothing.</summary>
+        internal static bool DestinationAt(out Vector3 at)
+        {
+            GuidersManager guiders = InstanceBehavior<GuidersManager>.Instance;
+            Transform target = guiders != null && guiders.destinationGuider != null ? guiders.destinationGuider.target : null;
+            at = target != null ? target.position : Vector3.zero;
+            return target != null;
+        }
+
 
         /// <summary>The words of a district's game id (also its text key).</summary>
         internal static string DistrictWords(string district) => string.IsNullOrEmpty(district) ? string.Empty : district.GetLocalization();
