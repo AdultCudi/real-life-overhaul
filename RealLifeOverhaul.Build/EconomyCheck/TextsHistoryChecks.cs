@@ -320,7 +320,7 @@ internal static partial class Program
         string city = ModSource(@"Texts\TextsDirector.City.cs");
         string hour = MemberText(city, "private void Hour()");
         string talk = MemberText(city, "private static void City(int day, int hour, bool six)");
-        Check(hour.Contains("if (Settings.TextsCity)") && !hour.Contains("Six && Settings.TextsCity") && hour.Contains("City(save.Day, save.Hour, Six);")
+        Check(hour.Contains("if (Settings.TextsCity)") && !hour.Contains("Six && Settings.TextsCity") && hour.Contains("City(day, hour, Six);")
               && talk.Contains("if (six && TextsBridges.Staff != null)") && talk.Contains("LifeTexts(day);")
               && talk.IndexOf("if (six)", StringComparison.Ordinal) < talk.IndexOf("Gossip(day, hour);", StringComparison.Ordinal)
               && talk.IndexOf("if (six)", StringComparison.Ordinal) > talk.IndexOf("LifeTexts(day);", StringComparison.Ordinal),

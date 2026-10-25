@@ -314,7 +314,7 @@ internal static partial class Program
         {
             guarded += wiring.Contains(bridge) ? 1 : 0;
         }
-        Check(guarded == 4 && street.Contains("Fault(\"RLO Texts, what a stranger remembers\"") && textsLinks.Contains("Fault(\"RLO Texts, a review's figures\"") && System.Text.RegularExpressions.Regex.IsMatch(city, @"City\(save\.Day, save\.Hour, Six\);\s*\}\s*catch \(Exception e\)\s*\{\s*Logger\?\.Error\(e\);"),
+        Check(guarded == 4 && street.Contains("Fault(\"RLO Texts, what a stranger remembers\"") && textsLinks.Contains("Fault(\"RLO Texts, a review's figures\"") && System.Text.RegularExpressions.Regex.IsMatch(city, @"City\(day, hour, Six\);\s*\}\s*catch \(Exception e\)\s*\{\s*Logger\?\.Error\(e\);"),
             "texts v6, sources: every entry point of the city's talk, a stranger's memory and a review's figures is guarded (a fault is logged, the game goes on)");
         Check(!share.Contains("TextMemoryStore") && !share.Contains("TextsCityStore") && !share.Contains("Memory") && hub.Contains("if (!shared && memory != null && memory.Count > 0)"),
             "texts v6, sources: what people remember and the city's talk are each player's own: never in the shared part, never on a shared card");
