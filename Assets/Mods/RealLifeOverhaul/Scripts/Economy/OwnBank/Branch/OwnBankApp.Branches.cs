@@ -75,6 +75,8 @@ namespace RealLifeOverhaul.Economy
             box.Row("reallife_branch_box_costs", OwnBankText.Money(costs));
             box.Note(OwnBankText.T(b.Branches.Count == 0 ? "reallife_branch_box_none" : "reallife_branch_box_pick"));
             box.Note(OwnBankText.Fill("reallife_branch_box_intro", "half", Whole(BranchCatalogue.ReachHalf), "most", OwnBankText.Ratio(BranchCatalogue.ReachMost)));
+            // A branch's own statement in the game holds only its rent and wages: its fees are booked at the headquarters.
+            box.Note(OwnBankText.T("reallife_branch_box_books"));
             Meta.Guide.Point(box, GuideTitle);
         }
 

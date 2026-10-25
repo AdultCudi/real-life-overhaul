@@ -12,6 +12,7 @@ Every feature runs in the New York the mod knows, a New York with districts a fr
 - [Justice](justice.md): cases, bail, lawyers, the courthouse, sentences and prison.
 - [The living city](city-life.md): people at work and about their day on the pavements.
 - [City events](city-events.md): fires, weather that matters and street events.
+- [Seasons](seasons.md): what customers buy through the year, and snow on some winter days.
 - [Civic life](civic.md): the city's government, elections, standing for office, construction sites.
 - [Construction](construction.md): buildings going up, wrapped in the game's own scaffolding, and new buildings on given ground; a construction company of the player's: land, plans, planning permission, sites, money, tenders and the city's builders.
 - [New ground](new-ground.md): ground the mod lays itself, to walk and drive on, with parking, people and buses, for a district of the mod's own (developer tests so far).
@@ -22,8 +23,10 @@ Every feature runs in the New York the mod knows, a New York with districts a fr
 ## The player's life
 
 - [Social life](social.md): the people the player knows, outings, texts and the morning paper.
+- [Networking](networking.md): people the player knows who hold a position, and the favours they do as the relationship grows.
 - [Family](family.md): a partner, a wedding, children, the wider family.
 - [Home life and health](home.md): needs, cooking, illness and the doctor.
+- [Household staff](household.md): a cleaner, a cook, a live-in butler and a mobile mechanic for the home.
 - [Leisure](leisure.md): things to do for fun, the mod's clothes, night life, sound, photo mode.
 - [Travel and lodging](travel.md): hotels and holidays.
 - [Permadeath](permadeath.md): an ending the player chooses.
@@ -44,6 +47,7 @@ Every feature runs in the New York the mod knows, a New York with districts a fr
 - [Jobs](jobs.md): gigs from the Gig Line and the help-wanted boards.
 - [Careers](careers.md): the employers' ranks, and education and the professions.
 - [Building trades](trades.md): the trades at the city's works sites, each with a game of its own, the architects' practice on a floor (the floor plan, the facade and the frame), the trades' courses and three ladders.
+- [Legal hustles](hustles.md): the Marketplace, used goods and cars to fix up and sell on, and freelance visits for clients.
 
 ## Economy
 
@@ -59,7 +63,9 @@ Every feature runs in the New York the mod knows, a New York with districts a fr
 - [Business pressure](business-pressure.md): rivals, inspections, the racket and more.
 - [Interiors and decor](interiors.md).
 - [Ready-made designs](designs.md): the interior installation firms' designs for the mod's own businesses.
+- [New kinds of shop](shops.md): an ice cream parlour, a tea bar and a tobacconist to start in BizMan.
 - [Districts](districts.md): the district view on the city map.
+- [A landlord's duties](landlord.md): tenants' satisfaction, repair calls, the city's inspections, rent owed, lettings agencies and property managers, for the buildings you let.
 
 `Scripts/Economy` also has `Brands`, `Dealer` (the Car Showroom), `Estate` (property), `Online` and `Services`, each with a `README.md` in its folder.
 

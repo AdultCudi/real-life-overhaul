@@ -14,6 +14,7 @@ Three needs the game does not have (hygiene, stress and a tidy home), sleep debt
 - Social and Careers ask Home through `SocialLinks.Wellbeing` and `CareerLinks.Health` (a sick note), filled in by `Wiring/LifeLinks.cs`.
 - Family shortens an illness and adds broken nights (`Wiring/FamilyLinks.cs`); Travel's hotels act on hygiene and stress.
 - The roommate's links are `Wiring/RoommateLinks.cs`.
+- Household staff ([household.md](household.md)) clean the home through `HomeTidy.Change` and put the cook's portions by as leftovers (`HomeState.PutBy`).
 
 ```
 Scripts/Home/

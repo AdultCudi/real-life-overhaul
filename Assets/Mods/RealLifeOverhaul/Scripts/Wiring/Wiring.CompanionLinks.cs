@@ -16,6 +16,7 @@ namespace RealLifeOverhaul
             internal static void Connect()
             {
                 CompanionGame.Reset();
+                PlanningCompanionLinks.Connect();
                 CompanionBridges.Readers["features"] = Features;
                 CompanionBridges.Readers["businesses"] = Businesses;
                 CompanionBridges.Readers["employment"] = Employment;
@@ -26,6 +27,7 @@ namespace RealLifeOverhaul
             internal static void Disconnect()
             {
                 CompanionBridges.Readers.Clear();
+                CompanionBridges.Ownership = null;
                 CompanionGame.Reset();
             }
 

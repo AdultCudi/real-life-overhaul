@@ -135,6 +135,7 @@ namespace RealLifeOverhaul.Meta
                 .Contact(SocialPhone.PeopleId)
                 .Objects("RealLifeOverhaul Shift Card")
                 .Fact("social_cast", () => SocialRules.MaxCast.ToString(CultureInfo.InvariantCulture))
+                .Fact("social_lose_days", () => SocialRules.DriftLoseDays.ToString(CultureInfo.InvariantCulture))
                 .ResetData(() =>
                 {
                     SocialState.Reset();   // the director reads the (now empty) save again on its next second
@@ -370,7 +371,9 @@ namespace RealLifeOverhaul.Meta
                 .Fact("moto_sport", () => Guide.Money(BikeCatalogue.All[3].Cost))
                 .Fact("helmet_price", () => Guide.Money(BikeCatalogue.HelmetPrice))
                 .Fact("fine_helmet", () => Guide.Money(BikeCatalogue.HelmetFine))
-                .Owns(Settings.GarageId, Settings.GarageCosmeticsId, Settings.GarageTuningId, Settings.GarageUnderglowId, Settings.TwoWheelersId, Settings.GarageSoundsId)
+                .Owns(Settings.GarageId, Settings.GarageCosmeticsId, Settings.GarageTuningId, Settings.GarageUnderglowId, Settings.TwoWheelersId, Settings.GarageSoundsId,
+                    Settings.GarageResaleId)
+
                 .OnFrom(Settings.GaragePoliceId, Intensity.Standard)
                 .Rows("reallife_garage_test_vehicles")   // the player's list of vehicles, not a test
                 .Data("reallife:garage_*")
@@ -405,6 +408,7 @@ namespace RealLifeOverhaul.Meta
                 .Preset(Settings.StartWithLicenceId, 1, 0, 0)
                 .OnFrom(Settings.LicencePointsId, Intensity.Standard)
                 .OnFrom(Settings.RoadsideChecksId, Intensity.Standard)
+                .OnFrom(Settings.HeavyLicenceId, Intensity.Standard)
                 .Data(LicenceState.Key, TestCar.Key)
                 .Contact(LicencePhone.ContactId)
                 .Fact("lic_theory_fee", () => Guide.Money(LicenceLaw.TheoryFee))
@@ -416,6 +420,9 @@ namespace RealLifeOverhaul.Meta
                 .Fact("lic_points_limit", () => LicenceLaw.PointsLimit.ToString(CultureInfo.InvariantCulture))
                 .Fact("lic_suspension_days", () => LicenceLaw.SuspensionDays.ToString(CultureInfo.InvariantCulture))
                 .Fact("lic_no_licence_fine", () => Guide.Money(LicenceLaw.NoLicenceFine))
+                .Fact("lic_heavy_test_fee", () => Guide.Money(HeavyRules.TestFee))
+                .Fact("lic_heavy_wait_days", () => HeavyRules.WaitDays.ToString(CultureInfo.InvariantCulture))
+                .Fact("lic_heavy_load_pay", () => Guide.Percent(HeavyRules.LoadPay - 1f))
                 .ResetData(LicenceState.Reset)   // the director reads the (now empty) save again on its next second
                 .Repair(LicencePhone.Setup);
 

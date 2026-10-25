@@ -71,6 +71,7 @@ namespace RealLifeOverhaul
         public static int GigDay { get; set; }
         /// <summary>Hours worked at the game's own employer job (the cashier), counted read-only: for the CV and as retail experience.</summary>
         public static int CashierHours { get; set; }
+        public static int ShutDay { get; set; }           // a rota day the player was turned away because nobody near was open to work for; 0 none
 
         private static readonly int[] Banned = new int[CareerCatalogue.All.Length];
         private static readonly List<Spell> Past = new List<Spell>(CareerCatalogue.HistoryMost);
@@ -138,7 +139,7 @@ namespace RealLifeOverhaul
         private static void Clear()
         {
             ClearSpell();
-            TotalShifts = TotalEarned = CartPaidDay = GigDay = CashierHours = 0;
+            TotalShifts = TotalEarned = CartPaidDay = GigDay = CashierHours = ShutDay = 0;
             for (int i = 0; i < Banned.Length; i++)
             {
                 Banned[i] = 0;
@@ -391,7 +392,7 @@ namespace RealLifeOverhaul
             text.Append('|');
             Join(text, OnTime, Late, NoShow, Complaints, Crashes, Stops, Tips, Shifts);
             text.Append('|');
-            Join(text, TotalShifts, TotalEarned, CartPaidDay, GigDay, CashierHours);
+            Join(text, TotalShifts, TotalEarned, CartPaidDay, GigDay, CashierHours, ShutDay);   // (the last at the end: an older build reads the five before it)
             text.Append('|');
             for (int i = 0; i < Banned.Length; i++)
             {
@@ -442,6 +443,8 @@ namespace RealLifeOverhaul
             CartPaidDay = totals[2];
             GigDay = totals[3];
             CashierHours = totals[4];
+            int[] shut = Numbers(parts[4], 6);
+            ShutDay = shut != null ? shut[5] : 0;   // (a save from before it: no day)
 
             foreach (string entry in parts[5].Split(';'))
             {

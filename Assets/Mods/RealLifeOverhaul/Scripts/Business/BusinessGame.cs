@@ -17,7 +17,7 @@ namespace RealLifeOverhaul
     /// by the promotion figure the game recomputes daily, a closure by the business's own switch, theft by stolenItemsCost
     /// (cleared each night), wages as the game's counter-offer writes them, leaving through Core/StaffLeave. No timer of its own.
     /// </summary>
-    internal static class BusinessGame
+    internal static partial class BusinessGame
     {
         public const string Marketing = "ba:transactioncategory_marketing";
         public const string Licensing = "ba:transactioncategory_licensingfees";
@@ -170,7 +170,7 @@ namespace RealLifeOverhaul
         {
             string type = reg.businessTypeName ?? string.Empty;
             return type.Contains("fastfood") || type.Contains("coffeeshop") || type.Contains("supermarket") || type.Contains("fruitandvegetable")
-                   || type.Contains("liquorstore") || type.Contains("nightclub");
+                   || type.Contains("liquorstore") || type.Contains("nightclub") || type.Contains("icecreamparlour") || type.Contains("teabar");   // the last two: Scripts/Shops
         }
 
         public static bool AllowsTheft(BuildingRegistration reg)
@@ -350,6 +350,11 @@ namespace RealLifeOverhaul
             public Promotion Promotion;
             public int Total, Own, Percent, Ambient, Interior;
             public float Multiplier;
+            /// <summary>
+            /// The figures of active play, kept while a save puts the game's own back; a few copies each time a figure
+            /// is written.
+            /// </summary>
+            public readonly CompanionPromotion Play = new CompanionPromotion();
         }
 
         private static readonly Dictionary<BuildingRegistration, Wrote> Written = new Dictionary<BuildingRegistration, Wrote>(64);
@@ -392,6 +397,7 @@ namespace RealLifeOverhaul
                     w.Interior = interior;
                     w.Multiplier = multiplier;
                 }
+                w.Play.Remember(SaveHook.Saving, w.Own, w.Total, w.Percent, w.Ambient, w.Interior, w.Multiplier);
                 LastOwn = w.Own;
                 LastWritten = w.Total;
                 if (regenerate)

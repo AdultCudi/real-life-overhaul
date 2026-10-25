@@ -4,7 +4,7 @@ Meals and music: food the player eats is taken to a free seat in the same room a
 
 ## Read first
 
-- `MealsRules.cs`: which seat, the same room, how long a meal is watched, when dancing lifts the mood (game-free).
+- `MealsRules.cs`: which seat, the same floor and the same room, how long a meal is watched, when dancing lifts the mood (game-free).
 - `MealsDirector.cs`: the one component, a meal step by step; `MealsDirector.Dance.cs` the dance.
 - `MealsGame.cs`: the only file that touches the game.
 - `MealBody.cs`: the player's body at a meal, and everything given back.

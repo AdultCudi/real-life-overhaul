@@ -7,6 +7,8 @@ ba:buildingtype_residential
 ba:buildingtype_retail
 ba:buildingtype_special
 ba:buildingtype_warehouse
+ba:businessproductsource_importer
+ba:businessproductsource_wholesaler
 ba:businesstype_appliancestore
 ba:businesstype_bank
 ba:businesstype_cardealership
@@ -33,6 +35,7 @@ ba:businesstype_importexport
 ba:businesstype_interiorinstallationfirm
 ba:businesstype_irs
 ba:businesstype_lawfirm
+ba:businesstype_liquorstore
 ba:businesstype_marketingagency
 ba:businesstype_movingservice
 ba:businesstype_nightclub
@@ -67,6 +70,7 @@ ba:itemname_carbondioxide
 ba:itemname_carrot
 ba:itemname_carrotseeds
 ba:itemname_cheapflower
+ba:itemname_cheapgift
 ba:itemname_cheapjewelry
 ba:itemname_cheese
 ba:itemname_cheeseplatter
@@ -74,6 +78,10 @@ ba:itemname_chickenbreast
 ba:itemname_cigar
 ba:itemname_cigarettepaper
 ba:itemname_cigarpaper
+ba:itemname_classiccheapfemaleclothing
+ba:itemname_classiccheapmaleclothing
+ba:itemname_classicexpensivefemaleclothing
+ba:itemname_classicexpensivemaleclothing
 ba:itemname_clay
 ba:itemname_colaflavoring
 ba:itemname_coppercladlaminate
@@ -85,9 +93,11 @@ ba:itemname_cupofcoffee
 ba:itemname_cupoftea
 ba:itemname_donut
 ba:itemname_dough
+ba:itemname_earbuds01
 ba:itemname_energydrink
 ba:itemname_expensiveflower
 ba:itemname_expensivegift
+ba:itemname_expensivejewelry
 ba:itemname_fabriccheap
 ba:itemname_fabricexpensive
 ba:itemname_flavorsyrup
@@ -118,13 +128,19 @@ ba:itemname_metalband
 ba:itemname_metalwire
 ba:itemname_microphone
 ba:itemname_milk
+ba:itemname_moderncheapfemaleclothing
+ba:itemname_moderncheapmaleclothing
+ba:itemname_modernexpensivefemaleclothing
+ba:itemname_modernexpensivemaleclothing
 ba:itemname_mop
+ba:itemname_novel
 ba:itemname_onion
 ba:itemname_paper
 ba:itemname_paperbag
 ba:itemname_pear
 ba:itemname_pearseeds
 ba:itemname_pepper
+ba:itemname_picturebook
 ba:itemname_pizza
 ba:itemname_plastic
 ba:itemname_popcorn
@@ -137,6 +153,10 @@ ba:itemname_screencinema
 ba:itemname_sealedcardboardbox
 ba:itemname_slicedonions
 ba:itemname_slushi
+ba:itemname_smartphone1
+ba:itemname_smartphone2
+ba:itemname_smartwatch1
+ba:itemname_smartwatch2
 ba:itemname_sodacan
 ba:itemname_speaker
 ba:itemname_specialemployeedesk
@@ -154,6 +174,7 @@ ba:itemname_vinaigrette
 ba:itemname_water
 ba:itemname_whisky
 ba:itemname_yeast
+ba:itemname_youngnovel
 ba:jobdemand_fulltime
 ba:messagetype_dialog_moving_service_done
 ba:messagetype_dialog_moving_service_done_items_sold
@@ -184,6 +205,7 @@ ba:transaction_boatyearlymaintenance
 ba:transaction_buildingbought
 ba:transaction_buildingsold
 ba:transaction_casinoboatticket
+ba:transaction_deposit
 ba:transaction_depositreturn
 ba:transaction_doctorappointment
 ba:transaction_electricscooterfee

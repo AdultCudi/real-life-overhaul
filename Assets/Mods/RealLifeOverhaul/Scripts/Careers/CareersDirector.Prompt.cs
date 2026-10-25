@@ -448,6 +448,17 @@ namespace RealLifeOverhaul.Careers
             return null;
         }
 
+        /// <summary>A test's sitting at a desk (Options > Tests), begun outside its course's hours: only the player's seat is asked; null with it held, or the reason key.</summary>
+        internal string HoldTest(Sitting sitting, IPlayerActivity holder)
+        {
+            string why = (_skip != null && _skip.Open) || DeskBusy ? "reallife_study_why_busy" : SeatWhy(false);
+            if (why == null)
+            {
+                Hold(sitting, holder);
+            }
+            return why;
+        }
+
         private static string Words(SittingKind kind)
         {
             switch (kind)

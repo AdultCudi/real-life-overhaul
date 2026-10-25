@@ -398,6 +398,22 @@ namespace RealLifeOverhaul
             return Bound(Math.Max(least, nominal), cash, CivilShareOfCash, least);
         }
 
+        /// <summary>
+        /// What the bill for a crash the player got away from still charges some hours later. Once a court case has taken the
+        /// incident it charges nothing: the sentence stands for the fine and the case holds the damages, so one incident is
+        /// punished once and a dismissed case is never followed by its bill.
+        /// </summary>
+        public static int LaterBill(int damages, int fine, bool caseTookIt)
+        {
+            return caseTookIt ? 0 : Math.Max(0, damages) + Math.Max(0, fine);
+        }
+
+        /// <summary>What a conviction makes due: the court's fine less what was paid at the roadside for it, and any damages the case holds.</summary>
+        public static int ConvictionDue(int fine, int paidAtScene, int damagesHeld)
+        {
+            return Math.Max(0, fine - Math.Max(0, paidAtScene)) + Math.Max(0, damagesHeld);
+        }
+
         /// <summary>Days off for good behaviour.</summary>
         public static int Remission(int behaviour, int term)
         {

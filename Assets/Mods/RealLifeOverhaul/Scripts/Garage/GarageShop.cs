@@ -31,7 +31,9 @@ namespace RealLifeOverhaul
             "reallife_garage_wheels_5spoke", "reallife_garage_wheels_mesh", "reallife_garage_wheels_steel"
         };
 
-        private enum Page { Main, Paint, Finish, Lights, Body, Parts }
+        private enum Page { Main, Paint, Finish, Lights, Body, Parts, Figures }
+
+        private static readonly GarageBuild Standard = new GarageBuild();   // the figures page's "as standard": never changed
 
         private static readonly string[] Families =
         {
@@ -64,7 +66,7 @@ namespace RealLifeOverhaul
         private readonly System.Text.StringBuilder _info = new System.Text.StringBuilder(320);
         private readonly Action<int> _onPick;
         private readonly Action _onListClosed;
-        private readonly Action _toMain, _toPaint, _toFinish, _toLights, _toBody, _toParts, _pay, _stock, _mix;
+        private readonly Action _toMain, _toPaint, _toFinish, _toLights, _toBody, _toParts, _toFigures, _pay, _stock, _mix;
         private readonly Action<Color> _onMixing, _onMixed;
         private GameObject _dragArea;
         private string _listClosing;
@@ -86,6 +88,7 @@ namespace RealLifeOverhaul
             _toLights = () => To(Page.Lights);
             _toBody = () => To(Page.Body);
             _toParts = () => To(Page.Parts);
+            _toFigures = () => To(Page.Figures);
             _pay = Pay;
             _stock = Stock;
             _mix = MixOpen;
@@ -260,7 +263,10 @@ namespace RealLifeOverhaul
                 Logger?.Info("Garage: custom shop opened on " + car.name + " (" + _kind + ").");
                 if (Meta.Dev.Verbose)
                 {
-                    Logger?.Info("Garage check (custom shop list): the game's list is open left of the middle with " + _acts.Count + " entries (pay, paint, finish, lights, body, parts, all stock); "
+                    Logger?.Info("Garage check (custom shop list): the game's list is open left of the middle with " + _acts.Count
+                                 + " entries (pay, paint, finish, lights, body, parts, figures, all stock); "
+
+
                                  + ((Time.realtimeSinceStartup - began) * 1000f).ToString("F1", CultureInfo.InvariantCulture) + " ms: PASS.");
                 }
                 return true;
@@ -391,6 +397,8 @@ namespace RealLifeOverhaul
                     case Page.Finish: FillFinish(list); break;
                     case Page.Lights: FillLights(list); break;
                     case Page.Body: FillBody(list); break;
+                    case Page.Figures: FillFigures(list); break;
+
                     default: FillParts(list); break;
                 }
             }
@@ -529,8 +537,51 @@ namespace RealLifeOverhaul
             return _text.ToString().TrimEnd('\n');
         }
 
+        /// <summary>
+        /// For the test button: the open shop turned to its figures page, and what it reads there as one check line: every
+        /// figure the model gave is a real number, the quicker gearbox never slower and the parts never heavier than standard,
+        /// the ride inside the shop's limits.
+        /// </summary>
+        public string ToFigures()
+        {
+            if (!_open)
+            {
+                return null;
+            }
+            _page = Page.Figures;
+            Fill();
+            var car = _car as CarController;
+            GarageFigures standard = GarageTuning.Figures(car, Standard);
+            GarageFigures now = GarageTuning.Figures(car, _saved);
+            string fault = null;
+            if (now.ShiftSeconds >= 0f && standard.ShiftSeconds >= 0f && now.ShiftSeconds > standard.ShiftSeconds + 0.001f)
+            {
+                fault = "the gear change is slower than standard";
+            }
+            else if (now.MassKg > standard.MassKg + 0.5f)
+            {
+                fault = "the car is heavier than standard";
+            }
+            else if (now.RideMetres < -GarageCatalogue.MaxLower - 0.001f || now.RideMetres > GarageCatalogue.MaxRaise + 0.001f)
+            {
+                fault = "the ride height is outside the shop's limits";
+            }
+            else if (float.IsNaN(now.PowerKw) || float.IsNaN(now.To100) || float.IsNaN(now.StopMetres) || float.IsInfinity(now.PowerKw))
+            {
+                fault = "a figure is not a number";
+            }
+            return string.Format(CultureInfo.InvariantCulture,
+                "Tuning check (figures): {0} ({1}), build [{2}]: power {3:F0} -> {4:F0} kW, torque {5:F0} -> {6:F0} Nm, 0-100 {7:F1} -> {8:F1} s, top {9:F0} -> {10:F0} km/h, "
+                + "gear change {11:F2} -> {12:F2} s, stop {13:F0} -> {14:F0} m, {15:F0} -> {16:F0} kg, ride {17:+0.000;-0.000;0} m{18}: {19}",
+                _car.name, _kind, _saved.Write(), standard.PowerKw, now.PowerKw, standard.TorqueNm, now.TorqueNm, standard.To100, now.To100, standard.TopKmh, now.TopKmh,
+                standard.ShiftSeconds, now.ShiftSeconds, standard.StopMetres, now.StopMetres, standard.MassKg, now.MassKg, now.RideMetres,
+                now.PowerKw < 0f ? " (power and acceleration are read with the player at the wheel and car performance on)" : string.Empty,
+                fault == null ? "PASS" : "FAIL, " + fault);
+        }
+
         private void Stock()
         {
+
             int spent = _cart.Spent;
             _cart.Take(new GarageBuild());
             _cart.Spent = spent;

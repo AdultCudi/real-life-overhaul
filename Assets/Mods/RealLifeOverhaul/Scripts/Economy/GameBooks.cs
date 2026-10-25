@@ -17,6 +17,9 @@ namespace RealLifeOverhaul.Economy
     /// </summary>
     public static class GameBooks
     {
+        /// <summary>Owner deduction labels whose mixed costs have no single portable recurrence rule.</summary>
+        internal static string[] CompanionUnclassifiedTaxLabels() => new[] { "reallife_empire_deduct".GetLocalization() };
+
         public const string Salaries = "ba:transactioncategory_salaryexpenses";
         public const string Rent = "ba:transactioncategory_rent";
         public const string Marketing = "ba:transactioncategory_marketing";

@@ -221,6 +221,10 @@ namespace RealLifeOverhaul.Careers
                     Pay = (int)((long)ProRules.PostPay(p, rank, kind, CareersBridges.ShortageOf(p.Family)) * (10000 + ad.PayBp) / 10000),
                     Work = (int)ProRules.ModeRoll(p, TechRandom.Mille(StudySeed, 8202, day, i)), From = day, To = ad.To, Via = (int)Via.JobsBoard, Family = ad.Family, Level = ad.Level
                 };
+                if (!FitShift(o2))
+                {
+                    continue;   // its place is never open long enough for a working day
+                }
                 w.Openings.Add(o2);
                 added++;
             }
@@ -309,7 +313,7 @@ namespace RealLifeOverhaul.Careers
                     return null;
                 }
             }
-            return o;
+            return FitShift(o) ? o : null;   // its week inside the place's opening hours, or no post there
         }
 
         /// <summary>The public sector's employers by name (a locale key, so the name follows the language).</summary>

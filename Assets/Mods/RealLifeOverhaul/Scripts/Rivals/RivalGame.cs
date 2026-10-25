@@ -36,6 +36,7 @@ namespace RealLifeOverhaul.Rivals
             }
             into.Worth = Worth();
             into.Level = Prices.Level;
+            into.FirstFrom = RivalDirector.FirstFrom;
             into.Cycle = RivalBridges.Cycle != null ? RivalCatalogue.Clamp(RivalBridges.Cycle(), 0, 3) : 1;
             into.Market = RivalBridges.Ask(RivalBridges.MarketHere);
             into.Listed = into.Market && RivalBridges.Ask(RivalBridges.Listed);

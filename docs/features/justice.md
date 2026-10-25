@@ -138,6 +138,7 @@ How a sentence is put together (`JusticeLaw.Sentence`):
 - **Fine**: the charges' fines added, times the plea (1, 0.75 guilty, 0.6 deal), less 15 % for having complied with the police and 10 % for remorse the court believed, plus a quarter for each prior conviction (three at most), half as much again on probation.
 
   Then **bounded**: never more than 35 % of the cash in hand (but never under 250) and never more than 60 000; what was fined at the roadside for the same thing is taken off.
+  The damages a case holds (`JusticeCase.Damages`, below) are added after the bound (`JusticeLaw.ConvictionDue`).
   Up to 15 % of cash it is paid at once; above that it is seven daily instalments.
 
 - **Prison**: the gravest charge's term, a day more for each further felony, a quarter more per prior, scaled to the cap option (default 7, 3 to 14) and never over it, never under 2.
@@ -241,7 +242,9 @@ Justice.Bridges.Law = new MyLawBridge();   // once, when the feature starts
 Justice.Bridges.Law = null;                // when it is destroyed: the default comes back
 ```
 
-Hooks in the mod's own code today (one line each): `PoliceAttention.Bust` and `PolicePursuit.Catch` arrest; `PolicePursuit.ChargeForPeople` and `BillLater` summon (a death, or leaving the scene); `PoliceAttention.Ticket` is a police contact; `CrashConsequences.ChargeLiability` and the two pursuit settlements report a crash victim; `NearbyInteraction` leaves the interaction key alone while `Justice.TakesInteractKey`.
+**One incident, one punishment.** A hit-and-run the player got away from (`PolicePursuit.Escape`, or a stop driven away from in `PoliceAttention.Clear`) goes through `PolicePursuit.SummonOrBill`. With people hurt it summons, and a case that opens takes the whole later bill (`JusticeLaw.LaterBill` is then 0): the fine is the court's sentence and the damages ride on the case (`JusticeReport.Damages`, saved after the charges on the case's line), charged only with a conviction. A dismissal or an acquittal therefore leaves nothing to be billed by the traffic camera. Only when no case opens (the justice system off, no room) is the bill queued as before; damages alone, with nobody hurt, are billed with no case. Test: Options, Justice, "A camera bill and a dismissed case" writes `Justice check (camera bill after a dismissal)` with PASS or the reason.
+
+Hooks in the mod's own code today (one line each): `PoliceAttention.Bust` and `PolicePursuit.Catch` arrest; `PolicePursuit.ChargeForPeople` and `SummonOrBill` summon (a death, or leaving the scene); `PoliceAttention.Ticket` is a police contact; `CrashConsequences.ChargeLiability` and the two pursuit settlements report a crash victim; `NearbyInteraction` leaves the interaction key alone while `Justice.TakesInteractKey`.
 
 ## Wish-list (assets; nothing waits on them: a prop or a clip of these ids is picked up with no code change, a sound or a sprite needs one line)
 

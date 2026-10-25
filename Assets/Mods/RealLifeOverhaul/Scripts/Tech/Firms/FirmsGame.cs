@@ -19,6 +19,9 @@ namespace RealLifeOverhaul.Tech
     /// </summary>
     internal static class FirmsGame
     {
+        /// <summary>Owner deduction labels whose mixed costs have no single portable recurrence rule.</summary>
+        internal static string[] CompanionUnclassifiedTaxLabels() => new[] { DeductKey.GetLocalization(), ReliefDeductKey.GetLocalization() };
+
         public const string TakingsKey = "reallife_transaction_tech_takings";
         public const string HostingKey = "reallife_transaction_tech_hosting";
         public const string SoftwareKey = "reallife_transaction_tech_software";

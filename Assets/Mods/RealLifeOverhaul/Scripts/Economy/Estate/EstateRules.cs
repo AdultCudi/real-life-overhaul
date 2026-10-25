@@ -31,6 +31,9 @@ namespace RealLifeOverhaul.Economy
         public bool Evicted;        // ...or by the court's order
         public bool Renewed;
         public int Damage;          // condition lost when they went
+        public bool PlanBroken;     // an instalment was missed: the plan is over
+        public bool PlanDone;       // the plan paid the arrears off
+        public bool Quit;           // an unhappy tenant went on the day they said
     }
 
     /// <summary>What went wrong at a building on a day.</summary>

@@ -195,10 +195,10 @@ namespace RealLifeOverhaul.Economy
         public const string ManagerKey = "reallife_transaction_co_manager";
 
         // The game's business types by what they sell, as the end of their names ("ba:businesstype_...").
-        private static readonly string[] FoodTypes = { "fastfoodrestaurant", "coffeeshop", "supermarket", "fruitandvegetablestore" };
+        private static readonly string[] FoodTypes = { "fastfoodrestaurant", "coffeeshop", "supermarket", "fruitandvegetablestore", "icecreamparlour", "teabar" };   // the last two: Scripts/Shops
         private static readonly string[] AlcoholTypes = { "liquorstore", "nightclub" };
         private static readonly string[] WellOffTypes = { "jewelrystore", "electronicsstore", "cardealership", "furniturestore", "clothingstore", "nightclub" };
-        private static readonly string[] PriceTypes = { "supermarket", "fastfoodrestaurant", "fruitandvegetablestore", "liquorstore", "gasstation", "giftshop" };
+        private static readonly string[] PriceTypes = { "supermarket", "fastfoodrestaurant", "fruitandvegetablestore", "liquorstore", "gasstation", "giftshop", "tobacconist" };
         private const string DeliveryDriver = "ba:skill_deliverydriver";
         private const int DriverHours = 570;    // hundredths: the fixed day the game pays a delivery driver (EmployeeInstance.PayWage)
 

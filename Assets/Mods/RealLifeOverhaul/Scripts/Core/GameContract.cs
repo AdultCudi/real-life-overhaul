@@ -18,6 +18,7 @@ namespace RealLifeOverhaul
         private const string UnityUi = "UnityEngine.UI";
         private const string Steam = "Facepunch.Steamworks.Win64";
         private const string Navigation = "Unity.AI.Navigation";
+        private const string Hg = "HGPlugins";
 
         static GameContract()
         {
@@ -93,6 +94,8 @@ namespace RealLifeOverhaul
         public static readonly GamePart StartCompetitors = ContractBook.Part("start_competitors", "tech_sector", "the competitors in the city on BizMan's start screen, for the mod's own kinds of business");
         public static readonly GamePart ChatFilter = ContractBook.Part("chat_filter", "flare", "Steam's own filter of what other players of a Going Public session type on Flare (the mod's own word list without it)");
         public static readonly GamePart PhotoHolds = ContractBook.Part("photo_holds", "photos", "the Camera telling its own hold on the player from the game's, and putting the world's clicks back as they were (the mop's floor)");
+        public static readonly GamePart SnowFall = ContractBook.Part("snow_fall", "seasons", "falling snow around the player, where the game's rain falls");
+        public static readonly GamePart SnowWalkers = ContractBook.Part("snow_walkers", "seasons", "people in the street walking more slowly on snow");
         public static readonly GamePart RivalOffers = ContractBook.Part("rival_offers", null, "taking the buttons off a rival's offer that is over");
         public static readonly GamePart StaffLeaving = ContractBook.Part("staff_leaving", null, "paying an employee the mod lets go at the turn of a day only once");
         public static readonly GamePart KeyHidden = ContractBook.Part("key_hidden", "textsai", "the key typed for Your own AI shown as dots in the game's text box");
@@ -108,6 +111,7 @@ namespace RealLifeOverhaul
             "Uptown as a district of the game: in its lists of districts, its people's tables and its city map");
         public static readonly GamePart UptownBigTests = ContractBook.Part("uptown_big_tests", "uptown",
             "the tests of Uptown's wholesale store and filling station: a delivery and a fill-up the game's own way");
+        public static readonly GamePart ShopHelp = ContractBook.Part("shop_help", "newshops", "the new kinds of shop's pages in the game's help");
 
         // The pieces, each group under the code that reads it.
 
@@ -190,6 +194,10 @@ namespace RealLifeOverhaul
 
         // Events/Weather
         public static readonly GameMember RainIntensity = StaticField(Thunder, Sky, "BigAmbitions.DayNightCycle.RainHelper", "NextRainMaxIntensity", "Single");
+
+        // Seasons/SeasonGame: the rain's place by the player, which the snow falls around; the people's paces, narrowed on snow
+        public static readonly GameMember RainPlace = StaticField(SnowFall, Sky, "BigAmbitions.DayNightCycle.RainHelper", "RainEffect", "RainEffect");
+        public static readonly GameMember WalkerPaces = Field(SnowWalkers, Game, "PedestrianPool", "animatorOverrides", "List<PedestrianPool.AnimatorOverride>");
 
         // Home/HomeOffers, Ledger/LedgerPointer, Transport/TransitPointer, Careers/DeskGame, Construction/BuilderDeskGame: the game's list of what a click does
         public static readonly GameMember CtaBehaviours = StaticField(On(ClickHome, ClickLedger, ClickBusStop, ClickDesk, ClickBuilderDesk), Game, "Player.HUD.ItemInfoOverlays.CtaManager", "CtaBehaviors", "List<ICtaBehavior>");
@@ -449,6 +457,9 @@ namespace RealLifeOverhaul
         public static readonly GameMember WholesaleDeliver = Optional(StaticMethod(UptownBigTests, Game, "Helpers.BusinessHelper", "DeliverWholesaleContract", "Boolean", "DeliveryContract"));
         public static readonly GameMember StationTrigger = Optional(Field(UptownBigTests, Game, "UI.Overlays.GasStationOverlay", "_currentStationTrigger", "GasStationTrigger"));
         public static readonly GameMember StationRefuel = Optional(Method(UptownBigTests, Game, "UI.Overlays.GasStationOverlay", "Refuel", "Void"));
+        // Shops/ShopsGame: the language tables the game's texts are read from, given each new kind of shop's help page
+        // under the keys the game's help reads (else BizMan's requirement link opens a page of bare keys)
+        public static readonly GameMember LocaleTables = Optional(StaticField(ShopHelp, Hg, "Localizor.LocalizorManager", "LocalizationDictionary", "Dictionary<String,Dictionary<String,String>>"));
 
         /// <summary>The five pieces Build 3675 lacks (the funeral helper's two properties are one, its type).</summary>
         public static readonly GameMember[] LackedBy3675 = { PlayerDead, FuneralActive, FenceIndex, ResumeTarget, StationNameKey, ConfirmByKey };

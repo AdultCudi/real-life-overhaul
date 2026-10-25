@@ -43,6 +43,7 @@ namespace RealLifeOverhaul
         public GigOffer Offer;           // what makes this shift differ: size, fee, crowd, events (the table's figures outside freelance)
         public int Level;
         public bool Test;                // started by a test button: needs and daily limits waived
+        public bool HeavyLoad;           // asked for as a heavy load: the courier round in a heavy truck (HeavyRules)
 
         /// <summary>The rota shift this job is being worked as, for an employer; null for a gig taken freelance.</summary>
         public CareerShift Shift;

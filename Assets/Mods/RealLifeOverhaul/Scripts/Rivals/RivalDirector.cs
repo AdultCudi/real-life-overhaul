@@ -37,6 +37,9 @@ namespace RealLifeOverhaul.Rivals
 
         public static int Strength => RivalCatalogue.Clamp(Settings.RivalsStrength, 0, RivalCatalogue.Strengths - 1);
 
+        /// <summary>The worth, at the start's prices, the first rival comes forward from: the option's step.</summary>
+        public static long FirstFrom => RivalRules.FirstFrom(Settings.RivalsFirst);
+
         private static GameInstance Save => SaveGameManager.Current;
         private static bool Verbose => Meta.Dev.Verbose;
 
@@ -149,7 +152,7 @@ namespace RealLifeOverhaul.Rivals
                 Resumed(day);   // (switched off, or the save loaded on a later day: the days missed are not played)
             }
             Logger?.Info("Rivals: " + (fresh ? "a file is opened for this save on day " + day + " (seed " + file.Seed + "); nobody comes forward before the player is worth "
-                                               + RivalRules.At(RivalCatalogue.TierFrom[1], Prices.Level) : "the file is read: tier " + file.Tier + ", " + Describe()) + ".");
+                                               + RivalRules.At(FirstFrom, Prices.Level) : "the file is read: tier " + file.Tier + ", " + Describe()) + ".");
         }
 
         // With 'keep' the file is saved first (the option switched off in play); with 'restore' the customers and the

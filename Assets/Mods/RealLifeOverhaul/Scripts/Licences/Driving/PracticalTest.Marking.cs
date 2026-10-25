@@ -454,7 +454,7 @@ namespace RealLifeOverhaul
             {
                 _faults[(int)TestFault.ParkedBadly]++;
             }
-            if (_class == LicenceClass.Commercial && _reversed < 2.5f && over <= 0.6f)
+            if (Reverses(_class) && _reversed < 2.5f && over <= 0.6f)
             {
                 _faults[(int)TestFault.NoReverse]++;
             }

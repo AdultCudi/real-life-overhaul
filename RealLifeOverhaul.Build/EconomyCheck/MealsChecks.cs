@@ -14,6 +14,7 @@ internal static partial class Program
     private static void Meals()
     {
         MealSeatChecks();
+        MealFloorChecks();
         MealTimeChecks();
         DanceRuleChecks();
         MealSourceChecks();
@@ -69,6 +70,125 @@ internal static partial class Program
         // Timing: the pick runs once a meal over eight seats; far within a millisecond.
         double ms = PickTime(seats);
         Check(ms < 200.0, "meals: 200,000 picks over four seats in under 200 ms: " + ms.ToString("0.0") + " ms");
+    }
+
+    // A house with an upper floor (a player's report: nobody sat down after cooking): the building lists the seats upstairs
+    // among those below, and the search kept the first it came to and measured the eight nearest, all of them upstairs and
+    // never usable, so the table downstairs was never looked at. Only the player's own floor is kept now, the nearest of it
+    // whatever order the list is in.
+    private static void MealFloorChecks()
+    {
+        Check(MealsRules.SameFloor(0f) && MealsRules.SameFloor(1f) && MealsRules.SameFloor(-1f) && !MealsRules.SameFloor(1.01f) && !MealsRules.SameFloor(-1.01f)
+              && !MealsRules.SameFloor(3.5f) && !MealsRules.SameFloor(-3.5f),
+            "meals floors: a seat within a metre up or down is on the player's floor, one a storey up or down is not");
+        bool sameRule = true;
+        for (float up = -5f; up <= 5f; up += 0.25f)
+        {
+            sameRule &= MealsRules.Usable(MealSeatAt(3f, 3f, true, true, up)) == MealsRules.SameFloor(up);
+        }
+        Check(sameRule, "meals floors: a seat is usable on the player's floor by the same rule the shortlist keeps to");
+
+        var kept = new SeatOption[4];
+        Check(MealsRules.Slot(kept, 0, 4, 2f, 0f) == 0 && MealsRules.Slot(kept, 3, 4, 2f, 0f) == 3, "meals floors: while there is room, a seat takes the next place");
+        Check(MealsRules.Slot(kept, 0, 4, 2f, 3.5f) == -1 && MealsRules.Slot(kept, 0, 4, 2f, -3.5f) == -1, "meals floors: a seat upstairs or downstairs takes no place");
+        Check(MealsRules.Slot(kept, 0, 4, 9.01f, 0f) == -1 && MealsRules.Slot(kept, 0, 4, 9f, 0f) == 0, "meals floors: a seat beyond the farthest a meal is carried takes no place");
+        Check(MealsRules.Slot(null, 0, 4, 2f, 0f) == -1 && MealsRules.Slot(kept, 0, 0, 2f, 0f) == -1, "meals floors: no shortlist, or no room in it, no place");
+        kept[0].Flat = 3f;
+        kept[1].Flat = 7f;
+        kept[2].Flat = 5f;
+        kept[3].Flat = 6f;
+        Check(MealsRules.Slot(kept, 4, 4, 4f, 0f) == 1, "meals floors: a full shortlist gives a nearer seat the farthest one's place");
+        Check(MealsRules.Slot(kept, 4, 4, 7f, 0f) == -1 && MealsRules.Slot(kept, 4, 4, 8f, 0f) == -1, "meals floors: a full shortlist takes no seat that is no nearer than all it keeps");
+        Check(MealsRules.Slot(kept, 9, 99, 4f, 0f) == 1, "meals floors: a count or room past the shortlist's end reads only what is there");
+
+        // The house of the report: twenty seats upstairs over the kitchen listed first, a sofa in the cellar, then the six
+        // at the dining table on the player's floor, farther across the floor than every seat upstairs.
+        var house = new List<SeatOption>();
+        for (int i = 0; i < 20; i++)
+        {
+            house.Add(MealSeatAt(1f + i * 0.2f, -1f, false, true, 3.5f + (i % 3) * 0.3f));
+        }
+        house.Add(MealSeatAt(2f, -1f, false, true, -3.2f));
+        for (int i = 0; i < 6; i++)
+        {
+            house.Add(MealSeatAt(6f + i * 0.3f, 6.5f + i * 0.3f, true, true, 0.45f));
+        }
+        Check(MealOldPick(house) < 0, "meals floors: the search as it was kept the first seats listed and found none to sit at (the report)");
+        int pick = MealShortlistPick(house, out SeatOption[] measured, out int count);
+        Check(count == 6 && measured.Length == 6 && pick == 0 && measured[0].Table && Near(measured[0].Flat, 6f) && MealsRules.SameFloor(measured[0].Up),
+            "meals floors: now the six at the dining table are the shortlist and the nearest of them is the seat (" + count + " kept, pick " + pick + ")");
+
+        // Whatever order the building lists its furniture in, the same seat.
+        var random = new Random(20261023);
+        bool same = true;
+        for (int round = 0; round < 40; round++)
+        {
+            var shuffled = new List<SeatOption>(house);
+            for (int i = shuffled.Count - 1; i > 0; i--)
+            {
+                int j = random.Next(i + 1);
+                (shuffled[i], shuffled[j]) = (shuffled[j], shuffled[i]);
+            }
+            int p = MealShortlistPick(shuffled, out SeatOption[] m, out int n);
+            same &= n == 6 && p >= 0 && Near(m[p].Flat, 6f);
+        }
+        Check(same, "meals floors: the same seat whatever order the building lists its furniture in");
+
+        // A big room on one floor: of forty seats the nearest twenty-four are kept, listed nearest last.
+        var hall = new List<SeatOption>();
+        for (int i = 39; i >= 0; i--)
+        {
+            hall.Add(MealSeatAt(0.5f + i * 0.2f, 0.5f + i * 0.2f, false));
+        }
+        MealShortlistPick(hall, out SeatOption[] near, out int hallCount);
+        Check(hallCount == 24 && near.Length == MealsRules.MostLooked && Near(near[0].Flat, 0.5f) && Near(near[MealsRules.MostLooked - 1].Flat, 0.5f + (MealsRules.MostLooked - 1) * 0.2f),
+            "meals floors: the shortlist keeps the nearest seats when there are more than it holds, and the walk is measured for the nearest eight");
+
+        // Over the sources: both of the building's lists of seats go through the shortlist, and the line counts the floors left out.
+        string game = MealsSource("MealsGame.cs");
+        string indoors = MealCode(MemberText(game, "private static int Indoors(Vector3 from)"));
+        string keep = MemberText(game, "private static int Keep(Transform place, Vector3 from, int count)");
+        Check(Occurs(indoors, "Keep(place, from, count)") == 2 && Occurs(indoors, "Options[slot] = seat.Option;") == 2 && !indoors.Contains("count++")
+              && !indoors.Contains("count < MostSeats"),
+            "meals floors sources: the table seats and the other seats go through the shortlist, with no stop after the first seats listed");
+        Check(keep.Contains("MealsRules.SameFloor(to.y)") && keep.Contains("_elsewhere++;") && keep.Contains("MealsRules.Slot(Options, count, MostSeats, Mathf.Sqrt(CitySpots.Flat(to)), to.y)"),
+            "meals floors sources: a seat on another floor is counted as left out and takes no place; the others by their distance across the floor");
+        string director = MealsSource("MealsDirector.cs");
+        Check(Occurs(director, "out int looked, out int elsewhere") == 2 && Occurs(director, "Elsewhere(elsewhere)") == 2
+              && MealsSource("MealsDirector.Tests.cs").Contains("out int looked, out int elsewhere"),
+            "meals floors sources: a meal's line and the test say how many seats on another floor were left out");
+    }
+
+    // The shortlist as MealsGame.Indoors keeps it (MealsRules.Slot, in the order listed), then its nearest MostLooked
+    // measured and picked as MealsGame.Find does.
+    private static int MealShortlistPick(List<SeatOption> listed, out SeatOption[] measured, out int count)
+    {
+        const int most = 24;
+        var shortlist = new SeatOption[most];
+        count = 0;
+        foreach (SeatOption seat in listed)
+        {
+            int slot = MealsRules.Slot(shortlist, count, most, seat.Flat, seat.Up);
+            if (slot < 0)
+            {
+                continue;
+            }
+            count += slot == count ? 1 : 0;
+            shortlist[slot] = seat;
+        }
+        var nearest = new List<SeatOption>(shortlist).GetRange(0, count);
+        nearest.Sort((a, b) => a.Flat.CompareTo(b.Flat));
+        measured = nearest.GetRange(0, Math.Min(count, MealsRules.MostLooked)).ToArray();
+        return MealsRules.Pick(measured, measured.Length);
+    }
+
+    // The search before the fix: the first twenty-four seats in the order listed, whatever their floor, then the eight nearest.
+    private static int MealOldPick(List<SeatOption> listed)
+    {
+        var first = listed.GetRange(0, Math.Min(24, listed.Count));
+        first.Sort((a, b) => a.Flat.CompareTo(b.Flat));
+        SeatOption[] measured = first.GetRange(0, Math.Min(first.Count, MealsRules.MostLooked)).ToArray();
+        return MealsRules.Pick(measured, measured.Length);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.NoInlining)]

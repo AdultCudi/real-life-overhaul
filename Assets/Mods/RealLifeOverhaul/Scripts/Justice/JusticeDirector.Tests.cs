@@ -44,15 +44,73 @@ namespace RealLifeOverhaul
                     : kind == 1 ? new JusticeReport(JusticeLaw.HitRunInjury, JusticeLaw.Reckless) { Witnesses = 2, Cameras = true, Fled = true, HeldHours = 4 }
                     : kind == 2 ? new JusticeReport(JusticeLaw.HitRunDeath, JusticeLaw.Evading) { Witnesses = 2, Cameras = true, InTheAct = true, Fled = true, HeldHours = 5 }
                     : new JusticeReport(JusticeLaw.Theft) { HeldHours = 4, PaidAtScene = 200, Complied = true, Evidence = new[] { 0.2f } };
-                int today = TimeHelper.CurrentDay;
-                for (int i = 0; i < JusticeState.Cases.Count; i++)
-                {
-                    if (JusticeState.Cases[i].Open && JusticeState.Cases[i].OpenedDay == today)
-                    {
-                        JusticeState.Cases[i].OpenedDay = today - 1;   // a case of its own each time: today's does not take it in
-                    }
-                }
+                KeepTodaysCasesApart();
                 OpenCase(report, arrested: true, test: true);
+            }
+            catch (Exception e)
+            {
+                Fault(e);
+            }
+        }
+
+        // A test's case of its own each time: today's open cases do not take it in.
+        private static void KeepTodaysCasesApart()
+        {
+            int today = TimeHelper.CurrentDay;
+            for (int i = 0; i < JusticeState.Cases.Count; i++)
+            {
+                if (JusticeState.Cases[i].Open && JusticeState.Cases[i].OpenedDay == today)
+                {
+                    JusticeState.Cases[i].OpenedDay = today - 1;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Test: the sequence a player reported. A hit-and-run got away from, the plate seen, goes to court by the pursuit's own
+        /// path; the case is dismissed at once; then no bill may be waiting for it. One check line, PASS or the reason.
+        /// </summary>
+        public void TestCameraDismissed()
+        {
+            try
+            {
+                JusticeRefusal why = Ready();
+                if (why == JusticeRefusal.None && (JusticeState.OpenCount >= MostOpenCases || _hearing != null))
+                {
+                    why = JusticeRefusal.Busy;
+                }
+                if (why != JusticeRefusal.None)
+                {
+                    JusticeRefusals.Tell(Logger, "Camera bill after a dismissal", why, "open cases " + JusticeState.OpenCount);
+                    return;
+                }
+                KeepTodaysCasesApart();
+                int billBefore = ModState.PendingFine;
+                float dueBefore = ModState.PendingFineDue;
+                int damages = Prices.At(1200);   // a car hit on the way too
+                JusticeCase c = PolicePursuit.SummonOrBill(damages, PolicePursuit.InjuryEscapedFine, killed: false, runningFine: 0);
+                int billAfterSummons = ModState.PendingFine;
+                if (c != null)
+                {
+                    Dismiss(c, announce: true);
+                }
+                int billAfter = ModState.PendingFine;
+                string fault = c == null ? "no case was opened, so the bill stood alone"
+                    : c.Damages != damages ? "the case holds " + c.Damages + " of damages, not " + damages
+                    : c.Open || c.Outcome != CaseOutcome.Dismissed ? "the case was not dismissed"
+                    : billAfterSummons != billBefore ? "a bill of " + (billAfterSummons - billBefore) + " was queued beside the summons"
+                    : billAfter != billBefore ? "a bill of " + (billAfter - billBefore) + " was queued after the dismissal"
+                    : null;
+                if (c == null || billAfter != billBefore)
+                {
+                    ModState.PendingFine = billBefore;   // the test's own bill is never charged
+                    ModState.PendingFineDue = dueBefore;
+                }
+                Logger?.Info("Justice check (camera bill after a dismissal): " + (c != null ? "case " + c.Number + ", damages held " + c.Damages : "no case")
+                             + "; bill waiting before " + billBefore + ", after the summons " + billAfterSummons
+                             + ", after the dismissal " + billAfter + ": " + (fault == null ? "PASS." : "FAIL, " + fault + "."));
+                JusticeText.Toast(fault == null ? NotificationType.Success : NotificationType.Error,
+                    fault == null ? "reallife_justice_test_camera_pass" : "reallife_justice_test_camera_fail", 10f);
             }
             catch (Exception e)
             {

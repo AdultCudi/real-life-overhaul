@@ -36,6 +36,34 @@ namespace RealLifeOverhaul
             }
         }
 
+        /// <summary>
+        /// Options-page test button: a courier round as a heavy load where the player stands, in their own heavy truck if one is
+        /// near or a hired one free of charge, whatever their licence. Says why when it cannot start.
+        /// </summary>
+        public void TestHeavyLoad()
+        {
+            JobDef def = JobCatalogue.Find(JobCatalogue.Courier);
+            if (def == null || _broken || !JobState.Loaded)
+            {
+                TestRefusals.Tell(Logger, "Heavy load", TestRefusal.NotLoaded);
+                return;
+            }
+            if (!Settings.HeavyLicence || !Settings.Jobs)
+            {
+                TestRefusals.Tell(Logger, "Heavy load", TestRefusal.FeatureOff, 0, !Settings.Jobs ? "jobs are off" : "the heavy goods licence is off");
+                return;
+            }
+            if (_job != null)
+            {
+                EndJob(JobEnd.Interrupted, null);
+            }
+            if (!Free(out string reason) || !StartJob(def, true, out reason, heavy: true))
+            {
+                Logger?.Info("Jobs: test of a heavy load could not start (" + reason + ").");
+                JobText.Toast(NotificationType.Warning, reason ?? "reallife_job_no_now");
+            }
+        }
+
         private int _testEmployer = -1;
 
         /// <summary>Options page: signs on with the next employer in turn (leaving the current one with no mark), on the first rota that works tomorrow.</summary>
@@ -144,6 +172,41 @@ namespace RealLifeOverhaul
             }
             Notifications.Show(NotificationType.Info, "reallife_career_gig_booked_toast",
                 new Dictionary<string, string>(2) { { "venue", _career.GigVenue }, { "fee", JobText.Money(_career.GigFee) } }, 10f);
+        }
+
+        /// <summary>
+        /// Options page: the ride-hail passengers' table in effect (the "easier passengers" option, or the fare being driven's
+        /// own if one is), both tables in Player.log, and whether the easier one is softer on braking, bumps and speeding and
+        /// the same on everything else. Changes nothing.
+        /// </summary>
+        public void TestTaxiTable()
+        {
+            const string Test = "Ride fare passengers";
+            if (_broken || !JobState.Loaded)
+            {
+                TestRefusals.Tell(Logger, Test, TestRefusal.NotLoaded);
+                return;
+            }
+            TaxiComfortTable wanted = TaxiComfortRules.For(Settings.JobTaxiEasy);
+            TaxiComfortTable riding = _job is TaxiJob taxi ? taxi.Table : null;
+            TaxiComfortTable shown = riding ?? wanted;
+            TaxiComfortTable n = TaxiComfortRules.Normal, e = TaxiComfortRules.Easier;
+            bool softer = e.JoltCost < n.JoltCost && e.JoltGap > n.JoltGap && e.HarshScale > n.HarshScale && e.BumpOver > n.BumpOver
+                          && e.SpeedingAbove >= n.SpeedingAbove && e.SpeedingCost < n.SpeedingCost;
+            bool same = e.CrashHard == n.CrashHard && e.CrashSoft == n.CrashSoft && e.PoliceCost == n.PoliceCost && e.LowComfort == n.LowComfort && e.LowCut == n.LowCut;
+            bool picked = TaxiComfortRules.For(false) == n && TaxiComfortRules.For(true) == e;
+            string why = (softer ? string.Empty : " the easier table is not softer on braking, bumps and speeding;") + (same ? string.Empty : " the easier table changes crashes, police or the slip;")
+                         + (picked ? string.Empty : " the option picks the wrong table;");
+            Logger?.Warn("Jobs check (ride fare passengers): option " + (Settings.JobTaxiEasy ? "easier" : "as always")
+                         + (riding != null ? ", the fare being driven " + (riding == e ? "easier" : "as always") + " (a switch counts from the next fare)" : ", no fare being driven")
+                         + "; as always: " + TaxiComfortRules.Describe(n) + "; easier: " + TaxiComfortRules.Describe(e) + ": "
+                         + (why.Length == 0 ? "PASS" : "FAIL (" + why.Trim() + ")") + ".");   // asked for by a button: written whether or not diagnostics are on
+            var inv = System.Globalization.CultureInfo.InvariantCulture;
+            Notifications.Show(NotificationType.Info, shown == e ? "reallife_job_taxi_table_easier" : "reallife_job_taxi_table_usual",
+                new Dictionary<string, string>(3)
+                {
+                    { "jolt", shown.JoltCost.ToString("0.#", inv) }, { "gap", shown.JoltGap.ToString("0.#", inv) }, { "speed", shown.SpeedingCost.ToString("0.#", inv) }
+                }, 10f);
         }
 
         private bool CareerTestReady()

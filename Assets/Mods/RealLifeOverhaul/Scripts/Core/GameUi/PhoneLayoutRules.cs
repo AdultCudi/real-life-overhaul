@@ -31,7 +31,7 @@ namespace RealLifeOverhaul.GameUi
         public static readonly int[] Defaults =
         {
             Dock, Dock, Life, Life, Life, Money, Money,
-            Work, Work, Work,
+            Work, Work, Work, Work,
             Money, Money, Money, Money,
             Business, Business, Business, Business, Business, Business, Business,
             Business,

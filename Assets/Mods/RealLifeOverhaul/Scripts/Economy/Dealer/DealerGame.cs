@@ -17,6 +17,9 @@ namespace RealLifeOverhaul.Economy.Dealership
     /// </summary>
     internal static class DealerGame
     {
+        /// <summary>Owner deduction labels whose mixed costs have no single portable recurrence rule.</summary>
+        internal static string[] CompanionUnclassifiedTaxLabels() => new[] { DeductKey.GetLocalization() };
+
         private const string CustomerService = "ba:skill_customerservice";
         private const string DeductKey = "reallife_dealer_deduct";
         private const float FloorLift = 0.08f;   // metres over the floor a car is put down at

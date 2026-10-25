@@ -83,7 +83,7 @@ namespace RealLifeOverhaul
             _uniform = new JobUniform(Logger);
             SolidFootprint.Reset();
             _onBoard = BoardClicked;
-            _rental = new JobRental(Logger);
+            _rental = new JobRental(this, Logger);
             _boards = new JobBoards(_props, Logger);
             _career = new CareerDirector(this, Logger);
             CareerState.Reset();
@@ -278,7 +278,31 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>Whether a job can be taken now; if not, the reason as a key the phone can say.</summary>
-        public bool Available(JobDef def, out string reasonKey)
+        public bool Available(JobDef def, out string reasonKey) => Available(def, false, out reasonKey);
+
+        /// <summary>
+        /// Whether heavy loads are open to the player: the heavy class on, and a licence the rules accept (any, with "Driving
+        /// needs a licence" off). Read when the Gig Line is asked, never per frame.
+        /// </summary>
+        public static bool HeavyOffered => Settings.HeavyLicence && Licences.Driving.Has(LicenceClass.Heavy);
+
+        /// <summary>Whether the courier round can be taken as a heavy load now; if not, the reason as a key the phone can say.</summary>
+        public bool HeavyAvailable(JobDef def, out string reasonKey)
+        {
+            if (def == null || def.Id != JobCatalogue.Courier)
+            {
+                reasonKey = "reallife_job_no_now";
+                return false;
+            }
+            if (!HeavyOffered)
+            {
+                reasonKey = "reallife_job_heavy_no_licence";
+                return false;
+            }
+            return Available(def, true, out reasonKey);
+        }
+
+        private bool Available(JobDef def, bool heavy, out string reasonKey)
         {
             reasonKey = null;
             if (_broken || !Settings.Jobs || !JobState.Loaded)
@@ -320,7 +344,11 @@ namespace RealLifeOverhaul
             {
                 reasonKey = "reallife_job_no_record";
             }
-            else if ((def.Needs & JobNeed.Car) != 0 && NearestCar(60f) == null)
+            else if (heavy && NearestHeavy(60f) == null)
+            {
+                _rental.CanHire(false, true, out reasonKey);   // no heavy truck of their own near: one can be hired, if they can pay for it
+            }
+            else if (!heavy && (def.Needs & JobNeed.Car) != 0 && NearestCar(60f) == null)
             {
                 _rental.CanHire(false, out reasonKey);   // no car near: a van can be hired, if they can pay for it
             }
@@ -390,6 +418,12 @@ namespace RealLifeOverhaul
             return Available(def, out reasonKey) && StartJob(def, false, out reasonKey);
         }
 
+        /// <summary>Starts the courier round as a heavy load from the phone. False with the reason if it cannot be started.</summary>
+        public bool TakeHeavy(JobDef def, out string reasonKey)
+        {
+            return HeavyAvailable(def, out reasonKey) && StartJob(def, false, out reasonKey, heavy: true);
+        }
+
         /// <summary>The player stops the job themselves (phone, or the test button).</summary>
         public void Quit()
         {
@@ -434,7 +468,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        private bool StartJob(JobDef def, bool test, out string reasonKey, CareerShift shift = null, BookedGig gig = null)
+        private bool StartJob(JobDef def, bool test, out string reasonKey, CareerShift shift = null, BookedGig gig = null, bool heavy = false)
         {
             reasonKey = "reallife_job_no_now";
             Job job = Create(def.Id);
@@ -444,6 +478,7 @@ namespace RealLifeOverhaul
             }
             RefreshContext();
             _context.Test = test;
+            _context.HeavyLoad = heavy;
             _context.Shift = shift;
             _context.Gig = gig;
             float scale = PayScale();

@@ -49,12 +49,12 @@ namespace RealLifeOverhaul.Meals
     /// The only place meals and music touch the game, one small method per read (Mono compiles a method naming a game
     /// member whole). Nothing here runs per frame but <see cref="MovePressed"/>, and only while the player is seated at a
     /// meal; the seat search runs once, when the player has eaten, over the building's own list of its furniture (or one
-    /// physics query for a street bench), with one walking path for each of the few nearest seats.
+    /// physics query for a street bench), with one walking path for each of the few nearest seats on the player's floor.
     /// </summary>
     internal static class MealsGame
     {
         private const float StreetReach = 9f;   // m: the street bench a meal outside is taken to
-        private const int MostSeats = 24;       // seats kept from one search, the nearest
+        private const int MostSeats = 24;       // seats kept from one search, the nearest on the player's floor
 
         private static readonly MealSeat[] Seats = MakeSeats();
         private static readonly SeatOption[] Options = new SeatOption[MostSeats];
@@ -62,6 +62,7 @@ namespace RealLifeOverhaul.Meals
         private static readonly RaycastHit[] Hits = new RaycastHit[8];
         private static readonly Vector3[] Corners = new Vector3[32];
         private static NavMeshPath _path;
+        private static int _elsewhere;          // seats in reach the last search left out for being on another floor, for its line
         private static UnityAction _arrived;
         private static UnityAction _moved;
         private static UnityAction _blocked;
@@ -186,13 +187,16 @@ namespace RealLifeOverhaul.Meals
         /// <summary>
         /// The seat a meal is taken to from where the player stands, or null: the building's own furniture indoors (the game's
         /// table seats as its customers take them, and its other seats), a street bench outdoors; then
-        /// <see cref="MealsRules.Pick"/>. Run once, when the player has eaten. <paramref name="looked"/> says how many were measured.
+        /// <see cref="MealsRules.Pick"/>. Run once, when the player has eaten. <paramref name="looked"/> says how many were
+        /// measured, <paramref name="elsewhere"/> how many seats in reach were left out for being on another floor.
         /// </summary>
-        public static MealSeat Find(PlayerController player, out int looked)
+        public static MealSeat Find(PlayerController player, out int looked, out int elsewhere)
         {
             looked = 0;
+            _elsewhere = 0;
             Vector3 from = player.transform.position;
             int count = BuildingManager.IsInsideBuilding ? Indoors(from) : Street(from);
+            elsewhere = _elsewhere;
             Nearest(count);
             int measured = count < MealsRules.MostLooked ? count : MealsRules.MostLooked;
             for (int i = 0; i < measured; i++)
@@ -211,7 +215,8 @@ namespace RealLifeOverhaul.Meals
             return best >= 0 ? Seats[best] : null;
         }
 
-        // The building's own list of its furniture: a table's own free seats first (and the chairs that belong to them), then other seats.
+        // The building's own list of its furniture: a table's own free seats (and the chairs that belong to them), then other
+        // seats; of them the nearest on the player's floor are kept (MealsRules.Slot), whatever order the list has them in.
         private static int Indoors(Vector3 from)
         {
             BuildingManager manager = InstanceBehavior<BuildingManager>.Instance;
@@ -223,7 +228,7 @@ namespace RealLifeOverhaul.Meals
                 return 0;
             }
             float reach = (MealsRules.Reach + 2f) * (MealsRules.Reach + 2f);
-            for (int i = 0; i < items.Count && count < MostSeats; i++)
+            for (int i = 0; i < items.Count; i++)
             {
                 ItemController table = items[i];
                 if (table == null || !table.isActiveAndEnabled || table.Item == null || (table.Item.type & ItemType.Table) == 0 || table.SeatSpots == null
@@ -232,7 +237,7 @@ namespace RealLifeOverhaul.Meals
                     continue;
                 }
                 SeatSpot[] spots = table.SeatSpots;
-                for (int s = 0; s < spots.Length && count < MostSeats; s++)
+                for (int s = 0; s < spots.Length; s++)
                 {
                     SeatSpot spot = spots[s];
                     if (spot == null || spot.seatAttachmentPoint == null)
@@ -249,7 +254,13 @@ namespace RealLifeOverhaul.Meals
                     {
                         continue;
                     }
-                    MealSeat seat = Seats[count++];
+                    int slot = Keep(place, from, count);
+                    if (slot < 0)
+                    {
+                        continue;
+                    }
+                    count += slot == count ? 1 : 0;
+                    MealSeat seat = Seats[slot];
                     seat.Clear();
                     seat.Spot = spot;
                     seat.Item = chair != null ? chair : table;
@@ -266,9 +277,10 @@ namespace RealLifeOverhaul.Meals
                         seat.Top = false;
                     }
                     Measure(seat, from, true);
+                    Options[slot] = seat.Option;
                 }
             }
-            for (int i = 0; i < items.Count && count < MostSeats; i++)
+            for (int i = 0; i < items.Count; i++)
             {
                 ItemController item = items[i];
                 if (item == null || AtTables.Contains(item) || !Seating.IsSeat(item) || !item.isActiveAndEnabled || CitySpots.Flat(item.transform.position - from) > reach)
@@ -280,13 +292,32 @@ namespace RealLifeOverhaul.Meals
                 {
                     continue;
                 }
-                MealSeat seat = Seats[count++];
+                int slot = Keep(place, from, count);
+                if (slot < 0)
+                {
+                    continue;
+                }
+                count += slot == count ? 1 : 0;
+                MealSeat seat = Seats[slot];
                 seat.Clear();
                 seat.Item = item;
                 seat.Place = place;
                 Measure(seat, from, false);
+                Options[slot] = seat.Option;
             }
             return count;
+        }
+
+        // The place in the shortlist a seat sitting here takes (MealsRules.Slot), or -1; one on another floor is counted as left out.
+        private static int Keep(Transform place, Vector3 from, int count)
+        {
+            Vector3 to = place.position - from;
+            if (!MealsRules.SameFloor(to.y))
+            {
+                _elsewhere++;
+                return -1;
+            }
+            return MealsRules.Slot(Options, count, MostSeats, Mathf.Sqrt(CitySpots.Flat(to)), to.y);
         }
 
         // A street bench within reach, its own place free (the game seats a pedestrian on its other place).

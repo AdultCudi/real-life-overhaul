@@ -45,6 +45,8 @@ internal static partial class Program
         Appended(rel, en);
     }
 
+    private static readonly System.Text.RegularExpressions.Regex ContactName = new System.Text.RegularExpressions.Regex(@"^reallife-[a-z0-9]+(-[a-z0-9]+)*$");
+
     // RLO-TXT-002: the keys the branch started from keep their order, and every new key comes after all of them.
     private static void Appended(string rel, List<KeyValuePair<string, string>> en)
     {
@@ -99,7 +101,9 @@ internal static partial class Program
             {
                 Hit("RLO-TXT-002", rel, 0, "new key " + key + " is not at the end: it stands before " + en[lastOld].Key);
             }
-            if (!key.StartsWith("reallife_", StringComparison.Ordinal) && !key.StartsWith("reallife:businesstype_", StringComparison.Ordinal))
+            // A phone contact's name is its id, reallife-<name> (docs/standards/texts.md, RLO-TXT-002), and a business type of the mod's
+            // is named reallife:businesstype_<name>, which the game reads by that name: the two other kinds of key the mod adds.
+            if (!key.StartsWith("reallife_", StringComparison.Ordinal) && !key.StartsWith("reallife:businesstype_", StringComparison.Ordinal) && !ContactName.IsMatch(key))
             {
                 Hit("RLO-TXT-002", rel, 0, "new key " + key + " does not begin reallife_ (nor names a business type of the mod's, which the game reads by its name)");
             }

@@ -22,7 +22,10 @@ namespace RealLifeOverhaul
         TestVan,
         Taxi,
         Renew,
-        Motorcycle     // the ride assessment at the desk
+        Motorcycle,    // the ride assessment at the desk
+        TheoryHeavy,   // the heavy goods paper
+        LessonHeavy,   // in the school's truck
+        TestHeavy
     }
 
     /// <summary>The driving school's rules: what each service costs, and when it can be had, at the desk or on the phone.</summary>
@@ -30,13 +33,30 @@ namespace RealLifeOverhaul
     {
         public const int OpensAt = 7;
         public const int ClosesAt = 20;
-        public const int Classes = 4;       // LicenceClass: car, commercial, taxi, motorcycle
+        public const int Classes = 5;       // LicenceClass: car, commercial, taxi, motorcycle, heavy
 
-        public static readonly SchoolService[] Order =
+        private static readonly SchoolService[] WithHeavy =
+        {
+            SchoolService.Card, SchoolService.Theory, SchoolService.LessonCar, SchoolService.TestCar,
+            SchoolService.LessonVan, SchoolService.TestVan, SchoolService.TheoryHeavy, SchoolService.LessonHeavy, SchoolService.TestHeavy,
+            SchoolService.Motorcycle, SchoolService.Taxi, SchoolService.Renew
+        };
+
+        private static readonly SchoolService[] WithoutHeavy =
         {
             SchoolService.Card, SchoolService.Theory, SchoolService.LessonCar, SchoolService.TestCar,
             SchoolService.LessonVan, SchoolService.TestVan, SchoolService.Motorcycle, SchoolService.Taxi, SchoolService.Renew
         };
+
+        /// <summary>The services in the order the desk and the phone offer them; the heavy class's only while its option is on.</summary>
+        public static SchoolService[] Order => Settings.HeavyLicence ? WithHeavy : WithoutHeavy;
+
+        /// <summary>The heavy class's step a service is, if it is one.</summary>
+        public static bool HeavyStep(SchoolService service, out HeavyRules.Step step)
+        {
+            step = service == SchoolService.TheoryHeavy ? HeavyRules.Step.Theory : service == SchoolService.LessonHeavy ? HeavyRules.Step.Lesson : HeavyRules.Step.Test;
+            return service == SchoolService.TheoryHeavy || service == SchoolService.LessonHeavy || service == SchoolService.TestHeavy;
+        }
 
         public static int Fee(SchoolService service)
         {
@@ -50,6 +70,9 @@ namespace RealLifeOverhaul
                 case SchoolService.Taxi: return LicenceLaw.TaxiFee;
                 case SchoolService.Motorcycle: return LicenceLaw.MotorcycleFee;
                 case SchoolService.Renew: return LicenceLaw.RenewalFee * Mathf.Max(1, Renewable(TimeHelper.CurrentDay));
+                case SchoolService.TheoryHeavy: return HeavyRules.Fee(HeavyRules.Step.Theory, LicenceState.Heavy);
+                case SchoolService.LessonHeavy: return HeavyRules.Fee(HeavyRules.Step.Lesson, LicenceState.Heavy);
+                case SchoolService.TestHeavy: return HeavyRules.Fee(HeavyRules.Step.Test, LicenceState.Heavy);
                 default: return 0;
             }
         }
@@ -98,6 +121,12 @@ namespace RealLifeOverhaul
             else if (needsDesk && LicenceState.SuspendedUntil > day)
             {
                 reasonKey = "reallife_school_no_suspended";
+            }
+            else if (HeavyStep(service, out HeavyRules.Step step))
+            {
+                LicenceStanding heavy = LicenceState.Standing(LicenceClass.Heavy, day);
+                reasonKey = !Settings.HeavyLicence ? "reallife_school_closed"
+                    : HeavyRules.Refusal(step, van == LicenceStanding.Valid, Holds(heavy), heavy == LicenceStanding.Valid, LicenceState.Heavy, day);
             }
             else
             {
@@ -171,6 +200,9 @@ namespace RealLifeOverhaul
                 case SchoolService.TestVan: return "reallife_school_pitch_test_van";
                 case SchoolService.Taxi: return "reallife_school_pitch_taxi";
                 case SchoolService.Renew: return "reallife_school_pitch_renew";
+                case SchoolService.TheoryHeavy: return "reallife_school_pitch_theory_heavy";
+                case SchoolService.LessonHeavy: return "reallife_school_pitch_lesson_heavy";
+                case SchoolService.TestHeavy: return "reallife_school_pitch_test_heavy";
                 default: return "reallife_school_pitch_card";
             }
         }
@@ -183,6 +215,10 @@ namespace RealLifeOverhaul
             for (int i = 0; i < Classes; i++)
             {
                 var kind = (LicenceClass)i;
+                if (!OnCard(kind))
+                {
+                    continue;
+                }
                 text.Append(Licences.ClassName(kind)).Append(": ").Append(CardLine(kind, day)).Append('\n');
             }
             int points = LicenceState.PointsOn(day);
@@ -194,6 +230,12 @@ namespace RealLifeOverhaul
             }
             text.Append('\n').Append(Licences.T("reallife_lic_card_today", "day", day.ToString()));
             return text.ToString();
+        }
+
+        /// <summary>Whether a class has a line on the card: the heavy class only while its option is on or once held.</summary>
+        public static bool OnCard(LicenceClass kind)
+        {
+            return kind != LicenceClass.Heavy || Settings.HeavyLicence || LicenceState.Of(kind).Held;
         }
 
         /// <summary>A licence's line on the card: its standing and dates, or never held.</summary>

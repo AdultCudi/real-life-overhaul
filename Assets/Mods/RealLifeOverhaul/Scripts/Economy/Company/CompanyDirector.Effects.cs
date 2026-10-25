@@ -9,6 +9,27 @@ namespace RealLifeOverhaul.Economy
             return (On(CompanyPart.Staff) ? StaffRules.Footfall(shop.File, day) : 0) + (On(CompanyPart.Marketing) ? CampaignRules.Footfall(shop.File, day) : 0);
         }
 
+        /// <summary>
+        /// What the company adds at each of its businesses for the report, even while held for a save. One pass over
+        /// the businesses, read only during a capture.
+        /// </summary>
+        internal static System.Collections.Generic.Dictionary<BuildingRegistration, int> CompanionFootfalls()
+        {
+            var values = new System.Collections.Generic.Dictionary<BuildingRegistration, int>();
+            CompanyDirector d = Instance;
+            if (d != null && d._running && !d._broken && Save != null)
+            {
+                foreach (CompanyShop shop in d._shops)
+                {
+                    if (shop.Reg != null)
+                    {
+                        values[shop.Reg] = d.Footfall(shop, Save.Day);
+                    }
+                }
+            }
+            return values;
+        }
+
         /// <summary>Per cent of customers the company adds at a business now; 0 while stopped or held for a save.</summary>
         public static int FootfallOf(BuildingRegistration reg)
         {

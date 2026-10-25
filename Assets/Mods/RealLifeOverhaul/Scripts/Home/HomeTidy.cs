@@ -105,7 +105,12 @@ namespace RealLifeOverhaul
         /// <summary>Tidier (positive) or messier (negative) by so many points of a hundred.</summary>
         public static void Change(float points)
         {
-            BuildingRegistration home = Home();
+            Change(Home(), points);
+        }
+
+        /// <summary>The same for one home of the player's in particular (the one household staff work at); null: the figure alone.</summary>
+        public static void Change(BuildingRegistration home, float points)
+        {
             if (!UsesFloor(home))
             {
                 HomeState.Tidy = HomeState.Clamp(HomeState.Tidy + points, 0f, 100f);

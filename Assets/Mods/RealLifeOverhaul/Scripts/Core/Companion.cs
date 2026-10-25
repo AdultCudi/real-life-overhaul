@@ -9,5 +9,11 @@ namespace RealLifeOverhaul
     {
         /// <summary>The report as JSON, or null when none can be made: no session, Going Public, or a fault (logged once).</summary>
         public static string CaptureV1(GameInstance game) => CompanionGame.CaptureSafe(game);
+
+        /// <summary>
+        /// Whether a change is allowed now, as JSON; only "allowed" authorises the caller to write. A fault answers
+        /// "unknown" and is logged once. Nothing per frame.
+        /// </summary>
+        public static string OwnershipV1(GameInstance game, string requestJson) => CompanionOwnership.Query(game, requestJson);
     }
 }

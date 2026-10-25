@@ -58,6 +58,7 @@ internal static partial class Program
     // Optional directory writes the shared fixtures; without it, the committed bytes must match the producer.
     private static void CompanionChecks(string output)
     {
+        CompanionPlanningChecks(output);
         string root = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, "../../../../.."));
         foreach (string language in new[] { "en", "pt", "zh-cn" })
         {

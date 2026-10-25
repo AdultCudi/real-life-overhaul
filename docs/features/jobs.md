@@ -51,6 +51,7 @@ Fifteen more jobs are the building trades (`JobCatalogue.Trades`, [Building trad
 - The employer ladder's optional doors are in `Jobs/CareerLinks.cs`, filled in by [`Wiring/LifeLinks.cs`](../reference/wiring.md) (the record on a CV, a doctor's sick note).
 - Shared pieces other features use: `ShiftCard` (the copied job panel), `ShiftSkip` (the rest of a shift left to the game's clock), `JobStand` and `JobUniform`.
 - A shift in progress at a save is settled on load: see [A shift across a save](#a-shift-across-a-save-jobsave-payslip).
+- The hired van is lent to the Marketplace's junk runs and moves while no gig is on (`JobDirector.HireVan`, `ReturnVan`, through `Wiring/Wiring.HustleLinks.cs`): see [Legal hustles](hustles.md). Its visits are worked on `ShiftSkip`.
 - To add a job, see [Adding a job](../contributing/adding-things.md#adding-a-job).
 
 The game has its own work: employer jobs (stand at a station in someone's shop while time is skipped, paid by the hour), the delivery van (a company van, a hand truck, boxes of stock to three shops, 100 a drop) and food delivery (accepted at a restaurant's till, 25 plus 0.05 a metre).
@@ -73,6 +74,8 @@ Every figure is in `JobCatalogue`, set against what the game itself pays (read f
 Pay is multiplied by 1 + 0.08 per level above the first (a level every 40 flyers, 30 patches, 20 boxes, 30 customers, 20 songs, 15 parcels, 12 fares; four levels) and by the "Job pay" option.
 Deductions only ever reduce what a job pays; a slip never goes below zero.
 Three failed shifts in a job and it lets the player go for three days; a good shift takes a strike off.
+
+A ride-hail fare's comfort starts at 100 and is judged by a table of `Kinds/TaxiComfortRules`, picked once as the passenger gets in. As always (the option "Ride fares: easier passengers" off): a hard stop, swerve or bump costs 8, at most once every 3 seconds, a hard stop is the car's own (`TaxiJob.Tune`), a bump 5.5 m/s2 more in a tick, speeding above 26 m/s costs 4 a second. Easier passengers: 4, once every 6 seconds, 1.35 times the car's hard stop (never past the 9.5 m/s2 of an emergency stop), a bump 8 m/s2 more, speeding 1.5 a second. Crashes (40, or 22 at 8 m/s or less), police stops (20), the tip by comfort and the slip's cut of 30 % under 30 comfort are the same in both. Options > Tests, "Ride fares: the passengers' table in effect", writes both tables and the one in effect to Player.log with PASS or FAIL. `EconomyCheck` TaxiComfortChecks checks the tables, a rough minute under each and that the gig reads only the table.
 
 Work spends energy and trains a skill through the game's own systems, and never takes energy below 12.
 
@@ -366,6 +369,17 @@ The key is registered and the three sentences have their blanks.
 Log lines: `Jobs check (saved shift): '<job>' is on at the save: paid so far N for U unit(s), owed M for V ...: PASS` (diagnostics on), `Jobs check (saved shift): settled '<job>' saved on day D: paid M for V unit(s) owed ...: PASS` (always), `Careers: a shift at <employer> that was on at a save was settled: ...`.
 
 Not checked in the game: any of it; in particular that the game's save event reaches the hook during each kind of shift (the cleaner's own hook shows it does for one), and what the figures are at a real midnight autosave.
+
+## Heavy loads
+
+With a heavy goods licence ([Driving licences](licences.md#the-heavy-goods-licence)) the Gig Line's courier page has "Got anything heavier?": the same round as a heavy load, freight in a heavy truck, each drop and the distance paid 1.8 times a parcel's (`HeavyRules.LoadPay`), with 1.35 times the time on the clock (`LoadTime`).
+The truck is the player's own heavy truck within 60 m (`JobDirector.NearestHeavy`), else one hired for the day (`JobRental` with `heavy`: 260, less a van's fee already paid that day).
+Any courier round, an employer's too, that is driven in a heavy truck by a licensed driver is a heavy load.
+Nothing is drawn: the pay follows the offer as every gig's does.
+
+The hired truck is the game's Freight Truck made as the driving school makes its car (`DeliveryVehicleInstance`, `VehicleHelper.CreateAndSpawnVehicle`); it has no clean-up of the game's, so `JobRental.Save` takes it off the save's vehicle list for each serialisation and puts it back a frame later, and it goes back by the game's own delete once the player is out of it.
+A save loaded without the mod has no truck in it; the hire's line keeps its id, so a copy that reached a save is taken back after a load.
+With "Heavy trucks need a heavy goods licence" off there are no heavy loads.
 
 ## The hired van
 

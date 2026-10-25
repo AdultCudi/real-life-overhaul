@@ -15,6 +15,9 @@ namespace RealLifeOverhaul.Tech
     /// </summary>
     internal static class TalentGame
     {
+        /// <summary>Owner deduction labels whose mixed costs have no single portable recurrence rule.</summary>
+        internal static string[] CompanionUnclassifiedTaxLabels() => new[] { DeductKey.GetLocalization() };
+
         public const string WagesKey = "reallife_transaction_tech_wages";
         public const string SeveranceKey = "reallife_transaction_tech_severance_wage";
         public const string TrainingKey = "reallife_transaction_tech_training";

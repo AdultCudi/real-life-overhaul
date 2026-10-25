@@ -504,7 +504,8 @@ namespace RealLifeOverhaul
                 sentence.Bounded = sentence.Fine < sentence.FineNominal;
                 sentence.CommunityHours = 0;
             }
-            int due = Mathf.Max(0, sentence.Fine - _case.PaidAtScene);
+            int fineDue = Mathf.Max(0, sentence.Fine - _case.PaidAtScene);
+            int due = JusticeLaw.ConvictionDue(sentence.Fine, _case.PaidAtScene, _case.Damages);
             // Hours already sat in a cell for this, after the arrest or on remand, are time served.
             int served = Mathf.Min(sentence.JailHours, Mathf.Max(0, _case.HeldHours));
             sentence.JailHours -= served;
@@ -520,7 +521,11 @@ namespace RealLifeOverhaul
             if (_case.PaidAtScene > 0)
             {
                 _text.Append(' ').Append(JusticeText.T("reallife_justice_sentence_fine_credit", "amount", JusticeText.Money(Mathf.Min(_case.PaidAtScene, sentence.Fine)),
-                    "due", JusticeText.Money(due)));
+                    "due", JusticeText.Money(fineDue)));
+            }
+            if (_case.Damages > 0)
+            {
+                _text.Append(' ').Append(JusticeText.T("reallife_justice_sentence_damages", "amount", JusticeText.Money(_case.Damages), "due", JusticeText.Money(due)));
             }
             if (due > 0)
             {

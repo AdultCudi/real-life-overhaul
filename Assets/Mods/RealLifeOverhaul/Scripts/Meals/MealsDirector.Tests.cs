@@ -37,10 +37,10 @@ namespace RealLifeOverhaul.Meals
                 TestRefusals.Tell(Logger, TestName, TestRefusal.ScreenBusy, 0, "a meal or a dance is on, or the player is held, seated, in a vehicle or carrying something");
                 return;
             }
-            MealSeat seat = MealsGame.Find(player, out int looked);
+            MealSeat seat = MealsGame.Find(player, out int looked, out int elsewhere);
             if (seat == null)
             {
-                TestRefusals.TellKey(Logger, TestName, MealsText.NoSeat, looked + " seats looked at");
+                TestRefusals.TellKey(Logger, TestName, MealsText.NoSeat, looked + " seats looked at, " + elsewhere + " on another floor left out");
                 return;
             }
             _hungerKnown = true;

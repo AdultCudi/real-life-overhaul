@@ -199,6 +199,19 @@ namespace RealLifeOverhaul.Careers
                 DeskCheck(session, way, where, begin, "no class of the school's was to be begun there", null);
                 return "reallife_study_why_no_class";   // a school desk is opened only to begin: its own click is Going Public's
             }
+            if (!ClassPlayRules.ShowsDesk(session, offer.Can))
+            {
+                DeskCheck(session, way, where, begin, null, "nothing to begin there now (" + (offer.Why ?? "a free classroom") + "): said in a notice, as Going Public hides the game's panel");
+                return offer.Why ?? "reallife_study_why_no_class";
+            }
+            return OwnDesk(door, offer, begun, session, where, begin);
+        }
+
+        // The desk's own activity on the game's panel, which Going Public hides in a session and presses the desk's Start on for
+        // the player (ClassPlayRules.SessionPick); begun: the Campus app's press, made here. Null if open or the game said why not.
+        private string OwnDesk(EducationDoorController door, SchoolDesk.DeskOffer offer, bool begun, bool session, string where, bool begin)
+        {
+            DeskWay way = DeskWay.OwnPanel;
             if (PlayerActivityUI.IsPanelOpen)
             {
                 DeskCheck(session, way, where, begin, "the game's panel is busy", null);

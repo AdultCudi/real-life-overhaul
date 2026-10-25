@@ -212,7 +212,7 @@ internal static partial class Program
             "class count: every sitting handed out goes through Hold, which books it with its activity (" + assigned + " assignment of _sitting)");
         Check(MethodText(director, "internal string Offer(Sitting sitting)").Contains("Hold(sitting, skip);")
               && MethodText(prompt, "internal string DeskSitting(int course, SittingKind kind, IPlayerActivity holder, out Sitting sitting)").Contains("Hold(sitting, holder);")
-              && school.Contains("_director.DeskSitting(_offer.Course, _offer.Kind, this, out Sitting sitting)")
+              && school.Contains("_director.DeskSitting(_offer.Course, _offer.Kind, this, out sitting)")
               && MethodText(play, "private string StartAtComputer(ComputerController computer, Sitting sitting, string what)").Contains("Hold(sitting, activity);")
               && day.Contains("Hold(sitting, holder);") && desk.Contains("_director.DeskBegin(late, this, out Sitting sitting)"),
             "class count: the in-place panel, the school's and the university's desks, the computer at home and the work desk each hand their sitting out with themselves as its activity");

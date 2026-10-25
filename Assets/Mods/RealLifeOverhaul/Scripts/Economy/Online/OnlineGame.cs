@@ -54,6 +54,9 @@ namespace RealLifeOverhaul.Economy
     /// </summary>
     internal static partial class OnlineGame
     {
+        /// <summary>Owner deduction labels whose mixed costs have no single portable recurrence rule.</summary>
+        internal static string[] CompanionUnclassifiedTaxLabels() => new[] { DeductKey.GetLocalization() };
+
         public const string TakingsKey = "reallife_transaction_online_takings";
         public const string RefundsKey = "reallife_transaction_online_refunds";
         public const string CourierKey = "reallife_transaction_online_courier";

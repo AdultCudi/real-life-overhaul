@@ -109,6 +109,13 @@ namespace RealLifeOverhaul
         public const string StageLivesWith = "reallife_social_stage_lives_with";
         public const string StageDrifted = "reallife_social_stage_drifted";
 
+        /// <summary>Why the player cannot lose touch with somebody, by LoseBlock (None and NotKnown have no line).</summary>
+        public static readonly string[] LoseBlocks =
+        {
+            null, null, "reallife_social_lose_no_family", "reallife_social_lose_no_oldfriend", "reallife_social_lose_no_together", "reallife_social_lose_no_home",
+            "reallife_social_lose_no_plan", "reallife_social_lose_no_money", "reallife_social_lose_no_flare"
+        };
+
         public static readonly string[] MoodNames =
         {
             "reallife_social_mood_rough", "reallife_social_mood_low", "reallife_social_mood_fine", "reallife_social_mood_good", "reallife_social_mood_great"
@@ -276,7 +283,17 @@ namespace RealLifeOverhaul
         public static SocialPerson MakeNew(int index, SocialOrigin origin, int sex, int castSeed, int day, int daysPerYear, int districts,
             SocialPerson[] people, int count)
         {
-            var random = new Random(SocialRules.SlotSeed(castSeed, index));
+            return MakeRolled(index, SocialRules.SlotSeed(castSeed, index), origin, sex, day, daysPerYear, districts, people, count);
+        }
+
+        /// <summary>
+        /// As <see cref="MakeNew"/>, everything rolled from <paramref name="seed"/> instead of the slot's own: for whoever takes
+        /// the slot of somebody the player lost touch with (<see cref="SocialRules.ReplaceSeed"/>).
+        /// </summary>
+        public static SocialPerson MakeRolled(int index, int seed, SocialOrigin origin, int sex, int day, int daysPerYear, int districts,
+            SocialPerson[] people, int count)
+        {
+            var random = new Random(seed);
             daysPerYear = Math.Max(8, daysPerYear);
             districts = Math.Max(1, districts);
             bool rolledFemale = random.Next(2) == 0;

@@ -60,6 +60,29 @@ namespace RealLifeOverhaul
         /// <summary>RLO Texts: asks for a person's answer to the player's typed words on a call (see <see cref="SocialAnswerAsk"/>).</summary>
         public static SocialAnswerAsk AnswerTyped;
 
+        /// <summary>Roommates: whether the person in this slot lives with the player, or is asked to move in. They stay while so.</summary>
+        public static Func<int, bool> LivesWith;
+
+        /// <summary>Flare: whether the person in this slot is one of its influencers, whose account Flare keeps. They stay while so.</summary>
+        public static Func<int, bool> OnFlare;
+
+        /// <summary>Flare: the player lost touch with the person in this slot; its posts, tags and follows let them go, before somebody new takes the slot.</summary>
+        public static Action<int> FlareForget;
+
+        /// <summary>RLO Texts: the player lost touch with the person in this slot; what they remembered of the player goes with them.</summary>
+        public static Action<int> TextsForget;
+        /// <summary>The networking life: somebody has just been met, and who brought them along (null for nobody).</summary>
+        public static Action<SocialPerson, SocialPerson> Met;
+
+        /// <summary>The networking life: the day's round is done, so a favour that is ready may be texted about.</summary>
+        public static Action DayDone;
+
+        /// <summary>
+        /// The networking life: what is said of the work of somebody about to be met, brought by the second (or nobody), by
+        /// the one who brought them (true) or by themselves (false); null when there is nothing to say.
+        /// </summary>
+        public static Func<SocialPerson, SocialPerson, bool, string> Position;
+
         public const string WordsKey = SocialFollowRules.WordsKey;   // RLO Texts' line for a model's words: "{text}"
     }
 
@@ -318,7 +341,8 @@ namespace RealLifeOverhaul
             Logger?.Info("Social: " + person.Name + " ended it (affection " + person.Affection.ToString("F0") + ", trust " + person.Trust.ToString("F0") + ").");
         }
 
-        public static void Meet(SocialPerson person, bool warm)
+        /// <summary>Numbers swapped: an acquaintance from now, in the phone. <paramref name="by"/>: who brought them along, or null.</summary>
+        public static void Meet(SocialPerson person, bool warm, SocialPerson by = null)
         {
             if (person.Met)
             {
@@ -343,6 +367,14 @@ namespace RealLifeOverhaul
             Toast(NotificationType.Success, "reallife_social_met", Data(person), 10f);
             ModState.AddModifier(ModState.Social);
             Logger?.Info("Social: met " + person.Name + " (" + person.Origin + "), traits " + person.Traits + (person.Compatible ? ", a romance is possible" : string.Empty) + ".");
+            try
+            {
+                SocialLinks.Met?.Invoke(person, by);
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);   // the meeting stands whatever the networking life made of it
+            }
         }
 
         public static bool CanAfford(int amount)

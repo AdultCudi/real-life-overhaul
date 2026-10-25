@@ -26,7 +26,7 @@ namespace RealLifeOverhaul.Economy
     /// (the rate in LoanHelper, the cap in BankDialog.LoanRequest), so writing the two fields is enough: a cap of 0 makes the
     /// game itself refuse. The first values seen are kept for the session, so <see cref="Restore"/> is exact; nothing is saved.
     /// </summary>
-    public static class BankTerms
+    public static partial class BankTerms
     {
         internal const string TutorialLoanObjective = "tutorial_quest_establish_first_business_objective_1";   // the game's own
         internal const string BankruptcyQuest = "SQBankruptcy";   // the game's own side quest: SideQuestHelper.BankruptcyQuestId

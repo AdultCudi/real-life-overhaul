@@ -13,7 +13,8 @@ namespace RealLifeOverhaul.Roommates
 {
     /// <summary>
     /// The roommate as one character, ever, kept on the shelf switched off so the mesh merge of a look is paid once; dressed
-    /// from the seed in the save. While they are out the director calls <see cref="Tick"/> each frame, which allocates nothing.
+    /// from the seed in the save. Household staff have a cast of their own of the same kind. While they are out the director
+    /// calls <see cref="Tick"/> each frame, which allocates nothing.
     /// </summary>
     public sealed class RoommateCast
     {
@@ -27,15 +28,19 @@ namespace RealLifeOverhaul.Roommates
 
         private readonly Transform _parent;
         private readonly IModLogger _logger;
+        private readonly string _objectName;   // the character's object in the scene
+        private readonly string _owner;        // whose character it is, as the log names the feature
         private CityPerson _person;
         private long _worn;            // which look the character on the shelf has
         private Quaternion _turnTo;
         private bool _turning;
 
-        public RoommateCast(Transform parent, IModLogger logger)
+        public RoommateCast(Transform parent, IModLogger logger, string objectName = "RealLifeOverhaul Roommate", string owner = "Roommates")
         {
             _parent = parent;
             _logger = logger;
+            _objectName = objectName;
+            _owner = owner;
             Props = new CityProps(parent);
         }
 
@@ -85,7 +90,7 @@ namespace RealLifeOverhaul.Roommates
             {
                 Failed = true;
                 _logger?.Error(e);
-                _logger?.Warn("Roommates: a character could not be made (see the error above); the roommate is not shown this session. Everything else goes on.");
+                _logger?.Warn(_owner + ": a character could not be made (see the error above); they are not shown this session. Everything else goes on.");
                 return null;
             }
         }
@@ -189,7 +194,7 @@ namespace RealLifeOverhaul.Roommates
         {
             using var piece = SessionWatch.Piece("people: a character being made");
             var character = PrefabHelper.CreatePrefab<ThirdPersonCharacter>(CharacterPrefab, near, Quaternion.identity, _parent);
-            character.name = "RealLifeOverhaul Roommate";
+            character.name = _objectName;
             var fidgets = character.GetComponentInChildren<BoredAnimations>(true);
             if (fidgets != null)
             {
@@ -199,7 +204,7 @@ namespace RealLifeOverhaul.Roommates
             {
                 character.characterRigidbody.isKinematic = true;   // they go where their route takes them
             }
-            _logger?.Info("Roommates: a character was created (one at most).");
+            _logger?.Info(_owner + ": a character was created (one at most).");
             return new CityPerson(character);
         }
 

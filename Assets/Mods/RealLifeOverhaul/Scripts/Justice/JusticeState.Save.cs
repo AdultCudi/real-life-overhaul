@@ -78,6 +78,8 @@ namespace RealLifeOverhaul
                     text.Append(Escape(charge.Id)).Append('~').Append(Mille(charge.Evidence).ToString(CultureInfo.InvariantCulture)).Append('~')
                         .Append(((charge.Dropped ? 1 : 0) | (charge.Convicted ? 2 : 0) | (charge.Reduced ? 4 : 0)).ToString(CultureInfo.InvariantCulture));
                 }
+                // After the charges, which hold no comma: an older build reads the line up to them and stops there.
+                text.Append(',').Append(c.Damages.ToString(CultureInfo.InvariantCulture));
             }
             text.Append("|D:");
             for (int i = 0; i < Debts.Count; i++)
@@ -290,6 +292,7 @@ namespace RealLifeOverhaul
                     });
                 }
             }
+            c.Damages = f.Int();   // absent from older saves: none held
             if (c.Number <= 0)
             {
                 return null;

@@ -46,10 +46,32 @@ namespace RealLifeOverhaul.Careers
         public int From, To;                  // the days it is open
         public int Via;
         public int Family = -1, Level = -1;   // the jobs board's ad it is, if it is one
+        public string Lead = string.Empty;    // who of the people the player knows passed it on (Network's job lead); empty for none
+        public int Shift;                     // its working week fitted to the workplace's opening hours (OpenHoursRules.Pack); 0 not fitted yet: the profession's own
+
+        private Profession _fitted;           // the profession on that week, made again only when the week changes
+        private int _fittedOf;
 
         public bool Open(int day) => day >= From && day <= To;
 
-        public Profession Def => ProCatalogue.Find(Prof);
+        /// <summary>The profession as this post works it: on its own fitted week, so every rule that reads a working day's hours reads the post's.</summary>
+        public Profession Def
+        {
+            get
+            {
+                Profession p = ProCatalogue.Find(Prof);
+                if (p == null || Shift == 0 || Shift == OpenHoursRules.Pack(p.Days, p.Hour, p.Hours))
+                {
+                    return p;
+                }
+                if (_fitted == null || _fittedOf != Shift || _fitted.Id != p.Id)
+                {
+                    _fitted = p.WithShift(OpenHoursRules.DaysOf(Shift), OpenHoursRules.HourOf(Shift), OpenHoursRules.HoursOf(Shift));
+                    _fittedOf = Shift;
+                }
+                return _fitted;
+            }
+        }
 
         public void CopyTo(Opening o)
         {
@@ -68,6 +90,8 @@ namespace RealLifeOverhaul.Careers
             o.Via = Via;
             o.Family = Family;
             o.Level = Level;
+            o.Lead = Lead;
+            o.Shift = Shift;
         }
 
         /// <summary>True for the same post at the same place.</summary>
@@ -132,6 +156,7 @@ namespace RealLifeOverhaul.Careers
         public int Bonus;             // whole money of a bonus awarded and not yet paid
         public int AskDay = -1000;    // the last time the player asked for a rise between reviews
         public int OffUntil;          // signed off for burnout until this day: its working days are excused
+        public int ShutDay = -1;      // a working day the workplace was shut at its start: excused, never a warning
 
         public Profession Def => Post.Def;
 

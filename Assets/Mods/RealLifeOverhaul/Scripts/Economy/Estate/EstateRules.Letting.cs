@@ -89,7 +89,7 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>Somebody applies for a unit today, or null; a test tool's <paramref name="whatever"/> skips chance and choice.</summary>
-        public static RentApplicant Apply(EstateHolding h, int unit, int seed, int day, EstateClimate c, bool whatever = false)
+        public static RentApplicant Apply(EstateHolding h, int unit, int seed, int day, EstateClimate c, bool whatever = false, int lift = 1000)
         {
             EstateUnit u = h.Unit(unit);
             int place = Hash(h.Place);
@@ -99,7 +99,7 @@ namespace RealLifeOverhaul.Economy
             {
                 return null;
             }
-            if (!whatever && Roll(seed, day, ForApplicant, UnitKey(h, unit)) >= ApplicantChance(u.Ask, h.Cond, c.Cycle))
+            if (!whatever && Roll(seed, day, ForApplicant, UnitKey(h, unit)) >= (int)Math.Min(1000L, (long)ApplicantChance(u.Ask, h.Cond, c.Cycle) * lift / 1000))
             {
                 return null;
             }
@@ -181,7 +181,7 @@ namespace RealLifeOverhaul.Economy
         public static bool MayServeNotice(EstateHolding h, int unit, int day)
         {
             EstateUnit u = h.Unit(unit);
-            return u != null && u.Let && u.NoticeEnd == 0 && u.CourtDay == 0 && (u.ArrearsDays >= EstateCatalogue.NoticeArrearsDays || day > u.Until);
+            return u != null && u.Let && u.NoticeEnd == 0 && u.CourtDay == 0 && !u.OnPlan && (u.ArrearsDays >= EstateCatalogue.NoticeArrearsDays || day > u.Until);
         }
 
         /// <summary>How many of a building's units wait for the landlord: notice may be served, or the court asked.</summary>
@@ -262,6 +262,15 @@ namespace RealLifeOverhaul.Economy
         /// <summary>One morning of a unit: the court's order, notice, the rent and the end of a lease.</summary>
         public static TenancyDay Day(EstateHolding h, int unit, int seed, int day, EstateClimate c)
         {
+            return Day(h, unit, seed, day, c, false);
+        }
+
+        /// <summary>
+        /// The same, with a landlord's duties (<paramref name="duties"/>: the option): a tenant who said they go goes, a
+        /// payment plan's instalment, a reminder's pull, and satisfaction in missing and renewing. Without them, as before.
+        /// </summary>
+        public static TenancyDay Day(EstateHolding h, int unit, int seed, int day, EstateClimate c, bool duties)
+        {
             var d = new TenancyDay();
             EstateUnit u = h.Unit(unit);
             if (u == null)
@@ -279,13 +288,26 @@ namespace RealLifeOverhaul.Economy
                 Vacate(h, unit, ref d, true, seed, day);
                 return d;
             }
-            if (u.Arrears > 0)
+            if (duties && u.QuitDay > 0 && day >= u.QuitDay)
             {
-                bool paysUp = Roll(seed, day, ForCatchUp, key) < (u.NoticeEnd > 0 ? Math.Max(EstateCatalogue.NoticePaysUp, CatchUpChance(u.Record)) : CatchUpChance(u.Record));
+                Vacate(h, unit, ref d, false, seed, day);
+                d.Quit = true;
+                return d;
+            }
+            if (duties && u.OnPlan && u.Arrears > 0)
+            {
+                if (!PlanDay(h, unit, seed, day, c, ref d))
+                {
+                    return d;
+                }
+            }
+            else if (u.Arrears > 0)
+            {
+                bool paysUp = Roll(seed, day, ForCatchUp, key) < PayUpChance(u, duties);
                 if (paysUp)
                 {
                     d.Lump = u.Arrears;
-                    u.Arrears = u.ArrearsDays = 0;
+                    u.Cleared();
                     if (day <= u.Until)
                     {
                         u.NoticeEnd = u.CourtDay = 0;   // notice for arrears falls away once they are paid
@@ -304,7 +326,7 @@ namespace RealLifeOverhaul.Economy
                     return d;
                 }
             }
-            else if (Roll(seed, day, ForMiss, key) < MissChance(u.Record, c.Cycle))
+            else if (Roll(seed, day, ForMiss, key) < (duties ? UnhappyMiss(MissChance(u.Record, c.Cycle), u.Happy) : MissChance(u.Record, c.Cycle)))
             {
                 u.Arrears = u.Rent;
                 u.ArrearsDays = 1;
@@ -320,7 +342,8 @@ namespace RealLifeOverhaul.Economy
             {
                 int market = UnitRent(h, c);
                 bool content = h.Cond >= EstateCatalogue.ConditionPoor && (market <= 0 || (long)u.Rent * 1000 <= (long)market * EstateCatalogue.RenewRentMost);
-                if (Roll(seed, day, ForRenew, key) < (content ? EstateCatalogue.RenewChance : EstateCatalogue.RenewChancePoor))
+                int renew = duties && u.Happy >= 0 ? RenewChance(u.Happy) : content ? EstateCatalogue.RenewChance : EstateCatalogue.RenewChancePoor;
+                if (Roll(seed, day, ForRenew, key) < renew)
                 {
                     u.Until = day + EstateCatalogue.TermLeast;
                     d.Renewed = true;

@@ -167,7 +167,10 @@ namespace RealLifeOverhaul
             return Newcomer(SocialOrigin.Street, -1);
         }
 
-        /// <summary>Whether anybody is left to meet, without making anybody. One pass over the cast.</summary>
+        /// <summary>
+        /// Whether anybody is left to meet, without making anybody: room in the cast, somebody not met yet, or once it is full an
+        /// acquaintance long drifted away who would make room (<see cref="MakeRoom"/>). One pass over the cast, two when full.
+        /// </summary>
         public static bool AnyStranger()
         {
             if (SocialState.Count < SocialRules.MaxCast)
@@ -182,19 +185,30 @@ namespace RealLifeOverhaul
                     return true;
                 }
             }
-            return false;
+            return RoomToMake();
         }
 
         /// <summary>
+        /// Whether the cast is full: every slot taken, everybody met, and nobody drifted far enough to go by themselves. Then
+        /// nobody new can be met until the player loses touch with somebody.
+        /// </summary>
+        public static bool CastFull => SocialState.Loaded && !AnyStranger();
+
+        /// <summary>
         /// Somebody new joins the cast, to be met at <paramref name="origin"/>: a woman (<paramref name="sex"/> 1), a man (0)
-        /// or either (-1). Null before the cast is loaded or once <see cref="SocialRules.MaxCast"/> are known. Their contact
+        /// or either (-1). Once <see cref="SocialRules.MaxCast"/> are known, the slot of an acquaintance long drifted away
+        /// (<see cref="MakeRoom"/>), as either; null before the cast is loaded or when nobody can make room. Their contact
         /// picture is made with them.
         /// </summary>
         internal static SocialPerson Newcomer(SocialOrigin origin, int sex)
         {
-            if (!SocialState.Loaded || SocialState.Count >= SocialRules.MaxCast)
+            if (!SocialState.Loaded)
             {
                 return null;
+            }
+            if (SocialState.Count >= SocialRules.MaxCast)
+            {
+                return MakeRoom(origin);
             }
             SocialPerson p = SocialCatalogue.MakeNew(SocialState.Count, origin, sex, SocialState.CastSeed, SocialLife.Day, SocialPlaces.DaysPerYear, SocialPlaces.Districts,
                 SocialState.People, SocialState.Count);

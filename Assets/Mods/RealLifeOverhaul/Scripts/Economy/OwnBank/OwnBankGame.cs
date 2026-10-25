@@ -50,6 +50,9 @@ namespace RealLifeOverhaul.Economy
     /// </summary>
     public static class OwnBankGame
     {
+        /// <summary>Owner deduction labels whose mixed costs have no single portable recurrence rule.</summary>
+        internal static string[] CompanionUnclassifiedTaxLabels() => new[] { DeductKey.GetLocalization() };
+
         private const string HeadquartersType = "ba:businesstype_headquarters";
         private const string DeductKey = "reallife_ob_deduct";
 

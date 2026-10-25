@@ -117,7 +117,7 @@ namespace RealLifeOverhaul
         public CarController Car => Active ? _car : null;
 
         /// <summary>Asked before the fee is taken: whether a car and a route could be had from a desk now. False with a locale key why.</summary>
-        public bool CanStage(Vector3 desk, out string reasonKey)
+        public bool CanStage(LicenceClass kind, Vector3 desk, out string reasonKey)
         {
             reasonKey = Active ? "reallife_lic_no_busy"
                 : !TrafficTools.Ready || !RoadMap.Ensure() ? "reallife_lic_no_roads"
@@ -125,7 +125,7 @@ namespace RealLifeOverhaul
             if (reasonKey == null)
             {
                 NewDraw();
-                reasonKey = _lender.Placeable(desk, _planFrom);
+                reasonKey = _lender.Placeable(desk, kind, _planFrom);
             }
             if (Meta.Dev.Verbose)
             {
@@ -164,7 +164,7 @@ namespace RealLifeOverhaul
             }
             NewDraw();
             int lending = SessionWatch.Mark("licences: the school's car being made and put out (its route planned, the game's own vehicle spawn)");
-            CarController car = _lender.Lend(desk, kind == LicenceClass.Commercial, _planFrom, out reasonKey);
+            CarController car = _lender.Lend(desk, kind, _planFrom, out reasonKey);
             SessionWatch.Done(lending);
             if (car == null)
             {
@@ -207,8 +207,10 @@ namespace RealLifeOverhaul
             _step = Step.Meet;
             _stepEnd = Time.time + MeetAllow;
             _nextTick = 0f;
-            Say("reallife_lic_test_meet");
-            Show(Licences.T("reallife_lic_test_get_in"), car.transform.position, Licences.T("reallife_lic_marker_car"));
+            bool truck = kind == LicenceClass.Heavy;
+            Say(truck ? "reallife_lic_test_meet_truck" : "reallife_lic_test_meet");
+            Show(Licences.T(truck ? "reallife_lic_test_get_in_truck" : "reallife_lic_test_get_in"), car.transform.position,
+                Licences.T(truck ? "reallife_lic_marker_truck" : "reallife_lic_marker_car"));
             _logger?.Info("Licences: " + (lesson ? "lesson" : "practical test") + " (" + kind + ") started: " + _route.Checkpoints.Count + " checkpoints over "
                           + _route.Length.ToString("F0") + " m, " + (_route.HasBay ? "a bay at the kerb" : "no kerb with room for a bay: a stop at the end")
                           + "; planned over the lanes open now (" + _route.Expanded + " lane points looked at).");
@@ -434,8 +436,10 @@ namespace RealLifeOverhaul
                 runs.y = 0f;
                 _boxCentre = _route.StopAt;
                 _boxFacing = runs.sqrMagnitude > 0.01f ? Quaternion.LookRotation(runs.normalized, Vector3.up) : Quaternion.identity;
-                _boxHalfWidth = StopHalfWidth;
-                _boxHalfLength = StopHalfLength;
+                // A car's box, or one a truck fits in with the same metre to spare at each end.
+                JobSpots.CarFrame(_car, out _, out _, out float carHalfLength, out float carHalfWidth);
+                _boxHalfWidth = Mathf.Max(StopHalfWidth, carHalfWidth + 0.45f);
+                _boxHalfLength = Mathf.Max(StopHalfLength, carHalfLength + 1.2f);
             }
             if (_bay == null)
             {
@@ -449,9 +453,9 @@ namespace RealLifeOverhaul
             }
             if (_route.HasBay)
             {
-                Show(Licences.T(_class == LicenceClass.Commercial ? "reallife_lic_test_park_reverse" : "reallife_lic_test_park"),
+                Show(Licences.T(Reverses(_class) ? "reallife_lic_test_park_reverse" : "reallife_lic_test_park"),
                     _route.BayCentre, Licences.T("reallife_lic_marker_bay"));
-                Say(_class == LicenceClass.Commercial ? "reallife_lic_test_say_park_reverse" : "reallife_lic_test_say_park");
+                Say(Reverses(_class) ? "reallife_lic_test_say_park_reverse" : "reallife_lic_test_say_park");
             }
             else
             {
@@ -539,6 +543,9 @@ namespace RealLifeOverhaul
             Vector3 goal = _route.HasBay ? _route.BayCentre : _route.StopAt;
             _parkOffered = JobSpots.Flat(position, goal) < 14f && _body.velocity.sqrMagnitude < 0.3f * 0.3f;
         }
+
+        /// <summary>The classes whose bay is reversed into: the van's and the truck's, as on a real test.</summary>
+        internal static bool Reverses(LicenceClass kind) => kind == LicenceClass.Commercial || kind == LicenceClass.Heavy;
 
         // Everything given back, whatever state it was in. Never throws.
         private void Finish()

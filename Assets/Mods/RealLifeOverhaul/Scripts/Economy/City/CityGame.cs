@@ -128,7 +128,7 @@ namespace RealLifeOverhaul.Economy
     /// (never saved; each item's own price kept, so a restore is exact), and transactions of the mod's own adjusting the
     /// day's rent, wages, takings and the game's shops and services. Runs on events, nothing per frame.
     /// </summary>
-    internal static class CityGame
+    internal static partial class CityGame
     {
         public const string RentKey = "reallife_transaction_macro_rent";
         public const string WagesKey = "reallife_transaction_macro_wages";
@@ -529,11 +529,10 @@ namespace RealLifeOverhaul.Economy
                 {
                     continue;
                 }
-                float bears = good.Market * (index + (Monopoly(price.itemName, district) ? MacroCatalogue.MonopolyAllowance / 1000f : 0f));
-                sum += price.price / bears;
+                sum += CityModel.PriceRatioTerm(price.price, good.Market, index, Monopoly(price.itemName, district));
                 count++;
             }
-            return count == 0 ? 0 : (int)Math.Round(sum / count * 1000.0);
+            return CityModel.MeanPriceRatio(sum, count);
         }
 
         /// <summary>The game's own rent, wages, takings and shops and services of a day (its daily run dates them on the day that has ended).</summary>

@@ -358,7 +358,7 @@ namespace RealLifeOverhaul.Careers
             try
             {
                 return _state == PlayerActivityState.Running
-                    ? _stop ?? (_stop = new[] { new ButtonInfo("StopRealLifeClass", "reallife_job_skip_stop", "gray", Guard.Way(Finish), PlayerAction.Cancel) })
+                    ? _stop ?? (_stop = new[] { new ButtonInfo(ClassPlayRules.DeskStopName, "reallife_job_skip_stop", "gray", Guard.Way(Finish), PlayerAction.Cancel) })
                     : null;
             }
             catch (Exception fault)

@@ -253,6 +253,7 @@ namespace RealLifeOverhaul.Meta
             removed.BusinessTypes += Careers.AcademyType.Strip(save);   // the player's academies, made the game's own recruitment office again
             removed.BusinessTypes += Economy.BranchType.Strip(save);   // the player's bank branches, made the game's own gift shops again
             removed.BusinessTypes += Construction.ConstructionType.Strip(save);   // the player's construction companies, made the game's own design studios again
+            removed.BusinessTypes += Shops.ShopsGame.Strip(save);   // ice cream parlours, tea bars and tobacconists, made the game's fast food restaurants, coffee shops and liquor stores
 
             if (save.Contacts != null)
             {

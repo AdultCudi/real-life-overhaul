@@ -125,7 +125,8 @@ namespace RealLifeOverhaul.Planner
     /// <summary>Each licence's expiry, a suspension's end and the theory test's retry day (LicenceState).</summary>
     public sealed class LicenceSource : IPlannerSource
     {
-        private static readonly string[] ClassKeys = { "reallife_lic_class_car", "reallife_lic_class_commercial", "reallife_lic_class_taxi" };
+        private static readonly string[] ClassKeys = { "reallife_lic_class_car", "reallife_lic_class_commercial", "reallife_lic_class_taxi", "reallife_lic_class_heavy" };
+        private static readonly int[] Classes = { 0, 1, 2, 4 };   // LicenceClass values; the entry's number stays the class's own
 
         public string Id => "licence";
         public bool Available => LicenceState.Loaded && Settings.DrivingLicence;
@@ -134,12 +135,12 @@ namespace RealLifeOverhaul.Planner
         {
             for (int k = 0; k < ClassKeys.Length; k++)
             {
-                LicenceState.Card card = LicenceState.Of((LicenceClass)k);
+                LicenceState.Card card = LicenceState.Of((LicenceClass)Classes[k]);
                 if (!card.Held || card.Expires <= 0)
                 {
                     continue;
                 }
-                PlannerEntry e = into.Add(Id, k, 0, PlannerCategory.Licence, card.Expires);
+                PlannerEntry e = into.Add(Id, Classes[k], 0, PlannerCategory.Licence, card.Expires);
                 if (e != null && into.WantText)
                 {
                     e.Title = PlannerText.T("reallife_planner_licence_title", "class", ClassKeys[k].GetLocalization());

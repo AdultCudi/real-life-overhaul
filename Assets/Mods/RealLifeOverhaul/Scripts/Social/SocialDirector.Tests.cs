@@ -81,6 +81,37 @@ namespace RealLifeOverhaul
             }
         }
 
+        /// <summary>
+        /// The old friend (Mom if the old friend is not known) brings the next person to be met over, here and now, as an
+        /// introduction does (for the networking life's test). The person's index, or -1 when it cannot start, said why.
+        /// </summary>
+        public int TestIntroduction()
+        {
+            const string test = "An introduction";
+            if (!TestReady(test, true))
+            {
+                return -1;
+            }
+            SocialPerson friend = SocialState.ByOrigin(SocialOrigin.OldFriend);
+            if (friend == null || !friend.Met)
+            {
+                friend = SocialState.ByOrigin(SocialOrigin.Family);
+            }
+            SocialPerson stranger = NextStranger();
+            if (stranger == null || friend == null)
+            {
+                TestRefusals.Tell(Logger, test, TestRefusal.AllMet);
+                return -1;
+            }
+            var scene = new MeetScene(MeetScene.Kind.Introduction, stranger, friend);
+            if (!Begin(scene))
+            {
+                TestRefusals.Tell(Logger, test, scene.Refusal, 0, scene.RefusalDetail);
+                return -1;
+            }
+            return stranger.Index;
+        }
+
         /// <summary>At the player's own shop if one is within 25 m.</summary>
         public void TestDropBy()
         {

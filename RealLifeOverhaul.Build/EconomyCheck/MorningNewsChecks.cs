@@ -443,7 +443,7 @@ internal static partial class Program
         string fame = MemberText(ModSource(@"Fame\FameDirector.City.cs"), "private void Requested(FameRequest r)");
         Check(CodeAt(fame, "if (Settings.StandingRequestNotes)") > 0 && CodeAt(fame, "\"reallife_fame_note_request\"") > CodeAt(fame, "if (Settings.StandingRequestNotes)"),
             "switches: the city's request is told only with its switch on; it is on the Standing page either way (made before it is told)");
-        string own = MemberText(ModSource(@"Careers\CareersDirector.Own.cs"), "private void OfferContract(int day, int salt, bool force)");
+        string own = MemberText(ModSource(@"Careers\CareersDirector.Own.cs"), "private Contract OfferContract(int day, int salt, bool force)");
         Check(CodeAt(own, "w.Contracts.Add(c2);") > 0 && CodeAt(own, "if (Settings.CareersOwnOfferNotes)") > CodeAt(own, "w.Contracts.Add(c2);")
               && CodeAt(own, "\"reallife_own_note_offer\"") > CodeAt(own, "if (Settings.CareersOwnOfferNotes)"),
             "switches: a client's contract is offered on the Own work tab first, and told only with its switch on");

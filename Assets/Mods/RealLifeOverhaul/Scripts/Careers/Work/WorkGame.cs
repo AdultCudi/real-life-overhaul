@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using BigAmbitions.DayNightCycle;
 using BigAmbitions.Rivals;
 using Buildings;
 using Helpers;
@@ -238,6 +239,73 @@ namespace RealLifeOverhaul.Careers
             {
                 return null;
             }
+        }
+
+        /// <summary>
+        /// The week's opening hours of the place at an address, into seven masks, Monday first (OpenHoursRules): the game's own
+        /// schedule, which its door keeps (BuildingHelper.CanEnterBuilding). False where the door is not the schedule's: no
+        /// address, a building the mod holds (walked into as the mod's own), or no hours kept for it. Asked once a day for each post.
+        /// </summary>
+        public static bool OpenWeek(string street, int number, int[] into)
+        {
+            for (int i = 0; i < 7; i++)
+            {
+                into[i] = 0;
+            }
+            try
+            {
+                BuildingRegistration reg = Registration(street, number);
+                List<ScheduleDay> days = reg != null ? reg.scheduleDays : null;
+                for (int w = 0; days != null && w < 7; w++)
+                {
+                    DayOfWeekOrdered weekday = TimeHelper.GetDayOfWeek(w + 1);   // day 1 of a game is a Monday
+                    for (int d = 0; d < days.Count; d++)
+                    {
+                        ScheduleDay s = days[d];
+                        if (s == null || s.day != weekday || !s.isOpen || s.openingHourSlots == null)
+                        {
+                            continue;
+                        }
+                        for (int h = 0; h < 24; h++)
+                        {
+                            into[w] |= s.IsOpenAtHour(h) ? 1 << h : 0;
+                        }
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                for (int i = 0; i < 7; i++)
+                {
+                    into[i] = 0;   // a building the game has no data for: its hours are not known
+                }
+            }
+            return OpenHoursRules.Known(into);
+        }
+
+        /// <summary>True if the game has the place at an address shut now, a temporary closing included, where its door keeps hours (<see cref="OpenWeek"/>).</summary>
+        public static bool ShutNow(string street, int number)
+        {
+            try
+            {
+                BuildingRegistration reg = Registration(street, number);
+                return reg != null && reg.scheduleDays != null && !BusinessHelper.IsBusinessOpen(reg);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        // The registration whose schedule a post's door keeps; null for none, or a building the mod holds.
+        private static BuildingRegistration Registration(string street, int number)
+        {
+            if (string.IsNullOrEmpty(street) || SpecialBuildings.Filed(street, number))
+            {
+                return null;
+            }
+            BuildingRegistration reg = BuildingHelper.GetBuildingRegistration(new Address(street, number));
+            return reg != null && !reg.RentedByPlayer ? reg : null;
         }
 
         /// <summary>True if the player is at work: inside the post's building or by its door (any hospital or the school for a post without an address).</summary>
