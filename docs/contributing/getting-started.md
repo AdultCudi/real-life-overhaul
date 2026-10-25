@@ -58,7 +58,7 @@ What each checker proves, and how to read a failure, is in [Checks](checks.md).
 
 1. **Close the game.** The game watches its mods folder, and files changed under a running game lose their textures and texts until it is restarted.
 2. Build with `-p:InstallToGame=true` added to the command in step 2. The build then puts the mod in `%USERPROFILE%\AppData\LocalLow\Hovgaard Games\Big Ambitions\ModsLocal\RealLifeOverhaul` instead, and removes any file there that is not part of the package.
-3. If you are subscribed on the Workshop, untick the Workshop item under **Mods** in the game's main menu. With both switched on the game starts the mod twice, and only one copy runs.
+3. If you are subscribed on the Workshop, untick the Workshop item under **Mods** in the game's main menu. With both switched on the game loads neither: it refuses two mods with the same assembly name.
 4. Start the game. The mod's page is under **Options**, on the **Mods** tab.
 5. On that page, under **Troubleshooting**, **Diagnostics**, switch on **Developer diagnostics** and **Show test tools**. The test buttons start most situations at once, and the mod's lines go to `Player.log`; see [Logs and debugging](../reference/logs-and-debugging.md).
 

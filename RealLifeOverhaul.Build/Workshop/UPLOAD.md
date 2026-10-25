@@ -51,7 +51,7 @@ If it fails, the game shows which of these it was: not connected to Steam, the f
 
 ## Straight afterwards: remove the local copy
 
-The game loads every folder in `ModsLocal` as well as every Workshop item that is switched on. After the upload you have both. They are the same DLL, so the game loads the assembly once, but it registers each folder as a mod of its own and starts the mod's classes twice (it only looks for two mods with one assembly name among the Workshop items and among the `ModsLocal` folders separately). Up to 0.1.0 that meant two copies of every feature running at once. From 0.1.1 the second copy to start writes one warning to `Player.log` ("switched on twice", "already running in this city") and does nothing; which copy is the one running, and so whose options and key choices are in use, is then whichever the game started first. Keep one:
+The game loads every folder in `ModsLocal` as well as every Workshop item that is switched on. After the upload you have both. They share the assembly name RealLifeOverhaul, and the game checks that across every mod it finds, Workshop items and `ModsLocal` folders together (`ModDiscoveryRegistry`, "Duplicate mod assembly name detected"): it loads neither and lists both as failed in the Mods menu. Keep one:
 
 - Quit the game and move `ModsLocal\RealLifeOverhaul` somewhere outside `ModsLocal` (or delete it: the build puts it back).
 - While you work on the mod again, do the opposite: keep the `ModsLocal` copy and untick the Workshop item under **Mods** in the main menu.
