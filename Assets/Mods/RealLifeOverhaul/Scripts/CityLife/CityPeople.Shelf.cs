@@ -50,11 +50,18 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Only while the shelf has something to see to: one look at a time, when People/Looks allows one.
+        // Only while the shelf has something to see to: one look at a time, when People/Looks allows one. A look asked for is
+        // made at the pace of Looks (a site waits for it); a worn one is only for variety, so it waits for a screen that hides
+        // the merge: up to 0.52.1 it was made in play, one to three a minute (the owner's session of 25 Oct 2026).
         private System.Collections.IEnumerator Tending()
         {
             while (_wanted.Count > 0 || AnyWorn())
             {
+                if (_wanted.Count == 0 && !Looks.Hidden)
+                {
+                    AskDoor();
+                    break;   // nothing a frame until then
+                }
                 yield return null;
                 if (!Looks.Free)
                 {
@@ -75,6 +82,46 @@ namespace RealLifeOverhaul
                 }
             }
             _tending = null;
+        }
+
+        private void AskDoor()
+        {
+            if (!_doorAsked)
+            {
+                _doorAsked = true;
+                ScenePrewarm.Again("city life: the street people's worn looks changed (behind the black screen)", _atDoor ??= AtDoor);
+            }
+        }
+
+        // Behind the black screen of a walk out (Core/ScenePrewarm): every worn look on the shelf changed, at most a few.
+        private bool AtDoor()
+        {
+            _doorAsked = false;
+            if (this == null)
+            {
+                return true;   // gone with its city
+            }
+            try
+            {
+                for (int i = 0, made = 0; i < _people.Count && made < WornAtDoor; i++)
+                {
+                    CityPerson person = _people[i];
+                    if (person.Stale && person.Valid && !person.InUse && !person.Actor.InUse)
+                    {
+                        Redress(person, CityLook.Civilian);
+                        made++;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                CityLifeDirector.Logger?.Error(e);
+                for (int i = 0; i < _people.Count; i++)
+                {
+                    _people[i].Stale = false;   // not tried again: they keep the look they have
+                }
+            }
+            return true;
         }
 
         private bool AnyWorn()

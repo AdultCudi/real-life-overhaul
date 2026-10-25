@@ -45,6 +45,9 @@ namespace RealLifeOverhaul
             _logger = logger;
             _officeMark.Keep(director);   // goes with the job director, or when the guard stops it
             _cast = new JobCast(director, logger);
+            // Made behind the loading screen: the first boss put out in play made a character and merged its look in a
+            // frame of play (the owner's session of 25 Oct 2026, under JobDirector.Update).
+            ScenePrewarm.Add("careers: the boss and a colleague being made", PrewarmCast);
             for (int i = 0; i < _depot.Length; i++)
             {
                 _depot[i] = -1;
@@ -52,6 +55,11 @@ namespace RealLifeOverhaul
         }
 
         public static bool On => Settings.Jobs && Settings.Careers;
+
+        private bool PrewarmCast()
+        {
+            return !On || _cast.Prewarm(JobCast.Size);
+        }
 
         /// <summary>The employer at whose depot the player stands (by its board or its boss), or -1.</summary>
         public int Near { get; private set; } = -1;

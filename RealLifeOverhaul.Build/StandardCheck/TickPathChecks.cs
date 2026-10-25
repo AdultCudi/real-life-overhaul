@@ -7,29 +7,46 @@ using System.Text.RegularExpressions;
 // follow its calls, which is how the seasons' once-a-second step came to grow the heap by 888 KB a second unseen (a
 // player's session record, 25 Oct 2026). Work that allocates on purpose and rarely (a log line when the season turns,
 // a copy of the sky when its look changes) lives in methods of its own, left off the list.
+// RLO-PERF-015: none of those methods builds a character's look either (the game's mesh merge, some 1.5 MB of arrays a
+// person): the coats dressed one person at every look in play and the city's people changed worn looks in play (the
+// owner's session of 25 Oct 2026); both now wait for a screen that hides them.
 internal static partial class Program
 {
-    private const string SeasonsDir = ScriptsDir + "/Seasons/";
-
-    // Each file and the methods of it that run on every tick of the seasons' step.
+    // Each file under Scripts and the methods of it that run on every tick of its feature.
     private static readonly (string File, string[] Methods)[] TickPaths =
     {
-        ("SeasonDirector.cs", new[] { "Update", "OnUpdate", "Slow", "Hush", "Demand", "FollowMarks", "News" }),
-        ("SeasonDirector.Look.cs", new[] { "Looks", "Bar" }),
-        ("SnowLook.cs", new[] { "Show", "Hide", "Fall", "Follow", "Fit", "Lie", "Layered", "Uncover", "Pose" }),
-        ("SeasonLook.cs", new[] { "Leaf", "StopLeaves" }),
-        ("SeasonBar.cs", new[] { "Show", "Hide" }),
-        ("SeasonGame.cs", new[] { "Loading", "Walkers" }),
-        ("SeasonGame.Trees.cs", new[] { "Trees", "WalkTrees", "RestoreTrees" }),
-        ("SeasonGame.Sky.cs", new[] { "Sky", "EndRain" }),
-        ("SeasonGame.Coats.cs", new[] { "Coats", "Seen", "PutBack" }),
-        ("SeasonGame.Snow.cs", new[] { "HushRain", "UnhushRain" }),
-        ("SnowHush.cs", new[] { "Hold", "LateUpdate", "OnLateUpdate" })
+        ("Seasons/SeasonDirector.cs", new[] { "Update", "OnUpdate", "Slow", "Hush", "Demand", "FollowMarks", "News" }),
+        ("Seasons/SeasonDirector.Look.cs", new[] { "Looks", "Bar" }),
+        ("Seasons/SnowLook.cs", new[] { "Show", "Hide", "Fall", "Follow", "Fit", "Lie", "Layered", "Uncover", "Pose" }),
+        ("Seasons/SeasonLook.cs", new[] { "Leaf", "StopLeaves" }),
+        ("Seasons/SeasonBar.cs", new[] { "Show", "Hide" }),
+        ("Seasons/SeasonGame.cs", new[] { "Loading", "Walkers" }),
+        ("Seasons/SeasonGame.Trees.cs", new[] { "Trees", "WalkTrees", "Walk", "RestoreTrees" }),
+        ("Seasons/SeasonGame.Sky.cs", new[] { "Sky", "EndRain" }),
+        ("Seasons/SeasonGame.Coats.cs", new[] { "Coats", "Undressed", "Walking" }),
+        ("Seasons/SeasonGame.Snow.cs", new[] { "HushRain", "UnhushRain" }),
+        ("Seasons/SnowHush.cs", new[] { "Hold", "LateUpdate", "OnLateUpdate" }),
+        // Flare's faces: the painter's frame while faces wait for their moment, and the moment itself.
+        ("Social/Flare/FlareFacePainter.cs", new[] { "Update", "OnUpdate", "Now" }),
+        ("Social/Flare/FlareFaceMoment.cs", new[] { "Of" }),
+        // The living city's shelf: the frames it waits through and what it asks each one.
+        ("CityLife/CityPeople.Shelf.cs", new[] { "Tending", "AnyWorn", "AskDoor" }),
+        // The session record and the mod's share of each frame: every frame while the record runs.
+        ("Diagnostics/SessionWatch.cs", new[] { "Update", "OnUpdate" }),
+        ("Diagnostics/SessionWatch.Timing.cs", new[] { "Split", "Figures", "CaptureTiming" }),
+        ("Core/HotSpots.cs", new[] { "Time", "End", "Roll", "Settle", "Keep" }),
+        // The performance director: every frame, its tweaks' timers, the culling's frame.
+        ("Performance/PerfDirector.cs", new[] { "Update", "OnUpdate", "Tick", "Schedule" })
     };
 
     // Beyond RLO-PERF-003's patterns: an object of a class made (the value types these methods use are let through).
     private static readonly Regex ObjectMade = new Regex(
-        @"\bnew\s+(?!(?:Vector2|Vector3|Vector4|Color|Color32|Quaternion|Keyframe|ParticleSystem\.MinMaxCurve|Worn|Tint|SnowDay|RainDay|SnowField)\b)[A-Z][\w.]*\s*[({]",
+        @"\bnew\s+(?!(?:Vector2|Vector3|Vector4|Color|Color32|Quaternion|Keyframe|ParticleSystem\.MinMaxCurve|Worn|Tint|SnowDay|RainDay|SnowField|Scope|FrameFigures)\b)[A-Z][\w.]*\s*[({]",
+        RegexOptions.Compiled);
+
+    // A character's look built: the game's own calls that merge a person's meshes, and the mod's that make them.
+    private static readonly Regex LookBuilt = new Regex(
+        @"\.(?:UpdateElements|UpdateVisuals|SetAppearance|SetRandomAppearance|RandomizeElements|RandomizeClothes)\s*\(|(?<![\w.])(?:Dress|DressSome|Redress|PutBack)\s*\(",
         RegexOptions.Compiled);
 
     private static void TickPathChecks()
@@ -41,11 +58,12 @@ internal static partial class Program
         }
         foreach ((string file, string[] methods) in TickPaths)
         {
-            string rel = SeasonsDir + file;
+            string rel = ScriptsDir + "/" + file;
             Examine("RLO-PERF-014", rel);
+            Examine("RLO-PERF-015", rel);
             if (!files.TryGetValue(rel, out SourceFile f))
             {
-                Hit("RLO-PERF-014", rel, 0, "the file is gone: put the list of the seasons' tick methods right");
+                Hit("RLO-PERF-014", rel, 0, "the file is gone: put the list of the tick methods right");
                 continue;
             }
             foreach (string method in methods)
@@ -53,7 +71,7 @@ internal static partial class Program
                 Match m = Regex.Match(f.CodeText, @"[\w>\]]\s+" + method + @"\s*\([^;{}]*\)\s*\{");
                 if (!m.Success || !f.Block(m.Index, out int open, out int close))
                 {
-                    Hit("RLO-PERF-014", rel, 0, method + " is gone: put the list of the seasons' tick methods right");
+                    Hit("RLO-PERF-014", rel, 0, method + " is gone: put the list of the tick methods right");
                     continue;
                 }
                 int bodyLine = f.LineAt(open);
@@ -70,6 +88,10 @@ internal static partial class Program
                     if (ObjectMade.IsMatch(lines[k]))
                     {
                         Hit("RLO-PERF-014", rel, bodyLine + k + 1, method + " (every tick): an object made: " + lines[k]);
+                    }
+                    if (LookBuilt.IsMatch(lines[k]))
+                    {
+                        Hit("RLO-PERF-015", rel, bodyLine + k + 1, method + " (every tick): a character's look built (a mesh merge): " + lines[k]);
                     }
                 }
             }

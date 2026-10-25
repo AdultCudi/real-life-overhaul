@@ -61,6 +61,7 @@ namespace RealLifeOverhaul.Seasons
             // both can only be looked for behind a screen.
             ScenePrewarm.Add("seasons: the game's road paint being found for the snow on the ground", RoadPaint.Prewarm);
             ScenePrewarm.Add("seasons: the game's soft round particle being found for the snowflakes", SeasonGame.FindFlakePaint);
+            ScenePrewarm.Add("seasons: the trees' leaf materials found (every tree of the city)", SeasonGame.WalkAllTrees);
             _markGround = MarkGround;
             ScenePrewarm.Add(MarkWhat, _markGround);
         }
