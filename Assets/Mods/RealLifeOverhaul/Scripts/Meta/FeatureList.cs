@@ -417,7 +417,6 @@ namespace RealLifeOverhaul.Meta
                 }))
                 .Row(new ButtonOption("reallife_meta_check_button", OptionsLayout.CheckSetup))
                 .Fact("game_build", () => Whole(GameBuild.MadeFor))
-                .Fact("bug_reports_kept", () => Whole(BugReportRules.KeepReports))
                 .Test("reallife_test_block_say", BlockTests.Say)
                 .Test("reallife_test_guard_fault", Guard.TestFault)
                 .Test("reallife_test_build_notice", GameBuild.TestNotice)

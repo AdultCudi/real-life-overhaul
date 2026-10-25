@@ -18315,7 +18315,7 @@
   "reallife_bug_done": "错误报告已生成，文件夹已打开。请把 zip 文件发到模组 Discord 的 #bug-reports，Discord 会在你的浏览器中打开。摘要已复制：请与文件一起粘贴。",
   "reallife_bug_done_folder": "错误报告已生成，文件夹已打开。请把其中的文件发到模组 Discord 的 #bug-reports，Discord 会在你的浏览器中打开。摘要已复制：请与这些文件一起粘贴。",
   "reallife_bug_failed": "无法写入错误报告：{error}。请改为把你的 Player.log 发到模组 Discord 的 #bug-reports。",
-  "reallife_guide_trouble_report": "# 报告错误\n- 在选项页面的“从这里开始”下或手机上的模组设置应用中按“报告错误”。用一两句话说明出了什么问题，也可以留空。\n- 模组会把报告写到你的电脑上，位于 {folder} 的 Reports 下：模组和游戏的版本、你的设置、日期和时间、模组最近的警告、本次游戏和上一次游戏的游戏日志，以及在城市已加载时的一张屏幕截图。你的 Windows 用户名、Steam ID，以及已知带有 Steam 名称的那些行里的 Steam 名称都会被去掉。日志中可能仍有其他名字：在公开发布之前，请先检查一遍 zip。模组不会发送任何东西。该文件夹保留最新的 {bug_reports_kept} 份报告。\n- 随后会打开报告所在的文件夹，报告是一个 zip 文件，模组的 Discord 也会在浏览器中打开。把 zip 发到 #bug-reports，并粘贴模组为你复制的摘要。",
+  "reallife_guide_trouble_report": "# 报告错误\n- 在选项页面的“从这里开始”下或手机上的模组设置应用中按“报告错误”。用一两句话说明出了什么问题，也可以留空。\n- 模组会把报告写到你的电脑上，位于游戏数据文件夹的 RealLifeOverhaul、Reports 下：模组和游戏的版本、你的设置、日期和时间、模组最近的警告、本次游戏和上一次游戏的游戏日志，以及在城市已加载时的一张屏幕截图。你的 Windows 用户名、Steam ID，以及已知带有 Steam 名称的那些行里的 Steam 名称都会被去掉。日志中可能仍有其他名字：在公开发布之前，请先检查一遍 zip。模组不会发送任何东西。较早的报告会被删除，只保留最近的几份。\n- 随后会打开报告所在的文件夹，报告是一个 zip 文件，模组的 Discord 也会在浏览器中打开。把 zip 发到 #bug-reports，并粘贴模组为你复制的摘要。",
   "reallife_changes_022_0_title": "0.22.0",
   "reallife_changes_022_0": "可在游戏内报告错误：选项页面“从这里开始”中的按钮（“模组设置”应用中也有）会把包含你的设置和游戏日志的报告写到你的电脑上，然后打开其文件夹和模组的 Discord，供你自行发布。模组本身不会发送任何东西。",
   "reallife_changes_023_0_title": "0.23.0",
