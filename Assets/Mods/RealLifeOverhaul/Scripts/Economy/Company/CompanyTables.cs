@@ -214,6 +214,57 @@ namespace RealLifeOverhaul.Economy
             .Column("reallife_co_col_pay", 300f, TableSort.Money)
             .Column("reallife_co_col_state", 360f, TableSort.Text, right: true);
 
+        // Who holds an escalation, as the exceptions' first filter has it: the owner, a regional manager, an executive, nobody (settled).
+        public const int HeldOwner = 0, HeldRegion = 1, HeldExecutive = 2, HeldClosed = 3;
+        private static readonly string[] HeldFilters = { "reallife_hier_held_you", "reallife_hier_held_region", "reallife_hier_held_executive", "reallife_hier_held_closed" };
+
+        /// <summary>The escalations: 0 what, 1 place, 2 with, 3 since, 4 how it stands. Newest first.</summary>
+        public static readonly TableSpec Escalations = new TableSpec("Company", "Hierarchy: escalations")
+            .Column("reallife_mgr_col_what", 420f, TableSort.Text)
+            .Column("reallife_mgr_col_place", 460f, TableSort.Text, flexible: true)
+            .Column("reallife_hier_col_with", 380f, TableSort.Text)
+            .Column("reallife_mgr_col_day", 200f, TableSort.Date)
+            .Column("reallife_co_col_state", 360f, TableSort.Text, right: true)
+            .Filter("reallife_hier_all_holders", HeldFilters)
+            .Empty("reallife_hier_inbox_none");
+
+        // An escalation's story, then a place's dashboard: laid out by hand, nothing sorts.
+        public static readonly TableSpec EscalationLog = new TableSpec("Company", "Hierarchy: an escalation")
+            .Column("reallife_mgr_col_what", 420f, TableSort.None)
+            .Column("reallife_mgr_col_detail", 640f, TableSort.None, flexible: true)
+            .Column("reallife_mgr_col_day", 220f, TableSort.None)
+            .Column("reallife_mgr_col_by", 360f, TableSort.None, right: true);
+
+        /// <summary>The policy centre, a row a rule under its heading: 0 rule, 1 the company's, 2 the region's, 3 the store's, 4 in force. Laid out by hand.</summary>
+        public static readonly TableSpec Policies = new TableSpec("Company", "Hierarchy: policy")
+            .Column("reallife_pol_col_rule", 560f, TableSort.None, flexible: true)
+            .Column("reallife_pol_col_company", 300f, TableSort.None)
+            .Column("reallife_pol_col_region", 300f, TableSort.None)
+            .Column("reallife_pol_col_store", 300f, TableSort.None)
+            .Column("reallife_pol_col_force", 300f, TableSort.None, right: true);
+
+        /// <summary>The policy's templates: 0 template, 1 kind, 2 saved. Laid out by hand.</summary>
+        public static readonly TableSpec Templates = new TableSpec("Company", "Hierarchy: templates")
+            .Column("reallife_pol_col_template", 620f, TableSort.None, flexible: true)
+            .Column("reallife_mgr_col_kind", 360f, TableSort.None)
+            .Column("reallife_pol_col_saved", 300f, TableSort.None, right: true);
+
+        /// <summary>The owner's overview: what waits for the owner, then the executives, then a way to each level. Laid out by hand.</summary>
+        public static readonly TableSpec OwnerView = new TableSpec("Company", "Hierarchy: owner")
+            .Column("reallife_mgr_col_what", 460f, TableSort.None)
+            .Column("reallife_mgr_col_detail", 700f, TableSort.None, flexible: true)
+            .Column("reallife_mgr_col_day", 220f, TableSort.None)
+            .Column("reallife_co_col_state", 360f, TableSort.None, right: true);
+
+        /// <summary>The player's professionals who fit a seat: 0 name, 1 role, 2 level, 3 going rate, 4 where.</summary>
+        public static readonly TableSpec Professionals = new TableSpec("Company", "Hierarchy: who could sit")
+            .Column("reallife_co_col_name", 440f, TableSort.Text, flexible: true)
+            .Column("reallife_hier_col_role", 400f, TableSort.Text)
+            .Column("reallife_hier_col_level", 240f, TableSort.Text)
+            .Column("reallife_co_col_pay", 260f, TableSort.Money)
+            .Column("reallife_mgr_col_where", 400f, TableSort.Text, right: true)
+            .Empty("reallife_hier_exec_nobody");
+
         public static TableSpec For(int tab)
         {
             switch (tab)

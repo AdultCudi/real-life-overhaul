@@ -72,8 +72,8 @@ namespace RealLifeOverhaul.Careers
 
     /// <summary>
     /// The management ladder's rungs, the one list of names and levels for a career at a city company and for the player's own
-    /// companies. Game-free. Kept small and apart so that it can be folded into the shared hierarchy catalogue of the player's own
-    /// companies (Economy/Company) when both are in main: the names, numbers and powers there are these.
+    /// companies: the hierarchy there (Economy/Company: who holds an escalation, an executive's seat, ExecutiveHiring's codes L0 to
+    /// L4) reads its rungs and seats from here and keeps no list of its own. Game-free.
     /// </summary>
     public static class LadderRanks
     {
