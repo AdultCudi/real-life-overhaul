@@ -170,6 +170,10 @@ namespace RealLifeOverhaul.Economy
                 mp.Own = OwnOf(mp.Place.Place);
                 mp.Region = RegionOf(mp.District);
             }
+            if (HierarchyOn)
+            {
+                Tally(Save.Day);   // the places' staff counted for the hierarchy's pages and its day
+            }
         }
 
         private RotaPlace PlaceOf(string place)
@@ -238,7 +242,7 @@ namespace RealLifeOverhaul.Economy
             {
                 return false;
             }
-            return ManagerRules.Answers(ManagersOn, OwnOf(place), task, employee);
+            return ManagerRules.Answers(ManagersOn, OwnOf(place), task, employee) && PolicyAllows(ManagedAt(place), task);
         }
 
         // Who decides at a place today: its manager, or the district's regional manager standing in for one off sick.
@@ -267,10 +271,10 @@ namespace RealLifeOverhaul.Economy
             return d;
         }
 
-        /// <summary>The month's budget of a manager, at today's prices.</summary>
+        /// <summary>The month's budget of a manager, at today's prices, with what the finance chief or the owner added this month.</summary>
         internal int BudgetOf(ManagerFile m)
         {
-            return CompanyCatalogue.AtPrices(ManagerCatalogue.Step(ManagerCatalogue.Budgets, m.Budget), _index);
+            return CompanyCatalogue.AtPrices(ManagerCatalogue.Step(ManagerCatalogue.Budgets, m.Budget), _index) + TopUpOf(m);
         }
 
         /// <summary>A manager's allowance a day, at today's prices.</summary>
@@ -305,10 +309,20 @@ namespace RealLifeOverhaul.Economy
                     Round(day, hour, (ManagerTask)t);
                 }
             }
+            HierarchyHour(day, hour);   // an exception to the pay band raised as the requests were answered goes to its approver at once
             if (hour == ManagerCatalogue.DigestHour && _mgr.Today > 0 && !_mgrBroken)
             {
-                Tell(NotificationType.Info, "reallife_mgr_note_today", new Dictionary<string, string> { { "count", _mgr.Today.ToString() } }, TabManagers, null);
-                _mgr.Today = 0;
+                // The policy says how often: every day (as before it), only on a Sunday with the week's count, or never.
+                int reports = Rule(null, PolicyField.Reports);
+                if (HierarchyRules.DigestDue(reports, day))
+                {
+                    Tell(NotificationType.Info, "reallife_mgr_note_today", new Dictionary<string, string> { { "count", _mgr.Today.ToString() } }, TabManagers, null);
+                    _mgr.Today = 0;
+                }
+                else if (PolicyCatalogue.Value(PolicyField.Reports, reports) == PolicyCatalogue.ReportExceptions)
+                {
+                    _mgr.Today = 0;
+                }
             }
         }
 
@@ -326,7 +340,7 @@ namespace RealLifeOverhaul.Economy
                     ManagedPlace mp = _managed[i];
                     int skill, review;
                     string who;
-                    if (mp.Own == null || !ManagerRules.Runs(mp.Own.Tasks, mp.Kind, task) || mp.Place.Reg == null
+                    if (mp.Own == null || !ManagerRules.Runs(mp.Own.Tasks, mp.Kind, task) || !PolicyAllows(mp, task) || mp.Place.Reg == null
                         || !GoingPublic.Mine(mp.Place.Reg) || !Decider(mp, out skill, out review, out who))
                     {
                         continue;
@@ -628,6 +642,11 @@ namespace RealLifeOverhaul.Economy
                 case LimitPriceHigh: m.PriceHigh = CompanyCatalogue.Clamp(step, 0, ManagerCatalogue.PriceHighs.Length - 1); break;
                 case LimitBudget: m.Budget = CompanyCatalogue.Clamp(step, 0, ManagerCatalogue.Budgets.Length - 1); break;
                 case LimitKeep: m.Keep = CompanyCatalogue.Clamp(step, 0, ManagerCatalogue.KeepMost); break;
+            }
+            if (limit == LimitWage || limit == LimitBudget)
+            {
+                // The pay band and the budget are the store's own rules of the policy: set here, held to the region's and the company's.
+                StoreOwn(place, limit == LimitWage ? PolicyField.PayBand : PolicyField.Budget, limit == LimitWage ? m.WageBand : m.Budget);
             }
             Logger?.Info("Company: a limit of the manager of " + ManagedName(place) + " set: " + limit + " to " + step + ".");
             Changed();

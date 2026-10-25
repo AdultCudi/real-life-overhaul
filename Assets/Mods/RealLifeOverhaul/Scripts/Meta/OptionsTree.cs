@@ -355,6 +355,8 @@ namespace RealLifeOverhaul.Meta
                 S("rota").For("economy_rota").Opt("economy_rota", "economy_company").Also("schedule shifts opening hours staff"),
                 S("managers").For("economy_managers").Opt("economy_managers", "economy_company")
                     .Also("manager managers regional bureaucracy delegate automate restock orders prices raises hiring report"),
+                S("hierarchy").For("economy_hierarchy").Opt("economy_hierarchy", "economy_managers")
+                    .Also("hierarchy policy policies escalation exceptions regional executive coo chro cfo chief bureaucracy corporate deep mode template"),
                 S("cleaning").For("economy_cleaning").Need("economy").Opts("economy_cleaning").Also("cleaners contract"),
                 S("sale").For("economy_sale").Need("economy").Opts("economy_sale").Also("sell buyer offer"),
                 S("ownbank").For("economy_ownbank").Need("economy").Opts("economy_bank").Also("bank licence deposits savers loans regulator capital fund"),

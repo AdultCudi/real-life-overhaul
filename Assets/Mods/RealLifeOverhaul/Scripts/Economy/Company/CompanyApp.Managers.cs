@@ -56,6 +56,10 @@ namespace RealLifeOverhaul.Economy
                 return;
             }
             _director.ManagerLook(_lines, _linePool, _counts);   // every place's post as it stands, read once for this page
+            if (WriteHierarchy(box, ms, ref selected))
+            {
+                return;   // the exceptions, the policy centre, a dashboard
+            }
             string place, rest;
             if (Split("mk:", out place, out rest) || Split("mc:", out place, out rest))
             {
@@ -273,6 +277,12 @@ namespace RealLifeOverhaul.Economy
             InfoBox.Button(top, InfoBox.Additional, "reallife_mgr_replace", () => Go("ma:" + place));
             InfoBox.Button(top, InfoBox.Negative, "reallife_mgr_stand_down", () => _director.ManagerStandDown(place, false));
             InfoBox.Button(top, InfoBox.Additional, "reallife_co_back", () => Go(PlaceBack(mp)));
+            if (_director.HierarchyOn)
+            {
+                Transform levels = box.ButtonRow();
+                InfoBox.Button(levels, InfoBox.Positive, "reallife_hier_open_dashboard", () => Go("db:" + place));
+                InfoBox.Button(levels, InfoBox.Additional, "reallife_hier_open_policy", () => OpenPolicy(CompanyDirector.ScopeStore, place));
+            }
             box.Section("reallife_mgr_sec_manager");
             box.RowPair("reallife_mgr_name", m.Name, "reallife_mgr_since", CompanyText.Day(m.From));
             int chance = _director.ChanceToday(mp);

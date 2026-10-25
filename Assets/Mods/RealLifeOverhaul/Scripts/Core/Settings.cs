@@ -162,6 +162,7 @@
         public const string EconomyCompanyLicencesId = "economy_company_licences";
         public const string EconomyRotaId = "economy_rota";
         public const string EconomyManagersId = "economy_managers";
+        public const string EconomyHierarchyId = "economy_hierarchy";
         public const string EstateId = "economy_estate";
         public const string EstateHotelId = "economy_estate_hotel";
         public const string EstateHireId = "economy_estate_hire";
@@ -497,6 +498,7 @@
         public static bool EconomyCompanyLicences = true;    // ...licences and permits
         public static bool EconomyRota = true;           // the staff rota planner (off: the tab says so and nothing is worked out)
         public static bool EconomyManagers = true;       // managers deciding inside the player's limits (CompanyDirector.Managers)
+        public static bool EconomyHierarchy = true;      // the company's policy and escalations over the managers (off: each by their own limits, nothing escalated)
         public static bool Estate = true;                // property (off: every value and rent is the game's own)
         public static bool EstateHotel = true;           // owning a hotel of the city's as a business
         public static int EstateRent = 100;              // rental income: percent of the market's rent of a unit the player lets himself, and so of what is asked, offered and renewed at (50 to 300)
@@ -885,6 +887,7 @@
             EconomyCompanyLicences = Bool(modId, EconomyCompanyLicencesId, EconomyCompanyLicences);
             EconomyRota = Bool(modId, EconomyRotaId, EconomyRota);
             EconomyManagers = Bool(modId, EconomyManagersId, EconomyManagers);
+            EconomyHierarchy = Bool(modId, EconomyHierarchyId, EconomyHierarchy);
             Estate = Bool(modId, EstateId, Estate);
             EstateHotel = Bool(modId, EstateHotelId, EstateHotel);
             EstateHire = Bool(modId, EstateHireId, EstateHire);

@@ -73,6 +73,7 @@ namespace RealLifeOverhaul.Economy
             }
             else
             {
+                HierarchyRows(ref selected);
                 GroupRow(ManagerGroup.Needs, needs.ToString(), string.Empty, string.Empty,
                     needs > 0 ? CompanyText.T("reallife_mgr_dir_look") : CompanyText.T("reallife_co_state_in_order"), needs > 0, ref selected);
                 int regional = c.Managers[(int)ManagerGroup.Regional];

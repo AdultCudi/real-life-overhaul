@@ -293,6 +293,14 @@ namespace RealLifeOverhaul.Meta
                 .Data(Economy.ManagerStore.Key)
                 .Test("reallife_mgr_test_appoint", "reallife_mgr_test_fill", "reallife_mgr_test_decide", "reallife_mgr_test_undo"));
 
+            // Over the managers, under the company's header too.
+            Economy.HierarchyGuide.AddFacts(Features.Add("economy_hierarchy", "reallife_meta_title_economy_hierarchy")
+                .About("reallife_guide_economy_hierarchy_about").Help("reallife_guide_economy_hierarchy")
+                .Owns(Settings.EconomyHierarchyId)
+                .Data(Economy.HierarchyStore.Key)
+                .Test("reallife_hier_test_store", "reallife_hier_test_owner", "reallife_hier_test_gap", "reallife_hier_test_budget", "reallife_hier_test_demand",
+                    "reallife_hier_test_mood", "reallife_hier_test_wave", "reallife_hier_test_kpi", "reallife_hier_test_exception"));
+
             Economy.EstateGuide.AddFacts(Features.Add("economy_estate", "reallife_meta_title_economy_estate")
                 .Group("reallife_estate_header")
                 .About("reallife_guide_economy_estate_about").Help("reallife_guide_economy_estate")

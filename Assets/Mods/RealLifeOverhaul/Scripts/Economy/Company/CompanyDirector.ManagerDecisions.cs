@@ -41,6 +41,7 @@ namespace RealLifeOverhaul.Economy
             }
             ManagerFile m = mp.Own;
             List<StaffFile> staff = _state.Staff;
+            int band = Rule(mp, PolicyField.PayBand), most = Rule(mp, PolicyField.RaiseMost), every = Rule(mp, PolicyField.RaiseEvery);
             for (int i = 0; i < staff.Count; i++)
             {
                 StaffFile f = staff[i];
@@ -48,9 +49,15 @@ namespace RealLifeOverhaul.Economy
                 {
                     continue;   // a manager's own request is the player's to answer
                 }
-                int ceiling = ManagerRules.Ceiling(f.Going, m.WageBand), roll;
+                // The policy's ceiling: the band, the largest raise and the days between two (PolicyRules); at its start, the band alone.
+                int ceiling = PolicyRules.RaiseDue(LastRaise(mp, f.Id), day, every) ? PolicyRules.RaiseCeiling(f.Paid, f.Going, band, most) : f.Paid, roll;
+                RaiseAnswer fair = ManagerRules.RaiseAnswerFor(f.Paid, f.AskTo, ceiling, false);
+                if (fair != RaiseAnswer.Agree && ToApprover(mp, f, false, ceiling, day))
+                {
+                    continue;   // past what the manager may agree: left open for whoever the policy names to approve it
+                }
                 bool slip = Slips(skill, review, day, mp.Place.Place, ManagerTask.Raises, f.Id, out roll);
-                RaiseAnswer fair = ManagerRules.RaiseAnswerFor(f.Paid, f.AskTo, ceiling, false), answer = ManagerRules.RaiseAnswerFor(f.Paid, f.AskTo, ceiling, slip);
+                RaiseAnswer answer = ManagerRules.RaiseAnswerFor(f.Paid, f.AskTo, ceiling, slip);
                 int askDay = f.AskDay, askTo = f.AskTo, rest = f.AskRest, standing = f.Standing, added = StaffRules.RaiseFor(f, answer);
                 StaffRules.Answer(f, answer, day);
                 Decision d = Record(mp, ManagerTask.Raises, f.Id, who, day, hour, answer != fair);
@@ -62,7 +69,7 @@ namespace RealLifeOverhaul.Economy
                 d.F = (int)answer;
                 d.Detail = ManagerStore.Word(f.Name);
                 Logger?.Info("Company: " + who + " (manager, skill " + skill + ") answered " + f.Name + "'s request for " + askTo + " an hour (hundredths): " + answer
-                             + "; the ceiling is " + ceiling + " (" + ManagerCatalogue.Step(ManagerCatalogue.WageBands, m.WageBand) + " thousandths of the going rate "
+                             + "; the ceiling is " + ceiling + " (" + ManagerCatalogue.Step(ManagerCatalogue.WageBands, band) + " thousandths of the going rate "
                              + f.Going + ")" + (answer != fair ? ", a mistake: " + fair + " was the answer" : string.Empty) + ".");
             }
             Recount();
@@ -76,6 +83,7 @@ namespace RealLifeOverhaul.Economy
             }
             ManagerFile m = mp.Own;
             List<StaffFile> staff = _state.Staff;
+            int band = Rule(mp, PolicyField.PayBand), most = Rule(mp, PolicyField.RaiseMost);
             for (int i = 0; i < staff.Count; i++)
             {
                 StaffFile f = staff[i];
@@ -89,9 +97,14 @@ namespace RealLifeOverhaul.Economy
                     GaveWay(f, day);   // the game's own offer decides, not the company's, nor its manager
                     continue;
                 }
-                int ceiling = ManagerRules.Ceiling(f.Going, m.WageBand), roll;
+                int ceiling = PolicyRules.RaiseCeiling(f.Paid, f.Going, band, most), roll;
+                bool fair = ManagerRules.Match(f.PoachOffer, ceiling, false);
+                if (!fair && ToApprover(mp, f, true, ceiling, day))
+                {
+                    continue;   // past the band: left open for whoever the policy names to approve it
+                }
                 bool slip = Slips(skill, review, day, mp.Place.Place, ManagerTask.Offers, f.Id, out roll);
-                bool fair = ManagerRules.Match(f.PoachOffer, ceiling, false), match = ManagerRules.Match(f.PoachOffer, ceiling, slip);
+                bool match = ManagerRules.Match(f.PoachOffer, ceiling, slip);
                 int came = f.PoachDay, offer = f.PoachOffer, rest = f.PoachRest, standing = f.Standing, raise = f.Raise;
                 string rival = f.Rival;
                 StaffRules.OfferAnswer(f, match, day);
@@ -541,6 +554,7 @@ namespace RealLifeOverhaul.Economy
             int count = _candidates.Count;
             if (count == 0)
             {
+                HireFromRegion(mp, who, day, hour);   // the policy's next source: the region's other boards
                 return;
             }
             if (_hireWage.Length < count)
@@ -557,16 +571,20 @@ namespace RealLifeOverhaul.Economy
                 _hireSkill[i] = ManagerGame.SkillOf(_candidates[i]);
             }
             int left = ManagerRules.Left(BudgetOf(m), m.Spent), roll;
+            int band = Rule(mp, PolicyField.PayBand), cap = Rule(mp, PolicyField.HirePayCap), floor = Rule(mp, PolicyField.SkillFloor);
             bool slip = Slips(skill, review, day, mp.Place.Place, ManagerTask.Hiring, string.Empty, out roll);
-            int fair = ManagerRules.Pick(_hireWage, _hireGoing, _hireSkill, count, m.WageBand, left, false);
-            int pick = ManagerRules.Pick(_hireWage, _hireGoing, _hireSkill, count, m.WageBand, left, slip);
+            // The policy's pick: the band, the hiring cap and the skill floor; at the policy's start the same pick as ManagerRules.Pick.
+            int fair = PolicyRules.Pick(_hireWage, _hireGoing, _hireSkill, count, band, cap, floor, left, false);
+            int pick = PolicyRules.Pick(_hireWage, _hireGoing, _hireSkill, count, band, cap, floor, left, slip);
             if (pick < 0)
             {
                 if (Verbose)
                 {
                     Logger?.Info("Company check (managers, hiring at " + mp.Place.Name + "): " + count + " candidate(s) from the job board, none inside the wage band "
-                                 + ManagerCatalogue.Step(ManagerCatalogue.WageBands, m.WageBand) + " and the " + left + " left of the budget: PASS");
+                                 + ManagerCatalogue.Step(ManagerCatalogue.WageBands, band) + ", the hiring cap " + PolicyCatalogue.Value(PolicyField.HirePayCap, cap)
+                                 + ", the skill floor " + PolicyCatalogue.Value(PolicyField.SkillFloor, floor) + " and the " + left + " left of the budget: PASS");
                 }
+                HireFromRegion(mp, who, day, hour);
                 return;
             }
             EmployeeInstance e = _candidates[pick];
