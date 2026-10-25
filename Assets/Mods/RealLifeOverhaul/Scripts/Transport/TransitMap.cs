@@ -59,8 +59,8 @@ namespace RealLifeOverhaul
         /// <summary>True while the network is being laid out: the director then comes back every frame.</summary>
         public static bool PlacingStops => !Ready;
 
-        /// <summary>True once the routes are laid (behind the loading screen, as a rule), before or after their stops are.</summary>
-        public static bool RoutesLaid => Ready || _phase >= 2;
+        /// <summary>True once the routes are laid (behind the loading screen, as a rule), a district's own with them, before or after their stops are.</summary>
+        public static bool RoutesLaid => Ready || (_phase >= 2 && OwnLaid);
 
         private static Waypoint[] _points;
         private static readonly List<SubwayStation> Stations = new List<SubwayStation>(24);
@@ -95,10 +95,11 @@ namespace RealLifeOverhaul
             Termini.Add(new TransitEnd { At = at, NameKey = nameKey, Name = name });
         }
 
-        /// <summary>The city is going: its termini go with it.</summary>
+        /// <summary>The city is going: its termini and a district's own routes go with it.</summary>
         public static void ClearTermini()
         {
             Termini.Clear();
+            OwnRoutes.Clear();
         }
         private static readonly List<int> PathScratch = new List<int>(2048);
         private static readonly List<float> XScratch = new List<float>(2048);
@@ -163,6 +164,7 @@ namespace RealLifeOverhaul
             _lineBegun = false;
             _shared = 0;
             Bays = 0;
+            ResetOwn();
             Ready = false;
         }
 
@@ -186,7 +188,7 @@ namespace RealLifeOverhaul
             }
             using (SessionWatch.Piece("transit: the bus routes laid between the subway stations (behind the loading screen)"))
             {
-                for (int guard = 0; guard < MaxSearches * 4 + 64 && !Ready && _phase < 2; guard++)
+                for (int guard = 0; guard < MaxSearches * 4 + 64 + MostOwnRoutes * 2 && !RoutesLaid; guard++)
                 {
                     Next(false);
                 }
@@ -197,7 +199,7 @@ namespace RealLifeOverhaul
         /// <summary>Lays out what is left of the network now, for a test pressed before it was done.</summary>
         public static void Complete()
         {
-            for (int guard = 0; guard < MaxSearches * 4 + 64 + 4096 && !Ready; guard++)
+            for (int guard = 0; guard < MaxSearches * 4 + 64 + MostOwnRoutes * 2 + 4096 && !Ready; guard++)
             {
                 Next(false);
             }
@@ -236,11 +238,20 @@ namespace RealLifeOverhaul
                     if (!PairStep(sliced ? WorkSlice.Of(SeekSliceMs, 1) : WorkSlice.Whole))
                     {
                         _phase = 2;
-                        _graph = null;   // the search's memory is the size of the road graph: let go of now
                         _pairs = null;
                     }
                     return;
                 }
+                if (!OwnLaid)
+                {
+                    LayOwn();   // a district's own routes, one direction a step, on the paired routes' graph
+                    if (OwnLaid)
+                    {
+                        _graph = null;   // the search's memory is the size of the road graph: let go of now
+                    }
+                    return;
+                }
+                _graph = null;
                 if (_lineCursor < Lines.Count)
                 {
                     // Stop after stop until the slice's time is up, at least one each slice.
@@ -408,6 +419,10 @@ namespace RealLifeOverhaul
             for (int i = 0; i < Lines.Count; i++)
             {
                 TransitLine line = Lines[i];
+                if (IsOwn(line))
+                {
+                    continue;   // a district's own route runs as a local line: the main lines stay the paired routes they were
+                }
                 float metres = line.Metres[line.Metres.Length - 1];
                 int at = lengths.FindIndex(p => p.Key == line.Number);
                 if (at < 0)
@@ -428,7 +443,7 @@ namespace RealLifeOverhaul
             for (int i = 0; i < Lines.Count; i++)
             {
                 TransitLine line = Lines[i];
-                int rank = lengths.FindIndex(p => p.Key == line.Number);
+                int rank = IsOwn(line) ? -1 : lengths.FindIndex(p => p.Key == line.Number);
                 line.Main = rank >= 0 && rank < TransitPlan.MainRoutes;
                 line.Seed = i * 7 + 3;
                 line.Minutes = new float[line.Stops.Count];

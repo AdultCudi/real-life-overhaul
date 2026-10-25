@@ -127,6 +127,11 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\LayoutStreets.cs" Link="Mod\Uptown\LayoutStreets.cs" />
     <!-- Uptown's cut in the city map's fog (UptownFogCheck.cs, with the game's own fog in UptownFogGame.cs): its data, game-free. -->
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\LayoutFog.cs" Link="Mod\Uptown\LayoutFog.cs" />
+    <!-- Uptown's streets (UptownStreetsCheck.cs): its buses' routes to every block and their reach, its street furniture, game-free; the bus network's routes of a district's own. -->
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\StreetsRules.cs" Link="Mod\Uptown\StreetsRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\TransitPlan.cs" Link="Mod\TransitPlan.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\TransitPlan.Journeys.cs" Link="Mod\TransitPlan.Journeys.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\TransitPlan.Routes.cs" Link="Mod\TransitPlan.Routes.cs" />
   </ItemGroup>
 
 </Project>

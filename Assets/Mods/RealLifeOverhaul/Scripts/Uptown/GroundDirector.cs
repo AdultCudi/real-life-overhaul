@@ -69,6 +69,7 @@ namespace RealLifeOverhaul.Uptown
             if (!stays)
             {
                 GroundGame.Forget();
+                StreetsGame.Forget();   // its pieces went with the art: the templates it holds go too
             }
             UptownLots.Laid(false, stays ? "the save tools stopped the mod" : "the city is going");
             if (Instance == this)
@@ -147,6 +148,7 @@ namespace RealLifeOverhaul.Uptown
             mark = Stopwatch.GetTimestamp();
             _copied = GroundGame.CopyArt(build);
             _artMs = Ms(mark);
+            Furnish();   // the street furniture with the art, before the ground grows round it (GroundDirector.Streets)
             mark = Stopwatch.GetTimestamp();
             why = GroundWork.Ground(LayoutPlans.PlayerGround());
             _playerMs = Ms(mark);
@@ -203,6 +205,7 @@ namespace RealLifeOverhaul.Uptown
             {
                 TransitMap.AddTerminus(new Vector3(_termini[i].X, UptownLots.GroundY, _termini[i].Z), _termini[i].NameKey, _termini[i].Name);
             }
+            AddRoutes();   // the district's own bus routes, to every corner (GroundDirector.Streets)
             _build = build;
             ScenePrewarm.AddLate("uptown: parking and pedestrians on its streets, once the game is loaded", Late);
             _laidWhy = _walkable ? null : "its ground for the player could not be laid";
@@ -214,7 +217,8 @@ namespace RealLifeOverhaul.Uptown
                          + _artMs.ToString("F0", Inv) + " ms; the player's walking ground " + (_walkable ? "grown in " + _playerMs.ToString("F0", Inv) + " ms" : "NOT laid")
                          + ", the pedestrians' " + (_people ? "in " + _peopleMs.ToString("F0", Inv) + " ms" : "not (" + _peopleWhy + "), so no one walks there") + "; " + _hidden
                          + " pieces of the backdrop and " + _strays + " strays put away, " + _opened + " of the game's walls opened, " + GroundGame.Built
-                         + " walls and colliders built, " + _termini.Count + " bus termini; " + UptownLots.All.Count + " lots " + (_walkable ? "open" : "closed") + ".");
+                         + " walls and colliders built, " + _termini.Count + " bus termini; " + FurnitureWords() + "; " + UptownLots.All.Count + " lots "
+                         + (_walkable ? "open" : "closed") + ".");
         }
 
         // The district does not stand at this load: one line, and what was laid of it given back.

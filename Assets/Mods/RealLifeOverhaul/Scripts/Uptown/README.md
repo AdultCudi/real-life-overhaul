@@ -11,6 +11,7 @@ Uptown: a district of the mod's own north of Manhattan, past 1st Avenue. Its gro
 - `BuildingsRules.cs`, then `LifeDirector.cs`: the district of the game on those lots: which lots are built from the first day and which stay open for the construction game, the offices leased to the city's rival builders, and the load step by step (`LifeGame*.cs` the only files of the district's life that touch the game).
 - `SpecialsRules.cs`, then `LifeDirector.Specials.cs` and `LifeGame.Specials.cs`: the district's special places, each a copy of one of the game's special services (a bank's branch, the agencies, the stores, a supermarket, a clinic, a dealership, an importer) on a fixed lot, through the made buildings' engine.
 - `BigPlacesRules.cs`, then `LifeDirector.BigPlaces.cs`: its wholesale store and gas station, copies of the game's own whole, the lots they hold and where each stands (game-free, checked by EconomyCheck's `UptownBigChecks.cs`); their tests in `LifeDirector.BigTests.cs` and `LifeGame.BigPlaces.cs`.
+- `StreetsRules.cs`, then `GroundDirector.Streets.cs` and `StreetsGame.cs`: its streets as the buses and pavements use them: the two bus routes to every block and their reach, the street furniture at Manhattan's spacing (game-free, checked by NavCheck's `UptownStreetsCheck.cs`), laid with the art; its three tests; `StreetsGuide.cs`, `StreetsText.cs`.
 
 ## Documentation
 

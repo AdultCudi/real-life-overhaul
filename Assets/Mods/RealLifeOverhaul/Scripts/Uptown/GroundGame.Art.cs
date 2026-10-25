@@ -61,6 +61,15 @@ namespace RealLifeOverhaul.Uptown
 
         /// <summary>The pieces copied at this load, and of them the blocks' grounds and the scenery past the walls.</summary>
         public static int Copied => Copies.Count;
+
+        /// <summary>The copied art's holder at this load, or null: what is laid under it (the street furniture) goes with the art.</summary>
+        public static Transform ArtRoot => _art != null ? _art.transform : null;
+
+        /// <summary>True where a car crosses the kerb into a big special place: nothing stands there (the mouths found by CopyArt).</summary>
+        public static bool InMouth(float x, float z)
+        {
+            return BigPlacesRules.In(Mouths, x, z);
+        }
         public static int GroundsLaid { get; private set; }
         public static int SceneryLaid { get; private set; }
 
