@@ -165,31 +165,32 @@ internal static partial class Program
             string path = System.IO.Path.Combine(scripts, file);
             return File.Exists(path) ? File.ReadAllText(path).Replace("\r\n", "\n") : string.Empty;
         }
-        string director = Read("Uptown/LifeDirector.cs"), opening = Read("Uptown/LifeGame.Opening.cs"), offices = Read("Uptown/LifeDirector.Offices.cs");
+        string director = Read("Uptown/LifeDirector.cs"), opening = Read("Uptown/LifeGame.Mix.cs"), offices = Read("Uptown/LifeDirector.Offices.cs");
         string gameOffices = Read("Uptown/LifeGame.Offices.cs"), guide = Read("Uptown/LifeGuide.cs"), wiring = Read("Wiring/CareersLinks.cs");
         string work = Read("Careers/Work/WorkGame.cs"), tests = Read("Careers/CareersDirector.Tests.cs");
 
         string firstLife = MemberText(director, "private static bool FirstLife()");
         Check(firstLife.IndexOf("Leases(save, out int renamed)", StringComparison.Ordinal) >= 0
-              && firstLife.IndexOf("LifeGame.OpenUnits(Standing, Another, save", StringComparison.Ordinal) > firstLife.IndexOf("Leases(save, out int renamed)", StringComparison.Ordinal)
-              && firstLife.Contains("!_state.Opened && !_stateUnread") && firstLife.Contains("_state.Opened = true") && firstLife.Contains("WriteState()"),
-            "uptown open: the opening pass runs once a save, after the generator and the leases, and its mark is written with the district's line");
+              && firstLife.IndexOf("LifeGame.Mix(Standing, Standing, Another, save", StringComparison.Ordinal) > firstLife.IndexOf("Leases(save, out int renamed)", StringComparison.Ordinal)
+              && firstLife.Contains("!_state.Mixed && !_stateUnread") && firstLife.Contains("_state.Mixed = _state.Opened = true") && firstLife.Contains("WriteState()"),
+            "uptown open: the mix pass runs once a save, after the generator and the leases, and its mark is written with the district's line");
         string later = MemberText(director, "private static void OpenLater(GameInstance save)");
         Check(firstLife.Contains("LaterOnes.AddRange(NewOnes)") && firstLife.Contains("OpenLater(save)") && later.Contains("_state.OpenedLot(")
-              && later.Contains("LifeGame.OpenUnits(NewOnes, Another, save") && later.Contains("_state.MarkOpened(") && later.Contains("WriteState()"),
+              && later.Contains("LifeGame.Mix(NewOnes, Standing, Another, save") && later.Contains("_state.MarkOpened(") && later.Contains("WriteState()"),
             "uptown open: buildings new to a save the district lived in get the pass for themselves alone, each lot once");
         string address = MemberText(work, "public static string Address(string street, int number)");
         Check(address.Contains("ModDistrict(street, number)") && address.Contains("CareersText.T(DistrictKey,") && work.Contains("DistrictKey = \"reallife_work_place_district\"") && work.Contains("DistrictSave.DistrictSaveRules.IsModId(district) ? CareersText.T(district)"),
             "uptown work: a workplace in the mod's own district names it after its address, by its id's text as the game names districts");
         string another = MemberText(director, "private static bool Another(MadeBuilding made)");
         Check(another.Contains("LeaseOf(made.Spec.Id)") && another.Contains("SpecialBuildings.TakenBy("), "uptown open: the pass leaves a lease's lot and a place the mod holds alone");
-        string units = MemberText(opening, "public static int OpenUnits(List<MadeBuilding> standing, Func<MadeBuilding, bool> skip, GameInstance save, out string said)");
-        Check(units.Contains("record.SpecialService != null") && units.Contains("reg.RentedByPlayer || reg.BuildingOwnedByPlayer || GoingPublic.Foreign(reg)")
-              && units.Contains("CompetitionHelper.GetIdealPercentageOfEmptyBuildings(type, DistrictValues.Id)") && units.Contains("OfficesRules.ToOpen("),
-            "uptown open: never a special building, the player's or another player's, and the game's own share to let kept");
+        string ours = MemberText(opening, "private static bool Ours(MadeBuilding made, string type, Func<MadeBuilding, bool> skip)");
+        string mixType = MemberText(opening, "private static int MixType(string type, List<MadeBuilding> units, Func<MadeBuilding, bool> skip, string seed, GameInstance save, ref string said)");
+        Check(ours.Contains("record.SpecialService == null") && ours.Contains("!reg.RentedByPlayer && !reg.BuildingOwnedByPlayer && !GoingPublic.Foreign(reg)")
+              && mixType.Contains("CompetitionHelper.GetIdealPercentageOfEmptyBuildings(type, DistrictValues.Id)") && mixType.Contains("MixRules.Change("),
+            "uptown open: never a special building, the player's or another player's, and the district's own share to let kept");
         string open = MemberText(opening, "private static bool Open(MadeBuilding made, string seed, GameInstance save)");
         Check(open.Contains("UnityEngine.Random.InitState(") && open.Contains("finally") && open.Contains("UnityEngine.Random.state = was")
-              && open.Contains("CompetitionHelper.StartNewCompetitorBusiness(pick.businessTypeName, reg, impactMarket: false, pick, rival)"),
+              && open.Contains("CompetitionHelper.StartNewCompetitorBusiness(type, reg, impactMarket: false, pick, rival)"),
             "uptown open: a unit is opened by the game's own start of a business, its chance seeded and put back, the market not moved");
         string fitting = MemberText(opening, "private static bool Fitting(AiBusinessDefault d, Building record, BuildingSizeInfo size)");
         Check(fitting.Contains("corporationRivalId") && fitting.Contains("allowplayercreation") && fitting.Contains("suitableBuildingType == record.BuildingType")

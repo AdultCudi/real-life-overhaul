@@ -130,6 +130,7 @@ namespace RealLifeOverhaul.Uptown
                 FiguresChanged = (FiguresChanged ?? "the game's") + " figures make no district the game can take, so Build 3682's are used";
                 f = DistrictValues.Written;
             }
+            f.EmptyOffices = f.EmptyShops = MixRules.ToLetShare;   // a third free to rent (the owner, 25 Oct 2026), not the neighbours' blend
             Figures = f;
             return f;
         }
@@ -232,12 +233,15 @@ namespace RealLifeOverhaul.Uptown
             }
         }
 
-        // The share of offices and shops the game keeps empty to let in Uptown: an entry for it in each type's targets (a homes' and a
-        // warehouses' fall back to the game's own city-wide one). Each array as the game had it is kept to be given back.
+        // The share of offices, shops and homes the game keeps empty to let in Uptown: an entry for it in each type's targets, the
+        // owner's third (MixRules.ToLetShare) whatever its neighbours keep (its figures' shares say so); a warehouses' falls back to
+        // the game's own city-wide one. The generator, the game's daily swaps of homes and its new businesses all read them. Each
+        // array as the game had it is kept to be given back.
         private static void Targets(DistrictFigures f)
         {
             Target(DistrictValues.OfficeType, f.EmptyOffices);
             Target(DistrictValues.RetailType, f.EmptyShops);
+            Target(MixRules.HomeType, MixRules.ToLetShare);
         }
 
         private static void Target(string type, int percent)
