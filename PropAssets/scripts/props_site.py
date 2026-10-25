@@ -22,9 +22,6 @@ Kit numbers that other things rely on (checks_site.py measures them):
     scaffold_bay_upper   the same plan; deck z 1.97 to 2.00; guard rails 1.00 and 0.50 m up, toe board to 0.15 m
     campaign_poster_n    the printed side is +Y; the mount reaches 0.010 m behind the pivot (the code hangs the pivot 0.012 m
                          off the wall, which would otherwise show as a gap)
-
-Also here, not asked for by the code (made for an earlier wish-list; kept because they are done): tower_crane,
-campaign_lawn_sign, gavel, gavel_block.
 """
 import math
 
@@ -259,18 +256,6 @@ def polling_sign():
         f.poly([(-0.012, -0.215), (0.075, -0.190), (0.047, -0.095), (-0.040, -0.120)], 0.0132, "paper")    # the ballot
         f.poly([(-0.004, -0.150), (0.010, -0.168), (0.046, -0.128), (0.038, -0.122), (0.011, -0.152), (0.002, -0.142)], 0.0146, "paint_blue")   # a tick on it
         f.panel(-0.28, -0.445, 0.28, -0.405, 0.0125, "paint_blue")
-    return p
-
-
-def campaign_lawn_sign():
-    p = Prop("campaign_lawn_sign", "lit",
-             note="yard sign, not asked for by code: the poster of party 1 (0.60 x 0.85 m) on both faces of a board 0.02 thick from z 0.22 to 1.07, on a wire stake")
-    p.add(box(0.60, 0.020, 0.85), flat(party(1)), at=(0, 0, 0.645))
-    for turn in (0, 180):
-        poster_art(Face(p, at=(0, 0, 0.645), rot=(0, 0, turn)), 1, 0.010)
-    for side in (-1, 1):
-        rod(p, (side * 0.20, 0, 0.0), (side * 0.20, 0, 0.225), 0.004, "steel_dark", 4)
-    rod(p, (-0.20, 0, 0.10), (0.20, 0, 0.10), 0.004, "steel_dark", 4)
     return p
 
 
@@ -787,110 +772,6 @@ def litter_pile():
 
 # ---------------------------------------------------------------------------------------------- not asked for by code
 
-def tower_crane():
-    p = Prop("tower_crane", "lit",
-             note="not asked for by code (Civic's README: no empty lot to build on). Static tower crane: lattice mast 2 x 2 m to the slewing ring 40 m up, cab at "
-                  "+X, 30 m jib along +Y at 41.6 to 42.9 m, 10 m counter-jib along -Y with its weights, tower top to 47.5 m, trolley 18 m out, hook block 26 m up")
-    yellow = "paint_yellow"
-    # The base: pad, a square of beams, ballast either side, knee braces to the mast.
-    p.add(box(6.0, 6.0, 0.5, bevel=0.08), "concrete", at=(0, 0, 0.25))
-    for k in range(4):
-        along = k % 2 == 0
-        offset = 2.1 if k < 2 else -2.1
-        p.add(box(4.6 if along else 0.4, 0.4 if along else 4.6, 0.4), flat(yellow), at=(0 if along else offset, offset if along else 0, 0.70))
-    for side in (-1, 1):
-        for level in range(3):
-            p.add(box(1.1, 4.4, 0.42), flat("concrete"), at=(side * 2.1, 0, 1.12 + 0.45 * level))
-        for back in (-1, 1):
-            bar(p, (side * 2.1, back * 2.1, 0.9), (side * 1.0, back * 1.0, 6.0), 0.09, yellow, 4)
-    # The mast: four chords, and on two adjoining faces a cross and a rail to each 3.9 m section.
-    foot, top, sections = 0.5, 40.0, 10
-    for x in (-1, 1):
-        for y in (-1, 1):
-            bar(p, (x, y, foot), (x, y, top), 0.10, yellow, 4)
-    step = (top - 0.9) / sections
-    for k in range(sections + 1):
-        z = 0.9 + step * k
-        bar(p, (1, -1, z), (1, 1, z), 0.055, yellow)
-        bar(p, (-1, 1, z), (1, 1, z), 0.055, yellow)
-        if k < sections:
-            for a, b in (((1, -1), (1, 1)), ((-1, 1), (1, 1))):
-                bar(p, (*a, z), (*b, z + step), 0.055, yellow)
-                bar(p, (*b, z), (*a, z + step), 0.055, yellow)
-    # The slewing ring, the machinery deck and the cab hung beside it.
-    p.add(lathe([(1.15, 40.0), (1.40, 40.2), (1.40, 40.65), (1.15, 40.85)], 8, cap_top=True, cap_bottom=True), flat("steel_dark"), sharp=40)
-    p.add(box(2.2, 2.6, 0.55), flat(yellow), at=(0, 0, 41.125))
-    cab = [(-0.3, 39.55), (1.5, 39.55), (1.95, 40.35), (1.75, 41.45), (-0.3, 41.45)]
-    p.add(loft([[(x, y, z) for y, z in cab] for x in (1.15, 2.55)], cap_start=True, cap_end=True), flat("paint_white"))
-    pane(p, "glass", (1.85, 1.725, 39.95), (0, 0.8, -0.45), (-1, 0, 0), (1.2, 0.72), lift=0.01)
-    pane(p, "glass", (1.85, 1.85, 40.90), (0, 1.1, 0.2), (-1, 0, 0), (1.2, 0.80), lift=0.01)
-    pane(p, "glass", (2.55, 0.80, 40.75), (1, 0, 0), (0, 1, 0), (1.5, 0.85), lift=0.01)
-    # The jib: two chords below and one above, a zigzag up each side and across the bottom.
-    low, high, reach, bay = 41.6, 42.9, 30.0, 3.0
-    for x in (-0.6, 0.6):
-        bar(p, (x, -0.8, low), (x, reach, low), 0.10, yellow, 4)
-    bar(p, (0, -0.8, high), (0, reach - 0.9, high), 0.10, yellow, 4)
-    bar(p, (0, reach - 0.9, high), (0, reach, low + 0.25), 0.08, yellow, 4)
-    for k in range(int(reach / bay)):
-        y = k * bay
-        for x in (-0.6, 0.6):
-            bar(p, (x, y, low), (0, y + bay / 2, high), 0.05, yellow)
-            if y + bay / 2 < reach - 1.0:
-                bar(p, (0, y + bay / 2, high), (x, y + bay, low), 0.05, yellow)
-        bar(p, (-0.6, y, low), (0.6, y, low), 0.05, yellow)
-        bar(p, (0.6, y, low), (-0.6, y + bay, low), 0.05, yellow)
-    bar(p, (-0.6, reach, low), (0.6, reach, low), 0.06, yellow, 4)
-    # The counter-jib: deck, hand rails, winch house and the weights hung at its end.
-    back = -10.0
-    for x in (-0.6, 0.6):
-        bar(p, (x, -0.8, low), (x, back, low), 0.10, yellow, 4)
-        bar(p, (x * 1.15, -1.4, low + 1.05), (x * 1.15, back, low + 1.05), 0.04, yellow)
-        for y in (-1.4, -4.2, -7.0, back + 0.05):
-            bar(p, (x * 1.15, y, low), (x * 1.15, y, low + 1.05), 0.04, yellow)
-    p.add(box(1.5, 8.6, 0.08), flat("steel_dark"), at=(0, -5.7, low + 0.10))
-    p.add(box(1.25, 2.2, 1.25, bevel=0.06), flat("plastic_grey"), at=(0, -4.6, low + 0.77))
-    for k in range(3):
-        p.add(box(1.9, 0.55, 2.3), flat("concrete"), at=(0, back + 0.45 + 0.62 * k, low - 0.80))
-    # The tower top and its ties.
-    apex = (0.0, -0.5, 47.5)
-    for x in (-0.85, 0.85):
-        for y in (-1.0, 1.0):
-            bar(p, (x, y, 41.4), apex, 0.09, yellow, 4)
-    for y in (-0.72, 0.42):
-        bar(p, (-0.5, y, 44.0), (0.5, y, 44.0), 0.05, yellow)
-    for x in (-0.5, 0.5):
-        bar(p, (x, -0.72, 44.0), (x, 0.42, 44.0), 0.05, yellow)
-    for y in (12.0, 24.0):
-        bar(p, apex, (0, y, high), 0.04, "steel_dark")
-    for x in (-0.6, 0.6):
-        bar(p, apex, (x, back + 0.3, low), 0.04, "steel_dark")
-    p.add(box(0.22, 0.22, 0.3), flat("lens_red"), at=(0, -0.5, 47.6))
-    # The trolley, the falls and the hook block.
-    out = 18.0
-    p.add(box(1.5, 1.3, 0.32), flat("steel_dark"), at=(0, out, low - 0.27))
-    for x in (-0.28, 0.28):
-        bar(p, (x, out, low - 0.4), (x, out, 27.2), 0.03, "steel_dark")
-    p.add(box(0.9, 0.34, 1.1, bevel=0.10), flat("paint_red"), at=(0, out, 26.7))
-    p.add(tube([(0, out, 26.2), (0, out, 25.75), (0.22, out, 25.42), (0.46, out, 25.62), (0.44, out, 25.90)], [0.08, 0.08, 0.08, 0.07, 0.03], 5), flat("steel_dark"), sharp=70)
-    return p
-
-
-def gavel():
-    p = Prop("gavel", "lit", note="not asked for by code. Judge's gavel 0.10 x 0.28 x 0.07 m lying on its side: head across X at the +Y end, handle along Y (0.022 thick at y -0.07)")
-    wood, z = flat("wood_dark"), 0.035
-    head = [(0.026, -0.050), (0.033, -0.046), (0.035, -0.030), (0.035, -0.021), (0.030, -0.018), (0.030, 0.018), (0.035, 0.021), (0.035, 0.030), (0.033, 0.046), (0.026, 0.050)]
-    p.add(lathe(head, 10, cap_top=True, cap_bottom=True), wood, at=(0, 0.105, z), rot=(0, 90, 0), sharp=35)
-    p.add(lathe([(0.0305, -0.017), (0.0305, 0.017)], 10), flat("gold"), at=(0, 0.105, z), rot=(0, 90, 0), sharp=35)
-    handle = [(0.0, -0.245), (0.012, -0.240), (0.013, -0.215), (0.0095, -0.200), (0.011, -0.150), (0.0105, -0.060), (0.008, -0.030), (0.008, 0.0)]
-    p.add(lathe(handle, 8), wood, at=(0, 0.105, z), rot=(-90, 0, 0), sharp=35)
-    return p
-
-
-def gavel_block():
-    p = Prop("gavel_block", "lit", note="not asked for by code. Sound block 0.12 m across, 0.03 m high")
-    p.add(lathe([(0.056, 0.0), (0.060, 0.004), (0.060, 0.012), (0.054, 0.018), (0.050, 0.027), (0.046, 0.030)], 12, cap_top=True), flat("wood_dark"), sharp=35)
-    return p
-
 
 # (maker, triangle budget). The module's budget is 14 000 triangles; these add up to 13 474 and the props use 12 633.
 PROPS = [
@@ -901,7 +782,6 @@ PROPS = [
     (site_hoarding, 240), (site_hoarding_notice, 300), (site_notice_board, 500), (skip_bin, 760),
     (road_sign_works, 500), (trench_cover, 260), (spoil_heap, 220), (road_marking, 40), (asphalt_patch, 24), (works_tent, 540), (manhole_open, 360), (manhole_lid, 130),
     (office_desk, 1000), (evidence_door, 660),
-    (tower_crane, 1500), (campaign_lawn_sign, 330), (gavel, 330), (gavel_block, 140),
 ]
 
 SIDES = {
@@ -919,5 +799,4 @@ SIDES = {
     "works_tent": {"people": (((0.0, 1.35), 180),)},
     "office_desk": {"references": (((2.4, 0.1, 2.4), (0, -0.40, 1.2)),), "people": (((-0.3, 0.75), 180),)},
     "evidence_door": {"references": (((2.4, 0.1, 2.4), (0, -0.05, 1.2)),), "people": (((0.95, 0.5), 180),)},
-    "tower_crane": {"references": (((3.0, 3.0, 3.0), (6.0, 0.0, 1.5)),), "people": (((9.0, 0.0), 0),)},
 }

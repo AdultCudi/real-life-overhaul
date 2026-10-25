@@ -30,7 +30,7 @@ The upload is done from inside the game. Everything else is prepared here. What 
    | `Locales\en.json` | about 0.7 MB |
    | `Bundles\reallife_anim` | 6,294,571 bytes |
    | `Bundles\reallife_character` | 44,520,019 bytes |
-   | `Bundles\reallife_props` | 12,023,742 bytes |
+   | `Bundles\reallife_props` | 10,650,842 bytes |
    | `Bundles\reallife_props_2` | 1,298 bytes (the second props bundle: no props in it yet, so no atlas) |
 
    The whole folder is uploaded as it stands (about 66 MB), so delete anything else you find in it. There must be exactly one `.dll` in the folder's root, and `thumbnail.jpg` must be the only picture there: the game takes the first `.jpg`, `.jpg` or `.jpeg` in the root that is within its size limit (1 MB) as the thumbnail, whatever it is called.
