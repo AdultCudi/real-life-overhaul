@@ -31,6 +31,17 @@ namespace RealLifeOverhaul.Texts
                 .Fact("texts_memory_facts", () => TextMemoryRules.FactsMost.ToString(Inv))
                 .Fact("texts_big_share", () => TextsCityRules.BigShare.ToString(Inv))
                 .Fact("texts_large_slow", () => TextSpeed.LargeSlow.ToString("0.0", Inv))
+                .Fact("texts_timeout_gpu", () => TextServer.TimeOutGpu.ToString("0", Inv))
+                .Fact("texts_gpu_threads", () => TextSpeed.GpuThreads.ToString(Inv))
+                .Fact("texts_game_cores", () => TextSpeed.GameKeeps.ToString(Inv))
+                .Fact("texts_ahead_notice", () => TextSpeed.AheadSeconds.ToString("0", Inv))
+                .Fact("texts_large_mb", () => (TextSpeed.LargeBytes / (1024 * 1024) * 2 + TextPacks.SpareMiB).ToString("N0", Inv))
+                .Fact("texts_restarts", () => TextHang.RestartsMost.ToString(Inv))
+                .Fact("texts_languages", () => TextLanguages.All.Length.ToString(Inv))
+                .Fact("texts_gossip_from", () => TextsCityRules.GossipFrom.ToString(Inv))
+                .Fact("texts_gossip_to", () => TextsCityRules.GossipTo.ToString(Inv))
+                .Fact("texts_staff_from", () => TextsCityRules.StaffFrom.ToString("00", Inv) + ":00")
+                .Fact("texts_staff_to", () => TextsCityRules.StaffTo.ToString("00", Inv) + ":00")
                 .Cleanup(() => TextsDirector.Words.Clear())
                 .ResetData(() =>
                 {
@@ -44,7 +55,8 @@ namespace RealLifeOverhaul.Texts
                 .Rows(TextsOptions.OwnAiButtons)
                 .Fact("textsai_timeout", () => TextServiceRules.TimeOut.ToString("0", Inv))
                 .Fact("textsai_in_flight", () => TextService.Workers.ToString(Inv))
-                .Fact("textsai_per_minute", () => TextService.PerMinute.ToString(Inv));
+                .Fact("textsai_per_minute", () => TextService.PerMinute.ToString(Inv))
+                .Fact("textsai_spoken", () => TextsHub.SpokenMost.ToString("0.0", Inv));
         }
     }
 

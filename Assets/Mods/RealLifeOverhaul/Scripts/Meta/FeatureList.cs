@@ -85,7 +85,11 @@ namespace RealLifeOverhaul.Meta
                 .Fact("coffee_price", () => Guide.Money(StallActivity.Price))
                 .Fact("city_people", () => CityPeople.MaxPeople.ToString(CultureInfo.InvariantCulture))
                 .Fact("city_sites", () => CityLifeDirector.MaxSites.ToString(CultureInfo.InvariantCulture))
-                .Fact("city_count", () => CityCatalogue.All.Length.ToString(CultureInfo.InvariantCulture))
+                .Fact("city_count", CityActivities)
+                .Fact("city_coffee_from", () => CityHour(CityActivity("coffee_cart").From))
+                .Fact("city_coffee_to", () => CityHour(CityActivity("coffee_cart").To))
+                .Fact("city_hotdog_from", () => CityHour(CityActivity("hot_dog_cart").From))
+                .Fact("city_hotdog_to", () => CityHour(CityActivity("hot_dog_cart").To))
                 .Cleanup(() => CityLifeDirector.Instance?.EndAll());
 
             Features.Add("crime", "reallife_meta_title_crime")
@@ -169,6 +173,13 @@ namespace RealLifeOverhaul.Meta
                 .Fact("vendor_hawk_fade", () => Guide.Number(VendorJob.HawkHeatFade))
                 .Fact("job_table", JobTable)
                 .Fact("job_van_fee", () => Guide.Money(JobRental.DailyFee))
+                .Fact("job_truck_fee", () => Guide.Money(JobRental.TruckFee))
+                .Fact("job_heavy_time", () => Guide.Percent(HeavyRules.LoadTime - 1f))
+                .Fact("job_owner_cut", () => Guide.Percent(1f - CareerCatalogue.OwnerFactor(1)))
+                .Fact("job_owner_floor", () => Guide.Percent(CareerCatalogue.OwnerFactor(1000)))
+                .Fact("job_cart_wait", () => Guide.Number(CartQueueRules.WaitMost))
+                .Fact("gig_set_level", () => CareerCatalogue.GigNeedsLevel.ToString(CultureInfo.InvariantCulture))
+                .Fact("gig_set_tips", () => Guide.Percent(CareerCatalogue.GigTipFactor - 1f))
                 .Fact("job_levels", () => JobCatalogue.MaxLevel.ToString(CultureInfo.InvariantCulture))
                 .Fact("job_level_bonus", () => Guide.Percent(JobCatalogue.LevelBonus))
                 .Fact("job_reference_level", () => JobCatalogue.ReferenceLevel.ToString(CultureInfo.InvariantCulture))
@@ -427,6 +438,27 @@ namespace RealLifeOverhaul.Meta
         {
             return (minute / 60).GetFormattedTime(minute % 60);
         }
+
+        // The different activities of city life: two entries that share a name (the umbrella walkers, alone or two) are one.
+        private static string CityActivities()
+        {
+            int n = 0;
+            for (int i = 0; i < CityCatalogue.All.Length; i++)
+            {
+                bool seen = false;
+                for (int k = 0; k < i && !seen; k++)
+                {
+                    seen = CityCatalogue.All[k].Name == CityCatalogue.All[i].Name;
+                }
+                n += seen ? 0 : 1;
+            }
+            return n.ToString(CultureInfo.InvariantCulture);
+        }
+
+        private static CityEntry CityActivity(string id) => System.Array.Find(CityCatalogue.All, e => e.Id == id);
+
+        // An hour of city life's day as a time, past midnight as the next day's (26 is 02:00).
+        private static string CityHour(int hour) => (hour % 24).GetFormattedTime(0);
 
         // One line per job, from the catalogue the jobs themselves pay by.
         private static string JobTable()
