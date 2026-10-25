@@ -69,6 +69,7 @@ namespace RealLifeOverhaul.Meta
                 .Test("reallife_test_hair_lamp", HairTests.Lamp)
                 .Test("reallife_test_hair_streetlamp", HairTests.StreetLamp)
                 .Test("reallife_test_hair_switch", HairTests.Switch)
+                .Test("reallife_test_hair_search", HairTests.Search)
                 .Cleanup(HairTests.Forget)
                 .Data("reallife:look_*")
                 .Objects("RealLifeOverhaul Character");
