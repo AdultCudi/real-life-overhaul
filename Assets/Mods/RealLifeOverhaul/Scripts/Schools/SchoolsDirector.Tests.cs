@@ -23,6 +23,7 @@ namespace RealLifeOverhaul.Schools
         private static float _testRunEnd;
         private static float _takeUntil;              // the take me test waits to put the player at the gate until then
         private static bool _runAfterTake;            // the school run's test goes on once the player is at the gate
+        private static readonly Dictionary<string, bool> TestPrivate = new Dictionary<string, bool>(4);   // a child the enrol test moved, and whether they were at a private school before
 
         // Why a test cannot run now, said in a notice; false when it can.
         private static bool Refused(string test, bool needsCampus)
@@ -371,11 +372,13 @@ namespace RealLifeOverhaul.Schools
                 }
                 List<SchoolChild> kids = Children();
                 string name = null;
+                bool wasPrivate = false;
                 for (int i = 0; i < kids.Count && name == null; i++)
                 {
                     if (!kids[i].Grown && kids[i].Age >= SchoolRules.SchoolFrom && kids[i].Age < SchoolRules.SchoolTo)
                     {
                         name = kids[i].Name;
+                        wasPrivate = kids[i].School == 2;
                     }
                 }
                 if (name == null)
@@ -388,8 +391,13 @@ namespace RealLifeOverhaul.Schools
                 {
                     SchoolRules.StepClass(_state.Campus, +1);   // a test makes room: a class opened if the campus is full
                 }
+                bool already = _state.Children.Contains(SchoolStore.Clean(name));
                 string why = Enrol(name);
                 bool there = _state.Children.Contains(SchoolStore.Clean(name));
+                if (there && !already && !TestPrivate.ContainsKey(SchoolStore.Clean(name)))
+                {
+                    TestPrivate[SchoolStore.Clean(name)] = wasPrivate;   // put back to the school family life had them at
+                }
                 string reports = StandingOf(name).ToString("F1", CultureInfo.InvariantCulture);
                 Done("Schools check (enrol): " + name + (there ? " at Birchwood School, its fee to family life " + FeeFor(name) + " a day, reports " + reports
                     : " not enrolled: " + why), there && FeeFor(name) >= 0, SchoolsText.T(SchoolsText.TestEnrol));
@@ -423,11 +431,14 @@ namespace RealLifeOverhaul.Schools
                 }
                 for (int i = 0; i < _state.Children.Count; i++)
                 {
-                    if (!before.Children.Contains(_state.Children[i]))
+                    string child = _state.Children[i];
+                    if (!before.Children.Contains(child))
                     {
-                        SchoolsBridges.SetSchool?.Invoke(_state.Children[i], false);   // a child a test enrolled goes back to the public school
+                        // A child a test enrolled goes back to the school family life had them at: private or public.
+                        SchoolsBridges.SetSchool?.Invoke(child, TestPrivate.TryGetValue(child, out bool wasPrivate) && wasPrivate);
                     }
                 }
+                TestPrivate.Clear();
                 _state = before;
                 _beforeTests = null;
                 _testRun = false;
