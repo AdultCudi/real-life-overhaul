@@ -108,6 +108,7 @@
         public const string JobTaxiEasyId = "job_taxi_easy";
         public const string FamilyId = "family";
         public const string UtilitiesId = "utilities";
+        public const string UtilitiesNetSpeedId = "utilities_net_speed";
         public const string FamilyAtHomeId = "family_at_home";
         public const string FamilyWeddingId = "family_wedding";
         public const string FamilyChildrenId = "family_children";
@@ -446,6 +447,7 @@
         public static bool JobTaxiEasy = false;          // ride-hail passengers who mind braking, bumps and speeding less (TaxiComfortRules.Easier); off, the ride is judged as it always was
         public static bool Family = true;                // a partner who moves in, engagement and wedding, children, relatives
         public static bool Utilities = true;             // power and water bills, the utilities office and the Utilities app
+        public static bool UtilitiesNetSpeed = true;     // ...internet speed counts for tech firms' work and online shops' orders; off, only having a connection does
         public static bool FamilyAtHome = true;          // the partner is shown as a character in the home
         public static bool FamilyWedding = true;         // rings, the proposal, planning and holding a wedding
         public static bool FamilyChildren = true;        // deciding to have children, pregnancy and adoption, growing up
@@ -837,6 +839,7 @@
             JobTaxiEasy = Bool(modId, JobTaxiEasyId, JobTaxiEasy);
             Family = Bool(modId, FamilyId, Family);
             Utilities = Bool(modId, UtilitiesId, Utilities);
+            UtilitiesNetSpeed = Bool(modId, UtilitiesNetSpeedId, UtilitiesNetSpeed);
             FamilyAtHome = Bool(modId, FamilyAtHomeId, FamilyAtHome);
             FamilyWedding = Bool(modId, FamilyWeddingId, FamilyWedding);
             FamilyChildren = Bool(modId, FamilyChildrenId, FamilyChildren);

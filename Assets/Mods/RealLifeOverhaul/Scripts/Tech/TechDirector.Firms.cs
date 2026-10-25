@@ -16,6 +16,8 @@ namespace RealLifeOverhaul.Tech
         public int People;
         public int Hours;             // the hours its people worked yesterday
         public long Today;            // takings booked today, cents
+        public int Mbps = NetSpeedRules.Unknown;   // the office's plan speed read for the day's work (TechBridges.PlanMbps)
+        public int Net = 1000;        // thousandths of the day's work points its connection gives (FirmsRules.Connection)
     }
 
     /// <summary>The firms part: each of the player's tech businesses is a firm, worked through each game day after the people's.</summary>
@@ -220,6 +222,10 @@ namespace RealLifeOverhaul.Tech
                     c.Web = c.Web * firm.Spare / 1000;
                     c.Testing = c.Testing * firm.Spare / 1000;
                 }
+                // read once with the day's crew, so the page and the day's work go by the same plan
+                firm.Mbps = TechBridges.PlanMbpsAt(firm.Reg);
+                firm.Net = FirmsRules.Connection(firm.File.Kind, firm.Mbps);
+                FirmsRules.Connected(ref c, firm.Net);
                 firm.Crew = c;
             }
         }

@@ -45,6 +45,14 @@ The rules are game-free and checked by EconomyCheck (`UtilitiesCatalogue`, `Util
   Outages are drawn from the save's own seed, the day and the provider (`InternetRules.Draw`), so a reload changes nothing; a day with one is not charged, and a business plan is repaired in half the time.
   Web design and software companies and the headquarters (`InternetCatalogue.Needs`) cannot open without a connection that works.
 
+- **Speed.** One game-free table (`Core/NetSpeedRules.cs`) says what a plan's speed does to the work over it, its tiers where the providers' plans fall: under 50 Mbps 70% of the usual pace, 50 Mbps 80%, 100 Mbps 90%, 300 Mbps (the usual business plan) 100%, 1000 Mbps 105%, 2000 Mbps 108%.
+  A lean stretches it: a game studio half as much again, an AI lab and an online shop twice as much, a consultancy or a graphic designer half as much, always within 30% and 120%.
+  A tech firm's day's building, design, web and testing points go by its office's plan, read once with the day's crew (`FirmsRules.Connection`, `TechBridges.PlanMbps`); with no working plan the firm is closed by the hour as before, so the share reads 100%.
+  An online shop's day's bound on orders goes by its building's plan (`OnlineRules.Most`, `OnlineBridges.Mbps`), read with the day's orders and again each hour, which also stops the hour's orders in an outage; with no working connection it takes none.
+  Shops without a connection when speed first counts in a save join the grace (`InternetRules.AddGrace`; the save keeps the day as `SpeedMet`, after the providers' months).
+  Both read the speed through one function (`Wiring/UtilityLinks.Speed`), unknown with the utilities or the option Internet speed matters (`utilities_net_speed`) off, and then everything runs exactly as before.
+  The Tech app's firm page, the Web shop app's site page and the Utilities app's plan picker show the figures from the same rules (`UtilitiesBridges.FirmWork`, `ShopMost`).
+
 - **Your own broadband company** (`BroadbandCatalogue`, `BroadbandRules`, `BroadbandCompany`).
   Late in a game and very costly: the city's operator's licence (with a headquarters: its office, and where it bills from), then a fibre network dug district by district, each a fortune and two of the game's months.
   Where it is open the company is a fifth provider (`InternetCatalogue.Own`, set by `BroadbandRules.Apply`), and the player's own places connect free.

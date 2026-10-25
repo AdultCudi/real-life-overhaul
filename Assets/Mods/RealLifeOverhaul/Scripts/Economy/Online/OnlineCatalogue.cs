@@ -43,6 +43,7 @@ namespace RealLifeOverhaul.Economy
         public static readonly int[] SeasonFactor = { 1100, 1000, 920, 1040 };  // winter, spring, summer, autumn: people order in when it is cold
         public const int CampaignShare = 500;       // thousandths of a shop campaign's customers that also find the site
         public const int CrowdStep = 250;           // thousandths each further site of the player's adds to the divisor of every site's orders
+        public const int NetLean = NetSpeedRules.Shop;   // how hard the day's bound leans on the building's connection: every order's pages and payment run over it
 
         // Thousandths of a day's orders that come in each hour, adding up to 1000: little at night, most in the evening.
         public static readonly int[] HourShare = { 8, 4, 2, 2, 2, 4, 12, 26, 40, 50, 54, 58, 66, 58, 50, 46, 48, 58, 74, 86, 90, 74, 54, 34 };

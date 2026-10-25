@@ -24,12 +24,20 @@ namespace RealLifeOverhaul.Economy
         /// <summary>Told of every deductible cost in cents as it is paid. Default: nobody (the game's own tax still deducts it).</summary>
         public static Action<int> Cost;
 
+        /// <summary>
+        /// The building's internet speed for the orders over it, Mbps (NetSpeedRules), at an hour (0 or more counts an
+        /// outage then) or for its plan (-1): 0 with no working connection, NetSpeedRules.Grace or Unknown to take orders as
+        /// before speed counted. Default: unknown.
+        /// </summary>
+        public static Func<BuildingRegistration, int, int> Mbps;
+
         public static void Reset()
         {
             Campaign = null;
             Season = null;
             Road = null;
             Cost = null;
+            Mbps = null;
         }
     }
 

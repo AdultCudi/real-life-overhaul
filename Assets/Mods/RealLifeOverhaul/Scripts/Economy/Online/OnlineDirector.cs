@@ -178,6 +178,7 @@ namespace RealLifeOverhaul.Economy
             _state = state;
             _running = true;
             _dayOpen = false;
+            _netNone.Clear();
             _index = Prices.Level;
             OnlineGame.Districts(_state, _centres, _hasCentre);
             int gone = ReadPlaces();

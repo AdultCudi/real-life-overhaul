@@ -48,6 +48,7 @@ namespace RealLifeOverhaul.Utilities
         public readonly Network Network = new Network();             // the player's own broadband company (Utilities/Broadband)
         public int GraceUntil;           // the internet's grace period (InternetRules.BeginGrace): the first day it no longer covers (0: none)
         public readonly List<string> Grace = new List<string>();     // ...and the places it covers: the businesses that needed a connection when it began
+        public int SpeedMet;             // the day internet speed first counted for the online shops (0: not yet), when those without a connection joined the grace
 
         /// <summary>A provider's month, thousandths of its list (the player's own company keeps to its list).</summary>
         public int PromoOf(int provider)

@@ -222,8 +222,8 @@ namespace RealLifeOverhaul.Meta
                 S("shops").Guide("leisure").Need("leisure").Opts("clothes_shops", "clothes_must_be_bought").Also("wardrobe buy outfit"),
                 S("roommates").For("home_roommates").Opts("home_roommates").Also("flatmate lodger share"),
                 S("household").For("home_household").Opts("home_household").Also("staff cleaner cook butler maid housekeeper mechanic servant chores car wash"),
-                S("utilities").For("utilities").Main("utilities")
-                    .Also("power water electricity bills utility office deposit"),
+                S("utilities").For("utilities").Main("utilities").Opt("utilities_net_speed", "utilities")
+                    .Also("power water electricity bills utility office deposit").Also("utilities_net_speed", "internet speed mbps broadband fibre tech online shop orders"),
                 S("family").For("family").Main("family").Opts("family_at_home", "family_wedding", "family_children", "family_relatives", "family_friction",
                     "family_interest", "family_year_weeks").Buttons("reallife_family_test_page").Also("partner spouse wife husband marriage kids baby"),
                 S("partner").Guide("family").Need("family").Opts("family_work", "family_wealth_mood", "family_expect").Also("partner money rich wealth job work half days part time"),

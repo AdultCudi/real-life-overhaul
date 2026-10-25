@@ -321,7 +321,8 @@ namespace RealLifeOverhaul.Meta
             Economy.OnlineGuide.AddFacts(Features.Add("economy_online", "reallife_meta_title_economy_online")
                 .About("reallife_guide_economy_online_about").Help("reallife_guide_economy_online")
                 .Owns(Settings.EconomyOnlineId, Settings.EconomyOnlineWaitNotesId)
-                .Test("reallife_online_test_open", "reallife_online_test_orders", "reallife_online_test_late", "reallife_online_test_return", "reallife_online_test_day", "reallife_online_test_back")
+                .Test("reallife_online_test_open", "reallife_online_test_orders", "reallife_online_test_late", "reallife_online_test_return", "reallife_online_test_day", "reallife_online_test_back",
+                    "reallife_online_test_net")
                 .Data(Economy.OnlineStore.Key, Economy.OnlineStore.TestKey)
                 .Cleanup(() => Economy.OnlineDirector.Instance?.StopAll(), -2)
                 .ResetData(() => Economy.OnlineDirector.Instance?.Forget()));   // the director opens the feature afresh from the (now empty) save on its next second
@@ -344,7 +345,7 @@ namespace RealLifeOverhaul.Meta
                 .About("reallife_guide_tech_sector_about").Help("reallife_guide_tech_sector")
                 .Owns(Settings.TechSectorId, Settings.TechOfferNotesId, Settings.TechInfraOfferId)
                 .Test("reallife_tech_test_offer", "reallife_tech_test_tender", "reallife_tech_test_outage", "reallife_tech_test_breach", "reallife_infra_test_down",
-                    "reallife_infra_test_price_war", "reallife_infra_test_offer")
+                    "reallife_infra_test_price_war", "reallife_infra_test_offer", "reallife_tech_test_net")
                 .Data(Tech.FirmsStore.Key, Tech.InfraStore.Key)
                 .Cleanup(() => Tech.TechDirector.Instance?.StopAll(), -2)
                 .ResetData(() => Tech.TechDirector.Instance?.Forget()));

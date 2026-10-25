@@ -208,6 +208,55 @@ namespace RealLifeOverhaul.Tech
             Notifications.ShowError("reallife_crew_test_none");
         }
 
+        /// <summary>
+        /// "Tech firms: connection speed and work": the curve through the firms' rules for every kind of firm (a slower line
+        /// never works more, the usual plan works at the usual pace, a day's points scale by exactly the share and selling is
+        /// left alone), and the player's first firm worked out now as its morning is, against its office's plan read afresh.
+        /// </summary>
+        public void TestNet()
+        {
+            if (!_firmsOn || Save == null)
+            {
+                Notifications.ShowError("reallife_tech_test_off");
+                return;
+            }
+            bool curve = true;
+            for (int kind = 0; kind < (int)FirmKind.Count; kind++)
+            {
+                int last = 0;
+                for (int t = 0; t < NetSpeedRules.Floors.Length; t++)
+                {
+                    int net = FirmsRules.Connection(kind, NetSpeedRules.Floors[t]);
+                    var c = new Crew { Engineering = 1000, Design = 500, Web = 200, Testing = 300, Selling = 77, Support = 3 };
+                    FirmsRules.Connected(ref c, net);
+                    curve &= net >= last && net >= NetSpeedRules.Least && net <= NetSpeedRules.Most && c.Engineering == net && c.Design == 500 * net / 1000
+                             && c.Web == 200 * net / 1000 && c.Testing == 300 * net / 1000 && c.Selling == 77 && c.Support == 3;
+                    last = net;
+                }
+                curve &= FirmsRules.Connection(kind, NetSpeedRules.Floors[NetSpeedRules.UsualTier]) == 1000 && FirmsRules.Connection(kind, 0) == 1000
+                         && FirmsRules.Connection(kind, NetSpeedRules.Unknown) == 1000 && FirmsRules.Connection(kind, NetSpeedRules.Grace) == 1000;
+            }
+            bool live = true;
+            Dictionary<string, string> data = null;
+            string firmLine = "no firm of the player's";
+            if (_firms.Count > 0)
+            {
+                Crews();   // the morning's own step, so what it read is what is checked
+                FirmPlace firm = _firms[0];
+                int mbps = TechBridges.PlanMbpsAt(firm.Reg), net = FirmsRules.Connection(firm.File.Kind, mbps);
+                live = firm.Mbps == mbps && firm.Net == net;
+                firmLine = firm.File.Name + " (kind " + firm.File.Kind + "): the plan reads " + mbps + " Mbps, the day's step read " + firm.Mbps + " Mbps and works at " + firm.Net
+                           + " thousandths, " + net + " wanted";
+                data = Data("name", firm.File.Name, "mbps", mbps > 0 ? mbps.ToString() : "-", "work", TechText.Mille(firm.Net));
+            }
+            bool ok = curve && live;
+            Logger?.Info("Tech check (connection speed and work): every kind of firm along the tiers " + (curve ? "slower never more, the usual plan at 1000, points scaled exactly"
+                         : "NOT as the curve says") + "; " + firmLine + ": " + (ok ? "PASS" : "FAIL"));
+            Notifications.Show(ok ? NotificationType.Success : NotificationType.Error, !ok ? "reallife_tech_test_net_fail" : data != null ? "reallife_tech_test_net_pass"
+                : "reallife_tech_test_net_pass_none", data, 10f);
+            Changed();
+        }
+
         private Product TestLive()
         {
             if (!_firmsOn || Save == null)
