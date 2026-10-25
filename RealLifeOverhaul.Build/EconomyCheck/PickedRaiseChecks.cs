@@ -14,6 +14,7 @@ internal static partial class Program
     {
         PickedRaises();
         CentreOffer();
+        CrewSearch();
     }
 
     private static void PickedRaises()

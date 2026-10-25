@@ -124,7 +124,15 @@ namespace RealLifeOverhaul.Tech
             for (int i = 0; i < _hiring.Ads.Count; i++)
             {
                 JobAd ad = _hiring.Ads[i];
-                if (ad.Search && ad.Came == 0 && day >= ad.Due)
+                if (ad.CrewSearch && ad.Came == 0 && day >= ad.Due)
+                {
+                    int found = HiringRules.DeliverCrew(_hiring, ad, day, _rate, HiringRules.Shortage(_hiring, TalentCatalogue.Role(ad.Role).Family, day), _districts);
+                    delivered += found;
+                    BuildingRegistration centre = TalentGame.Find(ad.Place);
+                    Tell(NotificationType.Success, "reallife_crew_note_found", Data("count", found.ToString(), "role", TechText.Role(ad.Role),
+                        "centre", centre != null ? TalentGame.NameOf(centre) : ad.Place), TabApplicants, null);
+                }
+                else if (ad.Search && ad.Came == 0 && day >= ad.Due)
                 {
                     delivered += HiringRules.Deliver(_hiring, ad, day, _rate, HiringRules.Shortage(_hiring, TalentCatalogue.Role(ad.Role).Family, day), _districts);
                     Tell(NotificationType.Success, "reallife_hire_note_search", Data("role", TechText.Role(ad.Role), "count", HiringCatalogue.SearchCandidates.ToString()), TabApplicants, null);
@@ -238,7 +246,8 @@ namespace RealLifeOverhaul.Tech
                     a.Stage = (int)ApplyStage.Withdrawn;   // the business is no longer the player's
                     continue;
                 }
-                bool payroll = !s.P.Def.InGame || ad.Work == (int)Arrangement.Remote;
+                // A data centre's crew is on the payroll: the game has no shifts at a warehouse to give its own employee.
+                bool payroll = !s.P.Def.InGame || ad.Work == (int)Arrangement.Remote || ad.CrewSearch;
                 bool ok;
                 if (payroll)
                 {
@@ -257,7 +266,12 @@ namespace RealLifeOverhaul.Tech
                 {
                     continue;   // tried again tomorrow
                 }
-                if (ad.Search && ad.FeePaid < ad.Fee)
+                if (ad.CrewSearch)
+                {
+                    ad.Hired++;
+                    PayCrewFee(ad, at);
+                }
+                else if (ad.Search && ad.FeePaid < ad.Fee)
                 {
                     TalentGame.Cost(ad.Fee - ad.FeePaid, HiringGame.SearchKey, at, TalentGame.NameOf(at), false, true);
                     ad.FeePaid = ad.Fee;
@@ -600,7 +614,7 @@ namespace RealLifeOverhaul.Tech
             for (int i = 0; i < _hiring.Ads.Count; i++)
             {
                 JobAd ad = _hiring.Ads[i];
-                open += ad.Search && (ad.Came == 0 || AnyLive(ad.Id)) ? 1 : 0;
+                open += ad.Search && !ad.CrewSearch && (ad.Came == 0 || AnyLive(ad.Id)) ? 1 : 0;
             }
             BuildingRegistration at = TalentGame.Find(place);
             RoleDef r = TalentCatalogue.Role(role);
@@ -631,6 +645,95 @@ namespace RealLifeOverhaul.Tech
         {
             fee = HiringRules.SearchFee(GoingFor(role, Math.Max(level, HiringCatalogue.SearchLeastLevel)) * (10000 + HiringCatalogue.EmployedPremiumBp) / 10000);
             retainer = HiringRules.Retainer(fee);
+        }
+
+        /// <summary>Crew searches waiting to deliver or with candidates still in play, beside the senior searches.</summary>
+        internal int CrewSearchesOpen()
+        {
+            int open = 0;
+            for (int i = 0; _hiringOn && i < _hiring.Ads.Count; i++)
+            {
+                JobAd ad = _hiring.Ads[i];
+                open += ad.CrewSearch && (ad.Came == 0 || AnyLive(ad.Id)) ? 1 : 0;
+            }
+            return open;
+        }
+
+        /// <summary>Why a data centre's crew cannot be briefed now, a text's key, or null: headquarters to brief it, room among the searches, a centre that is the player's.</summary>
+        internal string CrewRefusal(string centre)
+        {
+            if (!_hiringOn || Save == null)
+            {
+                return "reallife_crew_off";
+            }
+            if (CentreOf(centre) == null || TalentGame.Find(centre) == null)
+            {
+                return "reallife_crew_no_centre";
+            }
+            if (HiringGame.Headquarters() == null)
+            {
+                return "reallife_crew_no_hq";
+            }
+            return CrewSearchesOpen() >= HiringCatalogue.CrewSearchesMost ? "reallife_crew_most" : null;
+        }
+
+        /// <summary>
+        /// A search firm briefed from headquarters for a data centre's crew: technicians or network engineers, junior to staff level,
+        /// so many of them. A third of the fee now, at headquarters; a share on each hire, who starts at that centre. False without
+        /// headquarters, room or cash, with the reason told.
+        /// </summary>
+        internal bool StartCrewSearch(string centre, int role, int level, int count)
+        {
+            string refusal = CrewRefusal(centre);
+            if (refusal != null)
+            {
+                Notifications.ShowError(refusal);
+                return false;
+            }
+            role = HiringRules.CrewRole(role) ? role : TalentCatalogue.Technician;
+            level = HiringRules.CrewLevel(role, level);
+            count = TalentCatalogue.Clamp(count, 1, HiringCatalogue.CrewMost);
+            BuildingRegistration hq = HiringGame.Headquarters();
+            CrewQuote(role, level, count, out int fee, out int retainer, out _);
+            if (!HiringGame.Pay(retainer, HiringGame.SearchKey, hq, TalentGame.NameOf(hq)))
+            {
+                Notifications.ShowInsufficientMoney();
+                return false;
+            }
+            int day = Save.Day;
+            _hiring.Ads.Add(new JobAd
+            {
+                Id = _hiring.Next(), Place = centre, Role = role, Level = level, Work = (int)Arrangement.OnSite, From = day, To = day + HiringCatalogue.ApplicantDays,
+                Search = true, Fee = fee, FeePaid = retainer, Crew = count,
+                Due = day + TechRandom.Range(_hiring.Seed, _hiring.NextId, 45, 0, HiringCatalogue.CrewDaysLeast, HiringCatalogue.CrewDaysMost)
+            });
+            Logger?.Info("Tech: headquarters at " + TalentGame.NameOf(hq) + " briefed a search firm for " + count + " " + TalentCatalogue.Role(role).Key + "(s) at level " + level
+                         + " for the data centre at " + centre + ": fee " + fee + " cents, " + retainer + " now.");
+            Changed();
+            ChangedTech();
+            return true;
+        }
+
+        /// <summary>What a crew search would cost, cents: the whole fee, the retainer and the fee a hire.</summary>
+        internal void CrewQuote(int role, int level, int count, out int fee, out int retainer, out int each)
+        {
+            level = HiringRules.CrewLevel(role, level);
+            each = HiringRules.CrewFeeEach(GoingFor(role, level), level);
+            fee = (int)System.Math.Min(int.MaxValue, (long)each * TalentCatalogue.Clamp(count, 1, HiringCatalogue.CrewMost));
+            retainer = HiringRules.CrewRetainer(fee);
+        }
+
+        // A crew hire's share of the fee, taken whatever the cash (as the senior search's rest is): at headquarters, at the centre if there is none now.
+        private void PayCrewFee(JobAd ad, BuildingRegistration centre)
+        {
+            int due = HiringRules.CrewDue(ad);
+            if (due <= 0)
+            {
+                return;
+            }
+            BuildingRegistration hq = HiringGame.Headquarters() ?? centre;
+            TalentGame.Cost(due, HiringGame.SearchKey, hq, TalentGame.NameOf(hq), false, true);
+            ad.FeePaid += due;
         }
 
         internal int ShortageOf(Family family) => _hiringOn && Save != null ? HiringRules.Shortage(_hiring, family, Save.Day) : 1000;
