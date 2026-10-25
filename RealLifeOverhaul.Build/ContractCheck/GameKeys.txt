@@ -257,6 +257,7 @@ common_confirm
 common_friday
 common_monday
 common_neighborhoods
+common_no_option_selected
 common_notification_invalid_amount
 common_open
 common_real_estate
@@ -275,6 +276,7 @@ filebrowser_delete
 government
 job_board
 menu_save
+myemployees_mass_action_no_employees_selected
 notification_destination_set
 notification_need_empty_hands_to_interact
 persona_education_not_started

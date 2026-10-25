@@ -102,6 +102,7 @@ namespace RealLifeOverhaul
             "stand-ins for the spray and the sound of a car that has none, so the game's car wash in a repair bay ends on it");
         public static readonly GamePart TrafficMend = ContractBook.Part("traffic_mend", "traffic", "putting the city's traffic right when it stops adding cars for good");
         public static readonly GamePart ShopHelp = ContractBook.Part("shop_help", "newshops", "the new kinds of shop's pages in the game's help");
+        public static readonly GamePart PickedRaises = ContractBook.Part("picked_raises", "economy_company", "a raise for several employees picked in the game's My Employees app");
 
         // The pieces, each group under the code that reads it.
 
@@ -415,6 +416,13 @@ namespace RealLifeOverhaul
         // Shops/ShopsGame: the language tables the game's texts are read from, given each new kind of shop's help page
         // under the keys the game's help reads (else BizMan's requirement link opens a page of bare keys)
         public static readonly GameMember LocaleTables = Optional(StaticField(ShopHelp, Hg, "Localizor.LocalizorManager", "LocalizationDictionary", "Dictionary<String,Dictionary<String,String>>"));
+
+        // Economy/Company/PickedRaiseGame: the game's list of the actions for several picked employees, and which its tabs offer,
+        // so a raise for them stands in My Employees' own drop-down beside paying bonuses
+        public static readonly GameMember MassActions = StaticField(PickedRaises, Game, "UI.Smartphone.Apps.MyEmployees.EmployeeMassActionHelper",
+            "MassActionsDict", "Dictionary<String,EmployeeMassAction>");
+        public static readonly GameMember MassActionTabs = StaticField(PickedRaises, Game, "UI.Smartphone.Apps.MyEmployees.EmployeeMassActionHelper",
+            "MassActionsByTabDict", "Dictionary<String,String[]>");
 
         /// <summary>The five pieces Build 3675 lacks (the funeral helper's two properties are one, its type).</summary>
         public static readonly GameMember[] LackedBy3675 = { PlayerDead, FuneralActive, FenceIndex, ResumeTarget, StationNameKey, ConfirmByKey };
