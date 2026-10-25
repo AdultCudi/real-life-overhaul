@@ -1,0 +1,15 @@
+{
+ "bundle": "reallife_props_2",
+ "set": "second",
+ "sha256": "45998a768beb6ae62beb551e79cf365a0904fef2c644ea437957c48fee186a1b",
+ "bytes": 1298,
+ "triangles": 0,
+ "triangle_limit": 60000,
+ "atlas": {
+  "width": 0,
+  "height": 0,
+  "used": 0
+ },
+ "textures": [],
+ "props": []
+}

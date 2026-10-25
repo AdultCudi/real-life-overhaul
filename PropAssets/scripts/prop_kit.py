@@ -21,7 +21,8 @@ from mathutils import Euler, Matrix, Vector
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
-BUILD = os.environ.get("PROPS_BUILD") or os.path.join(ROOT, "build")      # PROPS_BUILD: a working folder of one's own
+sys.path.insert(0, HERE)
+from sets import BUILD  # noqa: E402  (the set being built, sets.json: PROPS_SET, PROPS_BUILD)
 PREVIEWS = os.path.join(ROOT, "previews")
 sys.path.append(os.path.join(ROOT, "_tools", "pylib"))
 
@@ -280,8 +281,9 @@ class Prop:
         self.bm = bmesh.new()
         self.uv = self.bm.loops.layers.uv.new("UVMap")
 
-    def add(self, part, paint, at=(0, 0, 0), rot=(0, 0, 0), sharp=50.0, scale=(1, 1, 1)):
-        """Adds a part: painted where it was made, then turned (degrees, XYZ) and moved into place."""
+    def add(self, part, paint, at=(0, 0, 0), rot=(0, 0, 0), sharp=50.0, scale=(1, 1, 1), marked=False):
+        """Adds a part: painted where it was made, then turned (degrees, XYZ) and moved into place. marked: the part's own
+        sharp edges stay sharp (a model from Blender, whose author marked them), beside those over the `sharp` angle."""
         if isinstance(paint, str):
             paint = Paint(paint)
         part.normal_update()
@@ -290,7 +292,7 @@ class Prop:
         paint.apply(part, uv)
         limit = math.radians(sharp)
         for edge in part.edges:
-            edge.smooth = len(edge.link_faces) == 2 and edge.calc_face_angle(0.0) < limit
+            edge.smooth = len(edge.link_faces) == 2 and edge.calc_face_angle(0.0) < limit and (edge.smooth or not marked)
         matrix = Matrix.Translation(Vector(at)) @ Euler([math.radians(a) for a in rot], "XYZ").to_matrix().to_4x4() @ Matrix.Diagonal((*scale, 1.0))
         made = [self.bm.verts.new(matrix @ v.co) for v in part.verts]
         for face in part.faces:

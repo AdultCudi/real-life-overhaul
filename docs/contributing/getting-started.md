@@ -79,12 +79,12 @@ Two ways, same source:
   Add `-p:InstallToGame=true` to put them in the game's `ModsLocal/RealLifeOverhaul` instead (only with the game closed), or `"-p:ModsLocal=<folder>"` for a folder of your own.
 - **Asset bundle (only after changing the looks):** `CharacterAssets/build.ps1` (or only the last step, `build_bundle.ps1`) rebuilds `Assets/Mods/RealLifeOverhaul/Bundles/reallife_character` from `CharacterAssets/build` with Unity in batch mode and checks that it loads; the bundle is committed, so a code-only build needs neither Unity nor Blender.
   See [`CharacterAssets/README.md`](../../CharacterAssets/README.md).
-- **Prop bundle (only after changing a prop):** `PropAssets/build.ps1` rebuilds `Assets/Mods/RealLifeOverhaul/Bundles/reallife_props` the same way; it is committed too.
+- **Prop bundles (only after changing a prop):** `PropAssets/build.ps1` rebuilds `Assets/Mods/RealLifeOverhaul/Bundles/reallife_props` and `reallife_props_2` the same way, and `PropAssets/contents/` with them; all are committed too. A new prop goes in the second (`PropAssets/README.md`, "The bundles").
   See [`PropAssets/README.md`](../../PropAssets/README.md), which also lists every prop with its size, pivot and how to use it.
 - **Clip bundle (only after changing a clip):** `CityAssets/build.ps1` rebuilds `Assets/Mods/RealLifeOverhaul/Bundles/reallife_anim`, measures every clip on a stand-in with the game's skeleton and proves in play mode that clips cross-fade over an Animator Controller; it is committed too.
   See [`CityAssets/README.md`](../../CityAssets/README.md), which lists every clip, what it is for and how to use one from any feature.
 
-  What the dotnet build installs is the whole package, exactly as it is uploaded: `RealLifeOverhaul.dll`, every `Locales/*.json`, the three files in `Bundles/` and `thumbnail.jpg` (the Workshop picture).
+  What the dotnet build installs is the whole package, exactly as it is uploaded: `RealLifeOverhaul.dll`, every `Locales/*.json`, every file in `Bundles/` and `thumbnail.jpg` (the Workshop picture).
   The Unity **Mod Builder** is not used for this mod: its manifest (`ModManifest.asset`) names no asset bundle, because the bundles are built by the three scripts above.
 
 Restart the game to load a new build.

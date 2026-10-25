@@ -1,0 +1,31 @@
+{
+ "about": "The props bundles, one row each, in the order the mod reads them (README, 'The bundles'). A prop is in exactly one, and its id is unique across all. The first is closed: it keeps the props it has and takes no new one. A new prop goes in the last open set. build.ps1, the scripts (sets.py), PropBundleBuilder, the mod's PropLibrary and StandardCheck (RLO-PERF-016) all read this table.",
+ "sets": [
+  {
+   "name": "first",
+   "bundle": "reallife_props",
+   "build": "build",
+   "open": false,
+   "source": "the procedural modules of scripts/props.py",
+   "triangles": 130000,
+   "atlas": {"width": 4096, "height": 2048, "grows": false},
+   "mask_divisor": 2,
+   "decals": true,
+   "disk_kb": 16384
+  },
+  {
+   "name": "second",
+   "bundle": "reallife_props_2",
+   "build": "build_2",
+   "open": true,
+   "source": "models/<id>/: a Blender export each (README, 'Adding a prop from Blender')",
+   "models": "models",
+   "modules": [],
+   "triangles": 60000,
+   "atlas": {"width": 2048, "height": 2048, "grows": true},
+   "mask_divisor": 2,
+   "decals": false,
+   "disk_kb": 8192
+  }
+ ]
+}
