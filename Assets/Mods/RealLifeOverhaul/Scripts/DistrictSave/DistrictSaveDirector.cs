@@ -19,7 +19,9 @@ namespace RealLifeOverhaul.DistrictSave
     /// menu's unload, after the save is read), or at the city load for a load that did not pass the main menu. With no
     /// places of the mod's and nothing kept, nothing is done. See docs/features/district-save.md.
     /// COST: nothing per frame (DistrictSaveWatch, while places exist: a reference comparison); at a save of a game
-    /// with places of the mod's, the strip, the payload and the check, a few milliseconds.
+    /// with places of the mod's, the strip and the game's serializer writing the payload on the main thread, the payload's
+    /// compression and the check on workers alongside (about 20 ms for a district of 537 businesses, against 70 ms with
+    /// them all on the main thread, measured under the game's Mono on the owner's save).
     /// </summary>
     public static partial class DistrictSaveDirector
     {
@@ -42,6 +44,9 @@ namespace RealLifeOverhaul.DistrictSave
 
         private static readonly List<string> Said = new List<string>(4);   // lines waiting: the log listener writes none
         private static readonly List<bool> SaidWarn = new List<bool>(4);
+
+        private static DistrictSaveZip _zip;               // made at the first save with a district; its buffers kept for the next
+        private static bool _zipped;                       // this save's payload was compressed in pieces (for the check line)
 
         /// <summary>True while there is anything to keep out of a save: places of the mod's, kept records, or a write going on.</summary>
         public static bool Holds => _pending != null || KeptRecords.Count > 0 || !DistrictPlaces.Current.Empty;
@@ -112,26 +117,38 @@ namespace RealLifeOverhaul.DistrictSave
             _pending = s;   // at once: whatever follows, what was taken out goes back
             Arm();
             DistrictSaveWatch.Wake();
+            long taken = Stopwatch.GetTimestamp();
+            DistrictSaveCheck.Start(save, places, s, MostHits);   // on a worker while the section is written: both only read
             int bytes = Write(save, s, out int records, out string fault);
-            List<string> hits;
-            try
-            {
-                hits = DistrictSaveScan.Find(save, places, s, MostHits);
-            }
-            catch (Exception e)
-            {
-                hits = new List<string>(1) { "the check itself failed: " + e.GetType().Name + ": " + e.Message };
-            }
-            double ms = (Stopwatch.GetTimestamp() - began) * 1000.0 / Stopwatch.Frequency;
+            long written = Stopwatch.GetTimestamp();
+            List<string> hits = DistrictSaveCheck.End(out double checkMs);
+            long done = Stopwatch.GetTimestamp();
             bool failed = hits.Count > 0 || fault != null || s.Faults.Count > 0;
-            LastCheck = CheckLine(places, s, records, bytes, ms, hits, fault);
+            LastCheck = CheckLine(places, s, records, bytes, hits, fault, Parts(Ms(began, done), Ms(began, taken), Ms(taken, written), checkMs, Ms(written, done)));
             Say(LastCheck, failed);
+        }
+
+        private static double Ms(long from, long to)
+        {
+            return (to - from) * 1000.0 / Stopwatch.Frequency;
+        }
+
+        // Where the save's time went: the whole, then its parts (the check runs beside the section, so they overlap).
+        private static string Parts(double all, double strip, double section, double check, double waited)
+        {
+            string packed = _zipped
+                ? "; " + (_zip.Written / 1024) + " KB of the game's serializer compressed to " + (_zip.Packed / 1024) + " KB on " + (_zip.Workers + 1) + " thread(s)"
+                : string.Empty;
+            return all.ToString("F1", CultureInfo.InvariantCulture) + " ms: the records out " + strip.ToString("F1", CultureInfo.InvariantCulture) + " ms, the section "
+                   + section.ToString("F1", CultureInfo.InvariantCulture) + " ms, the check " + check.ToString("F1", CultureInfo.InvariantCulture)
+                   + " ms beside it, then waited for " + waited.ToString("F1", CultureInfo.InvariantCulture) + " ms" + packed;
         }
 
         // The mod's section: what this save took out of the player's own, and what the load kept.
         private static int Write(GameInstance save, DistrictSaveGame.Strip s, out int records, out string fault)
         {
             fault = null;
+            _zipped = false;
             records = s.Records.Count + KeptRecords.Count;
             if (save.modData == null)
             {
@@ -157,8 +174,8 @@ namespace RealLifeOverhaul.DistrictSave
                     }
                     all.Add(kept);
                 }
-                string payload = items.Count > 0 ? DistrictSaveCodec.Encode(items.ToArray()) : string.Empty;
-                string line = DistrictSaveStore.Write(all, payload);
+                string head = DistrictSaveStore.Head(all);
+                string line = items.Count > 0 ? Packed(items.ToArray(), head) : head;
                 save.modData[DistrictSaveStore.Key] = line;
                 return line.Length;
             }
@@ -167,6 +184,23 @@ namespace RealLifeOverhaul.DistrictSave
                 fault = "the mod's section could not be written (" + e.GetType().Name + ": " + e.Message + "); the line from before stays";
                 return 0;
             }
+        }
+
+        // The line with its payload compressed in pieces on the workers; in one stream of the runtime's gzip if a piece failed.
+        private static string Packed(object[] items, string head)
+        {
+            if (_zip == null)
+            {
+                _zip = new DistrictSaveZip(DistrictSaveZip.WorkersHere);
+            }
+            string line = DistrictSaveCodec.Line(items, head, _zip);
+            if (line != null)
+            {
+                _zipped = true;
+                return line;
+            }
+            Say("District save: the mod's section was compressed the slower way, in one stream, as " + _zip.Fault + ".", true);
+            return head + DistrictSaveCodec.Encode(items);
         }
 
         // Nothing to keep: a line left from before goes (a line no version could read stays under its own key).
@@ -178,11 +212,11 @@ namespace RealLifeOverhaul.DistrictSave
             }
         }
 
-        private static string CheckLine(PlaceSet places, DistrictSaveGame.Strip s, int records, int bytes, double ms, List<string> hits, string fault)
+        private static string CheckLine(PlaceSet places, DistrictSaveGame.Strip s, int records, int bytes, List<string> hits, string fault, string time)
         {
             string counts = s.Left + " record(s) taken out" + (s.NotKept > 0 ? " (" + s.NotKept + " another player's, put back after and not kept)" : string.Empty)
                             + ", " + s.StoodIn + " stand-in(s), " + KeptRecords.Count + " kept from the load; the mod's section " + records + " record(s), "
-                            + (bytes / 1024f).ToString("F1", CultureInfo.InvariantCulture) + " KB, " + ms.ToString("F1", CultureInfo.InvariantCulture) + " ms";
+                            + (bytes / 1024f).ToString("F1", CultureInfo.InvariantCulture) + " KB, " + time;
             string scope = (places.Addresses + places.Streets) + " addresses (" + places.Streets + " whole streets) and " + places.Districts + " districts";
             if (hits.Count == 0 && fault == null && s.Faults.Count == 0)
             {

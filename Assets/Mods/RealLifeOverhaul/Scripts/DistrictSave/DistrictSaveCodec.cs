@@ -15,11 +15,36 @@ namespace RealLifeOverhaul.DistrictSave
     /// for the modData line. The line store could not hold them: a registration is some fifty fields deep (items, rota,
     /// designs, orders, staff), and any field a game update adds would be lost. Measured under the game's own Mono with
     /// the game's assemblies on a real save: the largest shop there (188 items, 306 interior designs) is 299 KB of Odin,
-    /// 37 KB gzipped, 50,000 base64 characters, about 5 ms to write and 26 ms to read. COST: at a save and a load only.
+    /// 37 KB gzipped, 50,000 base64 characters, about 5 ms to write and 26 ms to read. A district of 537 businesses is
+    /// 3.6 MB of Odin: one zlib stream took 42 ms of the save's frame, so a save compresses it in pieces on its workers
+    /// while Odin writes (DistrictSaveZip), into the same gzip that the same reader reads. COST: at a save and a load only.
     /// </summary>
     internal static class DistrictSaveCodec
     {
-        /// <summary>The records as the store's payload text.</summary>
+        /// <summary>
+        /// The store's whole line for the records: <paramref name="head"/> (the store's records, DistrictSaveStore.Head),
+        /// then the payload, compressed in pieces by <paramref name="zip"/> as Odin writes; null when a piece failed its
+        /// read back (zip.Fault), and the caller writes the payload with <see cref="Encode"/>.
+        /// </summary>
+        public static string Line(object[] records, string head, DistrictSaveZip zip)
+        {
+            zip.Begin();
+            try
+            {
+                Write(records, zip);
+            }
+            catch
+            {
+                zip.Finish(string.Empty);   // every worker done before the fault goes up
+                throw;
+            }
+            return zip.Finish(head);
+        }
+
+        /// <summary>
+        /// The records as the store's payload text, through one stream of the runtime's own gzip: the way every payload was
+        /// written before the pieces, kept for a save whose pieces failed.
+        /// </summary>
         public static string Encode(object[] records)
         {
             using (var raw = new MemoryStream())
