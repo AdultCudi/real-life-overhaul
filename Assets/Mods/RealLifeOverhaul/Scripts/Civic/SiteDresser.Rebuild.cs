@@ -21,7 +21,7 @@ namespace RealLifeOverhaul
             if (why != null)
             {
                 dressed.Wrap.Plan.Clear();
-                CivicDirector.Logger?.Info("Civic: site " + site.Id + " (Rebuild) at " + CivicWorks.PlaceText(site) + " shows its hoarding without the game's scaffold: " + why + ".");
+                CivicDirector.Logger?.Info("Civic: site " + site.Id + " (" + site.Kind + ") at " + CivicWorks.PlaceText(site) + " shows its hoarding without the game's scaffold: " + why + ".");
             }
             dressed.Area = dressed.Wrap.Plan.Pieces.Count > 0 ? dressed.Wrap.Bounds : new Bounds(dressed.Origin, new Vector3(16f, 8f, 16f));
             return SiteRefusal.None;

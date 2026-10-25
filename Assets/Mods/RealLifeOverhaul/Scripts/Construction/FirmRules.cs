@@ -66,7 +66,7 @@ namespace RealLifeOverhaul.Construction
                 case Speciality.Renovation:
                     return model == ProjectKind.Rebuild || (model == ProjectKind.Contract && (civicKind == 1 || civicKind == 2));
                 case Speciality.Demolition:
-                    return model == ProjectKind.Rebuild;
+                    return model == ProjectKind.Rebuild || (model == ProjectKind.Contract && civicKind == RedevelopRules.DemolitionWorks);
                 default:
                     return false;
             }

@@ -187,10 +187,16 @@ namespace RealLifeOverhaul.Construction
         public bool HireFree;                        // a test's contract: nothing is paid either way
         public int ClaimCase;                        // the court's number of a claim over faults in it, for the objectives while it is heard; 0 for none
 
+        public string FitDesign = string.Empty;      // a refit's new furnishing: one of the game's interior designs for the unit, installed at the handover; empty keeps the furniture
+        public string FitType = string.Empty;        // the firm's folder of that design: the business's type, or the game's empty business for a home or an empty unit
+        public int NoticeUntil;                      // the last day of the notice given to a building's tenants and business before its works; 0 for none
+        public long BuyOut;                          // what buying its tenants and business out cost, paid as the notice ran out; -1 when nothing was due, 0 before
+        public int Added;                            // an extension's storeys on top of those its building has
+
         public bool Live => Stage != ProjectStage.Finished && Stage != ProjectStage.Abandoned;
 
-        /// <summary>True for the player's own building put up by one of the city's builders under contract (a refit by one is not).</summary>
-        public bool Hired => Contractor >= 0 && Kind != ProjectKind.Refit;
+        /// <summary>True for the player's own building put up by one of the city's builders under contract (a refit or a demolition paid at once by one is not).</summary>
+        public bool Hired => Contractor >= 0 && Kind != ProjectKind.Refit && Kind != ProjectKind.Demolition && Kind != ProjectKind.Conversion;
 
         /// <summary>True while its show flat is open.</summary>
         public bool ShowOpen => ShowSince > 0 && !string.IsNullOrEmpty(ShowDesign);
@@ -217,9 +223,13 @@ namespace RealLifeOverhaul.Construction
         {
             get
             {
-                if (Kind == ProjectKind.Refit)
+                if (Kind == ProjectKind.Refit || Kind == ProjectKind.Demolition || Kind == ProjectKind.Conversion)
                 {
-                    return ProjectKind.Contract;
+                    return ProjectKind.Contract;   // worked as the programme's works of its kind: their crews, plant, hours and one final inspection
+                }
+                if (Kind == ProjectKind.Extension)
+                {
+                    return ProjectKind.Rebuild;    // the frame stands: new floors on it behind the rebuild's scaffolding, its stages and inspections
                 }
                 if (Kind != ProjectKind.Contract)
                 {
@@ -273,6 +283,50 @@ namespace RealLifeOverhaul.Construction
         public bool Public;                          // a public building a rival won the tender for: finished when its site is handed over
     }
 
+    /// <summary>
+    /// A redevelopment of the city's developers in Uptown (ConstructionDirector.CityRedevelop): their move, the building it
+    /// takes and where it stands. Saved in the line's "^w:" part; a line without it has none.
+    /// </summary>
+    public sealed class RedevFile
+    {
+        public int Id;
+        public CityMove Move;
+        public CityStage Stage;
+        public string Lot = string.Empty;            // the building's own lot
+        public string Street = string.Empty;         // its address
+        public int Number;
+        public string[] Lots;                        // the other lots it takes (those its building stands over, an assembly's neighbour's); null for none
+        public int Rival;                            // the builder of the city's whose development arm it is, or who does a holding's works
+        public string Holding = string.Empty;        // a rival tycoon's holding that develops it; empty for the builder's own arm
+        public int Day;                              // the day it began
+        public int Until;                            // the day its stage ends
+        public int SiteId;                           // the city's site showing its works; 0 for none
+        public int Storeys;                          // an extension's storeys in all
+        public BuildUse Use;                         // a change of use's new use, or the new building's
+        public string Design = string.Empty;         // the new building's design (a split's first), "-" when nothing of the city's fits
+        public long Price;                           // what the developer paid for the building, when it was for sale
+        public int Area;                             // the building's floor area as it began
+
+        public bool Live => Stage < CityStage.Done;
+
+        /// <summary>True when it takes a lot: its building's own, or one of its others.</summary>
+        public bool Takes(string lot)
+        {
+            if (string.Equals(Lot, lot, StringComparison.Ordinal))
+            {
+                return true;
+            }
+            for (int i = 0; Lots != null && i < Lots.Length; i++)
+            {
+                if (string.Equals(Lots[i], lot, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
     /// <summary>One day of the construction company's books: what its works brought in and what they cost, in money.</summary>
     public struct DayBook
     {
@@ -295,6 +349,34 @@ namespace RealLifeOverhaul.Construction
         public int NextId = 1;
         public int NextClientDay, NextPublicDay;     // the days the next client's and public tenders open
         public int NextRefitDay;                     // the day the next business's refit tender opens
+        public int NextCityRedevDay;                 // the day the city's developers next take a building of Uptown's on; 0 before they first look
+        public readonly List<RedevFile> CityRedevs = new List<RedevFile>(8);   // the city's redevelopments, those under way and the last done
+
+        /// <summary>The city's redevelopment under way that takes a lot, or null.</summary>
+        public RedevFile CityRedevOn(string lot)
+        {
+            for (int i = 0; !string.IsNullOrEmpty(lot) && i < CityRedevs.Count; i++)
+            {
+                if (CityRedevs[i].Live && CityRedevs[i].Takes(lot))
+                {
+                    return CityRedevs[i];
+                }
+            }
+            return null;
+        }
+
+        /// <summary>The city's redevelopment under way whose site has this id, or null.</summary>
+        public RedevFile CityRedevSite(int siteId)
+        {
+            for (int i = 0; siteId > 0 && i < CityRedevs.Count; i++)
+            {
+                if (CityRedevs[i].Live && CityRedevs[i].SiteId == siteId)
+                {
+                    return CityRedevs[i];
+                }
+            }
+            return null;
+        }
         public readonly FirmFile Firm = new FirmFile();
         public readonly List<LotFile> Lots = new List<LotFile>(8);
         public readonly List<CrewFile> Crews = new List<CrewFile>(8);
@@ -531,13 +613,14 @@ namespace RealLifeOverhaul.Construction
             return null;
         }
 
-        /// <summary>The live refit or rebuild at a building, or null.</summary>
+        /// <summary>The live refit, rebuild, extension or change of use at a building, or null.</summary>
         public ProjectFile AtBuilding(string street, int number)
         {
             for (int i = 0; street != null && i < Projects.Count; i++)
             {
                 ProjectFile p = Projects[i];
-                if (p.Live && (p.Kind == ProjectKind.Refit || p.Kind == ProjectKind.Rebuild) && p.Number == number && string.Equals(p.Street, street, StringComparison.Ordinal))
+                if (p.Live && (p.Kind == ProjectKind.Refit || p.Kind == ProjectKind.Rebuild || p.Kind == ProjectKind.Extension || p.Kind == ProjectKind.Conversion)
+                    && p.Number == number && string.Equals(p.Street, street, StringComparison.Ordinal))
                 {
                     return p;
                 }

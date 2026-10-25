@@ -181,6 +181,65 @@ namespace RealLifeOverhaul.Uptown
             return LifeDirector.Withdraw(lotId, out why);
         }
 
+        /// <summary>The district's building standing on a lot (its own) at this load, as redevelopment reads it; false for none.</summary>
+        public static bool StandingOn(string lotId, out DistrictBuilding building)
+        {
+            return LifeDirector.StandingOn(lotId, out building);
+        }
+
+        /// <summary>The district's building standing at an address at this load; false for none.</summary>
+        public static bool StandingAt(string street, int number, out DistrictBuilding building)
+        {
+            return LifeDirector.StandingAt(street, number, out building);
+        }
+
+        /// <summary>
+        /// A standing building knocked down now: every record naming its address let go for good (the district save's clear),
+        /// out of the game's lists, hidden, its ground walked on again, its lots cleared so nothing stands there from the next load
+        /// until a building is finished there. False, with why, when refused (none standing, one of the district's own places,
+        /// the player inside it). The caller asks it only outside a Going Public session.
+        /// </summary>
+        public static bool Demolish(string lotId, out string why)
+        {
+            return LifeDirector.Demolish(lotId, out why);
+        }
+
+        /// <summary>True for a lot whose building was knocked down and on which nothing has been finished since: free ground of whoever knocked it down.</summary>
+        public static bool Cleared(string lotId)
+        {
+            return LifeDirector.Cleared(lotId);
+        }
+
+        /// <summary>A standing building's look hidden while it comes down behind its wrap, or shown again; false when nothing changed.</summary>
+        public static bool HideLook(string lotId, bool hide)
+        {
+            return LifeDirector.HideLook(lotId, hide);
+        }
+
+        /// <summary>Every one of the district's buildings standing at this load, as redevelopment reads them, into the caller's list (cleared).</summary>
+        public static void StandingAll(List<DistrictBuilding> into)
+        {
+            LifeDirector.StandingAll(into);
+        }
+
+        /// <summary>
+        /// A standing building given so many storeys of floor area in all, its look its own: its record and the player's deed now,
+        /// the district's line from every load. False, with why, when refused. The caller asks it only outside a Going Public session.
+        /// </summary>
+        public static bool Extend(string lotId, int storeys, out string why)
+        {
+            return LifeDirector.Extend(lotId, storeys, out why);
+        }
+
+        /// <summary>
+        /// A standing building made another use its structure takes (a game building type), now and from every load. False, with
+        /// why, when refused. The caller asks it only outside a Going Public session, with the unit emptied.
+        /// </summary>
+        public static bool Convert(string lotId, string type, out string why)
+        {
+            return LifeDirector.Convert(lotId, type, out why);
+        }
+
         /// <summary>
         /// The traffic index a building on the lot gets (Building.trafficIndex, 10 to 60, lifted by <see cref="TrafficLift"/>
         /// to 80 at most), as the rules give it; -1 for a lot not in the plan.

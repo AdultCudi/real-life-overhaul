@@ -103,10 +103,16 @@ namespace RealLifeOverhaul.Construction
                     pickedLandmark = site.Id;
                 }
             }
-            bool business = WriteBusinessRows(ref selected, out BusinessView pickedBusiness);
+            bool business = WriteUnitRows(ref selected, out UnitView pickedUnit);
+            RedevFile pickedOffer = WriteOfferRows(ref selected);   // ConstructionApp.Redevelop.cs: the developers' offers for Uptown's buildings for sale
             if (pickedLot != null && _director.Lot(pickedLot, out LotView picked))
             {
                 WriteLot(box, state, picked);
+                return;
+            }
+            if (pickedOffer != null)
+            {
+                WriteOffer(box, pickedOffer);
                 return;
             }
             if (run)
@@ -126,7 +132,7 @@ namespace RealLifeOverhaul.Construction
             }
             if (business)
             {
-                WriteBusiness(box, pickedBusiness);
+                WriteUnit(box, pickedUnit);
                 return;
             }
             box.Title(ConstructionText.T("reallife_bld_tab_land"));
@@ -145,7 +151,7 @@ namespace RealLifeOverhaul.Construction
             {
                 return ConstructionText.StageWords(p);
             }
-            return ConstructionText.T(owned.ZoneAsk != 0 ? "reallife_bld_land_state_zoning" : "reallife_bld_land_state_empty");
+            return ConstructionText.T(owned.ZoneAsk != 0 ? "reallife_bld_land_state_zoning" : _director.ClearedGround(lot.Id) ? "reallife_bld_land_state_cleared" : "reallife_bld_land_state_empty");
         }
 
         private static string RebuildState(BuildState state, BuildingView b)
@@ -279,6 +285,10 @@ namespace RealLifeOverhaul.Construction
                 InfoBox.Button(buttons, InfoBox.Negative, "reallife_bld_button_rezone", () => PlanningCall.Open(0));
             }
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_bld_back", Back);
+            if (p == null)
+            {
+                JoinButtons(box, lot.Id);   // joined with the next site, or split back into its lots (ConstructionApp.Redevelop.cs)
+            }
             Guide(box);
         }
 
@@ -348,7 +358,11 @@ namespace RealLifeOverhaul.Construction
                 });
             }
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_bld_back", Back);
-            if (live == null && ConstructionGame.Business(b.Street, b.Number, out BusinessView inside))
+            if (live == null)
+            {
+                RedevelopButtons(box, b);   // a building of Uptown's: knocked down to its ground (ConstructionApp.Redevelop.cs)
+            }
+            if (live == null && ConstructionGame.Unit(b.Street, b.Number, out UnitView inside))
             {
                 RefitButtons(box, inside);
             }

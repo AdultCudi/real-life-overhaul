@@ -47,6 +47,9 @@ namespace RealLifeOverhaul
         /// <summary>True when a finished building's lot holds a building of the district now, so no copy is needed there. Default: no.</summary>
         public static Func<string, bool> Taken;
 
+        /// <summary>True when a builder's rebuild keeps its building's own look (an extension: more floors, the same front), so no copy stands over it. Default: no.</summary>
+        public static Func<SiteState, bool> KeepsLook;
+
         /// <summary>A design stood over a building out of view, its own look hidden (BuildingCopies.PlaceOver): a handle, or null. Default: none.</summary>
         public static Func<CityBuildingController, string, object> CopyOver;
 
@@ -76,6 +79,7 @@ namespace RealLifeOverhaul
             Design = null;
             Tag = null;
             Taken = null;
+            KeepsLook = null;
             CopyOver = null;
             CopyOnPlot = null;
             CopyRemove = null;
@@ -183,6 +187,19 @@ namespace RealLifeOverhaul
             {
                 CivicDirector.Logger?.Error(e);
                 return null;
+            }
+        }
+
+        internal static bool Keeps(SiteState site)
+        {
+            try
+            {
+                return KeepsLook != null && KeepsLook(site);
+            }
+            catch (Exception e)
+            {
+                CivicDirector.Logger?.Error(e);
+                return false;
             }
         }
 

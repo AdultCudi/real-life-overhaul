@@ -57,6 +57,11 @@ namespace RealLifeOverhaul.TestRun
             { "reallife_uptown_test_rent", "the player rents the unit in BizMan with the game's own button" },
             { "reallife_uptown_test_store_order", "it needs a business of the player's that takes wholesale deliveries" },
             { "reallife_uptown_test_station_fill", "it needs the player at the wheel of a car of their own" },
+            { "reallife_bld_test_demolish", "it knocks a building of the player's own down for good, so only the player presses it" },
+            { "reallife_bld_test_cleared_build", "it builds on ground the player cleared by knocking a building of theirs down, which the run never does" },
+            { "reallife_bld_test_extend", "it puts a storey on a building of the player's own for good, so only the player presses it" },
+            { "reallife_bld_test_convert", "it changes a building of the player's own to another use for good, emptying it first, so only the player presses it" },
+            { "reallife_bld_test_city_redevelop", "it has the city's developers knock down, build, extend and convert Uptown's own buildings for good, so only the player presses it" },
         };
 
         /// <summary>The expansion's test buttons the run presses through a step of its own (it asks for exactly what it needs), and that step.</summary>

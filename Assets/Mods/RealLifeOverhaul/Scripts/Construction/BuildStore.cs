@@ -162,6 +162,15 @@ namespace RealLifeOverhaul.Construction
             Join(t, p.HireDays, p.HirePace, p.HireStages, p.HireFree ? 1 : 0);   // a hired builder's contract, after every field an older reader knows
             t.Append('|').Append(p.HirePaid.ToString(Inv)).Append('|').Append(p.HirePenalty.ToString(Inv));
             t.Append('|').Append(p.ClaimCase.ToString(Inv));   // a claim over faults, after every field an older reader knows
+            if (p.FitDesign.Length > 0 || p.NoticeUntil > 0 || p.BuyOut != 0L || p.Added > 0)
+            {
+                // Redevelopment's fields, after every field an older reader knows, and only when one is set: a record without them is as before.
+                t.Append('|').Append(Esc(p.FitDesign)).Append('|').Append(Esc(p.FitType)).Append('|').Append(p.NoticeUntil.ToString(Inv)).Append('|').Append(p.BuyOut.ToString(Inv));
+                if (p.Added > 0)
+                {
+                    t.Append('|').Append(p.Added.ToString(Inv));
+                }
+            }
         }
 
         /// <summary>Reads a line; null for one that is not this feature's.</summary>
@@ -313,7 +322,7 @@ namespace RealLifeOverhaul.Construction
                                 var d = new TenderFile
                                 {
                                     Id = r.I(0), Source = (TenderSource)BuildCatalogue.Clamp(r.I(0), 0, (int)TenderSource.Landmark), SiteId = r.I(0),
-                                    CivicKind = BuildCatalogue.Clamp(r.I(0), 0, 5), Number = r.I(0),
+                                    CivicKind = BuildCatalogue.Clamp(r.I(0), 0, RedevelopRules.DemolitionWorks), Number = r.I(0),
                                     Use = (BuildUse)BuildCatalogue.Clamp(r.I(0), 0, (int)BuildUse.Count - 1), Area = Math.Max(0, r.I(0)), Hours = Math.Max(1, r.I(1)), Opened = r.I(0),
                                     Closes = r.I(0), BidPermille = Math.Max(0, r.I(0)), Fast = r.I(0) == 1, State = (TenderState)BuildCatalogue.Clamp(r.I(0), 0, 3),
                                     Winner = BuildCatalogue.Clamp(r.I(-2), -2, BuildCatalogue.RivalCount - 1), WinningDays = Math.Max(0, r.I(0)), Client = Math.Max(0, r.I(0)),
@@ -430,7 +439,8 @@ namespace RealLifeOverhaul.Construction
         {
             var p = new ProjectFile
             {
-                Id = r.I(0), Kind = (ProjectKind)BuildCatalogue.Clamp(r.I(0), 0, 3), Stage = (ProjectStage)BuildCatalogue.Clamp(r.I(0), 0, 5), Created = r.I(0), Number = r.I(0),
+                Id = r.I(0), Kind = (ProjectKind)BuildCatalogue.Clamp(r.I(0), 0, (int)ProjectKind.Conversion), Stage = (ProjectStage)BuildCatalogue.Clamp(r.I(0), 0, 5),
+                Created = r.I(0), Number = r.I(0),
                 Use = (BuildUse)BuildCatalogue.Clamp(r.I(0), 0, (int)BuildUse.Count - 1), Version = r.I(1), Area = Math.Max(0, r.I(0)), Storeys = BuildCatalogue.Clamp(r.I(1), 1, 60),
                 Width = Math.Max(0, r.I(0)), Depth = Math.Max(0, r.I(0)), Height = Math.Max(0, r.I(0)), Architect = (ArchitectKind)BuildCatalogue.Clamp(r.I(0), 0, 2),
                 Firm = BuildCatalogue.Clamp(r.I(0), 0, BuildCatalogue.FirmCount - 1), PlansDay = r.I(0), PlansDone = r.I(0) == 1, Quality = BuildCatalogue.Clamp(r.I(0), 0, 100),
@@ -445,7 +455,8 @@ namespace RealLifeOverhaul.Construction
                 Investor = BuildCatalogue.Clamp(r.I(-1), -1, BuildCatalogue.InvestorCount - 1), InvestorDue = r.I(0), Flats = Math.Max(0, r.I(0)), FlatsSold = Math.Max(0, r.I(0)),
                 FlatsOffPlan = Math.Max(0, r.I(0)), Handed = r.I(0), Opening = r.I(0), Ribbon = r.I(0) == 1, Opened = r.I(0) == 1,
                 After = (AfterUse)BuildCatalogue.Clamp(r.I(0), 0, 1), Ask = BuildCatalogue.Clamp(r.I(1), 0, BuildCatalogue.AskPermille.Length - 1), DefectDay = r.I(0),
-                Source = (TenderSource)BuildCatalogue.Clamp(r.I(0), 0, (int)TenderSource.Landmark), CivicKind = BuildCatalogue.Clamp(r.I(-1), -1, 5), Client = Math.Max(0, r.I(0)),
+                Source = (TenderSource)BuildCatalogue.Clamp(r.I(0), 0, (int)TenderSource.Landmark), CivicKind = BuildCatalogue.Clamp(r.I(-1), -1, RedevelopRules.DemolitionWorks),
+                Client = Math.Max(0, r.I(0)),
                 RainHours = Math.Max(0, r.I(0)), WaitHours = Math.Max(0, r.I(0)), StrikeDays = Math.Max(0, r.I(0)), Fails = Math.Max(0, r.I(0)), InDistrict = r.I(0) == 1,
                 Tender = Math.Max(0, r.I(0))
             };
@@ -524,6 +535,15 @@ namespace RealLifeOverhaul.Construction
             p.HirePaid = Math.Max(0L, r.L(0L));
             p.HirePenalty = Math.Max(0L, r.L(0L));
             p.ClaimCase = Math.Max(0, r.I(0));
+            p.FitDesign = r.S();
+            p.FitType = r.S();
+            p.NoticeUntil = Math.Max(0, r.I(0));
+            p.BuyOut = Math.Max(-1L, r.L(0L));
+            p.Added = p.Kind == ProjectKind.Extension ? BuildCatalogue.Clamp(r.I(0), 0, RedevelopRules.StoreysMost) : 0;
+            if (p.FitDesign.Length == 0)
+            {
+                p.FitType = string.Empty;   // no design, nothing to install
+            }
             if (p.Hired && p.HirePace < BuildCatalogue.HirePaceLeast)
             {
                 p.HirePace = 1000;   // a contract whose pace was lost goes at the city's own

@@ -73,6 +73,40 @@ namespace RealLifeOverhaul.Uptown
             }
         }
 
+        // The fillers standing on the ground of some lots hidden (their building was knocked down): a filler stands on its lot's
+        // ground, so one whose root is inside a lot's rectangle is that lot's. Uptown's grid lies along the world's axes.
+        private static int HideFillersOn(List<BuildingsLot> lots)
+        {
+            int hidden = 0;
+            for (int i = 0; lots != null && i < Fillers.Count; i++)
+            {
+                Transform root = BuildingCopies.RootOf(Fillers[i]);
+                if (root == null || !root.gameObject.activeSelf)
+                {
+                    continue;
+                }
+                Vector3 at = root.position;
+                for (int k = 0; k < lots.Count; k++)
+                {
+                    if (OnLot(lots[k], at.x, at.z))
+                    {
+                        root.gameObject.SetActive(false);
+                        hidden++;
+                        break;
+                    }
+                }
+            }
+            return hidden;
+        }
+
+        // True for a point on a lot's ground: its width along its street, its depth back from it.
+        private static bool OnLot(BuildingsLot lot, float x, float z)
+        {
+            bool alongX = Mathf.Abs(Mathf.DeltaAngle(lot.Facing, 0f)) < 45f || Mathf.Abs(Mathf.DeltaAngle(lot.Facing, 180f)) < 45f;
+            float halfX = (alongX ? lot.Width : lot.Depth) * 0.5f, halfZ = (alongX ? lot.Depth : lot.Width) * 0.5f;
+            return Mathf.Abs(x - lot.X) <= halfX && Mathf.Abs(z - lot.Z) <= halfZ;
+        }
+
         // The city goes or a new load begins: the fillers are taken away.
         private static void DropFillers()
         {

@@ -137,6 +137,7 @@ namespace RealLifeOverhaul.Construction
             Clock();
             AppSecond();
             SitesSecond();
+            RedevelopSecond();
             ShowSecond();
             DeskSecond();
             TrackSecond();
@@ -168,6 +169,7 @@ namespace RealLifeOverhaul.Construction
             _beforeTests = save.modData.TryGetValue(BuildStore.TestKey, out string before) && !string.IsNullOrEmpty(before) ? before : null;
             _testLots.Clear();
             _testOpening = false;
+            _downLooks.Clear();   // a new load makes every building with its look
             _state = state;
             _save = save;
             _loaded = true;
@@ -251,6 +253,7 @@ namespace RealLifeOverhaul.Construction
             _beforeTests = null;
             _testLots.Clear();
             _testOpening = false;
+            _downLooks.Clear();
             HidePanels();
             DropShowPlace("the save's state is forgotten");
             TrackDown();

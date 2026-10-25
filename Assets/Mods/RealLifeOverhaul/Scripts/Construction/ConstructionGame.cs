@@ -68,7 +68,7 @@ namespace RealLifeOverhaul.Construction
     /// own transaction call, the player's offices of the company's type, warehouses and buildings, the office's staff, a
     /// building type's value multiplier, addresses and doors, the game's destination, and the game's notifications. Nothing here keeps state.
     /// </summary>
-    internal static class ConstructionGame
+    internal static partial class ConstructionGame
     {
         private const string Warehouse = "ba:buildingtype_warehouse";
         private const float SpotLift = 1.5f;   // m over the ground: a spot's marker stands where the map's own double click puts one

@@ -161,7 +161,7 @@ namespace RealLifeOverhaul.Construction
         public bool DeveloperOn(string lot)
         {
             DevFile dev = _state.Development(lot);
-            return dev != null && (dev.Handed || dev.SiteId > 0 || dev.Design == NoDesign || dev.Public);
+            return (dev != null && (dev.Handed || dev.SiteId > 0 || dev.Design == NoDesign || dev.Public)) || _state.CityRedevOn(lot) != null;   // or the city redevelops it
         }
 
         /// <summary>A lot bought outright at its price. Returns a text key.</summary>

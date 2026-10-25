@@ -23,7 +23,7 @@ namespace RealLifeOverhaul
                 return ResolveRoad(dressed, pavement);
             }
             SiteRefusal why = ResolveWall(dressed, pavement, door, site.Kind != SiteKind.Scaffold);
-            return why == SiteRefusal.None && site.Kind == SiteKind.Rebuild ? ResolveWrap(dressed) : why;
+            return why == SiteRefusal.None && (site.Kind == SiteKind.Rebuild || site.Kind == SiteKind.Demolition) ? ResolveWrap(dressed) : why;
         }
 
         // From the pavement towards the nearest lane: the edge of the pedestrians' mesh, the kerb (where the ground drops within

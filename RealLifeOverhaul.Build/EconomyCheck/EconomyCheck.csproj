@@ -584,6 +584,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\ExposureRules.cs" Link="Mod\Construction\ExposureRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\ShowFlatRules.cs" Link="Mod\Construction\ShowFlatRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\RefitRules.cs" Link="Mod\Construction\RefitRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\RedevelopRules.cs" Link="Mod\Construction\RedevelopRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\CommissionRules.cs" Link="Mod\Construction\CommissionRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\FrontDeskRules.cs" Link="Mod\Construction\FrontDeskRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\TrackRules.cs" Link="Mod\Construction\TrackRules.cs" />

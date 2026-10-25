@@ -23,6 +23,7 @@ namespace RealLifeOverhaul.Construction
                 .Owns(Settings.ConstructionId, Settings.ConstructionDevelopersId, Settings.ConstructionLandTaxId, Settings.ConstructionRisksId)
                 .Owns(Settings.ConstructionShowFlatsId, Settings.ConstructionRenovationsId)
                 .Owns(Settings.ConstructionCityId)
+                .Owns(Settings.ConstructionRedevelopId, Settings.ConstructionCityRedevelopId)
                 .Owns(Settings.ConstructionTrackId)
                 .Data(BuildStore.Key, BuildStore.TestKey)
                 .ResetData(() => ConstructionDirector.Instance?.Forget())
@@ -84,6 +85,10 @@ namespace RealLifeOverhaul.Construction
                 .Fact("bld_hire_retention", () => Share((int)CommissionRules.Retention(1000L)))
                 .Fact("bld_hire_penalty", () => Share(BuildCatalogue.HirePenaltyDayPermille))
                 .Fact("bld_hire_penalty_most", () => Share(BuildCatalogue.HirePenaltyMostPermille))
+                .Fact("bld_permit_days_most", () => RedevelopRules.PermitDaysMost.ToString(Inv))
+                .Fact("bld_notice_days", () => RedevelopRules.NoticeDays.ToString(Inv))
+                .Fact("bld_buyout_days", () => RedevelopRules.TenantDays.ToString(Inv))
+                .Fact("bld_site_spaces_most", () => BuildCatalogue.SiteSpacesMost.ToString(Inv))
                 .Check("reallife_bld_test_sites", () => ConstructionDirector.TestSitesNow(), "Construction check (sites of 1, 2 and 3 spaces bought, joined and planned)", RunPlace.Here)
                 .Check("reallife_bld_test_hire_quotes", () => ConstructionDirector.TestHireQuotesNow(), "Construction check (a builder's quotes shown)", RunPlace.Here)
                 .Check("reallife_bld_test_hire", () => ConstructionDirector.TestHireNow(), "Construction check (a client project built by a rival now)", RunPlace.Here)
@@ -101,6 +106,19 @@ namespace RealLifeOverhaul.Construction
                 .Check("reallife_bld_test_refit", () => ConstructionDirector.TestRefitNow(), "Renovation check (renovate the nearest shop of yours now)", RunPlace.Here)
                 .Check("reallife_bld_test_refit_tender", () => ConstructionDirector.TestRefitTenderNow(), "Renovation check (a business's refit tender now)", RunPlace.Here)
                 .Check("reallife_bld_test_show_visit", () => ConstructionDirector.TestShowVisitNow(), "Show flats check (into the show flat now)", RunPlace.Outdoors)
+                .Check("reallife_bld_test_refurnish", () => ConstructionDirector.TestRefurnishNow(),
+                    "Redevelopment check (refurnish your nearest unit with one of the game's designs now)", RunPlace.Here)
+                .Check("reallife_bld_test_city_refurnish", () => ConstructionDirector.TestCityRefurnishNow(),
+                    "Redevelopment check (a business of the city's refitted by a rival and furnished anew now)", RunPlace.Here)
+                .Check("reallife_bld_test_join_split", () => ConstructionDirector.TestJoinSplitNow(),
+                    "Redevelopment check (two sites of yours joined into one and split back now)", RunPlace.Here)
+                .Test("reallife_bld_test_demolish", () => ConstructionDirector.TestDemolitionNow())
+                .Test("reallife_bld_test_cleared_build", () => ConstructionDirector.TestClearedBuildNow())
+                .Test("reallife_bld_test_extend", () => ConstructionDirector.TestExtensionNow())
+                .Test("reallife_bld_test_convert", () => ConstructionDirector.TestConversionNow())
+                .Check("reallife_bld_test_city_choices", () => ConstructionDirector.TestCityChoicesNow(),
+                    "Redevelopment check (the city's developers' choices now, nothing changed)", RunPlace.Here)
+                .Test("reallife_bld_test_city_redevelop", () => ConstructionDirector.TestCityRedevelopNow())
                 .Test("reallife_bld_test_lot", "reallife_bld_test_company", "reallife_bld_test_licence", "reallife_bld_test_plans", "reallife_bld_test_planning",
                     "reallife_bld_test_council", "reallife_bld_test_stage", "reallife_bld_test_inspection", "reallife_bld_test_deliveries", "reallife_bld_test_handover",
                     "reallife_bld_test_opening", "reallife_bld_test_tender", "reallife_bld_test_award", "reallife_bld_test_developers", "reallife_bld_test_poach",
@@ -133,6 +151,10 @@ namespace RealLifeOverhaul.Construction
                 .AddToggle(Settings.ConstructionShowFlatsId, "reallife_bld_show_flats", Settings.ConstructionShowFlats, v => Settings.ConstructionShowFlats = v)
                 .AddToggle(Settings.ConstructionRenovationsId, "reallife_bld_renovations", Settings.ConstructionRenovations, v => Settings.ConstructionRenovations = v)
                 .AddToggle(Settings.ConstructionCityId, "reallife_bld_city_option", Settings.ConstructionCity, v => Settings.ConstructionCity = v)
+                .AddToggle(Settings.ConstructionRedevelopId, "reallife_bld_redevelop_option", Settings.ConstructionRedevelop, v => Settings.ConstructionRedevelop = v)
+                .AddDropdown(Settings.ConstructionCityRedevelopId, "reallife_bld_city_redevelop_option",
+                    new[] { "reallife_bld_city_rate_off", "reallife_bld_city_rate_slow", "reallife_bld_city_rate_usual", "reallife_bld_city_rate_lively" },
+                    Settings.ConstructionCityRedevelop, v => Settings.ConstructionCityRedevelop = v)
                 .AddToggle(Settings.ConstructionTrackId, "reallife_bld_track_option", Settings.ConstructionTrack, v => Settings.ConstructionTrack = v)
                 .AddButton("reallife_bld_test_lot", () => ConstructionDirector.Instance?.TestLot())
                 .AddButton("reallife_bld_test_company", () => ConstructionDirector.Instance?.TestCompany())

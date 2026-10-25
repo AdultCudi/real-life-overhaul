@@ -66,6 +66,7 @@ namespace RealLifeOverhaul
                 SiteBuilders.Started = site => Director?.SiteStarted(Facts(site));
                 SiteBuilders.Design = site => Director != null ? Director.DesignFor(site.Id) : null;
                 SiteBuilders.Tag = site => Director != null ? Director.TagFor(site.Id) : null;
+                SiteBuilders.KeepsLook = site => Director != null && Director.KeepsLook(site.Id);
                 SiteBuilders.Taken = ConstructionDirector.LotBuilt;
                 SiteBuilders.CopyOver = (building, design) => BuildingCopies.PlaceOver(building, design, null, Owner, true);
                 SiteBuilders.CopyOnPlot = (design, middle, yaw, width, depth) => BuildingCopies.PlaceOnPlot(design, null, middle, yaw, width, depth, Owner);
@@ -85,6 +86,15 @@ namespace RealLifeOverhaul
                 ConstructionBridges.Finish = Finish;
                 ConstructionBridges.FinishOver = FinishOver;
                 ConstructionBridges.SpacesOf = SpacesRules.SpacesOf;
+                ConstructionBridges.StandingAt = StandingAt;
+                ConstructionBridges.StandingOn = StandingOn;
+                ConstructionBridges.Demolish = Demolish;
+                ConstructionBridges.Cleared = Cleared;
+                ConstructionBridges.HideLook = HideLook;
+                ConstructionBridges.Extend = Extend;
+                ConstructionBridges.Convert = Convert;
+                ConstructionBridges.StandingAll = StandingAll;
+                ConstructionBridges.Holdings = Holdings;
                 DistrictBuildings.Lessee = RivalLease;   // whatever the options say: every machine leases the same offices
                 ConstructionBridges.RivalOffice = RivalOffice;
                 ConstructionBridges.RivalOfficeGo = RivalOfficeGo;
@@ -192,6 +202,15 @@ namespace RealLifeOverhaul
                 ConstructionBridges.Finish = null;
                 ConstructionBridges.FinishOver = null;
                 ConstructionBridges.SpacesOf = null;
+                ConstructionBridges.StandingAt = null;
+                ConstructionBridges.StandingOn = null;
+                ConstructionBridges.Demolish = null;
+                ConstructionBridges.Cleared = null;
+                ConstructionBridges.HideLook = null;
+                ConstructionBridges.Extend = null;
+                ConstructionBridges.Convert = null;
+                ConstructionBridges.StandingAll = null;
+                ConstructionBridges.Holdings = null;
                 ConstructionBridges.Designs = null;
                 ConstructionBridges.Footprint = null;
                 ConstructionBridges.StartPlot = null;
@@ -362,7 +381,9 @@ namespace RealLifeOverhaul
                         why = "no building at " + street + " " + number;
                         return 0;
                     }
-                    SiteState site = works.StartAt((SiteKind)Mathf.Clamp(kind, 0, (int)SiteKind.Rebuild), place, TimeHelper.CurrentDay, mine, hours);
+                    // A plot is set out on its ground, never at a building; a demolition is the one kind after it asked for at one.
+                    SiteKind asked = kind == (int)SiteKind.Demolition ? SiteKind.Demolition : (SiteKind)Mathf.Clamp(kind, 0, (int)SiteKind.Rebuild);
+                    SiteState site = works.StartAt(asked, place, TimeHelper.CurrentDay, mine, hours);
                     if (site == null)
                     {
                         why = "a site is there already, or the building has no street door";
@@ -539,6 +560,159 @@ namespace RealLifeOverhaul
                     Fault("ConstructionLinks.Finish", e);
                     why = "a fault";
                     return false;
+                }
+            }
+
+            // ------------------------------------------------------------------ redevelopment: the district's buildings
+
+            private static bool StandingAt(string street, int number, out StandingView view)
+            {
+                view = default(StandingView);
+                try
+                {
+                    return DistrictBuildings.StandingAt(street, number, out DistrictBuilding b) && View(b, out view);
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.StandingAt", e);
+                    return false;
+                }
+            }
+
+            private static bool StandingOn(string lot, out StandingView view)
+            {
+                view = default(StandingView);
+                try
+                {
+                    return DistrictBuildings.StandingOn(lot, out DistrictBuilding b) && View(b, out view);
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.StandingOn", e);
+                    return false;
+                }
+            }
+
+            private static bool View(DistrictBuilding b, out StandingView view)
+            {
+                view = new StandingView
+                {
+                    Lot = b.Lot, Street = b.Street, Number = b.Number, Size = b.Size, Version = b.Version, Type = b.Type, Design = b.Design, Storeys = b.Storeys,
+                    SizeSqm = b.SizeSqm, Sqm = b.Sqm, Height = b.Height, Over = b.Over, Finished = b.Finished, Kept = b.Kept
+                };
+                return true;
+            }
+
+            private static string Demolish(string lot)
+            {
+                try
+                {
+                    return DistrictBuildings.Demolish(lot, out string why) ? null : why ?? "refused";
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.Demolish", e);
+                    return "a fault";
+                }
+            }
+
+            private static bool Cleared(string lot)
+            {
+                try
+                {
+                    return DistrictBuildings.Cleared(lot);
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.Cleared", e);
+                    return false;
+                }
+            }
+
+            private static bool HideLook(string lot, bool hide)
+            {
+                try
+                {
+                    return DistrictBuildings.HideLook(lot, hide);
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.HideLook", e);
+                    return false;
+                }
+            }
+
+            private static readonly List<DistrictBuilding> AllStanding = new List<DistrictBuilding>(256);
+
+            private static void StandingAll(List<StandingView> into)
+            {
+                into.Clear();
+                try
+                {
+                    DistrictBuildings.StandingAll(AllStanding);
+                    for (int i = 0; i < AllStanding.Count; i++)
+                    {
+                        if (View(AllStanding[i], out StandingView view))
+                        {
+                            into.Add(view);
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.StandingAll", e);
+                }
+                finally
+                {
+                    AllStanding.Clear();
+                }
+            }
+
+            // The rival tycoons in play, by their holdings' names: each may develop in Uptown as the city's builders do.
+            private static void Holdings(List<string> into)
+            {
+                into.Clear();
+                try
+                {
+                    Rivals.RivalDirector rivals = Rivals.RivalDirector.Instance;
+                    Rivals.RivalFile f = rivals != null && rivals.Running && !rivals.Resting ? rivals.File : null;
+                    for (int i = 0; f != null && i < f.Tycoons.Length; i++)
+                    {
+                        if (f.Tycoons[i] != null && f.Tycoons[i].Active)
+                        {
+                            into.Add(f.Tycoons[i].Def.Holding);
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.Holdings", e);
+                }
+            }
+
+            private static string Extend(string lot, int storeys)
+            {
+                try
+                {
+                    return DistrictBuildings.Extend(lot, storeys, out string why) ? null : why ?? "refused";
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.Extend", e);
+                    return "a fault";
+                }
+            }
+
+            private static string Convert(string lot, string type)
+            {
+                try
+                {
+                    return DistrictBuildings.Convert(lot, type, out string why) ? null : why ?? "refused";
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.Convert", e);
+                    return "a fault";
                 }
             }
 

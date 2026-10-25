@@ -237,6 +237,33 @@ namespace RealLifeOverhaul.Uptown
         }
 
         /// <summary>
+        /// One district building knocked down in play: its record out of the game's lists of buildings (nothing of the game's
+        /// walks it from now on), its carving box off so its ground is walked on again, and every filler standing on its lots'
+        /// ground hidden. Its record stays in the game's lookup by address until the next load. Returns the fillers hidden.
+        /// </summary>
+        public static int Leave(MadeBuilding made, List<BuildingsLot> lots)
+        {
+            Building record = made != null ? made.Building : null;
+            if (record == null)
+            {
+                return 0;
+            }
+            BuildingHelper.allBuildings.Remove(record);
+            if (BuildingHelper.AllNeighbourhoodBuildings.TryGetValue(DistrictValues.Id, out List<Building> district) && district != null)
+            {
+                district.Remove(record);
+            }
+            Entered.Remove(record);
+            if (made.Controller != null && made.Controller.TryGetComponent(out NavMeshObstacle cut))
+            {
+                cut.carving = false;
+                cut.enabled = false;
+                Cuts.Remove(cut);
+            }
+            return HideFillersOn(lots);
+        }
+
+        /// <summary>
         /// Uptown stood down in play: its special places out of the game's lists of them too (the nearest clinic, the
         /// importers and the banks are found there), each with the registration it stood with.
         /// </summary>
@@ -567,6 +594,52 @@ namespace RealLifeOverhaul.Uptown
                 BusinessHelper.SetBuildingForRent(reg, false, false);   // empty: nothing of the market or the rivals to bring up to date
             }
             return null;
+        }
+
+        /// <summary>The player's deed of a district building (the game's real estate at its address), or null.</summary>
+        public static RealEstate Deed(MadeBuilding made)
+        {
+            GameInstance save = SaveGameManager.Current;
+            Address address = made != null && made.Building != null ? made.Building.Address : null;
+            for (int i = 0; address != null && save != null && save.realEstate != null && i < save.realEstate.Count; i++)
+            {
+                if (save.realEstate[i] != null && save.realEstate[i].address == address)
+                {
+                    return save.realEstate[i];
+                }
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// The player's deed of an extended building given its new floor area, as BizMan's purchase writes the building's own
+        /// into it: the owner's rent from the city's tenants and the property tax follow (RealEstate.DailyIncome, TaxesAmount).
+        /// False when the player holds no deed of it.
+        /// </summary>
+        public static bool Resize(MadeBuilding made, int sqm)
+        {
+            RealEstate deed = Deed(made);
+            if (deed == null || sqm <= 0)
+            {
+                return false;
+            }
+            deed.totalSqm = sqm;
+            return true;
+        }
+
+        /// <summary>True when the game's structure of a size and version takes a building type (BuildingVersion.supportedBuildingTypes).</summary>
+        public static bool Takes(string size, int version, string type)
+        {
+            BuildingSizeData data = string.IsNullOrEmpty(size) ? null : BuildingSizeHelper.GetData(size);
+            BuildingVersion[] versions = data != null ? data.buildingVersions : null;
+            for (int i = 0; versions != null && i < versions.Length; i++)
+            {
+                if (versions[i] != null && versions[i].number == version && versions[i].supportedBuildingTypes != null)
+                {
+                    return versions[i].supportedBuildingTypes.Contains(type);
+                }
+            }
+            return false;
         }
 
         private static bool Deeded(GameInstance save, Address address)

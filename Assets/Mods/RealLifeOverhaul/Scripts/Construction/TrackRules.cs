@@ -271,10 +271,10 @@ namespace RealLifeOverhaul.Construction
             return line;
         }
 
-        // A plot or a rebuild of the player's with no contractor yet: a builder of the city's may be hired for it (the director's HireKind).
+        // A plot, a rebuild or an extension of the player's with no contractor yet: a builder of the city's may be hired for it (the director's HireKind).
         private static bool ConstructionHire(ProjectFile p)
         {
-            return (p.Kind == ProjectKind.Plot || p.Kind == ProjectKind.Rebuild) && p.Contractor < 0;
+            return (p.Kind == ProjectKind.Plot || p.Kind == ProjectKind.Rebuild || p.Kind == ProjectKind.Extension) && p.Contractor < 0;
         }
 
         private static void Step(ref TrackLine line, string key, TrackNeed need, int onDay)
@@ -289,7 +289,8 @@ namespace RealLifeOverhaul.Construction
         private static void SiteLine(BuildState s, ProjectFile p, ITrackFacts f, ref TrackLine line)
         {
             line.Percent = Math.Min(100, Math.Max(0, f.Percent(p)));
-            line.Stage = p.Kind == ProjectKind.Refit ? "reallife_bld_stage_refit" : BuildCatalogue.StageKeys[BuildCatalogue.Clamp(p.StageSeen, 0, BuildCatalogue.StageKeys.Length - 1)];
+            line.Stage = p.Kind == ProjectKind.Refit || p.Kind == ProjectKind.Conversion   // a change of use's works are a refit's
+                ? "reallife_bld_stage_refit" : BuildCatalogue.StageKeys[BuildCatalogue.Clamp(p.StageSeen, 0, BuildCatalogue.StageKeys.Length - 1)];
             int booked = Booked(p);
             if (p.Contractor >= 0 && !p.Hired)
             {

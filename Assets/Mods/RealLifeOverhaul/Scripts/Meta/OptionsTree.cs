@@ -393,6 +393,8 @@ namespace RealLifeOverhaul.Meta
                 S("construction").For("construction").Opt("construction", "civic_construction").Opt("construction_developers", "construction")
                     .Opt("construction_land_tax", "construction").Opt("construction_risks", "construction")
                     .Opt("construction_show_flats", "construction").Opt("construction_renovations", "construction").Opt("construction_city", "construction")
+                    .Opt("construction_redevelop", "construction").Opt("construction_city_redevelop", "construction")
+                    .Also("demolish demolition knock down redevelop redevelopment join assemble split extension storeys convert conversion change of use cleared")
                     .Opt("construction_track", "construction")
                     .Also("objectives objective tasks task hud show on map destination where marker")
                     .Also("show flat flats viewing viewings buyer buyers sales agent renovation renovate refit refurbish hoarding")

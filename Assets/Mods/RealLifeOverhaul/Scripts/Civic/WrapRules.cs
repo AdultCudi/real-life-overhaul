@@ -504,6 +504,22 @@ namespace RealLifeOverhaul
             }
         }
 
+        /// <summary>
+        /// What a demolition shows of its wrap in a stage: the hoarding alone, the scaffold going up, the building wrapped to its
+        /// roof for the strip-out, the building coming down behind the wrap, then the wrap gone from the cleared ground.
+        /// </summary>
+        public static void DemolitionStage(int stage, int lifts, out int shown, out bool fabric)
+        {
+            switch (stage)
+            {
+                case 0: shown = 0; fabric = false; break;
+                case 1: shown = Math.Max(1, (lifts + 1) / 2); fabric = false; break;
+                case 2:
+                case 3: shown = lifts; fabric = true; break;
+                default: shown = 0; fabric = false; break;
+            }
+        }
+
         /// <summary>What a new plot shows of its wrap in a stage: only the last, round the finished frame.</summary>
         public static void PlotStage(int stage, int lifts, out int shown, out bool fabric)
         {

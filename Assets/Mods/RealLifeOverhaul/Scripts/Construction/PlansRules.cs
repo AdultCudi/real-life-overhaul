@@ -38,7 +38,7 @@ namespace RealLifeOverhaul.Construction
             int u = BuildCatalogue.Clamp((int)use, 0, (int)BuildUse.Count - 1);
             long tenths = (long)Math.Max(0, area) * BuildCatalogue.HoursPerHundred[u] / 100L;
             long hours = tenths * (1000L + Math.Max(0, storeys - 1) * BuildCatalogue.StoreyHoursPermille) / 10000L;
-            if (kind == ProjectKind.Rebuild)
+            if (Rebuilt(kind))
             {
                 hours = hours * 600L / 1000L;
             }
@@ -48,7 +48,7 @@ namespace RealLifeOverhaul.Construction
         /// <summary>The share of a site's progress, in thousandths, at which each stage ends, by the kind of project.</summary>
         public static int[] Ends(ProjectKind kind)
         {
-            return kind == ProjectKind.Rebuild ? BuildCatalogue.RebuildStageEnds : kind == ProjectKind.Contract ? BuildCatalogue.ContractStageEnds : BuildCatalogue.PlotStageEnds;
+            return Rebuilt(kind) ? BuildCatalogue.RebuildStageEnds : kind == ProjectKind.Contract ? BuildCatalogue.ContractStageEnds : BuildCatalogue.PlotStageEnds;
         }
 
         /// <summary>The stage a site is in at a progress (0 to 1).</summary>
@@ -156,7 +156,7 @@ namespace RealLifeOverhaul.Construction
             long tenths = (long)BuildCatalogue.StageLoads[s][m] * Math.Max(0, area) / 100L;
             tenths = tenths * BuildCatalogue.UseMaterialsPermille[u] / 1000L;
             tenths = tenths * (1000L + Math.Max(0, storeys - BuildCatalogue.TallFrom) * BuildCatalogue.StoreyMaterialsPermille) / 1000L;
-            if (kind == ProjectKind.Rebuild)
+            if (Rebuilt(kind))
             {
                 tenths = tenths * 550L / 1000L;   // the frame stands: the new front, the roof, the floors and services
             }
@@ -312,10 +312,19 @@ namespace RealLifeOverhaul.Construction
             return Math.Max(1, limit * CivicCatalogue.HeightPermille(permits) / 1000);
         }
 
-        /// <summary>True when the plans need an engineer's sign off: a tall frame, or a rebuild's work on a standing one.</summary>
+        /// <summary>True when the plans need an engineer's sign off: a tall frame, or work on a standing one (a rebuild, floors put on top of it).</summary>
         public static bool NeedsEngineer(int storeys, ProjectKind kind)
         {
-            return kind == ProjectKind.Rebuild || (kind == ProjectKind.Plot && storeys >= BuildCatalogue.EngineerFromStoreys);
+            return Rebuilt(kind) || (kind == ProjectKind.Plot && storeys >= BuildCatalogue.EngineerFromStoreys);
+        }
+
+        /// <summary>
+        /// True for work on a frame that stands: a rebuild, or an extension's floors on top of one (worked as a rebuild, with no
+        /// ground to dig or foundations to lay, at a rebuild's hours, stages and loads for the floor area it adds).
+        /// </summary>
+        public static bool Rebuilt(ProjectKind kind)
+        {
+            return kind == ProjectKind.Rebuild || kind == ProjectKind.Extension;
         }
 
         /// <summary>The requirements a set of plans does not meet (0 to 4): exits, parking, the height limit, the engineer.</summary>

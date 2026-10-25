@@ -31,6 +31,25 @@ namespace RealLifeOverhaul.Construction
         public bool Known;      // the site is in the programme
     }
 
+    /// <summary>One of the district's buildings standing at this load, as redevelopment reads it (the new district's own buildings).</summary>
+    public struct StandingView
+    {
+        public string Lot;          // its own lot, its address's
+        public string Street;
+        public int Number;
+        public string Size;         // the game's structure it stands as
+        public int Version;
+        public string Type;
+        public string Design;       // the look it wears
+        public int Storeys;         // storeys of floor area its record has now
+        public int SizeSqm;         // one storey of its size
+        public int Sqm;             // its floor area at this load
+        public int Height;          // m: its look's height
+        public string[] Over;       // the other lots it stands over, or null
+        public bool Finished;       // finished by the construction game
+        public bool Kept;           // one of the district's own places: never redeveloped
+    }
+
     /// <summary>A show flat's design as the construction game reads it (Scripts/Designs, scored by Scripts/Interiors).</summary>
     public struct ShowDesignView
     {
@@ -95,6 +114,37 @@ namespace RealLifeOverhaul.Construction
 
         /// <summary>The spaces of the district's grid a size and version takes, 0 for one off the grid. Default: none known.</summary>
         public static Func<string, int, int> SpacesOf;
+
+        /// <summary>The district's building standing at an address at this load. Default: none, so nothing of the district is redeveloped.</summary>
+        public static StandingRead StandingAt;
+
+        public delegate bool StandingRead(string street, int number, out StandingView building);
+
+        /// <summary>The district's building standing on a lot (its own) at this load. Default: none.</summary>
+        public static LotStandingRead StandingOn;
+
+        public delegate bool LotStandingRead(string lot, out StandingView building);
+
+        /// <summary>A standing building knocked down now, its records let go for good and its lots cleared: null when done, else why not. Default: refused.</summary>
+        public static Func<string, string> Demolish;
+
+        /// <summary>True for a lot whose building was knocked down and on which nothing has been finished since. Default: no.</summary>
+        public static Func<string, bool> Cleared;
+
+        /// <summary>A standing building's look hidden while it comes down behind its wrap, or shown again. Default: nothing.</summary>
+        public static Func<string, bool, bool> HideLook;
+
+        /// <summary>Every one of the district's buildings standing at this load, into the caller's list (cleared). Default: none.</summary>
+        public static Action<List<StandingView>> StandingAll;
+
+        /// <summary>The holdings of the rival tycoons in play, into the caller's list (cleared): the city's other developers. Default: none.</summary>
+        public static Action<List<string>> Holdings;
+
+        /// <summary>A district building on a lot given so many storeys of floor area in all, its look its own: null when done, else why not. Default: none.</summary>
+        public static Func<string, int, string> Extend;
+
+        /// <summary>A district building on a lot made another use, a game building type its structure takes: null when done, else why not. Default: none.</summary>
+        public static Func<string, string, string> Convert;
 
         /// <summary>A rival builder's office (its index among the city's contractors) as the game writes its address, or null when it has none standing at this load. Default: none.</summary>
         public static Func<int, string> RivalOffice;
@@ -368,6 +418,15 @@ namespace RealLifeOverhaul.Construction
             LandPrice = null;
             Finish = null;
             FinishOver = null;
+            StandingAt = null;
+            StandingOn = null;
+            Demolish = null;
+            Cleared = null;
+            HideLook = null;
+            Extend = null;
+            Convert = null;
+            StandingAll = null;
+            Holdings = null;
             SpacesOf = null;
             RivalOffice = null;
             RivalOfficeGo = null;
