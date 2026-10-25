@@ -163,7 +163,7 @@ namespace RealLifeOverhaul.Uptown
         // ---- the band built from the first day, the rest open for the construction game (the owner, 23 Oct 2026: "Mostly built";
         // 25 Oct: "keep 30" of the open lots for the construction game, the rest built)
 
-        public const int OpenLots = 30;                   // lots left open for the construction game and the city's developers over the band, a landmark's blocks apart: one a block, on blocks spread through the band
+        public const int OpenLots = 30;                   // lots open for the construction game and the developers, a landmark's blocks apart: one a block, spread
         public const int LeasedOffices = 8;               // office lots built for the businesses other features lease there: the construction game's eight rival builders
         public const string OfficeType = "ba:buildingtype_office";   // the game's building type a leased office is built with
         public const string EmptyBusinessType = "ba:businesstype_empty";   // the game's business type of a unit with no business in it

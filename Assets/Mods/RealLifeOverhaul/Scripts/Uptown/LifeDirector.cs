@@ -355,7 +355,8 @@ namespace RealLifeOverhaul.Uptown
             {
                 Logger?.Warn("Uptown: its zone on the city map could not be made (" + why + "); the district has no row in the map's filters at this load.");
             }
-            Logger?.Info("Uptown: " + Standing.Count + " of " + Declared.Count + " building(s) standing as the game's own, " + cut + " cut into the walking meshes, " + fillers + " filler(s) standing beside and behind them, in "
+            Logger?.Info("Uptown: " + Standing.Count + " of " + Declared.Count + " building(s) standing as the game's own, " + cut + " cut into the walking meshes, "
+                         + fillers + " filler(s) standing beside and behind them, in "
                          + ((System.Diagnostics.Stopwatch.GetTimestamp() - began) * 1000.0 / System.Diagnostics.Stopwatch.Frequency).ToString("F0", Plain) + " ms.");
         }
 

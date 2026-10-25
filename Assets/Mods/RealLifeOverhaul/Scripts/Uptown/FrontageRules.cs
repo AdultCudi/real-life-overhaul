@@ -217,13 +217,11 @@ namespace RealLifeOverhaul.Uptown
         }
 
         /// <summary>
-        /// The district's streets built up: every strip's runs of lots whose buildings may be placed (a declaration with one
-        /// lot, standing on its front line in the middle: <paramref name="specOf"/> by the lot's id, null for an open lot)
-        /// laid out by <see cref="Arrange"/>. Each declaration is given its design by name (its own when named, else
-        /// <see cref="Choose"/>'s of its size, else of the first of its other structures with one, which it then takes) and its
-        /// lot made the ground of its place in the run; the fillers into <paramref name="fills"/> (cleared), those along the
-        /// street and the second rows behind buildings that leave <see cref="BackLeast"/> or more of their lot. Returns how many
-        /// declarations were placed. Lots in the plan's order; the same on every machine.
+        /// The district's streets built up: every strip's runs of placeable lots (<paramref name="specOf"/> by id, null for an
+        /// open lot) laid out by <see cref="Arrange"/>, each declaration given its design by name (its own, else
+        /// <see cref="Choose"/>'s of its size or of its first other structure with one) and its place in the run as its lot;
+        /// the fillers into <paramref name="fills"/> (cleared): along the street, and second rows behind buildings that leave
+        /// <see cref="BackLeast"/> or more of their lot. Returns how many were placed; the same on every machine.
         /// </summary>
         public static int Plan(IList<BuildingsLot> lots, Func<string, MadeSpec> specOf, IList<DesignEntry> designs, List<FrontFill> fills)
         {
