@@ -271,6 +271,10 @@ namespace RealLifeOverhaul.Meta
                 .Fact("bond_sell_city", () => Guide.Percent(Markets.BondCatalogue.SellSpreadCityBp / 10000f))
                 .Fact("bond_penalty_months", () => Whole(Markets.BondCatalogue.DepositPenaltyMonths))
                 .Fact("bond_short_years", () => Whole((int)Markets.BondCatalogue.ShortYears))
+                .Fact("mkt_holding_own", () => Guide.Percent(Markets.MarketCatalogue.HoldingShareBp / 10000f))
+                .Fact("mkt_holding_float", () => Guide.Percent(Markets.MarketCatalogue.HoldingFloatBp / 10000f))
+                .Fact("mkt_orders_most", () => Whole(Markets.MarketCatalogue.OrdersMost))
+                .Fact("mkt_watch_most", () => Whole(Markets.MarketCatalogue.WatchMost))
                 .Cleanup(() => Markets.MarketDirector.Instance?.StopAll())
                 .ResetData(() => Markets.MarketDirector.Instance?.Forget());   // the director opens a new market from the (now empty) save on its next second
             Markets.ListingGuide.Register();
