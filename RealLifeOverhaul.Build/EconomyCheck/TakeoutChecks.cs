@@ -164,7 +164,7 @@ internal static partial class Program
     private static void TakeoutTextChecks()
     {
         string[] notices = { MealsText.TestArmed, MealsText.TestPass, MealsText.TestFail, MealsText.TestLapsed, MealsText.Packed, MealsText.PackedBurnt, MealsText.CarryFull, MealsText.BurntLost };
-        var heading = new Dictionary<string, string> { { "en", "# Takeout and plates" }, { "pt", "# Comida para viagem e pratos" }, { "zh-cn", "# 外带与餐盘" } };
+        var heading = new Dictionary<string, string> { { "en", "# Takeaway and plates" }, { "pt", "# Comida para viagem e pratos" }, { "zh-cn", "# 外带与餐盘" } };
         foreach (KeyValuePair<string, string> said in heading)
         {
             Dictionary<string, string> words = LoadWords(System.IO.Path.Combine(DesignLocales, said.Key + ".json"));
@@ -182,7 +182,7 @@ internal static partial class Program
             "takeout texts: the Guide says a plate goes in the lap with no table, as it now does");
         var lines = new Dictionary<string, string>
         {
-            { "en", "Takeout and plates: food you carry in a bag" }, { "pt", "Comida para viagem e pratos:" }, { "zh-cn", "外带与餐盘：" },
+            { "en", "Takeaway and plates: food you carry in a bag" }, { "pt", "Comida para viagem e pratos:" }, { "zh-cn", "外带与餐盘：" },
             { "de", "Essen zum Mitnehmen und Teller:" }, { "fr", "Plats à emporter et assiettes :" }, { "es", "Comida para llevar y platos:" },
             { "ru", "Еда с собой и тарелки:" }, { "nl", "Eten om mee te nemen en borden:" }, { "tr", "Paket yemek ve tabaklar:" },
         };

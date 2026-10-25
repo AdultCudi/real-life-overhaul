@@ -240,7 +240,9 @@ namespace RealLifeOverhaul
             _list.Add(SizeRow, JobText.T("reallife_home_cooklist_size", "size", JobText.T(SizeNames[_size])), JobText.T("reallife_home_cooklist_size_detail"), ButtonChange, true);
             if (Settings.MealsTakeout)
             {
-                string carried = HomeState.Takeout > 0 ? " " + JobText.T("reallife_takeout_serve_carried", "count", HomeState.Takeout.ToString(), "most", HomeBalance.TakeoutMost.ToString()) : string.Empty;
+                string carried = HomeState.Takeout > 0
+                    ? " " + JobText.T("reallife_takeout_serve_carried", "count", HomeState.Takeout.ToString(), "most", HomeBalance.TakeoutMost.ToString())
+                    : string.Empty;
                 _list.Add(ServeRow, JobText.T(_pack ? "reallife_takeout_serve_pack" : "reallife_takeout_serve_now"), JobText.T("reallife_takeout_serve_detail") + carried, ButtonChange, true);
             }
 

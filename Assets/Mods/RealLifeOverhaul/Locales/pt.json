@@ -22571,7 +22571,7 @@
   "reallife_changes_054_0_title": "0.54.0",
   "reallife_changes_054_0": "Dê aumento a vários funcionários de uma vez: marque-os no MyEmployees e escolha Dar aumento nas ações dele, por uma parte do salário, um valor por hora ou até o valor de mercado, vendo antes o salário deles antes e depois. Quando você aluga ou compra um armazém, o jogo pergunta se ele vai virar um data center, e Sim abre a montagem dele na aba Infra do app Tech. Sua sede pode encomendar a uma empresa de busca a equipe de um data center: técnicos ou engenheiros de rede, de júnior a staff, quantos faltarem para os racks, pela aba Busca do Open Roles ou pela página do data center. Quem for contratado começa naquele data center.",
   "reallife_meals_takeout": "Comida para viagem e pratos",
-  "reallife_opt_tip_meals_takeout": "A comida que você leva numa sacola, e um prato de casa embalado para levar, é comida quando você se senta: clique numa cadeira ou num banco, descanse e aperte Comer para ter um prato à sua frente. Desligado, você come como antes.",
+  "reallife_opt_tip_meals_takeout": "Comida numa sacola, ou um prato de casa embalado para levar, é comida quando você se senta e descansa numa cadeira ou num banco: aperte Comer para ter um prato. Desligado, como antes.",
   "reallife_meals_button_eat": "Comer {food}",
   "reallife_meals_test_takeout": "Ter um prato de teste num assento",
   "reallife_meals_test_takeout_armed": "Clique numa cadeira ou num banco e aperte Descansar em até dois minutos. Um prato de teste é posto à sua frente quando você se senta. Nada é comido.",
@@ -22585,5 +22585,6 @@
   "reallife_takeout_packed": "{meal}: feito e embalado para levar. Sente-se numa cadeira ou num banco em qualquer lugar, descanse e aperte Comer para comer num prato.",
   "reallife_takeout_packed_burnt": "{meal}: queimou. O que deu para salvar foi embalado para você levar.",
   "reallife_takeout_carry_full": "{meal}: feito, mas você já leva {most} refeições embaladas. Ele foi guardado com as sobras.",
-  "reallife_takeout_burnt_lost": "{meal}: queimou, e você já leva {most} refeições embaladas, então nada pôde ser embalado."
+  "reallife_takeout_burnt_lost": "{meal}: queimou, e você já leva {most} refeições embaladas, então nada pôde ser embalado.",
+  "reallife_contract_part_takeout_plates": "Comer no painel de descanso do jogo num assento"
 }

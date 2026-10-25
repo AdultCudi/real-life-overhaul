@@ -22571,7 +22571,7 @@
   "reallife_changes_054_0_title": "0.54.0",
   "reallife_changes_054_0": "一次为多名员工加薪：在 MyEmployees 中勾选他们，从操作中选择“加薪”，可按工资比例、每小时金额或加到行情价，并先显示他们加薪前后的工资。 租下或买下仓库时，会询问是否把它改建成数据中心，选“是”会打开科技应用 Infra 标签页上的改建页面。 你的总部可以为数据中心的团队委托猎头公司：技术员或网络工程师，从初级到资深员工级，按机架所缺人数招聘，可在 Open Roles 的搜寻标签页或数据中心的页面委托。被雇用的人在那个数据中心上班。",
   "reallife_meals_takeout": "外带与餐盘",
-  "reallife_opt_tip_meals_takeout": "你用袋子带着的食物，以及打包带走的家常菜，会在你坐下时吃：点击椅子或长椅，休息，再按“吃”，面前就会有一个盘子。关闭后，你像以前一样吃。",
+  "reallife_opt_tip_meals_takeout": "袋子里的食物，或打包带走的家常菜，会在你坐到椅子或长椅上休息时吃：按“吃”就有一个盘子。关闭后和以前一样。",
   "reallife_meals_button_eat": "吃{food}",
   "reallife_meals_test_takeout": "在座位上来一个测试餐盘",
   "reallife_meals_test_takeout_armed": "点击椅子或长椅，并在两分钟内按“休息”。你坐下时，面前会放一个测试餐盘。不会吃任何东西。",
@@ -22585,5 +22585,6 @@
   "reallife_takeout_packed": "{meal}：做好并打包带走。在任何地方坐到椅子或长椅上，休息，再按“吃”就能用盘子吃。",
   "reallife_takeout_packed_burnt": "{meal}：烧焦了。能保住的部分已打包让你带走。",
   "reallife_takeout_carry_full": "{meal}：做好了，但你已经带着{most}份打包的饭菜。它被放进了剩菜里。",
-  "reallife_takeout_burnt_lost": "{meal}：烧焦了，而且你已经带着{most}份打包的饭菜，所以无法打包。"
+  "reallife_takeout_burnt_lost": "{meal}：烧焦了，而且你已经带着{most}份打包的饭菜，所以无法打包。",
+  "reallife_contract_part_takeout_plates": "在座位上的游戏休息面板中吃东西"
 }

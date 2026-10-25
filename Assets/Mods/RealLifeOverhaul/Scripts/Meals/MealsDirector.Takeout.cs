@@ -219,7 +219,8 @@ namespace RealLifeOverhaul.Meals
             }
             _testArmed = true;
             _testUntil = Time.unscaledTime + TestWaitSeconds;
-            Logger?.Info("Meals check (takeout test): armed; it begins when the player sits down on a chair or a bench through the game's own Rest within " + TestWaitSeconds.ToString("0", Inv) + " s.");
+            Logger?.Info("Meals check (takeout test): armed; it begins when the player sits down on a chair or a bench through the game's own Rest within "
+                         + TestWaitSeconds.ToString("0", Inv) + " s.");
             MealsGame.Notice(NotificationType.Info, MealsText.TestArmed);
         }
 
