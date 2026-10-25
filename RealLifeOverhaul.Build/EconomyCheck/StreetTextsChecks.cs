@@ -95,7 +95,7 @@ internal static partial class Program
                 }
             }
         }
-        Check(missing.Count == 0 && v4 == (int)StreetLine.Count - written && written == 13, "street talk, RLO Texts: every line the game decides has its registered data v4 card (" + v4
+        Check(missing.Count == 0 && v4 == (int)StreetLine.Count - written && written == 17, "street talk, RLO Texts: every line the game decides has its registered data v4 card (" + v4
                                                                     + "), but for the " + written + " always written, and v3's where one fits (" + v3 + "; " + string.Join("; ", missing) + ")");
         int street = 0;
         foreach (TextIntent t in TextIntents.All)

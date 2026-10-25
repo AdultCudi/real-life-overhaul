@@ -99,6 +99,10 @@ namespace RealLifeOverhaul.Street
             new[] { "reallife_street_welcome_1", "reallife_street_welcome_2", "reallife_street_welcome_3", "reallife_street_welcome_4", "reallife_street_welcome_5" },   // Welcome
             new[] { "reallife_street_greet_back_1", "reallife_street_greet_back_2", "reallife_street_greet_back_3", "reallife_street_greet_back_4" },   // GreetBack
             new[] { "reallife_street_number_full_1", "reallife_street_number_full_2", "reallife_street_number_full_3" },   // NumberFull
+            new[] { "reallife_street_age_give_1", "reallife_street_age_give_2", "reallife_street_age_give_3", "reallife_street_age_give_4", "reallife_street_age_give_5" },   // AgeGive
+            new[] { "reallife_street_age_playful_1", "reallife_street_age_playful_2", "reallife_street_age_playful_3", "reallife_street_age_playful_4" },   // AgePlayful
+            new[] { "reallife_street_age_cool_1", "reallife_street_age_cool_2", "reallife_street_age_cool_3", "reallife_street_age_cool_4" },   // AgeCool
+            new[] { "reallife_street_age_again_1", "reallife_street_age_again_2", "reallife_street_age_again_3" },   // AgeAgain
         };
 
         /// <summary>What the player says for each choice, by StreetAsk: the button's words and the player's line on the card.</summary>
@@ -107,7 +111,8 @@ namespace RealLifeOverhaul.Street
             "reallife_street_ask_smalltalk", "reallife_street_ask_about", "reallife_street_ask_name", "reallife_street_ask_area", "reallife_street_ask_directions",
             "reallife_street_ask_compliment", "reallife_street_ask_joke", "reallife_street_ask_flirt", "reallife_street_ask_number", "reallife_street_ask_invite",
             "reallife_street_ask_election", "reallife_street_ask_economy", "reallife_street_ask_business", "reallife_street_ask_say", "reallife_street_ask_rude",
-            "reallife_street_ask_day", "reallife_street_ask_event", "reallife_street_ask_work", "reallife_street_ask_thanks", "reallife_street_btn_goodbye"
+            "reallife_street_ask_day", "reallife_street_ask_event", "reallife_street_ask_work", "reallife_street_ask_thanks", "reallife_street_btn_goodbye",
+            "reallife_street_ask_age"
         };
 
         /// <summary>The remarks of small talk, by StreetRules.SmallTopic.</summary>
@@ -120,6 +125,7 @@ namespace RealLifeOverhaul.Street
         // Other wordings of a choice, picked by the person's seed, and those of the moment.
         public static readonly string[] DayAsks = { "reallife_street_ask_day", "reallife_street_ask_day_2" };
         public static readonly string[] WorkAsks = { "reallife_street_ask_work", "reallife_street_ask_work_2" };
+        public static readonly string[] AgeAsks = { "reallife_street_ask_age", "reallife_street_ask_age_2" };
         public const string AskWorkRetired = "reallife_street_ask_work_retired";
         public const string AskThanksAnyway = "reallife_street_ask_thanks_anyway";
         public const string AskRain = "reallife_street_ask_smalltalk_rain";

@@ -37,6 +37,7 @@ namespace RealLifeOverhaul.Street
         private StreetAsk _aheadAsk = StreetAsk.Count;   // the blue button whose answer was asked ahead, and its line
         private StreetLine _aheadLine;
         private bool _aheadNow;                // the click is the blue button asked ahead (its words may be ready)
+        private bool _testAge;                 // the age test's talk: the age question is the first blue button until asked, and its checks are written
 
         private void TalkPressed()
         {
@@ -66,8 +67,11 @@ namespace RealLifeOverhaul.Street
             }
         }
 
-        /// <summary>Stops somebody for the player and asks for their first line; false if they cannot be stopped.</summary>
-        internal bool Begin(BaseHuman p, Pedestrian walker, StreetFigure kind, float now)
+        /// <summary>
+        /// Stops somebody for the player and asks for their first line; false if they cannot be stopped. For the age test
+        /// (<paramref name="testAge"/>) they have time, and today's answer is forgotten, so the question is there to ask.
+        /// </summary>
+        internal bool Begin(BaseHuman p, Pedestrian walker, StreetFigure kind, float now, bool testAge = false)
         {
             int day = TimeHelper.CurrentDay;
             StreetStranger who = Who(p, day);
@@ -80,6 +84,11 @@ namespace RealLifeOverhaul.Street
             StreetMemo memo = _memory.Get(who.Key, day);
             var chat = new StreetChat { Who = who, Memo = memo, Approach = StreetRules.Approach(who, memo, _facts, Settings.StreetBrush, StreetGame.Phone(p)) };
             chat.Speaking = _onSpeaking ?? (_onSpeaking = AboutToSpeak);
+            if (testAge)
+            {
+                chat.Approach.Brush = StreetBrush.None;
+                memo.AgeTold = false;
+            }
             if (!_hold.Take(p, walker, kind, player.transform.position, this))
             {
                 return false;
@@ -91,6 +100,7 @@ namespace RealLifeOverhaul.Street
             _chat = chat;
             _phase = 1;
             _pending = _typing = _flirted = _aheadNow = false;
+            _testAge = testAge;
             _aheadAsk = StreetAsk.Count;
             _lastKey = null;
             _turnSaid = "stopped them (\"" + StreetText.T(StreetLines.Opener) + "\")";
@@ -196,6 +206,7 @@ namespace RealLifeOverhaul.Street
                 return;
             }
             _chat = null;
+            _testAge = false;
             bool open = _phase == 2 && Ours();
             _phase = 0;
             _pending = _typing = false;
@@ -277,6 +288,10 @@ namespace RealLifeOverhaul.Street
                 return Closing(entry);
             }
             StreetAsk ask = _choices[_chat.Menu % _choices.Count];
+            if (_testAge && _chat.Menu == 0 && _choices.IndexOf(StreetAsk.Age) >= 0)
+            {
+                ask = StreetAsk.Age;
+            }
             Dictionary<string, string> data = Data(_chat);
             entry.ConfirmTextOverride = Label(ask).Localize(data);
             entry.OnConfirm = () => Choose(ask);
@@ -394,6 +409,7 @@ namespace RealLifeOverhaul.Street
                 case StreetAsk.Day: return StreetLines.DayAsks[StreetRules.Roll(seed, 42, StreetLines.DayAsks.Length)];
                 case StreetAsk.Work:
                     return _chat.Who.Job == SocialCatalogue.Jobs.Length - 1 ? StreetLines.AskWorkRetired : StreetLines.WorkAsks[StreetRules.Roll(seed, 43, StreetLines.WorkAsks.Length)];
+                case StreetAsk.Age: return StreetLines.AgeAsks[StreetRules.Roll(seed, 44, StreetLines.AgeAsks.Length)];
                 case StreetAsk.Thanks: return _chat.Last == StreetLine.DirNone || _chat.Last == StreetLine.AreaNothing ? StreetLines.AskThanksAnyway : StreetLines.Asks[(int)ask];
                 default: return StreetLines.Asks[(int)ask];
             }
@@ -403,8 +419,9 @@ namespace RealLifeOverhaul.Street
         private Dictionary<string, string> Data(StreetChat c)
         {
             StreetStranger s = c.Who;
-            return new Dictionary<string, string>(11)
+            return new Dictionary<string, string>(12)
             {
+                { "age", AgeShown(c).ToString(System.Globalization.CultureInfo.InvariantCulture) },
                 { "t_thanks", StreetRules.WarmThanks(c) ? "warm" : "cool" },
                 { "t_weather", _facts.Raining ? "raining" : string.Empty },
                 { "first", s.First },
@@ -415,6 +432,15 @@ namespace RealLifeOverhaul.Street
                 { "event", _facts.EventToday ?? string.Empty },
                 { "t_event", _facts.EventWords ?? string.Empty }
             };
+        }
+
+        // Their age: as the People page shows it once they are somebody the player knows, else the figure's own (the same
+        // number: met in the street, their age there is the one kept, true from that day).
+        private static int AgeShown(StreetChat c)
+        {
+            int cast = c.Memo != null ? c.Memo.Cast : -1;
+            int known = cast >= 0 && StreetBridges.AgeOf != null ? StreetBridges.AgeOf(cast) : -1;
+            return known >= 0 ? known : c.Who.Age;
         }
 
         private DialogEntry Choose(StreetAsk ask)
@@ -515,6 +541,10 @@ namespace RealLifeOverhaul.Street
                             m.Told = true;   // the player gave their name, whatever came back
                             break;
                         case StreetAsk.AboutThem: c.Shared = line == StreetLine.AboutJob || line == StreetLine.AboutRetired; break;
+                        case StreetAsk.Age:
+                            m.AgeTold = true;
+                            AgeCheck(line, data);
+                            break;
                         case StreetAsk.Compliment: m.Complimented = true; break;
                         case StreetAsk.Joke: m.Joked = true; break;
                         case StreetAsk.Flirt:

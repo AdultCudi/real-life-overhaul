@@ -9,7 +9,7 @@ namespace RealLifeOverhaul.Street
     public enum StreetSayKind
     {
         Other, Nonsense, Greeting, Goodbye, Thanks, SmallTalk, AboutThem, Name, Area, Directions, Compliment, Joke, Flirt, Number, Invite,
-        Election, Economy, Business, Rude, Threat, Day
+        Election, Economy, Business, Rude, Threat, Day, Age
     }
 
     /// <summary>The reading of what the player typed.</summary>
@@ -60,6 +60,7 @@ namespace RealLifeOverhaul.Street
         };
         private static readonly string[] ComplimentWords = { "nice", "love your", "like your", "great", "cool", "you look", "lovely", "smart", "good taste", "well dressed", "style" };
         private static readonly string[] JokeWords = { "joke", "knock knock", "why did", "haha", "lol", "funny" };
+        private static readonly string[] AgeWords = { "how old", "your age", "what age", "age are you", "when were you born", "year were you born" };
         private static readonly string[] AboutWords = { "what do you do", "your job", "do you work", "work as", "where do you live", "you from", "about you" };
         private static readonly string[] DayWords = { "how are you", "how's it going", "hows it going", "how are things", "your day", "how's life", "hows life", "how have you been" };
         private static readonly string[] ByeWords = { "bye", "see you", "see ya", "take care", "later", "have a good", "gotta go", "got to go", "i'm off", "im off", "farewell" };
@@ -152,6 +153,7 @@ namespace RealLifeOverhaul.Street
             said.Kind = Any(t, NameWords) ? StreetSayKind.Name
                 : Any(t, FlirtWords) ? StreetSayKind.Flirt
                 : Any(t, JokeWords) ? StreetSayKind.Joke
+                : Any(t, AgeWords) ? StreetSayKind.Age
                 : Any(t, AboutWords) ? StreetSayKind.AboutThem
                 : Any(t, DayWords) ? StreetSayKind.Day
                 : Any(t, SmallWords) ? StreetSayKind.SmallTalk
@@ -184,6 +186,7 @@ namespace RealLifeOverhaul.Street
                 case StreetSayKind.Rude: return StreetAsk.Rude;
                 case StreetSayKind.Day: return StreetAsk.Day;
                 case StreetSayKind.Thanks: return StreetAsk.Thanks;
+                case StreetSayKind.Age: return StreetAsk.Age;
                 default: return StreetAsk.Count;
             }
         }

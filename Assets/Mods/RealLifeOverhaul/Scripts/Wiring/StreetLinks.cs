@@ -27,6 +27,7 @@ namespace RealLifeOverhaul
                 StreetBridges.Noticed = Reputation.Noticed;
                 StreetBridges.CanMeet = () => Stranger(-1) != null;
                 StreetBridges.Meet = Meet;
+                StreetBridges.AgeOf = AgeOf;
                 StreetBridges.InviteLook = a => FlareBridges.InviteLook?.Invoke(a);
                 StreetBridges.InviteBook = Book;
                 StreetBridges.MouthChanged = MouthChanged;
@@ -144,6 +145,7 @@ namespace RealLifeOverhaul
                 }
                 p.Female = m.Female;
                 p.Age = Mathf.Clamp(m.Age, 18, 85);
+                p.AgeDay = Mathf.Max(1, SocialLife.Day);   // the age they had in the street is true today: a seat rolled long ago adds no birthdays it never had
                 p.Job = m.Job;
                 p.District = m.District;
                 p.Traits = m.Traits;
@@ -158,6 +160,21 @@ namespace RealLifeOverhaul
                 SocialLife.Meet(p, m.Warm);
                 SocialDirector.Logger?.Info("Social: " + p.Name + " swapped numbers with the player in the street: met in the street"
                                             + (seed != 0 ? ", with the look they had there." : " (their look could not be read: the seat's own)."));
+            }
+
+            // The age People shows for somebody the player knows (SocialTalk.AgeOf), so street talk says the same number.
+            private static int AgeOf(int cast)
+            {
+                try
+                {
+                    SocialPerson p = SocialState.Loaded ? SocialState.Get(cast) : null;
+                    return p != null && p.Met ? SocialTalk.AgeOf(p) : -1;
+                }
+                catch (Exception e)
+                {
+                    Fault("StreetLinks.AgeOf", e);
+                    return -1;
+                }
             }
 
             // A yes booked as a call books a plan; -1 if it cannot be now (a plan on already, the place gone, nobody left).
