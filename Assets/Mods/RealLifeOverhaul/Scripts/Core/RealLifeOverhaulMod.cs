@@ -1038,6 +1038,8 @@ namespace RealLifeOverhaul
                     v => Settings.TechSector = v)
                 .AddToggle(Settings.TechOfferNotesId, "reallife_tech_opt_offer_notes", Settings.TechOfferNotes,
                     v => Settings.TechOfferNotes = v)
+                .AddToggle(Settings.TechInfraOfferId, "reallife_infra_opt_offer", Settings.TechInfraOffer,
+                    v => Settings.TechInfraOffer = v)
                 .AddButton("reallife_tech_test_offer", () => Tech.TechDirector.Instance?.TestContractOffer())
                 .AddButton("reallife_tech_test_tender", () => Tech.TechDirector.Instance?.TestTender())
                 .AddButton("reallife_tech_test_move", () => Tech.TechDirector.Instance?.TestMove())
@@ -1045,6 +1047,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_tech_test_breach", () => Tech.TechDirector.Instance?.TestBreach())
                 .AddButton("reallife_infra_test_down", () => Tech.TechDirector.Instance?.TestCentreDown())
                 .AddButton("reallife_infra_test_price_war", () => Tech.TechDirector.Instance?.TestPriceWar())
+                .AddButton("reallife_infra_test_offer", () => Tech.TechDirector.Instance?.TestCentreOffer())
                 .AddToggle(Settings.TechStartupsId, "reallife_vc_enabled", Settings.TechStartups,
                     v => Settings.TechStartups = v)
                 .AddButton("reallife_vc_test_pitch", () => Tech.TechDirector.Instance?.TestPitch())
