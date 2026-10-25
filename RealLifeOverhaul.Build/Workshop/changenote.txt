@@ -1,4 +1,7 @@
-0.52.1
+0.53.0
+
+New
+- A management ladder at the city's companies: work on the floor of a store of a chain and rise to shift supervisor, store manager, regional manager and executive, each rank with its own tools on the Career app's new Management tab. A company policy over your managers: one set of rules for the company, a region or a store, escalations that bring you only real problems, a dashboard for each place, regional managers over regions you draw, three executives from your professionals, and an owner overview with Deep Mode. Street talk: you can ask people in the street how old they are, as you ask what they do. They answer in their own way, a few find it a little forward, and the age they give is the one their People page shows once you know them.
 
 Fixed
-- Snow is easy to see now. The flakes are soft round dots sized and spaced for how far off the camera is, on foot, in a car or with the mod's camera, and there are more of them on heavy days. Switching the snow's look on now whitens the ground at once, without going through a door. Snow takes the place of rain: while it snows the game's rain is not seen or heard and the streets do not look wet. The seasons no longer make the game's memory grow every second.
+- Fewer stutters and less memory churn. Flare's faces are drawn only while the screen is fully black, winter coats and the street people's new looks are put on behind the black screen at a door, a boss keeps their look between visits, and the first moments after a load are spread over more frames.
