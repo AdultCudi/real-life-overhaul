@@ -8,8 +8,8 @@ namespace RealLifeOverhaul.Seasons
     /// summer storm's lightning, the sky's overcast on snow and summer's warmth, autumn's falling leaves, people dressed
     /// for the cold (off by default) and the season under the top bar's date; and standing down for Alcware - Seasons.
     /// Everything is the day, the hour and the save's number through SeasonLookRules, so every machine sees the same; each
-    /// part is written only when what it shows changes. Cost: a few comparisons a second, a tree walk spread over the
-    /// first half minute of a city, and a flash's few frames in a storm.
+    /// part is written only when what it shows changes. Looked at every few seconds, not every frame. Cost: a few
+    /// comparisons each look, a tree walk spread over the first minute of a city, and a flash's few frames in a storm.
     /// </summary>
     public sealed partial class SeasonDirector
     {
@@ -77,8 +77,9 @@ namespace RealLifeOverhaul.Seasons
             }
 
             Rain = salt != 0 ? SeasonLookRules.RainOn(day, year, salt) : default(RainDay);
-            bool storm = showing ? _showSeason == CalendarRules.Summer : Rain.Storm && Rain.At(hour);
-            if (!Settings.SeasonRain)
+            bool snowDay = Snowing || (!showing && Today.Falls);   // snow takes the place of rain: the seasons start no shower or storm on a snow day
+            bool storm = !snowDay && (showing ? _showSeason == CalendarRules.Summer : Rain.Storm && Rain.At(hour));
+            if (!Settings.SeasonRain || snowDay)
             {
                 SeasonGame.EndRain();
             }

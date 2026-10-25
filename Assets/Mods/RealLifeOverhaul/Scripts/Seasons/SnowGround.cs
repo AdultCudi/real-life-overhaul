@@ -8,8 +8,9 @@ namespace RealLifeOverhaul.Seasons
     /// Where lying snow may be drawn: the city's ground, roads, pavements and roofs, on the game's own physics layers for
     /// them, are given one decal layer of their own, and the snow's decal is drawn on that layer alone. Cars and people
     /// are never given it, so the snow cannot reach them whatever stands in its box, and the game's own decals are drawn
-    /// as before (it keeps its default layer). Marked once a city behind the loading screen (one search of the scene's
-    /// renderers) and put back exactly; nothing runs a frame.
+    /// as before (it keeps its default layer). Marked behind every loading screen while the seasons are on, whatever the
+    /// snow's look option says (one search of the scene's renderers; the bit is harmless while no snow lies), and put back
+    /// exactly; nothing runs a frame.
     /// </summary>
     internal sealed class SnowGround
     {
@@ -46,6 +47,10 @@ namespace RealLifeOverhaul.Seasons
 
         public int Roofed { get; private set; }
         public int Cleared { get; private set; }
+
+        /// <summary>When the ground was last marked (real seconds since the game started), and behind which screen; for the test.</summary>
+        public float MarkedAt { get; private set; } = -1f;
+        public bool MarkedAtLoad { get; private set; }
 
         /// <summary>Why nothing could be marked, for the log and the test; null when the ground is marked.</summary>
         public string Missing { get; private set; } = "the ground is marked behind the next loading screen";
@@ -109,6 +114,8 @@ namespace RealLifeOverhaul.Seasons
                 _marked.Add(renderer);
             }
             Roofed = roofed;
+            MarkedAt = Time.realtimeSinceStartup;
+            MarkedAtLoad = SeasonGame.LoadingScreen;
             Missing = Marked > 0 ? null : "the city has no renderer on its ground layers";
             Cleared = _cleared.Count;
             SeasonDirector.Logger?.Info("Seasons: " + Marked + " piece(s) of ground, road, pavement and roof (" + roofed + " roof) given the snow's own decal layer (rendering layer bit "
@@ -137,6 +144,7 @@ namespace RealLifeOverhaul.Seasons
             _marked.Clear();
             _cleared.Clear();
             Roofed = Cleared = _already = 0;
+            MarkedAt = -1f;
             Missing = "the ground is marked behind the next loading screen";
         }
 
