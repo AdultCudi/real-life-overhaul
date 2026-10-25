@@ -596,6 +596,52 @@ namespace RealLifeOverhaul.Uptown
             return null;
         }
 
+        /// <summary>The player's deed of a district building (the game's real estate at its address), or null.</summary>
+        public static RealEstate Deed(MadeBuilding made)
+        {
+            GameInstance save = SaveGameManager.Current;
+            Address address = made != null && made.Building != null ? made.Building.Address : null;
+            for (int i = 0; address != null && save != null && save.realEstate != null && i < save.realEstate.Count; i++)
+            {
+                if (save.realEstate[i] != null && save.realEstate[i].address == address)
+                {
+                    return save.realEstate[i];
+                }
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// The player's deed of an extended building given its new floor area, as BizMan's purchase writes the building's own
+        /// into it: the owner's rent from the city's tenants and the property tax follow (RealEstate.DailyIncome, TaxesAmount).
+        /// False when the player holds no deed of it.
+        /// </summary>
+        public static bool Resize(MadeBuilding made, int sqm)
+        {
+            RealEstate deed = Deed(made);
+            if (deed == null || sqm <= 0)
+            {
+                return false;
+            }
+            deed.totalSqm = sqm;
+            return true;
+        }
+
+        /// <summary>True when the game's structure of a size and version takes a building type (BuildingVersion.supportedBuildingTypes).</summary>
+        public static bool Takes(string size, int version, string type)
+        {
+            BuildingSizeData data = string.IsNullOrEmpty(size) ? null : BuildingSizeHelper.GetData(size);
+            BuildingVersion[] versions = data != null ? data.buildingVersions : null;
+            for (int i = 0; versions != null && i < versions.Length; i++)
+            {
+                if (versions[i] != null && versions[i].number == version && versions[i].supportedBuildingTypes != null)
+                {
+                    return versions[i].supportedBuildingTypes.Contains(type);
+                }
+            }
+            return false;
+        }
+
         private static bool Deeded(GameInstance save, Address address)
         {
             for (int i = 0; save.realEstate != null && i < save.realEstate.Count; i++)

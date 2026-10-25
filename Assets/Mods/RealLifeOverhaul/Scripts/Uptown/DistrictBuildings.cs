@@ -217,6 +217,24 @@ namespace RealLifeOverhaul.Uptown
         }
 
         /// <summary>
+        /// A standing building given so many storeys of floor area in all, its look its own: its record and the player's deed now,
+        /// the district's line from every load. False, with why, when refused. The caller asks it only outside a Going Public session.
+        /// </summary>
+        public static bool Extend(string lotId, int storeys, out string why)
+        {
+            return LifeDirector.Extend(lotId, storeys, out why);
+        }
+
+        /// <summary>
+        /// A standing building made another use its structure takes (a game building type), now and from every load. False, with
+        /// why, when refused. The caller asks it only outside a Going Public session, with the unit emptied.
+        /// </summary>
+        public static bool Convert(string lotId, string type, out string why)
+        {
+            return LifeDirector.Convert(lotId, type, out why);
+        }
+
+        /// <summary>
         /// The traffic index a building on the lot gets (Building.trafficIndex, 10 to 60, lifted by <see cref="TrafficLift"/>
         /// to 80 at most), as the rules give it; -1 for a lot not in the plan.
         /// </summary>

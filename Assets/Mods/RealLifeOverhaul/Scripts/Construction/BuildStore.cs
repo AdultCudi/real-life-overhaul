@@ -161,10 +161,14 @@ namespace RealLifeOverhaul.Construction
             t.Append('|');
             Join(t, p.HireDays, p.HirePace, p.HireStages, p.HireFree ? 1 : 0);   // a hired builder's contract, after every field an older reader knows
             t.Append('|').Append(p.HirePaid.ToString(Inv)).Append('|').Append(p.HirePenalty.ToString(Inv));
-            if (p.FitDesign.Length > 0 || p.NoticeUntil > 0 || p.BuyOut != 0L)
+            if (p.FitDesign.Length > 0 || p.NoticeUntil > 0 || p.BuyOut != 0L || p.Added > 0)
             {
                 // Redevelopment's fields, after every field an older reader knows, and only when one is set: a record without them is as before.
                 t.Append('|').Append(Esc(p.FitDesign)).Append('|').Append(Esc(p.FitType)).Append('|').Append(p.NoticeUntil.ToString(Inv)).Append('|').Append(p.BuyOut.ToString(Inv));
+                if (p.Added > 0)
+                {
+                    t.Append('|').Append(p.Added.ToString(Inv));
+                }
             }
         }
 
@@ -434,7 +438,7 @@ namespace RealLifeOverhaul.Construction
         {
             var p = new ProjectFile
             {
-                Id = r.I(0), Kind = (ProjectKind)BuildCatalogue.Clamp(r.I(0), 0, (int)ProjectKind.Demolition), Stage = (ProjectStage)BuildCatalogue.Clamp(r.I(0), 0, 5),
+                Id = r.I(0), Kind = (ProjectKind)BuildCatalogue.Clamp(r.I(0), 0, (int)ProjectKind.Conversion), Stage = (ProjectStage)BuildCatalogue.Clamp(r.I(0), 0, 5),
                 Created = r.I(0), Number = r.I(0),
                 Use = (BuildUse)BuildCatalogue.Clamp(r.I(0), 0, (int)BuildUse.Count - 1), Version = r.I(1), Area = Math.Max(0, r.I(0)), Storeys = BuildCatalogue.Clamp(r.I(1), 1, 60),
                 Width = Math.Max(0, r.I(0)), Depth = Math.Max(0, r.I(0)), Height = Math.Max(0, r.I(0)), Architect = (ArchitectKind)BuildCatalogue.Clamp(r.I(0), 0, 2),
@@ -533,6 +537,7 @@ namespace RealLifeOverhaul.Construction
             p.FitType = r.S();
             p.NoticeUntil = Math.Max(0, r.I(0));
             p.BuyOut = Math.Max(-1L, r.L(0L));
+            p.Added = p.Kind == ProjectKind.Extension ? BuildCatalogue.Clamp(r.I(0), 0, RedevelopRules.StoreysMost) : 0;
             if (p.FitDesign.Length == 0)
             {
                 p.FitType = string.Empty;   // no design, nothing to install

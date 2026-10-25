@@ -122,9 +122,9 @@ namespace RealLifeOverhaul
         private void HandOver(SiteState site, int day)
         {
             State.Completed++;
-            if (site.Kind == SiteKind.Rebuild || site.Kind == SiteKind.Plot)
+            if ((site.Kind == SiteKind.Rebuild && !SiteBuilders.Keeps(site)) || site.Kind == SiteKind.Plot)
             {
-                AddLook(site, day);
+                AddLook(site, day);   // an extension's building keeps its own front: no copy over it
             }
             SiteBuilders.HandedOver(site);
             if (SiteBuilders.IsOwned(site))

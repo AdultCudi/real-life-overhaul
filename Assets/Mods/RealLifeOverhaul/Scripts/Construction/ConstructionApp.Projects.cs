@@ -55,7 +55,7 @@ namespace RealLifeOverhaul.Construction
         {
             switch (p.Stage)
             {
-                case ProjectStage.Design when p.Kind == ProjectKind.Demolition:
+                case ProjectStage.Design when ConstructionDirector.NeedsNotice(p):
                     return ConstructionText.T("reallife_bld_next_permit");
                 case ProjectStage.Design:
                     return ConstructionText.T(!p.PlansDone ? p.PlansDay > 0 ? "reallife_bld_next_wait_plans" : "reallife_bld_next_plans"
@@ -100,9 +100,9 @@ namespace RealLifeOverhaul.Construction
                 WriteContracted(box, p);
                 return;
             }
-            if (p.Kind == ProjectKind.Demolition && (p.Stage == ProjectStage.Design || p.Stage == ProjectStage.Ready))
+            if (ConstructionDirector.NeedsNotice(p) && (p.Stage == ProjectStage.Design || p.Stage == ProjectStage.Ready))
             {
-                WriteDemolition(box, state, p);   // ConstructionApp.Redevelop.cs: the notice, the permit, who knocks it down
+                WriteVacant(box, state, p);   // ConstructionApp.Redevelop.cs: the notice, the permission, who does the works
                 return;
             }
             if (_page == 3 && p.Stage == ProjectStage.Ready && ConstructionDirector.HireKind(p))
@@ -180,8 +180,12 @@ namespace RealLifeOverhaul.Construction
             {
                 box.Row("reallife_bld_row_use", ConstructionText.T(BuildCatalogue.UseKeys[(int)p.Use]));
             }
-            bool ready = _director.DesignChoices(p, _designs);
-            if (!ready)
+            bool ready = p.Kind == ProjectKind.Extension || _director.DesignChoices(p, _designs);
+            if (p.Kind == ProjectKind.Extension)
+            {
+                StoreysSelector(box, p, asked);   // ConstructionApp.Redevelop.cs: floors on top, the front its own
+            }
+            else if (!ready)
             {
                 box.Note(ConstructionText.T("reallife_bld_designs_wait"));
             }
@@ -295,7 +299,7 @@ namespace RealLifeOverhaul.Construction
                     ids.Add(_staff[i].Id);
                 }
             }
-            if (ConstructionDirector.Qualified("architect"))
+            if (ConstructionDirector.Qualified("architect") && p.Kind != ProjectKind.Extension)   // the player designs whole buildings, not floors on one
             {
                 labels.Add(ConstructionText.T("reallife_bld_sel_player_architect"));
                 kinds.Add(ArchitectKind.Player);
@@ -664,6 +668,12 @@ namespace RealLifeOverhaul.Construction
             else if (p.Kind == ProjectKind.Rebuild)
             {
                 box.Note(ConstructionText.T("reallife_bld_rebuilt_note"));
+            }
+            else if (p.Kind == ProjectKind.Extension || p.Kind == ProjectKind.Conversion)
+            {
+                box.Note(!p.InDistrict ? ConstructionText.T("reallife_bld_redeveloped_waits") : p.Kind == ProjectKind.Extension
+                    ? ConstructionText.T("reallife_bld_extended_note", "storeys", p.Storeys.ToString())
+                    : ConstructionText.T("reallife_bld_converted_note", "use", ConstructionText.T(BuildCatalogue.UseKeys[(int)p.Use])));
             }
             else if (p.Kind == ProjectKind.Refit)
             {

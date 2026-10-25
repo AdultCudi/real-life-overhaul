@@ -102,6 +102,10 @@ namespace RealLifeOverhaul.Construction
                     return ConstructionText.T("reallife_bld_name_refit", "address", where);
                 case ProjectKind.Demolition:
                     return ConstructionText.T("reallife_bld_name_demolition", "address", where);
+                case ProjectKind.Extension:
+                    return ConstructionText.T("reallife_bld_name_extension", "address", where);
+                case ProjectKind.Conversion:
+                    return ConstructionText.T("reallife_bld_name_conversion", "use", ConstructionText.T(BuildCatalogue.UseKeys[(int)p.Use]), "address", where);
                 default:
                     return ConstructionText.T("reallife_bld_name_plot", "use", ConstructionText.T(BuildCatalogue.UseKeys[(int)p.Use]), "address", where);
             }
@@ -695,7 +699,7 @@ namespace RealLifeOverhaul.Construction
             p.PlanningDay = day;
             p.DecideDay = PlanningRules.AfterWorkingDays(day, p.Kind == ProjectKind.Demolition ? RedevelopRules.PermitDays(p.Area) : PlanningRules.WorkingDays(p.Area));
             p.Consulted = false;
-            if (p.Kind == ProjectKind.Demolition)
+            if (NeedsNotice(p))
             {
                 GiveNotice(p, day);   // the tenants and the business are told as the permit is asked for
             }
@@ -710,8 +714,9 @@ namespace RealLifeOverhaul.Construction
         private void Consult(ProjectFile p)
         {
             p.Consulted = true;
-            int norm = Mathf.Max(2, p.Kind == ProjectKind.Rebuild ? p.Storeys : 4);
-            bool zoned = p.Kind != ProjectKind.Plot || (_state.Lot(p.Lot) is LotFile l && LandRules.Zoned(ZonesNow(l), p.Use));
+            // The neighbours weigh the height against what stands: a rebuild's own, the storeys an extension puts on, else the usual four.
+            int norm = Mathf.Max(2, p.Kind == ProjectKind.Rebuild ? p.Storeys : p.Kind == ProjectKind.Extension ? p.Storeys - p.Added : 4);
+            bool zoned = Zoned(p);
             int parkingShort = p.ParkingUnder ? 0 : p.ParkingNeeded;
             p.Objections = PlanningRules.Objections(_state.Seed, p.Id * 13 + p.Applications, p.Storeys, norm, zoned, parkingShort, _state.Firm.Reputation, p.Quality);
             if (p.Objections > 0)
@@ -720,6 +725,17 @@ namespace RealLifeOverhaul.Construction
                 Tell(NotificationType.Info, "reallife_bld_notice_objections", ProjectName(p), null, TabProjects, p.Id, p.Objections);
             }
             Logger?.Info("Construction: project " + p.Id + "'s neighbours had their say: " + p.Objections + " objection(s).");
+        }
+
+        // Whether the council hears the project's use where it is: a plot's on the zones its land holds now, a change of use's on its
+        // lot's class; any other keeps the use its building has.
+        private bool Zoned(ProjectFile p)
+        {
+            if (p.Kind == ProjectKind.Conversion)
+            {
+                return ConversionZoned(p);
+            }
+            return p.Kind != ProjectKind.Plot || (_state.Lot(p.Lot) is LotFile l && LandRules.Zoned(ZonesNow(l), p.Use));
         }
 
         // City Hall's decision on its day.
@@ -733,9 +749,9 @@ namespace RealLifeOverhaul.Construction
             int limit = HeightLimitOf(p);
             p.ParkingNeeded = PlansRules.ParkingNeeded(p.Use, p.Area, Permits());
             bool engineerNeeded = PlansRules.NeedsEngineer(p.Storeys, p.Kind);
-            bool zoned = p.Kind != ProjectKind.Plot || (_state.Lot(p.Lot) is LotFile l && LandRules.Zoned(ZonesNow(l), p.Use));
+            bool zoned = Zoned(p);
             int reasons = 0;
-            if (p.Kind != ProjectKind.Demolition)
+            if (p.Kind != ProjectKind.Demolition && p.Kind != ProjectKind.Conversion)
             {
                 PlansRules.Unmet(p.Exits, p.ExitsNeeded, p.ParkingUnder, p.ParkingNeeded, p.Storeys, limit, engineerNeeded, p.Engineered, out reasons);   // a demolition builds nothing to meet them
             }
@@ -860,7 +876,7 @@ namespace RealLifeOverhaul.Construction
             {
                 return "reallife_bld_answer_no_lot";
             }
-            if (p.Kind == ProjectKind.Demolition && !Emptied(p))
+            if (NeedsNotice(p) && !Emptied(p))
             {
                 return "reallife_bld_answer_notice_running";   // the tenants and the business leave first
             }
@@ -1046,6 +1062,11 @@ namespace RealLifeOverhaul.Construction
             {
                 p.Opened = true;   // no ribbon for ground cleared
                 Demolished(p);     // its ground the player's land; asked again each day while the district cannot take it
+            }
+            if (p.Kind == ProjectKind.Extension || p.Kind == ProjectKind.Conversion)
+            {
+                p.Opened = p.Kind == ProjectKind.Conversion;   // a change of use has no opening day; floors put on top keep their ribbon
+                Redeveloped(p, true);   // its floor area or its use the district's now; asked again each day while it cannot take it
             }
             if (p.Kind == ProjectKind.Refit || (p.Kind == ProjectKind.Rebuild && p.WithRefit))
             {

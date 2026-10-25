@@ -108,6 +108,21 @@ namespace RealLifeOverhaul.Construction
             return true;
         }
 
+        /// <summary>The game's building types its structure of a size and version takes (BuildingVersion.supportedBuildingTypes), into the caller's list.</summary>
+        internal static void Takes(string size, int version, List<string> into)
+        {
+            into.Clear();
+            BuildingSizeData data = string.IsNullOrEmpty(size) ? null : BuildingSizeHelper.GetData(size);
+            BuildingVersion[] versions = data != null ? data.buildingVersions : null;
+            for (int i = 0; versions != null && i < versions.Length; i++)
+            {
+                if (versions[i] != null && versions[i].number == version && versions[i].supportedBuildingTypes != null)
+                {
+                    into.AddRange(versions[i].supportedBuildingTypes);
+                }
+            }
+        }
+
         // The player's deed of a building (the game's real estate), or null.
         private static RealEstate DeedOf(string street, int number)
         {

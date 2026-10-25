@@ -21,6 +21,8 @@ internal static partial class Program
         DemolitionSourceChecks();
         ClearedBuildChecks();
         JoinChecks();
+        ExtensionRuleChecks();
+        ExtensionSourceChecks();
         RedevelopTextChecks();
     }
 
@@ -188,7 +190,7 @@ internal static partial class Program
               && BuildStore.Write(back) == line, "demolition: a demolition, its works' kind, its notice and its buy-out come back from the save, the line as it was");
         string later = line.Replace("|4|2|0|12|", "|9|2|0|12|");
         BuildState clamped = BuildStore.Read(later, out int _);
-        Check(later != line && clamped != null && clamped.Project(31) != null && clamped.Project(31).Kind == ProjectKind.Demolition, "demolition: a project of a kind this version does not know reads as its last kind");
+        Check(later != line && clamped != null && clamped.Project(31) != null && clamped.Project(31).Kind == ProjectKind.Conversion, "demolition: a project of a kind this version does not know reads as its last kind");
         // Uptown's line: the cleared lots come back; a line from before them has none; what is no lot id is left out.
         var life = new RealLifeOverhaul.Uptown.LifeState();
         life.MarkCleared("uptown_1_02_0003");
@@ -239,9 +241,10 @@ internal static partial class Program
               && strip.Contains("s.PutBacks.Clear()") && strip.Contains("DistrictSaveGame.Down(s)") && strip.Contains("DistrictSaveStore.RetireAddress(KeptRecords, KeptItems, street, number)") && !strip.Contains("KeptRecords.Add("),
             "demolition sources: the district save takes one address's records out for good and keeps none, never an address of the game's");
         // The project: refused in a session and for anything not the player's; notice with the permit; empty before the works.
-        string block = MethodText(demolish, "public string DemolishBlock(");
+        string block = MethodText(demolish, "public string RedevelopRefusal(");
         Check(block.Contains("GoingPublic.InSession") && block.Contains("b.Kept") && block.Contains("ConstructionGame.Owns(street, number)") && block.Contains("Busy(street, number, b.Lot)")
-              && block.Contains("ConstructionGame.Occupied(street, number)"), "demolition sources: only a building of the player's in Uptown, empty of their own things, outside a Going Public session");
+              && MethodText(demolish, "public string DemolishBlock(").Contains("RedevelopRefusal(street, number, out _) ?? ConstructionGame.Occupied(street, number)"),
+            "demolition sources: only a building of the player's in Uptown, empty of their own things, outside a Going Public session");
         Check(MethodText(projects, "public string Apply(").Contains("GiveNotice(p, day)") && MethodText(projects, "public string StartBlock(").Contains("!Emptied(p)")
               && MethodText(projects, "public long PlanningFee(").Contains("RedevelopRules.PermitFeeOf(") && MethodText(projects, "private void Decide(").Contains("p.Kind != ProjectKind.Demolition"),
             "demolition sources: the permit is the planning application's path, with its own fee and days, the notice given with it, no requirements of a building to meet, and the works wait for an empty building");
@@ -322,6 +325,76 @@ internal static partial class Program
             "joining sources: a site's page joins, buys and joins, or splits it");
         Check(tests.Contains("public static bool TestJoinSplitNow()") && guide.Contains(".Check(\"reallife_bld_test_join_split\", () => ConstructionDirector.TestJoinSplitNow(),") && guide.Contains(".Fact(\"bld_site_spaces_most\""),
             "joining sources: its test is in the test run (nothing knocked down), and the Guide's widest site is a fact");
+    }
+
+    // ------------------------------------------------------------------ extensions and change of use
+
+    private static void ExtensionRuleChecks()
+    {
+        Check(RedevelopRules.ExtensionRoom(4, 12) == 8 && RedevelopRules.ExtensionRoom(12, 12) == 0 && RedevelopRules.ExtensionRoom(10, 8) == 0 && RedevelopRules.ExtensionRoom(3, 40) == RedevelopRules.StoreysMost - 3
+              && RedevelopRules.ExtensionRoom(0, 12) == 11, "extensions: storeys go on top up to the building code's limit in force and the most a district record takes, none past either");
+        Check(RedevelopRules.AddedArea(300, 5, 1200) == 300 && RedevelopRules.AddedArea(300, 5, 1234) == 266 && RedevelopRules.AddedArea(300, 6, 1400) == 400 && RedevelopRules.AddedArea(300, 2, 900) == 1,
+            "extensions: the floor area added is the new storeys' less what the building has, a design's own floor area taken as it is");
+        Check(RedevelopRules.ConversionHours(300) == RefitRules.Hours(300) * 3 / 2 && RedevelopRules.ConversionHours(100000) == RefitRules.Hours(100000) * 3 / 2
+              && RedevelopRules.ConversionWorks == RefitRules.Works, "change of use: its works are the programme's refit works, a refit's hours of its floor area and half again");
+        RefitQuote q = RedevelopRules.ConversionQuote(7, 120, 1500, 1000), again = RedevelopRules.ConversionQuote(7, 120, 1500, 1000);
+        Check(q.Rival >= 0 && q.Rival < BuildCatalogue.RivalCount && q.Price > 0 && q.Price % 10 == 0 && q.Days >= 1 && q.Hours == RedevelopRules.ConversionHours(1500) && q.Rival == again.Rival
+              && q.Price == again.Price, "change of use: the renovation contractor's quote is one of the city's builders', seeded by the save and the day");
+        // Worked as a rebuild: its hours, stages, loads and the engineer's sign off are a rebuild's for the floor area it adds.
+        Check(PlansRules.Rebuilt(ProjectKind.Extension) && PlansRules.Rebuilt(ProjectKind.Rebuild) && !PlansRules.Rebuilt(ProjectKind.Plot) && !PlansRules.Rebuilt(ProjectKind.Conversion)
+              && PlansRules.Hours(BuildUse.Offices, 600, 6, ProjectKind.Extension) == PlansRules.Hours(BuildUse.Offices, 600, 6, ProjectKind.Rebuild)
+              && PlansRules.Ends(ProjectKind.Extension) == BuildCatalogue.RebuildStageEnds && PlansRules.NeedsEngineer(1, ProjectKind.Extension) && !PlansRules.NeedsEngineer(1, ProjectKind.Conversion)
+              && PlansRules.Loads(BuildUse.Homes, 600, 6, ProjectKind.Extension, WorkStage.Frame, Material.Cement) == PlansRules.Loads(BuildUse.Homes, 600, 6, ProjectKind.Rebuild, WorkStage.Frame, Material.Cement),
+            "extensions: floors on a standing frame are worked as a rebuild: its hours, stages, loads and an engineer's sign off");
+        Check(new ProjectFile { Kind = ProjectKind.Extension }.Model == ProjectKind.Rebuild && new ProjectFile { Kind = ProjectKind.Conversion }.Model == ProjectKind.Contract
+              && new ProjectFile { Kind = ProjectKind.Extension, Contractor = 2 }.Hired && !new ProjectFile { Kind = ProjectKind.Conversion, Contractor = 2 }.Hired,
+            "extensions: an extension is built as a rebuild and may be put out to a hired builder; a change of use is the programme's works, its contractor paid at once");
+        var s = new BuildState { Seed = 5, NextId = 60 };
+        s.Projects.Add(new ProjectFile { Id = 51, Kind = ProjectKind.Extension, Stage = ProjectStage.Design, Lot = "uptown_2_07_0014", Street = "reallife:street_uptown_x", Number = 14,
+            Storeys = 7, Added = 3, Area = 900, Hours = 200 });
+        s.Projects.Add(new ProjectFile { Id = 52, Kind = ProjectKind.Conversion, Stage = ProjectStage.Planning, Use = BuildUse.Homes, CivicKind = RedevelopRules.ConversionWorks, NoticeUntil = 61,
+            Storeys = 4, Hours = 90 });
+        s.Projects.Add(new ProjectFile { Id = 53, Kind = ProjectKind.Plot, Stage = ProjectStage.Design, Storeys = 3, Hours = 100 });
+        string line = BuildStore.Write(s);
+        BuildState back = BuildStore.Read(line, out int _);
+        ProjectFile e = back != null ? back.Project(51) : null, c = back != null ? back.Project(52) : null, plot = back != null ? back.Project(53) : null;
+        Check(e != null && e.Kind == ProjectKind.Extension && e.Added == 3 && e.Storeys == 7 && c != null && c.Kind == ProjectKind.Conversion && c.Use == BuildUse.Homes && c.NoticeUntil == 61
+              && c.Added == 0 && plot != null && plot.Added == 0 && BuildStore.Write(back) == line, "extensions: an extension's storeys on top and a change of use's new use come back from the save, the line as it was");
+    }
+
+    private static void ExtensionSourceChecks()
+    {
+        string ext = ModSource(@"Construction\ConstructionDirector.Extend.cs"), life = ModSource(@"Uptown\LifeDirector.Extend.cs"), projects = ModSource(@"Construction\ConstructionDirector.Projects.cs");
+        string works = ModSource(@"Civic\CivicWorks.cs"), wiring = ModSource(@"Wiring\Wiring.ConstructionLinks.cs"), guide = ModSource(@"Construction\ConstructionGuide.cs");
+        Check(MethodText(ext, "public string ExtendBlock(").Contains("RedevelopRefusal(street, number, out StandingView b)") && MethodText(ext, "public string ExtendBlock(").Contains("RedevelopRules.ExtensionRoom(b.Storeys, UptownStoreys())")
+              && MethodText(ext, "public string ConvertBlock(").Contains("RedevelopRefusal(street, number, out StandingView b)") && MethodText(ext, "public string ConvertBlock(").Contains("ConstructionGame.Occupied(street, number)"),
+            "extension sources: only a building of the player's in Uptown outside a session, an extension up to the code's height, a change of use empty of their own things");
+        Check(MethodText(ext, "public void ConversionUses(").Contains("ConstructionGame.Takes(size, version, _takes)") && MethodText(ext, "public void ConversionUses(").Contains("!string.Equals(use, type, StringComparison.Ordinal)"),
+            "extension sources: a change of use offers only the uses the game's structure of its size and version takes, other than its own");
+        string done = MethodText(ext, "private bool Redeveloped(");
+        Check(done.Contains("ConstructionBridges.Extend(p.Lot, p.Storeys)") && done.Contains("ConstructionBridges.Convert(p.Lot, BuildCatalogue.UseTypes[(int)p.Use])") && done.Contains("p.InDistrict = true")
+              && MethodText(projects, "private void Handover(").Contains("Redeveloped(p, true)") && ModSource(@"Construction\ConstructionDirector.Demolish.cs").Contains("Redeveloped(p);"),
+            "extension sources: at the handover the district takes the storeys or the new use, asked again each day while it cannot");
+        string extend = MethodText(life, "public static bool Extend("), convert = MethodText(life, "public static bool Convert("), record = MethodText(life, "private static FinishedBuilding Record(");
+        Check(extend.Contains("f.Storeys = storeys") && extend.Contains("made.Building.totalSqm = sqm") && extend.Contains("LifeGame.Resize(made, sqm)") && extend.Contains("WriteState()"),
+            "extension sources: the district's record, the game's building and the player's deed take the floor area, now and from every load");
+        Check(convert.Contains("LifeGame.Takes(made.Spec.Size, made.Spec.Version, type)") && convert.Contains("f.Type = type") && convert.Contains("made.Building.BuildingType = type")
+              && convert.Contains("LifeGame.Inside(made)"), "extension sources: a change of use is to a type the structure takes, the record's and the building's type, never with the player inside");
+        Check(record.Contains("Settled = true") && record.Contains("Storeys = made.Spec.DesignArea ? 0 : Math.Max(1, made.Spec.Floors)") && record.Contains("Design = made.Design ?? string.Empty")
+              && MethodText(life, "private static string Refused(").Contains("KeptFromRedevelopment(made)"),
+            "extension sources: a building from the first day is recorded as it stands (its look, its floor area, set up already), and the district's own places are left alone");
+        Check(works.Contains("(site.Kind == SiteKind.Rebuild && !SiteBuilders.Keeps(site)) || site.Kind == SiteKind.Plot") && wiring.Contains("SiteBuilders.KeepsLook = site => Director != null && Director.KeepsLook(site.Id);")
+              && MethodText(ext, "public bool KeepsLook(").Contains("p.Kind == ProjectKind.Extension"), "extension sources: an extension's site leaves no copy over its building: its front stays its own");
+        Check(wiring.Contains("ConstructionBridges.Extend = Extend;") && wiring.Contains("ConstructionBridges.Convert = Convert;") && wiring.Contains("ConstructionBridges.Extend = null;")
+              && ModSource(@"Construction\ConstructionBridges.cs").Contains("Extend = null;"), "extension sources: the bridges are wired and let go");
+        Check(MethodText(projects, "private bool Zoned(").Contains("ConversionZoned(p)") && MethodText(projects, "private void Decide(").Contains("p.Kind != ProjectKind.Conversion")
+              && MethodText(projects, "private void Consult(").Contains("p.Kind == ProjectKind.Extension ? p.Storeys - p.Added") && MethodText(projects, "public string Apply(").Contains("NeedsNotice(p)"),
+            "extension sources: the council weighs a change of use on its lot's zones and the height an extension adds, and a change of use gives notice with its application");
+        Check(ModSource(@"Construction\ConstructionDirector.Hire.cs").Contains("p.Kind == ProjectKind.Extension) && p.Contractor < 0"), "extension sources: an extension may be built by a hired builder");
+        Check(guide.Contains(".Test(\"reallife_bld_test_extend\", () => ConstructionDirector.TestExtensionNow())") && guide.Contains(".Test(\"reallife_bld_test_convert\", () => ConstructionDirector.TestConversionNow())")
+              && ModSource(@"TestRun\RunPlan.cs").Contains("{ \"reallife_bld_test_extend\",") && ModSource(@"TestRun\RunPlan.cs").Contains("{ \"reallife_bld_test_convert\","),
+            "extension sources: their tests are buttons alone: each changes a building of the player's for good");
+        Check(ModSource(@"NewBuildings\NewBuildingsRules.cs").Contains("public const int MostFloors = " + RedevelopRules.StoreysMost + ";"), "extension sources: the storeys an extension reaches are those a district record takes");
     }
 
     // ------------------------------------------------------------------ the texts
@@ -407,6 +480,16 @@ internal static partial class Program
         for (int l = 0; l < words.Length; l++)
         {
             Check(joined.TryGetValue(codes[l], out string start) && WhatsNewHas(words[l], start), "redevelopment texts: What's new has the line for joining and splitting land in " + codes[l]);
+        }
+        var raised = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            { "en", "Put storeys on a building of yours in Uptown" }, { "pt", "Acrescente andares a um prédio seu em Uptown" }, { "zh-cn", "可以给你在上城的建筑加建楼层" },
+            { "de", "Setz einem Gebäude von dir in Uptown Stockwerke auf" }, { "fr", "Ajoutez des étages à un de vos bâtiments d'Uptown" }, { "es", "Añade plantas a un edificio tuyo en Uptown" },
+            { "ru", "Надстраивайте этажи на своём здании в Аптауне" }, { "nl", "Zet verdiepingen op een gebouw van je in Uptown" }, { "tr", "Uptown'daki bir binanıza imar kurallarının sınırına kadar kat çıkın" }
+        };
+        for (int l = 0; l < words.Length; l++)
+        {
+            Check(raised.TryGetValue(codes[l], out string start) && WhatsNewHas(words[l], start), "redevelopment texts: What's new has the line for extensions and change of use in " + codes[l]);
         }
         var down = new Dictionary<string, string>(StringComparer.Ordinal)
         {

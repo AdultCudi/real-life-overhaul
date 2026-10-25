@@ -282,7 +282,7 @@ namespace RealLifeOverhaul.Construction
             p.NoticeUntil = ConstructionGame.Day;
             ConstructionGame.Evict(p.Street, p.Number);   // the notice run at once: the business closed and the tenants gone, nothing paid for a test
             p.BuyOut = -1L;
-            string ordered = ContractorDemolition(p, true);
+            string ordered = ContractorVacant(p, true);
             bool handed = p.SiteId > 0 && FinishSite(p.SiteId);
             if (!handed && p.Stage == ProjectStage.Building)
             {
@@ -509,6 +509,167 @@ namespace RealLifeOverhaul.Construction
                 return Failed(RedoCheck, test, "reallife_bld_test_failed_log", "the sites were not joined and split as they should be");
             }
             Passed(test, "reallife_bld_test_join_split", line, TabLand, 0);
+            return true;
+        }
+
+        // ------------------------------------------------------------------ extensions and change of use
+
+        /// <summary>
+        /// Test: the player's nearest building in Uptown given a storey more now, for good: an extension made, its plans and
+        /// permission at once, the cheapest of the city's builders hired for nothing, its inspections passed and handed over at
+        /// once; its floor area (the district's record and the deed) a storey more, its front its own.
+        /// </summary>
+        public static bool TestExtensionNow()
+        {
+            const string test = "a storey more on your nearest Uptown building now, for good";
+            ConstructionDirector d = RedoDirector(test, false);
+            if (d == null)
+            {
+                return false;
+            }
+            try
+            {
+                return d.ExtensionNow(test);
+            }
+            catch (Exception e)
+            {
+                d.Fault("a test (" + test + ")", e);
+                return false;
+            }
+        }
+
+        private bool ExtensionNow(string test)
+        {
+            if (GoingPublic.InSession || !Settings.ConstructionRedevelop)
+            {
+                return Failed(RedoCheck, test, GoingPublic.InSession ? "reallife_bld_test_session_city" : "reallife_bld_answer_redevelop_off",
+                    "a Going Public session is on, or redevelopment is off in the options");
+            }
+            if (!NearestUptownBuilding(out BuildingView b, out float metres))
+            {
+                return Failed(RedoCheck, test, "reallife_bld_test_no_uptown", "the player owns no building of Uptown's that redevelopment may take (buy one in BizMan first)");
+            }
+            string block = ExtendBlock(b.Street, b.Number);
+            if (block != null)
+            {
+                return Failed(RedoCheck, test, block, b.Name + " cannot be given a storey more now (" + block + ")");
+            }
+            BeforeTest();
+            Standing(b.Street, b.Number, out StandingView before);
+            int id = NewExtension(b.Street, b.Number, out string why);
+            ProjectFile p = _state.Project(id);
+            if (p == null)
+            {
+                return Failed(RedoCheck, test, why ?? "reallife_bld_test_failed_log", "no extension could be made at " + b.Name + " (" + why + ")");
+            }
+            p.PlansDone = true;   // the plans, the engineer and the permission at once, as the practice and City Hall would give them
+            p.Quality = 70;
+            p.Engineered = true;
+            p.Planning = PlanningState.Granted;
+            p.Stage = ProjectStage.Ready;
+            p.Estimate = Math.Max(1L, Preview(p, out _, out _, out _, out _).Total);
+            int count = Quotes(p, _quotes);
+            string answer = HireBuilder(p, CommissionRules.Cheapest(_quotes, count), true);
+            if (!p.Hired || p.Stage != ProjectStage.Building)
+            {
+                return Failed(RedoCheck, test, answer, "no builder could be hired for project " + p.Id + " (" + answer + ")");
+            }
+            bool keeps = KeepsLook(p.SiteId);
+            int day = ConstructionGame.Day, site = p.SiteId;
+            for (int k = 0; k < (int)Inspection.Count; k++)
+            {
+                AdvanceSiteNow(site);   // the street's site moves on with it
+                HiredStage(p, (WorkStage)Math.Min(k + 1, (int)WorkStage.Envelope));
+                Passed(p, k, true, day);
+            }
+            if (!FinishSite(site) && p.Stage == ProjectStage.Building)
+            {
+                Handover(p, day);   // the site was gone from the programme: handed over all the same
+            }
+            Standing(b.Street, b.Number, out StandingView after);
+            string where = b.Name + ", " + metres.ToString("0", CultureInfo.InvariantCulture) + " m away, " + before.Storeys + " storey(s) and " + before.Sqm + " m2";
+            if (!(p.Stage == ProjectStage.Finished && p.InDistrict && keeps && after.Storeys == before.Storeys + 1 && after.Sqm > before.Sqm && after.Design == before.Design))
+            {
+                Logger?.Warn(RedoCheck + test + "): " + where + ": project " + p.Id + " at " + p.Stage + ", the district's " + p.InDistrict + ", its front kept " + keeps + "; now "
+                             + after.Storeys + " storey(s), " + after.Sqm + " m2: FAIL.");
+                return Failed(RedoCheck, test, "reallife_bld_test_failed_log", "the building was not given its storey");
+            }
+            Passed(test, "reallife_bld_test_extend", where + ": a storey more by " + ConstructionText.T(BuildCatalogue.RivalKeys[p.Contractor]) + " for nothing, now " + after.Storeys
+                   + " storey(s) and " + after.Sqm + " m2, the deed's with it, its front its own", TabProjects, p.Id);
+            return true;
+        }
+
+        /// <summary>
+        /// Test: the player's nearest building in Uptown made another use now, for good: a change of use made to the first use
+        /// its structure takes, its permission granted and its notice run at once (its tenants and business gone, nothing paid),
+        /// the city's renovation contractor's works for nothing, handed over at once; its building of the new type now.
+        /// </summary>
+        public static bool TestConversionNow()
+        {
+            const string test = "your nearest Uptown building made another use now, for good";
+            ConstructionDirector d = RedoDirector(test, false);
+            if (d == null)
+            {
+                return false;
+            }
+            try
+            {
+                return d.ConversionNow(test);
+            }
+            catch (Exception e)
+            {
+                d.Fault("a test (" + test + ")", e);
+                return false;
+            }
+        }
+
+        private bool ConversionNow(string test)
+        {
+            if (GoingPublic.InSession || !Settings.ConstructionRedevelop)
+            {
+                return Failed(RedoCheck, test, GoingPublic.InSession ? "reallife_bld_test_session_city" : "reallife_bld_answer_redevelop_off",
+                    "a Going Public session is on, or redevelopment is off in the options");
+            }
+            if (!NearestUptownBuilding(out BuildingView b, out float metres))
+            {
+                return Failed(RedoCheck, test, "reallife_bld_test_no_uptown", "the player owns no building of Uptown's that redevelopment may take (buy one in BizMan first)");
+            }
+            string block = ConvertBlock(b.Street, b.Number);
+            if (block != null)
+            {
+                return Failed(RedoCheck, test, block, b.Name + " cannot be made another use now (" + block + ")");
+            }
+            BeforeTest();
+            Standing(b.Street, b.Number, out StandingView before);
+            int id = NewConversion(b.Street, b.Number, out string why);
+            ProjectFile p = _state.Project(id);
+            if (p == null)
+            {
+                return Failed(RedoCheck, test, why ?? "reallife_bld_test_failed_log", "no change of use could be made at " + b.Name + " (" + why + ")");
+            }
+            p.Planning = PlanningState.Granted;   // the permission at once, as City Hall would grant it
+            p.Stage = ProjectStage.Ready;
+            p.NoticeUntil = ConstructionGame.Day;
+            ConstructionGame.Evict(p.Street, p.Number);   // the notice run at once: the business closed and the tenants gone, nothing paid for a test
+            p.BuyOut = -1L;
+            string ordered = ContractorVacant(p, true);
+            bool handed = p.SiteId > 0 && FinishSite(p.SiteId);
+            if (!handed && p.Stage == ProjectStage.Building)
+            {
+                Handover(p, ConstructionGame.Day);   // the site was gone from the programme: handed over all the same
+                handed = true;
+            }
+            Standing(b.Street, b.Number, out StandingView after);
+            string type = BuildCatalogue.UseTypes[(int)p.Use];
+            string where = b.Name + ", " + metres.ToString("0", CultureInfo.InvariantCulture) + " m away, of " + before.Type;
+            if (!(handed && p.InDistrict && string.Equals(after.Type, type, StringComparison.Ordinal) && after.Sqm == before.Sqm))
+            {
+                Logger?.Warn(RedoCheck + test + "): " + where + ": project " + p.Id + " at " + p.Stage + " (" + ordered + "), the district's " + p.InDistrict + ", now of " + after.Type
+                             + " (" + type + " asked): FAIL.");
+                return Failed(RedoCheck, test, "reallife_bld_test_failed_log", "the building was not made its new use");
+            }
+            Passed(test, "reallife_bld_test_convert", where + ": permission granted, notice run, made " + type + " by contractor " + p.Contractor + " for nothing; an empty unit of the player's",
+                TabProjects, p.Id);
             return true;
         }
     }

@@ -134,6 +134,12 @@ namespace RealLifeOverhaul.Construction
         /// <summary>A standing building's look hidden while it comes down behind its wrap, or shown again. Default: nothing.</summary>
         public static Func<string, bool, bool> HideLook;
 
+        /// <summary>A district building on a lot given so many storeys of floor area in all, its look its own: null when done, else why not. Default: none.</summary>
+        public static Func<string, int, string> Extend;
+
+        /// <summary>A district building on a lot made another use, a game building type its structure takes: null when done, else why not. Default: none.</summary>
+        public static Func<string, string, string> Convert;
+
         /// <summary>A rival builder's office (its index among the city's contractors) as the game writes its address, or null when it has none standing at this load. Default: none.</summary>
         public static Func<int, string> RivalOffice;
 
@@ -405,6 +411,8 @@ namespace RealLifeOverhaul.Construction
             Demolish = null;
             Cleared = null;
             HideLook = null;
+            Extend = null;
+            Convert = null;
             SpacesOf = null;
             RivalOffice = null;
             RivalOfficeGo = null;

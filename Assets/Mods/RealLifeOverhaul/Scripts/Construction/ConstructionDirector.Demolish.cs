@@ -55,6 +55,17 @@ namespace RealLifeOverhaul.Construction
         /// <summary>Why the player's building at an address cannot be planned for demolition now, as a text key; null when it can.</summary>
         public string DemolishBlock(string street, int number)
         {
+            return RedevelopRefusal(street, number, out _) ?? ConstructionGame.Occupied(street, number);   // empty of their own things first
+        }
+
+        /// <summary>
+        /// Why a building at an address cannot be redeveloped by the player at all now, as a text key; null when it may: one of
+        /// Uptown's standing at this load, not a place the district keeps, the player's own (the game's deed), with no project of
+        /// theirs on it, the option on and outside a Going Public session. Every redevelopment of a building asks this first.
+        /// </summary>
+        public string RedevelopRefusal(string street, int number, out StandingView b)
+        {
+            b = default(StandingView);
             if (!Running || !Settings.ConstructionRedevelop)
             {
                 return "reallife_bld_answer_redevelop_off";
@@ -63,7 +74,7 @@ namespace RealLifeOverhaul.Construction
             {
                 return "reallife_bld_answer_session_redevelop";
             }
-            if (!Standing(street, number, out StandingView b))
+            if (!Standing(street, number, out b))
             {
                 return "reallife_bld_answer_not_district";
             }
@@ -75,11 +86,7 @@ namespace RealLifeOverhaul.Construction
             {
                 return "reallife_bld_answer_not_yours";
             }
-            if (Busy(street, number, b.Lot))
-            {
-                return "reallife_bld_answer_building_busy";
-            }
-            return ConstructionGame.Occupied(street, number);
+            return Busy(street, number, b.Lot) ? "reallife_bld_answer_building_busy" : null;
         }
 
         // A live project of the player's at a building or on its lot.
@@ -129,10 +136,20 @@ namespace RealLifeOverhaul.Construction
             return PlansRules.EstimateWorks(RedevelopRules.DemolitionWorks, p.Hours, ConstructionGame.Prices, _exchange).Total + RedevelopRules.RubbleCost(p.Area, ConstructionGame.Prices);
         }
 
-        /// <summary>The city's best demolition contractor's quote for a demolition today.</summary>
-        public RefitQuote DemolitionQuote(ProjectFile p)
+        /// <summary>
+        /// The city's best contractor's quote today for works that need their building empty: a demolition's (the demolition
+        /// house's trade), or a change of use's (the renovators').
+        /// </summary>
+        public RefitQuote VacantQuote(ProjectFile p)
         {
-            return RedevelopRules.Quote(_state.Seed, ConstructionGame.Day, p.Area, ConstructionGame.Prices);
+            return p.Kind == ProjectKind.Conversion ? RedevelopRules.ConversionQuote(_state.Seed, ConstructionGame.Day, p.Area, ConstructionGame.Prices)
+                : RedevelopRules.Quote(_state.Seed, ConstructionGame.Day, p.Area, ConstructionGame.Prices);
+        }
+
+        /// <summary>True for a project whose works need its building empty: notice to its tenants and business with its application, the works after it has run.</summary>
+        public static bool NeedsNotice(ProjectFile p)
+        {
+            return p.Kind == ProjectKind.Demolition || p.Kind == ProjectKind.Conversion;
         }
 
         /// <summary>True for the player's land where a building was knocked down and nothing has been finished since: ground cleared for a new building.</summary>
@@ -148,12 +165,12 @@ namespace RealLifeOverhaul.Construction
         }
 
         /// <summary>
-        /// A demolition with its permit and an empty building done by the city's best demolition contractor at today's quote, paid
-        /// now: its site set out at once, at the city's own pace. Returns a text key.
+        /// A demolition or a change of use with its permission and an empty building done by the city's best contractor for it at
+        /// today's quote, paid now: its site set out at once, at the city's own pace. Returns a text key.
         /// </summary>
-        public string ContractorDemolition(ProjectFile p, bool free)
+        public string ContractorVacant(ProjectFile p, bool free)
         {
-            if (p == null || p.Kind != ProjectKind.Demolition || p.Stage != ProjectStage.Ready)
+            if (p == null || !NeedsNotice(p) || p.Stage != ProjectStage.Ready)
             {
                 return "reallife_bld_answer_no_permission";
             }
@@ -165,20 +182,22 @@ namespace RealLifeOverhaul.Construction
             {
                 return "reallife_bld_answer_city_full";
             }
-            RefitQuote q = DemolitionQuote(p);
+            RefitQuote q = VacantQuote(p);
             string name = ProjectName(p);
-            if (!free && !ConstructionGame.Take(q.Price, "reallife_transaction_bld_demolition", name, true))
+            bool down = p.Kind == ProjectKind.Demolition;
+            if (!free && !ConstructionGame.Take(q.Price, down ? "reallife_transaction_bld_demolition" : "reallife_transaction_bld_conversion", name, true))
             {
                 return "reallife_bld_answer_no_money";
             }
-            int site = StartWorksSite(p.Street, p.Number, RedevelopRules.DemolitionWorks, true, q.Rival, q.Hours, out string refused);
+            int site = StartWorksSite(p.Street, p.Number, p.CivicKind, true, q.Rival, q.Hours, out string refused);
             if (site <= 0)
             {
                 if (!free)
                 {
-                    ConstructionGame.Give(q.Price, "reallife_transaction_bld_demolition_back", name);   // nothing started: the money comes back
+                    // Nothing started: the money comes back.
+                    ConstructionGame.Give(q.Price, down ? "reallife_transaction_bld_demolition_back" : "reallife_transaction_bld_conversion_back", name);
                 }
-                Logger?.Info("Construction: the contractor's demolition of " + name + " could not start: " + refused + ".");
+                Logger?.Info("Construction: the contractor's works on " + name + " could not start: " + refused + ".");
                 return "reallife_bld_answer_site_refused";
             }
             int day = ConstructionGame.Day;
@@ -190,9 +209,9 @@ namespace RealLifeOverhaul.Construction
             p.StartDay = day;
             p.DueDay = PlanningRules.AfterWorkingDays(day, q.Days);
             Spend(p, free ? 0L : q.Price);
-            Logger?.Info("Construction: project " + p.Id + ": " + name + " knocked down by contractor " + q.Rival + " for " + q.Price + " in about " + q.Days + " working day(s), site " + site + ".");
+            Logger?.Info("Construction: project " + p.Id + ": " + name + " by contractor " + q.Rival + " for " + q.Price + " in about " + q.Days + " working day(s), site " + site + ".");
             Changed();
-            return "reallife_bld_answer_demolition_ordered";
+            return down ? "reallife_bld_answer_demolition_ordered" : "reallife_bld_answer_conversion_ordered";
         }
 
         // The notice given with the permit's application: the building's tenants and business leave when it runs out.
@@ -216,21 +235,25 @@ namespace RealLifeOverhaul.Construction
             for (int i = 0; i < _state.Projects.Count; i++)
             {
                 ProjectFile p = _state.Projects[i];
-                if (p.Kind != ProjectKind.Demolition)
-                {
-                    continue;
-                }
-                if (p.Live && p.NoticeUntil > 0 && day > p.NoticeUntil && !Emptied(p))
+                if (NeedsNotice(p) && p.Live && p.NoticeUntil > 0 && day > p.NoticeUntil && !Emptied(p))
                 {
                     SettleNotice(p);
                 }
-                else if (p.Live && Emptied(p))
+                else if (NeedsNotice(p) && p.Live && Emptied(p))
                 {
                     ConstructionGame.HoldEmpty(p.Street, p.Number);
                 }
-                if (p.Stage == ProjectStage.Finished && !p.InDistrict)
+                if (p.Stage != ProjectStage.Finished || p.InDistrict)
+                {
+                    continue;
+                }
+                if (p.Kind == ProjectKind.Demolition)
                 {
                     Demolished(p);
+                }
+                else if (p.Kind == ProjectKind.Extension || p.Kind == ProjectKind.Conversion)
+                {
+                    Redeveloped(p);   // ConstructionDirector.Extend.cs
                 }
             }
         }

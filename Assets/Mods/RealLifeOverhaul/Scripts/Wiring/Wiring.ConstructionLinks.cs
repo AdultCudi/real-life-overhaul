@@ -66,6 +66,7 @@ namespace RealLifeOverhaul
                 SiteBuilders.Started = site => Director?.SiteStarted(Facts(site));
                 SiteBuilders.Design = site => Director != null ? Director.DesignFor(site.Id) : null;
                 SiteBuilders.Tag = site => Director != null ? Director.TagFor(site.Id) : null;
+                SiteBuilders.KeepsLook = site => Director != null && Director.KeepsLook(site.Id);
                 SiteBuilders.Taken = ConstructionDirector.LotBuilt;
                 SiteBuilders.CopyOver = (building, design) => BuildingCopies.PlaceOver(building, design, null, Owner, true);
                 SiteBuilders.CopyOnPlot = (design, middle, yaw, width, depth) => BuildingCopies.PlaceOnPlot(design, null, middle, yaw, width, depth, Owner);
@@ -90,6 +91,8 @@ namespace RealLifeOverhaul
                 ConstructionBridges.Demolish = Demolish;
                 ConstructionBridges.Cleared = Cleared;
                 ConstructionBridges.HideLook = HideLook;
+                ConstructionBridges.Extend = Extend;
+                ConstructionBridges.Convert = Convert;
                 DistrictBuildings.Lessee = RivalLease;   // whatever the options say: every machine leases the same offices
                 ConstructionBridges.RivalOffice = RivalOffice;
                 ConstructionBridges.RivalOfficeGo = RivalOfficeGo;
@@ -200,6 +203,8 @@ namespace RealLifeOverhaul
                 ConstructionBridges.Demolish = null;
                 ConstructionBridges.Cleared = null;
                 ConstructionBridges.HideLook = null;
+                ConstructionBridges.Extend = null;
+                ConstructionBridges.Convert = null;
                 ConstructionBridges.Designs = null;
                 ConstructionBridges.Footprint = null;
                 ConstructionBridges.StartPlot = null;
@@ -610,6 +615,32 @@ namespace RealLifeOverhaul
                 {
                     Fault("ConstructionLinks.HideLook", e);
                     return false;
+                }
+            }
+
+            private static string Extend(string lot, int storeys)
+            {
+                try
+                {
+                    return DistrictBuildings.Extend(lot, storeys, out string why) ? null : why ?? "refused";
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.Extend", e);
+                    return "a fault";
+                }
+            }
+
+            private static string Convert(string lot, string type)
+            {
+                try
+                {
+                    return DistrictBuildings.Convert(lot, type, out string why) ? null : why ?? "refused";
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.Convert", e);
+                    return "a fault";
                 }
             }
 

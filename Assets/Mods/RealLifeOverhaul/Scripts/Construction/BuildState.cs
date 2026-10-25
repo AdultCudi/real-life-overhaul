@@ -190,11 +190,12 @@ namespace RealLifeOverhaul.Construction
         public string FitType = string.Empty;        // the firm's folder of that design: the business's type, or the game's empty business for a home or an empty unit
         public int NoticeUntil;                      // the last day of the notice given to a building's tenants and business before its works; 0 for none
         public long BuyOut;                          // what buying its tenants and business out cost, paid as the notice ran out; -1 when nothing was due, 0 before
+        public int Added;                            // an extension's storeys on top of those its building has
 
         public bool Live => Stage != ProjectStage.Finished && Stage != ProjectStage.Abandoned;
 
         /// <summary>True for the player's own building put up by one of the city's builders under contract (a refit or a demolition paid at once by one is not).</summary>
-        public bool Hired => Contractor >= 0 && Kind != ProjectKind.Refit && Kind != ProjectKind.Demolition;
+        public bool Hired => Contractor >= 0 && Kind != ProjectKind.Refit && Kind != ProjectKind.Demolition && Kind != ProjectKind.Conversion;
 
         /// <summary>True while its show flat is open.</summary>
         public bool ShowOpen => ShowSince > 0 && !string.IsNullOrEmpty(ShowDesign);
@@ -221,9 +222,13 @@ namespace RealLifeOverhaul.Construction
         {
             get
             {
-                if (Kind == ProjectKind.Refit || Kind == ProjectKind.Demolition)
+                if (Kind == ProjectKind.Refit || Kind == ProjectKind.Demolition || Kind == ProjectKind.Conversion)
                 {
                     return ProjectKind.Contract;   // worked as the programme's works of its kind: their crews, plant, hours and one final inspection
+                }
+                if (Kind == ProjectKind.Extension)
+                {
+                    return ProjectKind.Rebuild;    // the frame stands: new floors on it behind the rebuild's scaffolding, its stages and inspections
                 }
                 if (Kind != ProjectKind.Contract)
                 {
@@ -535,13 +540,14 @@ namespace RealLifeOverhaul.Construction
             return null;
         }
 
-        /// <summary>The live refit or rebuild at a building, or null.</summary>
+        /// <summary>The live refit, rebuild, extension or change of use at a building, or null.</summary>
         public ProjectFile AtBuilding(string street, int number)
         {
             for (int i = 0; street != null && i < Projects.Count; i++)
             {
                 ProjectFile p = Projects[i];
-                if (p.Live && (p.Kind == ProjectKind.Refit || p.Kind == ProjectKind.Rebuild) && p.Number == number && string.Equals(p.Street, street, StringComparison.Ordinal))
+                if (p.Live && (p.Kind == ProjectKind.Refit || p.Kind == ProjectKind.Rebuild || p.Kind == ProjectKind.Extension || p.Kind == ProjectKind.Conversion)
+                    && p.Number == number && string.Equals(p.Street, street, StringComparison.Ordinal))
                 {
                     return p;
                 }

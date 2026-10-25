@@ -97,10 +97,12 @@ namespace RealLifeOverhaul.Uptown
             int sqm = Math.Max(1, made.Building.totalSqm);
             IList<DesignEntry> designs = CopyGame.Catalogue;
             DesignEntry d = made.DesignIndex >= 0 && made.DesignIndex < designs.Count ? designs[made.DesignIndex] : null;
+            // Its type and storeys as they stand now: an extension or a change of use in play holds at once, its record's (f) from the next load.
+            int storeys = f != null && f.Storeys > 0 ? f.Storeys : made.Spec.DesignArea ? Math.Max(1, (int)Math.Round(sqm / (double)sizeSqm)) : Math.Max(1, made.Spec.Floors);
             b = new DistrictBuilding
             {
-                Lot = lot, Street = made.Spec.Street, Number = made.Spec.Number, Size = made.Spec.Size, Version = made.Spec.Version, Type = made.Spec.Type,
-                Design = made.Design ?? string.Empty, Storeys = made.Spec.DesignArea ? Math.Max(1, (int)Math.Round(sqm / (double)sizeSqm)) : Math.Max(1, made.Spec.Floors),
+                Lot = lot, Street = made.Spec.Street, Number = made.Spec.Number, Size = made.Spec.Size, Version = made.Spec.Version, Type = made.Building.BuildingType,
+                Design = made.Design ?? string.Empty, Storeys = storeys,
                 SizeSqm = sizeSqm, Sqm = sqm, Height = d != null ? Mathf.RoundToInt(d.Height) : 0, Over = f != null ? f.Over : null, Finished = f != null,
                 Kept = KeptFromRedevelopment(made), DoorX = made.DoorX, DoorY = made.DoorY, DoorZ = made.DoorZ, DoorFacing = made.DoorFacing
             };

@@ -90,6 +90,51 @@ namespace RealLifeOverhaul.Construction
             return new RefitQuote { Rival = won.Bidder, Price = won.Price / 10L * 10L, Days = Math.Max(1, won.Days), Hours = hours };
         }
 
+        // ------------------------------------------------------------------ extensions and change of use
+
+        public const int StoreysMost = 12;          // storeys a district building's record has at most: the floors core's most (NewBuildingsRules.MostFloors)
+        public const int ConversionWorks = RefitRules.Works;   // a change of use is worked as the programme's refit works: stripped to its shell, fitted out anew
+
+        /// <summary>
+        /// Storeys an Uptown building of so many may be given on top: up to the building code's limit in force (the elected
+        /// government's, PlansRules.HeightLimit) and the most a district record takes; 0 when it stands at either already.
+        /// </summary>
+        public static int ExtensionRoom(int storeys, int limit)
+        {
+            return Math.Max(0, Math.Min(limit, StoreysMost) - Math.Max(1, storeys));
+        }
+
+        /// <summary>
+        /// The floor area an extension adds: a building of its size's storey area, of so many storeys in all, less the floor area it
+        /// has (a building standing from the first day keeps its design's own, which need not be a whole number of storeys, so a
+        /// storey on it may add a little less or more than a storey's area); a square metre at the least.
+        /// </summary>
+        public static int AddedArea(int storeySqm, int storeys, int sqmNow)
+        {
+            return Math.Max(1, Math.Max(1, storeySqm) * Math.Max(1, storeys) - Math.Max(0, sqmNow));
+        }
+
+        /// <summary>Working hours a change of use takes: a refit's of its floor area and half again, the building stripped to its shell first.</summary>
+        public static int ConversionHours(int sqm)
+        {
+            return RefitRules.Hours(sqm) * 3 / 2;
+        }
+
+        /// <summary>
+        /// The city's best renovation contractor's quote for a change of use: the eight builders bid for its works as for a client's
+        /// refit, the renovators best placed (CommissionRules.Bids, Speciality.Renovation), seeded by the save and the day.
+        /// </summary>
+        public static RefitQuote ConversionQuote(int seed, int day, int sqm, int prices)
+        {
+            int hours = ConversionHours(sqm);
+            long value = TenderRules.WorksValue(ConversionWorks, hours, prices);
+            int days = TenderRules.StandardDays(hours);
+            var bids = new TenderBid[BuildCatalogue.RivalCount];
+            int count = CommissionRules.Bids(seed, day * 41 + 13, value, days, Speciality.Renovation, null, bids);
+            TenderBid won = bids[Math.Max(0, TenderRules.Winner(bids, count))];
+            return new RefitQuote { Rival = won.Bidder, Price = won.Price / 10L * 10L, Days = Math.Max(1, won.Days), Hours = hours };
+        }
+
         // ------------------------------------------------------------------ joining and splitting land
 
         /// <summary>
