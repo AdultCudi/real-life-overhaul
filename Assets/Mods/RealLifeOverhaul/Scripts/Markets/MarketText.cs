@@ -45,6 +45,22 @@ namespace RealLifeOverhaul.Markets
             return T(i >= 0 && i < WhyKeys.Length ? WhyKeys[i] : WhyKeys[0]);
         }
 
+        /// <summary>
+        /// The same, with the company's own most when the holding option is not the tenth: the old sentence says "a tenth",
+        /// and every language has it, so it stays for the default.
+        /// </summary>
+        public static string Why(OrderWhy why, Stock s)
+        {
+            int bp = s != null && why == OrderWhy.HoldingLimit ? MarketTrading.MostHeldBp(s) : MarketCatalogue.HoldingShareBp;
+            return bp == MarketCatalogue.HoldingShareBp ? Why(why) : Fill("reallife_mkt_why_holding_most", "pct", Share(bp));
+        }
+
+        /// <summary>A whole share in basis points: "25%".</summary>
+        public static string Share(int bp)
+        {
+            return (bp / 100).ToString() + "%";
+        }
+
         public static string Price(int cents)
         {
             return (cents / 100f).ToCurrencyFormat();

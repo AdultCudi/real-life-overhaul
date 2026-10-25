@@ -57,12 +57,12 @@ namespace RealLifeOverhaul.Markets
                 // A dividend put back: what it bought, a part with the reason, or why it could not; the rest stays in the cash.
                 if (qty <= 0)
                 {
-                    Queue(NotificationType.Warning, "reallife_mkt_inv_note_back_refused", "name", stock.Name, "why", MarketText.Why(order.Why));
+                    Queue(NotificationType.Warning, "reallife_mkt_inv_note_back_refused", "name", stock.Name, "why", MarketText.Why(order.Why, stock));
                 }
                 else if (order.Why != OrderWhy.None)
                 {
                     Queue(NotificationType.Info, "reallife_mkt_inv_note_back_part", "name", stock.Name, "count", qty.ToString("N0"), "price", MarketText.Price(cents), "why",
-                        MarketText.Why(order.Why));
+                        MarketText.Why(order.Why, stock));
                 }
                 else
                 {
@@ -72,7 +72,7 @@ namespace RealLifeOverhaul.Markets
             }
             if (qty <= 0)
             {
-                Queue(NotificationType.Error, "reallife_mkt_note_refused", "name", stock.Name, "why", MarketText.Why(order.Why));
+                Queue(NotificationType.Error, "reallife_mkt_note_refused", "name", stock.Name, "why", MarketText.Why(order.Why, stock));
                 return;
             }
             if (order.Forced)
