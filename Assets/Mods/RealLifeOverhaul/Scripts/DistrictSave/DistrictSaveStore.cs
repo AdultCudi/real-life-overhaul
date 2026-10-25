@@ -97,7 +97,13 @@ namespace RealLifeOverhaul.DistrictSave
 
         public static string Write(List<StoredRecord> records, string payload)
         {
-            var t = new StringBuilder(64 + (records != null ? records.Count * 48 : 0) + (payload != null ? payload.Length : 0));
+            return Head(records) + (payload ?? string.Empty);
+        }
+
+        /// <summary>The line up to its payload, "^p:" last: a save puts the payload after it in the same string (DistrictSaveZip.Finish).</summary>
+        public static string Head(List<StoredRecord> records)
+        {
+            var t = new StringBuilder(64 + (records != null ? records.Count * 48 : 0));
             t.Append("v=").Append(Version.ToString(CultureInfo.InvariantCulture)).Append("^r:");
             for (int i = 0; records != null && i < records.Count; i++)
             {
@@ -124,7 +130,7 @@ namespace RealLifeOverhaul.DistrictSave
                     t.Append('|').Append(DistrictSaveRules.Escape(r.Values[k]));
                 }
             }
-            t.Append("^p:").Append(payload ?? string.Empty);
+            t.Append("^p:");
             return t.ToString();
         }
 

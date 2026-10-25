@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using BAModAPI;
 
@@ -27,6 +28,10 @@ namespace RealLifeOverhaul
         private static readonly HashSet<FeatureGuard> Skipped = new HashSet<FeatureGuard>();   // said once each
         private static readonly Action Relay = Run;
         private static Action _seen;   // the game's event when the relay was last put on it
+        private const int Named = 3;   // the longest steps the timed line names
+        private static readonly long[] LongTicks = new long[Named];
+        private static readonly string[] LongNames = new string[Named];
+        private static readonly Delegate[] LongSteps = new Delegate[Named];
 
         public static IModLogger Logger;
 
@@ -82,6 +87,12 @@ namespace RealLifeOverhaul
                 using var piece = SessionWatch.Piece("the game is saving (the mod writes its state into the save first)");
                 bool timed = Meta.Dev.Verbose;
                 float began = timed ? UnityEngine.Time.realtimeSinceStartup : 0f;
+                if (timed)
+                {
+                    Array.Clear(LongTicks, 0, Named);
+                    Array.Clear(LongNames, 0, Named);
+                    Array.Clear(LongSteps, 0, Named);
+                }
                 for (int i = 0; i < Handlers.Count; i++)
                 {
                     FeatureGuard guard = Guards[i];
@@ -94,6 +105,7 @@ namespace RealLifeOverhaul
                         }
                         continue;
                     }
+                    long step = timed ? Stopwatch.GetTimestamp() : 0;
                     try
                     {
                         Handlers[i]();
@@ -109,7 +121,12 @@ namespace RealLifeOverhaul
                             Logger?.Error(e);
                         }
                     }
+                    if (timed)
+                    {
+                        Longest(Stopwatch.GetTimestamp() - step, null, Handlers[i]);
+                    }
                 }
+                long district = timed ? Stopwatch.GetTimestamp() : 0;
                 try
                 {
                     int put = SaveLines.PutBack(SaveGameManager.Current != null ? SaveGameManager.Current.modData : null);
@@ -133,15 +150,64 @@ namespace RealLifeOverhaul
                 }
                 if (timed)
                 {
+                    Longest(Stopwatch.GetTimestamp() - district, "the kept lines, the companion and the district save", null);
                     Logger?.Info("Session: the mod wrote its state into the save in "
                                  + ((UnityEngine.Time.realtimeSinceStartup - began) * 1000f).ToString("F1", CultureInfo.InvariantCulture)
-                                 + " ms (" + Handlers.Count + " features); the rest of the save is the game's.");
+                                 + " ms (" + Handlers.Count + " features; the longest: " + LongestText() + "); the rest of the save is the game's.");
                 }
             }
             finally
             {
                 Saving = false;
             }
+        }
+
+        // Keeps a step among the longest of this save (Developer diagnostics only): by its handler, named when the line is written.
+        private static void Longest(long ticks, string name, Delegate step)
+        {
+            int at = Named;
+            while (at > 0 && ticks > LongTicks[at - 1])
+            {
+                at--;
+            }
+            if (at == Named)
+            {
+                return;
+            }
+            for (int k = Named - 1; k > at; k--)
+            {
+                LongTicks[k] = LongTicks[k - 1];
+                LongNames[k] = LongNames[k - 1];
+                LongSteps[k] = LongSteps[k - 1];
+            }
+            LongTicks[at] = ticks;
+            LongNames[at] = name;
+            LongSteps[at] = step;
+        }
+
+        private static string LongestText()
+        {
+            var text = new System.Text.StringBuilder(128);
+            for (int k = 0; k < Named && (LongNames[k] != null || LongSteps[k] != null); k++)
+            {
+                text.Append(k > 0 ? ", " : string.Empty).Append(LongNames[k] ?? NameOf(LongSteps[k])).Append(' ')
+                    .Append((LongTicks[k] * 1000.0 / Stopwatch.Frequency).ToString("F1", CultureInfo.InvariantCulture)).Append(" ms");
+            }
+            return text.ToString();
+        }
+
+        // A handler as its class and method ("MarketDirector.OnSave"); a lambda by the class and method it is written in.
+        private static string NameOf(Delegate step)
+        {
+            System.Reflection.MethodInfo m = step.Method;
+            Type t = m.DeclaringType;
+            while (t != null && t.Name.StartsWith("<", StringComparison.Ordinal) && t.DeclaringType != null)
+            {
+                t = t.DeclaringType;
+            }
+            string method = m.Name;
+            int close = method.StartsWith("<", StringComparison.Ordinal) ? method.IndexOf('>') : -1;
+            return (t != null ? t.Name : "?") + "." + (close > 1 ? method.Substring(1, close - 1) : method);
         }
     }
 }
