@@ -638,6 +638,13 @@ namespace RealLifeOverhaul
             return Clamp(0.32f + Clamp(approval, 0f, 100f) / 100f * 0.6f + Clamp(push, 0f, MostPush), 0.05f, 0.95f);
         }
 
+        /// <summary>The approval after a post about the office went out (thousandths of a point of its worth): up to a point and a half, never past 95.</summary>
+        public static float PostedApproval(float approval, int weight)
+        {
+            float worth = Clamp(weight, 0, 1500) / 1000f;
+            return Math.Min(95f, approval + Math.Min(1.5f, worth * 3f));
+        }
+
         public static float StartApproval(float share)
         {
             return Clamp(46f + Clamp01(share) * 30f, 40f, 72f);
