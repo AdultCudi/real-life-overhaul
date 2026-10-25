@@ -47,6 +47,7 @@ namespace RealLifeOverhaul.Seasons
         {
             Instance = this;
             _look = new SnowLook(transform);
+            _seasonLook = new SeasonLook(transform, this);
             // The snow on the ground copies the game's road paint, which can only be looked for behind a screen.
             ScenePrewarm.Add("seasons: the game's road paint being found for the snow on the ground", RoadPaint.Prewarm);
             ScenePrewarm.Add(MarkWhat, MarkGround);
@@ -90,6 +91,9 @@ namespace RealLifeOverhaul.Seasons
             {
                 StopAll();
                 _look.Dispose();
+                _seasonLook.Dispose();
+                SeasonBar.Remove();
+                SeasonGame.ForgetFailures();
             }
             catch (Exception e)
             {
@@ -150,7 +154,7 @@ namespace RealLifeOverhaul.Seasons
             {
                 return;
             }
-            if (!Settings.Seasons)
+            if (!Settings.Seasons || StandDown())
             {
                 if (_on)
                 {
@@ -187,6 +191,7 @@ namespace RealLifeOverhaul.Seasons
             {
                 _look.Hide();
             }
+            Looks(day, time, year, salt, SeasonGame.Outdoors);
             if (salt != 0)
             {
                 News(day, hour, year, salt);
@@ -278,6 +283,7 @@ namespace RealLifeOverhaul.Seasons
             Falling = Cover = 0f;
             Step = 0;
             _look?.Hide();
+            StopLooks();
             if (_look != null && _look.Ground.Marked > 0)
             {
                 _look.Ground.Unmark();

@@ -21,6 +21,7 @@ internal static partial class Program
         SeasonCost();
         SeasonSources();
         SnowLookSources();
+        SeasonLooks();
         SeasonTexts();
     }
 
@@ -371,7 +372,9 @@ internal static partial class Program
             string text = System.IO.File.ReadAllText(file);
             foreach (string word in new[] { "AppearanceSetter", "MaterialPropertyBlock", "EnableKeyword", "VehicleController", "SkinnedMeshRenderer>" })
             {
-                if (text.Contains(word))
+                // People's clothes alone, for the cold, behind an option off by default (SeasonGame.Coats.cs, checked in SeasonLookChecks).
+                bool clothes = word == "AppearanceSetter" && System.IO.Path.GetFileName(file) == "SeasonGame.Coats.cs";
+                if (text.Contains(word) && !clothes)
                 {
                     touched.Add(System.IO.Path.GetFileName(file) + ": " + word);
                 }

@@ -14,7 +14,7 @@ namespace RealLifeOverhaul.Seasons
     /// game's in memory, never in a save, written once a season and put back exactly), the place by the player where the
     /// rain falls, and the paces the city's people are given as they set off (narrowed on snow and put back).
     /// </summary>
-    public static class SeasonGame
+    public static partial class SeasonGame
     {
         private const float WalkLeast = 0.6f;   // m/s: no walker is held slower than this, however deep the snow
 
@@ -220,6 +220,7 @@ namespace RealLifeOverhaul.Seasons
         {
             RestoreDemand();
             RestoreWalkers();
+            RestoreLooks();
             _walkFailed = false;
         }
     }
