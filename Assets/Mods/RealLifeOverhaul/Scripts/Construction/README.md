@@ -5,9 +5,9 @@ The construction game: a construction company of the player's (a business type o
 ## Read first
 
 - `BuildCatalogue.cs`: every number and every name the texts are made of (game-free).
-- The rules, game-free and checked offline (`EconomyCheck/BuildersChecks.cs`): `LandRules.cs`, `PlansRules.cs`, `PlanningRules.cs`, `SiteRules.cs`, `MoneyRules.cs`, `TenderRules.cs`, `FirmRules.cs`, `DevelopmentRules.cs`, `CommissionRules.cs` (a builder of the city's hired by the player), `FrontDeskRules.cs` (the front desks, `EconomyCheck/BuilderDeskChecks.cs`), `BuildRandom.cs`.
+- The rules, game-free and checked offline (`EconomyCheck/BuildersChecks.cs`): `LandRules.cs`, `PlansRules.cs`, `PlanningRules.cs`, `SiteRules.cs`, `MoneyRules.cs`, `TenderRules.cs`, `FirmRules.cs`, `DevelopmentRules.cs`, `CommissionRules.cs` (a builder of the city's hired by the player), `FrontDeskRules.cs` (the front desks, `EconomyCheck/BuilderDeskChecks.cs`), `TrackRules.cs` (the objectives on the HUD, `EconomyCheck/TrackChecks.cs`), `BuildRandom.cs`.
 - `BuildState.cs` and `BuildStore.cs`: the save's one line.
-- `ConstructionDirector.cs`: the state and its timing; its parts are named for what they do (`.Projects`, `.Sites`, `.Day`, `.Market`, `.Actions`, `.App`, `.Asks`, `.Tests`, and `.Hire` and `.HireTests` for a builder the player hires, with or without a company, `.Desk` and `.DeskTests` for the front desks).
+- `ConstructionDirector.cs`: the state and its timing; its parts are named for what they do (`.Projects`, `.Sites`, `.Day`, `.Market`, `.Actions`, `.App`, `.Asks`, `.Tests`, and `.Hire` and `.HireTests` for a builder the player hires, with or without a company, `.Desk` and `.DeskTests` for the front desks, `.Map` and `.MapTests` for Show on map, `.Track` and `.TrackTests` for the objectives in the game's objectives window through `Core/GameUi/TaskGroup.cs`).
 - `ConstructionBridges.cs`: everything it asks of the rest of the mod, each with a default; `Wiring/Wiring.ConstructionLinks.cs` fills them in.
 - `ConstructionGame.cs`: the one file that reads or changes the game; the front desks' own side of it is `BuilderDeskGame.cs`, with the person to point at (`BuilderDeskPointer.cs`) and the conversation in the game's dialogue panel (`BuilderDesk.cs`).
 

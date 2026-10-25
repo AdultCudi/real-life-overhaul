@@ -188,6 +188,9 @@ namespace RealLifeOverhaul.Construction
         /// <summary>A site's contractor set (a rival who won its tender). Default: nothing.</summary>
         public static Action<int, int> SetContractor;
 
+        /// <summary>A site's works set to so many of its hours done (a project's site set out again where its works had reached). Default: nothing.</summary>
+        public static Action<int, float> SiteDone;
+
         /// <summary>A site handed over now, its works done. False for one not in the programme. Default: no.</summary>
         public static Func<int, bool> FinishSite;
 
@@ -274,6 +277,9 @@ namespace RealLifeOverhaul.Construction
 
         /// <summary>A civil claim filed against the player for faults: the amount, the claimant's name, the building. Its number, or 0. Default: none.</summary>
         public static Func<long, string, string, int> Claim;
+
+        /// <summary>The day a claim against the player (its number) must be answered by while the court has it; -1 once it has not. Default: -1.</summary>
+        public static Func<int, int> ClaimDue;
 
         /// <summary>A case opened for a bribe to an inspector that came out: the amount. Its number, or 0. Default: none.</summary>
         public static Func<int, int> Bribery;
@@ -432,6 +438,7 @@ namespace RealLifeOverhaul.Construction
             StartWorks = null;
             Site = null;
             SetContractor = null;
+            SiteDone = null;
             FinishSite = null;
             DropSite = null;
             SiteCount = null;
@@ -456,6 +463,7 @@ namespace RealLifeOverhaul.Construction
             Record = null;
             Lawyer = null;
             Claim = null;
+            ClaimDue = null;
             Bribery = null;
             Opened = null;
             Standing = null;

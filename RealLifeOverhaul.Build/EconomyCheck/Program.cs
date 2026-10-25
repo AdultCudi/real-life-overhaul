@@ -135,6 +135,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--schools")
+        {
+            SchoolChecks();   // (Birchwood School and the city's schools alone, while working on them: SchoolChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--uptown-fill")
         {
             UptownLifeChecks();   // (Uptown's life and its filled band alone, while working on them: UptownLifeChecks.cs, UptownFillChecks.cs, UptownPlaceChecks.cs, UptownBigChecks.cs)
@@ -159,6 +165,12 @@ internal static partial class Program
         if (args.Length == 1 && args[0] == "--desk")
         {
             BuilderDesk();   // (the front desks alone, while working on them: BuilderDeskChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--track")
+        {
+            Track();   // (Show on map and the construction objectives alone, while working on them: TrackChecks.cs)
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
@@ -529,6 +541,7 @@ internal static partial class Program
         Builders();     // the construction game: the catalogue, the land, the plans and planning, a site, the money, tenders and rivals, the developers, the frame, the store's line, the sources and wiring, the texts (BuildersChecks.cs)
         Hire();         // a builder of the city's hired by the player: the quotes, the contract's money, the penalty, the pace, the line, the sources, the texts (HireChecks.cs)
         BuilderDesk();  // the front desks: what the desk talks about first, the front desk picked, the office's visitors, the one quote and hire, the click, the tests, the texts (BuilderDeskChecks.cs)
+        Track();        // Show on map and the construction objectives: what is under way, each line's words, the order, the cap, the claim kept, the one way to the destination, the game's objectives window, the texts (TrackChecks.cs)
         ShowFlats();    // show flats and renovations: viewings, buyers and prices, a refit's hours, grade and quote, the fittings' decor, the lines, the game's residential designs, the sources, the texts (ShowFlatsChecks.cs)
         Redevelop();    // redevelopment: refurnishing with the game's designs and its price, an AI business's new layout, the lines, the sources, the texts (RedevelopChecks.cs)
         DistrictSaveChecks();   // the district save: whose a place is, what each record does, put back where it stood, the store's line, nothing at all for a game with none (DistrictSaveChecks.cs)
@@ -538,6 +551,7 @@ internal static partial class Program
         UptownBigChecks();    // Uptown's wholesale store and gas station: their lots, their ground and where each stands, the whole designs, the mouths, the sources, the texts (UptownBigChecks.cs)
         MarketsBuild();   // the city's builders on the market and a project's hedge: who is listed, the news and its moves, two machines alike, the building materials, the hedge's rules and money, a project's exposure, the books, the sources, the texts (MarketsBuildChecks.cs)
         LandmarksChecks();    // Uptown's landmarks: their sites, a span of lots, the timetable, the lift, the season, the stadium, the line, the sources, the texts (LandmarksChecks.cs)
+        SchoolChecks();       // Birchwood School and the city's schools: the campus on its block, the market, the owner's rule for NPCs, the days, the lift, the line, the sources, the texts (SchoolChecks.cs)
         TestRunChecks();   // the city expansion's test run: its order, its registry and every check in it, the lines it reads, the lots it gives, its carry-over, the summary, the texts (TestRunChecks.cs)
         CivicBuild();   // the city around the construction company: the building code, the one council's zoning, rigged tenders, unpaid bills, the building of the year, the lines, the sources, the texts (CivicBuildChecks.cs)
         Seasons();      // the seasons: the goods' table, the season of a day, the snow of a winter day and how much lies, the cost, the sources, the texts (SeasonChecks.cs)

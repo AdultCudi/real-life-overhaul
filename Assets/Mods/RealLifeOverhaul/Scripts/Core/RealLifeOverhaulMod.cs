@@ -68,6 +68,8 @@ namespace RealLifeOverhaul
             Guard.Step("Uptown's places for the district save", () => Uptown.LifeDirector.Register(context.Logger));   // before any save is read: its early step runs then
             // After Uptown's: the lift is asked as the district's buildings are declared.
             Guard.Step("the landmarks' places and their lift of Uptown's traffic", () => Landmarks.LandmarksDirector.Register(context.Logger));
+            // After the landmarks': the campus's name lifts Uptown's traffic after theirs.
+            Guard.Step("the schools' street and their lift of Uptown's traffic", () => Schools.SchoolsDirector.Register(context.Logger));
             Guard.Step("the city expansion's test run, if one waits for its load", () => TestRun.RunDirector.Begin(context.Logger));   // before any save is read: it hears the load's own lines
 
             var options = new ModOptions()
@@ -1600,6 +1602,9 @@ namespace RealLifeOverhaul
             Guard.Step("Uptown.GroundDirector", () => Guard.Add<Uptown.GroundDirector>(_root));
             Guard.Step("Uptown.LifeDirector", () => Uptown.LifeDirector.Logger = context.Logger);
             Guard.Step("Uptown.LifeDirector", () => Guard.Add<Uptown.LifeDirector>(_root));   // after Uptown's ground's director: its buildings declared for the made buildings below
+            Guard.Step("Schools.SchoolsDirector", () => Schools.SchoolsDirector.Logger = context.Logger);
+            // Birchwood School: its main school declared for the made buildings below, its other buildings asked of the copy engine.
+            Guard.Step("Schools.SchoolsDirector", () => Guard.Add<Schools.SchoolsDirector>(_root));
             Guard.Step("NewBuildings.NewBuildingsDirector", () => NewBuildings.NewBuildingsDirector.Logger = context.Logger);
             // Its buildings are made behind the loading screen, once every director has declared its own.
             Guard.Step("NewBuildings.NewBuildingsDirector", () => Guard.Add<NewBuildings.NewBuildingsDirector>(_root));

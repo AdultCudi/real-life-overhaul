@@ -127,6 +127,11 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\SpacesRules.cs" Link="Mod\Uptown\SpacesRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\LayoutPlans.cs" Link="Mod\Uptown\LayoutPlans.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\LayoutStreets.cs" Link="Mod\Uptown\LayoutStreets.cs" />
+    <!-- "What is this ground?" (GroundSurveyCheck.cs): the district's ground read at a spot, game-free. -->
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\GroundSurvey.cs" Link="Mod\Uptown\GroundSurvey.cs" />
+    <!-- Uptown's parks (UptownParksCheck.cs): their layout, paths and the search for the game's pieces, game-free. -->
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\ParksRules.cs" Link="Mod\Uptown\ParksRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\PieceRules.cs" Link="Mod\Uptown\PieceRules.cs" />
     <!-- Uptown's cut in the city map's fog (UptownFogCheck.cs, with the game's own fog in UptownFogGame.cs): its data, game-free. -->
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\LayoutFog.cs" Link="Mod\Uptown\LayoutFog.cs" />
     <!-- Uptown's streets (UptownStreetsCheck.cs): its buses' routes to every block and their reach, its street furniture, game-free; the bus network's routes of a district's own. -->

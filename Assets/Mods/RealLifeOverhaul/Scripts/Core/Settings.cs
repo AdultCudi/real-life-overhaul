@@ -49,6 +49,7 @@
         public const string ConstructionCityId = "construction_city";              // ...the city around it: rigged tenders, unpaid bills, the building of the year
         public const string ConstructionRedevelopId = "construction_redevelop";    // ...knocking down, joining, extending and converting Uptown's buildings
         public const string ConstructionCityRedevelopId = "construction_city_redevelop";   // ...how often the city's developers do it to the city's own
+        public const string ConstructionTrackId = "construction_track";            // ...its matters under way as lines in the game's objectives window
         public const string HouseholdStaffId = "home_household";
         public const string CameraFovId = "camera_fov";
         public const string CameraHeightId = "camera_height";
@@ -359,6 +360,7 @@
         public const string NewGroundTestRoadId = "newground_test_road";   // NewGround: a developer's test road, read at each load
         public const string UptownId = "uptown";   // Uptown, north of Manhattan: its ground laid at each load
         public const string LandmarksId = "uptown_landmarks";   // Uptown's landmarks: the tower, the mall and the stadium (Scripts/Landmarks)
+        public const string SchoolsId = "uptown_campus";        // Birchwood School's campus on Uptown's west square and the city's schools (Scripts/Schools)
 
         public static bool CameraEnabled = true;
         public static bool CameraIndoors = false;
@@ -402,6 +404,7 @@
         public static bool ConstructionCity = true;        // rigged tenders, unpaid bills taken to court, and the City Ledger's building of the year
         public static bool ConstructionRedevelop = true;   // Uptown's buildings knocked down, their ground joined or split and built on again, storeys added, uses changed
         public static int ConstructionCityRedevelop = 2;   // the city's developers redevelop Uptown's own buildings: 0 Off, 1 Slow, 2 Usual, 3 Lively
+        public static bool ConstructionTrack = true;       // the construction matters under way shown in the game's objectives window
         public static bool HouseholdStaff = true;   // a cleaner, a cook, a butler or a mechanic taken on for the home through the phone
         public static int CameraFov = 55;        // degrees, vertical
         public static bool LifeEvents = true;
@@ -722,6 +725,7 @@
         public static bool NewGroundTestRoad = false;    // a copy of a short stretch of road added to the traffic at each load, for the developer's test
         public static bool Uptown = true;                // the district north of Manhattan laid at each load; read only then
         public static bool Landmarks = true;             // Uptown's three landmarks: announced, tendered, built, opened, and what they do for the district
+        public static bool Schools = true;               // Birchwood School on Uptown's west square and the city's schools: its buildings at the next load, its market at once
 
         private static string _modId;
 
@@ -801,6 +805,7 @@
             ConstructionCity = Bool(modId, ConstructionCityId, ConstructionCity);
             ConstructionRedevelop = Bool(modId, ConstructionRedevelopId, ConstructionRedevelop);
             ConstructionCityRedevelop = System.Math.Max(0, System.Math.Min(3, Int(modId, ConstructionCityRedevelopId, ConstructionCityRedevelop)));
+            ConstructionTrack = Bool(modId, ConstructionTrackId, ConstructionTrack);
             HouseholdStaff = Bool(modId, HouseholdStaffId, HouseholdStaff);
             CameraFov = Int(modId, CameraFovId, CameraFov);
             CameraHeight = Int(modId, CameraHeightId, CameraHeight);
@@ -1110,6 +1115,7 @@
             NewGroundTestRoad = Bool(modId, NewGroundTestRoadId, NewGroundTestRoad);
             Uptown = Bool(modId, UptownId, Uptown);
             Landmarks = Bool(modId, LandmarksId, Landmarks);
+            Schools = Bool(modId, SchoolsId, Schools);
             NewShops = Bool(modId, NewShopsId, NewShops);
         }
 

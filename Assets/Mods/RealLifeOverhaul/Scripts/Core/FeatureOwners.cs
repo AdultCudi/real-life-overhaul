@@ -42,6 +42,7 @@ namespace RealLifeOverhaul
             { "RealLifeOverhaul.BuildTrades", "buildtrades" },
             { "RealLifeOverhaul.Construction", "construction" },
             { "RealLifeOverhaul.Landmarks", "landmarks" },
+            { "RealLifeOverhaul.Schools", "schools" },
             { "RealLifeOverhaul.Hustles", "hustles" },
             { "RealLifeOverhaul.Seasons", "seasons" },
             { "RealLifeOverhaul.Networking", "networking" },

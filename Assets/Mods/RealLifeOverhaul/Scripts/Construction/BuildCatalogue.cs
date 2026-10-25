@@ -319,6 +319,8 @@ namespace RealLifeOverhaul.Construction
         public static readonly int[] PlotStageEnds = { 400, 600, 800, 1000 };
         public static readonly int[] RebuildStageEnds = { 200, 400, 800, 1000 };
         public static readonly int[] ContractStageEnds = { 250, 500, 750, 1000 };
+        public const double LastStageEnd = 0.999;               // of the site's progress: the last stage stops here for the final inspection, the handover takes the rest
+        public const int ScheduleMostDays = 400;                // days: a site's schedule is run no further (480 hours at the slowest pace and code take about 280)
 
         // ------------------------------------------------------------------ requirements
 
@@ -415,6 +417,7 @@ namespace RealLifeOverhaul.Construction
         public const int InspectionCount = 3;
         public static readonly int[] InspectionFee = { 900, 1200, 1800 };
         public const int InspectLateHour = 15;                  // booked after this hour, the inspector comes a working day later
+        public const int InspectorHour = 10;                    // the inspector comes at ten on the day booked
         public const int PassBasePermille = 550;
         public const int PassPerQuality = 4;                    // thousandths a point of the work's quality
         public const int PassRushPermille = 100;                // less when rushed

@@ -98,6 +98,56 @@ namespace RealLifeOverhaul.Construction
             }
         }
 
+        /// <summary>A share of a site's progress within which a stage's end counts as reached: the programme keeps a site's hours in floats.</summary>
+        public const double EndSlack = 1e-6;
+
+        /// <summary>The inspections a kind of works has: three for a building, the final one only for the city's works.</summary>
+        public static int Inspections(ProjectKind kind)
+        {
+            int n = 0;
+            for (int s = 0; s < (int)WorkStage.Count; s++)
+            {
+                n += InspectionAfter(kind, (WorkStage)s) >= 0 ? 1 : 0;
+            }
+            return n;
+        }
+
+        /// <summary>The inspections passed, as bits (inspection k the bit 1 &lt;&lt; k).</summary>
+        public static int Passed(InspectionState[] inspections)
+        {
+            int bits = 0;
+            for (int k = 0; inspections != null && k < inspections.Length && k < 30; k++)
+            {
+                bits |= inspections[k] == InspectionState.Passed ? 1 << k : 0;
+            }
+            return bits;
+        }
+
+        /// <summary>
+        /// The stage a site's works are in at a progress (0 to 1), given the inspections passed (<see cref="Passed"/>): the stage
+        /// the progress falls in, its end still its own while the inspection that ends it has not passed. At the end of a stage
+        /// with no inspection, or with its inspection passed, the works go straight on into the next one, so the only thing a
+        /// stage's end ever holds the works for is the inspector. (Read as the stage at the progress alone, a stage's end kept
+        /// the works in that stage, whose end they may not pass: a site stood still at its first stage's end for good.)
+        /// </summary>
+        public static WorkStage WorkingStage(ProjectKind kind, double progress, int passed)
+        {
+            int[] ends = Ends(kind);
+            for (int s = 0; s < ends.Length - 1; s++)
+            {
+                if (progress < ends[s] / 1000.0 - EndSlack)
+                {
+                    return (WorkStage)s;
+                }
+                int inspection = InspectionAfter(kind, (WorkStage)s);
+                if (inspection >= 0 && (passed & (1 << inspection)) == 0)
+                {
+                    return (WorkStage)s;   // its end reached: held there until its inspection passes
+                }
+            }
+            return (WorkStage)(ends.Length - 1);
+        }
+
         /// <summary>Tenths of a load of a material one stage of a building needs.</summary>
         public static int Loads(BuildUse use, int area, int storeys, ProjectKind kind, WorkStage stage, Material material)
         {

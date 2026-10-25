@@ -185,6 +185,7 @@ namespace RealLifeOverhaul.Construction
         public long HirePaid;                        // what it has been paid so far: the deposit and the stages
         public long HirePenalty;                     // what it paid back at the handover for being late
         public bool HireFree;                        // a test's contract: nothing is paid either way
+        public int ClaimCase;                        // the court's number of a claim over faults in it, for the objectives while it is heard; 0 for none
 
         public string FitDesign = string.Empty;      // a refit's new furnishing: one of the game's interior designs for the unit, installed at the handover; empty keeps the furniture
         public string FitType = string.Empty;        // the firm's folder of that design: the business's type, or the game's empty business for a home or an empty unit

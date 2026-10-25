@@ -67,6 +67,9 @@ namespace RealLifeOverhaul.Construction
         {
             box.Title(u.Name);
             box.Subtitle(ConstructionGame.AddressText(u.Street, u.Number));
+            string where = u.Street;
+            int at = u.Number;
+            MapRow(box, () => _director.ShowBuilding(where, at));
             box.Row("reallife_bld_row_area", ConstructionText.T("reallife_bld_value_area", "area", ConstructionText.N(u.Sqm)));
             box.Row("reallife_bld_row_district", ConstructionGame.DistrictWords(u.District));
             box.Note(ConstructionText.T(u.Trading ? "reallife_bld_refit_note_rented" : "reallife_bld_refit_note_home"));

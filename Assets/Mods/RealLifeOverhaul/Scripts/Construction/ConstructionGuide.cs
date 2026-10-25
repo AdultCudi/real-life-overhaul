@@ -24,6 +24,7 @@ namespace RealLifeOverhaul.Construction
                 .Owns(Settings.ConstructionShowFlatsId, Settings.ConstructionRenovationsId)
                 .Owns(Settings.ConstructionCityId)
                 .Owns(Settings.ConstructionRedevelopId, Settings.ConstructionCityRedevelopId)
+                .Owns(Settings.ConstructionTrackId)
                 .Data(BuildStore.Key, BuildStore.TestKey)
                 .ResetData(() => ConstructionDirector.Instance?.Forget())
                 .Fact("bld_licence_fee", () => Money(BuildCatalogue.LicenceFee))
@@ -92,9 +93,12 @@ namespace RealLifeOverhaul.Construction
                 .Check("reallife_bld_test_hire_quotes", () => ConstructionDirector.TestHireQuotesNow(), "Construction check (a builder's quotes shown)", RunPlace.Here)
                 .Check("reallife_bld_test_hire", () => ConstructionDirector.TestHireNow(), "Construction check (a client project built by a rival now)", RunPlace.Here)
                 .Check("reallife_bld_test_hire_late", () => ConstructionDirector.TestHireLateNow(), "Construction check (a late builder pays its penalty)", RunPlace.Here)
+                .Check("reallife_bld_test_hire_worked", () => ConstructionDirector.TestHireWorkedNow(), "Construction check (a hired builder's site worked to its keys)", RunPlace.Here)
                 .Check("reallife_bld_test_desk_go", () => ConstructionDirector.TestDeskGoNow(), "Construction check (take me to a builder's desk)", RunPlace.Here)
                 .Test("reallife_bld_test_desk_talk", () => ConstructionDirector.TestDeskTalkNow())
                 .Check("reallife_bld_test_desk_pages", () => ConstructionDirector.TestDeskPagesNow(), "Construction check (a builder's desk pages)", RunPlace.Here)
+                .Check("reallife_bld_test_map", () => ConstructionDirector.TestMapNow(), "Construction check (show on map)", RunPlace.Here)
+                .Check("reallife_bld_test_track", () => ConstructionDirector.TestTrackNow(), "Construction check (objectives)", RunPlace.Here)
                 .Check("reallife_bld_test_show_flat", () => ConstructionDirector.TestShowFlatNow(), "Show flats check (a show flat at the test project now)", RunPlace.Here)
                 .Check("reallife_bld_test_viewing", () => ConstructionDirector.TestViewingNow(), "Show flats check (a viewing now)", RunPlace.Here)
                 .Check("reallife_bld_test_show_buyer", () => ConstructionDirector.TestShowBuyerNow(), "Show flats check (a buyer at the show flat now)", RunPlace.Here)
@@ -151,6 +155,7 @@ namespace RealLifeOverhaul.Construction
                 .AddDropdown(Settings.ConstructionCityRedevelopId, "reallife_bld_city_redevelop_option",
                     new[] { "reallife_bld_city_rate_off", "reallife_bld_city_rate_slow", "reallife_bld_city_rate_usual", "reallife_bld_city_rate_lively" },
                     Settings.ConstructionCityRedevelop, v => Settings.ConstructionCityRedevelop = v)
+                .AddToggle(Settings.ConstructionTrackId, "reallife_bld_track_option", Settings.ConstructionTrack, v => Settings.ConstructionTrack = v)
                 .AddButton("reallife_bld_test_lot", () => ConstructionDirector.Instance?.TestLot())
                 .AddButton("reallife_bld_test_company", () => ConstructionDirector.Instance?.TestCompany())
                 .AddButton("reallife_bld_test_licence", () => ConstructionDirector.Instance?.TestLicence())

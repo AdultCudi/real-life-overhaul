@@ -12,8 +12,8 @@ namespace RealLifeOverhaul.Construction
     /// its timing; every site goes up in the city's construction programme (Scripts/Civic), which asks this how fast. The
     /// state is read at a load whatever the option says (the programme's sites must be known as the builders'), and runs
     /// only while the option is on. Cost: one time comparison a frame; once a second, a look at the clock, the save hook,
-    /// the panels at the player's sites and the building the player is in (its front desk); an hour's and a day's passes
-    /// over the projects, crews and tenders when they come.
+    /// the panels at the player's sites, the building the player is in (its front desk) and the objectives' flag; an hour's
+    /// and a day's passes over the projects, crews and tenders when they come, and the objectives written after a change.
     /// </summary>
     public sealed partial class ConstructionDirector : MonoBehaviour
     {
@@ -140,6 +140,7 @@ namespace RealLifeOverhaul.Construction
             RedevelopSecond();
             ShowSecond();
             DeskSecond();
+            TrackSecond();
         }
 
         // ------------------------------------------------------------------ the state
@@ -174,6 +175,7 @@ namespace RealLifeOverhaul.Construction
             _loaded = true;
             _lastHour = -1;
             _lotsStamp = int.MinValue;
+            _trackDirty = true;
             Logger?.Info("Construction: " + (version > 0 ? "read (line version " + version + ")" : "a new save for the construction game") + ": " + state.Projects.Count + " project(s), "
                          + state.Crews.Count + " crew(s), " + state.Lots.Count + " lot(s) owned, " + state.Developments.Count + " development(s) known; the company "
                          + (state.Firm.Founded > 0 ? "founded on day " + state.Firm.Founded : "not founded") + ".");
@@ -254,6 +256,7 @@ namespace RealLifeOverhaul.Construction
             _downLooks.Clear();
             HidePanels();
             DropShowPlace("the save's state is forgotten");
+            TrackDown();
         }
 
         private void OnSave()
@@ -311,6 +314,7 @@ namespace RealLifeOverhaul.Construction
             RemoveApp();
             HidePanels();
             DesksDown();
+            TrackDown();
             DropShowPlace("the construction game stood down");
             if (was)
             {
@@ -370,6 +374,7 @@ namespace RealLifeOverhaul.Construction
             try
             {
                 HourWork(day, hour);
+                TrackChanged();   // a site's share done and the hour's inspections and tenders move the objectives on
             }
             catch (Exception e)
             {
@@ -385,8 +390,9 @@ namespace RealLifeOverhaul.Construction
                 {
                     return;   // a day's pass runs once a day, whatever the loads
                 }
+                int before = _state.LastDay;
                 _state.LastDay = day;
-                DayWork(day);
+                DayWork(day, before);
                 Changed();
             }
             catch (Exception e)
@@ -422,6 +428,7 @@ namespace RealLifeOverhaul.Construction
         internal void Changed()
         {
             AppChanged();
+            TrackChanged();
         }
     }
 }

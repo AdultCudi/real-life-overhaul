@@ -5,15 +5,14 @@ using UI.Notification;
 namespace RealLifeOverhaul.Construction
 {
     /// <summary>
-    /// The director's hour and day. The hour: deliveries at seven, the inspector at ten, the site managers, a contract's
-    /// first payment, the tenders closing, the opening days. The day: the crews' pay, morale, strikes and rivals' offers;
-    /// the plant hired and kept; the loans, investors, land tax, cover and flats sold; the plans, the engineer, planning, the
-    /// licence and the council's zoning; a night's theft, a storm, a fault coming to light and a bribe coming out.
+    /// The director's hour and day. The hour: deliveries at seven, the inspector from ten (for a site the programme is not
+    /// working then; a worked site has its visit in its own working hour), the site managers, a contract's first payment, the
+    /// tenders closing, the opening days. The day: the crews' pay, morale, strikes and rivals' offers; the plant hired and kept;
+    /// the loans, investors, land tax, cover and flats sold; the plans, the engineer, planning, the licence and the council's
+    /// zoning; a night's theft, a storm, a fault coming to light and a bribe coming out; a hired builder gone past its day.
     /// </summary>
     public sealed partial class ConstructionDirector
     {
-        private const int InspectorHour = 10;
-
         private void HourWork(int day, int hour)
         {
             for (int i = 0; i < _state.Projects.Count; i++)
@@ -29,7 +28,7 @@ namespace RealLifeOverhaul.Construction
                 }
                 for (int k = 0; k < (int)Inspection.Count; k++)
                 {
-                    if (p.Insp[k] == InspectionState.Booked && p.InspDay[k] <= day && (hour == InspectorHour || p.InspDay[k] < day))
+                    if (p.Insp[k] == InspectionState.Booked && SiteRules.Visits(day, hour, p.InspDay[k]))
                     {
                         Inspect(p, k, day);
                     }
@@ -83,7 +82,8 @@ namespace RealLifeOverhaul.Construction
 
         private readonly List<StaffView> _staffNow = new List<StaffView>(8);
 
-        private void DayWork(int day)
+        // The day's pass; before: the day the last one ran for.
+        private void DayWork(int day, int before)
         {
             long began = System.Diagnostics.Stopwatch.GetTimestamp();
             StaffDay();
@@ -97,6 +97,8 @@ namespace RealLifeOverhaul.Construction
             OpenedDay(day);
             ShowDay(day);
             CityDay(day);
+            HiresDay(day, before);   // a hired builder gone past its due day (ConstructionDirector.Hire.cs)
+            SitesLost();   // a building whose site the programme lost, set out again (ConstructionDirector.Sites.cs)
             RedevelopDay(day);   // notices run out, buildings kept empty, handovers the district could not take yet (ConstructionDirector.Demolish.cs)
             if (Verbose)
             {
@@ -556,6 +558,7 @@ namespace RealLifeOverhaul.Construction
             string claimant = ConstructionText.T(p.Kind == ProjectKind.Contract ? "reallife_bld_claimant_client" : p.After == AfterUse.SellFlats
                 ? "reallife_bld_claimant_residents" : "reallife_bld_claimant_tenants");
             int number = Claim(claim, claimant, PlaceWords(p));
+            p.ClaimCase = Math.Max(0, number);   // the objectives say it must be answered while the court has it
             long covered = FirmRules.Pays(_state.Firm.Cover, claim, true, false, ConstructionGame.Prices);
             if (covered > 0)
             {

@@ -161,6 +161,7 @@ namespace RealLifeOverhaul.Construction
             t.Append('|');
             Join(t, p.HireDays, p.HirePace, p.HireStages, p.HireFree ? 1 : 0);   // a hired builder's contract, after every field an older reader knows
             t.Append('|').Append(p.HirePaid.ToString(Inv)).Append('|').Append(p.HirePenalty.ToString(Inv));
+            t.Append('|').Append(p.ClaimCase.ToString(Inv));   // a claim over faults, after every field an older reader knows
             if (p.FitDesign.Length > 0 || p.NoticeUntil > 0 || p.BuyOut != 0L || p.Added > 0)
             {
                 // Redevelopment's fields, after every field an older reader knows, and only when one is set: a record without them is as before.
@@ -533,6 +534,7 @@ namespace RealLifeOverhaul.Construction
             p.HireFree = r.I(0) == 1;
             p.HirePaid = Math.Max(0L, r.L(0L));
             p.HirePenalty = Math.Max(0L, r.L(0L));
+            p.ClaimCase = Math.Max(0, r.I(0));
             p.FitDesign = r.S();
             p.FitType = r.S();
             p.NoticeUntil = Math.Max(0, r.I(0));
