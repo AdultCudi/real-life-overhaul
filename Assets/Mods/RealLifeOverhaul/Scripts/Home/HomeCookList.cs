@@ -16,6 +16,7 @@ namespace RealLifeOverhaul
     public static class HomeCookList
     {
         private const int SizeRow = -1;
+        private const int ServeRow = -2;   // eat it now, or take it with you (Meals' takeout): shown while that option is on
         private const string ButtonCook = "reallife_home_cookpanel_cook";
         private const string Chosen = "a dish was chosen";
         private const string ButtonMake = "reallife_home_cookpanel_make";
@@ -39,6 +40,7 @@ namespace RealLifeOverhaul
         private static bool _cooker;
         private static int _fridges;
         private static int _size;
+        private static bool _pack;         // the serve row: packed to take rather than eaten at once; kept for the session like the size
 
         public static bool IsOpen => _list != null && _list.IsOpen;
 
@@ -69,6 +71,12 @@ namespace RealLifeOverhaul
                 _dark = HomeTidy.Dark(HomeTidy.Home());   // a home whose power is cut has no cooker to cook on (Utilities)
                 _cooker = HomePlace.Cookers.Count > 0 && !_dark;
                 HomePlace.ReadPantry(Pantry);
+                if (!Settings.MealsTakeout && HomeState.Takeout > 0)
+                {
+                    // Takeout switched off: what was packed joins the leftovers listed below, so nothing is lost.
+                    int back = HomeState.Unpack();
+                    Logger?.Info("Home: takeout is off: " + back + " packed portion(s) put by with the leftovers, " + HomeState.Takeout + " still packed.");
+                }
                 string found = Fill();
                 _closing = null;
                 _list.Open(OnPick, OnClosed);
@@ -158,11 +166,23 @@ namespace RealLifeOverhaul
                     }
                     return;
                 }
+                if (id == ServeRow)
+                {
+                    _pack = !_pack;
+                    string found = Fill();
+                    _list.Open(OnPick, OnClosed);
+                    if (Meta.Dev.Verbose)
+                    {
+                        Logger?.Info("Home check (choice): serving is now " + (_pack ? "packed to take" : "eaten at once") + ": " + found);
+                    }
+                    return;
+                }
                 if (id < 0 || id >= Plans.Count || Plans[id] == null)
                 {
                     return;
                 }
                 CookPlan plan = Plans[id];
+                plan.Pack = _pack && Settings.MealsTakeout;
                 HomeDirector host = _host;
                 if (Meta.Dev.Verbose)
                 {
@@ -218,6 +238,11 @@ namespace RealLifeOverhaul
             _list.Begin(JobText.T("reallife_home_cookpanel_title"), Text.ToString());
 
             _list.Add(SizeRow, JobText.T("reallife_home_cooklist_size", "size", JobText.T(SizeNames[_size])), JobText.T("reallife_home_cooklist_size_detail"), ButtonChange, true);
+            if (Settings.MealsTakeout)
+            {
+                string carried = HomeState.Takeout > 0 ? " " + JobText.T("reallife_takeout_serve_carried", "count", HomeState.Takeout.ToString(), "most", HomeBalance.TakeoutMost.ToString()) : string.Empty;
+                _list.Add(ServeRow, JobText.T(_pack ? "reallife_takeout_serve_pack" : "reallife_takeout_serve_now"), JobText.T("reallife_takeout_serve_detail") + carried, ButtonChange, true);
+            }
 
             CookPlan reheat = Cooking.Reheat(HomeState.Leftovers, HomeState.LeftoverDish, HomeState.LeftoverFill);
             if (reheat != null)
