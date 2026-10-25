@@ -112,6 +112,15 @@ namespace RealLifeOverhaul
             return HomeState.Tidy;
         }
 
+        /// <summary>
+        /// One home's tidiness in particular (0..100): its own floor where it has one, else home life's one figure. Household
+        /// staff may work at a home other than the one <see cref="Read"/> counts, so what they did is read from theirs.
+        /// </summary>
+        public static float ReadOf(BuildingRegistration home)
+        {
+            return UsesFloor(home) ? Mathf.Clamp(home.GetCleanliness(), 0f, 100f) : HomeState.Tidy;
+        }
+
         /// <summary>Tidier (positive) or messier (negative) by so many points of a hundred.</summary>
         public static void Change(float points)
         {

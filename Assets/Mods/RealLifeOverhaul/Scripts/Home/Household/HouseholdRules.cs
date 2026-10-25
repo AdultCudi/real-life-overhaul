@@ -4,7 +4,7 @@ using RealLifeOverhaul.Roommates;
 
 namespace RealLifeOverhaul.Household
 {
-    /// <summary>Who can be taken on for the home. The numbers are written into the save: never change one.</summary>
+    /// <summary>Who can be taken on for a home. The numbers are written into the save: never change one.</summary>
     public enum StaffKind
     {
         None = 0,
@@ -30,6 +30,16 @@ namespace RealLifeOverhaul.Household
         public int Salt;           // what tells their candidates apart from the other kinds'
     }
 
+    /// <summary>Why somebody cannot be taken on for a home.</summary>
+    public enum HireRefusal
+    {
+        None = 0,
+        NoHome,       // no home of the player's to work at
+        Taken,        // somebody of that kind works at that home already (or there is no such kind)
+        HomesFull,    // that home has nobody yet and the most homes with staff have them already
+        Full          // the most people on the staff at once
+    }
+
     /// <summary>A person the agency puts forward, before they are taken on.</summary>
     public struct StaffCandidate
     {
@@ -48,7 +58,8 @@ namespace RealLifeOverhaul.Household
     /// </summary>
     public static class HouseholdRules
     {
-        public const int Most = 4;                  // people on the staff at once: one of each kind
+        public const int HomesMost = 4;             // homes with staff at once: a flat in town, a villa and two more, and a call that stays short to page through
+        public const int Most = HomesMost * 4;      // people on the staff at once: one of each kind at each of those homes
         public const int QuitAfter = 2;             // visits in a row the player could not pay, after which they leave
         public const int NoteHour = 21;             // the hour the day's note comes, after the last visit of a day
         public const int CatchUpHours = 72;         // the most hours a late look makes up for (a long sleep); older ones are days off
@@ -267,8 +278,8 @@ namespace RealLifeOverhaul.Household
             return c;
         }
 
-        /// <summary>The next kind for the hiring page after <paramref name="kind"/>, skipping those taken on; None when all are.</summary>
-        public static StaffKind NextOpen(StaffKind kind, List<StaffMember> staff)
+        /// <summary>The next kind for the hiring page after <paramref name="kind"/>, skipping those taken on at that home; None when all are.</summary>
+        public static StaffKind NextOpen(StaffKind kind, List<StaffMember> staff, string street, int number)
         {
             int at = 0;
             for (int i = 0; i < Roles.Length; i++)
@@ -281,7 +292,7 @@ namespace RealLifeOverhaul.Household
             for (int k = 0; k < Roles.Length; k++)
             {
                 StaffKind next = Roles[(at + k) % Roles.Length].Kind;
-                if (Find(staff, next) == null)
+                if (FindAt(staff, next, street, number) == null)
                 {
                     return next;
                 }
@@ -289,6 +300,7 @@ namespace RealLifeOverhaul.Household
             return StaffKind.None;
         }
 
+        /// <summary>Somebody of the kind at any of the player's homes; null for none.</summary>
         public static StaffMember Find(List<StaffMember> staff, StaffKind kind)
         {
             for (int i = 0; staff != null && i < staff.Count; i++)
@@ -301,8 +313,132 @@ namespace RealLifeOverhaul.Household
             return null;
         }
 
-        /// <summary>The one shown at home at an hour: the butler before the cook before the cleaner; the mechanic works at the cars, outdoors.</summary>
-        public static StaffMember OnShow(List<StaffMember> staff, int day, int weekday, int hour)
+        /// <summary>Somebody of the kind at that home; null for none.</summary>
+        public static StaffMember FindAt(List<StaffMember> staff, StaffKind kind, string street, int number)
+        {
+            for (int i = 0; staff != null && i < staff.Count; i++)
+            {
+                if (staff[i] != null && staff[i].Kind == kind && staff[i].WorksAt(street, number))
+                {
+                    return staff[i];
+                }
+            }
+            return null;
+        }
+
+        /// <summary>True if anybody works at that home, leaving <paramref name="skip"/> out of it.</summary>
+        public static bool Staffed(List<StaffMember> staff, string street, int number, StaffMember skip = null)
+        {
+            for (int i = 0; staff != null && i < staff.Count; i++)
+            {
+                if (staff[i] != null && !ReferenceEquals(staff[i], skip) && staff[i].WorksAt(street, number))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>How many different homes have staff, leaving <paramref name="skip"/> out of it. A few people at most, so no list is made.</summary>
+        public static int HomesStaffed(List<StaffMember> staff, StaffMember skip = null)
+        {
+            int homes = 0;
+            for (int i = 0; staff != null && i < staff.Count; i++)
+            {
+                StaffMember m = staff[i];
+                if (m == null || ReferenceEquals(m, skip) || string.IsNullOrEmpty(m.HomeStreet))
+                {
+                    continue;
+                }
+                bool earlier = false;
+                for (int j = 0; j < i && !earlier; j++)
+                {
+                    StaffMember o = staff[j];
+                    earlier = o != null && !ReferenceEquals(o, skip) && o.WorksAt(m.HomeStreet, m.HomeNumber);
+                }
+                homes += earlier ? 0 : 1;
+            }
+            return homes;
+        }
+
+        /// <summary>
+        /// Whether somebody of a kind may be taken on for a home: one of each kind at each home, a home with nobody yet only
+        /// while fewer than <see cref="HomesMost"/> homes have staff, and never past <see cref="Most"/> people.
+        /// </summary>
+        public static HireRefusal CanHire(List<StaffMember> staff, StaffKind kind, string street, int number)
+        {
+            if (string.IsNullOrEmpty(street))
+            {
+                return HireRefusal.NoHome;
+            }
+            if (Role(kind) == null || FindAt(staff, kind, street, number) != null)
+            {
+                return HireRefusal.Taken;
+            }
+            if (staff != null && staff.Count >= Most)
+            {
+                return HireRefusal.Full;
+            }
+            if (!Staffed(staff, street, number) && HomesStaffed(staff) >= HomesMost)
+            {
+                return HireRefusal.HomesFull;
+            }
+            return HireRefusal.None;
+        }
+
+        /// <summary>
+        /// Whether a member may move to another home: not the one they are at, nobody of their kind there already, and a home
+        /// with nobody yet only while the homes with staff (leaving them out) are fewer than <see cref="HomesMost"/>.
+        /// </summary>
+        public static bool CanMove(List<StaffMember> staff, StaffMember m, string street, int number)
+        {
+            if (m == null || string.IsNullOrEmpty(street) || m.WorksAt(street, number))
+            {
+                return false;
+            }
+            if (FindAt(staff, m.Kind, street, number) != null)
+            {
+                return false;
+            }
+            return Staffed(staff, street, number, m) || HomesStaffed(staff, m) < HomesMost;
+        }
+
+        /// <summary>
+        /// Where a member goes when the home they worked at is no longer the player's: the first of the player's homes, in
+        /// their order, they may move to, counting only the homes still the player's (the one given up no longer holds a
+        /// place); -1 when there is none, and they leave.
+        /// </summary>
+        public static int Rehome(List<StaffMember> staff, StaffMember m, IList<HomeKey> homes)
+        {
+            if (m == null || homes == null)
+            {
+                return -1;
+            }
+            int staffed = 0;
+            for (int h = 0; h < homes.Count; h++)
+            {
+                staffed += homes[h].Valid && Staffed(staff, homes[h].Street, homes[h].Number, m) ? 1 : 0;
+            }
+            for (int h = 0; h < homes.Count; h++)
+            {
+                HomeKey home = homes[h];
+                if (!home.Valid || m.WorksAt(home.Street, home.Number) || FindAt(staff, m.Kind, home.Street, home.Number) != null)
+                {
+                    continue;
+                }
+                if (Staffed(staff, home.Street, home.Number, m) || staffed < HomesMost)
+                {
+                    return h;
+                }
+            }
+            return -1;
+        }
+
+        /// <summary>
+        /// The one shown at a home at an hour: of those who work there, the butler before the cook before the cleaner; the
+        /// mechanic works at the cars, outdoors. Staff of the player's other homes are never shown here.
+        /// </summary>
+        public static StaffMember OnShow(List<StaffMember> staff, int day, int weekday, int hour, string street, int number)
         {
             StaffMember best = null;
             int rank = 0;
@@ -310,7 +446,7 @@ namespace RealLifeOverhaul.Household
             {
                 StaffMember m = staff[i];
                 StaffRole role = m != null ? Role(m.Kind) : null;
-                if (role == null || role.Kind == StaffKind.Mechanic || m.OnDay != day || !AtWork(role, weekday, hour))
+                if (role == null || role.Kind == StaffKind.Mechanic || !m.WorksAt(street, number) || m.OnDay != day || !AtWork(role, weekday, hour))
                 {
                     continue;
                 }
