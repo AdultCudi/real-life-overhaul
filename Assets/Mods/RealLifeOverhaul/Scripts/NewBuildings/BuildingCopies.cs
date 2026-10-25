@@ -189,6 +189,25 @@ namespace RealLifeOverhaul.NewBuildings
             return (uMax - uMin) * (vMax - vMin);
         }
 
+        /// <summary>
+        /// A copy of a design of the catalogue (by its index) for its look alone, standing at once at (x, y, z) turned by
+        /// <paramref name="yaw"/> degrees: nothing of the game's controller, so it is no building of the city's and nobody enters
+        /// it (Uptown's fillers between its buildings). Null while the catalogue is not measured, or the design's building is gone.
+        /// </summary>
+        public static CopyLook StandLook(int design, Vector3 at, float yaw, string name)
+        {
+            return CopyGame.Ready && design >= 0 && design < CopyGame.DesignCount ? CopyGame.MakeLook(design, at, yaw, name) : null;
+        }
+
+        /// <summary>A look of <see cref="StandLook"/> taken away.</summary>
+        public static void RemoveLook(CopyLook look)
+        {
+            CopyGame.Remove(look);
+        }
+
+        /// <summary>The root of a look of <see cref="StandLook"/>, or null once it is gone.</summary>
+        public static Transform RootOf(CopyLook look) => CopyGame.RootOf(look);
+
         /// <summary>A copy of a design (by name, and size where one name stands for several) to stand at a place; null while not available.</summary>
         public static CopyHandle Place(string design, string size, Vector3 at, float yaw, string owner)
         {

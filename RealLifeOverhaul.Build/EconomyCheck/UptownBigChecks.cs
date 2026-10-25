@@ -91,7 +91,7 @@ internal static partial class Program
         Check(clear && holds && neighbours, "uptown big: a place's lots are none of the plan's ordinary buildings (BuildingsRules.Clear), its neighbours are");
         var built = UptownIds(plan, BuildingsRules.Built(plan, LandmarkRules.OwnBlock, 0f, 1f, new List<int>()));
         var leased = UptownIds(plan, BuildingsRules.Leased(plan, new List<int>()));
-        var legacy = UptownIds(plan, BuildingsRules.DayOne(plan, 0f, 1f, new List<int>()));
+        var legacy = UptownIds(plan, BuildingsRules.DayOne(plan, 0f, 1f, new List<int>(), LandmarkRules.OwnBlock));
         bool apart = true;
         foreach (string id in held)
         {

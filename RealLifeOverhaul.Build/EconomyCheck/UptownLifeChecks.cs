@@ -37,6 +37,7 @@ internal static partial class Program
         UptownFillChecks();
         UptownPlaceChecks();
         UptownDenseChecks();
+        UptownFrontChecks();
         UptownWorkChecks();
     }
 

@@ -43,7 +43,7 @@ namespace RealLifeOverhaul.Uptown
 
         // ---- the lots: places.md's footprints of Manhattan's size classes, in its mix
 
-        public const int PlanGeneration = 2;           // the plan's generation, kept in every save with Uptown: a save of an earlier one has its district's records retired
+        public const int PlanGeneration = 3;           // the plan's generation, kept in every save with Uptown: a save of an earlier one has its district's records retired
         public const float LotGap = 0f;                // m between two lots: none, Manhattan's buildings stand side by side
         public const float BackGap = 2f;               // m from the backs of 1st Avenue's buildings to the first lots behind them
         public const float FirstNorthDepth = 32f;      // m: the first block's strip along Uptown Avenue (no warehouse) ...
@@ -51,8 +51,8 @@ namespace RealLifeOverhaul.Uptown
         public const float StreetDepth = 35f;          // m: a strip along a street, half a block across: the two streets' lots meet back to back
         public const float AvenueDepth = 39f;          // m: a strip along an avenue beyond the first block, any class, its ends the block's corners
         private static readonly int[] MixShare = { 64, 14, 13, 7 };   // per cent of Manhattan's buildings in each class (the other 2%: theatres, cinemas, towers)
-        private static readonly int[] ClassWidth = { 11, 23, 23, 29 };   // m along the street: places.md's typical footprint of each class
-        private static readonly int[] ClassDepth = { 24, 32, 31, 39 };   // m back from it
+        private static readonly int[] ClassWidth = { 11, 23, 23, 29, 34, 34 };   // m along the street: places.md's typical footprint of each class; a venue's the game's theatre's
+        private static readonly int[] ClassDepth = { 24, 32, 31, 39, 27, 27 };   // m back from it
 
         // The backs of 1st Avenue's north side, block by block east of 9th Street (m, the game's buildings' boxes, Build 3682).
         private static readonly float[] FirstBacks = { 508.8f, 508.5f, 504.7f, 520.0f, 510.8f, 506.9f, 510.7f, 510.8f };
@@ -67,6 +67,14 @@ namespace RealLifeOverhaul.Uptown
         {
             new PlaceGround("uptown_place_wholesale", 1, FirstColumn + 2, 0, -113.4f, -53.4f, 557f, LotClass.Warehouse),
             new PlaceGround("uptown_place_fuel", 2, FirstColumn, 180, -291.5f, -268.5f, 32f, LotClass.Office),
+            // The district's venues (the owner, 25 Oct 2026: cinemas "to be rented"), lots of their own (no id: numbered as the
+            // block's lots), each 34 by 27 m on an avenue 18 m from its block's west corner, where a real district has them:
+            // two theatres on Summit Avenue, three cinemas on Uptown, Uptown and Crest Avenue, spread west to east.
+            new PlaceGround(null, 2, 7, 0, -187.72f, -153.72f, 27f, LotClass.Theatre),
+            new PlaceGround(null, 3, 14, 180, 423.38f, 457.38f, 27f, LotClass.Theatre),
+            new PlaceGround(null, 1, 4, 0, -449.62f, -415.62f, 27f, LotClass.Cinema),
+            new PlaceGround(null, 2, 12, 180, 248.78f, 282.78f, 27f, LotClass.Cinema),
+            new PlaceGround(null, 3, 16, 0, 597.98f, 631.98f, 27f, LotClass.Cinema),
         };
 
         public const float PlaceClear = 1.5f;          // m between a place's ground and the lots round it: a made building's clearance
@@ -137,23 +145,18 @@ namespace RealLifeOverhaul.Uptown
             return row == 1 && column >= FirstColumn && column < FirstColumn + FirstColumns;
         }
 
+        // The squares kept as parks (row * 100 + column): one in the west, one in the middle and one in the east of the band,
+        // each in another row, so every part of the district keeps green ground; every other square is built (the owner, 25 Oct
+        // 2026: "make the empty spaces denser").
+        private static readonly int[] Parks = { 202, 309, 117 };
+
         /// <summary>
-        /// True for a block left as a square (a park or a plaza), no lots on it. The plan's squares are every third block of
-        /// rows 2 and 3 on a stagger and every other block of row 1 beyond Manhattan's; of each row's, west to east, every
-        /// second is built (the owner, 24 Oct 2026: "build half the squares"), so the parks left are spread along every row.
+        /// True for a block left as a square (a park or a plaza), no lots on it: three of the plan's squares (every third block
+        /// of rows 2 and 3 on a stagger and every other block of row 1 beyond Manhattan's), one in each part of the band.
         /// </summary>
         public static bool IsSquare(int row, int column)
         {
-            if (!PlannedSquare(row, column))
-            {
-                return false;
-            }
-            int before = 0;
-            for (int c = 1; c < column; c++)
-            {
-                before += PlannedSquare(row, c) ? 1 : 0;
-            }
-            return before % 2 == 0;
+            return PlannedSquare(row, column) && Array.IndexOf(Parks, row * 100 + column) >= 0;
         }
 
         /// <summary>True for a block the plan first left as a square: built now where <see cref="IsSquare"/> is false.</summary>
@@ -231,7 +234,7 @@ namespace RealLifeOverhaul.Uptown
         /// <summary>Manhattan's share of a class among its buildings of the four classes, per cent of 98.</summary>
         public static int Share(LotClass kind)
         {
-            return MixShare[(int)kind];
+            return (int)kind < MixShare.Length ? MixShare[(int)kind] : 0;   // the venues are the table's, outside the mix
         }
 
         // One lot as laid, before its street and number are known.
@@ -340,9 +343,10 @@ namespace RealLifeOverhaul.Uptown
                 {
                     continue;
                 }
-                Run(row, column, laid, counts, next, g.From - PlaceClear, front, depth, facing, street);
+                float clear = g.Id == null ? LotGap : PlaceClear;   // a venue's lot stands beside the others as any lot does
+                Run(row, column, laid, counts, next, g.From - clear, front, depth, facing, street);
                 Place(g, row, column, laid, front, facing, street);
-                next = g.To + PlaceClear;
+                next = g.To + clear;
             }
             Run(row, column, laid, counts, next, to, front, depth, facing, street);
         }
@@ -351,7 +355,7 @@ namespace RealLifeOverhaul.Uptown
         private static void Place(PlaceGround g, int row, int column, List<Laid> laid, float front, int facing, string street)
         {
             float depth = (float)Math.Round(g.Depth(front)), along = (g.From + g.To) * 0.5f, half = depth * 0.5f;   // whole metres, its front on the street's line
-            var l = new Laid { Row = row, Column = column, Class = g.Class, Street = street, Place = g.Id, Width = (int)Math.Round(g.To - g.From), Depth = (int)Math.Round(depth) };
+            var l = new Laid { Row = row, Column = column, Class = g.Class, Street = street, Place = g.Id, Width = (int)Math.Round(g.To - g.From), Depth = (int)Math.Round(depth) };   // a venue's (no id): a lot of the block's
             l.X = facing == 0 || facing == 180 ? along : facing == 270 ? front + half : front - half;
             l.Z = facing == 0 ? front - half : facing == 180 ? front + half : along;
             l.X = Round(l.X);

@@ -50,7 +50,7 @@ internal static partial class Program
         var data = new Dictionary<string, string> { { LifeStore.Key, line } };
         Check(line.Contains("^g:" + LayoutRules.PlanGeneration) && back != null && back.Plan == LayoutRules.PlanGeneration && first != null && first.Plan == 1 && first.Opened
               && LifeStore.PlanOf(null) == 1 && LifeStore.PlanOf(new Dictionary<string, string>()) == 1 && LifeStore.PlanOf(data) == LayoutRules.PlanGeneration
-              && LayoutRules.PlanGeneration == 2 && new LifeState().Plan == LayoutRules.PlanGeneration,
+              && LayoutRules.PlanGeneration == 3 && new LifeState().Plan == LayoutRules.PlanGeneration,
             "uptown dense: the district's line says its plan's generation; a line without one, or no line, is of the first plan");
         Check(UptownLots.OfEarlierPlan("uptown_2_07_05") && !UptownLots.OfEarlierPlan(UptownLots.All[0].Id) && !UptownLots.OfEarlierPlan("uptown_place_fuel"),
             "uptown dense: a lot of the first plan is told apart from this plan's lots and places");

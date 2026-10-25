@@ -84,16 +84,16 @@ namespace RealLifeOverhaul.Uptown
         /// <summary>The table: the order is the tests' order through them.</summary>
         public static readonly SpecialPlace[] All =
         {
-            new SpecialPlace("uptown_2_06_001", "VantanderBank", BankType, null, D, 2, Office, Office, SpecialStaff.Desk),
+            new SpecialPlace("uptown_2_05_004", "VantanderBank", BankType, null, D, 2, Office, Office, SpecialStaff.Desk),
             new SpecialPlace("uptown_2_09_004", "CityWorkforceInc", "ba:businesstype_recruitmentagency", "Summit Talent Partners", C, 2, Retail, Retail, SpecialStaff.Desk),
             new SpecialPlace("uptown_2_09_008", "McCainseMarketing", "ba:businesstype_marketingagency", "Northline Media", C, 2, Retail, Retail, SpecialStaff.Desk),
-            new SpecialPlace("uptown_2_10_009", "Kingdom Office", "ba:businesstype_interiorinstallationfirm", "Crestwork Interiors", D, 2, Retail, Retail, SpecialStaff.Desk),
-            new SpecialPlace("uptown_3_10_001", "MrScottsOfficeSupplies", "ba:businesstype_officesupplystore", "Paper Trail Office Supply", D, 2, Retail, Retail, SpecialStaff.Desk),
-            new SpecialPlace("uptown_2_12_008", "Square Appliances", "ba:businesstype_appliancestore", "Uptown Appliance Hall", C, 1, Retail, Retail, SpecialStaff.Desk),
-            new SpecialPlace("uptown_2_09_005", "Hamptons Furniture", "ba:businesstype_furniturestore", "Hearth and Oak Furniture", M, 1, Retail, Retail, SpecialStaff.Desk),
+            new SpecialPlace("uptown_2_10_006", "Kingdom Office", "ba:businesstype_interiorinstallationfirm", "Crestwork Interiors", D, 2, Retail, Retail, SpecialStaff.Desk),
+            new SpecialPlace("uptown_3_10_010", "MrScottsOfficeSupplies", "ba:businesstype_officesupplystore", "Paper Trail Office Supply", D, 2, Retail, Retail, SpecialStaff.Desk),
+            new SpecialPlace("uptown_2_12_006", "Square Appliances", "ba:businesstype_appliancestore", "Uptown Appliance Hall", C, 1, Retail, Retail, SpecialStaff.Desk),
+            new SpecialPlace("uptown_2_09_007", "Hamptons Furniture", "ba:businesstype_furniturestore", "Hearth and Oak Furniture", M, 1, Retail, Retail, SpecialStaff.Desk),
             new SpecialPlace("uptown_3_10_004", "El Gato Food Market", "ba:businesstype_supermarket", "Corner Basket Market", C, 1, Retail, Retail, SpecialStaff.Till, "Corner Basket Manager"),
-            new SpecialPlace("uptown_3_08_008", "IndustryCityIntensiveCareUnit", "ba:businesstype_clinic", "Summit Care Clinic", C, 2, Retail, Retail, SpecialStaff.None),
-            new SpecialPlace("uptown_2_10_006", "Manhattan Luxury Cars", "ba:businesstype_cardealership", "Crest Motors", M, 1, Retail, Retail, SpecialStaff.Showroom),
+            new SpecialPlace("uptown_3_08_010", "IndustryCityIntensiveCareUnit", "ba:businesstype_clinic", "Summit Care Clinic", C, 2, Retail, Retail, SpecialStaff.None),
+            new SpecialPlace("uptown_2_11_005", "Manhattan Luxury Cars", "ba:businesstype_cardealership", "Crest Motors", M, 1, Retail, Retail, SpecialStaff.Showroom),
             new SpecialPlace("uptown_3_14_001", "BlueStone Imports", ImportType, "Northgate Trading", H, 1, Special, Warehouse, SpecialStaff.Desk, null, ImportedGoods),
         };
 

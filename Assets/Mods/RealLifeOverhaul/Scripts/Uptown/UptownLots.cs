@@ -9,7 +9,9 @@ namespace RealLifeOverhaul.Uptown
         Small = 0,       // shops and homes: the game's sizes A, B, C and F
         Office = 1,      // D, J and K
         Big = 2,         // big stores and big homes: M, L and N
-        Warehouse = 3    // H, I, P and Q
+        Warehouse = 3,   // H, I, P and Q
+        Theatre = 4,     // R: a theatre, on the avenues (LayoutRules' table of the district's venues)
+        Cinema = 5       // S: a cinema, the same
     }
 
     /// <summary>
@@ -117,6 +119,8 @@ namespace RealLifeOverhaul.Uptown
         private static readonly string[] OfficeSizes = { "ba:buildingsize_d", "ba:buildingsize_j", "ba:buildingsize_k" };
         private static readonly string[] BigSizes = { "ba:buildingsize_m", "ba:buildingsize_l", "ba:buildingsize_n" };
         private static readonly string[] WarehouseSizes = { "ba:buildingsize_h", "ba:buildingsize_i", "ba:buildingsize_p", "ba:buildingsize_q" };
+        private static readonly string[] TheatreSizes = { "ba:buildingsize_r" };
+        private static readonly string[] CinemaSizes = { "ba:buildingsize_s" };
 
         private static string _why = "the city has not loaded";
 
@@ -186,6 +190,10 @@ namespace RealLifeOverhaul.Uptown
                     return BigSizes;
                 case LotClass.Warehouse:
                     return WarehouseSizes;
+                case LotClass.Theatre:
+                    return TheatreSizes;
+                case LotClass.Cinema:
+                    return CinemaSizes;
                 default:
                     return SmallSizes;
             }

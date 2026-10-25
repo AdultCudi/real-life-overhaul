@@ -46,6 +46,34 @@ namespace RealLifeOverhaul.NewBuildings
         /// <summary>The buildings standing in this city, shown or hidden.</summary>
         public static int Count => City.Count;
 
+        /// <summary>
+        /// Raised once a load, with the city's designs measured and before any building is made: a feature may choose its
+        /// declarations' designs and where on their lots they stand from the catalogue there (Uptown stands its streets'
+        /// buildings side by side, LifeDirector.Frontage). A handler that throws is logged and the buildings are made as declared.
+        /// </summary>
+        public static event Action<IList<DesignEntry>> Arranging;
+
+        // The designs measured: each handler of Arranging in turn, a fault of one never the others'.
+        internal static void Arrange(IList<DesignEntry> designs, Action<Exception> fault)
+        {
+            Action<IList<DesignEntry>> all = Arranging;
+            if (all == null)
+            {
+                return;
+            }
+            foreach (Delegate one in all.GetInvocationList())
+            {
+                try
+                {
+                    ((Action<IList<DesignEntry>>)one)(designs);
+                }
+                catch (Exception e)
+                {
+                    fault?.Invoke(e);
+                }
+            }
+        }
+
         /// <summary>Declares a building, in place of one with the same id; made at the next load (or this one, if it has not come to them yet).</summary>
         public static void Declare(MadeSpec spec)
         {
