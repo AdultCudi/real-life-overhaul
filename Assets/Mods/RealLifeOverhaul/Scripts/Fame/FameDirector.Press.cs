@@ -39,7 +39,8 @@ namespace RealLifeOverhaul.Fame
             {
                 return 0;
             }
-            return FamePress.Footfall(f, f.District(reg.Neighborhood)) + FameCity.BoostAt(f, FameGame.Place(reg), reg.Neighborhood, FameGame.Day);
+            string district = GameRegistrations.District(reg);
+            return FamePress.Footfall(f, f.District(district)) + FameCity.BoostAt(f, FameGame.Place(reg), district, FameGame.Day);
         }
 
         private void MakeParts()

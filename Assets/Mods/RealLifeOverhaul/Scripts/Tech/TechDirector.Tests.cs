@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using UI.Notification;
 
 namespace RealLifeOverhaul.Tech
@@ -427,6 +429,75 @@ namespace RealLifeOverhaul.Tech
             TechBridges.Stock?.Invoke(107, -30);
             TellTech(NotificationType.Info, "reallife_infra_note_price_war", Data("name", c.Name, "price", TechText.Mille(c.RivalPrice)), TabInfra, TechApp.CloudRow);
             ChangedTech();
+        }
+
+        private const string TestStreet = "Test Street (Real Life Overhaul)";   // no street of the city's has this name, so no building is found for it
+
+        /// <summary>
+        /// A registration whose building the city lacks (as a player's save held, left by another mod) is put in the save's
+        /// list for the length of this call and taken out again before the game runs another frame: the tech hiring's
+        /// districts and the walks of the player's businesses, offices of tech firms and warehouses read past it.
+        /// PASS when none throws and none takes it in. Refused in a Going Public session, where the list is shared.
+        /// </summary>
+        public void TestOrphanRegistration()
+        {
+            GameInstance save = Save;
+            if (save == null || save.BuildingRegistrations == null || GoingPublic.InSession)
+            {
+                Notifications.ShowError("reallife_hire_test_orphan_off");
+                return;
+            }
+            var orphan = new BuildingRegistration
+            {
+                // a tech firm, so every walk below reaches its test of the building
+                StreetName = TestStreet, StreetNumber = 1, RentedByPlayer = true, BusinessName = TestStreet, businessTypeName = FirmsGame.WebAgency
+            };
+            var districts = new List<string>(16);
+            var regs = new List<BuildingRegistration>(32);
+            string failed = null;
+            int taken = 0;
+            save.BuildingRegistrations.Add(orphan);
+            try
+            {
+                failed = Walk("the tech hiring's districts", () => HiringGame.Districts(districts)) ?? failed;
+                failed = Walk("the player's businesses", () => taken += Holds(regs, orphan, Economy.Books.Businesses)) ?? failed;
+                failed = Walk("the tech firms", () => taken += Holds(regs, orphan, FirmsGame.Firms)) ?? failed;
+                failed = Walk("the businesses with professionals", () => taken += Holds(regs, orphan, TalentGame.Businesses)) ?? failed;
+                failed = Walk("the warehouses for data centres", () => taken += Holds(regs, orphan, InfraGame.Warehouses)) ?? failed;
+            }
+            finally
+            {
+                save.BuildingRegistrations.Remove(orphan);   // taken out on every path: the game never sees it
+            }
+            bool ok = failed == null && taken == 0 && GameRegistrations.WasTold(orphan);
+            Logger?.Info("Buildings check (a registration with no building, at " + TestStreet + "): " + districts.Count + " district(s) read for hiring; "
+                         + (failed != null ? failed + " threw" : "no walk threw") + "; " + taken + " walk(s) took it in; the warning " + (GameRegistrations.WasTold(orphan) ? "given" : "not given")
+                         + "; the save's list as before: " + (ok ? "PASS" : "FAIL"));
+            Notifications.Show(ok ? NotificationType.Success : NotificationType.Error, ok ? "reallife_hire_test_orphan_pass" : "reallife_hire_test_orphan_fail", null, 10f);
+        }
+
+        // One walk of the test: its name if it threw, else null. The fault is logged; nothing is switched off for a test.
+        private static string Walk(string name, Action walk)
+        {
+            try
+            {
+                walk();
+                return null;
+            }
+            catch (Exception e)
+            {
+                Logger?.Warn("Buildings check: " + name + " threw on a registration with no building: " + e);
+                return name;
+            }
+        }
+
+        // 1 if the walk put the registration with no building in its list, else 0.
+        private static int Holds(List<BuildingRegistration> into, BuildingRegistration orphan, Action<List<BuildingRegistration>> walk)
+        {
+            walk(into);
+            int n = into.Contains(orphan) ? 1 : 0;
+            into.Clear();
+            return n;
         }
     }
 }

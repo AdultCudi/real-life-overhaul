@@ -55,7 +55,7 @@ namespace RealLifeOverhaul.Economy
             i.AvgProfit7 = b.AvgProfit7;
             i.DaysOnRecord = b.DaysOnRecord;
             i.Sector = (int)b.Sector;
-            i.Income = Mathf.RoundToInt(CityEconomy.DistrictIncome(reg.Neighborhood));
+            i.Income = Mathf.RoundToInt(CityEconomy.DistrictIncome(GameRegistrations.District(reg)));
             i.Fixtures = Fixtures(reg);
             i.Deposit = Mathf.Max(0, Mathf.FloorToInt(reg.lastDeposit));
             i.Investors = ServicesBridges.InvestorsOwed != null ? Mathf.Max(0, ServicesBridges.InvestorsOwed(reg)) : 0;
@@ -148,15 +148,7 @@ namespace RealLifeOverhaul.Economy
         public static void Trade(BuildingRegistration reg, out string type, out string district)
         {
             type = reg != null ? reg.businessTypeName ?? string.Empty : string.Empty;
-            district = string.Empty;
-            try
-            {
-                district = reg != null ? reg.Neighborhood ?? string.Empty : string.Empty;
-            }
-            catch (Exception)
-            {
-                // a building that cannot be read is in no district
-            }
+            district = GameRegistrations.District(reg) ?? string.Empty;
         }
 
         /// <summary>The day the player took a business on (BuildingRegistration.creationDay).</summary>
@@ -166,7 +158,7 @@ namespace RealLifeOverhaul.Economy
         public static SaleAfter Complete(BuildingRegistration reg, bool keepsStaff, out int deposit, out string log)
         {
             Address address = reg.Address;
-            Building building = reg.BuildingCached;
+            Building building = GameRegistrations.BuildingOf(reg);
             string name = reg.BusinessName, type = reg.businessTypeName;
             bool owned = reg.BuildingOwnedByPlayer;
             int staffGone = 0;
@@ -285,7 +277,7 @@ namespace RealLifeOverhaul.Economy
         {
             try
             {
-                Building building = reg != null ? reg.BuildingCached : null;
+                Building building = GameRegistrations.BuildingOf(reg);
                 AiBusinessDefault def = building != null && !reg.BuildingOwnedByPlayer ? Default(reg, building, reg.businessTypeName) : null;
                 return def != null ? def.businessName : null;
             }

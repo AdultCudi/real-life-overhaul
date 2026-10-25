@@ -284,6 +284,7 @@ namespace RealLifeOverhaul.Economy
                     continue;
                 }
                 BuildingRegistration seller = c.wholesaleAddress != null ? BuildingHelper.GetBuildingRegistration(c.wholesaleAddress) : null;
+                string sellerDistrict = GameRegistrations.District(seller);   // the game's look-up can hand back a registration with no building
                 for (int k = 0; k < c.items.Count; k++)
                 {
                     DeliveryContractItem line = c.items[k];
@@ -293,10 +294,10 @@ namespace RealLifeOverhaul.Economy
                     }
                     Item item = line.ItemCached;
                     stock.Contract(p, line.amount, limits && item != null ? item.maxWholesaleOrderAmount : 0);
-                    if (seller != null)
+                    if (sellerDistrict != null)
                     {
-                        stock.Backorder[p] |= ProductMarketHelper.IsProductInMarketEvent(line.itemName, MarketEventType.ProductBackorder, seller.Neighborhood);
-                        stock.Shortage[p] |= limits && ProductMarketHelper.IsProductInMarketEvent(line.itemName, MarketEventType.ProductShortage, seller.Neighborhood);
+                        stock.Backorder[p] |= ProductMarketHelper.IsProductInMarketEvent(line.itemName, MarketEventType.ProductBackorder, sellerDistrict);
+                        stock.Shortage[p] |= limits && ProductMarketHelper.IsProductInMarketEvent(line.itemName, MarketEventType.ProductShortage, sellerDistrict);
                     }
                 }
             }

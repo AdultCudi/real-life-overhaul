@@ -40,7 +40,7 @@ namespace RealLifeOverhaul.Careers
             for (int i = 0; all != null && i < all.Count; i++)
             {
                 BuildingRegistration reg = all[i];
-                if (reg == null || !reg.HasValidAddress || reg.RentedByPlayer)
+                if (reg == null || !reg.HasValidAddress || reg.RentedByPlayer || !GameRegistrations.Found(reg))
                 {
                     continue;   // (the player's own, and in a session another player's, which Going Public shows as rented by the player: never an employer)
                 }
@@ -62,7 +62,7 @@ namespace RealLifeOverhaul.Careers
         {
             try
             {
-                return reg.GetBuildingType();
+                return GameRegistrations.BuildingType(reg) ?? string.Empty;
             }
             catch (Exception)
             {

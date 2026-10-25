@@ -73,7 +73,7 @@ namespace RealLifeOverhaul
                 List<BuildingRegistration> all = SaveGameManager.Current.BuildingRegistrations;
                 for (int i = 0; all != null && i < all.Count; i++)
                 {
-                    if (all[i] != null && GoingPublic.Mine(all[i]) && all[i].GetBuildingType() == Residential)
+                    if (all[i] != null && GoingPublic.Mine(all[i]) && GameRegistrations.BuildingType(all[i]) == Residential)
                     {
                         _home = all[i];
                         break;

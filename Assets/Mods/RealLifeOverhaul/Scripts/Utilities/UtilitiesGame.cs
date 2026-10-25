@@ -53,7 +53,7 @@ namespace RealLifeOverhaul.Utilities
                 {
                     continue;
                 }
-                Building building = BuildingHelper.GetBuilding(reg.Address);
+                Building building = GameRegistrations.BuildingOf(reg);
                 if (building == null)
                 {
                     continue;
@@ -180,7 +180,7 @@ namespace RealLifeOverhaul.Utilities
             for (int i = 0; save != null && save.BuildingRegistrations != null && i < save.BuildingRegistrations.Count; i++)
             {
                 BuildingRegistration reg = save.BuildingRegistrations[i];
-                if (reg != null && GoingPublic.Mine(reg) && reg.HasValidAddress && reg.businessTypeName == HeadquartersType)
+                if (reg != null && GoingPublic.Mine(reg) && reg.HasValidAddress && reg.businessTypeName == HeadquartersType && GameRegistrations.Found(reg))
                 {
                     return reg;
                 }

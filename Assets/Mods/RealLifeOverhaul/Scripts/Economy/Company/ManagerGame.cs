@@ -174,17 +174,7 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>A place's district, as the game names it; null if it cannot be read.</summary>
-        public static string District(BuildingRegistration reg)
-        {
-            try
-            {
-                return reg != null ? reg.Neighborhood : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
+        public static string District(BuildingRegistration reg) => GameRegistrations.District(reg);
 
         // --- Stock: repeating delivery contracts ---
 

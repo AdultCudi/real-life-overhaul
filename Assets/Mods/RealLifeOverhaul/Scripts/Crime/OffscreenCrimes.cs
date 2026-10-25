@@ -121,7 +121,7 @@ namespace RealLifeOverhaul
             foreach (BuildingRegistration shop in save.BuildingRegistrations)
             {
                 if (shop == null || !GoingPublic.Mine(shop) || shop == inside || string.IsNullOrEmpty(shop.BusinessName)
-                    || shop.businessTypeName == EmptyBusinessType || shop.itemInstances == null)
+                    || shop.businessTypeName == EmptyBusinessType || shop.itemInstances == null || !GameRegistrations.Found(shop))
                 {
                     continue;
                 }

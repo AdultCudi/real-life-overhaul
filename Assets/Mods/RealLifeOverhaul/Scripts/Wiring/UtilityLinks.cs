@@ -206,7 +206,7 @@ namespace RealLifeOverhaul
                 {
                     if (reg != null && GoingPublic.Mine(reg) && reg.HasValidAddress)
                     {
-                        Buildings.Building building = Helpers.BuildingHelper.GetBuilding(reg.Address);
+                        Buildings.Building building = GameRegistrations.BuildingOf(reg);
                         if (building != null && building.BuildingType == "ba:buildingtype_residential")
                         {
                             return reg;

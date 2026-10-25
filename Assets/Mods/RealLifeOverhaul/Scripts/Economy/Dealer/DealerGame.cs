@@ -54,7 +54,7 @@ namespace RealLifeOverhaul.Economy.Dealership
         // A showroom of the player's own (not another Going Public player's) that is open for business.
         private static bool Mine(BuildingRegistration reg)
         {
-            return DealerType.Is(reg) && GoingPublic.Mine(reg) && reg.HasEstablishedBusiness && reg.HasValidAddress;
+            return DealerType.Is(reg) && GoingPublic.Mine(reg) && reg.HasEstablishedBusiness && reg.HasValidAddress && GameRegistrations.Found(reg);
         }
 
         /// <summary>The player's dealerships. One pass over the save's buildings.</summary>

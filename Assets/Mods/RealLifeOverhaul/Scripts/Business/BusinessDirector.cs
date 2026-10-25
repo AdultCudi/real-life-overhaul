@@ -310,7 +310,8 @@ namespace RealLifeOverhaul
             for (int i = 0; all != null && i < all.Count; i++)
             {
                 BuildingRegistration reg = all[i];
-                if (reg == null || !GoingPublic.Mine(reg) || !reg.HasEstablishedBusiness || !reg.HasValidAddress || !reg.temporarilyClosed || BusinessGame.HasSwitch(reg)
+                if (reg == null || !GoingPublic.Mine(reg) || !reg.HasEstablishedBusiness || !reg.HasValidAddress || !reg.temporarilyClosed
+                    || !GameRegistrations.Found(reg) || BusinessGame.HasSwitch(reg)
                     || BusinessState.ClosureAt(BusinessGame.Place(reg)) >= 0)
                 {
                     continue;

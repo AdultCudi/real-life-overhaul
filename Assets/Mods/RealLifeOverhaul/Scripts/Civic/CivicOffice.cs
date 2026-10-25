@@ -78,9 +78,9 @@ namespace RealLifeOverhaul
                 BuildingRegistration r = save.BuildingRegistrations[i];
                 try
                 {
-                    if (r != null && GoingPublic.Mine(r) && r.GetBuildingType() == "ba:buildingtype_residential")
+                    if (r != null && GoingPublic.Mine(r) && GameRegistrations.BuildingType(r) == "ba:buildingtype_residential")
                     {
-                        return r.Neighborhood;
+                        return GameRegistrations.District(r);
                     }
                 }
                 catch (Exception)
@@ -137,7 +137,7 @@ namespace RealLifeOverhaul
                 BuildingRegistration r = save.BuildingRegistrations[i];
                 try
                 {
-                    if (r != null && GoingPublic.Mine(r) && r.HasEstablishedBusiness && (district < 0 || r.Neighborhood == id))
+                    if (r != null && GoingPublic.Mine(r) && r.HasEstablishedBusiness && GameRegistrations.Found(r) && (district < 0 || GameRegistrations.District(r) == id))
                     {
                         count++;
                     }
