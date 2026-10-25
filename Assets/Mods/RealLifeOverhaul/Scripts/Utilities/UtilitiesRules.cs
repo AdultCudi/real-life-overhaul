@@ -19,6 +19,15 @@ namespace RealLifeOverhaul.Utilities
         TakeOut = 3         // closed and settled: off the books
     }
 
+    /// <summary>What a power or water account can be given at the desk, or in the app while there is no office (UtilitiesRules.Offer).</summary>
+    public enum AccountOffer
+    {
+        None = 0,           // supplied, connecting, closed, or the internet (bought from its provider)
+        Apply = 1,          // a temporary supply, or one cut when it ran out: a new account
+        Reconnect = 2,      // cut for a bill not paid, and paid since: reconnected, with the fee
+        OwedFirst = 3       // cut or temporary with a bill still owed: that is paid first
+    }
+
     /// <summary>The rules of the city's power and water, prices as the city's level (1000 at the start: Core/Prices). Checked offline (EconomyCheck).</summary>
     public static class UtilitiesRules
     {
@@ -197,6 +206,34 @@ namespace RealLifeOverhaul.Utilities
             a.OpenedDay = day;
             a.ConnectDay = day + UtilitiesCatalogue.ConnectDays;
             return true;
+        }
+
+        /// <summary>
+        /// What the account can be given now. The desk and the app ask the same question, so the app's phone line, open
+        /// while no building can hold the office, keeps exactly the desk's rules.
+        /// </summary>
+        public static AccountOffer Offer(Account a)
+        {
+            if (a == null || a.Service == Service.Internet || (a.State != SupplyState.Temporary && a.State != SupplyState.Cut))
+            {
+                return AccountOffer.None;
+            }
+            if (a.Owed > 0)
+            {
+                return AccountOffer.OwedFirst;
+            }
+            return a.CutForDebt ? AccountOffer.Reconnect : AccountOffer.Apply;
+        }
+
+        public const string PhoneKey = "_app";   // the ending of a text's twin that sends the player to the app instead of the office
+
+        /// <summary>
+        /// A text that sends the player to the office, or its twin that sends them to the app while there is no office to
+        /// go to: the player is never told to visit a place that is not there.
+        /// </summary>
+        public static string Where(string key, bool byPhone)
+        {
+            return byPhone ? key + PhoneKey : key;
         }
 
         /// <summary>The day's turn: an applied account connects, a run-out temporary supply is cut. True if it changed.</summary>

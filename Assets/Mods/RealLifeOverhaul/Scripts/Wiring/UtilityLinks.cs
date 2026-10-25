@@ -29,6 +29,7 @@ namespace RealLifeOverhaul
                 LifeAccounts.Power = () => UtilitiesDirector.HasPowerAccount;
                 HomeTidy.HasPower = reg => UtilitiesDirector.Supplied(reg, Service.Power);
                 HomeTidy.HasWater = reg => UtilitiesDirector.Supplied(reg, Service.Water);
+                HomeTidy.UtilitiesByPhone = () => UtilitiesDirector.Instance != null && UtilitiesDirector.Instance.State != null && UtilitiesDirector.Instance.ByPhone;
                 Family.HomeLife.Bills = UtilitiesDirector.DayCost;
                 Roommates.RoommateGame.Bills = UtilitiesDirector.DayCost;
                 PlannerDirector.Instance?.AddSource(Source);
@@ -43,6 +44,7 @@ namespace RealLifeOverhaul
                 LifeAccounts.Power = null;
                 HomeTidy.HasPower = null;
                 HomeTidy.HasWater = null;
+                HomeTidy.UtilitiesByPhone = null;
                 Family.HomeLife.Bills = null;
                 Roommates.RoommateGame.Bills = null;
             }
@@ -109,7 +111,7 @@ namespace RealLifeOverhaul
                         }
                         if (a.State == SupplyState.Temporary && a.TemporaryUntil >= fromDay && a.TemporaryUntil <= toDay)
                         {
-                            Entry(into, 3, key, a.TemporaryUntil, a, d, "reallife_util_plan_temporary_title", "reallife_util_plan_temporary_what", null);
+                            Entry(into, 3, key, a.TemporaryUntil, a, d, "reallife_util_plan_temporary_title", UtilitiesRules.Where("reallife_util_plan_temporary_what", d.ByPhone), null);
                         }
                         if (a.State == SupplyState.Pending && a.ConnectDay >= fromDay && a.ConnectDay <= toDay)
                         {

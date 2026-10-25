@@ -27,6 +27,16 @@ namespace RealLifeOverhaul
         /// <summary>Whether a home has power, and water, now (Utilities, through Wiring/UtilityLinks); null: always.</summary>
         public static Func<BuildingRegistration, bool> HasPower, HasWater;
 
+        /// <summary>True while the utilities have no office to visit, so a cut is put right in the Utilities app (Wiring/UtilityLinks); null: never.</summary>
+        public static Func<bool> UtilitiesByPhone;
+
+        /// <summary>A cut's notice: the one that sends the player to the office, or its twin ("_app") that sends them to the app while there is none.</summary>
+        public static string CutKey(string key)
+        {
+            Func<bool> phone = UtilitiesByPhone;
+            return phone != null && phone() ? key + "_app" : key;
+        }
+
         public static bool Dark(BuildingRegistration home)
         {
             Func<BuildingRegistration, bool> has = HasPower;

@@ -3,7 +3,7 @@ using UI.Notification;
 
 namespace RealLifeOverhaul.Utilities
 {
-    /// <summary>The utilities' bills part: accounts connecting and cut, bills falling due, paying, and applying in person.</summary>
+    /// <summary>The utilities' bills part: accounts connecting and cut, bills falling due, paying, and applying in person, or by phone while there is no office.</summary>
     public sealed partial class UtilitiesDirector
     {
         private void Turns(int today)
@@ -23,8 +23,8 @@ namespace RealLifeOverhaul.Utilities
                 }
                 else if (a.State == SupplyState.Cut)
                 {
-                    UtilitiesText.Toast(NotificationType.Warning, UtilitiesText.T("reallife_util_toast_temporary_over", "service", UtilitiesText.Service(a.Service), "place", where,
-                        "office", OfficeName()), 12f);
+                    UtilitiesText.Toast(NotificationType.Warning, UtilitiesText.T(UtilitiesRules.Where("reallife_util_toast_temporary_over", ByPhone),
+                        "service", UtilitiesText.Service(a.Service), "place", where, "office", OfficeName()), 12f);
                 }
             }
         }
@@ -54,8 +54,8 @@ namespace RealLifeOverhaul.Utilities
                         break;
                     case DueStep.Cut:
                         UtilitiesRules.Cut(a, today, true);
-                        UtilitiesText.Toast(NotificationType.Error, UtilitiesText.T("reallife_util_toast_cut", "service", UtilitiesText.Service(a.Service), "place", NameOf(a),
-                            "office", OfficeName()), 14f);
+                        UtilitiesText.Toast(NotificationType.Error, UtilitiesText.T(UtilitiesRules.Where("reallife_util_toast_cut", ByPhone),
+                            "service", UtilitiesText.Service(a.Service), "place", NameOf(a), "office", OfficeName()), 14f);
                         break;
                 }
             }
@@ -109,8 +109,22 @@ namespace RealLifeOverhaul.Utilities
             return deposit + fee;
         }
 
+        /// <summary>
+        /// An account applied for, or reconnected, in the app: only while there is no office to visit, on the desk's rules
+        /// and prices. False with a reason key if it cannot be (the office open again: in person there).
+        /// </summary>
+        public bool ApplyByPhone(Account a, out string why)
+        {
+            if (!ByPhone)
+            {
+                why = "reallife_util_app_in_person";
+                return false;
+            }
+            return Apply(a, out why, true);
+        }
+
         /// <summary>An account applied for in person: paid now, it connects the next morning. False with a reason key if it cannot be.</summary>
-        public bool Apply(Account a, out string why)
+        public bool Apply(Account a, out string why, bool byPhone = false)
         {
             why = null;
             int today = UtilitiesGame.Today;
@@ -133,7 +147,8 @@ namespace RealLifeOverhaul.Utilities
                 return false;
             }
             a.Deposit += deposit;
-            Logger?.Info("Utilities: " + a.Service + " applied for at " + a.Place + (reconnect ? " (reconnection)" : string.Empty) + ": deposit " + deposit + ", fee " + fee
+            Logger?.Info("Utilities: " + a.Service + " applied for at " + a.Place + (byPhone ? " by phone" : string.Empty) + (reconnect ? " (reconnection)" : string.Empty)
+                         + ": deposit " + deposit + ", fee " + fee
                          + "; connects on day " + a.ConnectDay + ".");
             _view?.Changed();
             return true;

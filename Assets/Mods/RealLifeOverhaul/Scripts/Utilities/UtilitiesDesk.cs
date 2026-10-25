@@ -67,15 +67,16 @@ namespace RealLifeOverhaul.Utilities
                         UtilitiesText.T(when, "amount", UtilitiesText.Money(a.Owed), "day", UtilitiesText.Day(a.DueDay)), ButtonPay, true);
                     entries++;
                 }
-                if (a.State == SupplyState.Temporary || a.State == SupplyState.Cut)
+                AccountOffer offer = UtilitiesRules.Offer(a);
+                if (offer != AccountOffer.None)
                 {
                     int cost = _director.ApplicationCost(a, out int deposit, out int fee);
-                    string detail = a.Owed > 0
+                    string detail = offer == AccountOffer.OwedFirst
                         ? UtilitiesText.T("reallife_util_desk_apply_owed")
                         : UtilitiesText.T(cost > 0 ? "reallife_util_desk_apply_cost" : "reallife_util_desk_apply_free",
                             "deposit", UtilitiesText.Money(deposit), "fee", UtilitiesText.Money(fee), "amount", UtilitiesText.Money(cost));
                     list.Add(index * 2 + Apply, UtilitiesText.T(a.CutForDebt ? "reallife_util_desk_reconnect" : "reallife_util_desk_apply", "service", service, "place", place),
-                        detail, ButtonApply, a.Owed <= 0);
+                        detail, ButtonApply, offer != AccountOffer.OwedFirst);
                     entries++;
                 }
                 else if (a.State == SupplyState.Pending)

@@ -53,7 +53,7 @@ namespace RealLifeOverhaul
             if (Time.unscaledTime - _cutSaid > 60f)
             {
                 _cutSaid = Time.unscaledTime;
-                Notifications.Show(NotificationType.Warning, key, null, 7f);
+                Notifications.Show(NotificationType.Warning, HomeTidy.CutKey(key), null, 7f);   // chosen only when told: once a minute at most
             }
         }
 

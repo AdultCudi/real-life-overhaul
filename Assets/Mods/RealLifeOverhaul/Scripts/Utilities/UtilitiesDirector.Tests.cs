@@ -147,6 +147,60 @@ namespace RealLifeOverhaul.Utilities
             _view?.Changed();
         }
 
+        private const int HoldHours = 2;   // game hours a test holds the office away: long enough to look at the app, then the desk is back by itself
+
+        /// <summary>
+        /// Test: the office held away for two game hours, as if every building that could hold it were the player's, and a
+        /// power or water account of a place they own opened by phone, through the app's own button's path. A PASS or FAIL
+        /// line in the log and the notice.
+        /// </summary>
+        public void TestByPhone()
+        {
+            if (!Ready())
+            {
+                return;
+            }
+            int today = UtilitiesGame.Today;
+            _office?.Hold(true);
+            _heldUntil = today * 24 + SaveGameManager.Current.Hour + HoldHours;
+            OfficeWatch();   // told and shown in the app at once, as a real loss of the office is
+            Account pick = null;
+            for (int i = 0; i < _state.Accounts.Count && pick == null; i++)
+            {
+                AccountOffer offer = UtilitiesRules.Offer(_state.Accounts[i]);
+                if (_state.Accounts[i].Owned && (offer == AccountOffer.Apply || offer == AccountOffer.Reconnect))
+                {
+                    pick = _state.Accounts[i];
+                }
+            }
+            for (int i = 0; i < _state.Accounts.Count && pick == null; i++)
+            {
+                Account a = _state.Accounts[i];
+                if (a.Owned && a.Service != Service.Internet && a.State == SupplyState.Active && a.Owed <= 0)
+                {
+                    // none waiting: a supplied one goes back to the temporary supply a purchase starts with
+                    a.State = SupplyState.Temporary;
+                    a.TemporaryUntil = today + UtilitiesCatalogue.TemporaryDays;
+                    pick = a;
+                }
+            }
+            if (pick == null)
+            {
+                Logger?.Info("Utilities check (by phone): no power or water account of a place the player owns with nothing owed: FAIL (nothing to apply for).");
+                UtilitiesText.Toast(NotificationType.Warning, UtilitiesText.T("reallife_util_test_phone_none"), 10f);
+                return;
+            }
+            bool applied = ApplyByPhone(pick, out string why);
+            bool ok = applied && ByPhone && pick.State == SupplyState.Pending && pick.ConnectDay == today + UtilitiesCatalogue.ConnectDays;
+            Logger?.Info("Utilities check (by phone): office " + (ByPhone ? "away" : "open") + "; " + pick.Service + " at " + pick.Place + " "
+                         + (applied ? "applied for, " + pick.State + " to day " + pick.ConnectDay : "refused (" + why + ")") + "; wanted Pending to day "
+                         + (today + UtilitiesCatalogue.ConnectDays) + ": " + (ok ? "PASS" : "FAIL"));
+            UtilitiesText.Toast(ok ? NotificationType.Success : NotificationType.Error, UtilitiesText.T(ok ? "reallife_util_test_phone_pass" : "reallife_util_test_phone_fail",
+                "service", UtilitiesText.Service(pick.Service), "place", NameOf(pick), "day", UtilitiesText.Day(pick.ConnectDay), "hours", HoldHours.ToString(),
+                "why", why != null ? UtilitiesText.T(why, "office", OfficeName()) : string.Empty), 12f);
+            _view?.Changed();
+        }
+
         private bool Ready()
         {
             if (_loaded)
