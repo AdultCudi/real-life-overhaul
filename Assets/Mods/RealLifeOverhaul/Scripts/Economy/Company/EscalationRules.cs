@@ -1,4 +1,5 @@
 using System;
+using RealLifeOverhaul.Careers;
 
 namespace RealLifeOverhaul.Economy
 {
@@ -33,17 +34,18 @@ namespace RealLifeOverhaul.Economy
     /// </summary>
     public static class EscalationRules
     {
-        public const int LevelRegion = 2, LevelExecutive = 3, LevelOwner = 4;   // HierarchyLevel as a number: who holds an escalation
+        // Who holds an escalation, as the rungs the ladders share (Careers/Ladder/LadderRanks) number them.
+        public const int LevelRegion = (int)Rung.Regional, LevelExecutive = (int)Rung.Executive, LevelOwner = (int)Rung.Owner;
 
         /// <summary>The executive whose area an escalation is in.</summary>
-        public static ExecutiveArea AreaOf(EscalationKind kind)
+        public static ExecSeat AreaOf(EscalationKind kind)
         {
             switch (kind)
             {
                 case EscalationKind.Gap:
-                case EscalationKind.Kpi: return ExecutiveArea.Operations;
-                case EscalationKind.Budget: return ExecutiveArea.Money;
-                default: return ExecutiveArea.People;
+                case EscalationKind.Kpi: return ExecSeat.Coo;
+                case EscalationKind.Budget: return ExecSeat.Cfo;
+                default: return ExecSeat.Chro;
             }
         }
 

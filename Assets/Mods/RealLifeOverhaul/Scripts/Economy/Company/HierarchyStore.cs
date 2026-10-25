@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
+using RealLifeOverhaul.Careers;
 
 namespace RealLifeOverhaul.Economy
 {
@@ -80,7 +81,7 @@ namespace RealLifeOverhaul.Economy
                 t.Append('|').Append(Clean(e.Who)).Append('|').Append(Clean(e.Place)).Append('|').Append(Clean(e.Detail));
             }
             t.Append("^x:");
-            for (int i = 0; i < s.Executives.Count && i < (int)ExecutiveArea.Count; i++)
+            for (int i = 0; i < s.Executives.Count && i < ExecutiveHiring.Seats.Length; i++)
             {
                 ExecutiveFile x = s.Executives[i];
                 t.Append(i > 0 ? ";" : string.Empty);
@@ -246,7 +247,7 @@ namespace RealLifeOverhaul.Economy
                             {
                                 string[] c = record.Split('|');
                                 int area = I(c, 0, -1);
-                                if (c.Length < 10 || area < 0 || area >= (int)ExecutiveArea.Count || c[9].Length == 0 || s.Executive((ExecutiveArea)area) != null)
+                                if (c.Length < 10 || !ExecutiveHiring.Real(area) || c[9].Length == 0 || s.Executive((ExecSeat)area) != null)
                                 {
                                     continue;
                                 }
@@ -319,7 +320,7 @@ namespace RealLifeOverhaul.Economy
             return new HierarchyEntry
             {
                 Id = Math.Max(1, I(c, 0, 1)), Day = Math.Max(0, I(c, 1)), Hour = CompanyCatalogue.Clamp(I(c, 2), 0, 23), Kind = kind,
-                Level = CompanyCatalogue.Clamp(I(c, 4), 0, HierarchyCatalogue.Levels - 1), A = I(c, 5), B = I(c, 6), C = I(c, 7),
+                Level = CompanyCatalogue.Clamp(I(c, 4), 0, (int)Rung.Owner), A = I(c, 5), B = I(c, 6), C = I(c, 7),
                 Who = c[8], Place = c.Length > 9 ? c[9] : string.Empty, Detail = c.Length > 10 ? c[10] : string.Empty
             };
         }

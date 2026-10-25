@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using RealLifeOverhaul.Careers;
 using UI.Notification;
 
 namespace RealLifeOverhaul.Economy
@@ -364,7 +365,7 @@ namespace RealLifeOverhaul.Economy
                 HireOwnBoard(mp, false);
                 if (mp.Place.Staff < mp.Own.Keep)
                 {
-                    FillGap(mp, (int)HierarchyLevel.Unit, Rule(mp, PolicyField.Sources), mp.Own.Name, Save.Day, Save.Hour, false);
+                    FillGap(mp, (int)Rung.StoreManager, Rule(mp, PolicyField.Sources), mp.Own.Name, Save.Day, Save.Hour, false);
                 }
             }
             catch (Exception e)
@@ -417,7 +418,7 @@ namespace RealLifeOverhaul.Economy
                 m.Spent += cost;
                 mp.Place.Staff++;
                 hired++;
-                HierarchyEntry entry = _hier.Log(HierarchyLog.Hired, owner ? (int)HierarchyLevel.Owner : (int)HierarchyLevel.Unit, owner ? CompanyText.T("reallife_hier_you") : m.Name,
+                HierarchyEntry entry = _hier.Log(HierarchyLog.Hired, owner ? (int)Rung.Owner : (int)Rung.StoreManager, owner ? CompanyText.T("reallife_hier_you") : m.Name,
                     mp.Place.Place, Save.Day, Save.Hour);
                 entry.A = _hireWage[pick];
                 entry.B = _hireSkill[pick];
@@ -439,7 +440,7 @@ namespace RealLifeOverhaul.Economy
             int count;
             try
             {
-                count = BatchRaise(mp, (int)HierarchyLevel.Unit, mp.Own != null ? mp.Own.Name : CompanyText.T("reallife_hier_you"), Save.Day, Save.Hour, false);
+                count = BatchRaise(mp, (int)Rung.StoreManager, mp.Own != null ? mp.Own.Name : CompanyText.T("reallife_hier_you"), Save.Day, Save.Hour, false);
             }
             catch (Exception e)
             {

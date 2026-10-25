@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using RealLifeOverhaul.Careers;
 using RealLifeOverhaul.Economy;
 using RealLifeOverhaul.Tech;
+using PolicyField = RealLifeOverhaul.Economy.PolicyField;
 
-// Checks for the company's hierarchy (Scripts/Economy/Company: HierarchyCatalogue, PolicyRules, EscalationRules,
+// Checks for the company's hierarchy (Scripts/Economy/Company: ExecutiveHiring, PolicyRules, EscalationRules,
 // HierarchyRules, HierarchyState and HierarchyStore): the shared ranks and levels; the policy's catalogue and its starting
 // steps deciding exactly as the managers did before there was a policy; a lower scope never past the one above, over every
 // rule and step; templates; each escalation's trigger at its edges; who holds an escalation and who may settle it; the
@@ -28,49 +30,34 @@ internal static partial class Program
         HierarchyTiming();
     }
 
+    // The company's hierarchy names its rungs and seats from the one list both ladders share (Careers/Ladder/LadderRanks)
+    // and keeps only who an executive is hired from beside it.
     private static void HierarchyRanks()
     {
-        bool ids = HierarchyCatalogue.Ranks.Length == HierarchyCatalogue.RankCount;
-        for (int i = 0; i < HierarchyCatalogue.Ranks.Length; i++)
+        Check(EscalationRules.LevelRegion == (int)Rung.Regional && EscalationRules.LevelExecutive == (int)Rung.Executive && EscalationRules.LevelOwner == (int)Rung.Owner
+              && LadderRanks.Of(EscalationRules.LevelOwner).Level == Rung.Owner && LadderRanks.Of(EscalationRules.LevelRegion).Key == "regional",
+            "hierarchy: who holds an escalation is numbered by the careers' own rungs, regional manager, executive and owner");
+        Check(ExecutiveHiring.Code(Rung.Frontline) == "L0" && ExecutiveHiring.Code(Rung.Supervisor) == "L0" && ExecutiveHiring.Code(Rung.StoreManager) == "L1"
+              && ExecutiveHiring.Code(Rung.Regional) == "L2" && ExecutiveHiring.Code(Rung.Executive) == "L3" && ExecutiveHiring.Code(Rung.Owner) == "L4",
+            "hierarchy: the rungs are coded L0 to L4 as the suggestion has them, the shift supervisor on the floor's L0");
+        bool seats = ExecutiveHiring.Seats.Length == 3 && ExecutiveHiring.SeatRoles.Length == (int)ExecSeat.Cfo + 1 && ExecutiveHiring.SeatRoles[(int)ExecSeat.None].Length == 0;
+        foreach (ExecSeat seat in ExecutiveHiring.Seats)
         {
-            ids &= HierarchyCatalogue.Ranks[i].Id == i && HierarchyCatalogue.Rank(i) == HierarchyCatalogue.Ranks[i];
-        }
-        Check(ids, "hierarchy: every rank's id is its place in the shared table (" + HierarchyCatalogue.RankCount + ")");
-        bool climbs = true;
-        int[] atLevel = new int[HierarchyCatalogue.Levels];
-        for (int i = 0; i < HierarchyCatalogue.Ranks.Length; i++)
-        {
-            HierarchyRank r = HierarchyCatalogue.Ranks[i];
-            atLevel[(int)r.Level]++;
-            for (int k = 0; k < HierarchyCatalogue.Ranks.Length; k++)
+            seats &= ExecutiveHiring.Real((int)seat) && ExecutiveHiring.SeatRoles[(int)seat].Length > 0;
+            foreach (int role in ExecutiveHiring.SeatRoles[(int)seat])
             {
-                HierarchyRank o = HierarchyCatalogue.Ranks[k];
-                climbs &= o.Level <= r.Level || o.Step > r.Step;   // a higher level is never a lower step
+                seats &= role >= 0 && role < TalentCatalogue.RoleCount && ExecutiveHiring.Fits(seat, role, TalentCatalogue.Senior)
+                         && !ExecutiveHiring.Fits(seat, role, TalentCatalogue.Mid) && TalentCatalogue.Role(role).MostLevel >= ExecutiveHiring.LeastLevel;
             }
         }
-        Check(climbs && Array.TrueForAll(atLevel, n => n > 0), "hierarchy: every level L0 to L4 has a rank and a higher level is never a lower rung");
-        Check(HierarchyCatalogue.Code(HierarchyLevel.Frontline) == "L0" && HierarchyCatalogue.Code(HierarchyLevel.Owner) == "L4" && HierarchyCatalogue.LevelKeys.Length == HierarchyCatalogue.Levels,
-            "hierarchy: the levels are called L0 to L4 and each has its name's key");
-        bool areas = HierarchyCatalogue.AreaRanks.Length == (int)ExecutiveArea.Count && HierarchyCatalogue.AreaRoles.Length == (int)ExecutiveArea.Count;
-        for (int a = 0; areas && a < (int)ExecutiveArea.Count; a++)
-        {
-            HierarchyRank r = HierarchyCatalogue.Rank(HierarchyCatalogue.AreaRanks[a]);
-            areas &= r.Level == HierarchyLevel.Executive && r.Area == a && HierarchyCatalogue.AreaRoles[a].Length > 0;
-            foreach (int role in HierarchyCatalogue.AreaRoles[a])
-            {
-                areas &= role >= 0 && role < TalentCatalogue.RoleCount && HierarchyCatalogue.Fits((ExecutiveArea)a, role, TalentCatalogue.Senior)
-                         && !HierarchyCatalogue.Fits((ExecutiveArea)a, role, TalentCatalogue.Mid) && TalentCatalogue.Role(role).MostLevel >= HierarchyCatalogue.ExecutiveLeastLevel;
-            }
-        }
-        Check(areas, "hierarchy: each executive's area has its rank at L3 and professions of the talent catalogue that reach senior, and nobody under senior fits");
+        Check(seats && !ExecutiveHiring.Real((int)ExecSeat.None) && !ExecutiveHiring.Fits(ExecSeat.None, TalentCatalogue.Accountant, TalentCatalogue.Principal),
+            "hierarchy: each seat is hired from professions of the talent catalogue that reach senior, and nobody under senior fits");
         Check(TalentCatalogue.Role(25).Key == "hr_manager" && TalentCatalogue.Role(26).Key == "recruiter" && TalentCatalogue.Role(30).Key == "business_analyst"
-              && !HierarchyCatalogue.Fits(ExecutiveArea.Money, 25, TalentCatalogue.Principal) && !HierarchyCatalogue.Fits(ExecutiveArea.People, TalentCatalogue.Accountant, TalentCatalogue.Principal),
-            "hierarchy: the executives' professions are the talent catalogue's own by number, and one area's profession is not another's");
-        int[] next = new int[4];
-        Check(HierarchyCatalogue.Next(HierarchyCatalogue.Frontline, next) == 1 && next[0] == HierarchyCatalogue.ShiftSupervisor
-              && HierarchyCatalogue.Next(HierarchyCatalogue.ShiftSupervisor, next) == 2 && HierarchyCatalogue.Next(HierarchyCatalogue.RegionalManager, next) == 3
-              && HierarchyCatalogue.Next(HierarchyCatalogue.OwnerChief, next) == 0,
-            "hierarchy: the way up is frontline, shift supervisor, store manager or department supervisor, regional manager, an executive, and nothing over the owner");
+              && !ExecutiveHiring.Fits(ExecSeat.Cfo, 25, TalentCatalogue.Principal) && !ExecutiveHiring.Fits(ExecSeat.Chro, TalentCatalogue.Accountant, TalentCatalogue.Principal),
+            "hierarchy: the seats' professions are the talent catalogue's own by number, and one seat's profession is not another's");
+        string hiring = ModSource(@"Economy\Company\ExecutiveHiring.cs");
+        Check(hiring.Length > 0 && !hiring.Contains("enum ") && !hiring.Contains("\"frontline\"") && !ModSource(@"Economy\Company\HierarchyState.cs").Contains("enum Rung"),
+            "hierarchy: no second list of ranks: the company's code keeps none of its own beside the careers' LadderRanks");
     }
 
     private static void HierarchyPolicyCatalogue()
@@ -284,7 +271,7 @@ internal static partial class Program
 
     private static void HierarchyRouting()
     {
-        int R = EscalationRules.LevelRegion, X = EscalationRules.LevelExecutive, O = EscalationRules.LevelOwner, L1 = (int)HierarchyLevel.Unit;
+        int R = EscalationRules.LevelRegion, X = EscalationRules.LevelExecutive, O = EscalationRules.LevelOwner, L1 = (int)Rung.StoreManager;
         Check(EscalationRules.Next(L1, true, true) == R && EscalationRules.Next(L1, false, true) == X && EscalationRules.Next(L1, false, false) == O
               && EscalationRules.Next(R, true, true) == X && EscalationRules.Next(R, true, false) == O && EscalationRules.Next(X, true, true) == O && EscalationRules.Next(O, true, true) == O,
             "escalation routing: from a manager to the regional manager, the executive, then you, skipping only who is not in post, and never past you");
@@ -311,9 +298,9 @@ internal static partial class Program
               && EscalationRules.Tries(EscalationKind.Gap, X, 0, PolicyCatalogue.SourceMove) && !EscalationRules.Tries(EscalationKind.Budget, R, 0, 2) && EscalationRules.Tries(EscalationKind.Budget, X, 0, 0)
               && EscalationRules.Tries(EscalationKind.Mood, R, 0, 0) && !EscalationRules.Tries(EscalationKind.Demand, R, 0, 0) && EscalationRules.Tries(EscalationKind.Demand, X, 0, 0),
             "escalation routing: a regional manager fills a gap only past the own board, never spends past a budget, and leaves unanswered requests to the people chief");
-        Check(EscalationRules.AreaOf(EscalationKind.Gap) == ExecutiveArea.Operations && EscalationRules.AreaOf(EscalationKind.Kpi) == ExecutiveArea.Operations
-              && EscalationRules.AreaOf(EscalationKind.Budget) == ExecutiveArea.Money && EscalationRules.AreaOf(EscalationKind.Exception) == ExecutiveArea.People
-              && EscalationRules.AreaOf(EscalationKind.Wave) == ExecutiveArea.People,
+        Check(EscalationRules.AreaOf(EscalationKind.Gap) == ExecSeat.Coo && EscalationRules.AreaOf(EscalationKind.Kpi) == ExecSeat.Coo
+              && EscalationRules.AreaOf(EscalationKind.Budget) == ExecSeat.Cfo && EscalationRules.AreaOf(EscalationKind.Exception) == ExecSeat.Chro
+              && EscalationRules.AreaOf(EscalationKind.Wave) == ExecSeat.Chro,
             "escalation routing: staffing and targets go to the operations chief, budgets to the finance chief, pay and people to the people chief");
     }
 
@@ -371,7 +358,7 @@ internal static partial class Program
         entry.A = 1;
         entry.B = 55;
         entry.Detail = "Di/Shop";
-        s.Executives.Add(new ExecutiveFile { Area = 2, Id = "pro:3", Name = "Ed", Role = TalentCatalogue.Accountant, Level = 3, Place = "HQ~1", From = 9, Decided = 2, Paid = 300, ProposedDay = 14 });
+        s.Executives.Add(new ExecutiveFile { Area = (int)ExecSeat.Cfo, Id = "pro:3", Name = "Ed", Role = TalentCatalogue.Accountant, Level = 3, Place = "HQ~1", From = 9, Decided = 2, Paid = 300, ProposedDay = 14 });
         s.PickArea("Main%20Street~12", HierarchyRules.CustomArea(2));
         return s;
     }
@@ -386,7 +373,7 @@ internal static partial class Program
         Check(back != null && back.Company.Of(PolicyField.PayBand) == 5 && back.Region("Midtown").Of(PolicyField.SkillFloor) == 2 && !back.Region("Midtown").Sets(PolicyField.PayBand)
               && back.Store("Main%20Street~12").Of(PolicyField.Budget) == 6 && back.Templates.Count == 1 && back.Templates[0].Set.Of(PolicyField.Reports) == 1 && back.Deep
               && back.Watch("Main%20Street~12", false).TopUpOf(15) == 500 && back.Watch("Main%20Street~12", false).Left.Count == 2 && back.Escalations.Count == 2
-              && back.Escalations[0].Subject == "emp_7" && back.Escalations[0].Detail.IndexOfAny(new[] { '|', ';', '^', '*' }) < 0 && back.Executives[0].Area == 2
+              && back.Escalations[0].Subject == "emp_7" && back.Escalations[0].Detail.IndexOfAny(new[] { '|', ';', '^', '*' }) < 0 && back.Executives[0].Area == (int)ExecSeat.Cfo
               && back.AreaPicked("Main%20Street~12") == HierarchyRules.CustomArea(2) && back.Entries[0].Detail == "Di/Shop" && back.NextId == s.NextId,
             "hierarchy save: every part comes back, a name cannot break the line, and the ids go on from where they were");
         Check(HierarchyStore.Read("v=1^c:1*2", out version) == null && HierarchyStore.Read("garbage", out version) == null && HierarchyStore.Read(string.Empty, out version) == null
@@ -511,11 +498,14 @@ internal static partial class Program
                 keys.Add(d.TextKey + "_" + s);
             }
         }
-        foreach (HierarchyRank r in HierarchyCatalogue.Ranks)
+        for (int r = 0; r <= (int)Rung.Owner; r++)
         {
-            keys.Add(r.TextKey);
+            keys.Add(LadderRanks.TitleKey(r, ExecSeat.None));
         }
-        keys.AddRange(HierarchyCatalogue.LevelKeys);
+        foreach (ExecSeat seat in ExecutiveHiring.Seats)
+        {
+            keys.Add(LadderRanks.TitleKey((int)Rung.Executive, seat));
+        }
         keys.AddRange(PolicyCatalogue.CategoryKeys);
         foreach (string t in PolicyCatalogue.TemplateKeys)
         {

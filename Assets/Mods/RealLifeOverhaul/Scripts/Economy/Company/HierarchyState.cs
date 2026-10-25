@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using RealLifeOverhaul.Careers;
 
 namespace RealLifeOverhaul.Economy
 {
@@ -67,7 +68,7 @@ namespace RealLifeOverhaul.Economy
         public int Id;
         public int Day, Hour;
         public int Kind;                        // HierarchyLog
-        public int Level;                       // HierarchyLevel of who did it
+        public int Level;                       // the rung of who did it (Careers/Ladder/LadderRanks: Rung)
         public string Who = string.Empty;
         public string Place = string.Empty;
         public int A, B, C;
@@ -96,7 +97,7 @@ namespace RealLifeOverhaul.Economy
     /// <summary>One executive: their area, who they are (a professional of the player's), and their month.</summary>
     public sealed class ExecutiveFile
     {
-        public int Area;                        // ExecutiveArea
+        public int Area;                        // the seat (Careers/Ladder/LadderRanks: ExecSeat), Coo to Cfo
         public string Id = string.Empty;        // the professional's id (the game's employee id, or the mod's "pro:n")
         public string Name = string.Empty;
         public int Role, Level;                 // TalentCatalogue's role and level as last read
@@ -245,11 +246,11 @@ namespace RealLifeOverhaul.Economy
             return e;
         }
 
-        public ExecutiveFile Executive(ExecutiveArea area)
+        public ExecutiveFile Executive(ExecSeat seat)
         {
             for (int i = 0; i < Executives.Count; i++)
             {
-                if (Executives[i].Area == (int)area)
+                if (Executives[i].Area == (int)seat)
                 {
                     return Executives[i];
                 }

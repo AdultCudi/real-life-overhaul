@@ -8,11 +8,12 @@ One **company policy** every manager obeys when they decide by themselves, set f
 
 - Folder: [`Scripts/Economy/Company`](../../Assets/Mods/RealLifeOverhaul/Scripts/Economy/Company/). It stands on the managers ([economy-managers.md](economy-managers.md)) and changes none of their saved data.
 - Read first: `PolicyRules.cs`, then `EscalationRules.cs`, then `CompanyDirector.Escalations.cs`.
+- The ranks, their names and numbers are the one list both ladders share: `Rung` and `ExecSeat` in [`Scripts/Careers/Ladder/LadderRanks.cs`](../../Assets/Mods/RealLifeOverhaul/Scripts/Careers/Ladder/LadderRanks.cs). Who holds an escalation is saved as a rung (regional manager 3, executive 4, owner 5), an executive as a seat.
 - Option "Company hierarchy: policies, escalations, regions and executives", id `economy_hierarchy`, under "Real Life Overhaul: Running a business", on by default. It runs while the managers do.
 
 ```
 Economy/Company/              the first six are game-free and compiled by EconomyCheck
-  HierarchyCatalogue            the ranks and levels L0 to L4, shared with the careers (Scripts/Careers)
+  ExecutiveHiring               who each executive's seat is hired from, the codes L0 to L4 of the careers' rungs
   PolicyRules                   the rules, their steps and starting steps, a scope held to the one above, templates
   EscalationRules               each trigger, who holds an escalation, who may settle which kind
   HierarchyRules                the regions a player makes, the reports' week

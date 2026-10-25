@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using RealLifeOverhaul.Careers;
 using RealLifeOverhaul.GameUi;
 using UnityEngine;
 
@@ -378,8 +379,8 @@ namespace RealLifeOverhaul.Economy
 
         private static string LevelWords(int level)
         {
-            int l = CompanyCatalogue.Clamp(level, 0, HierarchyCatalogue.Levels - 1);
-            return l >= EscalationRules.LevelOwner ? CompanyText.T("reallife_hier_you") : CompanyText.T(HierarchyCatalogue.LevelKeys[l]);
+            int l = CompanyCatalogue.Clamp(level, 0, (int)Rung.Owner);
+            return l >= EscalationRules.LevelOwner ? CompanyText.T("reallife_hier_you") : CompanyText.T(LadderRanks.TitleKey(l, ExecSeat.None));
         }
 
         // --- The policy centre ---
@@ -739,7 +740,7 @@ namespace RealLifeOverhaul.Economy
             ManagerFile m = mp.Own;
             box.Title(CompanyText.T("reallife_hier_dash_title"));
             box.Subtitle(mp.Place.Name + (m != null ? ", " + m.Name : string.Empty));
-            box.Chip(CompanyText.T("reallife_hier_level_chip", "level", HierarchyCatalogue.Code(HierarchyLevel.Unit)));
+            box.Chip(CompanyText.T("reallife_hier_level_chip", "level", ExecutiveHiring.Code(Rung.StoreManager)));
             Transform top = box.ButtonRow();
             InfoBox.Button(top, InfoBox.Additional, "reallife_co_back", () => Go("mp:" + place));
             if (m == null)

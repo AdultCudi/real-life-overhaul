@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Entities;
+using RealLifeOverhaul.Careers;
 using UI.Notification;
 
 namespace RealLifeOverhaul.Economy
@@ -286,7 +287,7 @@ namespace RealLifeOverhaul.Economy
         /// <summary>A new escalation, handed to the first holder in post who may settle it under the policy; null if one is open already.</summary>
         private Escalation Raise(EscalationKind kind, ManagedPlace mp, int a, int b, int c, string subject, string detail, int day)
         {
-            int level = Holder(kind, mp, (int)HierarchyLevel.Unit);
+            int level = Holder(kind, mp, (int)Rung.StoreManager);
             Escalation e = _hier.Add(kind, mp.Place.Place, level, day);
             e.A = a;
             e.B = b;
@@ -294,7 +295,7 @@ namespace RealLifeOverhaul.Economy
             e.Subject = HierarchyStore.Clean(subject);
             e.Detail = HierarchyStore.Clean(detail);
             e.By = mp.Own != null ? HierarchyStore.Clean(mp.Own.Name) : string.Empty;
-            HierarchyEntry entry = _hier.Log(HierarchyLog.Raised, (int)HierarchyLevel.Unit, e.By, e.Place, day, Save.Hour);
+            HierarchyEntry entry = _hier.Log(HierarchyLog.Raised, (int)Rung.StoreManager, e.By, e.Place, day, Save.Hour);
             entry.A = e.Id;
             entry.B = e.Kind;
             entry.C = level;
@@ -323,10 +324,10 @@ namespace RealLifeOverhaul.Economy
             return r != null && !Sick(r) ? r : null;
         }
 
-        /// <summary>The executive of an area in post; null for none.</summary>
-        internal ExecutiveFile ExecutiveAtWork(ExecutiveArea area)
+        /// <summary>The executive of a seat in post; null for none.</summary>
+        internal ExecutiveFile ExecutiveAtWork(ExecSeat seat)
         {
-            ExecutiveFile x = _hier != null ? _hier.Executive(area) : null;
+            ExecutiveFile x = _hier != null ? _hier.Executive(seat) : null;
             return x != null && x.Seen ? x : null;
         }
 
@@ -471,7 +472,7 @@ namespace RealLifeOverhaul.Economy
 
         private static int LevelOfHolder(int level)
         {
-            return CompanyCatalogue.Clamp(level, 0, HierarchyCatalogue.Levels - 1);
+            return CompanyCatalogue.Clamp(level, 0, (int)Rung.Owner);
         }
 
         private void Close(Escalation e, EscalationState state, string who, int day)
@@ -515,7 +516,7 @@ namespace RealLifeOverhaul.Economy
                     scored++;
                 }
             }
-            HierarchyEntry entry = _hier.Log(HierarchyLog.Report, (int)HierarchyLevel.Owner, string.Empty, string.Empty, day, Save.Hour);
+            HierarchyEntry entry = _hier.Log(HierarchyLog.Report, (int)Rung.Owner, string.Empty, string.Empty, day, Save.Hour);
             entry.A = open;
             entry.B = _hier.Settled;
             entry.C = scored > 0 ? scores / scored : 0;
@@ -611,7 +612,7 @@ namespace RealLifeOverhaul.Economy
                 return;
             }
             ScopeOf(mp, EscalationRules.LevelRegion);
-            HireFromBoards(mp, (int)HierarchyLevel.Unit, who, day, hour, false);
+            HireFromBoards(mp, (int)Rung.StoreManager, who, day, hour, false);
         }
 
         // Candidates the other places' boards found, hired for this place inside its policy while its gap lasts; the
@@ -936,7 +937,7 @@ namespace RealLifeOverhaul.Economy
                             int amount = CompanyCatalogue.AtPrices(ManagerCatalogue.Step(ManagerCatalogue.Budgets, mp.Own.Budget), _index);
                             w.TopUp = w.TopUpOf(_mgr.MonthFrom) + amount;
                             w.TopUpFrom = _mgr.MonthFrom;
-                            HierarchyEntry entry = _hier.Log(HierarchyLog.TopUp, (int)HierarchyLevel.Owner, who, mp.Place.Place, day, hour);
+                            HierarchyEntry entry = _hier.Log(HierarchyLog.TopUp, (int)Rung.Owner, who, mp.Place.Place, day, hour);
                             entry.A = amount;
                             done = true;
                         }
@@ -973,7 +974,7 @@ namespace RealLifeOverhaul.Economy
             if (done && e.Open)
             {
                 Close(e, EscalationState.Resolved, who, day);
-                HierarchyEntry entry = _hier.Log(HierarchyLog.Settled, (int)HierarchyLevel.Owner, who, e.Place, day, hour);
+                HierarchyEntry entry = _hier.Log(HierarchyLog.Settled, (int)Rung.Owner, who, e.Place, day, hour);
                 entry.A = e.Id;
                 entry.B = e.Kind;
             }
