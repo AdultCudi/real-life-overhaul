@@ -36,7 +36,9 @@ namespace RealLifeOverhaul.Economy
         MoodFloor = 22,         // the staff's standing under which a place is escalated
         WaveCount = 23,         // staff leaving one place within a week that make a wave
         Reports = 24,           // how often the managers report: only what needs the owner, a week, a day
-        Count = 25
+        RegionAppoints = 25,    // a regional manager appoints a manager at a store of theirs with none
+        RegionReplaces = 26,    // a regional manager replaces a store's manager whose place stays off its targets
+        Count = 27
     }
 
     /// <summary>
@@ -135,7 +137,9 @@ namespace RealLifeOverhaul.Economy
             new PolicyDef(PolicyField.UnmetDays, PolicyCategory.Escalation, "unmet_days", new[] { 1, 2, 3 }, 1, PolicyWay.LooseUp, PolicyUnit.Days),
             new PolicyDef(PolicyField.MoodFloor, PolicyCategory.Escalation, "mood_floor", new[] { MoodNone, 20, 30, 40, 50 }, 2, PolicyWay.LooseDown, PolicyUnit.Count),
             new PolicyDef(PolicyField.WaveCount, PolicyCategory.Escalation, "wave_count", new[] { 2, 3, 4, 5 }, 1, PolicyWay.LooseUp, PolicyUnit.Count),
-            new PolicyDef(PolicyField.Reports, PolicyCategory.Escalation, "reports", new[] { ReportExceptions, ReportWeekly, ReportDaily }, ReportDaily, PolicyWay.CompanyOnly, PolicyUnit.Choice)
+            new PolicyDef(PolicyField.Reports, PolicyCategory.Escalation, "reports", new[] { ReportExceptions, ReportWeekly, ReportDaily }, ReportDaily, PolicyWay.CompanyOnly, PolicyUnit.Choice),
+            new PolicyDef(PolicyField.RegionAppoints, PolicyCategory.Hiring, "region_appoints", new[] { 0, 1 }, 0, PolicyWay.LooseUp, PolicyUnit.OnOff),
+            new PolicyDef(PolicyField.RegionReplaces, PolicyCategory.Hiring, "region_replaces", new[] { 0, 1 }, 0, PolicyWay.LooseUp, PolicyUnit.OnOff)
         };
 
         /// <summary>reallife_pol_cat_{name}, by PolicyCategory.</summary>
@@ -170,9 +174,9 @@ namespace RealLifeOverhaul.Economy
         public static readonly int[][] Templates =
         {
             null,
-            new[] { 3, 3, 0, 2, 2, 3, 3, 0, 1, 1, 0, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 0, 3, 0, 2 },
-            new[] { 2, 2, 1, 2, 1, 4, 3, 0, 1, 0, 0, 1, 1, 0, 1, 0, 2, 2, 3, 3, 3, 1, 2, 1, 1 },
-            new[] { 1, 6, 2, 5, 4, 1, 1, 2, 1, 1, 1, 1, 5, 4, 0, 3, 2, 2, 2, 2, 2, 1, 2, 1, 2 }
+            new[] { 3, 3, 0, 2, 2, 3, 3, 0, 1, 1, 0, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 0, 3, 0, 2, 0, 0 },
+            new[] { 2, 2, 1, 2, 1, 4, 3, 0, 1, 0, 0, 1, 1, 0, 1, 0, 2, 2, 3, 3, 3, 1, 2, 1, 1, 1, 1 },
+            new[] { 1, 6, 2, 5, 4, 1, 1, 2, 1, 1, 1, 1, 5, 4, 0, 3, 2, 2, 2, 2, 2, 1, 2, 1, 2, 1, 0 }
         };
     }
 

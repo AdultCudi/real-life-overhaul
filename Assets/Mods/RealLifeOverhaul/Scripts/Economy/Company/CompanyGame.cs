@@ -124,8 +124,16 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
+        /// <summary>The player's professionals into a list, from the professions; false while they are off (the seats then wait).</summary>
+        public static Func<List<ProfessionalHand>, bool> Professionals;
+
+        /// <summary>For a test: a professional of a role and level joins the professions' own payroll at a place; false if they could not.</summary>
+        public static Func<string, int, int, bool> HireProfessional;
+
         public static void Reset()
         {
+            Professionals = null;
+            HireProfessional = null;
             Comfort = null;
             Footfall = null;
             Promoted = null;

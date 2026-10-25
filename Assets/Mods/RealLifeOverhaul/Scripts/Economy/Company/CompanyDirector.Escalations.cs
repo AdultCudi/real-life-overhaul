@@ -43,6 +43,8 @@ namespace RealLifeOverhaul.Economy
                 float started = UnityEngine.Time.realtimeSinceStartup;
                 PolicyMirror();
                 _ownerNew = 0;
+                ExecutivesRead(true);
+                ExecutivesMonth();
                 Tally(day);
                 int raised = _hier.NextId;
                 for (int i = 0; i < _managed.Count; i++)
@@ -50,6 +52,7 @@ namespace RealLifeOverhaul.Economy
                     WatchPlace(_managed[i], day);
                 }
                 Forgotten();
+                RegionRound(day, Save.Hour);   // the regional managers appoint and replace before the escalations are handled
                 int settled = Handle(day, Save.Hour, false);
                 Week(day);
                 TellOwner();

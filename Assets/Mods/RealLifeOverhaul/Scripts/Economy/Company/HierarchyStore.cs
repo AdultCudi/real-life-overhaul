@@ -37,7 +37,7 @@ namespace RealLifeOverhaul.Economy
         {
             var t = new StringBuilder(256 + s.Escalations.Count * 64 + s.Entries.Count * 56 + (s.Regions.Count + s.Stores.Count) * 80);
             t.Append("v=").Append(Version).Append("^h:");
-            Join(t, s.NextId, s.NextTemplate, s.WeekFrom, s.Settled, s.Deep ? 1 : 0);
+            Join(t, s.NextId, s.NextTemplate, s.WeekFrom, s.Settled, s.Deep ? 1 : 0, s.MonthFrom);
             t.Append("^c:");
             Steps(t, s.Company);
             t.Append("^r:");
@@ -152,6 +152,7 @@ namespace RealLifeOverhaul.Economy
                             s.WeekFrom = Math.Max(0, I(c, 2));
                             s.Settled = Math.Max(0, I(c, 3));
                             s.Deep = I(c, 4) != 0;
+                            s.MonthFrom = Math.Max(0, I(c, 5));
                             header = true;
                             break;
                         }

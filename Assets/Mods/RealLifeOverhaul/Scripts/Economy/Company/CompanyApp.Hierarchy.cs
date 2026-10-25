@@ -28,6 +28,7 @@ namespace RealLifeOverhaul.Economy
             "reallife_hier_state_open", "reallife_hier_state_resolved", "reallife_hier_state_cleared", "reallife_hier_state_dismissed", "reallife_hier_state_lapsed"
         };
 
+        private const string OverviewBack = "ov:";   // an escalation opened from the owner's overview goes back to it
         private readonly int[] _kindCounts = new int[(int)EscalationKind.Count];
         private int _polKind = CompanyDirector.ScopeCompany;
         private string _polScope;
@@ -105,9 +106,27 @@ namespace RealLifeOverhaul.Economy
             int yours = hs.OpenAt(EscalationRules.LevelOwner), others = hs.OpenAt(EscalationRules.LevelRegion) + hs.OpenAt(EscalationRules.LevelExecutive);
             Pick("hx:", CompanyText.T("reallife_hier_dir_inbox"), yours.ToString(), string.Empty, others.ToString(), 0, ref selected);
             Last.Set(4, yours > 0 ? CompanyText.T("reallife_mgr_dir_look") : CompanyText.T("reallife_co_state_in_order"), yours > 0 ? CellTone.Yellow : CellTone.Plain);
+            int seats = 0;
+            for (int i = 0; i < hs.Executives.Count; i++)
+            {
+                seats += hs.Executives[i].Seen ? 1 : 0;
+            }
+            Pick("xs:", CompanyText.T("reallife_hier_seats"), CompanyText.T("reallife_mgr_dir_of", "count", seats.ToString(), "all", ExecutiveHiring.Seats.Length.ToString()),
+                string.Empty, string.Empty, 0, ref selected);
+            Last.Set(4, seats < ExecutiveHiring.Seats.Length ? CompanyText.T("reallife_mgr_dir_appoint") : CompanyText.T("reallife_co_state_in_order"));
             int own = hs.Regions.Count + hs.Stores.Count;
             Pick("pc:", CompanyText.T("reallife_hier_dir_policy"), CompanyText.T("reallife_pol_dir_own", "count", own.ToString()), string.Empty, string.Empty, 0, ref selected);
             Last.Set(4, CompanyText.T("reallife_pol_dir_open"));
+        }
+
+        // The directory's box in Deep Mode: the switch back to the owner's overview.
+        private void HierarchyBox(InfoBox box)
+        {
+            HierarchyState hs = _director.HierarchyData;
+            if (hs != null && _director.HierarchyOn)
+            {
+                DeepSwitch(box, hs);
+            }
         }
 
         private string KindWords(int kind)
@@ -256,7 +275,7 @@ namespace RealLifeOverhaul.Economy
                 InfoBox.Button(buttons, InfoBox.Positive, "reallife_hier_do_try", () => _director.HierarchyTryNow(id));
                 InfoBox.Button(buttons, InfoBox.Additional, "reallife_hier_do_pass", () => _director.HierarchyPass(id));
             }
-            InfoBox.Button(buttons, InfoBox.Additional, "reallife_co_back", () => Go(_escBack ?? "hx:"));
+            InfoBox.Button(buttons, InfoBox.Additional, "reallife_co_back", () => Go(_escBack == OverviewBack ? null : _escBack ?? "hx:"));
             Transform links = mp != null ? box.ButtonRow() : null;
             if (mp != null)
             {

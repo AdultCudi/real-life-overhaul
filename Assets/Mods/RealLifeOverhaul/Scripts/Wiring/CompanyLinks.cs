@@ -61,6 +61,7 @@ namespace RealLifeOverhaul
                 CompanyBridges.TaxCase = TaxCases.File;
                 CompanyBridges.Inspect = Inspect;
                 CompanyBridges.IssueFootfall = IssueFootfall;
+                HierarchyLinks.Connect();   // the professionals the executives are, from the professions
                 BusinessEvents.Closed += IssueClosed;
                 BusinessGame.Ambient = Ambient;
                 _paperBefore = News.Extra;

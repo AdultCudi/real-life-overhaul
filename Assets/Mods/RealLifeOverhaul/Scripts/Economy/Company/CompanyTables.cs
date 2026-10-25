@@ -249,6 +249,22 @@ namespace RealLifeOverhaul.Economy
             .Column("reallife_mgr_col_kind", 360f, TableSort.None)
             .Column("reallife_pol_col_saved", 300f, TableSort.None, right: true);
 
+        /// <summary>The owner's overview: what waits for the owner, then the executives, then a way to each level. Laid out by hand.</summary>
+        public static readonly TableSpec OwnerView = new TableSpec("Company", "Hierarchy: owner")
+            .Column("reallife_mgr_col_what", 460f, TableSort.None)
+            .Column("reallife_mgr_col_detail", 700f, TableSort.None, flexible: true)
+            .Column("reallife_mgr_col_day", 220f, TableSort.None)
+            .Column("reallife_co_col_state", 360f, TableSort.None, right: true);
+
+        /// <summary>The player's professionals who fit a seat: 0 name, 1 role, 2 level, 3 going rate, 4 where.</summary>
+        public static readonly TableSpec Professionals = new TableSpec("Company", "Hierarchy: who could sit")
+            .Column("reallife_co_col_name", 440f, TableSort.Text, flexible: true)
+            .Column("reallife_hier_col_role", 400f, TableSort.Text)
+            .Column("reallife_hier_col_level", 240f, TableSort.Text)
+            .Column("reallife_co_col_pay", 260f, TableSort.Money)
+            .Column("reallife_mgr_col_where", 400f, TableSort.Text, right: true)
+            .Empty("reallife_hier_exec_nobody");
+
         public static TableSpec For(int tab)
         {
             switch (tab)

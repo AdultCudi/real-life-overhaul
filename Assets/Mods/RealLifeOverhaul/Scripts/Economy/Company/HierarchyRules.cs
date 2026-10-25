@@ -1,11 +1,25 @@
 using System;
 using System.Globalization;
+using RealLifeOverhaul.Careers;
 
 namespace RealLifeOverhaul.Economy
 {
+    /// <summary>What the escalations raised in a week were about, counted for the executives' proposals. Never saved.</summary>
+    public struct WeekFigures
+    {
+        public int Gaps, Budgets, People, Kpis;     // people: requests, standing, leavers and exceptions
+    }
+
+    /// <summary>The figures the regional managers' replacing goes by, game-free so the rules and the director share them.</summary>
+    public static class RegionCatalogue
+    {
+        public const int ReplaceScore = 50;         // a place's score under which its manager may be replaced, 0 to 100
+        public const int ReplaceRuns = 2;           // ...after this many times the policy's days off target in a row
+    }
+
     /// <summary>
     /// The hierarchy's own rules beyond the policy and the escalations, game-free (EconomyCheck compiles them): the regions
-    /// a player makes from their stores, and the reports' week.
+    /// a player makes from their stores, a regional manager replacing a store's, an executive's proposal, and the reports' week.
     /// </summary>
     public static class HierarchyRules
     {
@@ -34,6 +48,64 @@ namespace RealLifeOverhaul.Economy
         public static string Letter(int number)
         {
             return ((char)('A' + CompanyCatalogue.Clamp(number, 1, CustomMost) - 1)).ToString();
+        }
+
+        public const int ProposalDays = 7;          // days at least between two proposals of one executive
+
+        /// <summary>
+        /// Whether a store's manager is due to be replaced by the regional manager: their place off its targets for twice
+        /// the policy's days in a row, and scoring under the line.
+        /// </summary>
+        public static bool ReplaceDue(int kpiRun, int kpiDays, int score)
+        {
+            return kpiRun >= Math.Max(1, kpiDays) * RegionCatalogue.ReplaceRuns && score < RegionCatalogue.ReplaceScore;
+        }
+
+        /// <summary>
+        /// An executive's proposal for the week, if it asks for one: the operations chief lets gaps be filled from further
+        /// when two or more were escalated, else has the regional managers replace managers off target; the people chief
+        /// widens the pay band when two or more people's matters were, else the room past it; the finance chief raises the
+        /// managers' budget when two or more budgets ran out, else the top-up. Each only a step looser than the company's now,
+        /// and none past a rule's last step.
+        /// </summary>
+        public static bool Propose(ExecSeat seat, WeekFigures week, PolicySet company, out PolicyField field, out int step)
+        {
+            field = PolicyField.Count;
+            step = -1;
+            int count = seat == ExecSeat.Coo ? Math.Max(week.Gaps, week.Kpis) : seat == ExecSeat.Chro ? week.People : week.Budgets;
+            if (count < 2)
+            {
+                return false;
+            }
+            PolicyField first, second;
+            switch (seat)
+            {
+                case ExecSeat.Coo:
+                    first = week.Gaps >= 2 ? PolicyField.Sources : PolicyField.RegionReplaces;
+                    second = PolicyField.RegionReplaces;
+                    break;
+                case ExecSeat.Chro:
+                    first = PolicyField.PayBand;
+                    second = PolicyField.ExceptionMargin;
+                    break;
+                case ExecSeat.Cfo:
+                    first = PolicyField.Budget;
+                    second = PolicyField.FinanceMost;
+                    break;
+                default:
+                    return false;
+            }
+            return Looser(company, first, out field, out step) || Looser(company, second, out field, out step);
+        }
+
+        // A rule one step looser than the company's now, if it has one.
+        private static bool Looser(PolicySet company, PolicyField rule, out PolicyField field, out int step)
+        {
+            PolicyDef d = PolicyCatalogue.Def(rule);
+            int now = company != null && company.Sets(rule) ? company.Of(rule) : d.Default;
+            field = rule;
+            step = d.Way == PolicyWay.LooseDown ? now - 1 : now + 1;
+            return step >= 0 && step < d.Steps.Length;
         }
 
         /// <summary>Whether a week of the reports has ended since it began.</summary>

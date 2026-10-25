@@ -143,6 +143,7 @@ namespace RealLifeOverhaul.Economy
             mask |= Settings.EconomyCompanyHide ? 1 << (int)CompanyPart.Count : 0;   // cash off the books: no part of its own
             mask |= RotaOn ? 1 << ((int)CompanyPart.Count + 1) : 0;                  // the rota planner: no part either
             mask |= ManagersOn ? 1 << ((int)CompanyPart.Count + 2) : 0;              // nor the managers
+            mask |= HierarchyOn ? 1 << ((int)CompanyPart.Count + 3) : 0;             // nor their hierarchy: its regions are read again when it is switched
             return mask;
         }
 

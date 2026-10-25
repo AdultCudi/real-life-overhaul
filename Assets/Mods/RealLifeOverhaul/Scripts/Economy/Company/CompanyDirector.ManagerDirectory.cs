@@ -142,7 +142,7 @@ namespace RealLifeOverhaul.Economy
             int count = 0;
             for (int i = 0; i < _managed.Count; i++)
             {
-                count += string.Equals(_managed[i].District, district, StringComparison.Ordinal) && PostOf(_managed[i]) == PostState.Covered ? 1 : 0;
+                count += string.Equals(_managed[i].Area, district, StringComparison.Ordinal) && PostOf(_managed[i]) == PostState.Covered ? 1 : 0;
             }
             return count;
         }

@@ -383,6 +383,137 @@ namespace RealLifeOverhaul.Economy
             });
         }
 
+        /// <summary>
+        /// L2: the first region with a store a manager runs given a regional manager if it has none (the most skilled at a
+        /// headquarters on none of the game's plans), who then appoints a manager at each of its stores with staff and none;
+        /// the check line says whether every such store has one, and the region's dashboard opens.
+        /// </summary>
+        public void TestHierarchyRegion()
+        {
+            const string test = "L2 regional manager";
+            if (!HierarchyTestReady(test))
+            {
+                return;
+            }
+            TestGuard(test, () =>
+            {
+                ManagedPlace first = TestManaged(test, false);
+                if (first == null)
+                {
+                    return;
+                }
+                string area = first.Area;
+                ManagerFile r = Working(RegionOf(area));
+                if (r == null)
+                {
+                    var hands = new List<ManagerHand>(8);
+                    ManagerGame.Offices(_mgrPlaces, _index, hands);
+                    int best = Best(hands, true);
+                    Entities.EmployeeInstance e = best >= 0 ? ManagerGame.Employee(hands[best].Id) : null;
+                    RotaPlace office = best >= 0 ? PlaceOf(hands[best].Place) : null;
+                    r = e != null && office != null ? AppointedRegion(area, e, hands[best].Id, office) : null;
+                    if (r == null)
+                    {
+                        TestRefusals.TellKey(Logger, test, "reallife_hier_test_no_office");
+                        return;
+                    }
+                    ManagerRead();
+                }
+                int made = RegionAppoint(area, r.Name, Save.Day, Save.Hour);
+                ManagerRead();
+                int stores = 0, without = 0;
+                for (int i = 0; i < _managed.Count; i++)
+                {
+                    ManagedPlace mp = _managed[i];
+                    if (mp.Area == area && mp.Place.Staff > 0)
+                    {
+                        stores++;
+                        without += mp.Own == null ? 1 : 0;
+                    }
+                }
+                int places, managed, gaps, standing, profit, score, open;
+                RegionFigures(area, out places, out managed, out gaps, out standing, out profit, out score, out open);
+                HierarchyCheck(test, Working(RegionOf(area)) != null && (without == 0 || _mgr.Managers.Count >= ManagerCatalogue.ManagersMost),
+                    r.Name + " regional manager of " + AreaName(area) + ", " + made + " store manager(s) appointed, " + without + " of " + stores + " store(s) with staff left with none; "
+                    + places + " place(s), " + gaps + " gap(s), score " + score);
+                Changed();
+                Open(TabManagers, "dr:" + area);
+            });
+        }
+
+        /// <summary>
+        /// L3: each empty seat given one of your professionals who fits it, one joining the professions' payroll at your
+        /// first place where nobody fits; then each executive's proposal for a week with two of their area's matters, to you.
+        /// </summary>
+        public void TestHierarchyExecutives()
+        {
+            const string test = "L3 executives";
+            if (!HierarchyTestReady(test))
+            {
+                return;
+            }
+            TestGuard(test, () =>
+            {
+                ManagedPlace first = TestManaged(test, false);
+                if (first == null)
+                {
+                    return;
+                }
+                ExecutivesRead(false);
+                if (!_prosKnown)
+                {
+                    TestRefusals.TellKey(Logger, test, "reallife_hier_test_no_professions");
+                    return;
+                }
+                int seated = 0, proposals = 0;
+                foreach (Careers.ExecSeat seat in ExecutiveHiring.Seats)
+                {
+                    if (_hier.Executive(seat) == null)
+                    {
+                        string id = FittingProfessional(seat);
+                        if (id == null && CompanyBridges.HireProfessional != null
+                            && CompanyBridges.HireProfessional(first.Place.Place, ExecutiveHiring.SeatRoles[(int)seat][0], ExecutiveHiring.LeastLevel))
+                        {
+                            ExecutivesRead(false);
+                            id = FittingProfessional(seat);
+                        }
+                        if (id != null)
+                        {
+                            HierarchyAppointExecutive((int)seat, id);
+                        }
+                    }
+                    ExecutiveFile x = _hier.Executive(seat);
+                    if (x == null || !x.Seen)
+                    {
+                        continue;
+                    }
+                    seated++;
+                    var week = new WeekFigures { Gaps = 2, Budgets = 2, People = 2, Kpis = 2 };
+                    _ownerNew = 0;
+                    proposals += Propose(x, week, Save.Day) != null || OpenProposalOf(x.Area) ? 1 : 0;
+                    TellOwner();
+                }
+                HierarchyCheck(test, seated == ExecutiveHiring.Seats.Length && proposals == seated,
+                    seated + " of " + ExecutiveHiring.Seats.Length + " seat(s) filled from your professionals, " + proposals + " proposal(s) waiting for you");
+                Changed();
+                Open(TabManagers, "xs:");
+            });
+        }
+
+        // The first of your professionals who fits a seat and holds none; null for none.
+        private string FittingProfessional(Careers.ExecSeat seat)
+        {
+            for (int i = 0; i < _pros.Count; i++)
+            {
+                ProfessionalHand h = _pros[i];
+                if (!h.Leaving && ExecutiveHiring.Fits(seat, h.Role, h.Level) && _hier.ExecutiveOf(h.Id) == null && _mgr.Of(h.Id) == null)
+                {
+                    return h.Id;
+                }
+            }
+            return null;
+        }
+
         /// <summary>L4: what waits for you, counted against the escalations kept, and the exceptions page opened.</summary>
         public void TestHierarchyOwner()
         {

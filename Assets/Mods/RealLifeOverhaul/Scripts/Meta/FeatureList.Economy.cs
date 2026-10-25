@@ -298,7 +298,8 @@ namespace RealLifeOverhaul.Meta
                 .About("reallife_guide_economy_hierarchy_about").Help("reallife_guide_economy_hierarchy")
                 .Owns(Settings.EconomyHierarchyId)
                 .Data(Economy.HierarchyStore.Key)
-                .Test("reallife_hier_test_store", "reallife_hier_test_owner", "reallife_hier_test_gap", "reallife_hier_test_budget", "reallife_hier_test_demand",
+                .Test("reallife_hier_test_store", "reallife_hier_test_region", "reallife_hier_test_executives", "reallife_hier_test_owner",
+                    "reallife_hier_test_gap", "reallife_hier_test_budget", "reallife_hier_test_demand",
                     "reallife_hier_test_mood", "reallife_hier_test_wave", "reallife_hier_test_kpi", "reallife_hier_test_exception"));
 
             Economy.EstateGuide.AddFacts(Features.Add("economy_estate", "reallife_meta_title_economy_estate")

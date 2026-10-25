@@ -977,6 +977,8 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_mgr_test_decide", () => Economy.CompanyDirector.Instance?.TestManagerDecide())
                 .AddButton("reallife_mgr_test_undo", () => Economy.CompanyDirector.Instance?.TestManagerUndoAll())
                 .AddButton("reallife_hier_test_store", () => Economy.CompanyDirector.Instance?.TestHierarchyStore())
+                .AddButton("reallife_hier_test_region", () => Economy.CompanyDirector.Instance?.TestHierarchyRegion())
+                .AddButton("reallife_hier_test_executives", () => Economy.CompanyDirector.Instance?.TestHierarchyExecutives())
                 .AddButton("reallife_hier_test_owner", () => Economy.CompanyDirector.Instance?.TestHierarchyOwner())
                 .AddButton("reallife_hier_test_gap", () => Economy.CompanyDirector.Instance?.TestHierarchyGap())
                 .AddButton("reallife_hier_test_budget", () => Economy.CompanyDirector.Instance?.TestHierarchyBudget())

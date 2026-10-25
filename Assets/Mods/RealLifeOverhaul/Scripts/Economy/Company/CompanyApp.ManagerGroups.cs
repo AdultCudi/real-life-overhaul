@@ -52,7 +52,7 @@ namespace RealLifeOverhaul.Economy
         // Where a place's Back goes: the district's page or the group it was opened from, else the group it is listed in.
         private string PlaceBack(ManagedPlace mp)
         {
-            if (_mgrRegion != null && string.Equals(_mgrRegion, "rg:" + mp.District, StringComparison.Ordinal))
+            if (_mgrRegion != null && string.Equals(_mgrRegion, "rg:" + mp.Area, StringComparison.Ordinal))
             {
                 return _mgrRegion;
             }
@@ -139,6 +139,7 @@ namespace RealLifeOverhaul.Economy
                 box.Note(CompanyText.T("reallife_mgr_left_out", "count", RotaGame.LeftOut.ToString(), "most", CompanyCatalogue.ShopsMost.ToString()));
             }
             box.Note(CompanyText.T("reallife_mgr_dir_what"));
+            HierarchyBox(box);
             Meta.Guide.Point(box, "reallife_meta_title_economy_managers");
         }
 
@@ -282,11 +283,11 @@ namespace RealLifeOverhaul.Economy
                 int places = 0, standing = r != null ? _director.StandingIn(district) : 0;
                 for (int k = 0; k < _lines.Count; k++)
                 {
-                    places += _lines[k].Line.Has && string.Equals(_lines[k].Mp.District, district, StringComparison.Ordinal) ? 1 : 0;
+                    places += _lines[k].Line.Has && string.Equals(_lines[k].Mp.Area, district, StringComparison.Ordinal) ? 1 : 0;
                 }
                 covered += standing;
                 int cost = _director.MonthCostOf(r);
-                Pick("rg:" + district, CompanyText.District(district), r != null ? r.Name : CompanyText.T("reallife_mgr_none"), r != null ? r.Skill.ToString() : string.Empty,
+                Pick("rg:" + district, CompanyDirector.AreaName(district), r != null ? r.Name : CompanyText.T("reallife_mgr_none"), r != null ? r.Skill.ToString() : string.Empty,
                     places.ToString(), 0, ref selected);
                 TableRow row = Last;
                 row.Kind = r == null ? CompanyTables.RegionEmpty : sick ? CompanyTables.RegionSick : CompanyTables.RegionInPost;

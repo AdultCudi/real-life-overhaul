@@ -56,9 +56,9 @@ namespace RealLifeOverhaul.Economy
                 return;
             }
             _director.ManagerLook(_lines, _linePool, _counts);   // every place's post as it stands, read once for this page
-            if (WriteHierarchy(box, ms, ref selected))
+            if (WriteHierarchy(box, ms, ref selected) || WriteLevels(box, ref selected))
             {
-                return;   // the exceptions, the policy centre, a dashboard
+                return;   // the exceptions, the policy centre, a dashboard, the executives
             }
             string place, rest;
             if (Split("mk:", out place, out rest) || Split("mc:", out place, out rest))
@@ -144,6 +144,12 @@ namespace RealLifeOverhaul.Economy
                 WriteGroup(box, ms, group, ref selected);
                 return;
             }
+            HierarchyState hs = _director.HierarchyData;
+            if (hs != null && _director.HierarchyOn && !hs.Deep)
+            {
+                WriteOwnerOverview(box, hs, ref selected);   // the owner's first page: only what waits for them and the executives' summaries
+                return;
+            }
             WriteDirectory(box, ms, ref selected);
         }
 
@@ -185,11 +191,11 @@ namespace RealLifeOverhaul.Economy
         {
             _spec = CompanyTables.ManagerPlace;
             ManagerFile m = mp.Own;
-            if (!string.IsNullOrEmpty(mp.District))
+            if (!string.IsNullOrEmpty(mp.Area))
             {
-                // The district's regional manager, a click away; their page lists this place and comes back to it.
+                // The region's regional manager, a click away; their page lists this place and comes back to it.
                 ManagerFile r = mp.Region;
-                Pick("rg:" + mp.District, CompanyText.T("reallife_mgr_row_region", "district", CompanyText.District(mp.District)), r != null ? r.Name : CompanyText.T("reallife_mgr_none"),
+                Pick("rg:" + mp.Area, CompanyText.T("reallife_mgr_row_region", "district", CompanyDirector.AreaName(mp.Area)), r != null ? r.Name : CompanyText.T("reallife_mgr_none"),
                     string.Empty, RegionState(r), CompanyDirector.Sick(r) ? 1 : 0, ref selected);
                 Last.Pinned = true;
             }
@@ -282,6 +288,7 @@ namespace RealLifeOverhaul.Economy
                 Transform levels = box.ButtonRow();
                 InfoBox.Button(levels, InfoBox.Positive, "reallife_hier_open_dashboard", () => Go("db:" + place));
                 InfoBox.Button(levels, InfoBox.Additional, "reallife_hier_open_policy", () => OpenPolicy(CompanyDirector.ScopeStore, place));
+                RegionPicker(box, mp);
             }
             box.Section("reallife_mgr_sec_manager");
             box.RowPair("reallife_mgr_name", m.Name, "reallife_mgr_since", CompanyText.Day(m.From));
@@ -588,7 +595,7 @@ namespace RealLifeOverhaul.Economy
                 Last.Key[2] = h.Skill;
                 Last.Key[3] = h.Wage / 100.0;
                 Last.Set(4, r != null && r.Id == h.Id ? CompanyText.T("reallife_mgr_in_post")
-                    : holds != null ? CompanyText.T("reallife_mgr_row_region", "district", CompanyText.District(holds)) : string.Empty);
+                    : holds != null ? CompanyText.T("reallife_mgr_row_region", "district", CompanyDirector.AreaName(holds)) : string.Empty);
             }
             if (_hands.Count == 0)
             {
@@ -606,7 +613,7 @@ namespace RealLifeOverhaul.Economy
             {
                 ManagerLine line = _lines[i];
                 ManagedPlace mp = line.Mp;
-                if (!string.Equals(mp.District, district, StringComparison.Ordinal))
+                if (!string.Equals(mp.Area, district, StringComparison.Ordinal))
                 {
                     continue;
                 }
@@ -642,7 +649,7 @@ namespace RealLifeOverhaul.Economy
             {
                 Decision d = ms.Decisions[i];
                 ManagedPlace mp = _director.ManagedAt(d.Place);
-                if (mp == null || !string.Equals(mp.District, district, StringComparison.Ordinal)
+                if (mp == null || !string.Equals(mp.Area, district, StringComparison.Ordinal)
                     || !ManagerDirectoryRules.ByRegion(d.Who, mp.Own != null ? ManagerStore.Clean(mp.Own.Name) : null, ManagerStore.Clean(r.Name)))
                 {
                     continue;
@@ -663,7 +670,7 @@ namespace RealLifeOverhaul.Economy
         {
             ManagerFile r = _director.RegionOf(district);
             bool sick = CompanyDirector.Sick(r);
-            box.Title(CompanyText.T("reallife_mgr_row_region", "district", CompanyText.District(district)));
+            box.Title(CompanyText.T("reallife_mgr_row_region", "district", CompanyDirector.AreaName(district)));
             box.Chip(RegionState(r), r == null ? CellTone.Plain : sick ? CellTone.Yellow : CellTone.Green);
             Transform buttons = box.ButtonRow();
             InfoBox.Button(buttons, r == null ? InfoBox.Positive : InfoBox.Additional, r == null ? "reallife_mgr_appoint" : "reallife_mgr_replace", () => Go("ra:" + district));
@@ -672,6 +679,10 @@ namespace RealLifeOverhaul.Economy
                 InfoBox.Button(buttons, InfoBox.Negative, "reallife_mgr_stand_down", () => _director.ManagerStandDown(district, true));
             }
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_co_back", () => Go(_mgrGroup ?? GroupPick(ManagerGroup.Regional)));
+            if (_director.HierarchyOn)
+            {
+                InfoBox.Button(box.ButtonRow(), InfoBox.Positive, "reallife_hier_open_dashboard", () => Go("dr:" + district));
+            }
             if (r == null)
             {
                 box.Note(CompanyText.T("reallife_mgr_region_empty"));
@@ -688,7 +699,7 @@ namespace RealLifeOverhaul.Economy
             IReadOnlyList<ManagedPlace> all = _director.Managed;
             for (int i = 0; i < all.Count; i++)
             {
-                places += all[i].District == district && all[i].Own != null ? 1 : 0;
+                places += all[i].Area == district && all[i].Own != null ? 1 : 0;
             }
             box.Section("reallife_mgr_sec_district");
             box.RowPair("reallife_mgr_region_places", places.ToString(), "reallife_mgr_standing_in", _director.StandingIn(district).ToString());
@@ -706,7 +717,7 @@ namespace RealLifeOverhaul.Economy
         private void WriteAppointRegion(InfoBox box, string district)
         {
             box.Title(CompanyText.T("reallife_mgr_appoint_title"));
-            box.Subtitle(CompanyText.T("reallife_mgr_row_region", "district", CompanyText.District(district)));
+            box.Subtitle(CompanyText.T("reallife_mgr_row_region", "district", CompanyDirector.AreaName(district)));
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_co_back", () => Go("rg:" + district));
             box.Note(CompanyText.T("reallife_mgr_region_what"));
             box.Note(CompanyText.T("reallife_mgr_region_pick"));
@@ -743,7 +754,7 @@ namespace RealLifeOverhaul.Economy
             string holds = _director.RegionHeldBy(h.Id);
             if (holds != null && holds != district)
             {
-                box.Line(CompanyText.T("reallife_mgr_region_moves", "district", CompanyText.District(holds)), CellTone.Yellow);
+                box.Line(CompanyText.T("reallife_mgr_region_moves", "district", CompanyDirector.AreaName(holds)), CellTone.Yellow);
             }
             ManagerFile r = _director.RegionOf(district);
             if (r != null && r.Id != h.Id)

@@ -112,6 +112,15 @@ namespace RealLifeOverhaul.Economy
         public bool Seen;
     }
 
+    /// <summary>One of the player's professionals as the executives' pages and reads see them (from Tech, CompanyBridges.Professionals). Never saved.</summary>
+    public struct ProfessionalHand
+    {
+        public string Id, Name, Place, PlaceName;
+        public int Role, Level;         // TalentCatalogue's
+        public int Going;               // the going rate of their role and skill, cents an hour
+        public bool Leaving;            // working their notice
+    }
+
     /// <summary>A store put into a region the player made, instead of its district's.</summary>
     public sealed class AreaPick
     {
@@ -136,6 +145,7 @@ namespace RealLifeOverhaul.Economy
         public int NextId = 1;
         public int NextTemplate = 1;
         public int WeekFrom;                    // the first day of the week the reports count
+        public int MonthFrom;                   // the managers' month the executives' figures are of
         public int Settled;                     // escalations settled since the week began
         public bool Deep;                       // the owner's Deep Mode: every level's pages, not only what needs them
 

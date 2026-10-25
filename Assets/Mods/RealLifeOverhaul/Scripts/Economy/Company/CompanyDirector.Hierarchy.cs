@@ -40,6 +40,7 @@ namespace RealLifeOverhaul.Economy
             {
                 KeepOwnLimits();
             }
+            ManagerRead();   // the regions the player made, read in now the hierarchy is
             if (!fresh || Verbose)
             {
                 Logger?.Info("Company: hierarchy " + (fresh ? "opened for this save at the starting policy" : "loaded (version " + version + ")") + ": "
@@ -96,12 +97,14 @@ namespace RealLifeOverhaul.Economy
         /// <summary>The region a place is in for its regional manager and its rules: the region the player put it in, else its district.</summary>
         internal string AreaOf(ManagedPlace mp)
         {
-            if (mp == null)
-            {
-                return null;
-            }
-            string picked = _hier != null ? _hier.AreaPicked(mp.Place.Place) : null;
-            return picked ?? mp.District;
+            return mp == null ? null : mp.Area ?? mp.District;
+        }
+
+        // A place's region as the managers' read sets it: the one the player put it in while the hierarchy runs, else its district.
+        private string AreaFor(string place, string district)
+        {
+            string picked = HierarchyOn ? _hier.AreaPicked(place) : null;
+            return picked ?? district;
         }
 
         /// <summary>

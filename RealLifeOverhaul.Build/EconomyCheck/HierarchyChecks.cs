@@ -24,6 +24,7 @@ internal static partial class Program
         HierarchyTriggers();
         HierarchyRouting();
         HierarchyAreas();
+        HierarchyAbove();   // the regional managers' replacing and the executives' proposals (step 2)
         HierarchySave();
         HierarchyWiring();
         HierarchyWords();
@@ -304,6 +305,54 @@ internal static partial class Program
             "escalation routing: staffing and targets go to the operations chief, budgets to the finance chief, pay and people to the people chief");
     }
 
+    private static void HierarchyAbove()
+    {
+        int kpi = 3;
+        Check(!HierarchyRules.ReplaceDue(kpi * RegionCatalogue.ReplaceRuns - 1, kpi, 10) && HierarchyRules.ReplaceDue(kpi * RegionCatalogue.ReplaceRuns, kpi, RegionCatalogue.ReplaceScore - 1)
+              && !HierarchyRules.ReplaceDue(99, kpi, RegionCatalogue.ReplaceScore) && HierarchyRules.ReplaceDue(RegionCatalogue.ReplaceRuns, 0, 0),
+            "regional managers: a store's manager is replaced only after twice the days off target and under the score, never at it");
+        var company = new PolicySet();
+        company.Start();
+        var busy = new WeekFigures { Gaps = 2, Budgets = 2, People = 3, Kpis = 0 };
+        PolicyField f;
+        int step;
+        bool coo = HierarchyRules.Propose(ExecSeat.Coo, busy, company, out f, out step) && f == PolicyField.Sources && step == company.Of(PolicyField.Sources) + 1;
+        bool chro = HierarchyRules.Propose(ExecSeat.Chro, busy, company, out f, out step) && f == PolicyField.PayBand && step == company.Of(PolicyField.PayBand) + 1;
+        bool cfo = HierarchyRules.Propose(ExecSeat.Cfo, busy, company, out f, out step) && f == PolicyField.Budget && step == company.Of(PolicyField.Budget) + 1;
+        var quiet = new WeekFigures { Gaps = 1, Budgets = 1, People = 1, Kpis = 1 };
+        bool none = !HierarchyRules.Propose(ExecSeat.Coo, quiet, company, out f, out step) && !HierarchyRules.Propose(ExecSeat.Chro, quiet, company, out f, out step)
+                    && !HierarchyRules.Propose(ExecSeat.Cfo, quiet, company, out f, out step) && !HierarchyRules.Propose(ExecSeat.None, busy, company, out f, out step);
+        Check(coo && chro && cfo && none, "executives: two of an area's matters in a week bring a proposal one step looser on its first rule, fewer bring none, and no seat proposes nothing");
+        var top = new PolicySet();
+        top.Start();
+        top.Steps[(int)PolicyField.Sources] = PolicyCatalogue.Def(PolicyField.Sources).Steps.Length - 1;
+        top.Steps[(int)PolicyField.PayBand] = PolicyCatalogue.Def(PolicyField.PayBand).Steps.Length - 1;
+        top.Steps[(int)PolicyField.Budget] = PolicyCatalogue.Def(PolicyField.Budget).Steps.Length - 1;
+        top.Steps[(int)PolicyField.FinanceMost] = PolicyCatalogue.Def(PolicyField.FinanceMost).Steps.Length - 1;
+        bool second = HierarchyRules.Propose(ExecSeat.Coo, busy, top, out f, out step) && f == PolicyField.RegionReplaces && step == 1
+                      && HierarchyRules.Propose(ExecSeat.Chro, busy, top, out f, out step) && f == PolicyField.ExceptionMargin
+                      && !HierarchyRules.Propose(ExecSeat.Cfo, busy, top, out f, out step);
+        var kpis = new WeekFigures { Kpis = 2 };
+        bool replace = HierarchyRules.Propose(ExecSeat.Coo, kpis, company, out f, out step) && f == PolicyField.RegionReplaces && step == 1;
+        Check(second && replace, "executives: past a rule's last step the proposal is the area's second rule, past both none, and places off target bring the replacing of managers");
+        string escalations = ModSource(@"Economy\Company\CompanyDirector.Escalations.cs"), executives = ModSource(@"Economy\Company\CompanyDirector.Executives.cs");
+        string managers = ModSource(@"Economy\Company\CompanyDirector.Managers.cs"), app = ModSource(@"Economy\Company\CompanyApp.Managers.cs"), regions = ModSource(@"Economy\Company\CompanyDirector.Regions.cs");
+        string links = ModSource(@"Wiring\Wiring.HierarchyLinks.cs"), company2 = ModSource(@"Wiring\CompanyLinks.cs");
+        Check(MemberText(managers, "internal void ManagerRead()").Contains("mp.Area = AreaFor(p.Place, mp.District)") && MemberText(managers, "internal void ManagerRead()").Contains("mp.Region = RegionOf(mp.Area)")
+              && MemberText(managers, "internal void ManagerRead()").Contains("HierarchyRules.CustomNumber(m.Place) > 0 && !HierarchyOn"),
+            "regions: a store's regional manager is of the region it is in, and one of a region the player made keeps the post while the hierarchy is off");
+        Check(MemberText(executives, "internal void ExecutivesRead(").Contains("if (!_prosKnown)") && MemberText(executives, "public void HierarchyAppointExecutive(").Contains("_mgr.Of(id) != null")
+              && MemberText(executives, "private Escalation Propose(").Contains("EscalationRules.LevelOwner") && MemberText(executives, "partial void ProposalDecided(").Contains("_hier.Company.Steps[")
+              && links.Contains("CompanyBridges.Professionals = Professionals") && company2.Contains("HierarchyLinks.Connect()"),
+            "executives: sat from the professions, never a manager, a seat kept while the professions are off, and a proposal only ever the owner's to put in force");
+        Check(MemberText(escalations, "partial void HierarchyDay(").Contains("RegionRound(day, Save.Hour)") && MemberText(regions, "private void RegionRound(").Contains("RegionRule(area, PolicyField.RegionAppoints) == 1")
+              && MemberText(regions, "private void RegionRound(").Contains("RegionRule(area, PolicyField.RegionReplaces) == 1")
+              && MemberText(regions, "internal int RegionAppoint(").Contains("GoingPublic.Mine(mp.Place.Reg)") && MemberText(regions, "internal int RegionReplace(").Contains("GoingPublic.Mine(mp.Place.Reg)"),
+            "regional managers: they appoint and replace only where the region's policy says so, and only at the player's own stores");
+        Check(MemberText(app, "partial void WriteManagers(").Contains("WriteOwnerOverview(box, hs, ref selected)") && MemberText(app, "partial void WriteManagers(").Contains("!hs.Deep"),
+            "owner overview: the Managers tab opens on it until Deep Mode opens the directory");
+    }
+
     private static void HierarchyAreas()
     {
         bool round = true;
@@ -324,7 +373,7 @@ internal static partial class Program
 
     private static HierarchyState HierarchySample()
     {
-        var s = new HierarchyState { NextId = 40, NextTemplate = 3, WeekFrom = 21, Settled = 4, Deep = true };
+        var s = new HierarchyState { NextId = 40, NextTemplate = 3, WeekFrom = 21, Settled = 4, Deep = true, MonthFrom = 15 };
         s.Company.Steps[(int)PolicyField.PayBand] = 5;
         PolicySet r = s.Want(true, "Midtown");
         r.Steps[(int)PolicyField.SkillFloor] = 2;
@@ -455,7 +504,7 @@ internal static partial class Program
         Check(MemberText(escalations, "partial void HierarchyDay(").Contains("WatchPlace(_managed[i], day)") && MemberText(escalations, "partial void HierarchyHour(").Contains("ManagerCatalogue.StaffHour")
               && MemberText(managers, "private void Hour(int day, int hour)").Contains("HierarchyHour(day, hour)"),
             "hierarchy wiring: the escalations are looked at on the day and the exceptions at the staff hour, nowhere else");
-        string[] buttons = { "TestHierarchyStore", "TestHierarchyOwner", "TestHierarchyGap", "TestHierarchyBudget", "TestHierarchyDemand", "TestHierarchyMood", "TestHierarchyWave",
+        string[] buttons = { "TestHierarchyStore", "TestHierarchyRegion", "TestHierarchyExecutives", "TestHierarchyOwner", "TestHierarchyGap", "TestHierarchyBudget", "TestHierarchyDemand", "TestHierarchyMood", "TestHierarchyWave",
             "TestHierarchyKpi", "TestHierarchyException" };
         bool wired = true;
         foreach (string b in buttons)
@@ -478,7 +527,12 @@ internal static partial class Program
         "reallife_hier_say_kpi", "reallife_hier_say_exception", "reallife_hier_say_exception_offer", "reallife_hier_say_proposal", "reallife_pol_what", "reallife_pol_held_what",
         "reallife_hier_dash_what", "reallife_hier_what_yours", "reallife_hier_what_others", "reallife_hier_what_closed", "reallife_hier_region_custom", "reallife_hier_level_chip",
         "reallife_pol_unit_day", "reallife_pol_unit_days", "reallife_pol_unit_skill", "reallife_pol_follow_one", "reallife_pol_held_line", "reallife_pol_company_only_line",
-        "reallife_pol_scope_region", "reallife_pol_scope_store", "reallife_pol_tpl_own", "reallife_pol_tpl_onto"
+        "reallife_pol_scope_region", "reallife_pol_scope_store", "reallife_pol_tpl_own", "reallife_pol_tpl_onto",
+        "reallife_hier_seat_what_coo", "reallife_hier_seat_what_chro", "reallife_hier_seat_what_cfo", "reallife_hier_seat_hire", "reallife_hier_seat_summary",
+        "reallife_hier_seat_empty_line", "reallife_hier_seat_figures", "reallife_hier_owner_title", "reallife_hier_owner_what", "reallife_hier_deep", "reallife_hier_deep_what",
+        "reallife_hier_region_dash_what", "reallife_hier_region_own", "reallife_hier_note_exec_appointed", "reallife_hier_note_exec_cannot", "reallife_hier_note_exec_gone",
+        "reallife_hier_note_exec_stood_down", "reallife_hier_note_no_moves", "reallife_hier_note_region_appointed", "reallife_hier_note_region_filled",
+        "reallife_hier_note_region_moved", "reallife_hier_note_region_nothing", "reallife_hier_note_region_raised"
     };
 
     private static void HierarchyWords()
