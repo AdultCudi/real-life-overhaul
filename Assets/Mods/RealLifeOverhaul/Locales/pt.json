@@ -22505,5 +22505,5 @@
   "reallife_util_test_phone_fail": "Teste de serviços: a conta não pôde ser aberta por telefone. {why} FAIL.",
   "reallife_util_test_phone_none": "Teste de serviços: é preciso um imóvel seu sem nada em aberto na luz ou na água. Não executado, FAIL.",
   "reallife_changes_next_title": "Próxima versão",
-  "reallife_changes_next": "Corrigido: quando todos os prédios que poderiam abrigar o escritório de serviços públicos são seus, as contas de luz e água são pedidas e religadas no app Contas, por telefone, pelos mesmos preços, e os avisos dizem isso; quando um prédio fica livre o escritório volta a abrir e o app diz onde."
+  "reallife_changes_next": "Corrigido: quando todos os prédios que poderiam abrigar o escritório de serviços públicos são seus, as contas de luz e água são pedidas e religadas no app Contas, por telefone, pelos mesmos preços, e os avisos dizem isso; quando um prédio fica livre o escritório volta a abrir e o app diz onde. Corrigido: depois de retirar uma candidatura e se candidatar de novo à mesma vaga, o app Carreira abria a retirada e não dava para chegar à entrevista. Cada candidatura agora tem sua própria linha, e a entrevista, a oferta e a retirada vão para a ativa."
 }

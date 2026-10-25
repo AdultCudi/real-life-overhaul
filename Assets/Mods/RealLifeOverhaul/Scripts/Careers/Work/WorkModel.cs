@@ -222,16 +222,26 @@ namespace RealLifeOverhaul.Careers
             return null;
         }
 
+        /// <summary>
+        /// The application to a post: its live one, else the newest. A post applied to again after a withdrawal has two, and
+        /// the oldest first sent every interview, offer and withdrawal to the withdrawn one (a player's report of 25 Oct).
+        /// </summary>
         public Application ApplicationOf(int id)
         {
-            for (int i = 0; i < Applications.Count; i++)
+            Application newest = null;
+            for (int i = Applications.Count - 1; i >= 0; i--)
             {
-                if (Applications[i].Post.Id == id)
+                if (Applications[i].Post.Id != id)
+                {
+                    continue;
+                }
+                if (Applications[i].Live)
                 {
                     return Applications[i];
                 }
+                newest = newest ?? Applications[i];
             }
-            return null;
+            return newest;
         }
 
         /// <summary>A live application for the same post, or null.</summary>
