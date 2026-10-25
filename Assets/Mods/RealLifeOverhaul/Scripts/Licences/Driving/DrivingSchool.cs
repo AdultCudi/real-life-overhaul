@@ -33,6 +33,18 @@ namespace RealLifeOverhaul
     {
         public const int OpensAt = 7;
         public const int ClosesAt = 20;
+
+        /// <summary>An hour of the school's day as the game writes the time.</summary>
+        public static string Hour(int hour)
+        {
+            return (hour % 24).GetFormattedTime(0f);
+        }
+
+        /// <summary>The words of a reason <see cref="Available"/> gave: the school's hours, where it names them, are filled in from the constants above.</summary>
+        public static string ReasonText(string reasonKey)
+        {
+            return Licences.T(reasonKey, "from", Hour(OpensAt), "to", Hour(ClosesAt));
+        }
         public const int Classes = 5;       // LicenceClass: car, commercial, taxi, motorcycle, heavy
 
         private static readonly SchoolService[] WithHeavy =
@@ -543,7 +555,7 @@ namespace RealLifeOverhaul
             }
             else
             {
-                status = reason.GetLocalization();
+                status = DrivingSchool.ReasonText(reason);
             }
             var entry = new DialogEntry
             {

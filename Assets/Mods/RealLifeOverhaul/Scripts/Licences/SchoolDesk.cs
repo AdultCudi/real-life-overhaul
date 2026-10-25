@@ -89,10 +89,7 @@ namespace RealLifeOverhaul
             _doorKey = -1;
         }
 
-        private static string Hour(int hour)
-        {
-            return (hour % 24).GetFormattedTime(0f);
-        }
+        private static string Hour(int hour) => DrivingSchool.Hour(hour);
 
         private void Speak()
         {
@@ -213,7 +210,7 @@ namespace RealLifeOverhaul
                 }
                 bool available = DrivingSchool.Available(service, true, out string reason);
                 string detail = Licences.T(DrivingSchool.PitchKey(service)).Replace("{amount}", Licences.Money(DrivingSchool.Fee(service)))
-                    .Replace("{status}", available ? Licences.T("reallife_school_ready") : Licences.T(reason));
+                    .Replace("{status}", available ? Licences.T("reallife_school_ready") : DrivingSchool.ReasonText(reason));
                 list.Add((int)service, Licences.T(NameKeys[(int)service]), detail, ButtonDo, available, list.HeightFor(detail.Length, true));
                 count++;
             }
@@ -273,7 +270,7 @@ namespace RealLifeOverhaul
                 // Asked again: the hour may have turned or the money gone since the list was written.
                 if (!DrivingSchool.Available(service, true, out string reason))
                 {
-                    Licences.Toast(NotificationType.Warning, reason, 7f);
+                    Licences.Toast(NotificationType.Warning, reason, "from", DrivingSchool.Hour(DrivingSchool.OpensAt), "to", DrivingSchool.Hour(DrivingSchool.ClosesAt), 7f);
                     Fill(list);
                     list.Open(_onPick, _onClosed);
                     Step(service + " refused: " + reason);

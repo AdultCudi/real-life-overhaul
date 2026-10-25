@@ -70,9 +70,9 @@ namespace RealLifeOverhaul
             return Prices.At(Mathf.Round(Mathf.Clamp(price * PremiumShare, PremiumLeast, PremiumMost) * PolicyDays / PremiumDays * (1f + PremiumPerClaim * Mathf.Clamp(claims, 0, 6)) / 5f) * 5f);
         }
 
-        public static float Payout(float bill)
+        public static float Payout(float bill, bool reported = false)
         {
-            return Mathf.Max(0f, Mathf.Round((bill - Excess) * Cover));
+            return ReportedRepair.Payout(bill, Excess, Cover, reported);
         }
 
         public static float ServiceEvery(CarKind kind)   // kilometres
@@ -138,16 +138,38 @@ namespace RealLifeOverhaul
     public static class CarGarage
     {
         private const string Key = "reallife:garage";
+        private const string ReportKey = "reallife:carreport";   // the day a police report was handed over for the car, 0 for none
 
         private static readonly Dictionary<string, CarRecord> Records = new Dictionary<string, CarRecord>(8);
         private static readonly List<string> Scratch = new List<string>(8);
 
         public static bool Loaded { get; private set; }
 
+        /// <summary>The day a police report on a car break-in or an accident was handed over and has not been used yet; 0 for none.</summary>
+        public static int ReportedDay { get; private set; }
+
         public static void Reset()
         {
             Records.Clear();
+            ReportedDay = 0;
             Loaded = false;
+        }
+
+        /// <summary>A police report was handed over at a front desk: the insurer takes it with the next repair it pays for.</summary>
+        public static void Reported(int day)
+        {
+            ReportedDay = Mathf.Max(0, day);
+        }
+
+        /// <summary>True if a report is in hand for a repair paid today. <see cref="Spend"/> uses it up.</summary>
+        public static bool Waives(int today)
+        {
+            return ReportedRepair.Fresh(ReportedDay, today, Law.Bridges.ReportDays);
+        }
+
+        public static void Spend()
+        {
+            ReportedDay = 0;
         }
 
         /// <summary>The record of a car, made the first time it is asked for.</summary>
@@ -191,6 +213,7 @@ namespace RealLifeOverhaul
                     Records[record.Id] = record;
                 }
             }
+            ReportedDay = data != null && data.TryGetValue(ReportKey, out string reported) ? I(reported) : 0;
             Loaded = true;
         }
 
@@ -213,6 +236,14 @@ namespace RealLifeOverhaul
                     .Append(r.Breakdowns).Append('~').Append(r.Broken ? '1' : '0').Append('~').Append(S(r.GraceKm));
             }
             data[Key] = text.ToString();
+            if (ReportedDay > 0)
+            {
+                data[ReportKey] = ReportedDay.ToString(CultureInfo.InvariantCulture);
+            }
+            else
+            {
+                data.Remove(ReportKey);
+            }
         }
 
         /// <summary>Drops the records of cars the save no longer has; returns how many.</summary>

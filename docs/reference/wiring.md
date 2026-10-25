@@ -19,6 +19,7 @@ An adapter never throws into its caller: a fault is logged once per place (`Wiri
 | `Standing.cs` | `Wiring.Standing`: the one answer to "has the player a record" (`HasRecord`, `Arrested(days)`, `Convictions`, `Charged`) and to what the city thinks of them (`Public`, `PublicSigned`), from Law's police record and Justice's convictions together, and how well the city knows them and what it thinks of them as an owner (Fame) |
 | `LawJustice.cs` | `Wiring.Arrests`: Law's cell and Justice's case for the same arrest; `Justice.Bridges.Law` |
 | `LicenceLinks.cs` | `Licences.Law`, `Justice.Bridges.Licences`, and what Licences reports to the courts instead of fining |
+| `Wiring.ReportLinks.cs` | `Law.Bridges.PoliceReport`: a police report from a front desk reaches the insurers (a break-in's theft claim, a car's next repair) |
 | `Scenes.cs` | `Wiring.Scenes`: the one question every street scene asks before it starts; `PlayerHeld` for panels |
 | `CivicLinks.cs` | `CivicBridges` (record, reputation, scenes, weather, news, city people; for running for office the economy's cycle, Standing's influence, recognition and integrity, a conviction or a case, a let building, Standing's notice, a summons); `Wiring.Paper.Print`: a finished story for the City Ledger |
 | `LifeLinks.cs` | `SocialLinks`, `CareerLinks`, `TravelBridges`, `Justice.Bridges.Social`, `GarageBridges.RoadIsWet`, `LifeAccounts.Home` |
@@ -124,6 +125,7 @@ The one theoretical overlap left is `SceneCordon.Recheck`, which looks at its ow
 |---|---|---|
 | `Justice.Bridges.Law` | `Wiring.Arrests` | `ReleaseSpot`: the pavement outside the nearest precinct, and its name. `PriorConvictions` -1, `Custody` false, the three record calls empty (see [For Scripts/Law](#who-does-what-at-an-arrest)) |
 | `Justice.Bridges.Licences` | `Wiring.LicenceLinks` | the licence's own suspension date |
+| `Law.Bridges.PoliceReport` | `Wiring.ReportLinks` | the newest theft claim of the player's businesses still to be paid pays in full, the excess too (`CoverRules.Reported`); for a car break-in or an accident the next repair the car's insurer pays carries no excess (`CarGarage.Waives`, saved as `reallife:carreport`) |
 | `Nav.NavBridges.HudHeld` | `Wiring.NavLinks` | true during custody (`Law.Custody.Active`), a bus ride (`TransitDirector.Riding`) and photo mode: the minimap is hidden |
 | `Nav.NavBridges.MoreMarks` | `Wiring.TaxiLinks` | adds the called taxi to the minimap's marks where it is, with the game's vehicle picture in the colour the game gives its private driver |
 | `TaxiBridges.Held` | `Wiring.TaxiLinks` | the police have business with the player (`PoliceAttention.IsBusy`, which includes custody), a driving test is on, or they are in prison: no taxi is sent, one that is out is let go free |
@@ -164,7 +166,7 @@ The one theoretical overlap left is `SceneCordon.Recheck`, which looks at its ow
 | `GarageBridges.RiderFalls` | nobody | `PlayerKnockdown` has no door for "down now", and a ragdoll on a rider leaving a scooter in the same frame cannot be judged without a run |
 | `Events.EventDirector.CrashFire` | nobody, on purpose | a severe crash already burns with the accident's own fire (`TrafficEffects.CreateFire`, 6 in 10 severe crashes, put out with the scene); `CrashFire` would be a second fire on the same bonnet |
 | `Events.Weather.SightFactor` | `Traffic/PursuitSight.Lost`, `Crime/PoliceAttention.Seen` | how far a patrol car keeps sight (150 m in fair weather) and how far an officer on foot notices driving (60 m) |
-| `Events.Weather.Wardrobe` | nobody | the wardrobe catalogue keeps what is worn private and has no coat |
+| `Events.Weather.Wardrobe` | `Wiring.LifeLinks` | whether the player's top is a warm one (`CharacterCatalogue.WearingWarmTop`), the mod's bomber or one of the game's own warm pieces (`WarmthRules`) |
 | `Economy.EconomyBridges.Legal`, `LegalReady` | `Wiring.EconomyLinks` | convictions that count (`Standing.Convictions`); from `JusticeState.Debts`: civil judgments being paid off, what is owed, and the days running on which a debt could not be taken (`JusticeDebt.Missed`); `ModState.PendingFine`; `Law.Record.Recent(30)`. Ready when Justice has read the save |
 | `Economy.EconomyBridges.OtherDebts` | `Wiring.EconomyLinks` | the same debts as lines for the Finance app: a court fine, legal fees, a civil judgment, a fine waiting at the police station |
 | `Economy.EconomyBridges.OtherAccounts` | `Wiring.CareersLinks` | the student loan as a credit account, registered on the rating each time the credit side starts (its ledger forgets every account when it stands down) |

@@ -23,9 +23,7 @@ namespace RealLifeOverhaul.Seasons
     {
         private const int DoorMost = 12;        // people dressed or put back behind one black screen: a dozen merges where nothing shows
 
-        // The game's warm pieces, by their variants' names (MaleSweater, FemHoodie, SuitJacket, HighNeckShirt, Jeans,
-        // LongCargoPants, SuitPants): the game has no coats.
-        private static readonly string[] WarmTops = { "Sweater", "Hoodie", "Jacket", "HighNeck", "Coat", "Cardigan", "Blazer" };
+        // The warm tops are WarmthRules'; the legs' (Jeans, LongCargoPants, SuitPants) are the street's alone.
         private static readonly string[] LongLegs = { "Jeans", "Pants", "Trousers" };
         private static readonly string[] ShortLegs = { "Short", "Skirt" };
 
@@ -170,7 +168,7 @@ namespace RealLifeOverhaul.Seasons
             Change.Clear();
             var worn = new Worn
             {
-                Top = Warm(look, own, AppearanceElementType.Torso, WarmTops, null, WarmTop),
+                Top = Warm(look, own, AppearanceElementType.Torso, WarmthRules.WarmTops, null, WarmTop),
                 Legs = legs ? Warm(look, own, AppearanceElementType.Legs, LongLegs, ShortLegs, WarmLegs) : null
             };
             Dressed[look] = worn;   // both null: already warm, nothing to put back
@@ -246,24 +244,12 @@ namespace RealLifeOverhaul.Seasons
                 return known;
             }
             string name = variant.gameObject.name;
-            bool yes = Has(name, warm) && (not == null || !Has(name, not));
+            bool yes = WarmthRules.Has(name, warm) && (not == null || !WarmthRules.Has(name, not));
             if (variant.id != null)
             {
                 Warmth[variant.id] = yes;
             }
             return yes;
-        }
-
-        private static bool Has(string name, string[] words)
-        {
-            for (int i = 0; i < words.Length; i++)
-            {
-                if (name.IndexOf(words[i], System.StringComparison.OrdinalIgnoreCase) >= 0)
-                {
-                    return true;
-                }
-            }
-            return false;
         }
 
         // In the worn outfit's style: casual for casual, formal for formal (a variant with no tags fits any).

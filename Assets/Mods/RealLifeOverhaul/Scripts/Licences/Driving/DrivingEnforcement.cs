@@ -244,7 +244,7 @@ namespace RealLifeOverhaul
                 fine += LicenceLaw.SuspendedFine;
                 key = "reallife_lic_stop_suspended";
                 offence = LicenceOffences.Suspended;
-                arrest = LicenceState.CountCaught(day) >= 2;
+                arrest = LicenceState.CountCaught(day) >= LicenceLaw.SuspendedArrestFromCount;
             }
             else if (HoldsAnother(kind, day))
             {

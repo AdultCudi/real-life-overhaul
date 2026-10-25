@@ -93,7 +93,7 @@ namespace RealLifeOverhaul
 
         float IClockedShift.ClockPay => UnitPay();
 
-        public override bool QuitIsFailure => TotalShare > 0f && TotalShare < Half;
+        public override bool QuitIsFailure => TotalShare < Half;
 
         public override bool WorksInside(Buildings.Building building)
         {

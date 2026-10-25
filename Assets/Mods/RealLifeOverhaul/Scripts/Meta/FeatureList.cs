@@ -67,7 +67,7 @@ namespace RealLifeOverhaul.Meta
                 .Fact("clothes_colours", () => CharacterCatalogue.Palette.Length.ToString(CultureInfo.InvariantCulture))
                 .Fact("clothes_least", () => Guide.Money(CharacterCatalogue.CheapestPiece))
                 .Fact("clothes_most", () => Guide.Money(CharacterCatalogue.DearestPiece))
-                .Owns(Settings.CharacterHighDetailId, Settings.CharacterHairId, Settings.CharacterLightingId, Settings.CharacterNewLooksId)
+                .Owns(Settings.CharacterHighDetailId, Settings.CharacterHairId, Settings.CharacterLightingId, Settings.CharacterSkinId, Settings.CharacterNewLooksId)
                 .Test("reallife_test_hair_say", HairTests.Say)
                 .Test("reallife_test_hair_lamp", HairTests.Lamp)
                 .Test("reallife_test_hair_streetlamp", HairTests.StreetLamp)

@@ -151,7 +151,7 @@ namespace RealLifeOverhaul
 
             // Too much of it with officers about: a warning, and the second ends it for the shift.
             bool warned = false;
-            if (_heat >= HawkWarnFrom && Settings.PolicePresence > 0 && Random.value < 0.12f + 0.03f * Settings.PolicePresence)
+            if (_heat >= HawkWarnFrom && JobCatalogue.OfficersAbout(Settings.Police, Settings.PolicePresence) && Random.value < 0.12f + 0.03f * Settings.PolicePresence)
             {
                 warned = true;
                 _hawkWarnings++;

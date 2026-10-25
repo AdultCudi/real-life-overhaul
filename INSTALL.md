@@ -64,7 +64,7 @@ The first time you load a save that has never had mods, the game offers to keep 
 
 ## If you are also subscribed on the Workshop
 
-Unsubscribe from the Workshop item (or untick it under **Mods** in the game's main menu), or uninstall the copy in `ModsLocal`. With both, the game starts the mod twice. The mod notices and the second copy does nothing, but you cannot be sure which version is the one that runs.
+Unsubscribe from the Workshop item (or untick it under **Mods** in the game's main menu), or uninstall the copy in `ModsLocal`. With both, the game loads neither: it finds two mods with the same assembly name and refuses both, and the Mods menu names the duplicate.
 
 ## Update
 

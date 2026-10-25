@@ -108,7 +108,7 @@ namespace RealLifeOverhaul
 
         public override bool OwnsInteractKey => _panel.Up;
 
-        public override bool QuitIsFailure => DoneCount > 0 && DoneCount * 3 < _bundle && DoneCount + _refusals < FairTry;
+        public override bool QuitIsFailure => DoneCount * 3 < _bundle && DoneCount + _refusals < FairTry;
 
         private int DoneCount => _taken + _clocked;
 
