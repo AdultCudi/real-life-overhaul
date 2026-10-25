@@ -89,5 +89,39 @@ namespace RealLifeOverhaul.Construction
             TenderBid won = bids[Math.Max(0, TenderRules.Winner(bids, count))];
             return new RefitQuote { Rival = won.Bidder, Price = won.Price / 10L * 10L, Days = Math.Max(1, won.Days), Hours = hours };
         }
+
+        // ------------------------------------------------------------------ joining and splitting land
+
+        /// <summary>
+        /// True when two neighbouring sites of so many spaces each may be joined into one: together no wider than the district's
+        /// grid takes a building (BuildCatalogue.SiteSpacesMost, the widest design of the city's that fills a site), and of no more
+        /// lots than a site keeps.
+        /// </summary>
+        public static bool Joins(int spacesA, int spacesB, int lots)
+        {
+            return spacesA >= 1 && spacesB >= 1 && spacesA + spacesB <= BuildCatalogue.SiteSpacesMost && lots >= 2 && lots <= BuildCatalogue.SiteSpacesMost;
+        }
+
+        /// <summary>
+        /// A sum shared out by weights into <paramref name=into/>: each share its weight's part, rounded down, what is left over
+        /// to the first, so the shares add up to the sum exactly (a split site's price, by its lots' worth as land).
+        /// </summary>
+        public static void Shares(long total, long[] weights, int count, long[] into)
+        {
+            long sum = 0L, given = 0L;
+            for (int i = 0; i < count; i++)
+            {
+                sum += Math.Max(0L, weights[i]);
+            }
+            for (int i = 0; i < count; i++)
+            {
+                into[i] = sum > 0L ? total * Math.Max(0L, weights[i]) / sum : 0L;
+                given += into[i];
+            }
+            if (count > 0)
+            {
+                into[0] += total - given;
+            }
+        }
     }
 }

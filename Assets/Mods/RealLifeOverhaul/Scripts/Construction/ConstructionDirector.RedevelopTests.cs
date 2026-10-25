@@ -431,5 +431,85 @@ namespace RealLifeOverhaul.Construction
                    + ConstructionText.T(BuildCatalogue.RivalKeys[p.Contractor]) + " for nothing and handed over now; the player's from the next load", TabProjects, p.Id);
             return true;
         }
+
+        // ------------------------------------------------------------------ joining and splitting land
+
+        private readonly List<LandRun> _testRuns = new List<LandRun>(16);
+        private readonly List<string> _testOver = new List<string>(8);
+
+        /// <summary>
+        /// Test: two neighbouring free spaces of Uptown's the player's for nothing as two sites, joined into one (one site, its
+        /// building over both), then split back into two; the price shared to the last unit. Nothing is knocked down.
+        /// </summary>
+        public static bool TestJoinSplitNow()
+        {
+            const string test = "two sites of yours joined into one and split back now";
+            ConstructionDirector d = RedoDirector(test, false);
+            if (d == null)
+            {
+                return false;
+            }
+            try
+            {
+                return d.JoinSplitNow(test);
+            }
+            catch (Exception e)
+            {
+                d.Fault("a test (" + test + ")", e);
+                return false;
+            }
+        }
+
+        private bool JoinSplitNow(string test)
+        {
+            if (GoingPublic.InSession || !DistrictLives())
+            {
+                return Failed(RedoCheck, test, "reallife_bld_test_session_city", "a Going Public session is on, or Uptown is not a district at this load");
+            }
+            Runs(_testRuns);
+            Vector3 near = ConstructionGame.Player;
+            string first = null;
+            float best = float.MaxValue;
+            for (int i = 0; i < _testRuns.Count; i++)
+            {
+                float far = Far(_testRuns[i].First, near);
+                if (_testRuns[i].Spaces >= 2 && far < best)
+                {
+                    best = far;
+                    first = _testRuns[i].First.Id;
+                }
+            }
+            _testRuns.Clear();
+            if (first == null || !SiteSpaces(first, 2, _strip) || _state.Lots.Count + 2 > BuildCatalogue.LotsMost)
+            {
+                return Failed(RedoCheck, test, "reallife_bld_test_nothing", "no run of two free spaces or more, or no room for two more sites");
+            }
+            string second = _strip[1].Id;
+            long priceA = Math.Max(1L, LotPrice(_strip[0])), priceB = Math.Max(1L, LotPrice(_strip[1]));
+            BeforeTest();
+            int day = ConstructionGame.Day;
+            _state.Lots.Add(new LotFile { Id = first, Bought = day, Paid = priceA, Zones = LandRules.ZonesOf(_strip[0].Class), TaxedTo = day, EmptySince = day, Spaces = 1 });
+            _state.Lots.Add(new LotFile { Id = second, Bought = day, Paid = priceB, Zones = LandRules.ZonesOf(_strip[1].Class), TaxedTo = day, EmptySince = day, Spaces = 1 });
+            string joined = Join(first);
+            LotFile site = _state.Lot(first);
+            bool one = joined == "reallife_bld_answer_joined" && site != null && site.Spaces == 2 && _state.Lot(second) == null && site.Paid == priceA + priceB
+                       && Lot(first, out LotView ground) && ground.Spaces == 2;
+            OverOf(first, _testOver);
+            bool over = _testOver.Count == 1 && _testOver[0] == second;
+            string split = Split(first);
+            LotFile a = _state.Lot(first), b = _state.Lot(second);
+            bool two = split == "reallife_bld_answer_split" && a != null && b != null && a.Spaces == 1 && b.Spaces == 1 && a.Paid + b.Paid == priceA + priceB;
+            _testOver.Clear();
+            string line = "spaces " + first + " and " + second + ": joined (" + joined + "), one site of 2 lots over " + (over ? "the second" : "nothing") + ", split back (" + split + ") into "
+                          + (a != null ? a.Paid.ToString(CultureInfo.InvariantCulture) : "?") + " and " + (b != null ? b.Paid.ToString(CultureInfo.InvariantCulture) : "?")
+                          + " of " + (priceA + priceB);
+            if (!(one && over && two))
+            {
+                Logger?.Warn(RedoCheck + test + "): " + line + ": FAIL.");
+                return Failed(RedoCheck, test, "reallife_bld_test_failed_log", "the sites were not joined and split as they should be");
+            }
+            Passed(test, "reallife_bld_test_join_split", line, TabLand, 0);
+            return true;
+        }
     }
 }

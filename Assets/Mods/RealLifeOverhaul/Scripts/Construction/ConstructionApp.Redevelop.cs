@@ -91,6 +91,38 @@ namespace RealLifeOverhaul.Construction
             BackButton(box);
         }
 
+        /// <summary>A site of the player's joined with the next along its block's side (bought first if it is a free space), or split back into its lots.</summary>
+        private void JoinButtons(InfoBox box, string firstId)
+        {
+            string join = _director.JoinBlock(firstId, out string nextId);
+            string split = _director.SplitBlock(firstId);
+            if (join != null && join != "reallife_bld_answer_join_buy_first" && join != "reallife_bld_answer_join_too_wide" && split != null)
+            {
+                return;   // nothing beside it to join, and one lot already
+            }
+            box.Section("reallife_bld_sec_join");
+            Transform buttons = box.ButtonRow();
+            if (join == null)
+            {
+                InfoBox.Button(buttons, InfoBox.Positive, "reallife_bld_button_join", () => Answer(_director.Join(firstId)));
+            }
+            else if (join == "reallife_bld_answer_join_buy_first")
+            {
+                long price = _director.NextSpacePrice(firstId);
+                InfoBox.Button(buttons, InfoBox.Positive, "reallife_bld_button_buy_join", () =>
+                    Confirm("reallife_bld_confirm_buy_join", "reallife_bld_confirm_buy_join_body", _director.LotWords(nextId), price, () => _director.BuyAndJoin(firstId), false));
+            }
+            else if (join == "reallife_bld_answer_join_too_wide")
+            {
+                box.Line(ConstructionText.T(join), CellTone.Yellow);
+            }
+            if (split == null)
+            {
+                InfoBox.Button(buttons, InfoBox.Negative, "reallife_bld_button_split", () => Answer(_director.Split(firstId)));
+            }
+            box.Note(ConstructionText.T("reallife_bld_join_note"));
+        }
+
         // The notice to a building's tenants and business in words: not given yet, running to its day, or done and what it cost.
         private static string NoticeWords(ProjectFile p)
         {

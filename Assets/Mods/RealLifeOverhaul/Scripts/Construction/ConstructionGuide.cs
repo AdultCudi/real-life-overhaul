@@ -87,6 +87,7 @@ namespace RealLifeOverhaul.Construction
                 .Fact("bld_permit_days_most", () => RedevelopRules.PermitDaysMost.ToString(Inv))
                 .Fact("bld_notice_days", () => RedevelopRules.NoticeDays.ToString(Inv))
                 .Fact("bld_buyout_days", () => RedevelopRules.TenantDays.ToString(Inv))
+                .Fact("bld_site_spaces_most", () => BuildCatalogue.SiteSpacesMost.ToString(Inv))
                 .Check("reallife_bld_test_sites", () => ConstructionDirector.TestSitesNow(), "Construction check (sites of 1, 2 and 3 spaces bought, joined and planned)", RunPlace.Here)
                 .Check("reallife_bld_test_hire_quotes", () => ConstructionDirector.TestHireQuotesNow(), "Construction check (a builder's quotes shown)", RunPlace.Here)
                 .Check("reallife_bld_test_hire", () => ConstructionDirector.TestHireNow(), "Construction check (a client project built by a rival now)", RunPlace.Here)
@@ -105,6 +106,8 @@ namespace RealLifeOverhaul.Construction
                     "Redevelopment check (refurnish your nearest unit with one of the game's designs now)", RunPlace.Here)
                 .Check("reallife_bld_test_city_refurnish", () => ConstructionDirector.TestCityRefurnishNow(),
                     "Redevelopment check (a business of the city's refitted by a rival and furnished anew now)", RunPlace.Here)
+                .Check("reallife_bld_test_join_split", () => ConstructionDirector.TestJoinSplitNow(),
+                    "Redevelopment check (two sites of yours joined into one and split back now)", RunPlace.Here)
                 .Test("reallife_bld_test_demolish", () => ConstructionDirector.TestDemolitionNow())
                 .Test("reallife_bld_test_cleared_build", () => ConstructionDirector.TestClearedBuildNow())
                 .Test("reallife_bld_test_lot", "reallife_bld_test_company", "reallife_bld_test_licence", "reallife_bld_test_plans", "reallife_bld_test_planning",

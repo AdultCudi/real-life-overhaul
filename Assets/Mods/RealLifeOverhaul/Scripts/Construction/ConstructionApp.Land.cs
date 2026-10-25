@@ -276,6 +276,10 @@ namespace RealLifeOverhaul.Construction
                 InfoBox.Button(buttons, InfoBox.Negative, "reallife_bld_button_rezone", () => PlanningCall.Open(0));
             }
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_bld_back", Back);
+            if (p == null)
+            {
+                JoinButtons(box, lot.Id);   // joined with the next site, or split back into its lots (ConstructionApp.Redevelop.cs)
+            }
             Guide(box);
         }
 

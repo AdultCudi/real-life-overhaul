@@ -20,6 +20,7 @@ internal static partial class Program
         DemolitionStoreChecks();
         DemolitionSourceChecks();
         ClearedBuildChecks();
+        JoinChecks();
         RedevelopTextChecks();
     }
 
@@ -292,13 +293,44 @@ internal static partial class Program
               && ModSource(@"TestRun\RunPlan.cs").Contains("{ \"reallife_bld_test_cleared_build\","), "cleared ground: its test plans, builds and hands a building to the district on the player's cleared ground by the usual path, a button only");
     }
 
+    // ------------------------------------------------------------------ joining and splitting land
+
+    private static void JoinChecks()
+    {
+        int most = BuildCatalogue.SiteSpacesMost;
+        Check(RedevelopRules.Joins(1, 1, 2) && RedevelopRules.Joins(4, most - 4, 2) && !RedevelopRules.Joins(4, most - 3, 2) && !RedevelopRules.Joins(1, 1, most + 1)
+              && !RedevelopRules.Joins(0, 2, 2) && !RedevelopRules.Joins(2, 2, 1), "joining: two neighbouring sites join while the whole is no wider than the widest of the city's designs");
+        long[] w = { 300, 100, 600 }, s = new long[3];
+        RedevelopRules.Shares(1001L, w, 3, s);
+        long[] z = { 0, 0 }, zs = new long[2];
+        RedevelopRules.Shares(500L, z, 2, zs);
+        long[] n = { -5, 10 }, ns = new long[2];
+        RedevelopRules.Shares(100L, n, 2, ns);
+        Check(s[0] + s[1] + s[2] == 1001L && s[1] == 100L && s[2] == 600L && s[0] == 301L && zs[0] == 500L && zs[1] == 0L && ns[0] == 0L && ns[1] == 100L,
+            "splitting: a site's price is shared by its lots' worth to the last unit, what is left over to the first");
+        string join = ModSource(@"Construction\ConstructionDirector.Join.cs"), app = ModSource(@"Construction\ConstructionApp.Redevelop.cs"), land = ModSource(@"Construction\ConstructionApp.Land.cs");
+        string tests = ModSource(@"Construction\ConstructionDirector.RedevelopTests.cs"), guide = ModSource(@"Construction\ConstructionGuide.cs");
+        string block = MethodText(join, "public string JoinBlock(");
+        Check(block.Contains("GoingPublic.InSession") && block.Contains("_state.OnLot(firstId) != null") && block.Contains("After(_strip[_strip.Count - 1], out LotView next)")
+              && block.Contains("FreeSpace(next) ? \"reallife_bld_answer_join_buy_first\"") && block.Contains("RedevelopRules.Joins(Joined(_strip).Spaces, Joined(_joinNext).Spaces, a.Spaces + b.Spaces)"),
+            "joining sources: only the player's own land straight after their site joins, nothing under a project, never wider than the grid takes, never in a session");
+        string merge = MethodText(join, "public string Join(");
+        Check(merge.Contains("a.Spaces += b.Spaces") && merge.Contains("a.Paid += b.Paid") && merge.Contains("_state.Lots.Remove(b)"), "joining sources: the two sites become one site of all their lots, what was paid for both, one record");
+        Check(MethodText(join, "public string BuyAndJoin(").Contains("BuySite(nextId, 1)") && MethodText(join, "public string Split(").Contains("RedevelopRules.Shares(a.Paid, _weights, n, _shares)")
+              && MethodText(join, "public string Split(").Contains("a.Spaces = 1"), "joining sources: the next free space is bought by the Land tab's own purchase; a split shares the price and leaves a site a lot each");
+        Check(app.Contains("_director.Join(firstId)") && app.Contains("_director.BuyAndJoin(firstId)") && app.Contains("_director.Split(firstId)") && land.Contains("JoinButtons(box, lot.Id)"),
+            "joining sources: a site's page joins, buys and joins, or splits it");
+        Check(tests.Contains("public static bool TestJoinSplitNow()") && guide.Contains(".Check(\"reallife_bld_test_join_split\", () => ConstructionDirector.TestJoinSplitNow(),") && guide.Contains(".Fact(\"bld_site_spaces_most\""),
+            "joining sources: its test is in the test run (nothing knocked down), and the Guide's widest site is a fact");
+    }
+
     // ------------------------------------------------------------------ the texts
 
     private static void RedevelopTextChecks()
     {
         var keys = new SortedSet<string>();
         foreach (string name in new[] { @"Construction\ConstructionApp.Refit.cs", @"Construction\ConstructionDirector.RedevelopTests.cs", @"Construction\ConstructionDirector.Refits.cs",
-                     @"Construction\ConstructionDirector.Demolish.cs", @"Construction\ConstructionApp.Redevelop.cs", @"Construction\ConstructionGame.Estate.cs" })
+                     @"Construction\ConstructionDirector.Demolish.cs", @"Construction\ConstructionApp.Redevelop.cs", @"Construction\ConstructionGame.Estate.cs", @"Construction\ConstructionDirector.Join.cs" })
         {
             foreach (Match m in Regex.Matches(ModSource(name), "\"(reallife_[a-z0-9_]+[a-z0-9])\""))
             {
@@ -365,6 +397,16 @@ internal static partial class Program
         for (int l = 0; l < words.Length; l++)
         {
             Check(built.TryGetValue(codes[l], out string start) && WhatsNewHas(words[l], start), "redevelopment texts: What's new has the line for building on cleared ground in " + codes[l]);
+        }
+        var joined = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            { "en", "Join sites of yours side by side" }, { "pt", "Junte terrenos seus lado a lado" }, { "zh-cn", "可以把你相邻的场地" }, { "de", "Leg nebeneinanderliegende Grundstücke von dir" },
+            { "fr", "Réunissez vos terrains voisins" }, { "es", "Une tus parcelas contiguas" }, { "ru", "Объединяйте свои соседние участки" }, { "nl", "Voeg naast elkaar gelegen percelen van je" },
+            { "tr", "Yan yana duran, satın aldığınız ya da temizlediğiniz arsalarınızı" }
+        };
+        for (int l = 0; l < words.Length; l++)
+        {
+            Check(joined.TryGetValue(codes[l], out string start) && WhatsNewHas(words[l], start), "redevelopment texts: What's new has the line for joining and splitting land in " + codes[l]);
         }
         var down = new Dictionary<string, string>(StringComparer.Ordinal)
         {
