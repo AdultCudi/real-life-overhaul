@@ -330,6 +330,13 @@ namespace RealLifeOverhaul.Meta
                 .Data(Careers.CareersStore.Key)
                 .Cleanup(() => Careers.CareersDirector.Instance?.StopAll(), -2)
                 .ResetData(() => Careers.CareersDirector.Instance?.Forget()));
+            Careers.CareersGuide.AddLadderFacts(Features.Add("careers_ladder", "reallife_meta_title_careers_ladder")
+                .About("reallife_guide_careers_ladder_about").Help("reallife_guide_careers_ladder")
+                .Owns(Settings.CareersLadderId)
+                .Test("reallife_ladder_test_job", "reallife_ladder_test_promote", "reallife_ladder_test_tasks", "reallife_ladder_test_decide", "reallife_ladder_test_ask")
+                .Data(Careers.CareersStore.Key, Careers.LadderStore.Key)
+                .Cleanup(() => Careers.CareersDirector.Instance?.StopAll(), -2)
+                .ResetData(() => Careers.CareersDirector.Instance?.Forget()));
             Careers.CareersGuide.AddOwnFacts(Features.Add("careers_own", "reallife_meta_title_careers_own")
                 .About("reallife_guide_careers_own_about").Help("reallife_guide_careers_own")
                 .Owns(Settings.CareersOwnId, Settings.CareersOwnOfferNotesId)

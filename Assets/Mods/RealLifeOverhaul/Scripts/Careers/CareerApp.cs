@@ -19,7 +19,7 @@ namespace RealLifeOverhaul.Careers
         private static readonly string[] TabKeys =
         {
             "reallife_career_tab_start", "reallife_career_tab_jobs", "reallife_career_tab_applications", "reallife_career_tab_job", "reallife_career_tab_cv",
-            "reallife_career_tab_own"
+            "reallife_career_tab_own", "reallife_career_tab_ladder"
         };
 
         private readonly CareersDirector _director;
@@ -148,7 +148,7 @@ namespace RealLifeOverhaul.Careers
                 else
                 {
                     UiClone.Words(_shell.Header, w.Job != null
-                        ? CareersText.T("reallife_career_head_job", "title", CareersText.Title(w.Job.Post.Prof, w.Job.Post.Rank), "employer", CareersText.Employer(w.Job.Post.Employer))
+                        ? CareersText.T("reallife_career_head_job", "title", _director.JobTitle(w.Job), "employer", CareersText.Employer(w.Job.Post.Employer))
                         : CareersText.T("reallife_career_head_none"));
                     int day = SaveGameManager.Current.Day;
                     switch (_tab)
@@ -158,6 +158,7 @@ namespace RealLifeOverhaul.Careers
                         case CareersDirector.TabJob: table = WriteJob(box, w, day); break;
                         case CareersDirector.TabCv: table = WriteCv(box, w, f, day); break;
                         case CareersDirector.TabOwn: table = WriteOwn(box, w, f, day); break;
+                        case CareersDirector.TabLadder: table = WriteLadder(box, w, day); break;
                         default: table = WriteJobs(box, w, f, day); break;
                     }
                 }
@@ -371,7 +372,7 @@ namespace RealLifeOverhaul.Careers
                     : today ? CareersText.T("reallife_career_row_today") : CareersText.T("reallife_career_row_ahead");
                 row.Set(3, state, today ? TableRow.Green : TableRow.Plain);
             }
-            box.Title(CareersText.Title(j.Post.Prof, j.Post.Rank));
+            box.Title(_director.JobTitle(j));
             box.Subtitle(CareersText.Fill("reallife_ibox_post_sub", "employer", CareersText.Employer(j.Post.Employer), "place", WorkGame.Address(j.Post.Street, j.Post.Number)));
             if (j.NoticeEnd > 0)
             {
