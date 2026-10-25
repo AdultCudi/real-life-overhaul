@@ -17,6 +17,8 @@ namespace RealLifeOverhaul.Seasons
         private const float HoldSeconds = 180f;   // the test's snow
         private const float LookAfter = 6f;       // seconds before the test's snow is checked: the look and the weather take a second each
         private const int SnowDaysListed = 8;
+        private const float SampleRadius = 40f;   // metres round the player the cars and people are sampled from
+        private const float ShowCheckAfter = 15f; // seconds before a season's test look is checked: the first flash may take twelve
 
         /// <summary>"Show this season's goods and the coming snow in the log."</summary>
         public void TestGoods()
@@ -112,6 +114,132 @@ namespace RealLifeOverhaul.Seasons
             StartCoroutine(Guard.Routine(LookAtSnow()));
         }
 
+        /// <summary>
+        /// "Seasons: show me (a season) here now": the trees, sky, rain, lightning, leaves and the line under the date of
+        /// that season at its height, held three minutes where the player stands (winter with a heavy fall); pressed again, it stops.
+        /// </summary>
+        public void TestShow(int season)
+        {
+            if (SeasonGame.Loading())
+            {
+                TestRefusals.Tell(Logger, TestName, TestRefusal.NotLoaded);
+                return;
+            }
+            if (!Settings.Seasons || _broken || StandDown())
+            {
+                TestRefusals.Tell(Logger, TestName, TestRefusal.FeatureOff);
+                return;
+            }
+            if (Showing && _showSeason == season)
+            {
+                _showUntil = 0f;
+                _holdUntil = season == CalendarRules.Winter ? 0f : _holdUntil;
+                SeasonGame.EndRain();
+                Logger?.Info("Seasons test (" + SeasonText.Name(season) + " look): stopped; the day's own look again.");
+                Notifications.Show(NotificationType.Info, "reallife_season_test_show_stopped", null, 6f);
+                return;
+            }
+            if (!SeasonGame.Outdoors)
+            {
+                TestRefusals.Tell(Logger, TestName, TestRefusal.Indoors);
+                return;
+            }
+            _showSeason = season;
+            _showUntil = Time.unscaledTime + ShowSeconds;
+            _flashDay = -1;
+            if (season == CalendarRules.Winter)
+            {
+                _holdUntil = Time.unscaledTime + HoldSeconds;
+            }
+            else
+            {
+                _holdUntil = 0f;
+                SeasonGame.EndRain();
+            }
+            bool wet = season == CalendarRules.Spring || season == CalendarRules.Summer;
+            if (wet && Settings.SeasonRain && !GoingPublic.IsGuest)
+            {
+                SeasonGame.StartRain(season == CalendarRules.Summer ? StormStrength : ShowerStrength, SeasonGame.Hour + TestRainHours, true);
+            }
+            Notifications.Show(NotificationType.Info, "reallife_season_test_show_started", new Dictionary<string, string>(1) { { "season", SeasonText.Title(season) } }, 8f);
+            StartCoroutine(Guard.Routine(LookAtSeason(season, _seasonLook.Flashes)));
+        }
+
+        private IEnumerator LookAtSeason(int season, int flashesBefore)
+        {
+            yield return new WaitForSecondsRealtime(ShowCheckAfter);
+            if (!Showing || _showSeason != season)
+            {
+                yield break;
+            }
+            int year = GameCalendar.DaysPerYear;
+            int day = SeasonLookRules.ShowDay(season, year, 0.5f);
+            Tint wanted = SeasonLookRules.Foliage(day, 12f, year);
+            Tint on = SeasonGame.TreeTint;
+            var why = new StringBuilder(160);
+            var text = new StringBuilder(512);
+            text.Append("Seasons test (").Append(SeasonText.Name(season)).Append(" look): the trees ");
+            if (!Settings.SeasonTrees)
+            {
+                text.Append("left as the game has them (option off)");
+            }
+            else
+            {
+                text.Append("x(").Append(F(on.R)).Append(", ").Append(F(on.G)).Append(", ").Append(F(on.B)).Append(") on ").Append(SeasonGame.LeafMaterials)
+                    .Append(" leaf material(s), ").Append(SeasonGame.TreesWalked).Append(" of ").Append(SeasonGame.TreeCount).Append(" trees looked at, wanted x(")
+                    .Append(F(wanted.R)).Append(", ").Append(F(wanted.G)).Append(", ").Append(F(wanted.B)).Append(')');
+                if (SeasonGame.LeafMaterials == 0 && SeasonGame.TreeCount > 0 && SeasonGame.TreesWalked >= SeasonGame.TreeCount)
+                {
+                    why.Append(" no leaf material of the game's wind shader on its trees;");
+                }
+                else if (SeasonGame.LeafMaterials > 0 && !wanted.Plain && !on.Same(wanted))
+                {
+                    why.Append(" the leaves not tinted as wanted;");
+                }
+            }
+            text.Append("; the sky ").Append(F(SeasonGame.SkyOvercast)).Append(" overcast, ").Append(F(SeasonGame.SkyWarmth)).Append(" warmer")
+                .Append(SeasonGame.SkyMissing != null ? " (" + SeasonGame.SkyMissing + ")" : string.Empty);
+            if (Settings.SeasonSky && SeasonGame.SkyMissing == null && season == CalendarRules.Winter && SeasonGame.SkyOvercast <= 0f)
+            {
+                why.Append(" no overcast on the snow;");
+            }
+            text.Append("; rain ").Append(SeasonGame.RainOurs ? "the season's" : SeasonGame.RainFalling ? "the game's own" : "none")
+                .Append(GoingPublic.IsGuest ? " (a Going Public guest's rain is the host's)" : string.Empty);
+            bool wet = season == CalendarRules.Spring || season == CalendarRules.Summer;
+            if (wet && Settings.SeasonRain && !GoingPublic.IsGuest && !SeasonGame.RainFalling)
+            {
+                why.Append(" no rain falling;");
+            }
+            int flashes = _seasonLook.Flashes - flashesBefore;
+            text.Append("; ").Append(flashes).Append(" flash(es) of lightning");
+            if (season == CalendarRules.Summer && Settings.SeasonRain && SeasonGame.RainFalling && flashes == 0)
+            {
+                why.Append(" no lightning in the storm;");
+            }
+            text.Append("; ").Append(_seasonLook.Leaves).Append(" leaf(s) falling").Append(_seasonLook.LeavesMissing != null ? " (" + _seasonLook.LeavesMissing + ")" : string.Empty);
+            if (season == CalendarRules.Autumn && Settings.SeasonLeaves && !_seasonLook.Leafing)
+            {
+                why.Append(" no leaves falling;");
+            }
+            text.Append("; under the date: ").Append(SeasonBar.Shown ? "'" + SeasonBar.Line + "'" : "nothing");
+            if (Settings.SeasonBar && !SeasonBar.Shown)
+            {
+                why.Append(" nothing under the date;");
+            }
+            text.Append("; ").Append(SeasonGame.CoatsOn).Append(" person(s) dressed for the cold").Append(Settings.SeasonCoats ? string.Empty : " (option off)");
+            text.Append(": ").Append(why.Length == 0 ? "PASS" : "FAIL:" + why.ToString().TrimEnd(';'));
+            Logger?.Info(text.ToString());
+            if (season == CalendarRules.Winter)
+            {
+                Logger?.Info(LookCheck());
+            }
+        }
+
+        private static string F(float value)
+        {
+            return value.ToString("0.00", CultureInfo.InvariantCulture);
+        }
+
         private IEnumerator LookAtSnow()
         {
             yield return new WaitForSecondsRealtime(LookAfter);
@@ -143,10 +271,59 @@ namespace RealLifeOverhaul.Seasons
                 }
             }
             Logger?.Info("Seasons test (snow): " + _look.Flakes + " flake(s) in the air, the cover at " + Cover.ToString("0.00", CultureInfo.InvariantCulture)
-                         + (_look.Tall ? " over the ground and the roofs" : " on the ground") + ", the roads' snow " + Events.Weather.Snow + ", traffic x"
+                         + (_look.Way == SnowWay.Layers ? " over the ground and the roofs" : " (none lying: " + (_look.CoverMissing ?? "not made yet") + ")")
+                         + ", the roads' snow " + Events.Weather.Snow + ", traffic x"
                          + Events.Weather.TrafficSpeedFactor.ToString("0.00", CultureInfo.InvariantCulture) + ", grip x" + Events.Weather.GripFactor.ToString("0.00", CultureInfo.InvariantCulture)
                          + ", walkers set off at x" + SeasonGame.WalkApplied.ToString("0.00", CultureInfo.InvariantCulture) + " of their pace: "
                          + (why.Length == 0 ? "PASS" : "FAIL:" + why.ToString().TrimEnd(';')));
+            Logger?.Info(LookCheck());
+        }
+
+        // Which way the ground is whitened at this load, and a sample of the cars and people near the player, none of
+        // which may be on the snow's layer; the rest of the picture the seasons leave as the game draws it.
+        private string LookCheck()
+        {
+            SnowGround ground = _look.Ground;
+            var renderers = new List<Renderer>(256);
+            int bodies = SeasonGame.Bodies(SampleRadius, renderers);
+            int onSnow = 0;
+            string first = null;
+            for (int i = 0; i < renderers.Count; i++)
+            {
+                if (ground.On(renderers[i]))
+                {
+                    onSnow++;
+                    first = first ?? renderers[i].name;
+                }
+            }
+            bool layers = SnowLook.LayersInEffect();
+            var text = new StringBuilder(512);
+            text.Append("Seasons test (snow look): the ground whitened ");
+            bool wayOk;
+            switch (_look.Way)
+            {
+                case SnowWay.Layers:
+                    text.Append("on the snow's own decal layer (").Append(ground.Marked).Append(" piece(s) marked, ").Append(ground.Roofed).Append(" of them roofs, the projector on ")
+                        .Append(_look.CoverLayer).Append("), the camera's decal layers ").Append(layers ? "in effect" : "NOT in effect");
+                    wayOk = layers && _look.Covering && ground.Marked > 0 && (_look.CoverLayer & UnityEngine.Rendering.HighDefinition.DecalLayerEnum.DecalLayerDefault) == 0;
+                    break;
+                case SnowWay.None:
+                    text.Append("not at all (").Append(_look.CoverMissing ?? "no reason kept").Append("): flakes and the roads' grip only");
+                    wayOk = !_look.Covering;
+                    break;
+                default:
+                    text.Append("not yet (").Append(_look.CoverMissing ?? ground.Missing ?? "not tried").Append(')');
+                    wayOk = !_look.Covering;
+                    break;
+            }
+            text.Append("; ").Append(renderers.Count).Append(" renderer(s) of ").Append(bodies).Append(" car(s) and person(s) within ").Append(SampleRadius.ToString("0", CultureInfo.InvariantCulture))
+                .Append(" m, the player's own among them, ").Append(onSnow).Append(" on the snow's layer").Append(first != null ? " (the first: '" + first + "')" : string.Empty)
+                .Append("; the seasons set no volume, fog, sky, exposure or light and no material, tint or keyword on any person or car; the flakes are ")
+                .Append(_look.Flakes).Append(" small lit cubes of the mod's paint with a faint glow: ")
+                .Append(wayOk && onSnow == 0 && bodies > 0 ? "PASS" : "FAIL" + (onSnow > 0 ? " (a car or person is on the snow's layer)" : string.Empty)
+                                                            + (wayOk ? string.Empty : " (the ground's way is not as wanted)")
+                                                            + (bodies > 0 ? string.Empty : " (nobody sampled, not even the player)"));
+            return text.ToString();
         }
     }
 }

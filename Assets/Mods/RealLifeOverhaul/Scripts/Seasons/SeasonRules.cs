@@ -313,5 +313,32 @@ namespace RealLifeOverhaul.Seasons
             }
             return 0;
         }
+
+        // HDRP 14 keeps a renderer's decal layers in bits 8 to 15 of its rendering layer mask; bit 8 is the default
+        // layer, which the game's own decals and every car and person (0x101) are on.
+        public const int DecalBitsFrom = 8;
+        public const int DecalBitsTo = 15;
+
+        /// <summary>
+        /// The rendering layer bit the lying snow takes: of bits 9 to 15, the one the fewest renderers that are not ground
+        /// carry (<paramref name="holders"/>, by bit), the highest on a tie; never the default decal layer.
+        /// </summary>
+        public static int SnowBit(int[] holders)
+        {
+            int best = DecalBitsTo;
+            for (int b = DecalBitsTo - 1; b > DecalBitsFrom; b--)
+            {
+                if (Held(holders, b) < Held(holders, best))
+                {
+                    best = b;
+                }
+            }
+            return best;
+        }
+
+        private static int Held(int[] holders, int bit)
+        {
+            return holders != null && bit < holders.Length ? holders[bit] : 0;
+        }
     }
 }

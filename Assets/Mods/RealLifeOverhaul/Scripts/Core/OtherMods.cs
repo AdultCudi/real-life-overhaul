@@ -13,6 +13,7 @@ namespace RealLifeOverhaul
         Business, // it runs a business of a type of its own, with its stock, its takings and its keys (Core/EmpireMotors)
         Interiors, // it sets each district's minimum interior score and adds products to customers' baskets (Scripts/Interiors)
         Ambience, // it adds customers for a business's decor each hour (Scripts/Interiors)
+        Seasons,  // it gives the city seasons of its own: snow, storms, trees, clothes and a season under the date (Scripts/Seasons)
         AddOn    // it adds to a mod of the kind above and does nothing this mod has to give way to
     }
 
@@ -58,8 +59,10 @@ namespace RealLifeOverhaul
         public static readonly OtherMod MeaningfulInteriors = new OtherMod("MeaningfulInteriors", "MeaningfulInteriors.MeaningfulInteriorsMod", "Meaningful Interiors", OtherModKind.Interiors);
         public static readonly OtherMod MeaningfulAmbience = new OtherMod("MeaningfulAmbience", "MeaningfulAmbience.MeaningfulAmbienceMod", "Meaningful Ambience", OtherModKind.Ambience);
 
+        public static readonly OtherMod AlcwareSeasons = new OtherMod("AlcwareSeasons", "AlcwareSeasons.SeasonsMod", "Alcware - Seasons", OtherModKind.Seasons);
+
         public static readonly OtherMod[] All = { RpgCamera, VoogleRoute, GoingPublic, GoingPublicExtras, FriendTrade, GoingPublicFrench, EmpireMotors, EmpireMustang, EmpireBmw,
-                                                  MeaningfulInteriors, MeaningfulAmbience };
+                                                  MeaningfulInteriors, MeaningfulAmbience, AlcwareSeasons };
 
         /// <summary>Looks for every mod not found yet, with a log line for each found; never throws.</summary>
         public static void Look(IModLogger logger)
@@ -113,6 +116,9 @@ namespace RealLifeOverhaul
                 case OtherModKind.Interiors:
                     return "Each district's minimum and the extra products in customers' baskets are left to it: this mod's district standard (its "
                            + "footfall and complaints) and its basket stay off (Scripts/Interiors).";
+                case OtherModKind.Seasons:
+                    return "Both would change the same things, so this mod's seasons stand down for it: what sells, the snow, the weather, the trees and the top bar's season "
+                           + "are its, unless 'Keep these seasons with Alcware - Seasons' is on (Scripts/Seasons).";
                 case OtherModKind.Ambience:
                     return "The customers decor brings are left to it: this mod's decor footfall stays off, and its redraws of a day's customers keep the "
                            + "hour under way (Scripts/Interiors, Core/CustomerDraw).";

@@ -4,12 +4,23 @@ using UnityEngine.Rendering.HighDefinition;
 
 namespace RealLifeOverhaul.Seasons
 {
+    /// <summary>How the ground is whitened at this load.</summary>
+    internal enum SnowWay
+    {
+        Unknown,   // not tried yet this city
+        Layers,    // the decal on the snow's own decal layer: the ground, roads, pavements and roofs alone
+        None,      // no snow lying: it falls, and the roads' grip still follows it
+    }
+
     /// <summary>
     /// What snow looks like. Flakes: one particle system hung where the game's rain falls by the player, small white
     /// cubes of the shared paint drifting down. The ground: one decal projector over the streets round the player, a copy
-    /// of the game's road paint carrying a patchy white made once; where HDRP's decal layers let a decal fade on what
-    /// faces sideways it reaches up over the roofs, else it lies on the ground alone. Asked once a second by the director;
-    /// Unity draws the rest, so nothing of the mod's runs a frame. Made the first time snow is shown, gone with the city.
+    /// of the game's road paint carrying a patchy white made once, drawn on the snow's own decal layer alone
+    /// (<see cref="SnowGround"/>: the ground, roads, pavements and roofs), its angle fade keeping walls clear. That needs
+    /// HDRP's decal layers, which the game's asset supports but its camera leaves off, so they are switched on for the
+    /// player's camera only while snow lies outdoors. Where they cannot be had no snow lies at all: a decal without them
+    /// whitens everything in its box, cars, people and faces. Asked once a second by the director; Unity draws the rest,
+    /// so nothing of the mod's runs a frame. Made the first time snow is shown, gone with the city.
     /// </summary>
     internal sealed class SnowLook
     {
@@ -20,10 +31,9 @@ namespace RealLifeOverhaul.Seasons
         private const int MostFlakes = 2600;
         private const float CoverSpan = 150f;        // metres: the square the snow lies on round the player
         private const float CoverTile = 12f;         // metres the white's pattern repeats over
-        private const float RoofTop = 70f;           // metres over the player the tall cover reaches, with decal layers
+        private const float RoofTop = 70f;           // metres over the player the cover reaches, for the roofs
         private const float RoofDepth = 76f;         //   and down to 6 m under the player's feet
-        private const float GroundTop = 0.35f;       // metres over the player's feet the flat cover reaches, without them
-        private const float GroundDepth = 0.7f;
+        private const float ConfirmWait = 4f;        // seconds the pipeline may take to draw with the decal layers asked for
         private const float Recentre = 25f;          // metres the player may go from the cover's middle before it follows
         private const int MapSize = 128;
 
@@ -39,9 +49,16 @@ namespace RealLifeOverhaul.Seasons
         private DecalProjector _cover;
         private Material _coverPaint;
         private Texture2D _coverMap;
-        private bool _coverFailed, _tall;
+        private bool _coverFailed, _layersAsked;
         private Vector3 _centre;
         private float _fade = -1f;
+        private float _askedAt;
+
+        /// <summary>The ground's marks, made behind the loading screen; the snow lies only where they are.</summary>
+        public readonly SnowGround Ground = new SnowGround();
+
+        /// <summary>How the ground is whitened at this load.</summary>
+        public SnowWay Way { get; private set; }
 
         /// <summary>Why a part could not be made, for the log and the test; null while it can.</summary>
         public string FlakesMissing { get; private set; }
@@ -49,8 +66,8 @@ namespace RealLifeOverhaul.Seasons
 
         public bool Flaking => _flakesOn && _flakes != null && _rate > 0f;
         public bool Covering => _cover != null && _cover.gameObject.activeSelf && _fade > 0f;
-        public bool Tall => _tall;
         public int Flakes => _flakes != null ? _flakes.particleCount : 0;
+        public DecalLayerEnum CoverLayer => _cover != null ? _cover.decalLayerMask : DecalLayerEnum.Nothing;
 
         public SnowLook(Transform root)
         {
@@ -59,7 +76,7 @@ namespace RealLifeOverhaul.Seasons
 
         /// <summary>
         /// Shows <paramref name="falling"/> (0 to 1) and <paramref name="cover"/> (0 to 1) round the player, or nothing indoors.
-        /// The cover can only be made behind a screen, as the game's road paint is found there: until then only flakes fall.
+        /// The cover can only be made behind a screen, as the game's road paint and the ground are found there: until then only flakes fall.
         /// </summary>
         public void Show(float falling, float cover, Vector3 player, bool outdoors)
         {
@@ -80,10 +97,28 @@ namespace RealLifeOverhaul.Seasons
                 _flakesOn = false;
                 _rate = -1f;
             }
+            Uncover();
+        }
+
+        /// <summary>The camera draws with decal layers now, as the pipeline last drew it (after its own checks of the asset).</summary>
+        public static bool LayersInEffect()
+        {
+            Camera camera = GameManager.GetMainCamera();
+            return camera != null && HDCamera.GetOrCreate(camera).frameSettings.IsEnabled(FrameSettingsField.DecalLayers);
+        }
+
+        // The cover off and the camera's decal layers given back: nothing of the snow left on the picture.
+        private void Uncover()
+        {
             if (_cover != null && _cover.gameObject.activeSelf)
             {
                 _cover.gameObject.SetActive(false);
-                _fade = -1f;
+            }
+            _fade = -1f;
+            if (_layersAsked)
+            {
+                _layersAsked = false;
+                PerfFrameSettings.ReleaseOn(FrameSettingsField.DecalLayers);
             }
         }
 
@@ -183,20 +218,20 @@ namespace RealLifeOverhaul.Seasons
         {
             if (cover <= 0f)
             {
-                if (_cover != null && _cover.gameObject.activeSelf)
-                {
-                    _cover.gameObject.SetActive(false);
-                    _fade = -1f;
-                }
+                Uncover();
                 return;
             }
             if (_cover == null && !BuildCover())
             {
                 return;
             }
+            if (!Layered())
+            {
+                return;
+            }
             bool on = _cover.gameObject.activeSelf;
             Vector3 offset = player - _centre;
-            if (!on || offset.x * offset.x + offset.z * offset.z > Recentre * Recentre || Mathf.Abs(offset.y) > (_tall ? 4f : 1.5f))
+            if (!on || offset.x * offset.x + offset.z * offset.z > Recentre * Recentre || Mathf.Abs(offset.y) > 4f)
             {
                 Pose(player);
             }
@@ -215,12 +250,19 @@ namespace RealLifeOverhaul.Seasons
                 return false;
             }
             var asset = GraphicsSettings.currentRenderPipeline as HDRenderPipelineAsset;
-            if (asset == null || !asset.currentPlatformRenderPipelineSettings.supportDecals)
+            string none = asset == null ? "the game draws without HDRP"
+                : !asset.currentPlatformRenderPipelineSettings.supportDecals ? "decals are switched off in this game's graphics"
+                : !asset.currentPlatformRenderPipelineSettings.supportDecalLayers ? "this graphics setting has no decal layers, and a decal without them would whiten cars and people too"
+                : null;
+            if (none != null)
             {
-                _coverFailed = true;
-                CoverMissing = "decals are switched off in this game's graphics";
-                SeasonDirector.Logger?.Warn("Seasons: no snow on the ground this session: " + CoverMissing + ".");
+                Refuse(none);
                 return false;
+            }
+            if (Ground.Bit == 0u)
+            {
+                CoverMissing = Ground.Missing;
+                return false;   // asked again: the ground is marked behind the next loading screen
             }
             Material template = RoadPaint.Decal;
             if (template == null)
@@ -228,7 +270,6 @@ namespace RealLifeOverhaul.Seasons
                 CoverMissing = "the game's road paint is found behind the next loading screen";
                 return false;   // asked again: found at the next door or load
             }
-            _tall = asset.currentPlatformRenderPipelineSettings.supportDecalLayers;
             DropCoverAssets();   // a projector lost with the city's objects leaves its paint behind
             _coverMap = new Texture2D(MapSize, MapSize, TextureFormat.RGBA32, false) { name = "RealLifeOverhaul Snow Cover", wrapMode = TextureWrapMode.Repeat };
             _coverMap.SetPixels32(SnowPattern());
@@ -242,17 +283,59 @@ namespace RealLifeOverhaul.Seasons
             piece.transform.SetParent(_root, false);
             _cover = piece.AddComponent<DecalProjector>();
             _cover.material = _coverPaint;
+            _cover.decalLayerMask = Ground.Layer;   // the ground and roofs alone: never the default layer, which cars and people carry
             _cover.drawDistance = CoverSpan + 50f;
             _cover.fadeScale = 0.95f;
-            _cover.startAngleFade = 30f;   // only with decal layers: walls and fronts stay as they are
+            _cover.startAngleFade = 30f;   // walls and fronts stay as they are (HDRP fades by angle only with decal layers, as here)
             _cover.endAngleFade = 60f;
-            _cover.size = new Vector3(CoverSpan, CoverSpan, _tall ? RoofDepth : GroundDepth);
-            _cover.pivot = new Vector3(0f, 0f, (_tall ? RoofDepth : GroundDepth) * 0.5f);
+            _cover.size = new Vector3(CoverSpan, CoverSpan, RoofDepth);
+            _cover.pivot = new Vector3(0f, 0f, RoofDepth * 0.5f);
             _cover.uvScale = new Vector2(CoverSpan / CoverTile, CoverSpan / CoverTile);
             CoverMissing = null;
-            SeasonDirector.Logger?.Info("Seasons: snow lies on " + (_tall ? "the ground and the roofs (HDRP decal layers on)" : "the ground only (no HDRP decal layers to keep it off walls)")
-                                        + ", a copy of the game's '" + template.name + "'.");
+            SeasonDirector.Logger?.Info("Seasons: snow lies on the ground and the roofs alone (its own decal layer, on " + Ground.Marked + " piece(s)), a copy of the game's '"
+                                        + template.name + "'.");
             return true;
+        }
+
+        // No white ground for the rest of this city: falling snow and the roads' grip stay.
+        private void Refuse(string why)
+        {
+            _coverFailed = true;
+            Way = SnowWay.None;
+            CoverMissing = why;
+            Uncover();
+            SeasonDirector.Logger?.Warn("Seasons: no snow lying on the ground this session (" + why + "); it still falls and is still felt on the roads.");
+        }
+
+        // The camera's decal layers asked on, and the cover shown only once the pipeline draws with them: without them the
+        // decal would reach everything in its box. False while waiting, and for good where they cannot be had.
+        private bool Layered()
+        {
+            if (!_layersAsked)
+            {
+                _layersAsked = true;
+                _askedAt = Time.unscaledTime;
+                PerfFrameSettings.Enable(FrameSettingsField.DecalLayers);
+            }
+            else
+            {
+                PerfFrameSettings.Follow();   // two reads: the game may have a new main camera after a load
+            }
+            if (LayersInEffect())
+            {
+                Way = SnowWay.Layers;
+                return true;
+            }
+            if (_cover.gameObject.activeSelf)
+            {
+                _cover.gameObject.SetActive(false);   // a camera that lost them: nothing drawn until they are back
+                _fade = -1f;
+            }
+            if (Time.unscaledTime - _askedAt > ConfirmWait)
+            {
+                Refuse("the game's camera would not draw with decal layers");
+            }
+            return false;
         }
 
         // Laid with the projector off, as the decal system takes one as it is when it comes on; the pattern is pinned to
@@ -262,8 +345,7 @@ namespace RealLifeOverhaul.Seasons
             GameObject piece = _cover.gameObject;
             piece.SetActive(false);
             _centre = player;
-            float top = _tall ? RoofTop : GroundTop;
-            piece.transform.SetPositionAndRotation(player + Vector3.up * top, Quaternion.LookRotation(Vector3.down, Vector3.forward));
+            piece.transform.SetPositionAndRotation(player + Vector3.up * RoofTop, Quaternion.LookRotation(Vector3.down, Vector3.forward));
             float half = CoverSpan / CoverTile * 0.5f;
             _cover.uvBias = new Vector2(Mathf.Repeat(player.x / CoverTile - half, 1f), Mathf.Repeat(player.z / CoverTile - half, 1f));
             piece.SetActive(true);
@@ -326,7 +408,7 @@ namespace RealLifeOverhaul.Seasons
             _coverMap = null;
         }
 
-        /// <summary>The city is unloading: everything made goes.</summary>
+        /// <summary>The city is unloading: everything made goes, and the ground's and the camera's layers are put back.</summary>
         public void Dispose()
         {
             if (_flakes != null)
@@ -337,9 +419,16 @@ namespace RealLifeOverhaul.Seasons
             {
                 Object.Destroy(_cover.gameObject);
             }
+            if (_layersAsked)
+            {
+                _layersAsked = false;
+                PerfFrameSettings.ReleaseOn(FrameSettingsField.DecalLayers);
+            }
+            Ground.Unmark();
             DropCoverAssets();
             _flakes = null;
             _cover = null;
+            Way = SnowWay.Unknown;
             _flakesFailed = _coverFailed = _flakesOn = false;
             _rate = _fade = -1f;
         }

@@ -6,12 +6,14 @@ using UnityEngine.Rendering.HighDefinition;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Pipeline features off and a level-of-detail scale for the player's camera only, through its frame settings' override
-    /// mask; the smallest scale wins, and the last user letting go puts the flag, settings and mask back.
+    /// Pipeline features off or on and a level-of-detail scale for the player's camera only, through its frame settings'
+    /// override mask; the smallest scale wins, a feature one user wants off stays off, and the last user letting go puts
+    /// the flag, settings and mask back. The one owner of those settings, so two features never undo each other.
     /// </summary>
     internal static class PerfFrameSettings
     {
         private static readonly List<FrameSettingsField> Off = new List<FrameSettingsField>(16);   // one entry per user: a feature two users want off appears twice
+        private static readonly List<FrameSettingsField> On = new List<FrameSettingsField>(2);    // the same, for features wanted on (the snow's decal layers)
         private static readonly List<object> LodUsers = new List<object>(2);
         private static readonly List<float> LodScales = new List<float>(2);
         private static HDAdditionalCameraData _data;
@@ -34,6 +36,30 @@ namespace RealLifeOverhaul
             Apply();
         }
 
+        /// <summary>A feature the asset supports switched on for the player's camera, while asked (the pipeline still drops one the asset lacks).</summary>
+        public static void Enable(FrameSettingsField field)
+        {
+            On.Add(field);
+            Apply();
+        }
+
+        public static void ReleaseOn(FrameSettingsField field)
+        {
+            On.Remove(field);
+            Apply();
+        }
+
+        /// <summary>Applies again only if the game has a new main camera: two reads, for a caller that asks once a second.</summary>
+        public static void Follow()
+        {
+            Camera camera = GameManager.GetMainCamera();
+            HDAdditionalCameraData data = camera != null ? camera.GetComponent<HDAdditionalCameraData>() : null;
+            if (data != _data)
+            {
+                Apply();
+            }
+        }
+
         /// <summary>A user's scale of the game's level-of-detail bias (under 1: simpler models nearer); 1 lets go.</summary>
         public static void LodScale(object user, float scale)
         {
@@ -51,7 +77,7 @@ namespace RealLifeOverhaul
             Apply();
         }
 
-        private static bool Wanted => Off.Count > 0 || LodUsers.Count > 0;
+        private static bool Wanted => Off.Count > 0 || On.Count > 0 || LodUsers.Count > 0;
 
         /// <summary>Brings the camera in line again; also follows the game to a new main camera.</summary>
         public static void Apply()
@@ -78,7 +104,12 @@ namespace RealLifeOverhaul
             }
             FrameSettings settings = _wasSettings;   // always from what the camera had, never from the last state of ours
             FrameSettingsOverrideMask mask = _wasCustom ? _wasMask : default;
-            foreach (FrameSettingsField field in Off)
+            foreach (FrameSettingsField field in On)
+            {
+                settings.SetEnabled(field, true);
+                mask.mask[(uint)field] = true;
+            }
+            foreach (FrameSettingsField field in Off)   // after: a benchmark row that wants a feature off measures it off
             {
                 settings.SetEnabled(field, false);
                 mask.mask[(uint)field] = true;

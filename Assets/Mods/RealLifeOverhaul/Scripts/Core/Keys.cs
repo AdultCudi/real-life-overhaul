@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using BAModAPI;
 using BigAmbitions.Mods;
 using BigAmbitions.ModsInternal;
@@ -43,7 +44,7 @@ namespace RealLifeOverhaul
     {
         private sealed class Binding
         {
-            public readonly string Id;            // saved as m:<mod>:key_<Id>
+            public readonly string Id;            // saved as m:RealLifeOverhaul:key_<Id> (Core/OptionKeysRules)
             public readonly string LabelKey;
             public readonly KeyCode DefaultKey;
             public readonly KeyModifier DefaultModifier;
@@ -81,7 +82,7 @@ namespace RealLifeOverhaul
 
         public static IModLogger Logger;
 
-        private static string _modId;
+        private static bool _loaded;        // read once: before that a change is not saved
         private static bool _capturing;     // a key is being chosen: nothing the mod does on a key may fire on it
         private static bool _hooked;
         private static bool _warned;
@@ -217,9 +218,9 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>Reads the saved bindings, once at game start with the other options.</summary>
-        public static void Load(string modId)
+        public static void Load()
         {
-            _modId = modId;
+            _loaded = true;
             foreach (Binding binding in All)
             {
                 int saved = UnityEngine.PlayerPrefs.GetInt(PrefsKey(binding), -1);
@@ -244,7 +245,7 @@ namespace RealLifeOverhaul
             Binding binding = All[(int)action];
             binding.Key = key;
             binding.Modifier = modifier;
-            if (_modId != null)
+            if (_loaded)
             {
                 UnityEngine.PlayerPrefs.SetInt(PrefsKey(binding), (int)key | ((int)modifier << 16));
             }
@@ -258,7 +259,7 @@ namespace RealLifeOverhaul
             {
                 binding.Key = binding.DefaultKey;
                 binding.Modifier = binding.DefaultModifier;
-                if (_modId != null)
+                if (_loaded)
                 {
                     UnityEngine.PlayerPrefs.DeleteKey(PrefsKey(binding));
                 }
@@ -267,8 +268,18 @@ namespace RealLifeOverhaul
             Logger?.Info("Keys: all back to their defaults.");
         }
 
-        // The key format the game uses for mod options.
-        private static string PrefsKey(Binding binding) => "m:" + _modId + ":key_" + binding.Id;
+        private static string PrefsKey(Binding binding) => OptionKeysRules.Key(PrefId(binding));
+
+        private static string PrefId(Binding binding) => "key_" + binding.Id;
+
+        /// <summary>Every binding's option id, for the one start that brings older values over (Core/OptionKeys).</summary>
+        internal static void PrefIds(List<string> into)
+        {
+            foreach (Binding binding in All)
+            {
+                into.Add(PrefId(binding));
+            }
+        }
 
         // After any change: the labels, and which plain binding must yield to a modified one on the same key.
         private static void Refresh()
