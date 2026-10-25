@@ -60,15 +60,24 @@ namespace RealLifeOverhaul
 
         private static string OptionId(PerfTweak tweak) => "perf_" + tweak.Id;
 
+        /// <summary>Every tweak's option id, for the one start that brings older values over (Core/OptionKeys).</summary>
+        internal static void PrefIds(System.Collections.Generic.List<string> into)
+        {
+            foreach (PerfTweak tweak in All)
+            {
+                into.Add(OptionId(tweak));
+            }
+        }
+
         /// <summary>Reads the saved choices; the game fires option callbacks only once its options screen has opened.</summary>
-        public static void Load(string modId)
+        public static void Load()
         {
             foreach (PerfTweak tweak in All)
             {
                 tweak.Wanted = tweak.BySetting ? tweak.SettingWants
-                    : !tweak.Trial && UnityEngine.PlayerPrefs.GetInt("m:" + modId + ":" + OptionId(tweak), tweak.DefaultOn ? 1 : 0) != 0;
+                    : !tweak.Trial && UnityEngine.PlayerPrefs.GetInt(OptionKeysRules.Key(OptionId(tweak)), tweak.DefaultOn ? 1 : 0) != 0;
             }
-            StepTiming = UnityEngine.PlayerPrefs.GetInt("m:" + modId + ":" + StepTimingId, 1) != 0;
+            StepTiming = UnityEngine.PlayerPrefs.GetInt(OptionKeysRules.Key(StepTimingId), 1) != 0;
             Dirty = true;
         }
 

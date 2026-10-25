@@ -408,6 +408,7 @@ internal static partial class Program
         DeskStarts();   // a classroom door, a school desk and the Campus app begin a class or exam by one rule; no button the game's panel cannot fill or dim (DeskStartChecks.cs)
         HiddenPanels(); // in a Going Public session, which hides the game's activity panel and presses Start for the player, a desk's class or exam begins (HiddenPanelChecks.cs)
         ShiftOpen();    // every job's week inside its workplace's opening hours, a save's put right at load, a day shut at its start excused, the rota's shut clients (ShiftOpenChecks.cs)
+        OptionKeysFix(); // the options kept under the mod's own id for every copy: the older copies' values brought over once, the running copy's first, the sources, the texts (OptionKeysChecks.cs)
         HomeFixes();    // home life: the roommate's talk test with no character, the door to social life nobody read, rain and sleep in a hotel room (HomeFixChecks.cs)
         LifeFixes();    // life events: news of the player's home, building, neighbours and landlord only to a player with a home (LifeFixChecks.cs)
         TravelFixes();  // travel: the hotel room refused while the game was paused (TravelFixChecks.cs)

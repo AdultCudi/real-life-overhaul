@@ -52,7 +52,7 @@ There is no text block, no sub-page and no way to scroll to a row.
 Toggles, sliders and dropdowns call their callback with the saved value every time the page is drawn, which is why the presets are buttons and not a dropdown.
 
 `OptionsLayout` therefore rearranges the finished list: sections are a button followed by the feature's rows, and a row that draws nothing (`RowTap`) on either side tells it which of the game's row objects are that section's, to switch on and off.
-Open/closed is kept per section in PlayerPrefs (`m:<mod>:ui_open_<feature id>`).
+Open/closed is kept per section in PlayerPrefs (`m:RealLifeOverhaul:ui_open_<feature id>`).
 Every row is re-made with the shipped value as its default, so the game's own "reset" resets (the chain passes the loaded values).
 
 "Test tools" is a section of sections: one group per feature that has test buttons, in the order of the sections, each a button ("Tests:  Crime and police stops   (14)") that opens and closes like a section and is closed until asked for (`m:<mod>:ui_open_tests_<feature id>`).
@@ -191,7 +191,7 @@ There is no "all saves" variant.
 ## Test paths
 
 - Guide: options page "Open the Guide on your phone" (the app opens when the menu is closed); the phone contact "Real Life Overhaul Guide"; "Check the mod's set-up" renders every page and lists unfilled `{facts}` and missing texts.
-- Welcome: "Show what changed" (opens the Guide on that page); or delete `m:<mod>:meta_seen_version` from PlayerPrefs.
+- Welcome: "Show what changed" (opens the Guide on that page); or delete `m:RealLifeOverhaul:meta_seen_release` from PlayerPrefs. Every option is kept under the mod's own id, the same for the Workshop copy and a ModsLocal copy (Core/OptionKeysRules); the first start of a version that has this brings over what older versions kept under each copy's own id.
 - Presets: the four buttons, then the guide's Presets page (the "Now" column) and the header "Preset in use".
 - Mod settings app (the phone, or "Open the mod's settings on your phone"): the game's help screen in dark colours; a group opens in the list on the left, a section shows on the right with each option's switch, slider, drop-down, button or key; a switch's change greys or frees the rows that need it at once; the search box finds rows from two letters; "Show test tools" on adds the Test tools group. How it is built: [game-ui.md, section 35](../../RealLifeOverhaul.Build/docs/game-ui.md).
 - Options page: open and close sections; "Show test tools" off hides the last section.
