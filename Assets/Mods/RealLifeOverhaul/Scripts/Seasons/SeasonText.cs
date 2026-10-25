@@ -75,6 +75,13 @@ namespace RealLifeOverhaul.Seasons
             return new Dictionary<string, string>(2) { { "from", Clock(snow.From) }, { "to", Clock(snow.To) } };
         }
 
+        /// <summary>"Winter, day 3 of 15": the top bar's line under the date.</summary>
+        public static string Bar(int season, int day, int days)
+        {
+            return T("reallife_season_bar", "season", Title(season)).Replace("{day}", day.ToString(System.Globalization.CultureInfo.CurrentCulture))
+                .Replace("{days}", days.ToString(System.Globalization.CultureInfo.CurrentCulture));
+        }
+
         /// <summary>An hour of the day in the game's own 12 or 24 hour format; hour 24 is midnight.</summary>
         public static string Clock(int hour)
         {

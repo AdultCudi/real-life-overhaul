@@ -20,6 +20,8 @@ internal static partial class Program
         SeasonCover();
         SeasonCost();
         SeasonSources();
+        SnowLookSources();
+        SeasonLooks();
         SeasonTexts();
     }
 
@@ -298,6 +300,87 @@ internal static partial class Program
             missing.Add("(no Guide page)");
         }
         Check(missing.Count == 0 && facts.Count >= 10, "seasons: every figure the Guide page names comes from the code (" + facts.Count + " facts" + (missing.Count > 0 ? "; not: " + string.Join(", ", missing) : string.Empty) + ")");
+    }
+
+    // ---------------------------------------------------------------- the snow's look: never on a car, a person or a face
+
+    private static void SnowLookSources()
+    {
+        Check(SeasonRules.SnowBit(new int[16]) == 15 && SeasonRules.SnowBit(null) == 15, "seasons: the lying snow takes decal bit 15 when nothing else carries one");
+        var held = new int[16];
+        for (int b = 9; b < 13; b++)
+        {
+            held[b] = 2;
+        }
+        held[15] = 3;
+        held[14] = 1;
+        held[13] = 1;
+        Check(SeasonRules.SnowBit(held) == 14, "seasons: the snow takes the bit fewest others carry, the highest on a tie (14 of 13 and 14 with one each)");
+        var all = new int[16];
+        for (int b = 0; b < 16; b++)
+        {
+            all[b] = b == SeasonRules.DecalBitsFrom ? 0 : 5;
+        }
+        int chosen = SeasonRules.SnowBit(all);
+        Check(chosen > SeasonRules.DecalBitsFrom && chosen <= SeasonRules.DecalBitsTo, "seasons: the snow never takes the default decal layer, which every car and person carries, even when it is the freest (" + chosen + ")");
+        bool steady = true;
+        for (int i = 0; i < 50; i++)
+        {
+            var some = new int[16];
+            for (int b = 9; b < 16; b++)
+            {
+                some[b] = (i * 7 + b * 3) % 4;
+            }
+            steady &= SeasonRules.SnowBit(some) == SeasonRules.SnowBit((int[])some.Clone());
+        }
+        Check(steady, "seasons: the snow's bit is the same every time it is chosen from the same city");
+
+        string folder = System.IO.Path.GetFullPath(System.IO.Path.Combine(LocalesFolder(), "..", "Scripts"));
+        string look = System.IO.File.ReadAllText(System.IO.Path.Combine(folder, "Seasons", "SnowLook.cs"));
+        string ground = System.IO.File.ReadAllText(System.IO.Path.Combine(folder, "Seasons", "SnowGround.cs"));
+        string frames = System.IO.File.ReadAllText(System.IO.Path.Combine(folder, "Performance", "Tweaks", "PipelineTrials.cs"));
+        string tests = System.IO.File.ReadAllText(System.IO.Path.Combine(folder, "Seasons", "SeasonDirector.Tests.cs"));
+        string director = System.IO.File.ReadAllText(System.IO.Path.Combine(folder, "Seasons", "SeasonDirector.cs"));
+        Check(look.Contains("_cover.decalLayerMask = Ground.Layer;") && !Regex.IsMatch(look, @"decalLayerMask\s*=\s*DecalLayerEnum\.(Everything|DecalLayerDefault)"),
+            "seasons: the snow's decal is drawn on its own layer alone, never on the default one cars and people carry");
+        int lie = look.IndexOf("private void Lie(", StringComparison.Ordinal);
+        int layered = lie >= 0 ? look.IndexOf("if (!Layered())", lie, StringComparison.Ordinal) : -1;
+        int pose = lie >= 0 ? look.IndexOf("Pose(player);", lie, StringComparison.Ordinal) : -1;
+        Check(layered > 0 && pose > layered && look.Contains("FrameSettingsField.DecalLayers") && look.Contains("frameSettings.IsEnabled(FrameSettingsField.DecalLayers)"),
+            "seasons: the cover is shown only once the camera draws with decal layers (without them a decal whitens everything in its box)");
+        Check(look.Contains("supportDecalLayers ? ") || Regex.IsMatch(look, @"!asset\.currentPlatformRenderPipelineSettings\.supportDecalLayers\s*\?"),
+            "seasons: a graphics setting without decal layers gets no lying snow at all, never an unmasked decal");
+        Check(!look.Contains("GroundDepth") && !look.Contains("_tall") && look.Contains("RoofDepth"),
+            "seasons: no slab of white at the player's feet is left as a fallback (it reached tyres, shoes and walls' feet)");
+        Check(look.Contains("ReleaseOn(FrameSettingsField.DecalLayers)") && Regex.Matches(look, @"ReleaseOn\(FrameSettingsField\.DecalLayers\)").Count >= 2,
+            "seasons: the camera's decal layers are given back when the snow goes, indoors and when the city unloads");
+        Check(frames.Contains("On.Count > 0") && frames.Contains("settings.SetEnabled(field, true);") && frames.Contains("public static void Follow()"),
+            "seasons: the camera's frame settings are asked of their one owner, which puts them back when the last user lets go");
+        Check(ground.Contains("\"Ground\", \"GroundUnplacable\", \"Roads\", \"Sidewalk\"") && ground.Contains("\"Buildings\"")
+              && !Regex.IsMatch(ground, "\"(Human|Player|Vehicles|AiVehicles|ParkedVehicles|PlayerVehicles|StreetProps|InteractiveItems|Default)\""),
+            "seasons: only the game's ground, road, pavement and building layers are marked for snow, never a person's, a car's or a prop's");
+        Check(ground.Contains("renderer is SkinnedMeshRenderer") && ground.Contains("SeasonRules.SnowBit(holders)") && ground.Contains("_cleared.Add(renderer)")
+              && ground.Contains("renderingLayerMask &= ~_bit") && ground.Contains("FindObjectsInactive.Include"),
+            "seasons: no skinned body is ever marked, anything else carrying the snow's bit is taken off it while marked, and every mark is put back");
+        Check(director.Contains("ScenePrewarm.Add(MarkWhat, MarkGround)") && director.Contains("ScenePrewarm.Again(MarkWhat, MarkGround)") && !Regex.IsMatch(director + look, @"SceneFinds\.All<"),
+            "seasons: the ground is searched for only behind a loading screen or a door's black screen, never in play");
+        Check(tests.Contains("Seasons test (snow look)") && tests.Contains("SeasonGame.Bodies(") && tests.Contains("on the snow's layer"),
+            "seasons: the snow test says which way the ground is whitened and checks the cars and people near the player");
+        var touched = new List<string>();
+        foreach (string file in System.IO.Directory.GetFiles(System.IO.Path.Combine(folder, "Seasons"), "*.cs"))
+        {
+            string text = System.IO.File.ReadAllText(file);
+            foreach (string word in new[] { "AppearanceSetter", "MaterialPropertyBlock", "EnableKeyword", "VehicleController", "SkinnedMeshRenderer>" })
+            {
+                // People's clothes alone, for the cold, behind an option off by default (SeasonGame.Coats.cs, checked in SeasonLookChecks).
+                bool clothes = word == "AppearanceSetter" && System.IO.Path.GetFileName(file) == "SeasonGame.Coats.cs";
+                if (text.Contains(word) && !clothes)
+                {
+                    touched.Add(System.IO.Path.GetFileName(file) + ": " + word);
+                }
+            }
+        }
+        Check(touched.Count == 0, "seasons: nothing of the seasons tints, keys or reaches into a person's or a car's look (" + (touched.Count == 0 ? "none" : string.Join(", ", touched)) + ")");
     }
 
     private static void SeasonTexts()

@@ -14,7 +14,7 @@ namespace RealLifeOverhaul.Seasons
     /// game's in memory, never in a save, written once a season and put back exactly), the place by the player where the
     /// rain falls, and the paces the city's people are given as they set off (narrowed on snow and put back).
     /// </summary>
-    public static class SeasonGame
+    public static partial class SeasonGame
     {
         private const float WalkLeast = 0.6f;   // m/s: no walker is held slower than this, however deep the snow
 
@@ -29,6 +29,8 @@ namespace RealLifeOverhaul.Seasons
         private static Vector2[] _pacesOwn;
         private static float _walkApplied = 1f;
         private static bool _walkFailed;
+
+        private static readonly Collider[] Near = new Collider[128];   // the test's sample of the cars and people round the player
 
         public static int Today => SaveGameManager.Current != null ? SaveGameManager.Current.Day : 0;
 
@@ -105,6 +107,35 @@ namespace RealLifeOverhaul.Seasons
             own = Own[good];
             now = Items[good].productSalesRatio;
             return true;
+        }
+
+        /// <summary>
+        /// The renderers of the cars and people within <paramref name="radius"/> of the player, and the player's own, into
+        /// <paramref name="into"/>; returns how many cars and people they belong to. One physics query: for a test, once.
+        /// </summary>
+        public static int Bodies(float radius, List<Renderer> into)
+        {
+            into.Clear();
+            var roots = new HashSet<Transform>();
+            var some = new List<Renderer>(64);
+            PlayerController player = PlayerHelper.PlayerController;
+            if (player != null && roots.Add(player.transform))
+            {
+                player.GetComponentsInChildren(true, some);
+                into.AddRange(some);
+            }
+            int mask = LayerHelper.vehicleAndHumanConflictMask | LayerHelper.freeParkingSpotDetectionMask | (LayerHelper.PlayerLayerIndex >= 0 ? 1 << LayerHelper.PlayerLayerIndex : 0);
+            int count = Physics.OverlapSphereNonAlloc(Player, radius, Near, mask, QueryTriggerInteraction.Collide);
+            for (int i = 0; i < count; i++)
+            {
+                Transform root = Near[i].attachedRigidbody != null ? Near[i].attachedRigidbody.transform : Near[i].transform;
+                if (roots.Add(root))
+                {
+                    root.GetComponentsInChildren(true, some);
+                    into.AddRange(some);
+                }
+            }
+            return roots.Count;
         }
 
         /// <summary>The place the game's rain falls around the player; null if it cannot be read (snow does not fall then).</summary>
@@ -189,6 +220,7 @@ namespace RealLifeOverhaul.Seasons
         {
             RestoreDemand();
             RestoreWalkers();
+            RestoreLooks();
             _walkFailed = false;
         }
     }

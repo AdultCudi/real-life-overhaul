@@ -30,6 +30,7 @@ namespace RealLifeOverhaul.Seasons
         private int _applied = -1;       // the season whose figures are on the goods; -1 for none
         private int _toldSeason = -1, _toldForecast = -1, _toldTomorrow = -1, _toldFalling = -1;   // days each piece of news was given on
         private float _holdUntil;        // the test's snow, while the real time is before this
+        private bool _markLater;         // the ground was left unmarked (an option off): marked at the next door once wanted
 
         /// <summary>The season of today (CalendarRules.Winter to Autumn).</summary>
         public int Season { get; private set; } = CalendarRules.Spring;
@@ -46,8 +47,42 @@ namespace RealLifeOverhaul.Seasons
         {
             Instance = this;
             _look = new SnowLook(transform);
+            _seasonLook = new SeasonLook(transform, this);
             // The snow on the ground copies the game's road paint, which can only be looked for behind a screen.
             ScenePrewarm.Add("seasons: the game's road paint being found for the snow on the ground", RoadPaint.Prewarm);
+            ScenePrewarm.Add(MarkWhat, MarkGround);
+        }
+
+        private const string MarkWhat = "seasons: the ground, roads, pavements and roofs given the snow's own decal layer";
+
+        // Behind a screen: the only place the snow may lie is marked, while the snow's look is wanted and can be drawn.
+        private bool MarkGround()
+        {
+            if (Settings.Seasons && Settings.SnowLook && SnowGround.Drawable)
+            {
+                _markLater = false;
+                _look.Ground.Mark();
+            }
+            else
+            {
+                _markLater = SnowGround.Drawable;
+            }
+            return true;
+        }
+
+        // The ground's marks follow the options: let go with the look switched off, asked for at the next door once on.
+        private void FollowMarks(bool wanted)
+        {
+            if (!wanted && _look.Ground.Marked > 0)
+            {
+                _look.Ground.Unmark();
+                _markLater = true;
+            }
+            else if (wanted && _markLater)
+            {
+                _markLater = false;
+                ScenePrewarm.Again(MarkWhat, MarkGround);
+            }
         }
 
         private void OnDestroy()
@@ -56,6 +91,9 @@ namespace RealLifeOverhaul.Seasons
             {
                 StopAll();
                 _look.Dispose();
+                _seasonLook.Dispose();
+                SeasonBar.Remove();
+                SeasonGame.ForgetFailures();
             }
             catch (Exception e)
             {
@@ -116,7 +154,7 @@ namespace RealLifeOverhaul.Seasons
             {
                 return;
             }
-            if (!Settings.Seasons)
+            if (!Settings.Seasons || StandDown())
             {
                 if (_on)
                 {
@@ -144,6 +182,7 @@ namespace RealLifeOverhaul.Seasons
             }
             Step = Settings.WeatherMatters ? SeasonRules.Step(Cover) : 0;
             SeasonGame.Walkers(Step == 2 ? WalkCovered : Step == 1 ? WalkPatchy : 1f);
+            FollowMarks(Settings.SnowLook);
             if (Settings.SnowLook)
             {
                 _look.Show(Falling, Cover, SeasonGame.Player, SeasonGame.Outdoors);
@@ -152,6 +191,7 @@ namespace RealLifeOverhaul.Seasons
             {
                 _look.Hide();
             }
+            Looks(day, time, year, salt, SeasonGame.Outdoors);
             if (salt != 0)
             {
                 News(day, hour, year, salt);
@@ -243,6 +283,12 @@ namespace RealLifeOverhaul.Seasons
             Falling = Cover = 0f;
             Step = 0;
             _look?.Hide();
+            StopLooks();
+            if (_look != null && _look.Ground.Marked > 0)
+            {
+                _look.Ground.Unmark();
+                _markLater = true;
+            }
         }
 
         /// <summary>The seasons' line for the Calendar's day page: the season and what sells more and less in it; null while off.</summary>
