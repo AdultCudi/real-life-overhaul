@@ -490,7 +490,7 @@ namespace RealLifeOverhaul.Tech
         {
             try
             {
-                return reg.GetBuildingType();
+                return GameRegistrations.BuildingType(reg) ?? string.Empty;
             }
             catch (Exception)
             {

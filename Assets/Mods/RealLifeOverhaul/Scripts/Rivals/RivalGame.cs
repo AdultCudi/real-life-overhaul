@@ -54,7 +54,7 @@ namespace RealLifeOverhaul.Rivals
                 {
                     Place = BusinessGame.Place(reg),
                     Name = Name(reg),
-                    District = reg.Neighborhood ?? string.Empty,
+                    District = GameRegistrations.District(reg) ?? string.Empty,
                     Type = reg.businessTypeName ?? string.Empty,
                     Week = (long)Math.Round(BusinessGame.DailyRevenue(reg) * 7.0),
                     Rented = !reg.BuildingOwnedByPlayer,

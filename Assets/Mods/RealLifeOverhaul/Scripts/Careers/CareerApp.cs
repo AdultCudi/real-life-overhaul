@@ -12,7 +12,8 @@ namespace RealLifeOverhaul.Careers
     public sealed partial class CareerApp
     {
         public const string OpeningRow = "post:", ApplicationRow = "app:", ProfessionRow = "prof:";
-        private const string DayRow = "day:", SpellRow = "spell:", QualRow = "qual:";
+        private const string DayRow = "day:", SpellRow = "spell:", QualRow = "qual:", OlderApplicationRow = "appx:";
+        private readonly System.Collections.Generic.HashSet<int> _seenPosts = new System.Collections.Generic.HashSet<int>();
         // The Guide's pages the tabs point to at their foot: finding a job, the working life, working for yourself.
         private const string JobsGuide = "reallife_meta_title_careers_jobs", LifeGuide = "reallife_meta_title_careers_life", OwnGuide = "reallife_meta_title_careers_own";
 
@@ -239,11 +240,15 @@ namespace RealLifeOverhaul.Careers
         private TableSpec WriteApplications(InfoBox box, WorkFile w, int day)
         {
             Application picked = null;
-            int id = PickedId(_picked, ApplicationRow), offers = 0;
+            int id = PickedId(_picked, ApplicationRow), older = PickedId(_picked, OlderApplicationRow), offers = 0;
+            // A post applied to again after a withdrawal has two applications: the newest keeps the post's row (notices open
+            // it by the post), an older one gets a row of its own, so a click never lands on the withdrawn one instead.
+            _seenPosts.Clear();
             for (int i = w.Applications.Count - 1; i >= 0; i--)
             {
                 Application a = w.Applications[i];
-                TableRow row = Row(ApplicationRow + a.Post.Id);
+                bool newest = _seenPosts.Add(a.Post.Id);
+                TableRow row = Row(newest ? ApplicationRow + a.Post.Id : OlderApplicationRow + i);
                 row.Set(0, CareersText.Title(a.Post.Prof, a.Post.Rank));
                 row.Set(1, CareersText.Employer(a.Post.Employer));
                 row.Set(2, CareersText.Day(a.Day), a.Day);
@@ -256,7 +261,7 @@ namespace RealLifeOverhaul.Careers
                 row.Set(6, by > 0 ? CareersText.Day(by) : "-", by);
                 row.Set(7, CareersText.Step(a.At), a.Stage == (int)ApplyStep.Offered || interview ? TableRow.Green : a.Live ? TableRow.Plain : TableRow.Yellow);
                 offers += a.Stage == (int)ApplyStep.Offered ? 1 : 0;
-                picked = a.Post.Id == id ? a : picked;
+                picked = (newest && a.Post.Id == id) || (!newest && i == older) ? a : picked;
             }
             if (picked != null)
             {

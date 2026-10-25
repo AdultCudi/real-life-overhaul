@@ -1041,6 +1041,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_hire_test_applicants", () => Tech.TechDirector.Instance?.TestApplicants())
                 .AddButton("reallife_hire_test_market", () => Tech.TechDirector.Instance?.TestMarketDay())
                 .AddButton("reallife_hire_test_search", () => Tech.TechDirector.Instance?.TestSearch())
+                .AddButton("reallife_hire_test_orphan", () => Tech.TechDirector.Instance?.TestOrphanRegistration())
                 .AddToggle(Settings.TechSectorId, "reallife_tech_enabled", Settings.TechSector,
                     v => Settings.TechSector = v)
                 .AddToggle(Settings.TechOfferNotesId, "reallife_tech_opt_offer_notes", Settings.TechOfferNotes,
@@ -1175,6 +1176,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_util_test_due", () => Utilities.UtilitiesDirector.Instance?.TestDue())
                 .AddButton("reallife_util_test_cut", () => Utilities.UtilitiesDirector.Instance?.TestCutHome())
                 .AddButton("reallife_util_test_restore", () => Utilities.UtilitiesDirector.Instance?.TestRestore())
+                .AddButton("reallife_util_test_phone", () => Utilities.UtilitiesDirector.Instance?.TestByPhone())
                 .AddButton("reallife_util_test_outage", () => Utilities.UtilitiesDirector.Instance?.TestOutage())
                 .AddButton("reallife_util_test_network_month", () => Utilities.UtilitiesDirector.Instance?.TestNetworkMonth())
                 .AddButton("reallife_util_test_network_built", () => Utilities.UtilitiesDirector.Instance?.TestNetworkBuilt())
@@ -1351,6 +1353,7 @@ namespace RealLifeOverhaul
             Guard.Step("PlayerKnockdown", () => PlayerKnockdown.Logger = context.Logger);
             Guard.Step("PhoneContacts", () => PhoneContacts.Logger = context.Logger);
             Guard.Step("GameFurniture", () => GameFurniture.Logger = context.Logger);
+            Guard.Step("GameRegistrations", () => GameRegistrations.Logger = context.Logger);
             Guard.Step("ContactPictures", () => ContactPictures.Logger = context.Logger);
             Guard.Step("ContactSearch", () => ContactSearch.Logger = context.Logger);
             Guard.Step("CityLifeDirector", () => CityLifeDirector.Logger = context.Logger);

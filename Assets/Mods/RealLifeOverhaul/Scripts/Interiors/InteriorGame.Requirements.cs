@@ -25,7 +25,8 @@ namespace RealLifeOverhaul.Interiors
             float weight = 0f;
             try
             {
-                weight = NeighborhoodHelper.GetData(reg.Neighborhood).customerDemandsWeight;
+                string district = GameRegistrations.District(reg);
+                weight = district != null ? NeighborhoodHelper.GetData(district).customerDemandsWeight : 0f;
             }
             catch (Exception)
             {
@@ -58,7 +59,7 @@ namespace RealLifeOverhaul.Interiors
                 if (demand is InteriorDesignCustomerDemand)
                 {
                     rule.Have = InteriorScore(reg);
-                    rule.Need = Minimum(reg.Neighborhood);
+                    rule.Need = Minimum(GameRegistrations.District(reg));
                 }
                 into.Add(rule);
             }

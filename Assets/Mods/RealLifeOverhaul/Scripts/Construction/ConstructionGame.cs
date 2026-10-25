@@ -161,7 +161,7 @@ namespace RealLifeOverhaul.Construction
                 {
                     continue;
                 }
-                Building b = reg.BuildingCached;
+                Building b = GameRegistrations.BuildingOf(reg);
                 if (b != null && b.BuildingType == Warehouse)
                 {
                     into.Add(View(reg));
@@ -171,7 +171,7 @@ namespace RealLifeOverhaul.Construction
 
         private static PlaceView View(BuildingRegistration reg)
         {
-            Building b = reg.BuildingCached;
+            Building b = GameRegistrations.BuildingOf(reg);
             return new PlaceView
             {
                 Place = Place(reg.Address.streetName, reg.Address.streetNumber), Street = reg.Address.streetName, Number = reg.Address.streetNumber,
@@ -303,7 +303,7 @@ namespace RealLifeOverhaul.Construction
             {
                 return false;
             }
-            Building b = reg.BuildingCached;
+            Building b = GameRegistrations.BuildingOf(reg);
             if (b == null || b.IsHamptonsHouse() || (b.BuildingType != "ba:buildingtype_retail" && b.BuildingType != "ba:buildingtype_office"))
             {
                 return false;

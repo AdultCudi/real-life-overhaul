@@ -365,7 +365,8 @@ namespace RealLifeOverhaul.Hustles
                 for (int i = 0; i < all.Count; i++)
                 {
                     BuildingRegistration reg = all[i];
-                    if (reg == null || reg.businessTypeName != wanted || !reg.HasEstablishedBusiness || !reg.HasValidAddress || reg.temporarilyClosed || !BusinessHelper.IsBusinessOpen(reg))
+                    if (reg == null || reg.businessTypeName != wanted || !reg.HasEstablishedBusiness || !reg.HasValidAddress || reg.temporarilyClosed || !GameRegistrations.Found(reg)
+                        || !BusinessHelper.IsBusinessOpen(reg))
                     {
                         continue;
                     }

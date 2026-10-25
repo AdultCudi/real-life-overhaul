@@ -69,6 +69,7 @@ internal static partial class Program
         BuildRules();
         PartNames(Path.Combine(root, @"Assets\Mods\RealLifeOverhaul\Locales\en.json"));
         Markers(scripts);
+        Registrations(scripts);   // a registration with no building is read only through Core/GameRegistrations (RegistrationChecks.cs)
         LookChecks(scripts, Path.Combine(root, @"Assets\Mods\RealLifeOverhaul\Locales"));
         ButtonChecks(scripts, Path.Combine(root, @"Assets\Mods\RealLifeOverhaul\Locales"));
         PagerChecks(scripts, Path.Combine(root, @"Assets\Mods\RealLifeOverhaul\Locales"));

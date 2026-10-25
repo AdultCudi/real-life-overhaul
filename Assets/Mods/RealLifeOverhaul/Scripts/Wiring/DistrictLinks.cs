@@ -101,7 +101,8 @@ namespace RealLifeOverhaul
                     for (int p = 0; places != null && p < places.Count; p++)
                     {
                         BuildingRegistration reg = places[p].Reg;
-                        if (reg == null || reg.BuildingCached == null || reg.Neighborhood != district)
+                        string here = GameRegistrations.District(reg);
+                        if (here == null || here != district)
                         {
                             continue;
                         }
@@ -260,9 +261,10 @@ namespace RealLifeOverhaul
             {
                 try
                 {
-                    if (business != null && business.BuildingCached != null)
+                    string district = GameRegistrations.District(business);
+                    if (district != null)
                     {
-                        DistrictView.Instance?.ReportIn(business.Neighborhood);
+                        DistrictView.Instance?.ReportIn(district);
                     }
                 }
                 catch (Exception e)

@@ -154,7 +154,7 @@ namespace RealLifeOverhaul.Fame
 
         private static FameShop Shop(BuildingRegistration reg, int onRecord)
         {
-            var shop = new FameShop { Place = Place(reg), District = reg.Neighborhood, Standing = -1 };
+            var shop = new FameShop { Place = Place(reg), District = GameRegistrations.District(reg), Standing = -1 };
             Satisfaction s = reg.satisfaction;
             if (s != null && onRecord > 0)
             {
@@ -340,11 +340,11 @@ namespace RealLifeOverhaul.Fame
             int most = 0;
             for (int i = 0; i < all.Count; i++)
             {
-                string d = all[i].Neighborhood;
+                string d = GameRegistrations.District(all[i]);
                 int n = 0;
                 for (int k = 0; k < all.Count; k++)
                 {
-                    n += all[k].Neighborhood == d ? 1 : 0;
+                    n += GameRegistrations.District(all[k]) == d ? 1 : 0;
                 }
                 if (!string.IsNullOrEmpty(d) && n > most)
                 {

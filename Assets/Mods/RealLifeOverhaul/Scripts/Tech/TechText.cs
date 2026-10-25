@@ -30,7 +30,7 @@ namespace RealLifeOverhaul.Tech
                 case Idle.NetNone: return T("reallife_tech_idle_net_none", "days", TechBridges.NetDaysNow().ToString(Inv));
                 case Idle.NetInstalling: return T("reallife_tech_idle_net_installing", "day", f.NetWhen.ToString(Inv));
                 case Idle.NetOutage: return T("reallife_tech_idle_net_outage", "time", (f.NetWhen % 24).ToString("00", Inv) + ":00");
-                case Idle.NoPower: return T("reallife_tech_idle_no_power");
+                case Idle.NoPower: return T(TechBridges.Try(TechBridges.UtilitiesByPhone) ? "reallife_tech_idle_no_power_app" : "reallife_tech_idle_no_power");
                 case Idle.Shut: return T("reallife_tech_idle_shut");
                 case Idle.NoHours: return T("reallife_tech_idle_no_hours");
                 case Idle.NoStations: return T("reallife_tech_idle_no_stations");

@@ -278,7 +278,7 @@ namespace RealLifeOverhaul.Family
                 for (int i = 0; all != null && i < all.Count; i++)
                 {
                     BuildingRegistration r = all[i];
-                    if (r == null || !GoingPublic.Mine(r) || r.GetBuildingType() != Residential)
+                    if (r == null || !GoingPublic.Mine(r) || GameRegistrations.BuildingType(r) != Residential)
                     {
                         continue;
                     }

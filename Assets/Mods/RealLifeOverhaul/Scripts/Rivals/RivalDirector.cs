@@ -500,11 +500,12 @@ namespace RealLifeOverhaul.Rivals
         {
             RivalDirector d = Instance;
             RivalFile f = d != null && d.Running && !d._resting ? d._file : null;
-            if (f == null || reg == null)
+            string district = f != null ? GameRegistrations.District(reg) : null;
+            if (district == null)
             {
                 return 0;
             }
-            return RivalRules.OutletDip(f, reg.Neighborhood, reg.businessTypeName);
+            return RivalRules.OutletDip(f, district, reg.businessTypeName);
         }
 
         /// <summary>The premium on buildings for sale in a district, per mille.</summary>

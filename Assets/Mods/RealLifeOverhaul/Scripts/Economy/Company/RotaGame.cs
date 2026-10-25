@@ -127,7 +127,7 @@ namespace RealLifeOverhaul.Economy
             {
                 BuildingRegistration reg = all[i];
                 if (reg == null || !GoingPublic.Mine(reg) || !reg.HasEstablishedBusiness || !reg.HasValidAddress
-                    || string.IsNullOrEmpty(reg.businessTypeName) || reg.businessTypeName == Empty || reg.scheduleDays == null)
+                    || string.IsNullOrEmpty(reg.businessTypeName) || reg.businessTypeName == Empty || reg.scheduleDays == null || !GameRegistrations.Found(reg))
                 {
                     continue;
                 }

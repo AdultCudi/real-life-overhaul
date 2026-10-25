@@ -168,8 +168,7 @@ namespace RealLifeOverhaul.DistrictSave
             building.StreetNumber = TestNumber;
             building.Neighbourhood = TestDistrict;
             building.BuildingType = "ba:buildingtype_retail";
-            var reg = new BuildingRegistration { StreetName = TestStreet, StreetNumber = TestNumber, BusinessName = "District save test" };
-            reg.BuildingCached = building;
+            var reg = new BuildingRegistration { StreetName = TestStreet, StreetNumber = TestNumber, BusinessName = "District save test", BuildingCached = building };
             var things = new TestThings(reg, new TodoTask { id = TestTask, type = TodoTaskType.MissingSchedule, address = new Address(TestStreet, TestNumber) },
                 new Transaction(new TransactionInfo(TestTransaction)) { address = new Address(TestStreet, TestNumber) }, new NeighbourhoodStats { name = TestDistrict },
                 new Address(TestStreet, TestNumber));

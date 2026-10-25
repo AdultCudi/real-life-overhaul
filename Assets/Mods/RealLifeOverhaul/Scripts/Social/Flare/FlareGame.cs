@@ -258,7 +258,7 @@ namespace RealLifeOverhaul.Flare
         public static string Hype(BuildingRegistration reg)
         {
             List<string> products = reg != null ? reg.cachedAvailableProducts : null;
-            string district = reg != null ? reg.Neighborhood : null;
+            string district = GameRegistrations.District(reg);
             if (products == null || string.IsNullOrEmpty(district) || SaveGameManager.Current == null || SaveGameManager.Current.marketEvents == null)
             {
                 return null;
@@ -358,7 +358,7 @@ namespace RealLifeOverhaul.Flare
                 FlareShopSeen seen = f.Shop(place);
                 into.Add(new FlareShop
                 {
-                    Place = place, Name = Name(all[i]), Niche = FlareCast.NicheOf(all[i].businessTypeName), District = all[i].Neighborhood,
+                    Place = place, Name = Name(all[i]), Niche = FlareCast.NicheOf(all[i].businessTypeName), District = GameRegistrations.District(all[i]),
                     OpenedDay = seen != null ? seen.FirstDay : f.StartDay
                 });
             }

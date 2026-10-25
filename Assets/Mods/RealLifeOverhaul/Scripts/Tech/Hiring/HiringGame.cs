@@ -32,7 +32,7 @@ namespace RealLifeOverhaul.Tech
             List<BuildingRegistration> all = Save != null ? Save.BuildingRegistrations : null;
             for (int i = 0; all != null && i < all.Count; i++)
             {
-                string n = all[i] != null ? all[i].Neighborhood : null;
+                string n = GameRegistrations.District(all[i]);   // null for one whose building the city lacks: skipped, not a fault
                 if (!string.IsNullOrEmpty(n) && !into.Contains(n) && n != "ba:neighborhood_global")
                 {
                     into.Add(n);

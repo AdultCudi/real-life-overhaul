@@ -45,7 +45,7 @@ namespace RealLifeOverhaul
             try
             {
                 if (reg == null || !GoingPublic.Mine(reg) || !reg.HasEstablishedBusiness || string.IsNullOrEmpty(reg.businessTypeName)
-                    || reg.businessTypeName == EmptyType || !reg.HasValidAddress)
+                    || reg.businessTypeName == EmptyType || !reg.HasValidAddress || !GameRegistrations.Found(reg))
                 {
                     return false;
                 }
@@ -607,7 +607,12 @@ namespace RealLifeOverhaul
                 {
                     return false;
                 }
-                SpecialRival rival = RivalsHelper.GetSpecialRivalByNeighborhood(reg.Neighborhood);
+                string district = GameRegistrations.District(reg);
+                if (district == null)
+                {
+                    return true;   // as when it cannot be told: the game's own rule decides
+                }
+                SpecialRival rival = RivalsHelper.GetSpecialRivalByNeighborhood(district);
                 SpecialRivalState state = rival != null && rival.rivalData != null ? RivalsHelper.GetSpecialRivalState(rival.rivalData.id) : null;
                 return state != null && state.isActive && !state.isDefeated;
             }
@@ -626,7 +631,8 @@ namespace RealLifeOverhaul
                 {
                     return null;
                 }
-                SpecialRival local = RivalsHelper.GetSpecialRivalByNeighborhood(reg.Neighborhood);
+                string district = GameRegistrations.District(reg);
+                SpecialRival local = district != null ? RivalsHelper.GetSpecialRivalByNeighborhood(district) : null;
                 if (local != null && local.rivalData != null && local.rivalData.ownedBusinesses != null && local.rivalData.ownedBusinesses.Count > 0)
                 {
                     return RivalsHelper.GetRivalData(local.rivalData.id);

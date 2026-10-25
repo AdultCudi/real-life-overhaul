@@ -285,16 +285,8 @@ namespace RealLifeOverhaul.Economy
                 shop.File = file;
                 shop.Reg = reg;
                 shop.Name = string.IsNullOrEmpty(reg.BusinessName) ? "?" : reg.BusinessName;
-                try
-                {
-                    shop.Address = reg.Address;
-                    shop.District = reg.Neighborhood;
-                }
-                catch (Exception)
-                {
-                    shop.Address = null;    // a building that cannot be read is in no district
-                    shop.District = null;
-                }
+                shop.Address = reg.Address;
+                shop.District = GameRegistrations.District(reg);
                 shop.Income = Mathf.RoundToInt(CityEconomy.DistrictIncome(shop.District));
                 shop.Needs = LicenceRules.Needs(Is(type, FoodTypes), Is(type, AlcoholTypes), OpensLate(reg));
                 shop.Taste = Is(type, WellOffTypes) ? 1 : Is(type, PriceTypes) ? -1 : 0;

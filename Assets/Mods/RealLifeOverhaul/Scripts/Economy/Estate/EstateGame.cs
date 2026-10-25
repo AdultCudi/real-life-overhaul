@@ -470,9 +470,10 @@ namespace RealLifeOverhaul.Economy
             Address address = e.address;
             BuildingRegistration reg = BuildingHelper.GetBuildingRegistration(address);
             Building building = BuildingHelper.GetBuilding(address);
-            if (reg != null)
+            string district = GameRegistrations.District(reg);
+            if (district != null)   // a registration with no building is left as it is
             {
-                reg.buildingOwnerRivalId = !string.IsNullOrEmpty(rival) ? rival : RivalsHelper.GetRandomRivalForBuilding(reg.Neighborhood);
+                reg.buildingOwnerRivalId = !string.IsNullOrEmpty(rival) ? rival : RivalsHelper.GetRandomRivalForBuilding(district);
                 if (reg.RentedByPlayer && building != null)
                 {
                     reg.RentPerDay = building.GetBuildingDailyMarketRent();
@@ -509,7 +510,7 @@ namespace RealLifeOverhaul.Economy
             for (int i = 0; all != null && i < all.Count; i++)
             {
                 BuildingRegistration reg = all[i];
-                if (reg != null && GoingPublic.Mine(reg) && reg.HasValidAddress && reg.GetBuildingType() == OfficeType)
+                if (reg != null && GoingPublic.Mine(reg) && reg.HasValidAddress && GameRegistrations.BuildingType(reg) == OfficeType)
                 {
                     into.Add(reg);
                 }

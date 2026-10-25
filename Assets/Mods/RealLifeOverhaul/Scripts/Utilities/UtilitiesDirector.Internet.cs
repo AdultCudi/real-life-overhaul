@@ -169,7 +169,7 @@ namespace RealLifeOverhaul.Utilities
         {
             why = null;
             int today = UtilitiesGame.Today, monthDays = GameCalendar.MonthDays;
-            if (!InternetRules.Reaches(provider, place.Reg != null ? place.Reg.Neighborhood : null))
+            if (!InternetRules.Reaches(provider, GameRegistrations.District(place.Reg)))
             {
                 why = "reallife_net_no_reach";
                 return false;

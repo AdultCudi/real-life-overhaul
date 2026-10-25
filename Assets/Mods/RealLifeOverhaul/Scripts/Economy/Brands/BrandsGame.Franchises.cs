@@ -126,7 +126,7 @@ namespace RealLifeOverhaul.Economy.Brands
         // chain (a beaten rival takes its chain's shops with it).
         private static AiBusinessDefault Default(string type, BuildingRegistration reg)
         {
-            if (reg == null || reg.BuildingCached == null)
+            if (GameRegistrations.BuildingOf(reg) == null)
             {
                 return null;
             }

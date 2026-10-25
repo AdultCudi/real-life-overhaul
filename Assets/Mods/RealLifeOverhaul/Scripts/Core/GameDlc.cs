@@ -52,7 +52,7 @@ namespace RealLifeOverhaul
 
         public static bool Gated(BuildingRegistration registration)
         {
-            return registration != null && Gated(registration.BuildingCached);
+            return registration != null && Gated(GameRegistrations.BuildingOf(registration));
         }
 
         /// <summary>True when the game keeps the kind of boat behind a DLC. Reads the boat type's data, never ownership.</summary>

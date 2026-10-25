@@ -96,7 +96,7 @@ namespace RealLifeOverhaul.Uptown
                 {
                     continue;   // Uptown's own (the mod's streets), and the player's, neither let nor the game's
                 }
-                Building b = reg.BuildingCached;
+                Building b = GameRegistrations.BuildingOf(reg);
                 if (b == null || b.BuildingType != BuildingsRules.OfficeType || b.SpecialService != null || GameDlc.Gated(b))
                 {
                     continue;

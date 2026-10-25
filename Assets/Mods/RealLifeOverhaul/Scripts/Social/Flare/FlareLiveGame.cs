@@ -85,7 +85,8 @@ namespace RealLifeOverhaul.Flare
 
         private static bool Shop(BuildingRegistration reg)
         {
-            return reg != null && !reg.RentedByPlayer && reg.HasValidAddress && !string.IsNullOrEmpty(reg.BusinessName) && reg.businessTypeName != EmptyBusiness && !GameDlc.Gated(reg);
+            return reg != null && !reg.RentedByPlayer && reg.HasValidAddress && !string.IsNullOrEmpty(reg.BusinessName) && reg.businessTypeName != EmptyBusiness
+                   && GameRegistrations.Found(reg) && !GameDlc.Gated(reg);
         }
 
         public static FlareBiz Biz(BuildingRegistration reg, bool mine)
@@ -93,7 +94,7 @@ namespace RealLifeOverhaul.Flare
             Satisfaction s = reg.satisfaction;
             return new FlareBiz
             {
-                Place = FlareGame.Place(reg), Name = FlareGame.Name(reg), District = reg.Neighborhood, Niche = FlareCast.NicheOf(reg.businessTypeName),
+                Place = FlareGame.Place(reg), Name = FlareGame.Name(reg), District = GameRegistrations.District(reg), Niche = FlareCast.NicheOf(reg.businessTypeName),
                 Stars = s != null ? s.overall : -1, Mine = mine, Open = OpenHours(reg)
             };
         }

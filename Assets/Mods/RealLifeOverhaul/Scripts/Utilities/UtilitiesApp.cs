@@ -264,7 +264,7 @@ namespace RealLifeOverhaul.Utilities
                 box.Row("reallife_util_box_owed", UtilitiesText.Money(owed));
                 box.Row("reallife_util_box_month", UtilitiesText.Money(month));
                 box.Note(UtilitiesText.T("reallife_util_box_pick"));
-                box.Line(UtilitiesText.T("reallife_util_box_office", "office", _director.OfficeName()));
+                box.Line(UtilitiesText.T(UtilitiesRules.Where("reallife_util_box_office", _director.ByPhone), "office", _director.OfficeName()));
                 Meta.Guide.Point(box, GuideTitle);
                 return;
             }
@@ -276,9 +276,19 @@ namespace RealLifeOverhaul.Utilities
             box.Title(_director.NameOf(a));
             box.Chip(UtilitiesText.State(a, today), a.State == SupplyState.Cut ? CellTone.Red : a.State == SupplyState.Temporary ? CellTone.Yellow : CellTone.Green);
             box.Section("reallife_ibox_sec_now");
-            if (a.Service != Service.Internet && (a.State == SupplyState.Temporary || a.State == SupplyState.Cut))
+            AccountOffer offer = UtilitiesRules.Offer(a);
+            bool phone = _director.ByPhone, byPhone = phone && (offer == AccountOffer.Apply || offer == AccountOffer.Reconnect);
+            if (offer != AccountOffer.None)
             {
-                box.Line(UtilitiesText.T(a.State == SupplyState.Temporary ? "reallife_util_box_apply_temporary" : "reallife_util_box_apply_cut", "office", _director.OfficeName()));
+                box.Line(UtilitiesText.T(UtilitiesRules.Where(a.State == SupplyState.Temporary ? "reallife_util_box_apply_temporary" : "reallife_util_box_apply_cut", phone),
+                    "office", _director.OfficeName()));
+            }
+            if (byPhone)
+            {
+                // the desk's own words for what it costs: the phone line is the desk, reached from the app
+                int cost = _director.ApplicationCost(a, out int deposit, out int fee);
+                box.Line(UtilitiesText.T(cost > 0 ? "reallife_util_desk_apply_cost" : "reallife_util_desk_apply_free",
+                    "deposit", UtilitiesText.Money(deposit), "fee", UtilitiesText.Money(fee), "amount", UtilitiesText.Money(cost)));
             }
             if (a.Owed > 0)
             {
@@ -325,6 +335,22 @@ namespace RealLifeOverhaul.Utilities
                     if (!_director.Pay(a, UtilitiesGame.Today))
                     {
                         UtilitiesText.Toast(NotificationType.Warning, UtilitiesText.T("reallife_util_desk_no_cash"), 8f);
+                    }
+                    Refresh();
+                }));
+            }
+            if (byPhone)
+            {
+                InfoBox.Button(buttons, InfoBox.Positive, offer == AccountOffer.Reconnect ? "reallife_util_box_reconnect" : "reallife_util_box_apply", () => UiClone.Safe(() =>
+                {
+                    if (_director.ApplyByPhone(a, out string why))
+                    {
+                        UtilitiesText.Toast(NotificationType.Success, UtilitiesText.T("reallife_util_toast_applied", "service", UtilitiesText.Service(a.Service), "place", _director.NameOf(a),
+                            "day", UtilitiesText.Day(a.ConnectDay)), 10f);
+                    }
+                    else
+                    {
+                        UtilitiesText.Toast(NotificationType.Warning, UtilitiesText.T(why ?? "reallife_util_desk_not_now", "office", _director.OfficeName()), 8f);
                     }
                     Refresh();
                 }));

@@ -472,7 +472,7 @@ namespace RealLifeOverhaul.Faults
             for (int i = 0; i < save.BuildingRegistrations.Count; i++)
             {
                 BuildingRegistration reg = save.BuildingRegistrations[i];
-                if (reg == null || !GoingPublic.Mine(reg) || !reg.HasEstablishedBusiness)
+                if (reg == null || !GoingPublic.Mine(reg) || !reg.HasEstablishedBusiness || !GameRegistrations.Found(reg))
                 {
                     continue;
                 }

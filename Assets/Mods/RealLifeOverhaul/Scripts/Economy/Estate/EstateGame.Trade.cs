@@ -65,7 +65,8 @@ namespace RealLifeOverhaul.Economy
             for (int i = 0; all != null && i < all.Count; i++)
             {
                 BuildingRegistration reg = all[i];
-                if (reg != null && reg.HasValidAddress && (GoingPublic.Mine(reg) || reg.BuildingOwnedByPlayer) && !reg.BuildingCached.IsHamptonsHouse())
+                Building building = reg != null && reg.HasValidAddress && (GoingPublic.Mine(reg) || reg.BuildingOwnedByPlayer) ? GameRegistrations.BuildingOf(reg) : null;
+                if (building != null && !building.IsHamptonsHouse())
                 {
                     into.Add(reg);
                 }
