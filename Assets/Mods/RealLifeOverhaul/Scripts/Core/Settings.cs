@@ -449,8 +449,8 @@
         public static int JobPay = 100;                  // percent of what the job catalogue pays
         public static bool JobTaxiEasy = false;          // ride-hail passengers who mind braking, bumps and speeding less (TaxiComfortRules.Easier); off, the ride is judged as it always was
         public static bool Family = true;                // a partner who moves in, engagement and wedding, children, relatives
-        public static bool Utilities = true;             // power and water bills, the utilities office and the Utilities app
-        public static bool UtilitiesNetSpeed = true;     // ...internet speed counts for tech firms' work and online shops' orders; off, only having a connection does
+        public static bool Utilities = true;             // power, water and internet bills and plans, the utilities office and the Utilities app
+        public static bool UtilitiesNetSpeed = true;     // ...a connection's speed sets how fast tech firms work and how many orders a shop takes; off, only having one counts
         public static bool FamilyAtHome = true;          // the partner is shown as a character in the home
         public static bool FamilyWedding = true;         // rings, the proposal, planning and holding a wedding
         public static bool FamilyChildren = true;        // deciding to have children, pregnancy and adoption, growing up
