@@ -191,6 +191,10 @@ namespace RealLifeOverhaul.Street
         /// </summary>
         public static bool Written(StreetLine line, int data)
         {
+            if (Aged(line))
+            {
+                return true;
+            }
             if (data >= Texts.TextIntents.DataV5)
             {
                 return line == StreetLine.Waiting || line == StreetLine.DirAsk || line == StreetLine.NumberFull;
@@ -205,6 +209,12 @@ namespace RealLifeOverhaul.Street
                     return false;
             }
         }
+
+        /// <summary>
+        /// The answers to their age: written in every pack. No data version has a card for them, and one added to data v6
+        /// would change the contract the shipped packs were trained on; they wait for the next data version's card.
+        /// </summary>
+        public static bool Aged(StreetLine line) => line == StreetLine.AgeGive || line == StreetLine.AgePlayful || line == StreetLine.AgeCool || line == StreetLine.AgeAgain;
 
         private static readonly Regex Starts = new Regex(@"([.?]\s+)([a-z])", RegexOptions.CultureInvariant);
 

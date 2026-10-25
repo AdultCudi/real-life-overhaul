@@ -26,6 +26,7 @@ namespace RealLifeOverhaul.Street
         Work,         // after they said what they do: whether they like it (or, retired, whether they miss it)
         Thanks,       // after they showed the way or said what is good around here
         Bye,          // goodbye, as a choice of the round (the game's cancel key says it too)
+        Age,          // how old they are, asked as what they do is (after Bye, so no older choice's place or seed moves)
         Count
     }
 
@@ -57,6 +58,7 @@ namespace RealLifeOverhaul.Street
         WorkLikes, WorkMixed, WorkRetired,
         Welcome, GreetBack,
         NumberFull,   // they would give it, but the player's life has no room for anybody new (StreetRules.Number)
+        AgeGive, AgePlayful, AgeCool, AgeAgain,   // their age: plainly, after a tease, curtly to a question they find forward, or again
         Count
     }
 
@@ -104,6 +106,7 @@ namespace RealLifeOverhaul.Street
         public bool Flirted, Joked, Complimented;
         public int Cast = -1;      // their place in the social life once met
         public bool Told;          // the player told them their name today (they may use it)
+        public bool AgeTold;       // they said how old they are today: never asked again that day
         public readonly List<string> Lines = new List<string>(StreetLines.SaidMost);   // the written lines they said today, newest last: none is said twice
 
         /// <summary>Remembers a written line for the day, letting the oldest go past <see cref="StreetLines.SaidMost"/>.</summary>

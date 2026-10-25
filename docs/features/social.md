@@ -95,6 +95,26 @@ The slot keeps its number, so nothing else of the save changes shape: the first 
 Once all `SocialRules.MaxCast` (400) slots are taken and everybody is met, the acquaintance longest without a word who drifted away at least `SocialRules.DriftLoseDays` (60) days ago, and whom nothing holds, goes by themselves when somebody new is wanted (`SocialDirector.MakeRoom`, `SocialRules.LongestDrifted`), with a notification; not with "Relationships fade" off.
 With nobody to make room, the cast is full: a street talk that went well ends with "You seem to know half the city already" (`StreetLine.NumberFull`) and the game's notification says to lose touch with somebody first, and People says the life is full.
 
+## Asking somebody's age in the street (`StreetAsk.Age`)
+
+A player asked to ask people in the street how old they are, as they can ask what they do, rather than read it on the People page afterwards.
+Street talk offers "How old are you, if you don't mind me asking?" (or "Can I ask how old you are?", by the person's seed) as it offers what they do: from the start among the rest, and as a follow-up after what they do (after whether they like it), their name and their work (`StreetRules.FollowUp`). Typed words ask it too ("how old", "your age", "what year were you born": `StreetSay`). It is asked once a day (`StreetMemo.AgeTold`); asked again by typing, they repeat the number (`StreetLine.AgeAgain`).
+
+The answer always says the age, so it is never a refusal to be asked round again (`StreetRules.AgeLine`, `AgeRapport`):
+
+| who | answer | rapport |
+|---|---|---|
+| most people | plainly (`AgeGive`), or, the playful and the cheeky and anybody with a sense of humour once the talk is warm (score `AgeTeaseFrom`, 2), after making the player guess (`AgePlayful`) | +1 |
+| the careful and the envious (`StreetRules.AgeForward`), until the talk is warm (score `AgeForwardWarmAt`, 2) | shortly ("That's a bit forward. 41, if you must know.", `AgeCool`) | -1 |
+| ...once it is warm | plainly | 0 |
+| anybody cool to the player (score under `AgeCoolBelow`, -1) | shortly | 0 (-1 if they find it forward) |
+
+The number is the person's real age as the mod holds it: the figure's own (its look's age in days, `StreetGame.Age`, kept within the cast's 18 to 85), and for somebody the player already knows, the People page's (`StreetBridges.AgeOf`, `SocialTalk.AgeOf`). Met in the street, the age they gave is the one their People page shows: `StreetLinks.MeetInStreet` now makes the age true from the day they were met (`SocialPerson.AgeDay`), where a seat rolled on the first day used to add every birthday since.
+
+The answers are written lines in every RLO Texts pack (`StreetCards.Aged`): no data version has a card for them, and adding one to data v6 would change the contract the shipped packs were trained on. A card belongs to the next data version.
+
+Test: Options, Street talk, "Street talk: ask the nearest passer-by their age" (`StreetDirector.TestAge`) stops the nearest person within 8 m with time to talk, today's answer forgotten, and the blue button asks their age. The answer writes `Street talk check (age)`: the age said and how, and for somebody the player knows the People page's age, PASS or FAIL; swapping numbers afterwards writes the same check against their new People page.
+
 ## The relationship model (`SocialRules`)
 
 Per person: familiarity, affection, trust (0 to 100), today's mood, last contact, up to six memories, what they would like to do.
