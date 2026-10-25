@@ -252,7 +252,7 @@ namespace RealLifeOverhaul.Markets
             box.Line(MarketText.Fill("reallife_mkt_order_state", "state", StateWords(o), "lasts", LastsWords(o)));
             if (o.Why != OrderWhy.None && !o.IsOpen)
             {
-                box.Line(MarketText.Why(o.Why), CellTone.Red);
+                box.Line(MarketText.Why(o.Why, k), CellTone.Red);
             }
             if (o.Worked || o.Back)
             {
@@ -448,7 +448,7 @@ namespace RealLifeOverhaul.Markets
             }
             else
             {
-                box.Line(MarketText.Why(e.Why), CellTone.Red);
+                box.Line(MarketText.Why(e.Why, k), CellTone.Red);
             }
             Transform buttons = box.ButtonRow();
             Stock company = k;
@@ -616,7 +616,7 @@ namespace RealLifeOverhaul.Markets
         private static void Error(OrderWhy why, Stock k)
         {
             Notifications.Show(NotificationType.Error, "reallife_mkt_note_refused",
-                new Dictionary<string, string> { { "name", k != null ? k.Name : string.Empty }, { "why", MarketText.Why(why) } }, 8f, null, null, true, false);
+                new Dictionary<string, string> { { "name", k != null ? k.Name : string.Empty }, { "why", MarketText.Why(why, k) } }, 8f, null, null, true, false);
         }
     }
 }

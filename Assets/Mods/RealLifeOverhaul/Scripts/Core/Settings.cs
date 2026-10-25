@@ -151,6 +151,7 @@
         public const string MarketsLargeId = "markets_large";
         public const string MarketsReinvestId = "markets_reinvest";
         public const string MarketsDerivativesId = "markets_derivatives";
+        public const string MarketsHoldingId = "markets_holding";
         public const string VenturesLevelId = "ventures_level";
         public const string EconomyCompanyId = "economy_company";
         public const string EconomyCompanyLevelId = "economy_company_level";
@@ -489,6 +490,7 @@
         public static bool MarketsLarge = true;          // a large order is worked a slice a step, and a bond purchase may be a share of what the player is worth
         public static bool MarketsReinvest = true;       // the share of each dividend a holding is set to put back is bought into the same company at the next open
         public static bool MarketsDerivatives = true;    // the exchange prices raw materials; futures and options on the Futures tab
+        public static int MarketsHolding = 0;            // the most of one company the player may hold: 0 a tenth (the old rule), 1 a quarter, 2 half, 3 all of it (MarketCatalogue.HoldingCapBp)
         public static int VenturesLevel = 1;             // how demanding investors are: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore
         public static bool EconomyCompany = true;        // running a business (off: none of it runs and nothing is charged)
         public static int EconomyCompanyLevel = 1;       // how strict it is: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore
@@ -880,6 +882,7 @@
             MarketsLarge = Bool(modId, MarketsLargeId, MarketsLarge);
             MarketsReinvest = Bool(modId, MarketsReinvestId, MarketsReinvest);
             MarketsDerivatives = Bool(modId, MarketsDerivativesId, MarketsDerivatives);
+            MarketsHolding = Int(modId, MarketsHoldingId, MarketsHolding);
             VenturesLevel = Int(modId, VenturesLevelId, VenturesLevel);
             EconomyCompany = Bool(modId, EconomyCompanyId, EconomyCompany);
             EconomyCompanyLevel = Int(modId, EconomyCompanyLevelId, EconomyCompanyLevel);

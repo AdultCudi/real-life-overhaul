@@ -901,6 +901,9 @@ namespace RealLifeOverhaul
                     v => Settings.MarketsReinvest = v)
                 .AddToggle(Settings.MarketsDerivativesId, "reallife_mkt_drv_opt", Settings.MarketsDerivatives,
                     v => Settings.MarketsDerivatives = v)
+                .AddDropdown(Settings.MarketsHoldingId, "reallife_mkt_opt_holding",
+                    new[] { "reallife_mkt_opt_holding_tenth", "reallife_mkt_opt_holding_quarter", "reallife_mkt_opt_holding_half", "reallife_mkt_opt_holding_all" }, Settings.MarketsHolding,
+                    v => Settings.MarketsHolding = v)
                 .AddButton("reallife_mkt_test_open", () => Markets.MarketDirector.Instance?.TestOpen())
                 .AddButton("reallife_mkt_test_crisis", () => Markets.MarketDirector.Instance?.TestNews(true))
                 .AddButton("reallife_mkt_test_windfall", () => Markets.MarketDirector.Instance?.TestNews(false))
@@ -913,6 +916,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_mkt_drv_test_call", () => Markets.MarketDirector.Instance?.TestCall())
                 .AddButton("reallife_mkt_inv_test_work", () => Markets.MarketDirector.Instance?.TestWorkedDay())
                 .AddButton("reallife_mkt_inv_test_back", () => Markets.MarketDirector.Instance?.TestPutBack())
+                .AddButton("reallife_mkt_test_holding", () => Markets.MarketDirector.Instance?.TestHolding())
                 .AddButton("reallife_mkt_inv_test_roll", () => Markets.MarketDirector.Instance?.TestRollover())
                 .AddButton("reallife_lst_test_list", () => Markets.MarketDirector.Instance?.TestListing())
                 .AddButton("reallife_lst_test_results", () => Markets.MarketDirector.Instance?.TestOwnResults())

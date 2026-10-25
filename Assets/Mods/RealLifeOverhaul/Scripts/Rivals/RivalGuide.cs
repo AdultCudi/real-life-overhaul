@@ -53,7 +53,7 @@ namespace RealLifeOverhaul.Rivals
                 .Fact("rival_bid_after", () => Whole(RivalCatalogue.BidAfterStakeDays))
                 .Fact("rival_bid_rest", () => Whole(RivalCatalogue.BidRestDays))
                 .Fact("rival_threshold", () => (Markets.ListingCatalogue.TakeoverThresholdBp / 100).ToString(Inv) + "%")
-                .Fact("rival_held_most", () => (Markets.MarketCatalogue.HoldingShareBp / 100).ToString(Inv) + "%")
+                .Fact("rival_held_most", () => (System.Math.Min(Markets.MarketTrading.HoldingBp, Markets.MarketCatalogue.HoldingFloatBp) / 100).ToString(Inv) + "%")
                 .Fact("rival_outbid_share", () => Basis(RivalCatalogue.CounterShare[(int)RivalCounter.Outbid]))
                 .Fact("rival_poach_share", () => Basis(RivalCatalogue.CounterShare[(int)RivalCounter.Poach]))
                 .Fact("rival_press_share", () => Basis(RivalCatalogue.CounterShare[(int)RivalCounter.Press]))
