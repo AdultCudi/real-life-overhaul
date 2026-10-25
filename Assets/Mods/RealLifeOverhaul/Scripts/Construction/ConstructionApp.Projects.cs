@@ -362,6 +362,7 @@ namespace RealLifeOverhaul.Construction
                 box.Selector(2, (int)p.After, i => ConstructionText.T(i == 0 ? "reallife_bld_sel_keep" : "reallife_bld_sel_sell_flats"), i => Answer(_director.SetAfter(p, (AfterUse)i)));
             }
             WithRefitSelector(box, p);
+            FitSelector(box, p);
             if (p.Kind == ProjectKind.Refit || (p.Kind == ProjectKind.Rebuild && p.WithRefit))
             {
                 box.Note(ConstructionText.T(p.Kind == ProjectKind.Refit ? "reallife_bld_refit_ready_note" : "reallife_bld_refit_rebuild_note"));

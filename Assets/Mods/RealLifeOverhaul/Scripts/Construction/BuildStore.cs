@@ -161,6 +161,11 @@ namespace RealLifeOverhaul.Construction
             t.Append('|');
             Join(t, p.HireDays, p.HirePace, p.HireStages, p.HireFree ? 1 : 0);   // a hired builder's contract, after every field an older reader knows
             t.Append('|').Append(p.HirePaid.ToString(Inv)).Append('|').Append(p.HirePenalty.ToString(Inv));
+            if (p.FitDesign.Length > 0)
+            {
+                // Redevelopment's fields, after every field an older reader knows, and only when one is set: a record without them is as before.
+                t.Append('|').Append(Esc(p.FitDesign)).Append('|').Append(Esc(p.FitType));
+            }
         }
 
         /// <summary>Reads a line; null for one that is not this feature's.</summary>
@@ -522,6 +527,12 @@ namespace RealLifeOverhaul.Construction
             p.HireFree = r.I(0) == 1;
             p.HirePaid = Math.Max(0L, r.L(0L));
             p.HirePenalty = Math.Max(0L, r.L(0L));
+            p.FitDesign = r.S();
+            p.FitType = r.S();
+            if (p.FitDesign.Length == 0)
+            {
+                p.FitType = string.Empty;   // no design, nothing to install
+            }
             if (p.Hired && p.HirePace < BuildCatalogue.HirePaceLeast)
             {
                 p.HirePace = 1000;   // a contract whose pace was lost goes at the city's own

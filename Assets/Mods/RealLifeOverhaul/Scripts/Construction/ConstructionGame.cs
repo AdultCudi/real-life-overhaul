@@ -64,7 +64,7 @@ namespace RealLifeOverhaul.Construction
     /// own transaction call, the player's offices of the company's type, warehouses and buildings, the office's staff, a
     /// building type's value multiplier, addresses and doors, and the game's notifications. Nothing here keeps state.
     /// </summary>
-    internal static class ConstructionGame
+    internal static partial class ConstructionGame
     {
         private const string Warehouse = "ba:buildingtype_warehouse";
 

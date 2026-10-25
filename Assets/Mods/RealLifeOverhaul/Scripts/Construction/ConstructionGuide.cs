@@ -97,6 +97,10 @@ namespace RealLifeOverhaul.Construction
                 .Check("reallife_bld_test_refit", () => ConstructionDirector.TestRefitNow(), "Renovation check (renovate the nearest shop of yours now)", RunPlace.Here)
                 .Check("reallife_bld_test_refit_tender", () => ConstructionDirector.TestRefitTenderNow(), "Renovation check (a business's refit tender now)", RunPlace.Here)
                 .Check("reallife_bld_test_show_visit", () => ConstructionDirector.TestShowVisitNow(), "Show flats check (into the show flat now)", RunPlace.Outdoors)
+                .Check("reallife_bld_test_refurnish", () => ConstructionDirector.TestRefurnishNow(),
+                    "Redevelopment check (refurnish your nearest unit with one of the game's designs now)", RunPlace.Here)
+                .Check("reallife_bld_test_city_refurnish", () => ConstructionDirector.TestCityRefurnishNow(),
+                    "Redevelopment check (a business of the city's refitted by a rival and furnished anew now)", RunPlace.Here)
                 .Test("reallife_bld_test_lot", "reallife_bld_test_company", "reallife_bld_test_licence", "reallife_bld_test_plans", "reallife_bld_test_planning",
                     "reallife_bld_test_council", "reallife_bld_test_stage", "reallife_bld_test_inspection", "reallife_bld_test_deliveries", "reallife_bld_test_handover",
                     "reallife_bld_test_opening", "reallife_bld_test_tender", "reallife_bld_test_award", "reallife_bld_test_developers", "reallife_bld_test_poach",

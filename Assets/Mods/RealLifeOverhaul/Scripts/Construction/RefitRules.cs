@@ -62,5 +62,44 @@ namespace RealLifeOverhaul.Construction
             TenderBid won = bids[Math.Max(0, TenderRules.Winner(bids, count))];
             return new RefitQuote { Rival = won.Bidder, Price = won.Price / 10L * 10L, Days = Math.Max(1, won.Days), Hours = hours };
         }
+
+        // ------------------------------------------------------------------ refurnishing with a design of the game's
+
+        /// <summary>
+        /// What the furnishing costs at the handover, as the game's own installation contract works it out
+        /// (InteriorInstallationFirmContract.GetInstallationPrice): the firm's fee for the unit's size and the design's pieces at
+        /// the game's market prices, less what the pieces already there sell for; nothing when they sell for more, as the game
+        /// then charges nothing and pays nothing.
+        /// </summary>
+        public static long FurnishPrice(long fee, long pieces, long sold)
+        {
+            long price = Math.Max(0L, fee) + Math.Max(0L, pieces) - Math.Max(0L, sold);
+            return price > 0L ? price : 0L;
+        }
+
+        /// <summary>
+        /// The design a refit's selector stands for, of <paramref name="designs"/> the firm lists: 0 keeps the furniture there and
+        /// renews the finishes (-1), 1 and on are the firm's designs in its order (0 and on); a pick past the list keeps the furniture.
+        /// </summary>
+        public static int DesignAt(int pick, int designs)
+        {
+            return pick <= 0 || pick > designs ? -1 : pick - 1;
+        }
+
+        /// <summary>
+        /// The layout an AI business of the city's wears after its refit: one of the game's layouts for its type at its size other
+        /// than the one it has (<paramref name="current"/>, or -1 when it has none of the list), drawn from the save's seed and the
+        /// tender, the same every time it is asked. -1 when there is no other.
+        /// </summary>
+        public static int AiLayout(int seed, int tender, int count, int current)
+        {
+            int others = current >= 0 && current < count ? count - 1 : count;
+            if (others <= 0)
+            {
+                return -1;
+            }
+            int pick = (int)((uint)BuildRandom.Mix(seed, tender * 7 + 3) % (uint)others);
+            return current >= 0 && current < count && pick >= current ? pick + 1 : pick;
+        }
     }
 }

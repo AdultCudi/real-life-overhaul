@@ -186,6 +186,9 @@ namespace RealLifeOverhaul.Construction
         public long HirePenalty;                     // what it paid back at the handover for being late
         public bool HireFree;                        // a test's contract: nothing is paid either way
 
+        public string FitDesign = string.Empty;      // a refit's new furnishing: one of the game's interior designs for the unit, installed at the handover; empty keeps the furniture
+        public string FitType = string.Empty;        // the firm's folder of that design: the business's type, or the game's empty business for a home or an empty unit
+
         public bool Live => Stage != ProjectStage.Finished && Stage != ProjectStage.Abandoned;
 
         /// <summary>True for the player's own building put up by one of the city's builders under contract (a refit by one is not).</summary>

@@ -445,7 +445,8 @@ namespace RealLifeOverhaul.Construction
                     LandmarkAwarded(t.Lot, won.Bidder, won.Price, won.Days);   // the landmarks' timetable runs the rival's works and hands it over
                     break;
                 case TenderSource.Refit:
-                    StartWorksSite(t.Street, t.Number, RefitRules.Works, false, won.Bidder, t.Hours, out _);   // the hoarding goes up at the business's front
+                    // The hoarding at the business's front; its site kept, as its handover refurnishes the business.
+                    t.SiteId = StartWorksSite(t.Street, t.Number, RefitRules.Works, false, won.Bidder, t.Hours, out _);
                     break;
                 case TenderSource.Public:
                     if (Lot(t.Lot, out LotView lot) && SiteCount() < BuildCatalogue.SitesMost)
@@ -547,6 +548,10 @@ namespace RealLifeOverhaul.Construction
                 int due = PlanningRules.AfterWorkingDays(Math.Max(0, t.Closes) / 24, Math.Max(1, t.WinningDays));
                 RivalNews(t.Winner, day <= due ? RivalFinished : RivalLate, WeightOf(t));
                 Logger?.Info("Construction: " + ConstructionText.T(BuildCatalogue.RivalKeys[t.Winner]) + " handed over tender " + t.Id + "'s works on day " + day + " (due " + due + ").");
+                if (t.Source == TenderSource.Refit)
+                {
+                    AiRefurnish(t.Street, t.Number, t.Id);   // the business wears its new interior: the city's side of a refit
+                }
                 return;
             }
         }

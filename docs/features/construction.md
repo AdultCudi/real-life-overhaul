@@ -118,7 +118,8 @@ ConstructionDirector  the state and its timing: a second's look, the hour's and 
   .App                the app on the phone, its notices, a site's notice board, the ribbon's panel at the place
   .Tests              the options page's test entries
   .ShowFlats          a block's show flat: its design, floor, viewings, sales and days
-  .Refits             a business's refit by the company or a contractor, its closure, its handover, businesses' refit tenders
+  .Refits             a unit's refit by the company or a contractor, its closure, its furnishing by the game's installers, its handover,
+                      businesses' refit tenders and their new layouts
   .Hire               a builder of the city's hired for the player's building: the quotes, the contract, its stages and
                       inspections, the stage payments and the settling up at the handover
   .HireTests          the hired builder's tests, each a public static method
@@ -128,6 +129,9 @@ ConstructionDirector  the state and its timing: a second's look, the hour's and 
   .SalesTests         the show flats' and renovations' tests, each a public static method
 ShowFlatPlace         the show flat's place on a floor (the floors core), on its design's apartment structure
 ConstructionGame      the one file that reads or changes the game: clock, prices, money, the player's offices, buildings and staff
+  .Units             the player's units of every kind, the game's interior designs for one, their price and the game's own
+                      installation contract, an AI business's layouts
+ConstructionDirector.RedevelopTests   redevelopment's test entries, each a public static method
 ConstructionType      the Construction Company business type (ModdingAPI.RegisterModBusinessType), furnished as the game's design studio
 ConstructionApp (.*)  the app in the game's own frame (GameUi.AppShell): Overview, Land, Projects, Tenders, Crews, Company, Rivals;
                       .ShowFlat a block's show flat on its money page, .Refit the businesses and their refits
@@ -287,6 +291,8 @@ A block of homes sold off plan (a plot of homes at its Ready or Building stage, 
 - **At the handover** Interiors refits it (`InteriorDirector.Refit`): wear to nothing and new fittings that add 6, 10 or 14 points to the decor score by the work's grade (a contractor's good; the company's by the work's quality, a grade better as a renovation company), fading as the finishes wear (`InteriorRules.RefitLift`). Kept in the save's line `reallife:interiors_refits`.
 - **An exterior refresh** is the construction game's rebuild of a building the player owns (Land, **Plan a rebuild**): the new look through the rebuild's site, where the building allows it. A rebuild can carry the interior refit too (**Refit the business inside too**): the business closes for its last stage and is refitted at the handover. The City Hall shopfront refit (Civic) stays the shopfront's: no interior, no closure.
 - **Tenders.** Businesses of the city's put their refits out to tender every 5 to 9 days (`TenderSource.Refit`), valued at the programme's refit rate; the renovation speciality's work. A rival's win puts the hoarding up at the business.
+- **Refurnishing** (the owner, 25 Oct 2026: "Can we also add refurnishing"). Any unit the player rents or owns and uses, a home or an empty unit as well as a business, anywhere in the city (`ConstructionGame.Units`), can be refitted, and its refit can carry one of the game's own interior designs for the unit: the designs the game's interior installation firms list for its building type, size and business type (`InteriorInstallationFirmHelper`, sorted by name so every machine lists them alike), picked on the refit's selector after **Keep the furniture**, and changeable on the project's page until the handover (`SetFitDesign`). At the handover the design goes in through the game's own installation contract (`InteriorInstallationFirmContract`, the firm of the building's type, dated that day, `DoInstallation`): the game charges its fee for the unit's size and the design's pieces at its market prices, less what the old pieces sell for (`RefitRules.FurnishPrice`, shown beforehand), lays the design and brings the business's schedule, capacity and tasks up to date; with the player inside the unit it waits for the game's next day, as any contract of the game's does. A business is still closed for the works and refitted by Interiors; a home or an empty unit has its finishes renewed. The project keeps the design and its folder at the end of its record (`FitDesign`, `FitType`, written only when set).
+- **The city's side of refurnishing.** A business of the city's refitted by tender, whoever wins it (a rival's works handed over, `RivalHanded`, or the player's company's contract, `Handover`), wears another of the game's own layouts for its type at its size from then on (`AiRefurnish`: the layouts of its type's AI businesses of no chain that the game has at its size, `RefitRules.AiLayout` from the save's seed and the tender, never its own; a chain's store keeps its branded interior). An AI business is not closed by the mod for its works: the game gives the player no switch to open one, so a closure left behind by a removed mod would never end. Never in a Going Public session, so every machine's businesses stay alike.
 
 ### The city around it
 
@@ -365,6 +371,13 @@ Each works from anywhere, writes one `Show flats check (...)` or `Renovation che
 - **Renovation: renovate the nearest shop of yours now**: the player's nearest business refitted (a contractor's, for nothing) and handed over at once, the wear and decor before and after in the line; **a refit under way at your nearest business now** leaves it running, the hoarding up and the business closed; **a business's refit tender now**.
 - Each joins the city expansion's test run with one `.Check(...)` in `ConstructionGuide` (its button too): all where the player stands before the load, but **into the show flat** out of doors; the construction game's own put back at the run's end undoes them.
 - The construction game's **put everything back** also puts back the interiors a test refitted (`InteriorDirector.TestKeep`, `TestPutBack`), lets a closed business open and lets the show flat's floor go.
+
+### Redevelopment's tests
+
+Each writes one `Redevelopment check (...)` line ending PASS or FAIL, says so in a notice (a failure's notice says why), is a public static method of `ConstructionDirector` (`ConstructionDirector.RedevelopTests.cs`) and joins the city expansion's test run with one `.Check(...)` in `ConstructionGuide`:
+
+- **Renovation: refurnish your nearest unit with one of the game's designs now** (`TestRefurnishNow`): the player's nearest unit of any kind refitted by the city's best contractor for nothing and furnished with the first of the firm's designs for it through the game's own contract (its price given back first, so the test costs nothing), handed over at once; the line counts the pieces laid against the design's, or says the installers wait for the player to step out.
+- **Renovation: a business of the city's refitted by a rival and furnished anew now** (`TestCityRefurnishNow`): a business of the city's with another layout of its kind put out to tender, won by a rival with no bid of the player's, handed over at once; the line names its layout before and after. Refused in a Going Public session.
 
 ### Hiring a builder's tests
 

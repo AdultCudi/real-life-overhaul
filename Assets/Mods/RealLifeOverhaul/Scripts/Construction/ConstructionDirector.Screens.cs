@@ -126,7 +126,7 @@ namespace RealLifeOverhaul.Construction
                 Answer(made > 0 ? "reallife_bld_answer_refit_planned" : why);
                 return;
             }
-            ConstructionGame.Business(street, number, out BusinessView b);
+            ConstructionGame.Unit(street, number, out UnitView b);
             RefitQuote q = QuoteFor(b);
             LanguageChangeEventDataHolder header = "reallife_bld_confirm_refit".Localize();
             LanguageChangeEventDataHolder body = "reallife_bld_confirm_refit_body".Localize(new Dictionary<string, string>

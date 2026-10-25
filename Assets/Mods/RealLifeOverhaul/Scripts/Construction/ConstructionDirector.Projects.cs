@@ -1006,6 +1006,10 @@ namespace RealLifeOverhaul.Construction
             if (p.Kind == ProjectKind.Contract)
             {
                 ContractPaid(p, true);
+                if (p.Source == TenderSource.Refit)
+                {
+                    AiRefurnish(p.Street, p.Number, p.Tender);   // the client's business wears its new interior, as after a rival's refit
+                }
             }
             if (!hired)
             {

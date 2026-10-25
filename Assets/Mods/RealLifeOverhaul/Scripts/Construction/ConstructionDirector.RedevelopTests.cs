@@ -1,0 +1,224 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using UI.Notification;
+using UnityEngine;
+
+namespace RealLifeOverhaul.Construction
+{
+    /// <summary>
+    /// Redevelopment's test entries (Options > Tests), one for each part of it, the player's side and the city's. Each works from
+    /// anywhere at any time: it brings forward what it needs, writes one line, "Redevelopment check (...)", ending PASS or FAIL,
+    /// and says so in a notice (a failure's notice says why). The state before the first test is kept for the construction
+    /// game's own "put back". Each test's work is a public static method, so a test runner can call it with no press of its own.
+    /// </summary>
+    public sealed partial class ConstructionDirector
+    {
+        private const string RedoCheck = "Redevelopment check (";   // each line goes on with its test's name and ")"
+
+        private readonly List<UnitView> _testUnits = new List<UnitView>(8);
+
+        // The director when a redevelopment test may run; otherwise the refusal said and a FAIL line written.
+        private static ConstructionDirector RedoDirector(string test, bool refits)
+        {
+            ConstructionDirector d = Instance;
+            if (d == null || !ModState.Loaded || SaveGameManager.Current == null || !d._loaded)
+            {
+                TestRefusals.Tell(Logger, RedoCheck + test + ")", TestRefusal.NotLoaded);
+                Logger?.Warn(RedoCheck + test + "): the construction game has not read this save yet: FAIL.");
+                return null;
+            }
+            if (!d.Running || (refits && !Settings.ConstructionRenovations))
+            {
+                TestRefusals.Tell(Logger, RedoCheck + test + ")", TestRefusal.FeatureOff);
+                Logger?.Warn(RedoCheck + test + "): " + (refits ? "renovations are" : "the construction game is") + " off in the options: FAIL.");
+                return null;
+            }
+            return d;
+        }
+
+        // A test passed: its line, and a notice saying so that opens the app on what it made.
+        private void Passed(string test, string labelKey, string line, int tab, int pick)
+        {
+            Logger?.Warn(RedoCheck + test + "): " + line + ": PASS.");
+            Changed();
+            Notifications.Show(NotificationType.Success, "reallife_bld_test_passed", new Dictionary<string, string>(1) { { "test", ConstructionText.T(labelKey) } }, 8f, null,
+                Guard.Wrap(() => Open(tab, pick)), true, false);
+        }
+
+        // ------------------------------------------------------------------ refurnishing
+
+        /// <summary>
+        /// Test: the player's nearest unit (a business, a home or an empty unit) refitted now by the city's best contractor for
+        /// nothing, furnished with the first of the game's designs for it through the game's own installation contract (its price
+        /// given back first, so the test costs nothing), and handed over at once.
+        /// </summary>
+        public static bool TestRefurnishNow()
+        {
+            const string test = "refurnish your nearest unit with one of the game's designs now";
+            ConstructionDirector d = RedoDirector(test, true);
+            if (d == null)
+            {
+                return false;
+            }
+            try
+            {
+                return d.RefurnishNow(test);
+            }
+            catch (Exception e)
+            {
+                d.Fault("a test (" + test + ")", e);
+                return false;
+            }
+        }
+
+        private bool RefurnishNow(string test)
+        {
+            if (!NearestUnit(out UnitView u, out float metres))
+            {
+                return Failed(RedoCheck, test, "reallife_bld_test_no_unit", "the player rents or owns no unit with a door on the street");
+            }
+            ProjectFile live = _state.AtBuilding(u.Street, u.Number);
+            if (live != null)
+            {
+                return Failed(RedoCheck, test, "reallife_bld_answer_building_busy", u.Name + " has works under way already (project " + live.Id + ")");
+            }
+            DesignsFor(u, _designs);
+            string design = _designs.Count > 0 ? _designs[0] : null;
+            long price = 0L;
+            if (design != null)
+            {
+                FurnishCost(u, design, out price, out _, out _, out _);
+            }
+            BeforeTest();
+            int id = ContractorRefit(u.Street, u.Number, true, design, out string why);
+            ProjectFile p = _state.Project(id);
+            if (p == null)
+            {
+                return Failed(RedoCheck, test, why ?? "reallife_bld_answer_site_refused", "no refit could start at " + u.Name + " (" + why + ")");
+            }
+            if (price > 0L)
+            {
+                ConstructionGame.Give(price, "reallife_transaction_bld_test_furnish", u.Name);   // the game's installers take it at the handover: the test costs nothing
+            }
+            bool handed = p.SiteId > 0 && FinishSite(p.SiteId);
+            if (!handed && p.Stage == ProjectStage.Building)
+            {
+                Handover(p, ConstructionGame.Day);   // the site was gone from the programme: handed over all the same
+                handed = true;
+            }
+            bool waiting = design != null && ConstructionGame.InstallationWaiting(u.Street, u.Number);
+            ConstructionGame.PiecesOf(u, design, out int inUnit, out int inDesign);
+            bool laid = design == null || waiting || (inDesign >= 0 && inUnit == inDesign);
+            string where = u.Name + ", " + metres.ToString("0", CultureInfo.InvariantCulture) + " m away (" + (u.Trading ? "a business" : "a home or an empty unit") + ")";
+            string what = design == null ? "the installers have no design for its kind and size: its finishes renewed, its furniture kept"
+                : waiting ? "the game's own installers lay the design " + design + " once the player is out of it (their contract waits for the next day)"
+                : "furnished as the game's design " + design + ": " + inUnit + " piece(s) in it, the design's " + inDesign;
+            if (!(handed && p.Stage == ProjectStage.Finished && laid))
+            {
+                Logger?.Warn(RedoCheck + test + "): " + where + ": project " + p.Id + " at " + p.Stage + "; " + what + ": FAIL.");
+                return Failed(RedoCheck, test, "reallife_bld_test_failed_log", "the refit or its furnishing did not finish");
+            }
+            Passed(test, "reallife_bld_test_refurnish", where + ", refitted now by contractor " + p.Contractor + " (grade " + p.Grade + "); " + what, TabProjects, p.Id);
+            return true;
+        }
+
+        // The player's unit nearest to them, or false.
+        private bool NearestUnit(out UnitView nearest, out float metres)
+        {
+            nearest = default(UnitView);
+            metres = 0f;
+            RefitUnits(_testUnits);
+            Vector3 player = ConstructionGame.Player;
+            float best = float.MaxValue;
+            for (int i = 0; i < _testUnits.Count; i++)
+            {
+                Vector3 d = _testUnits[i].Door - player;
+                d.y = 0f;
+                if (d.sqrMagnitude < best)
+                {
+                    best = d.sqrMagnitude;
+                    nearest = _testUnits[i];
+                }
+            }
+            _testUnits.Clear();
+            metres = best < float.MaxValue ? Mathf.Sqrt(best) : 0f;
+            return best < float.MaxValue;
+        }
+
+        /// <summary>
+        /// Test: a business of the city's (one the game has another layout of its kind for at its size) puts its refit out to tender
+        /// now, a rival wins it with no bid of the player's, the hoarding goes up and its works are handed over at once: the
+        /// business wears another of the game's layouts. The city's side of refurnishing; never in a Going Public session.
+        /// </summary>
+        public static bool TestCityRefurnishNow()
+        {
+            const string test = "a business of the city's refitted by a rival and furnished anew now";
+            ConstructionDirector d = RedoDirector(test, true);
+            if (d == null)
+            {
+                return false;
+            }
+            try
+            {
+                return d.CityRefurnishNow(test);
+            }
+            catch (Exception e)
+            {
+                d.Fault("a test (" + test + ")", e);
+                return false;
+            }
+        }
+
+        private bool CityRefurnishNow(string test)
+        {
+            if (GoingPublic.InSession)
+            {
+                return Failed(RedoCheck, test, "reallife_bld_test_session_city", "in a Going Public session the city's businesses keep their interiors on every machine");
+            }
+            int day = ConstructionGame.Day;
+            BuildRandom random = BuildRandom.Of(_state.Seed, day, 919);
+            BuildingView b = default(BuildingView);
+            bool found = false;
+            for (int k = 0; k < 32 && !found; k++)
+            {
+                if (ConstructionGame.Client(random.Range(0, 100000), out BuildingView c) && ConstructionGame.AiLayouts(c.Street, c.Number, _layouts, out int current)
+                    && RefitRules.AiLayout(0, 0, _layouts.Count, current) >= 0)
+                {
+                    b = c;
+                    found = true;
+                }
+            }
+            _layouts.Clear();
+            if (!found)
+            {
+                return Failed(RedoCheck, test, "reallife_bld_test_no_city_business", "no business of the city's that the game has another layout of its kind for was found");
+            }
+            string before = ConstructionGame.LayoutOf(b.Street, b.Number);
+            BeforeTest();
+            int now = day * 24 + ConstructionGame.Hour;
+            var t = new TenderFile
+            {
+                Id = _state.NewId(), Source = TenderSource.Refit, CivicKind = RefitRules.Works, Street = b.Street, Number = b.Number,
+                Use = BuildCatalogue.UseOf(b.Type) >= 0 ? (BuildUse)BuildCatalogue.UseOf(b.Type) : BuildUse.Shops, Area = Math.Max(1, b.TotalSqm), Opened = now, Closes = now
+            };
+            t.Hours = RefitRules.Hours(t.Area);
+            t.Value = RefitRules.Value(t.Hours, ConstructionGame.Prices);
+            AddTender(t);
+            Award(t, day);   // the player's company has no bid in it: one of the city's builders wins
+            if (t.Winner < 0 || t.SiteId <= 0 || !FinishSite(t.SiteId))
+            {
+                return Failed(RedoCheck, test, "reallife_bld_test_failed_log", "tender " + t.Id + " went to " + t.Winner + " and its site " + t.SiteId + " could not be handed over");
+            }
+            string after = ConstructionGame.LayoutOf(b.Street, b.Number);
+            if (string.IsNullOrEmpty(after) || after == before)
+            {
+                Logger?.Warn(RedoCheck + test + "): " + b.Name + " kept its layout " + before + " after tender " + t.Id + ": FAIL.");
+                return Failed(RedoCheck, test, "reallife_bld_test_failed_log", "the business kept its layout");
+            }
+            Passed(test, "reallife_bld_test_city_refurnish", b.Name + ", tender " + t.Id + " won by " + ConstructionText.T(BuildCatalogue.RivalKeys[t.Winner]) + " and handed over now: its layout "
+                   + before + " -> " + after, TabTenders, t.Id);
+            return true;
+        }
+    }
+}

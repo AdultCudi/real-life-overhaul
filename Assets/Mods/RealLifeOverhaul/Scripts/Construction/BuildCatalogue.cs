@@ -18,7 +18,7 @@ namespace RealLifeOverhaul.Construction
         Plot = 0,       // a new building on an Uptown lot the player owns
         Rebuild = 1,    // an old building of the player's, rebuilt behind the game's scaffolding
         Contract = 2,   // works won in a tender: the city's, a business's or a public building
-        Refit = 3       // the interior of a business of the player's refitted, by their crews or a contractor of the city's
+        Refit = 3       // the interior of a unit of the player's refitted, by their crews or a contractor of the city's, furnished anew or not
     }
 
     /// <summary>Where a project stands, from the plans to the keys. Saved as a number.</summary>
