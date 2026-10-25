@@ -62,7 +62,7 @@ namespace RealLifeOverhaul
                 SiteBuilders.Owns = site => Director != null && Director.Owns(site.Id);
                 SiteBuilders.Shown = site => Director == null || Director.Shown(site.Id);
                 SiteBuilders.Name = site => Director != null ? Director.NoticeName(site.Id) : null;
-                SiteBuilders.Handed = site => Director?.SiteHanded(site.Id);
+                SiteBuilders.Handed = (site, day) => Director?.SiteHanded(site.Id, day);
                 SiteBuilders.Started = site => Director?.SiteStarted(Facts(site));
                 SiteBuilders.Design = site => Director != null ? Director.DesignFor(site.Id) : null;
                 SiteBuilders.Tag = site => Director != null ? Director.TagFor(site.Id) : null;
@@ -96,6 +96,7 @@ namespace RealLifeOverhaul
                 ConstructionBridges.StartWorks = StartWorks;
                 ConstructionBridges.Site = Site;
                 ConstructionBridges.SetContractor = SetContractor;
+                ConstructionBridges.SiteDone = SiteDone;
                 ConstructionBridges.FinishSite = id => Works() is CivicWorks w && w.Finish(w.Find(id), TimeHelper.CurrentDay);
                 ConstructionBridges.DropSite = id => Works() is CivicWorks w && w.Drop(w.Find(id));
                 ConstructionBridges.SiteCount = () => Works() is CivicWorks w ? w.State.Sites.Count : 0;
@@ -197,6 +198,7 @@ namespace RealLifeOverhaul
                 ConstructionBridges.StartWorks = null;
                 ConstructionBridges.Site = null;
                 ConstructionBridges.SetContractor = null;
+                ConstructionBridges.SiteDone = null;
                 ConstructionBridges.FinishSite = null;
                 ConstructionBridges.DropSite = null;
                 ConstructionBridges.SiteCount = null;
@@ -276,12 +278,13 @@ namespace RealLifeOverhaul
 
             // ------------------------------------------------------------------ the programme asks the builders
 
-            private static float Hours(SiteState site, float hours)
+            // at: the hour the programme works (day x 24 + hour), which a sleep's catching up works some time after.
+            private static float Hours(SiteState site, float hours, long at)
             {
                 try
                 {
                     ConstructionDirector d = Director;
-                    return d != null && site != null ? d.WorkOn(site.Id, site.Done, site.Needed, hours) : hours;
+                    return d != null && site != null ? d.WorkOn(site.Id, site.Done, site.Needed, hours, (int)(at / 24), (int)(at % 24)) : hours;
                 }
                 catch (Exception e)
                 {
@@ -326,14 +329,10 @@ namespace RealLifeOverhaul
                         why = "the city's construction sites are off";
                         return 0;
                     }
-                    SiteState site = works.StartPlot(middle, yaw, width, depth, storeys, TimeHelper.CurrentDay, out why);
+                    SiteState site = works.StartPlot(middle, yaw, width, depth, storeys, TimeHelper.CurrentDay, out why, hours);   // set out with its builder's hours, as its line says
                     if (site == null)
                     {
                         return 0;
-                    }
-                    if (hours > 0)
-                    {
-                        site.Needed = hours;
                     }
                     site.Contractor = Mathf.Clamp(contractor, 0, CivicCatalogue.Contractors.Length - 1);
                     return site.Id;
@@ -393,6 +392,25 @@ namespace RealLifeOverhaul
                 catch (Exception e)
                 {
                     Fault("ConstructionLinks.SetContractor", e);
+                }
+            }
+
+            // A site set out again for a project starts where its works had reached, short of its end (the programme hands over
+            // a finished one, which only its works may do).
+            private static void SiteDone(int id, float done)
+            {
+                try
+                {
+                    SiteState site = Works()?.Find(id);
+                    if (site != null)
+                    {
+                        site.Done = Mathf.Clamp(done, 0f, site.Needed * 0.999f);
+                        Works()?.SitesChanged?.Invoke();   // what stands in the street follows its stage
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.SiteDone", e);
                 }
             }
 

@@ -239,6 +239,21 @@ namespace RealLifeOverhaul.Construction
             }
         }
 
+        internal static void SetSiteDone(int site, float done)
+        {
+            try
+            {
+                if (!Down("SiteDone"))
+                {
+                    ConstructionBridges.SiteDone?.Invoke(site, done);
+                }
+            }
+            catch (Exception e)
+            {
+                Faulty("SiteDone", e);
+            }
+        }
+
         internal static bool FinishSite(int site)
         {
             try

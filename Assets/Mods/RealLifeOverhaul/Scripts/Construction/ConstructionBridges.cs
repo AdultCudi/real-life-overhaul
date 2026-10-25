@@ -138,6 +138,9 @@ namespace RealLifeOverhaul.Construction
         /// <summary>A site's contractor set (a rival who won its tender). Default: nothing.</summary>
         public static Action<int, int> SetContractor;
 
+        /// <summary>A site's works set to so many of its hours done (a project's site set out again where its works had reached). Default: nothing.</summary>
+        public static Action<int, float> SiteDone;
+
         /// <summary>A site handed over now, its works done. False for one not in the programme. Default: no.</summary>
         public static Func<int, bool> FinishSite;
 
@@ -376,6 +379,7 @@ namespace RealLifeOverhaul.Construction
             StartWorks = null;
             Site = null;
             SetContractor = null;
+            SiteDone = null;
             FinishSite = null;
             DropSite = null;
             SiteCount = null;

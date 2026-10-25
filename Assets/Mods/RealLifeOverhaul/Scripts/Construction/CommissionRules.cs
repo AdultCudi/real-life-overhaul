@@ -4,10 +4,11 @@ namespace RealLifeOverhaul.Construction
 {
     /// <summary>
     /// The player as a client who hires one of the city's eight builders to put up their building: each builder's quote (its
-    /// bid as on a tender, the works priced off the plans' estimate), the contract's money (a deposit, a payment at each
-    /// inspection passed, the retention at the handover, a penalty for each day late), the pace its crews keep and the quality
-    /// the inspector sees in its work. The quotes stand for the week, drawn from the save's seed, the project and the week, so
-    /// every machine and every look gives the same. Game-free, nothing allocated but the caller's array.
+    /// bid as on a tender, the works priced off the plans' estimate), its days and its due day from the site's own schedule,
+    /// the contract's money (a deposit, a payment at each inspection passed, the retention at the handover, a penalty for each
+    /// day late), the pace its crews keep and the quality the inspector sees in its work. The quotes stand for the week, drawn
+    /// from the save's seed, the project and the week, so every machine and every look gives the same. Game-free, nothing
+    /// allocated but the caller's array.
     /// </summary>
     public static class CommissionRules
     {
@@ -20,6 +21,39 @@ namespace RealLifeOverhaul.Construction
                 into[r] = TenderRules.RivalBid(seed, salt, r, value, days, need, busy != null && r < busy.Length ? busy[r] : 0);
             }
             return count;
+        }
+
+        /// <summary>
+        /// The working days a site's hours take at the city's own pace in the city's own working day (its hours and speed under
+        /// the permits policy, -1 to 1): what each builder bids its days of works around. (A tender's ten hours a working day knew
+        /// nothing of the code, so a strict one's shorter, slower days made every builder late.)
+        /// </summary>
+        public static int UsualDays(int hours, int permits)
+        {
+            return Math.Max(1, (int)Math.Ceiling(Math.Max(1, hours) / Math.Max(0.1, SiteRules.DayHours(permits)) - 1e-9));
+        }
+
+        /// <summary>The pace (thousandths of the city's) a builder's bid needs: the site's usual days of works got through in the days it bid.</summary>
+        public static int Promised(int usualDays, int bidDays)
+        {
+            return BuildCatalogue.Clamp(Math.Max(1, usualDays) * 1000 / Math.Max(1, bidDays), BuildCatalogue.HirePaceLeast, BuildCatalogue.HirePaceMost);
+        }
+
+        /// <summary>
+        /// A builder's quote as the client reads it: the working days from a working day's start to the handover of a site of
+        /// these hours at the pace its bid needs, each inspection's wait in them, by the site's own schedule
+        /// (<see cref="SiteRules.HandoverDay"/>). The same however late in the week it is read.
+        /// </summary>
+        public static int Days(ProjectKind kind, int hours, int pace, int permits)
+        {
+            const int monday = 1;
+            return Math.Max(1, SiteRules.WorkingDays(monday, SiteRules.HandoverDay(kind, hours, pace, permits, monday, CivicCatalogue.SiteOpens(permits))));
+        }
+
+        /// <summary>A contract's due day: the day its site, set out at a day's hour, is handed over at the pace its builder's bid needs (<see cref="SiteRules.HandoverDay"/>).</summary>
+        public static int Due(ProjectKind kind, int hours, int pace, int permits, int day, int hour)
+        {
+            return SiteRules.HandoverDay(kind, hours, pace, permits, day, hour);
         }
 
         /// <summary>The draw a project's quotes come from this week: a new week, new quotes.</summary>
