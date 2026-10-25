@@ -37,7 +37,9 @@ internal static partial class Program
         UptownFillChecks();
         UptownPlaceChecks();
         UptownDenseChecks();
+        UptownFrontChecks();
         UptownWorkChecks();
+        UptownMixChecks();
     }
 
     // ---------------------------------------------------------------- its values
@@ -615,7 +617,7 @@ internal static partial class Program
         string code = all.ToString();
         Check(code.Length > 0 && noLinq && noHarmony, "uptown: no LINQ and no Harmony in the district's files");
         Check(oneFrame && noSend, "uptown: of the district's files only its director has a frame method, and none sends anything over Going Public");
-        Check(noChance && Occurs(code, "UnityEngine.Random.InitState(") == 4 && Occurs(code, "UnityEngine.Random.state = was;") == 4
+        Check(noChance && Occurs(code, "UnityEngine.Random.InitState(") == 5 && Occurs(code, "UnityEngine.Random.state = was;") == 5
               && code.Contains("NewBuildingsRules.Hash(DistrictValues.Id + \"|first|\"") && code.Contains("NewBuildingsRules.Hash(DistrictValues.Id + \"|more|\"")
               && code.Contains("NewBuildingsRules.Hash(lease.BusinessType + \"|\" + lease.Owner + \"|\" + index.ToString(")
               && code.Contains("NewBuildingsRules.Hash(DistrictValues.Id + \"|stats|\" + save.seed)")
@@ -740,7 +742,7 @@ internal static partial class Program
         {
             keys.Add(m.Groups[1].Value);
         }
-        bool there = en != null && pt != null && zh != null && keys.Count == 52 && LifeText.District == UptownId;
+        bool there = en != null && pt != null && zh != null && keys.Count == 54 && LifeText.District == UptownId;
         string missing = null;
         bool short240 = true;
         foreach (string key in keys)

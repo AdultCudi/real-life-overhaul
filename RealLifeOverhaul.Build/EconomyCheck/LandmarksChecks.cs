@@ -36,12 +36,12 @@ internal static partial class Program
         {
             plan.Add(new BuildingsLot
             {
-                Id = l.Id, Street = l.Street, Number = l.Number, First = l.First, Avenue = BuildingsRules.FrontsAvenue(l.Facing), X = l.X, Z = l.Z, Facing = l.Facing,
+                Id = l.Id, Street = l.Street, Number = l.Number, Block = l.Block, First = l.First, Avenue = BuildingsRules.FrontsAvenue(l.Facing), X = l.X, Z = l.Z, Facing = l.Facing,
                 Width = l.Width, Depth = l.Depth, Class = (BuildingsClass)(int)l.Class, Sizes = l.Sizes
             });
         }
         var dayOne = new List<int>();
-        BuildingsRules.DayOne(plan, 0f, 1f, dayOne);
+        BuildingsRules.DayOne(plan, 0f, 1f, dayOne, LandmarkRules.OwnBlock);
         var firstDay = new HashSet<string>();
         foreach (int i in dayOne)
         {
@@ -56,7 +56,7 @@ internal static partial class Program
                 Width = l.Width, Depth = l.Depth, Class = (int)l.Class
             });
         }
-        Check(lots.Count == 79 && firstDay.Count == 20, "landmarks: the first block's 79 lots read, 20 of them built from the first day (" + lots.Count + ", " + firstDay.Count + ")");
+        Check(lots.Count == 77 && firstDay.Count == 19, "landmarks: the first block's 77 lots read, 19 of them built from the first day (" + lots.Count + ", " + firstDay.Count + ")");
         return lots;
     }
 

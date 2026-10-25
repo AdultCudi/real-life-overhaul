@@ -1,8 +1,4 @@
-0.52.0
-
-New
-- Seasons: each season now looks like itself. Trees turn fresh green in spring and amber, red and brown in autumn, spring brings showers, autumn rain and falling leaves, some summer days have thunderstorms with lightning, snow days have a greyer sky, and the season and its day stand under the date. Each part has its own switch, people can dress warmer in the cold if you switch it on, and with Alcware Seasons on these seasons stand down unless you keep both.
+0.52.1
 
 Fixed
-- The Steam Workshop copy of the mod and a copy in ModsLocal (from the installer, or put there by hand) each kept their own options, so moving from one to the other, or having both, lost every choice, your RLO Texts service among them. Your options are now kept in one place for every copy. At its first start this version brings over what the copies kept; where both kept a choice, the copy you started wins.
-- Snow no longer turns faces, people, cars and walls white. It lies only on the streets, pavements and roofs, and where the game's graphics settings cannot keep it there, only the flakes fall.
+- Snow is easy to see now. The flakes are soft round dots sized and spaced for how far off the camera is, on foot, in a car or with the mod's camera, and there are more of them on heavy days. Switching the snow's look on now whitens the ground at once, without going through a door. Snow takes the place of rain: while it snows the game's rain is not seen or heard and the streets do not look wet. The seasons no longer make the game's memory grow every second.

@@ -152,10 +152,12 @@ namespace RealLifeOverhaul.Seasons
         /// </summary>
         public static bool Walkers(float factor)
         {
-            if (_walkFailed || Mathf.Approximately(factor, _walkApplied))
-            {
-                return true;
-            }
+            return _walkFailed || Mathf.Approximately(factor, _walkApplied) || Narrow(factor);
+        }
+
+        // The paces put back and narrowed again for a new factor: a few times a snow day.
+        private static bool Narrow(float factor)
+        {
             try
             {
                 RestoreWalkers();
@@ -221,6 +223,7 @@ namespace RealLifeOverhaul.Seasons
             RestoreDemand();
             RestoreWalkers();
             RestoreLooks();
+            UnhushRain();
             _walkFailed = false;
         }
     }

@@ -36,6 +36,24 @@ namespace RealLifeOverhaul.Seasons
     }
 
     /// <summary>
+    /// The falling snow fitted to the camera looking at it: how big a flake is, how far apart flakes hang, and the box
+    /// round the camera's view they are kept in. The particle system does the rest.
+    /// </summary>
+    public struct SnowField
+    {
+        public float Size;      // metres across a flake, on average
+        public float Spacing;   // metres between neighbouring flakes, on average
+        public float Span;      // metres: the square the flakes hang over, between the camera and what it looks at
+        public float Height;    // metres: from under the ground to over the camera
+        public float Life;      // seconds a flake lives
+        public int Count;       // flakes in the air at once
+        public float Rate;      // flakes started a second, so that Count stay in the air
+
+        /// <summary>Pixels across a flake of the average size at <paramref name="distance"/> metres, on a 1080-line screen through the game's lens.</summary>
+        public float PixelsAt(float distance) => SeasonLookRules.Pixels(Size, distance);
+    }
+
+    /// <summary>
     /// How the seasons look, game-free (checked by EconomyCheck): the day of the season and how far through it a moment
     /// is, the colour the trees' leaves turn to through the year, the season's own rain (spring showers, autumn rain,
     /// summer thunderstorms) and its lightning, the falling leaves of autumn, and the softer light of a snow day and the
@@ -57,6 +75,30 @@ namespace RealLifeOverhaul.Seasons
         public const int FlashLeast = 9;              // seconds between flashes of lightning in a storm, at least
         public const int FlashMost = 40;              //   and at most
         public const float LeavesMost = 1f;           // the falling leaves' strength at the height of autumn
+
+        public const int FlakesMost = 6000;           // flakes in the air at most: a few thousand soft dots are little to the particle system
+        private const float FieldNearest = 2f;        // metres: a camera nearer than this is taken as this far
+        private const float FieldFarthest = 60f;      //   and one farther (the city map's) as this far
+        private const float FlakeAtFocus = 0.0034f;   // metres of flake for each metre of distance: about four pixels where the camera looks
+        private const float FlakeLeast = 0.035f;      // metres: a flake right by a close camera
+        private const float FlakeMost = 0.15f;        // metres: a flake for the game's highest camera
+        private const float SpanPerMetre = 1.3f;      // the box's side for each metre of distance (the lens shows about this much)
+        private const float SpanAdded = 16f;          // metres beyond it, so a turning camera sees no edge
+        private const float SpanLeast = 24f;          // metres
+        private const float SpanMost = 72f;           // metres
+        private const float HeightAdded = 6f;         // metres: under the ground's dips and over the camera
+        private const float HeightLeast = 8f;         // metres
+        private const float HeightMost = 42f;         // metres
+        private const float FallSpeed = 1.15f;        // m/s: a flake's average fall
+        private const float LifeLeast = 6f;           // seconds
+        private const float LifeMost = 30f;           // seconds
+        private const float SpacingBase = 0.8f;       // metres between flakes in a heavy fall by a close camera,
+        private const float SpacingPerMetre = 0.06f;  //   and wider by this for each metre the camera stands back
+        private const float SpacingLeast = 1.1f;      // metres
+        private const float SpacingMost = 3.2f;       // metres
+        private const float StrengthLeast = 0.15f;    // the thinnest fall is spaced as this strength, so the first flakes are seen
+        private const float ScreenLines = 1080f;      // the screen the pixels are counted on
+        private const float HalfLensTan = 0.4557f;    // tan of half the game's 49-degree lens
 
         public const int PurposeRain = 61, PurposeRainFrom = 67, PurposeRainHours = 71, PurposeFlash = 73;
 
@@ -199,6 +241,44 @@ namespace RealLifeOverhaul.Seasons
                 }
             }
             return 1;
+        }
+
+        /// <summary>
+        /// The snow for a camera <paramref name="distance"/> metres from what it looks at and <paramref name="height"/>
+        /// metres over it, while it snows <paramref name="falling"/> (0 to 1; heavy days are 1, light ones half). Flakes are
+        /// sized to show a few pixels across where the camera looks, and hang closer together for a near camera and on a
+        /// heavy day; a far camera gets fewer, larger flakes over a wider box. No falling, no flakes.
+        /// </summary>
+        public static SnowField Field(float distance, float height, float falling)
+        {
+            distance = Math.Max(FieldNearest, Math.Min(FieldFarthest, distance));
+            height = Math.Max(0f, Math.Min(FieldFarthest, height));
+            float strength = Math.Max(0f, Math.Min(1f, falling));
+            var field = new SnowField
+            {
+                Size = Math.Max(FlakeLeast, Math.Min(FlakeMost, distance * FlakeAtFocus)),
+                Span = Math.Max(SpanLeast, Math.Min(SpanMost, distance * SpanPerMetre + SpanAdded)),
+                Height = Math.Max(HeightLeast, Math.Min(HeightMost, height + HeightAdded))
+            };
+            field.Life = Math.Max(LifeLeast, Math.Min(LifeMost, field.Height / FallSpeed));
+            if (strength <= 0f)
+            {
+                field.Spacing = float.PositiveInfinity;
+                return field;
+            }
+            // Spacing for a heavy fall, then thinned by the cube root of the strength: flakes in a volume go as its cube.
+            float heavy = Math.Max(SpacingLeast, Math.Min(SpacingMost, SpacingBase + distance * SpacingPerMetre));
+            field.Spacing = heavy / (float)Math.Pow(Math.Max(StrengthLeast, strength), 1.0 / 3.0);
+            double count = field.Span * field.Span * field.Height / Math.Pow(field.Spacing, 3.0);
+            field.Count = (int)Math.Max(1.0, Math.Min(FlakesMost, count));
+            field.Rate = (float)Math.Round(field.Count / field.Life);
+            return field;
+        }
+
+        /// <summary>Pixels across a thing <paramref name="size"/> metres wide at <paramref name="distance"/> metres, on a 1080-line screen through the game's lens.</summary>
+        public static float Pixels(float size, float distance)
+        {
+            return size * ScreenLines / (2f * Math.Max(0.1f, distance) * HalfLensTan);
         }
 
         private static float Lerp(float a, float b, float t)

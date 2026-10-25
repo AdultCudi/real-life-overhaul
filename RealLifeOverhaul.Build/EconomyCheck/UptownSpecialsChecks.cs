@@ -29,7 +29,7 @@ internal static partial class Program
     {
         HashSet<string> built = UptownIds(plan, BuildingsRules.Built(plan, LandmarkRules.OwnBlock, 0f, 1f, new List<int>()));
         HashSet<string> leased = UptownIds(plan, BuildingsRules.Leased(plan, new List<int>()));
-        HashSet<string> oldQuarter = UptownIds(plan, BuildingsRules.DayOne(plan, 0f, 1f, new List<int>()));
+        HashSet<string> oldQuarter = UptownIds(plan, BuildingsRules.DayOne(plan, 0f, 1f, new List<int>(), LandmarkRules.OwnBlock));
         string why = SpecialsRules.TableRefusal(plan, built, leased, SpecialsRules.All);
         Check(why == null, "uptown specials: every place of the table stands on a lot of the plan built from the first day, of a class that takes its structure, never leased, open or kept empty"
                            + (why != null ? " (" + why + ")" : string.Empty));

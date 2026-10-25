@@ -9,7 +9,9 @@ namespace RealLifeOverhaul.Seasons
     /// The seasons (docs/features/seasons.md): what customers buy follows the season of the calendar, and some winter days
     /// it snows. Everything comes of the day and the save's number (SeasonRules), so nothing is saved and every machine of
     /// a session has the same seasons and the same snow. Cost: a timer comparison a frame; once a second a few comparisons,
-    /// the snow's two figures worked out and handed to the weather, the walkers and the look; the goods written once a season.
+    /// the snow's two figures worked out and handed to the weather, the walkers and the look, and the seasons' other looks
+    /// every few seconds; while snow falls, the flakes moved after the camera four times a second; the goods written once
+    /// a season. Nothing of it allocates in its steady run (StandardCheck, RLO-PERF-014).
     /// </summary>
     public sealed partial class SeasonDirector : MonoBehaviour
     {
@@ -19,18 +21,24 @@ namespace RealLifeOverhaul.Seasons
         private const float WalkPatchy = 0.93f;   // of the game's paces, on snow in patches
         private const float WalkCovered = 0.85f;  // on covered streets
         private const int MorningFrom = 7, MorningTo = 10, EveningAt = 18;   // hours the season's and the snow's news is given
+        private const float SlowEvery = 1f;       // seconds between looks at the snow and the news
+        private const float FollowEvery = 0.25f;  // seconds between moves of the flakes after the camera, while they fall
+        private const float LookEvery = 3f;       // seconds between looks at the trees, sky, rain, leaves, coats and the line under the date
 
         public static IModLogger Logger;
         public static SeasonDirector Instance { get; private set; }
 
         private SnowLook _look;
-        private float _next;
+        private SnowHush _hush;
+        private Func<bool> _markGround;  // made once: handed over behind the loading screen and again at a door
+        private float _next, _nextSlow, _nextLook;
+        private bool _lookShowing;       // a test's season look was held at the last look: a change is looked at at once
         private bool _broken;
         private bool _on;                // something of the seasons may be on the city: StopAll has work to do
         private int _applied = -1;       // the season whose figures are on the goods; -1 for none
         private int _toldSeason = -1, _toldForecast = -1, _toldTomorrow = -1, _toldFalling = -1;   // days each piece of news was given on
         private float _holdUntil;        // the test's snow, while the real time is before this
-        private bool _markLater;         // the ground was left unmarked (an option off): marked at the next door once wanted
+        private bool _markLater;         // the ground was left unmarked (the seasons off): marked at the next door once they are on
 
         /// <summary>The season of today (CalendarRules.Winter to Autumn).</summary>
         public int Season { get; private set; } = CalendarRules.Spring;
@@ -48,17 +56,22 @@ namespace RealLifeOverhaul.Seasons
             Instance = this;
             _look = new SnowLook(transform);
             _seasonLook = new SeasonLook(transform, this);
-            // The snow on the ground copies the game's road paint, which can only be looked for behind a screen.
+            _hush = gameObject.AddComponent<SnowHush>();
+            // The snow on the ground copies the game's road paint, and the flakes are the game's soft round particle:
+            // both can only be looked for behind a screen.
             ScenePrewarm.Add("seasons: the game's road paint being found for the snow on the ground", RoadPaint.Prewarm);
-            ScenePrewarm.Add(MarkWhat, MarkGround);
+            ScenePrewarm.Add("seasons: the game's soft round particle being found for the snowflakes", SeasonGame.FindFlakePaint);
+            _markGround = MarkGround;
+            ScenePrewarm.Add(MarkWhat, _markGround);
         }
 
         private const string MarkWhat = "seasons: the ground, roads, pavements and roofs given the snow's own decal layer";
 
-        // Behind a screen: the only place the snow may lie is marked, while the snow's look is wanted and can be drawn.
+        // Behind every load while the seasons are on, whatever the snow's look option says: the mark is one rendering
+        // layer bit no decal of the game's uses, harmless while no snow lies, so switching the look on in play needs no door.
         private bool MarkGround()
         {
-            if (Settings.Seasons && Settings.SnowLook && SnowGround.Drawable)
+            if (Settings.Seasons && SnowGround.Drawable)
             {
                 _markLater = false;
                 _look.Ground.Mark();
@@ -70,18 +83,13 @@ namespace RealLifeOverhaul.Seasons
             return true;
         }
 
-        // The ground's marks follow the options: let go with the look switched off, asked for at the next door once on.
-        private void FollowMarks(bool wanted)
+        // The seasons switched back on in play after a load passed with them off: the ground is marked at the next door.
+        private void FollowMarks()
         {
-            if (!wanted && _look.Ground.Marked > 0)
-            {
-                _look.Ground.Unmark();
-                _markLater = true;
-            }
-            else if (wanted && _markLater)
+            if (_markLater)
             {
                 _markLater = false;
-                ScenePrewarm.Again(MarkWhat, MarkGround);
+                ScenePrewarm.Again(MarkWhat, _markGround);
             }
         }
 
@@ -130,14 +138,22 @@ namespace RealLifeOverhaul.Seasons
             {
                 return;
             }
-            _next = now + 1f;
+            _next = now + (_look.Following ? FollowEvery : SlowEvery);
             if (_broken)
             {
                 return;
             }
             try
             {
-                Slow();
+                if (now >= _nextSlow)
+                {
+                    _nextSlow = now + SlowEvery;
+                    Slow(now);
+                }
+                else if (_look.Following)
+                {
+                    _look.Follow(SeasonGame.Player);
+                }
             }
             catch (Exception e)
             {
@@ -148,7 +164,7 @@ namespace RealLifeOverhaul.Seasons
             }
         }
 
-        private void Slow()
+        private void Slow(float now)
         {
             if (SeasonGame.Loading())
             {
@@ -182,29 +198,50 @@ namespace RealLifeOverhaul.Seasons
             }
             Step = Settings.WeatherMatters ? SeasonRules.Step(Cover) : 0;
             SeasonGame.Walkers(Step == 2 ? WalkCovered : Step == 1 ? WalkPatchy : 1f);
-            FollowMarks(Settings.SnowLook);
+            FollowMarks();
+            bool outdoors = SeasonGame.Outdoors;
             if (Settings.SnowLook)
             {
-                _look.Show(Falling, Cover, SeasonGame.Player, SeasonGame.Outdoors);
+                _look.Show(Falling, Cover, SeasonGame.Player, outdoors);
             }
             else
             {
                 _look.Hide();
             }
-            Looks(day, time, year, salt, SeasonGame.Outdoors);
+            Hush(Snowing);
+            if (now >= _nextLook || Showing != _lookShowing)
+            {
+                _nextLook = now + LookEvery;
+                _lookShowing = Showing;
+                Looks(day, time, year, salt, outdoors);
+            }
             if (salt != 0)
             {
                 News(day, hour, year, salt);
             }
         }
 
+        /// <summary>Snow falls or lies on the roads here now, or the test's snow is held: it takes the place of rain.</summary>
+        public bool Snowing => Showing ? Holding : Falling > 0f || Step > 0 || Holding;   // a test showing another season shows its own rain
+
+        // While snow takes the place of rain, the game's rain is not seen or heard on this machine; its weather goes on.
+        private void Hush(bool snowing)
+        {
+            SeasonGame.HushRain(snowing);
+            _hush.Hold(snowing && SeasonGame.GameRaining);
+        }
+
         // The season's figures on the goods: once when it turns, and once after a load.
         private void Demand(int season, int day)
         {
-            if (season == _applied)
+            if (season != _applied)
             {
-                return;
+                Turned(season, day);
             }
+        }
+
+        private void Turned(int season, int day)
+        {
             float started = Time.realtimeSinceStartup;
             int written = SeasonGame.ApplyDemand(season);
             bool first = _applied < 0;
@@ -283,6 +320,10 @@ namespace RealLifeOverhaul.Seasons
             Falling = Cover = 0f;
             Step = 0;
             _look?.Hide();
+            if (_hush != null)
+            {
+                _hush.Hold(false);
+            }
             StopLooks();
             if (_look != null && _look.Ground.Marked > 0)
             {
