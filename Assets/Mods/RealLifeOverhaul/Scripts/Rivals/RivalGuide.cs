@@ -62,6 +62,7 @@ namespace RealLifeOverhaul.Rivals
                 .Fact("rival_lobby_rest", () => Whole(RivalCatalogue.CounterRestDays[(int)RivalCounter.Lobby]))
                 .Fact("rival_suit_least", () => Money(RivalCatalogue.SuitLeast))
                 .Fact("rival_poach_gap", () => Whole(Economy.CompanyCatalogue.PoachCompanyRestDays))
+                .Fact("rival_poach_answer", () => Whole(Economy.CompanyCatalogue.PoachAnswerDays))
                 .Fact("rival_poach_slow", () => Whole(RivalCatalogue.PoachSlowDays))
                 .Fact("rival_press_delay", () => Whole(RivalCatalogue.PressDelayDays))
                 .Fact("rival_press_cut", () => Permille(RivalCatalogue.PressWorthCut))
