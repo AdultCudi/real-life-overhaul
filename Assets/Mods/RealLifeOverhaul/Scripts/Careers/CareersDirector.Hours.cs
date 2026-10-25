@@ -32,13 +32,15 @@ namespace RealLifeOverhaul.Careers
         }
 
         // The week a post of the profession is worked on there: its own where the door keeps no hours or the work is all from home.
-        private int Fitted(Profession p, Opening o)
+        // A start moved by a shift request granted on the management ladder (prefer, hours) is fitted the same way, from the hour asked for.
+        private int Fitted(Profession p, Opening o, int prefer = 0)
         {
+            int hour = Tech.TalentCatalogue.Clamp(p.Hour + prefer, 0, System.Math.Max(0, 24 - p.Hours));
             if (o.Work == (int)WorkMode.Remote || !WorkGame.OpenWeek(o.Street, o.Number, _week))
             {
-                return OpenHoursRules.Pack(p.Days, p.Hour, p.Hours);
+                return OpenHoursRules.Pack(p.Days, hour, p.Hours);
             }
-            return OpenHoursRules.Fit(p.Days, p.Hour, p.Hours, _week);
+            return OpenHoursRules.Fit(p.Days, hour, p.Hours, _week);
         }
 
         /// <summary>Every post's week against its place's hours now: a vacancy with no working day to be had there goes, the job's moves (and says so).</summary>
@@ -75,7 +77,7 @@ namespace RealLifeOverhaul.Careers
             }
             int ownWeek = OpenHoursRules.Pack(own.Days, own.Hour, own.Hours);
             int was = j.Post.Shift != 0 ? j.Post.Shift : ownWeek;
-            int fit = Fitted(own, j.Post);
+            int fit = Fitted(own, j.Post, LadderPrefer(j));
             bool known = j.Post.Work != (int)WorkMode.Remote && OpenHoursRules.Known(_week);
             if (fit == 0)
             {

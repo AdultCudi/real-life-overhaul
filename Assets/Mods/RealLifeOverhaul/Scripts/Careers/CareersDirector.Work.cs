@@ -36,6 +36,7 @@ namespace RealLifeOverhaul.Careers
             _employersDay = -1;
             WorkFile w = _study.Work;
             KeepShifts(Save.Day, true);   // a save from before the weeks were fitted, or a place whose hours changed while it was away
+            LadderKeep(Save.Day);         // the company of a job at one of the city's businesses, there for the Career app at once
             Logger?.Info("Careers: the working life " + (w.LastDay < 0 ? "opened" : "loaded") + " on day " + Save.Day + ": " + w.Openings.Count + " vacancies, " + w.Applications.Count
                          + " application(s), " + (w.Job != null ? "a job at " + w.Job.Post.Employer : "no job") + ".");
         }
@@ -144,6 +145,7 @@ namespace RealLifeOverhaul.Careers
             KeepShifts(day, false);   // after the days gone by are settled on the week they were worked on
             Applications(day);
             Vacancies(day);
+            LadderDay(day);   // before the review, which reads the performance score
             WorkDayMore(day);
             if (OwnOn)
             {
@@ -455,6 +457,7 @@ namespace RealLifeOverhaul.Careers
             LearnAtWork(a, hours, day);
             LearnAtWork(b, hours, day);
             WorkedMore(j, s, minutes, day);
+            LadderWorked(j, minutes, day);
             if (ProRules.DayOver(p, day, day, CareersGame.MinuteOfDay) && j.SettledDay < day)
             {
                 SettleDay(j, day);
@@ -464,7 +467,7 @@ namespace RealLifeOverhaul.Careers
         // A skill learnt from hours of work, less the more of it the player has.
         private void LearnAtWork(int skill, int hours, int day)
         {
-            StudyRules.Learn(_study, skill, StudyCatalogue.WorkLearn * hours * (100 - StudyRules.Points(_study, skill)) / 100, day);
+            StudyRules.Learn(_study, skill, StudyCatalogue.WorkLearn * hours * (100 - StudyRules.Points(_study, skill)) / 100 * LadderLearn() / 1000, day);
         }
 
         /// <summary>The pay for minutes worked, with the student loan's repayment taken from it.</summary>

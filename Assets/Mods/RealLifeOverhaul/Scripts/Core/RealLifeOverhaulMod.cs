@@ -333,6 +333,13 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_life_test_review", () => Careers.CareersDirector.Instance?.TestReview())
                 .AddButton("reallife_life_test_matter", () => Careers.CareersDirector.Instance?.TestMatter())
                 .AddButton("reallife_life_test_approach", () => Careers.CareersDirector.Instance?.TestApproach())
+                .AddToggle(Settings.CareersLadderId, "reallife_ladder_enabled", Settings.CareersLadder,
+                    v => Settings.CareersLadder = v)
+                .AddButton("reallife_ladder_test_job", () => Careers.CareersDirector.Instance?.TestLadderJob())
+                .AddButton("reallife_ladder_test_promote", () => Careers.CareersDirector.Instance?.TestLadderPromote())
+                .AddButton("reallife_ladder_test_tasks", () => Careers.CareersDirector.Instance?.TestLadderTasks())
+                .AddButton("reallife_ladder_test_decide", () => Careers.CareersDirector.Instance?.TestLadderDecide())
+                .AddButton("reallife_ladder_test_ask", () => Careers.CareersDirector.Instance?.TestLadderAsk())
                 .AddToggle(Settings.CareersOwnId, "reallife_own_enabled", Settings.CareersOwn,
                     v => Settings.CareersOwn = v)
                 .AddToggle(Settings.CareersOwnOfferNotesId, "reallife_own_opt_offer_notes", Settings.CareersOwnOfferNotes,

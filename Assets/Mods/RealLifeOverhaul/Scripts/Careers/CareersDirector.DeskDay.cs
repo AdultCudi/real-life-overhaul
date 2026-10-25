@@ -73,8 +73,14 @@ namespace RealLifeOverhaul.Careers
                     _deskLabels.Add(DeskGame.Label(CareersText.T("reallife_desk_label_late"), 1));
                 }
             }
+            LadderFile ladder = Ladder;
+            if (ladder != null && ladder.Tasks.Count > 0)
+            {
+                // a manager's desk: what waits for a decision, decided in the Career app's Management tab
+                _deskLabels.Add(DeskGame.Label(CareersText.T("reallife_ladder_desk_tasks", "count", ladder.Tasks.Count.ToString()), 1));
+            }
             bool canLate = state == DeskState.Done && CanWorkLate() == null && !(station != null && DeskGame.Taken(station));
-            string title = CareersText.Fill("reallife_work_skip_title", "title", CareersText.Title(j.Post.Prof, j.Post.Rank), "employer", CareersText.Employer(j.Post.Employer));
+            string title = CareersText.Fill("reallife_work_skip_title", "title", JobTitle(j), "employer", CareersText.Employer(j.Post.Employer));
             var work = new DeskWork(this, station, desk, title, _deskLabels.ToArray(), canStart, canLate);
             if (DeskGame.Show(work))
             {

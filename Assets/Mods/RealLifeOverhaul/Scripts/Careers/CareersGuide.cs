@@ -146,6 +146,33 @@ namespace RealLifeOverhaul.Careers
                 .Fact("life_share_exec", () => Bp(LifeRules.ProfitShareExecBp));
         }
 
+        public static void AddLadderFacts(Feature f)
+        {
+            f.Fact("ladder_days_1", () => Whole(LifeRules.Paced(LadderRanks.Of((int)Rung.Supervisor).Days, GameCalendar.DaysPerYear)))
+                .Fact("ladder_days_2", () => Whole(LifeRules.Paced(LadderRanks.Of((int)Rung.StoreManager).Days, GameCalendar.DaysPerYear)))
+                .Fact("ladder_days_3", () => Whole(LifeRules.Paced(LadderRanks.Of((int)Rung.Regional).Days, GameCalendar.DaysPerYear)))
+                .Fact("ladder_days_4", () => Whole(LifeRules.Paced(LadderRanks.Of((int)Rung.Executive).Days, GameCalendar.DaysPerYear)))
+                .Fact("ladder_score_1", () => Whole(LadderRanks.Of((int)Rung.Supervisor).Score))
+                .Fact("ladder_score_2", () => Whole(LadderRanks.Of((int)Rung.StoreManager).Score))
+                .Fact("ladder_score_3", () => Whole(LadderRanks.Of((int)Rung.Regional).Score))
+                .Fact("ladder_score_4", () => Whole(LadderRanks.Of((int)Rung.Executive).Score))
+                .Fact("ladder_need_1", () => Whole(LadderRanks.Of((int)Rung.Supervisor).Need))
+                .Fact("ladder_need_2", () => Whole(LadderRanks.Of((int)Rung.StoreManager).Need))
+                .Fact("ladder_need_3", () => Whole(LadderRanks.Of((int)Rung.Regional).Need))
+                .Fact("ladder_need_4", () => Whole(LadderRanks.Of((int)Rung.Executive).Need))
+                .Fact("ladder_pay_1", () => Guide.Money(Prices.At(ManagerPay((int)Rung.Supervisor)) / 100f))
+                .Fact("ladder_pay_2", () => Guide.Money(Prices.At(ManagerPay((int)Rung.StoreManager)) / 100f))
+                .Fact("ladder_pay_3", () => Guide.Money(Prices.At(ManagerPay((int)Rung.Regional)) / 100f))
+                .Fact("ladder_pay_4", () => Guide.Money(Prices.At(ManagerPay((int)Rung.Executive)) / 100f))
+                .Fact("ladder_task_days", () => Whole(CareerLadderRules.TaskDays))
+                .Fact("ladder_bonus", () => Whole(CareerLadderRules.ReviewBonusMost))
+                .Fact("ladder_stores", () => Whole(CareerLadderRules.StoresMost))
+                .Fact("ladder_raise_days", () => Whole(CareerLadderRules.RaiseGapDays));
+        }
+
+        // A rung's pay from the management profession at one of the city's own businesses, cents an hour at the start's prices.
+        private static int ManagerPay(int rung) => ProRules.PostPay(ProCatalogue.Find(ProCatalogue.Manager), LadderRanks.Of(rung).PayRank, EmployerKind.City, 1000);
+
         public static void AddOwnFacts(Feature f)
         {
             f.Fact("own_colleagues", () => Whole(OwnRules.ColleaguesMost))
