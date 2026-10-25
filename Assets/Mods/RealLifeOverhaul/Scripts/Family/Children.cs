@@ -364,7 +364,7 @@ namespace RealLifeOverhaul.Family
                 }
                 if (c.Age >= FamilyBalance.PocketFrom && c.Pocket > 0)
                 {
-                    pocket += FamilyBalance.PocketMoney[Mathf.Clamp(c.Pocket, 0, 3)];
+                    pocket += FamilyBalance.PocketMoney(c.Pocket);
                 }
             }
             care = 0;
@@ -452,8 +452,8 @@ namespace RealLifeOverhaul.Family
         {
             FamilySave s = FamilyState.S;
             ChildRecord c = s.Children[child];
-            c.Pocket = (c.Pocket + 1) % FamilyBalance.PocketMoney.Length;
-            return FamilyTalk.Either(FamilyText.Say("reallife_family_pocket_set", Args.Us.Kid(c.Name).Cost(FamilyBalance.PocketMoney[c.Pocket])),
+            c.Pocket = (c.Pocket + 1) % FamilyBalance.PocketLevels;
+            return FamilyTalk.Either(FamilyText.Say("reallife_family_pocket_set", Args.Us.Kid(c.Name).Cost(FamilyBalance.PocketMoney(c.Pocket))),
                 "reallife_family_pocket_change", () => PocketStep(child), "reallife_family_menu_back", () => FamilyPhone.FamilyMenu(0));
         }
 

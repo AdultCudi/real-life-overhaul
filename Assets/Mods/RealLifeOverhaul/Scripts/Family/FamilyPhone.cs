@@ -36,20 +36,14 @@ namespace RealLifeOverhaul.Family
         public static Contact PartnerContact => _partnerContact ?? (Partner.Kept(out _) ? FamilyBridges.Social.PartnerContact : null);
         public static Contact InLawContact { get; private set; }
 
-        /// <summary>
-        /// While the social life keeps the partner and the home's fridge can show the family's board, no Family contact is made:
-        /// what it offered is face to face at home, on the fridge's Family button (Board), in the partner's People call (CallMatters:
-        /// time apart and the in-laws) and, for a new home, a text to the partner (FamilySms). The family's own texts are notices then.
-        /// A Family contact the save already has is never taken away: it keeps its thread, still answers and still gets the
-        /// family's texts (Setup), since a contact removed from the save takes every message in it with it.
-        /// </summary>
-        public static bool Hides => Partner.UsesSocial && Settings.HomeLife && Settings.HomeRoutines;
-
         /// <summary>True while the fridge's board is open: nothing that needs the partner face to face is offered from it.</summary>
         internal static bool AtBoard;
 
-        /// <summary>Whether the fridge's panel shows the Family button (Home/HomeFridgeButton, through Wiring/FamilyLinks).</summary>
-        public static bool BoardShown => Settings.Family && FamilyState.Loaded && Hides;
+        /// <summary>
+        /// Whether the fridge's panel shows the Family button (Home/HomeFridgeButton, through Wiring/FamilyLinks). The Family contact
+        /// is always made (Setup), so this is a second way in, face to face at home; what needs the open air is asked from the phone.
+        /// </summary>
+        public static bool BoardShown => Settings.Family && FamilyState.Loaded;
 
         /// <summary>The fridge's Family button: the family's page, then everything that can be done from it, once the fridge's panel has gone.</summary>
         public static void Board()
@@ -77,13 +71,22 @@ namespace RealLifeOverhaul.Family
         {
             get
             {
-                if (!Settings.Family || !FamilyState.Loaded || !Hides)
+                if (!Settings.Family || !FamilyState.Loaded)
                 {
                     return false;
                 }
                 Choices();
                 return _callChoices.Exists(c => c.When == null || c.When());
             }
+        }
+
+        /// <summary>Whether People's partner is the one family life keeps: their moving in is then family life's (room, the home, the rent share).</summary>
+        public static bool KeepsMoveIn => Settings.Family && FamilyState.Loaded && Partner.Kept(out _);
+
+        /// <summary>The partner agreed in People to move in: family life moves them in. Null if they did, else why not (a Family locale key).</summary>
+        public static string MoveInFromPeople()
+        {
+            return HomeLife.MoveIn(false);
         }
 
         /// <summary>"Family matters" in the partner's People call.</summary>
@@ -107,12 +110,10 @@ namespace RealLifeOverhaul.Family
             }
             try
             {
-                if (!Hides || Saved(FamilyId))
-                {
-                    // Made, or an earlier session's kept with its thread: face to face at home takes the place of a new one only.
-                    FamilyContact = Register(FamilyId, "reallife_contact_family_desc", "reallife_family_calldialogtype", () => new FamilyPageDialog(),
-                        "reallife_text_family_welcome");
-                }
+                // Always made: the walks, the proposal and a wedding in the open are asked for outdoors, where only the phone is at hand.
+                // A contact the save has keeps its thread (Register sends the welcome only into an empty one).
+                FamilyContact = Register(FamilyId, "reallife_contact_family_desc", "reallife_family_calldialogtype", () => new FamilyPageDialog(),
+                    "reallife_text_family_welcome");
                 if (!Partner.UsesSocial)
                 {
                     _partnerContact = Register(PartnerId, "reallife_contact_partner_desc", "reallife_partner_calldialogtype", () => new PartnerDialog(),

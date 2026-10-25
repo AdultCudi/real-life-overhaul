@@ -129,6 +129,14 @@ namespace RealLifeOverhaul
             {
                 Logger?.Error(e);
             }
+            try
+            {
+                SocialLinks.NetworkForget?.Invoke(index);
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
         }
 
         // Whatever the director still holds of them: nobody drops by, rings or texts thanks as them.

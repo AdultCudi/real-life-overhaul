@@ -179,6 +179,11 @@ internal static partial class Program
                 wrong.Add(codes[l]);
             }
             string family = words != null && words.TryGetValue("reallife_guide_family", out string f) ? f : string.Empty;
+            // A page a language has not yet translated (its key is taken out of the file after the English changes) reads in English.
+            if (family.Length == 0 && l >= ModLanguages.Required && words != null)
+            {
+                continue;
+            }
             if (!family.Contains(PeopleContactInGuide[l]))
             {
                 guide.Add(codes[l]);

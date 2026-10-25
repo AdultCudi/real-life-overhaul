@@ -130,7 +130,7 @@ namespace RealLifeOverhaul.Networking
         // What a person is: the save's seed and their place in the cast, how they were met, and the city's importers.
         private static NetContact Roll(NetPerson p, NetVia via)
         {
-            int seed = Seed;
+            int seed = NetworkRules.SeedOf(Seed, p.Seed);
             NetRole role = TestRoles.TryGetValue(p.Index, out NetRole forced) ? forced : NetworkRules.RoleOf(seed, p.Index, p.Origin, via);
             var c = new NetContact { Person = p.Index, Role = role, Via = via, MetDay = p.MetDay > 0 ? p.MetDay : NetworkGame.Day };
             if (role == NetRole.None)
@@ -167,6 +167,25 @@ namespace RealLifeOverhaul.Networking
                 {
                     Met(p, NetVia.Met, true);
                 }
+            }
+        }
+
+        /// <summary>
+        /// The player lost touch with the person in this slot of the cast: their position and the favours they did go with them,
+        /// so that whoever takes the slot is rolled afresh when met and never inherits it. Once, on that event.
+        /// </summary>
+        public static void Forget(int person)
+        {
+            NetworkFile f = On ? File() : null;
+            TestRoles.Remove(person);
+            if (_testReady == person)
+            {
+                _testReady = -1;
+            }
+            if (f != null && f.Forget(person))
+            {
+                Write();
+                Logger?.Info("Networking: person " + (person + 1) + " of the social life let go, with the position they held.");
             }
         }
 
