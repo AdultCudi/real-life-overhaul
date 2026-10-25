@@ -52,7 +52,7 @@ namespace RealLifeOverhaul.Economy.Brands
                 Refusal why = FranchiseRules.Answer(_state, b, a, feeTier, royaltyTier, levyTier, exclusive, index);
                 if (why != Refusal.None)
                 {
-                    Say(NotificationType.Error, BrandsText.RefusalKeys[(int)why]);
+                    Say(NotificationType.Error, BrandsText.RefusalKeys[(int)why], BrandsText.RefusalData());
                     return;
                 }
                 IReadOnlyList<BrandSite> sites = SitesFor(a);

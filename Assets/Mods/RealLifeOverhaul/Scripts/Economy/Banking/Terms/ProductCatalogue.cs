@@ -89,7 +89,7 @@ namespace RealLifeOverhaul.Economy
         public const int CardRatePoints = 12;
         public const float CardCashFeeShare = 0.03f;         // of cash drawn, never less than the least
         public static int CardCashFeeLeast => Prices.At(5);
-        public const int CardDrawLeast = 20;
+        public static int CardDrawLeast => Prices.At(20);
         public const int CardStatementDays = 7;              // a statement every so many days...
         public const int CardGraceDays = 3;                  // ...its minimum taken this many days after it
         public const float CardMinimumShare = 0.05f;         // of the statement, never less than the least, or the whole of a smaller balance
@@ -104,11 +104,11 @@ namespace RealLifeOverhaul.Economy
         public const int CarDepositLeast = 10, CarDepositMost = 50, CarDepositStep = 10;      // per cent of the price
         public const int CarTermLeast = 60, CarTermMost = 240, CarTermStep = 30;              // game days
         public const int CarRatePoints = 2;
-        public const int CarLeast = 500;
+        public static int CarLeast => Prices.At(500);
         public const int HomeDepositLeast = 20, HomeDepositMost = 50, HomeDepositStep = 10;   // per cent of the price
         public const int HomeTermLeast = 360, HomeTermMost = 1440, HomeTermStep = 180;        // game days
         public const int HomeRatePoints = -1;
-        public const int HomeLeast = 5000;
+        public static int HomeLeast => Prices.At(5000);
         public const int HomeCapMultiple = 5;                // a mortgage lends this many times what the bank would lend unsecured
 
         public const float ConsolidateFeeShare = 0.01f;

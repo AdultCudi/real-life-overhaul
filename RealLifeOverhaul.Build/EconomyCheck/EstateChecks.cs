@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using RealLifeOverhaul;
 using RealLifeOverhaul.Economy;
 
 // The property business's checks (Scripts/Economy/Estate): the market against the cycle, prices and the bank's rate;
@@ -207,6 +208,16 @@ internal static partial class Program
         freed.RentLever = -1;
         Check(EstateRules.MarketRent(1000000, 0, 1000, 1000, 0, controlled) < EstateRules.MarketRent(1000000, 0, 1000, 1000, 0, c) && EstateRules.MarketRent(1000000, 0, 1000, 1000, 0, freed) > EstateRules.MarketRent(1000000, 0, 1000, 1000, 0, c)
               && EstateRules.MarketRent(1000000, 1, 1000, 1000, 0, controlled) == EstateRules.MarketRent(1000000, 1, 1000, 1000, 0, c), "the council's rent policy moves the rent of homes and of nothing else");
+        // Civic's +1 is "landlords set their own rents" (a dearer rent), -1 is rent control; the estate reads +1 as controlled.
+        EstateClimate civicFreed = c, civicControlled = c;
+        civicFreed.RentLever = EstateRules.FromCouncil(1);
+        civicControlled.RentLever = EstateRules.FromCouncil(-1);
+        Check(CivicCatalogue.LandlordShare(1) > 0 && CivicCatalogue.LandlordShare(-1) < 0
+              && EstateRules.MarketRent(1000000, 0, 1000, 1000, 0, civicFreed) > EstateRules.MarketRent(1000000, 0, 1000, 1000, 0, c)
+              && EstateRules.MarketRent(1000000, 0, 1000, 1000, 0, civicControlled) < EstateRules.MarketRent(1000000, 0, 1000, 1000, 0, c)
+              && EstateRules.FromCouncil(0) == 0
+              && EstateRules.NoticeLength(EstateRules.FromCouncil(1)) < EstateRules.NoticeLength(EstateRules.FromCouncil(-1)),
+            "landlords setting their own rents lets homes dearer and gives the shorter notice; rent control the reverse");
         EstateClimate longYear = c;
         longYear.DaysPerYear = 120;
         Check(EstateRules.MarketRent(1000000, 1, 1000, 1000, 0, longYear) == EstateRules.MarketRent(1000000, 1, 1000, 1000, 0, c) / 2, "a year twice as long halves a day's rent: the yield is a year's");

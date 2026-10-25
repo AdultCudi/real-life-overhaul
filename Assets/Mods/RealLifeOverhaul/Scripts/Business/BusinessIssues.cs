@@ -60,7 +60,8 @@ namespace RealLifeOverhaul
                     return null;
 
                 case BusinessCatalogue.Licence:
-                    return BusinessGame.Fee(reg, BusinessCatalogue.LicenceShare, 60, 900) <= 0 ? "reallife_biz_why_no_cash" : null;
+                    return BusinessCatalogue.CompanyKeepsLicences(Settings.Economy, Settings.EconomyCompany, Settings.EconomyCompanyLicences) ? "reallife_biz_why_company_licences"
+                        : BusinessGame.Fee(reg, BusinessCatalogue.LicenceShare, 60, 900) <= 0 ? "reallife_biz_why_no_cash" : null;
 
                 case BusinessCatalogue.Strike:
                     return BusinessGame.Staff(reg).Count < 2 ? "reallife_biz_why_two_staff"

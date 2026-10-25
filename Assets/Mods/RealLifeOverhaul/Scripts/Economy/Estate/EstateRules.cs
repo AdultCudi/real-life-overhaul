@@ -149,6 +149,12 @@ namespace RealLifeOverhaul.Economy
             return Value(h.Base, real, index, h.Income, h.Cond, h.Level);
         }
 
+        /// <summary>
+        /// The estate's rent policy (-1 freed, 0 as it was, +1 controlled) from the council's Rent lever. Civic reads +1 as
+        /// "landlords set their own rents" and -1 as rent control, the other way round, so this is the one place that turns it.
+        /// </summary>
+        public static int FromCouncil(int councilRent) => -Math.Sign(councilRent);
+
         /// <summary>The gross yield a year of a use in a district, thousandths of the value: dear districts yield less.</summary>
         public static int Yield(int use, int income)
         {
