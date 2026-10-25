@@ -108,6 +108,17 @@ internal static partial class Program
               && !mix.Contains("\"uptown_"), "uptown mix: no unseeded chance, nothing a frame, and its rules by type and share, never by a lot's id");
         Check(wiring.Contains("DistrictShops.Kinds = ShopKinds") && wiring.Contains("DistrictShops.Kinds = null") && wire.Contains("UptownShopsLinks.Connect") && wire.Contains("UptownShopsLinks.Disconnect"),
             "uptown mix: the mod's kinds of shop reach the pass through the wiring, and are taken off again");
+        // The builders' offices: the design studio's layouts filed under the builders' type by the studio's own names were
+        // met by the game's generator, which picks a layout where an AI business names it, and found no AI business of the type.
+        string leases = Read("Uptown/LifeGame.Leases.cs");
+        string borrow = MemberText(leases, "private static string Borrow(string from, string to)");
+        Check(borrow.Contains("string name = LentPrefix + set.LayoutName") && borrow.Contains("LayoutName = name") && !borrow.Contains("LayoutName = set.LayoutName")
+              && borrow.Contains("LayoutKey(to, set.BuildingSize, set.BuildingVersion, name)")
+              && MemberText(leases, "private static void MoveIn(BuildingRegistration reg, DistrictLease lease, int index, AiBusinessDefault from, GameInstance save)").Contains("Lent(from, lease.BusinessType)")
+              && MemberText(leases, "private static AiBusinessDefault Lent(AiBusinessDefault from, string type)").Contains("copy.buildingLayout = name")
+              && MemberText(leases, "private static void LentLayout(BuildingRegistration reg, Building record)").Contains("reg.Layout = LentPrefix + layout")
+              && MemberText(leases, "public static string Lease(MadeBuilding made, DistrictLease lease, int index, GameInstance save, out bool movedIn, out bool renamed)").Contains("LentLayout(reg, record)"),
+            "uptown mix: the builders' offices' layouts are lent under names no AI business of the game's has, and an office from before takes the lent name");
         Check(guide.Contains(".Check(\"reallife_uptown_test_mix\", LifeDirector.TestMixCensus, \"Uptown check (mix)\")"), "uptown mix: the census is a test in the run");
     }
 

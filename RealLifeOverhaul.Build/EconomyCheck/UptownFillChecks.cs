@@ -774,7 +774,7 @@ internal static partial class Program
         string lease = MemberText(gameLeases, "public static string Lease(MadeBuilding made, DistrictLease lease, int index, GameInstance save, out bool movedIn, out bool renamed)");
         string moveIn = MemberText(gameLeases, "private static void MoveIn(BuildingRegistration reg, DistrictLease lease, int index, AiBusinessDefault from, GameInstance save)");
         Check(lease.Contains("GoingPublic.Foreign(reg)") && lease.Contains("reg.RentedByPlayer || reg.BuildingOwnedByPlayer") && lease.Contains("made.NewRegistration")
-              && moveIn.Contains("CompetitionHelper.StartNewCompetitorBusiness(lease.BusinessType, reg, impactMarket: false, from, string.Empty, setUpFirstDailyIncome: false)")
+              && moveIn.Contains("CompetitionHelper.StartNewCompetitorBusiness(lease.BusinessType, reg, impactMarket: false, Lent(from, lease.BusinessType), string.Empty, setUpFirstDailyIncome: false)")
               && moveIn.Contains("UnityEngine.Random.InitState(") && moveIn.Contains("UnityEngine.Random.state = was") && moveIn.Contains("reg.dailyIncomes = new List<float>(IncomeDays)"),
             "uptown fill: a builder moves into its office by the game's own start of a business, seeded, never into the player's or another player's, with days of income to value it by");
         string borrow = MemberText(gameLeases, "private static string Borrow(string from, string to)");
