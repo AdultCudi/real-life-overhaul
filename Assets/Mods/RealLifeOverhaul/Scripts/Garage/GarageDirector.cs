@@ -120,6 +120,14 @@ namespace RealLifeOverhaul
                         GarageSummary.Tick(gm);
                     }
                 }
+                if (!GarageState.Loaded && ModState.Loaded && !LoadScene.isLoading)
+                {
+                    if (StartLine.Holds(StartSeats.Garage))
+                    {
+                        return;   // the first load waits for a frame of its own (Core/StartLine)
+                    }
+                    _nextSlow = 0f;   // its seat: the first load in this very frame, alone
+                }
                 if (now >= _nextSlow)
                 {
                     _nextSlow = now + 1f;

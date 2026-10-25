@@ -32,6 +32,9 @@ namespace RealLifeOverhaul
 
         private readonly List<CityPerson> _people = new List<CityPerson>(MaxPeople);
         private readonly List<CityLook> _wanted = new List<CityLook>(4);   // looks nobody on the shelf had, made ready one at a time
+        private const int WornAtDoor = 4;   // worn looks changed behind one black screen at most: four merges where nothing shows
+        private bool _doorAsked;            // the worn looks are with Core/ScenePrewarm for the next door
+        private Func<bool> _atDoor;         // made once
         private Coroutine _tending;
 
         /// <summary>Never builds a look in the frame somebody is asked for: hands out somebody dressed for it, or says no and makes it ready.</summary>

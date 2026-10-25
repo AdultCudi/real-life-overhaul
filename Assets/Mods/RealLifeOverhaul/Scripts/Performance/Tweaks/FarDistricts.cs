@@ -52,6 +52,9 @@ namespace RealLifeOverhaul
 
         private readonly Dictionary<long, Cell> _byKey = new Dictionary<long, Cell>(512);
         private readonly List<Cell> _cells = new List<Cell>(512);
+        // Squares of a city gone, kept with their lists' room: the survey is the one thing here that allocates (some 400,000
+        // renderers sorted into 58 squares once a city, a few megabytes of lists in the first minute), and once a session.
+        private readonly List<Cell> _spareCells = new List<Cell>(64);
         private readonly List<GameObject> _roots = new List<GameObject>(64);
         private readonly List<MeshRenderer> _gathered = new List<MeshRenderer>(32768);
         private readonly List<MeshRenderer> _survey = new List<MeshRenderer>(65536);
@@ -306,7 +309,8 @@ namespace RealLifeOverhaul
                 long key = ((long)Mathf.FloorToInt(at.x / CellSize) << 32) ^ (uint)Mathf.FloorToInt(at.z / CellSize);
                 if (!_byKey.TryGetValue(key, out Cell cell))
                 {
-                    cell = new Cell { Bounds = new Bounds(at, Vector3.one * (Margin * 2f)) };
+                    cell = Fresh();
+                    cell.Bounds = new Bounds(at, Vector3.one * (Margin * 2f));
                     _byKey.Add(key, cell);
                     _cells.Add(cell);
                 }
@@ -329,6 +333,17 @@ namespace RealLifeOverhaul
                 PerfDirector.Logger?.Info("Performance: " + _id + " looked through the scenery: " + _scenery + " mesh renderers in " + _cells.Count + " squares of " + CellSize
                                           + " m; " + _leftAlone + " left alone (of things that move" + (_byEnabled ? ", disabled, or the game switches them itself" : string.Empty) + ").");
             }
+        }
+
+        private Cell Fresh()
+        {
+            if (_spareCells.Count == 0)
+            {
+                return new Cell();
+            }
+            Cell cell = _spareCells[_spareCells.Count - 1];
+            _spareCells.RemoveAt(_spareCells.Count - 1);
+            return cell;
         }
 
         // takes out as many of the square's renderers as the slice has time for
@@ -516,6 +531,17 @@ namespace RealLifeOverhaul
         private void Forget()
         {
             GiveBackAll();
+            for (int i = 0; i < _cells.Count; i++)
+            {
+                Cell gone = _cells[i];
+                gone.Held = false;
+                gone.Cursor = 0;
+                gone.Scenery.Clear();
+                gone.OnMap.Clear();
+                gone.Taken.Clear();
+                gone.TakenOff.Clear();
+                _spareCells.Add(gone);
+            }
             _cells.Clear();
             _byKey.Clear();
             _seenScenes.Clear();

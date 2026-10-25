@@ -215,6 +215,7 @@ internal static partial class Program
         FadePlay();
         FadeSession();
         FadeSources();
+        FaceFadeChecks();
     }
 
     // A walk into a building, its load one frame to forty: every search with the screen black, one of them after the game

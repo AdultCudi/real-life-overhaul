@@ -191,6 +191,19 @@ namespace RealLifeOverhaul
             }
         }
 
+        // Behind the loading screen: the stops' people made and dressed there, not on the first wait or the first stop in play
+        // (a character made and its look merged in a frame of play, the owner's session of 25 Oct 2026).
+        private bool PrewarmPeople()
+        {
+            if (!Settings.TransitPeople)
+            {
+                return true;
+            }
+            _waiters ??= new JobCast(this, Logger);
+            _others ??= new JobCast(this, Logger);
+            return _waiters.Prewarm(JobCast.Size) & _others.Prewarm(1);
+        }
+
         // Somebody walks up to the stop from out of view and waits: on the bench if a seat is free and the clips are there, else by the pole.
         private void Arrive(int slot)
         {
@@ -220,10 +233,7 @@ namespace RealLifeOverhaul
             {
                 return;   // nowhere out of sight to come from: nobody comes just now
             }
-            if (_waiters == null)
-            {
-                _waiters = new JobCast(this, Logger);
-            }
+            _waiters ??= new JobCast(this, Logger);
             StreetActor person = _waiters.Put(from, false);   // on the pavement only, until the bus is there
             if (person == null)
             {
@@ -267,10 +277,7 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            if (_others == null)
-            {
-                _others = new JobCast(this, Logger);
-            }
+            _others ??= new JobCast(this, Logger);
             StreetActor person = _others.Put(_exitDoor, true);
             if (person == null)
             {

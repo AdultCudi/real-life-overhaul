@@ -36,6 +36,7 @@ namespace RealLifeOverhaul
     {
         private const int MaxDocks = 8, MaxShops = 5, MaxStands = 4;
         private const float ShowWithin = 90f;   // metres
+        private const int RefusalsSaid = 3;   // places refused said one by one in the log, with Developer diagnostics on
         public const float Reach = 3.5f;   // metres: a place's panel
         private const int ShareColour = 0x1E88E5;   // 0xRRGGBB
 
@@ -253,7 +254,7 @@ namespace RealLifeOverhaul
             if (why != BikeSpotRules.Refusal.None)
             {
                 _refused++;
-                if (Meta.Dev.Verbose)
+                if (Meta.Dev.Verbose && _refused <= RefusalsSaid)   // the rest are counted in the line after the search: 170 lines in one frame before
                 {
                     Logger?.Info("Two-wheelers check (place): a place at (" + spot.x.ToString("F1", CultureInfo.InvariantCulture) + ", "
                                  + spot.z.ToString("F1", CultureInfo.InvariantCulture) + ") refused: " + RefusalWords(why, off, highest - lowest) + ": PASS.");

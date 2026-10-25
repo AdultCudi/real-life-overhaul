@@ -5,15 +5,17 @@ namespace RealLifeOverhaul.Seasons
 {
     /// <summary>
     /// The trees' leaves through the year. The game's trees (TreeController.AllTrees, no search) draw their leaves with a
-    /// handful of shared materials of its wind shader, coloured by "_MainColor". Those materials are found by walking the
-    /// trees a few hundred a second (a few milliseconds' work in all, spread out), and each is coloured as its own colour
+    /// handful of shared materials of its wind shader, coloured by "_MainColor". Those materials are found by walking every
+    /// tree behind the loading screen (Core/ScenePrewarm; up to 0.52.1 300 trees at a look in play, 25 ms of the first frames
+    /// after a load in the owner's session of 25 Oct 2026), and any tree left a millisecond at a look; each is coloured as its own colour
     /// times the season's tint: in memory only, never saved, and put back exactly. A tint is written only when it changes,
     /// a few times a game day at most, so nothing runs a frame. Trunks, people and cars are on other materials.
     /// </summary>
     public static partial class SeasonGame
     {
         private const string LeafShader = "VegetationShaders/VegetationWindShader";
-        private const int TreesASecond = 300;   // trees walked a second for their leaf materials, until all are known
+        private const double WalkSliceMs = 1.0;   // milliseconds of a look the trees not walked behind the loading screen may take
+        private const int WalkLookEvery = 16;     // trees between two looks at the clock
 
         private static readonly int MainColorId = Shader.PropertyToID("_MainColor");
         private static readonly List<Material> Leaves = new List<Material>(16);
@@ -78,12 +80,23 @@ namespace RealLifeOverhaul.Seasons
             _tint = new Tint(1f, 1f, 1f);
         }
 
-        // The next trees' renderers' materials, without allocating: a leaf material of the game's wind shader is kept once.
+        /// <summary>Behind the loading screen (Core/ScenePrewarm): every tree of the city walked for its leaf materials at once.</summary>
+        public static bool WalkAllTrees()
+        {
+            Walk(WorkSlice.Whole);
+            return true;
+        }
+
         private static void WalkTrees()
         {
+            Walk(WorkSlice.Of(WalkSliceMs, WalkLookEvery));
+        }
+
+        // The next trees' renderers' materials, without allocating: a leaf material of the game's wind shader is kept once.
+        private static void Walk(WorkSlice slice)
+        {
             List<TreeController> trees = TreeController.AllTrees;
-            int until = Mathf.Min(trees.Count, _treesWalked + TreesASecond);
-            for (; _treesWalked < until; _treesWalked++)
+            for (; _treesWalked < trees.Count && slice.More(); _treesWalked++)
             {
                 TreeController tree = trees[_treesWalked];
                 if (tree == null)

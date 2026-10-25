@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using BigAmbitions.Characters.Appearance;
 using Streets.Pedestrians;
@@ -9,16 +10,18 @@ namespace RealLifeOverhaul.Seasons
     /// People in the street dressed for the cold, from the game's own clothes alone: in autumn a warm top, in winter a warm
     /// top and long trousers, chosen among the variants the person's own model has, in their own outfit's style (its
     /// tags). Only the clothes' elements change (the game's AppearanceSetter.UpdateElements); body, face, hair and skin are
-    /// never touched, and every outfit changed is put back as it was. One person at a look (every few seconds), never one
-    /// on screen, from the game's list of people walking; the game merges their meshes again as it does when it dresses
-    /// them, which is its own work (named in the session record), the only allocation of a dressing. Nothing of the mod's
-    /// is made for it: the outfit worn is kept by reference and the change is written through two kept pieces, which the
-    /// game copies. Off by default.
+    /// never touched, and every outfit changed is put back as it was. The game merges a person's meshes again for each
+    /// change, its own work and some 1.5 MB of arrays each: up to 0.52.1 one person was dressed at every look in play (20
+    /// a minute until the pool was dressed; 241 to 528 KB a second under the seasons' tick in the owner's session of
+    /// 25 Oct 2026). Now a look only notes that someone waits, and the dressing (or the putting back once the cold is over)
+    /// is done behind the black screen of the next walk out to the street (Core/ScenePrewarm), at most
+    /// <see cref="DoorMost"/> people a door. Cost in play: a walk over the game's list of walkers at a look, nothing
+    /// allocated. Nothing of the mod's is made for a dressing: the outfit worn is kept by reference and the change is
+    /// written through two kept pieces, which the game copies. Off by default.
     /// </summary>
     public static partial class SeasonGame
     {
-        private const int UndressASecond = 3;   // outfits put back a second when the cold is over, so no frame merges many
-        private const float OutOfSight = 45f;   // metres: without a merged mesh to ask, a person this far off is taken as off screen
+        private const int DoorMost = 12;        // people dressed or put back behind one black screen: a dozen merges where nothing shows
 
         // The game's warm pieces, by their variants' names (MaleSweater, FemHoodie, SuitJacket, HighNeckShirt, Jeans,
         // LongCargoPants, SuitPants): the game has no coats.
@@ -26,6 +29,7 @@ namespace RealLifeOverhaul.Seasons
         private static readonly string[] LongLegs = { "Jeans", "Pants", "Trousers" };
         private static readonly string[] ShortLegs = { "Short", "Skirt" };
 
+        private const string DoorWhat = "seasons: people in the street dressed for the cold, or their own clothes put back (behind the black screen)";
         private const string DressWhat = "seasons: a person dressed for the cold (the game's own mesh merge)";
         private const string UndressWhat = "seasons: a person's own clothes put back (the game's own mesh merge)";
 
@@ -38,6 +42,9 @@ namespace RealLifeOverhaul.Seasons
         private static readonly AppearanceElementData WarmTop = new AppearanceElementData();
         private static readonly AppearanceElementData WarmLegs = new AppearanceElementData();
         private static bool _coatsFailed;
+        private static bool _cold, _winter;     // as the last look found it, for the work at the door
+        private static bool _asked;             // the work is with Core/ScenePrewarm for the next door
+        private static Func<bool> _atDoor;      // made once
 
         // What a person wore before the cold; both null when they were warm already and nothing was changed.
         private struct Worn
@@ -48,8 +55,8 @@ namespace RealLifeOverhaul.Seasons
         public static int CoatsOn => Dressed.Count;
 
         /// <summary>
-        /// At a look: one more person off screen dressed for <paramref name="season"/> while <paramref name="wanted"/>
-        /// and it is autumn or winter; otherwise a few of those dressed put back.
+        /// At a look: whether someone waits to be dressed for <paramref name="season"/> while <paramref name="wanted"/>
+        /// and it is autumn or winter, or to have their own clothes back; if so the work is asked of the next black screen.
         /// </summary>
         public static void Coats(int season, bool wanted)
         {
@@ -57,48 +64,98 @@ namespace RealLifeOverhaul.Seasons
             {
                 return;
             }
-            bool cold = wanted && (season == CalendarRules.Autumn || season == CalendarRules.Winter);
-            if (!cold)
+            _cold = wanted && (season == CalendarRules.Autumn || season == CalendarRules.Winter);
+            _winter = season == CalendarRules.Winter;
+            if (_asked || !(_cold ? Undressed() : Dressed.Count > 0))
             {
-                PutBack(UndressASecond);
                 return;
             }
-            var city = InstanceBehavior<CityManager>.Instance;
-            List<Pedestrian> walking = city != null && city.pedestrianSpawner != null ? city.pedestrianSpawner.activePedestrians : null;
-            if (walking == null)
+            _asked = true;
+            ScenePrewarm.Again(DoorWhat, _atDoor ??= AtDoor);
+        }
+
+        // Someone in the game's list of walkers not dressed yet.
+        private static bool Undressed()
+        {
+            List<Pedestrian> walking = Walking();
+            for (int i = 0; walking != null && i < walking.Count; i++)
             {
-                return;
+                AppearanceSetter look = walking[i] != null && walking[i].tpc != null ? walking[i].tpc.appearanceSetter : null;
+                if (look != null && !Dressed.ContainsKey(look))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static List<Pedestrian> Walking()
+        {
+            var city = InstanceBehavior<CityManager>.Instance;
+            return city != null && city.pedestrianSpawner != null ? city.pedestrianSpawner.activePedestrians : null;
+        }
+
+        // Behind the black screen of a walk out (Core/ScenePrewarm): the merges no frame of play may pay for. Done for this
+        // door whatever is left; the next look asks again.
+        private static bool AtDoor()
+        {
+            _asked = false;
+            if (_coatsFailed)
+            {
+                return true;
             }
             try
             {
-                for (int i = 0; i < walking.Count; i++)
+                Forget();
+                if (_cold)
                 {
-                    AppearanceSetter look = walking[i] != null && walking[i].tpc != null ? walking[i].tpc.appearanceSetter : null;
-                    if (look == null || Dressed.ContainsKey(look) || Seen(look))
-                    {
-                        continue;
-                    }
-                    Dress(look, season == CalendarRules.Winter);
-                    return;   // one a look
+                    DressSome(DoorMost);
+                }
+                else
+                {
+                    PutBack(DoorMost);
                 }
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 _coatsFailed = true;
                 SeasonDirector.Logger?.Error(e);
                 SeasonDirector.Logger?.Warn("Seasons: people's clothes cannot be changed in this build; they keep the game's own this session.");
                 RestoreCoats();
             }
+            return true;
         }
 
-        // On screen now: the merged mesh's own answer, else nearer than the game spawns people (50 to 90 m off).
-        private static bool Seen(AppearanceSetter look)
+        private static void DressSome(int most)
         {
-            if (look.lastMergedMeshRenderer != null)
+            List<Pedestrian> walking = Walking();
+            for (int i = 0; walking != null && i < walking.Count && most > 0; i++)
             {
-                return look.lastMergedMeshRenderer.isVisible;
+                AppearanceSetter look = walking[i] != null && walking[i].tpc != null ? walking[i].tpc.appearanceSetter : null;
+                if (look != null && !Dressed.ContainsKey(look))
+                {
+                    Dress(look, _winter);
+                    most--;
+                }
             }
-            return (look.transform.position - Player).sqrMagnitude < OutOfSight * OutOfSight;
+        }
+
+        // A walker the pool destroyed (one released past its most) leaves its key: nothing of it is to be put back.
+        private static void Forget()
+        {
+            Undress.Clear();
+            foreach (KeyValuePair<AppearanceSetter, Worn> one in Dressed)
+            {
+                if (one.Key == null)
+                {
+                    Undress.Add(one.Key);
+                }
+            }
+            for (int i = 0; i < Undress.Count; i++)
+            {
+                Dressed.Remove(Undress[i]);
+            }
+            Undress.Clear();
         }
 
         // The game's own list is read, never copied: what was worn stays as the game had it once it drops it for the change.
@@ -285,6 +342,7 @@ namespace RealLifeOverhaul.Seasons
         /// <summary>Every outfit changed put back at once. Safe at any time.</summary>
         public static void RestoreCoats()
         {
+            _asked = false;   // the city's pieces go with it (Core/ScenePrewarm): asked again at the next look
             try
             {
                 PutBack(int.MaxValue);
