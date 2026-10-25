@@ -115,6 +115,12 @@ namespace RealLifeOverhaul.Seasons
 
         public static int GoodCount => Goods.Length;
 
+        /// <summary>True when these seasons stand down for Alcware - Seasons: it is switched on and the player has not asked for both.</summary>
+        public static bool StandsDown(bool alcwareLoaded, bool keptBeside)
+        {
+            return alcwareLoaded && !keptBeside;
+        }
+
         /// <summary>The season of a day: CalendarRules.Winter, Spring, Summer or Autumn.</summary>
         public static int SeasonOf(int day, int year)
         {

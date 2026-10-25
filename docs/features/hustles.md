@@ -72,7 +72,7 @@ Each morning the city's people put up `GoodsADay` (9) goods and `CarsADay` (2) c
 - Pay is the table's at today's price level, times the client's own figure (90 to 115 %), and 10 % more for a rating of 4.5 or better.
 - At the door, Start the job opens the work panel. With no van or pickup (cargo room of 14 or more) within 35 m of the door, Hire a van takes the jobs' van for the day (its fee, once a day), given back when the visit is paid.
 - The stars: 3 for coming, up to 1.5 more by the skill the work draws on, half a star either way by chance, one off for coming late, two off for leaving before the end (paid for the minutes worked). Five stars bring a tip of 10 %.
-- Booked and nobody came: one star. Called off: two.
+- Booked and nobody came: one star. Called off: two. A request can be booked or sent a helper only while the client waits (`HustleRules.Takeable`); after that the visit is gone and the player is told.
 - A helper takes 55 % of the pay, starts when the client wants and is done after the visit's hours; they are rated 3, 4 or 5 stars (one in four, two in four, one in four), and their stars count as the player's.
 - The last twenty ratings make the player's rating.
 
