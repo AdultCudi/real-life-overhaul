@@ -203,7 +203,12 @@ namespace RealLifeOverhaul.Markets
                     ListingText.Findings(f.Findings));
                 Logger?.Info("Listing: the audit is signed on day " + day + ", findings " + f.Findings + (clean ? " (clean)." : " (qualified: no listing until another clean audit)."));
             }
-            if (f.HandOver.Count > 0 && day > f.HandOverBy)
+            bool session = GoingPublic.InSession;   // HandOverNow does nothing in one, so its days do not count against the buyer's time
+            if (f.HandOver.Count > 0)
+            {
+                f.HandOverBy = ListingBook.HandOverDeadline(f.HandOverBy, session);
+            }
+            if (ListingBook.HandOverLate(f.HandOver.Count, day, f.HandOverBy, session))
             {
                 long owed = f.HandOverCount > 0 ? f.HandOverOwed * f.HandOver.Count / f.HandOverCount : f.HandOverOwed;
                 _engine.Wallet.Force(owed, ListingMoney.Kept, f.HandOverTo ?? string.Empty);

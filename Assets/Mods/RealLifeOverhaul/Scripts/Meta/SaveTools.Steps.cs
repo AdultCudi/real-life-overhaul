@@ -191,7 +191,10 @@ namespace RealLifeOverhaul.Meta
             public int Messages;
             public int Notifications;
             public int Transactions;      // counted, never removed
-            public int BusinessTypes;     // businesses of the tech sector's types made the game's own office business again
+            public int TechTypes;         // businesses of the tech sector's types made web development agencies again
+            public int Academies;         // academies made recruitment agencies again
+            public int Branches;          // bank branches made gift shops again
+            public int ShopKinds;         // ice cream parlours, tea bars and tobacconists made fast food restaurants, coffee shops and liquor stores
 
             public int Total => Modifiers.Count + Contacts.Count + DataKeys.Count + Notifications;
         }
@@ -249,10 +252,10 @@ namespace RealLifeOverhaul.Meta
             }
             RemoveModifiers(save, removed);
             RemoveData(save, removed);
-            removed.BusinessTypes += Tech.TechTypes.Strip(save);   // the tech sector's business types, made the game's own web development agency again
-            removed.BusinessTypes += Careers.AcademyType.Strip(save);   // the player's academies, made the game's own recruitment office again
-            removed.BusinessTypes += Economy.BranchType.Strip(save);   // the player's bank branches, made the game's own gift shops again
-            removed.BusinessTypes += Shops.ShopsGame.Strip(save);   // ice cream parlours, tea bars and tobacconists, made the game's fast food restaurants, coffee shops and liquor stores
+            removed.TechTypes += Tech.TechTypes.Strip(save);   // the tech sector's business types, made the game's own web development agency again
+            removed.Academies += Careers.AcademyType.Strip(save);   // the player's academies, made the game's own recruitment agency again
+            removed.Branches += Economy.BranchType.Strip(save);   // the player's bank branches, made the game's own gift shops again
+            removed.ShopKinds += Shops.ShopsGame.Strip(save);   // ice cream parlours, tea bars and tobacconists, made the game's fast food restaurants, coffee shops and liquor stores
 
             if (save.Contacts != null)
             {
