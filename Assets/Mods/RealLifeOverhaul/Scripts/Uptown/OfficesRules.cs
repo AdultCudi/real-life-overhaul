@@ -149,7 +149,7 @@ namespace RealLifeOverhaul.Uptown
         public const int ShareMost = 100;   // % of a type's units kept to let at most
 
         /// <summary>
-        /// How many of a building type's units to open a business in after the game's generator (LifeGame.OpenUnits): those
+        /// How many of a building type's units to open a business in after the game's generator (an earlier build's opening pass; MixRules.Change is the mix pass's): those
         /// empty to let past the share the game keeps to let (<paramref name="sharePercent"/> of <paramref name="units"/>,
         /// rounded as the game's MarkBuildingsForRent rounds it, halves to even), never fewer than none. The generator gives a
         /// unit a business only where an importer or wholesaler rival takes its size, and Uptown is no corporation rival's home,
