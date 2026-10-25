@@ -68,7 +68,7 @@ namespace RealLifeOverhaul.Tech
             for (int i = 0; all != null && i < all.Count; i++)
             {
                 BuildingRegistration reg = all[i];
-                if (reg != null && GoingPublic.Mine(reg) && reg.HasValidAddress && reg.HasEstablishedBusiness && KindOf(reg.businessTypeName) >= 0)
+                if (reg != null && GoingPublic.Mine(reg) && reg.HasValidAddress && reg.HasEstablishedBusiness && KindOf(reg.businessTypeName) >= 0 && GameRegistrations.Found(reg))
                 {
                     into.Add(reg);
                 }
@@ -84,7 +84,7 @@ namespace RealLifeOverhaul.Tech
             {
                 BuildingRegistration reg = all[i];
                 if (reg != null && GoingPublic.Mine(reg) && reg.HasValidAddress && reg.HasEstablishedBusiness && !string.IsNullOrEmpty(reg.businessTypeName)
-                    && reg.businessTypeName != "ba:businesstype_empty" && KindOf(reg.businessTypeName) < 0)
+                    && reg.businessTypeName != "ba:businesstype_empty" && KindOf(reg.businessTypeName) < 0 && GameRegistrations.Found(reg))
                 {
                     into.Add(new KeyValuePair<string, string>(TalentGame.Place(reg), TalentGame.NameOf(reg)));
                 }
@@ -242,7 +242,7 @@ namespace RealLifeOverhaul.Tech
             for (int i = 0; all != null && i < all.Count; i++)
             {
                 BuildingRegistration reg = all[i];
-                if (reg == null || !reg.RentedByPlayer || !reg.HasValidAddress || !reg.HasEstablishedBusiness)
+                if (reg == null || !reg.RentedByPlayer || !reg.HasValidAddress || !reg.HasEstablishedBusiness || !GameRegistrations.Found(reg))
                 {
                     continue;
                 }
@@ -274,15 +274,8 @@ namespace RealLifeOverhaul.Tech
                 }
                 street = reg.StreetName;
                 number = reg.StreetNumber;
-                try
-                {
-                    string id = reg.Neighborhood;
-                    district = string.IsNullOrEmpty(id) ? null : id.GetLocalization();
-                }
-                catch (Exception)
-                {
-                    district = null;
-                }
+                string id = GameRegistrations.District(reg);
+                district = string.IsNullOrEmpty(id) ? null : id.GetLocalization();
                 return true;
             }
             return false;

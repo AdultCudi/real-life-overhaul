@@ -74,16 +74,8 @@ namespace RealLifeOverhaul.Economy.Brands
                 shop.Place = Place(reg);
                 shop.Name = string.IsNullOrEmpty(reg.BusinessName) ? "?" : reg.BusinessName;
                 shop.Type = reg.businessTypeName ?? string.Empty;
-                try
-                {
-                    shop.Address = reg.Address;
-                    shop.District = reg.Neighborhood;
-                }
-                catch (Exception)
-                {
-                    shop.Address = null;   // a business whose building cannot be read is in no district
-                    shop.District = null;
-                }
+                shop.Address = reg.Address;
+                shop.District = GameRegistrations.District(reg);
                 shop.File = state.Member(shop.Place);
                 shop.Chain = state.TakenAt(shop.Place);
                 shop.Customers = shop.Takings = 0;

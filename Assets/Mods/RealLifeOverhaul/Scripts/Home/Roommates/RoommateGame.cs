@@ -63,7 +63,7 @@ namespace RealLifeOverhaul.Roommates
         {
             try
             {
-                return r.GetBuildingType() == Residential;
+                return GameRegistrations.BuildingType(r) == Residential;
             }
             catch (Exception)
             {
@@ -134,7 +134,7 @@ namespace RealLifeOverhaul.Roommates
                 {
                     return home.RentPerDay * level + bills;
                 }
-                Building building = home.BuildingCached;
+                Building building = GameRegistrations.BuildingOf(home);
                 return (building != null ? building.GetBuildingDailyMarketRent() * level : 0f) + bills;
             }
             catch (Exception e)

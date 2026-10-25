@@ -95,7 +95,7 @@ namespace RealLifeOverhaul.Economy
 
         private static bool IsWarehouse(BuildingRegistration reg)
         {
-            return reg is Warehouse && GoingPublic.Mine(reg) && reg.HasValidAddress && reg.businessTypeName == WarehouseType;
+            return reg is Warehouse && GoingPublic.Mine(reg) && reg.HasValidAddress && reg.businessTypeName == WarehouseType && GameRegistrations.Found(reg);
         }
 
         /// <summary>The businesses that take money and the warehouses the player runs. One pass over the save's buildings.</summary>

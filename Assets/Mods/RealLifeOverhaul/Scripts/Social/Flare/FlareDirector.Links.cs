@@ -129,7 +129,8 @@ namespace RealLifeOverhaul.Flare
                 return 0;
             }
             int day = SaveGameManager.Current.Day;
-            int clean = d._file.Net.Watches.Count > 0 && d._file.Net.WatchIn(reg.Neighborhood, day, FlareOrder.Cleanup) != FlareOrder.None ? FlareLiveRules.CleanFootfall : 0;
+            string district = d._file.Net.Watches.Count > 0 ? GameRegistrations.District(reg) : null;
+            int clean = district != null && d._file.Net.WatchIn(district, day, FlareOrder.Cleanup) != FlareOrder.None ? FlareLiveRules.CleanFootfall : 0;
             return (d._file.Buzz.Count > 0 ? d._file.BuzzAt(FlareGame.Place(reg), day) : 0) + clean;
         }
 

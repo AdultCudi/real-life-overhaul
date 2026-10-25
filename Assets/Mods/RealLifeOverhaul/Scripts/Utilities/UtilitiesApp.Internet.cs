@@ -69,7 +69,8 @@ namespace RealLifeOverhaul.Utilities
         {
             Account a = state.Find(place.Place, Service.Internet);
             bool live = a != null && a.State != SupplyState.Closed;
-            string district = place.Reg != null && !string.IsNullOrEmpty(place.Reg.Neighborhood) ? place.Reg.Neighborhood.GetLocalization() : "-";
+            string id = GameRegistrations.District(place.Reg);
+            string district = !string.IsNullOrEmpty(id) ? id.GetLocalization() : "-";
             box.Title(place.Name);
             if (UtilitiesDirector.NeedsNet(place))
             {
@@ -223,7 +224,7 @@ namespace RealLifeOverhaul.Utilities
         private void Reach(PlaceInfo place)
         {
             _reach.Clear();
-            string district = place.Reg != null ? place.Reg.Neighborhood : null;
+            string district = GameRegistrations.District(place.Reg);
             for (int p = 0; p < InternetRules.Count; p++)
             {
                 if (InternetRules.Reaches(p, district))

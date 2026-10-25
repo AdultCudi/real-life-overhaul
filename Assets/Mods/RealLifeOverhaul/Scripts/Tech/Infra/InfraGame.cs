@@ -39,7 +39,7 @@ namespace RealLifeOverhaul.Tech
             for (int i = 0; all != null && i < all.Count; i++)
             {
                 BuildingRegistration reg = all[i];
-                if (reg != null && GoingPublic.Mine(reg) && reg.HasValidAddress && reg.GetBuildingType() == WarehouseBuilding)
+                if (reg != null && GoingPublic.Mine(reg) && reg.HasValidAddress && GameRegistrations.BuildingType(reg) == WarehouseBuilding)
                 {
                     into.Add(reg);
                 }
@@ -52,7 +52,7 @@ namespace RealLifeOverhaul.Tech
             return b != null ? Mathf.Max(0, b.totalSqm) : 0;
         }
 
-        public static string District(BuildingRegistration reg) => reg != null && reg.Neighborhood != null ? reg.Neighborhood : string.Empty;
+        public static string District(BuildingRegistration reg) => GameRegistrations.District(reg) ?? string.Empty;
 
         /// <summary>A charge the player chose (racks, fitting out, a licence), cents: refused if the cash does not cover it.</summary>
         public static bool Pay(long cents, string key, BuildingRegistration at, string name, bool deductible)

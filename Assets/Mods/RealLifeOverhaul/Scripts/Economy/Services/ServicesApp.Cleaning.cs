@@ -71,7 +71,7 @@ namespace RealLifeOverhaul.Economy
                 int clean = ServicesGame.Cleanliness(_shops[i]);
                 TableRow row = Pick("add:" + place, ServicesTables.NotOn, ref selected, out isPicked);
                 row.Set(0, ServicesGame.Name(_shops[i]));
-                row.Set(1, ServicesText.District(_shops[i].Neighborhood));
+                row.Set(1, ServicesText.District(GameRegistrations.District(_shops[i])));
                 row.Set(4, clean.ToString(), clean, clean < ServicesCatalogue.CleanlinessWarn ? TableRow.Yellow : TableRow.Plain);
                 row.Set(6, ServicesText.T("reallife_svc_row_not_on"));
                 adding = isPicked ? _shops[i] : adding;

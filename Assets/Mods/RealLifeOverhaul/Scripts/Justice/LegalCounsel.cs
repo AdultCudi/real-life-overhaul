@@ -51,7 +51,7 @@ namespace RealLifeOverhaul
             }
             foreach (BuildingRegistration registration in save.BuildingRegistrations)
             {
-                if (registration == null || registration.businessTypeName != LawFirmType || string.IsNullOrEmpty(registration.StreetName))
+                if (registration == null || registration.businessTypeName != LawFirmType || string.IsNullOrEmpty(registration.StreetName) || !GameRegistrations.Found(registration))
                 {
                     continue;
                 }

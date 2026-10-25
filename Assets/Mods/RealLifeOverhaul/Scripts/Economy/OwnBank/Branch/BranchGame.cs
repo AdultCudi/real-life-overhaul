@@ -40,7 +40,7 @@ namespace RealLifeOverhaul.Economy
         // A branch of the player's own (not another Going Public player's) that is set up as a business.
         private static bool Mine(BuildingRegistration reg)
         {
-            return BranchType.Is(reg) && GoingPublic.Mine(reg) && reg.HasEstablishedBusiness && reg.HasValidAddress;
+            return BranchType.Is(reg) && GoingPublic.Mine(reg) && reg.HasEstablishedBusiness && reg.HasValidAddress && GameRegistrations.Found(reg);
         }
 
         /// <summary>The player's branches, in the save's order. One pass over the save's buildings.</summary>

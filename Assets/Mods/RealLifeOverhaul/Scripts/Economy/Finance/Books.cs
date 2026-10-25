@@ -82,7 +82,7 @@ namespace RealLifeOverhaul.Economy
             for (int i = 0; i < registrations.Count; i++)
             {
                 BuildingRegistration r = registrations[i];
-                if (GoingPublic.Mine(r) && !r.BuildingOwnedByPlayer && r.RentPerDay > 0f && (!homeRentFree || r.GetBuildingType() != Residential))
+                if (GoingPublic.Mine(r) && !r.BuildingOwnedByPlayer && r.RentPerDay > 0f && GameRegistrations.Found(r) && (!homeRentFree || GameRegistrations.BuildingType(r) != Residential))
                 {
                     o.Rent += r.RentPerDay;
                 }
@@ -177,7 +177,8 @@ namespace RealLifeOverhaul.Economy
         {
             try
             {
-                if (r == null || !GoingPublic.Mine(r) || !r.HasEstablishedBusiness || string.IsNullOrEmpty(r.businessTypeName) || r.businessTypeName == EmptyType || !r.HasValidAddress)
+                if (r == null || !GoingPublic.Mine(r) || !r.HasEstablishedBusiness || string.IsNullOrEmpty(r.businessTypeName) || r.businessTypeName == EmptyType || !r.HasValidAddress
+                    || !GameRegistrations.Found(r))   // one whose building the city lacks is left out of every walk of the player's businesses
                 {
                     return false;
                 }

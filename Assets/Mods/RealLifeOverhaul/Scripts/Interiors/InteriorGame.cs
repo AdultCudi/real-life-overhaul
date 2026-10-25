@@ -102,11 +102,11 @@ namespace RealLifeOverhaul.Interiors
             try
             {
                 if (reg == null || !GoingPublic.Mine(reg) || !reg.HasEstablishedBusiness || !reg.HasValidAddress || string.IsNullOrEmpty(reg.businessTypeName)
-                    || reg.businessTypeName == Empty)
+                    || reg.businessTypeName == Empty || !GameRegistrations.Found(reg))
                 {
                     return InteriorKind.None;
                 }
-                if (reg.businessTypeName == Headquarters || reg.GetBuildingType() == OfficeBuilding)
+                if (reg.businessTypeName == Headquarters || GameRegistrations.BuildingType(reg) == OfficeBuilding)
                 {
                     return InteriorKind.Office;
                 }
@@ -166,14 +166,7 @@ namespace RealLifeOverhaul.Interiors
             {
                 s.Sqm = 0;
             }
-            try
-            {
-                s.District = reg.Neighborhood ?? string.Empty;
-            }
-            catch (Exception)
-            {
-                s.District = string.Empty;
-            }
+            s.District = GameRegistrations.District(reg) ?? string.Empty;
             s.GameMinimum = Minimum(s.District);
             s.Income = IncomeOf(s.District);
             Items(reg, s);
@@ -400,7 +393,8 @@ namespace RealLifeOverhaul.Interiors
                     float strength = 0.5f;
                     try
                     {
-                        strength = NeighborhoodHelper.GetData(reg.Neighborhood).marketingStrength;
+                        string district = GameRegistrations.District(reg);
+                        strength = district != null ? NeighborhoodHelper.GetData(district).marketingStrength : strength;
                     }
                     catch (Exception)
                     {

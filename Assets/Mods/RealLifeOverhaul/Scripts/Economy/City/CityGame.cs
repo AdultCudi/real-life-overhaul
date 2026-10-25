@@ -407,15 +407,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     shop = new CityShop();
                 }
-                string district;
-                try
-                {
-                    district = reg.Neighborhood;
-                }
-                catch (Exception)
-                {
-                    district = null;   // its building cannot be read: no district, the cycle's part alone
-                }
+                string district = GameRegistrations.District(reg);
                 shop.Reg = reg;
                 shop.District = state.District(district);
                 shop.Cycle = cycle;

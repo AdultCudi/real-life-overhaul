@@ -46,7 +46,7 @@ namespace RealLifeOverhaul.Careers
             for (int i = 0; all != null && i < all.Count; i++)
             {
                 BuildingRegistration reg = all[i];
-                if (reg == null || ReferenceEquals(reg, mine) || !Theirs(reg, rival, mine.BusinessName, type))
+                if (reg == null || ReferenceEquals(reg, mine) || !Theirs(reg, rival, mine.BusinessName, type) || !GameRegistrations.Found(reg))
                 {
                     continue;
                 }
@@ -112,14 +112,7 @@ namespace RealLifeOverhaul.Careers
 
         private static string District(BuildingRegistration reg)
         {
-            try
-            {
-                return reg.Neighborhood ?? string.Empty;
-            }
-            catch (Exception)
-            {
-                return string.Empty;   // (a registration whose building is not in this city's list)
-            }
+            return GameRegistrations.District(reg) ?? string.Empty;
         }
 
         // The registration at an address, if it is none of a player's.

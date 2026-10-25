@@ -112,7 +112,7 @@ namespace RealLifeOverhaul.Markets
             {
                 return false;
             }
-            return reg.GetBuildingType() == WarehouseType || reg.businessTypeName == FactoryType;
+            return GameRegistrations.BuildingType(reg) == WarehouseType || reg.businessTypeName == FactoryType;
         }
 
         /// <summary>A place's key as a contract keeps it: its street and number.</summary>

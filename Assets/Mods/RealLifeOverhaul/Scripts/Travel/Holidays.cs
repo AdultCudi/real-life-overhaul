@@ -146,7 +146,7 @@ namespace RealLifeOverhaul
                 for (int i = 0; all != null && i < all.Count; i++)
                 {
                     BuildingRegistration registration = all[i];
-                    if (registration == null || !GoingPublic.Mine(registration))
+                    if (registration == null || !GoingPublic.Mine(registration) || !GameRegistrations.Found(registration))
                     {
                         continue;
                     }
@@ -157,7 +157,7 @@ namespace RealLifeOverhaul
                     }
                     count++;
                     profit += registration.GetAvgDailyIncome(7);
-                    alerts += registration.Alerts;
+                    alerts += GameRegistrations.Alerts(registration);
                 }
                 if (count == 0)
                 {

@@ -305,7 +305,7 @@ namespace RealLifeOverhaul.Shops
             for (int i = 0; all != null && i < all.Count; i++)
             {
                 BuildingRegistration reg = all[i];
-                if (reg != null && reg != here && reg.RentedByPlayer && ShopsCatalogue.Is(reg.businessTypeName) && GoingPublic.Mine(reg))
+                if (reg != null && reg != here && reg.RentedByPlayer && ShopsCatalogue.Is(reg.businessTypeName) && GoingPublic.Mine(reg) && GameRegistrations.Found(reg))
                 {
                     into.Add(reg);
                 }

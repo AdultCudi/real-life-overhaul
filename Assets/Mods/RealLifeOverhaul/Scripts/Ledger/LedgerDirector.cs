@@ -501,7 +501,7 @@ namespace RealLifeOverhaul.Ledger
                 List<BuildingRegistration> all = Save != null ? Save.BuildingRegistrations : null;
                 for (int i = 0; all != null && i < all.Count; i++)
                 {
-                    if (all[i] != null && GoingPublic.Mine(all[i]) && all[i].GetBuildingType() == Residential)
+                    if (all[i] != null && GoingPublic.Mine(all[i]) && GameRegistrations.BuildingType(all[i]) == Residential)
                     {
                         _homeReg = all[i];
                         break;

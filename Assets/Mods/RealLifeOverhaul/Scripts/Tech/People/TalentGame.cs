@@ -50,7 +50,7 @@ namespace RealLifeOverhaul.Tech
                     return true;
                 }
                 BuildingRegistration reg = e.assignedAddress != null ? BuildingHelper.GetBuildingRegistration(e.assignedAddress) : null;
-                return reg != null && reg.GetBuildingType() == Office;
+                return reg != null && GameRegistrations.BuildingType(reg) == Office;
             }
             catch (Exception)
             {
@@ -193,7 +193,7 @@ namespace RealLifeOverhaul.Tech
             {
                 BuildingRegistration reg = all[i];
                 if (reg != null && GoingPublic.Mine(reg) && reg.HasValidAddress && reg.HasEstablishedBusiness && !string.IsNullOrEmpty(reg.businessTypeName)
-                    && reg.businessTypeName != "ba:businesstype_empty")
+                    && reg.businessTypeName != "ba:businesstype_empty" && GameRegistrations.Found(reg))
                 {
                     into.Add(reg);
                 }

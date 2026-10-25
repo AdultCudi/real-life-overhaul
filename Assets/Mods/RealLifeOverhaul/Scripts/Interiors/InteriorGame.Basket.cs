@@ -50,7 +50,12 @@ namespace RealLifeOverhaul.Interiors
             {
                 return 0;
             }
-            List<CustomerEntry> made = calculator.GetCustomersEntriesForHour(next, n, NeighborhoodHelper.GetData(reg.Neighborhood).customerDemandsWeight);
+            string district = GameRegistrations.District(reg);
+            if (district == null)
+            {
+                return 0;   // no building, so no district for the game's calculator to weigh
+            }
+            List<CustomerEntry> made = calculator.GetCustomersEntriesForHour(next, n, NeighborhoodHelper.GetData(district).customerDemandsWeight);
             DrawPrint before = CustomerDraw.Print(entries);
             int added = 0;
             for (int i = 0; made != null && i < made.Count && added < n; i++)   // the calculator's own list: taken from at once

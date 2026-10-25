@@ -171,7 +171,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     return false;
                 }
-                Building building = reg.BuildingCached;
+                Building building = GameRegistrations.BuildingOf(reg);
                 return building != null && BuildingTypeHelper.GetData(building).NeedsCleaning;
             }
             catch (Exception)
@@ -232,7 +232,7 @@ namespace RealLifeOverhaul.Economy
                 return;
             }
             c.Name = Name(reg);
-            c.District = reg.Neighborhood ?? string.Empty;
+            c.District = GameRegistrations.District(reg) ?? string.Empty;
             if (Door(reg, out int x, out int z))
             {
                 c.X = x;
@@ -513,7 +513,7 @@ namespace RealLifeOverhaul.Economy
                     {
                         continue;
                     }
-                    Building building = reg.BuildingCached;
+                    Building building = GameRegistrations.BuildingOf(reg);
                     if (building == null || building.SpecialService != null || !BuildingTypeHelper.GetData(building).NeedsCleaning)
                     {
                         continue;

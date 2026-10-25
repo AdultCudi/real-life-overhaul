@@ -214,7 +214,7 @@ namespace RealLifeOverhaul
             for (int i = 0; i < save.BuildingRegistrations.Count; i++)
             {
                 BuildingRegistration registration = save.BuildingRegistrations[i];
-                if (registration != null && GoingPublic.Mine(registration) && registration.HasEstablishedBusiness)
+                if (registration != null && GoingPublic.Mine(registration) && registration.HasEstablishedBusiness && GameRegistrations.Found(registration))
                 {
                     count++;
                 }
@@ -235,7 +235,7 @@ namespace RealLifeOverhaul
             for (int i = 0; i < save.BuildingRegistrations.Count; i++)
             {
                 BuildingRegistration registration = save.BuildingRegistrations[i];
-                if (registration == null || !GoingPublic.Mine(registration))
+                if (registration == null || !GoingPublic.Mine(registration) || !GameRegistrations.Found(registration))
                 {
                     continue;
                 }
