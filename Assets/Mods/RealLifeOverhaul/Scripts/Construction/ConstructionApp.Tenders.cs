@@ -62,6 +62,10 @@ namespace RealLifeOverhaul.Construction
             box.Title(_director.TenderName(t));
             box.Subtitle(ConstructionText.T(t.Source == TenderSource.CityWorks ? "reallife_bld_source_city" : t.Source == TenderSource.Public
                 ? "reallife_bld_source_public" : t.Source == TenderSource.Landmark ? "reallife_lmk_source" : "reallife_bld_source_client"));
+            if (_director.HasPlace(t))
+            {
+                MapRow(box, () => _director.ShowTender(t));
+            }
             int days = TenderRules.StandardDays(t.Hours);
             box.RowPair("reallife_bld_row_value", ConstructionText.Money(t.Value), "reallife_bld_row_hours", ConstructionText.N(t.Hours));
             box.RowPair("reallife_bld_row_usual_days", ConstructionText.N(days), "reallife_bld_row_closes", ConstructionText.When(t.Closes));

@@ -239,6 +239,21 @@ namespace RealLifeOverhaul.Construction
             }
         }
 
+        internal static void SetSiteDone(int site, float done)
+        {
+            try
+            {
+                if (!Down("SiteDone"))
+                {
+                    ConstructionBridges.SiteDone?.Invoke(site, done);
+                }
+            }
+            catch (Exception e)
+            {
+                Faulty("SiteDone", e);
+            }
+        }
+
         internal static bool FinishSite(int site)
         {
             try
@@ -413,6 +428,19 @@ namespace RealLifeOverhaul.Construction
             {
                 Faulty("Claim", e);
                 return 0;
+            }
+        }
+
+        internal static int ClaimDue(int number)
+        {
+            try
+            {
+                return number > 0 && !Down("ClaimDue") && ConstructionBridges.ClaimDue != null ? ConstructionBridges.ClaimDue(number) : -1;
+            }
+            catch (Exception e)
+            {
+                Faulty("ClaimDue", e);
+                return -1;
             }
         }
 

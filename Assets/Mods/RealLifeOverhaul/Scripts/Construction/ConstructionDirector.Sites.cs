@@ -7,8 +7,11 @@ namespace RealLifeOverhaul.Construction
     /// <summary>
     /// The director's part the city's construction programme asks (through Wiring/Wiring.ConstructionLinks): how many hours one of
     /// the builders' sites works in a working hour, whether a site is a builder's, its notice board's name, its finished
-    /// look and its handover. A project's site goes at its crews' pace, as far as the materials on site allow, and stands
-    /// at the end of each stage until the building inspector has passed it. Asked once a working hour a site, never per frame.
+    /// look and its handover. A project's site goes at its crews' pace, as far as the materials on site allow, stands at the
+    /// end of each stage until the building inspector has passed it and goes straight on into the next (SiteRules.Hour,
+    /// PlansRules.WorkingStage). The programme says which hour it works, so a sleep it catches up at once on waking keeps the
+    /// days it would have kept awake: the inspector booked and coming at the hour's own time. Asked once a working hour a
+    /// site, never per frame.
     /// </summary>
     public sealed partial class ConstructionDirector
     {
@@ -16,8 +19,8 @@ namespace RealLifeOverhaul.Construction
         private readonly int[] _need = new int[(int)Trade.Count];
         private readonly int[] _exchange = new int[(int)Material.Count];
 
-        /// <summary>The hours a site of the programme works in one of its working hours, given what the city's pace makes it.</summary>
-        public float WorkOn(int siteId, double done, double needed, float hours)
+        /// <summary>The hours a site of the programme works in one of its working hours (the day and hour it works), given what the city's pace makes it.</summary>
+        public float WorkOn(int siteId, double done, double needed, float hours, int day, int hour)
         {
             if (LandmarkWorks(siteId) != null)
             {
@@ -25,7 +28,9 @@ namespace RealLifeOverhaul.Construction
             }
             if (!Ready())
             {
-                return hours;
+                // A builder's site waits while its construction game has faulted, as while it is off: at the city's pace it would be
+                // handed over with nobody to hear it, its project left building with no site for good.
+                return _loaded && _state != null && (_state.OnSite(siteId) != null || DevOnSite(siteId) != null) ? 0f : hours;
             }
             ProjectFile p = _state.OnSite(siteId);
             if (p != null)
@@ -34,7 +39,7 @@ namespace RealLifeOverhaul.Construction
                 {
                     return Running ? hours : 0f;   // a contractor's refit goes at the city's own pace, its crews and materials the contractor's
                 }
-                return Running ? Work(p, done, needed, hours) : 0f;   // the company's crews, or a hired builder's at its own pace through the same inspections
+                return Running ? Work(p, done, needed, hours, day, hour) : 0f;   // the company's crews, or a hired builder's at its own pace through the same inspections
             }
             DevFile dev = DevOnSite(siteId);
             if (dev != null)
@@ -135,8 +140,11 @@ namespace RealLifeOverhaul.Construction
             return dev != null ? dev.Lot : null;
         }
 
-        /// <summary>A site of the programme was handed over: a project's, a development's, or none of the builders'.</summary>
-        public void SiteHanded(int siteId)
+        /// <summary>
+        /// A site of the programme was handed over on a day (the day of the hour that finished it, which a sleep's catching up
+        /// works some time after): a project's, a development's, or none of the builders'.
+        /// </summary>
+        public void SiteHanded(int siteId, int day)
         {
             if (!Ready())
             {
@@ -144,7 +152,7 @@ namespace RealLifeOverhaul.Construction
             }
             try
             {
-                int day = ConstructionGame.Day;
+                day = Math.Min(day, ConstructionGame.Day);
                 ProjectFile p = _state.OnSite(siteId);
                 if (p != null)
                 {
@@ -169,6 +177,41 @@ namespace RealLifeOverhaul.Construction
             }
         }
 
+        // The day's pass: a building (a plot or a rebuild, the company's or a builder's) whose site the programme no longer holds
+        // (emptied by its test, lost from a Going Public guest's copy of the host's programme) is set out again where its stage
+        // began, so it never stands building with no site; what was passed and paid stands. Nothing while the programme holds no
+        // site at all, which cannot tell a lost one from one not read yet.
+        private void SitesLost()
+        {
+            if (SiteCount() <= 0)
+            {
+                return;
+            }
+            for (int i = 0; i < _state.Projects.Count; i++)
+            {
+                ProjectFile p = _state.Projects[i];
+                if (p.Stage != ProjectStage.Building || p.SiteId <= 0 || (p.Kind != ProjectKind.Plot && p.Kind != ProjectKind.Rebuild) || SiteOf(p.SiteId).Known)
+                {
+                    continue;
+                }
+                int lost = p.SiteId;
+                int site = StartSite(p, Math.Max(0, p.Contractor), out string why);
+                if (site <= 0)
+                {
+                    Logger?.Info("Construction: project " + p.Id + "'s site " + lost + " is not in the city's programme and could not be set out again (" + why + "); tried again tomorrow.");
+                    continue;
+                }
+                WorkStage stage = (WorkStage)BuildCatalogue.Clamp(p.StageSeen, 0, (int)WorkStage.Envelope);
+                PlansRules.Span(p.Model, stage, out double from, out _);
+                SetSiteDone(site, (float)(from * p.Hours));
+                p.SiteId = site;
+                Logger?.Info("Construction: project " + p.Id + "'s site " + lost + " was not in the city's programme; set out again as site " + site + " where its " + stage + " stage began ("
+                             + (int)Math.Round(from * 100.0) + "% of " + p.Hours + " working hours), its inspections and payments as they were.");
+                Tell(NotificationType.Warning, "reallife_bld_notice_site_again", ProjectName(p), BuildCatalogue.StageKeys[(int)stage], TabProjects, p.Id);
+                Changed();
+            }
+        }
+
         private DevFile DevOnSite(int siteId)
         {
             for (int i = 0; siteId > 0 && i < _state.Developments.Count; i++)
@@ -183,15 +226,19 @@ namespace RealLifeOverhaul.Construction
 
         // ------------------------------------------------------------------ a project's working hour
 
-        private float Work(ProjectFile p, double done, double needed, float hours)
+        // The hour (day and hour) the programme works it: the rules decide what it comes to (SiteRules.Hour), this does it.
+        private float Work(ProjectFile p, double done, double needed, float hours, int day, int hour)
         {
             if (needed <= 0.0)
             {
                 return hours;
             }
             ProjectKind model = p.Model;
-            double progress = done / needed;
-            WorkStage stage = PlansRules.StageAt(model, Math.Max(0.0, progress - 1e-7));   // a stage's end still counts as that stage
+            if (p.Hired && p.WaitHours > 0)
+            {
+                HireResumed(p, done / needed, day);   // a site an older version held at a stage's end for good goes on from where it stands
+            }
+            WorkStage stage = PlansRules.WorkingStage(model, done / needed, PlansRules.Passed(p.Insp));
             if ((int)stage != p.StageSeen)
             {
                 if (p.Hired)
@@ -203,51 +250,36 @@ namespace RealLifeOverhaul.Construction
                     EnterStage(p, stage);
                 }
             }
-            PlansRules.Span(model, stage, out double from, out double to);
-            int inspection = PlansRules.InspectionAfter(model, stage);
-            bool last = stage == WorkStage.Envelope;
-            double end = last ? 0.999 : to;
-            if (progress >= end - 1e-6)
-            {
-                if (inspection >= 0 && p.Insp[inspection] != InspectionState.Passed)
-                {
-                    if (p.Insp[inspection] == InspectionState.NotDue)
-                    {
-                        InspectionDue(p, inspection);
-                    }
-                    return 0f;   // the building inspector decides
-                }
-                if (last)
-                {
-                    return (float)Math.Max(0.0, needed - done) + 0.01f;   // passed: handed over
-                }
-            }
-            int day = ConstructionGame.Day;
             int pace = p.Hired ? p.HirePace : Pace(p, stage, day);
-            if (pace <= 0)
+            double share = p.Hired ? 1.0 : SiteRules.MaterialsShare(p.Have, p.Need);   // read after a new stage has set out what it needs
+            int inspection = PlansRules.InspectionAfter(model, stage);
+            InspectionState held = inspection >= 0 ? p.Insp[inspection] : InspectionState.Passed;
+            SiteHour work = SiteRules.Hour(model, stage, done, needed, hours, pace, share, held, inspection >= 0 ? p.InspDay[inspection] : 0, p.Rework, day, hour);
+            p.Rework = work.Rework;
+            switch (work.Call)
             {
-                return 0f;
+                case SiteCall.Due:
+                case SiteCall.Redo:
+                    InspectionDue(p, work.Inspection, day, hour);   // a builder books it at this hour; the company's manager, or the player, books it
+                    break;
+                case SiteCall.Held:
+                    if (p.Hired && p.Insp[work.Inspection] == InspectionState.Due)
+                    {
+                        HiredBooks(p, work.Inspection, day, hour);   // a builder never leaves its inspection unbooked
+                    }
+                    break;
+                case SiteCall.Visit:
+                    Inspect(p, work.Inspection, day);   // the inspector's visit at the hour's own time, whenever the programme works it
+                    break;
+                case SiteCall.Short:
+                    p.WaitHours++;   // a working hour lost for want of materials
+                    break;
+                case SiteCall.Worked:
+                    p.PaceSum += pace;
+                    p.PaceDays++;
+                    break;
             }
-            if (p.Rework > 0)
-            {
-                p.Rework = Math.Max(0, p.Rework - (int)Math.Round(hours * pace / 100.0));   // tenths of an hour of rework
-                if (p.Rework == 0 && inspection >= 0 && p.Insp[inspection] == InspectionState.Failed)
-                {
-                    InspectionDue(p, inspection);   // put right: the inspector is asked again
-                }
-                return 0f;
-            }
-            double share = p.Hired ? 1.0 : SiteRules.MaterialsShare(p.Have, p.Need);
-            double cap = Math.Min(end, from + (to - from) * share);
-            double allowed = cap * needed - done;
-            if (allowed <= 1e-6)
-            {
-                p.WaitHours++;   // a working hour lost for want of materials
-                return 0f;
-            }
-            p.PaceSum += pace;
-            p.PaceDays++;
-            return (float)Math.Min(hours * pace / 1000.0, allowed);
+            return (float)work.Hours;
         }
 
         // The pace of a project's stage: the crews on it (not on strike), their skill and morale, the plant there and missing.
@@ -345,16 +377,17 @@ namespace RealLifeOverhaul.Construction
 
         // ------------------------------------------------------------------ inspections
 
-        private void InspectionDue(ProjectFile p, int inspection)
+        // An inspection falls due in the hour (day and hour) the programme works the site.
+        private void InspectionDue(ProjectFile p, int inspection, int day, int hour)
         {
             p.Insp[inspection] = InspectionState.Due;
             Logger?.Info("Construction: project " + p.Id + " is ready for its " + (Inspection)inspection + " inspection.");
             if (p.Hired)
             {
-                HiredBooks(p, inspection);   // the builder books the inspector and pays the fee itself
+                HiredBooks(p, inspection, day, hour);   // the builder books the inspector and pays the fee itself
                 return;
             }
-            if (!ManagerBooks(p, inspection))
+            if (!ManagerBooks(p, inspection, day, hour))
             {
                 Tell(NotificationType.Info, "reallife_bld_notice_inspection_due", ProjectName(p), BuildCatalogue.InspectionKeys[inspection], TabProjects, p.Id);
             }
@@ -364,8 +397,13 @@ namespace RealLifeOverhaul.Construction
         public string BookInspection(int projectId)
         {
             ProjectFile p = _state != null ? _state.Project(projectId) : null;
-            int inspection = p != null ? DueInspection(p) : -1;
-            if (inspection < 0)
+            return Book(p, p != null ? DueInspection(p) : -1, ConstructionGame.Day, ConstructionGame.Hour);
+        }
+
+        // The booking made at a day's hour: the player's now, a site manager's when the stage ended.
+        private string Book(ProjectFile p, int inspection, int day, int hour)
+        {
+            if (p == null || inspection < 0 || p.Insp[inspection] != InspectionState.Due)
             {
                 return "reallife_bld_answer_no_inspection";
             }
@@ -376,7 +414,7 @@ namespace RealLifeOverhaul.Construction
             }
             Spend(p, fee);
             p.Insp[inspection] = InspectionState.Booked;
-            p.InspDay[inspection] = SiteRules.InspectorDay(ConstructionGame.Day, ConstructionGame.Hour);
+            p.InspDay[inspection] = SiteRules.InspectorDay(day, hour);
             Logger?.Info("Construction: project " + p.Id + "'s " + (Inspection)inspection + " inspection booked for day " + p.InspDay[inspection] + " (fee " + fee + ").");
             Changed();
             return "reallife_bld_answer_inspection_booked";
@@ -425,6 +463,8 @@ namespace RealLifeOverhaul.Construction
             p.Rework = SiteRules.Rework(PlansRules.StageHours(p.Hours, p.Model, stage));
             if (hired)
             {
+                Logger?.Info("Construction: project " + p.Id + " failed its " + (Inspection)inspection + " inspection on day " + day + "; builder " + p.Contractor + " puts it right ("
+                             + (p.Rework / 10.0).ToString("0.#", CultureInfo.InvariantCulture) + " working hour(s)) and books the inspector again.");
                 TellHire(NotificationType.Warning, "reallife_bld_notice_hire_failed", p, 0L, BuildCatalogue.InspectionKeys[inspection]);   // the builder puts it right in its own time
                 return;
             }
@@ -517,7 +557,7 @@ namespace RealLifeOverhaul.Construction
             int due = DueInspection(p);
             if (due >= 0)
             {
-                ManagerBooks(p, due);
+                ManagerBooks(p, due, day, hour);
             }
             if (p.OrderDay == 0 && !SiteRules.Supplied(p.Have, p.Need))
             {
@@ -549,13 +589,13 @@ namespace RealLifeOverhaul.Construction
             }
         }
 
-        private bool ManagerBooks(ProjectFile p, int inspection)
+        private bool ManagerBooks(ProjectFile p, int inspection, int day, int hour)
         {
             if (ManagerOf(p) == null || p.Insp[inspection] != InspectionState.Due)
             {
                 return false;
             }
-            return BookInspection(p.Id) == "reallife_bld_answer_inspection_booked";
+            return Book(p, inspection, day, hour) == "reallife_bld_answer_inspection_booked";
         }
 
         /// <summary>The site manager running a project, or null.</summary>

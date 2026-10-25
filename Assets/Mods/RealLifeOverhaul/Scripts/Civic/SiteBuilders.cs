@@ -13,8 +13,12 @@ namespace RealLifeOverhaul
     /// </summary>
     public static class SiteBuilders
     {
-        /// <summary>The hours a site works in one of its working hours, given what the city's pace makes it. Default: as given.</summary>
-        public static Func<SiteState, float, float> Hours;
+        /// <summary>
+        /// The hours a site works in one of its working hours, given what the city's pace makes it and which hour it is (day x 24
+        /// + hour: the programme works the hours of a sleep at once on waking, so a builder dates what it does by the hour's own
+        /// time). Default: as given.
+        /// </summary>
+        public static Func<SiteState, float, long, float> Hours;
 
         /// <summary>True for a site a builder started (a plot, a rebuild of its own): the programme does not count it among its own. Default: none.</summary>
         public static Func<SiteState, bool> Owns;
@@ -25,8 +29,11 @@ namespace RealLifeOverhaul
         /// <summary>The name a builder's site gives on its notice board; null for the city's contractor. Default: none.</summary>
         public static Func<SiteState, string> Name;
 
-        /// <summary>A site has been handed over: told for every site, so a builder hears of its own and of the city's it runs. Default: nothing.</summary>
-        public static Action<SiteState> Handed;
+        /// <summary>
+        /// A site has been handed over on a day (the day of the hour that finished it): told for every site, so a builder hears
+        /// of its own and of the city's it runs. Default: nothing.
+        /// </summary>
+        public static Action<SiteState, int> Handed;
 
         /// <summary>The programme started one of the city's own sites (it may go to tender). Default: nothing.</summary>
         public static Action<SiteState> Started;
@@ -77,11 +84,11 @@ namespace RealLifeOverhaul
             Notice = null;
         }
 
-        internal static float WorkOn(SiteState site, float hours)
+        internal static float WorkOn(SiteState site, float hours, long at)
         {
             try
             {
-                return Hours != null ? Mathf.Max(0f, Hours(site, hours)) : hours;
+                return Hours != null ? Mathf.Max(0f, Hours(site, hours, at)) : hours;
             }
             catch (Exception e)
             {
@@ -129,11 +136,11 @@ namespace RealLifeOverhaul
             }
         }
 
-        internal static void HandedOver(SiteState site)
+        internal static void HandedOver(SiteState site, int day)
         {
             try
             {
-                Handed?.Invoke(site);
+                Handed?.Invoke(site, day);
             }
             catch (Exception e)
             {

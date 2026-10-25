@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using RealLifeOverhaul.GameUi;
@@ -200,9 +200,7 @@ namespace RealLifeOverhaul.Construction
             place = Vector3.zero;
             if (!string.IsNullOrEmpty(p.Lot) && Lot(p.Lot, out LotView lot))
             {
-                double a = lot.Yaw * Math.PI / 180.0;
-                float half = lot.Depth * 0.5f + 0.8f;   // just out in front of the land's front, on the pavement
-                place = new Vector3(lot.X - (float)Math.Sin(a) * half, lot.Y, lot.Z - (float)Math.Cos(a) * half);
+                place = LotFront(lot);   // just out in front of the land's front, on the pavement: where Show on map leads too
                 return true;
             }
             if (ConstructionGame.Door(p.Street, p.Number, out Vector3 door, out Vector3 outward))

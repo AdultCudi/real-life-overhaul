@@ -1234,3 +1234,29 @@ menu, every app a button. A folder of the mod's is made of the game's own parts 
   which opens the subway's list window (`DeskList`, section 10) with the places to go.
 
 See [the phone](../../docs/features/phone.md) for what the player sees and what is checked.
+
+## 38. Lines of the mod's in the game's objectives window (`GameUi.TaskGroup`; the construction objectives)
+
+`UIs.Instance.tasksUI` (`UI.Tasks.TasksUI`, `Canvases/Tasks`, the panel of section 10) holds groups under its
+`groupTemplate`'s parent: the business alerts (`bizman_alerts`, made in its `Start`), a job's mission group
+(`MissionTasksUI.CreateTasksGroup`, first in order), the workout plan (`WorkoutPlanUI`) and each side quest
+(`SideQuestUI`). Every one is made by the public `SetUpTasksGroup(headerKey)`, a copy of the template with
+`Headline/Label`'s key set, and filled with copies of the public `taskEntryTemplate`: a `Button` on the entry, `Label`
+(TMP 30 with its `TextLocalizationComponent`), `Checkmark` (a `Toggle`), `DestinationButton` (a `Button`) and
+`CloseButton`. The game's own entries set the label's colour to `GlobalReferences.colors.yellow` or `.red` for its
+medium and high priorities, hide the destination button when there is no address and wire it to the Set destination
+sequence of section 5. After a change the owner calls `ScheduleUpdateObjectivesHeight()`: the game sizes the window,
+folds it away while no group has a shown entry (`HasVisibleObjectiveEntries`, which skips entries named as its
+templates and `Headline`) and opens it again when one has. The whole window's alpha follows the full menu
+(`GlobalEvents.onFullMenuToggle` -> `ChangeVisibility`, also off in a mini game), and it goes with the HUD in the time
+machine and with "hide the interface".
+
+`TaskGroup` makes one group by that call, its entries by instancing the template (named `reallife_task_N`, never a
+template's name), hides `Checkmark` and `CloseButton` (as the game's own time entry does), rewires the entry's button
+and its destination button to the owner's presses (`UiClone.Rewire`), and folds on a press of its headline (a `Button`
+added to `Headline` if it has none, its label the raycast target). Words go through `UiClone.Words`; a line whose words
+did not change is not written again. No line hides the group; the feature off destroys it. A load destroys the window
+with the scene: the next write makes the group again. Nothing runs a frame.
+
+Proven: every member named here (decompiled `TasksUI.cs`, `MissionTasksUI.cs`, `SideQuestUI.cs`, `WorkoutPlanUI.cs`).
+Inferred: how a long line wraps in the entry and how the added headline button takes a press.

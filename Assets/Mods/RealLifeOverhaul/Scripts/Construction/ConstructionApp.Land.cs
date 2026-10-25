@@ -168,6 +168,7 @@ namespace RealLifeOverhaul.Construction
             LotView first = run.First;
             box.Title(ConstructionGame.AddressText(first.Street, first.Number));
             box.Subtitle(ConstructionText.T("reallife_bld_land_run_sub", "count", run.Spaces.ToString()));
+            MapRow(box, () => _director.ShowLot(first.Id));
             box.RowPair("reallife_bld_row_spaces", ConstructionText.T("reallife_bld_value_spaces", "count", run.Spaces.ToString(), "width", run.Width.ToString(), "depth",
                 first.Depth.ToString()), "reallife_bld_row_traffic", ConstructionText.N(first.Traffic));
             box.Row("reallife_bld_row_zoned", ConstructionText.ZonesWords(_director.ClassZones(first.Class)));
@@ -203,6 +204,8 @@ namespace RealLifeOverhaul.Construction
             LotFile owned = state.Lot(lot.Id);
             box.Title(ConstructionGame.AddressText(lot.Street, lot.Number));
             box.Subtitle(ConstructionText.T(BuildCatalogue.ClassKeys[BuildCatalogue.Clamp(lot.Class, 0, BuildCatalogue.ClassCount - 1)]));
+            string lotId = lot.Id;
+            MapRow(box, () => _director.ShowLot(lotId));
             box.RowPair("reallife_bld_row_size", ConstructionText.T("reallife_bld_value_size", "width", lot.Width.ToString(), "depth", lot.Depth.ToString()),
                 "reallife_bld_row_traffic", ConstructionText.N(lot.Traffic));
             if (ConstructionDirector.OnSpaces(lot))
@@ -284,6 +287,8 @@ namespace RealLifeOverhaul.Construction
         {
             box.Title(ConstructionDirector.LandmarkName(site.Id) ?? ConstructionText.T("reallife_lmk_tender_unnamed"));
             box.Subtitle(ConstructionText.T("reallife_lmk_source"));
+            string siteId = site.Id;
+            MapRow(box, () => _director.ShowLot(siteId));
             box.RowPair("reallife_bld_row_size", ConstructionText.T("reallife_bld_value_size", "width", site.Width.ToString(), "depth", site.Depth.ToString()),
                 "reallife_bld_row_traffic", ConstructionText.N(site.Traffic));
             box.Row("reallife_bld_col_state", ConstructionDirector.LandmarkWords(site.Id) ?? string.Empty);
@@ -307,6 +312,9 @@ namespace RealLifeOverhaul.Construction
         {
             box.Title(b.Name);
             box.Subtitle(ConstructionGame.AddressText(b.Street, b.Number));
+            string where = b.Street;
+            int at = b.Number;
+            MapRow(box, () => _director.ShowBuilding(where, at));
             box.RowPair("reallife_bld_row_area", ConstructionText.T("reallife_bld_value_area", "area", ConstructionText.N(b.TotalSqm)), "reallife_bld_row_traffic", ConstructionText.N(b.Traffic));
             box.Row("reallife_bld_row_district", ConstructionGame.DistrictWords(b.District));
             box.Note(ConstructionText.T("reallife_bld_rebuild_note"));

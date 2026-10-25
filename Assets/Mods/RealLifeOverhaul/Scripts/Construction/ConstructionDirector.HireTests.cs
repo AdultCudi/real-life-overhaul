@@ -32,6 +32,16 @@ namespace RealLifeOverhaul.Construction
             return HireTest("a builder's quotes shown", d => d.HireQuotes("a builder's quotes shown"));
         }
 
+        /// <summary>
+        /// Test: a builder hired for the player's building now and its site worked hour by hour to the keys through the director's
+        /// own working hour, the programme's hours run on ahead of the clock as a sleep's catching up runs them: every stage begun,
+        /// each inspection booked by the builder, visited at the hour's own time and paid, nothing standing still, handed over.
+        /// </summary>
+        public static bool TestHireWorkedNow()
+        {
+            return HireTest("a hired builder's site worked to its keys", d => d.HireWorked("a hired builder's site worked to its keys"));
+        }
+
         private static bool HireTest(string test, Func<ConstructionDirector, bool> work)
         {
             ConstructionDirector d = Instance;
@@ -134,6 +144,64 @@ namespace RealLifeOverhaul.Construction
                          + "; handed over on day " + p.Handed + ", its opening on day "
                          + p.Opening + ", " + (p.InDistrict ? "the player's from the next load" : IsTestLot(p.Lot) ? "on a test's lot" : "not the district's yet") + (pass ? ": PASS." : ": FAIL."));
             TestDone(late > 0 ? "a late builder paid its penalty" : "a building of yours put up by a builder of the city's", TabProjects, p.Id);
+            return pass;
+        }
+
+        // Hired, then its site worked from the next working hour as the programme works it (WorkOn, the hour's own day and hour),
+        // the site's hours moved on by what each hour did, and handed over by the programme once its works are done.
+        private bool HireWorked(string test)
+        {
+            if (GoingPublic.IsGuest)
+            {
+                return Failed(HireCheck, test, "reallife_bld_test_host", "a Going Public guest starts no site of the city's programme");
+            }
+            ProjectFile p = HireTestProject(out bool made, out string why);
+            if (p == null)
+            {
+                return Failed(HireCheck, test, "reallife_bld_test_no_building", why ?? "no building of the player's is ready to start");
+            }
+            BeforeTest();
+            int count = Quotes(p, _quotes);
+            string answer = HireBuilder(p, CommissionRules.Cheapest(_quotes, count), true);
+            if (!p.Hired || p.Stage != ProjectStage.Building)
+            {
+                return Failed(HireCheck, test, answer, "no builder could be hired for project " + p.Id + " (" + answer + ")");
+            }
+            int site = p.SiteId, permits = Permits(), worked = 0, seen = p.StageSeen;
+            float speed = CivicCatalogue.SiteSpeed(permits);
+            var stages = new System.Text.StringBuilder(64);
+            long at = (long)ConstructionGame.Day * 24 + ConstructionGame.Hour;
+            for (int guard = 0; guard < 24 * BuildCatalogue.ScheduleMostDays && p.Stage == ProjectStage.Building; guard++)
+            {
+                at++;
+                int day = (int)(at / 24), hour = (int)(at % 24);
+                SiteFacts facts = SiteOf(site);
+                if (!facts.Known || !SiteRules.WorkingHour(day, hour, permits))
+                {
+                    continue;
+                }
+                float done = facts.Done + WorkOn(site, facts.Done, facts.Hours, speed, day, hour);
+                worked++;
+                if (p.StageSeen != seen)
+                {
+                    seen = p.StageSeen;
+                    stages.Append(stages.Length > 0 ? ", " : string.Empty).Append((WorkStage)seen);
+                }
+                if (done >= facts.Hours)
+                {
+                    FinishSite(site);   // the programme hands a finished site over: the handover is the director's own
+                    break;
+                }
+                SetSiteDone(site, done);
+            }
+            bool every = p.Insp[0] == InspectionState.Passed && p.Insp[1] == InspectionState.Passed && p.Insp[2] == InspectionState.Passed && p.HireStages == 7;
+            bool pass = p.Stage == ProjectStage.Finished && every && seen == (int)WorkStage.Envelope && p.HirePaid == p.ContractorPrice - p.HirePenalty && p.WaitHours == 0;
+            Logger?.Warn(HireCheck + test + "): project " + p.Id + (made ? " (made for the test)" : string.Empty) + " built by " + ConstructionText.T(BuildCatalogue.RivalKeys[p.Contractor])
+                         + ", " + HireWords(p) + ": " + worked + " working hour(s) of its site's " + p.Hours + ", the stages " + stages + ", " + p.Fails + " inspection(s) failed and put right, "
+                         + (every ? "every inspection passed and paid" : "not every inspection passed and paid") + ", "
+                         + (p.Stage == ProjectStage.Finished ? "handed over on day " + p.Handed : "not handed over")
+                         + " (due " + p.DueDay + ")" + (pass ? ": PASS." : ": FAIL."));
+            TestDone("a building of yours worked to its keys by a builder of the city's", TabProjects, p.Id);
             return pass;
         }
 
