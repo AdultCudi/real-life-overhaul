@@ -176,7 +176,8 @@ namespace RealLifeOverhaul.Careers
         {
             var p = new Colleague
             {
-                Id = c.NextPerson++, GameId = gameId ?? string.Empty, Name = name ?? string.Empty, Store = store, Skill = TalentCatalogue.Clamp(skill, 0, 100), Wage = Math.Max(0, wage),
+                Id = c.NextPerson++, GameId = gameId ?? string.Empty, Name = name ?? string.Empty, Store = store, Skill = TalentCatalogue.Clamp(skill, 0, 100),
+                    Wage = Math.Max(0, wage),
                 Morale = TalentCatalogue.Clamp(morale, 0, 100)
             };
             c.People.Add(p);

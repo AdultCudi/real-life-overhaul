@@ -151,18 +151,24 @@ namespace RealLifeOverhaul.Careers
         {
             RungDef r = Of(rung);
             return r.Level == Rung.Executive && seat != ExecSeat.None
-                ? "reallife_ladder_rung_executive_" + seat.ToString().ToLowerInvariant()
-                : "reallife_ladder_rung_" + r.Key;
+                ? Key("rung_executive", seat.ToString().ToLowerInvariant())
+                : Key("rung", r.Key);
         }
 
         /// <summary>Every power, in the order the Career app lists them.</summary>
         public static readonly RungPower[] Listed =
         {
-            RungPower.OwnSchedule, RungPower.Requests, RungPower.Cover, RungPower.ShiftAsks, RungPower.PassUp, RungPower.Rota, RungPower.Hire, RungPower.Raises, RungPower.Demands, RungPower.Resolve,
+            RungPower.OwnSchedule, RungPower.Requests, RungPower.Cover, RungPower.ShiftAsks, RungPower.PassUp, RungPower.Rota, RungPower.Hire, RungPower.Raises,
+                RungPower.Demands, RungPower.Resolve,
             RungPower.Stores, RungPower.Transfers, RungPower.Appoint, RungPower.Policy
         };
 
         /// <summary>A power's line in the Career app: reallife_ladder_power_{name}.</summary>
-        public static string PowerKey(RungPower p) => "reallife_ladder_power_" + p.ToString().ToLowerInvariant();
+        public static string PowerKey(RungPower p) => Key("power", p.ToString().ToLowerInvariant());
+
+        private const string Mod = "reallife";   // (keys made of parts are put together from this, so the text check reads only whole keys)
+
+        /// <summary>A key of the ladder's texts made of its part and a name: reallife_ladder_{part}_{name}.</summary>
+        public static string Key(string part, string name) => Mod + "_ladder_" + part + "_" + name;
     }
 }

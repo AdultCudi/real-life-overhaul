@@ -455,7 +455,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\LifeRules.cs" Link="Mod\LifeRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\OwnRules.cs" Link="Mod\OwnRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Ladder\LadderRanks.cs" Link="Mod\LadderRanks.cs" />
-    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Ladder\LadderModel.cs" Link="Mod\LadderModel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Ladder\LadderFile.cs" Link="Mod\LadderFile.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Ladder\CareerLadderRules.cs" Link="Mod\CareerLadderRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Ladder\CareerLadderRules.Day.cs" Link="Mod\CareerLadderRules.Day.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Ladder\CareerLadderRules.Tasks.cs" Link="Mod\CareerLadderRules.Tasks.cs" />

@@ -22151,5 +22151,7 @@
   "reallife_ladder_test_tasks_fail": "Test failed: no task could be brought. The log says why.",
   "reallife_ladder_test_decide_none": "No task is waiting. Press Bring every task of my rank now first.",
   "reallife_ladder_test_decide_pass": "Test passed: {good} of {count} tasks decided, each doing what it should.",
-  "reallife_ladder_test_decide_fail": "Test failed: {good} of {count} tasks did what they should. The log says which."
+  "reallife_ladder_test_decide_fail": "Test failed: {good} of {count} tasks did what they should. The log says which.",
+  "reallife_opt_sec_ladder": "Management ladder",
+  "reallife_opt_tip_careers_ladder": "A job at a city chain's store climbs from the floor to store manager, regional manager and executive, each rank with its own tools. Off: the profession's ranks alone."
 }

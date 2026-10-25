@@ -22151,5 +22151,7 @@
   "reallife_ladder_test_tasks_fail": "Teste reprovado: nenhuma tarefa pôde ser trazida. O log diz o motivo.",
   "reallife_ladder_test_decide_none": "Nenhuma tarefa em espera. Antes, aperte Trazer agora todas as tarefas do meu nível.",
   "reallife_ladder_test_decide_pass": "Teste aprovado: {good} de {count} tarefas decididas, cada uma com o efeito certo.",
-  "reallife_ladder_test_decide_fail": "Teste reprovado: {good} de {count} tarefas tiveram o efeito certo. O log diz quais."
+  "reallife_ladder_test_decide_fail": "Teste reprovado: {good} de {count} tarefas tiveram o efeito certo. O log diz quais.",
+  "reallife_opt_sec_ladder": "Escada da gestão",
+  "reallife_opt_tip_careers_ladder": "Um emprego numa loja de rede da cidade sobe do chão de loja a gerente, gerente regional e executivo, cada nível com suas ferramentas. Desligado: só os níveis da profissão."
 }

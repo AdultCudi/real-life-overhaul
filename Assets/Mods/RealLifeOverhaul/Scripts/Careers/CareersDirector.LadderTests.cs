@@ -183,8 +183,10 @@ namespace RealLifeOverhaul.Careers
                 LadderPromote(j, Save.Day);
                 RungPower after = f.Def.Powers;
                 Colleague superior = CareerLadderRules.Superior(f);
-                bool ok = f.Rung == rung + 1 && (after & before) == before && after != before && j.Pay >= pay && (f.Rung >= (int)Rung.Executive || superior != null || f.Rung >= (int)Rung.Regional);
-                Logger?.Info("Careers check (ladder promotion): " + LadderRanks.Of(rung).Key + " to " + LadderRanks.Of(f.Rung).Key + (f.Rung == (int)Rung.Executive ? " (" + (ExecSeat)f.Seat + ")" : string.Empty)
+                bool ok = f.Rung == rung + 1 && (after & before) == before && after != before && j.Pay >= pay && (f.Rung >= (int)Rung.Executive || superior != null
+                    || f.Rung >= (int)Rung.Regional);
+                Logger?.Info("Careers check (ladder promotion): " + LadderRanks.Of(rung).Key + " to " + LadderRanks.Of(f.Rung).Key
+                             + (f.Rung == (int)Rung.Executive ? " (" + (ExecSeat)f.Seat + ")" : string.Empty)
                              + ", pay " + pay + " to " + j.Pay + " cents an hour at the start's prices, " + Count(before) + " tools to " + Count(after) + ", reports to "
                              + (superior != null ? superior.Name : "the owner") + ": " + (ok ? "PASS" : "FAIL"));
                 Notifications.Show(ok ? NotificationType.Success : NotificationType.Error, ok ? "reallife_ladder_test_promote_pass" : "reallife_ladder_test_promote_fail",
@@ -231,7 +233,8 @@ namespace RealLifeOverhaul.Careers
                 }
                 int brought = CareerLadderRules.BringAll(f, Save.Day);
                 bool ok = brought > 0 || f.Tasks.Count > 0;
-                Logger?.Info("Careers check (ladder tasks): " + brought + " task(s) brought for a " + LadderRanks.Of(f.Rung).Key + ", " + f.Tasks.Count + " waiting: " + (ok ? "PASS" : "FAIL, none could be brought"));
+                Logger?.Info("Careers check (ladder tasks): " + brought + " task(s) brought for a " + LadderRanks.Of(f.Rung).Key + ", " + f.Tasks.Count
+                             + " waiting: " + (ok ? "PASS" : "FAIL, none could be brought"));
                 Notifications.Show(ok ? NotificationType.Success : NotificationType.Error, ok ? "reallife_ladder_test_tasks_pass" : "reallife_ladder_test_tasks_fail",
                     Data("count", f.Tasks.Count.ToString()), 10f);
                 Changed();
@@ -273,7 +276,8 @@ namespace RealLifeOverhaul.Careers
                     Logger?.Info("Careers check (ladder decision): " + (TaskKind)t.Kind + (t.Kind == (int)TaskKind.Escalation ? " (" + (Concern)t.About + ")" : string.Empty) + " at "
                                  + LadderStoreName(f, t.Store) + ": " + what + ": " + (ok ? "PASS" : "FAIL"));
                 }
-                Notifications.Show(good == tasks.Count ? NotificationType.Success : NotificationType.Error, good == tasks.Count ? "reallife_ladder_test_decide_pass" : "reallife_ladder_test_decide_fail",
+                Notifications.Show(good == tasks.Count ? NotificationType.Success : NotificationType.Error,
+                    good == tasks.Count ? "reallife_ladder_test_decide_pass" : "reallife_ladder_test_decide_fail",
                     Data("count", tasks.Count.ToString(), "good", good.ToString()), 10f);
                 Changed();
             }
@@ -283,7 +287,8 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        private static string LadderStoreName(LadderFile f, int s) => s >= 0 && s < f.Company.Stores.Count ? f.Company.Stores[s].Name + " (" + f.Company.Stores[s].Street + " " + f.Company.Stores[s].Number + ")" : "?";
+        private static string LadderStoreName(LadderFile f, int s) => s >= 0
+            && s < f.Company.Stores.Count ? f.Company.Stores[s].Name + " (" + f.Company.Stores[s].Street + " " + f.Company.Stores[s].Number + ")" : "?";
 
         /// <summary>The player's own request for equipment (or the one waiting) answered now, as the next morning would: granted or not, and its effect there.</summary>
         public void TestLadderAsk()
@@ -326,7 +331,7 @@ namespace RealLifeOverhaul.Careers
                 Logger?.Info("Careers check (ladder request): " + asked + " asked of " + LadderBoss(f) + ", " + (granted ? "granted" : "turned down") + " at a chance of "
                              + CareerLadderRules.AskChance(f) + " per mille, the effect " + (granted ? (effect ? "in place" : "MISSING") : "none, as turned down") + ": " + (ok ? "PASS" : "FAIL"));
                 Notifications.Show(ok ? NotificationType.Success : NotificationType.Error, granted ? "reallife_ladder_note_ask_yes" : "reallife_ladder_note_ask_no",
-                    Data("boss", LadderBoss(f), "what", CareersText.T("reallife_ladder_want_" + asked.ToString().ToLowerInvariant())), 10f);
+                    Data("boss", LadderBoss(f), "what", WantText((int)asked)), 10f);
                 Changed();
             }
             catch (Exception e)

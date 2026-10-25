@@ -27,7 +27,7 @@ What `Scripts/Careers` holds: education and careers: the city's courses and the 
 | `AcademyType` | the player's own training academy, a business type of the game's (registered at the start, stripped for removal) |
 | `CareersBridges` | what it asks of the others (Wiring/CareersLinks fills them in) |
 | `Ladder/LadderRanks` | the management ladder's rungs (frontline employee to executive, the owner apart), what each asks and pays, the powers it brings (game-free) |
-| `Ladder/CareerLadderRules` (and .Day, .Tasks, .Proof), `Ladder/LadderModel`, `Ladder/LadderStore` | the city company modelled from the save, a day of its stores, the tasks and tools of each rung, the score, promotion, the player's requests, the save line (game-free) |
+| `Ladder/CareerLadderRules` (and .Day, .Tasks, .Proof), `Ladder/LadderFile`, `Ladder/LadderStore` | the city company modelled from the save, a day of its stores, the tasks and tools of each rung, the score, promotion, the player's requests, the save line (game-free) |
 | `Ladder/LadderGame`, `CareersDirector.Ladder`, `CareerApp.Ladder` | what the ladder reads of the game (read only), the director's part, the Career app's Management tab |
 
 Working for yourself: a client's freelance contract comes on the game's day (`CareersDirector.Own`, `OfferContract`) and waits on the Career app's Own work tab; its notification ("{client} offers a contract: ...") can be switched off with "A notification for each contract offered" (under Working for yourself), which leaves the offer itself as it is.

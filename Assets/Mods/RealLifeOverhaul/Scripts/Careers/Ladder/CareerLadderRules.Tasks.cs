@@ -357,7 +357,10 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        /// <summary>The executive moves a field of their seat's policy a step up or down; every store keeps to it from the next decision. A store's schedule fuller than the new staffing is brought down to it.</summary>
+        /// <summary>
+        /// The executive moves a field of their seat's policy a step up or down; every store keeps to it from the next decision. A
+        /// store's schedule fuller than the new staffing is brought down to it.
+        /// </summary>
         public static string SetPolicy(LadderFile f, PolicyField field, int way)
         {
             if (!LadderRanks.Has(f.Rung, RungPower.Policy) || f.Rung != (int)Rung.Executive)

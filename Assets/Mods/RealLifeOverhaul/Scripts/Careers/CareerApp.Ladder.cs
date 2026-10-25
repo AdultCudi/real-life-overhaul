@@ -45,7 +45,7 @@ namespace RealLifeOverhaul.Careers
                 row.Set(1, StoreName(c, t.Store));
                 Colleague who = c.PersonOf(t.Person);
                 row.Set(2, who != null ? who.Name : "-");
-                row.Set(3, CareersText.T("reallife_ladder_kind_" + ((TaskKind)t.Kind).ToString().ToLowerInvariant()));
+                row.Set(3, CareersText.T(LadderRanks.Key("kind", ((TaskKind)t.Kind).ToString().ToLowerInvariant())));
                 row.Set(4, CareersText.Day(t.Lapse), t.Lapse);
                 row.Set(5, CareersText.T(t.Lapse <= day ? "reallife_ladder_state_today" : "reallife_ladder_state_waiting"), t.Lapse <= day ? TableRow.Yellow : TableRow.Plain);
                 pickedTask = t.Id == taskId ? t : pickedTask;
@@ -64,7 +64,8 @@ namespace RealLifeOverhaul.Careers
                 row.Set(2, CareersText.T(LadderRanks.TitleKey(p.Role, (ExecSeat)p.Seat)));
                 row.Set(3, CareersText.T("reallife_ladder_row_skill", "skill", p.Skill.ToString()), p.Skill);
                 row.Set(4, CareersText.Rate(Prices.At(p.Wage)), p.Wage);
-                row.Set(5, CareersText.T("reallife_ladder_row_morale", "morale", p.Morale.ToString()), p.Morale < CareerLadderRules.LowMorale ? TableRow.Red : p.Morale >= 70 ? TableRow.Green : TableRow.Plain);
+                row.Set(5, CareersText.T("reallife_ladder_row_morale", "morale", p.Morale.ToString()),
+                    p.Morale < CareerLadderRules.LowMorale ? TableRow.Red : p.Morale >= 70 ? TableRow.Green : TableRow.Plain);
                 pickedPerson = p.Id == personId ? p : pickedPerson;
             }
             for (int s = 0; s < c.Stores.Count && LadderRanks.Has(f.Rung, RungPower.Stores); s++)
@@ -80,9 +81,11 @@ namespace RealLifeOverhaul.Careers
                 row.Set(1, WorkGame.Address(st.Street, st.Number));
                 Colleague manager = CareerLadderRules.Holder(c, s, (int)Rung.StoreManager);
                 row.Set(2, manager != null ? manager.Name : s == 0 && f.Rung == (int)Rung.StoreManager ? CareersText.T("reallife_ladder_you") : "-");
-                row.Set(3, CareersText.T("reallife_ladder_row_staff", "staff", CareerLadderRules.StaffAt(c, s).ToString(), "wanted", CareerLadderRules.Wanted(st).ToString()), CareerLadderRules.StaffAt(c, s));
+                row.Set(3, CareersText.T("reallife_ladder_row_staff", "staff", CareerLadderRules.StaffAt(c, s).ToString(), "wanted",
+                    CareerLadderRules.Wanted(st).ToString()), CareerLadderRules.StaffAt(c, s));
                 row.Set(4, CareersText.T("reallife_ladder_row_morale", "morale", CareerLadderRules.MoraleAt(c, s).ToString()), CareerLadderRules.MoraleAt(c, s));
-                row.Set(5, CareersText.T("reallife_ladder_row_results", "results", st.Results.ToString()), st.Results >= 70 ? TableRow.Green : st.Results < 45 ? TableRow.Red : TableRow.Plain);
+                row.Set(5, CareersText.T("reallife_ladder_row_results", "results", st.Results.ToString()),
+                    st.Results >= 70 ? TableRow.Green : st.Results < 45 ? TableRow.Red : TableRow.Plain);
                 pickedStore = s == storeId ? s : pickedStore;
             }
             if (pickedTask != null)
@@ -107,7 +110,8 @@ namespace RealLifeOverhaul.Careers
 
         private static string StoreName(CityCompany c, int s)
         {
-            return s >= 0 && s < c.Stores.Count ? CareersText.Fill("reallife_ladder_store_at", "name", c.Stores[s].Name, "place", WorkGame.Address(c.Stores[s].Street, c.Stores[s].Number))
+            return s >= 0 && s < c.Stores.Count ? CareersText.Fill("reallife_ladder_store_at", "name", c.Stores[s].Name, "place", WorkGame.Address(c.Stores[s].Street,
+                c.Stores[s].Number))
                 : CareersText.T("reallife_ladder_head_office");
         }
 
@@ -118,11 +122,11 @@ namespace RealLifeOverhaul.Careers
             switch ((TaskKind)t.Kind)
             {
                 case TaskKind.Demand:
-                    return CareersText.Fill("reallife_ladder_task_demand", "name", who, "what", CareersText.T("reallife_ladder_want_" + ((StaffWant)t.About).ToString().ToLowerInvariant()));
+                    return CareersText.Fill("reallife_ladder_task_demand", "name", who, "what", CareersDirector.WantText(t.About));
                 case TaskKind.Escalation:
-                    return CareersText.T("reallife_ladder_task_up_" + ((Concern)t.About).ToString().ToLowerInvariant(), "name", who);
+                    return CareersText.T(LadderRanks.Key("task_up", ((Concern)t.About).ToString().ToLowerInvariant()), "name", who);
                 default:
-                    return CareersText.T("reallife_ladder_task_" + ((TaskKind)t.Kind).ToString().ToLowerInvariant());
+                    return CareersText.T(LadderRanks.Key("task", ((TaskKind)t.Kind).ToString().ToLowerInvariant()));
             }
         }
 
@@ -133,13 +137,15 @@ namespace RealLifeOverhaul.Careers
             Job j = w.Job;
             box.Title(CareersDirector.LadderTitle(f));
             box.Subtitle(CareersText.Fill("reallife_ladder_sub", "company", CareersText.Employer(c.Name), "stores", c.Stores.Count.ToString()));
-            box.Chip(CareersText.T("reallife_ladder_chip_score", "score", CareerLadderRules.ScoreOf(f).ToString()), CareerLadderRules.ScoreOf(f) >= 70 ? CellTone.Green : CareerLadderRules.ScoreOf(f) < 50 ? CellTone.Yellow : CellTone.Plain);
+            box.Chip(CareersText.T("reallife_ladder_chip_score", "score", CareerLadderRules.ScoreOf(f).ToString()),
+                CareerLadderRules.ScoreOf(f) >= 70 ? CellTone.Green : CareerLadderRules.ScoreOf(f) < 50 ? CellTone.Yellow : CellTone.Plain);
             box.Section("reallife_ladder_sec_position");
             box.Row("reallife_ladder_row_since", CareersText.Day(f.RungDay));
             box.Row("reallife_ladder_row_reports", _director.LadderBoss(f));
             box.Row("reallife_career_col_pay", CareersText.T("reallife_career_row_rate", "rate", CareersText.Rate(Prices.At(j.Pay))));
             box.Row("reallife_career_col_hours", CareersText.Week(j.Def));
-            box.Row("reallife_ladder_row_unit", CareersText.T(f.Rung <= (int)Rung.StoreManager ? "reallife_ladder_unit_store" : f.Rung == (int)Rung.Regional ? "reallife_ladder_unit_region" : "reallife_ladder_unit_company"));
+            box.Row("reallife_ladder_row_unit",
+                CareersText.T(f.Rung <= (int)Rung.StoreManager ? "reallife_ladder_unit_store" : f.Rung == (int)Rung.Regional ? "reallife_ladder_unit_region" : "reallife_ladder_unit_company"));
             box.Section("reallife_ladder_sec_powers");
             for (int i = 0; i < LadderRanks.Listed.Length; i++)
             {
@@ -148,13 +154,16 @@ namespace RealLifeOverhaul.Careers
             }
             box.Section("reallife_ladder_sec_score");
             CareerLadderRules.UnitFigures(f, day, out int staffing, out int morale, out int stores);
-            box.Meter("reallife_ladder_row_score", CareerLadderRules.ScoreOf(f) / 100f, CareersText.T("reallife_ibox_of", "value", CareerLadderRules.ScoreOf(f).ToString(), "most", "100"),
+            box.Meter("reallife_ladder_row_score", CareerLadderRules.ScoreOf(f) / 100f, CareersText.T("reallife_ibox_of", "value",
+                CareerLadderRules.ScoreOf(f).ToString(), "most", "100"),
                 CareerLadderRules.ScoreOf(f) >= 70 ? CellTone.Green : CareerLadderRules.ScoreOf(f) < 50 ? CellTone.Yellow : CellTone.Plain);
             box.Row("reallife_ladder_row_staffing", CareersText.Percent(staffing), staffing < 100 ? CellTone.Yellow : CellTone.Plain);
             box.Row("reallife_ladder_row_morale_avg", morale.ToString(), morale < CareerLadderRules.LowMorale ? CellTone.Red : CellTone.Plain);
-            box.Row("reallife_ladder_row_decided", CareersText.T("reallife_ladder_decided", "done", f.Handled.ToString(), "lapsed", f.Lapsed.ToString()), f.Lapsed > 0 ? CellTone.Yellow : CellTone.Plain);
+            box.Row("reallife_ladder_row_decided", CareersText.T("reallife_ladder_decided", "done", f.Handled.ToString(), "lapsed", f.Lapsed.ToString()),
+                f.Lapsed > 0 ? CellTone.Yellow : CellTone.Plain);
             int bonus = CareerLadderRules.ReviewBonus(f);
-            box.Note(CareersText.T(f.Rung == (int)Rung.Frontline ? "reallife_ladder_score_floor" : "reallife_ladder_score_manager", "bonus", (bonus > 0 ? "+" : string.Empty) + bonus));
+            box.Note(CareersText.T(f.Rung == (int)Rung.Frontline ? "reallife_ladder_score_floor" : "reallife_ladder_score_manager", "bonus",
+                (bonus > 0 ? "+" : string.Empty) + bonus));
             WriteNext(box, f, day);
             WriteRequests(box, f);
             if (LadderRanks.Has(f.Rung, RungPower.Rota) && f.Rung == (int)Rung.StoreManager)
@@ -185,18 +194,23 @@ namespace RealLifeOverhaul.Careers
             box.SectionWords(CareersText.T("reallife_ladder_sec_next_to", "title", CareersText.T(LadderRanks.TitleKey(f.Rung + 1, seat))));
             int need = _director.LadderDaysNeeded(f), had = day - f.RungDay;
             box.Check(CareersText.T("reallife_ladder_need_days", "have", System.Math.Max(0, had).ToString(), "need", need.ToString()), had >= need);
-            box.Check(CareersText.T("reallife_ladder_need_score", "have", CareerLadderRules.ScoreOf(f).ToString(), "need", next.Score.ToString()), CareerLadderRules.ScoreOf(f) >= next.Score);
+            box.Check(CareersText.T("reallife_ladder_need_score", "have", CareerLadderRules.ScoreOf(f).ToString(), "need", next.Score.ToString()),
+                CareerLadderRules.ScoreOf(f) >= next.Score);
             _director.LadderSkills(f, out int have, out int skills);
             LadderRanks.SkillsOf(f.Rung + 1, seat, out int a, out int b);
-            box.Check(CareersText.Fill("reallife_ladder_need_skills", "a", CareersText.Skill(a), "b", CareersText.Skill(b), "have", have.ToString(), "need", skills.ToString()), have >= skills);
-            box.Check(CareersText.T(next.Recommend ? "reallife_ladder_need_recommend" : "reallife_ladder_need_recommend_optional", "boss", _director.LadderBoss(f)), f.Recommended || !next.Recommend);
-            box.Check(CareersText.T("reallife_ladder_need_stores", "have", f.Company.Stores.Count.ToString(), "need", next.Stores.ToString()), f.Company.Stores.Count >= next.Stores);
+            box.Check(CareersText.Fill("reallife_ladder_need_skills", "a", CareersText.Skill(a), "b", CareersText.Skill(b), "have", have.ToString(), "need",
+                skills.ToString()), have >= skills);
+            box.Check(CareersText.T(next.Recommend ? "reallife_ladder_need_recommend" : "reallife_ladder_need_recommend_optional", "boss", _director.LadderBoss(f)),
+                f.Recommended || !next.Recommend);
+            box.Check(CareersText.T("reallife_ladder_need_stores", "have", f.Company.Stores.Count.ToString(), "need", next.Stores.ToString()),
+                f.Company.Stores.Count >= next.Stores);
             string why = _director.LadderWhyNot(f);
             box.Line(CareersText.T(why == null ? "reallife_ladder_next_ready" : why), why == null ? CellTone.Green : CellTone.Plain);
             box.Switch("reallife_ladder_aiming", f.Aiming, on => Do(() => _director.LadderAiming(on)));
             if (next.Level == Rung.Executive)
             {
-                box.Selector(3, (int)seat - 1, i => CareersText.T(LadderRanks.TitleKey((int)Rung.Executive, (ExecSeat)(i + 1))), i => Do(() => _director.LadderAimSeat((ExecSeat)(i + 1))));
+                box.Selector(3, (int)seat - 1, i => CareersText.T(LadderRanks.TitleKey((int)Rung.Executive, (ExecSeat)(i + 1))),
+                    i => Do(() => _director.LadderAimSeat((ExecSeat)(i + 1))));
             }
         }
 
@@ -206,12 +220,13 @@ namespace RealLifeOverhaul.Careers
             box.Section("reallife_ladder_sec_requests");
             if (f.Ask != (int)StaffWant.None)
             {
-                box.Line(CareersText.Fill("reallife_ladder_asked_line", "what", CareersText.T("reallife_ladder_want_" + ((StaffWant)f.Ask).ToString().ToLowerInvariant()), "boss", _director.LadderBoss(f)),
+                box.Line(CareersText.Fill("reallife_ladder_asked_line", "what", CareersDirector.WantText(f.Ask), "boss", _director.LadderBoss(f)),
                     CellTone.Yellow);
             }
             if (f.Prefer != 0)
             {
-                box.Line(CareersText.T(f.Prefer < 0 ? "reallife_ladder_granted_earlier" : "reallife_ladder_granted_later", "hours", System.Math.Abs(f.Prefer).ToString()), CellTone.Green);
+                box.Line(CareersText.T(f.Prefer < 0 ? "reallife_ladder_granted_earlier" : "reallife_ladder_granted_later", "hours", System.Math.Abs(f.Prefer).ToString()),
+                    CellTone.Green);
             }
             if (f.Equipped)
             {
@@ -256,7 +271,7 @@ namespace RealLifeOverhaul.Careers
                 var field = (PolicyField)i;
                 CareerLadderRules.Range(p, field, out int value, out int least, out int most, out int step);
                 bool mine = (int)CareerLadderRules.SeatOf(field) == f.Seat;
-                box.RowWords(CareersText.T("reallife_ladder_policy_" + field.ToString().ToLowerInvariant()), PolicyValue(field, value));
+                box.RowWords(CareersText.T(LadderRanks.Key("policy", field.ToString().ToLowerInvariant())), PolicyValue(field, value));
                 if (!mine)
                 {
                     continue;
@@ -298,15 +313,18 @@ namespace RealLifeOverhaul.Careers
             }
             box.Title(TaskTitle(f, t));
             box.Subtitle(StoreName(c, t.Store));
-            box.Chip(CareersText.T("reallife_ladder_kind_" + ((TaskKind)t.Kind).ToString().ToLowerInvariant()));
+            box.Chip(CareersText.T(LadderRanks.Key("kind", ((TaskKind)t.Kind).ToString().ToLowerInvariant())));
             box.Row("reallife_ladder_row_raised", CareersText.Day(t.Day));
             box.Row("reallife_ladder_row_decide_by", CareersText.Day(t.Lapse), t.Lapse <= day ? CellTone.Yellow : CellTone.Plain);
             if (t.Store >= 0 && t.Store < c.Stores.Count)
             {
-                box.Row("reallife_ladder_row_staff_now", CareersText.T("reallife_ladder_row_staff", "staff", CareerLadderRules.StaffAt(c, t.Store).ToString(), "wanted", CareerLadderRules.Wanted(c.Stores[t.Store]).ToString()));
+                box.Row("reallife_ladder_row_staff_now", CareersText.T("reallife_ladder_row_staff", "staff", CareerLadderRules.StaffAt(c, t.Store).ToString(), "wanted",
+                    CareerLadderRules.Wanted(c.Stores[t.Store]).ToString()));
                 box.Row("reallife_ladder_row_budget", CareersText.Money(Prices.At(CareerLadderRules.BudgetLeft(c, t.Store))));
             }
-            string key = "reallife_ladder_do_" + ((TaskKind)t.Kind).ToString().ToLowerInvariant() + (t.Kind == (int)TaskKind.Escalation ? "_" + ((Concern)t.About).ToString().ToLowerInvariant() : string.Empty);
+            string kind = ((TaskKind)t.Kind).ToString().ToLowerInvariant();
+            string key = LadderRanks.Key("do",
+                t.Kind == (int)TaskKind.Escalation ? kind + "_" + ((Concern)t.About).ToString().ToLowerInvariant() : kind);
             box.Note(CareersText.T(key + "_about"));
             int pick = -1;
             switch ((TaskKind)t.Kind)
@@ -317,7 +335,8 @@ namespace RealLifeOverhaul.Careers
                         box.Selector(least, _ladderPick, i =>
                         {
                             CareerLadderRules.Candidate(_director.LadderSeed, id, i, out int skill, out int wage);
-                            return CareersText.Fill("reallife_ladder_candidate", "name", _director.LadderCandidateName(id, i), "skill", skill.ToString(), "pay", CareersText.Rate(Prices.At(wage)));
+                            return CareersText.Fill("reallife_ladder_candidate", "name", _director.LadderCandidateName(id, i), "skill", skill.ToString(), "pay",
+                                CareersText.Rate(Prices.At(wage)));
                         }, i =>
                         {
                             _ladderPick = i;
@@ -325,7 +344,8 @@ namespace RealLifeOverhaul.Careers
                         });
                         CareerLadderRules.Candidate(_director.LadderSeed, id, _ladderPick, out int s, out int w);
                         bool within = CareerLadderRules.WithinPolicy(c.Policy, s, w);
-                        box.Line(CareersText.T(within ? "reallife_ladder_within_policy" : "reallife_ladder_outside_policy", "floor", c.Policy.Floor.ToString(), "top", CareersText.Rate(Prices.At(c.Policy.WageTop))),
+                        box.Line(CareersText.T(within ? "reallife_ladder_within_policy" : "reallife_ladder_outside_policy", "floor", c.Policy.Floor.ToString(), "top",
+                            CareersText.Rate(Prices.At(c.Policy.WageTop))),
                             within ? CellTone.Green : CellTone.Red);
                         pick = _ladderPick;
                         break;
@@ -365,12 +385,14 @@ namespace RealLifeOverhaul.Careers
             }
             int chosen = pick;
             Transform row = box.ButtonRow();
-            if (pick >= 0 || (t.Kind != (int)TaskKind.Hire && t.Kind != (int)TaskKind.Cover && t.Kind != (int)TaskKind.Appoint && !(t.Kind == (int)TaskKind.Escalation && t.About == (int)Concern.Gap)))
+            if (pick >= 0 || (t.Kind != (int)TaskKind.Hire && t.Kind != (int)TaskKind.Cover && t.Kind != (int)TaskKind.Appoint && !(t.Kind == (int)TaskKind.Escalation
+                && t.About == (int)Concern.Gap)))
             {
                 InfoBox.Button(row, InfoBox.Positive, key + "_yes", () => Do(() => _director.LadderAnswer(id, Verdict.Yes, chosen)));
             }
             InfoBox.Button(row, InfoBox.Negative, key + "_no", () => Do(() => _director.LadderAnswer(id, Verdict.No, chosen)));
-            if (LadderRanks.Has(f.Rung, RungPower.PassUp) && f.Rung < (int)Rung.Executive && t.Kind != (int)TaskKind.Appoint && !(t.Kind == (int)TaskKind.Cover && f.Rung >= (int)Rung.StoreManager))
+            if (LadderRanks.Has(f.Rung, RungPower.PassUp) && f.Rung < (int)Rung.Executive && t.Kind != (int)TaskKind.Appoint && !(t.Kind == (int)TaskKind.Cover
+                && f.Rung >= (int)Rung.StoreManager))
             {
                 InfoBox.Button(row, InfoBox.Additional, "reallife_ladder_button_up", () => Do(() => _director.LadderAnswer(id, Verdict.Up, chosen)));
             }
@@ -388,8 +410,9 @@ namespace RealLifeOverhaul.Careers
             box.Chip(CareersText.T(LadderRanks.TitleKey(p.Role, (ExecSeat)p.Seat)));
             box.Row("reallife_ladder_row_skill_label", p.Skill.ToString());
             box.Row("reallife_career_col_pay", CareersText.Rate(Prices.At(p.Wage)));
-            box.Meter("reallife_ladder_row_morale_label", p.Morale / 100f, p.Morale.ToString(), p.Morale < CareerLadderRules.LowMorale ? CellTone.Red : p.Morale >= 70 ? CellTone.Green : CellTone.Plain);
-            box.Row("reallife_ladder_row_wants", p.Want == (int)StaffWant.None ? "-" : CareersText.T("reallife_ladder_want_" + ((StaffWant)p.Want).ToString().ToLowerInvariant()));
+            box.Meter("reallife_ladder_row_morale_label", p.Morale / 100f, p.Morale.ToString(),
+                p.Morale < CareerLadderRules.LowMorale ? CellTone.Red : p.Morale >= 70 ? CellTone.Green : CellTone.Plain);
+            box.Row("reallife_ladder_row_wants", p.Want == (int)StaffWant.None ? "-" : CareersDirector.WantText(p.Want));
             if (p.GameId.Length == 0)
             {
                 box.Note(CareersText.T("reallife_ladder_person_ours"));
@@ -435,12 +458,14 @@ namespace RealLifeOverhaul.Careers
             box.Subtitle(WorkGame.Address(st.Street, st.Number));
             Colleague manager = CareerLadderRules.Holder(c, s, (int)Rung.StoreManager);
             box.Row("reallife_ladder_row_manager", manager != null ? manager.Name : CareersText.T("reallife_ladder_none"), manager != null ? CellTone.Plain : CellTone.Red);
-            box.Row("reallife_ladder_row_staff_now", CareersText.T("reallife_ladder_row_staff", "staff", CareerLadderRules.StaffAt(c, s).ToString(), "wanted", CareerLadderRules.Wanted(st).ToString()));
+            box.Row("reallife_ladder_row_staff_now", CareersText.T("reallife_ladder_row_staff", "staff", CareerLadderRules.StaffAt(c, s).ToString(), "wanted",
+                CareerLadderRules.Wanted(st).ToString()));
             box.Row("reallife_ladder_row_staffing", CareersText.Percent(CareerLadderRules.Staffing(c, s, day)));
             box.Row("reallife_ladder_row_morale_avg", CareerLadderRules.MoraleAt(c, s).ToString());
             box.Row("reallife_ladder_row_rota", CareersText.T(RotaKeys[TalentCatalogue.Clamp(st.Rota, 0, 2)]));
             box.Row("reallife_ladder_row_budget", CareersText.Money(Prices.At(CareerLadderRules.BudgetLeft(c, s))));
-            box.Meter("reallife_ladder_row_results_label", st.Results / 100f, st.Results.ToString(), st.Results >= 70 ? CellTone.Green : st.Results < 45 ? CellTone.Red : CellTone.Plain);
+            box.Meter("reallife_ladder_row_results_label", st.Results / 100f, st.Results.ToString(),
+                st.Results >= 70 ? CellTone.Green : st.Results < 45 ? CellTone.Red : CellTone.Plain);
             if (st.GapDays > 0)
             {
                 box.Line(CareersText.T("reallife_ladder_gap_days", "days", st.GapDays.ToString()), CellTone.Yellow);

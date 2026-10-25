@@ -148,7 +148,7 @@ namespace RealLifeOverhaul.Careers
             {
                 string boss = LadderBoss(f);
                 Tell2(granted ? NotificationType.Success : NotificationType.Info, granted ? "reallife_ladder_note_ask_yes" : "reallife_ladder_note_ask_no",
-                    Data("boss", boss, "what", CareersText.T("reallife_ladder_want_" + ((StaffWant)asked).ToString().ToLowerInvariant())), TabLadder, null);
+                    Data("boss", boss, "what", WantText(asked)), TabLadder, null);
                 if (granted && asked == (int)StaffWant.Shift)
                 {
                     KeepJobShift(j, day, false);   // the start an hour earlier or later, where the opening hours have room
@@ -164,7 +164,8 @@ namespace RealLifeOverhaul.Careers
                 CareerLadderRules.UnitFigures(f, day, out int staffing, out int morale, out int stores);
                 Logger?.Info("Careers check (ladder day " + day + "): " + LadderRanks.Of(f.Rung).Key + " at " + f.Company.Name + ", " + stores + " store(s) run, staffing " + staffing
                              + "%, morale " + morale + ", score " + CareerLadderRules.ScoreOf(f) + ", " + f.Tasks.Count + " task(s) waiting, " + all.Left + " left, " + all.Hired
-                             + " taken on, " + all.Lapsed + " lapsed: " + (staffing >= 0 && staffing <= 100 && morale >= 0 && morale <= 100 ? "PASS" : "FAIL, a figure out of its range"));
+                             + " taken on, " + all.Lapsed + " lapsed: " + (staffing >= 0 && staffing <= 100 && morale >= 0
+                                 && morale <= 100 ? "PASS" : "FAIL, a figure out of its range"));
             }
         }
 
@@ -224,7 +225,8 @@ namespace RealLifeOverhaul.Careers
             j.NonCompete |= f.Rung >= (int)Rung.StoreManager;
             j.Exclusive |= f.Rung >= (int)Rung.Regional;
             string title = LadderTitle(f), employer = CareersText.Employer(j.Post.Employer);
-            Tell2(NotificationType.Success, "reallife_ladder_note_promoted", Data("title", title, "employer", employer, "pay", CareersText.Rate(Prices.At(j.Pay))), TabLadder, null);
+            Tell2(NotificationType.Success, "reallife_ladder_note_promoted", Data("title", title, "employer", employer, "pay", CareersText.Rate(Prices.At(j.Pay))),
+                TabLadder, null);
             CareersGame.Mood(ModState.MoodUp);
             if (f.Rung == (int)Rung.Executive)
             {
@@ -237,6 +239,9 @@ namespace RealLifeOverhaul.Careers
                 Logger?.Info("Careers check (ladder promotion): to " + LadderRanks.Of(f.Rung).Key + ", the tools of the rung below kept and its own added: " + (ok ? "PASS" : "FAIL"));
             }
         }
+
+        /// <summary>What a demand or request is for, in words: "a raise", "better equipment".</summary>
+        internal static string WantText(int want) => CareersText.T(LadderRanks.Key("want", ((StaffWant)want).ToString().ToLowerInvariant()));
 
         /// <summary>The player's title on the ladder: the rung's, an executive's by the seat.</summary>
         public static string LadderTitle(LadderFile f) => f != null ? CareersText.T(LadderRanks.TitleKey(f.Rung, (ExecSeat)f.Seat)) : string.Empty;

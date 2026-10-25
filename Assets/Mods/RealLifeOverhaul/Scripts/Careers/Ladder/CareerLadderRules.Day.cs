@@ -143,7 +143,8 @@ namespace RealLifeOverhaul.Careers
                 {
                     news.NewTasks += Queue(f, TaskKind.Demand, s, p.Id, (int)w, day, Cost(w)) ? 1 : 0;
                 }
-                else if (!Waiting(f, p.Id) && (Holder(c, s, duty) ?? Holder(c, s, (int)Rung.StoreManager)) != null && TechRandom.Mille(seed, Salt + 13, day, p.Id ^ salt) < AiAnswer)
+                else if (!Waiting(f, p.Id) && (Holder(c, s, duty) ?? Holder(c, s, (int)Rung.StoreManager)) != null && TechRandom.Mille(seed, Salt + 13, day,
+                    p.Id ^ salt) < AiAnswer)
                 {
                     bool yes = w == StaffWant.Raise ? day - p.RaisedDay >= RaiseGapDays : Allowed(c, s, w);
                     if (!yes && w != StaffWant.Raise && (PlayerHolds(f, (int)Rung.Regional, s) || (f.Rung == (int)Rung.Executive && f.Seat == (int)ExecSeat.Cfo)))
@@ -367,7 +368,8 @@ namespace RealLifeOverhaul.Careers
             {
                 return false;
             }
-            f.Tasks.Add(new LadderTask { Id = f.NextTask++, Kind = (int)kind, Store = s, Person = person, About = about, Day = day, Lapse = lapse >= 0 ? lapse : day + TaskDays, Amount = amount });
+            f.Tasks.Add(new LadderTask { Id = f.NextTask++, Kind = (int)kind, Store = s, Person = person, About = about, Day = day,
+                Lapse = lapse >= 0 ? lapse : day + TaskDays, Amount = amount });
             return true;
         }
 

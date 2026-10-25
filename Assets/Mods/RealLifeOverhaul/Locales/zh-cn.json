@@ -22151,5 +22151,7 @@
   "reallife_ladder_test_tasks_fail": "测试失败：没能生成任何任务。日志中有原因。",
   "reallife_ladder_test_decide_none": "没有等待中的任务。请先点击“立即生成我职级的所有任务”。",
   "reallife_ladder_test_decide_pass": "测试通过：{count}项任务中已决定{good}项，效果均符合预期。",
-  "reallife_ladder_test_decide_fail": "测试失败：{count}项任务中有{good}项效果符合预期。日志中写明了是哪几项。"
+  "reallife_ladder_test_decide_fail": "测试失败：{count}项任务中有{good}项效果符合预期。日志中写明了是哪几项。",
+  "reallife_opt_sec_ladder": "管理晋升阶梯",
+  "reallife_opt_tip_careers_ladder": "在城中连锁店工作，可从一线晋升为店长、区域经理和高管，每个职级都有自己的工具。关闭时只按职业本身的职级晋升。"
 }

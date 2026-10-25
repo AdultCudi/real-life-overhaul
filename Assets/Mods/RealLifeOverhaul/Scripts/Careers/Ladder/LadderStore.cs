@@ -115,8 +115,10 @@ namespace RealLifeOverhaul.Careers
                 }
                 var s = new Outlet
                 {
-                    Street = x.Text(), Number = x.Int(), Name = x.Text(), Region = Math.Max(0, x.Int()), Needed = Math.Max(1, x.Int(1)), Rota = TalentCatalogue.Clamp(x.Int(1), 0, 2),
-                    GapDays = Math.Max(0, x.Int()), LowDays = Math.Max(0, x.Int()), Spent = Math.Max(0, x.Int()), Results = TalentCatalogue.Clamp(x.Int(), 0, 100), Covered = x.Int(-1),
+                    Street = x.Text(), Number = x.Int(), Name = x.Text(), Region = Math.Max(0, x.Int()), Needed = Math.Max(1, x.Int(1)),
+                        Rota = TalentCatalogue.Clamp(x.Int(1), 0, 2),
+                    GapDays = Math.Max(0, x.Int()), LowDays = Math.Max(0, x.Int()), Spent = Math.Max(0, x.Int()), Results = TalentCatalogue.Clamp(x.Int(), 0, 100),
+                        Covered = x.Int(-1),
                     Pushed = x.Int(-1), Present = x.Int(-1)
                 };
                 c.Stores.Add(s);
@@ -129,8 +131,10 @@ namespace RealLifeOverhaul.Careers
             {
                 var o = new Colleague
                 {
-                    Id = x.Int(), GameId = x.Text(), Name = x.Text(), Store = x.Int(-1), Region = x.Int(-1), Skill = TalentCatalogue.Clamp(x.Int(), 0, 100), Wage = Math.Max(0, x.Int()),
-                    Morale = TalentCatalogue.Clamp(x.Int(CareerLadderRules.MoraleBase), 0, 100), Want = TalentCatalogue.Clamp(x.Int(), 0, (int)StaffWant.Insurance), WantDay = x.Int(),
+                    Id = x.Int(), GameId = x.Text(), Name = x.Text(), Store = x.Int(-1), Region = x.Int(-1), Skill = TalentCatalogue.Clamp(x.Int(), 0, 100),
+                        Wage = Math.Max(0, x.Int()),
+                    Morale = TalentCatalogue.Clamp(x.Int(CareerLadderRules.MoraleBase), 0, 100), Want = TalentCatalogue.Clamp(x.Int(), 0, (int)StaffWant.Insurance),
+                        WantDay = x.Int(),
                     Role = TalentCatalogue.Clamp(x.Int(), 0, LadderRanks.CareerTop), Seat = TalentCatalogue.Clamp(x.Int(), 0, (int)ExecSeat.Cfo), RaisedDay = x.Int(-1000)
                 };
                 if (o.Store < c.Stores.Count && o.Id > 0 && c.PersonOf(o.Id) == null)
@@ -143,7 +147,8 @@ namespace RealLifeOverhaul.Careers
             {
                 var t = new LadderTask
                 {
-                    Id = x.Int(), Kind = TalentCatalogue.Clamp(x.Int(), 0, (int)TaskKind.Appoint), Store = x.Int(-1), Person = x.Int(-1), About = x.Int(), Day = x.Int(), Lapse = x.Int(),
+                    Id = x.Int(), Kind = TalentCatalogue.Clamp(x.Int(), 0, (int)TaskKind.Appoint), Store = x.Int(-1), Person = x.Int(-1), About = x.Int(), Day = x.Int(),
+                        Lapse = x.Int(),
                     Amount = Math.Max(0, x.Int())
                 };
                 if (t.Store >= 0 && t.Store < c.Stores.Count && f.Tasks.Count < CareerLadderRules.TasksMost && f.TaskOf(t.Id) == null)

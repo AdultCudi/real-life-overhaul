@@ -69,7 +69,8 @@ namespace RealLifeOverhaul.Careers
                             p.Want = (int)StaffWant.Equipment;
                             p.WantDay = day;
                         }
-                        Queue(f, TaskKind.Escalation, s, p != null ? p.Id : -1, (int)about, day, about == Concern.Morale ? OutingCost : about == Concern.Budget ? Cost(StaffWant.Equipment) : 0);
+                        Queue(f, TaskKind.Escalation, s, p != null ? p.Id : -1, (int)about, day,
+                            about == Concern.Morale ? OutingCost : about == Concern.Budget ? Cost(StaffWant.Equipment) : 0);
                         break;
                     }
             }
@@ -151,7 +152,8 @@ namespace RealLifeOverhaul.Careers
                     choice = pick >= 0 ? Verdict.Yes : Verdict.Up;
                     break;
                 case TaskKind.Demand:
-                    choice = LadderRanks.Has(f.Rung, t.About == (int)StaffWant.Shift ? RungPower.ShiftAsks : t.About == (int)StaffWant.Raise ? RungPower.Raises : RungPower.Demands) ? Verdict.Yes : Verdict.Up;
+                    choice = LadderRanks.Has(f.Rung,
+                        t.About == (int)StaffWant.Shift ? RungPower.ShiftAsks : t.About == (int)StaffWant.Raise ? RungPower.Raises : RungPower.Demands) ? Verdict.Yes : Verdict.Up;
                     if (choice == Verdict.Yes && t.About != (int)StaffWant.Raise && t.About != (int)StaffWant.Shift && !Allowed(c, s, (StaffWant)t.About))
                     {
                         choice = Verdict.Up;
