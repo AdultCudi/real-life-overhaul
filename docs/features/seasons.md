@@ -12,7 +12,8 @@ The year's four seasons, as the calendar has them, change how much of each good 
 ```
 SeasonRules          the goods' table, the season of a day, the snow of a day and how much lies     EconomyCheck/SeasonChecks.cs
 SeasonGame           THE GAME SIDE: the clock, each good's sales ratio, the rain's place, the walkers' paces
-SnowLook             the flakes (one particle system) and the white ground (one decal projector)
+SnowLook             the flakes (one particle system) and the white ground (one decal projector on the snow's own decal layer)
+SnowGround           the ground, roads, pavements and roofs given that decal layer behind the loading screen, and given back
 SeasonDirector       keeps it going: the goods once a season, the snow once a second, the forecast and the news
 SeasonText           the seasons' names, the goods that sell more and less, the snow's hours
 SeasonGuide          the feature's entry, the options block, the Guide page's figures
@@ -77,14 +78,16 @@ The game has no swimwear or hot chocolate to sell, so they are not in the table.
 
 - **Flakes:** one particle system, hung 10 m over the place by the player where the game's rain falls (`RainHelper.RainEffect`, contract part `snow_fall`), simulated in the world so the player walks through it. Up to 230 small white cubes a second over a 44 m square, falling about a metre a second for 11 seconds, drifting with low-quality noise. The paint is the shared lit material (`Shapes.Paint`) with a little glow, so flakes show at night. At most 2,600 at once.
 - **The ground:** one decal projector, 150 m square round the player, a copy of the game's road paint (`RoadPaint.Decal`, an HDRP/Decal material) carrying a 128 pixel white made once (two layers of tileable noise, mostly opaque with thinner patches), its pattern pinned to the street. Its fade is the cover, in fiftieths. It follows the player when they are 25 m from its middle.
-  - With HDRP's decal layers on (`supportDecalLayers`), it reaches from 70 m over the player to 6 m under their feet with an angle fade from 30 to 60 degrees, so the ground and the roofs turn white and walls do not.
-  - Without them HDRP ignores the angle fade, so the box is a 70 cm slab at the player's feet: the ground and pavements only, and the bottom of what stands on them.
-  - With decals off in the game's graphics there is no white ground, said once in the log.
+  - **Only on the ground.** A decal draws on every surface in its box unless HDRP's decal layers are in effect. The game's HDRP asset (`HDRP_High`) supports them (`supportDecalLayers`), but its camera's frame settings leave `DecalLayers` off (the mod's performance census: "frame settings OFF: ... DecalLayers"). In 0.51.0 the snow read the asset alone, so its 76 m box whitened everything in it, cars, people, faces and walls, wholly in heavy snow. Now:
+    - behind the loading screen (`SnowGround.Mark`, one search of the scene's renderers), every renderer on the game's own `Ground`, `GroundUnplacable`, `Roads`, `Sidewalk` and `Buildings` physics layers, never a skinned one, is given one decal layer of the snow's own: the one of rendering layer bits 9 to 15 the fewest other renderers carry (`SeasonRules.SnowBit`; none do in this build, so bit 15). Any other renderer carrying it is taken off it while marked. Cars and people (`0x101`: light layer default and decal layer default) are never on it, so nothing spawned later is either. The game's own decals stay on the default layer and draw as before;
+    - the projector is drawn on that layer alone (`decalLayerMask`), and while it lies outdoors the player's camera is given `DecalLayers` through the one owner of its frame settings (`PerfFrameSettings.Enable`, given back on going indoors, when the snow melts, with the option off and when the city unloads);
+    - the cover is shown only once the camera draws with decal layers (`HDCamera.frameSettings`), so for no frame can it whiten everything in its box. The angle fade (30 to 60 degrees), which HDRP applies only with decal layers, keeps walls and fronts clear.
+  - **Where that cannot be had** (decals or decal layers off in the asset, no ground layer by name, or a camera that will not draw with them after four seconds) no snow lies at all: it still falls, and the roads' grip and traffic still follow it, said once in the log. There is no thin slab at the player's feet as a fallback any more: it reached tyres, shoes and the foot of every wall.
 - Nothing is drawn indoors. Off ("Show the snow falling and on the ground"), nothing is drawn and the snow is still forecast and felt.
 
 ## Cost
 
-One timer comparison a frame. Once a second: the season (a few comparisons), the snow of the moment (two rolls of the day and the day before, no allocation: EconomyCheck times it), the weather's one call, and the look's comparisons. The goods: 49 writes once a season and once after a load. The walkers' ranges: a handful of writes when the snow on the roads changes. The particle system and the decal are Unity's to draw; the projector moves once every 25 m. The white is made once a session (16,384 pixels). The Calendar's source: a few comparisons a day of the month looked at, and the snow of at most eight days.
+One timer comparison a frame. Once a second: the season (a few comparisons), the snow of the moment (two rolls of the day and the day before, no allocation: EconomyCheck times it), the weather's one call, and the look's comparisons. The goods: 49 writes once a season and once after a load. The walkers' ranges: a handful of writes when the snow on the roads changes. The particle system and the decal are Unity's to draw; the projector moves once every 25 m. The white is made once a session (16,384 pixels). The ground's marks: one search of the scene's renderers a city, behind the loading screen, and a bit set on each piece of ground; given back by a walk over the same list. While snow lies outdoors the camera draws with decal layers, a little more of the graphics card's time (HDRP writes a decal layer target with the depth prepass); never otherwise. Two reads a second follow the game's camera while it lies. The Calendar's source: a few comparisons a day of the month looked at, and the snow of at most eight days.
 
 ## Going Public
 
@@ -97,9 +100,9 @@ Nothing. Everything is worked out from the day and the save's number. A save loa
 ## Options and tests
 
 - `seasons` (Seasons change what sells, and it snows in winter, on): off, every ratio is the game's and it never snows.
-- `snow_look` (Show the snow falling and on the ground, on): off, nothing is drawn, for slower machines.
+- `snow_look` (Show the snow falling and on the ground, on): off, nothing is drawn, for slower machines, and the ground's marks are given back (marked again at the next door once on). Its tip says that snow lies only where the game's graphics settings allow it, never on people or cars.
 - Test: "Show this season's goods and the coming snow in the log": each good's figure and its ratio as the game has it and now, the next eight snow days, and `Seasons test (goods): ...: PASS` when every ratio is the game's own times the season's and the snow falls only in winter and the same when asked again.
-- Test: "Let it snow here now (press again to stop)": a heavy fall and the ground whitening over twenty seconds, held three minutes. Six seconds on, `Seasons test (snow): ...: PASS` when flakes are falling, the ground is covered, the roads are snowy to the weather and traffic is slower. Refused indoors.
+- Test: "Let it snow here now (press again to stop)": a heavy fall and the ground whitening over twenty seconds, held three minutes. Six seconds on, `Seasons test (snow): ...: PASS` when flakes are falling, the ground is covered, the roads are snowy to the weather and traffic is slower; then `Seasons test (snow look): the ground whitened on the snow's own decal layer (...) | not at all (why); N renderer(s) of M car(s) and person(s) within 40 m, the player's own among them, 0 on the snow's layer; ...: PASS` (one physics query of the cars and people near the player, once). Refused indoors.
 - With Developer diagnostics on, each time the goods are written: `Seasons check (demand, day n): 49 good(s) held for winter, 0 not as wanted, 0.05 ms: PASS`.
 
 ## Offline checks
@@ -108,7 +111,8 @@ Nothing. Everything is worked out from the day and the save's number. A save loa
 
 ## Not done
 
-- Snow drifting in through doorways, footprints, or snow on cars and people beyond what the decal gives the tops of them.
-- Ground snow that keeps off walls without HDRP's decal layers: that needs a mask of where the ground is, which is either a search of the scene or physics queries over many frames.
+- Snow drifting in through doorways, footprints, or snow on cars and people: snow never lies on them.
+- Lying snow on a graphics setting without HDRP's decal layers: a decal there whitens whatever stands in it, so none is drawn.
+- Ground on the game's `Default` layer (some squares and plazas) is not marked: what it is cannot be told from its layer.
 - A snowy sky: the game's sky is darkened only by its own rain's transition, which is worked out every frame from its own clock.
 - Market Insider's percentages: they are the game's saved demand, worked out again by the game.

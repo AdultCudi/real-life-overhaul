@@ -160,6 +160,19 @@ namespace RealLifeOverhaul
             }
         }
 
+        /// <summary>
+        /// Hands a piece over again in play, for a feature switched back on whose work the loading screen already passed:
+        /// it is done the next time the player goes through a door to the street, behind the black screen.
+        /// </summary>
+        public static void Again(string what, Func<bool> work)
+        {
+            Add(what, work);
+            if (_instance != null && work != null)
+            {
+                _instance.enabled = true;
+            }
+        }
+
         /// <summary>Hands over a piece run in the game's late "game loaded" call, in order; false there, and it waits. A constant text.</summary>
         public static void AddLate(string what, Func<bool> work)
         {

@@ -17,6 +17,7 @@ namespace RealLifeOverhaul.Seasons
         private const float HoldSeconds = 180f;   // the test's snow
         private const float LookAfter = 6f;       // seconds before the test's snow is checked: the look and the weather take a second each
         private const int SnowDaysListed = 8;
+        private const float SampleRadius = 40f;   // metres round the player the cars and people are sampled from
 
         /// <summary>"Show this season's goods and the coming snow in the log."</summary>
         public void TestGoods()
@@ -143,10 +144,59 @@ namespace RealLifeOverhaul.Seasons
                 }
             }
             Logger?.Info("Seasons test (snow): " + _look.Flakes + " flake(s) in the air, the cover at " + Cover.ToString("0.00", CultureInfo.InvariantCulture)
-                         + (_look.Tall ? " over the ground and the roofs" : " on the ground") + ", the roads' snow " + Events.Weather.Snow + ", traffic x"
+                         + (_look.Way == SnowWay.Layers ? " over the ground and the roofs" : " (none lying: " + (_look.CoverMissing ?? "not made yet") + ")")
+                         + ", the roads' snow " + Events.Weather.Snow + ", traffic x"
                          + Events.Weather.TrafficSpeedFactor.ToString("0.00", CultureInfo.InvariantCulture) + ", grip x" + Events.Weather.GripFactor.ToString("0.00", CultureInfo.InvariantCulture)
                          + ", walkers set off at x" + SeasonGame.WalkApplied.ToString("0.00", CultureInfo.InvariantCulture) + " of their pace: "
                          + (why.Length == 0 ? "PASS" : "FAIL:" + why.ToString().TrimEnd(';')));
+            Logger?.Info(LookCheck());
+        }
+
+        // Which way the ground is whitened at this load, and a sample of the cars and people near the player, none of
+        // which may be on the snow's layer; the rest of the picture the seasons leave as the game draws it.
+        private string LookCheck()
+        {
+            SnowGround ground = _look.Ground;
+            var renderers = new List<Renderer>(256);
+            int bodies = SeasonGame.Bodies(SampleRadius, renderers);
+            int onSnow = 0;
+            string first = null;
+            for (int i = 0; i < renderers.Count; i++)
+            {
+                if (ground.On(renderers[i]))
+                {
+                    onSnow++;
+                    first = first ?? renderers[i].name;
+                }
+            }
+            bool layers = SnowLook.LayersInEffect();
+            var text = new StringBuilder(512);
+            text.Append("Seasons test (snow look): the ground whitened ");
+            bool wayOk;
+            switch (_look.Way)
+            {
+                case SnowWay.Layers:
+                    text.Append("on the snow's own decal layer (").Append(ground.Marked).Append(" piece(s) marked, ").Append(ground.Roofed).Append(" of them roofs, the projector on ")
+                        .Append(_look.CoverLayer).Append("), the camera's decal layers ").Append(layers ? "in effect" : "NOT in effect");
+                    wayOk = layers && _look.Covering && ground.Marked > 0 && (_look.CoverLayer & UnityEngine.Rendering.HighDefinition.DecalLayerEnum.DecalLayerDefault) == 0;
+                    break;
+                case SnowWay.None:
+                    text.Append("not at all (").Append(_look.CoverMissing ?? "no reason kept").Append("): flakes and the roads' grip only");
+                    wayOk = !_look.Covering;
+                    break;
+                default:
+                    text.Append("not yet (").Append(_look.CoverMissing ?? ground.Missing ?? "not tried").Append(')');
+                    wayOk = !_look.Covering;
+                    break;
+            }
+            text.Append("; ").Append(renderers.Count).Append(" renderer(s) of ").Append(bodies).Append(" car(s) and person(s) within ").Append(SampleRadius.ToString("0", CultureInfo.InvariantCulture))
+                .Append(" m, the player's own among them, ").Append(onSnow).Append(" on the snow's layer").Append(first != null ? " (the first: '" + first + "')" : string.Empty)
+                .Append("; the seasons set no volume, fog, sky, exposure or light and no material, tint or keyword on any person or car; the flakes are ")
+                .Append(_look.Flakes).Append(" small lit cubes of the mod's paint with a faint glow: ")
+                .Append(wayOk && onSnow == 0 && bodies > 0 ? "PASS" : "FAIL" + (onSnow > 0 ? " (a car or person is on the snow's layer)" : string.Empty)
+                                                            + (wayOk ? string.Empty : " (the ground's way is not as wanted)")
+                                                            + (bodies > 0 ? string.Empty : " (nobody sampled, not even the player)"));
+            return text.ToString();
         }
     }
 }
