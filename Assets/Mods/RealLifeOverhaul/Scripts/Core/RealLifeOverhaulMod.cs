@@ -339,6 +339,13 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_life_test_review", () => Careers.CareersDirector.Instance?.TestReview())
                 .AddButton("reallife_life_test_matter", () => Careers.CareersDirector.Instance?.TestMatter())
                 .AddButton("reallife_life_test_approach", () => Careers.CareersDirector.Instance?.TestApproach())
+                .AddToggle(Settings.CareersLadderId, "reallife_ladder_enabled", Settings.CareersLadder,
+                    v => Settings.CareersLadder = v)
+                .AddButton("reallife_ladder_test_job", () => Careers.CareersDirector.Instance?.TestLadderJob())
+                .AddButton("reallife_ladder_test_promote", () => Careers.CareersDirector.Instance?.TestLadderPromote())
+                .AddButton("reallife_ladder_test_tasks", () => Careers.CareersDirector.Instance?.TestLadderTasks())
+                .AddButton("reallife_ladder_test_decide", () => Careers.CareersDirector.Instance?.TestLadderDecide())
+                .AddButton("reallife_ladder_test_ask", () => Careers.CareersDirector.Instance?.TestLadderAsk())
                 .AddToggle(Settings.CareersOwnId, "reallife_own_enabled", Settings.CareersOwn,
                     v => Settings.CareersOwn = v)
                 .AddToggle(Settings.CareersOwnOfferNotesId, "reallife_own_opt_offer_notes", Settings.CareersOwnOfferNotes,
@@ -940,6 +947,8 @@ namespace RealLifeOverhaul
                     v => Settings.EconomyRota = v)
                 .AddToggle(Settings.EconomyManagersId, "reallife_mgr_enabled", Settings.EconomyManagers,
                     v => Settings.EconomyManagers = v)
+                .AddToggle(Settings.EconomyHierarchyId, "reallife_hier_enabled", Settings.EconomyHierarchy,
+                    v => Settings.EconomyHierarchy = v)
                 .AddToggle(Settings.EconomyCleaningId, "reallife_svc_cleaning_enabled", Settings.EconomyCleaning,
                     v => Settings.EconomyCleaning = v)
                 .AddToggle(Settings.EconomySaleId, "reallife_svc_sale_enabled", Settings.EconomySale,
@@ -976,6 +985,17 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_mgr_test_fill", () => Economy.CompanyDirector.Instance?.TestManagerFill())
                 .AddButton("reallife_mgr_test_decide", () => Economy.CompanyDirector.Instance?.TestManagerDecide())
                 .AddButton("reallife_mgr_test_undo", () => Economy.CompanyDirector.Instance?.TestManagerUndoAll())
+                .AddButton("reallife_hier_test_store", () => Economy.CompanyDirector.Instance?.TestHierarchyStore())
+                .AddButton("reallife_hier_test_region", () => Economy.CompanyDirector.Instance?.TestHierarchyRegion())
+                .AddButton("reallife_hier_test_executives", () => Economy.CompanyDirector.Instance?.TestHierarchyExecutives())
+                .AddButton("reallife_hier_test_owner", () => Economy.CompanyDirector.Instance?.TestHierarchyOwner())
+                .AddButton("reallife_hier_test_gap", () => Economy.CompanyDirector.Instance?.TestHierarchyGap())
+                .AddButton("reallife_hier_test_budget", () => Economy.CompanyDirector.Instance?.TestHierarchyBudget())
+                .AddButton("reallife_hier_test_demand", () => Economy.CompanyDirector.Instance?.TestHierarchyDemand())
+                .AddButton("reallife_hier_test_mood", () => Economy.CompanyDirector.Instance?.TestHierarchyMood())
+                .AddButton("reallife_hier_test_wave", () => Economy.CompanyDirector.Instance?.TestHierarchyWave())
+                .AddButton("reallife_hier_test_kpi", () => Economy.CompanyDirector.Instance?.TestHierarchyKpi())
+                .AddButton("reallife_hier_test_exception", () => Economy.CompanyDirector.Instance?.TestHierarchyException())
                 .AddButton("reallife_ob_test_found", () => Economy.OwnBankDirector.Instance?.TestFound())
                 .AddButton("reallife_ob_test_month", () => Economy.OwnBankDirector.Instance?.TestMonth())
                 .AddButton("reallife_ob_test_hard", () => Economy.OwnBankDirector.Instance?.TestHardMonth())

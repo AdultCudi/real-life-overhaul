@@ -33,6 +33,9 @@ namespace RealLifeOverhaul.Street
         /// <summary>Somebody met in the street becomes somebody the player knows: their place in the social life, or -1. Default: never.</summary>
         public static Func<StreetMeet, int> Meet;
 
+        /// <summary>Somebody the player knows, by their place in the social life: their age as the People page shows it today, or -1. Default: none.</summary>
+        public static Func<int, int> AgeOf;
+
         /// <summary>Fills what the social life knows for an invitation (FlareBridges.InviteLook). Default: nothing can be booked.</summary>
         public static Action<FlareInviteAsk> InviteLook;
 
@@ -49,6 +52,7 @@ namespace RealLifeOverhaul.Street
             Noticed = null;
             CanMeet = null;
             Meet = null;
+            AgeOf = null;
             InviteLook = null;
             InviteBook = null;
             MouthChanged = null;

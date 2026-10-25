@@ -444,15 +444,14 @@ internal static partial class Program
         string painter = ReviewSource("Social/Flare/FlareFacePainter.cs"), hold = ReviewSource("Core/LoadHold.cs"), mod = ReviewSource("Core/RealLifeOverhaulMod.cs"),
             director = ReviewSource("Social/Flare/FlareDirector.cs"), photos = ReviewSource("Social/Flare/FlareDirector.Photos.cs"), avatars = ReviewSource("Social/Flare/FlareAvatars.cs"),
             rules = ReviewSource("Social/Flare/FlareFaceAheadRules.cs"), turn = ReviewSource("Phone/Contacts/PortraitTurn.cs");
-        string now = FlareMethod(painter, "private static Moment Now()");
-        int held = now.IndexOf("LoadHold.Holding", StringComparison.Ordinal), loading = now.IndexOf("LoadScene.isLoading", StringComparison.Ordinal),
-            black = now.IndexOf("UI.UiFader.isFading", StringComparison.Ordinal), app = now.IndexOf("AppShowing", StringComparison.Ordinal);
-        Check(held >= 0 && loading > held && black > loading && app > black && !now.Contains("timeScale") && !now.Contains("SceneFinds.Hidden"),
-            "Flare faces: a face is drawn only behind the loading screen held for it, behind the game's black screen, or with Flare open (never in a pause or a load not held for it)");
+        string now = FlareMethod(painter, "private static FaceMoment Now()");
+        Check(now.Contains("FlareFaceMoment.Of(LoadHold.Holding, _loadOn && !_loadStop, LoadScene.isLoading, fading, fading && SceneFinds.Covered, AppShowing, _wanted > 0)")
+              && !now.Contains("timeScale") && !now.Contains("SceneFinds.Hidden"),
+            "Flare faces: a face is drawn only behind the loading screen held for it, behind the game's black screen at full strength, or with Flare open (never in a pause, a fade or a load not held for it; the moments are NavCheck's face pace)");
         string on = FlareMethod(painter, "private void OnUpdate()");
-        int moment = on.IndexOf("Moment moment = Now()", StringComparison.Ordinal), none = on.IndexOf("moment == Moment.None", StringComparison.Ordinal),
+        int moment = on.IndexOf("FaceMoment moment = Now()", StringComparison.Ordinal), none = on.IndexOf("moment == FaceMoment.None", StringComparison.Ordinal),
             budget = on.IndexOf("FlareFaceAheadRules.Another(", StringComparison.Ordinal), draw = on.IndexOf("Draw(now, moment)", StringComparison.Ordinal),
-            appOnly = on.IndexOf("at < 0 && moment == Moment.App", StringComparison.Ordinal);
+            appOnly = on.IndexOf("at < 0 && moment == FaceMoment.App", StringComparison.Ordinal);
         Check(moment >= 0 && none > moment && budget > none && appOnly > budget && draw > appOnly && Count(painter, "Draw(now, moment)") == 1
               && Count(painter, "PortraitTurn.Face(") == 1 && Count(painter, "PortraitTurn.Character(") == 1 && FlareMethod(painter, "private void Draw(").Contains("PortraitTurn.Face("),
             "Flare faces: the camera is asked in one place, only after the moment is known, behind the load's budget, and with the app open only for a face in view");

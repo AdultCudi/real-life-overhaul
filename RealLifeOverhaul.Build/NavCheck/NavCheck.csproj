@@ -49,6 +49,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\WorkRings.cs" Link="Mod\WorkRings.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\HotSpots.cs" Link="Mod\HotSpots.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\SearchPace.cs" Link="Mod\SearchPace.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareFaceMoment.cs" Link="Mod\FlareFaceMoment.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\PointGrid.cs" Link="Mod\PointGrid.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Character\HairRules.cs" Link="Mod\HairRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Traffic\Solid\SolidRules.cs" Link="Mod\SolidRules.cs" />

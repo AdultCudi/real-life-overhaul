@@ -262,6 +262,12 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\ManagerState.cs" Link="Mod\ManagerState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\ManagerStore.cs" Link="Mod\ManagerStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\ManagerDirectoryRules.cs" Link="Mod\ManagerDirectoryRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\ExecutiveHiring.cs" Link="Mod\ExecutiveHiring.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\PolicyRules.cs" Link="Mod\PolicyRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\EscalationRules.cs" Link="Mod\EscalationRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\HierarchyRules.cs" Link="Mod\HierarchyRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\HierarchyState.cs" Link="Mod\HierarchyState.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\HierarchyStore.cs" Link="Mod\HierarchyStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaFit.cs" Link="Mod\RotaFit.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Business\BusinessCatalogue.cs" Link="Mod\BusinessCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Business\BusinessState.cs" Link="Mod\BusinessState.cs" />
@@ -466,6 +472,13 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\WorkStore.cs" Link="Mod\WorkStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\LifeRules.cs" Link="Mod\LifeRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\OwnRules.cs" Link="Mod\OwnRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Ladder\LadderRanks.cs" Link="Mod\LadderRanks.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Ladder\LadderFile.cs" Link="Mod\LadderFile.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Ladder\CareerLadderRules.cs" Link="Mod\CareerLadderRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Ladder\CareerLadderRules.Day.cs" Link="Mod\CareerLadderRules.Day.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Ladder\CareerLadderRules.Tasks.cs" Link="Mod\CareerLadderRules.Tasks.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Ladder\CareerLadderRules.Proof.cs" Link="Mod\CareerLadderRules.Proof.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Ladder\LadderStore.cs" Link="Mod\LadderStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Districts\DistrictRules.cs" Link="Mod\DistrictRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Interiors\InteriorRules.cs" Link="Mod\InteriorRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Interiors\InteriorRules.Effects.cs" Link="Mod\InteriorRules.Effects.cs" />

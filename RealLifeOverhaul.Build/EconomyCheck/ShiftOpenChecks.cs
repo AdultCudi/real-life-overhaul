@@ -250,7 +250,7 @@ internal static partial class Program
         Check(keepJob.Contains("bool righted = load && shutBefore") && keepJob.Contains("j.Warnings = 0;") && keepJob.Contains("j.Absent = 0;")
               && keepJob.Contains("\"reallife_work_note_hours_righted\"") && keepJob.Contains("\"reallife_work_note_hours_moved\""),
             "shift open: a save's job whose old week began while shut is put right at load, its warnings and missed days taken back, and the player told");
-        string fitted = MethodText(hours, "private int Fitted(Profession p, Opening o)");
+        string fitted = MethodText(hours, "private int Fitted(Profession p, Opening o, int prefer = 0)");
         Check(fitted.Contains("o.Work == (int)WorkMode.Remote") && fitted.Contains("WorkGame.OpenWeek(o.Street, o.Number, _week)") && fitted.Contains("OpenHoursRules.Fit("),
             "shift open: the fit reads the game's schedule of the post's own place, and leaves a post worked only from home on its own week");
         string week = MethodText(game, "public static bool OpenWeek(string street, int number, int[] into)");

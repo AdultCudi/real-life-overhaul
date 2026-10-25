@@ -226,7 +226,7 @@ internal static partial class Program
                 }
             }
             bool written4 = StreetCards.Written(line, TextIntents.DataV4), written5 = StreetCards.Written(line, TextIntents.DataV5);
-            if (written4 != (four == null) || written5 != (five == null) || written5 != (line == StreetLine.Waiting || line == StreetLine.DirAsk || line == StreetLine.NumberFull))
+            if (written4 != (four == null) || written5 != (five == null) || written5 != (line == StreetLine.Waiting || line == StreetLine.DirAsk || line == StreetLine.NumberFull || StreetCards.Aged(line)))
             {
                 wrong.Add(line + ": written for data 4 " + written4 + ", for data 5 " + written5);
             }
@@ -238,7 +238,7 @@ internal static partial class Program
         StreetCards.V5(StreetLine.DayFine, true, out _, out int flat);
         Check(wrong.Count == 0 && cool == "cool" && warm == "warm" && up == 1 && down == -1 && flat == 0,
             "street talk, data v5: the lines written until now have their v5 card for a data 5 pack only (their day leaning with it, thanks warm or cool), the rest v4's; "
-            + "written for data 5 only the \"go on\", the question of where to and a full life's refusal (" + string.Join("; ", wrong) + ")");
+            + "written for data 5 only the \"go on\", the question of where to, a full life's refusal and their age (" + string.Join("; ", wrong) + ")");
 
         int v4 = 0, v5 = 0, moment = 0;
         foreach (TextIntent t in TextIntents.All)

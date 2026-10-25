@@ -182,6 +182,7 @@ namespace RealLifeOverhaul.Economy
                 }
                 ManagerDay(day);   // the allowances are yesterday's costs: in the books read next
                 Books(day, next);
+                HierarchyDay(day);   // after the managers' day and the books: a place's targets are judged on yesterday's profit after its costs
                 float ruled = Time.realtimeSinceStartup;
                 int written = WriteAll(day, true, true);
                 RotaRead();
@@ -247,6 +248,7 @@ namespace RealLifeOverhaul.Economy
             save.modData[CompanyStore.Key] = CompanyStore.Write(_state);
             RotaSave(save);
             ManagerSave(save);
+            HierarchySave(save);
             if (_beforeTests != null)
             {
                 save.modData[CompanyStore.TestKey] = _beforeTests;

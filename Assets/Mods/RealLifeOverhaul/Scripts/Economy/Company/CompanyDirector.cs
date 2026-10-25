@@ -143,6 +143,7 @@ namespace RealLifeOverhaul.Economy
             mask |= Settings.EconomyCompanyHide ? 1 << (int)CompanyPart.Count : 0;   // cash off the books: no part of its own
             mask |= RotaOn ? 1 << ((int)CompanyPart.Count + 1) : 0;                  // the rota planner: no part either
             mask |= ManagersOn ? 1 << ((int)CompanyPart.Count + 2) : 0;              // nor the managers
+            mask |= HierarchyOn ? 1 << ((int)CompanyPart.Count + 3) : 0;             // nor their hierarchy: its regions are read again when it is switched
             return mask;
         }
 
@@ -169,6 +170,10 @@ namespace RealLifeOverhaul.Economy
         partial void ManagerStop();
         partial void ManagerHour(int day, int hour);
         partial void ManagerDay(int day);
+        partial void HierarchyLoad(GameInstance save);
+        partial void HierarchySave(GameInstance save);
+        partial void HierarchyDay(int day);
+        partial void HierarchyHour(int day, int hour);
 
         private void PartDay(CompanyPart part, int day)
         {
@@ -303,6 +308,7 @@ namespace RealLifeOverhaul.Economy
             RotaLoad(save);
             RotaRead();
             ManagerLoad(save);
+            HierarchyLoad(save);   // after the managers: a save from before the policy keeps their own limits as their stores' rules
             BuildAlerts(today);
             Logger?.Info("Company: " + (fresh ? "opened for this save" : "state loaded (version " + version + ")") + " on day " + today + ". "
                          + _shops.Count + " business(es)"
@@ -650,6 +656,7 @@ namespace RealLifeOverhaul.Economy
             _state = null;
             _beforeTests = null;
             ManagerForget();
+            HierarchyForget();
         }
     }
 }

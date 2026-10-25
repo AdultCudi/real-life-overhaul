@@ -46,7 +46,33 @@ namespace RealLifeOverhaul.Street
             m.Named = true;
             m.Cast = cast;
             _chat.Gain(1);
+            if (m.AgeTold && (Meta.Dev.Verbose || _testAge))
+            {
+                int shown = StreetBridges.AgeOf != null ? StreetBridges.AgeOf(cast) : -1;
+                Logger?.Info("Street talk check (age): " + _chat.Who.Name + " said they are " + _chat.Who.Age + " and is now somebody the player knows; their People page shows "
+                             + shown + (shown == _chat.Who.Age ? ": PASS." : ": FAIL (the page should show the age they said)."));
+            }
             return line;
+        }
+
+        // The age test's line, and with Developer diagnostics every answer's: the age said, how, and whether the People page
+        // shows the same for somebody the player knows.
+        private void AgeCheck(StreetLine line, Dictionary<string, string> data)
+        {
+            if (!_testAge && !Meta.Dev.Verbose)
+            {
+                return;
+            }
+            StreetChat c = _chat;
+            data.TryGetValue("age", out string said);
+            int cast = c.Memo.Cast;
+            int shown = cast >= 0 && StreetBridges.AgeOf != null ? StreetBridges.AgeOf(cast) : -1;
+            bool told = StreetCards.Aged(line) && !string.IsNullOrEmpty(said);   // (every written answer names {age}: EconomyCheck)
+            bool same = cast < 0 || shown.ToString(System.Globalization.CultureInfo.InvariantCulture) == said;
+            Logger?.Info("Street talk check (age): " + c.Who.Name + " was asked their age and said " + said + " (" + line + (StreetRules.AgeForward(c.Who) ? ", finds it forward" : string.Empty)
+                         + ", rapport " + c.Rapport + ")"
+                         + (cast >= 0 ? "; their People page shows " + shown : "; not somebody the player knows yet: swapping numbers keeps " + said + " on their People page")
+                         + (told && same ? ": PASS." : ": FAIL (" + (!told ? "the answer does not say the age" : "the People page shows another age") + ")."));
         }
 
         // An invitation, decided as on Flare; a yes is booked as a call books a plan.

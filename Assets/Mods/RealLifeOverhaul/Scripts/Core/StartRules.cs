@@ -28,7 +28,9 @@ namespace RealLifeOverhaul
         public const int Flare = 17;        // Social/Flare/FlareDirector
         public const int Fame = 18;         // Fame/FameDirector
         public const int Permadeath = 19;   // Permadeath/PermadeathDirector
-        public const int Count = 20;
+        public const int Law = 20;          // Law/LawDirector: the record, the precincts chosen and the nearest front put out (58 ms in the owner's session of 25 Oct 2026)
+        public const int Garage = 21;       // Garage/GarageDirector: the builds and the two-wheelers' places found (40 ms)
+        public const int Count = 22;
 
         /// <summary>What each seat is, for the log's line (constant texts).</summary>
         public static readonly string[] Names =
@@ -36,6 +38,7 @@ namespace RealLifeOverhaul
             "the credit rating", "the bank apps", "the city's economy", "the car dealership", "online shops", "the cleaning service and selling a business",
             "running a business", "property", "the player's own bank", "brands and franchises", "investors", "the stock market", "the City Ledger",
             "the tech sector", "education and careers", "empty shops as offices", "the tech sector's buildings", "Flare", "Standing", "Permadeath",
+            "the police and the record", "the Garage",
         };
 
         /// <summary>For each seat, the seats whose state it reads when it starts, so must start before it.</summary>
@@ -61,6 +64,8 @@ namespace RealLifeOverhaul
             new[] { Company, Brands, Careers },           // Flare
             new[] { Company, Estate, Brands, Flare },     // Fame
             new int[0],                                   // Permadeath
+            new int[0],                                   // Law
+            new int[0],                                   // Garage
         };
     }
 

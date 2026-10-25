@@ -329,6 +329,8 @@ namespace RealLifeOverhaul.Meta
                 S("worklife").For("careers_life").Opt("careers_life", "careers_jobs")
                     .Also("review reviews promotion promoted rise raise bonus overtime burnout boss office politics headhunter poached redundancy redundant benefit pension retire "
                         + "retirement options shares conflict interest"),
+                S("ladder").For("careers_ladder").Opt("careers_ladder", "careers_life")
+                    .Also("management ladder manager supervisor store regional executive coo chro cfo staff schedule rota gap hire raise escalation policy permissions performance"),
                 S("ownwork").For("careers_own").Opt("careers_own", "careers_jobs").Opt("careers_own_offer_notes", "careers_own")
                     .Also("freelance freelancing contract contracts client clients practice self employed startup found founder spin out colleagues restraint clause non compete side work"),
                 S("planner").For("planner").Main("planner").Opts("planner_reminders", "planner_morning").Also("diary notes to do"),
@@ -363,6 +365,8 @@ namespace RealLifeOverhaul.Meta
                 S("rota").For("economy_rota").Opt("economy_rota", "economy_company").Also("schedule shifts opening hours staff"),
                 S("managers").For("economy_managers").Opt("economy_managers", "economy_company")
                     .Also("manager managers regional bureaucracy delegate automate restock orders prices raises hiring report"),
+                S("hierarchy").For("economy_hierarchy").Opt("economy_hierarchy", "economy_managers")
+                    .Also("hierarchy policy policies escalation exceptions regional executive coo chro cfo chief bureaucracy corporate deep mode template"),
                 S("cleaning").For("economy_cleaning").Need("economy").Opts("economy_cleaning").Also("cleaners contract"),
                 S("sale").For("economy_sale").Need("economy").Opts("economy_sale").Also("sell buyer offer"),
                 S("ownbank").For("economy_ownbank").Need("economy").Opts("economy_bank").Also("bank licence deposits savers loans regulator capital fund"),

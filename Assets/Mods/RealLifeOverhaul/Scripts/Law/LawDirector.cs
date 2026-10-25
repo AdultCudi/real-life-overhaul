@@ -171,6 +171,14 @@ namespace RealLifeOverhaul.Law
                     _nextLook = Time.unscaledTime + 0.25f;
                     Look();
                 }
+                if (!LawState.Loaded && ModState.Loaded)
+                {
+                    if (StartLine.Holds(StartSeats.Law))
+                    {
+                        return;   // the first load waits for a frame of its own (Core/StartLine)
+                    }
+                    _nextTick = 0f;   // its seat: the first load in this very frame, alone
+                }
                 if (Time.unscaledTime < _nextTick)
                 {
                     return;

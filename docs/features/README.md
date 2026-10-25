@@ -60,6 +60,7 @@ Every feature runs in the New York the mod knows, a New York with districts a fr
 - [Running a business](economy-company.md).
 - [The staff rota planner](economy-rota.md).
 - [Managers for your empire](economy-managers.md).
+- [The company's hierarchy](economy-hierarchy.md): one policy over the managers, escalations up to you, regional managers and executives.
 - [Business pressure](business-pressure.md): rivals, inspections, the racket and more.
 - [Interiors and decor](interiors.md).
 - [Ready-made designs](designs.md): the interior installation firms' designs for the mod's own businesses.

@@ -173,6 +173,7 @@
         public const string EconomyCompanyLicencesId = "economy_company_licences";
         public const string EconomyRotaId = "economy_rota";
         public const string EconomyManagersId = "economy_managers";
+        public const string EconomyHierarchyId = "economy_hierarchy";
         public const string EstateId = "economy_estate";
         public const string EstateHotelId = "economy_estate_hotel";
         public const string EstateHireId = "economy_estate_hire";
@@ -318,6 +319,7 @@
         public const string CareersLifeId = "careers_life";
         public const string CareersOwnId = "careers_own";
         public const string CareersOwnOfferNotesId = "careers_own_offer_notes";
+        public const string CareersLadderId = "careers_ladder";
         public const string CareersFamilyId = "careers_family";
         public const string CareersAgencyNoteId = "careers_agency_note";
         public const string CareersClassStartId = "careers_class_start";
@@ -521,6 +523,7 @@
         public static bool EconomyCompanyLicences = true;    // ...licences and permits
         public static bool EconomyRota = true;           // the staff rota planner (off: the tab says so and nothing is worked out)
         public static bool EconomyManagers = true;       // managers deciding inside the player's limits (CompanyDirector.Managers)
+        public static bool EconomyHierarchy = true;      // the company's policy and escalations over the managers (off: each by their own limits, nothing escalated)
         public static bool Estate = true;                // property (off: every value and rent is the game's own)
         public static bool EstateHotel = true;           // owning a hotel of the city's as a business
         public static int EstateRent = 100;              // rental income: percent of the market's rent of a unit the player lets himself, and so of what is asked, offered and renewed at (50 to 300)
@@ -689,6 +692,7 @@
         public static bool CareersAgencyNote = true;     // a notification on the last day of a registration with the recruitment office
         public static bool CareersOwn = true;            // working for oneself (off: no contracts come; a practice is kept)
         public static bool CareersOwnOfferNotes = true;  // ...a notification for each contract a client offers
+        public static bool CareersLadder = true;         // the management ladder at a city company's stores (off: a job there is the profession's ranks alone; the record is kept)
         public static bool Business = true;              // rival moves, inspections, staff and supplier trouble, opportunities for the player's businesses
         public static int BusinessFrequency = 4;         // 1 = something every couple of weeks, 10 = most days (never more than two open at once)
         public static bool BusinessEasy = false;         // "easy business": only the opportunities are left
@@ -923,6 +927,7 @@
             EconomyCompanyLicences = Bool(modId, EconomyCompanyLicencesId, EconomyCompanyLicences);
             EconomyRota = Bool(modId, EconomyRotaId, EconomyRota);
             EconomyManagers = Bool(modId, EconomyManagersId, EconomyManagers);
+            EconomyHierarchy = Bool(modId, EconomyHierarchyId, EconomyHierarchy);
             Estate = Bool(modId, EstateId, Estate);
             EstateHotel = Bool(modId, EstateHotelId, EstateHotel);
             EstateHire = Bool(modId, EstateHireId, EstateHire);
@@ -1069,6 +1074,7 @@
             CareersLife = Bool(modId, CareersLifeId, CareersLife);
             CareersOwn = Bool(modId, CareersOwnId, CareersOwn);
             CareersOwnOfferNotes = Bool(modId, CareersOwnOfferNotesId, CareersOwnOfferNotes);
+            CareersLadder = Bool(modId, CareersLadderId, CareersLadder);
             CareersFamily = Bool(modId, CareersFamilyId, CareersFamily);
             CareersAgencyNote = Bool(modId, CareersAgencyNoteId, CareersAgencyNote);
             CareersClassStart = Bool(modId, CareersClassStartId, CareersClassStart);

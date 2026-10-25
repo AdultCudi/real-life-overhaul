@@ -582,6 +582,7 @@ namespace RealLifeOverhaul.Careers
                 Fault("the save tools", e);
             }
             _study = null;
+            LadderForget();
             _news = new TechNews();
         }
     }

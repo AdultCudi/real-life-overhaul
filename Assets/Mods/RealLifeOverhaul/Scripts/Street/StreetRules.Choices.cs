@@ -66,6 +66,8 @@ namespace RealLifeOverhaul.Street
                     return (c.Turns == 0 ? TierMoment : TierRest) * TierSize + FitSize + turn;   // a usual opening; later, one of the rest
                 case StreetAsk.Name:
                     return TierRest * TierSize + (c.Turns >= 1 ? 0 : 1) * FitSize + turn;
+                case StreetAsk.Age:
+                    return TierRest * TierSize + (c.Shared || (c.Memo != null && c.Memo.Named) ? 0 : 1) * FitSize + turn;   // easier asked once they said who they are
                 case StreetAsk.Bye:
                     return TierBye * TierSize;
                 case StreetAsk.Rude:
@@ -83,7 +85,7 @@ namespace RealLifeOverhaul.Street
             {
                 case StreetLine.AboutJob:
                 case StreetLine.AboutRetired:
-                    return At(ask, 0, StreetAsk.Work, StreetAsk.Name);
+                    return At(ask, 0, StreetAsk.Work, StreetAsk.Name, StreetAsk.Age);
                 case StreetLine.DirFound:
                 case StreetLine.DirFar:
                 case StreetLine.DirNone:
@@ -98,7 +100,7 @@ namespace RealLifeOverhaul.Street
                 case StreetLine.FlirtYes:
                     return At(ask, 0, StreetAsk.Name, StreetAsk.Number, StreetAsk.Invite);
                 case StreetLine.NameGive:
-                    return At(ask, turn, StreetAsk.AboutThem, StreetAsk.Number, StreetAsk.Day);
+                    return At(ask, turn, StreetAsk.AboutThem, StreetAsk.Number, StreetAsk.Day, StreetAsk.Age);
                 case StreetLine.SmallWarm:
                 case StreetLine.DayGood:
                 case StreetLine.DayFine:
@@ -119,7 +121,13 @@ namespace RealLifeOverhaul.Street
                 case StreetLine.WorkLikes:
                 case StreetLine.WorkMixed:
                 case StreetLine.WorkRetired:
-                    return At(ask, turn, StreetAsk.Name, StreetAsk.Area, StreetAsk.Compliment);
+                    return At(ask, turn, StreetAsk.Name, StreetAsk.Area, StreetAsk.Compliment, StreetAsk.Age);
+                case StreetLine.AgeGive:
+                case StreetLine.AgePlayful:
+                    return At(ask, turn, StreetAsk.AboutThem, StreetAsk.Name, StreetAsk.Day);
+                case StreetLine.AgeCool:
+                case StreetLine.AgeAgain:
+                    return At(ask, turn, StreetAsk.Area, StreetAsk.Directions, StreetAsk.Day);
                 case StreetLine.EventGoing:
                     return At(ask, 0, StreetAsk.Invite, StreetAsk.Name);
                 case StreetLine.EventNot:
@@ -176,6 +184,7 @@ namespace RealLifeOverhaul.Street
                 case StreetAsk.Thanks: return Helped(c.Last);
                 case StreetAsk.Bye: return true;
                 case StreetAsk.Name: return !done && (m == null || !m.Named);
+                case StreetAsk.Age: return !done && (m == null || !m.AgeTold);
                 case StreetAsk.Directions: return true;
                 case StreetAsk.Compliment: return !done && (m == null || !m.Complimented);
                 case StreetAsk.Joke: return !done && (m == null || !m.Joked);
@@ -252,6 +261,10 @@ namespace RealLifeOverhaul.Street
                     o.Line = s.Job == SocialCatalogue.Jobs.Length - 1 ? StreetLine.WorkRetired : Roll(s.Seed, 35, 100) < LikesWorkPercent + s.Mood * 10 ? StreetLine.WorkLikes : StreetLine.WorkMixed;
                     o.Rapport = 1;
                     break;
+                case StreetAsk.Age:
+                    o.Line = AgeLine(c, score);
+                    o.Rapport = AgeRapport(s, o.Line);
+                    break;
                 case StreetAsk.Thanks:
                     o.Line = StreetLine.Welcome;
                     o.Rapport = score >= WarmThanksLeast ? 1 : 0;
@@ -266,6 +279,48 @@ namespace RealLifeOverhaul.Street
             }
             return o;
         }
+
+        /// <summary>Whether somebody finds being asked their age by a stranger forward: the careful and the envious keep such things close.</summary>
+        public static bool AgeForward(StreetStranger s) => (s.Traits & (SocialTrait.Careful | SocialTrait.Envious)) != 0;
+
+        /// <summary>
+        /// How they answer when asked their age. Every answer says it: a cool one only says it shortly, so asking never turns
+        /// into a refusal to be asked round again. Somebody who finds it forward answers plainly only once the talk is warm.
+        /// </summary>
+        public static StreetLine AgeLine(StreetChat c, int score)
+        {
+            if (c.Memo != null && c.Memo.AgeTold)
+            {
+                return StreetLine.AgeAgain;
+            }
+            StreetStranger s = c.Who;
+            if (score < (AgeForward(s) ? AgeForwardWarmAt : AgeCoolBelow))
+            {
+                return StreetLine.AgeCool;
+            }
+            string style = Styles[Math.Max(0, Math.Min(Styles.Length - 1, s.Style))];
+            return style == "playful" || style == "cheeky" || (s.Humour && score >= AgeTeaseFrom) ? StreetLine.AgePlayful : StreetLine.AgeGive;
+        }
+
+        /// <summary>What the answer does to the rapport, by their nature: a point for most, none or one less for those who find it forward.</summary>
+        public static int AgeRapport(StreetStranger s, StreetLine line)
+        {
+            bool forward = AgeForward(s);
+            switch (line)
+            {
+                case StreetLine.AgeGive:
+                case StreetLine.AgePlayful:
+                    return forward ? 0 : 1;
+                case StreetLine.AgeCool:
+                    return forward ? -1 : 0;
+                default:
+                    return 0;
+            }
+        }
+
+        public const int AgeCoolBelow = -1;       // the talk's score below which anybody gives their age shortly (as they will not say what they do)
+        public const int AgeForwardWarmAt = 2;    // ...and at or above which somebody who finds it forward says it plainly
+        public const int AgeTeaseFrom = 2;        // ...and at or above which somebody with a sense of humour makes the player guess first
 
         /// <summary>The candidate somebody votes for, by their seed; -1 with none.</summary>
         public static int Candidate(StreetStranger s, int candidates) => candidates > 0 ? Roll(s.Seed, 32, candidates) : -1;

@@ -192,6 +192,13 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+
+        if (args.Length == 1 && args[0] == "--hierarchy")
+        {
+            Hierarchy();   // (the company's hierarchy alone, while working on it: HierarchyChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--hustles")
         {
             Hustles();   // (the Marketplace and freelance visits alone, while working on them: HustleChecks.cs)
@@ -323,6 +330,7 @@ internal static partial class Program
         Company();
         Rota();
         Managers();   // the managers of the player's places: their decisions inside the limits, mistakes, undo and the save (ManagerChecks.cs)
+        Hierarchy();  // the company's policy over the managers, its scopes, the escalations, who holds them and the save (HierarchyChecks.cs)
         Estate();
         Online();
         Services();
@@ -479,6 +487,7 @@ internal static partial class Program
         DeskStarts();   // a classroom door, a school desk and the Campus app begin a class or exam by one rule; no button the game's panel cannot fill or dim (DeskStartChecks.cs)
         HiddenPanels(); // in a Going Public session, which hides the game's activity panel and presses Start for the player, a desk's class or exam begins (HiddenPanelChecks.cs)
         ShiftOpen();    // every job's week inside its workplace's opening hours, a save's put right at load, a day shut at its start excused, the rota's shut clients (ShiftOpenChecks.cs)
+        Ladder();       // the management ladder at a city company: the ranks' powers, the company seeded, every task decided by the rank that may, promotion with its tools, the save (LadderChecks.cs)
         OptionKeysFix(); // the options kept under the mod's own id for every copy: the older copies' values brought over once, the running copy's first, the sources, the texts (OptionKeysChecks.cs)
         HomeFixes();    // home life: the roommate's talk test with no character, the door to social life nobody read, rain and sleep in a hotel room (HomeFixChecks.cs)
         LifeFixes();    // life events: news of the player's home, building, neighbours and landlord only to a player with a home (LifeFixChecks.cs)

@@ -293,7 +293,13 @@ internal static partial class Program
             ("Fame", @"Fame\FameDirector.cs", true, "Guard.Add<Fame.FameDirector>(_root)"),
             ("Permadeath", @"Permadeath\PermadeathDirector.cs", true, "Guard.Add<PermadeathDirector>(_root)"),
         };
-        Check(table.Length == StartSeats.Count, "start line: every seat is in the check's table");
+        // seat field, file, what the wiring adds: directors whose first load is in an Update of their own, on a timer
+        var frames = new (string Seat, string File, string Add)[]
+        {
+            ("Law", @"Law\LawDirector.cs", "Guard.Add<Law.LawDirector>(_root)"),
+            ("Garage", @"Garage\GarageDirector.cs", "Guard.Add<GarageDirector>(_root)"),
+        };
+        Check(table.Length + frames.Length == StartSeats.Count, "start line: every seat is in the check's table");
         string mod = Source(scripts, @"Core\RealLifeOverhaulMod.cs");
         int lastOwn = -1, lastFollower = -1, seatOwn = -1, seatFollower = -1;
         bool ownOrder = true, followerOrder = true, wired = true, held = true, named = true;
@@ -332,6 +338,23 @@ internal static partial class Program
                 {
                     missing.Add(row.Seat);
                 }
+            }
+        }
+        // A director on a frame timer asks for its seat every frame until its first load, and then runs that load at once.
+        foreach (var row in frames)
+        {
+            string code = Source(scripts, row.File);
+            wired &= mod.IndexOf(row.Add, StringComparison.Ordinal) >= 0;
+            string update = Body(code, "private void OnUpdate()");
+            int ask = update.IndexOf("StartLine.Holds(StartSeats." + row.Seat + ")", StringComparison.Ordinal);
+            int now = ask >= 0 ? update.IndexOf(" = 0f;", ask, StringComparison.Ordinal) : -1;   // (the source without its comments)
+            bool waits = ask >= 0 && now > ask;
+            bool timed = Body(code, "private void Update()").Contains("HotSpots.Time(HotUpdate)");
+            held &= waits;
+            named &= timed;
+            if (!waits || !timed)
+            {
+                missing.Add(row.Seat);
             }
         }
         string missed = missing.Count > 0 ? " (not: " + string.Join(", ", missing) + ")" : string.Empty;

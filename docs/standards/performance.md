@@ -164,8 +164,16 @@ UnityEngine.Object.Destroy(profile);   // bad: the setting Add made stays
 
 ### RLO-PERF-014: What a frame method calls each tick does not allocate either
 
-**MUST NOT** allocate in a method a frame method calls on every tick, in the features whose tick methods StandardCheck lists (the seasons: the director's step, the snow's look and its following of the camera, the leaves, the line under the date, the trees, the sky's test, the coats, the rain's hush). Work that allocates on purpose and rarely (a log line when the season turns, the sky copied when its look changes, the walkers' paces narrowed) lives in a method of its own, left off the list.
+**MUST NOT** allocate in a method a frame method calls on every tick, in the features whose tick methods StandardCheck lists (the seasons: the director's step, the snow's look and its following of the camera, the leaves, the line under the date, the trees, the sky's test, the coats, the rain's hush; Flare's face painter and its moment; the living city's shelf; the session record and the timing of the mod's scripts; the performance director). Work that allocates on purpose and rarely (a log line when the season turns, the sky copied when its look changes, the walkers' paces narrowed) lives in a method of its own, left off the list.
 
 Why: [RLO-PERF-003](#rlo-perf-003-no-allocation-in-a-frame-method) reads only the frame method's own body. The seasons' once-a-second step passed it while a player's session record showed the heap growing 888 KB a second under it.
 
 Checked by: StandardCheck (each listed method's body, with RLO-PERF-003's patterns and any object of a class made; a listed method that is gone fails too).
+
+### RLO-PERF-015: No character's look is built on a tick
+
+**MUST NOT** build a character's look (the game's `UpdateElements`, `UpdateVisuals`, `SetAppearance`, `SetRandomAppearance`, `RandomizeElements`, or the mod's `Dress`, `Redress`, `PutBack`) in a method StandardCheck lists for RLO-PERF-014. A look that is only for variety waits for a screen that hides it: the loading screen, or the black screen at full strength at a door (`Core/ScenePrewarm`, `Looks.Hidden`); one a scene needs is built at the pace of `People/Looks`.
+
+Why: the game merges a person's meshes for every look, some 1.5 MB of arrays and a few milliseconds each. The coats dressed one walker at every look in play and the living city changed worn looks in play (the owner's session record of 25 Oct 2026: 241 to 528 KB a second under the seasons' step, about 260 KB a second under the shelf).
+
+Checked by: StandardCheck (each listed method's body).

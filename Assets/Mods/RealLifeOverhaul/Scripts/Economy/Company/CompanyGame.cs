@@ -124,8 +124,16 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
+        /// <summary>The player's professionals into a list, from the professions; false while they are off (the seats then wait).</summary>
+        public static Func<List<ProfessionalHand>, bool> Professionals;
+
+        /// <summary>For a test: a professional of a role and level joins the professions' own payroll at a place; false if they could not.</summary>
+        public static Func<string, int, int, bool> HireProfessional;
+
         public static void Reset()
         {
+            Professionals = null;
+            HireProfessional = null;
             Comfort = null;
             Footfall = null;
             Promoted = null;
@@ -193,6 +201,7 @@ namespace RealLifeOverhaul.Economy
         public const string LicenceKey = "reallife_transaction_co_licence";
         public const string LicenceFineKey = "reallife_transaction_co_licence_fine";
         public const string ManagerKey = "reallife_transaction_co_manager";
+        public const string ExecutiveKey = "reallife_transaction_co_executive";   // an executive's allowance on top of their professional's pay
 
         // The game's business types by what they sell, as the end of their names ("ba:businesstype_...").
         private static readonly string[] FoodTypes = { "fastfoodrestaurant", "coffeeshop", "supermarket", "fruitandvegetablestore", "icecreamparlour", "teabar" };   // the last two: Scripts/Shops

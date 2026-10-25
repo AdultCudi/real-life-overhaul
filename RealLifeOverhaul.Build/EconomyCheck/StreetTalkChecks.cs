@@ -32,6 +32,7 @@ internal static partial class Program
         StreetTiming();
         StreetSources();
         StreetCardsUsed();   // street talk worded by RLO Texts (StreetTextsChecks.cs)
+        StreetAge();         // asking their age (StreetAgeChecks.cs)
         Console.WriteLine("  street talk: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed, " + watch.ElapsedMilliseconds + " ms");
     }
 
@@ -474,7 +475,7 @@ internal static partial class Program
         }
         Check(StreetLines.Lines.Length == (int)StreetLine.Count && StreetLines.Asks.Length == (int)StreetAsk.Count, "street talk: every kind of line and every choice has its words");
         // The values each kind's lines may name: what the conversation fills for it (StreetDirector.Talk.cs).
-        var always = new HashSet<string> { "first", "player", "job", "district", "shop", "event" };
+        var always = new HashSet<string> { "first", "player", "job", "district", "shop", "event", "age" };
         var extra = new Dictionary<StreetLine, string[]>
         {
             { StreetLine.AreaPlaces, new[] { "place", "place_two" } }, { StreetLine.AreaEvent, new[] { "event" } },
@@ -517,6 +518,7 @@ internal static partial class Program
         other.AddRange(StreetLines.Small);
         other.AddRange(StreetLines.DayAsks);
         other.AddRange(StreetLines.WorkAsks);
+        other.AddRange(StreetLines.AgeAsks);
         other.AddRange(new[] { StreetLines.AskWorkRetired, StreetLines.AskThanksAnyway });
         other.AddRange(new[]
         {
@@ -524,7 +526,7 @@ internal static partial class Program
             "reallife_street_btn_never_mind", "reallife_street_btn_talk", "reallife_street_btn_say", "reallife_street_say_placeholder", "reallife_street_stranger", "reallife_street_walk_one",
             "reallife_street_walk_many", "reallife_street_note_police", "reallife_street_note_booked", "reallife_street_note_mouth", "reallife_street_header", "reallife_street_enabled",
             "reallife_street_opt_brush", "reallife_street_brush_0", "reallife_street_brush_1", "reallife_street_brush_2", "reallife_street_test_talk", "reallife_street_test_forget",
-            "reallife_street_test_nobody", "reallife_street_test_forgot", "reallife_meta_title_street", "reallife_guide_street_about", "reallife_guide_street", "reallife_opt_sec_street",
+            "reallife_street_test_age", "reallife_street_test_nobody", "reallife_street_test_forgot", "reallife_meta_title_street", "reallife_guide_street_about", "reallife_guide_street", "reallife_opt_sec_street",
             "reallife_opt_tip_street_talk", "reallife_opt_tip_street_brush", "reallife_social_desc_street", "reallife_social_welcome_street", "reallife_social_meet_street_1", "reallife_social_meet_street_2"
         });
         foreach (string key in other)

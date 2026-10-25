@@ -12,6 +12,7 @@ namespace RealLifeOverhaul.Economy
         public ManagedKind Kind;
         public CompanyShop Shop;        // the company's business there; null for a warehouse, a factory or a place it does not run
         public string District;
+        public string Area;             // the region of its regional manager: its district, or a region the player made (CompanyDirector.Hierarchy)
         public ManagerFile Own;         // the place's manager; null for none
         public ManagerFile Region;      // the district's regional manager; null for none
     }
@@ -125,12 +126,13 @@ namespace RealLifeOverhaul.Economy
                 mp.Shop = ShopAt(p.Place);
                 mp.Kind = p.Type == RotaType.Warehouse ? ManagedKind.Warehouse : p.Type == RotaType.Customers && mp.Shop != null ? ManagedKind.Shop : ManagedKind.Works;
                 mp.District = ManagerGame.District(p.Reg);
+                mp.Area = AreaFor(p.Place, mp.District);
                 mp.Own = OwnOf(p.Place);
                 mp.Region = null;
                 _managed.Add(mp);
-                if (!string.IsNullOrEmpty(mp.District) && !_districts.Contains(mp.District))
+                if (!string.IsNullOrEmpty(mp.Area) && !_districts.Contains(mp.Area))
                 {
-                    _districts.Add(mp.District);
+                    _districts.Add(mp.Area);
                 }
             }
             _gone.Clear();
@@ -142,7 +144,8 @@ namespace RealLifeOverhaul.Economy
                 m.Seen = where != null && e != null && ManagerGame.At(e, where.Reg) && (!m.Region || _districts.Contains(m.Place));
                 if (!m.Seen)
                 {
-                    if (ManagersOn)
+                    // A region the player made has no stores while the hierarchy is off: its regional manager's post waits for it.
+                    if (ManagersOn && !(m.Region && HierarchyRules.CustomNumber(m.Place) > 0 && !HierarchyOn))
                     {
                         _gone.Add(m);   // off, the post is kept as it is and looked at again when they are on
                     }
@@ -155,7 +158,7 @@ namespace RealLifeOverhaul.Economy
             {
                 ManagerFile m = _gone[i];
                 _mgr.Managers.Remove(m);
-                string where = m.Region ? CompanyText.District(m.Place) : ManagedName(m.Place);
+                string where = m.Region ? AreaName(m.Place) : ManagedName(m.Place);
                 Logger?.Info("Company: the " + (m.Region ? "regional manager of " : "manager of ") + where + " (" + m.Name
                              + ") is no longer there, so the post is empty and the decisions are yours again there.");
                 if (!string.IsNullOrEmpty(m.Name))
@@ -168,7 +171,12 @@ namespace RealLifeOverhaul.Economy
             {
                 ManagedPlace mp = _managed[i];
                 mp.Own = OwnOf(mp.Place.Place);
-                mp.Region = RegionOf(mp.District);
+                mp.Region = RegionOf(mp.Area);
+            }
+            if (HierarchyOn)
+            {
+                Tally(Save.Day);   // the places' staff counted for the hierarchy's pages and its day
+                ExecutivesRead(false);   // who sits in each seat now; one gone is stood down on the day, not as a page opens
             }
         }
 
@@ -238,7 +246,7 @@ namespace RealLifeOverhaul.Economy
             {
                 return false;
             }
-            return ManagerRules.Answers(ManagersOn, OwnOf(place), task, employee);
+            return ManagerRules.Answers(ManagersOn, OwnOf(place), task, employee) && PolicyAllows(ManagedAt(place), task);
         }
 
         // Who decides at a place today: its manager, or the district's regional manager standing in for one off sick.
@@ -267,10 +275,10 @@ namespace RealLifeOverhaul.Economy
             return d;
         }
 
-        /// <summary>The month's budget of a manager, at today's prices.</summary>
+        /// <summary>The month's budget of a manager, at today's prices, with what the finance chief or the owner added this month.</summary>
         internal int BudgetOf(ManagerFile m)
         {
-            return CompanyCatalogue.AtPrices(ManagerCatalogue.Step(ManagerCatalogue.Budgets, m.Budget), _index);
+            return CompanyCatalogue.AtPrices(ManagerCatalogue.Step(ManagerCatalogue.Budgets, m.Budget), _index) + TopUpOf(m);
         }
 
         /// <summary>A manager's allowance a day, at today's prices.</summary>
@@ -305,10 +313,20 @@ namespace RealLifeOverhaul.Economy
                     Round(day, hour, (ManagerTask)t);
                 }
             }
+            HierarchyHour(day, hour);   // an exception to the pay band raised as the requests were answered goes to its approver at once
             if (hour == ManagerCatalogue.DigestHour && _mgr.Today > 0 && !_mgrBroken)
             {
-                Tell(NotificationType.Info, "reallife_mgr_note_today", new Dictionary<string, string> { { "count", _mgr.Today.ToString() } }, TabManagers, null);
-                _mgr.Today = 0;
+                // The policy says how often: every day (as before it), only on a Sunday with the week's count, or never.
+                int reports = Rule(null, PolicyField.Reports);
+                if (HierarchyRules.DigestDue(reports, day))
+                {
+                    Tell(NotificationType.Info, "reallife_mgr_note_today", new Dictionary<string, string> { { "count", _mgr.Today.ToString() } }, TabManagers, null);
+                    _mgr.Today = 0;
+                }
+                else if (PolicyCatalogue.Value(PolicyField.Reports, reports) == PolicyCatalogue.ReportExceptions)
+                {
+                    _mgr.Today = 0;
+                }
             }
         }
 
@@ -326,7 +344,7 @@ namespace RealLifeOverhaul.Economy
                     ManagedPlace mp = _managed[i];
                     int skill, review;
                     string who;
-                    if (mp.Own == null || !ManagerRules.Runs(mp.Own.Tasks, mp.Kind, task) || mp.Place.Reg == null
+                    if (mp.Own == null || !ManagerRules.Runs(mp.Own.Tasks, mp.Kind, task) || !PolicyAllows(mp, task) || mp.Place.Reg == null
                         || !GoingPublic.Mine(mp.Place.Reg) || !Decider(mp, out skill, out review, out who))
                     {
                         continue;
@@ -529,7 +547,7 @@ namespace RealLifeOverhaul.Economy
                 Notify(NotificationType.Warning, "reallife_mgr_note_most", new Dictionary<string, string> { { "count", ManagerCatalogue.ManagersMost.ToString() } }, 7f);
                 return;
             }
-            Notify(NotificationType.Success, "reallife_mgr_note_appointed", new Dictionary<string, string> { { "name", m.Name }, { "place", CompanyText.District(district) } }, 8f);
+            Notify(NotificationType.Success, "reallife_mgr_note_appointed", new Dictionary<string, string> { { "name", m.Name }, { "place", AreaName(district) } }, 8f);
             ManagerRead();
             Changed();
         }
@@ -560,8 +578,8 @@ namespace RealLifeOverhaul.Economy
             m.Name = ManagerGame.NameOf(e);
             m.Skill = ManagerGame.SkillOf(e);
             m.Seen = true;
-            Logger?.Info("Company: " + m.Name + " (skill " + m.Skill + ", at " + office.Name + ") appointed regional manager of " + CompanyText.District(district)
-                         + ", allowance " + AllowanceOf(m) + " a day" + (left != null ? "; " + CompanyText.District(left) + " has no regional manager now" : string.Empty) + ".");
+            Logger?.Info("Company: " + m.Name + " (skill " + m.Skill + ", at " + office.Name + ") appointed regional manager of " + AreaName(district)
+                         + ", allowance " + AllowanceOf(m) + " a day" + (left != null ? "; " + AreaName(left) + " has no regional manager now" : string.Empty) + ".");
             return m;
         }
 
@@ -578,7 +596,7 @@ namespace RealLifeOverhaul.Economy
                 return;
             }
             _mgr.Managers.Remove(m);
-            string where = region ? CompanyText.District(place) : ManagedName(place);
+            string where = region ? AreaName(place) : ManagedName(place);
             Logger?.Info("Company: " + m.Name + " stood down as " + (region ? "regional manager of " : "manager of ") + where
                          + ". Their decisions stay in the log and can still be undone where it is not too late; the products they left to you are let go with the post.");
             Notify(NotificationType.Info, "reallife_mgr_note_stood_down", new Dictionary<string, string> { { "name", m.Name }, { "place", where } }, 8f);
@@ -628,6 +646,11 @@ namespace RealLifeOverhaul.Economy
                 case LimitPriceHigh: m.PriceHigh = CompanyCatalogue.Clamp(step, 0, ManagerCatalogue.PriceHighs.Length - 1); break;
                 case LimitBudget: m.Budget = CompanyCatalogue.Clamp(step, 0, ManagerCatalogue.Budgets.Length - 1); break;
                 case LimitKeep: m.Keep = CompanyCatalogue.Clamp(step, 0, ManagerCatalogue.KeepMost); break;
+            }
+            if (limit == LimitWage || limit == LimitBudget)
+            {
+                // The pay band and the budget are the store's own rules of the policy: set here, held to the region's and the company's.
+                StoreOwn(place, limit == LimitWage ? PolicyField.PayBand : PolicyField.Budget, limit == LimitWage ? m.WageBand : m.Budget);
             }
             Logger?.Info("Company: a limit of the manager of " + ManagedName(place) + " set: " + limit + " to " + step + ".");
             Changed();

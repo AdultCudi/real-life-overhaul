@@ -17,7 +17,7 @@ namespace RealLifeOverhaul.Street
                 .Owns(Settings.StreetTalkId, Settings.StreetBrushId)
                 .Preset(Settings.StreetBrushId, 0, 1, 2)
                 .Data(StreetStore.Key)
-                .Test("reallife_street_test_talk", "reallife_street_test_forget")
+                .Test("reallife_street_test_talk", "reallife_street_test_age", "reallife_street_test_forget")
                 .Fact("street_police", () => ((int)StreetRules.PoliceMetres).ToString(Inv))
                 .Fact("street_find", () => ((int)StreetRules.FindMetres).ToString(Inv))
                 .Fact("street_mouth", () => StreetRules.MouthPercent.ToString(Inv))
@@ -43,6 +43,7 @@ namespace RealLifeOverhaul.Street
                 .AddDropdown(Settings.StreetBrushId, "reallife_street_opt_brush",
                     new[] { "reallife_street_brush_0", "reallife_street_brush_1", "reallife_street_brush_2" }, Settings.StreetBrush, v => Settings.StreetBrush = v)
                 .AddButton("reallife_street_test_talk", () => StreetDirector.Instance?.TestTalk())
+                .AddButton("reallife_street_test_age", () => StreetDirector.Instance?.TestAge())
                 .AddButton("reallife_street_test_forget", () => StreetDirector.Instance?.TestForget())
                 .AddSplitter();
         }
