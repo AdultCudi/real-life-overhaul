@@ -39,6 +39,10 @@ namespace RealLifeOverhaul
         // The next stop of a line, or the finding that the next stretch has none. True once the line has all its stops.
         private static bool PlaceStop(TransitLine line)
         {
+            if (line.Wanted != null)
+            {
+                return PlaceWanted(line);   // a district's own route: its stops where they are wanted (TransitMap.Routes)
+            }
             if (!_lineBegun)
             {
                 _lineBegun = true;
@@ -183,21 +187,21 @@ namespace RealLifeOverhaul
 
         // This line's own stop at a place another line laid out; null if the lane is not plain either side on this line's way.
         // The bay is the place's only if this line's own way into it is as straight as the bay needs.
-        private static TransitStop Share(TransitLine line, int index, TransitStop host)
+        private static TransitStop Share(TransitLine line, int index, TransitStop host, float clear = JunctionClear)
         {
             if (SharedBy.TryGetValue(host, out int lines) && lines >= MostLinesAt)
             {
                 return null;   // as many lines as one place is timetabled for
             }
             int[] path = line.Path;
-            for (int k = index - 1; k >= 0 && line.Metres[index] - line.Metres[k] < JunctionClear; k--)
+            for (int k = index - 1; k >= 0 && line.Metres[index] - line.Metres[k] < clear; k--)
             {
                 if (!Plain(_points[path[k]]))
                 {
                     return null;
                 }
             }
-            for (int k = index + 1; k < path.Length && line.Metres[k] - line.Metres[index] < JunctionClear; k++)
+            for (int k = index + 1; k < path.Length && line.Metres[k] - line.Metres[index] < clear; k++)
             {
                 if (!Plain(_points[path[k]]))
                 {
@@ -225,8 +229,9 @@ namespace RealLifeOverhaul
             return stop;
         }
 
-        // A stop at one lane point of a line, or null if it will not do (or has no bay, with bayOnly).
-        private static TransitStop Try(TransitLine line, int index, bool bayOnly)
+        // A stop at one lane point of a line, or null if it will not do (or has no bay, with bayOnly), with a clear stretch of
+        // plain lane either side: the paired lines' own, or a shorter one where a district wants a stop between near crossings.
+        private static TransitStop Try(TransitLine line, int index, bool bayOnly, float clear = JunctionClear)
         {
             int[] path = line.Path;
             if (index < 3 || index >= path.Length - 3 || HostIndex.ContainsKey(path[index]))
@@ -238,14 +243,14 @@ namespace RealLifeOverhaul
             {
                 return null;
             }
-            for (int k = index - 1; k >= 0 && line.Metres[index] - line.Metres[k] < JunctionClear; k--)
+            for (int k = index - 1; k >= 0 && line.Metres[index] - line.Metres[k] < clear; k--)
             {
                 if (!Plain(_points[path[k]]))
                 {
                     return null;
                 }
             }
-            for (int k = index + 1; k < path.Length && line.Metres[k] - line.Metres[index] < JunctionClear; k++)
+            for (int k = index + 1; k < path.Length && line.Metres[k] - line.Metres[index] < clear; k++)
             {
                 if (!Plain(_points[path[k]]))
                 {
@@ -396,11 +401,15 @@ namespace RealLifeOverhaul
             return piece != null && !BusZones.MustStay(piece) ? piece : null;
         }
 
-        // The pole at the first of BusInside.SignPlaces that is free pavement clear of the doors; false if none is.
+        // The pole at the first of BusInside.SignPlaces that is free pavement clear of the doors; false if none is. The
+        // pavement's spot found for the pole may lie up to 0.3 m off the place asked, and the kerb found up to 0.3 m off the
+        // step that found it, so the pole is judged again where it stands against the kerb as found: the figures the
+        // poles' check (TransitMap.Log) reads, so every pole laid passes it.
         private static bool PlaceSign(TransitStop stop, Vector3 right, float kerb)
         {
             Vector3 toWait = Flat(stop.Wait - stop.Lane);
             float waitAlong = Vector3.Dot(toWait, stop.Along), waitAside = Vector3.Dot(toWait, right);
+            float found = Vector3.Dot(Flat(stop.Kerb - stop.Lane), right);
             for (int i = 0; i < BusInside.SignPlaces.Length; i++)
             {
                 if (i == BusInside.SignByShelter && !stop.Shelter)
@@ -415,6 +424,11 @@ namespace RealLifeOverhaul
                 }
                 if (IsPavement(stop.Lane + right * aside + stop.Along * place.Z, out Vector3 at) && Open(at, 0.3f))
                 {
+                    Vector3 toPole = Flat(at - stop.Lane);
+                    if (!BusInside.SignClearAlways(Vector3.Dot(toPole, stop.Along), Vector3.Dot(toPole, right), found, waitAlong, waitAside))
+                    {
+                        continue;
+                    }
                     stop.Sign = at;
                     return true;
                 }

@@ -79,6 +79,11 @@ namespace RealLifeOverhaul
                 text.Append(" m);");
             }
             Logger?.Info(text.ToString());
+            string own = OwnWords();
+            if (own != null)
+            {
+                Logger?.Info(own);
+            }
             if (Notes.Length > 0)
             {
                 Logger?.Info("Transit: the pairs of stations not joined:" + Notes);
