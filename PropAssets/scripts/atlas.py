@@ -1,8 +1,13 @@
-"""Paints the one texture atlas every prop shares, and says where each region is.
+"""Paints the texture atlas the props of one bundle share, and says where each region is.
 
-    build/textures/props_base.png   4096 x 2048, colour
+    build/textures/props_base.png   4096 x 2048 (the first bundle), colour
     build/textures/props_mask.png   2048 x 1024, HDRP mask map: R metallic, G occlusion, B detail (unused), A smoothness
     build/atlas.json                region name -> [u0, v0, u1, v1]
+
+The set being built (sets.json, PROPS_SET) gives the folder and the size. The first bundle's atlas has a fixed size; a
+set whose atlas "grows" takes the smallest power-of-two size its regions fit, up to its limit, so it costs video
+memory only for what it holds, and none while it holds nothing. Such a set paints the swatches its models name and
+each model's own picture (models.py --scan lists them), and its procedural modules if it has any.
 
 A region is either a SWATCH (one surface finish: a colour that gets grimier towards the bottom of the patch, so a
 part mapped onto it by height picks up dirt and contact shadow where it meets the ground) or a DECAL (a painted
@@ -16,15 +21,20 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
-BUILD = os.environ.get("PROPS_BUILD") or os.path.join(ROOT, "build")      # PROPS_BUILD: a working folder of one's own (README, "Working on one module")
 sys.path.append(os.path.join(ROOT, "_tools", "pylib"))
 sys.path.insert(0, HERE)
 
 import numpy as np  # noqa: E402
 from PIL import Image, ImageDraw, ImageFilter, ImageFont  # noqa: E402
 
-WIDTH, HEIGHT = 4096, 2048        # powers of two, both: Unity leaves any other size uncompressed (RGBA32, four times the memory)
-MASK_DIVISOR = 2          # the mask map is half the size of the colour
+import sets  # noqa: E402
+
+BUILD = sets.BUILD          # PROPS_BUILD: a working folder of one's own (README, "Working on one module")
+# Powers of two, both: Unity leaves any other size uncompressed (RGBA32, four times the memory). A set that grows
+# starts at the smallest and doubles to this limit.
+WIDTH, HEIGHT = sets.SET["atlas"]["width"], sets.SET["atlas"]["height"]
+MASK_DIVISOR = sets.SET["mask_divisor"]       # the mask map is this much smaller each way than the colour
+SMALLEST = 256
 PAD = 8                   # gutter round every region, filled with the region's own edge
 SS = 2                    # regions are painted at twice their size and reduced: smooth edges without a rasteriser
 GRIME = (0.23, 0.20, 0.17)
@@ -203,9 +213,11 @@ BLACK = (0.03, 0.03, 0.035)
 
 def paint_tape():
     # One repeat of the tape per metre; the row spans the atlas, so the strip tiles along U.
-    # Painted 2048 wide as it always was and drawn out to the atlas's width when packed: the strip maps one repeat a metre.
-    layer = Layer(2048, 152, TAPE_YELLOW, 0.0, 0.5)
-    layer.text("POLICE LINE DO NOT CROSS", (150, 30, 2048 - 150, 122), BLACK, weight=0.07, smooth=0.4, spacing=0.03)
+    # Painted 1024 wide and drawn out to the atlas's width when packed: the strip maps one repeat a metre. 76 px for the
+    # strip's 0.075 m is about 1000 px a metre each way, more than a cordon shows from a step away; it was 152 px high
+    # (2000 px a metre), 8 % of the first atlas spent on detail nobody sees.
+    layer = Layer(1024, 76, TAPE_YELLOW, 0.0, 0.5)
+    layer.text("POLICE LINE DO NOT CROSS", (75, 15, 1024 - 75, 61), BLACK, weight=0.07, smooth=0.4, spacing=0.03)
     return layer.finish(grain=0.02, blotch=0.03)
 
 
@@ -307,18 +319,6 @@ def paint_banded(width, height, bands):
             layer.line([(0, bottom * height), (width, bottom * height)], (0.75, 0.72, 0.68), width=1)
         return layer.finish(grime=0.75, grain=0.04, blotch=0.06, scratches=14)
     return paint
-
-
-def paint_first_aid():
-    green = SWATCHES["plastic_green"][0]
-    layer = Layer(256, 192, green, 0.0, 0.45)
-    layer.line([(0, 44), (256, 44)], tuple(c * 0.5 for c in green), width=2)
-    for x in (56, 200):
-        layer.rect(x - 14, 34, x + 14, 56, (0.75, 0.76, 0.78), metal=1.0, smooth=0.6, radius=3)
-    layer.rect(113, 62, 143, 138, WHITE)
-    layer.rect(90, 85, 166, 115, WHITE)
-    layer.text("FIRST AID", (40, 148, 216, 180), WHITE, weight=0.05)
-    return layer.finish(grime=0.3, grain=0.03, blotch=0.04, scratches=10, edge=0.2)
 
 
 def paint_evidence(number):
@@ -485,7 +485,6 @@ DECALS = {
                                                                      (444, 6, (0.62, 0.66, 0.70)), (458, 14, (0.62, 0.66, 0.70))), fold=0.09),
     "cone_side": paint_banded(128, 384, ((0.15, 0.36), (0.44, 0.56))),
     "post_side": paint_banded(64, 384, ((0.10, 0.20), (0.27, 0.37))),
-    "first_aid_face": paint_first_aid,
     "evidence_1": paint_evidence(1),
     "evidence_2": paint_evidence(2),
     "evidence_3": paint_evidence(3),
@@ -852,23 +851,6 @@ def paint_price_card():
     return layer.finish(grain=0.02, blotch=0.03)
 
 
-def paint_handset():
-    layer = Layer(72, 208, (0.075, 0.075, 0.085), 0.0, 0.35)
-    layer.rect(4, 4, 68, 204, (0.11, 0.11, 0.12), radius=8)
-    layer.rect(12, 18, 60, 54, (0.02, 0.02, 0.025), radius=3)
-    layer.rect(15, 21, 57, 51, (0.50, 0.66, 0.46), smooth=0.8, radius=2)        # the display
-    layer.text("CH 05", (18, 26, 54, 46), (0.08, 0.14, 0.08), weight=0.06)
-    for r in range(2):
-        for c in range(3):
-            layer.rect(13 + c * 16, 62 + r * 13, 26 + c * 16, 71 + r * 13, (0.24, 0.24, 0.26), radius=2)
-    layer.rect(45, 62, 59, 71, (0.90, 0.38, 0.05), radius=2)
-    for y in range(98, 186, 9):                            # the speaker grille
-        layer.rect(14, y, 58, y + 4, (0.015, 0.015, 0.02), radius=2)
-        layer.line([(15, y + 5), (57, y + 5)], (0.22, 0.22, 0.23), width=1)
-    layer.disc(36, 10.5, 2.4, (0.90, 0.12, 0.08), smooth=0.7)
-    return layer.finish(grain=0.05, blotch=0.04)
-
-
 def paint_guitar_top():
     spruce = (0.83, 0.62, 0.33)
     layer = Layer(200, 248, spruce, 0.0, 0.62)
@@ -932,23 +914,6 @@ def paint_caution():
     layer.text("CAUTION", (60, 8, 154, 32), BLACK, weight=0.07)
     layer.text("WET FLOOR", (60, 36, 154, 54), BLACK, weight=0.06)
     return layer.finish(grain=0.03, blotch=0.04, scratches=8)
-
-
-def paint_food_logo():
-    white, dark = (0.97, 0.96, 0.93), (0.10, 0.10, 0.11)
-    layer = Layer(176, 152, white, 0.0, 0.4)
-    layer.rect(0, 0, 176, 152, dark, radius=14)
-    layer.rect(5, 5, 171, 147, white, radius=10)
-    layer.disc(88, 60, 40, SWATCHES["nylon_orange"][0])
-    layer.disc(88, 60, 25, white)                                               # a plate, a fork and a knife
-    layer.disc(88, 60, 18, (0.90, 0.89, 0.86))
-    layer.rect(52, 34, 55, 88, dark, radius=1)
-    for dx in (-5, 0, 5):
-        layer.rect(52 + dx, 30, 55 + dx, 48, dark, radius=1)
-    layer.rect(121, 46, 125, 88, dark, radius=1)
-    layer.poly([(121, 30), (128, 36), (128, 56), (121, 56)], dark)
-    layer.text("QUICK BITE", (16, 108, 160, 138), dark, weight=0.07)
-    return layer.finish(grime=0.15, grain=0.03, blotch=0.04)
 
 
 def paint_banknote():
@@ -1015,12 +980,10 @@ LIFE_DECALS = {
     "fruit_lemon": paint_fruit((0.97, 0.86, 0.14)),
     "fruit_banana": paint_fruit((0.96, 0.80, 0.16), kind="banana"),
     "price_card": paint_price_card,
-    "handset_face": paint_handset,
     "guitar_top": paint_guitar_top,
     "fretboard": paint_fretboard,
     "mop_strings": paint_mop_strings,
     "caution": paint_caution,
-    "food_logo": paint_food_logo,
     "banknote": paint_banknote,
     "fragile": paint_fragile,
     "awning_green": paint_stripes((0.08, 0.36, 0.17)),
@@ -1052,33 +1015,84 @@ def extra_modules():
 EXTRA.append("tech")       # the tech sector's buildings (paint_tech.py): a module of its own, painted after the others
 
 
-def build():
-    layers = {"tape": paint_tape()}
-    layers.update({name: paint() for name, paint in DECALS.items()})
-    layers.update({name: paint_swatch(name) for name in SWATCHES if name not in LIFE_SWATCHES})
-    layers.update({name: paint() for name, paint in LIFE_DECALS.items()})          # after the above: see LIFE_SWATCHES
-    layers.update({name: paint_swatch(name) for name in LIFE_SWATCHES})
-    for module in extra_modules():
-        swatches, decals = module.register(sys.modules[__name__])
-        clash = [n for n in list(swatches) + list(decals) if n in layers or n in SWATCHES]
-        if clash:
-            raise SystemExit("%s names regions that exist already: %s" % (module.__name__, ", ".join(clash)))
-        SWATCHES.update(swatches)
-        layers.update({name: paint() for name, paint in decals.items()})
-        layers.update({name: paint_swatch(name) for name in swatches})
-        print("%s: %d regions, %d pixels with their gutters" % (module.__name__, len(swatches) + len(decals),
-              sum((layers[n].width + 2 * PAD) * (layers[n].height + 2 * PAD) for n in list(swatches) + list(decals))))
+def add_module(layers, module):
+    """A painting module's regions (see EXTRA above), refused if it names one that exists."""
+    swatches, decals = module.register(sys.modules[__name__])
+    clash = [n for n in list(swatches) + list(decals) if n in layers or n in SWATCHES]
+    if clash:
+        raise SystemExit("%s names regions that exist already: %s" % (module.__name__, ", ".join(clash)))
+    SWATCHES.update(swatches)
+    layers.update({name: paint() for name, paint in decals.items()})
+    layers.update({name: paint_swatch(name) for name in swatches})
+    print("%s: %d regions, %d pixels with their gutters" % (module.__name__, len(swatches) + len(decals),
+          sum((layers[n].width + 2 * PAD) * (layers[n].height + 2 * PAD) for n in list(swatches) + list(decals))))
 
-    # The tape is a row of its own with no gutter at its ends. The rest go, largest first, into the free
-    # rectangle each fits most tightly, which is then cut in two.
-    places = {"tape": (0, PAD)}
-    top = PAD + layers["tape"].height + PAD
-    free = [(0, top, WIDTH, HEIGHT - top)]
+
+class Picture:
+    """A model's own painted picture (models.py --scan saved it) as a region: its colour, and its mask map's metallic,
+    occlusion and smoothness from <id>_mask.png when the model has one, else its material's own two values."""
+
+    def __init__(self, entry):
+        self.colour = Image.open(entry["file"]).convert("RGB")
+        self.width, self.height = self.colour.size
+        self.mask = Image.open(entry["mask"]).convert("RGBA").resize(self.colour.size, Image.LANCZOS) if entry.get("mask") else None
+        self.metal, self.smooth = entry.get("metallic", 0.0), entry.get("smoothness", 0.3)
+
+    def images(self):
+        if self.mask is not None:
+            r, g, _, a = self.mask.split()
+            return [self.colour, r, g, a]
+        size = self.colour.size
+        return [self.colour, Image.new("L", size, _byte(self.metal)), Image.new("L", size, 255), Image.new("L", size, _byte(self.smooth))]
+
+
+def gather():
+    """The regions of the set being built: name -> something with width, height and images()."""
+    if sets.FIRST:
+        layers = {"tape": paint_tape()}
+        layers.update({name: paint() for name, paint in DECALS.items()})
+        layers.update({name: paint_swatch(name) for name in SWATCHES if name not in LIFE_SWATCHES})
+        layers.update({name: paint() for name, paint in LIFE_DECALS.items()})          # after the above: see LIFE_SWATCHES
+        layers.update({name: paint_swatch(name) for name in LIFE_SWATCHES})
+        for module in extra_modules():
+            add_module(layers, module)
+        return layers
+    modules = [__import__("paint_" + name) for name in sets.SET.get("modules", [])]
+    scanned = os.path.join(BUILD, "models.json")
+    models = []
+    if sets.SET.get("models"):
+        if not os.path.exists(scanned):
+            raise SystemExit("no %s: run models.py --scan first (build.ps1 does)" % scanned)
+        with open(scanned, encoding="utf-8") as f:
+            models = json.load(f)["models"]
+    # The swatches its procedural modules may name (all of them), or only those its models name.
+    wanted = set(SWATCHES) if modules else set()
+    for model in models:
+        unknown = [s for s in model["swatches"] if s not in SWATCHES]
+        if unknown:
+            raise SystemExit("model %s names swatches the atlas does not have: %s (README, 'Adding a prop from Blender')" % (model["id"], ", ".join(unknown)))
+        wanted.update(model["swatches"])
+    layers = {name: paint_swatch(name) for name in SWATCHES if name in wanted}
+    for module in modules:
+        add_module(layers, module)
+    for model in models:
+        for picture in model["pictures"]:
+            layers[picture["region"]] = Picture(picture)
+    return layers
+
+
+def pack(layers, width, height):
+    """Where each region goes in a width x height atlas, or (None, the first that does not fit). The tape is a row of
+    its own with no gutter at its ends. The rest go, largest first, into the free rectangle each fits most tightly,
+    which is then cut in two."""
+    places = {"tape": (0, PAD)} if "tape" in layers else {}
+    top = PAD + layers["tape"].height + PAD if "tape" in layers else 0
+    free = [(0, top, width, height - top)]
     for name in sorted((n for n in layers if n != "tape"), key=lambda n: (-layers[n].height * layers[n].width, n)):
         w, h = layers[name].width + 2 * PAD, layers[name].height + 2 * PAD
         fits = [r for r in free if r[2] >= w and r[3] >= h]
         if not fits:
-            raise SystemExit("the atlas is full: no room for " + name)
+            return None, name
         fx, fy, fw, fh = min(fits, key=lambda r: min(r[2] - w, r[3] - h))
         free.remove((fx, fy, fw, fh))
         if fw - w > fh - h:
@@ -1086,6 +1100,46 @@ def build():
         else:
             free += [(fx + w, fy, fw - w, h), (fx, fy + h, fw, fh - h)]
         places[name] = (fx + PAD, fy + PAD)
+    return places, None
+
+
+def sizes():
+    """The sizes to try: the set's own, or for one that grows each power of two up to it, square then twice as wide."""
+    if not sets.SET["atlas"].get("grows"):
+        return [(WIDTH, HEIGHT)]
+    out, w, h = [], SMALLEST, SMALLEST
+    while w <= WIDTH and h <= HEIGHT:
+        out.append((w, h))
+        w, h = (w * 2, h) if w == h else (w, h * 2)
+    return out
+
+
+def write_empty():
+    """A set with nothing in it ships no atlas at all: no video memory for nothing."""
+    for name in ("props_base.png", "props_mask.png"):
+        stale = os.path.join(BUILD, "textures", name)
+        if os.path.exists(stale):
+            os.remove(stale)
+    os.makedirs(BUILD, exist_ok=True)
+    with open(os.path.join(BUILD, "atlas.json"), "w") as f:
+        json.dump({"width": 0, "height": 0, "used": 0, "swatches": [], "regions": {}}, f, indent=1)
+    print("atlas: none, the set '%s' has no regions" % sets.NAME)
+
+
+def build():
+    global WIDTH, HEIGHT
+    layers = gather()
+    if not layers:
+        write_empty()
+        return
+    missing = None
+    for width, height in sizes():
+        places, missing = pack(layers, width, height)
+        if places is not None:
+            WIDTH, HEIGHT = width, height
+            break
+    else:
+        raise SystemExit("the atlas is full: no room for %s (the set '%s', %d x %d at most)" % (missing, sets.NAME, WIDTH, HEIGHT))
 
     base = np.full((HEIGHT, WIDTH, 3), 96, dtype=np.uint8)
     mask = np.zeros((HEIGHT, WIDTH, 4), dtype=np.uint8)
@@ -1110,9 +1164,10 @@ def build():
     os.makedirs(os.path.join(BUILD, "textures"), exist_ok=True)
     Image.fromarray(base, "RGB").save(os.path.join(BUILD, "textures", "props_base.png"))
     Image.fromarray(mask, "RGBA").resize((WIDTH // MASK_DIVISOR, HEIGHT // MASK_DIVISOR), Image.BOX).save(os.path.join(BUILD, "textures", "props_mask.png"))
+    percent = round(100 * used / (WIDTH * HEIGHT))
     with open(os.path.join(BUILD, "atlas.json"), "w") as f:
-        json.dump({"width": WIDTH, "height": HEIGHT, "swatches": sorted(SWATCHES), "regions": rects}, f, indent=1)
-    print("atlas %d x %d, %d regions, %d %% used" % (WIDTH, HEIGHT, len(rects), round(100 * used / (WIDTH * HEIGHT))))
+        json.dump({"width": WIDTH, "height": HEIGHT, "used": percent, "swatches": sorted(SWATCHES), "regions": rects}, f, indent=1)
+    print("atlas %d x %d, %d regions, %d %% used" % (WIDTH, HEIGHT, len(rects), percent))
 
 
 if __name__ == "__main__":

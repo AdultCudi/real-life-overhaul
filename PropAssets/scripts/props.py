@@ -14,6 +14,7 @@ import numpy as np
 from city_props import CITY_PROPS
 from life_props import LIFE_PROPS
 from prop_kit import Paint, Prop, box, ellipse, fillet, grid, lathe, loft, moved, prism, rounded_rect, tube
+import sets  # the bundle being built (sets.json)
 
 # The stretcher's bed, as People/Stretcher.cs has it: 2 m long, the top of the mattress 0.7 m up, head end forward.
 BED_TOP = 0.70
@@ -176,14 +177,6 @@ def medic_bag():
 def blanket_and_sheet():
     return [drape("stretcher_sheet", "sheet_cloth", SHEET_FORM, -0.98, 0.98, 12, 32, "a covered body, head to toe")(),
             drape("stretcher_blanket", "blanket_cloth", BLANKET_FORM, -0.98, 0.34, 12, 20, "feet to chest; the real body lies under it")()]
-
-
-def first_aid_box():
-    p = Prop("first_aid_box", "lit")
-    faces = Paint("plastic_green").planar("first_aid_face", (0, 1, 0), (-1, 0, 0), (0, 0, 0), (0.30, 0.22)).planar("first_aid_face", (0, -1, 0), (1, 0, 0), (0, 0, 0), (0.30, 0.22))
-    p.add(box(0.30, 0.11, 0.22, bevel=0.012), faces, at=(0, 0, 0.11))
-    p.add(tube(fillet([(-0.055, 0, 0.215), (-0.055, 0, 0.252), (0.055, 0, 0.252), (0.055, 0, 0.215)], 0.015, 2), 0.007, 5), Paint("reflective_white", grade=False))
-    return p
 
 
 # ---------------------------------------------------------------------------------------------- police equipment
@@ -368,49 +361,18 @@ def evidence_marker(number):
     return make
 
 
-def duffel_bag():
-    p = Prop("duffel_bag", "lit", note="lies left to right")
-    section = [(0.15 * math.copysign(abs(math.cos(a)) ** 0.6, math.cos(a)), 0.14 * math.copysign(abs(math.sin(a)) ** (0.45 if math.sin(a) < 0 else 0.7), math.sin(a)))
-               for a in np.linspace(0, 2 * math.pi, 12, endpoint=False)]
-    rings = [[(x, y * s, 0.14 + z * s) for y, z in section] for x, s in ((-0.35, 0.5), (-0.335, 0.82), (-0.29, 1.0), (0.29, 1.0), (0.335, 0.82), (0.35, 0.5))]
-    p.add(loft(rings, cap_start=True, cap_end=True), Paint("canvas_olive").planar("duffel_top", (0, 0, 1), (1, 0, 0), (0, 0, 0.28), (0.70, 0.30), facing=0.45), sharp=60)
-    for side in (-1, 1):
-        handle = fillet([(-0.115, side * 0.085, 0.24), (-0.09, side * 0.05, 0.345), (0.09, side * 0.05, 0.345), (0.115, side * 0.085, 0.24)], 0.04, 2)
-        p.add(tube(handle, 0.009, 4), Paint("nylon_black", grade=False))
-    return p
-
-
-def spray_can():
-    p = Prop("spray_can", "lit", note="standing")
-    p.add(lathe([(0.030, 0.0), (0.033, 0.004), (0.033, 0.150), (0.031, 0.156), (0.018, 0.170), (0.0175, 0.172)], 10, cap_bottom=True), Paint("aluminium").wrap("can_label", 0.0, 0.172), sharp=35)
-    p.add(lathe([(0.0325, 0.152), (0.0325, 0.197), (0.0290, 0.203)], 10, cap_top=True), Paint("paint_blue", grade=False), sharp=35)
-    return p
-
-
-def crowbar():
-    p = Prop("crowbar", "lit", note="lying along forward, hook at the front")
-    radius = 0.009
-    path = [(0.040, -0.385), (0.016, -0.345), (0.0, -0.29), (0.0, 0.29)]
-    path += [(0.038 - 0.038 * math.cos(a), 0.29 + 0.038 * math.sin(a)) for a in np.radians((30, 70, 110, 150))]
-    path += [(0.084, 0.275), (0.094, 0.245)]
-    flat = [0.25, 0.6, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.6, 0.25]
-    p.add(tube([(x, y, radius) for x, y in path], [radius * 1.5, radius * 1.2] + [radius] * 6 + [radius * 1.2, radius * 1.5], 6, flatten=flat), Paint("paint_red", grade=False), sharp=40)
-    return p
-
-
 # ---------------------------------------------------------------------------------------------- the list
 
 # (maker, triangle budget). A maker returns one Prop or several.
 PROPS = [
     (cone, 300), (tape_post, 250), (barrier, 600),
     (tape("tape", 1.0), 4), (tape("tape_4m", 4.0), 4), (tape("tape_4m_sag", 4.0, sag=0.07, segments=8), 32),
-    (stretcher, 2500), (blanket_and_sheet, 800), (medic_bag, 400), (first_aid_box, 150),
+    (stretcher, 2500), (blanket_and_sheet, 800), (medic_bag, 400),
     (badge, 100), (duty_belt, 800), (shoulder_radio, 120), (police_cap, 600), (handcuffs, 450),
     (panel("back_panel_police", "panel_police", 0.28, 0.10, 0.24, True), 12), (panel("back_panel_ems", "panel_ems", 0.28, 0.10, 0.24, True), 12),
     (panel("chest_panel_police", "panel_police", 0.11, 0.04, 0.24, False), 12), (panel("chest_panel_ems", "chest_ems", 0.09, 0.042, 0.24, False), 12),
     (debris_glass, 120), (debris_plastic, 220), (flare, 120),
     (evidence_marker(1), 8), (evidence_marker(2), 8), (evidence_marker(3), 8), (evidence_marker(4), 8),
-    (duffel_bag, 300), (spray_can, 200), (crowbar, 150),
 ] + CITY_PROPS + LIFE_PROPS          # what the people of Scripts/CityLife work with: city_props.py, life_props.py
 
 
@@ -419,15 +381,27 @@ PROPS = [
 # A module may also say SIDES = {prop id: {"references": ((size, centre), ...), "people": (((x, y), turn), ...)}}: such a
 # prop gets a second sheet, previews/<id>_sides.png, from six sides with what it goes over or beside (kit.turnaround).
 # "parts": ((prop id, (x, y, z), turn), ...) puts other props on it where the code does (a vehicle's wheels).
+# ALIASES = {id: id it is drawn as}: a name callers use for a prop that looks the same as another, kept as a second row of
+# the catalogue over the other's mesh, so nothing is stored twice and no caller changes.
 SIDES = {}
+ALIASES = {}
 EXTRA = ["civic", "service", "events", "everyday", "garage", "family", "site", "tow"]
 _only = os.environ.get("PROPS_DEV")
 EXTRA = EXTRA + ["tech"]   # the tech sector's buildings (props_tech.py)
+if not sets.FIRST:
+    # Another bundle (sets.json): its own procedural modules and models, nothing of the first's.
+    PROPS = []
+    EXTRA = list(sets.SET.get("modules", []))
+    _only = None
 for _name in ([n.strip() for n in _only.split(",") if n.strip()] if _only else EXTRA):
     if os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), "props_" + _name + ".py")):
         _module = __import__("props_" + _name)
         PROPS = PROPS + _module.PROPS
         SIDES.update(getattr(_module, "SIDES", {}))
+        ALIASES.update(getattr(_module, "ALIASES", {}))
+if sets.MODELS:
+    import models
+    PROPS = PROPS + models.PROPS()
 
 
 def build_all(only=None):

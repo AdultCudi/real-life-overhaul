@@ -54,7 +54,7 @@
   </Target>
 
   <!-- What is installed is the whole package, as the game's Mod Creator uploads it: exactly one DLL in the mod's root
-       folder (the game requires that), the locales, the three asset bundles, the recorded car sounds with their sources
+       folder (the game requires that), the locales, the asset bundles, the recorded car sounds with their sources
        file, and the Workshop thumbnail. The uploader
        takes the first .png/.jpg/.jpeg in the root as the thumbnail, so there must be no other picture there.
        The folder is made the package and nothing else: whatever it holds that the package does not ship (an old

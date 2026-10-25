@@ -177,3 +177,11 @@ Checked by: StandardCheck (each listed method's body, with RLO-PERF-003's patter
 Why: the game merges a person's meshes for every look, some 1.5 MB of arrays and a few milliseconds each. The coats dressed one walker at every look in play and the living city changed worn looks in play (the owner's session record of 25 Oct 2026: 241 to 528 KB a second under the seasons' step, about 260 KB a second under the shelf).
 
 Checked by: StandardCheck (each listed method's body).
+
+### RLO-PERF-016: Props live in their bundles, within their limits
+
+**MUST.** Build every modelled prop into one of the props bundles that `PropAssets/sets.json` lists, and only through `PropAssets/build.ps1`, which writes the bundle and its list (`PropAssets/contents/<bundle>.json`) together. The first bundle is closed: a new prop goes in the open one. A prop's id is in one bundle only. Each bundle keeps its set's triangle, atlas and disk limits. The mod reads the bundles in `Core/PropLibrary` and nowhere else, and a caller asks for a prop by id, never by bundle. Everything that ships or lists the mod's files carries every bundle. A prop the code asks for by name is in a bundle; a prop taken out of the bundles (`removed` in sets.json) is not named by code again unless it is modelled anew in the open one.
+
+Why: one bundle filled its atlas and its triangle budget, and two prop branches merging once overflowed it ("the atlas is full: no room for plastic_grey"). A second bundle with its own limits lets new props in without changing any old one, and the lists keep a reader of the repository able to see what each shipped bundle holds without Unity.
+
+Checked by: StandardCheck (each bundle's SHA-256 against its list, the limits, ids across the bundles, `PropLibrary.BundlePaths` against sets.json, the package, installer and zip taking the whole folder, INSTALL.md, UPLOAD.md, the Workshop credits and the folder map naming every bundle, the names asked of `PropLibrary`, `Shapes.Prop` and a clip's `tool=`, and the removed ids); the build itself (`sets.py`: a new id in the closed set, or one another bundle holds, stops it).

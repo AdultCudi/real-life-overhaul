@@ -56,12 +56,6 @@ def fit(p, size, limit=0.06):
 
 # ---------------------------------------------------------------------------------------------- the driving school
 
-def learner_plate():
-    p = Prop("learner_plate", "lit", pivot="centre of its back", note="L plate 0.18 x 0.18 x 0.004 m with rounded corners; the red L faces +Y")
-    face = Paint("paint_white", grade=False).planar("family_l_plate", (0, 0, 1), (-1, 0, 0), (0, 0, 0), (0.18, 0.18))
-    p.add(prism(rounded_rect(0.18, 0.18, 0.022, 2), 0.0, 0.004, bottom=False), face, rot=(-90, 0, 0))
-    return p
-
 
 def driving_school_sign():
     p = Prop("driving_school_sign", "lit",
@@ -111,41 +105,6 @@ BOX = (2.4, 5.5)                                     # a parking bay, outside of
 LINE = 0.10
 
 
-def parking_box_marker():
-    p = Prop("parking_box_marker", "lit",
-             note="a parking bay painted on the ground, 2.4 x 5.5 m outside its 0.10 m lines (2.2 x 5.3 clear), lying 5 mm up; a 0.30 m tick "
-                  "inwards at the middle of each side")
-    w, d = BOX
-
-    def strip(a, b):
-        """A line LINE wide from a to b on the ground (its length runs up the paint)."""
-        a, b = Vector((*a, 0.005)), Vector((*b, 0.005))
-        side = (b - a).normalized().cross(Vector((0, 0, 1))) * LINE / 2
-        p.add(grid(lambda u, v: tuple(a + (b - a) * v + side * (2 * u - 1)), 1, 1), flat("paint_white").param("family_line_paint"), sharp=180)
-    for sx in (-1, 1):
-        x = sx * (w - LINE) / 2
-        strip((x, -d / 2), (x, d / 2))
-        strip((x - sx * LINE / 2, 0), (x - sx * (LINE / 2 + 0.30), 0))
-    for sy in (-1, 1):
-        y = sy * (d - LINE) / 2
-        strip((-w / 2 + LINE, y), (w / 2 - LINE, y))
-        strip((0, y - sy * LINE / 2), (0, y - sy * (LINE / 2 + 0.30)))
-    return p
-
-
-def parking_box_posts():
-    p = Prop("parking_box_posts", "glow",
-             note="four red and white poles 1.20 m high on rubber bases at the corners of the parking bay: their centres are at (+-1.15, +-2.70), "
-                  "the middle of the lines' corners; 2.26 x 5.36 m clear between them")
-    w, d = BOX
-    for sx in (-1, 1):
-        for sy in (-1, 1):
-            at = (sx * (w - LINE) / 2, sy * (d - LINE) / 2, 0)
-            p.add(lathe([(0.11, 0.0), (0.11, 0.028), (0.055, 0.05), (0.024, 0.056)], 6), flat("rubber_black"), at=at, sharp=40)
-            p.add(lathe([(0.020, 0.05), (0.020, 1.185), (0.012, 1.20)], 6, cap_top=True), Paint("reflective_white", grade=False).wrap("family_pole_bands", 0.05, 1.20), at=at, sharp=40)
-    return p
-
-
 # ---------------------------------------------------------------------------------------------- the proposal and the wedding
 
 def ring_box():
@@ -189,36 +148,6 @@ def leaf(p, root, tip, width, paint="plastic_green", sag=0.25):
         wide = math.sin(math.pi * min(1.0, 0.10 + v * 0.90)) ** 0.7
         return tuple(root + along * v + across * (2 * u - 1) * wide + lift * (2 * u - 1) * wide - lift * 0.6 * math.sin(math.pi * v))
     p.add(grid(surface, 1, 2, both_sides=True), flat(paint), sharp=180)
-
-
-def bouquet():
-    p = Prop("bouquet", "lit", pivot="the middle of the wrapped stems, 0.10 m above their cut ends",
-             note="round bridal posy 0.28 m across, 0.40 m long: thirteen white and pink roses in a dome over a collar of leaves; the stems are "
-                  "wrapped in ribbon (a round bar 0.035 m thick from z -0.06 to 0.06, where the fist closes), a bow under the flowers at +Y")
-    p.add(lathe([(0.011, -0.10), (0.0145, -0.06)], 8, cap_bottom=True), flat("plastic_green"), sharp=40)
-    p.add(lathe([(0.0155, -0.066), (WRAP, -0.060), (WRAP, 0.060), (0.0155, 0.066)], 8), flat("linen"), sharp=40)
-    p.add(lathe([(0.015, 0.060), (0.045, 0.105), (0.095, 0.150), (0.108, 0.185), (0.095, 0.225), (0.060, 0.250), (0.0, 0.260)], 8), "paint_green", sharp=60)
-    for k in range(9):
-        turn = 2 * math.pi * (k + 0.5) / 9
-        out = Vector((math.cos(turn), math.sin(turn), 0))
-        leaf(p, out * 0.070 + Vector((0, 0, 0.125)), out * 0.144 + Vector((0, 0, 0.140 + 0.012 * (k % 3))), 0.066)
-    a, b, middle = 0.083, 0.076, 0.172
-    rose(p, (0, 0, middle + b), 0, 0, False, scale=1.4, sides=8)
-    for ring, (polar, count, start) in enumerate(((46, 6, 0), (82, 6, 30))):
-        for k in range(count):
-            heading = start + 360 * k / count
-            lean, round_ = math.radians(polar), math.radians(heading)
-            at = (a * math.sin(lean) * math.cos(round_), a * math.sin(lean) * math.sin(round_), middle + b * math.cos(lean))
-            rose(p, at, polar, heading, (k + ring) % 2 == 0, full=ring == 0, scale=1.4, sides=8 if ring == 0 else 6)
-    # The bow, tied under the flowers on the front.
-    knot = Vector((0, 0.024, 0.082))
-    for side in (-1, 1):
-        loop = [knot, knot + Vector((side * 0.040, 0.012, 0.022)), knot + Vector((side * 0.066, 0.016, 0.004)), knot + Vector((side * 0.040, 0.012, -0.016)), knot + Vector((side * 0.004, 0.002, -0.003))]
-        p.add(ribbon(loop, lambda q: (0, 1, 0.1), 0.024, 0.0025), flat("family_pink"), sharp=60)
-        tail = [knot, knot + Vector((side * 0.018, 0.022, -0.050)), knot + Vector((side * 0.034, 0.028, -0.135))]
-        p.add(ribbon(tail, lambda q: (0, 1, 0.2), 0.022, 0.0025), flat("family_pink"), sharp=60)
-    p.add(box(0.020, 0.014, 0.018, bevel=0.004), flat("family_pink"), at=tuple(knot + Vector((0, 0.004, 0))))
-    return p
 
 
 ARCH = dict(post=0.95, depth=0.085, spring=1.86, rise=0.525, pole=0.027)
@@ -412,24 +341,6 @@ def high_chair():
     return fit(p, (0.48, 0.50, 1.05), 0.03)
 
 
-def birthday_cake():
-    p = Prop("birthday_cake", "lit", pivot="centre of the base",
-             note="iced cake 0.20 m across and 0.088 m high on a silver board 0.26 m across, piped round top and bottom, five candles alight "
-                  "(flames to 0.16 m); HAPPY BIRTHDAY on top reads from +Y")
-    p.add(lathe([(0.13, 0.0), (0.13, 0.006)], 12, cap_top=True), flat("stainless"), sharp=40)
-    icing = Paint("paper", grade=False).wrap("family_cake_side", 0.006, 0.088).planar("family_cake_top", (0, 0, 1), (-1, 0, 0), (0, 0, 0), (0.196, 0.196))
-    p.add(lathe([(0.098, 0.006), (0.100, 0.014), (0.100, 0.080), (0.096, 0.088)], 12, cap_top=True), icing, sharp=40)
-    for radius, z, count, wobble in ((0.089, 0.091, 14, 0.004), (0.103, 0.013, 12, 0.0)):
-        ring = [(math.cos(a) * (radius + wobble * (k % 2)), math.sin(a) * (radius + wobble * (k % 2)), z + wobble * (k % 2)) for k, a in enumerate(np.linspace(0, 2 * math.pi, count, endpoint=False))]
-        p.add(tube(ring, 0.0075, 3, closed=True), flat("family_pink"), sharp=100)
-    for k, paint in enumerate(("paint_blue", "paint_yellow", "paint_red", "plastic_green", "family_pink")):
-        a = 2 * math.pi * (k + 0.25) / 5
-        x, y = math.cos(a) * 0.058, math.sin(a) * 0.058
-        p.add(tube([(x, y, 0.086), (x, y, 0.134)], 0.0036, 4), flat(paint), sharp=70)
-        p.add(lathe([(0.0008, 0.134), (0.0052, 0.143), (0.0034, 0.151), (0.0, 0.160)], 4), flat("flame"), at=(x, y, 0), sharp=40)
-    return p
-
-
 def baby_bundle():
     p = Prop("baby_bundle", "lit", pivot="the middle of its underside",
              note="a swaddled baby 0.22 x 0.50 x 0.18 m lying along Y on its back, head (in a pink hat) at +Y: carried in the crook of the left "
@@ -458,9 +369,7 @@ def baby_bundle():
 
 PROPS = [
     (wedding_arch, 1950), (flower_stand, 900), (aisle_runner, 90), (cot, 950), (high_chair, 600),
-    (driving_school_sign, 440), (test_checkpoint_beacon, 320),
-    # Not asked for by code yet.
-    (learner_plate, 36), (parking_box_marker, 16), (parking_box_posts, 260), (ring_box, 320), (bouquet, 800), (birthday_cake, 440), (baby_bundle, 450),
+    (driving_school_sign, 440), (test_checkpoint_beacon, 320), (ring_box, 320), (baby_bundle, 450),
 ]
 
 SIDES = {

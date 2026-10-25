@@ -174,7 +174,7 @@ Both are in the prop bundle now, and the code fits them as built:
   Its middle stands 0.55 m from the wall (`DrivingSchool.FromWall`), so it reaches from 0.29 to 0.81 m out; the spot is tested clear to 1.6 m out, and the desk's place is 0.6 m beyond that.
   Nothing to change.
 - `test_checkpoint_beacon` flies its flag to its own +X and shows it along +Z and -Z. `PracticalTest.Beacon` turns it so that a face looks back down the lane at the driver and the flag points in at the checkpoint (it stood unturned, the flag to wherever the world's +X was).
-- `parking_box_marker` and `parking_box_posts` are in the bundle and deliberately not used: they are one fixed bay of 2.40 x 5.50 m, and the bay that is judged is sized to each route and vehicle (`TestRoute.BayHalfWidth`, `BayHalfLength`; `LicenceProps.SizeBay`).
+- `parking_box_marker` and `parking_box_posts` were never used, and were taken out of the props bundle on 26 Oct 2026 as nothing placed it; a feature that wants it models it anew in the second bundle (PropAssets/README.md, "Adding a prop from Blender"): they are one fixed bay of 2.40 x 5.50 m, and the bay that is judged is sized to each route and vehicle (`TestRoute.BayHalfWidth`, `BayHalfLength`; `LicenceProps.SizeBay`).
   Drawing a box of another size than the one that is marked would be a lie, and scaling the posts' mesh makes their poles oval.
   The code-drawn bay stays.
 

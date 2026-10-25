@@ -403,7 +403,7 @@ Still wanted: `sit_sofa` (only if seats are solved).
 
 Props (drawn from the prop bundle by these ids when present; plain shapes from `FamilyProps` until then, origin on the floor, facing +z, metres): `wedding_arch` (2.1 wide, 2.4 high, 0.3 deep, flowers along the top), `flower_stand` (a pedestal 0.95 high with an arrangement, 0.4 across), `aisle_runner` (a strip 1.1 wide by 1.0 long, laid end to end), `cot` (0.72 x 0.9 x 1.26), `high_chair` (0.48 x 1.05 x 0.5).
 
-Not used yet: `bouquet` (no clip holds it), `birthday_cake` (a birthday is told, not shown).
+`bouquet` and `birthday_cake` were never used (no clip held the one, a birthday is told, not shown) and were taken out of the props bundle on 26 Oct 2026 as nothing placed it; a feature that wants it models it anew in the second bundle (PropAssets/README.md, "Adding a prop from Blender").
 `ring_box` comes with the kneeling clips and `baby_bundle` lies in the cot (both delivered and used).
 Still wanted: `toy_box`.
 

@@ -7,17 +7,18 @@ using UnityEngine.Rendering;
 
 /// <summary>
 /// Turns the interchange folder written by the Blender scripts (catalogue.json, meshes/*.json,
-/// textures/*.png) into the asset bundle of street props the mod ships. The bundle carries
-/// static meshes, the shared atlas textures and the catalogue only: no materials, shaders,
-/// colliders or scripts, so this project needs nothing of the game's. Run from the command
+/// textures/*.png) into one of the asset bundles of props the mod ships (PropAssets/sets.json
+/// names them). A bundle carries static meshes, its own atlas textures and the catalogue only:
+/// no materials, shaders, colliders or scripts, so this project needs nothing of the game's. A
+/// bundle with no props yet is built too, with its catalogue and no atlas. Run from the command
 /// line (see build_bundle.ps1):
 ///   Unity.exe -batchmode -quit -projectPath . -executeMethod PropBundleBuilder.Build
-///             [-buildFolder path] [-outFolder path]
-///   Unity.exe -batchmode -quit -projectPath . -executeMethod PropBundleBuilder.Verify [-outFolder path]
+///             [-buildFolder path] [-outFolder path] [-bundleName name]
+///   Unity.exe -batchmode -quit -projectPath . -executeMethod PropBundleBuilder.Verify [-outFolder path] [-bundleName name]
 /// </summary>
 public static class PropBundleBuilder
 {
-    public const string BundleName = "reallife_props";
+    public const string FirstBundle = "reallife_props";
     public const string CatalogueAsset = "catalogue";
 
     private const string Generated = "Assets/Generated";
@@ -75,8 +76,11 @@ public static class PropBundleBuilder
             Check(File.Exists(cataloguePath), "no catalogue.json in " + buildFolder + ". Run the Blender scripts first.");
             string catalogueText = File.ReadAllText(cataloguePath);
             Catalogue catalogue = JsonUtility.FromJson<Catalogue>(catalogueText);
-            Check(catalogue.items != null && catalogue.items.Length > 0, "the catalogue has no items");
-            Check(catalogue.textures != null && catalogue.textures.Length > 0, "the catalogue has no textures");
+            string bundleName = BundleName();
+            Check(catalogue.items != null && catalogue.textures != null, "the catalogue has no list of items or of textures");
+            // An atlas with nothing drawn on it would be video memory for nothing.
+            Check(catalogue.items.Length > 0 || catalogue.textures.Length == 0, "the catalogue has textures and no items");
+            Check(catalogue.items.Length == 0 || catalogue.textures.Length > 0, "the catalogue has items and no textures");
 
             if (AssetDatabase.IsValidFolder(Generated))
             {
@@ -135,7 +139,7 @@ public static class PropBundleBuilder
             Directory.CreateDirectory(staging);
             var bundle = new AssetBundleBuild
             {
-                assetBundleName = BundleName,
+                assetBundleName = bundleName,
                 assetNames = paths.ToArray(),
                 addressableNames = names.ToArray()
             };
@@ -146,8 +150,8 @@ public static class PropBundleBuilder
 
             // Only the bundle itself ships; Unity's manifest files stay in the staging folder.
             Directory.CreateDirectory(outFolder);
-            string shipped = Path.Combine(outFolder, BundleName);
-            File.Copy(Path.Combine(staging, BundleName), shipped, true);
+            string shipped = Path.Combine(outFolder, bundleName);
+            File.Copy(Path.Combine(staging, bundleName), shipped, true);
             Debug.Log(Tag + "BUILT " + shipped + "  " + (new FileInfo(shipped).Length / 1024) + " KB, " + meshes.Count + " meshes (" + triangles + " triangles), "
                       + textureNames.Count + " textures, " + catalogue.items.Length + " props");
         });
@@ -159,7 +163,7 @@ public static class PropBundleBuilder
         Run(() =>
         {
             string project = Directory.GetParent(Application.dataPath).FullName;
-            string shipped = Path.Combine(OutFolder(project), BundleName);
+            string shipped = Path.Combine(OutFolder(project), BundleName());
             Check(File.Exists(shipped), "no bundle at " + shipped);
             AssetBundle bundle = AssetBundle.LoadFromFile(shipped);
             Check(bundle != null, "AssetBundle.LoadFromFile failed for " + shipped);
@@ -304,6 +308,11 @@ public static class PropBundleBuilder
         {
             throw new Exception(problem);
         }
+    }
+
+    private static string BundleName()
+    {
+        return Argument("-bundleName", FirstBundle);
     }
 
     private static string OutFolder(string project)

@@ -1,0 +1,2585 @@
+{
+ "bundle": "reallife_props",
+ "set": "first",
+ "sha256": "6ecd55eb3171a33c47079c33ee5f30e3169904072c4144c11bc126858c47ea6a",
+ "bytes": 10650842,
+ "triangles": 115384,
+ "triangle_limit": 130000,
+ "atlas": {
+  "width": 4096,
+  "height": 2048,
+  "used": 82
+ },
+ "textures": [
+  "props_base",
+  "props_mask",
+  "decal_bus_stop",
+  "decal_dash"
+ ],
+ "props": [
+  {
+   "id": "cone",
+   "mesh": "cone",
+   "triangles": 274,
+   "material": "glow",
+   "size": [
+    0.36,
+    0.75,
+    0.36
+   ]
+  },
+  {
+   "id": "tape_post",
+   "mesh": "tape_post",
+   "triangles": 188,
+   "material": "glow",
+   "size": [
+    0.38,
+    1.1002,
+    0.38
+   ]
+  },
+  {
+   "id": "barrier",
+   "mesh": "barrier",
+   "triangles": 508,
+   "material": "lit",
+   "size": [
+    2.4,
+    1.0763,
+    0.74
+   ]
+  },
+  {
+   "id": "tape",
+   "mesh": "tape",
+   "triangles": 4,
+   "material": "glow",
+   "size": [
+    0.0,
+    0.075,
+    1.0
+   ]
+  },
+  {
+   "id": "tape_4m",
+   "mesh": "tape_4m",
+   "triangles": 4,
+   "material": "glow",
+   "size": [
+    0.0,
+    0.075,
+    4.0
+   ]
+  },
+  {
+   "id": "tape_4m_sag",
+   "mesh": "tape_4m_sag",
+   "triangles": 32,
+   "material": "glow",
+   "size": [
+    0.0,
+    0.145,
+    4.0
+   ]
+  },
+  {
+   "id": "stretcher",
+   "mesh": "stretcher",
+   "triangles": 1698,
+   "material": "lit",
+   "size": [
+    0.6031,
+    0.871,
+    2.028
+   ]
+  },
+  {
+   "id": "stretcher_sheet",
+   "mesh": "stretcher_sheet",
+   "triangles": 768,
+   "material": "lit",
+   "size": [
+    0.564,
+    0.3642,
+    1.96
+   ]
+  },
+  {
+   "id": "stretcher_blanket",
+   "mesh": "stretcher_blanket",
+   "triangles": 480,
+   "material": "lit",
+   "size": [
+    0.564,
+    0.3716,
+    1.32
+   ]
+  },
+  {
+   "id": "medic_bag",
+   "mesh": "medic_bag",
+   "triangles": 368,
+   "material": "lit",
+   "size": [
+    0.638,
+    0.4157,
+    0.26
+   ]
+  },
+  {
+   "id": "badge",
+   "mesh": "badge",
+   "triangles": 92,
+   "material": "lit",
+   "size": [
+    0.056,
+    0.072,
+    0.005
+   ]
+  },
+  {
+   "id": "duty_belt",
+   "mesh": "duty_belt",
+   "triangles": 724,
+   "material": "lit",
+   "size": [
+    0.3972,
+    0.3004,
+    0.2993
+   ]
+  },
+  {
+   "id": "shoulder_radio",
+   "mesh": "shoulder_radio",
+   "triangles": 92,
+   "material": "lit",
+   "size": [
+    0.061,
+    0.1944,
+    0.036
+   ]
+  },
+  {
+   "id": "police_cap",
+   "mesh": "police_cap",
+   "triangles": 492,
+   "material": "lit",
+   "size": [
+    0.2328,
+    0.1381,
+    0.3062
+   ]
+  },
+  {
+   "id": "handcuffs",
+   "mesh": "handcuffs",
+   "triangles": 424,
+   "material": "lit",
+   "size": [
+    0.197,
+    0.012,
+    0.081
+   ]
+  },
+  {
+   "id": "back_panel_police",
+   "mesh": "back_panel_police",
+   "triangles": 12,
+   "material": "glow",
+   "size": [
+    0.2644,
+    0.1,
+    0.0397
+   ]
+  },
+  {
+   "id": "back_panel_ems",
+   "mesh": "back_panel_ems",
+   "triangles": 12,
+   "material": "glow",
+   "size": [
+    0.2644,
+    0.1,
+    0.0397
+   ]
+  },
+  {
+   "id": "chest_panel_police",
+   "mesh": "chest_panel_police",
+   "triangles": 12,
+   "material": "glow",
+   "size": [
+    0.109,
+    0.04,
+    0.0063
+   ]
+  },
+  {
+   "id": "chest_panel_ems",
+   "mesh": "chest_panel_ems",
+   "triangles": 12,
+   "material": "glow",
+   "size": [
+    0.0895,
+    0.042,
+    0.0042
+   ]
+  },
+  {
+   "id": "debris_glass",
+   "mesh": "debris_glass",
+   "triangles": 102,
+   "material": "lit",
+   "size": [
+    0.766,
+    0.0096,
+    0.8132
+   ]
+  },
+  {
+   "id": "debris_plastic",
+   "mesh": "debris_plastic",
+   "triangles": 160,
+   "material": "lit",
+   "size": [
+    0.6384,
+    0.0624,
+    1.1634
+   ]
+  },
+  {
+   "id": "flare",
+   "mesh": "flare",
+   "triangles": 116,
+   "material": "glow",
+   "size": [
+    0.034,
+    0.0323,
+    0.286
+   ]
+  },
+  {
+   "id": "evidence_marker_1",
+   "mesh": "evidence_marker_1",
+   "triangles": 8,
+   "material": "lit",
+   "size": [
+    0.09,
+    0.125,
+    0.084
+   ]
+  },
+  {
+   "id": "evidence_marker_2",
+   "mesh": "evidence_marker_2",
+   "triangles": 8,
+   "material": "lit",
+   "size": [
+    0.09,
+    0.125,
+    0.084
+   ]
+  },
+  {
+   "id": "evidence_marker_3",
+   "mesh": "evidence_marker_3",
+   "triangles": 8,
+   "material": "lit",
+   "size": [
+    0.09,
+    0.125,
+    0.084
+   ]
+  },
+  {
+   "id": "evidence_marker_4",
+   "mesh": "evidence_marker_4",
+   "triangles": 8,
+   "material": "lit",
+   "size": [
+    0.09,
+    0.125,
+    0.084
+   ]
+  },
+  {
+   "id": "broom",
+   "mesh": "broom",
+   "triangles": 162,
+   "material": "lit",
+   "size": [
+    0.43,
+    1.4849,
+    0.1
+   ]
+  },
+  {
+   "id": "shovel",
+   "mesh": "shovel",
+   "triangles": 284,
+   "material": "lit",
+   "size": [
+    0.23,
+    1.1995,
+    0.07
+   ]
+  },
+  {
+   "id": "jackhammer",
+   "mesh": "jackhammer",
+   "triangles": 622,
+   "material": "lit",
+   "size": [
+    0.58,
+    1.04,
+    0.2713
+   ]
+  },
+  {
+   "id": "stop_paddle",
+   "mesh": "stop_paddle",
+   "triangles": 78,
+   "material": "glow",
+   "size": [
+    0.449,
+    1.9045,
+    0.036
+   ]
+  },
+  {
+   "id": "squeegee",
+   "mesh": "squeegee",
+   "triangles": 156,
+   "material": "lit",
+   "size": [
+    0.36,
+    0.42,
+    0.032
+   ]
+  },
+  {
+   "id": "bucket",
+   "mesh": "bucket",
+   "triangles": 246,
+   "material": "lit",
+   "size": [
+    0.3095,
+    0.272,
+    0.2964
+   ]
+  },
+  {
+   "id": "clipboard",
+   "mesh": "clipboard",
+   "triangles": 84,
+   "material": "lit",
+   "size": [
+    0.235,
+    0.018,
+    0.33
+   ]
+  },
+  {
+   "id": "toolbox",
+   "mesh": "toolbox",
+   "triangles": 252,
+   "material": "lit",
+   "size": [
+    0.47,
+    0.2436,
+    0.226
+   ]
+  },
+  {
+   "id": "parcel",
+   "mesh": "parcel",
+   "triangles": 80,
+   "material": "lit",
+   "size": [
+    0.385,
+    0.242,
+    0.28
+   ]
+  },
+  {
+   "id": "leaflet",
+   "mesh": "leaflet",
+   "triangles": 12,
+   "material": "lit",
+   "size": [
+    0.105,
+    0.0012,
+    0.148
+   ]
+  },
+  {
+   "id": "leaflet_stack",
+   "mesh": "leaflet_stack",
+   "triangles": 12,
+   "material": "lit",
+   "size": [
+    0.105,
+    0.018,
+    0.148
+   ]
+  },
+  {
+   "id": "coffee_cup",
+   "mesh": "coffee_cup",
+   "triangles": 118,
+   "material": "lit",
+   "size": [
+    0.088,
+    0.124,
+    0.0837
+   ]
+  },
+  {
+   "id": "phone",
+   "mesh": "phone",
+   "triangles": 28,
+   "material": "lit",
+   "size": [
+    0.072,
+    0.008,
+    0.15
+   ]
+  },
+  {
+   "id": "cigarette",
+   "mesh": "cigarette",
+   "triangles": 42,
+   "material": "glow",
+   "size": [
+    0.0072,
+    0.0076,
+    0.084
+   ]
+  },
+  {
+   "id": "sandwich_board",
+   "mesh": "sandwich_board",
+   "triangles": 100,
+   "material": "lit",
+   "size": [
+    0.6,
+    0.9349,
+    0.4589
+   ]
+  },
+  {
+   "id": "coffee_cart",
+   "mesh": "coffee_cart",
+   "triangles": 930,
+   "material": "lit",
+   "size": [
+    1.795,
+    2.05,
+    1.068
+   ]
+  },
+  {
+   "id": "mop",
+   "mesh": "mop",
+   "triangles": 260,
+   "material": "lit",
+   "size": [
+    0.3,
+    1.4915,
+    0.1642
+   ]
+  },
+  {
+   "id": "rake",
+   "mesh": "rake",
+   "triangles": 624,
+   "material": "lit",
+   "size": [
+    0.4611,
+    1.5518,
+    0.0526
+   ]
+  },
+  {
+   "id": "paint_roller",
+   "mesh": "paint_roller",
+   "triangles": 408,
+   "material": "lit",
+   "size": [
+    0.2686,
+    0.445,
+    0.09
+   ]
+  },
+  {
+   "id": "watering_can",
+   "mesh": "watering_can",
+   "triangles": 498,
+   "material": "lit",
+   "size": [
+    0.2,
+    0.355,
+    0.6391
+   ]
+  },
+  {
+   "id": "guitar",
+   "mesh": "guitar",
+   "triangles": 698,
+   "material": "lit",
+   "size": [
+    0.38,
+    1.0,
+    0.11
+   ]
+  },
+  {
+   "id": "notebook",
+   "mesh": "notebook",
+   "triangles": 268,
+   "material": "lit",
+   "size": [
+    0.1,
+    0.0124,
+    0.15
+   ]
+  },
+  {
+   "id": "newspaper",
+   "mesh": "newspaper",
+   "triangles": 128,
+   "material": "lit",
+   "size": [
+    0.58,
+    0.4,
+    0.05
+   ]
+  },
+  {
+   "id": "map_folded",
+   "mesh": "map_folded",
+   "triangles": 48,
+   "material": "lit",
+   "size": [
+    0.44,
+    0.3,
+    0.041
+   ]
+  },
+  {
+   "id": "umbrella",
+   "mesh": "umbrella",
+   "triangles": 726,
+   "material": "lit",
+   "size": [
+    1.036,
+    0.918,
+    1.036
+   ]
+  },
+  {
+   "id": "parcel_s",
+   "mesh": "parcel_s",
+   "triangles": 82,
+   "material": "lit",
+   "size": [
+    0.222,
+    0.1015,
+    0.1622
+   ]
+  },
+  {
+   "id": "parcel_m",
+   "mesh": "parcel_m",
+   "triangles": 86,
+   "material": "lit",
+   "size": [
+    0.382,
+    0.2415,
+    0.283
+   ]
+  },
+  {
+   "id": "parcel_l",
+   "mesh": "parcel_l",
+   "triangles": 86,
+   "material": "lit",
+   "size": [
+    0.502,
+    0.3215,
+    0.363
+   ]
+  },
+  {
+   "id": "shelf_box",
+   "mesh": "shelf_box",
+   "triangles": 558,
+   "material": "lit",
+   "size": [
+    0.4288,
+    0.2526,
+    0.4475
+   ]
+  },
+  {
+   "id": "hand_truck",
+   "mesh": "hand_truck",
+   "triangles": 756,
+   "material": "lit",
+   "size": [
+    0.472,
+    1.1987,
+    0.37
+   ]
+  },
+  {
+   "id": "pushchair",
+   "mesh": "pushchair",
+   "triangles": 1195,
+   "material": "lit",
+   "size": [
+    0.524,
+    1.0176,
+    0.8472
+   ]
+  },
+  {
+   "id": "stretcher_push_bar",
+   "mesh": "stretcher_push_bar",
+   "triangles": 576,
+   "material": "lit",
+   "size": [
+    0.632,
+    0.3782,
+    2.2544
+   ]
+  },
+  {
+   "id": "taxi_sign",
+   "mesh": "taxi_sign",
+   "triangles": 132,
+   "material": "glow",
+   "size": [
+    0.36,
+    0.155,
+    0.12
+   ]
+  },
+  {
+   "id": "flyer",
+   "mesh": "flyer",
+   "triangles": 64,
+   "material": "lit",
+   "size": [
+    0.148,
+    0.007,
+    0.21
+   ]
+  },
+  {
+   "id": "flyer_stack",
+   "mesh": "flyer_stack",
+   "triangles": 60,
+   "material": "lit",
+   "size": [
+    0.1505,
+    0.2117,
+    0.02
+   ]
+  },
+  {
+   "id": "job_board",
+   "mesh": "job_board",
+   "triangles": 554,
+   "material": "lit",
+   "size": [
+    1.28,
+    1.85,
+    0.54
+   ]
+  },
+  {
+   "id": "mop_bucket",
+   "mesh": "mop_bucket",
+   "triangles": 704,
+   "material": "lit",
+   "size": [
+    0.392,
+    0.757,
+    0.5363
+   ]
+  },
+  {
+   "id": "guitar_case",
+   "mesh": "guitar_case",
+   "triangles": 969,
+   "material": "lit",
+   "size": [
+    1.08,
+    0.5236,
+    0.5825
+   ]
+  },
+  {
+   "id": "vendor_cart",
+   "mesh": "vendor_cart",
+   "triangles": 2070,
+   "material": "lit",
+   "size": [
+    1.67,
+    1.1912,
+    0.84
+   ]
+  },
+  {
+   "id": "vendor_umbrella",
+   "mesh": "vendor_umbrella",
+   "triangles": 792,
+   "material": "lit",
+   "size": [
+    2.1052,
+    2.35,
+    2.1052
+   ]
+  },
+  {
+   "id": "mail_satchel",
+   "mesh": "mail_satchel",
+   "triangles": 608,
+   "material": "lit",
+   "size": [
+    0.4034,
+    0.7588,
+    0.3784
+   ]
+  },
+  {
+   "id": "step_ladder",
+   "mesh": "step_ladder",
+   "triangles": 440,
+   "material": "lit",
+   "size": [
+    0.47,
+    0.72,
+    0.754
+   ]
+  },
+  {
+   "id": "chess_table",
+   "mesh": "chess_table",
+   "triangles": 1540,
+   "material": "lit",
+   "size": [
+    0.7,
+    0.8255,
+    1.58
+   ]
+  },
+  {
+   "id": "fruit_stand",
+   "mesh": "fruit_stand",
+   "triangles": 1528,
+   "material": "lit",
+   "size": [
+    1.72,
+    2.215,
+    1.183
+   ]
+  },
+  {
+   "id": "newspaper_kiosk",
+   "mesh": "newspaper_kiosk",
+   "triangles": 730,
+   "material": "lit",
+   "size": [
+    1.7924,
+    2.4,
+    1.52
+   ]
+  },
+  {
+   "id": "precinct_sign",
+   "mesh": "precinct_sign",
+   "triangles": 516,
+   "material": "lit",
+   "size": [
+    1.8,
+    2.9,
+    0.08
+   ]
+  },
+  {
+   "id": "blue_lamp",
+   "mesh": "blue_lamp",
+   "triangles": 284,
+   "material": "glow",
+   "size": [
+    0.2,
+    0.27,
+    0.2
+   ]
+  },
+  {
+   "id": "precinct_desk",
+   "mesh": "precinct_desk",
+   "triangles": 740,
+   "material": "lit",
+   "size": [
+    2.4,
+    1.1,
+    0.8
+   ]
+  },
+  {
+   "id": "precinct_bench",
+   "mesh": "precinct_bench",
+   "triangles": 742,
+   "material": "lit",
+   "size": [
+    1.7986,
+    0.85,
+    0.553
+   ]
+  },
+  {
+   "id": "holding_cell_bars",
+   "mesh": "holding_cell_bars",
+   "triangles": 1098,
+   "material": "lit",
+   "size": [
+    3.0,
+    2.4,
+    0.1
+   ]
+  },
+  {
+   "id": "notice_board",
+   "mesh": "notice_board",
+   "triangles": 232,
+   "material": "lit",
+   "size": [
+    1.2,
+    1.6,
+    0.06
+   ]
+  },
+  {
+   "id": "flag_pole",
+   "mesh": "flag_pole",
+   "triangles": 558,
+   "material": "lit",
+   "size": [
+    1.705,
+    6.0,
+    0.34
+   ]
+  },
+  {
+   "id": "police_shield_emblem",
+   "mesh": "police_shield_emblem",
+   "triangles": 246,
+   "material": "lit",
+   "size": [
+    0.6222,
+    0.8,
+    0.048
+   ]
+  },
+  {
+   "id": "station_awning",
+   "mesh": "station_awning",
+   "triangles": 450,
+   "material": "lit",
+   "size": [
+    2.6,
+    0.5,
+    1.4
+   ]
+  },
+  {
+   "id": "bollard",
+   "mesh": "bollard",
+   "triangles": 324,
+   "material": "lit",
+   "size": [
+    0.17,
+    0.9,
+    0.17
+   ]
+  },
+  {
+   "id": "bus_stop_sign",
+   "mesh": "bus_stop_sign",
+   "triangles": 334,
+   "material": "glow",
+   "size": [
+    0.61,
+    2.85,
+    0.12
+   ]
+  },
+  {
+   "id": "bus_shelter",
+   "mesh": "bus_shelter",
+   "triangles": 1342,
+   "material": "lit",
+   "size": [
+    1.7,
+    2.5,
+    3.76
+   ]
+  },
+  {
+   "id": "hotel_sign",
+   "mesh": "hotel_sign",
+   "triangles": 490,
+   "material": "lit",
+   "size": [
+    0.7,
+    1.9,
+    0.16
+   ]
+  },
+  {
+   "id": "hotel_awning",
+   "mesh": "hotel_awning",
+   "triangles": 520,
+   "material": "lit",
+   "size": [
+    2.4,
+    0.45,
+    1.4
+   ]
+  },
+  {
+   "id": "luggage_cart",
+   "mesh": "luggage_cart",
+   "triangles": 1804,
+   "material": "lit",
+   "size": [
+    1.1,
+    1.75,
+    0.6001
+   ]
+  },
+  {
+   "id": "suitcase",
+   "mesh": "suitcase",
+   "triangles": 608,
+   "material": "lit",
+   "size": [
+    0.45,
+    0.65,
+    0.25
+   ]
+  },
+  {
+   "id": "street_bin",
+   "mesh": "street_bin",
+   "triangles": 546,
+   "material": "lit",
+   "size": [
+    0.54,
+    0.9,
+    0.54
+   ]
+  },
+  {
+   "id": "city_bus",
+   "mesh": "city_bus",
+   "triangles": 4918,
+   "material": "lit",
+   "size": [
+    2.82,
+    2.845,
+    10.9
+   ]
+  },
+  {
+   "id": "city_bus_roof",
+   "mesh": "city_bus_roof",
+   "triangles": 990,
+   "material": "lit",
+   "size": [
+    2.4,
+    0.42,
+    10.47
+   ]
+  },
+  {
+   "id": "city_bus_wheel",
+   "mesh": "city_bus_wheel",
+   "triangles": 346,
+   "material": "lit",
+   "size": [
+    0.3,
+    0.96,
+    0.96
+   ]
+  },
+  {
+   "id": "city_bus_wheel_twin",
+   "mesh": "city_bus_wheel_twin",
+   "triangles": 442,
+   "material": "lit",
+   "size": [
+    0.56,
+    0.96,
+    0.96
+   ]
+  },
+  {
+   "id": "city_bus_door",
+   "mesh": "city_bus_door",
+   "triangles": 47,
+   "material": "lit",
+   "size": [
+    0.04,
+    2.3,
+    0.6
+   ]
+  },
+  {
+   "id": "city_bus_light_head",
+   "mesh": "city_bus_light_head",
+   "triangles": 32,
+   "material": "glow",
+   "size": [
+    1.4299,
+    0.1168,
+    0.0
+   ]
+  },
+  {
+   "id": "city_bus_light_tail",
+   "mesh": "city_bus_light_tail",
+   "triangles": 4,
+   "material": "glow",
+   "size": [
+    1.9128,
+    0.1504,
+    0.0
+   ]
+  },
+  {
+   "id": "city_bus_light_brake",
+   "mesh": "city_bus_light_brake",
+   "triangles": 6,
+   "material": "glow",
+   "size": [
+    1.9128,
+    1.7394,
+    0.012
+   ]
+  },
+  {
+   "id": "city_bus_light_left",
+   "mesh": "city_bus_light_left",
+   "triangles": 6,
+   "material": "glow",
+   "size": [
+    0.4724,
+    0.7095,
+    10.891
+   ]
+  },
+  {
+   "id": "city_bus_light_right",
+   "mesh": "city_bus_light_right",
+   "triangles": 6,
+   "material": "glow",
+   "size": [
+    0.4724,
+    0.7095,
+    10.891
+   ]
+  },
+  {
+   "id": "fire_engine",
+   "mesh": "fire_engine",
+   "triangles": 6224,
+   "material": "lit",
+   "size": [
+    2.714,
+    3.2,
+    7.4305
+   ]
+  },
+  {
+   "id": "fire_light_bar",
+   "mesh": "fire_light_bar",
+   "triangles": 316,
+   "material": "glow",
+   "size": [
+    1.3,
+    0.17,
+    0.28
+   ]
+  },
+  {
+   "id": "fire_bar_lens",
+   "mesh": "fire_bar_lens",
+   "triangles": 44,
+   "material": "glow",
+   "size": [
+    0.6005,
+    0.129,
+    0.2953
+   ]
+  },
+  {
+   "id": "hose_nozzle",
+   "mesh": "hose_nozzle",
+   "triangles": 554,
+   "material": "lit",
+   "size": [
+    0.07,
+    0.0859,
+    0.47
+   ]
+  },
+  {
+   "id": "placard",
+   "mesh": "placard",
+   "triangles": 36,
+   "material": "lit",
+   "size": [
+    0.56,
+    1.49,
+    0.03
+   ]
+  },
+  {
+   "id": "banner_pole",
+   "mesh": "banner_pole",
+   "triangles": 192,
+   "material": "lit",
+   "size": [
+    0.7228,
+    1.5,
+    0.0308
+   ]
+  },
+  {
+   "id": "film_camera",
+   "mesh": "film_camera",
+   "triangles": 1474,
+   "material": "lit",
+   "size": [
+    0.8474,
+    1.7,
+    1.0654
+   ]
+  },
+  {
+   "id": "fire_helmet",
+   "mesh": "fire_helmet",
+   "triangles": 552,
+   "material": "lit",
+   "size": [
+    0.3,
+    0.182,
+    0.4
+   ]
+  },
+  {
+   "id": "fire_air_pack",
+   "mesh": "fire_air_pack",
+   "triangles": 1014,
+   "material": "lit",
+   "size": [
+    0.3404,
+    0.756,
+    0.4351
+   ]
+  },
+  {
+   "id": "runner_bib",
+   "mesh": "runner_bib",
+   "triangles": 12,
+   "material": "lit",
+   "size": [
+    0.2151,
+    0.17,
+    0.0199
+   ]
+  },
+  {
+   "id": "light_stand",
+   "mesh": "light_stand",
+   "triangles": 1006,
+   "material": "glow",
+   "size": [
+    0.8567,
+    2.5076,
+    0.742
+   ]
+  },
+  {
+   "id": "directors_chair",
+   "mesh": "directors_chair",
+   "triangles": 456,
+   "material": "lit",
+   "size": [
+    0.55,
+    1.1,
+    0.445
+   ]
+  },
+  {
+   "id": "firework_rack",
+   "mesh": "firework_rack",
+   "triangles": 822,
+   "material": "lit",
+   "size": [
+    1.2,
+    0.5428,
+    0.5
+   ]
+  },
+  {
+   "id": "hose_coil",
+   "mesh": "hose_coil",
+   "triangles": 696,
+   "material": "lit",
+   "size": [
+    0.522,
+    0.0951,
+    0.52
+   ]
+  },
+  {
+   "id": "pan",
+   "mesh": "pan",
+   "triangles": 282,
+   "material": "lit",
+   "size": [
+    0.44,
+    0.059,
+    0.26
+   ]
+  },
+  {
+   "id": "plate",
+   "mesh": "plate",
+   "triangles": 142,
+   "material": "lit",
+   "size": [
+    0.26,
+    0.0235,
+    0.26
+   ]
+  },
+  {
+   "id": "mug",
+   "mesh": "mug",
+   "triangles": 216,
+   "material": "lit",
+   "size": [
+    0.1137,
+    0.1,
+    0.08
+   ]
+  },
+  {
+   "id": "run_checkpoint",
+   "mesh": "run_checkpoint",
+   "triangles": 596,
+   "material": "glow",
+   "size": [
+    1.6,
+    1.3985,
+    1.6
+   ]
+  },
+  {
+   "id": "wine_glass",
+   "mesh": "wine_glass",
+   "triangles": 236,
+   "material": "lit",
+   "size": [
+    0.07,
+    0.2,
+    0.0666
+   ]
+  },
+  {
+   "id": "takeaway_box",
+   "mesh": "takeaway_box",
+   "triangles": 122,
+   "material": "lit",
+   "size": [
+    0.1399,
+    0.0896,
+    0.1109
+   ]
+  },
+  {
+   "id": "moving_box",
+   "mesh": "moving_box",
+   "triangles": 94,
+   "material": "lit",
+   "size": [
+    0.4516,
+    0.3508,
+    0.35
+   ]
+  },
+  {
+   "id": "newspaper_ledger",
+   "mesh": "newspaper_ledger",
+   "triangles": 128,
+   "material": "lit",
+   "size": [
+    0.58,
+    0.4,
+    0.05
+   ]
+  },
+  {
+   "id": "fishing_rod",
+   "mesh": "fishing_rod",
+   "triangles": 828,
+   "material": "lit",
+   "size": [
+    0.0982,
+    0.1015,
+    2.1
+   ]
+  },
+  {
+   "id": "fishing_float",
+   "mesh": "fishing_float",
+   "triangles": 113,
+   "material": "lit",
+   "size": [
+    0.045,
+    0.11,
+    0.045
+   ]
+  },
+  {
+   "id": "fishing_line",
+   "mesh": "fishing_line",
+   "triangles": 8,
+   "material": "lit",
+   "size": [
+    0.004,
+    0.004,
+    1.0
+   ]
+  },
+  {
+   "id": "drink_glass",
+   "mesh": "drink_glass",
+   "triangles": 200,
+   "material": "lit",
+   "size": [
+    0.075,
+    0.12,
+    0.075
+   ]
+  },
+  {
+   "id": "clothes_rack",
+   "mesh": "clothes_rack",
+   "triangles": 1811,
+   "material": "lit",
+   "size": [
+    1.44,
+    1.76,
+    0.56
+   ]
+  },
+  {
+   "id": "turnstile",
+   "mesh": "turnstile",
+   "triangles": 592,
+   "material": "lit",
+   "size": [
+    0.7525,
+    1.0,
+    1.2
+   ]
+  },
+  {
+   "id": "jerry_can",
+   "mesh": "jerry_can",
+   "triangles": 412,
+   "material": "lit",
+   "size": [
+    0.35,
+    0.45,
+    0.18
+   ]
+  },
+  {
+   "id": "bicycle_city",
+   "mesh": "bicycle_city",
+   "triangles": 2379,
+   "material": "lit",
+   "size": [
+    0.644,
+    1.168,
+    1.7935
+   ]
+  },
+  {
+   "id": "bicycle_city_frame",
+   "mesh": "bicycle_city_frame",
+   "triangles": 340,
+   "material": "lit",
+   "size": [
+    0.21,
+    0.7371,
+    0.8764
+   ]
+  },
+  {
+   "id": "bicycle_city_frame_paint",
+   "mesh": "bicycle_city_frame_paint",
+   "triangles": 234,
+   "material": "lit",
+   "size": [
+    0.1421,
+    0.6914,
+    1.3362
+   ]
+  },
+  {
+   "id": "bicycle_city_fork",
+   "mesh": "bicycle_city_fork",
+   "triangles": 565,
+   "material": "lit",
+   "size": [
+    0.644,
+    0.8929,
+    0.7417
+   ]
+  },
+  {
+   "id": "bicycle_city_fork_paint",
+   "mesh": "bicycle_city_fork_paint",
+   "triangles": 176,
+   "material": "lit",
+   "size": [
+    0.1217,
+    0.4912,
+    0.6975
+   ]
+  },
+  {
+   "id": "bicycle_city_wheel",
+   "mesh": "bicycle_city_wheel",
+   "triangles": 444,
+   "material": "lit",
+   "size": [
+    0.104,
+    0.68,
+    0.68
+   ]
+  },
+  {
+   "id": "bicycle_city_crank",
+   "mesh": "bicycle_city_crank",
+   "triangles": 88,
+   "material": "lit",
+   "size": [
+    0.178,
+    0.184,
+    0.346
+   ]
+  },
+  {
+   "id": "bicycle_city_pedal",
+   "mesh": "bicycle_city_pedal",
+   "triangles": 44,
+   "material": "lit",
+   "size": [
+    0.09,
+    0.03,
+    0.075
+   ]
+  },
+  {
+   "id": "bicycle_road",
+   "mesh": "bicycle_road",
+   "triangles": 2364,
+   "material": "lit",
+   "size": [
+    0.448,
+    1.0571,
+    1.72
+   ]
+  },
+  {
+   "id": "bicycle_road_frame",
+   "mesh": "bicycle_road_frame",
+   "triangles": 412,
+   "material": "lit",
+   "size": [
+    0.141,
+    0.781,
+    0.7361
+   ]
+  },
+  {
+   "id": "bicycle_road_frame_paint",
+   "mesh": "bicycle_road_frame_paint",
+   "triangles": 120,
+   "material": "lit",
+   "size": [
+    0.1381,
+    0.6602,
+    0.9499
+   ]
+  },
+  {
+   "id": "bicycle_road_fork",
+   "mesh": "bicycle_road_fork",
+   "triangles": 768,
+   "material": "lit",
+   "size": [
+    0.448,
+    0.7197,
+    0.2159
+   ]
+  },
+  {
+   "id": "bicycle_road_wheel",
+   "mesh": "bicycle_road_wheel",
+   "triangles": 444,
+   "material": "lit",
+   "size": [
+    0.104,
+    0.68,
+    0.68
+   ]
+  },
+  {
+   "id": "bicycle_road_crank",
+   "mesh": "bicycle_road_crank",
+   "triangles": 88,
+   "material": "lit",
+   "size": [
+    0.178,
+    0.2,
+    0.346
+   ]
+  },
+  {
+   "id": "motorbike_standard",
+   "mesh": "motorbike_standard",
+   "triangles": 3724,
+   "material": "lit",
+   "size": [
+    0.744,
+    1.2589,
+    2.0656
+   ]
+  },
+  {
+   "id": "motorbike_standard_frame",
+   "mesh": "motorbike_standard_frame",
+   "triangles": 1326,
+   "material": "lit",
+   "size": [
+    0.5619,
+    0.8228,
+    1.5244
+   ]
+  },
+  {
+   "id": "motorbike_standard_frame_paint",
+   "mesh": "motorbike_standard_frame_paint",
+   "triangles": 264,
+   "material": "lit",
+   "size": [
+    0.344,
+    0.485,
+    1.168
+   ]
+  },
+  {
+   "id": "motorbike_standard_fork",
+   "mesh": "motorbike_standard_fork",
+   "triangles": 990,
+   "material": "lit",
+   "size": [
+    0.744,
+    0.9759,
+    0.4797
+   ]
+  },
+  {
+   "id": "motorbike_standard_fork_paint",
+   "mesh": "motorbike_standard_fork_paint",
+   "triangles": 48,
+   "material": "lit",
+   "size": [
+    0.135,
+    0.2031,
+    0.6322
+   ]
+  },
+  {
+   "id": "motorbike_standard_wheel_front",
+   "mesh": "motorbike_standard_wheel_front",
+   "triangles": 524,
+   "material": "lit",
+   "size": [
+    0.139,
+    0.66,
+    0.65
+   ]
+  },
+  {
+   "id": "motorbike_standard_wheel_rear",
+   "mesh": "motorbike_standard_wheel_rear",
+   "triangles": 572,
+   "material": "lit",
+   "size": [
+    0.177,
+    0.66,
+    0.65
+   ]
+  },
+  {
+   "id": "motorbike_sport",
+   "mesh": "motorbike_sport",
+   "triangles": 3400,
+   "material": "lit",
+   "size": [
+    0.7556,
+    1.1389,
+    2.0771
+   ]
+  },
+  {
+   "id": "motorbike_sport_frame",
+   "mesh": "motorbike_sport_frame",
+   "triangles": 1116,
+   "material": "lit",
+   "size": [
+    0.7556,
+    0.9629,
+    1.8698
+   ]
+  },
+  {
+   "id": "motorbike_sport_frame_paint",
+   "mesh": "motorbike_sport_frame_paint",
+   "triangles": 600,
+   "material": "lit",
+   "size": [
+    0.472,
+    0.862,
+    1.69
+   ]
+  },
+  {
+   "id": "motorbike_sport_fork",
+   "mesh": "motorbike_sport_fork",
+   "triangles": 484,
+   "material": "lit",
+   "size": [
+    0.664,
+    0.7028,
+    0.3525
+   ]
+  },
+  {
+   "id": "motorbike_sport_fork_paint",
+   "mesh": "motorbike_sport_fork_paint",
+   "triangles": 48,
+   "material": "lit",
+   "size": [
+    0.135,
+    0.2445,
+    0.6464
+   ]
+  },
+  {
+   "id": "motorbike_sport_wheel_front",
+   "mesh": "motorbike_sport_wheel_front",
+   "triangles": 580,
+   "material": "lit",
+   "size": [
+    0.144,
+    0.66,
+    0.65
+   ]
+  },
+  {
+   "id": "motorbike_sport_wheel_rear",
+   "mesh": "motorbike_sport_wheel_rear",
+   "triangles": 572,
+   "material": "lit",
+   "size": [
+    0.197,
+    0.66,
+    0.65
+   ]
+  },
+  {
+   "id": "helmet",
+   "mesh": "helmet",
+   "triangles": 506,
+   "material": "lit",
+   "size": [
+    0.284,
+    0.3059,
+    0.3244
+   ]
+  },
+  {
+   "id": "wheel_5spoke",
+   "mesh": "wheel_5spoke",
+   "triangles": 1022,
+   "material": "lit",
+   "size": [
+    0.22,
+    0.68,
+    0.68
+   ]
+  },
+  {
+   "id": "wheel_mesh",
+   "mesh": "wheel_mesh",
+   "triangles": 1128,
+   "material": "lit",
+   "size": [
+    0.22,
+    0.68,
+    0.68
+   ]
+  },
+  {
+   "id": "wheel_steel",
+   "mesh": "wheel_steel",
+   "triangles": 1016,
+   "material": "lit",
+   "size": [
+    0.22,
+    0.68,
+    0.68
+   ]
+  },
+  {
+   "id": "car_spoiler",
+   "mesh": "car_spoiler",
+   "triangles": 308,
+   "material": "lit",
+   "size": [
+    1.4,
+    0.2,
+    0.26
+   ]
+  },
+  {
+   "id": "car_roof_bar",
+   "mesh": "car_roof_bar",
+   "triangles": 212,
+   "material": "lit",
+   "size": [
+    1.2,
+    0.1305,
+    0.0605
+   ]
+  },
+  {
+   "id": "car_bull_bar",
+   "mesh": "car_bull_bar",
+   "triangles": 648,
+   "material": "lit",
+   "size": [
+    0.9999,
+    0.597,
+    0.14
+   ]
+  },
+  {
+   "id": "bike_dock",
+   "mesh": "bike_dock",
+   "triangles": 938,
+   "material": "glow",
+   "size": [
+    2.6,
+    1.25,
+    0.177
+   ]
+  },
+  {
+   "id": "wedding_arch",
+   "mesh": "wedding_arch",
+   "triangles": 1930,
+   "material": "lit",
+   "size": [
+    2.1,
+    2.5,
+    0.3
+   ]
+  },
+  {
+   "id": "flower_stand",
+   "mesh": "flower_stand",
+   "triangles": 870,
+   "material": "lit",
+   "size": [
+    0.4,
+    1.2,
+    0.4
+   ]
+  },
+  {
+   "id": "aisle_runner",
+   "mesh": "aisle_runner",
+   "triangles": 80,
+   "material": "lit",
+   "size": [
+    1.1,
+    0.018,
+    1.0
+   ]
+  },
+  {
+   "id": "cot",
+   "mesh": "cot",
+   "triangles": 898,
+   "material": "lit",
+   "size": [
+    0.72,
+    0.9,
+    1.26
+   ]
+  },
+  {
+   "id": "high_chair",
+   "mesh": "high_chair",
+   "triangles": 544,
+   "material": "lit",
+   "size": [
+    0.48,
+    1.05,
+    0.5
+   ]
+  },
+  {
+   "id": "driving_school_sign",
+   "mesh": "driving_school_sign",
+   "triangles": 428,
+   "material": "lit",
+   "size": [
+    0.62,
+    1.05,
+    0.52
+   ]
+  },
+  {
+   "id": "test_checkpoint_beacon",
+   "mesh": "test_checkpoint_beacon",
+   "triangles": 314,
+   "material": "glow",
+   "size": [
+    0.56,
+    2.9,
+    0.22
+   ]
+  },
+  {
+   "id": "ring_box",
+   "mesh": "ring_box",
+   "triangles": 256,
+   "material": "lit",
+   "size": [
+    0.05,
+    0.06,
+    0.05
+   ]
+  },
+  {
+   "id": "baby_bundle",
+   "mesh": "baby_bundle",
+   "triangles": 440,
+   "material": "lit",
+   "size": [
+    0.22,
+    0.1789,
+    0.4992
+   ]
+  },
+  {
+   "id": "courthouse_sign",
+   "mesh": "courthouse_sign",
+   "triangles": 856,
+   "material": "lit",
+   "size": [
+    1.42,
+    1.95,
+    0.42
+   ]
+  },
+  {
+   "id": "litter_pile",
+   "mesh": "litter_pile",
+   "triangles": 446,
+   "material": "lit",
+   "size": [
+    0.4302,
+    0.1013,
+    0.409
+   ]
+  },
+  {
+   "id": "campaign_poster_0",
+   "mesh": "campaign_poster_0",
+   "triangles": 144,
+   "material": "lit",
+   "size": [
+    0.6,
+    0.85,
+    0.017
+   ]
+  },
+  {
+   "id": "campaign_poster_1",
+   "mesh": "campaign_poster_1",
+   "triangles": 144,
+   "material": "lit",
+   "size": [
+    0.6,
+    0.85,
+    0.017
+   ]
+  },
+  {
+   "id": "campaign_poster_2",
+   "mesh": "campaign_poster_2",
+   "triangles": 144,
+   "material": "lit",
+   "size": [
+    0.6,
+    0.85,
+    0.017
+   ]
+  },
+  {
+   "id": "campaign_poster_3",
+   "mesh": "campaign_poster_3",
+   "triangles": 144,
+   "material": "lit",
+   "size": [
+    0.6,
+    0.85,
+    0.017
+   ]
+  },
+  {
+   "id": "campaign_board_0",
+   "mesh": "campaign_board_0",
+   "triangles": 272,
+   "material": "lit",
+   "size": [
+    0.6,
+    0.9349,
+    0.4589
+   ]
+  },
+  {
+   "id": "campaign_board_1",
+   "mesh": "campaign_board_1",
+   "triangles": 272,
+   "material": "lit",
+   "size": [
+    0.6,
+    0.9349,
+    0.4589
+   ]
+  },
+  {
+   "id": "campaign_board_2",
+   "mesh": "campaign_board_2",
+   "triangles": 272,
+   "material": "lit",
+   "size": [
+    0.6,
+    0.9349,
+    0.4589
+   ]
+  },
+  {
+   "id": "campaign_board_3",
+   "mesh": "campaign_board_3",
+   "triangles": 272,
+   "material": "lit",
+   "size": [
+    0.6,
+    0.9349,
+    0.4589
+   ]
+  },
+  {
+   "id": "polling_sign",
+   "mesh": "polling_sign",
+   "triangles": 216,
+   "material": "lit",
+   "size": [
+    0.6,
+    0.9349,
+    0.4589
+   ]
+  },
+  {
+   "id": "soapbox",
+   "mesh": "soapbox",
+   "triangles": 576,
+   "material": "lit",
+   "size": [
+    0.6,
+    0.3,
+    0.45
+   ]
+  },
+  {
+   "id": "scaffold_bay",
+   "mesh": "scaffold_bay",
+   "triangles": 612,
+   "material": "lit",
+   "size": [
+    2.45,
+    2.4,
+    1.83
+   ]
+  },
+  {
+   "id": "scaffold_bay_upper",
+   "mesh": "scaffold_bay_upper",
+   "triangles": 528,
+   "material": "lit",
+   "size": [
+    2.425,
+    2.0,
+    1.812
+   ]
+  },
+  {
+   "id": "scaffold_net",
+   "mesh": "scaffold_net",
+   "triangles": 192,
+   "material": "lit",
+   "size": [
+    2.38,
+    1.96,
+    0.012
+   ]
+  },
+  {
+   "id": "scaffold_fan",
+   "mesh": "scaffold_fan",
+   "triangles": 120,
+   "material": "lit",
+   "size": [
+    2.4,
+    0.811,
+    0.884
+   ]
+  },
+  {
+   "id": "site_hoarding",
+   "mesh": "site_hoarding",
+   "triangles": 214,
+   "material": "lit",
+   "size": [
+    2.4,
+    2.4,
+    0.1
+   ]
+  },
+  {
+   "id": "site_hoarding_notice",
+   "mesh": "site_hoarding_notice",
+   "triangles": 282,
+   "material": "lit",
+   "size": [
+    2.4,
+    2.4,
+    0.1015
+   ]
+  },
+  {
+   "id": "site_notice_board",
+   "mesh": "site_notice_board",
+   "triangles": 484,
+   "material": "lit",
+   "size": [
+    0.9,
+    1.8,
+    0.45
+   ]
+  },
+  {
+   "id": "skip_bin",
+   "mesh": "skip_bin",
+   "triangles": 722,
+   "material": "lit",
+   "size": [
+    3.4,
+    1.25,
+    1.7
+   ]
+  },
+  {
+   "id": "road_sign_works",
+   "mesh": "road_sign_works",
+   "triangles": 488,
+   "material": "lit",
+   "size": [
+    0.75,
+    1.55,
+    0.6
+   ]
+  },
+  {
+   "id": "trench_cover",
+   "mesh": "trench_cover",
+   "triangles": 237,
+   "material": "lit",
+   "size": [
+    0.9983,
+    0.02,
+    2.0
+   ]
+  },
+  {
+   "id": "spoil_heap",
+   "mesh": "spoil_heap",
+   "triangles": 192,
+   "material": "lit",
+   "size": [
+    0.9,
+    0.35,
+    0.9
+   ]
+  },
+  {
+   "id": "road_marking",
+   "mesh": "road_marking",
+   "triangles": 30,
+   "material": "lit",
+   "size": [
+    0.1,
+    0.0,
+    2.0
+   ]
+  },
+  {
+   "id": "asphalt_patch",
+   "mesh": "asphalt_patch",
+   "triangles": 18,
+   "material": "lit",
+   "size": [
+    1.2,
+    0.012,
+    2.0
+   ]
+  },
+  {
+   "id": "works_tent",
+   "mesh": "works_tent",
+   "triangles": 506,
+   "material": "lit",
+   "size": [
+    1.5,
+    1.9,
+    1.5
+   ]
+  },
+  {
+   "id": "manhole_open",
+   "mesh": "manhole_open",
+   "triangles": 334,
+   "material": "lit",
+   "size": [
+    0.9,
+    0.06,
+    0.9
+   ]
+  },
+  {
+   "id": "manhole_lid",
+   "mesh": "manhole_lid",
+   "triangles": 110,
+   "material": "lit",
+   "size": [
+    0.66,
+    0.05,
+    0.66
+   ]
+  },
+  {
+   "id": "office_desk",
+   "mesh": "office_desk",
+   "triangles": 954,
+   "material": "lit",
+   "size": [
+    1.4,
+    1.1644,
+    0.7
+   ]
+  },
+  {
+   "id": "evidence_door",
+   "mesh": "evidence_door",
+   "triangles": 622,
+   "material": "lit",
+   "size": [
+    1.04,
+    2.12,
+    0.0665
+   ]
+  },
+  {
+   "id": "tow_truck",
+   "mesh": "tow_truck",
+   "triangles": 2996,
+   "material": "lit",
+   "size": [
+    2.71,
+    2.612,
+    8.162
+   ]
+  },
+  {
+   "id": "tow_truck_tilt",
+   "mesh": "tow_truck_tilt",
+   "triangles": 176,
+   "material": "lit",
+   "size": [
+    1.1,
+    0.14,
+    5.4
+   ]
+  },
+  {
+   "id": "tow_truck_bed",
+   "mesh": "tow_truck_bed",
+   "triangles": 686,
+   "material": "lit",
+   "size": [
+    2.42,
+    1.24,
+    6.15
+   ]
+  },
+  {
+   "id": "tow_bar_lens",
+   "mesh": "tow_bar_lens",
+   "triangles": 44,
+   "material": "glow",
+   "size": [
+    0.69,
+    0.099,
+    0.2567
+   ]
+  },
+  {
+   "id": "tow_truck_light_head",
+   "mesh": "tow_truck_light_head",
+   "triangles": 32,
+   "material": "glow",
+   "size": [
+    1.5827,
+    0.1088,
+    0.0
+   ]
+  },
+  {
+   "id": "tow_truck_light_tail",
+   "mesh": "tow_truck_light_tail",
+   "triangles": 4,
+   "material": "glow",
+   "size": [
+    1.8846,
+    0.1128,
+    0.0
+   ]
+  },
+  {
+   "id": "tow_truck_light_brake",
+   "mesh": "tow_truck_light_brake",
+   "triangles": 4,
+   "material": "glow",
+   "size": [
+    1.8846,
+    0.1128,
+    0.0
+   ]
+  },
+  {
+   "id": "tow_truck_light_left",
+   "mesh": "tow_truck_light_left",
+   "triangles": 6,
+   "material": "glow",
+   "size": [
+    0.327,
+    0.171,
+    8.009
+   ]
+  },
+  {
+   "id": "tow_truck_light_right",
+   "mesh": "tow_truck_light_right",
+   "triangles": 6,
+   "material": "glow",
+   "size": [
+    0.327,
+    0.171,
+    8.009
+   ]
+  },
+  {
+   "id": "dc_rack",
+   "mesh": "dc_rack",
+   "triangles": 116,
+   "material": "lit",
+   "size": [
+    0.6,
+    2.0,
+    1.0926
+   ]
+  },
+  {
+   "id": "dc_rack_ai",
+   "mesh": "dc_rack_ai",
+   "triangles": 216,
+   "material": "lit",
+   "size": [
+    0.6,
+    2.0,
+    1.202
+   ]
+  },
+  {
+   "id": "dc_rack_network",
+   "mesh": "dc_rack_network",
+   "triangles": 172,
+   "material": "lit",
+   "size": [
+    0.6,
+    2.45,
+    1.0926
+   ]
+  },
+  {
+   "id": "dc_leds_a",
+   "mesh": "dc_leds_a",
+   "triangles": 28,
+   "material": "glow",
+   "size": [
+    0.044,
+    1.5136,
+    0.0
+   ]
+  },
+  {
+   "id": "dc_leds_b",
+   "mesh": "dc_leds_b",
+   "triangles": 32,
+   "material": "glow",
+   "size": [
+    0.044,
+    1.5512,
+    0.0
+   ]
+  },
+  {
+   "id": "dc_cooling",
+   "mesh": "dc_cooling",
+   "triangles": 70,
+   "material": "lit",
+   "size": [
+    1.8,
+    1.962,
+    0.9006
+   ]
+  },
+  {
+   "id": "dc_ups",
+   "mesh": "dc_ups",
+   "triangles": 58,
+   "material": "lit",
+   "size": [
+    0.8,
+    1.9,
+    0.8506
+   ]
+  },
+  {
+   "id": "dc_tray",
+   "mesh": "dc_tray",
+   "triangles": 252,
+   "material": "lit",
+   "size": [
+    0.46,
+    0.58,
+    2.0
+   ]
+  },
+  {
+   "id": "dc_floor",
+   "mesh": "dc_floor",
+   "triangles": 12,
+   "material": "lit",
+   "size": [
+    2.4,
+    0.02,
+    2.4
+   ]
+  },
+  {
+   "id": "dc_floor_vent",
+   "mesh": "dc_floor_vent",
+   "triangles": 12,
+   "material": "lit",
+   "size": [
+    0.6,
+    0.024,
+    2.4
+   ]
+  },
+  {
+   "id": "dc_ops_desk",
+   "mesh": "dc_ops_desk",
+   "triangles": 378,
+   "material": "lit",
+   "size": [
+    1.6,
+    1.205,
+    0.8
+   ]
+  },
+  {
+   "id": "hq_reception",
+   "mesh": "hq_reception",
+   "triangles": 282,
+   "material": "lit",
+   "size": [
+    2.64,
+    1.195,
+    0.94
+   ]
+  },
+  {
+   "id": "hq_logo_wall",
+   "mesh": "hq_logo_wall",
+   "triangles": 156,
+   "material": "lit",
+   "size": [
+    3.42,
+    2.61,
+    0.3
+   ]
+  },
+  {
+   "id": "hq_screen",
+   "mesh": "hq_screen",
+   "triangles": 58,
+   "material": "lit",
+   "size": [
+    1.6,
+    0.95,
+    0.0606
+   ]
+  },
+  {
+   "id": "tech_rack_small",
+   "mesh": "tech_rack_small",
+   "triangles": 114,
+   "material": "lit",
+   "size": [
+    0.6,
+    1.2,
+    0.822
+   ]
+  },
+  {
+   "id": "tech_bench",
+   "mesh": "tech_bench",
+   "triangles": 320,
+   "material": "lit",
+   "size": [
+    1.4,
+    1.205,
+    0.7
+   ]
+  },
+  {
+   "id": "tech_whiteboard",
+   "mesh": "tech_whiteboard",
+   "triangles": 74,
+   "material": "lit",
+   "size": [
+    1.805,
+    1.205,
+    0.075
+   ]
+  },
+  {
+   "id": "dc_sign",
+   "mesh": "dc_sign",
+   "triangles": 112,
+   "material": "lit",
+   "size": [
+    2.4,
+    1.42,
+    0.4
+   ]
+  },
+  {
+   "id": "dc_booth",
+   "mesh": "dc_booth",
+   "triangles": 220,
+   "material": "lit",
+   "size": [
+    1.84,
+    2.42,
+    1.84
+   ]
+  },
+  {
+   "id": "dc_barrier",
+   "mesh": "dc_barrier",
+   "triangles": 92,
+   "material": "lit",
+   "size": [
+    0.475,
+    4.45,
+    0.4
+   ]
+  },
+  {
+   "id": "dc_fence",
+   "mesh": "dc_fence",
+   "triangles": 192,
+   "material": "lit",
+   "size": [
+    2.5,
+    2.201,
+    0.2488
+   ]
+  },
+  {
+   "id": "bicycle_road_pedal",
+   "mesh": "bicycle_city_pedal",
+   "triangles": 44,
+   "material": "lit",
+   "size": [
+    0.09,
+    0.03,
+    0.075
+   ],
+   "alias_of": "bicycle_city_pedal"
+  }
+ ]
+}

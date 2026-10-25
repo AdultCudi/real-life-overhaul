@@ -1,14 +1,22 @@
 # Prop assets
 
-The street props the mod places itself (cordon, stretcher, police and paramedic equipment, accident and
-crime-scene dressing), modelled by script in Blender and shipped with the mod as one asset bundle. Parallel to
-`CharacterAssets\` and independent of it: own scripts, own Unity project, own bundle.
+The props the mod places itself (cordon, stretcher, police and paramedic equipment, accident and crime-scene
+dressing, and everything since), shipped with the mod as two asset bundles: the first modelled by script in Blender,
+the second modelled by hand in Blender and exported (see "The bundles"). Parallel to `CharacterAssets\` and
+independent of it: own scripts, own Unity project, own bundles.
 
 ```
-build.ps1                 everything, start to finish (see below)
-build_bundle.ps1          only the last step: build\ -> the asset bundle, and the check that it loads
+sets.json                 THE BUNDLES: one row each, with its source, its limits and whether it takes new props
+build.ps1                 everything, start to finish, every bundle (see below)
+build_bundle.ps1          only the last step: a build folder -> its asset bundle, the check that it loads, its contents list
+contents\<bundle>.json    what each shipped bundle holds (props, triangles, atlas, SHA-256), written with it (committed)
+models\<id>\              the second bundle's props: a Blender export each (see "Adding a prop from Blender")
 scripts\
-  atlas.py                paints the one texture atlas (surface finishes and lettered faces) and says where each region is
+  sets.py                 the bundle being built (PROPS_SET), its folders and limits, and the rules on its ids
+  models.py               reads the models of a bundle: lists their pictures for the atlas, and builds each as a prop
+  contents.py             writes contents\<bundle>.json once Unity has built the bundle
+  test_models.py          two made-up models (a .glb and an .fbx) for build.ps1 -Test, which ships nothing
+  atlas.py                paints a bundle's texture atlas (surface finishes, lettered faces, models' pictures) and says where each region is
   prop_kit.py             the modelling kit: box, lathe, tube, prism, loft, grid; atlas mapping; export; preview renders
   props.py                THE PROPS: one function each, and the list with triangle budgets
   city_props.py           the city-life props (tools, things carried, the coffee cart): same rules, listed by props.py
@@ -21,10 +29,10 @@ scripts\
   newer_props.py          ships props remade since the bundle was last built beside it (Bundles\props_newer), while Unity cannot build it
   check_life.py           measures the handles and heights that animation clips rely on; the build fails if one has moved
   overview.py             stacks preview sheets into one image
-UnityProject\             a bare 2022.3 project whose only job is to turn build\ into the bundle
+UnityProject\             a bare 2022.3 project whose only job is to turn a build folder into its bundle
 previews\                 a render of every prop, and of a whole scene (committed: look at them)
 CREDITS.md                source and licence of every asset
-_reference\ _tools\ build\     generated, git-ignored
+_reference\ _tools\ build\ build_*\     generated, git-ignored
 ```
 
 ## Run it
@@ -36,10 +44,14 @@ version). The game is not needed. Then:
 powershell -File PropAssets\build.ps1
 ```
 
-It installs Pillow into `_tools\pylib` (nothing system-wide), paints the atlas, builds every mesh into `build\`,
-renders `previews\`, builds `Assets\Mods\RealLifeOverhaul\Bundles\reallife_props` and loads it back as a check
-(about two minutes, most of it Unity). `-SkipPreviews` and `-SkipBundle` shorten it. The dotnet build of the mod
-copies `Bundles\` into the installed mod folder.
+It installs Pillow into `_tools\pylib` (nothing system-wide), then for each bundle of `sets.json` in turn paints its
+atlas, builds every mesh into its build folder (`build\`, `build_2\`), renders `previews\`, builds
+`Assets\Mods\RealLifeOverhaul\Bundles\<bundle>`, loads it back as a check and writes `contents\<bundle>.json`
+(about two minutes a bundle, most of it Unity). `-Set second` builds one bundle; `-SkipPreviews` and `-SkipBundle`
+shorten it. `-Test` makes two models in Blender, exports them as `.glb` and `.fbx` and takes them through the second
+bundle's whole path into `build_test\`, Unity's load check included; nothing in `Bundles\` changes. The dotnet build
+of the mod copies `Bundles\` into the installed mod folder. Commit each rebuilt bundle with its `contents\` list:
+StandardCheck holds the one to the other by SHA-256.
 
 **Look at the renders before committing.** `previews\<id>.png` shows the prop from the front and the back, then
 beside a 1.8 m bar banded every 0.3 m. `scene_cordon.png`, `scene_cordon_street.png` and the `scene_*.png` of `scenes.py` (a precinct frontage, a bus stop
@@ -49,11 +61,11 @@ occlusion, and nothing else: no Blender-only shading.
 
 ## How it is made
 
-- **One atlas, two materials.** Every prop is one mesh with one material slot. All of them share
-  `props_base` (4096 x 2048, colour) and `props_mask` (2048 x 1024, HDRP mask map: metallic, occlusion, -,
-  smoothness). **Both sides of both must be powers of two:** Unity silently keeps any other size uncompressed
+- **One atlas a bundle, two materials on each.** Every prop is one mesh with one material slot. All the props of a
+  bundle share its `props_base` (the first's 4096 x 2048, colour) and `props_mask` (2048 x 1024, HDRP mask map:
+  metallic, occlusion, -, smoothness). **Both sides of both must be powers of two:** Unity silently keeps any other size uncompressed
   (the 2048 x 1280 atlas shipped as RGBA32, 17.5 MB of video memory, not the 4.2 MB this file used to claim);
-  the bundle check now fails if a texture is not BC7. The mod makes two materials from the game's `HDRP/Lit` at run time, both instanced: `lit`, and
+  the bundle check now fails if a texture is not BC7. The mod makes two materials on each bundle's atlas from the game's `HDRP/Lit` at run time, both instanced: `lit`, and
   `glow` (the same, lighting itself faintly in its own colours) for what must read at night. No normal map: the
   shapes carry chamfers and area-weighted normals instead, which is what gives the edges their highlight.
 - **Swatches and decals.** A swatch is one surface finish whose patch gets dirtier towards the bottom; a part
@@ -64,26 +76,99 @@ occlusion, and nothing else: no Blender-only shading.
 - **No colliders, scripts or materials in the bundle**, meshes are not kept readable, textures are BC7 with
   mipmaps. `PropLibrary` does nothing per frame.
 
-## Budgets (kept by the build: it fails if a prop, or the total, goes over)
+## The bundles
+
+`sets.json` lists the props bundles, in the order the mod reads them. Each has its own source folder, its own build
+folder, its own atlas and its own limits; the build, the mod's `Core/PropLibrary` and StandardCheck (RLO-PERF-016) all
+read that one table.
+
+| bundle | source | takes new props | triangles | atlas | disk |
+|---|---|---|---|---|---|
+| `reallife_props` | the procedural modules (`scripts\props.py` and its modules) | **no**: closed, it keeps what it has | 130 000 | 4096 x 2048, fixed | 16 MB |
+| `reallife_props_2` | `models\<id>\`, one Blender export each | **yes** | 60 000 | grows by powers of two from 256 x 256 to 2048 x 2048 | 8 MB |
+
+**Which bundle a prop goes in.** A new prop goes in the second bundle (the last open row of `sets.json`). A prop of
+the first stays where it is; the build refuses a new id in a closed bundle. A prop's id is unique across the bundles:
+the build refuses an id another bundle's `contents\` list holds, the mod uses the earlier bundle's if two ever did,
+and StandardCheck fails on it. Callers never say which bundle: `PropLibrary.TryGet(id, ...)` looks in all of them.
+
+**What the second costs.** Its atlas is as small as its props allow, so it costs video memory only for what it
+holds (BC7, one byte a pixel, a third more for the mipmaps; the mask is half each way):
+
+| atlas | colour | mask | in all |
+|---|---|---|---|
+| none (no props: what ships until the first model) | 0 | 0 | 0 |
+| 512 x 512 | 0.33 MB | 0.08 MB | 0.4 MB |
+| 1024 x 1024 | 1.3 MB | 0.3 MB | 1.7 MB |
+| 2048 x 2048 (its limit) | 5.3 MB | 1.3 MB | 6.7 MB |
+
+A 256 px picture is enough for a hand-held prop and 512 for a large one, so the full atlas holds some thirty to sixty
+props; 6.7 MB beside the first bundle's 14.0 MB. Its 60 000 triangles are about 3.4 MB of meshes at most. A missing
+second bundle (an older install) costs nothing: the mod writes one warning and its props are drawn as their plain
+shapes, as for any prop it lacks.
+
+**Shipped.** The build copies all of `Bundles\` into the mod, the installer and the zip take the whole mod folder,
+and the Workshop upload takes the release's whole folder; `INSTALL.md`, `RealLifeOverhaul.Build\Workshop\UPLOAD.md`,
+the Workshop credits and `docs\reference\folder-map.md` name every bundle. StandardCheck holds all of it.
+
+## Adding a prop from Blender
+
+1. **Model it** in Blender, in metres at scale 1: X right, Y forward, Z up. **The prop's front looks along +Y** (in
+   Blender's Front view you see its back), and **the origin is its pivot**, at the world origin: for anything that
+   stands, the ground under the middle of its footprint. Apply the object's rotation and scale (Ctrl A) before
+   exporting. Unity gets (x, z, y) on the way out, so +Y forward becomes +Z, as for every prop.
+2. **One mesh, one painted material.** Bake everything painted into one picture (256 px a side for a hand-held prop,
+   512 for a large one, 1024 at most) on UVs that stay inside 0..1: the picture is drawn once into the atlas, never
+   tiled. Plain finishes need no picture: name the material `swatch_<name>` after a swatch of `scripts\atlas.py`
+   (`swatch_paper`, `swatch_cardboard`, `swatch_aluminium`, ...) and the faces get that finish with its grime towards
+   the bottom. Metallic and smoothness come from the material's own values, or from `<id>_mask.png` (R metallic,
+   G occlusion, A smoothness) beside the model.
+3. **Hard edges.** Mark sharp edges in Blender (or shade faces flat); edges sharper than 50 degrees are hard anyway
+   (`"sharp"` in the settings changes that). Normals are made by the kit from those, area weighted, as for the
+   procedural props: no normal map.
+4. **No LODs, no collision, no rig.** Export one mesh at the detail it needs at street distance: the budget is the
+   limit. Objects named `*_LOD1` and the like, or `UCX_`/`UBX_`/`UCP_`/`USP_` collision meshes, stop the build; a
+   caller that must be hit gives the prop a box from `PropLibrary.SizeOf(id)`. Props are static.
+5. **Export** to `models\<id>\<id>.glb` (glTF binary, the default settings, +Y Up on, with its picture packed in) or
+   `<id>.fbx` (the default settings, the picture beside it as `<id>.png`; the build reads either back in Blender, so the axes come out as they were made). The id is the folder's
+   name: lower case letters, digits and `_`, new to every bundle. Beside it, `<id>.json`:
+   `{"budget": 400, "material": "lit", "pivot": "ground centre", "note": "what it is and how the code holds it"}`
+   (`"glow"` for what must read at night).
+6. **Build**: `powershell -File PropAssets\build.ps1 -Set second`. Look at `previews\<id>.png`, then commit the model's
+   folder, `Bundles\reallife_props_2` and `contents\reallife_props_2.json` together. Add a row for it below, in a
+   section for the second bundle, and ask for it by id in code (`PropLibrary.TryGet`), with a plain shape for while it
+   is missing.
+
+## Budgets of the first bundle (kept by the build: it fails if a prop, or the total, goes over)
 
 | | limit | now |
 |---|---|---|
 | triangles, each prop | its own budget, beside its maker in the `PROPS` lists | see the tables below |
-| triangles, all props together | 130 000 | 127 186 (271 props: the two-wheelers are in the bundle whole and in parts, the city bus and the tow truck in parts) |
+| triangles, all props together | 130 000 | 115 384 (233 props on 232 meshes: the two-wheelers are in the bundle whole and in parts, the city bus and the tow truck in parts; `bicycle_road_pedal` is drawn with `bicycle_city_pedal`'s mesh). It was 127 186 for 271 before the clean-up of 26 Oct 2026 (below) |
 | materials | 2, shared by everything | 2 |
-| textures | one atlas: 4096 x 2048 colour + 2048 x 1024 mask, BC7 (the bundle check fails on anything else); the two road paint pictures | 14.0 MB of video memory (10.7 + 2.7, and 0.7 for the road paint), 277 regions, 94 % of the atlas used (swatches are 40 x 80) |
-| meshes in memory | | 7.3 MB |
-| bundle on disk | 16 MB | 11.5 MB, loaded once per session, asynchronously |
+| textures | one atlas: 4096 x 2048 colour + 2048 x 1024 mask, BC7 (the bundle check fails on anything else); the two road paint pictures | 14.0 MB of video memory (10.7 + 2.7, and 0.7 for the road paint), 248 regions, 82 % of the atlas used (94 % before the clean-up) (swatches are 40 x 80) |
+| meshes in memory | | 6.3 MB |
+| bundle on disk | 16 MB | 10.2 MB, loaded once per session, asynchronously |
 
 **Why the ceilings went up** (they were 30 000 triangles, a 2048 x 2048 atlas and 9 MB for 77 props). The first two
 rounds were things in a hand and a cordon. The later rounds are a police station's frontage, bus stops and a bus,
 a fire engine, hotels, street events, home and social life, a garage and a building site: 240 props, among
 them vehicle bodies of 3 700 to 6 300 triangles. None of it is drawn unless a feature places it, a placed prop is one
 instanced draw call with one of two materials, and a scene shows a dozen at most: the totals are what sits in memory,
-not what is rendered. Memory is the real cost: about 7.3 MB of meshes and 14.0 MB of texture, where the game's own
-city uses gigabytes. The atlas doubled in width only (BC7 keeps it at one byte a pixel); `PropLibrary` reads exactly
-one bundle with one colour and one mask texture, so a second bundle or a second atlas would have needed code and a
-third material. If the atlas fills again, 4096 x 4096 is the next step (27 MB); nothing else changes.
+not what is rendered. Memory is the real cost: about 6.3 MB of meshes and 14.0 MB of texture, where the game's own
+city uses gigabytes. The atlas doubled in width only (BC7 keeps it at one byte a pixel). It is closed now: new props
+go in the second bundle, with an atlas and two materials of its own ("The bundles").
+
+### The clean-up of 26 Oct 2026
+
+38 props nothing used were taken out of the first bundle (`sets.json`, `removed`, lists them): no code, design data,
+clip, branch or worktree named them, whole or built from parts. 29 atlas regions only they used (or none did) went
+with them, and the tape's row was halved to 76 px (about 1000 px a metre each way; it was 2000, 8 % of the atlas).
+`bicycle_road_pedal` was the same mesh as `bicycle_city_pedal` and is now drawn with it (an alias in the catalogue,
+`ALIASES` in `props_garage.py`: callers did not change). Every other prop kept its geometry and its regions; only
+where each region sits moved. Gained: 11 802 triangles (127 186 to 115 384) and 12 points of the atlas (94 % to 82 %).
+Kept on purpose: `civic_lamp_blue` (unused pixels, but the blue lamp's paint names it); the meshes heavy for their
+size (handcuffs, duty belt, the bikes, the wheels) are all seen from a step away or closer, where fewer sides show.
 
 ### Working on one module
 
@@ -109,6 +194,7 @@ Vector3 size = PropLibrary.SizeOf("cone");  // bounds in metres, zero if unknown
 ```
 
 `PropLibrary.Load(context)` is called when the city loads and `Dispose()` when it unloads (`Core\RealLifeOverhaulMod.cs`).
+It reads every bundle of `sets.json` behind the loading screen, once a session; an id is looked up in all of them.
 The load takes a moment: a prop built in the first second of a city gets `false`. Either build props when they
 are first needed (the cordon and stretcher already do) or check `PropLibrary.Ready`.
 
@@ -138,7 +224,6 @@ replace `localScale = (0.012, 0.075, length)` with `(1, 1, length / 4)`.
 | `stretcher_sheet` | 0.56 x 0.36 x 1.96 | 768 | lit | **the stretcher's pivot**: child of the stretcher at zero | a covered body, head to toe. Replaces the `Sheet` object |
 | `stretcher_blanket` | 0.56 x 0.37 x 1.32 | 480 | lit | the stretcher's pivot | feet to chest over someone carried as they are. Its top is 0.25 to 0.27 m above the mattress at hips and chest: a body lying flat fits under it, one lying awkwardly will poke through |
 | `medic_bag` | 0.64 x 0.42 x 0.26 | 368 | lit | ground centre; emblem faces +Z and -Z | beside a kneeling paramedic |
-| `first_aid_box` | 0.30 x 0.26 x 0.11 | 120 | lit | ground centre; face at +Z and -Z | |
 
 ### Police and paramedic equipment (on a character)
 
@@ -176,9 +261,6 @@ multiply the prop's local scale by its inverse to keep it life-size).
 | `debris_plastic` | 0.64 x 0.06 x 1.16 | 160 | lit | ground centre | bumper and lamp fragments; random heading |
 | `flare` | 0.03 x 0.03 x 0.29 | 116 | glow | ground centre; lies along Z, burning end at +Z | pair it with a light if it should light the road |
 | `evidence_marker_1` .. `_4` | 0.09 x 0.125 x 0.084 | 8 each | lit | ground centre; number faces +Z and -Z | |
-| `duffel_bag` | 0.70 x 0.35 x 0.30 | 260 | lit | ground centre; lies along X | |
-| `spray_can` | 0.066 x 0.20 x 0.066 | 156 | lit | ground centre; standing | |
-| `crowbar` | 0.11 x 0.02 x 0.72 | 116 | lit | ground centre; lies along Z, hook at +Z | |
 
 A high-visibility vest is not here: it would need skinning to the body, which is the character pipeline's job.
 
@@ -224,7 +306,6 @@ Held (the clip's grip places them; do not parent by hand):
 | `watering_can` | 0.20 x 0.36 x 0.64 | 498 | lit | ground centre of the body; spout and rose towards +Z, ending at (0, 0.30, 0.42) | by the bar over the top: it runs along Z, centred (0, 0.34, -0.02), 0.03 m thick, 0.11 m of it straight, 0.08 m clear above the body |
 | `guitar` | 0.38 x 1.00 x 0.11 | 698 | lit | bottom end of the body, standing on its end, neck up; sound board faces +Z | fret hand wraps the neck (0.045 x 0.032 m) 0.78 m up; the strumming hand is over the sound hole at (0, 0.30, 0.05). Nut 0.86 m up; body 0.38 x 0.48 x 0.10 |
 | `notebook` | 0.10 x 0.012 x 0.15 | 268 | lit | centre, lying flat; spiral at +Z, written page up | flat on a palm |
-| `radio_handset` | 0.064 x 0.21 x 0.039 | 294 | lit | centre of its base, standing; grille and display face +Z | round the body (0.06 x 0.035 m) 0.06 m up; antenna and knob above 0.13 m |
 | `newspaper` | 0.58 x 0.40 x 0.05 | 128 | lit | bottom of the centre fold; stands across X; the reader is at -Z (inner pages), front and back page face +Z | hands at (-0.25, 0.13, 0) and (0.25, 0.13, 0). The fold is 0.03 m nearer +Z than the outer edges, so the sheet is 0.026 m behind those two points |
 | `map_folded` | 0.44 x 0.30 x 0.04 | 48 | lit | bottom centre; stands across X; map print faces -Z (the reader), cover panel +Z | hands at (-0.19, 0.10, 0) and (0.19, 0.10, 0) |
 | `umbrella` | 1.04 x 0.92 x 1.04 | 726 | lit | bottom of the handle; the shaft is Y | straight handle 0.13 m long, 0.03 m thick, held 0.06 m up. Canopy 1.02 m across (8 ribs), rim 0.62 m up, tip 0.86 m, ferrule to 0.92 m |
@@ -238,7 +319,6 @@ For jobs:
 
 | id | size | triangles | material | pivot and facing | use |
 |---|---|---|---|---|---|
-| `food_bag` | 0.43 x 0.48 x 0.36 | 458 | lit | ground centre; **the straps (+Z) go against the wearer's back**, the logo faces -Z | insulated delivery backpack: the box is 0.42 x 0.44 x 0.30, the grab handle on the lid and the straps make up the rest |
 | `taxi_sign` | 0.36 x 0.155 x 0.12 | 132 | glow | ground centre (it sits on a roof); "TAXI" on its +Z and -Z faces | the lamp is 0.13 m high on a 0.025 m black magnetic base. A car's sides are its X: turn the sign so its faces look fore and aft |
 | `flyer` | 0.148 x 0.007 x 0.21 | 64 | lit | centre, lying flat, printed side up, its head towards +Z (as `leaflet`) | one A5 flyer |
 | `flyer_stack` | 0.15 x 0.21 x 0.02 | 60 | lit | **middle of the top edge: the stack hangs below the pivot**, upright; printed face +Z | a hand's worth, five uneven layers |
@@ -385,12 +465,7 @@ Social (held: the clip's grip places them):
 | id | size (X x Y x Z, Unity) | triangles | material | pivot and facing | use / grips / which feature |
 |---|---|---|---|---|---|
 | `wine_glass` | 0.07 x 0.20 x 0.07 | 236 | lit | the middle of the stem (foot at y -0.085, rim at +0.115) | `cheers`. Held by the stem at the origin: a round bar 0.009 m thick, straight from y -0.066 to +0.028. Red wine to y 0.078 |
-| `beer_bottle` | 0.066 x 0.24 x 0.066 | 208 | lit | 0.08 m up the axis (base at y -0.08, cap at +0.16); label faces +Z | Brown glass, crown cap. The hand closes round the body at the origin: a plain cylinder 0.066 across from y -0.075 to +0.055. **Built to the Social list (0.07 x 0.24, pivot 0.08 up); no code places it yet. Leisure's list says 0.065 x 0.23 without a pivot** |
 | `takeaway_box` | 0.14 x 0.09 x 0.11 | 122 | lit | the middle of the underside; printed sides face +Z and -Z | `eat_standing` (left palm). Open noodle carton, flaps up and out, noodles to y 0.076, a fork in it towards +X |
-| `popcorn_tub` | 0.16 x 0.20 x 0.16 | 230 | lit | the middle of the underside; "POPCORN" on +Z and -Z | Red and white striped tub 0.11 across at the foot, 0.16 at the rim (0.165 up), heaped to 0.20 |
-| `gift_box` | 0.20 x 0.14 x 0.20 | 238 | lit | ground centre | Red box with a lid (0.10 high), gold ribbon both ways, bow to 0.14 |
-| `flowers_bunch` | 0.22 x 0.42 x 0.22 | 496 | lit | the wrapped stems, 0.10 m above their cut ends (blooms to y +0.32); the paper stands higher at -Z | The hand closes round the paper at the origin: 0.039 m thick there (0.035 at y -0.03, 0.042 at +0.03), widening above y 0.04. Ten blooms in red, yellow and pink |
-| `gym_bag` | 0.50 x 0.26 x 0.24 | 528 | lit | the middle of the handles; the bag lies along X | The handles meet in a wrap: a round bar along X at the origin, 0.03 m thick, 0.11 m long. The bag's top is 0.061 below the pivot, its underside 0.245 below. Teal barrel, white hoops, end pockets, zip |
 | `moving_box` | 0.45 x 0.35 x 0.35 | 94 | lit | ground centre; "FRAGILE" on +Z and -Z, a hand hole in each X end | Carried as `parcel_m`: a hand under each end along X (`OutingScene.BoxProp` is `parcel_m` today) |
 | `newspaper_ledger` | 0.58 x 0.40 x 0.05 | 128 | lit | as `newspaper`: bottom of the centre fold, read from -Z, front and back page face +Z | Vertex for vertex the `newspaper` prop (hands at (-0.25, 0.13, 0) and (0.25, 0.13, 0)) with the front page "THE CITY LEDGER" (the phone contact's name is "City Ledger") |
 
@@ -402,29 +477,19 @@ Leisure:
 | `fishing_float` | 0.045 x 0.11 x 0.045 | 113 | lit | the waterline | Red above to 0.043, orange antenna to 0.07, white below to -0.04 |
 | `fishing_line` | 0.004 x 0.004 x 1.0 | 8 | lit | one end; runs along +Z | Scale Z to the span (`Fishing.Frame` does). A four-sided pale thread, 4 mm across like the stand-in |
 | `drink_glass` | 0.075 x 0.12 x 0.075 | 200 | lit | ground centre | `NightOut` (`Body.Play("sip", "drink_glass")`): held by the `coffee_cup` grip 0.06 up, where it is 0.069 across. Tumbler, amber drink to 0.086, three ice cubes |
-| `cocktail_glass` | 0.11 x 0.16 x 0.11 | 225 | lit | ground centre | Martini glass: stem 0.008 thick from y 0.02 to 0.08, pink drink, an olive on a stick. Not used by code yet |
 | `clothes_rack` | 1.44 x 1.76 x 0.56 | 1 811 | lit | ground centre; rail along X 1.55 m up; **browsed from +Z**; "SALE" sign on top reads from +Z and -Z | `ClothesShop` (`LeisureProps`; its NavMeshObstacle 1.5 x 1.6 x 0.6 still fits). Rail 0.035 thick; seven garments at x -0.54 .. +0.54 every 0.18, hung across the rail (0.42 to 0.52 wide in Z, hems 0.49 to 0.86 up), each on a wire hook 6 mm thick: 0.17 m of clear rail between hooks for the hand of `browse_rack` |
-| `shopping_bag` | 0.32 x 0.38 x 0.12 | 202 | lit | **top centre of the handles: the bag hangs below**; shop panel on +Z and -Z | Paper carrier 0.29 high, twisted-paper handles 0.09 above it, pink tissue in the top. Not used by code yet |
 
 Transport:
 
 | id | size (X x Y x Z, Unity) | triangles | material | pivot and facing | use / grips / which feature |
 |---|---|---|---|---|---|
 | `turnstile` | cabinet 0.30 x 1.00 x 1.20; **0.75 wide with the arms** | 592 | lit | ground centre of the cabinet; walked past along Z on its +X side, entered from +Z | Stainless cabinet, top 0.975 up; card reader on the top at (0, 0.975, 0.455), a go / no-entry display behind it to 1.00 and on both ends; tripod hub on the +X side 0.80 up, one arm level across the way out to x 0.60, 0.77 up. Not placed by code yet |
-| `fuel_pump` | 0.50 x 1.60 x 0.40 | 768 | lit | ground centre; price and litres on +Z and -Z | Display from 0.88 to 1.36 up, a nozzle in its boot and a hose looping down on each side (x +-0.25), brand board on top, kick plate. Not placed by code yet |
 | `jerry_can` | 0.35 x 0.45 x 0.18 | 412 | lit | ground centre; spout cap at the +X top corner (to 0.45) | `refuel_hold`. Carried by the bar over the top: along X, centred (0, 0.415, 0), 0.03 m thick, 0.11 m of it straight, 0.03 m clear above the can's flat top (0.37 up). Red, pressed X on both sides |
-| `warning_triangle` | 0.45 x 0.42 x 0.05 | 152 | glow | ground centre; faces +Z and -Z alike | Hollow red reflective triangle, yellow inner edge, on a weighted foot 0.34 x 0.05 |
-| `car_wash_arch` | 3.60 x 3.20 x 1.00 | 1 563 | lit | ground centre; driven through along Z, entry face (traffic lights, spray arch) at +Z | 2.60 m clear between the side brushes, 2.42 m under the top brush. "CAR WASH" on top reads from +Z and -Z (letters 0.2 m). Not placed by code yet |
 
 Careers and business (none placed by code yet: each needs a line of placement):
 
 | id | size (X x Y x Z, Unity) | triangles | material | pivot and facing | use / grips / which feature |
 |---|---|---|---|---|---|
-| `dispatch_desk` | 1.20 x 1.40 x 0.50 | 554 | lit | ground centre; **the dispatcher stands at +Z facing -Z**; the map faces +Z | `DispatchJob`, clip `desk_plan`. Sloping top 1.03 up at the back, 0.97 at its front edge (z +0.25); the city map on the board behind (z -0.22) from 0.64 to 1.37, pins and a route on it; radio handset, base set with a mike, papers, a mug of pens |
-| `employer_sign` | 0.60 x 0.30 x 0.03 | 58 | lit | the middle of its back, on the wall; faces +Z | Blank blue enamel plate in a brass frame with four screws, for lettering by code (plate 0.58 x 0.28, 0.026 proud) |
-| `employer_sign_1` .. `_6` | 0.60 x 0.30 x 0.03 | 58 each | lit | as `employer_sign` | In the order of `CareerCatalogue.All`: 1 Brightline Promotions, 2 Brightside Contract Cleaning, 3 Uncle Lou's Street Eats, 4 Fairway Markets, 5 Hudson Parcel Co., 6 Five Borough Cabs. Capitals 0.07 to 0.09 m high |
-| `window_boarded` | 1.20 x 1.50 x 0.05 | 96 | lit | ground centre of its back face; faces +Z | Plywood sheet 0.018 thick, two battens screwed across its front, a sprayed tag and a "SORRY CLOSED" note. The back is plain |
-| `closed_notice` | 0.34 x 1.30 x 0.32 | 186 | lit | ground centre; faces +Z, leaning 8 degrees back | A3 notice (0.30 x 0.42, "CLOSED BY ORDER", crest, seal) in a frame on a weighted stand (base 0.34 across) |
 <!-- end: everyday -->
 
 <!-- module: family -->
@@ -441,12 +506,7 @@ Careers and business (none placed by code yet: each needs a line of placement):
 | `high_chair` | 0.48 x 1.05 x 0.50 | 544 | lit | ground centre; **faces +Z** (the tray is at +Z) | Family, a child of one or two at home: beech high chair, four splayed legs (feet at (+-0.22, +-0.23)), pale-blue padded seat with its top at **y 0.645**, padded back to y 1.05 leaning 8 degrees, a white tray with a rim at **y 0.815** (0.44 x 0.24, z 0.01 to 0.25), a foot rest at y 0.34, a three-point harness with a red buckle. Nobody sits in it |
 | `driving_school_sign` | 0.62 x 1.05 x 0.52 | 428 | lit | ground centre; **a face to +Z and one to -Z** (`DrivingSchool` turns +Z to the street; its middle is 0.55 m from the wall) | Licences, outside a driving school: a sandwich board, two white boards 0.56 x 0.90 in black frames leaning 12 degrees to a hinge bar at y 1.02 to 1.05, feet at z +-0.26, two steel stays. Each face: DRIVING SCHOOL (capitals 0.09 m), a learner plate 0.36 m across (white square, red L), LESSONS on a red band. Read across a street by its L, not by its lettering |
 | `test_checkpoint_beacon` | 0.56 x 2.90 x 0.22 (x -0.11 to +0.45) | 314 | glow | **the middle of its base** on the ground; the flag flies to +X (the code does not turn it) | Licences, the practical test's next checkpoint, 2.4 m to the kerb side of the lane: a rubber base 0.22 m across, a teal post 0.09 m thick tapering to 0.07 at y 2.56 with two white reflective bands (y 0.95 to 1.13, 1.38 to 1.56), a yellow flag 0.44 x 0.28 on a staff from y 2.60 to 2.88, a teal knob to 2.90 |
-| `learner_plate` | 0.18 x 0.18 x 0.004 | 34 | lit | **centre of its back**; the L faces +Z | not asked for by code yet. L plate: white, bold red L, rounded corners; one-sided (stick it on a bumper or a boot lid) |
-| `parking_box_marker` | 2.40 x 0 x 5.50 (flat, at y 0.005) | 16 | lit | ground centre; **the bay's length is Z** | not asked for by code yet (`LicenceProps.MakeBay` draws the test's bay itself, sized to each route). A parking bay in worn white paint: four lines 0.10 m wide round a 2.40 x 5.50 rectangle (2.20 x 5.30 clear inside), a 0.30 m tick inwards from the middle of each side. One-sided, lying 5 mm above the pivot's plane |
-| `parking_box_posts` | 2.52 x 1.20 x 5.59 | 256 | glow | ground centre of the same bay | not asked for by code yet. Four red and white banded poles 0.04 m thick and 1.20 m high on rubber bases 0.22 m across, **their centres at (+-1.15, +-2.70)**; 2.26 x 5.36 m clear between the poles |
 | `ring_box` | 0.05 x 0.06 x 0.05 | 256 | lit | **centre of its base**; the lid stands open at the back (-Z), **the ring shows from +Z** | the tool of `propose_kneel` (and `_down`, `_up`): it comes with the clip (`JobBody.Clip` attaches a clip's tool at its grip), on the **right** palm. Red velvet ring box, open: base 0.05 x 0.05 x 0.018, lid 0.042 m high standing at the back, a gold ring with a stone upright in a white cushion. The lid is a little shorter than the base: it would not close |
-| `bouquet` | 0.28 x 0.40 x 0.28 | 756 | lit | **the middle of the wrapped stems, 0.10 m above their cut ends**; the stems are Y; the bow is at +Z | not asked for by code yet (the wish-list wants it in the left hand). Round bridal posy: thirteen white and pink roses in a dome (y 0.15 to 0.30) over a collar of leaves. **The fist closes round the wrap: a round bar 0.035 m thick from y -0.06 to +0.06**; a pink bow with tails on the +Z side at y 0.08. No clip holds it: parent it to a hand so the palm is at the pivot and the stems run along the fist |
-| `birthday_cake` | 0.26 x 0.16 x 0.26 | 432 | lit | **centre of the base**; HAPPY BIRTHDAY on top **reads from +Z** | not asked for by code yet. Iced cake 0.20 m across with its top at y 0.088 on a silver board 0.26 m across, pink piping, sprinkles, five candles with flames to y 0.16. Lit, not glow (the flames are 2 cm) |
 | `baby_bundle` | 0.22 x 0.18 x 0.50 | 440 | lit | **the middle of its underside**; lies along Z, **head at +Z**, face up (+Y) | not asked for by code yet. A swaddled baby: white blanket with a pink edge across the chest, a face (nose, shut eyes), a pink hat. Held by `hold_baby` (attach at the clip's grip): **the left palm is under (0, 0, -0.10)**, fingers towards the feet, thumb to the bundle's +X; the head rests in the crook of the left arm |
 <!-- end: family -->
 
@@ -484,16 +544,13 @@ A two-wheeler's pivot is the vehicle's origin, **on the ground under its middle,
 | `motorbike_standard` | 0.74 x 1.26 x 2.07 | 3 724 | lit | as `bicycle_city` | `BikeBody.cs` (StandardMotorbike). Naked roadster, navy tank, finned twin, exhaust and silencer on the right, twin shocks, mirrors (1.26 up; the bars are at 1.09), plate. **Axles** (0, 0.33, -0.651) and (0, 0.33, 0.723) (the game's scooter's), wheels 0.66 across, tyres 0.115 and 0.15 wide. **Seat top** (0, 0.83, -0.20), flat from z -0.325 to -0.115. **Pegs** round, along X, 0.032 thick, 0.08 long, centred (+-0.24, 0.34, -0.10). **Grips** along X, 0.034 thick, 0.12 long, centred (+-0.31, 1.075, 0.30). **Steering axis** from (0, 0.98, 0.40) down to (0, 0.80, 0.47); the fork legs run parallel to it through the front axle |
 | `motorbike_sport` | 0.76 x 1.14 x 2.08 | 3 400 | lit | as `bicycle_city` | `BikeBody.cs` (SportMotorbike). Sports bike, red with a white belly pan, full fairing with smoked screen and twin lamps (fixed to the frame), tail cowl, upside-down forks, twin front discs; **clip-ons**: a bar clamped to each fork leg under the top yoke, running back and out to its grip. Axles as the standard. **Seat top** (0, 0.84, -0.22), flat from z -0.32 to -0.16. **Pegs** along X, 0.032 thick, centred (+-0.24, 0.38, -0.16). **Grips** along X, 0.034 thick, centred (+-0.27, 0.915, 0.42) (`BikeDef.Grip`), with their levers and reservoirs; the inner ends of the levers are just inside the fairing's rear lip, as on the real thing. **Steering axis** from (0, 0.96, 0.41) down to (0, 0.78, 0.48) |
 | `helmet` | 0.28 x 0.31 x 0.32 | 506 | lit | **the Head bone** (the base of the skull); visor to +Z | `BikeBody.Helmet` (`BikeMount` puts it at the Head bone's position with the PLAYER's rotation, each frame). Full-face helmet, white, red stripe, smoked visor. From 0.080 below the pivot (chin) to 0.226 above. The head's middle is 0.113 above the pivot; the opening is 0.096 x 0.117 half sizes (a 0.076 x 0.097 head and 0.02 all round) and it is hollow to 0.208 above the pivot. Hair is not hidden: use the game's `Hat` blend shape |
-| `bicycle_helmet` | 0.21 x 0.22 x 0.32 | 396 | lit | as `helmet` | **not asked for by code.** Vented cycling helmet on top of the head, teal with ten dark vents, a short peak, straps to buckles under the ears at (+-0.081, 0.018, 0.004). From 0.089 to 0.231 above the pivot; rim inside 0.084 x 0.105 half sizes |
 | `wheel_5spoke` | 0.22 x 0.68 x 0.68 | 1 022 | lit | the middle of the wheel; **the axle along X, the outer face looking along -X** | `GarageShop.WheelIds`, `GarageCar.Wheels`: put in place of the car's own wheel (which is hidden), scaled (width / 0.22, radius / 0.34, radius / 0.34), and turned 180 degrees about Y on the car's right side. **A whole wheel, tyre included**: radius 0.34, 0.22 wide, rim 0.25 in radius with its lip 0.007 inside the outer sidewall, the back closed. Five thick silver spokes; brake disc and red caliper seen between them; chrome cap, five nuts |
 | `wheel_mesh` | 0.22 x 0.68 x 0.68 | 1 128 | lit | as `wheel_5spoke` | the same wheel with a cross-laced gold mesh centre (ten pairs of spokes) in a polished lip |
 | `wheel_steel` | 0.22 x 0.68 x 0.68 | 1 016 | lit | as `wheel_5spoke` | the same wheel with a pressed steel centre painted white, eight ventilation holes (painted dark, not cut through), chrome hub cap, five nuts |
 | `car_spoiler` | 1.40 x 0.20 x 0.26 | 308 | lit | on the boot deck under the middle of its two feet; leading edge to +Z | `GarageCar.Fit`: at (0, DeckPostHeight, Rear + 0.26), X scaled by the deck's half width / 0.70. Raised wing, gloss black: aerofoil 0.12 to 0.17 up between two end plates, **top 0.18 above the pivot**, on two uprights at x +-0.42 whose feet are 0.056 x 0.19 and **reach 0.02 below the pivot** (into the deck, so that no gap shows on a deck sloping up to 25 degrees) |
-| `car_spoiler_lip` | 1.40 x 0.06 x 0.18 | 94 | lit | the centre of its underside; front edge to +Z | **not asked for by code** (it has one spoiler, the wing). Boot-lid lip, gloss black: nothing at the front edge rising to 0.06 at the back, ends rounded off |
 | `car_roof_bar` | 1.20 x 0.13 x 0.06 | 212 | lit | on the roof under the middle of the bar, at the height its feet stand on; the bar along X | `GarageCar.Fit`: ONE bar, fitted twice, at (0, RoofFootHeight, z), X scaled by (the roof's half width + 0.04) / 0.60. Aluminium aero bar 0.080 to 0.110 up (**top 0.11 above the pivot**; it clears a roof crowned 0.06 over its feet) with a rubber strip and end caps, on two black clamp feet at x +-0.52 that **reach 0.02 below the pivot** |
 | `car_bull_bar` | 1.00 x 0.60 x 0.14 | 648 | lit | the bottom centre of the hoop, 0.02 behind the front of its tubes; faces +Z | `GarageCar.Fit`: at (0, NoseLow + 0.05, Front + 0.07), X scaled by the nose's half width / 0.50, Y by the nose's height / 0.60 (0.72 to 1.07 on the cars it fits). Chrome tubular bull bar: outer hoop with its lower corners cut in, uprights at x +-0.275, rails 0.14 and 0.37 up, a dark slotted skid plate; two mounts at the uprights **reach 0.12 behind the pivot** at 0.14 up (into the nose). No round lamps: the Y scale would squash them |
 | `bike_dock` | 2.60 x 1.25 x 0.18 | 938 | glow | ground centre, **0.80 behind the line of the hoops**; the bicycles stand on the pivot's line facing +Z | `BikePlaces.Dress` (`Shapes.Prop("bike_dock", root)`, then two city bicycles at x -0.8 and 0). Bike-share dock for three: a rail on the ground from x -1.14 to +1.46 at z 0.75 to 0.90, three wheel hoops 0.72 high at x -0.80, 0, +0.80 on the line z 0.80 (0.087 clear between their legs, a lock with a green light on each), a green pay post 1.25 high at (1.38, 0, 0.80) whose screen and numbered bicycle panel face -Z. A city bicycle at a hoop's x on z 0 has its front tyre between the legs, over the rail and under the hoop's top; its basket and lamp are above and behind the hoop |
-| `bike_dock_kiosk` | 0.50 x 1.70 x 0.30 | 288 | glow | ground centre; faces +Z | **not asked for by code** (the dock has its own pay post). Payment terminal: screen 1.22 to 1.42 up, card reader beside it, a map of the docks 0.58 to 1.03 up, "BIKES" across the top in 0.12 m letters on both faces |
 <!-- end: garage -->
 
 <!-- module: site -->
@@ -551,10 +608,6 @@ Not asked for by code (made for an earlier wish-list; kept because they are done
 
 | id | size (X x Y x Z, Unity) | triangles | material | pivot and facing | use / grips / which feature |
 |---|---|---|---|---|---|
-| `tower_crane` | 6.0 x 47.75 x 40.06 | 1 468 | lit | ground centre of its pad; jib along +Z | Static tower crane: lattice mast to the slewing ring 40 m up, cab at +X, 30 m jib, 10 m counter-jib with its weights, trolley 18 m out, hook block 26 m up. the Civic page (docs/features/civic.md) says no site can use one (no empty lot) |
-| `campaign_lawn_sign` | 0.60 x 1.07 x 0.026 | 312 | lit | ground centre; both faces alike | `campaign_poster_1`'s print on both faces of a board from 0.22 to 1.07 up, on a wire stake |
-| `gavel` | 0.10 x 0.07 x 0.28 | 320 | lit | ground centre; lying on its side, head across X at the +Z end | Judge's gavel; the handle is 0.022 thick. Justice wants only its sound |
-| `gavel_block` | 0.12 x 0.03 x 0.12 | 130 | lit | ground centre; round | Sound block |
 
 Atlas: 28 regions (5 swatches: `site_party_0` .. `_3`, `site_door`; 23 decals), 452 096 pixels with their gutters. One word is one strip that several props share (`site_vote` is on ten props), the stars are geometry. Module total 12 633 triangles.
 <!-- end: site -->

@@ -10,16 +10,20 @@ using UnityEngine.Rendering;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The modelled street props (PropAssets/README.md), from one asset bundle beside the DLL: static meshes, one atlas
-    /// and a catalogue, read once a session in the background. Each prop is drawn with one of two instanced materials
-    /// made here from the game's lit shader: "lit", and "glow" for what should still read at night. Callers ask
-    /// <see cref="TryGet"/> and fall back to a plain shape. Props remade since the bundle was built may ship in
-    /// Bundles/props_newer (newer_props.py), used all or none, and only beside the bundle whose SHA-256 their catalogue
-    /// names: their UVs point into that atlas. Nothing per frame, nothing made per prop or per scene.
+    /// The modelled props (PropAssets/README.md), from the asset bundles beside the DLL (PropAssets/sets.json): each
+    /// holds static meshes, its own atlas and a catalogue, and all are read once a session in the background, behind the
+    /// loading screen. A prop is drawn with one of two instanced materials made here from the game's lit shader on its
+    /// own bundle's atlas: "lit", and "glow" for what should still read at night. Callers ask <see cref="TryGet"/> by id,
+    /// whichever bundle holds it, and fall back to a plain shape. The first bundle must be there; a later one missing
+    /// (an older install) leaves its props out with one warning. Props remade since the first bundle was built may ship
+    /// in Bundles/props_newer (newer_props.py), used all or none, and only beside the bundle whose SHA-256 their
+    /// catalogue names: their UVs point into its atlas. Nothing per frame, nothing made per prop or per scene.
     /// </summary>
     public static class PropLibrary
     {
-        private const string BundlePath = "Bundles/reallife_props";
+        // In the order of PropAssets/sets.json, which StandardCheck holds this list to (RLO-PERF-016). Where two hold the
+        // same id, the earlier one's is used; the build allows no such pair.
+        private static readonly string[] BundlePaths = { "Bundles/reallife_props", "Bundles/reallife_props_2" };
         private const string NewerPath = "Bundles/props_newer";
         private const string CatalogueName = "catalogue";
         private const string BaseTexture = "props_base";
@@ -76,6 +80,21 @@ namespace RealLifeOverhaul
             public Mesh Mesh;
             public bool Glows;
             public Vector3 Size;
+            public Bundle From;   // whose atlas it is drawn with
+        }
+
+        // One bundle: its atlas and the two materials made on it, and a later bundle's props until the first is in.
+        private sealed class Bundle
+        {
+            public int Index;
+            public string Name;
+            public Texture2D Base;
+            public Texture2D Mask;
+            public Material Lit;
+            public Material Glow;
+            public bool Settled;               // read, failed or not installed: nothing more will come from it
+            public ItemFile[] Pending;
+            public Dictionary<string, Mesh> Meshes;
         }
 
         private enum State { NotStarted, Loading, Ready, Failed }
@@ -84,20 +103,17 @@ namespace RealLifeOverhaul
 
         private static readonly Dictionary<string, Prop> Props = new Dictionary<string, Prop>(48);
         private static readonly HashSet<string> MissingLogged = new HashSet<string>();
-        private static readonly Dictionary<int, Material> Tints = new Dictionary<int, Material>(8);   // by 0xBBGGRR: see Tinted
-        private static readonly Dictionary<string, Texture2D> Pictures = new Dictionary<string, Texture2D>(4);   // the bundle's other textures (road paint: see Texture)
+        private static readonly Dictionary<int, Material> Tints = new Dictionary<int, Material>(8);   // by 0xIIBBGGRR, II the bundle: see Tinted
+        private static readonly Dictionary<string, Texture2D> Pictures = new Dictionary<string, Texture2D>(4);   // the bundles' other textures (road paint: see Texture)
         private static State _state = State.NotStarted;
-        private static Texture2D _base;
-        private static Texture2D _mask;
-        private static Material _lit;
-        private static Material _glow;
+        private static Bundle[] _bundles = new Bundle[0];
         private static bool _shaderMissing;
         private static Task<Newer> _newer;
 
-        /// <summary>True once the bundle has loaded; false while loading or if it failed.</summary>
+        /// <summary>True once the bundles have loaded (a later one missing or unreadable counts as done); false while loading or if the first failed.</summary>
         public static bool Ready => _state == State.Ready;
 
-        /// <summary>True once the load has ended either way: what is built from the bundle now is what it will be.</summary>
+        /// <summary>True once the load has ended either way: what is built from the bundles now is what it will be.</summary>
         public static bool Settled => _state == State.Ready || _state == State.Failed;
 
         public static void Load(ModContext context)
@@ -108,7 +124,12 @@ namespace RealLifeOverhaul
             }
             try
             {
-                string path = Path.Combine(context.ModRootPath, BundlePath);
+                _bundles = new Bundle[BundlePaths.Length];
+                for (int i = 0; i < BundlePaths.Length; i++)
+                {
+                    _bundles[i] = new Bundle { Index = i, Name = Path.GetFileName(BundlePaths[i]) };
+                }
+                string path = Path.Combine(context.ModRootPath, BundlePaths[0]);
                 if (!File.Exists(path))
                 {
                     Fail("the asset bundle is not installed (" + path + ")");
@@ -120,8 +141,18 @@ namespace RealLifeOverhaul
                 {
                     _newer = Task.Run(() => ReadNewer(newer, path));
                 }
-                AssetBundleCreateRequest opening = AssetBundle.LoadFromFileAsync(path);
-                opening.completed += Guard.Way<AsyncOperation>(_ => Opened(opening));
+                for (int i = 0; i < BundlePaths.Length; i++)
+                {
+                    string file = Path.Combine(context.ModRootPath, BundlePaths[i]);
+                    if (i > 0 && !File.Exists(file))
+                    {
+                        Later(i, "is not installed (an older copy of the mod?)");
+                        continue;
+                    }
+                    int index = i;
+                    AssetBundleCreateRequest opening = AssetBundle.LoadFromFileAsync(file);
+                    opening.completed += Guard.Way<AsyncOperation>(_ => Opened(opening, index));
+                }
             }
             catch (Exception e)
             {
@@ -129,13 +160,13 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>One of the bundle's other textures by name (road paint: "decal_dash"); null while loading or if none.</summary>
+        /// <summary>One of the bundles' other textures by name (road paint: "decal_dash"); null while loading or if none.</summary>
         public static Texture2D Texture(string name)
         {
             return _state == State.Ready && name != null && Pictures.TryGetValue(name, out Texture2D picture) ? picture : null;
         }
 
-        /// <summary>The shared mesh and material for a prop id; false if not ready or no such prop (logged once).</summary>
+        /// <summary>The shared mesh and material for a prop id, from whichever bundle holds it; false if not ready or no such prop (logged once).</summary>
         public static bool TryGet(string id, out Mesh mesh, out Material material)
         {
             mesh = null;
@@ -148,11 +179,11 @@ namespace RealLifeOverhaul
             {
                 if (MissingLogged.Add(id))
                 {
-                    Logger?.Warn("Props: '" + id + "' is not in the asset bundle; its plain shape is used.");
+                    Logger?.Warn("Props: '" + id + "' is not in the asset bundles; its plain shape is used.");
                 }
                 return false;
             }
-            material = Material(prop.Glows);
+            material = Material(prop.Glows, prop.From);
             if (material == null)
             {
                 return false;
@@ -161,22 +192,26 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>Whether the bundle is loaded and has this prop; unlike <see cref="TryGet"/>, never logs.</summary>
+        /// <summary>Whether the bundles are loaded and one has this prop; unlike <see cref="TryGet"/>, never logs.</summary>
         public static bool Has(string id)
         {
             return _state == State.Ready && id != null && Props.ContainsKey(id);
         }
 
-        /// <summary>The lit material tinted, one shared per colour until <see cref="Dispose"/>; null if it cannot be made.</summary>
-        public static Material Tinted(Color tint)
+        /// <summary>The lit material of a prop's own atlas, tinted: one shared per atlas and colour until <see cref="Dispose"/>; null if it cannot be made.</summary>
+        public static Material Tinted(string id, Color tint)
         {
-            Material lit = _state == State.Ready ? Material(false) : null;
+            if (_state != State.Ready || id == null || !Props.TryGetValue(id, out Prop prop))
+            {
+                return null;
+            }
+            Material lit = Material(false, prop.From);
             if (lit == null)
             {
                 return null;
             }
             Color32 packed = tint;
-            int key = packed.r | packed.g << 8 | packed.b << 16;
+            int key = packed.r | packed.g << 8 | packed.b << 16 | prop.From.Index << 24;
             if (!Tints.TryGetValue(key, out Material made) || made == null)
             {
                 made = new Material(lit) { name = "RealLifeOverhaul Props (tinted)" };
@@ -193,16 +228,21 @@ namespace RealLifeOverhaul
             return _state == State.Ready && id != null && Props.TryGetValue(id, out Prop prop) ? prop.Size : Vector3.zero;
         }
 
-        /// <summary>Destroys the materials when the city ends; the bundle stays loaded for the session.</summary>
+        /// <summary>Destroys the materials when the city ends; the bundles stay loaded for the session.</summary>
         public static void Dispose()
         {
-            if (_lit != null)
+            foreach (Bundle bundle in _bundles)
             {
-                UnityEngine.Object.Destroy(_lit);
-            }
-            if (_glow != null)
-            {
-                UnityEngine.Object.Destroy(_glow);
+                if (bundle.Lit != null)
+                {
+                    UnityEngine.Object.Destroy(bundle.Lit);
+                }
+                if (bundle.Glow != null)
+                {
+                    UnityEngine.Object.Destroy(bundle.Glow);
+                }
+                bundle.Lit = null;
+                bundle.Glow = null;
             }
             foreach (Material tinted in Tints.Values)
             {
@@ -212,14 +252,12 @@ namespace RealLifeOverhaul
                 }
             }
             Tints.Clear();
-            _lit = null;
-            _glow = null;
         }
 
-        // One material per kind, made when first asked for.
-        private static Material Material(bool glows)
+        // One material per kind and atlas, made when first asked for.
+        private static Material Material(bool glows, Bundle from)
         {
-            Material made = glows ? _glow : _lit;
+            Material made = glows ? from.Glow : from.Lit;
             if (made != null || _shaderMissing)
             {
                 return made;
@@ -231,14 +269,15 @@ namespace RealLifeOverhaul
                 Logger?.Warn("Props: the game's lit shader was not found; plain shapes are used.");
                 return null;
             }
-            made = new Material(shader) { name = glows ? "RealLifeOverhaul Props (glow)" : "RealLifeOverhaul Props", renderQueue = Shapes.TakesDecalsQueue };   // Tinted's copies keep it
+            string name = (glows ? "RealLifeOverhaul Props (glow)" : "RealLifeOverhaul Props") + (from.Index > 0 ? " " + from.Name : string.Empty);
+            made = new Material(shader) { name = name, renderQueue = Shapes.TakesDecalsQueue };   // Tinted's copies keep it
             made.SetColor(BaseColorId, Color.white);
-            made.SetTexture(BaseColorMapId, _base);
+            made.SetTexture(BaseColorMapId, from.Base);
             made.SetFloat(MetallicId, 0f);
             made.SetFloat(SmoothnessId, PlainSmoothness);
-            if (_mask != null)
+            if (from.Mask != null)
             {
-                made.SetTexture(MaskMapId, _mask);
+                made.SetTexture(MaskMapId, from.Mask);
                 made.EnableKeyword("_MASKMAP");
             }
             if (glows)
@@ -250,38 +289,39 @@ namespace RealLifeOverhaul
             made.enableInstancing = true;
             if (glows)
             {
-                _glow = made;
+                from.Glow = made;
             }
             else
             {
-                _lit = made;
+                from.Lit = made;
             }
             return made;
         }
 
-        private static void Opened(AssetBundleCreateRequest opening)
+        private static void Opened(AssetBundleCreateRequest opening, int index)
         {
             try
             {
                 AssetBundle bundle = opening.assetBundle;
                 if (bundle == null)
                 {
-                    Fail("the asset bundle could not be read (built for another Unity version?)");
+                    Unread(index, "could not be read (built for another Unity version?)", null);
                     return;
                 }
                 AssetBundleRequest reading = bundle.LoadAllAssetsAsync();
-                reading.completed += Guard.Way<AsyncOperation>(_ => Loaded(reading));
+                reading.completed += Guard.Way<AsyncOperation>(_ => Loaded(reading, index));
             }
             catch (Exception e)
             {
-                Fail("the asset bundle could not be read", e);
+                Unread(index, "could not be read", e);
             }
         }
 
-        private static void Loaded(AssetBundleRequest reading)
+        private static void Loaded(AssetBundleRequest reading, int index)
         {
             try
             {
+                Bundle into = _bundles[index];
                 var meshes = new Dictionary<string, Mesh>(48);
                 TextAsset catalogueText = null;
                 foreach (UnityEngine.Object asset in reading.allAssets)
@@ -294,11 +334,11 @@ namespace RealLifeOverhaul
                     {
                         if (texture.name == BaseTexture)
                         {
-                            _base = texture;
+                            into.Base = texture;
                         }
                         else if (texture.name == MaskTexture)
                         {
-                            _mask = texture;
+                            into.Mask = texture;
                         }
                         else
                         {
@@ -310,48 +350,112 @@ namespace RealLifeOverhaul
                         catalogueText = text;
                     }
                 }
-                if (catalogueText == null || _base == null)
-                {
-                    Fail("the asset bundle has no " + (catalogueText == null ? "catalogue" : "texture atlas"));
-                    return;
-                }
                 // Not JsonUtility: it leaves the arrays of a class from an assembly loaded at run time empty.
-                CatalogueFile catalogue = Newtonsoft.Json.JsonConvert.DeserializeObject<CatalogueFile>(catalogueText.text);
+                CatalogueFile catalogue = catalogueText != null ? Newtonsoft.Json.JsonConvert.DeserializeObject<CatalogueFile>(catalogueText.text) : null;
                 if (catalogue == null || catalogue.version != SupportedVersion || catalogue.items == null)
                 {
-                    Fail("the prop catalogue is version " + (catalogue != null ? catalogue.version : 0) + " with "
-                         + (catalogue != null && catalogue.items != null ? catalogue.items.Length : 0) + " items; this build reads version " + SupportedVersion);
+                    Unread(index, "has a prop catalogue of version " + (catalogue != null ? catalogue.version : 0) + " with "
+                                  + (catalogue != null && catalogue.items != null ? catalogue.items.Length : 0) + " items; this build reads version " + SupportedVersion, null);
                     return;
                 }
-                int triangles = 0;
-                foreach (ItemFile file in catalogue.items)
+                if (into.Base == null && catalogue.items.Length > 0)
                 {
-                    if (string.IsNullOrEmpty(file.id) || string.IsNullOrEmpty(file.mesh) || !meshes.TryGetValue(file.mesh, out Mesh mesh))
-                    {
-                        Logger?.Warn("Props: '" + file.id + "' is left out, its mesh is not in the bundle.");
-                        continue;
-                    }
-                    Props[file.id] = MakeProp(file, mesh);
-                    triangles += (int)mesh.GetIndexCount(0) / 3;
+                    Unread(index, "has no texture atlas", null);
+                    return;
                 }
-                _state = State.Ready;
-                Logger?.Info("Props: " + Props.Count + " loaded from the asset bundle (" + triangles + " triangles in all, one " + _base.width + " x " + _base.height
-                             + " atlas" + (_mask != null ? " with a mask map" : "") + (Pictures.Count > 0 ? ", and " + Pictures.Count + " picture(s) of road paint" : "") + ").");
-                UseNewer();
+                into.Pending = catalogue.items;
+                into.Meshes = meshes;
+                into.Settled = true;
+                TryReady();
             }
             catch (Exception e)
             {
-                Fail("the prop catalogue could not be read", e);
+                Unread(index, "has a prop catalogue that could not be read", e);
             }
         }
 
-        private static Prop MakeProp(ItemFile file, Mesh mesh)
+        // A bundle that could not be used: the first switches props off, a later one only leaves its own out.
+        private static void Unread(int index, string problem, Exception error)
+        {
+            if (index == 0)
+            {
+                Fail("the asset bundle " + problem, error);
+                return;
+            }
+            if (error != null)
+            {
+                Logger?.Error(error);
+            }
+            Later(index, problem);
+        }
+
+        private static void Later(int index, string problem)
+        {
+            Logger?.Warn("Props: " + BundlePaths[index] + " " + problem + "; the props in it are left out and their plain shapes are used.");
+            _bundles[index].Settled = true;
+            TryReady();
+        }
+
+        // Once every bundle has settled, their props in the order of the bundles, then the newer props: a later bundle
+        // whose read ends first still never stands in front of an earlier one.
+        private static void TryReady()
+        {
+            if (_state != State.Loading)
+            {
+                return;
+            }
+            foreach (Bundle bundle in _bundles)
+            {
+                if (!bundle.Settled)
+                {
+                    return;
+                }
+            }
+            var said = new System.Text.StringBuilder(160);
+            var counted = new HashSet<Mesh>();      // an alias shares its mesh: counted once
+            int triangles = 0;
+            foreach (Bundle bundle in _bundles)
+            {
+                if (bundle.Pending == null)
+                {
+                    continue;
+                }
+                int added = 0;
+                foreach (ItemFile file in bundle.Pending)
+                {
+                    if (string.IsNullOrEmpty(file.id) || string.IsNullOrEmpty(file.mesh) || !bundle.Meshes.TryGetValue(file.mesh, out Mesh mesh))
+                    {
+                        Logger?.Warn("Props: '" + file.id + "' is left out, its mesh is not in " + bundle.Name + ".");
+                        continue;
+                    }
+                    if (Props.TryGetValue(file.id, out Prop held) && held.From != bundle)
+                    {
+                        Logger?.Warn("Props: '" + file.id + "' of " + bundle.Name + " is left out, " + held.From.Name + " has it.");
+                        continue;
+                    }
+                    Props[file.id] = MakeProp(file, mesh, bundle);
+                    triangles += counted.Add(mesh) ? (int)mesh.GetIndexCount(0) / 3 : 0;
+                    added++;
+                }
+                said.Append(said.Length > 0 ? ", " : string.Empty).Append(bundle.Name).Append(' ').Append(added)
+                    .Append(bundle.Base != null ? " on a " + bundle.Base.width + " x " + bundle.Base.height + " atlas" + (bundle.Mask != null ? " with a mask map" : string.Empty) : " (no atlas)");
+                bundle.Pending = null;
+                bundle.Meshes = null;
+            }
+            _state = State.Ready;
+            Logger?.Info("Props: " + Props.Count + " loaded from the asset bundles (" + said + "; " + triangles + " triangles in all"
+                         + (Pictures.Count > 0 ? ", and " + Pictures.Count + " picture(s) of road paint" : "") + ").");
+            UseNewer();
+        }
+
+        private static Prop MakeProp(ItemFile file, Mesh mesh, Bundle from)
         {
             return new Prop
             {
                 Mesh = mesh,
                 Glows = file.material == GlowKind,
-                Size = file.size != null && file.size.Length == 3 ? new Vector3(file.size[0], file.size[1], file.size[2]) : mesh.bounds.size
+                Size = file.size != null && file.size.Length == 3 ? new Vector3(file.size[0], file.size[1], file.size[2]) : mesh.bounds.size,
+                From = from
             };
         }
 
@@ -506,7 +610,7 @@ namespace RealLifeOverhaul
             {
                 Mesh mesh = made[file.mesh];
                 replaced += Props.ContainsKey(file.id) ? 1 : 0;
-                Props[file.id] = MakeProp(file, mesh);
+                Props[file.id] = MakeProp(file, mesh, _bundles[0]);   // the newer props draw with the first bundle's atlas
                 MissingLogged.Remove(file.id);
                 names.Add(file.id);
             }

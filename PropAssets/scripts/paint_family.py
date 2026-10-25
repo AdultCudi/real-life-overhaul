@@ -26,12 +26,6 @@ def register(a):
     L_RED = (0.84, 0.06, 0.05)
     BOARD = (0.96, 0.96, 0.94)
 
-    def l_plate():
-        layer = a.Layer(80, 80, BOARD, 0.0, 0.5)
-        layer.rect(24, 12, 41, 67, L_RED)                                                 # the upright on the reader's left, the foot to the right
-        layer.rect(24, 51, 60, 67, L_RED)
-        return layer.finish(grain=0.02, blotch=0.03)
-
     def school_board():
         # One face of the sandwich board, 160 x 256 px for 0.56 x 0.896 m (3.5 mm a pixel).
         layer = a.Layer(160, 256, BOARD, 0.0, 0.5)
@@ -46,25 +40,6 @@ def register(a):
         layer.rect(12, 204, 148, 242, L_RED, radius=5)
         layer.text("LESSONS", (20, 209, 140, 237), BOARD, weight=0.07, spacing=0.03)
         return layer.finish(grime=0.22, grain=0.03, blotch=0.05, scratches=10, edge=0.10)
-
-    def line_paint():
-        rng = np.random.default_rng(829)
-        layer = a.Layer(32, 256, (0.88, 0.88, 0.84), 0.0, 0.25)
-        road = (0.19, 0.19, 0.20)
-        for _ in range(60):                                                               # chipped off the edges, worn through in the tracks
-            edge = rng.uniform() < 0.6
-            x = (0 if rng.uniform() < 0.5 else 32) if edge else rng.uniform(4, 28)
-            layer.disc(x, rng.uniform(0, 256), rng.uniform(1.0, 3.2 if edge else 2.0), road)
-        for y in (70, 186):
-            for _ in range(26):
-                layer.disc(rng.uniform(0, 32), y + rng.normal(0, 9), rng.uniform(0.8, 2.4), tuple(c * rng.uniform(1.0, 2.2) for c in road))
-        return layer.finish(grain=0.06, blotch=0.10)
-
-    def pole_bands():
-        layer = a.Layer(32, 160, (0.95, 0.95, 0.93), 0.0, 0.6)
-        for k in (0, 2, 4):
-            layer.rect(0, k * 32, 32, k * 32 + 32, (0.86, 0.07, 0.05), smooth=0.6)
-        return layer.finish(grime=0.35, grain=0.03, blotch=0.04, scratches=4)
 
     # ------------------------------------------------------------------------------------------ the wedding, the nursery
 
@@ -108,50 +83,10 @@ def register(a):
             layer.poly(shape, tone)
         return layer.finish(grain=0.03, blotch=0.05)
 
-    PIPING = (0.90, 0.36, 0.52)
-    SPRINKLES = ((0.90, 0.20, 0.20), (0.20, 0.45, 0.85), (0.98, 0.80, 0.15), (0.25, 0.70, 0.35), (0.95, 0.50, 0.70), (0.55, 0.30, 0.75))
-
-    def sprinkle(layer, rng, x, y):
-        turn = rng.uniform(0, 3.1416)
-        dx, dy = math.cos(turn) * 2.6, math.sin(turn) * 2.6
-        layer.line([(x - dx, y - dy), (x + dx, y + dy)], SPRINKLES[int(rng.integers(len(SPRINKLES)))], width=1.8, smooth=0.6)
-
-    def cake_top():
-        rng = np.random.default_rng(839)
-        icing = (0.97, 0.95, 0.90)
-        layer = a.Layer(96, 96, icing, 0.0, 0.4)
-        for _ in range(70):
-            turn, radius = rng.uniform(0, 6.283), rng.uniform(33, 46)
-            sprinkle(layer, rng, 48 + math.cos(turn) * radius, 48 + math.sin(turn) * radius)
-        for x, y in ((14, 14), (82, 14), (14, 82), (82, 82)):
-            for _ in range(8):
-                sprinkle(layer, rng, x + rng.normal(0, 6), y + rng.normal(0, 6))
-        layer.text("HAPPY", (20, 26, 76, 46), PIPING, weight=0.07)
-        layer.text("BIRTHDAY", (15, 50, 81, 68), PIPING, weight=0.07)
-        return layer.finish(grain=0.02, blotch=0.03)
-
-    def cake_side():
-        rng = np.random.default_rng(841)
-        icing = (0.97, 0.95, 0.90)
-        layer = a.Layer(128, 48, icing, 0.0, 0.4)
-        for k in range(9):                                                                # icing run down from the top, in scallops
-            x = k * 16
-            layer.disc(x, 0, 9.5, PIPING)
-            layer.rect(x - 3, 0, x + 3, 13 + (k * 5) % 7, PIPING, radius=3)
-        layer.rect(0, 0, 128, 4, PIPING)
-        for _ in range(46):
-            sprinkle(layer, rng, rng.uniform(0, 128), rng.uniform(22, 46))
-        return layer.finish(grain=0.02, blotch=0.03)
-
     decals = {
-        "family_l_plate": l_plate,
         "family_school_board": school_board,
-        "family_line_paint": line_paint,
-        "family_pole_bands": pole_bands,
         "family_rose_white": rose((0.95, 0.93, 0.86), (0.74, 0.69, 0.60)),
         "family_rose_pink": rose((0.93, 0.58, 0.67), (0.68, 0.30, 0.42)),
         "family_runner": runner,
-        "family_cake_top": cake_top,
-        "family_cake_side": cake_side,
     }
     return swatches, decals
