@@ -22482,7 +22482,7 @@
   "reallife_street_age_again_3": "{age}, same as when you asked before.",
   "reallife_street_test_age": "Street talk: ask the nearest passer-by their age",
   "reallife_changes_next_title": "Next version",
-  "reallife_changes_next": "Nothing yet.",
+  "reallife_changes_next": "Fixed: after withdrawing an application and applying to the same post again, the Career app opened the withdrawn one and the interview could not be reached. Each application now has its own row, and the interview, offer and withdrawal go to the live one.",
   "reallife_changes_053_0_title": "0.53.0",
   "reallife_changes_053_0": "A management ladder at the city's companies: work on the floor of a store of a chain and rise to shift supervisor, store manager, regional manager and executive, each rank with its own tools on the Career app's new Management tab. A company policy over your managers: one set of rules for the company, a region or a store, escalations that bring you only real problems, a dashboard for each place, regional managers over regions you draw, three executives from your professionals, and an owner overview with Deep Mode. Street talk: you can ask people in the street how old they are, as you ask what they do. They answer in their own way, a few find it a little forward, and the age they give is the one their People page shows once you know them. Fixed: fewer stutters and less memory churn. Flare's faces are drawn only while the screen is fully black, winter coats and the street people's new looks are put on behind the black screen at a door, a boss keeps their look between visits, and the first moments after a load are spread over more frames."
 }
