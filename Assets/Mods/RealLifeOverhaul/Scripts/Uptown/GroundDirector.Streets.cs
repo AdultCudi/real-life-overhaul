@@ -46,7 +46,8 @@ namespace RealLifeOverhaul.Uptown
         private string FurnitureWords()
         {
             return _furnished + " pieces of street furniture of " + StreetsGame.Planned + " planned (" + StreetsGame.Occupied + " places where something of the game's stood, "
-                   + StreetsGame.Mouths + " in a big place's mouth, " + StreetsGame.OffStops + " kept off the bus stops" + (StreetsGame.Missing != null ? "; not found: " + StreetsGame.Missing : string.Empty)
+                   + StreetsGame.Mouths + " in a big place's mouth, " + StreetsGame.OffStops + " kept off the bus stops"
+                   + (StreetsGame.Missing != null ? "; not found: " + StreetsGame.Missing : string.Empty)
                    + ") in " + _furnishMs.ToString("F0", Inv) + " ms";
         }
 
