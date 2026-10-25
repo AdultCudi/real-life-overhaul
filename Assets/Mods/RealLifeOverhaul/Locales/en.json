@@ -22505,5 +22505,5 @@
   "reallife_util_test_phone_fail": "Utilities test: the account could not be opened by phone. {why} FAIL.",
   "reallife_util_test_phone_none": "Utilities test: it needs a place you own with nothing owed on its power or water. Not run, FAIL.",
   "reallife_changes_next_title": "Next version",
-  "reallife_changes_next": "Nothing yet. Fixed: when every building that could hold the utilities office is yours, power and water accounts are applied for and reconnected in the Utilities app, by phone, at the same prices, and the notices say so; once a building is free the office opens again and the app says where."
+  "reallife_changes_next": "Fixed: when every building that could hold the utilities office is yours, power and water accounts are applied for and reconnected in the Utilities app, by phone, at the same prices, and the notices say so; once a building is free the office opens again and the app says where."
 }
