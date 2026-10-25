@@ -117,14 +117,16 @@ internal static partial class Program
         HashSet<string> leased = UptownIds(plan, BuildingsRules.Leased(plan, new List<int>()));
         string openLot = plan.Find(l => !built.Contains(l.Id) && BuildingsRules.Clear(l.Id) && l.Class == BuildingsClass.Small).Id;
         string leasedLot = plan.Find(l => leased.Contains(l.Id)).Id;
-        string officeLot = plan.Find(l => built.Contains(l.Id) && !leased.Contains(l.Id) && l.Class == BuildingsClass.Office && SpecialsRules.At(l.Id) == null).Id;
-        string smallLot = plan.Find(l => built.Contains(l.Id) && l.Class == BuildingsClass.Small && SpecialsRules.At(l.Id) == null).Id;
+        // Lots of the structures the made-up places name (a D2 office's, a C2 shop's): a lot of the plan's spaces takes its own size and version alone.
+        string officeLot = plan.Find(l => built.Contains(l.Id) && !leased.Contains(l.Id) && l.Class == BuildingsClass.Office && l.Sizes[0] == "ba:buildingsize_d" && l.Version == 2
+                                          && SpecialsRules.At(l.Id) == null).Id;
+        string smallLot = plan.Find(l => built.Contains(l.Id) && l.Sizes[0] == "ba:buildingsize_c" && l.Version == 2 && SpecialsRules.At(l.Id) == null).Id;
         const string C = "ba:buildingsize_c", Rt = SpecialsRules.Retail, Agency = "ba:businesstype_recruitmentagency";
         string Refuse(params SpecialPlace[] table) => SpecialsRules.TableRefusal(plan, built, leased, table);
         Check(Refuse(new SpecialPlace("uptown_9_99_99", "S", Agency, "A", C, 2, Rt, Rt, SpecialStaff.Desk)) != null, "uptown specials: a lot the plan lacks is refused");
         Check(Refuse(new SpecialPlace(openLot, "S", Agency, "A", C, 2, Rt, Rt, SpecialStaff.Desk)) != null, "uptown specials: open land for the construction game is refused");
         Check(Refuse(new SpecialPlace(leasedLot, "S", Agency, "A", "ba:buildingsize_d", 2, Rt, Rt, SpecialStaff.Desk)) != null, "uptown specials: a leased office is refused");
-        Check(Refuse(new SpecialPlace("uptown_1_14_04", "S", Agency, "A", C, 2, Rt, Rt, SpecialStaff.Desk)) != null, "uptown specials: the lot kept empty for the tree is refused");
+        Check(Refuse(new SpecialPlace("uptown_1_14_0004", "S", Agency, "A", C, 2, Rt, Rt, SpecialStaff.Desk)) != null, "uptown specials: the lot kept empty for the tree is refused");
         Check(Refuse(new SpecialPlace(officeLot, "S", Agency, "A", C, 2, Rt, Rt, SpecialStaff.Desk)) != null, "uptown specials: a structure the lot's class does not take is refused");
         Check(Refuse(new SpecialPlace(smallLot, "S", Agency, "A", C, 2, Rt, Rt, SpecialStaff.Desk), new SpecialPlace(smallLot, "S", Agency, "B", C, 2, Rt, Rt, SpecialStaff.Desk)) != null,
             "uptown specials: two places on one lot are refused");

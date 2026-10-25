@@ -84,17 +84,17 @@ namespace RealLifeOverhaul.Uptown
         /// <summary>The table: the order is the tests' order through them.</summary>
         public static readonly SpecialPlace[] All =
         {
-            new SpecialPlace("uptown_2_05_004", "VantanderBank", BankType, null, D, 2, Office, Office, SpecialStaff.Desk),
-            new SpecialPlace("uptown_2_09_004", "CityWorkforceInc", "ba:businesstype_recruitmentagency", "Summit Talent Partners", C, 2, Retail, Retail, SpecialStaff.Desk),
-            new SpecialPlace("uptown_2_09_008", "McCainseMarketing", "ba:businesstype_marketingagency", "Northline Media", C, 2, Retail, Retail, SpecialStaff.Desk),
-            new SpecialPlace("uptown_2_10_006", "Kingdom Office", "ba:businesstype_interiorinstallationfirm", "Crestwork Interiors", D, 2, Retail, Retail, SpecialStaff.Desk),
-            new SpecialPlace("uptown_3_10_010", "MrScottsOfficeSupplies", "ba:businesstype_officesupplystore", "Paper Trail Office Supply", D, 2, Retail, Retail, SpecialStaff.Desk),
-            new SpecialPlace("uptown_2_12_006", "Square Appliances", "ba:businesstype_appliancestore", "Uptown Appliance Hall", C, 1, Retail, Retail, SpecialStaff.Desk),
-            new SpecialPlace("uptown_2_09_007", "Hamptons Furniture", "ba:businesstype_furniturestore", "Hearth and Oak Furniture", M, 1, Retail, Retail, SpecialStaff.Desk),
-            new SpecialPlace("uptown_3_10_004", "El Gato Food Market", "ba:businesstype_supermarket", "Corner Basket Market", C, 1, Retail, Retail, SpecialStaff.Till, "Corner Basket Manager"),
-            new SpecialPlace("uptown_3_08_010", "IndustryCityIntensiveCareUnit", "ba:businesstype_clinic", "Summit Care Clinic", C, 2, Retail, Retail, SpecialStaff.None),
-            new SpecialPlace("uptown_2_11_005", "Manhattan Luxury Cars", "ba:businesstype_cardealership", "Crest Motors", M, 1, Retail, Retail, SpecialStaff.Showroom),
-            new SpecialPlace("uptown_3_14_001", "BlueStone Imports", ImportType, "Northgate Trading", H, 1, Special, Warehouse, SpecialStaff.Desk, null, ImportedGoods),
+            new SpecialPlace("uptown_2_06_0001", "VantanderBank", BankType, null, D, 2, Office, Office, SpecialStaff.Desk),
+            new SpecialPlace("uptown_2_09_0005", "CityWorkforceInc", "ba:businesstype_recruitmentagency", "Summit Talent Partners", C, 2, Retail, Retail, SpecialStaff.Desk),
+            new SpecialPlace("uptown_2_08_0001", "McCainseMarketing", "ba:businesstype_marketingagency", "Northline Media", C, 2, Retail, Retail, SpecialStaff.Desk),
+            new SpecialPlace("uptown_2_08_0006", "Kingdom Office", "ba:businesstype_interiorinstallationfirm", "Crestwork Interiors", D, 2, Retail, Retail, SpecialStaff.Desk),
+            new SpecialPlace("uptown_3_10_0007", "MrScottsOfficeSupplies", "ba:businesstype_officesupplystore", "Paper Trail Office Supply", D, 2, Retail, Retail, SpecialStaff.Desk),
+            new SpecialPlace("uptown_2_12_0006", "Square Appliances", "ba:businesstype_appliancestore", "Uptown Appliance Hall", C, 1, Retail, Retail, SpecialStaff.Desk),
+            new SpecialPlace("uptown_2_09_0001", "Hamptons Furniture", "ba:businesstype_furniturestore", "Hearth and Oak Furniture", M, 1, Retail, Retail, SpecialStaff.Desk),
+            new SpecialPlace("uptown_3_10_0006", "El Gato Food Market", "ba:businesstype_supermarket", "Corner Basket Market", C, 1, Retail, Retail, SpecialStaff.Till, "Corner Basket Manager"),
+            new SpecialPlace("uptown_3_07_0006", "IndustryCityIntensiveCareUnit", "ba:businesstype_clinic", "Summit Care Clinic", C, 2, Retail, Retail, SpecialStaff.None),
+            new SpecialPlace("uptown_2_13_0005", "Manhattan Luxury Cars", "ba:businesstype_cardealership", "Crest Motors", M, 1, Retail, Retail, SpecialStaff.Showroom),
+            new SpecialPlace("uptown_3_14_0002", "BlueStone Imports", ImportType, "Northgate Trading", H, 1, Special, Warehouse, SpecialStaff.Desk, null, ImportedGoods),
         };
 
         /// <summary>The special place on that lot, or null.</summary>
@@ -110,13 +110,10 @@ namespace RealLifeOverhaul.Uptown
             return null;
         }
 
-        /// <summary>
-        /// The size of the class of lot each structure needs: the plan's lot classes hold the game's sizes A, B, C and F (small),
-        /// D, J and K (offices), M, L and N (big) and H, I, P and Q (warehouses).
-        /// </summary>
+        /// <summary>True when a lot takes a place's structure: the size and version the plan stands on its spaces.</summary>
         public static bool Fits(BuildingsLot lot, SpecialPlace place)
         {
-            return place != null && BuildingsRules.TakesSize(lot, place.Size);
+            return place != null && BuildingsRules.TakesSize(lot, place.Size) && (lot.Version <= 0 || lot.Version == place.Version);
         }
 
         /// <summary>

@@ -47,7 +47,7 @@ namespace RealLifeOverhaul.Construction
                 LotFile l = s.Lots[i];
                 t.Append(i > 0 ? ";" : string.Empty).Append(Esc(l.Id)).Append('|');
                 Join(t, l.Bought, l.Zones, l.ZoneAsk, l.ZoneDay, l.TaxedTo, l.EmptySince);
-                t.Append('|').Append(l.Paid.ToString(Inv));
+                t.Append('|').Append(l.Paid.ToString(Inv)).Append('|').Append(l.Spaces.ToString(Inv));
             }
             t.Append("^c:");
             for (int i = 0; i < s.Crews.Count && i < BuildCatalogue.CrewsMost; i++)
@@ -223,6 +223,7 @@ namespace RealLifeOverhaul.Construction
                                 l.TaxedTo = r.I(0);
                                 l.EmptySince = r.I(0);
                                 l.Paid = Math.Max(0L, r.L(0L));
+                                l.Spaces = BuildCatalogue.Clamp(r.I(1), 1, BuildCatalogue.SiteSpacesMost);   // a line from before the spaces: one
                                 if (l.Id.Length > 0)
                                 {
                                     s.Lots.Add(l);

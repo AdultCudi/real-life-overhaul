@@ -177,7 +177,7 @@ namespace RealLifeOverhaul.Construction
                          + (state.Firm.Founded > 0 ? "founded on day " + state.Firm.Founded : "not founded") + ".");
         }
 
-        // Uptown's lots were planned again (the owner's "Like Manhattan", 24 Oct 2026): land on a lot of the first plan, which
+        // Uptown's lots were planned again (the owner's "Like Manhattan", 24 Oct 2026, and its spaces, 25 Oct): land on a lot of an earlier plan, which
         // is no more, is given back at the price paid, and the developments and open tenders there let go. A project there
         // stays to its end, as a project's site is the city's own.
         private void Retire(BuildState state)
@@ -219,7 +219,7 @@ namespace RealLifeOverhaul.Construction
                 return;
             }
             ConstructionGame.Give(back, "reallife_transaction_bld_land_back", ConstructionText.T("reallife_neighborhood_uptown"));
-            Logger?.Info("Construction: Uptown's lots were planned again: " + lots + " lot(s) of the first plan given back for " + back + ", " + developments
+            Logger?.Info("Construction: Uptown's lots were planned again: " + lots + " lot(s) of an earlier plan given back for " + back + ", " + developments
                          + " development(s) and " + tenders + " open tender(s) there let go.");
         }
 

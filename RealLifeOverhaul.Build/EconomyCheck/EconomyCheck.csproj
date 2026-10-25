@@ -589,6 +589,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Civic\PlotRules.cs" Link="Mod\PlotRules.cs" />
     <!-- Uptown's landmarks (LandmarksChecks.cs): their rules and their line, on the plan of Uptown's lots. -->
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\LayoutRules.cs" Link="Mod\LayoutRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\SpacesRules.cs" Link="Mod\SpacesRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\UptownLots.cs" Link="Mod\UptownLots.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Landmarks\LandmarkRules.cs" Link="Mod\Landmarks\LandmarkRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Landmarks\LandmarkStore.cs" Link="Mod\Landmarks\LandmarkStore.cs" />

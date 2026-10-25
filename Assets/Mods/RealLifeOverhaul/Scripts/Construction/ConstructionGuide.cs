@@ -83,6 +83,7 @@ namespace RealLifeOverhaul.Construction
                 .Fact("bld_hire_retention", () => Share((int)CommissionRules.Retention(1000L)))
                 .Fact("bld_hire_penalty", () => Share(BuildCatalogue.HirePenaltyDayPermille))
                 .Fact("bld_hire_penalty_most", () => Share(BuildCatalogue.HirePenaltyMostPermille))
+                .Check("reallife_bld_test_sites", () => ConstructionDirector.TestSitesNow(), "Construction check (sites of 1, 2 and 3 spaces bought, joined and planned)", RunPlace.Here)
                 .Check("reallife_bld_test_hire_quotes", () => ConstructionDirector.TestHireQuotesNow(), "Construction check (a builder's quotes shown)", RunPlace.Here)
                 .Check("reallife_bld_test_hire", () => ConstructionDirector.TestHireNow(), "Construction check (a client project built by a rival now)", RunPlace.Here)
                 .Check("reallife_bld_test_hire_late", () => ConstructionDirector.TestHireLateNow(), "Construction check (a late builder pays its penalty)", RunPlace.Here)

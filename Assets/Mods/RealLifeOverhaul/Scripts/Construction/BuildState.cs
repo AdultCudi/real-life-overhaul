@@ -32,6 +32,7 @@ namespace RealLifeOverhaul.Construction
         public int ZoneDay;         // the day the council hears it
         public int TaxedTo;         // the last day its land tax was charged for
         public int EmptySince;      // the day it last had no works under way; 0 while works are
+        public int Spaces = 1;      // the spaces bought side by side from this one along its strip: one site, one building
     }
 
     /// <summary>A crew the company employs: a foreman and the people of a gang, their skill, morale, day rate and where they work.</summary>

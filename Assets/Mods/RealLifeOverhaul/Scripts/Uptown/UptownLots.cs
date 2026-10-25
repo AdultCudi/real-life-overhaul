@@ -21,7 +21,7 @@ namespace RealLifeOverhaul.Uptown
     /// </summary>
     public sealed class Lot
     {
-        public readonly string Id;          // "uptown_<row>_<column, two digits>_<n, two digits>": letters, digits and underscores only
+        public readonly string Id;          // "uptown_<row>_<column, two digits>_<n, four digits>": letters, digits and underscores only
         public readonly int Row;            // 1, the first block's row north of 1st Avenue, then 2 and 3
         public readonly int Column;         // the block's column west to east, 1 to 18 (9th Street's block east of it is 6)
         public readonly int Block;          // Row * 100 + Column
@@ -36,8 +36,20 @@ namespace RealLifeOverhaul.Uptown
         public readonly int Width;          // whole metres along the street
         public readonly int Depth;          // whole metres back from it
         public readonly LotClass Class;
+        public readonly int Strip;          // its strip of spaces along one side of a block: (Block * 1000) + the way its street lies (Facing)
+        public readonly int Index;          // its first space along the strip, from the strip's west or south end
+        public readonly int Spaces;         // the spaces it takes (SpacesRules): one for an open run's
+        public readonly string Size;        // the game's size planned on its spaces ("ba:buildingsize_c"), null for an open run's space
+        public readonly int Version;        // and its version
+        public readonly bool Open;          // a space of an open run: the construction game's land, never built from the first day
 
         public Lot(string id, int row, int column, string street, int number, int order, float x, float z, int yaw, int width, int depth, LotClass kind, bool first)
+            : this(id, row, column, street, number, order, x, z, yaw, width, depth, kind, first, 0, 0, 1, null, 0, false)
+        {
+        }
+
+        public Lot(string id, int row, int column, string street, int number, int order, float x, float z, int yaw, int width, int depth, LotClass kind, bool first,
+                   int strip, int index, int spaces, string size, int version, bool open)
         {
             Id = id;
             Row = row;
@@ -54,10 +66,28 @@ namespace RealLifeOverhaul.Uptown
             Width = width;
             Depth = depth;
             Class = kind;
+            Strip = strip;
+            Index = index;
+            Spaces = Math.Max(1, spaces);
+            Size = size;
+            Version = version;
+            Open = open;
+            _sizes = size != null ? new[] { size } : null;
         }
 
-        /// <summary>The game's building sizes the lot's class holds ("ba:buildingsize_a" and so on); a design of one must also fit the lot.</summary>
-        public IReadOnlyList<string> Sizes => UptownLots.SizesOf(Class);
+        private readonly string[] _sizes;
+
+        /// <summary>
+        /// The game's building sizes a building of the plan stands as here: the size planned on its spaces, or for an open
+        /// run's space (and a lot made without one) its class's ("ba:buildingsize_a" and so on).
+        /// </summary>
+        public IReadOnlyList<string> Sizes => _sizes ?? UptownLots.SizesOf(Class);
+
+        /// <summary>True when <paramref name="other"/> is the next lot along the same strip, its spaces straight after this one's.</summary>
+        public bool Before(Lot other)
+        {
+            return other != null && other.Strip == Strip && other.Index == Index + Spaces;
+        }
     }
 
     /// <summary>A rectangle of the district's own ground, in world metres, corners in order (as the district save takes it).</summary>
@@ -140,16 +170,24 @@ namespace RealLifeOverhaul.Uptown
         }
 
         /// <summary>
-        /// True for a lot id of the district's first plan ("uptown_1_02_01": two digits in its block), which the plan of
-        /// generation 2 replaced (its ids have three): a save's land, developments and tenders on one are retired. A string test.
+        /// True for a lot id of an earlier plan of the district's ("uptown_1_02_01", two digits in its block: the first plan;
+        /// "uptown_1_02_001", three: the plans of generations 2 and 3, whose lots stood on other ground), which the plan of
+        /// spaces replaced (its ids have four): a save's land, developments and tenders on one are retired. A string test.
         /// </summary>
         public static bool OfEarlierPlan(string id)
         {
-            if (id == null || id.Length != 14 || !id.StartsWith("uptown_", StringComparison.Ordinal) || id[8] != '_' || id[11] != '_')
+            if (id == null || (id.Length != 14 && id.Length != 15) || !id.StartsWith("uptown_", StringComparison.Ordinal) || id[8] != '_' || id[11] != '_')
             {
                 return false;
             }
-            return char.IsDigit(id[7]) && char.IsDigit(id[9]) && char.IsDigit(id[10]) && char.IsDigit(id[12]) && char.IsDigit(id[13]) && Get(id) == null;
+            for (int i = 12; i < id.Length; i++)
+            {
+                if (!char.IsDigit(id[i]))
+                {
+                    return false;
+                }
+            }
+            return char.IsDigit(id[7]) && char.IsDigit(id[9]) && char.IsDigit(id[10]) && Get(id) == null;
         }
 
         /// <summary>The district's own ground as it is laid at every load (the whole band's), for the district save's Ground entries.</summary>

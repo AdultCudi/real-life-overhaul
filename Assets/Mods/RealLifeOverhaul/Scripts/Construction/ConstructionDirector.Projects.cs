@@ -62,6 +62,10 @@ namespace RealLifeOverhaul.Construction
         /// <summary>A lot of the district (or a test's, or a landmark's site) by its id; false for one not there at this load.</summary>
         public bool Lot(string id, out LotView lot)
         {
+            if (JoinedSite(id, out lot))
+            {
+                return true;   // a site of several spaces: one lot to its projects, its plot and its building
+            }
             IReadOnlyList<LotView> lots = Lots;
             for (int i = 0; id != null && i < lots.Count; i++)
             {
@@ -286,6 +290,11 @@ namespace RealLifeOverhaul.Construction
                 width = depth = 0f;
                 return;
             }
+            if (p.Kind == ProjectKind.Plot && !string.IsNullOrEmpty(p.Lot) && Lot(p.Lot, out LotView site) && OnSpaces(site))
+            {
+                SiteGround(site, out width, out depth);   // a building on the grid fills its site; the plot's frame is only its scaffolding
+                return;
+            }
             PlotFrame(p.Width, p.Depth, out width, out depth);
         }
 
@@ -350,7 +359,14 @@ namespace RealLifeOverhaul.Construction
             bool ready = ReadDesigns(width, depth, BuildCatalogue.UseTypes[(int)p.Use], DesignsAsked, into);
             if (p.Model == ProjectKind.Plot && !string.IsNullOrEmpty(p.Lot) && !IsTestLot(p.Lot))
             {
-                KeepSizes(p.Lot, into);   // the district takes a building of its lot's class's sizes only
+                if (Lot(p.Lot, out LotView site))
+                {
+                    KeepFitting(site, into);   // the district takes a building that fills its site's spaces
+                }
+                else
+                {
+                    KeepSizes(p.Lot, into);
+                }
             }
             if (p.Kind == ProjectKind.Rebuild)
             {
@@ -1068,7 +1084,12 @@ namespace RealLifeOverhaul.Construction
             bool player = p.Kind == ProjectKind.Plot && p.After == AfterUse.Keep && p.FlatsOffPlan == 0;   // a public building is the city's
             LotFile lot = _state.Lot(p.Lot);
             double paid = (lot != null ? lot.Paid : 0L) + p.Spent;
-            if (FinishLot(p.Lot, p.Design, p.Size, p.Version, BuildCatalogue.UseTypes[(int)p.Use], 0, player, player ? paid : 0.0, out string why))
+            OverOf(p.Lot, _over);
+            string why;
+            bool handed = _over.Count > 0
+                ? FinishOverLot(p.Lot, _over, p.Design, p.Size, p.Version, BuildCatalogue.UseTypes[(int)p.Use], 0, player, player ? paid : 0.0, out why)
+                : FinishLot(p.Lot, p.Design, p.Size, p.Version, BuildCatalogue.UseTypes[(int)p.Use], 0, player, player ? paid : 0.0, out why);
+            if (handed)
             {
                 p.InDistrict = true;
                 if (!player && lot != null)

@@ -476,6 +476,18 @@ namespace RealLifeOverhaul.Construction
         public const int ProjectsMost = 24;                     // the player's projects kept, finished ones included
         public const int BuildingMost = 4;                      // the player's sites going up at once
         public const int LotsMost = 40;
+        public const int SiteSpacesMost = 7;                    // spaces one site joins at most: the widest size the district's grid takes (P1's)
+        public const float SiteSliver = 1f;                     // m of a site its building may leave: no gap to the eye (Uptown's SpacesRules.FillSliver)
+
+        /// <summary>
+        /// True when a site of <paramref name="siteSpaces"/> spaces offers a design of a size taking <paramref name="sizeSpaces"/>:
+        /// exactly the site's, or fewer when the design's frontage alone fills the site (<paramref name="fills"/>), so no ground
+        /// is left beside a building inside its site. As Uptown's SpacesRules.Offered; the checks hold the two together.
+        /// </summary>
+        public static bool Offered(int siteSpaces, int sizeSpaces, bool fills)
+        {
+            return sizeSpaces > 0 && siteSpaces > 0 && (sizeSpaces == siteSpaces || (sizeSpaces < siteSpaces && fills));
+        }
 
         // ------------------------------------------------------------------ money
 

@@ -288,9 +288,9 @@ internal static partial class Program
         List<GroundRect> band = LayoutRules.BandGround;
         LayoutPlans.MapBounds(out float west, out float east, out float north);
         double south = band.Min(r => (double)r.Z1);
-        Check(band.Count == 23 && band.All(r => r.X1 >= LayoutFog.CutWest && r.X2 <= LayoutFog.CutEast && r.Z1 >= LayoutFog.CutSouth && r.Z2 <= LayoutFog.CutNorth)
+        Check(band.Count == 47 && band.All(r => r.X1 >= LayoutFog.CutWest && r.X2 <= LayoutFog.CutEast && r.Z1 >= LayoutFog.CutSouth && r.Z2 <= LayoutFog.CutNorth)
               && LayoutFog.CutWest <= west && LayoutFog.CutEast >= east && LayoutFog.CutNorth >= north && LayoutFog.CutSouth <= south,
-            "uptown fog: the cut holds the band's 23 pieces of ground and the map's widened bounds over them (x " + west + " to " + east + ", to z " + north + ")");
+            "uptown fog: the cut holds the band's 47 pieces of ground (the ring's strips among them) and the map's widened bounds over them (x " + west + " to " + east + ", to z " + north + ")");
         Check(Math.Abs(LayoutFog.CutSouth - (south - LayoutFog.Clearance)) < 0.001 && Math.Abs(LayoutFog.CutWest - west) < 0.001 && Math.Abs(LayoutFog.CutEast - east) < 0.001
               && Math.Abs(LayoutFog.CutNorth - north) < 0.001,
             "uptown fog: the cut is the map's bounds over the band, and south of 1st Avenue's continuations the " + LayoutFog.Clearance.ToString("0.0") + " m the game keeps past 1st Avenue's north pavement");

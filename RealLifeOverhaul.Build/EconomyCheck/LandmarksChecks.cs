@@ -37,7 +37,7 @@ internal static partial class Program
             plan.Add(new BuildingsLot
             {
                 Id = l.Id, Street = l.Street, Number = l.Number, Block = l.Block, First = l.First, Avenue = BuildingsRules.FrontsAvenue(l.Facing), X = l.X, Z = l.Z, Facing = l.Facing,
-                Width = l.Width, Depth = l.Depth, Class = (BuildingsClass)(int)l.Class, Sizes = l.Sizes
+                Width = l.Width, Depth = l.Depth, Class = (BuildingsClass)(int)l.Class, Sizes = l.Sizes, Version = l.Version, Spaces = l.Spaces, Strip = l.Strip, Index = l.Index, Open = l.Open
             });
         }
         var dayOne = new List<int>();
@@ -56,7 +56,7 @@ internal static partial class Program
                 Width = l.Width, Depth = l.Depth, Class = (int)l.Class
             });
         }
-        Check(lots.Count == 77 && firstDay.Count == 19, "landmarks: the first block's 77 lots read, 19 of them built from the first day (" + lots.Count + ", " + firstDay.Count + ")");
+        Check(lots.Count == 65 && firstDay.Count == 15, "landmarks: the first block's 65 lots read, 15 of them built from the first day (" + lots.Count + ", " + firstDay.Count + ")");
         return lots;
     }
 

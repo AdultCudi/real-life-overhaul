@@ -4,15 +4,6 @@ using RealLifeOverhaul.NewBuildings;
 
 namespace RealLifeOverhaul.Uptown
 {
-    /// <summary>One piece of a run of frontage: a lot's building (<see cref="Item"/> its place in the run) or a filler (-1), from and to along the run (m).</summary>
-    public struct FrontSlot
-    {
-        public int Item;      // the run's building it is, or -1 for a filler
-        public int Design;    // the catalogue's design a filler wears; a building's is its lot's own choice
-        public float From;    // m along the run from its start
-        public float To;
-    }
-
     /// <summary>A filler to stand: a design of the catalogue for its look alone, on a piece of ground as a lot's building stands (its front on the ground's front line).</summary>
     public struct FrontFill
     {
@@ -22,24 +13,22 @@ namespace RealLifeOverhaul.Uptown
     }
 
     /// <summary>
-    /// How Uptown's streets are built up as Manhattan's busiest are (the owner, 25 Oct 2026: "There is so much free space
-    /// between buildings in uptown ... Please fill the lots"), game-free (EconomyCheck's UptownFrontChecks). A lot's
-    /// building is the design of its size that fills its frontage best, then its depth, then is the tallest
-    /// (<see cref="Choose"/>); the buildings of a run of built lots along one street stand side by side from its start
-    /// (<see cref="Arrange"/>), and what their fronts leave of the run is closed with fillers, the game's own buildings
-    /// copied for their looks alone, the narrowest 6 m wide, and what is still left shared out between them so no gap is
-    /// more than a sliver. Every answer comes from the catalogue (the same on every machine) and the arguments alone.
-    /// COST: nothing per frame; a few passes over the catalogue for each lot and run once a load, behind the loading screen.
+    /// How Uptown's buildings stand on their spaces (the owner, 25 Oct 2026: "There is so much free space between buildings
+    /// in uptown ... Please fill the lots", and "I can see empty spaces in lots that have buildings"), game-free
+    /// (EconomyCheck's UptownFrontChecks). Every building of the plan stands on the whole spaces its size takes
+    /// (SpacesRules), so the buildings of a street stand side by side; its look is a design that fills them
+    /// (<see cref="Look"/>); where none does, its size's that fits best (<see cref="Choose"/>) with a filler, the game's own
+    /// buildings copied for their looks alone, in what it leaves. Every answer comes from the catalogue (the same on every
+    /// machine) and the arguments alone.
+    /// COST: nothing per frame; a few passes over the catalogue for each lot once a load, behind the loading screen.
     /// </summary>
     public static class FrontageRules
     {
         public const float FrontShare = 0.9f;    // of the widest fitting design's front: a lot's building is among those this wide
         public const float DepthShare = 0.75f;   // of the deepest of those: and among those this deep
         public const float HeightShare = 0.6f;   // of the tallest of those: and among those this tall
-        public const int FillersMost = 4;        // fillers a run takes at most: the rest of its frontage is shared out
         public const float FillerSpare = 0.4f;   // m a filler's slot is wider than its front, so it fits as a lot's design does
         public const float BackLeast = 10f;      // m of a lot left behind its building that takes a second row: less is a yard
-        public const float Adjacent = 0.1f;      // m two lots of a strip may be apart and still be one run
 
         /// <summary>
         /// The design a lot's building wears: of its size's designs that can be copied and fit (those of its type if any),
@@ -156,180 +145,210 @@ namespace RealLifeOverhaul.Uptown
         }
 
         /// <summary>
-        /// A run of built lots along one street, laid out: its buildings (<paramref name="widths"/>, their fronts, in order)
-        /// side by side; what their fronts leave of <paramref name="length"/> closed with fillers no deeper than
-        /// <paramref name="depth"/>, at most <see cref="FillersMost"/>, each the widest that fits what is still left, spread
-        /// between the buildings; and what is left after them at the run's soft ends (<paramref name="startSoft"/>,
-        /// <paramref name="endSoft"/>: beside open land, not a block's corner), else shared out evenly before, between and after
-        /// all of them. Into <paramref name="into"/> (cleared), in order along the run. Picks by <paramref name="key"/>.
+        /// The look a building on its spaces wears, filling them (SpacesRules.Fills: its frontage within
+        /// <see cref="SpacesRules.FillSliver"/> of the spaces' width, never wider, its depth within the lot's): of the designs
+        /// that can be copied, those of its own size and version, else of its own size, else of its type and as many ways in
+        /// (the game's sizes M, R and S have two), else of as many ways in; one picked by the lot's id among the first of
+        /// those that has any, and only one the made buildings' engine takes by its name for this size. -1 when none fills.
         /// </summary>
-        public static void Arrange(float length, IList<float> widths, IList<DesignEntry> designs, float depth, string key, List<FrontSlot> into)
+        public static int Look(IList<DesignEntry> designs, string size, int version, string type, float width, float depth, string id)
         {
-            Arrange(length, widths, designs, depth, key, false, false, into);
+            if (designs == null || string.IsNullOrEmpty(size))
+            {
+                return -1;
+            }
+            int doors = SpacesRules.Doors(size);
+            for (int tier = 0; tier < 4; tier++)
+            {
+                int pool = 0;
+                for (int i = 0; i < designs.Count; i++)
+                {
+                    pool += InTier(designs[i], tier, size, version, type, doors, width, depth) ? 1 : 0;
+                }
+                if (pool == 0)
+                {
+                    continue;
+                }
+                // From the hash's pick on round the pool: the first the engine takes by name (one name may stand for several sizes).
+                int start = (int)(NewBuildingsRules.Hash(id + "|look") % (uint)pool);
+                for (int k = 0; k < pool; k++)
+                {
+                    int wanted = (start + k) % pool;
+                    for (int i = 0; i < designs.Count; i++)
+                    {
+                        if (InTier(designs[i], tier, size, version, type, doors, width, depth) && wanted-- == 0)
+                        {
+                            if (NewBuildingsRules.Pick(designs, size, type, designs[i].Name, width + 0.01f, depth, id) == i)
+                            {
+                                return i;
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+            return -1;
         }
 
-        public static void Arrange(float length, IList<float> widths, IList<DesignEntry> designs, float depth, string key, bool startSoft, bool endSoft, List<FrontSlot> into)
+        private static bool InTier(DesignEntry d, int tier, string size, int version, string type, int doors, float width, float depth)
         {
-            into.Clear();
-            int n = widths != null ? widths.Count : 0;
-            float left = length;
-            for (int i = 0; i < n; i++)
+            if (d == null)
             {
-                left -= widths[i];
+                return false;
             }
-            var fillers = new List<int>(FillersMost);
-            var fills = new List<float>(FillersMost);
-            while (n > 0 && left > 0f && fillers.Count < FillersMost)
+            Measure m = Of(d);
+            if (!m.Free || m.Deep > depth || !SpacesRules.Fills(m.Across, width))
             {
-                int f = Filler(designs, left, depth, key + "#" + fillers.Count);
-                if (f < 0)
-                {
-                    break;
-                }
-                float w = Across(designs[f]) + FillerSpare;
-                fillers.Add(f);
-                fills.Add(w);
-                left -= w;
+                return false;
             }
-            int pieces = n + fillers.Count;
-            left = Math.Max(0f, left);
-            bool soft = startSoft || endSoft;
-            float gap = pieces > 0 && !soft ? left / (pieces + 1) : 0f;
-            float at = soft ? (startSoft ? (endSoft ? left * 0.5f : left) : 0f) : gap;
-            int nextFiller = 0;
-            for (int i = 0; i < n; i++)
+            bool ownSize = d.Size == size;
+            switch (tier)
             {
-                into.Add(new FrontSlot { Item = i, Design = -1, From = at, To = at + widths[i] });
-                at += widths[i] + gap;
-                // The fillers after the buildings at even steps along the run: filler k after building ((k + 1) n / (f + 1)) - 1.
-                while (nextFiller < fillers.Count && i == Math.Max(0, (nextFiller + 1) * n / (fillers.Count + 1) - 1))
-                {
-                    into.Add(new FrontSlot { Item = -1, Design = fillers[nextFiller], From = at, To = at + fills[nextFiller] });
-                    at += fills[nextFiller] + gap;
-                    nextFiller++;
-                }
-            }
-            for (; nextFiller < fillers.Count; nextFiller++)
-            {
-                into.Add(new FrontSlot { Item = -1, Design = fillers[nextFiller], From = at, To = at + fills[nextFiller] });
-                at += fills[nextFiller] + gap;
+                case 0:
+                    return ownSize && d.Version == version;
+                case 1:
+                    return ownSize && d.Version != version;
+                case 2:
+                    return !ownSize && d.Type == type && SpacesRules.Doors(d.Size) == doors;
+                default:
+                    return !ownSize && d.Type != type && SpacesRules.Doors(d.Size) == doors;
             }
         }
 
         /// <summary>
-        /// The district's streets built up: every strip's runs of placeable lots (<paramref name="specOf"/> by id, null for an
-        /// open lot) laid out by <see cref="Arrange"/>, each declaration given its design by name (its own, else
-        /// <see cref="Choose"/>'s of its size or of its first other structure with one) and its place in the run as its lot;
-        /// the fillers into <paramref name="fills"/> (cleared): along the street, and second rows behind buildings that leave
-        /// <see cref="BackLeast"/> or more of their lot. Returns how many were placed; the same on every machine.
+        /// The district's streets built up, every building on its own spaces: each placeable declaration (<paramref name="specOf"/>
+        /// by id, null for an open lot) given a look that fills its lot (<see cref="Look"/>), in its middle; where none fills,
+        /// its own design or <see cref="Choose"/>'s against its first side, a filler in what it leaves where one fits. The
+        /// fillers into <paramref name="fills"/> (cleared), with second rows behind buildings that leave <see cref="BackLeast"/>
+        /// or more of their lot. Returns how many were placed, the same on every machine; the overload also how many a look fills.
         /// </summary>
         public static int Plan(IList<BuildingsLot> lots, Func<string, MadeSpec> specOf, IList<DesignEntry> designs, List<FrontFill> fills)
         {
+            return Plan(lots, specOf, designs, fills, out int _);
+        }
+
+        public static int Plan(IList<BuildingsLot> lots, Func<string, MadeSpec> specOf, IList<DesignEntry> designs, List<FrontFill> fills, out int filled)
+        {
             fills.Clear();
+            filled = 0;
             Measures.Clear();   // a load's catalogue is new: nothing of the last one's measures is kept
             if (lots == null || specOf == null || designs == null)
             {
                 return 0;
             }
-            var strips = new SortedDictionary<long, List<int>>();
+            int placed = 0;
             for (int i = 0; i < lots.Count; i++)
             {
-                long key = (long)lots[i].Block * 1000 + (int)Math.Round(lots[i].Facing);
-                if (!strips.TryGetValue(key, out List<int> strip))
+                BuildingsLot lot = lots[i];
+                MadeSpec spec = specOf(lot.Id);
+                if (spec == null || !Placeable(spec, lot))
                 {
-                    strip = new List<int>();
-                    strips.Add(key, strip);
+                    continue;
                 }
-                strip.Add(i);
-            }
-            int placed = 0;
-            var run = new List<int>(16);
-            var picks = new List<int>(16);
-            var widths = new List<float>(16);
-            var slots = new List<FrontSlot>(24);
-            foreach (List<int> strip in strips.Values)
-            {
-                strip.Sort((a, b) => Start(lots[a]).CompareTo(Start(lots[b])));
-                run.Clear();
-                picks.Clear();
-                for (int k = 0; k <= strip.Count; k++)
+                float along = Middle(lot);
+                int look = string.IsNullOrEmpty(spec.Design) ? Look(designs, spec.Size, spec.Version, spec.Type, lot.Width, lot.Depth, spec.Id) : -1;
+                if (look < 0 && !string.IsNullOrEmpty(spec.Design))
                 {
-                    int i = k < strip.Count ? strip[k] : -1;
-                    MadeSpec spec = i >= 0 ? specOf(lots[i].Id) : null;
-                    int pick = spec != null && Placeable(spec, lots[i]) ? DesignOf(spec, lots[i], designs) : -1;
-                    bool joins = pick >= 0 && (run.Count == 0 || Math.Abs(Start(lots[i]) - End(lots[run[run.Count - 1]])) <= Adjacent);
-                    if (!joins && run.Count > 0)
-                    {
-                        // A run's end is soft where the strip goes on past it (open land, reserved ground), hard at the strip's own end.
-                        placed += Lay(lots, run, picks, specOf, designs, widths, slots, fills, run[0] != strip[0], run[run.Count - 1] != strip[strip.Count - 1]);
-                        run.Clear();
-                        picks.Clear();
-                    }
-                    if (pick >= 0)
-                    {
-                        run.Add(i);
-                        picks.Add(pick);
-                    }
+                    // A look declared by name (a cinema's theatre front) fills its spaces as it can: in their middle.
+                    look = NewBuildingsRules.Pick(designs, spec.Size, spec.Type, spec.Design, lot.Width, lot.Depth, spec.Id);
                 }
+                if (look >= 0)
+                {
+                    filled += SpacesRules.Fills(Across(designs[look]), lot.Width) ? 1 : 0;
+                    Wear(spec, designs[look], Ground(lot, along, lot.Width + 0.01f, lot.Depth, 0f));
+                    Behind(lot, designs, designs[look], along, lot.Width, fills);
+                    placed++;
+                    continue;
+                }
+                int pick = DesignOf(spec, lot, designs);
+                pick = pick >= 0 ? pick : Widest(designs, spec, lot);
+                if (pick < 0)
+                {
+                    continue;
+                }
+                float across = Across(designs[pick]), start = along - lot.Width * 0.5f, left = lot.Width - across;
+                int filler = left >= SliverMost ? Filler(designs, left, lot.Depth, lot.Id + "|beside") : -1;
+                float own = filler >= 0 ? lot.Width - (Across(designs[filler]) + FillerSpare) : lot.Width;   // the filler's slot, the rest the building's
+                float ownMiddle = start + own * 0.5f;
+                Wear(spec, designs[pick], Ground(lot, ownMiddle, own + 0.01f, lot.Depth, 0f));
+                if (filler >= 0)
+                {
+                    fills.Add(new FrontFill { Design = filler, Lot = Ground(lot, start + own + (lot.Width - own) * 0.5f, lot.Width - own, lot.Depth, 0f) });
+                }
+                Behind(lot, designs, designs[pick], ownMiddle, own, fills);
+                placed++;
             }
             return placed;
         }
 
-        // One run laid out: its declarations given their designs and their places, its fillers listed.
-        private static int Lay(IList<BuildingsLot> lots, List<int> run, List<int> picks, Func<string, MadeSpec> specOf, IList<DesignEntry> designs, List<float> widths,
-            List<FrontSlot> slots, List<FrontFill> fills, bool startSoft, bool endSoft)
+        // Where no design of its own size fits its spaces: the widest of any size with as many ways in that does, one picked by
+        // its id among those within FrontShare, and only one the engine takes by its name for this size.
+        private static int Widest(IList<DesignEntry> designs, MadeSpec spec, BuildingsLot lot)
         {
-            BuildingsLot first = lots[run[0]];
-            float from = Start(first), length = End(lots[run[run.Count - 1]]) - from;
-            widths.Clear();
-            float left = length;
-            for (int k = 0; k < run.Count; k++)
+            int doors = SpacesRules.Doors(spec.Size);
+            float wide = 0f;
+            for (int i = 0; i < designs.Count; i++)
             {
-                widths.Add(Across(designs[picks[k]]));
-                left -= widths[k];
+                wide = AnyFits(designs[i], doors, lot) ? Math.Max(wide, Across(designs[i])) : wide;
             }
-            // What the run's fronts leave, offered to its buildings first: each not declared with a design of its own may take a
-            // wider one of its size with its share of what is left, so real buildings close the run before fillers do.
-            for (int k = 0; k < run.Count && left > SliverMost; k++)
+            if (wide <= 0f)
             {
-                MadeSpec spec = specOf(lots[run[k]].Id);
-                if (!string.IsNullOrEmpty(spec.Design))
-                {
-                    continue;
-                }
-                float allowed = widths[k] + left / (run.Count - k);
-                int wider = Choose(designs, spec.Size, spec.Type, allowed, lots[run[k]].Depth, spec.Id);
-                if (wider >= 0 && Across(designs[wider]) > widths[k] && Across(designs[wider]) <= allowed)
-                {
-                    left -= Across(designs[wider]) - widths[k];
-                    widths[k] = Across(designs[wider]);
-                    picks[k] = wider;
-                }
+                return -1;
             }
-            Arrange(length, widths, designs, first.Depth, first.Id, startSoft, endSoft, slots);
-            for (int s = 0; s < slots.Count; s++)
+            int pool = 0;
+            for (int i = 0; i < designs.Count; i++)
             {
-                FrontSlot slot = slots[s];
-                BuildingsLot lot = slot.Item >= 0 ? lots[run[slot.Item]] : first;
-                MadeLot ground = Ground(lot, from + (slot.From + slot.To) * 0.5f, slot.To - slot.From + (slot.Item >= 0 ? 0.01f : 0f), lot.Depth, 0f);
-                if (slot.Item < 0)
+                pool += AnyFits(designs[i], doors, lot) && Across(designs[i]) >= wide * FrontShare ? 1 : 0;
+            }
+            int start = (int)(NewBuildingsRules.Hash(spec.Id + "|widest") % (uint)pool);
+            for (int k = 0; k < pool; k++)
+            {
+                int wanted = (start + k) % pool;
+                for (int i = 0; i < designs.Count; i++)
                 {
-                    fills.Add(new FrontFill { Design = slot.Design, Lot = ground });
-                    continue;
-                }
-                DesignEntry d = designs[picks[slot.Item]];
-                MadeSpec spec = specOf(lot.Id);
-                spec.Design = d.Name;
-                spec.Lots = new[] { ground };
-                spec.Preferred = 0;
-                float behind = lot.Depth - Deep(d);
-                int back = behind >= BackLeast ? Filler(designs, ground.Width, behind, lot.Id + "|back") : -1;
-                if (back >= 0)
-                {
-                    fills.Add(new FrontFill { Design = back, Lot = Ground(lot, from + (slot.From + slot.To) * 0.5f, ground.Width, behind, lot.Depth - behind), Back = true });
+                    if (AnyFits(designs[i], doors, lot) && Across(designs[i]) >= wide * FrontShare && wanted-- == 0)
+                    {
+                        if (NewBuildingsRules.Pick(designs, spec.Size, spec.Type, designs[i].Name, lot.Width, lot.Depth, spec.Id) == i)
+                        {
+                            return i;
+                        }
+                        break;
+                    }
                 }
             }
-            return run.Count;
+            return -1;
+        }
+
+        private static bool AnyFits(DesignEntry d, int doors, BuildingsLot lot)
+        {
+            if (d == null || SpacesRules.Doors(d.Size) != doors)
+            {
+                return false;
+            }
+            Measure m = Of(d);
+            return m.Free && m.Across <= lot.Width && m.Deep <= lot.Depth;
+        }
+
+        // A declaration given its look by name and its ground; a look of another size keeps its record's floor area its own
+        // size's, as the interior the game loads is that size's.
+        private static void Wear(MadeSpec spec, DesignEntry d, MadeLot ground)
+        {
+            spec.DesignArea &= d.Size == spec.Size;
+            spec.Design = d.Name;
+            spec.Lots = new[] { ground };
+            spec.Preferred = 0;
+            spec.Others = null;   // its structure is settled: the made buildings' engine takes this design by name
+        }
+
+        // A second row behind a building that leaves BackLeast or more of its lot.
+        private static void Behind(BuildingsLot lot, IList<DesignEntry> designs, DesignEntry d, float along, float width, List<FrontFill> fills)
+        {
+            float behind = lot.Depth - Deep(d);
+            int back = behind >= BackLeast ? Filler(designs, width, behind, lot.Id + "|back") : -1;
+            if (back >= 0)
+            {
+                fills.Add(new FrontFill { Design = back, Lot = Ground(lot, along, width, behind, lot.Depth - behind), Back = true });
+            }
         }
 
         // A declaration this may place: its own lot alone as it is planned (never a landmark's or a finished building's span
@@ -384,15 +403,10 @@ namespace RealLifeOverhaul.Uptown
             return new MadeLot(alongX ? along : inX, alongX ? inZ : along, lot.Facing, width, depth);
         }
 
-        // m along a strip's axis (x for an avenue's lots, z for a street's): where a lot starts and ends.
-        private static float Start(BuildingsLot lot)
+        // m along a lot's strip (x for an avenue's lots, z for a street's): its middle.
+        private static float Middle(BuildingsLot lot)
         {
-            return (Math.Abs(Math.Cos(lot.Facing * Math.PI / 180.0)) > 0.5 ? lot.X : lot.Z) - lot.Width * 0.5f;
-        }
-
-        private static float End(BuildingsLot lot)
-        {
-            return Start(lot) + lot.Width;
+            return Math.Abs(Math.Cos(lot.Facing * Math.PI / 180.0)) > 0.5 ? lot.X : lot.Z;
         }
 
         /// <summary>m: a design's front, across its door's side.</summary>
