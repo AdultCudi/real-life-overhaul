@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using UI.Notification;
 using UnityEngine;
 
@@ -91,9 +92,10 @@ namespace RealLifeOverhaul.Construction
             string why = project != null ? ShowProject(project) : ShowLot(lotId);
             bool set = why == null && ConstructionGame.DestinationAt(out Vector3 at) && Flat(at, Where(best)) <= (best.Building ? BuildingNear : SpotNear);
             ConstructionGame.DestinationAt(out Vector3 marked);
-            Logger?.Warn(TrackCheck + test + "): " + what + " at " + ConstructionGame.AddressText(best.Street, best.Number) + ", " + (best.Building ? "a standing building, by its address"
-                : "no building, by its front on its street") + "; the game's destination " + (why != null ? "refused (" + why + ")" : "marks a point " + Flat(marked, Where(best)).ToString("0.0")
-                + " m from it") + (set ? ": PASS." : ": FAIL."));
+            string how = best.Building ? "a standing building, by its address" : "no building, by its front on its street";
+            string off = why != null ? "refused (" + why + ")" : "marks a point " + Flat(marked, Where(best)).ToString("0.0", CultureInfo.InvariantCulture) + " m from it";
+            Logger?.Warn(TrackCheck + test + "): " + what + " at " + ConstructionGame.AddressText(best.Street, best.Number) + ", " + how + "; the game's destination " + off
+                         + (set ? ": PASS." : ": FAIL."));
             if (why != null)
             {
                 Notifications.Show(NotificationType.Warning, why, null, 6f);

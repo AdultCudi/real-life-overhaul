@@ -225,6 +225,9 @@ namespace RealLifeOverhaul.Construction
         /// <summary>A civil claim filed against the player for faults: the amount, the claimant's name, the building. Its number, or 0. Default: none.</summary>
         public static Func<long, string, string, int> Claim;
 
+        /// <summary>The day a claim against the player (its number) must be answered by while the court has it; -1 once it has not. Default: -1.</summary>
+        public static Func<int, int> ClaimDue;
+
         /// <summary>A case opened for a bribe to an inspector that came out: the amount. Its number, or 0. Default: none.</summary>
         public static Func<int, int> Bribery;
 
@@ -397,6 +400,7 @@ namespace RealLifeOverhaul.Construction
             Record = null;
             Lawyer = null;
             Claim = null;
+            ClaimDue = null;
             Bribery = null;
             Opened = null;
             Standing = null;

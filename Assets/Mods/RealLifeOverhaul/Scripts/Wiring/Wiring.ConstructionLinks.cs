@@ -109,6 +109,7 @@ namespace RealLifeOverhaul
                 ConstructionBridges.Record = () => Standing.Convictions > 0;
                 ConstructionBridges.Lawyer = () => JusticeState.Loaded && JusticeState.Lawyer == LawyerKind.Firm;
                 ConstructionBridges.Claim = BuildClaims.File;
+                ConstructionBridges.ClaimDue = DebtClaims.DueDay;
                 ConstructionBridges.Bribery = TaxCases.FileBribery;
                 ConstructionBridges.Opened = (place, name) => FlareDirector.Instance?.Happened(FlareSource.Opened, -1, place, name, 0);
                 ConstructionBridges.Standing = (points, scandal) => FameDirector.Instance?.Moved(scandal ? FamePart.Integrity
@@ -209,6 +210,7 @@ namespace RealLifeOverhaul
                 ConstructionBridges.Record = null;
                 ConstructionBridges.Lawyer = null;
                 ConstructionBridges.Claim = null;
+                ConstructionBridges.ClaimDue = null;
                 ConstructionBridges.Bribery = null;
                 ConstructionBridges.Opened = null;
                 ConstructionBridges.Standing = null;

@@ -416,6 +416,19 @@ namespace RealLifeOverhaul.Construction
             }
         }
 
+        internal static int ClaimDue(int number)
+        {
+            try
+            {
+                return number > 0 && !Down("ClaimDue") && ConstructionBridges.ClaimDue != null ? ConstructionBridges.ClaimDue(number) : -1;
+            }
+            catch (Exception e)
+            {
+                Faulty("ClaimDue", e);
+                return -1;
+            }
+        }
+
         internal static int Bribery(int amount)
         {
             try

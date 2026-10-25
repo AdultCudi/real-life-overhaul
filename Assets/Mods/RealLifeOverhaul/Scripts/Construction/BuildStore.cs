@@ -161,6 +161,7 @@ namespace RealLifeOverhaul.Construction
             t.Append('|');
             Join(t, p.HireDays, p.HirePace, p.HireStages, p.HireFree ? 1 : 0);   // a hired builder's contract, after every field an older reader knows
             t.Append('|').Append(p.HirePaid.ToString(Inv)).Append('|').Append(p.HirePenalty.ToString(Inv));
+            t.Append('|').Append(p.ClaimCase.ToString(Inv));   // a claim over faults, after every field an older reader knows
         }
 
         /// <summary>Reads a line; null for one that is not this feature's.</summary>
@@ -522,6 +523,7 @@ namespace RealLifeOverhaul.Construction
             p.HireFree = r.I(0) == 1;
             p.HirePaid = Math.Max(0L, r.L(0L));
             p.HirePenalty = Math.Max(0L, r.L(0L));
+            p.ClaimCase = Math.Max(0, r.I(0));
             if (p.Hired && p.HirePace < BuildCatalogue.HirePaceLeast)
             {
                 p.HirePace = 1000;   // a contract whose pace was lost goes at the city's own

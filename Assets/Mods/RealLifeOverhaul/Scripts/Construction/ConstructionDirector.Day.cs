@@ -555,6 +555,7 @@ namespace RealLifeOverhaul.Construction
             string claimant = ConstructionText.T(p.Kind == ProjectKind.Contract ? "reallife_bld_claimant_client" : p.After == AfterUse.SellFlats
                 ? "reallife_bld_claimant_residents" : "reallife_bld_claimant_tenants");
             int number = Claim(claim, claimant, PlaceWords(p));
+            p.ClaimCase = Math.Max(0, number);   // the objectives say it must be answered while the court has it
             long covered = FirmRules.Pays(_state.Firm.Cover, claim, true, false, ConstructionGame.Prices);
             if (covered > 0)
             {

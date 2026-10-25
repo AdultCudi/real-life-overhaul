@@ -185,6 +185,7 @@ namespace RealLifeOverhaul.Construction
         public long HirePaid;                        // what it has been paid so far: the deposit and the stages
         public long HirePenalty;                     // what it paid back at the handover for being late
         public bool HireFree;                        // a test's contract: nothing is paid either way
+        public int ClaimCase;                        // the court's number of a claim over faults in it, for the objectives while it is heard; 0 for none
 
         public bool Live => Stage != ProjectStage.Finished && Stage != ProjectStage.Abandoned;
 
