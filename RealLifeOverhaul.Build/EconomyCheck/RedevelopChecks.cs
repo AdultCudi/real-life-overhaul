@@ -393,7 +393,11 @@ internal static partial class Program
         Check(MethodText(projects, "private bool Zoned(").Contains("ConversionZoned(p)") && MethodText(projects, "private void Decide(").Contains("p.Kind != ProjectKind.Conversion")
               && MethodText(projects, "private void Consult(").Contains("p.Kind == ProjectKind.Extension ? p.Storeys - p.Added") && MethodText(projects, "public string Apply(").Contains("NeedsNotice(p)"),
             "extension sources: the council weighs a change of use on its lot's zones and the height an extension adds, and a change of use gives notice with its application");
-        Check(ModSource(@"Construction\ConstructionDirector.Hire.cs").Contains("p.Kind == ProjectKind.Extension) && p.Contractor < 0"), "extension sources: an extension may be built by a hired builder");
+        Check(ModSource(@"Construction\ConstructionDirector.Hire.cs").Contains("p.Kind == ProjectKind.Extension) && p.Contractor < 0")
+              && ModSource(@"Construction\TrackRules.cs").Contains("p.Kind == ProjectKind.Extension) && p.Contractor < 0")
+              && MethodText(projects, "public string DrawPlans(").Contains("(string.IsNullOrEmpty(p.Design) && p.Kind != ProjectKind.Extension) || p.Area <= 0")
+              && MethodText(ModSource(@"Construction\ConstructionDirector.Sites.cs"), "private void SitesLost(").Contains("p.Kind != ProjectKind.Extension"),
+            "extension sources: an extension may be built by a hired builder (the objectives say so too), its plans drawn with its building's own front, its lost site set out again");
         Check(guide.Contains(".Test(\"reallife_bld_test_extend\", () => ConstructionDirector.TestExtensionNow())") && guide.Contains(".Test(\"reallife_bld_test_convert\", () => ConstructionDirector.TestConversionNow())")
               && ModSource(@"TestRun\RunPlan.cs").Contains("{ \"reallife_bld_test_extend\",") && ModSource(@"TestRun\RunPlan.cs").Contains("{ \"reallife_bld_test_convert\","),
             "extension sources: their tests are buttons alone: each changes a building of the player's for good");

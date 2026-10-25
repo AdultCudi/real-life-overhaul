@@ -522,7 +522,7 @@ namespace RealLifeOverhaul.Construction
             {
                 return "reallife_bld_answer_not_design";
             }
-            if (string.IsNullOrEmpty(p.Design) || p.Area <= 0)
+            if ((string.IsNullOrEmpty(p.Design) && p.Kind != ProjectKind.Extension) || p.Area <= 0)   // an extension's front is its building's own
             {
                 return "reallife_bld_answer_no_design";
             }
