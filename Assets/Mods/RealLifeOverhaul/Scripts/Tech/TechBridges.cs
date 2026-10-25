@@ -45,6 +45,26 @@ namespace RealLifeOverhaul.Tech
         /// <summary>A building's internet speed in Mbps; 0 with none or in an outage. Default: unknown, and a data centre counts as connected.</summary>
         public static Func<BuildingRegistration, int> Mbps;
 
+        /// <summary>
+        /// A building's plan speed in Mbps for the work over it, outages aside (the utilities close a firm for those by the
+        /// hour): 0 with no working plan, NetSpeedRules.Grace in the internet's grace, NetSpeedRules.Unknown with nothing to
+        /// ask or the switch off. Default: unknown, so the work runs as before speed counted.
+        /// </summary>
+        public static Func<BuildingRegistration, int> PlanMbps;
+
+        /// <summary><see cref="PlanMbps"/> asked: unknown with no answer, or if the utilities fault.</summary>
+        public static int PlanMbpsAt(BuildingRegistration reg)
+        {
+            try
+            {
+                return PlanMbps != null && reg != null ? PlanMbps(reg) : NetSpeedRules.Unknown;
+            }
+            catch (Exception)
+            {
+                return NetSpeedRules.Unknown;
+            }
+        }
+
         /// <summary>A business's internet: 0 working or not needed, 1 no plan, 2 being installed (when: the day), 3 down (when: the hour back).</summary>
         public delegate int NetAsk(BuildingRegistration reg, out int when);
 
@@ -265,6 +285,7 @@ namespace RealLifeOverhaul.Tech
             Ipo = null;
             Supplied = null;
             Mbps = null;
+            PlanMbps = null;
             Net = null;
             NetDays = null;
             OpenInternet = null;

@@ -119,6 +119,16 @@ namespace RealLifeOverhaul.Tech
         public const int SoftwarePerSeat = 300;                // tools and licences a day per professional at a tech firm, cents
         public const int ProductsMost = 16;                    // products across the player's firms
 
+        /// <summary>
+        /// How hard each kind of firm leans on its office's connection (NetSpeedRules), by FirmKind: an AI lab moves training
+        /// data and a game studio its builds and assets, while a consultancy and a design studio do much of theirs at the
+        /// client's or on paper.
+        /// </summary>
+        public static readonly int[] NetLean =
+        {
+            NetSpeedRules.Usual, NetSpeedRules.Heavy, NetSpeedRules.Light, NetSpeedRules.Usual, NetSpeedRules.Heaviest, NetSpeedRules.Usual, NetSpeedRules.Light
+        };
+
         // Games
         public static readonly int[] GameScope = { 600, 1800, 4500 };        // work points: a small game, a mid-sized one, a big one
         public static readonly int[] GamePrice = { 999, 2499, 5999 };        // cents

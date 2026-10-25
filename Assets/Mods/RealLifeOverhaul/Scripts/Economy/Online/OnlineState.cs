@@ -295,6 +295,8 @@ namespace RealLifeOverhaul.Economy
         public int[] Metres = new int[16];      // road to each district's middle
         public bool[] Measured = new bool[16];  // measured along the roads, not a straight line's guess
         public int Need, Price, Stars, Ads, Campaign, Cycle, Season, Crowd;   // the parts of PerDay, for the page and the log
+        public int Mbps = NetSpeedRules.Unknown;   // the building's plan speed, outages aside: it sets the day's bound (OnlineRules.Most)
+        public bool Down;               // the connection is down in an outage this hour: no orders come
 
         public void Size(int lines, int districts)
         {

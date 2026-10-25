@@ -1053,6 +1053,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_infra_test_down", () => Tech.TechDirector.Instance?.TestCentreDown())
                 .AddButton("reallife_infra_test_price_war", () => Tech.TechDirector.Instance?.TestPriceWar())
                 .AddButton("reallife_infra_test_offer", () => Tech.TechDirector.Instance?.TestCentreOffer())
+                .AddButton("reallife_tech_test_net", () => Tech.TechDirector.Instance?.TestNet())
                 .AddToggle(Settings.TechStartupsId, "reallife_vc_enabled", Settings.TechStartups,
                     v => Settings.TechStartups = v)
                 .AddButton("reallife_vc_test_pitch", () => Tech.TechDirector.Instance?.TestPitch())
@@ -1080,6 +1081,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_online_test_return", () => Economy.OnlineDirector.Instance?.TestReturn())
                 .AddButton("reallife_online_test_day", () => Economy.OnlineDirector.Instance?.TestDay())
                 .AddButton("reallife_online_test_back", () => Economy.OnlineDirector.Instance?.TestBack())
+                .AddButton("reallife_online_test_net", () => Economy.OnlineDirector.Instance?.TestNet())
                 .AddToggle(Settings.EconomyDealerId, "reallife_dealer_enabled", Settings.EconomyDealer,
                     v => Settings.EconomyDealer = v)
                 .AddToggle(Settings.EconomyDealerFloorId, "reallife_showroom_floor_enabled", Settings.EconomyDealerFloor,
@@ -1167,6 +1169,8 @@ namespace RealLifeOverhaul
                 .AddHeader("reallife_util_header")
                 .AddToggle(Settings.UtilitiesId, "reallife_util_enabled", Settings.Utilities,
                     v => Settings.Utilities = v)
+                .AddToggle(Settings.UtilitiesNetSpeedId, "reallife_util_net_speed", Settings.UtilitiesNetSpeed,
+                    v => Settings.UtilitiesNetSpeed = v)
                 .AddButton("reallife_util_test_bill", () => Utilities.UtilitiesDirector.Instance?.TestBill())
                 .AddButton("reallife_util_test_due", () => Utilities.UtilitiesDirector.Instance?.TestDue())
                 .AddButton("reallife_util_test_cut", () => Utilities.UtilitiesDirector.Instance?.TestCutHome())

@@ -33,6 +33,7 @@ namespace RealLifeOverhaul
                 TechBridges.Supplied = Supplied;
                 TechBridges.Ipo = Ipo;
                 TechBridges.Mbps = Mbps;
+                TechBridges.PlanMbps = reg => UtilityLinks.Speed(reg, -1, false);
                 TechBridges.Net = Net;
                 TechBridges.NetDays = () => Utilities.InternetCatalogue.InstallDays;
                 TechBridges.OpenInternet = () => Utilities.UtilitiesDirector.Instance != null && Utilities.UtilitiesDirector.Instance.OpenInternet();

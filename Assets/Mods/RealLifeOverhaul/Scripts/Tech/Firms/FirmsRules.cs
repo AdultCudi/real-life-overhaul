@@ -163,6 +163,30 @@ namespace RealLifeOverhaul.Tech
             return 1000 - Math.Min(700, (int)Math.Min(int.MaxValue, (long)p.Bugs * 1000 / allowance));
         }
 
+        /// <summary>
+        /// Thousandths of a day's work a kind of firm gets from its office's connection (NetSpeedRules at the kind's lean). A
+        /// firm with no working connection reads 1000: the utilities close it by the hour (the one rule for a place without a
+        /// connection), so its people's hours already say so, and a day read at the wrong moment never wipes out work done.
+        /// </summary>
+        public static int Connection(int kind, int mbps)
+        {
+            return mbps == 0 ? 1000 : NetSpeedRules.Factor(mbps, FirmsCatalogue.NetLean[TalentCatalogue.Clamp(kind, 0, FirmsCatalogue.NetLean.Length - 1)]);
+        }
+
+        /// <summary>The day's work points at a connection's share: the same points the office's spare hours share, not selling or support.</summary>
+        public static void Connected(ref Crew c, int net)
+        {
+            if (net == 1000)
+            {
+                return;
+            }
+            net = Math.Max(0, net);
+            c.Engineering = (int)((long)c.Engineering * net / 1000);
+            c.Design = (int)((long)c.Design * net / 1000);
+            c.Web = (int)((long)c.Web * net / 1000);
+            c.Testing = (int)((long)c.Testing * net / 1000);
+        }
+
         /// <summary>What product people add to a feature's points, thousandths: up to 400 with one for every few engineers.</summary>
         public static int ProductBoost(in Crew c) => Math.Min(400, c.Product * 3000 / Math.Max(1, c.Engineering + c.Product));
 

@@ -36,6 +36,7 @@ namespace RealLifeOverhaul.Utilities
             {
                 t.Append('|').Append(s.Promo[p].ToString(Inv));
             }
+            t.Append('|').Append(s.SpeedMet.ToString(Inv));   // after the promotions: a line from before it reads 0
             t.Append("~a:");
             bool first = true;
             for (int i = 0; i < s.Accounts.Count; i++)
@@ -186,6 +187,7 @@ namespace RealLifeOverhaul.Utilities
                         int promo = I(c, 4 + p);
                         s.Promo[p] = promo <= 0 ? 1000 : Clamp(promo, InternetCatalogue.PromoLeast, InternetCatalogue.PromoMost);   // none in a line from before the internet
                     }
+                    s.SpeedMet = Math.Max(0, I(c, 4 + s.Promo.Length));
                 }
                 else if (section.StartsWith("n:", StringComparison.Ordinal))
                 {

@@ -196,6 +196,29 @@ namespace RealLifeOverhaul.Utilities
             return s.Grace.Count;
         }
 
+        /// <summary>
+        /// More places brought into the grace today (the online shops when speed first counts for them): each new one is
+        /// covered for the grace's days from today, and a grace already running is held open that long too, as there is one
+        /// end day for all. Places already covered are left as they are. How many it added.
+        /// </summary>
+        public static int AddGrace(UtilitiesState s, IList<string> places, int today)
+        {
+            int added = 0;
+            for (int i = 0; places != null && i < places.Count; i++)
+            {
+                if (!string.IsNullOrEmpty(places[i]) && !s.Grace.Contains(places[i]))
+                {
+                    s.Grace.Add(places[i]);
+                    added++;
+                }
+            }
+            if (added > 0)
+            {
+                s.GraceUntil = Math.Max(s.GraceUntil, today + InternetCatalogue.GraceDays);
+            }
+            return added;
+        }
+
         /// <summary>A place the grace covers may open without a connection before it ends.</summary>
         public static bool InGrace(UtilitiesState s, string place, int today)
         {
