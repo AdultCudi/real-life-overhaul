@@ -274,6 +274,7 @@ educationdoorcontroller_closed
 ferris_wheel
 filebrowser_delete
 government
+itemhelper_notification_you_are_to_stuffed_to_eat_this
 job_board
 menu_save
 myemployees_mass_action_no_employees_selected

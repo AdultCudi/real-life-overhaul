@@ -247,6 +247,7 @@ namespace RealLifeOverhaul
         public const int ReheatMinutes = 8;
         public const int LeftoverSaturation = 35;       // what a portion put by fills when its own fill is not known
         public const int LeftoversMost = 8;             // portions
+        public const int TakeoutMost = 2;               // portions packed to take: what one bag holds, carried until eaten at a seat
         public const float BurntYield = 0.6f;           // of the fill, for a burnt dish
 
         /// <summary>What is left of a need or a risk with "easy needs" on.</summary>

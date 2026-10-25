@@ -72,6 +72,7 @@ namespace RealLifeOverhaul
         public static readonly GamePart SpecialHeadline = ContractBook.Part("special_headline", null, "a special building's own name over the game's building panel");
         public static readonly GamePart SpecialSearch = ContractBook.Part("special_search", null, "the special buildings' own names in the city map's search");
         public static readonly GamePart RideToggle = ContractBook.Part("ride_toggle", "transport", "the fast forward switch of the bus ride");
+        public static readonly GamePart TakeoutPlates = ContractBook.Part("takeout_plates", "meals", "Eat in the game's rest panel at a seat");
         public static readonly GamePart CustomersKept = ContractBook.Part("customers_kept", null, "the customers of the hour under way kept when the mod draws a day's customers again");
         public static readonly GamePart InteriorCustomers = ContractBook.Part("interior_customers", "interiors", "the basket and the day's customers on the Interior tab");
         public static readonly GamePart InteriorTabPart = ContractBook.Part("interior_tab", "interiors", "the Interior tab in BizMan");
@@ -324,6 +325,9 @@ namespace RealLifeOverhaul
 
         // Transport/BusRidePanel: the game's fast forward switch on its activity panel
         public static readonly GameMember FastForward = Field(RideToggle, Game, "PlayerActivity.PlayerActivityUI", "fastForwardToggle", "Toggle");
+
+        // Meals/TakeoutButton: the activity panel's button template, copied once per city for Eat at a seat
+        public static readonly GameMember ActivityButtons = Field(TakeoutPlates, Game, "PlayerActivity.PlayerActivityUI", "buttonTemplate", "Button");
 
         // Core/CustomerDraw: the game's list of a day's customers at each business
         public static readonly GameMember CustomerTable = StaticField(On(CustomersKept, InteriorCustomers), Game, "AI.Customers.CustomerEntries.CustomerEntriesHelper", "BusinessCustomerEntries", "Dictionary<Address,List<CustomerEntry>>");
