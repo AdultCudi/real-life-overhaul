@@ -37,6 +37,7 @@ namespace RealLifeOverhaul.Uptown
             }
             string line = "Ground check (what is this ground): at (" + at.x.ToString("F1", Inv) + ", " + at.z.ToString("F1", Inv) + ") " + a.Kind
                           + (a.Block > 0 ? ", block " + a.Block + (a.First ? " of the first block" : string.Empty) : string.Empty)
+                          + (a.Block > 0 && a.Lot == null && state != null ? " (" + state + ")" : string.Empty)
                           + (a.Lot != null ? ", lot " + a.Lot + " at " + a.LotNumber + " " + a.LotStreet + (state != null ? " (" + state + ")" : string.Empty) : string.Empty)
                           + (a.On != null ? ", on " + a.On : string.Empty) + "; west " + (a.West ?? "none") + ", east " + (a.East ?? "none") + ", south " + (a.South ?? "none")
                           + ", north " + (a.North ?? "none") + "; district " + (district ?? "none") + ": PASS";
@@ -63,7 +64,9 @@ namespace RealLifeOverhaul.Uptown
                 case GroundKind.Campus:
                     state = MadeBuildings.Get(CampusId) != null ? "the campus stands" : "the campus does not stand at this load";
                     return Fill(GroundText.WhatCampus, "block", block);
-                case GroundKind.ParkSquare: return Fill(GroundText.WhatPark, "block", block);
+                case GroundKind.ParkSquare:
+                    state = ParksGame.Stands(a.Block) ? "the park stands" : "the park does not stand at this load";
+                    return Fill(GroundText.WhatPark, "block", block);
                 case GroundKind.Between: return Fill(GroundText.WhatBetween, "block", block);
                 case GroundKind.BigPlace: return Fill(GroundText.WhatBigPlace, "block", block, "address", Address(a));
                 case GroundKind.LandmarkSite:

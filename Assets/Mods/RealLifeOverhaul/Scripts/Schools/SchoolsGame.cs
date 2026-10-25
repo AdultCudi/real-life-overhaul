@@ -13,7 +13,6 @@ using UI.Notification;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.Rendering;
-using UnityEngine.SceneManagement;
 
 namespace RealLifeOverhaul.Schools
 {
@@ -32,33 +31,23 @@ namespace RealLifeOverhaul.Schools
         private const string RootName = "RealLifeOverhaul Schools campus";
         private const string Owner = "schools";              // the copy engine's log names the feature that asked
         private const float CutInset = 0.5f;                 // m inside a footprint each side: a carve reaches the walker's radius past its box
-        private const float TakeWithin = 6f;                 // m from its fixed place a template must be: farther, and the game's scene has moved
-
-        // A piece of the game's own the campus copies: the scene root it is kept under, its name with the copies' numbers off,
-        // the place of the one taken (its nearest within a few metres, so every machine copies the same one, never one in the
-        // scene's static batches), the height its pivot stands above the ground, and the room it takes (0 for a flat one).
-        private struct Template
-        {
-            public CampusPieceKind Kind;
-            public string Root, Name;
-            public float X, Z, Y;
-            public Vector3 Room;
-        }
 
         // Build 3682, read from the game's level files (not-in-repo scratch scan of 25 Oct 2026): every one of these is drawn
-        // on its own, never in a static batch.
-        private static readonly Template[] Templates =
+        // on its own, never in a static batch. Found and copied by GamePieces, as Uptown's street furniture and parks are.
+        private static readonly PieceTemplate[] Templates =
         {
-            new Template { Kind = CampusPieceKind.Fence, Root = "Roads", Name = "Playground_Fence_Modular", X = -1600.71f, Z = -1168.75f, Y = 0f, Room = Vector3.zero },
-            new Template { Kind = CampusPieceKind.Post, Root = "Roads", Name = "Playground_Fence_ModularFinal", X = -1659.65f, Z = -1168.76f, Y = 0f, Room = Vector3.zero },
-            new Template { Kind = CampusPieceKind.Court, Root = "BuildingBlocks", Name = "SM_BasketballCourt", X = -452.71f, Z = -326.32f, Y = 0.03f, Room = Vector3.zero },
-            new Template { Kind = CampusPieceKind.Hoop, Root = "BuildingBlocks", Name = "Prefab_BasketballHoop", X = -454.67f, Z = -326.22f, Y = 1.15f, Room = new Vector3(1.2f, 3f, 0.9f) },
-            new Template { Kind = CampusPieceKind.Bench, Root = "BuildingBlocks", Name = "SleepingBench", X = -397.79f, Z = -269.32f, Y = 0.03f, Room = new Vector3(2.4f, 1.2f, 0.8f) },
-            new Template { Kind = CampusPieceKind.Tree, Root = "Vegetation", Name = "SM_PavementHoleforTrees_Broadleaf M1", X = 148.67f, Z = 475.57f, Y = 0.05f, Room = new Vector3(1.2f, 3f, 1.2f) }
+            new PieceTemplate { Kind = (int)CampusPieceKind.Fence, Root = "Roads", Name = "Playground_Fence_Modular", X = -1600.71f, Z = -1168.75f, Y = 0f, Room = Vector3.zero },
+            new PieceTemplate { Kind = (int)CampusPieceKind.Post, Root = "Roads", Name = "Playground_Fence_ModularFinal", X = -1659.65f, Z = -1168.76f, Y = 0f, Room = Vector3.zero },
+            new PieceTemplate { Kind = (int)CampusPieceKind.Court, Root = "BuildingBlocks", Name = "SM_BasketballCourt", X = -452.71f, Z = -326.32f, Y = 0.03f, Room = Vector3.zero },
+            new PieceTemplate { Kind = (int)CampusPieceKind.Hoop, Root = "BuildingBlocks", Name = "Prefab_BasketballHoop", X = -454.67f, Z = -326.22f, Y = 1.15f, Room = new Vector3(1.2f, 3f, 0.9f) },
+            new PieceTemplate { Kind = (int)CampusPieceKind.Bench, Root = "BuildingBlocks", Name = "SleepingBench", X = -397.79f, Z = -269.32f, Y = 0.03f, Room = new Vector3(2.4f, 1.2f, 0.8f) },
+            new PieceTemplate
+            {
+                Kind = (int)CampusPieceKind.Tree, Root = "Vegetation", Name = "SM_PavementHoleforTrees_Broadleaf M1", X = 148.67f, Z = 475.57f, Y = 0.05f, Room = new Vector3(1.2f, 3f, 1.2f)
+            }
         };
 
         private static readonly GameObject[] Found = new GameObject[Templates.Length];
-        private static readonly List<GameObject> SceneRoots = new List<GameObject>(64);
 
         internal static bool Loading => LoadScene.isLoading || !ModState.Loaded || SaveGameManager.Current == null;
 
@@ -266,63 +255,14 @@ namespace RealLifeOverhaul.Schools
         /// </summary>
         internal static string FindTemplates()
         {
-            Array.Clear(Found, 0, Found.Length);
-            for (int s = 0; s < SceneManager.sceneCount; s++)
-            {
-                Scene scene = SceneManager.GetSceneAt(s);
-                if (!scene.isLoaded)
-                {
-                    continue;
-                }
-                SceneRoots.Clear();
-                scene.GetRootGameObjects(SceneRoots);
-                for (int r = 0; r < SceneRoots.Count; r++)
-                {
-                    GameObject root = SceneRoots[r];
-                    for (int t = 0; root != null && t < Templates.Length; t++)
-                    {
-                        if (root.name == Templates[t].Root)
-                        {
-                            Take(root.transform, t);
-                        }
-                    }
-                }
-            }
-            SceneRoots.Clear();
-            string missing = null;
-            for (int t = 0; t < Templates.Length; t++)
-            {
-                if (Found[t] == null)
-                {
-                    missing = (missing == null ? string.Empty : missing + ", ") + Templates[t].Name;
-                }
-            }
-            return missing;
+            return GamePieces.Find(Templates, Found);
         }
 
-        private static void Take(Transform root, int t)
+        /// <summary>The line for Player.log about which of the game's pieces were found and which were not.</summary>
+        internal static string FoundWords()
         {
-            Template want = Templates[t];
-            float best = Found[t] != null ? Flat(Found[t].transform.position, want) : TakeWithin * TakeWithin;
-            Transform[] parts = root.GetComponentsInChildren<Transform>(true);
-            for (int i = 0; i < parts.Length; i++)
-            {
-                Transform part = parts[i];
-                string name = part.name;
-                if (!name.StartsWith(want.Name, StringComparison.Ordinal) || (name.Length > want.Name.Length && name[want.Name.Length] != ' '))
-                {
-                    continue;   // a piece of another kind whose name begins the same ("Playground_Fence_ModularFinal" for the module)
-                }
-                float d = Flat(part.position, want);
-                if (d < best)
-                {
-                    best = d;
-                    Found[t] = part.gameObject;
-                }
-            }
+            return GamePieces.Words(Templates, Found);
         }
-
-        private static float Flat(Vector3 at, Template want) => (at.x - want.X) * (at.x - want.X) + (at.z - want.Z) * (at.z - want.Z);
 
         /// <summary>
         /// The campus's pieces stood under a root of their own (made asleep, woken together): each a copy of the game's piece
@@ -367,22 +307,14 @@ namespace RealLifeOverhaul.Schools
             {
                 return null;
             }
-            GameObject copy = UnityEngine.Object.Instantiate(template, parent);
-            copy.name = RootName + " " + p.Kind;
-            copy.SetActive(true);
-            copy.transform.SetPositionAndRotation(new Vector3(p.X, UptownLots.GroundY + Templates[t].Y, p.Z), Quaternion.Euler(0f, p.Yaw, 0f));
+            GameObject copy = GamePieces.Stand(template, parent, RootName + " " + p.Kind, new Vector3(p.X, UptownLots.GroundY + Templates[t].Y, p.Z), p.Yaw);
             if (p.Kind == CampusPieceKind.Court)
             {
                 copy.transform.localScale = new Vector3(p.StretchX, 1f, p.StretchZ);
             }
-            Renderer[] renderers = copy.GetComponentsInChildren<Renderer>(true);
-            for (int i = 0; i < renderers.Length; i++)
-            {
-                renderers[i].forceRenderingOff = false;   // the far districts' tweak may have put the template out of the picture
-            }
             if (Templates[t].Room != Vector3.zero)
             {
-                Block(copy, Templates[t].Room);
+                GamePieces.Block(copy, Templates[t].Room);
             }
             return copy;
         }
@@ -391,7 +323,7 @@ namespace RealLifeOverhaul.Schools
         {
             for (int t = 0; t < Templates.Length; t++)
             {
-                if (Templates[t].Kind == kind)
+                if (Templates[t].Kind == (int)kind)
                 {
                     return t;
                 }
@@ -417,17 +349,6 @@ namespace RealLifeOverhaul.Schools
             renderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
             renderer.shadowCastingMode = ShadowCastingMode.Off;
             return piece;
-        }
-
-        // What stands in the way: the walking meshes cut round a piece, a little larger than its body.
-        private static void Block(GameObject piece, Vector3 room)
-        {
-            var cut = piece.AddComponent<NavMeshObstacle>();
-            cut.shape = NavMeshObstacleShape.Box;
-            cut.center = new Vector3(0f, room.y * 0.5f, 0f);
-            cut.size = room;
-            cut.carveOnlyStationary = true;
-            cut.carving = true;
         }
 
         // A run of fence cut out of the walking meshes: one thin box from end to end.

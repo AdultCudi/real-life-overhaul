@@ -88,7 +88,7 @@ namespace RealLifeOverhaul.Uptown
             LayoutPlans.MapBounds(out float west, out float east, out float north);
             Vector3 at = WalkGame.At;
             bool onIt = LayoutRules.OnGround(at.x, at.z);
-            int zones = _people ? LayoutPlans.ZoneCount : 0;
+            int zones = _people ? LayoutPlans.ZoneCount + LayoutPlans.ParkZoneCount : 0;
             int pieces = GroundGame.Copied - GroundGame.GroundsLaid;
             bool pass = UptownLots.Ready && pieces == modules && junctions == LayoutPlans.JunctionCount && GroundGame.Lights == arms && GroundGame.Crossings == arms
                         && _opened == LayoutPlans.OldWallCount && _hidden > 0 && GroundGame.PeopleZones == zones && GroundGame.ParkingLanes + GroundGame.LanesKeptOff == LayoutPlans.ParkingCount

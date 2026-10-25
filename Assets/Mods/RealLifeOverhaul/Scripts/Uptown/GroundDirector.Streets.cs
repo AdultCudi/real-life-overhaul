@@ -30,6 +30,7 @@ namespace RealLifeOverhaul.Uptown
             long mark = Stopwatch.GetTimestamp();
             _furnished = StreetsGame.Furnish(GroundGame.ArtRoot);
             _furnishMs = Ms(mark);
+            LayParks();   // the parks with it (GroundDirector.Parks)
         }
 
         // After the termini: the district's routes, laid by the bus network at this load behind the loading screen.
@@ -236,7 +237,8 @@ namespace RealLifeOverhaul.Uptown
             bool pass = StreetsGame.Missing == null && StreetsGame.Laid > 0 && StreetsGame.Laid + StreetsGame.Occupied + StreetsGame.Mouths == StreetsGame.Planned;
             if (Meta.Dev.Verbose)
             {
-                Logger?.Info("Uptown check (street furniture): " + FurnitureWords() + "; benches " + benches + ", bins " + bins + ", trees " + trees + ", bicycle docks " + racks
+                Logger?.Info("Uptown check (street furniture): " + FurnitureWords() + " (the game's pieces " + (StreetsGame.FoundWords ?? "none") + "); benches " + benches
+                             + ", bins " + bins + ", trees " + trees + ", bicycle docks " + racks
                              + "; by street (benches/bins/trees/docks): " + streets + ": " + (pass ? "PASS" : "FAIL") + ".");
             }
             Notice(StreetsText.FurnitureDone, new Dictionary<string, string>(5)

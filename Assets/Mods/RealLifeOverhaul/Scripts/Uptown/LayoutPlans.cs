@@ -475,8 +475,26 @@ namespace RealLifeOverhaul.Uptown
             {
                 plan.Seeds.Add(new GroundPoint(LayoutRules.StreetX(k) + LayoutRules.StreetPitch * 0.5f, SeedY, pavement));
             }
+            Parks(plan.Boxes);
             Area(plan.Area);
             return plan;
+        }
+
+        // The parks' paths, walked by the pedestrians as the pavements are: each joined at the block's edge to the pavement it opens on.
+        private static void Parks(List<GroundBox> into)
+        {
+            var blocks = new List<int>(4);
+            var walks = new List<PlanBox>(10);
+            ParksRules.Blocks(blocks);
+            for (int b = 0; b < blocks.Count; b++)
+            {
+                ParksRules.Walks(blocks[b], walks);
+                for (int i = 0; i < walks.Count; i++)
+                {
+                    PlanBox w = walks[i];
+                    into.Add(Box(w.X - w.HalfX, w.Z - w.HalfZ, w.X + w.HalfX, w.Z + w.HalfZ));
+                }
+            }
         }
 
         // The ring's built strips, walked as the band's blocks are, their backs kept off the walls.
@@ -800,8 +818,30 @@ namespace RealLifeOverhaul.Uptown
         /// <summary>The game's walls that open: across the first block's street ends and 1st Avenue's two ends.</summary>
         public static int OldWallCount => LayoutRules.FirstColumns + 1 + 2;
 
-        /// <summary>The pedestrians' zones: one along each street between its avenues, one along each length of avenue.</summary>
+        /// <summary>The pedestrians' zones along the pavements: one along each street between its avenues, one along each length of avenue.</summary>
         public static int ZoneCount => Rows * StreetsN + Rows * (StreetsN - 1);
+
+        /// <summary>The parks' zones, appended to the list after the pavements' (into the list as it is): two along each park's spine.</summary>
+        public static void ParkZones(List<PlanBox> into)
+        {
+            var blocks = new List<int>(4);
+            ParksRules.Blocks(blocks);
+            for (int b = 0; b < blocks.Count; b++)
+            {
+                ParksRules.Zones(blocks[b], into);
+            }
+        }
+
+        /// <summary>How many zones the parks have.</summary>
+        public static int ParkZoneCount
+        {
+            get
+            {
+                var blocks = new List<int>(4);
+                ParksRules.Blocks(blocks);
+                return blocks.Count * ParksRules.ZonesPerPark;
+            }
+        }
 
         /// <summary>The parking lanes along the copied streets and avenues of the band, never the scenery's.</summary>
         public static int ParkingCount => ModuleCount(ModuleKind.Street, false) * StreetParking + ModuleCount(ModuleKind.Avenue, false) * AvenueParking;
