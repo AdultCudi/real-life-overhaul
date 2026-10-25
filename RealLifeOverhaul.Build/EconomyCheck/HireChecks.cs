@@ -19,6 +19,7 @@ internal static partial class Program
         HireStoreChecks();
         HireSourceChecks();
         HireTextChecks();
+        HireStuck();   // the hired build that stood still at 40%: the rule, the owner's build and save, a failure put right, the schedule (HireStuckChecks.cs)
     }
 
     private static void HireQuoteChecks()
@@ -179,10 +180,10 @@ internal static partial class Program
         Check(hire.Length > 0 && tests.Length > 0 && app.Length > 0, "hire sources: the director's part, its tests and the app's page are there");
         string workOn = MethodText(sites, "public float WorkOn(");
         string work = MethodText(sites, "private float Work(");
-        Check(workOn.Contains("if (p.Contractor >= 0 && !p.Hired)") && workOn.Contains("Work(p, done, needed, hours)") && work.Contains("HiredStage(p, stage);")
+        Check(workOn.Contains("if (p.Contractor >= 0 && !p.Hired)") && workOn.Contains("Work(p, done, needed, hours, day, hour)") && work.Contains("HiredStage(p, stage);")
               && work.Contains("int pace = p.Hired ? p.HirePace : Pace(p, stage, day);") && work.Contains("p.Hired ? 1.0 : SiteRules.MaterialsShare(p.Have, p.Need)"),
             "hire sources: a hired builder's site goes through the company's own working hour: its stages, its inspections' holds, its rework, at the builder's pace");
-        Check(MethodText(sites, "private void InspectionDue(").Contains("HiredBooks(p, inspection);") && MethodText(sites, "private void Passed(").Contains("HireStagePaid(p, inspection);")
+        Check(MethodText(sites, "private void InspectionDue(").Contains("HiredBooks(p, inspection, day, hour);") && MethodText(sites, "private void Passed(").Contains("HireStagePaid(p, inspection);")
               && MethodText(sites, "private void Inspect(").Contains("CommissionRules.Quality(_state.Rivals[p.Contractor].Reputation)"),
             "hire sources: the builder books the inspector, the verdict weighs its standing, and its stage is paid as each inspection passes");
         string handover = MethodText(projects, "private void Handover(");
@@ -211,13 +212,15 @@ internal static partial class Program
             found++;
             Check(guide.Contains("() => ConstructionDirector." + m.Groups[1].Value + "(), \"Construction check ("), "hire sources: " + m.Groups[1].Value + " is a button of the feature and a check of the run");
         }
-        Check(found == 3, "hire sources: three tests (the quotes, a builder start to finish, a late builder): " + found);
+        Check(found == 4, "hire sources: four tests (the quotes, a builder start to finish, a late builder, a builder's site worked to its keys): " + found);
         foreach (Match m in Regex.Matches(guide, @"\.Check\(""reallife_bld_test_hire[a-z_]*"", \(\) => ConstructionDirector\.TestHire[A-Za-z]*Now\(\), ""Construction check \(([^)]+)\)"""))
         {
             Check(tests.Contains("\"" + m.Groups[1].Value + "\""), "hire sources: the line \"Construction check (" + m.Groups[1].Value + ")\" is written by its test");
         }
-        Check(tests.Contains("private const string HireCheck = \"Construction check (\";") && Regex.Matches(tests, @"\(pass \? "": PASS\."" : "": FAIL\.""\)").Count == 2
-              && MethodText(tests, "private bool HireThrough(").Contains("HireBuilder(p, cheapest, true)"), "hire sources: each test ends its line PASS or FAIL; a test's contract moves no money");
+        Check(tests.Contains("private const string HireCheck = \"Construction check (\";") && Regex.Matches(tests, @"\(pass \? "": PASS\."" : "": FAIL\.""\)").Count == 3
+              && MethodText(tests, "private bool HireThrough(").Contains("HireBuilder(p, cheapest, true)") && MethodText(tests, "private bool HireWorked(").Contains("HireBuilder(p, CommissionRules.Cheapest(_quotes, count), true)")
+              && MethodText(tests, "private bool HireWorked(").Contains("WorkOn(site, facts.Done, facts.Hours, speed, day, hour)"),
+            "hire sources: each test ends its line PASS or FAIL; a test's contract moves no money; the worked test goes through the director's own working hour");
         Check(!Regex.IsMatch(hire + tests + app, @"using System\.Linq|\.Where\(|\.Select\(|void Update\(|FindObjectsOfType|FindObjectsByType"), "hire sources: no LINQ, no Update, no scene search");
     }
 
@@ -256,7 +259,9 @@ internal static partial class Program
             }
             Check(missing == null, "hire texts: every key of a hired builder is in " + codes[l] + ".json, in the style, with the English names (" + (missing ?? "all") + ")");
         }
-        foreach (string key in new[] { "reallife_bld_notice_hire_stage", "reallife_bld_notice_hire_failed", "reallife_bld_notice_hire_handed", "reallife_bld_notice_hire_late" })
+        foreach (string key in new[] { "reallife_bld_notice_hire_stage", "reallife_bld_notice_hire_failed", "reallife_bld_notice_hire_handed", "reallife_bld_notice_hire_late",
+                     "reallife_bld_notice_hire_begun", "reallife_bld_notice_hire_booked", "reallife_bld_notice_hire_overdue", "reallife_bld_notice_hire_resumed",
+                     "reallife_bld_notice_hire_resumed_late" })
         {
             string text = words[0].TryGetValue(key, out string t) ? t : string.Empty;
             Check(text.Length > 0 && text.Length + 120 <= 240, "hire texts: " + key + " stays under 240 characters with a long name and builder (" + text.Length + ")");

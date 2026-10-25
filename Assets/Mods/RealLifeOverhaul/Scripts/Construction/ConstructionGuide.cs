@@ -87,6 +87,7 @@ namespace RealLifeOverhaul.Construction
                 .Check("reallife_bld_test_hire_quotes", () => ConstructionDirector.TestHireQuotesNow(), "Construction check (a builder's quotes shown)", RunPlace.Here)
                 .Check("reallife_bld_test_hire", () => ConstructionDirector.TestHireNow(), "Construction check (a client project built by a rival now)", RunPlace.Here)
                 .Check("reallife_bld_test_hire_late", () => ConstructionDirector.TestHireLateNow(), "Construction check (a late builder pays its penalty)", RunPlace.Here)
+                .Check("reallife_bld_test_hire_worked", () => ConstructionDirector.TestHireWorkedNow(), "Construction check (a hired builder's site worked to its keys)", RunPlace.Here)
                 .Check("reallife_bld_test_desk_go", () => ConstructionDirector.TestDeskGoNow(), "Construction check (take me to a builder's desk)", RunPlace.Here)
                 .Test("reallife_bld_test_desk_talk", () => ConstructionDirector.TestDeskTalkNow())
                 .Check("reallife_bld_test_desk_pages", () => ConstructionDirector.TestDeskPagesNow(), "Construction check (a builder's desk pages)", RunPlace.Here)

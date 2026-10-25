@@ -382,8 +382,9 @@ namespace RealLifeOverhaul.Construction
                 {
                     return;   // a day's pass runs once a day, whatever the loads
                 }
+                int before = _state.LastDay;
                 _state.LastDay = day;
-                DayWork(day);
+                DayWork(day, before);
                 Changed();
             }
             catch (Exception e)

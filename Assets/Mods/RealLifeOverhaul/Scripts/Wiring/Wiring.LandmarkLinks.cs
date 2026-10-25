@@ -146,14 +146,10 @@ namespace RealLifeOverhaul
                         why = "the city's construction sites are off";
                         return 0;
                     }
-                    SiteState site = works.StartPlot(middle, yaw, width, depth, storeys, TimeHelper.CurrentDay, out why);
+                    SiteState site = works.StartPlot(middle, yaw, width, depth, storeys, TimeHelper.CurrentDay, out why, hours);   // set out with the landmark's hours, as its line says
                     if (site == null)
                     {
                         return 0;
-                    }
-                    if (hours > 0)
-                    {
-                        site.Needed = hours;
                     }
                     site.Contractor = Mathf.Clamp(contractor, 0, CivicCatalogue.Contractors.Length - 1);
                     return site.Id;
