@@ -93,6 +93,8 @@ namespace RealLifeOverhaul
                 ConstructionBridges.HideLook = HideLook;
                 ConstructionBridges.Extend = Extend;
                 ConstructionBridges.Convert = Convert;
+                ConstructionBridges.StandingAll = StandingAll;
+                ConstructionBridges.Holdings = Holdings;
                 DistrictBuildings.Lessee = RivalLease;   // whatever the options say: every machine leases the same offices
                 ConstructionBridges.RivalOffice = RivalOffice;
                 ConstructionBridges.RivalOfficeGo = RivalOfficeGo;
@@ -205,6 +207,8 @@ namespace RealLifeOverhaul
                 ConstructionBridges.HideLook = null;
                 ConstructionBridges.Extend = null;
                 ConstructionBridges.Convert = null;
+                ConstructionBridges.StandingAll = null;
+                ConstructionBridges.Holdings = null;
                 ConstructionBridges.Designs = null;
                 ConstructionBridges.Footprint = null;
                 ConstructionBridges.StartPlot = null;
@@ -615,6 +619,54 @@ namespace RealLifeOverhaul
                 {
                     Fault("ConstructionLinks.HideLook", e);
                     return false;
+                }
+            }
+
+            private static readonly List<DistrictBuilding> AllStanding = new List<DistrictBuilding>(256);
+
+            private static void StandingAll(List<StandingView> into)
+            {
+                into.Clear();
+                try
+                {
+                    DistrictBuildings.StandingAll(AllStanding);
+                    for (int i = 0; i < AllStanding.Count; i++)
+                    {
+                        if (View(AllStanding[i], out StandingView view))
+                        {
+                            into.Add(view);
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.StandingAll", e);
+                }
+                finally
+                {
+                    AllStanding.Clear();
+                }
+            }
+
+            // The rival tycoons in play, by their holdings' names: each may develop in Uptown as the city's builders do.
+            private static void Holdings(List<string> into)
+            {
+                into.Clear();
+                try
+                {
+                    Rivals.RivalDirector rivals = Rivals.RivalDirector.Instance;
+                    Rivals.RivalFile f = rivals != null && rivals.Running && !rivals.Resting ? rivals.File : null;
+                    for (int i = 0; f != null && i < f.Tycoons.Length; i++)
+                    {
+                        if (f.Tycoons[i] != null && f.Tycoons[i].Active)
+                        {
+                            into.Add(f.Tycoons[i].Def.Holding);
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.Holdings", e);
                 }
             }
 

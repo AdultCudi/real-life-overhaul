@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Buildings;
 using Entities;
@@ -106,6 +107,73 @@ namespace RealLifeOverhaul.Construction
             }
             deed.occupancy = 0f;
             return true;
+        }
+
+        // ------------------------------------------------------------------ the city's developers
+
+        /// <summary>
+        /// True for a building that is the city's own: nobody's deed of the player's, no unit of it rented by the player, and
+        /// nothing of another player's in a Going Public session. Only such a building may the city's developers take.
+        /// </summary>
+        internal static bool CityHeld(string street, int number)
+        {
+            BuildingRegistration reg = string.IsNullOrEmpty(street) ? null : BuildingHelper.GetBuildingRegistration(new Address(street, number));
+            return reg != null && !reg.RentedByPlayer && !GoingPublic.Foreign(reg) && DeedOf(street, number) == null;
+        }
+
+        /// <summary>True when a business of the city's trades in a building's unit.</summary>
+        internal static bool Trading(string street, int number)
+        {
+            BuildingRegistration reg = string.IsNullOrEmpty(street) ? null : BuildingHelper.GetBuildingRegistration(new Address(street, number));
+            return reg != null && reg.HasEstablishedBusiness && reg.businessTypeName != EmptyBusiness;
+        }
+
+        /// <summary>
+        /// An empty unit of the city's put up for rent again as the game leaves one it sets free (a change of use's at its end),
+        /// never the player's or another player's. True when it was.
+        /// </summary>
+        internal static bool LetAgain(string street, int number)
+        {
+            BuildingRegistration reg = string.IsNullOrEmpty(street) ? null : BuildingHelper.GetBuildingRegistration(new Address(street, number));
+            if (reg == null || reg.RentedByPlayer || GoingPublic.Foreign(reg) || DeedOf(street, number) != null || (reg.HasEstablishedBusiness && reg.businessTypeName != EmptyBusiness))
+            {
+                return false;
+            }
+            BusinessHelper.SetBuildingForRent(reg, false, false);
+            return true;
+        }
+
+        /// <summary>True when a building is for sale in the game's own listing (BizMan's buildings for sale), with its asking price.</summary>
+        internal static bool ForSale(string street, int number, out long price)
+        {
+            price = 0L;
+            List<BuildingForSale> sale = SaveGameManager.Current != null ? SaveGameManager.Current.buildingsForSale : null;
+            for (int i = 0; sale != null && i < sale.Count; i++)
+            {
+                Address a = sale[i] != null ? sale[i].address : null;
+                if (a != null && a.streetNumber == number && a.streetName == street)
+                {
+                    price = (long)Math.Round(sale[i].buildingPrice);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>A building taken off the game's listing of buildings for sale, as BizMan takes one off once it is sold. True when it was listed.</summary>
+        internal static bool TakeOffMarket(string street, int number)
+        {
+            List<BuildingForSale> sale = SaveGameManager.Current != null ? SaveGameManager.Current.buildingsForSale : null;
+            for (int i = sale != null ? sale.Count - 1 : -1; i >= 0; i--)
+            {
+                Address a = sale[i] != null ? sale[i].address : null;
+                if (a != null && a.streetNumber == number && a.streetName == street)
+                {
+                    sale.RemoveAt(i);
+                    return true;
+                }
+            }
+            return false;
         }
 
         /// <summary>The game's building types its structure of a size and version takes (BuildingVersion.supportedBuildingTypes), into the caller's list.</summary>

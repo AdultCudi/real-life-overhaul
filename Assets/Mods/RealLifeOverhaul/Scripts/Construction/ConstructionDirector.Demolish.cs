@@ -293,6 +293,7 @@ namespace RealLifeOverhaul.Construction
                     Logger?.Info("Construction: project " + p.Id + "'s building comes down behind its wrap: its look hidden.");
                 }
             }
+            CitySecond();   // the city's own demolitions alike
         }
 
         private static bool HideLook(string lot, bool hide)

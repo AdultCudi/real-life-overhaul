@@ -134,6 +134,12 @@ namespace RealLifeOverhaul.Construction
         /// <summary>A standing building's look hidden while it comes down behind its wrap, or shown again. Default: nothing.</summary>
         public static Func<string, bool, bool> HideLook;
 
+        /// <summary>Every one of the district's buildings standing at this load, into the caller's list (cleared). Default: none.</summary>
+        public static Action<List<StandingView>> StandingAll;
+
+        /// <summary>The holdings of the rival tycoons in play, into the caller's list (cleared): the city's other developers. Default: none.</summary>
+        public static Action<List<string>> Holdings;
+
         /// <summary>A district building on a lot given so many storeys of floor area in all, its look its own: null when done, else why not. Default: none.</summary>
         public static Func<string, int, string> Extend;
 
@@ -413,6 +419,8 @@ namespace RealLifeOverhaul.Construction
             HideLook = null;
             Extend = null;
             Convert = null;
+            StandingAll = null;
+            Holdings = null;
             SpacesOf = null;
             RivalOffice = null;
             RivalOfficeGo = null;

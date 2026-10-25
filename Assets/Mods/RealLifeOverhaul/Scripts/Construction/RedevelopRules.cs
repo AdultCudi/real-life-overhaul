@@ -135,6 +135,91 @@ namespace RealLifeOverhaul.Construction
             return new RefitQuote { Rival = won.Bidder, Price = won.Price / 10L * 10L, Days = Math.Max(1, won.Days), Hours = hours };
         }
 
+        // ------------------------------------------------------------------ the city's developers
+
+        public const int CityRates = 4;                 // the option's steps: off, slow, usual, lively
+        public const int OfferDays = 7;                 // days a developer's offer for a building for sale takes to complete: the player's time to buy it first
+        public const int CityRedevsMost = 3;            // the city's redevelopments under way at once at most
+        public const int CityRedevsKept = 16;           // those kept in the save, the last ones done among them
+        public const int CityShortlist = 4;             // the buildings a move is drawn among: those for sale first, then the emptiest
+        public const int HoldingPermille = 330;         // a move made by a rival tycoon's holding while one is in play
+        public const int CityPlansQuality = 70;         // a developer's plans before City Hall: a practice's, as good as the middling one's
+        public const int CityPatienceDays = 30;         // days past its works' end a redevelopment waits on the district before it is given up
+        private static readonly int[] CityGapLeast = { 0, 24, 12, 6 }, CityGapMost = { 0, 36, 18, 9 };   // days between moves, by the option
+        private static readonly int[] MoveWeights = { 30, 15, 10, 25, 20 };   // Redevelop, Assemble, Split, Extend, Convert
+
+        /// <summary>
+        /// Days to the city's developers' next move at an option's rate (1 slow: 24 to 36; 2 usual: 12 to 18; 3 lively: 6 to 9),
+        /// drawn from the save's seed and the day; 0 when they are off.
+        /// </summary>
+        public static int CityGap(int rate, int seed, int day)
+        {
+            if (rate <= 0 || rate >= CityRates)
+            {
+                return 0;
+            }
+            return BuildRandom.Of(seed, day, 0x5EDE).Range(CityGapLeast[rate], CityGapMost[rate] + 1);
+        }
+
+        /// <summary>
+        /// The move the city's developers make, drawn by the moves' weights among those the district holds a building for
+        /// (<paramref name="can"/>, by CityMove), from the save's seed and the day; CityMove.Count when it holds none.
+        /// </summary>
+        public static CityMove MoveOf(int seed, int day, bool[] can)
+        {
+            int total = 0;
+            for (int m = 0; m < MoveWeights.Length && m < can.Length; m++)
+            {
+                total += can[m] ? MoveWeights[m] : 0;
+            }
+            if (total <= 0)
+            {
+                return CityMove.Count;
+            }
+            int roll = BuildRandom.Of(seed, day, 0x30FE).Range(0, total);
+            for (int m = 0; m < MoveWeights.Length && m < can.Length; m++)
+            {
+                if (!can[m])
+                {
+                    continue;
+                }
+                if (roll < MoveWeights[m])
+                {
+                    return (CityMove)m;
+                }
+                roll -= MoveWeights[m];
+            }
+            return CityMove.Count;
+        }
+
+        /// <summary>One of so many, drawn from the save's seed, the day and what it is for; 0 for none.</summary>
+        public static int PickOf(int seed, int day, int salt, int count)
+        {
+            return count <= 1 ? 0 : BuildRandom.Of(seed, day, 0x7A11 + salt).Range(0, count);
+        }
+
+        /// <summary>True when a rival tycoon's holding makes the move (while one is in play), from the save's seed and the day.</summary>
+        public static bool ByHolding(int seed, int day)
+        {
+            return BuildRandom.Of(seed, day, 0x4F1D).Chance(HoldingPermille);
+        }
+
+        /// <summary>
+        /// A building's place in the developers' order: one for sale first (their offer goes in before anyone else's), then one
+        /// with no business trading in it, then the rest; within each, by the save's seed and the lot, the same every day.
+        /// </summary>
+        public static long Rank(bool forSale, bool trading, int seed, string lot)
+        {
+            long group = forSale ? 0L : trading ? 2L : 1L;
+            return group * 0x100000000L + (uint)BuildRandom.Mix(seed, BuildRandom.Hash(lot));
+        }
+
+        /// <summary>Days a developer's new building takes to go up on cleared ground: three weeks and a day for each 150 m2, at most eleven weeks.</summary>
+        public static int NewBuildDays(int sqm)
+        {
+            return BuildCatalogue.Clamp(21 + Math.Max(0, sqm) / 150, 21, 77);
+        }
+
         // ------------------------------------------------------------------ joining and splitting land
 
         /// <summary>

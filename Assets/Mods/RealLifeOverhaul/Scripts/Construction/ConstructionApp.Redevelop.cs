@@ -14,6 +14,60 @@ namespace RealLifeOverhaul.Construction
     public sealed partial class ConstructionApp
     {
         private readonly System.Collections.Generic.List<BuildUse> _uses = new System.Collections.Generic.List<BuildUse>(4);
+        private readonly System.Collections.Generic.List<RedevFile> _offers = new System.Collections.Generic.List<RedevFile>(4);
+
+        /// <summary>The city's developers' offers for Uptown's buildings for sale, one row each on the Land tab; the one picked, or null.</summary>
+        private RedevFile WriteOfferRows(ref string selected)
+        {
+            RedevFile picked = null;
+            _director.CityOffers(_offers);
+            for (int i = 0; i < _offers.Count; i++)
+            {
+                RedevFile r = _offers[i];
+                TableRow row = Pick("cof:" + r.Id, ref selected);
+                row.Kind = ConstructionTables.LandForSale;
+                row.Set(0, ConstructionGame.AddressText(r.Street, r.Number));
+                row.Set(1, ConstructionText.T("reallife_bld_value_area", "area", ConstructionText.N(r.Area)), r.Area);
+                row.Set(2, ConstructionDirector.DeveloperName(r));
+                row.Set(3, r.Price > 0 ? ConstructionText.Money(r.Price) : "-", r.Price);
+                row.Set(4, ConstructionText.T("reallife_bld_land_state_offer", "day", ConstructionText.Day(r.Until)), CellTone.Yellow);
+                picked = row.Id == selected ? r : picked;
+            }
+            return picked;
+        }
+
+        /// <summary>A developer's offer for a building for sale: who, what they pay, the day it completes, and that BizMan sells it to the player first.</summary>
+        private void WriteOffer(InfoBox box, RedevFile r)
+        {
+            box.Title(ConstructionGame.AddressText(r.Street, r.Number));
+            box.Subtitle(ConstructionText.T("reallife_bld_city_offer_title"));
+            box.RowPair("reallife_bld_row_developer", ConstructionDirector.DeveloperName(r), "reallife_bld_row_offer_price", r.Price > 0 ? ConstructionText.Money(r.Price) : "-");
+            box.RowPair("reallife_bld_row_area", ConstructionText.T("reallife_bld_value_area", "area", ConstructionText.N(r.Area)), "reallife_bld_row_offer_day",
+                ConstructionText.Day(r.Until));
+            box.Row("reallife_bld_row_city_plan", ConstructionText.T(ConstructionDirector.CityMoveKeys[(int)r.Move]));
+            box.Note(ConstructionText.T("reallife_bld_city_offer_note"));
+            BackButton(box);
+        }
+
+        /// <summary>On a rival builder's page: the city's redevelopments it does, under way and the last done.</summary>
+        private void WriteCityRedevs(InfoBox box, BuildState state, int rival)
+        {
+            int shown = 0;
+            for (int i = state.CityRedevs.Count - 1; i >= 0 && shown < 6; i--)
+            {
+                RedevFile r = state.CityRedevs[i];
+                if (r.Rival != rival)
+                {
+                    continue;
+                }
+                if (shown == 0)
+                {
+                    box.Section("reallife_bld_sec_city_redevs");
+                }
+                box.RowWords(ConstructionDirector.CityName(r), ConstructionDirector.CityStageWords(r), r.Live ? CellTone.Yellow : r.Stage == CityStage.Done ? CellTone.Green : CellTone.Plain);
+                shown++;
+            }
+        }
 
         /// <summary>The ways to redevelop a building of the player's that is one of Uptown's; nothing for a building of the game's own districts.</summary>
         private void RedevelopButtons(InfoBox box, BuildingView b)

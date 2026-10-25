@@ -28,6 +28,7 @@ namespace RealLifeOverhaul.Construction
             if (!GoingPublic.InSession)
             {
                 PublicTenders(day);
+                CityRedevelopDay(day);   // the city's developers redevelop Uptown on a machine of its own alone (ConstructionDirector.CityRedevelop)
             }
             RivalsDay(day);
         }
@@ -66,9 +67,9 @@ namespace RealLifeOverhaul.Construction
                 }
                 if (dev == null)
                 {
-                    if (_state.Lot(lot.Id) != null || _state.OnLot(lot.Id) != null || LotTaken(lot.Id))
+                    if (_state.Lot(lot.Id) != null || _state.OnLot(lot.Id) != null || LotTaken(lot.Id) || _state.CityRedevOn(lot.Id) != null)
                     {
-                        continue;   // the player's land, or a building of the district's own: passed over
+                        continue;   // the player's land, a building of the district's own, or ground the city redevelops: passed over
                     }
                     dev = new DevFile { Lot = lot.Id };
                     _state.Developments.Add(dev);

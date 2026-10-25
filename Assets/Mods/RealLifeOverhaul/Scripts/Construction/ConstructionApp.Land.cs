@@ -104,9 +104,15 @@ namespace RealLifeOverhaul.Construction
                 }
             }
             bool business = WriteUnitRows(ref selected, out UnitView pickedUnit);
+            RedevFile pickedOffer = WriteOfferRows(ref selected);   // ConstructionApp.Redevelop.cs: the developers' offers for Uptown's buildings for sale
             if (pickedLot != null && _director.Lot(pickedLot, out LotView picked))
             {
                 WriteLot(box, state, picked);
+                return;
+            }
+            if (pickedOffer != null)
+            {
+                WriteOffer(box, pickedOffer);
                 return;
             }
             if (run)

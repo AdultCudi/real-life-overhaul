@@ -24,6 +24,28 @@ namespace RealLifeOverhaul.Construction
         Conversion = 6  // an Uptown building made another use its structure takes, emptied first, worked as the programme's refit works
     }
 
+    /// <summary>What the city's developers do with a building of Uptown's (each by the player's own rules and calls). Saved as a number.</summary>
+    public enum CityMove
+    {
+        Redevelop = 0,  // knocked down, and a new building on its ground
+        Assemble = 1,   // two neighbours knocked down, and one bigger building over both
+        Split = 2,      // a building over several lots knocked down, and a smaller one on each
+        Extend = 3,     // storeys put on top
+        Convert = 4,    // made another use its structure takes
+        Count = 5
+    }
+
+    /// <summary>Where a redevelopment of the city's stands. Saved as a number.</summary>
+    public enum CityStage
+    {
+        Offer = 0,      // the developer's offer for a building for sale, to complete on its day (the player may buy it first)
+        Notice = 1,     // the permission asked, the notice to its tenants and business running
+        Works = 2,      // the demolition, the floors on top or the fit-out
+        Building = 3,   // the new building going up on the cleared ground
+        Done = 4,
+        Dropped = 5     // given up: outbid by the player, refused, or nothing of the city's fits
+    }
+
     /// <summary>Where a project stands, from the plans to the keys. Saved as a number.</summary>
     public enum ProjectStage
     {

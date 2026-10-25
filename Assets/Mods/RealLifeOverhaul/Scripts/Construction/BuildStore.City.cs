@@ -5,8 +5,9 @@ namespace RealLifeOverhaul.Construction
 {
     /// <summary>
     /// The city around the company in the save's line, after the parts of before: "^z:" the council's zoning of each class
-    /// of lot, "^g:" the rings on tenders, "^b:" the bills owed to the company and by it, "^y:" the building of the year.
-    /// A line without them reads as a company the city has never ruled on; an older reader passes them over.
+    /// of lot, "^g:" the rings on tenders, "^b:" the bills owed to the company and by it, "^y:" the building of the year,
+    /// "^w:" the city's developers' redevelopments of Uptown. A line without them reads as a company the city has never ruled
+    /// on and a city that has redeveloped nothing; an older reader passes them over.
     /// </summary>
     public static partial class BuildStore
     {
@@ -41,6 +42,66 @@ namespace RealLifeOverhaul.Construction
                 Join(t, 1);
                 WriteEntry(t, a.Entries[i]);
             }
+            WriteCityRedevs(t, s);
+        }
+
+        // The city's redevelopments: the day of the next, then each one, the last kept ones alone.
+        private static void WriteCityRedevs(StringBuilder t, BuildState s)
+        {
+            if (s.NextCityRedevDay <= 0 && s.CityRedevs.Count == 0)
+            {
+                return;   // a city that has redeveloped nothing writes nothing: its line is as before
+            }
+            t.Append("^w:").Append(s.NextCityRedevDay.ToString(Inv));
+            for (int i = Math.Max(0, s.CityRedevs.Count - RedevelopRules.CityRedevsKept); i < s.CityRedevs.Count; i++)
+            {
+                RedevFile r = s.CityRedevs[i];
+                t.Append(';');
+                Join(t, r.Id, (int)r.Move, (int)r.Stage);
+                t.Append('|').Append(Esc(r.Lot)).Append('|').Append(Esc(r.Street)).Append('|');
+                for (int k = 0; r.Lots != null && k < r.Lots.Length; k++)
+                {
+                    t.Append(k > 0 ? "," : string.Empty).Append(Esc(r.Lots[k]));
+                }
+                t.Append('|');
+                Join(t, r.Number, r.Rival, r.Day, r.Until, r.SiteId, r.Storeys, (int)r.Use, r.Area);
+                t.Append('|').Append(Esc(r.Holding)).Append('|').Append(Esc(r.Design)).Append('|').Append(r.Price.ToString(Inv));
+            }
+        }
+
+        private static void ReadCityRedevs(string body, BuildState s)
+        {
+            string[] records = body.Split(';');
+            s.NextCityRedevDay = int.TryParse(records[0], System.Globalization.NumberStyles.Integer, Inv, out int next) ? Math.Max(0, next) : 0;
+            for (int i = 1; i < records.Length && s.CityRedevs.Count < RedevelopRules.CityRedevsKept; i++)
+            {
+                var r = new Fields(records[i]);
+                var f = new RedevFile
+                {
+                    Id = r.I(0), Move = (CityMove)BuildCatalogue.Clamp(r.I(0), 0, (int)CityMove.Count - 1), Stage = (CityStage)BuildCatalogue.Clamp(r.I(0), 0, (int)CityStage.Dropped),
+                    Lot = r.S(), Street = r.S()
+                };
+                string others = r.S();   // read back whole; a lot's id holds no comma
+                if (others.Length > 0)
+                {
+                    f.Lots = others.Split(',');
+                }
+                f.Number = r.I(0);
+                f.Rival = BuildCatalogue.Clamp(r.I(0), 0, BuildCatalogue.RivalCount - 1);
+                f.Day = r.I(0);
+                f.Until = r.I(0);
+                f.SiteId = Math.Max(0, r.I(0));
+                f.Storeys = BuildCatalogue.Clamp(r.I(0), 0, RedevelopRules.StoreysMost);
+                f.Use = (BuildUse)BuildCatalogue.Clamp(r.I(0), 0, (int)BuildUse.Count - 1);
+                f.Area = Math.Max(0, r.I(0));
+                f.Holding = r.S();
+                f.Design = r.S();
+                f.Price = Math.Max(0L, r.L(0L));
+                if (f.Id > 0 && f.Lot.Length > 0)
+                {
+                    s.CityRedevs.Add(f);
+                }
+            }
         }
 
         private static void WriteEntry(StringBuilder t, AwardEntry e)
@@ -54,6 +115,9 @@ namespace RealLifeOverhaul.Construction
         {
             switch (part)
             {
+                case 'w':
+                    ReadCityRedevs(body, s);
+                    break;
                 case 'z':
                 {
                     var r = new Fields(body);

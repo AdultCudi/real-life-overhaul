@@ -216,6 +216,12 @@ namespace RealLifeOverhaul.Uptown
             return LifeDirector.HideLook(lotId, hide);
         }
 
+        /// <summary>Every one of the district's buildings standing at this load, as redevelopment reads them, into the caller's list (cleared).</summary>
+        public static void StandingAll(List<DistrictBuilding> into)
+        {
+            LifeDirector.StandingAll(into);
+        }
+
         /// <summary>
         /// A standing building given so many storeys of floor area in all, its look its own: its record and the player's deed now,
         /// the district's line from every load. False, with why, when refused. The caller asks it only outside a Going Public session.

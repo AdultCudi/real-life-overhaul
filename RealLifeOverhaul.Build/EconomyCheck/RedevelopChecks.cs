@@ -23,6 +23,9 @@ internal static partial class Program
         JoinChecks();
         ExtensionRuleChecks();
         ExtensionSourceChecks();
+        CityRuleChecks();
+        CityStoreChecks();
+        CitySourceChecks();
         RedevelopTextChecks();
     }
 
@@ -397,6 +400,132 @@ internal static partial class Program
         Check(ModSource(@"NewBuildings\NewBuildingsRules.cs").Contains("public const int MostFloors = " + RedevelopRules.StoreysMost + ";"), "extension sources: the storeys an extension reaches are those a district record takes");
     }
 
+    // ------------------------------------------------------------------ the city's developers
+
+    private static void CityRuleChecks()
+    {
+        bool gaps = RedevelopRules.CityGap(0, 7, 100) == 0 && RedevelopRules.CityGap(RedevelopRules.CityRates, 7, 100) == 0 && RedevelopRules.CityGap(-1, 7, 100) == 0;
+        int[] least = { 0, 24, 12, 6 }, most = { 0, 36, 18, 9 };
+        for (int rate = 1; rate < RedevelopRules.CityRates; rate++)
+        {
+            int low = int.MaxValue, high = int.MinValue;
+            for (int day = 1; day < 2000; day++)
+            {
+                int gap = RedevelopRules.CityGap(rate, 11, day);
+                low = Math.Min(low, gap);
+                high = Math.Max(high, gap);
+                gaps &= gap == RedevelopRules.CityGap(rate, 11, day);
+            }
+            gaps &= low == least[rate] && high == most[rate];
+        }
+        Check(gaps, "the city redevelops: a move every 24 to 36 days when slow, 12 to 18 as usual, 6 to 9 when lively, none when off, the same days from the same save");
+        var none = new bool[(int)CityMove.Count];
+        var one = new bool[(int)CityMove.Count];
+        one[(int)CityMove.Extend] = true;
+        var all = new bool[(int)CityMove.Count];
+        for (int m = 0; m < all.Length; m++)
+        {
+            all[m] = true;
+        }
+        var counts = new int[(int)CityMove.Count];
+        bool same = true, onlyOne = true;
+        for (int day = 1; day <= 5000; day++)
+        {
+            CityMove move = RedevelopRules.MoveOf(3, day, all);
+            counts[(int)move]++;
+            same &= move == RedevelopRules.MoveOf(3, day, all);
+            onlyOne &= RedevelopRules.MoveOf(3, day, one) == CityMove.Extend;
+        }
+        Check(RedevelopRules.MoveOf(3, 9, none) == CityMove.Count && onlyOne && same && counts[(int)CityMove.Redevelop] > counts[(int)CityMove.Split] && counts[(int)CityMove.Split] > 0
+              && counts[(int)CityMove.Assemble] > 0 && counts[(int)CityMove.Convert] > 0, "the city redevelops: the move is drawn by its weight among those the district holds a building for, and none when it holds none");
+        Check(RedevelopRules.Rank(true, true, 5, "uptown_1_02_0003") < RedevelopRules.Rank(false, false, 5, "uptown_1_02_0004") && RedevelopRules.Rank(false, false, 5, "uptown_1_02_0004") < RedevelopRules.Rank(false, true, 5, "uptown_1_02_0005")
+              && RedevelopRules.Rank(false, true, 5, "uptown_1_02_0005") == RedevelopRules.Rank(false, true, 5, "uptown_1_02_0005"),
+            "the city redevelops: a building for sale comes first in the developers' order, then one with no business, then the rest, the same each time");
+        int byHolding = 0;
+        bool picks = true;
+        for (int day = 1; day <= 3000; day++)
+        {
+            byHolding += RedevelopRules.ByHolding(9, day) ? 1 : 0;
+            int pick = RedevelopRules.PickOf(9, day, 3, 4);
+            picks &= pick >= 0 && pick < 4 && RedevelopRules.PickOf(9, day, 3, 1) == 0;
+        }
+        Check(byHolding > 750 && byHolding < 1250 && picks && RedevelopRules.NewBuildDays(0) == 21 && RedevelopRules.NewBuildDays(100000) == 77 && RedevelopRules.NewBuildDays(1500) == 31,
+            "the city redevelops: a rival tycoon's holding makes about a third of the moves while one is in play; a new building takes three to eleven weeks by its size");
+    }
+
+    private static void CityStoreChecks()
+    {
+        var s = new BuildState { Seed = 4, NextId = 90, NextCityRedevDay = 77 };
+        s.CityRedevs.Add(new RedevFile { Id = 81, Move = CityMove.Assemble, Stage = CityStage.Works, Lot = "uptown_2_03_0001", Street = "reallife:street_uptown_y", Number = 4,
+            Lots = new[] { "uptown_2_03_0002" }, Rival = 5, Holding = "Harlow Holdings", Day = 60, Until = 70, SiteId = 12, Use = BuildUse.Offices, Area = 2400, Price = 0 });
+        s.CityRedevs.Add(new RedevFile { Id = 82, Move = CityMove.Extend, Stage = CityStage.Offer, Lot = "uptown_2_03_0005", Street = "reallife:street_uptown_y", Number = 10, Rival = 2,
+            Day = 66, Until = 73, Storeys = 8, Use = BuildUse.Homes, Design = "SM_BT_001", Area = 1800, Price = 950000 });
+        string line = BuildStore.Write(s);
+        BuildState back = BuildStore.Read(line, out int _);
+        RedevFile a = back != null && back.CityRedevs.Count == 2 ? back.CityRedevs[0] : null, b = a != null ? back.CityRedevs[1] : null;
+        Check(back != null && back.NextCityRedevDay == 77 && a != null && a.Id == 81 && a.Move == CityMove.Assemble && a.Stage == CityStage.Works && a.Lots != null && a.Lots.Length == 1
+              && a.Lots[0] == "uptown_2_03_0002" && a.Holding == "Harlow Holdings" && a.SiteId == 12 && a.Area == 2400 && b != null && b.Storeys == 8 && b.Price == 950000 && b.Design == "SM_BT_001"
+              && b.Lots == null && back.CityRedevOn("uptown_2_03_0002") == a && back.CityRedevSite(12) == a && BuildStore.Write(back) == line,
+            "the city redevelops: the developers' redevelopments come back from the save's own part, every field, the line as it was");
+        string plain = BuildStore.Write(new BuildState { Seed = 4, NextId = 2 });
+        BuildState old = BuildStore.Read(plain, out int _);
+        Check(!plain.Contains("^w:") && old != null && old.CityRedevs.Count == 0 && old.NextCityRedevDay == 0,
+            "the city redevelops: a city that has redeveloped nothing writes no part of its own, and a line from before reads as none");
+        string odd = line.Replace("^w:77;81|1|2|", "^w:77;81|9|9|");
+        BuildState clamped = BuildStore.Read(odd, out int _);
+        Check(odd != line && clamped != null && clamped.CityRedevs.Count == 2 && clamped.CityRedevs[0].Move == CityMove.Convert && clamped.CityRedevs[0].Stage == CityStage.Dropped && !clamped.CityRedevs[0].Live,
+            "the city redevelops: a move or a stage this version does not know reads as its last, never as one under way it cannot carry on");
+    }
+
+    private static void CitySourceChecks()
+    {
+        string city = ModSource(@"Construction\ConstructionDirector.CityRedevelop.cs"), estate = ModSource(@"Construction\ConstructionGame.Estate.cs"), market = ModSource(@"Construction\ConstructionDirector.Market.cs");
+        string sites = ModSource(@"Construction\ConstructionDirector.Sites.cs"), wiring = ModSource(@"Wiring\Wiring.ConstructionLinks.cs"), guide = ModSource(@"Construction\ConstructionGuide.cs");
+        Check(city.Contains("public bool CityRedevelopOn => Running && Settings.ConstructionRedevelop && Settings.ConstructionCityRedevelop > 0 && !GoingPublic.InSession && DistrictLives();")
+              && MethodText(market, "private void MarketDay(").Contains("if (!GoingPublic.InSession)") && MethodText(market, "private void MarketDay(").Contains("CityRedevelopDay(day);"),
+            "the city redevelops sources: only with both options on, Uptown standing, and outside a Going Public session, where they rest");
+        string takes = MethodText(city, "public bool CityTakes(");
+        Check(takes.Contains("b.Kept") && takes.Contains("LotFree(b.Lot)") && takes.Contains("Busy(b.Street, b.Number, b.Lot)") && takes.Contains("!ConstructionGame.Owns(b.Street, b.Number) && ConstructionGame.CityHeld(b.Street, b.Number)")
+              && MethodText(city, "private bool LotFree(").Contains("_state.Lot(lot) == null && _state.OnLot(lot) == null && _state.CityRedevOn(lot) == null"),
+            "the city redevelops sources: a developer takes only the city's own buildings, never a place the district keeps, the player's land or anything under their projects");
+        string held = MethodText(estate, "internal static bool CityHeld(");
+        Check(held.Contains("!reg.RentedByPlayer") && held.Contains("!GoingPublic.Foreign(reg)") && held.Contains("DeedOf(street, number) == null"),
+            "the city redevelops sources: the city's own is no deed of the player's, no unit they rent, nothing of another player's");
+        string step = MethodText(city, "internal void CityStep(");
+        Check(step.Contains("!StillTheCitys(r)") && step.Contains("ConstructionGame.TakeOffMarket(r.Street, r.Number)") && step.Contains("\"reallife_bld_notice_city_outbid\"")
+              && MethodText(city, "internal RedevFile CityBegin(").Contains("r.Until = day + RedevelopRules.OfferDays") && MethodText(city, "internal RedevFile CityBegin(").Contains("\"reallife_bld_notice_city_offer\""),
+            "the city redevelops sources: an offer for a building for sale completes on its day unless the player bought it first, and they are told of both");
+        string decide = MethodText(city, "private void CityDecide("), apply = MethodText(city, "private void CityApply(");
+        Check(apply.Contains("RedevelopRules.PermitDays(r.Area)") && apply.Contains("PlanningRules.WorkingDays(r.Area)") && apply.Contains("RedevelopRules.NoticeEnds(day)")
+              && decide.Contains("PlanningRules.Objections(") && decide.Contains("PlanningRules.Decide(") && decide.Contains("ConstructionGame.Evict(r.Street, r.Number)")
+              && decide.Contains("RedevelopRules.DemolitionHours(r.Area)") && decide.Contains("RedevelopRules.ConversionHours(r.Area)") && decide.Contains("ProjectKind.Extension)"),
+            "the city redevelops sources: their permission, notice, objections, decision and works are the player's own rules");
+        string works = MethodText(city, "private void CityWorksDone("), built = MethodText(city, "private void CityBuilt(");
+        Check(works.Contains("CityDemolish(r.Lot)") && MethodText(city, "private static string CityDemolish(").Contains("ConstructionBridges.Demolish(lot)") && works.Contains("ConstructionBridges.Extend(r.Lot, r.Storeys)")
+              && works.Contains("ConstructionBridges.Convert(r.Lot, BuildCatalogue.UseTypes[(int)r.Use])") && built.Contains("FinishOverLot(r.Lot, _over, design.Name, design.Size, design.Version, type, 0, false, 0.0, out why)")
+              && built.Contains("FinishLot(r.Lot, design.Name, design.Size, design.Version, type, 0, false, 0.0, out why)") && built.Contains("RivalNews(r.Rival, RivalDeveloped, 1)"),
+            "the city redevelops sources: the district takes their works by the player's own calls, and what they build is the city's, its builder's record and the market's news");
+        string let = MethodText(estate, "internal static bool LetAgain(");
+        Check(works.Contains("ConstructionGame.LetAgain(r.Street, r.Number)") && let.Contains("reg.RentedByPlayer || GoingPublic.Foreign(reg) || DeedOf(street, number) != null")
+              && let.Contains("BusinessHelper.SetBuildingForRent(reg, false, false)") && works.Contains("day > r.Until + RedevelopRules.CityPatienceDays")
+              && MethodText(city, "private bool StillTheCitys(").Contains("r.Stage == CityStage.Works && Demolishes(r.Move)"),
+            "the city redevelops sources: a unit changed in use is let again as the game lets one, never the player's; what the district will not take is given up in time");
+        Check(MethodText(sites, "public bool Owns(").Contains("_state.CityRedevSite(siteId) != null") && MethodText(sites, "public float WorkOn(").Contains("CityPace(siteId, done, needed, hours, out float pace)")
+              && MethodText(sites, "public void SiteHanded(").Contains("CityHanded(siteId)") && MethodText(ModSource(@"Construction\ConstructionDirector.Extend.cs"), "public bool KeepsLook(").Contains("r.Move == CityMove.Extend"),
+            "the city redevelops sources: their sites are the builders' own, handed over by their schedule, an extension's front its own");
+        Check(MethodText(market, "private void Developments(").Contains("_state.CityRedevOn(lot.Id) != null") && MethodText(ModSource(@"Construction\ConstructionDirector.Actions.cs"), "public bool DeveloperOn(").Contains("_state.CityRedevOn(lot) != null"),
+            "the city redevelops sources: ground they redevelop is neither another developer's nor for sale to the player meanwhile");
+        Check(wiring.Contains("ConstructionBridges.StandingAll = StandingAll;") && wiring.Contains("ConstructionBridges.Holdings = Holdings;") && wiring.Contains("ConstructionBridges.Holdings = null;")
+              && wiring.Contains("f.Tycoons[i].Active") && ModSource(@"Construction\ConstructionBridges.cs").Contains("Holdings = null;"), "the city redevelops sources: the district's buildings and the rival tycoons in play reach them by bridges, wired and let go");
+        Check(ModSource(@"Core\Settings.cs").Contains("public static int ConstructionCityRedevelop = 2;") && guide.Contains(".AddDropdown(Settings.ConstructionCityRedevelopId, \"reallife_bld_city_redevelop_option\",")
+              && guide.Contains(".Owns(Settings.ConstructionRedevelopId, Settings.ConstructionCityRedevelopId)") && ModSource(@"Meta\OptionsTree.cs").Contains(".Opt(\"construction_city_redevelop\", \"construction\")"),
+            "the city redevelops sources: its option under Construction, usual by default, the guide's and the search's");
+        Check(guide.Contains(".Check(\"reallife_bld_test_city_choices\", () => ConstructionDirector.TestCityChoicesNow(),") && guide.Contains(".Test(\"reallife_bld_test_city_redevelop\", () => ConstructionDirector.TestCityRedevelopNow())")
+              && ModSource(@"TestRun\RunPlan.cs").Contains("{ \"reallife_bld_test_city_redevelop\","), "the city redevelops sources: its choices are tested in the run, nothing changed; its moves by a button alone, being for good");
+        Check(ModSource(@"Construction\ConstructionApp.Land.cs").Contains("WriteOfferRows(ref selected)") && ModSource(@"Construction\ConstructionApp.Rivals.cs").Contains("WriteCityRedevs(box, state, r)"),
+            "the city redevelops sources: their offers are on the Land tab, and each builder's redevelopments on its page");
+    }
+
     // ------------------------------------------------------------------ the texts
 
     private static void RedevelopTextChecks()
@@ -490,6 +619,16 @@ internal static partial class Program
         for (int l = 0; l < words.Length; l++)
         {
             Check(raised.TryGetValue(codes[l], out string start) && WhatsNewHas(words[l], start), "redevelopment texts: What's new has the line for extensions and change of use in " + codes[l]);
+        }
+        var city = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            { "en", "The city's developers do all of this too" }, { "pt", "As incorporadoras da cidade também fazem tudo isso" }, { "zh-cn", "城里的开发商也按同样的规则做这些事" },
+            { "de", "Die Bauträger der Stadt tun all das auch" }, { "fr", "Les promoteurs de la ville font tout cela aussi" }, { "es", "Los promotores de la ciudad también hacen todo esto" },
+            { "ru", "Городские застройщики тоже делают всё это" }, { "nl", "De projectontwikkelaars van de stad doen dit allemaal ook" }, { "tr", "Şehrin müteahhitleri de bunların hepsini aynı kurallarla yapar" }
+        };
+        for (int l = 0; l < words.Length; l++)
+        {
+            Check(city.TryGetValue(codes[l], out string start) && WhatsNewHas(words[l], start), "redevelopment texts: What's new has the line for the city's developers in " + codes[l]);
         }
         var down = new Dictionary<string, string>(StringComparer.Ordinal)
         {

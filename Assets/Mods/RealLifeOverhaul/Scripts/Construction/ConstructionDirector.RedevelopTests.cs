@@ -672,5 +672,147 @@ namespace RealLifeOverhaul.Construction
                 TabProjects, p.Id);
             return true;
         }
+
+        // ------------------------------------------------------------------ the city's developers
+
+        private static readonly CityMove[] TestMoves = { CityMove.Extend, CityMove.Convert, CityMove.Redevelop, CityMove.Assemble, CityMove.Split };
+
+        /// <summary>
+        /// Test (in the test run): the city's developers' choices now, nothing changed: for each move the buildings they may take,
+        /// none of them the player's, another player's, a place the district keeps or on the player's land; and the move drawn
+        /// today one the district holds a building for.
+        /// </summary>
+        public static bool TestCityChoicesNow()
+        {
+            const string test = "the city's developers' choices now, nothing changed";
+            ConstructionDirector d = RedoDirector(test, false);
+            if (d == null)
+            {
+                return false;
+            }
+            try
+            {
+                return d.CityChoicesNow(test);
+            }
+            catch (Exception e)
+            {
+                d.Fault("a test (" + test + ")", e);
+                return false;
+            }
+        }
+
+        private bool CityChoicesNow(string test)
+        {
+            if (GoingPublic.InSession || !DistrictLives())
+            {
+                return Failed(RedoCheck, test, "reallife_bld_test_session_city", "a Going Public session is on, or Uptown is not a district at this load");
+            }
+            ReadStanding();
+            var line = new System.Text.StringBuilder(160);
+            bool all = true;
+            int any = 0, wrong = 0;
+            for (int m = 0; m < (int)CityMove.Count; m++)
+            {
+                int count = CityCandidates((CityMove)m, _candidates);
+                _canMove[m] = count > 0;
+                any += count;
+                for (int i = 0; i < count; i++)
+                {
+                    StandingView b = _standing[_candidates[i]];
+                    if (b.Kept || ConstructionGame.Owns(b.Street, b.Number) || !ConstructionGame.CityHeld(b.Street, b.Number) || _state.Lot(b.Lot) != null || Busy(b.Street, b.Number, b.Lot))
+                    {
+                        wrong++;
+                        Logger?.Warn(RedoCheck + test + "): " + (CityMove)m + " may take " + b.Street + " " + b.Number + " (lot " + b.Lot + "), which is not the city's own to take.");
+                    }
+                }
+                line.Append(m > 0 ? ", " : string.Empty).Append((CityMove)m).Append(' ').Append(count.ToString(CultureInfo.InvariantCulture));
+            }
+            CityMove pick = RedevelopRules.MoveOf(_state.Seed, ConstructionGame.Day, _canMove);
+            all &= wrong == 0 && (any == 0 ? pick == CityMove.Count : pick != CityMove.Count && _canMove[(int)pick]);
+            string said = _standing.Count + " building(s) standing; they may take " + line + "; today's move " + (pick == CityMove.Count ? "none" : pick.ToString()) + "; "
+                          + LiveCityRedevs() + " of theirs under way";
+            if (!all)
+            {
+                Logger?.Warn(RedoCheck + test + "): " + said + ": FAIL.");
+                return Failed(RedoCheck, test, "reallife_bld_test_failed_log", "the developers may take a building that is not the city's own, or drew a move with nothing to take");
+            }
+            Passed(test, "reallife_bld_test_city_choices", said, TabRivals, 0);
+            return true;
+        }
+
+        /// <summary>
+        /// Test: each of the city's developers' moves made now where the district holds a building for it, for good: begun as
+        /// the day's pass begins one (an offer for a building for sale completed at once), its permission granted, its works and
+        /// its new building handed over at once by the same calls the player's take.
+        /// </summary>
+        public static bool TestCityRedevelopNow()
+        {
+            const string test = "the city's developers make each move now, for good";
+            ConstructionDirector d = RedoDirector(test, false);
+            if (d == null)
+            {
+                return false;
+            }
+            try
+            {
+                return d.CityRedevelopNow(test);
+            }
+            catch (Exception e)
+            {
+                d.Fault("a test (" + test + ")", e);
+                return false;
+            }
+        }
+
+        private bool CityRedevelopNow(string test)
+        {
+            if (GoingPublic.InSession || !Settings.ConstructionRedevelop || !DistrictLives())
+            {
+                return Failed(RedoCheck, test, GoingPublic.InSession ? "reallife_bld_test_session_city" : "reallife_bld_answer_redevelop_off",
+                    "a Going Public session is on, redevelopment is off in the options, or Uptown is not a district at this load");
+            }
+            BeforeTest();
+            int day = ConstructionGame.Day, done = 0, made = 0, waiting = 0;
+            bool all = true;
+            var line = new System.Text.StringBuilder(240);
+            for (int m = 0; m < TestMoves.Length; m++)
+            {
+                RedevFile r = CityBegin(day, TestMoves[m]);
+                if (r == null)
+                {
+                    line.Append(line.Length > 0 ? "; " : string.Empty).Append(TestMoves[m]).Append(": nothing to take");
+                    continue;
+                }
+                made++;
+                for (int step = 0; step < 6 && r.Live; step++)
+                {
+                    CityStage was = r.Stage;
+                    CityStep(r, day, true);
+                    if (r.Stage == was)
+                    {
+                        break;   // the city's designs are being looked through, or the district cannot take it yet
+                    }
+                }
+                bool finished = r.Stage == CityStage.Done;
+                bool designs = r.Stage == CityStage.Building && string.IsNullOrEmpty(r.Design);
+                done += finished ? 1 : 0;
+                waiting += designs ? 1 : 0;
+                all &= finished || designs;
+                line.Append(line.Length > 0 ? "; " : string.Empty).Append(TestMoves[m]).Append(" at ").Append(r.Street).Append(' ').Append(r.Number.ToString(CultureInfo.InvariantCulture))
+                    .Append(" by ").Append(DeveloperName(r)).Append(": ").Append(finished ? "done" : designs ? "down, its new building waits on the city's designs" : r.Stage + " (WRONG)");
+            }
+            if (made == 0)
+            {
+                return Failed(RedoCheck, test, "reallife_bld_test_city_nothing", "the district holds no building of the city's own the developers may take");
+            }
+            if (!all)
+            {
+                Logger?.Warn(RedoCheck + test + "): " + line + ": FAIL.");
+                return Failed(RedoCheck, test, "reallife_bld_test_failed_log", "a move of the developers did not reach the district");
+            }
+            Passed(test, "reallife_bld_test_city_redevelop", line + "; " + done + " of " + made + " done now" + (waiting > 0 ? ", " + waiting + " to finish on the day's pass" : string.Empty),
+                TabRivals, 0);
+            return true;
+        }
     }
 }

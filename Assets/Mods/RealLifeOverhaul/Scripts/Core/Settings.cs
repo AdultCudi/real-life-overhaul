@@ -48,6 +48,7 @@
         public const string ConstructionRenovationsId = "construction_renovations"; // ...refits of the player's own businesses, and businesses' refits to tender
         public const string ConstructionCityId = "construction_city";              // ...the city around it: rigged tenders, unpaid bills, the building of the year
         public const string ConstructionRedevelopId = "construction_redevelop";    // ...knocking down, joining, extending and converting Uptown's buildings
+        public const string ConstructionCityRedevelopId = "construction_city_redevelop";   // ...how often the city's developers do it to the city's own
         public const string HouseholdStaffId = "home_household";
         public const string CameraFovId = "camera_fov";
         public const string CameraHeightId = "camera_height";
@@ -400,6 +401,7 @@
         public static bool ConstructionRenovations = true; // the player's businesses refitted by their company or a contractor, and businesses' refits out to tender
         public static bool ConstructionCity = true;        // rigged tenders, unpaid bills taken to court, and the City Ledger's building of the year
         public static bool ConstructionRedevelop = true;   // Uptown's buildings knocked down, their ground joined or split and built on again, storeys added, uses changed
+        public static int ConstructionCityRedevelop = 2;   // the city's developers redevelop Uptown's own buildings: 0 Off, 1 Slow, 2 Usual, 3 Lively
         public static bool HouseholdStaff = true;   // a cleaner, a cook, a butler or a mechanic taken on for the home through the phone
         public static int CameraFov = 55;        // degrees, vertical
         public static bool LifeEvents = true;
@@ -798,6 +800,7 @@
             ConstructionRenovations = Bool(modId, ConstructionRenovationsId, ConstructionRenovations);
             ConstructionCity = Bool(modId, ConstructionCityId, ConstructionCity);
             ConstructionRedevelop = Bool(modId, ConstructionRedevelopId, ConstructionRedevelop);
+            ConstructionCityRedevelop = System.Math.Max(0, System.Math.Min(3, Int(modId, ConstructionCityRedevelopId, ConstructionCityRedevelop)));
             HouseholdStaff = Bool(modId, HouseholdStaffId, HouseholdStaff);
             CameraFov = Int(modId, CameraFovId, CameraFov);
             CameraHeight = Int(modId, CameraHeightId, CameraHeight);

@@ -282,6 +282,50 @@ namespace RealLifeOverhaul.Construction
         public bool Public;                          // a public building a rival won the tender for: finished when its site is handed over
     }
 
+    /// <summary>
+    /// A redevelopment of the city's developers in Uptown (ConstructionDirector.CityRedevelop): their move, the building it
+    /// takes and where it stands. Saved in the line's "^w:" part; a line without it has none.
+    /// </summary>
+    public sealed class RedevFile
+    {
+        public int Id;
+        public CityMove Move;
+        public CityStage Stage;
+        public string Lot = string.Empty;            // the building's own lot
+        public string Street = string.Empty;         // its address
+        public int Number;
+        public string[] Lots;                        // the other lots it takes (those its building stands over, an assembly's neighbour's); null for none
+        public int Rival;                            // the builder of the city's whose development arm it is, or who does a holding's works
+        public string Holding = string.Empty;        // a rival tycoon's holding that develops it; empty for the builder's own arm
+        public int Day;                              // the day it began
+        public int Until;                            // the day its stage ends
+        public int SiteId;                           // the city's site showing its works; 0 for none
+        public int Storeys;                          // an extension's storeys in all
+        public BuildUse Use;                         // a change of use's new use, or the new building's
+        public string Design = string.Empty;         // the new building's design (a split's first), "-" when nothing of the city's fits
+        public long Price;                           // what the developer paid for the building, when it was for sale
+        public int Area;                             // the building's floor area as it began
+
+        public bool Live => Stage < CityStage.Done;
+
+        /// <summary>True when it takes a lot: its building's own, or one of its others.</summary>
+        public bool Takes(string lot)
+        {
+            if (string.Equals(Lot, lot, StringComparison.Ordinal))
+            {
+                return true;
+            }
+            for (int i = 0; Lots != null && i < Lots.Length; i++)
+            {
+                if (string.Equals(Lots[i], lot, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
     /// <summary>One day of the construction company's books: what its works brought in and what they cost, in money.</summary>
     public struct DayBook
     {
@@ -304,6 +348,34 @@ namespace RealLifeOverhaul.Construction
         public int NextId = 1;
         public int NextClientDay, NextPublicDay;     // the days the next client's and public tenders open
         public int NextRefitDay;                     // the day the next business's refit tender opens
+        public int NextCityRedevDay;                 // the day the city's developers next take a building of Uptown's on; 0 before they first look
+        public readonly List<RedevFile> CityRedevs = new List<RedevFile>(8);   // the city's redevelopments, those under way and the last done
+
+        /// <summary>The city's redevelopment under way that takes a lot, or null.</summary>
+        public RedevFile CityRedevOn(string lot)
+        {
+            for (int i = 0; !string.IsNullOrEmpty(lot) && i < CityRedevs.Count; i++)
+            {
+                if (CityRedevs[i].Live && CityRedevs[i].Takes(lot))
+                {
+                    return CityRedevs[i];
+                }
+            }
+            return null;
+        }
+
+        /// <summary>The city's redevelopment under way whose site has this id, or null.</summary>
+        public RedevFile CityRedevSite(int siteId)
+        {
+            for (int i = 0; siteId > 0 && i < CityRedevs.Count; i++)
+            {
+                if (CityRedevs[i].Live && CityRedevs[i].SiteId == siteId)
+                {
+                    return CityRedevs[i];
+                }
+            }
+            return null;
+        }
         public readonly FirmFile Firm = new FirmFile();
         public readonly List<LotFile> Lots = new List<LotFile>(8);
         public readonly List<CrewFile> Crews = new List<CrewFile>(8);

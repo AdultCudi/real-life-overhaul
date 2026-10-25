@@ -203,7 +203,8 @@ namespace RealLifeOverhaul.Construction
         public bool KeepsLook(int siteId)
         {
             ProjectFile p = _state != null ? _state.OnSite(siteId) : null;
-            return p != null && p.Kind == ProjectKind.Extension;
+            RedevFile r = _state != null && p == null ? _state.CityRedevSite(siteId) : null;
+            return (p != null && p.Kind == ProjectKind.Extension) || (r != null && r.Move == CityMove.Extend);   // the city's extensions too
         }
 
         /// <summary>

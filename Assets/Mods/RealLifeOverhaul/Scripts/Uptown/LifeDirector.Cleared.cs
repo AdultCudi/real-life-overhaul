@@ -69,6 +69,19 @@ namespace RealLifeOverhaul.Uptown
             return false;
         }
 
+        /// <summary>Every one of the district's buildings standing at this load, as the construction game reads them, into the caller's list (cleared).</summary>
+        public static void StandingAll(List<DistrictBuilding> into)
+        {
+            into.Clear();
+            for (int i = 0; i < Standing.Count; i++)
+            {
+                if (Read(Standing[i], out DistrictBuilding b))
+                {
+                    into.Add(b);
+                }
+            }
+        }
+
         /// <summary>The district's building standing at an address at this load; false for none.</summary>
         public static bool StandingAt(string street, int number, out DistrictBuilding b)
         {

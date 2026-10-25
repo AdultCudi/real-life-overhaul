@@ -76,6 +76,7 @@ namespace RealLifeOverhaul.Construction
             {
                 box.Line(ConstructionText.T("reallife_bld_rival_beat_you", "count", against.ToString()), CellTone.Yellow);
             }
+            WriteCityRedevs(box, state, r);   // ConstructionApp.Redevelop.cs
             box.Note(ConstructionText.T("reallife_bld_rival_note"));
             box.Note(ConstructionText.T("reallife_bld_rival_hire_note"));
             if (office != null)

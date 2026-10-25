@@ -23,7 +23,7 @@ namespace RealLifeOverhaul.Construction
                 .Owns(Settings.ConstructionId, Settings.ConstructionDevelopersId, Settings.ConstructionLandTaxId, Settings.ConstructionRisksId)
                 .Owns(Settings.ConstructionShowFlatsId, Settings.ConstructionRenovationsId)
                 .Owns(Settings.ConstructionCityId)
-                .Owns(Settings.ConstructionRedevelopId)
+                .Owns(Settings.ConstructionRedevelopId, Settings.ConstructionCityRedevelopId)
                 .Data(BuildStore.Key, BuildStore.TestKey)
                 .ResetData(() => ConstructionDirector.Instance?.Forget())
                 .Fact("bld_licence_fee", () => Money(BuildCatalogue.LicenceFee))
@@ -112,6 +112,9 @@ namespace RealLifeOverhaul.Construction
                 .Test("reallife_bld_test_cleared_build", () => ConstructionDirector.TestClearedBuildNow())
                 .Test("reallife_bld_test_extend", () => ConstructionDirector.TestExtensionNow())
                 .Test("reallife_bld_test_convert", () => ConstructionDirector.TestConversionNow())
+                .Check("reallife_bld_test_city_choices", () => ConstructionDirector.TestCityChoicesNow(),
+                    "Redevelopment check (the city's developers' choices now, nothing changed)", RunPlace.Here)
+                .Test("reallife_bld_test_city_redevelop", () => ConstructionDirector.TestCityRedevelopNow())
                 .Test("reallife_bld_test_lot", "reallife_bld_test_company", "reallife_bld_test_licence", "reallife_bld_test_plans", "reallife_bld_test_planning",
                     "reallife_bld_test_council", "reallife_bld_test_stage", "reallife_bld_test_inspection", "reallife_bld_test_deliveries", "reallife_bld_test_handover",
                     "reallife_bld_test_opening", "reallife_bld_test_tender", "reallife_bld_test_award", "reallife_bld_test_developers", "reallife_bld_test_poach",
@@ -145,6 +148,9 @@ namespace RealLifeOverhaul.Construction
                 .AddToggle(Settings.ConstructionRenovationsId, "reallife_bld_renovations", Settings.ConstructionRenovations, v => Settings.ConstructionRenovations = v)
                 .AddToggle(Settings.ConstructionCityId, "reallife_bld_city_option", Settings.ConstructionCity, v => Settings.ConstructionCity = v)
                 .AddToggle(Settings.ConstructionRedevelopId, "reallife_bld_redevelop_option", Settings.ConstructionRedevelop, v => Settings.ConstructionRedevelop = v)
+                .AddDropdown(Settings.ConstructionCityRedevelopId, "reallife_bld_city_redevelop_option",
+                    new[] { "reallife_bld_city_rate_off", "reallife_bld_city_rate_slow", "reallife_bld_city_rate_usual", "reallife_bld_city_rate_lively" },
+                    Settings.ConstructionCityRedevelop, v => Settings.ConstructionCityRedevelop = v)
                 .AddButton("reallife_bld_test_lot", () => ConstructionDirector.Instance?.TestLot())
                 .AddButton("reallife_bld_test_company", () => ConstructionDirector.Instance?.TestCompany())
                 .AddButton("reallife_bld_test_licence", () => ConstructionDirector.Instance?.TestLicence())
