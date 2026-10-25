@@ -22,7 +22,7 @@ namespace RealLifeOverhaul
 
         // Seconds of play after the loading screen: every feature has put its handlers on the game's events by then
         // (the economy waits a few seconds for the legal record).
-        private const float StartAfter = 20f;
+        internal const float StartAfter = 20f;
         public const double SliceMs = 1.0;       // milliseconds of reading and compiling a frame may take
         private const double WorstMs = 20.0;     // milliseconds a frame may reach with one long method (the longest offline: 13 ms)
         private const int MostMethods = 30000;   // methods taken in at most

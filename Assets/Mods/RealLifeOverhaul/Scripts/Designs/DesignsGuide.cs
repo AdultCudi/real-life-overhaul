@@ -12,6 +12,8 @@ namespace RealLifeOverhaul.Designs
             Features.Add("designs", "reallife_meta_title_designs")
                 .Group("reallife_designs_header")
                 .About("reallife_guide_designs_about").Help("reallife_guide_designs")
+                .Fact("designs_shop_most", () => DesignCatalogue.ShopMost.ToString(CultureInfo.InvariantCulture))
+                .Fact("designs_branch_most", () => DesignCatalogue.BranchMost.ToString(CultureInfo.InvariantCulture))
                 .Owns(Settings.DesignsId)
                 .Test("reallife_designs_test_say", "reallife_designs_test_install")
                 .Fact("designs_showroom_most", () => DesignCatalogue.ShowroomMost.ToString(CultureInfo.InvariantCulture));
