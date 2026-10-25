@@ -24,7 +24,9 @@ namespace RealLifeOverhaul.Economy
                 .Fact("rota_hires_most", () => Whole(RotaLadder.HiresMost))
                 .Fact("rota_share_least", () => Whole(RotaLadder.ShareLeast))
                 .Fact("rota_gain_least", () => CompanyText.Money(RotaLadder.GainLeast / 100f))
-                .Fact("rota_replace_days", () => Whole(RotaLadder.ReplaceDays));
+                .Fact("rota_replace_days", () => Whole(RotaLadder.ReplaceDays))
+                .Fact("rota_delivery_hour", () => RotaStock.DeliveryHour.ToString("00", Inv))
+                .Fact("rota_round_hour", () => RotaStock.RoundHour.ToString("00", Inv));
         }
 
         private static string Whole(int value)
