@@ -68,6 +68,8 @@ namespace RealLifeOverhaul.Economy
                 .Fact("ob_fund_bold", () => Whole(OwnBankCatalogue.FundCompanies[3]))
                 .Fact("ob_sale_years", () => Whole(OwnBankCatalogue.SaleYears))
                 .Fact("ob_staff", () => Money(OwnBankRules.At(OwnBankCatalogue.StaffDayCents, Prices.Level)))
+                .Fact("ob_hall_community", () => Money(OwnBankRules.At(BankTiers.HallDayCents[BankTiers.Community], Prices.Level)))
+                .Fact("ob_hall_regional", () => Money(OwnBankRules.At(BankTiers.HallDayCents[BankTiers.Regional], Prices.Level)))
                 .Cleanup(() => OwnBankDirector.Instance?.StopAll(), -3)
                 .ResetData(() => OwnBankDirector.Instance?.Forget());   // the director reads the now empty save afresh on its next second
         }

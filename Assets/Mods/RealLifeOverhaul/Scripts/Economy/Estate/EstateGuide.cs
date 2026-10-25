@@ -75,7 +75,11 @@ namespace RealLifeOverhaul.Economy
                 .Fact("est_return_let_poor", () => EstateText.Yield(Let(EstateCatalogue.IncomeLeast)))
                 .Fact("est_return_let_rich", () => EstateText.Yield(Let(EstateCatalogue.IncomeMost)))
                 .Fact("est_return_hire", () => EstateText.Yield(Hire()))
-                .Fact("est_return_shop", () => EstateText.Yield(EstateBalance.ShopYearlyBp(1)));
+                .Fact("est_return_shop", () => EstateText.Yield(EstateBalance.ShopYearlyBp(1)))
+                .Fact("est_lease_least", () => Whole(EstateCatalogue.TermLeast))
+                .Fact("est_lease_most", () => Whole(EstateCatalogue.TermLeast + EstateCatalogue.TermStep * (EstateCatalogue.TermSteps - 1)))
+                .Fact("est_hotel_sell", () => EstateText.Share(EstateCatalogue.HotelSellShare))
+                .Fact("est_holdings", () => Whole(EstateCatalogue.HoldingsMost));
         }
 
         /// <summary>The figures the Guide's page "A landlord's duties" prints.</summary>
@@ -110,7 +114,8 @@ namespace RealLifeOverhaul.Economy
                 .Fact("duty_agent_days", () => Whole(EstateCatalogue.AgentLetDays))
                 .Fact("duty_manager", () => EstateText.Share(EstateCatalogue.ManagerShare))
                 .Fact("duty_more", () => EstateText.Share(EstateCatalogue.ManagedApplicants - 1000))
-                .Fact("duty_record", () => Whole(EstateCatalogue.ManagerRecordLeast));
+                .Fact("duty_record", () => Whole(EstateCatalogue.ManagerRecordLeast))
+                .Fact("duty_city_come", () => Whole(EstateCatalogue.CityDays));
         }
 
         // A shop building let in a steady economy, averaged over the seeds.

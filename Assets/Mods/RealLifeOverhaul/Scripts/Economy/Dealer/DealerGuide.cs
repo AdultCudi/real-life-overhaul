@@ -62,7 +62,16 @@ namespace RealLifeOverhaul.Economy.Dealership
                 .Fact("dealer_delivery_most", () => Whole(DealerCatalogue.DeliveryDaysMost))
                 .Fact("dealer_delivery_hour", () => Hour(DealerCatalogue.DeliveryHour))
                 .Fact("dealer_report_days", () => Whole(DealerCatalogue.ReportDays))
-                .Fact("dealer_average_days", () => Whole(DealerCatalogue.AverageDays));
+                .Fact("dealer_average_days", () => Whole(DealerCatalogue.AverageDays))
+                .Fact("dealer_showrooms", () => Whole(DealerCatalogue.YardsMost))
+                .Fact("dealer_deliveries_most", () => Whole(DealerCatalogue.DeliveriesMost))
+                .Fact("dealer_ask_least", () => Share(DealerCatalogue.AskLeast))
+                .Fact("dealer_ask_most", () => Share(DealerCatalogue.AskMost))
+                .Fact("dealer_floor_least", () => Share(DealerCatalogue.StaffFloorLeast))
+                .Fact("dealer_floor_most", () => Share(DealerCatalogue.StaffFloorMost))
+                .Fact("dealer_offers_most", () => Whole(DealerCatalogue.DealsMost))
+                .Fact("dealer_plans_most", () => Whole(DealerCatalogue.PlansMost))
+                .Fact("dealer_covers_most", () => Whole(DealerCatalogue.CoversMost));
         }
 
         private static string Events()

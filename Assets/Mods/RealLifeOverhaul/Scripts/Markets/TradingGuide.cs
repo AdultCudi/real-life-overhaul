@@ -61,7 +61,8 @@ namespace RealLifeOverhaul.Markets
                 .Fact("bot_own_volume", () => Whole(MarketBots.OwnVolumePct) + "%")
                 .Fact("bot_own_swing", () => Whole(MarketBots.OwnSwingDays(System.Math.Max(8, GameCalendar.DaysPerYear))))
                 .Fact("bot_deal_year", () => Bp(ListingCatalogue.FounderDealMostBpYear))
-                .Fact("bot_founder_most", () => Bp(ListingCatalogue.FounderMostBp));
+                .Fact("bot_founder_most", () => Bp(ListingCatalogue.FounderMostBp))
+                .Fact("bot_change_least", () => Guide.Money(Prices.At((float)MarketBots.ChangeLeastAtStart)));
         }
 
         private static string Whole(int value)

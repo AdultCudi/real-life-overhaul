@@ -32,7 +32,17 @@ namespace RealLifeOverhaul.Economy
                 .Fact("mgr_items", () => Whole(ManagerCatalogue.ItemsInDecision))
                 .Fact("mgr_price_step", () => CompanyText.Share(ManagerCatalogue.PriceStep))
                 .Fact("mgr_stock_step", () => CompanyText.Share(ManagerCatalogue.StockStep))
-                .Fact("mgr_budget_near", () => CompanyText.Share(ManagerDirectoryRules.BudgetNearShare));
+                .Fact("mgr_budget_near", () => CompanyText.Share(ManagerDirectoryRules.BudgetNearShare))
+                .Fact("mgr_most", () => Whole(ManagerCatalogue.ManagersMost))
+                .Fact("mgr_band_least", () => CompanyText.Share(ManagerCatalogue.WageBands[0]))
+                .Fact("mgr_band_most", () => CompanyText.Share(ManagerCatalogue.WageBands[ManagerCatalogue.WageBands.Length - 1]))
+                .Fact("mgr_band_default", () => CompanyText.Share(ManagerCatalogue.WageBands[ManagerCatalogue.WageBandDefault]))
+                .Fact("mgr_budget_most", () => CompanyText.Money(ManagerCatalogue.Budgets[ManagerCatalogue.Budgets.Length - 1]))
+                .Fact("mgr_budget_default", () => CompanyText.Money(ManagerCatalogue.Budgets[ManagerCatalogue.BudgetDefault]))
+                .Fact("mgr_keep_most", () => Whole(ManagerCatalogue.KeepMost))
+                .Fact("mgr_stock_default", () => Whole(ManagerCatalogue.StockDays[ManagerCatalogue.StockDaysDefault]))
+                .Fact("mgr_price_low_default", () => CompanyText.Share(ManagerCatalogue.PriceLows[ManagerCatalogue.PriceLowDefault]))
+                .Fact("mgr_price_high_default", () => CompanyText.Share(ManagerCatalogue.PriceHighs[ManagerCatalogue.PriceHighDefault]));
         }
 
         private static string Whole(int value)

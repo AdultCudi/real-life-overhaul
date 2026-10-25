@@ -41,6 +41,8 @@ namespace RealLifeOverhaul.Tech
                 .Fact("talent_course_days", () => Whole(TalentCatalogue.CourseDays))
                 .Fact("talent_course_gain", () => Whole(TalentCatalogue.CourseGain))
                 .Fact("talent_exam_pass", () => Whole(TalentCatalogue.ExamPassBase) + "%")
+                .Fact("talent_rise_days", () => Whole(WageRules.PeriodDays))
+                .Fact("talent_wage_cap", () => (WageRules.CapBp / 10000f).ToString("0.#", Inv))
                 .Fact("talent_certs", Certs);
         }
 

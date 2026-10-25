@@ -82,7 +82,19 @@ namespace RealLifeOverhaul.Economy
                 .Fact("co_lic_hours", () => Whole(CompanyCatalogue.LicenceClosedHours))
                 .Fact("co_late_hour", () => Whole(CompanyCatalogue.LateHour))
                 .Fact("co_early_hour", () => Whole(CompanyCatalogue.EarlyHour))
-                .Fact("co_loss_days", () => Whole(CompanyCatalogue.LossRunDays));
+                .Fact("co_loss_days", () => Whole(CompanyCatalogue.LossRunDays))
+                .Fact("co_esteem", () => Whole(CompanyCatalogue.EsteemMost))
+                .Fact("co_stand_match", () => Whole(CompanyCatalogue.StandMatch))
+                .Fact("co_poach_rest", () => Whole(CompanyCatalogue.PoachRestDays))
+                .Fact("co_strike_staff_least", () => Whole(CompanyCatalogue.StrikeStaffLeast))
+                .Fact("co_strike_raise_standing", () => Whole(CompanyCatalogue.StrikeRaiseStanding))
+                .Fact("co_strike_pay_standing", () => Whole(CompanyCatalogue.StrikePayStanding))
+                .Fact("co_strike_after_standing", () => Whole(CompanyCatalogue.StrikeAfterStanding))
+                .Fact("co_ot_answer", () => Whole(CompanyCatalogue.OvertimeAnswerDays))
+                .Fact("co_ot_standing", () => Whole(CompanyCatalogue.OvertimeStanding))
+                .Fact("co_ot_rest", () => Whole(CompanyCatalogue.OvertimeRestDays))
+                .Fact("co_term_least", () => Whole(CompanyCatalogue.TermDaysLeast))
+                .Fact("co_lic_check", () => Tenths(CompanyCatalogue.LicenceCheckChance));
         }
 
         private static string Whole(int value)

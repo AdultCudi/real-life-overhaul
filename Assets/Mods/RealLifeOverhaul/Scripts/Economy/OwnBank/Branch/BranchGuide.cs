@@ -25,7 +25,9 @@ namespace RealLifeOverhaul.Economy
                 .Fact("branch_reach_most", () => OwnBankText.Ratio(BranchCatalogue.ReachMost))
                 .Fact("branch_reach_half", () => Whole(BranchCatalogue.ReachHalf))
                 .Fact("branch_firms", () => OwnBankText.Ratio(BranchCatalogue.FirmsReach))
-                .Fact("branch_designs_most", () => Whole(Designs.DesignCatalogue.BranchMost));
+                .Fact("branch_designs_most", () => Whole(Designs.DesignCatalogue.BranchMost))
+                .Fact("branch_shown", () => Whole(BranchCatalogue.ShownMost))
+                .Fact("branch_at_once", () => Whole(BranchCatalogue.OnFloorMost));
         }
 
         private static string Money(long cents)

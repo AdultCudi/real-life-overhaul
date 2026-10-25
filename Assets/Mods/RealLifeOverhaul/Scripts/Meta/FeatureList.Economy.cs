@@ -114,6 +114,9 @@ namespace RealLifeOverhaul.Meta
                 .Fact("econ_bank_from", () => Whole(Economy.ProductCatalogue.BankruptRebuildFrom))
                 .Fact("econ_bank_per_day", () => Whole(Economy.ProductCatalogue.BankruptRebuildPerDay))
                 .Fact("econ_bank_every", () => Whole(Economy.ProductCatalogue.BankruptEveryDays))
+                .Fact("econ_car_least", () => Guide.Money(Economy.ProductTerms.FinanceLeast(Economy.ProductKind.CarFinance)))
+                .Fact("econ_home_least", () => Guide.Money(Economy.ProductTerms.FinanceLeast(Economy.ProductKind.Mortgage)))
+                .Fact("econ_shark_bill_share", () => Guide.Percent(Economy.ProductCatalogue.SharkDamageShare))
                 .Cleanup(() => Economy.EconomyDirector.Instance?.StopAll())
                 .ResetData(() => Economy.EconomyDirector.Instance?.Forget());   // the director opens a new file from the (now empty) save on its next second
 
@@ -153,6 +156,8 @@ namespace RealLifeOverhaul.Meta
                 .Fact("macro_swing_relaxed", () => Whole(Economy.MacroCatalogue.SwingPercent[Economy.MacroCatalogue.Relaxed]) + "%")
                 .Fact("macro_swing_realistic", () => Whole(Economy.MacroCatalogue.SwingPercent[Economy.MacroCatalogue.Realistic]) + "%")
                 .Fact("macro_swing_hardcore", () => Whole(Economy.MacroCatalogue.SwingPercent[Economy.MacroCatalogue.Hardcore]) + "%")
+                .Fact("macro_eve_hour", () => Economy.CityModel.DecisionEveHour.ToString(CultureInfo.InvariantCulture) + ":00")
+                .Fact("macro_shocks_most", () => Whole(Economy.MacroCatalogue.ShocksAtOnce))
                 .Cleanup(() => Economy.CityEconomyDirector.Instance?.StopAll(), -1)
                 .ResetData(() => Economy.CityEconomyDirector.Instance?.Forget());   // the director opens a new economy from the (now empty) save on its next second
             // Its rows stand under the economy's header.
@@ -206,6 +211,15 @@ namespace RealLifeOverhaul.Meta
                 .Fact("ven_levels", VenturesLevels)
                 .Fact("ven_buy_out_days", () => Whole(Economy.Ventures.VenturesCatalogue.BuyOutDays))
                 .Fact("ven_buy_out_floor", () => Whole(Economy.Ventures.VenturesCatalogue.BuyOutFloorPct) + "%")
+                .Fact("ven_offer_slow", () => Whole(Economy.Ventures.VenturesCatalogue.SlowdownChancePct) + "%")
+                .Fact("ven_offer_boom", () => Whole(Economy.Ventures.VenturesCatalogue.BoomChancePct) + "%")
+                .Fact("ven_offers_most", () => Whole(Economy.Ventures.VenturesCatalogue.OffersMost))
+                .Fact("ven_name_start", () => Whole(Economy.Ventures.VenturesCatalogue.ReputationStart))
+                .Fact("ven_name_claim", () => Whole(-Economy.Ventures.VenturesCatalogue.ReputationClaim))
+                .Fact("ven_pledges_most", () => Whole(Economy.Ventures.VenturesCatalogue.PledgesMost))
+                .Fact("ven_deals_most", () => Whole(Economy.Ventures.VenturesCatalogue.DealsMost))
+                .Fact("ven_deals_business", () => Whole(Economy.Ventures.VenturesCatalogue.DealsPerBusiness))
+                .Fact("ven_follow_days", () => Whole(Economy.Ventures.VenturesCatalogue.FollowOnValueDays))
                 .Cleanup(() => Economy.Ventures.VenturesDirector.Instance?.StopAll())
                 .ResetData(() => Economy.Ventures.VenturesDirector.Instance?.Forget());   // the director opens a new file from the (now empty) save on its next second
 
@@ -257,6 +271,10 @@ namespace RealLifeOverhaul.Meta
                 .Fact("bond_sell_city", () => Guide.Percent(Markets.BondCatalogue.SellSpreadCityBp / 10000f))
                 .Fact("bond_penalty_months", () => Whole(Markets.BondCatalogue.DepositPenaltyMonths))
                 .Fact("bond_short_years", () => Whole((int)Markets.BondCatalogue.ShortYears))
+                .Fact("mkt_holding_own", () => Guide.Percent(Markets.MarketCatalogue.HoldingCapBp[0] / 10000f))
+                .Fact("mkt_holding_float", () => Guide.Percent(Markets.MarketCatalogue.HoldingFloatBp / 10000f))
+                .Fact("mkt_orders_most", () => Whole(Markets.MarketCatalogue.OrdersMost))
+                .Fact("mkt_watch_most", () => Whole(Markets.MarketCatalogue.WatchMost))
                 .Cleanup(() => Markets.MarketDirector.Instance?.StopAll())
                 .ResetData(() => Markets.MarketDirector.Instance?.Forget());   // the director opens a new market from the (now empty) save on its next second
             Markets.ListingGuide.Register();
