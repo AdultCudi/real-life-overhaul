@@ -90,6 +90,7 @@ namespace RealLifeOverhaul.Construction
                 .Check("reallife_bld_test_desk_go", () => ConstructionDirector.TestDeskGoNow(), "Construction check (take me to a builder's desk)", RunPlace.Here)
                 .Test("reallife_bld_test_desk_talk", () => ConstructionDirector.TestDeskTalkNow())
                 .Check("reallife_bld_test_desk_pages", () => ConstructionDirector.TestDeskPagesNow(), "Construction check (a builder's desk pages)", RunPlace.Here)
+                .Check("reallife_bld_test_map", () => ConstructionDirector.TestMapNow(), "Construction check (show on map)", RunPlace.Here)
                 .Check("reallife_bld_test_show_flat", () => ConstructionDirector.TestShowFlatNow(), "Show flats check (a show flat at the test project now)", RunPlace.Here)
                 .Check("reallife_bld_test_viewing", () => ConstructionDirector.TestViewingNow(), "Show flats check (a viewing now)", RunPlace.Here)
                 .Check("reallife_bld_test_show_buyer", () => ConstructionDirector.TestShowBuyerNow(), "Show flats check (a buyer at the show flat now)", RunPlace.Here)

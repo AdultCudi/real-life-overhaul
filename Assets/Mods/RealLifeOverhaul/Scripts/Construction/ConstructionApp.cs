@@ -282,6 +282,20 @@ namespace RealLifeOverhaul.Construction
             GameConfirm.Show(header, body, () => UiClone.Safe(() => Answer(act())), null, null, null, true, negative);
         }
 
+        // Show on map under a page's title, a row of its own: the place made the game's own destination (the menu closes so its
+        // marker shows), and an answer in a notice only when it could not be.
+        private void MapRow(InfoBox box, Func<string> show)
+        {
+            InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_bld_button_map", () =>
+            {
+                string why = show();
+                if (why != null)
+                {
+                    Answer(why);
+                }
+            });
+        }
+
         private void BackButton(InfoBox box)
         {
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_bld_back", Back);
