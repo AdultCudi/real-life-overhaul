@@ -9,7 +9,8 @@ namespace RealLifeOverhaul.Seasons
 {
     /// <summary>
     /// The seasons' test buttons: the season's goods as written on the game's items, with the coming snow days, into
-    /// Player.log; and a heavy fall where the player stands, held for three minutes, with its check line.
+    /// Player.log; and a heavy fall where the player stands, held for three minutes, with its check line: the flakes'
+    /// size and spacing for the camera's distance, when the ground was marked, and the game's rain kept out of sight.
     /// </summary>
     public sealed partial class SeasonDirector
     {
@@ -19,6 +20,7 @@ namespace RealLifeOverhaul.Seasons
         private const int SnowDaysListed = 8;
         private const float SampleRadius = 40f;   // metres round the player the cars and people are sampled from
         private const float ShowCheckAfter = 15f; // seconds before a season's test look is checked: the first flash may take twelve
+        private const float FlakePixelsLeast = 2.5f;   // pixels across a flake where the camera looks, at the least, to be seen
 
         /// <summary>"Show this season's goods and the coming snow in the log."</summary>
         public void TestGoods()
@@ -258,6 +260,10 @@ namespace RealLifeOverhaul.Seasons
                 {
                     why.Append(" no flakes falling (").Append(_look.FlakesMissing ?? "not made yet").Append(");");
                 }
+                else if (_look.Field.PixelsAt(_look.SeenFrom) < FlakePixelsLeast)
+                {
+                    why.Append(" the flakes too small to be seen from the camera;");
+                }
                 if (!_look.Covering)
                 {
                     why.Append(" the ground not covered (").Append(_look.CoverMissing ?? "not made yet").Append(");");
@@ -270,13 +276,61 @@ namespace RealLifeOverhaul.Seasons
                     why.Append(" the roads not snowy to the weather (snow ").Append(Events.Weather.Snow).Append(");");
                 }
             }
-            Logger?.Info("Seasons test (snow): " + _look.Flakes + " flake(s) in the air, the cover at " + Cover.ToString("0.00", CultureInfo.InvariantCulture)
+            bool rainSeen = SeasonGame.GameDropsFalling && !SeasonGame.RainHushed;
+            if (rainSeen)
+            {
+                why.Append(" the game's rain seen falling with the snow;");
+            }
+            Logger?.Info("Seasons test (snow): " + _look.Flakes + " flake(s) in the air, " + FlakeWords() + "; " + MarkWords() + "; rain seen: " + RainWords(rainSeen)
+                         + "; the cover at " + Cover.ToString("0.00", CultureInfo.InvariantCulture)
                          + (_look.Way == SnowWay.Layers ? " over the ground and the roofs" : " (none lying: " + (_look.CoverMissing ?? "not made yet") + ")")
                          + ", the roads' snow " + Events.Weather.Snow + ", traffic x"
                          + Events.Weather.TrafficSpeedFactor.ToString("0.00", CultureInfo.InvariantCulture) + ", grip x" + Events.Weather.GripFactor.ToString("0.00", CultureInfo.InvariantCulture)
                          + ", walkers set off at x" + SeasonGame.WalkApplied.ToString("0.00", CultureInfo.InvariantCulture) + " of their pace: "
                          + (why.Length == 0 ? "PASS" : "FAIL:" + why.ToString().TrimEnd(';')));
             Logger?.Info(LookCheck());
+        }
+
+        // The flakes as fitted to the camera: their size and spacing, how far off the camera is and what a flake shows there.
+        private string FlakeWords()
+        {
+            if (!_look.Flaking)
+            {
+                return "none fitted to the camera";
+            }
+            SnowField field = _look.Field;
+            return (field.Size * 100f).ToString("0.0", CultureInfo.InvariantCulture) + " cm across and " + field.Spacing.ToString("0.0", CultureInfo.InvariantCulture)
+                   + " m apart for the camera " + _look.SeenFrom.ToString("0", CultureInfo.InvariantCulture) + " m off (about "
+                   + field.PixelsAt(_look.SeenFrom).ToString("0.0", CultureInfo.InvariantCulture) + " px where it looks, at 1080 lines), up to " + field.Count + " in a "
+                   + field.Span.ToString("0", CultureInfo.InvariantCulture) + " m box " + field.Height.ToString("0", CultureInfo.InvariantCulture) + " m high round its view, "
+                   + (_look.Soft ? "soft round dots of the game's '" + (SeasonGame.FlakePaintFrom ?? "?") + "'" : "small lit pieces (the game's soft round particle was not found)");
+        }
+
+        // What of the ground was marked for the snow, and when and behind which screen.
+        private string MarkWords()
+        {
+            SnowGround ground = _look.Ground;
+            if (ground.Marked == 0)
+            {
+                return "the ground not marked (" + (ground.Missing ?? "no reason kept") + ")";
+            }
+            return "the ground marked: " + ground.Marked + " piece(s) behind " + (ground.MarkedAtLoad ? "the loading screen " : "a door's black screen ")
+                   + (Time.realtimeSinceStartup - ground.MarkedAt).ToString("0", CultureInfo.InvariantCulture) + " s ago";
+        }
+
+        // Whether the game's own rain shows under the snow: its weather is left as it is, its look kept out of sight.
+        private static string RainWords(bool seen)
+        {
+            if (seen)
+            {
+                return "YES";
+            }
+            if (!SeasonGame.GameRaining)
+            {
+                return "no (the game's own rain is not falling)";
+            }
+            return "no (the game's own rain falls on in its weather, hidden here: " + SeasonGame.RainPartsHidden + " particle renderer(s) off, "
+                   + SeasonGame.RainSoundsHushed + " sound(s) muted, the wet look held dry)";
         }
 
         // Which way the ground is whitened at this load, and a sample of the cars and people near the player, none of
@@ -319,7 +373,7 @@ namespace RealLifeOverhaul.Seasons
             text.Append("; ").Append(renderers.Count).Append(" renderer(s) of ").Append(bodies).Append(" car(s) and person(s) within ").Append(SampleRadius.ToString("0", CultureInfo.InvariantCulture))
                 .Append(" m, the player's own among them, ").Append(onSnow).Append(" on the snow's layer").Append(first != null ? " (the first: '" + first + "')" : string.Empty)
                 .Append("; the seasons set no volume, fog, sky, exposure or light and no material, tint or keyword on any person or car; the flakes are ")
-                .Append(_look.Flakes).Append(" small lit cubes of the mod's paint with a faint glow: ")
+                .Append(_look.Flakes).Append(_look.Soft ? " soft round dots of the game's own particle, unchanged: " : " small lit pieces of the mod's paint: ")
                 .Append(wayOk && onSnow == 0 && bodies > 0 ? "PASS" : "FAIL" + (onSnow > 0 ? " (a car or person is on the snow's layer)" : string.Empty)
                                                             + (wayOk ? string.Empty : " (the ground's way is not as wanted)")
                                                             + (bodies > 0 ? string.Empty : " (nobody sampled, not even the player)"));

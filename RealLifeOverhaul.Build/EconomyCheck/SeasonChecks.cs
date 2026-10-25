@@ -22,6 +22,7 @@ internal static partial class Program
         SeasonSources();
         SnowLookSources();
         SeasonLooks();
+        SnowFields();
         SeasonTexts();
     }
 
@@ -362,7 +363,7 @@ internal static partial class Program
         Check(ground.Contains("renderer is SkinnedMeshRenderer") && ground.Contains("SeasonRules.SnowBit(holders)") && ground.Contains("_cleared.Add(renderer)")
               && ground.Contains("renderingLayerMask &= ~_bit") && ground.Contains("FindObjectsInactive.Include"),
             "seasons: no skinned body is ever marked, anything else carrying the snow's bit is taken off it while marked, and every mark is put back");
-        Check(director.Contains("ScenePrewarm.Add(MarkWhat, MarkGround)") && director.Contains("ScenePrewarm.Again(MarkWhat, MarkGround)") && !Regex.IsMatch(director + look, @"SceneFinds\.All<"),
+        Check(director.Contains("ScenePrewarm.Add(MarkWhat, _markGround)") && director.Contains("ScenePrewarm.Again(MarkWhat, _markGround)") && !Regex.IsMatch(director + look, @"SceneFinds\.All<"),
             "seasons: the ground is searched for only behind a loading screen or a door's black screen, never in play");
         Check(tests.Contains("Seasons test (snow look)") && tests.Contains("SeasonGame.Bodies(") && tests.Contains("on the snow's layer"),
             "seasons: the snow test says which way the ground is whitened and checks the cars and people near the player");

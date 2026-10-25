@@ -42,10 +42,15 @@ namespace RealLifeOverhaul.Seasons
         /// </summary>
         public static void Sky(float overcast, float warmth)
         {
-            if (_skyFailed || (Mathf.Approximately(overcast, SkyOvercast) && Mathf.Approximately(warmth, SkyWarmth)))
+            if (!_skyFailed && !(Mathf.Approximately(overcast, SkyOvercast) && Mathf.Approximately(warmth, SkyWarmth)))
             {
-                return;
+                WriteSky(overcast, warmth);
             }
+        }
+
+        // The copy made or blended again for a new look: a few times a game day.
+        private static void WriteSky(float overcast, float warmth)
+        {
             try
             {
                 TimeOfDayController time = Clock();
@@ -257,6 +262,7 @@ namespace RealLifeOverhaul.Seasons
         {
             _skyFailed = false;
             SkyMissing = null;
+            ForgetSnow();
         }
     }
 }

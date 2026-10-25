@@ -185,8 +185,10 @@ namespace RealLifeOverhaul
         // Events/Weather
         public static readonly GameMember RainIntensity = StaticField(Thunder, Sky, "BigAmbitions.DayNightCycle.RainHelper", "NextRainMaxIntensity", "Single");
 
-        // Seasons/SeasonGame: the rain's place by the player, which the snow falls around; the people's paces, narrowed on snow
+        // Seasons/SeasonGame: the rain's place by the player and its sound, kept out of sight and hearing while snow falls; the people's paces, narrowed on snow
         public static readonly GameMember RainPlace = StaticField(SnowFall, Sky, "BigAmbitions.DayNightCycle.RainHelper", "RainEffect", "RainEffect");
+        // optional: without it the game's rain is still heard under the snow, and nothing else is lost
+        public static readonly GameMember RainSound = Optional(StaticField(SnowFall, Sky, "BigAmbitions.DayNightCycle.RainHelper", "RainAudio", "RainAudio"));
         public static readonly GameMember WalkerPaces = Field(SnowWalkers, Game, "PedestrianPool", "animatorOverrides", "List<PedestrianPool.AnimatorOverride>");
         public static readonly GameMember DaySettings = Field(SeasonSky, Game, "TimeOfDayController", "environmentSettings", "EnvironmentSettings");
         public static readonly GameMember RainSettings = Field(SeasonSky, Game, "TimeOfDayController", "environmentSettingsRain", "EnvironmentSettings");
