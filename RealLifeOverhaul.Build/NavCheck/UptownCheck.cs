@@ -886,10 +886,10 @@ internal static partial class Program
             for (int column = 1; column <= LayoutRules.Columns; column++)
             {
                 LayoutRules.Block(row, column, out float x0, out float z0, out float x1, out float z1);
-                kept &= !UptownCovered(npc.Boxes, (x0 + x1) * 0.5f, (z0 + z1) * 0.5f);
+                kept &= ParksRules.IsPark(row * 100 + column) || !UptownCovered(npc.Boxes, (x0 + x1) * 0.5f, (z0 + z1) * 0.5f);   // a park's paths are walked too (UptownParksCheck.cs)
             }
         }
-        Check(kept, "uptown walking: the pedestrians keep to the pavements, crossing each avenue at every junction on both sides, off the carriageways and the blocks");
+        Check(kept, "uptown walking: the pedestrians keep to the pavements, crossing each avenue at every junction on both sides, off the carriageways and the blocks but the parks' paths");
         // Inside its edge: every box off the walls by the edge's clearance, north of 1st Avenue's kerbs.
         float west = LayoutPlans.RingWest + LayoutPlans.EdgeClear - 0.01f, east = LayoutPlans.RingEast - LayoutPlans.EdgeClear + 0.01f, north = LayoutPlans.RingNorth - LayoutPlans.EdgeClear + 0.01f;
         bool inside = player.Boxes.Concat(npc.Boxes).All(b =>

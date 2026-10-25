@@ -645,6 +645,7 @@ namespace RealLifeOverhaul.Uptown
             if (people)
             {
                 LayoutPlans.Zones(ZoneBoxes);
+                LayoutPlans.ParkZones(ZoneBoxes);   // after the pavements', so the pavements' count stays the plan's
                 for (int i = 0; i < ZoneBoxes.Count; i++)
                 {
                     PlanBox box = ZoneBoxes[i];

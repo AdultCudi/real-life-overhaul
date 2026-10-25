@@ -70,6 +70,7 @@ namespace RealLifeOverhaul.Uptown
             {
                 GroundGame.Forget();
                 StreetsGame.Forget();   // its pieces went with the art: the templates it holds go too
+                ParksGame.Forget();     // ... and the parks' pieces, their paving's meshes with them
             }
             UptownLots.Laid(false, stays ? "the save tools stopped the mod" : "the city is going");
             if (Instance == this)
@@ -217,7 +218,7 @@ namespace RealLifeOverhaul.Uptown
                          + _artMs.ToString("F0", Inv) + " ms; the player's walking ground " + (_walkable ? "grown in " + _playerMs.ToString("F0", Inv) + " ms" : "NOT laid")
                          + ", the pedestrians' " + (_people ? "in " + _peopleMs.ToString("F0", Inv) + " ms" : "not (" + _peopleWhy + "), so no one walks there") + "; " + _hidden
                          + " pieces of the backdrop and " + _strays + " strays put away, " + _opened + " of the game's walls opened, " + GroundGame.Built
-                         + " walls and colliders built, " + _termini.Count + " bus termini; " + FurnitureWords() + "; " + UptownLots.All.Count + " lots "
+                         + " walls and colliders built, " + _termini.Count + " bus termini; " + FurnitureWords() + "; " + ParksWords() + "; " + UptownLots.All.Count + " lots "
                          + (_walkable ? "open" : "closed") + ".");
         }
 
