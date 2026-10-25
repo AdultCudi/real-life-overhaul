@@ -1,6 +1,4 @@
-0.53.1
+0.54.0
 
-Fixed
-- When every building that could hold the utilities office is yours, power and water accounts are applied for and reconnected in the Utilities app, by phone, at the same prices, and the notices say so; once a building is free the office opens again and the app says where.
-- After withdrawing an application and applying to the same post again, the Career app opened the withdrawn one and the interview could not be reached. Each application now has its own row, and the interview, offer and withdrawal go to the live one.
-- A save holding a business record whose building the city does not have (another mod can leave one behind) no longer switches the tech sector off at every load. The mod now leaves such a record out wherever it reads the city's businesses, names its address once in the log and changes nothing of it.
+New
+- Give several employees a raise at once: tick them in MyEmployees and choose Give a raise from its actions, by a share of their pay, an amount an hour or up to the going rate, with their pay before and after shown first. When you rent or buy a warehouse, you are asked whether to set it up as a data centre, and Yes opens its fit-out on the Tech app's Infra tab. Your headquarters can brief a search firm for a data centre's crew: technicians or network engineers, junior to staff level, as many as its racks lack, from Open Roles' Search tab or the data centre's page. Those hired start at that data centre.

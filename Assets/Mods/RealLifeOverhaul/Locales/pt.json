@@ -22509,7 +22509,7 @@
   "reallife_hire_test_orphan_fail": "Teste falhou: uma leitura dos negócios da cidade tropeçou num registro sem prédio. O log diz qual.",
   "reallife_hire_test_orphan_off": "Carregue um save primeiro. Este teste não roda numa sessão do Going Public.",
   "reallife_changes_next_title": "Próxima versão",
-  "reallife_changes_next": "Dê aumento a vários funcionários de uma vez: marque-os no MyEmployees e escolha Dar aumento nas ações dele, por uma parte do salário, um valor por hora ou até o valor de mercado, vendo antes o salário deles antes e depois. Quando você aluga ou compra um armazém, o jogo pergunta se ele vai virar um data center, e Sim abre a montagem dele na aba Infra do app Tech. Sua sede pode encomendar a uma empresa de busca a equipe de um data center: técnicos ou engenheiros de rede, de júnior a staff, quantos faltarem para os racks, pela aba Busca do Open Roles ou pela página do data center. Quem for contratado começa naquele data center.",
+  "reallife_changes_next": "Nada ainda.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Corrigido: quando todos os prédios que poderiam abrigar o escritório de serviços públicos são seus, as contas de luz e água são pedidas e religadas no app Contas, por telefone, pelos mesmos preços, e os avisos dizem isso; quando um prédio fica livre o escritório volta a abrir e o app diz onde. Corrigido: depois de retirar uma candidatura e se candidatar de novo à mesma vaga, o app Carreira abria a retirada e não dava para chegar à entrevista. Cada candidatura agora tem sua própria linha, e a entrevista, a oferta e a retirada vão para a ativa. Corrigido: um save com um registro de negócio cujo prédio a cidade não tem (outro mod pode deixar um para trás) não desliga mais o setor de tecnologia a cada carregamento. O mod agora deixa esse registro de fora sempre que lê os negócios da cidade, cita o endereço dele uma vez no log e não muda nada nele.",
   "reallife_co_mass_raise": "Dar aumento",
@@ -22567,5 +22567,7 @@
   "reallife_crew_test": "Minha busca de equipe de data center mais antiga entrega",
   "reallife_crew_test_pass": "Teste aprovado: a busca de equipe trouxe os candidatos, da função e do nível pedidos, para a aba Candidatos, e nada mais foi cobrado.",
   "reallife_crew_test_fail": "Teste reprovado: a busca de equipe não trouxe o que o pedido dizia. O registro diz o que veio.",
-  "reallife_crew_test_none": "Encomende primeiro uma busca de equipe de data center: Open Roles, aba Busca, ou a página de um data center na aba Infra."
+  "reallife_crew_test_none": "Encomende primeiro uma busca de equipe de data center: Open Roles, aba Busca, ou a página de um data center na aba Infra.",
+  "reallife_changes_054_0_title": "0.54.0",
+  "reallife_changes_054_0": "Dê aumento a vários funcionários de uma vez: marque-os no MyEmployees e escolha Dar aumento nas ações dele, por uma parte do salário, um valor por hora ou até o valor de mercado, vendo antes o salário deles antes e depois. Quando você aluga ou compra um armazém, o jogo pergunta se ele vai virar um data center, e Sim abre a montagem dele na aba Infra do app Tech. Sua sede pode encomendar a uma empresa de busca a equipe de um data center: técnicos ou engenheiros de rede, de júnior a staff, quantos faltarem para os racks, pela aba Busca do Open Roles ou pela página do data center. Quem for contratado começa naquele data center."
 }
