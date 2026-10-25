@@ -101,7 +101,7 @@ namespace RealLifeOverhaul.Family
                 if (c.School > 0 && c.Age - c.LastReport >= 0.34f)
                 {
                     c.LastReport = c.Age;
-                    float standing = c.Closeness + (c.School == 2 ? 12f : 0f) + c.Pocket * 2f;
+                    float standing = c.Closeness + SchoolStanding(c) + c.Pocket * 2f;
                     string grade = Reports[standing >= 80f ? 0 : standing >= 60f ? 1 : standing >= 40f ? 2 : 3];
                     FamilyText.Message(FamilyPhone.FamilyContact, grade, fill);
                 }
@@ -119,7 +119,7 @@ namespace RealLifeOverhaul.Family
                 if (c.School > 0 && c.Age - c.LastEvening >= 1f && FamilyState.FindErrand(Errands.ParentsEvening) == null)
                 {
                     c.LastEvening = c.Age;
-                    Errands.Add(Errands.ParentsEvening, day + 3, 16, 20, i);
+                    AtSchool(Errands.Add(Errands.ParentsEvening, day + 3, 16, 20, i), c);
                     FamilyText.Message(FamilyPhone.FamilyContact, "reallife_family_parents_evening_invite", fill.On(FamilyText.When(day + 3)));
                 }
             }

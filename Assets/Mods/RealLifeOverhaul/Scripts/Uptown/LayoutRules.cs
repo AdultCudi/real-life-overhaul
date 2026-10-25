@@ -157,6 +157,14 @@ namespace RealLifeOverhaul.Uptown
         // 2026: "make the empty spaces denser").
         private static readonly int[] Parks = { 202, 309, 117 };
 
+        // The west square was never laid as a park, and the owner found it bare (25 Oct 2026: "Try making it a big school"):
+        // Birchwood School's campus stands on it (Scripts/Schools). It stays a square of the plan, with no lots, so no lot's
+        // id, street number or day one building moves.
+        public const int CampusBlock = 202;
+
+        /// <summary>The plan's squares, as Row * 100 + Column: the campus's among them.</summary>
+        public static IReadOnlyList<int> Squares => Parks;
+
         /// <summary>
         /// True for a block left as a square (a park or a plaza), no lots on it: three of the plan's squares (every third block
         /// of rows 2 and 3 on a stagger and every other block of row 1 beyond Manhattan's), one in each part of the band.

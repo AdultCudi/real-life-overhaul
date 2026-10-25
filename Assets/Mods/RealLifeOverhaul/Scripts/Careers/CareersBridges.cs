@@ -1,8 +1,15 @@
 using System;
 using System.Collections.Generic;
+using RealLifeOverhaul.GameUi;
 
 namespace RealLifeOverhaul.Careers
 {
+    /// <summary>
+    /// The Campus app's Schools tab as the schools write it (Scripts/Schools): the box and the rows (each made through the
+    /// app's own row), for the row picked; a press goes through the app's own way of saying why not. Its table, or null.
+    /// </summary>
+    public delegate TableSpec SchoolsTabWriter(InfoBox box, Func<string, TableRow> row, string picked, Action<Func<string>> act);
+
     /// <summary>What careers ask of the rest of the mod; each optional with a default, filled in by Wiring/CareersLinks.cs.</summary>
     public static class CareersBridges
     {
@@ -181,8 +188,12 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
+        /// <summary>The Campus app's Schools tab, written by the schools (Wiring.SchoolLinks). Default: the tab says the schools are away.</summary>
+        public static SchoolsTabWriter SchoolsTab;
+
         public static void Reset()
         {
+            SchoolsTab = null;
             OthersPicked = null;
             Headquarters = null;
             HeadquartersStamp = null;

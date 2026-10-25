@@ -595,6 +595,12 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\UptownLots.cs" Link="Mod\UptownLots.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Landmarks\LandmarkRules.cs" Link="Mod\Landmarks\LandmarkRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Landmarks\LandmarkStore.cs" Link="Mod\Landmarks\LandmarkStore.cs" />
+    <!-- Birchwood School and the city's schools (SchoolChecks.cs): the campus on its block, the market's rules, the line, and "What is this ground?". -->
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Schools\SchoolState.cs" Link="Mod\Schools\SchoolState.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Schools\SchoolRules.cs" Link="Mod\Schools\SchoolRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Schools\SchoolStore.cs" Link="Mod\Schools\SchoolStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Schools\SchoolGrounds.cs" Link="Mod\Schools\SchoolGrounds.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\GroundSurvey.cs" Link="Mod\GroundSurvey.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Civic\CouncilZoning.cs" Link="Mod\CouncilZoning.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\RingRules.cs" Link="Mod\Construction\RingRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BillRules.cs" Link="Mod\Construction\BillRules.cs" />

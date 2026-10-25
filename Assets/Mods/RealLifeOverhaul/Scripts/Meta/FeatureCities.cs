@@ -134,6 +134,7 @@ namespace RealLifeOverhaul.Meta
             new Line("construction", CityScope.NewYork, "a construction company's works on the lots of the new district by New York's map, and its rebuilds at New York's buildings"),
             new Line("markets_builders", CityScope.AnyCity, "the market's builders and building materials; a project's hedge stands down with the construction game away from New York"),
             new Line("landmarks", CityScope.NewYork, "the new district's landmarks on blocks of its first block by New York's map, built through New York's construction programme"),
+            new Line("schools", CityScope.NewYork, "a campus on the new district's west square by New York's map, and the city's schools in New York's districts"),
             new Line("economy_estate_duties", CityScope.AnyCity, "the player's buildings and their tenants"),
             new Line("hustles", CityScope.AnyCity, "the Marketplace, and clients at the game's businesses picked at each load"),
             new Line("seasons", CityScope.AnyCity, "the calendar's seasons and the weather round the player"),

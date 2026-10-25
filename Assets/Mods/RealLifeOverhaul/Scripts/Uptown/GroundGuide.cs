@@ -22,6 +22,7 @@ namespace RealLifeOverhaul.Uptown
                 .Test("reallife_uptown_ground_test_path", GroundDirector.TestPath)
                 .Test("reallife_uptown_ground_test_traffic", GroundDirector.TestTraffic)
                 .Check("reallife_uptown_ground_test_fog", GroundDirector.TestFog, "Uptown check (map fog)")
+                .Check("reallife_uptown_ground_test_what", GroundDirector.TestWhatGround, "Ground check (what is this ground)")
                 .Cleanup(() => GroundDirector.Instance?.Close("its feature's clean-up (the options page, faults in a row, the save tools or another city)"));
         }
     }

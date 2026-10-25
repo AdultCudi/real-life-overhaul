@@ -161,6 +161,7 @@ namespace RealLifeOverhaul.NewBuildings
         public static readonly MadeStreet[] All = WithDistricts(new[]
         {
             new MadeStreet(Prefix + "provinglane", NewBuildingsText.StreetProvingLane, "PRL", false),
+            new MadeStreet(Prefix + "birchwoodgreen", "reallife_newbuildings_street_birchwoodgreen", "BWG", false),   // Birchwood School's own way (Scripts/Schools)
         });
 
         // The mod's own streets, then those of its districts (Uptown's, Scripts/Uptown/LayoutStreets.cs), so a building on a
