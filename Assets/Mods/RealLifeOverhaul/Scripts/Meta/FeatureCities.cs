@@ -140,6 +140,8 @@ namespace RealLifeOverhaul.Meta
             new Line("networking", CityScope.AnyCity, "people with positions at the game's businesses picked at each load"),
             new Line("home_household", CityScope.AnyCity, "staff at the player's home"),
             new Line("newshops", CityScope.AnyCity, "business types of the mod's own in the game's buildings"),
+            new Line("careers_ladder", CityScope.AnyCity, "the city's chains and their stores, read from the game's businesses at each load"),
+            new Line("economy_hierarchy", CityScope.AnyCity, "the player's own stores and managers, with regions drawn from them"),
         };
 
         private static Dictionary<string, Line> _byFeature;
