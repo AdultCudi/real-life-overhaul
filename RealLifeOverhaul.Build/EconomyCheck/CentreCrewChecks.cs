@@ -204,7 +204,20 @@ internal static partial class Program
         Check(Fits(en, "reallife_crew_note_found") && Fits(en, "reallife_crew_no_hq") && Fits(en, "reallife_crew_most"), "crew search texts: the notices are 240 characters or fewer");
         Check(en.TryGetValue("reallife_guide_tech_jobs", out string page2) && page2.Contains("A data centre's crew has a search of its own, briefed from your headquarters")
               && page2.Contains("{crew_fee_least} to {crew_fee_most}"), "crew search texts: the Guide's page on hiring tells of the crew search");
-        Check(en.TryGetValue("reallife_changes_next", out string next) && next.Contains("Give several employees a raise at once") && next.Contains("set it up as a data centre")
-              && next.Contains("brief a search firm for a data centre's crew"), "the three asks: What's new's next row tells of each");
+        Check(WhatsNewHas(en, "Give several employees a raise at once") && WhatsNewHas(en, "set it up as a data centre")
+              && WhatsNewHas(en, "brief a search firm for a data centre's crew"), "the three asks: What's new tells of each (any of its rows)");
+    }
+
+    // Whether any row of What's new has the words: the next row until a version step numbers it.
+    private static bool WhatsNewHas(Dictionary<string, string> words, string line)
+    {
+        foreach (KeyValuePair<string, string> row in words)
+        {
+            if (row.Key.StartsWith("reallife_changes_", StringComparison.Ordinal) && !row.Key.EndsWith("_title", StringComparison.Ordinal) && row.Value.Contains(line))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 }
