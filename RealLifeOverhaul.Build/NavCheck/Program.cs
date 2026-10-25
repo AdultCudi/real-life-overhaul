@@ -50,6 +50,7 @@ internal static partial class Program
         Polish();
         Hitch();
         Hair();
+        HairWearersChecks();
         Solid();
         Crew(Array.IndexOf(args, "--crew") >= 0);
         CarExit();
