@@ -19,7 +19,7 @@ namespace RealLifeOverhaul.Planner
         private static readonly FeatureGuard FrameGuard = Guard.For("planner", "PlannerDirector", typeof(PlannerDirector));
 
         public const string AppId = "RealLifePlanner";
-        private const int BadgeMinutes = 120;      // game minutes ahead the badge counts
+        internal const int BadgeMinutes = 120;      // game minutes ahead the badge counts
 
         public static IModLogger Logger;
         public static PlannerDirector Instance { get; private set; }

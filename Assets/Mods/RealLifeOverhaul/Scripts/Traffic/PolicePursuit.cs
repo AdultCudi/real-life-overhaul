@@ -20,7 +20,7 @@ namespace RealLifeOverhaul
     {
         private static readonly FeatureGuard FrameGuard = Guard.For("traffic", "PolicePursuit", typeof(PolicePursuit));
 
-        private const float StopWindow = 12f;           // seconds to stop after the crash
+        internal const float StopWindow = 12f;           // seconds to stop after the crash
         private const float StopRadius = 40f;           // ...within this far of it
         private const float StoppedSpeedSqr = 1f;       // (m/s) squared
         private const float CrumbSpacing = 6f;          // metres between recorded trail points

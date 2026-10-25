@@ -11,12 +11,12 @@ namespace RealLifeOverhaul
     /// <summary>The stop: the patrol car behind the player, the ticket, the pursuit, and the one bill for all of it.</summary>
     public partial class PoliceAttention
     {
-        private const float ComplyWindow = 15f;        // seconds to stop once the lights are on
+        internal const float ComplyWindow = 15f;        // seconds to stop once the lights are on
         private const float StoppedSpeedSqr = 1f;      // (m/s)^2
         private const float TicketDistance = 28f;      // metres: the patrol car is close enough to deal with a stopped driver
         private const float TicketHold = 1.5f;         // seconds
         private const float BustHold = 3f;             // seconds
-        private const float LostDistance = 240f;       // metres
+        internal const float LostDistance = 240f;       // metres
         private const float PursuitTime = 150f;        // seconds
         private const float PursuitMost = 300f;        // seconds of fleeing in all, however close the patrol car still is
         private const float PatrolGap = 9f;            // metres
