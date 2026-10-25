@@ -19,6 +19,7 @@ internal static partial class Program
         DemolitionRuleChecks();
         DemolitionStoreChecks();
         DemolitionSourceChecks();
+        ClearedBuildChecks();
         RedevelopTextChecks();
     }
 
@@ -273,6 +274,24 @@ internal static partial class Program
               && ModSource(@"TestRun\RunPlan.cs").Contains("{ \"reallife_bld_test_demolish\","), "demolition sources: its test is a button only, left out of the test run with why: it knocks a building of the player's down for good");
     }
 
+    // ------------------------------------------------------------------ building new on cleared ground
+
+    private static void ClearedBuildChecks()
+    {
+        // A cleared site offers the city's designs that fill its spaces, of any size that does, never wider.
+        Check(BuildCatalogue.Offered(3, 3, false) && BuildCatalogue.Offered(3, 2, true) && !BuildCatalogue.Offered(3, 2, false) && !BuildCatalogue.Offered(3, 4, true),
+            "cleared ground: a site offers a design of its own spaces, or of fewer that fills its frontage, never one wider");
+        string lots = ModSource(@"Uptown\LifeDirector.Lots.cs"), land = ModSource(@"Construction\ConstructionApp.Land.cs"), demolish = ModSource(@"Construction\ConstructionDirector.Demolish.cs");
+        string tests = ModSource(@"Construction\ConstructionDirector.RedevelopTests.cs"), guide = ModSource(@"Construction\ConstructionGuide.cs");
+        Check(MethodText(lots, "public static bool FinishOver(").Contains("spanned, Cleared(lotId))"), "cleared ground: the district takes a building of any size that fits on a lot knocked down");
+        Check(MethodText(demolish, "public bool ClearedGround(").Contains("_state.Lot(lot) != null && AskCleared(lot)") && land.Contains("_director.ClearedGround(lot.Id) ? \"reallife_bld_land_state_cleared\""),
+            "cleared ground: the Land tab says the player's ground is cleared and ready to build on");
+        string build = MethodText(tests, "private bool ClearedBuildNow(");
+        Check(tests.Contains("public static bool TestClearedBuildNow()") && build.Contains("NewPlot(lot, out string why)") && build.Contains("HireBuilder(p, CommissionRules.Cheapest(_quotes, count), true)")
+              && build.Contains("p.InDistrict") && guide.Contains(".Test(\"reallife_bld_test_cleared_build\", () => ConstructionDirector.TestClearedBuildNow())")
+              && ModSource(@"TestRun\RunPlan.cs").Contains("{ \"reallife_bld_test_cleared_build\","), "cleared ground: its test plans, builds and hands a building to the district on the player's cleared ground by the usual path, a button only");
+    }
+
     // ------------------------------------------------------------------ the texts
 
     private static void RedevelopTextChecks()
@@ -322,7 +341,7 @@ internal static partial class Program
         keys.Add("reallife_opt_tip_construction_redevelop");
         keys.Add("reallife_bld_redevelop_option");
         foreach (string notice in new[] { "reallife_bld_test_passed", "reallife_bld_test_no_unit", "reallife_bld_test_session_city", "reallife_bld_test_no_city_business", "reallife_bld_test_failed_log",
-                     "reallife_bld_test_no_uptown", "reallife_bld_notice_demolished", "reallife_bld_notice_emptied", "reallife_bld_notice_notice_given" })
+                     "reallife_bld_test_no_uptown", "reallife_bld_notice_demolished", "reallife_bld_notice_emptied", "reallife_bld_notice_notice_given", "reallife_bld_test_no_cleared" })
         {
             Check(words[0].TryGetValue(notice, out string en) && en.Length <= 240, "redevelopment texts: the notice " + notice + " is at most 240 characters");
         }
@@ -335,6 +354,17 @@ internal static partial class Program
         for (int l = 0; l < words.Length; l++)
         {
             Check(starts.TryGetValue(codes[l], out string start) && WhatsNewHas(words[l], start), "redevelopment texts: What's new has refurnishing's line in " + codes[l] + " (any of its rows)");
+        }
+        var built = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            { "en", "Build a new building on ground you cleared" }, { "pt", "Construa um prédio novo no terreno que você limpou" }, { "zh-cn", "可以在你清空的地块上建造新楼" },
+            { "de", "Bau ein neues Gebäude auf dem Grund, den du geräumt hast" }, { "fr", "Construisez un nouveau bâtiment sur le terrain que vous avez dégagé" },
+            { "es", "Construye un edificio nuevo en el terreno que despejaste" }, { "ru", "Постройте новое здание на расчищенном участке" },
+            { "nl", "Bouw een nieuw gebouw op grond die je hebt vrijgemaakt" }, { "tr", "Temizlediğiniz arsaya yeni bir bina yapın" }
+        };
+        for (int l = 0; l < words.Length; l++)
+        {
+            Check(built.TryGetValue(codes[l], out string start) && WhatsNewHas(words[l], start), "redevelopment texts: What's new has the line for building on cleared ground in " + codes[l]);
         }
         var down = new Dictionary<string, string>(StringComparer.Ordinal)
         {

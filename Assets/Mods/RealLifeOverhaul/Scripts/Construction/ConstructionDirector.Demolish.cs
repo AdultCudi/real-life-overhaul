@@ -135,6 +135,12 @@ namespace RealLifeOverhaul.Construction
             return RedevelopRules.Quote(_state.Seed, ConstructionGame.Day, p.Area, ConstructionGame.Prices);
         }
 
+        /// <summary>True for the player's land where a building was knocked down and nothing has been finished since: ground cleared for a new building.</summary>
+        public bool ClearedGround(string lot)
+        {
+            return _state != null && _state.Lot(lot) != null && AskCleared(lot);
+        }
+
         /// <summary>True when a project's building is empty for its works: its notice has run and its tenants and business are gone.</summary>
         public static bool Emptied(ProjectFile p)
         {

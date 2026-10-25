@@ -344,5 +344,92 @@ namespace RealLifeOverhaul.Construction
                 return false;
             }
         }
+
+        // ------------------------------------------------------------------ building new on cleared ground
+
+        /// <summary>
+        /// Test: a new building on ground the player cleared by a demolition, put up now: a plot planned on their cleared site (the
+        /// first of the city's designs that fills its spaces, any size that does), its plans and permission at once, one of the
+        /// city's builders hired for nothing, every stage moved on and handed over; the building the district's from the next load.
+        /// </summary>
+        public static bool TestClearedBuildNow()
+        {
+            const string test = "a new building on your cleared ground now";
+            ConstructionDirector d = RedoDirector(test, false);
+            if (d == null)
+            {
+                return false;
+            }
+            try
+            {
+                return d.ClearedBuildNow(test);
+            }
+            catch (Exception e)
+            {
+                d.Fault("a test (" + test + ")", e);
+                return false;
+            }
+        }
+
+        private bool ClearedBuildNow(string test)
+        {
+            if (GoingPublic.InSession)
+            {
+                return Failed(RedoCheck, test, "reallife_bld_test_session_city", "in a Going Public session the district's buildings stay as they are on every machine");
+            }
+            string lot = null;
+            for (int i = 0; i < _state.Lots.Count && lot == null; i++)
+            {
+                lot = AskCleared(_state.Lots[i].Id) && _state.OnLot(_state.Lots[i].Id) == null ? _state.Lots[i].Id : null;
+            }
+            if (lot == null)
+            {
+                return Failed(RedoCheck, test, "reallife_bld_test_no_cleared", "the player holds no cleared ground with nothing planned on it (knock a building of theirs down first)");
+            }
+            BeforeTest();
+            int id = NewPlot(lot, out string why);
+            ProjectFile p = _state.Project(id);
+            if (p == null || string.IsNullOrEmpty(p.Design))
+            {
+                return Failed(RedoCheck, test, why ?? "reallife_bld_answer_no_design",
+                    "no building of the city's designs could be planned on cleared lot " + lot + " (" + (why ?? "no design fills it") + ")");
+            }
+            p.PlansDone = true;   // the plans and the permission at once, as the practice and City Hall would give them
+            p.Quality = 70;
+            p.Engineered = true;
+            p.Planning = PlanningState.Granted;
+            p.Stage = ProjectStage.Ready;
+            p.After = AfterUse.Keep;
+            p.Estimate = Math.Max(1L, Preview(p, out _, out _, out _, out _).Total);
+            int count = Quotes(p, _quotes);
+            string answer = HireBuilder(p, CommissionRules.Cheapest(_quotes, count), true);
+            if (!p.Hired || p.Stage != ProjectStage.Building)
+            {
+                return Failed(RedoCheck, test, answer, "no builder could be hired for project " + p.Id + " (" + answer + ")");
+            }
+            int day = ConstructionGame.Day, site = p.SiteId;
+            for (int k = 0; k < (int)Inspection.Count; k++)
+            {
+                AdvanceSiteNow(site);   // the street's site moves on with it
+                HiredStage(p, (WorkStage)Math.Min(k + 1, (int)WorkStage.Envelope));
+                Passed(p, k, true, day);
+            }
+            if (!FinishSite(site) && p.Stage == ProjectStage.Building)
+            {
+                Handover(p, day);   // the site was gone from the programme: handed over all the same
+            }
+            Lot(lot, out LotView ground);
+            int spaces = SpacesOf(p.Size, p.Version);
+            string where = "cleared lot " + lot + " (" + ground.Spaces + " space(s), " + ground.Width + " m)";
+            if (!(p.Stage == ProjectStage.Finished && p.InDistrict && spaces >= 1 && spaces <= ground.Spaces))
+            {
+                Logger?.Warn(RedoCheck + test + "): " + where + ": project " + p.Id + " at " + p.Stage + ", " + p.Size + " v" + p.Version + " (" + spaces + " space(s)), the district's "
+                             + p.InDistrict + ": FAIL.");
+                return Failed(RedoCheck, test, "reallife_bld_test_failed_log", "the new building was not handed to the district");
+            }
+            Passed(test, "reallife_bld_test_cleared_build", where + ": " + p.Size + " v" + p.Version + " (" + spaces + " space(s)) in " + p.Design + ", built by "
+                   + ConstructionText.T(BuildCatalogue.RivalKeys[p.Contractor]) + " for nothing and handed over now; the player's from the next load", TabProjects, p.Id);
+            return true;
+        }
     }
 }

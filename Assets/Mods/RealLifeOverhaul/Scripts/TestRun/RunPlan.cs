@@ -58,6 +58,7 @@ namespace RealLifeOverhaul.TestRun
             { "reallife_uptown_test_store_order", "it needs a business of the player's that takes wholesale deliveries" },
             { "reallife_uptown_test_station_fill", "it needs the player at the wheel of a car of their own" },
             { "reallife_bld_test_demolish", "it knocks a building of the player's own down for good, so only the player presses it" },
+            { "reallife_bld_test_cleared_build", "it builds on ground the player cleared by knocking a building of theirs down, which the run never does" },
         };
 
         /// <summary>The expansion's test buttons the run presses through a step of its own (it asks for exactly what it needs), and that step.</summary>

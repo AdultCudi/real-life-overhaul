@@ -145,7 +145,7 @@ namespace RealLifeOverhaul.Construction
             {
                 return ConstructionText.StageWords(p);
             }
-            return ConstructionText.T(owned.ZoneAsk != 0 ? "reallife_bld_land_state_zoning" : "reallife_bld_land_state_empty");
+            return ConstructionText.T(owned.ZoneAsk != 0 ? "reallife_bld_land_state_zoning" : _director.ClearedGround(lot.Id) ? "reallife_bld_land_state_cleared" : "reallife_bld_land_state_empty");
         }
 
         private static string RebuildState(BuildState state, BuildingView b)

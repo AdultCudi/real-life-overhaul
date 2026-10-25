@@ -106,6 +106,7 @@ namespace RealLifeOverhaul.Construction
                 .Check("reallife_bld_test_city_refurnish", () => ConstructionDirector.TestCityRefurnishNow(),
                     "Redevelopment check (a business of the city's refitted by a rival and furnished anew now)", RunPlace.Here)
                 .Test("reallife_bld_test_demolish", () => ConstructionDirector.TestDemolitionNow())
+                .Test("reallife_bld_test_cleared_build", () => ConstructionDirector.TestClearedBuildNow())
                 .Test("reallife_bld_test_lot", "reallife_bld_test_company", "reallife_bld_test_licence", "reallife_bld_test_plans", "reallife_bld_test_planning",
                     "reallife_bld_test_council", "reallife_bld_test_stage", "reallife_bld_test_inspection", "reallife_bld_test_deliveries", "reallife_bld_test_handover",
                     "reallife_bld_test_opening", "reallife_bld_test_tender", "reallife_bld_test_award", "reallife_bld_test_developers", "reallife_bld_test_poach",
