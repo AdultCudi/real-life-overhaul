@@ -13,22 +13,25 @@ namespace RealLifeOverhaul.Seasons
     }
 
     /// <summary>
-    /// What snow looks like. Flakes: one particle system hung where the game's rain falls by the player, small white
-    /// cubes of the shared paint drifting down. The ground: one decal projector over the streets round the player, a copy
-    /// of the game's road paint carrying a patchy white made once, drawn on the snow's own decal layer alone
-    /// (<see cref="SnowGround"/>: the ground, roads, pavements and roofs), its angle fade keeping walls clear. That needs
-    /// HDRP's decal layers, which the game's asset supports but its camera leaves off, so they are switched on for the
-    /// player's camera only while snow lies outdoors. Where they cannot be had no snow lies at all: a decal without them
-    /// whitens everything in its box, cars, people and faces. Asked once a second by the director; Unity draws the rest,
-    /// so nothing of the mod's runs a frame. Made the first time snow is shown, gone with the city.
+    /// What snow looks like. Flakes: one particle system kept round what the camera sees (between the camera and the
+    /// player it looks at, from under the ground to over the camera), soft round dots of the game's own particle material
+    /// sized and spaced for the camera's distance (<see cref="SeasonLookRules.Field"/>): a few pixels across where the
+    /// camera looks, closer together for a near camera and on a heavy day. The ground: one decal projector over the
+    /// streets round the player, a copy of the game's road paint carrying a patchy white made once, drawn on the snow's
+    /// own decal layer alone (<see cref="SnowGround"/>: the ground, roads, pavements and roofs), its angle fade keeping
+    /// walls clear. That needs HDRP's decal layers, which the game's asset supports but its camera leaves off, so they are
+    /// switched on for the player's camera only while snow lies outdoors. Where they cannot be had no snow lies at all: a
+    /// decal without them whitens everything in its box, cars, people and faces. Asked once a second by the director, and
+    /// the flakes' box moved after the camera four times a second while they fall (a few reads and one position, nothing
+    /// allocated); Unity draws the rest, so nothing of the mod's runs a frame. Made the first time snow is shown, gone with
+    /// the city; indoors nothing falls.
     /// </summary>
     internal sealed class SnowLook
     {
-        private const float FallFrom = 10f;          // metres over the player the flakes start
-        private const float FallSpan = 44f;          // metres: the square they start over
-        private const float FallLife = 11f;          // seconds: long enough to reach the ground at the slowest fall
-        private const float MostRate = 230f;         // flakes a second in a heavy fall
-        private const int MostFlakes = 2600;
+        private const float FlakeSmallest = 0.6f;    // of the field's flake size, the smallest flake
+        private const float FlakeLargest = 1.4f;     //   and the largest
+        private const float FlakeHeadroom = 1.25f;   // of the field's count the system may hold, as rates and lives vary
+        private const float UnderGround = 2f;        // metres under the player the box reaches, for the ground's dips
         private const float CoverSpan = 150f;        // metres: the square the snow lies on round the player
         private const float CoverTile = 12f;         // metres the white's pattern repeats over
         private const float RoofTop = 70f;           // metres over the player the cover reaches, for the roofs
@@ -43,8 +46,11 @@ namespace RealLifeOverhaul.Seasons
 
         private readonly Transform _root;
         private ParticleSystem _flakes;
+        private Transform _fall;
         private bool _flakesFailed, _flakesOn;   // failed: cannot be made this city
         private float _rate = -1f;
+        private float _falling;
+        private int _fieldKey = -1;               // the camera's distance and height and the fall the flakes were last fitted to
 
         private DecalProjector _cover;
         private Material _coverPaint;
@@ -69,6 +75,16 @@ namespace RealLifeOverhaul.Seasons
         public int Flakes => _flakes != null ? _flakes.particleCount : 0;
         public DecalLayerEnum CoverLayer => _cover != null ? _cover.decalLayerMask : DecalLayerEnum.Nothing;
 
+        /// <summary>The flakes' box follows the camera: they are falling, outdoors.</summary>
+        public bool Following => _flakesOn && _flakes != null;
+
+        /// <summary>The flakes as last fitted to the camera, and the camera's distance from the player then.</summary>
+        public SnowField Field { get; private set; }
+        public float SeenFrom { get; private set; }
+
+        /// <summary>The flakes are the game's own soft round particle (else small lit pieces, where it was not found).</summary>
+        public bool Soft { get; private set; }
+
         public SnowLook(Transform root)
         {
             _root = root;
@@ -85,7 +101,7 @@ namespace RealLifeOverhaul.Seasons
                 Hide();
                 return;
             }
-            Fall(falling);
+            Fall(falling, player);
             Lie(cover, player);
         }
 
@@ -96,6 +112,7 @@ namespace RealLifeOverhaul.Seasons
                 _flakes.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
                 _flakesOn = false;
                 _rate = -1f;
+                _fieldKey = -1;
             }
             Uncover();
         }
@@ -122,8 +139,9 @@ namespace RealLifeOverhaul.Seasons
             }
         }
 
-        private void Fall(float falling)
+        private void Fall(float falling, Vector3 player)
         {
+            _falling = Mathf.Clamp01(falling);
             if (falling <= 0f)
             {
                 if (_flakes != null && _flakesOn && _rate != 0f)
@@ -131,6 +149,7 @@ namespace RealLifeOverhaul.Seasons
                     ParticleSystem.EmissionModule off = _flakes.emission;
                     off.rateOverTime = 0f;   // those in the air come down; none start
                     _rate = 0f;
+                    _fieldKey = -1;
                 }
                 return;
             }
@@ -138,18 +157,51 @@ namespace RealLifeOverhaul.Seasons
             {
                 return;
             }
-            float rate = Mathf.Round(MostRate * Mathf.Clamp01(falling) / 5f) * 5f;
-            if (rate != _rate)
-            {
-                ParticleSystem.EmissionModule emission = _flakes.emission;
-                emission.rateOverTime = rate;
-                _rate = rate;
-            }
+            Follow(player);
             if (!_flakesOn)
             {
                 _flakes.Play(true);
                 _flakesOn = true;
             }
+        }
+
+        /// <summary>
+        /// The flakes' box moved to what the camera sees, between it and the player, and the flakes fitted again when the
+        /// camera's distance, its height or the fall has changed: a few reads and one position, nothing allocated.
+        /// </summary>
+        public void Follow(Vector3 player)
+        {
+            Camera camera = GameManager.GetMainCamera();
+            if (_flakes == null || camera == null)
+            {
+                return;
+            }
+            Vector3 eye = camera.transform.position;
+            Vector3 gap = eye - player;
+            float distance = gap.magnitude;
+            int key = Mathf.RoundToInt(Mathf.Min(distance, 99f)) * 10000 + Mathf.RoundToInt(Mathf.Clamp(gap.y, 0f, 99f)) * 100 + Mathf.RoundToInt(_falling * 20f);
+            if (key != _fieldKey)
+            {
+                _fieldKey = key;
+                Fit(SeasonLookRules.Field(distance, gap.y, _falling), distance);
+            }
+            float height = Field.Height;
+            _fall.position = new Vector3(player.x + gap.x * 0.5f, player.y - UnderGround + height * 0.5f, player.z + gap.z * 0.5f);
+        }
+
+        private void Fit(SnowField field, float distance)
+        {
+            Field = field;
+            SeenFrom = distance;
+            ParticleSystem.MainModule main = _flakes.main;
+            main.startSize = new ParticleSystem.MinMaxCurve(field.Size * FlakeSmallest, field.Size * FlakeLargest);
+            main.startLifetime = field.Life;
+            main.maxParticles = Mathf.Min(SeasonLookRules.FlakesMost, Mathf.CeilToInt(field.Count * FlakeHeadroom));
+            ParticleSystem.ShapeModule shape = _flakes.shape;
+            shape.scale = new Vector3(field.Span, field.Height, field.Span);
+            ParticleSystem.EmissionModule emission = _flakes.emission;
+            emission.rateOverTime = field.Rate;
+            _rate = field.Rate;
         }
 
         private bool BuildFlakes()
@@ -158,41 +210,39 @@ namespace RealLifeOverhaul.Seasons
             {
                 return false;
             }
-            Transform place = SeasonGame.RainPlace();
-            Material paint = Shapes.Paint(new Color(0.95f, 0.97f, 1f), 1.2f);
-            if (place == null || paint == null)
+            Material soft = SeasonGame.FlakePaint;
+            Material paint = soft != null ? soft : Shapes.Paint(new Color(0.95f, 0.97f, 1f), 1.2f);
+            if (paint == null)
             {
                 _flakesFailed = true;
-                FlakesMissing = place == null ? "the game's rain has no place by the player to read" : "the game has no lit shader for the flakes";
+                FlakesMissing = "the game has neither its soft round particle nor a lit shader for the flakes";
                 SeasonDirector.Logger?.Warn("Seasons: no falling snow this session: " + FlakesMissing + ".");
                 return false;
             }
             var made = new GameObject("RealLifeOverhaul Snowfall");
-            made.transform.SetParent(place, false);
-            made.transform.localPosition = new Vector3(0f, FallFrom, 0f);
+            made.transform.SetParent(_root, false);
+            made.transform.rotation = Quaternion.identity;   // the box lies square to the world; only its place follows the camera
             var flakes = made.AddComponent<ParticleSystem>();
             flakes.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
             ParticleSystem.MainModule main = flakes.main;
             main.loop = true;
             main.playOnAwake = false;
-            main.simulationSpace = ParticleSystemSimulationSpace.World;   // the player walks through the snow, it does not follow them
-            main.startLifetime = FallLife;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;   // the camera moves through the snow, it does not carry it
             main.startSpeed = 0f;
-            main.startSize = new ParticleSystem.MinMaxCurve(0.03f, 0.065f);
-            main.startRotation3D = true;
+            main.startRotation = new ParticleSystem.MinMaxCurve(0f, Mathf.PI * 2f);
+            main.startRotation3D = soft == null;
             main.gravityModifier = 0f;
-            main.maxParticles = MostFlakes;
+            main.maxParticles = SeasonLookRules.FlakesMost;
             ParticleSystem.EmissionModule emission = flakes.emission;
             emission.rateOverTime = 0f;
             ParticleSystem.ShapeModule shape = flakes.shape;
             shape.enabled = true;
-            shape.shapeType = ParticleSystemShapeType.Box;
-            shape.scale = new Vector3(FallSpan, 1f, FallSpan);
+            shape.shapeType = ParticleSystemShapeType.Box;   // started anywhere in the box, so a moving camera never sees an empty edge
             ParticleSystem.VelocityOverLifetimeModule drift = flakes.velocityOverLifetime;
             drift.enabled = true;
             drift.space = ParticleSystemSimulationSpace.World;
             drift.x = new ParticleSystem.MinMaxCurve(-0.35f, 0.35f);
-            drift.y = new ParticleSystem.MinMaxCurve(-1.3f, -0.95f);
+            drift.y = new ParticleSystem.MinMaxCurve(-1.4f, -0.9f);
             drift.z = new ParticleSystem.MinMaxCurve(-0.35f, 0.35f);
             ParticleSystem.NoiseModule noise = flakes.noise;
             noise.enabled = true;
@@ -200,16 +250,27 @@ namespace RealLifeOverhaul.Seasons
             noise.strength = 0.3f;
             noise.frequency = 0.35f;
             noise.scrollSpeed = 0.2f;
-            ParticleSystem.RotationOverLifetimeModule spin = flakes.rotationOverLifetime;
-            spin.enabled = true;
-            spin.z = new ParticleSystem.MinMaxCurve(-1.6f, 1.6f);
+            // Grown in over the first moments and shrunk away at the end, so no flake pops into or out of the air.
+            ParticleSystem.SizeOverLifetimeModule grow = flakes.sizeOverLifetime;
+            grow.enabled = true;
+            grow.size = new ParticleSystem.MinMaxCurve(1f, new AnimationCurve(new Keyframe(0f, 0f), new Keyframe(0.06f, 1f), new Keyframe(0.92f, 1f), new Keyframe(1f, 0f)));
             var renderer = made.GetComponent<ParticleSystemRenderer>();
-            renderer.renderMode = ParticleSystemRenderMode.Mesh;
-            renderer.mesh = Shapes.Cube;
-            renderer.sharedMaterial = paint;
+            if (soft != null)
+            {
+                renderer.renderMode = ParticleSystemRenderMode.Billboard;
+                renderer.alignment = ParticleSystemRenderSpace.View;
+            }
+            else
+            {
+                renderer.renderMode = ParticleSystemRenderMode.Mesh;
+                renderer.mesh = Shapes.Cube;
+            }
+            renderer.sharedMaterial = paint;   // the game's own, shared and never changed
             renderer.shadowCastingMode = ShadowCastingMode.Off;
             renderer.receiveShadows = false;
             _flakes = flakes;
+            _fall = made.transform;
+            Soft = soft != null;
             FlakesMissing = null;
             return true;
         }
@@ -427,10 +488,13 @@ namespace RealLifeOverhaul.Seasons
             Ground.Unmark();
             DropCoverAssets();
             _flakes = null;
+            _fall = null;
             _cover = null;
             Way = SnowWay.Unknown;
             _flakesFailed = _coverFailed = _flakesOn = false;
             _rate = _fade = -1f;
+            _fieldKey = -1;
+            Soft = false;
         }
     }
 }
