@@ -265,7 +265,10 @@ namespace RealLifeOverhaul.Uptown
                     }
                     leased += lease ? 1 : 0;
                     structure = Options[pick];
-                    BuildingsRules.Others(Options, pick, lease, Others);
+                    if (lot.Version <= 0)
+                    {
+                        BuildingsRules.Others(Options, pick, lease, Others);   // a lot of the plan's spaces keeps its size: they are that size's
+                    }
                 }
                 Lot plain = UptownLots.Get(lot.Id);
                 MadeSpec spec = LifeGame.Spec(GroundOf(lot, f), structure, Others, f != null ? f.Design : BuildingsRules.LookOf(lot.Class), f != null ? f.Storeys : 0, TrafficOf(lot.Id),
@@ -278,19 +281,23 @@ namespace RealLifeOverhaul.Uptown
                 Declared.Add(spec);
             }
             int big = DeclareBig();
-            int open = 0, notClear = 0, held = 0;
+            int open = 0, notClear = 0, held = 0, ring = 0, ringBuilt = 0;
             for (int i = 0; i < Plan.Count; i++)
             {
                 bool clear = BuildingsRules.Clear(Plan[i].Id), place = BigPlacesRules.Holds(Plan[i].Id);
                 open += clear && !BuiltLots.Contains(Plan[i].Id) && _state.Covering(Plan[i].Id) == null ? 1 : 0;
                 notClear += clear || place ? 0 : 1;
                 held += place ? 1 : 0;
+                bool onRing = LayoutRules.IsRing(Plan[i].Block / 100, Plan[i].Block % 100);
+                ring += onRing ? 1 : 0;
+                ringBuilt += onRing && BuiltLots.Contains(Plan[i].Id) ? 1 : 0;
             }
             Logger?.Info("Uptown: " + Declared.Count + " building(s) declared for this load (" + Built.Count + " of the band's lots from the first day, " + leased
                          + " of them offices leased to the city's builders, " + special + " the district's special places; " + KeptLots.Count + " kept from an earlier load; "
                          + finished + " finished by the construction game; " + big + " of the game's special services copied whole over " + held + " lots"
                          + (refused > 0 ? "; " + refused + " left empty" : string.Empty) + ") of " + Plan.Count + " lots, " + open + " open for the construction game"
-                         + (notClear > 0 ? ", " + notClear + " kept empty as something of the game's stands into it" : string.Empty) + ".");
+                         + (notClear > 0 ? ", " + notClear + " kept empty as something of the game's stands into it" : string.Empty) + "; on the ring past its outer streets "
+                         + ringBuilt + " of " + ring + " lots built.");
         }
 
         /// <summary>

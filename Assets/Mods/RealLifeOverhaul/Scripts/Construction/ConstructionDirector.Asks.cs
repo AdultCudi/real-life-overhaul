@@ -137,6 +137,36 @@ namespace RealLifeOverhaul.Construction
             }
         }
 
+        internal static bool FinishOverLot(string lot, IList<string> over, string design, string size, int version, string type, int storeys, bool player, double price,
+                                           out string why)
+        {
+            why = "the district takes no buildings over several spaces in this version";
+            try
+            {
+                return !Down("FinishOver") && ConstructionBridges.FinishOver != null
+                       && ConstructionBridges.FinishOver(lot, over, design, size, version, type, storeys, player, price, out why);
+            }
+            catch (Exception e)
+            {
+                Faulty("FinishOver", e);
+                why = "the district's call failed";
+                return false;
+            }
+        }
+
+        internal static int SpacesOf(string size, int version)
+        {
+            try
+            {
+                return !Down("SpacesOf") && ConstructionBridges.SpacesOf != null ? ConstructionBridges.SpacesOf(size, version) : 0;
+            }
+            catch (Exception e)
+            {
+                Faulty("SpacesOf", e);
+                return 0;
+            }
+        }
+
         /// <summary>The designs that fit ground for a type; false while the city's designs are being looked through, or with no copy engine.</summary>
         internal static bool ReadDesigns(float width, float depth, string type, int most, List<DesignChoice> into)
         {

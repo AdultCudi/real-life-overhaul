@@ -30,7 +30,12 @@ namespace RealLifeOverhaul.Uptown
         public int Width;              // m along the street
         public int Depth;              // m back from it
         public BuildingsClass Class;
-        public IReadOnlyList<string> Sizes;   // the game's sizes its class takes (the plan's)
+        public IReadOnlyList<string> Sizes;   // the game's sizes it takes: the plan's size on its spaces, or its class's for an open run's space
+        public int Version;            // the plan's version of that size, or 0
+        public int Spaces;             // the spaces it stands on (SpacesRules)
+        public int Strip;              // its strip of spaces and its first space along it (Lot.Strip, Lot.Index)
+        public int Index;
+        public bool Open;              // a space of an open run: the construction game's land, never built from the first day
     }
 
     /// <summary>A structure the game has for a building: its size, version and type.</summary>
@@ -83,9 +88,9 @@ namespace RealLifeOverhaul.Uptown
         public const string HomeType = NewBuildingsRules.HomeType;
 
         // Lots something of the game's own stands into, from the ground's scan of the game's scene (navlab/facts/band_clear.py):
-        // a building there would meet it, as the copy engine stands a design on the lot's front line. uptown_1_14_004: the crown
+        // a building there would meet it, as the copy engine stands a design on the lot's front line. uptown_1_14_0004: the crown
         // of a tree on 1st Street's east pavement leans some 2 m over the lot's front from 3.5 m up.
-        private static readonly string[] NotClear = { "uptown_1_14_004" };
+        private static readonly string[] NotClear = { "uptown_1_14_0004" };
 
         /// <summary>
         /// False for a lot something of the game's stands into, or one of the district's big special places stands on, spans
@@ -139,7 +144,7 @@ namespace RealLifeOverhaul.Uptown
             int firstLots = 0;
             for (int i = 0; i < lots.Count; i++)
             {
-                bool own = lots[i].First && !string.IsNullOrEmpty(lots[i].Id) && Clear(lots[i].Id);   // never a big place's ground or a lot something stands into
+                bool own = lots[i].First && !lots[i].Open && !string.IsNullOrEmpty(lots[i].Id) && Clear(lots[i].Id);   // never a big place's ground, an open run's or a lot something stands into
                 firstLots += own ? 1 : 0;
                 if (own && (keptOpen == null || !keptOpen(lots[i].Block)))
                 {
@@ -160,27 +165,12 @@ namespace RealLifeOverhaul.Uptown
             return into;
         }
 
-        // ---- the band built from the first day, the rest open for the construction game (the owner, 23 Oct 2026: "Mostly built";
-        // 25 Oct: "keep 30" of the open lots for the construction game, the rest built)
+        // ---- the band built from the first day, the open runs and the landmarks' blocks open for the construction game (the
+        // owner, 23 Oct 2026: "Mostly built"; 25 Oct: "keep 30" of the open lots, as the open runs' spaces now are)
 
-        public const int OpenLots = 30;                   // lots open for the construction game and the developers, a landmark's blocks apart: one a block, spread
         public const int LeasedOffices = 8;               // office lots built for the businesses other features lease there: the construction game's eight rival builders
         public const string OfficeType = "ba:buildingtype_office";   // the game's building type a leased office is built with
         public const string EmptyBusinessType = "ba:businesstype_empty";   // the game's business type of a unit with no business in it
-
-        /// <summary>
-        /// True when the block at <paramref name="index"/> of <paramref name="blocks"/> blocks that may have one (in block order,
-        /// row by row west to east) keeps a lot open: <see cref="OpenLots"/> of them, spread evenly through the band. Every
-        /// block keeps one when there are fewer blocks than that.
-        /// </summary>
-        public static bool OpenBlock(int index, int blocks)
-        {
-            if (index < 0 || blocks <= 0 || index >= blocks)
-            {
-                return false;
-            }
-            return blocks <= OpenLots || (long)(index + 1) * OpenLots / blocks > (long)index * OpenLots / blocks;
-        }
 
         /// <summary>
         /// The office lots built for the businesses other features lease in the district, as indices into
@@ -198,7 +188,7 @@ namespace RealLifeOverhaul.Uptown
             var offices = new List<int>(64);
             for (int i = 0; i < lots.Count; i++)
             {
-                if (lots[i].Class == BuildingsClass.Office && !lots[i].First && Clear(lots[i].Id))
+                if (lots[i].Class == BuildingsClass.Office && !lots[i].First && !lots[i].Open && Clear(lots[i].Id))
                 {
                     offices.Add(i);
                 }
@@ -225,11 +215,10 @@ namespace RealLifeOverhaul.Uptown
 
         /// <summary>
         /// The lots built from the first day, as indices into <paramref name="lots"/> (into the caller's list, cleared), in
-        /// the order of their ids: every lot but those left open. Left open: every lot of a block kept open
-        /// (<paramref name="keptOpen"/>: a landmark's block) but the first block's quarter built before the band was filled
-        /// (<see cref="DayOne"/>, whose records saves hold); and one lot on each block <see cref="OpenBlock"/> picks, by the
-        /// lots' ids' hashes among its lots that are neither that quarter nor leased (<see cref="Leased"/>). A lot not
-        /// <see cref="Clear"/> is neither built nor one of a block's open lots. The same on every machine with the same mod.
+        /// the order of their ids: every lot but those left open. Left open: the open runs' spaces (the plan's), and every
+        /// lot of a block kept open (<paramref name="keptOpen"/>: a landmark's block) but the first block's quarter built
+        /// before the band was filled (<see cref="DayOne"/>, whose records saves hold) and the leased offices
+        /// (<see cref="Leased"/>). A lot not <see cref="Clear"/> is never built. The same on every machine with the same mod.
         /// </summary>
         public static List<int> Built(IList<BuildingsLot> lots, Func<int, bool> keptOpen, float awayX, float awayZ, List<int> into)
         {
@@ -253,73 +242,19 @@ namespace RealLifeOverhaul.Uptown
             {
                 stays[i] |= Venue(lots[i].Class);   // a theatre's or a cinema's lot is built from the first day, for the game to let
             }
-            var open = new bool[lots.Count];
-            var blocks = new List<int>(64);
             for (int i = 0; i < lots.Count; i++)
             {
-                if (!blocks.Contains(lots[i].Block))
+                if (string.IsNullOrEmpty(lots[i].Id) || lots[i].Open || !Clear(lots[i].Id))
                 {
-                    blocks.Add(lots[i].Block);
+                    continue;
                 }
-            }
-            blocks.Sort();
-            int may = 0;   // blocks that may keep an open lot: not kept open, with a lot to keep
-            for (int b = 0; b < blocks.Count; b++)
-            {
-                may += (keptOpen == null || !keptOpen(blocks[b])) && Candidates(lots, blocks[b], stays) ? 1 : 0;
-            }
-            var candidates = new List<int>(32);
-            int at = 0;
-            for (int b = 0; b < blocks.Count; b++)
-            {
-                int block = blocks[b];
-                candidates.Clear();
-                for (int i = 0; i < lots.Count; i++)
-                {
-                    if (lots[i].Block != block || string.IsNullOrEmpty(lots[i].Id))
-                    {
-                        continue;
-                    }
-                    if (!stays[i] && Clear(lots[i].Id))
-                    {
-                        candidates.Add(i);
-                    }
-                }
-                bool kept = keptOpen != null && keptOpen(block);
-                int wanted = kept ? candidates.Count : candidates.Count > 0 && OpenBlock(at, may) ? 1 : 0;
-                at += !kept && candidates.Count > 0 ? 1 : 0;
-                candidates.Sort((x, y) =>
-                {
-                    int byHash = NewBuildingsRules.Hash(lots[x].Id + "|open").CompareTo(NewBuildingsRules.Hash(lots[y].Id + "|open"));
-                    return byHash != 0 ? byHash : string.CompareOrdinal(lots[x].Id, lots[y].Id);
-                });
-                for (int k = 0; k < wanted; k++)
-                {
-                    open[candidates[k]] = true;
-                }
-            }
-            for (int i = 0; i < lots.Count; i++)
-            {
-                if (!open[i] && Clear(lots[i].Id))
+                if (stays[i] || keptOpen == null || !keptOpen(lots[i].Block))
                 {
                     into.Add(i);
                 }
             }
             into.Sort((a, b) => string.CompareOrdinal(lots[a].Id, lots[b].Id));
             return into;
-        }
-
-        // True when a block has a lot that could be left open: clear, neither the first quarter nor leased.
-        private static bool Candidates(IList<BuildingsLot> lots, int block, bool[] stays)
-        {
-            for (int i = 0; i < lots.Count; i++)
-            {
-                if (lots[i].Block == block && !string.IsNullOrEmpty(lots[i].Id) && !stays[i] && Clear(lots[i].Id))
-                {
-                    return true;
-                }
-            }
-            return false;
         }
 
         /// <summary>True for a theatre's or a cinema's lot (the owner, 25 Oct 2026: "cinemas etc to be rented").</summary>
@@ -583,9 +518,10 @@ namespace RealLifeOverhaul.Uptown
             {
                 return "the game's special building type needs a special service of the game's";
             }
-            if (!spanned && !TakesSize(lot, size))
+            // An open run's space takes any size of the grid that stands on one space; a site of several spans its others.
+            if (!spanned && !(lot.Open ? SpacesRules.SpacesOf(size, version) == 1 : TakesSize(lot, size)))
             {
-                return "the size " + (size ?? "(none)") + " is not one the lot's class takes";
+                return "the size " + (size ?? "(none)") + " is not one the lot takes";
             }
             if (!structure)
             {

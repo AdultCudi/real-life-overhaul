@@ -380,7 +380,7 @@ internal static partial class Program
         Check(wasMade > 300 && wasFront > 2f && wasOnPavement > 50 && wasStray > 100f,
             "uptown place: with the box alone, as before, " + wasOnPavement + " of " + wasMade + " buildings stood more than 0.3 m on the pavement, the worst " + wasFront.ToString("F2") + " m at "
             + wasWorst + ", and " + wasStrayAt + " carried a collider " + wasStray.ToString("F0") + " m from its building");
-        Check(nowMade == built.Count && nowOnPavement == 0 && nowFront <= 0.01f && avenues > 100 && streets > 150 && first >= 40,
+        Check(nowMade == built.Count && nowOnPavement == 0 && nowFront <= 0.01f && avenues > 100 && streets > 150 && first >= 30,
             "uptown place: on the real plan all " + nowMade + " of " + built.Count + " buildings (" + avenues + " on avenues, " + streets + " on streets, " + first
             + " in the first block) stand nothing on the pavement (the most forward " + Math.Max(0f, nowFront).ToString("F2") + " m, at " + nowWorst + ")");
         Check(nowDoor <= NewBuildingsRules.DoorBackMost + 0.01f, "uptown place: every door stands at most " + nowDoor.ToString("F2") + " m behind its building's front, where the pedestrians reach it");

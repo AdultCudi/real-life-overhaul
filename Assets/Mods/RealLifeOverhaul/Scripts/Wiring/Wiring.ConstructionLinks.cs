@@ -83,6 +83,8 @@ namespace RealLifeOverhaul
                 ConstructionBridges.SizeTaken = SizeTaken;
                 ConstructionBridges.LandPrice = () => DistrictBuildings.LandPricePerSqm;
                 ConstructionBridges.Finish = Finish;
+                ConstructionBridges.FinishOver = FinishOver;
+                ConstructionBridges.SpacesOf = SpacesRules.SpacesOf;
                 DistrictBuildings.Lessee = RivalLease;   // whatever the options say: every machine leases the same offices
                 ConstructionBridges.RivalOffice = RivalOffice;
                 ConstructionBridges.RivalOfficeGo = RivalOfficeGo;
@@ -186,6 +188,8 @@ namespace RealLifeOverhaul
                 ConstructionBridges.SizeTaken = null;
                 ConstructionBridges.LandPrice = null;
                 ConstructionBridges.Finish = null;
+                ConstructionBridges.FinishOver = null;
+                ConstructionBridges.SpacesOf = null;
                 ConstructionBridges.Designs = null;
                 ConstructionBridges.Footprint = null;
                 ConstructionBridges.StartPlot = null;
@@ -425,7 +429,8 @@ namespace RealLifeOverhaul
                         into.Add(new LotView
                         {
                             Id = l.Id, Street = l.Street, Number = l.Number, X = l.X, Y = UptownLots.GroundY, Z = l.Z, Yaw = l.Yaw, Width = l.Width, Depth = l.Depth,
-                            Class = (int)l.Class, First = l.First, Open = UptownLots.Open(l), Traffic = Math.Max(0, DistrictBuildings.TrafficOf(l.Id))
+                            Class = (int)l.Class, First = l.First, Open = UptownLots.Open(l), Traffic = Math.Max(0, DistrictBuildings.TrafficOf(l.Id)), Block = l.Block,
+                            Strip = l.Strip, Index = l.Index, Spaces = l.Spaces, Size = l.Size
                         });
                     }
                 }
@@ -482,6 +487,23 @@ namespace RealLifeOverhaul
                 {
                     Fault("ConstructionLinks.SizeTaken", e);
                     return true;
+                }
+            }
+
+            // A site of several spaces: its building over all of them, as a landmark's stands over its block's lots.
+            private static bool FinishOver(string lot, IList<string> over, string design, string size, int version, string type, int storeys, bool player, double price,
+                                           out string why)
+            {
+                why = null;
+                try
+                {
+                    return DistrictBuildings.FinishOver(lot, over, design, size, version, type, storeys, player ? FinishOwner.Player : FinishOwner.City, price, out why);
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.FinishOver", e);
+                    why = "a fault";
+                    return false;
                 }
             }
 

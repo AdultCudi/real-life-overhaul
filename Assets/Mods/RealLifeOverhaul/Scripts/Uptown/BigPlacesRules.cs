@@ -39,10 +39,14 @@ namespace RealLifeOverhaul.Uptown
         public readonly int Side;            // -1 against its ground's left side, +1 its right, looking out to the street
         public readonly float SideGap;       // m between that side of its ground and its own
         public readonly BigMouth Mouths;
+        public readonly float MouthLeft;     // m its mouths stop short of its ground's left end, looking out: a corner's crossing keeps its poles and bags
+        public readonly float MouthRight;    // and of its right end
 
         public BigPlace(BigKind kind, string lot, string[] over, string[] keptClear, string service, string name, string design, string size, int version,
-            float inset, int side, float sideGap, BigMouth mouths)
+            float inset, int side, float sideGap, BigMouth mouths, float mouthLeft = 0f, float mouthRight = 0f)
         {
+            MouthLeft = mouthLeft;
+            MouthRight = mouthRight;
             Kind = kind;
             Lot = lot;
             Over = over;
@@ -72,20 +76,21 @@ namespace RealLifeOverhaul.Uptown
         public const string SpecialType = BuildingsRules.SpecialType;
         public const float MouthIntoRoad = 3f;   // m a mouth reaches past the kerb: over the kerb's parking lane, which the game lays 1.3 m in and 2.5 m wide
 
-        // The one place Uptown's big places are chosen: each stands on the ground the plan keeps for it (LayoutRules.Places,
-        // its id and address the plan's), the lots round it kept 1.5 m off by the plan itself. The store, Total
-        // Produce Trading's drive-in, over block 108's whole Uptown Avenue front (7th to 6th Street): 10.5 m back so its car
-        // park lines (10.47 m past its walls) end at the pavement, against the west end so its garage doors open east onto a
-        // yard about 22 m wide; the lots behind it end 1.5 m short of its ground. The station, United
-        // Gasoline's, on the north-east corner of 9th Street and Uptown Avenue as United Gasoline stands on 2nd Street and 1st
-        // Avenue: the pumps' open end 1.87 m behind the avenue's pavement, its forecourt and repair bays 5.11 m from the street's.
+        // The one place Uptown's big places are chosen: each stands on the whole spaces the plan keeps for it (LayoutRules.Places,
+        // its id and address the plan's). The store, Total Produce Trading's drive-in, over block 108's whole Uptown Avenue
+        // front (7th to 6th Street, 70 m): 10.5 m back so its car park lines (10.47 m past its walls) end at the pavement,
+        // 5.52 m from the west end, where it stood before the spaces, so its garage doors open east onto a yard over 30 m wide;
+        // the lots behind it end 1.5 m short of its ground. The station, United Gasoline's, on four spaces of the north-east
+        // corner of 9th Street and Uptown Avenue as United Gasoline stands on 2nd Street and 1st Avenue: the pumps' open end
+        // 1.87 m behind the avenue's pavement, its forecourt and repair bays 5.11 m from the street's, the strip's next
+        // building beside its ground.
         /// <summary>The two places, in a fixed order.</summary>
         public static readonly BigPlace[] All =
         {
             new BigPlace(BigKind.Wholesale, "uptown_place_wholesale", new string[0], new string[0], "MurrayHillWholesaleStore",
-                "Northgate Wholesale", "DriveInMurrayHill", "ba:buildingsize_e", 1, 10.5f, -1, 0.5f, BigMouth.Front),
+                "Northgate Wholesale", "DriveInMurrayHill", "ba:buildingsize_e", 1, 10.5f, -1, 5.52f, BigMouth.Front, 5f, 5f),
             new BigPlace(BigKind.GasStation, "uptown_place_fuel", new string[0], new string[0], "UnitedGasoline",
-                "Summit Fuel", "GasStationBuilding", "ba:buildingsize_a", 2, 1.87f, 1, 3.61f, BigMouth.Front | BigMouth.Right),
+                "Summit Fuel", "GasStationBuilding", "ba:buildingsize_a", 2, 1.87f, 1, 5.11f, BigMouth.Front | BigMouth.Right, 3.5f, 1.5f),
         };
 
         /// <summary>True for a lot one of the places stands on, spans or keeps clear: never one of the plan's ordinary buildings.</summary>
@@ -203,7 +208,12 @@ namespace RealLifeOverhaul.Uptown
                 return;
             }
             int facing = ((int)Math.Round(ground.Facing / 90.0) % 4 + 4) % 4;   // 0 north, 1 east, 2 south, 3 west
-            float halfW = ground.Width * 0.5f, halfD = ground.Depth * 0.5f;
+            // The mouths' ground: the place's, its ends drawn in where its spaces run on to a corner's crossing.
+            float shift = (place.MouthLeft - place.MouthRight) * 0.5f;          // along the way to its right, looking out
+            float rightX = facing == 0 ? 1f : facing == 2 ? -1f : 0f, rightZ = facing == 1 ? -1f : facing == 3 ? 1f : 0f;
+            ground.X += rightX * shift;
+            ground.Z += rightZ * shift;
+            float halfW = Math.Max(0f, ground.Width - place.MouthLeft - place.MouthRight) * 0.5f, halfD = ground.Depth * 0.5f;
             if ((place.Mouths & BigMouth.Front) != 0)
             {
                 into.Add(Out(ground.X, ground.Z, facing, halfW, halfD));

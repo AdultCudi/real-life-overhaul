@@ -100,12 +100,12 @@ namespace RealLifeOverhaul.Construction
         // The design a development wears: one of those that fit its plot's frame, picked by its lot (the same on every machine).
         private bool DevDesign(LotView lot, BuildUse use, DevFile dev)
         {
-            PlotFrame(lot.Width, lot.Depth, out float w, out float d);
+            SiteGround(lot, out float w, out float d);
             if (!ReadDesigns(w, d, BuildCatalogue.UseTypes[(int)use], DesignsAsked, _choices))
             {
                 return false;
             }
-            KeepSizes(lot.Id, _choices);
+            KeepFitting(lot, _choices);
             int pick = DevelopmentRules.DesignPick(lot.Id, _choices.Count);
             dev.Design = pick >= 0 ? _choices[pick].Name : NoDesign;
             if (pick < 0)
@@ -118,12 +118,12 @@ namespace RealLifeOverhaul.Construction
         private bool DesignOf(LotView lot, BuildUse use, string name, out DesignChoice design)
         {
             design = default(DesignChoice);
-            PlotFrame(lot.Width, lot.Depth, out float w, out float d);
+            SiteGround(lot, out float w, out float d);
             if (!ReadDesigns(w, d, BuildCatalogue.UseTypes[(int)use], DesignsAsked, _choices))
             {
                 return false;
             }
-            KeepSizes(lot.Id, _choices);
+            KeepFitting(lot, _choices);
             for (int i = 0; i < _choices.Count; i++)
             {
                 if (_choices[i].Name == name)

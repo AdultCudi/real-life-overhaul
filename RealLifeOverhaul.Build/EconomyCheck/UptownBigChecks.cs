@@ -85,7 +85,7 @@ internal static partial class Program
             clear &= !BuildingsRules.Clear(id);
             holds &= BigPlacesRules.Holds(id) && BigPlacesRules.HolderOf(id) != null;
         }
-        bool neighbours = plan.TrueForAll(l => held.Contains(l.Id) || l.Id == "uptown_1_14_004" || (BuildingsRules.Clear(l.Id) && !BigPlacesRules.Holds(l.Id)))
+        bool neighbours = plan.TrueForAll(l => held.Contains(l.Id) || l.Id == "uptown_1_14_0004" || (BuildingsRules.Clear(l.Id) && !BigPlacesRules.Holds(l.Id)))
                           && !BigPlacesRules.Holds(null) && BigPlacesRules.On("uptown_1_08_001") == null
                           && BigPlacesRules.On("uptown_place_wholesale") == store && BigPlacesRules.On("uptown_place_fuel") == station;
         Check(clear && holds && neighbours, "uptown big: a place's lots are none of the plan's ordinary buildings (BuildingsRules.Clear), its neighbours are");
@@ -111,10 +111,10 @@ internal static partial class Program
     {
         BigPlace store = BigPlacesRules.Of(BigKind.Wholesale), station = BigPlacesRules.Of(BigKind.GasStation);
         bool g1 = BigPlacesRules.Ground(store, plan, out BuildingsLot storeGround), g2 = BigPlacesRules.Ground(station, plan, out BuildingsLot stationGround);
-        Check(g1 && g2 && storeGround.Id == store.Lot && storeGround.Street == UptownLotOf(plan, store.Lot).Street && Near(storeGround.X, -83.4f, 0.05f) && Near(storeGround.Z, 577.63f, 0.05f)
-              && storeGround.Width == 60 && storeGround.Depth == 41 && Near(storeGround.Facing, 0f, 0.01f)
-              && stationGround.Width == 23 && stationGround.Depth == 32 && Near(stationGround.Facing, 180f, 0.01f) && Near(stationGround.X, -280.0f, 0.05f),
-            "uptown big: the store's ground is the plan's 60 by 41 m along Uptown Avenue at its own address; the station's 23 by 32 m on its corner ("
+        Check(g1 && g2 && storeGround.Id == store.Lot && storeGround.Street == UptownLotOf(plan, store.Lot).Street && Near(storeGround.X, -83.42f, 0.05f) && Near(storeGround.Z, 577.63f, 0.05f)
+              && storeGround.Width == 70 && storeGround.Depth == 41 && Near(storeGround.Facing, 0f, 0.01f)
+              && stationGround.Width == 28 && stationGround.Depth == 32 && Near(stationGround.Facing, 180f, 0.01f) && Near(stationGround.X, -279.02f, 0.05f),
+            "uptown big: the store's ground is the plan's ten spaces, 70 by 41 m, along Uptown Avenue at its own address; the station's four, 28 by 32 m, on its corner ("
             + storeGround.X + ", " + storeGround.Z + ", " + storeGround.Width + " by " + storeGround.Depth + ")");
         var shuffled = new List<BuildingsLot>(plan);
         shuffled.Reverse();
@@ -128,14 +128,14 @@ internal static partial class Program
         NewBuildingsRules.Place(d, lot, out float x, out float z, out float yaw);
         float pavement = (float)(LayoutRules.AvenueZ(1) - LayoutRules.AvenueHalf), west7th = LayoutRules.StreetX(2) + LayoutRules.StreetHalf, east6th = LayoutRules.StreetX(3) - LayoutRules.StreetHalf;
         bool front = Near(z + d.MaxZ, pavement - 10.5f, 0.1f) && Near(yaw, 0f, 0.01f);
-        bool westSide = Near(x + d.MinX, storeGround.X - 30f + 0.5f, 0.05f);
+        bool westSide = Near(x + d.MinX, storeGround.X - storeGround.Width * 0.5f + store.SideGap, 0.05f) && Near(x + d.MinX, -112.9f, 0.05f);   // where it stood before the spaces
         bool lines = x - 22.01f >= west7th && z + 27.92f <= pavement + 0.05f;                     // the car park's lines, x -22.01 to 12.27 and to z 27.92 round its root
-        bool yard = storeGround.X + 30f - (x + 20.29f) >= 20f && x + 20.29f < east6th;           // the garage doors' triggers reach x 20.29; 20 m or more of yard beyond them
+        bool yard = storeGround.X + storeGround.Width * 0.5f - (x + 20.29f) >= 20f && x + 20.29f < east6th;   // the garage doors' triggers reach x 20.29; 20 m or more of yard beyond them
         NewBuildingsRules.Footprint(d, lot, out float cx, out float cz, out float hw, out float hd);
         bool foot = Near(cx, x + (d.MinX + d.MaxX) * 0.5f, 0.05f) && Near(cz, z + (d.MinZ + d.MaxZ) * 0.5f, 0.05f) && Near(hw * 2f, d.MaxX - d.MinX, 0.01f);
         Check(front && westSide && lines && yard && foot,
             "uptown big: the store stands as Total Produce Trading stands to its street, its front 10.5 m back from Uptown Avenue's pavement so its car park's lines end there, "
-            + "against the ground's west end, its garage doors opening east onto a yard 20 m wide or more (root " + x.ToString("F2") + ", " + z.ToString("F2") + ")");
+            + "5.52 m from the ground's west end, its garage doors opening east onto a yard 20 m wide or more (root " + x.ToString("F2") + ", " + z.ToString("F2") + ")");
         bool storeClear = UptownBigClear(plan, store, cx, cz, lot.Facing, hw, hd, out string storeMeets);
         Check(storeClear, "uptown big: the store's walls stand 1.5 m clear of every lot of the plan it does not hold" + (storeMeets != null ? " (meets " + storeMeets + ")" : string.Empty));
 

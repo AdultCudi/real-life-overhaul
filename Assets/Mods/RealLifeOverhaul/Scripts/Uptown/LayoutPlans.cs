@@ -176,6 +176,11 @@ namespace RealLifeOverhaul.Uptown
         public static float North => LayoutRules.AvenueZ(Rows) + LayoutRules.AvenueHalf;                    // m: its north edge, Crest Avenue's north pavement
         public static float RowOneFrom => LayoutRules.AvenueZ(0) + LayoutRules.AvenueHalf;                  // m: 1st Avenue's north pavement's back, where row 1 begins
         public static float South => LayoutRules.AvenueZ(0) - LayoutRules.AvenueHalf;                      // m: 1st Avenue's south pavement's back, its continuations' edge
+        // The ring's strips past the band's outer streets and Crest Avenue are built (LayoutRules.IsRing): the district's walls
+        // stand behind them, and its outer pavements go to the band's edge, the ring's buildings' fronts.
+        public static float RingWest => West - LayoutRules.RingDepth(false);   // m: the ring's west strips' backs, where the west wall stands
+        public static float RingEast => East + LayoutRules.RingDepth(false);   // m: its east strips' backs
+        public static float RingNorth => North + LayoutRules.RingDepth(true);  // m: its north strips' backs
 
         /// <summary>True for a street of the first block, Manhattan's own continued (9th to 1st Street).</summary>
         public static bool Manhattan(int street)
@@ -402,8 +407,9 @@ namespace RealLifeOverhaul.Uptown
                     plan.Boxes.Add(Box(x0, z0, x1, z1));
                 }
                 float a = LayoutRules.AvenueZ(row);
-                plan.Boxes.Add(Box(West + EdgeClear, a - LayoutRules.AvenueHalf, East - EdgeClear, row == Rows ? North - EdgeClear : a + LayoutRules.AvenueHalf));
+                plan.Boxes.Add(Box(West + EdgeClear, a - LayoutRules.AvenueHalf, East - EdgeClear, a + LayoutRules.AvenueHalf));
             }
+            Ring(plan.Boxes);
             float first = LayoutRules.AvenueZ(0);
             var wall = new List<FlatRect>(1) { KeptWall.Grown(KeepClear) };
             GroundShapes.Cut(Box(West + EdgeClear, first - LayoutRules.AvenueKerb, WestCornerJoin, RowOneFrom), wall, Least, plan.Boxes);
@@ -447,7 +453,7 @@ namespace RealLifeOverhaul.Uptown
                 }
                 float a = LayoutRules.AvenueZ(row);
                 plan.Boxes.Add(Box(West + EdgeClear, a - LayoutRules.AvenueHalf, East - EdgeClear, a - LayoutRules.AvenueKerb));
-                plan.Boxes.Add(Box(West + EdgeClear, a + LayoutRules.AvenueKerb, East - EdgeClear, row == Rows ? North - EdgeClear : a + LayoutRules.AvenueHalf));
+                plan.Boxes.Add(Box(West + EdgeClear, a + LayoutRules.AvenueKerb, East - EdgeClear, a + LayoutRules.AvenueHalf));
                 for (int k = LayoutStreets.WestMost; k <= LayoutStreets.EastMost; k++)
                 {
                     float c = LayoutRules.StreetX(k);
@@ -471,6 +477,23 @@ namespace RealLifeOverhaul.Uptown
             }
             Area(plan.Area);
             return plan;
+        }
+
+        // The ring's built strips, walked as the band's blocks are, their backs kept off the walls.
+        private static void Ring(List<GroundBox> into)
+        {
+            for (int row = 1; row <= Rows + 1; row++)
+            {
+                for (int column = 0; column <= LayoutRules.Columns + 1; column++)
+                {
+                    if (!LayoutRules.IsRing(row, column))
+                    {
+                        continue;
+                    }
+                    LayoutRules.RingStrip(row, column, out float x0, out float z0, out float x1, out float z1, out int facing);
+                    into.Add(Box(facing == 90 ? x0 + EdgeClear : x0, z0, facing == 270 ? x1 - EdgeClear : x1, facing == 180 ? z1 - EdgeClear : z1));
+                }
+            }
         }
 
         // The band's whole ground, rebuilt for both meshes: what the game baked on the backdrop between the new ground's boxes goes.
@@ -523,11 +546,7 @@ namespace RealLifeOverhaul.Uptown
         private static float Outer(int street, bool east)
         {
             float c = LayoutRules.StreetX(street);
-            if (east)
-            {
-                return c + LayoutRules.StreetHalf - (street == LayoutStreets.EastMost ? EdgeClear : 0f);
-            }
-            return c - LayoutRules.StreetHalf + (street == LayoutStreets.WestMost ? EdgeClear : 0f);
+            return east ? c + LayoutRules.StreetHalf : c - LayoutRules.StreetHalf;   // the outer streets' outer pavements meet the ring's buildings, no wall
         }
 
         // A row of blocks' ground between its avenues: from the avenue south of it (1st Avenue's north pavement for row 1).
@@ -629,15 +648,23 @@ namespace RealLifeOverhaul.Uptown
 
         /// <summary>
         /// The new invisible walls round the band's edge, as the game's own (StreetProps, 4.76 m): north, west and east of
-        /// it, and along the south of 1st Avenue's continuations, from the backdrop's buildings south of them.
+        /// it behind the ring's buildings, across 1st Avenue's continuations' ends and their corners with the ring, and along
+        /// the south of 1st Avenue's continuations, from the backdrop's buildings south of them.
         /// </summary>
         public static void NewWalls(List<PlanBox> into)
         {
             into.Clear();
-            float west = West, east = East, north = North, south = South;
+            // Behind the ring's strips; 1st Avenue's continuations walled at the band's edge as before, up to row 1's ring.
+            float west = RingWest, east = RingEast, north = RingNorth, south = South;
             into.Add(new PlanBox(west - WallThick, north, east + WallThick, north + WallThick, WallHigh));
-            into.Add(new PlanBox(west - WallThick, south - WallThick, west, north + WallThick, WallHigh));
-            into.Add(new PlanBox(east, south - WallThick, east + WallThick, north + WallThick, WallHigh));
+            into.Add(new PlanBox(west - WallThick, RowOneFrom, west, north + WallThick, WallHigh));
+            into.Add(new PlanBox(east, RowOneFrom, east + WallThick, north + WallThick, WallHigh));
+            into.Add(new PlanBox(West - WallThick, south - WallThick, West, RowOneFrom, WallHigh));
+            into.Add(new PlanBox(East, south - WallThick, East + WallThick, RowOneFrom, WallHigh));
+            into.Add(new PlanBox(west - WallThick, RowOneFrom - WallThick, West - WallThick, RowOneFrom, WallHigh));
+            into.Add(new PlanBox(East + WallThick, RowOneFrom - WallThick, east + WallThick, RowOneFrom, WallHigh));
+            west = West;
+            east = East;
             into.Add(new PlanBox(west, SouthWall - WallThick, WestKeptWall, SouthWall, WallHigh));
             into.Add(new PlanBox(EastBuilding, SouthWall - WallThick, east, SouthWall, WallHigh));
         }
@@ -652,7 +679,7 @@ namespace RealLifeOverhaul.Uptown
             grounds.Clear();
             roads.Clear();
             float west = West - WallThick, east = East + WallThick, first = LayoutRules.AvenueZ(0);
-            grounds.Add(new PlanBox(west, RowOneFrom, east, North + WallThick, UptownLots.GroundY));
+            grounds.Add(new PlanBox(RingWest - WallThick, RowOneFrom, RingEast + WallThick, RingNorth + WallThick, UptownLots.GroundY));
             grounds.Add(new PlanBox(west, South - WallThick, LayoutRules.StreetX(0) - LayoutRules.CrossingHalfX, RowOneFrom, UptownLots.GroundY));
             grounds.Add(new PlanBox(LayoutRules.StreetX(LayoutRules.FirstColumns) + LayoutRules.CrossingHalfX, South - WallThick, east, RowOneFrom, UptownLots.GroundY));
             for (int k = LayoutStreets.WestMost; k <= LayoutStreets.EastMost; k++)

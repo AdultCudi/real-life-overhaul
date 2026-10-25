@@ -88,6 +88,14 @@ namespace RealLifeOverhaul.Construction
 
         public delegate bool FinishCall(string lot, string design, string size, int version, string type, int storeys, bool player, double price, out string why);
 
+        /// <summary>A finished building handed to the district standing over a site's other spaces as well as its first: one building, one address. Default: none.</summary>
+        public static FinishOverCall FinishOver;
+
+        public delegate bool FinishOverCall(string lot, IList<string> over, string design, string size, int version, string type, int storeys, bool player, double price, out string why);
+
+        /// <summary>The spaces of the district's grid a size and version takes, 0 for one off the grid. Default: none known.</summary>
+        public static Func<string, int, int> SpacesOf;
+
         /// <summary>A rival builder's office (its index among the city's contractors) as the game writes its address, or null when it has none standing at this load. Default: none.</summary>
         public static Func<int, string> RivalOffice;
 
@@ -353,6 +361,8 @@ namespace RealLifeOverhaul.Construction
             SizeTaken = null;
             LandPrice = null;
             Finish = null;
+            FinishOver = null;
+            SpacesOf = null;
             RivalOffice = null;
             RivalOfficeGo = null;
             RivalHere = null;

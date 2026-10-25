@@ -9,6 +9,8 @@ namespace RealLifeOverhaul.Construction
     public sealed partial class ConstructionApp
     {
         private readonly List<BuildingView> _owned = new List<BuildingView>(8);
+        private readonly List<LandRun> _runs = new List<LandRun>(32);
+        private int _runSpaces = 1;   // spaces of a run the player means to buy, as the Land tab's selector last stood
 
         partial void WriteLand(InfoBox box, BuildState state, ref string selected)
         {
@@ -18,9 +20,13 @@ namespace RealLifeOverhaul.Construction
             {
                 LotView lot = lots[i];
                 LotFile owned = state.Lot(lot.Id);
-                if (owned == null && (!lot.Open || ConstructionDirector.LotTaken(lot.Id) || _director.DeveloperOn(lot.Id)))
+                if (owned == null && (ConstructionDirector.OnSpaces(lot) || !lot.Open || ConstructionDirector.LotTaken(lot.Id) || _director.DeveloperOn(lot.Id)))
                 {
-                    continue;   // built on, or the developers': not land to buy
+                    continue;   // built on, the developers', or a free space of the grid (its run's row sells it): not land to buy here
+                }
+                if (owned != null && _director.Lot(lot.Id, out LotView site))
+                {
+                    lot = site;   // a site of several spaces as one lot
                 }
                 TableRow row = Pick((owned != null ? "own:" : "lot:") + lot.Id, ref selected);
                 row.Kind = owned != null ? ConstructionTables.LandOwned : ConstructionTables.LandForSale;
@@ -33,6 +39,27 @@ namespace RealLifeOverhaul.Construction
                 if (row.Id == selected)
                 {
                     pickedLot = lot.Id;
+                }
+            }
+            // A block's free spaces in runs side by side: each run one row, bought a space or more at a time.
+            _director.Runs(_runs);
+            LandRun pickedRun = default(LandRun);
+            bool run = false;
+            for (int i = 0; i < _runs.Count; i++)
+            {
+                LandRun r = _runs[i];
+                TableRow row = Pick("run:" + r.First.Id, ref selected);
+                row.Kind = ConstructionTables.LandForSale;
+                row.Set(0, ConstructionGame.AddressText(r.First.Street, r.First.Number));
+                row.Set(1, ConstructionText.T("reallife_bld_value_spaces", "count", r.Spaces.ToString(), "width", r.Width.ToString(), "depth", r.First.Depth.ToString()), r.Width * r.First.Depth);
+                row.Set(2, ConstructionText.ZonesWords(_director.ClassZones(r.First.Class)));
+                long each = _director.SitePrice(r.First.Id, 1);
+                row.Set(3, each > 0 ? ConstructionText.T("reallife_bld_value_a_space", "amount", ConstructionText.Money(each)) : "-", each);
+                row.Set(4, ConstructionText.T(GoingPublic.InSession ? "reallife_bld_land_state_session" : "reallife_bld_land_state_sale"));
+                if (row.Id == selected)
+                {
+                    pickedRun = r;
+                    run = true;
                 }
             }
             ConstructionGame.Owned(_owned);
@@ -82,6 +109,11 @@ namespace RealLifeOverhaul.Construction
                 WriteLot(box, state, picked);
                 return;
             }
+            if (run)
+            {
+                WriteRun(box, pickedRun);
+                return;
+            }
             if (pickedLandmark != null && _director.Lot(pickedLandmark, out LotView landmark))
             {
                 WriteLandmark(box, state, landmark);
@@ -129,6 +161,43 @@ namespace RealLifeOverhaul.Construction
             return ConstructionText.T("reallife_bld_land_state_yours");
         }
 
+        // A run of a block's free spaces: what a space costs, and a button for each site it holds from its first space, one
+        // space to all of them side by side, each building one that fills it.
+        private void WriteRun(InfoBox box, LandRun run)
+        {
+            LotView first = run.First;
+            box.Title(ConstructionGame.AddressText(first.Street, first.Number));
+            box.Subtitle(ConstructionText.T("reallife_bld_land_run_sub", "count", run.Spaces.ToString()));
+            box.RowPair("reallife_bld_row_spaces", ConstructionText.T("reallife_bld_value_spaces", "count", run.Spaces.ToString(), "width", run.Width.ToString(), "depth",
+                first.Depth.ToString()), "reallife_bld_row_traffic", ConstructionText.N(first.Traffic));
+            box.Row("reallife_bld_row_zoned", ConstructionText.ZonesWords(_director.ClassZones(first.Class)));
+            box.Note(ConstructionText.T("reallife_bld_land_run_note"));
+            // How many of its spaces side by side to buy, from its first: one site, one building that fills it.
+            int spaces = Mathf.Clamp(_runSpaces, 1, run.Spaces);
+            box.Selector(run.Spaces, spaces - 1, i => ConstructionText.T(i == 0 ? "reallife_bld_set_one_space" : "reallife_bld_set_spaces", "count", (i + 1).ToString()),
+                i => UiClone.Safe(() =>
+                {
+                    _runSpaces = i + 1;
+                    Refresh();
+                }));
+            string id = first.Id;
+            long price = _director.SitePrice(id, spaces);
+            box.Row("reallife_bld_row_price", price > 0 ? ConstructionText.Money(price) : ConstructionText.T("reallife_bld_value_not_known"));
+            Transform buttons = box.ButtonRow();
+            string block = _director.BuySiteBlock(id, spaces);
+            if (block != null)
+            {
+                box.Line(ConstructionText.T(block), CellTone.Yellow);
+            }
+            else
+            {
+                InfoBox.Button(buttons, InfoBox.Positive, "reallife_bld_button_buy_site", () =>
+                    Confirm("reallife_bld_confirm_site", "reallife_bld_confirm_site_body", _director.LotWords(id), price, () => _director.BuySite(id, spaces), false));
+            }
+            InfoBox.Button(buttons, InfoBox.Additional, "reallife_bld_back", Back);
+            Guide(box);
+        }
+
         private void WriteLot(InfoBox box, BuildState state, LotView lot)
         {
             LotFile owned = state.Lot(lot.Id);
@@ -136,6 +205,10 @@ namespace RealLifeOverhaul.Construction
             box.Subtitle(ConstructionText.T(BuildCatalogue.ClassKeys[BuildCatalogue.Clamp(lot.Class, 0, BuildCatalogue.ClassCount - 1)]));
             box.RowPair("reallife_bld_row_size", ConstructionText.T("reallife_bld_value_size", "width", lot.Width.ToString(), "depth", lot.Depth.ToString()),
                 "reallife_bld_row_traffic", ConstructionText.N(lot.Traffic));
+            if (ConstructionDirector.OnSpaces(lot))
+            {
+                box.Row("reallife_bld_row_spaces", ConstructionText.T("reallife_bld_value_spaces", "count", lot.Spaces.ToString(), "width", lot.Width.ToString(), "depth", lot.Depth.ToString()));
+            }
             int zones = owned != null ? _director.ZonesNow(owned) : _director.ClassZones(lot.Class);
             box.Row("reallife_bld_row_zoned", ConstructionText.ZonesWords(zones));
             box.Row("reallife_bld_row_usual", ConstructionText.T("reallife_bld_value_area", "area", ConstructionText.N(LandRules.UsualArea(lot.Width, lot.Depth, lot.Class))));

@@ -41,9 +41,9 @@ namespace RealLifeOverhaul.Uptown
         public const int FirstColumn = 6;              // the first block's westmost column: the block east of 9th Street
         public const int FirstColumns = 8;             // ... and its eight blocks, to 1st Street
 
-        // ---- the lots: places.md's footprints of Manhattan's size classes, in its mix
+        // ---- the lots: the game's sizes on whole spaces (SpacesRules), in Manhattan's mix
 
-        public const int PlanGeneration = 3;           // the plan's generation, kept in every save with Uptown: a save of an earlier one has its district's records retired
+        public const int PlanGeneration = 4;           // the plan's generation, kept in every save with Uptown: a save of an earlier one has its district's records retired
         public const float LotGap = 0f;                // m between two lots: none, Manhattan's buildings stand side by side
         public const float BackGap = 2f;               // m from the backs of 1st Avenue's buildings to the first lots behind them
         public const float FirstNorthDepth = 32f;      // m: the first block's strip along Uptown Avenue (no warehouse) ...
@@ -51,59 +51,66 @@ namespace RealLifeOverhaul.Uptown
         public const float StreetDepth = 35f;          // m: a strip along a street, half a block across: the two streets' lots meet back to back
         public const float AvenueDepth = 39f;          // m: a strip along an avenue beyond the first block, any class, its ends the block's corners
         private static readonly int[] MixShare = { 64, 14, 13, 7 };   // per cent of Manhattan's buildings in each class (the other 2%: theatres, cinemas, towers)
-        private static readonly int[] ClassWidth = { 11, 23, 23, 29, 34, 34 };   // m along the street: places.md's typical footprint of each class; a venue's the game's theatre's
-        private static readonly int[] ClassDepth = { 24, 32, 31, 39, 27, 27 };   // m back from it
+
+        // ---- the open runs: the construction game's land (the owner, 25 Oct 2026: "keep 30" open lots), a run of single
+        // spaces on a block's west street, so a player joins one, two, three or more of them into a site
+
+        public const int OpenRuns = 13;                // blocks with a run: 65 spaces, the frontage of the 30 open lots the plan kept before
+        public const int OpenRunSpaces = 5;            // spaces in a run: a site of up to five, a K1 office's or a theatre's
+        private static readonly int[] LandmarkBlocks = { 110, 111, 113 };   // the landmarks' own blocks (LandmarkRules.Blocks' firsts), open whole: never a run's
 
         // The backs of 1st Avenue's north side, block by block east of 9th Street (m, the game's buildings' boxes, Build 3682).
         private static readonly float[] FirstBacks = { 508.8f, 508.5f, 504.7f, 520.0f, 510.8f, 506.9f, 510.7f, 510.8f };
 
-        // Ground the plan keeps for Uptown's big places (Scripts/Uptown/BigPlacesRules): each in one strip of one block, from
-        // and to along it (m, x for an avenue's strip, z for a street's) and back from its street's line; the strip's lots stand
-        // PlaceClear m off it, and a street's strips of its block end that far short of a place deeper than its avenue's.
-        // The wholesale store over block 108's Uptown Avenue front, x -113.4 to -53.4 and back to z 557 (its car park, its
-        // yard east of it); the filling station on block 206's corner of 9th Street and Uptown Avenue, x -291.5 to -268.5,
-        // 32 m back, as the game's own stand to their streets (BigPlacesRules' measures, Build 3682).
+        // Ground the plan keeps on whole spaces of one strip: from a space (counted along the strip from its west or south end)
+        // for so many (0: the whole strip), as deep as the strip or as Back says. Uptown's big places (Scripts/Uptown/
+        // BigPlacesRules): the wholesale store over block 108's whole Uptown Avenue front and back to z 557 (its car park, its
+        // yard east of it), the streets' lots ending PlaceClear m short of its back; the filling station on block 206's corner
+        // of 9th Street and Uptown Avenue, four spaces, 32 m back. The district's venues (the owner, 25 Oct 2026: cinemas "to
+        // be rented"), lots of their own numbered as their block's: five spaces each on an avenue, two theatres on Summit
+        // Avenue, three cinemas on Uptown, Uptown and Crest Avenue, spread west to east.
         private static readonly PlaceGround[] PlaceTable =
         {
-            new PlaceGround("uptown_place_wholesale", 1, FirstColumn + 2, 0, -113.4f, -53.4f, 557f, LotClass.Warehouse),
-            new PlaceGround("uptown_place_fuel", 2, FirstColumn, 180, -291.5f, -268.5f, 32f, LotClass.Office),
-            // The district's venues (the owner, 25 Oct 2026: cinemas "to be rented"), lots of their own (no id: numbered as the
-            // block's lots), each 34 by 27 m on an avenue 18 m from its block's west corner, where a real district has them:
-            // two theatres on Summit Avenue, three cinemas on Uptown, Uptown and Crest Avenue, spread west to east.
-            new PlaceGround(null, 2, 7, 0, -187.72f, -153.72f, 27f, LotClass.Theatre),
-            new PlaceGround(null, 3, 14, 180, 423.38f, 457.38f, 27f, LotClass.Theatre),
-            new PlaceGround(null, 1, 4, 0, -449.62f, -415.62f, 27f, LotClass.Cinema),
-            new PlaceGround(null, 2, 12, 180, 248.78f, 282.78f, 27f, LotClass.Cinema),
-            new PlaceGround(null, 3, 16, 0, 597.98f, 631.98f, 27f, LotClass.Cinema),
+            new PlaceGround("uptown_place_wholesale", 1, FirstColumn + 2, 0, 0, 0, 557f, LotClass.Warehouse, null, 0),
+            new PlaceGround("uptown_place_fuel", 2, FirstColumn, 180, 0, 4, 32f, LotClass.Office, null, 0),
+            new PlaceGround(null, 2, 7, 0, 2, 5, 0f, LotClass.Theatre, "ba:buildingsize_r", 1),
+            new PlaceGround(null, 3, 14, 180, 2, 5, 0f, LotClass.Theatre, "ba:buildingsize_r", 2),
+            new PlaceGround(null, 1, 4, 0, 2, 5, 0f, LotClass.Cinema, "ba:buildingsize_s", 1),
+            new PlaceGround(null, 2, 12, 180, 2, 5, 0f, LotClass.Cinema, "ba:buildingsize_s", 2),
+            new PlaceGround(null, 3, 16, 0, 2, 5, 0f, LotClass.Cinema, "ba:buildingsize_s", 3),
         };
 
-        public const float PlaceClear = 1.5f;          // m between a place's ground and the lots round it: a made building's clearance
+        public const float PlaceClear = 1.5f;          // m the streets' lots end short of a place deeper than its avenue's strip
 
-        // One place's ground as the table gives it: its block, the strip's facing, its run along the strip, and how far back it
-        // reaches (a depth in m, or for an avenue's strip a z the place's back stands on when over 100).
+        // One place's ground as the table gives it: its block, the strip's facing, its spaces, and how far back it reaches (a
+        // depth in m, or for an avenue's strip a z the place's back stands on when over 100; 0 the strip's own).
         private struct PlaceGround
         {
             public readonly string Id;
-            public readonly int Row, Column, Facing;
-            public readonly float From, To, Back;
+            public readonly int Row, Column, Facing, First, Spaces;
+            public readonly float Back;
             public readonly LotClass Class;
+            public readonly string Size;
+            public readonly int Version;
 
-            public PlaceGround(string id, int row, int column, int facing, float from, float to, float back, LotClass kind)
+            public PlaceGround(string id, int row, int column, int facing, int first, int spaces, float back, LotClass kind, string size, int version)
             {
                 Id = id;
                 Row = row;
                 Column = column;
                 Facing = facing;
-                From = from;
-                To = to;
+                First = first;
+                Spaces = spaces;
                 Back = back;
                 Class = kind;
+                Size = size;
+                Version = version;
             }
 
             // m from its street's line back to its back.
-            public float Depth(float front)
+            public float Depth(float front, float strip)
             {
-                return Back > 100f ? Math.Abs(front - Back) : Back;
+                return Back <= 0f ? strip : Back > 100f ? Math.Abs(front - Back) : Back;
             }
         }
 
@@ -158,6 +165,44 @@ namespace RealLifeOverhaul.Uptown
         {
             return PlannedSquare(row, column) && Array.IndexOf(Parks, row * 100 + column) >= 0;
         }
+
+        /// <summary>
+        /// True for a block of the ring round the band, past its outer streets (the owner, 25 Oct 2026: "the edge lots of the
+        /// district aren't filled. Please fill it buildings"): row 4 north of Crest Avenue, column 0 west of the westmost
+        /// street and column 19 east of the eastmost, each built along the side that faces the band (its inner strip), the
+        /// rest of it the scenery behind the district's walls.
+        /// </summary>
+        public static bool IsRing(int row, int column)
+        {
+            return (row == Rows + 1 && column >= 1 && column <= Columns) || ((column == 0 || column == Columns + 1) && row >= 1 && row <= Rows);
+        }
+
+        /// <summary>
+        /// A ring block's inner strip: its ground from the outer street's or Crest Avenue's pavement back
+        /// <see cref="RingDepth"/> (west, south, east, north, m); the way its street lies from it (MadeLot's facing).
+        /// </summary>
+        public static void RingStrip(int row, int column, out float x0, out float z0, out float x1, out float z1, out int facing)
+        {
+            Block(row, column, out x0, out z0, out x1, out z1);
+            if (row == Rows + 1)
+            {
+                z1 = z0 + AvenueDepth;
+                facing = 180;
+            }
+            else if (column == 0)
+            {
+                x0 = x1 - StreetDepth;
+                facing = 90;
+            }
+            else
+            {
+                x1 = x0 + StreetDepth;
+                facing = 270;
+            }
+        }
+
+        /// <summary>m a ring strip reaches past the band's edge: an avenue's strip north of Crest Avenue, a street's west and east.</summary>
+        public static float RingDepth(bool north) => north ? AvenueDepth : StreetDepth;
 
         /// <summary>True for a block the plan first left as a square: built now where <see cref="IsSquare"/> is false.</summary>
         public static bool PlannedSquare(int row, int column)
@@ -224,11 +269,22 @@ namespace RealLifeOverhaul.Uptown
             }
         }
 
-        /// <summary>The class's footprint along its street and back from it (m): the least a lot of it takes. A lot is as deep as its strip and takes its share of what the strip has over.</summary>
+        /// <summary>The class's least footprint along its street and back from it (m): its narrowest size's spaces and its shallowest depth class.</summary>
         public static void Footprint(LotClass kind, out int width, out int depth)
         {
-            width = ClassWidth[(int)kind];
-            depth = ClassDepth[(int)kind];
+            width = int.MaxValue;
+            depth = int.MaxValue;
+            for (int i = 0; i < SpacesRules.Grid.Length; i++)
+            {
+                SpaceSize s = SpacesRules.Grid[i];
+                if (s.Class == kind)
+                {
+                    width = Math.Min(width, s.Spaces * SpacesRules.SpaceWidth);
+                    depth = Math.Min(depth, s.DepthClass);
+                }
+            }
+            width = width == int.MaxValue ? 0 : width;
+            depth = depth == int.MaxValue ? 0 : depth;
         }
 
         /// <summary>Manhattan's share of a class among its buildings of the four classes, per cent of 98.</summary>
@@ -236,6 +292,31 @@ namespace RealLifeOverhaul.Uptown
         {
             return (int)kind < MixShare.Length ? MixShare[(int)kind] : 0;   // the venues are the table's, outside the mix
         }
+
+        /// <summary>
+        /// True for a block with an open run: <see cref="OpenRuns"/> of the band's built blocks but the landmarks', spread
+        /// evenly in block order (row by row, west to east).
+        /// </summary>
+        public static bool OpenRunBlock(int row, int column)
+        {
+            int index = -1, count = 0;
+            for (int r = 1; r <= Rows; r++)
+            {
+                for (int c = 1; c <= Columns; c++)
+                {
+                    if (IsSquare(r, c) || Array.IndexOf(LandmarkBlocks, r * 100 + c) >= 0)
+                    {
+                        continue;
+                    }
+                    index = r == row && c == column ? count : index;
+                    count++;
+                }
+            }
+            return index >= 0 && (long)(index + 1) * OpenRuns / count > (long)index * OpenRuns / count;
+        }
+
+        /// <summary>The landmarks' own blocks the open runs keep off (for the checks, against LandmarkRules).</summary>
+        public static IReadOnlyList<int> KeptForLandmarks => LandmarkBlocks;
 
         // One lot as laid, before its street and number are known.
         private sealed class Laid
@@ -246,10 +327,14 @@ namespace RealLifeOverhaul.Uptown
             public int Yaw;
             public string Street;
             public float Along;      // m along its street, for the numbers
-            public int Width, Depth; // m: along its street (its class's and its share of what the strip has over), and its strip's depth
+            public int Width, Depth; // m: along its street (its spaces'), and its strip's depth
             public string Place;     // a place's id (PlaceTable), or null for a lot
             public bool OddSide;     // its street's odd side: a street's west side, an avenue's south side
             public int Number, Order;
+            public int Strip, Index, Spaces;   // its strip (Lot.Strip), its first space along it and how many it takes
+            public string Size;      // the game's size and version planned for it, or null for an open run's space
+            public int Version;
+            public bool Open;        // a space of an open run
         }
 
         private static void Make()
@@ -258,8 +343,8 @@ namespace RealLifeOverhaul.Uptown
             {
                 return;
             }
-            var laid = new List<Laid>(512);
-            var counts = new int[4];
+            var laid = new List<Laid>(768);
+            var counts = new int[SpacesRules.Grid.Length];
             for (int row = 1; row <= Rows; row++)
             {
                 for (int column = 1; column <= Columns; column++)
@@ -271,6 +356,23 @@ namespace RealLifeOverhaul.Uptown
                     LayBlock(row, column, laid, counts);
                 }
             }
+            for (int row = 1; row <= Rows + 1; row++)
+            {
+                for (int column = 0; column <= Columns + 1; column++)
+                {
+                    if (IsRing(row, column))
+                    {
+                        LayRing(row, column, laid, counts);
+                    }
+                }
+            }
+            // In id order, row by row and west to east, each block's own order kept: the ring's blocks were laid after the band's.
+            var order = new Dictionary<Laid, int>(laid.Count);
+            for (int i = 0; i < laid.Count; i++)
+            {
+                order[laid[i]] = i;
+            }
+            laid.Sort((a, b) => a.Row != b.Row ? a.Row.CompareTo(b.Row) : a.Column != b.Column ? a.Column.CompareTo(b.Column) : order[a].CompareTo(order[b]));
             Number(laid);
             var lots = new List<Lot>(laid.Count);
             var places = new List<Lot>(PlaceTable.Length);
@@ -279,10 +381,11 @@ namespace RealLifeOverhaul.Uptown
             for (int i = 0; i < laid.Count; i++)
             {
                 Laid l = laid[i];
-                // Three digits in the block: the first plan's ids had two, so none of its lots is ever taken for one of these.
-                string id = l.Place ?? "uptown_" + l.Row.ToString(Inv) + "_" + l.Column.ToString("00", Inv) + "_" + l.InBlock.ToString("000", Inv);
+                // Four digits in the block: the earlier plans' ids had two or three, so none of their lots is ever taken for one of these.
+                string id = l.Place ?? "uptown_" + l.Row.ToString(Inv) + "_" + l.Column.ToString("00", Inv) + "_" + l.InBlock.ToString("0000", Inv);
                 bool isFirst = IsFirst(l.Row, l.Column);
-                var lot = new Lot(id, l.Row, l.Column, l.Street, l.Number, l.Order, l.X, l.Z, l.Yaw, l.Width, l.Depth, l.Class, isFirst);
+                var lot = new Lot(id, l.Row, l.Column, l.Street, l.Number, l.Order, l.X, l.Z, l.Yaw, l.Width, l.Depth, l.Class, isFirst, l.Strip, l.Index, l.Spaces, l.Size,
+                    l.Version, l.Open);
                 if (l.Place != null)
                 {
                     places.Add(lot);
@@ -310,16 +413,16 @@ namespace RealLifeOverhaul.Uptown
             int west = WestStreet(column);
             int start = laid.Count;
             float north = first ? (Array.IndexOf(DeepFirst, column) >= 0 ? DeepNorthDepth : FirstNorthDepth) : AvenueDepth;
-            Strip(row, column, laid, counts, x0, x1, z1, north, 0, LayoutStreets.Avenue(row).Id);
+            Strip(row, column, laid, counts, x0, x1, z1, north, 0, LayoutStreets.Avenue(row).Id, 0);
             float sideFrom = z0;
             if (row > 1)
             {
-                Strip(row, column, laid, counts, x0, x1, z0, AvenueDepth, 180, LayoutStreets.Avenue(row - 1).Id);
+                Strip(row, column, laid, counts, x0, x1, z0, AvenueDepth, 180, LayoutStreets.Avenue(row - 1).Id, 0);
                 sideFrom = z0 + AvenueDepth + LotGap;
             }
-            float sideTo = Math.Min(z1 - north - LotGap, PlaceBackZ(row, column, z1) - PlaceClear);
-            Strip(row, column, laid, counts, sideFrom, sideTo, x0, StreetDepth, 270, LayoutStreets.Street(west).Id);
-            Strip(row, column, laid, counts, sideFrom, sideTo, x1, StreetDepth, 90, LayoutStreets.Street(west + 1).Id);
+            float sideTo = Math.Min(z1 - north - LotGap, PlaceBackZ(row, column, z1, north) - PlaceClear);
+            Strip(row, column, laid, counts, sideFrom, sideTo, x0, StreetDepth, 270, LayoutStreets.Street(west).Id, OpenRunBlock(row, column) ? OpenRunSpaces : 0);
+            Strip(row, column, laid, counts, sideFrom, sideTo, x1, StreetDepth, 90, LayoutStreets.Street(west + 1).Id, 0);
             int inBlock = 0;
             for (int i = start; i < laid.Count; i++)
             {
@@ -327,15 +430,48 @@ namespace RealLifeOverhaul.Uptown
             }
         }
 
-        // One strip of lots along a frontage, from its start to its end: each lot the class furthest below its share of the
-        // lots laid so far that fits the strip's depth and what is left of its length, side by side; what the strip has over
-        // shared out among its lots in whole metres, the metres left to its end lots, the last part of a metre at its two
-        // ends; every lot as deep as the
-        // strip. facing: the way the street lies from the lots (0 north, 90 east, 180 south, 270 west); front: the
-        // street's line the lots' fronts stand on (z for an avenue, x for a street).
-        private static void Strip(int row, int column, List<Laid> laid, int[] counts, float from, float to, float front, float depth, int facing, string street)
+        // A ring block's one strip, facing the band across its outer street or Crest Avenue, laid as any strip is.
+        private static void LayRing(int row, int column, List<Laid> laid, int[] counts)
         {
-            float next = from;
+            RingStrip(row, column, out float x0, out float z0, out float x1, out float z1, out int facing);
+            int start = laid.Count;
+            if (facing == 180)
+            {
+                Strip(row, column, laid, counts, x0, x1, z0, AvenueDepth, 180, LayoutStreets.Avenue(Rows).Id, 0);
+            }
+            else
+            {
+                Strip(row, column, laid, counts, z0, z1, facing == 90 ? x1 : x0, StreetDepth, facing, LayoutStreets.Street(facing == 90 ? LayoutStreets.WestMost : LayoutStreets.EastMost).Id, 0);
+            }
+            for (int i = start; i < laid.Count; i++)
+            {
+                laid[i].InBlock = i - start + 1;
+            }
+        }
+
+        // One strip along a frontage, from its start to its end, cut into spaces (SpacesRules.Cut), its places on their
+        // spaces, its first <open> spaces an open run of single spaces, and the rest laid as buildings: each the size and
+        // version furthest below its share of the band's buildings that fits the strip's depth and the spaces left before
+        // the next place or the strip's end, on exactly its spaces. facing: the way the street lies from the lots (0 north,
+        // 90 east, 180 south, 270 west); front: the street's line the lots' fronts stand on (z for an avenue, x for a street).
+        private static void Strip(int row, int column, List<Laid> laid, int[] counts, float from, float to, float front, float depth, int facing, string street, int open)
+        {
+            var widths = new List<int>(16);
+            float lead = SpacesRules.Cut(to - from, widths) * 0.5f;
+            int n = widths.Count;
+            var starts = new float[n + 1];
+            starts[0] = from + lead;
+            for (int i = 0; i < n; i++)
+            {
+                starts[i + 1] = starts[i] + widths[i];
+            }
+            var s = new StripCut { Row = row, Column = column, Front = front, Depth = depth, Facing = facing, Street = street, Starts = starts, Key = (row * 100 + column) * 1000 + facing };
+            int next = 0;
+            for (int i = 0; i < Math.Min(open, n); i++)
+            {
+                Add(s, laid, i, 1, depth, LotClass.Small, null, 0, null).Open = true;
+                next = i + 1;
+            }
             for (int p = 0; p < PlaceTable.Length; p++)
             {
                 PlaceGround g = PlaceTable[p];
@@ -343,33 +479,83 @@ namespace RealLifeOverhaul.Uptown
                 {
                     continue;
                 }
-                float clear = g.Id == null ? LotGap : PlaceClear;   // a venue's lot stands beside the others as any lot does
-                Run(row, column, laid, counts, next, g.From - clear, front, depth, facing, street);
-                Place(g, row, column, laid, front, facing, street);
-                next = g.To + clear;
+                int at = Math.Max(next, g.First), count = g.Spaces <= 0 ? n - at : Math.Min(g.Spaces, n - at);
+                Run(s, laid, counts, next, at);
+                Add(s, laid, at, count, (float)Math.Round(g.Depth(front, depth)), g.Class, g.Size, g.Version, g.Id);
+                next = at + count;
             }
-            Run(row, column, laid, counts, next, to, front, depth, facing, street);
+            Run(s, laid, counts, next, n);
         }
 
-        // A place's ground laid as one entry of its strip, to be numbered with its lots.
-        private static void Place(PlaceGround g, int row, int column, List<Laid> laid, float front, int facing, string street)
+        // A strip as cut: where it lies and its spaces' starts along it (the last its end).
+        private sealed class StripCut
         {
-            float depth = (float)Math.Round(g.Depth(front)), along = (g.From + g.To) * 0.5f, half = depth * 0.5f;   // whole metres, its front on the street's line
-            // A venue's ground (no id) is a lot of its block's, numbered with them.
-            var l = new Laid { Row = row, Column = column, Class = g.Class, Street = street, Place = g.Id, Width = (int)Math.Round(g.To - g.From), Depth = (int)Math.Round(depth) };
-            l.X = facing == 0 || facing == 180 ? along : facing == 270 ? front + half : front - half;
-            l.Z = facing == 0 ? front - half : facing == 180 ? front + half : along;
+            public int Row, Column, Facing, Key;
+            public float Front, Depth;
+            public string Street;
+            public float[] Starts;
+        }
+
+        // One run of a strip's spaces between its ends (or a place's ground), as the strip comment says.
+        private static void Run(StripCut s, List<Laid> laid, int[] counts, int from, int to)
+        {
+            int at = from;
+            while (at < to)
+            {
+                int pick = Pick(counts, s.Depth, to - at);
+                if (pick < 0)
+                {
+                    break;   // never: A1 takes one space of any strip
+                }
+                SpaceSize size = SpacesRules.Grid[pick];
+                counts[pick]++;
+                Add(s, laid, at, size.Spaces, s.Depth, size.Class, size.Size, size.Version, null);
+                at += size.Spaces;
+            }
+        }
+
+        // A lot (or a place's ground) on spaces [at, at + count) of a strip, as deep as given.
+        private static Laid Add(StripCut s, List<Laid> laid, int at, int count, float depth, LotClass kind, string size, int version, string place)
+        {
+            float a = s.Starts[at], b = s.Starts[at + count];
+            var l = new Laid
+            {
+                Row = s.Row, Column = s.Column, Class = kind, Street = s.Street, Place = place, Width = (int)Math.Round(b - a), Depth = (int)Math.Round(depth), Strip = s.Key,
+                Index = at, Spaces = count, Size = size, Version = version
+            };
+            float along = (a + b) * 0.5f, half = depth * 0.5f;
+            switch (s.Facing)
+            {
+                case 0:
+                    l.X = along;
+                    l.Z = s.Front - half;
+                    break;
+                case 180:
+                    l.X = along;
+                    l.Z = s.Front + half;
+                    break;
+                case 270:
+                    l.X = s.Front + half;
+                    l.Z = along;
+                    break;
+                default:
+                    l.X = s.Front - half;
+                    l.Z = along;
+                    break;
+            }
             l.X = Round(l.X);
             l.Z = Round(l.Z);
-            l.Yaw = (facing + 180) % 360;
-            l.OddSide = facing == 90 || facing == 0;
-            l.Along = facing == 0 || facing == 180 ? -l.X : l.Z;
+            l.Yaw = (s.Facing + 180) % 360;
+            // A street's west side is its odd one (lots facing east toward it), an avenue's south side (lots facing north).
+            l.OddSide = s.Facing == 90 || s.Facing == 0;
+            l.Along = s.Facing == 0 || s.Facing == 180 ? -l.X : l.Z;   // avenues number from their east end, as 1st Avenue; streets from the south
             laid.Add(l);
+            return l;
         }
 
         // The z of the back of a place in a block's north avenue strip (its streets' lots end short of it when it reaches past
         // the strip), else none.
-        private static float PlaceBackZ(int row, int column, float front)
+        private static float PlaceBackZ(int row, int column, float front, float strip)
         {
             float back = float.MaxValue;
             for (int p = 0; p < PlaceTable.Length; p++)
@@ -377,90 +563,44 @@ namespace RealLifeOverhaul.Uptown
                 PlaceGround g = PlaceTable[p];
                 if (g.Row == row && g.Column == column && g.Facing == 0)
                 {
-                    back = Math.Min(back, front - g.Depth(front));
+                    back = Math.Min(back, front - g.Depth(front, strip));
                 }
             }
             return back;
         }
 
-        // One run of a strip's lots between its ends (or a place's ground), as the strip comment says.
-        private static void Run(int row, int column, List<Laid> laid, int[] counts, float from, float to, float front, float depth, int facing, string street)
+        // The size and version of the mix's four classes furthest below its share that fits the strip's depth and the
+        // spaces left; -1 when none fits. A size's share: its class's of Manhattan's buildings, split by the game's own
+        // buildings of each of the class's sizes.
+        private static int Pick(int[] counts, float depth, int room)
         {
-            float room = to - from;
-            int begin = laid.Count;
-            float used = 0f;
-            while (true)
+            int laid = 0;
+            var classWeight = new int[MixShare.Length];
+            for (int i = 0; i < SpacesRules.Grid.Length; i++)
             {
-                int pick = Pick(counts, laid.Count, depth, room - used);
-                if (pick < 0)
+                laid += counts[i];
+                int c = (int)SpacesRules.Grid[i].Class;
+                if (c < MixShare.Length)
                 {
-                    break;
+                    classWeight[c] += SpacesRules.Grid[i].Weight;
                 }
-                counts[pick]++;
-                laid.Add(new Laid { Row = row, Column = column, Class = (LotClass)pick, Along = used + ClassWidth[pick] * 0.5f, Street = street });
-                used += ClassWidth[pick] + LotGap;
             }
-            if (laid.Count == begin)
-            {
-                return;
-            }
-            int count = laid.Count - begin;
-            float over = room - (used - LotGap);
-            int extra = (int)Math.Floor((over + 0.01f) / count);   // a strip of 70 m is 69.99999 in floats
-            int spare = (int)Math.Floor(over - extra * count + 0.01f);   // whole metres left: to the end lots, so the corners are built
-            float next = from + (over - extra * count - spare) * 0.5f;
-            for (int i = begin; i < laid.Count; i++)
-            {
-                Laid l = laid[i];
-                l.Width = ClassWidth[(int)l.Class] + extra + (i == begin ? spare - spare / 2 : 0) + (i == laid.Count - 1 ? spare / 2 : 0);
-                l.Depth = (int)depth;
-                float along = next + l.Width * 0.5f;
-                next += l.Width + LotGap;
-                float half = depth * 0.5f;
-                switch (facing)
-                {
-                    case 0:
-                        l.X = along;
-                        l.Z = front - half;
-                        break;
-                    case 180:
-                        l.X = along;
-                        l.Z = front + half;
-                        break;
-                    case 270:
-                        l.X = front + half;
-                        l.Z = along;
-                        break;
-                    default:
-                        l.X = front - half;
-                        l.Z = along;
-                        break;
-                }
-                l.X = Round(l.X);
-                l.Z = Round(l.Z);
-                l.Yaw = (facing + 180) % 360;
-                // A street's west side is its odd one (lots facing east toward it), an avenue's south side (lots facing north).
-                l.OddSide = facing == 90 || facing == 0;
-                l.Along = facing == 0 || facing == 180 ? -l.X : l.Z;   // avenues number from their east end, as 1st Avenue; streets from the south
-            }
-        }
-
-        // The class furthest below its share that fits; -1 when none fits.
-        private static int Pick(int[] counts, int laid, float depth, float room)
-        {
             int best = -1;
-            float most = float.MinValue;
-            for (int c = 0; c < 4; c++)
+            double most = double.MinValue;
+            for (int i = 0; i < SpacesRules.Grid.Length; i++)
             {
-                if (ClassDepth[c] > depth || ClassWidth[c] > room)
+                SpaceSize s = SpacesRules.Grid[i];
+                int c = (int)s.Class;
+                if (c >= MixShare.Length || s.DepthClass > depth + 0.01f || s.Spaces > room)
                 {
                     continue;
                 }
-                float below = MixShare[c] * (laid + 1) / 98f - counts[c];
-                if (below > most + 0.000001f)
+                double share = MixShare[c] / 98.0 * s.Weight / classWeight[c];
+                double below = share * (laid + 1) - counts[i];
+                if (below > most + 1e-9)
                 {
                     most = below;
-                    best = c;
+                    best = i;
                 }
             }
             return best;
@@ -552,6 +692,17 @@ namespace RealLifeOverhaul.Uptown
                     rects.Add(new GroundRect(x0, AvenueZ(1) - CrossingHalfZ, x1, north));
                     rects.Add(new GroundRect(west, south, StreetX(0) - CrossingHalfX, row));
                     rects.Add(new GroundRect(StreetX(FirstColumns) + CrossingHalfX, south, east, row));
+                    for (int r = 1; r <= Rows + 1; r++)
+                    {
+                        for (int c = 0; c <= Columns + 1; c++)
+                        {
+                            if (IsRing(r, c))
+                            {
+                                RingStrip(r, c, out float rx0, out float rz0, out float rx1, out float rz1, out _);
+                                rects.Add(new GroundRect(rx0, rz0, rx1, rz1));   // the ring's built strips past the band's outer streets
+                            }
+                        }
+                    }
                     _bandGround = rects;
                 }
                 return _bandGround;

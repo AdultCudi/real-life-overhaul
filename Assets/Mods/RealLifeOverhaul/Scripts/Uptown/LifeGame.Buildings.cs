@@ -49,7 +49,8 @@ namespace RealLifeOverhaul.Uptown
                 into.Add(new BuildingsLot
                 {
                     Id = lot.Id, Street = lot.Street, Number = lot.Number, Block = lot.Block, First = lot.First, Avenue = BuildingsRules.FrontsAvenue(lot.Facing),
-                    X = lot.X, Z = lot.Z, Facing = lot.Facing, Width = lot.Width, Depth = lot.Depth, Class = ClassOf(lot.Class), Sizes = lot.Sizes
+                    X = lot.X, Z = lot.Z, Facing = lot.Facing, Width = lot.Width, Depth = lot.Depth, Class = ClassOf(lot.Class), Sizes = lot.Sizes, Version = lot.Version,
+                    Spaces = lot.Spaces, Strip = lot.Strip, Index = lot.Index, Open = lot.Open
                 });
             }
         }
@@ -94,8 +95,9 @@ namespace RealLifeOverhaul.Uptown
 
         /// <summary>
         /// Every structure the game has for a lot's sizes, read at this load (BuildingSizeHelper, never assumed): each size's
-        /// versions that are not kept for the game's special buildings, and the types each takes but the special one; in the
-        /// rules' order (size, type, version), into the caller's list (cleared).
+        /// versions that are not kept for the game's special buildings (only the plan's version where the lot has one: its
+        /// spaces are that version's), and the types each takes but the special one; in the rules' order (size, type,
+        /// version), into the caller's list (cleared).
         /// </summary>
         public static void Structures(BuildingsLot lot, List<BuildingsStructure> into)
         {
@@ -113,7 +115,7 @@ namespace RealLifeOverhaul.Uptown
                     for (int v = 0; v < data.buildingVersions.Length; v++)
                     {
                         BuildingVersion each = data.buildingVersions[v];
-                        if (each == null || each.specialBuildingOnly || each.supportedBuildingTypes == null)
+                        if (each == null || each.specialBuildingOnly || each.supportedBuildingTypes == null || (lot.Version > 0 && each.number != lot.Version))
                         {
                             continue;
                         }

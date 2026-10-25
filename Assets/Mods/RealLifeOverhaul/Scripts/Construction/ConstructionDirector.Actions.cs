@@ -146,9 +146,9 @@ namespace RealLifeOverhaul.Construction
             {
                 return "reallife_bld_answer_session_land";
             }
-            if (!lot.Open || LotTaken(lot.Id) || _state.Lot(lot.Id) != null || DeveloperOn(lot.Id))
+            if (!lot.Open || LotTaken(lot.Id) || Holding(lot.Id) != null || DeveloperOn(lot.Id) || (OnSpaces(lot) && lot.Size != null))
             {
-                return "reallife_bld_answer_lot_taken";
+                return "reallife_bld_answer_lot_taken";   // a space of the grid is free land only where the plan stands no building
             }
             if (_state.Lots.Count >= BuildCatalogue.LotsMost)
             {
@@ -170,6 +170,10 @@ namespace RealLifeOverhaul.Construction
             if (!Lot(lotId, out LotView lot))
             {
                 return "reallife_bld_answer_no_lot";
+            }
+            if (OnSpaces(lot))
+            {
+                return BuySite(lotId, 1);   // one space: a site of one
             }
             string block = BuyBlock(lot);
             if (block != null)
