@@ -83,6 +83,10 @@ namespace RealLifeOverhaul.Uptown
                     return BuildingsClass.Big;
                 case LotClass.Warehouse:
                     return BuildingsClass.Warehouse;
+                case LotClass.Theatre:
+                    return BuildingsClass.Theatre;
+                case LotClass.Cinema:
+                    return BuildingsClass.Cinema;
                 default:
                     return BuildingsClass.Small;
             }

@@ -87,11 +87,18 @@ internal static partial class Program
     {
         List<Lot> lots = LayoutRules.Lots;
         List<Lot> first = LayoutRules.FirstLots;
-        int[] all = new int[4], firstMix = new int[4];
+        int[] all = new int[6], firstMix = new int[6];
         foreach (Lot l in lots)
         {
             all[(int)l.Class]++;
         }
+        int mixed = all[0] + all[1] + all[2] + all[3];
+        // The venues: two theatres and three cinemas (the owner, 25 Oct 2026), lots of their own on the avenues, none in the first block.
+        List<Lot> venues = lots.FindAll(l => l.Class == LotClass.Theatre || l.Class == LotClass.Cinema);
+        Check(all[4] == 2 && all[5] == 3 && venues.TrueForAll(l => (l.Facing == 0f || l.Facing == 180f) && !l.First && l.Width == 34 && l.Depth == 27
+                                                                    && UptownLots.SizesOf(l.Class)[0] == (l.Class == LotClass.Theatre ? "ba:buildingsize_r" : "ba:buildingsize_s")),
+            "uptown lots: two theatres' lots (the game's size R) and three cinemas' (S), 34 by 27 m, on the avenues and out of the first block ("
+            + string.Join(", ", venues.ConvertAll(l => l.Id + " " + l.Number + " " + l.Street.Substring(l.Street.LastIndexOf('_') + 1))) + ")");
         foreach (Lot l in first)
         {
             firstMix[(int)l.Class]++;
@@ -100,11 +107,11 @@ internal static partial class Program
         {
             Console.WriteLine("uptown lots: " + lots.Count + " in all (" + string.Join(", ", all) + "), the first block " + first.Count + " (" + string.Join(", ", firstMix) + ")");
         }
-        Check(lots.Count >= 520 && lots.Count <= 620, "uptown lots: about 560 in the band, built up as Manhattan (" + lots.Count + ")");
+        Check(lots.Count >= 600 && lots.Count <= 680, "uptown lots: about 630 in the band, built up as Manhattan's busiest (" + lots.Count + ")");
         Check(first.Count >= 75 && first.Count <= 100, "uptown lots: a first block of 75 to 100 (" + first.Count + ")");
         for (int c = 0; c < 4; c++)
         {
-            float share = 100f * all[c] / lots.Count, want = 100f * LayoutRules.Share((LotClass)c) / 98f;
+            float share = 100f * all[c] / mixed, want = 100f * LayoutRules.Share((LotClass)c) / 98f;
             Check(Math.Abs(share - want) <= 1.5f, "uptown lots: " + (LotClass)c + " " + share.ToString("0.0") + "% of the band, Manhattan's " + want.ToString("0.0") + "%");
         }
         Check(firstMix[0] < first.Count && firstMix[1] + firstMix[2] + firstMix[3] >= first.Count / 8, "uptown lots: the first block holds offices, big stores and a warehouse as well as small lots");
@@ -158,7 +165,7 @@ internal static partial class Program
             }
         }
         Check(worstEdge >= 0.93f, "uptown lots: every block's edge is lots side by side, the corners its avenues', a place's two blocks apart (the least " + (100f * worstEdge).ToString("0") + "%, block " + thinBlock + ")");
-        // Half the squares built (the owner, 24 Oct 2026), the parks left spread along every row and never a landmark's block.
+        // Three parks kept, one in each part of the band and each in another row (25 Oct 2026), every other square built, never a landmark's block.
         int planned = 0, kept = 0;
         var keptRows = new HashSet<int>();
         for (int row = 1; row <= LayoutRules.Rows; row++)
@@ -177,8 +184,9 @@ internal static partial class Program
                 }
             }
         }
-        Check(planned == 17 && kept == 9 && keptRows.Count == LayoutRules.Rows && lots.Select(l => l.Block).Distinct().Count() == LayoutRules.Rows * LayoutRules.Columns - kept,
-            "uptown lots: of the plan's 17 squares 8 are built and " + kept + " stay parks and plazas, some in every row, the rest of the 54 blocks laid with lots");
+        Check(planned == 17 && kept == 3 && keptRows.Count == LayoutRules.Rows && lots.Select(l => l.Block).Distinct().Count() == LayoutRules.Rows * LayoutRules.Columns - kept
+              && LayoutRules.IsSquare(2, 2) && LayoutRules.IsSquare(3, 9) && LayoutRules.IsSquare(1, 17),
+            "uptown lots: of the plan's 17 squares 14 are built and " + kept + " stay parks and plazas, west, middle and east, one in each row, the rest of the 54 blocks laid with lots");
         // Clear of one another: two lots side by side, never one over another.
         var byBlock = lots.GroupBy(l => l.Block).ToList();
         int clashes = 0;

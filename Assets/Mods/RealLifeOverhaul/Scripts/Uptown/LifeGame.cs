@@ -301,6 +301,7 @@ namespace RealLifeOverhaul.Uptown
         /// </summary>
         public static void Unload()
         {
+            DropFillers();
             foreach (KeyValuePair<BuildingTypeData, IdealAvailableBuildingsInNeighborhood[]> was in TargetsWas)
             {
                 if (was.Key != null)

@@ -246,6 +246,7 @@ namespace RealLifeOverhaul.NewBuildings
                 SceneFinds.All<NavMeshObstacle>("new buildings: the game's fixed obstacles listed for the made buildings' ground (a search of the scene)", FindObjectsInactive.Include),
                 SceneFinds.All<ToggleObjectDLC>("new buildings: the DLC content listed for the made buildings' ground (a search of the scene)", FindObjectsInactive.Include));
             _specs.Sort(NewBuildingsRules.CompareSpecs);
+            MadeBuildings.Arrange(CopyGame.Catalogue, e => Logger?.Error(e));
             _homes.Clear();
             _tookOther = 0;
             long measured = Stopwatch.GetTimestamp();

@@ -541,6 +541,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\DistrictSave\DistrictSaveStore.cs" Link="Mod\DistrictSaveStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\DistrictValues.cs" Link="Mod\DistrictValues.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\BuildingsRules.cs" Link="Mod\BuildingsRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\FrontageRules.cs" Link="Mod\FrontageRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\SpecialsRules.cs" Link="Mod\SpecialsRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\BigPlacesRules.cs" Link="Mod\BigPlacesRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\OfficesRules.cs" Link="Mod\OfficesRules.cs" />

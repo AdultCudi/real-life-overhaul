@@ -489,11 +489,17 @@ namespace RealLifeOverhaul.NewBuildings
             }
             if (!string.IsNullOrEmpty(named))
             {
-                for (int i = 0; i < designs.Count; i++)
+                // Its own size's entry first: one name stands for several sizes, each measured on a building of its own, so
+                // another size's may stand otherwise (a feature that chose by size, as Uptown's streets, gets what it chose).
+                for (int pass = 0; pass < 2; pass++)
                 {
-                    if (string.Equals(designs[i].Name, named, StringComparison.Ordinal) && designs[i].Whole == whole && Copyable(designs[i]) && Fits(designs[i], width, depth))
+                    for (int i = 0; i < designs.Count; i++)
                     {
-                        return i;
+                        if (string.Equals(designs[i].Name, named, StringComparison.Ordinal) && (pass == 1 || string.Equals(designs[i].Size, size, StringComparison.Ordinal))
+                            && designs[i].Whole == whole && Copyable(designs[i]) && Fits(designs[i], width, depth))
+                        {
+                            return i;
+                        }
                     }
                 }
                 return -1;

@@ -91,6 +91,7 @@ namespace RealLifeOverhaul.Uptown
         {
             Logger = logger;
             DistrictPlaces.Add(PlacesOwner, Fill, Early);
+            MadeBuildings.Arranging += Arrange;
             DistrictSaveDirector.KeepsAlso(LifeStore.Key);
         }
 
@@ -267,7 +268,7 @@ namespace RealLifeOverhaul.Uptown
                     BuildingsRules.Others(Options, pick, lease, Others);
                 }
                 Lot plain = UptownLots.Get(lot.Id);
-                MadeSpec spec = LifeGame.Spec(GroundOf(lot, f), structure, Others, f != null ? f.Design : null, f != null ? f.Storeys : 0, TrafficOf(lot.Id),
+                MadeSpec spec = LifeGame.Spec(GroundOf(lot, f), structure, Others, f != null ? f.Design : BuildingsRules.LookOf(lot.Class), f != null ? f.Storeys : 0, TrafficOf(lot.Id),
                     () => _known && !_down && UptownLots.Ready && plain != null && UptownLots.Open(plain));
                 if (place != null)
                 {
@@ -336,6 +337,8 @@ namespace RealLifeOverhaul.Uptown
                 cut += LifeGame.Cut(made) ? 1 : 0;
                 Standing.Add(made);
             }
+            int fillers = LifeGame.StandFillers(Fills);
+            Fills.Clear();
             _lives = Standing.Count > 0;
             MarkStanding();
             _stamp++;
@@ -352,7 +355,8 @@ namespace RealLifeOverhaul.Uptown
             {
                 Logger?.Warn("Uptown: its zone on the city map could not be made (" + why + "); the district has no row in the map's filters at this load.");
             }
-            Logger?.Info("Uptown: " + Standing.Count + " of " + Declared.Count + " building(s) standing as the game's own, " + cut + " cut into the walking meshes, in "
+            Logger?.Info("Uptown: " + Standing.Count + " of " + Declared.Count + " building(s) standing as the game's own, " + cut + " cut into the walking meshes, "
+                         + fillers + " filler(s) standing beside and behind them, in "
                          + ((System.Diagnostics.Stopwatch.GetTimestamp() - began) * 1000.0 / System.Diagnostics.Stopwatch.Frequency).ToString("F0", Plain) + " ms.");
         }
 
@@ -667,6 +671,7 @@ namespace RealLifeOverhaul.Uptown
                     CopyGame.Show(Standing[i].Controller, false);
                     Standing[i].Shown = false;
                 }
+                LifeGame.ShowFillers(false);
                 MadeBuildings.Changed();
                 LifeGame.Unlist();
                 LifeGame.Unmap();

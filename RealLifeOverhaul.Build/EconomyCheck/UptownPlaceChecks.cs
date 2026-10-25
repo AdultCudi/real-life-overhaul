@@ -328,8 +328,8 @@ internal static partial class Program
             }
             BuildingsRules.Others(options, structure, lease, into);
             var made = new MadeLot(lot.X, lot.Z, lot.Facing, lot.Width, lot.Depth);
-            int n = Choose(now, options[structure], into, made, lot.Id, false);
-            int w = Choose(was, options[structure], into, made, lot.Id, true);
+            int n = Choose(now, options[structure], into, made, lot.Id, false, BuildingsRules.LookOf(lot.Class));
+            int w = Choose(was, options[structure], into, made, lot.Id, true, BuildingsRules.LookOf(lot.Class));
             if (n >= 0)
             {
                 Stood s = StandOn(byEntry[now[n]], now[n], made);
@@ -454,12 +454,12 @@ internal static partial class Program
 
     // The director's choice for a lot (NewBuildingsDirector.Make): its own structure's design, else the first of its others
     // with one. The old way picked among every design of the size that fits, by Batched alone.
-    private static int Choose(List<DesignEntry> designs, BuildingsStructure own, List<BuildingsStructure> others, MadeLot lot, string id, bool old)
+    private static int Choose(List<DesignEntry> designs, BuildingsStructure own, List<BuildingsStructure> others, MadeLot lot, string id, bool old, string named)
     {
         for (int s = -1; s < others.Count; s++)
         {
             BuildingsStructure st = s < 0 ? own : others[s];
-            int pick = old ? OldPick(designs, st.Size, st.Type, lot.Width, lot.Depth, id) : NewBuildingsRules.Pick(designs, st.Size, st.Type, null, lot.Width, lot.Depth, id);
+            int pick = old && named == null ? OldPick(designs, st.Size, st.Type, lot.Width, lot.Depth, id) : NewBuildingsRules.Pick(designs, st.Size, st.Type, named, lot.Width, lot.Depth, id);
             if (pick >= 0)
             {
                 return pick;

@@ -66,12 +66,10 @@ internal static partial class Program
 
     private static void UptownFillRules(List<BuildingsLot> plan)
     {
-        Check(BuildingsRules.OpenCount(0, true) == 0 && BuildingsRules.OpenCount(11, true) == 3 && BuildingsRules.OpenCount(9, true) == 2 && BuildingsRules.OpenCount(10, true) == 3
-              && BuildingsRules.OpenCount(11, false) == 1 && BuildingsRules.OpenCount(15, false) == 2 && BuildingsRules.OpenCount(1, false) == 1 && BuildingsRules.OpenCount(-2, false) == 0,
-            "uptown fill: a block leaves its share of lots open, a quarter in the first block and an eighth elsewhere, halves up, at least one, never more than it has");
+        Check(BuildingsRules.OpenLots == 30, "uptown fill: thirty lots stay open for the construction game (the owner, 25 Oct 2026), the rest built");
         var built = BuildingsRules.Built(plan, LandmarkRules.OwnBlock, 0f, 1f, new List<int>());
         HashSet<string> builtIds = UptownIds(plan, built);
-        HashSet<string> legacy = UptownIds(plan, BuildingsRules.DayOne(plan, 0f, 1f, new List<int>()));
+        HashSet<string> legacy = UptownIds(plan, BuildingsRules.DayOne(plan, 0f, 1f, new List<int>(), LandmarkRules.OwnBlock));
         HashSet<string> leased = UptownIds(plan, BuildingsRules.Leased(plan, new List<int>()));
         int first = 0, firstBuilt = 0;
         foreach (BuildingsLot lot in plan)
@@ -84,8 +82,8 @@ internal static partial class Program
         {
             notClear += BuildingsRules.Clear(lot.Id) ? 0 : 1;
         }
-        Check(plan.Count == 557 && built.Count == 454 && legacy.Count == 20 && first == 80 && firstBuilt == 42 && notClear == 3,
-            "uptown fill: of the band's 555 lots and two big places' ground, 454 lots are built from the first day, 100 left open and one kept empty; 42 of the first block's 80 (" + plan.Count + ", "
+        Check(plan.Count == 630 && built.Count == 567 && legacy.Count == 19 && first == 78 && firstBuilt == 44 && notClear == 3,
+            "uptown fill: of the band's 628 lots and two big places' ground, 567 lots are built from the first day, 60 left open (30 for the construction game, 30 the landmarks' sites) and one kept empty; 44 of the first block's 78 (" + plan.Count + ", "
             + built.Count + ", " + legacy.Count + ", " + firstBuilt + " of " + first + ", " + notClear + " not clear)");
         bool treeLot = plan.Exists(l => l.Id == "uptown_1_14_004") && !BuildingsRules.Clear("uptown_1_14_004") && !builtIds.Contains("uptown_1_14_004")
                        && !leased.Contains("uptown_1_14_004") && BuildingsRules.Clear("uptown_1_14_005") && !BuildingsRules.Clear(null) && !BuildingsRules.Clear(string.Empty);
@@ -103,7 +101,8 @@ internal static partial class Program
             }
             list.Add(lot);
         }
-        bool shares = true, someOpen = true, landmarksOpen = true;
+        bool shares = true, landmarksOpen = true;
+        int openBlocks = 0, blocksMay = 0;
         string wrong = null;
         foreach (KeyValuePair<int, List<BuildingsLot>> block in blocks)
         {
@@ -122,13 +121,13 @@ internal static partial class Program
                 wrong = all ? wrong : wrong ?? "block " + block.Key + " (a landmark's) has " + open + " open of " + block.Value.Count;
                 continue;
             }
-            int wanted = Math.Min(block.Value.Count - fixedOnes, BuildingsRules.OpenCount(block.Value.Count, firstBlock));
-            shares &= open == wanted;
-            someOpen &= open >= 1;
-            wrong = open == wanted ? wrong : wrong ?? "block " + block.Key + " has " + open + " open, wanted " + wanted;
+            shares &= open <= 1;
+            openBlocks += open;
+            blocksMay += block.Value.Count > fixedOnes ? 1 : 0;
+            wrong = open <= 1 ? wrong : wrong ?? "block " + block.Key + " has " + open + " open";
         }
-        Check(blocks.Count == 45 && landmarksOpen && shares && someOpen,
-            "uptown fill: each landmark's own block open but for the old quarter's lots, every other block its share open and at least one, in each of the 45 blocks with lots"
+        Check(blocks.Count == 51 && landmarksOpen && shares && openBlocks == BuildingsRules.OpenLots && blocksMay > BuildingsRules.OpenLots,
+            "uptown fill: each landmark's own block open but for the old quarter's lots; of the other " + blocksMay + " blocks with lots " + openBlocks + " keep one open, none more"
             + (wrong != null ? " (" + wrong + ")" : string.Empty));
         Check(LandmarkRules.OwnBlock(111) && LandmarkRules.OwnBlock(113) && LandmarkRules.OwnBlock(110) && !LandmarkRules.OwnBlock(106) && !LandmarkRules.OwnBlock(112)
               && !LandmarkRules.OwnBlock(201),
@@ -182,7 +181,7 @@ internal static partial class Program
                 openFirst += lot.First ? 1 : 0;
             }
         }
-        Check(developers >= 25 && openFirst >= 30, "uptown fill: the city's developers have " + developers + " open lots to build on, " + openFirst
+        Check(developers >= 25 && openFirst >= 20, "uptown fill: the city's developers have " + developers + " open lots to build on, " + openFirst
                                                   + " of the open lots in the first block, where they build first and the landmarks stand");
 
         var options = new List<BuildingsStructure>
@@ -525,7 +524,9 @@ internal static partial class Program
         new[] { "l", "1", "residential" }, new[] { "m", "1", "retail" }, new[] { "n", "1", "residential" },
         new[] { "h", "1", "warehouse" }, new[] { "h", "2", "warehouse" }, new[] { "h", "3", "warehouse" }, new[] { "i", "1", "warehouse" },
         new[] { "i", "2", "warehouse" }, new[] { "i", "3", "warehouse" }, new[] { "p", "1", "warehouse" }, new[] { "p", "2", "warehouse" },
-        new[] { "p", "3", "warehouse" }, new[] { "q", "1", "warehouse" }, new[] { "q", "2", "warehouse" }, new[] { "q", "3", "warehouse" }
+        new[] { "p", "3", "warehouse" }, new[] { "q", "1", "warehouse" }, new[] { "q", "2", "warehouse" }, new[] { "q", "3", "warehouse" },
+        new[] { "r", "1", "theater" }, new[] { "r", "2", "theater" }, new[] { "r", "3", "theater" },
+        new[] { "s", "1", "cinema" }, new[] { "s", "2", "cinema" }, new[] { "s", "3", "cinema" }
     };
 
     // A lot's options as LifeGame.Structures lists them from the table above: its class's sizes, in the rules' order.
@@ -639,7 +640,7 @@ internal static partial class Program
             groundMs = Math.Min(groundMs, (d - c) * 1000.0 / Stopwatch.Frequency);
         }
         double all = rulesMs + lanesMs + groundMs;
-        Check(built == 454 && others > 0 && hits > 0 && all < 30.0,
+        Check(built == 567 && others > 0 && hits > 0 && all < 30.0,
             "uptown fill: the fill's own load work without the game's code, on the real plan: the built and leased lots and each one's structures and others in "
             + rulesMs.ToString("F2") + " ms, " + LanePoints + " lane points into squares in " + lanesMs.ToString("F2") + " ms, " + built + " buildings' lane and box checks in "
             + groundMs.ToString("F2") + " ms; " + all.ToString("F2") + " ms in all (wanted under 30 ms)");
