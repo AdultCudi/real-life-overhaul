@@ -51,6 +51,17 @@ namespace RealLifeOverhaul.Economy
         }
 
         public const int ProposalDays = 7;          // days at least between two proposals of one executive
+        public const int ExecutivePremium = 250;    // thousandths of a day's pay at their going rate an executive is paid a day on top of it
+
+        /// <summary>
+        /// An executive's allowance a day, whole money, on top of the pay they have as a professional: a share of a working
+        /// day at the going rate of their role and skill (the talent catalogue's, cents an hour).
+        /// </summary>
+        public static int ExecutiveAllowance(int goingCents)
+        {
+            long cents = (long)Math.Max(0, goingCents) * RealLifeOverhaul.Tech.TalentCatalogue.DayHours * ExecutivePremium / 1000;
+            return (int)Math.Min(int.MaxValue / 4, (cents + 50) / 100);
+        }
 
         /// <summary>
         /// Whether a store's manager is due to be replaced by the regional manager: their place off its targets for twice

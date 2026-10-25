@@ -282,7 +282,7 @@ namespace RealLifeOverhaul.Economy
             Logger?.Info("Company: you rejected " + e.Detail + "'s proposal for the company's " + PolicyCatalogue.Def(field).Key + ".");
         }
 
-        // A new month of the managers': the executives' month turns over with it.
+        // A new month of the managers': the executives' month turns over with it, each one's pay for it in the log.
         private void ExecutivesMonth()
         {
             if (_mgr == null || _hier.MonthFrom == _mgr.MonthFrom)
@@ -292,11 +292,58 @@ namespace RealLifeOverhaul.Economy
             for (int i = 0; i < _hier.Executives.Count; i++)
             {
                 ExecutiveFile x = _hier.Executives[i];
+                if (x.Paid > 0)
+                {
+                    HierarchyEntry entry = _hier.Log(HierarchyLog.Paid, (int)Rung.Executive, x.Name, string.Empty, Save.Day, Save.Hour);
+                    entry.A = x.Paid;
+                    entry.B = x.Decided;
+                    entry.C = x.Area;
+                }
                 x.LastDecided = x.Decided;
                 x.LastPaid = x.Paid;
                 x.Decided = x.Paid = 0;
             }
             _hier.MonthFrom = _mgr.MonthFrom;
+        }
+
+        /// <summary>An executive's allowance a day at their going rate now (HierarchyRules.ExecutiveAllowance).</summary>
+        internal static int AllowanceOf(ExecutiveFile x)
+        {
+            return x != null ? HierarchyRules.ExecutiveAllowance(x.Going) : 0;
+        }
+
+        // Yesterday's allowance of each executive in the seat by then, a business cost through the game's money, as the managers' are.
+        private void ExecutivesPay(int day)
+        {
+            int paid = 0;
+            for (int i = 0; i < _hier.Executives.Count; i++)
+            {
+                ExecutiveFile x = _hier.Executives[i];
+                int amount = AllowanceOf(x);
+                if (!x.Seen || x.From >= day || amount <= 0)
+                {
+                    continue;   // a seat that waits, or one taken today, is paid nothing for yesterday
+                }
+                Cost(amount, CompanyGame.ExecutiveKey, null, x.Name, CostKind.Wages, day - 1,
+                    "the " + (ExecSeat)x.Area + " executive's allowance at a going rate of " + x.Going + " cents an hour, for day " + (day - 1), true);
+                x.Paid += amount;
+                paid += amount;
+            }
+            if (Verbose && paid > 0)
+            {
+                Logger?.Info("Company check (executives, day " + day + "): " + paid + " paid in allowances for day " + (day - 1) + " through the game's money: PASS");
+            }
+        }
+
+        /// <summary>The executives' allowances over a month of the game's days, at their going rates now.</summary>
+        internal int ExecutivesMonthCost()
+        {
+            int sum = 0;
+            for (int i = 0; _hier != null && i < _hier.Executives.Count; i++)
+            {
+                sum += _hier.Executives[i].Seen ? ManagerDirectoryRules.MonthCost(AllowanceOf(_hier.Executives[i]), MonthDays) : 0;
+            }
+            return sum;
         }
     }
 }

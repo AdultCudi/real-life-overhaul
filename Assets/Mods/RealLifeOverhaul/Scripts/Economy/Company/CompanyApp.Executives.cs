@@ -114,7 +114,7 @@ namespace RealLifeOverhaul.Economy
             }
             box.Section("reallife_mgr_sec_directory");
             box.RowPair("reallife_mgr_dir_regional", Of(c.Managers[(int)ManagerGroup.Regional], c.Districts), "reallife_mgr_over_places", Of(c.PlaceManagers, c.AllPlaces));
-            box.Row("reallife_mgr_over_cost", CompanyText.Money(c.AllCost));
+            box.RowPair("reallife_mgr_over_cost", CompanyText.Money(c.AllCost), "reallife_hier_exec_cost", CompanyText.Money(_director.ExecutivesMonthCost()));
             Transform buttons = box.ButtonRow();
             InfoBox.Button(buttons, InfoBox.Positive, "reallife_hier_dir_inbox", () => Go("hx:"));
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_hier_dir_policy", () => OpenPolicy(CompanyDirector.ScopeCompany, null));
@@ -247,7 +247,16 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        partial void WriteSeatPay(InfoBox box, ExecutiveFile x);
+        // An executive's pay as the seat adds it: the allowance a day on top of their own, this month's and last.
+        private void WriteSeatPay(InfoBox box, ExecutiveFile x)
+        {
+            box.RowPair("reallife_mgr_allowance", CompanyText.T("reallife_co_row_a_day", "amount", CompanyText.Money(CompanyDirector.AllowanceOf(x))),
+                "reallife_hier_paid_month", CompanyText.Money(x.Paid));
+            if (x.LastPaid > 0)
+            {
+                box.Line(CompanyText.T("reallife_hier_paid_last", "amount", CompanyText.Money(x.LastPaid), "decisions", x.LastDecided.ToString()));
+            }
+        }
 
         // The professions a seat is hired from, in words.
         private static string SeatRoles(ExecSeat seat)

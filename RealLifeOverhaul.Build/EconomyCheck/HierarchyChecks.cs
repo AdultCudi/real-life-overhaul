@@ -25,6 +25,7 @@ internal static partial class Program
         HierarchyRouting();
         HierarchyAreas();
         HierarchyAbove();   // the regional managers' replacing and the executives' proposals (step 2)
+        HierarchyPay();     // everybody above the floor paid through the game's money, and their decisions logged (step 3)
         HierarchySave();
         HierarchyWiring();
         HierarchyWords();
@@ -351,6 +352,35 @@ internal static partial class Program
             "regional managers: they appoint and replace only where the region's policy says so, and only at the player's own stores");
         Check(MemberText(app, "partial void WriteManagers(").Contains("WriteOwnerOverview(box, hs, ref selected)") && MemberText(app, "partial void WriteManagers(").Contains("!hs.Deep"),
             "owner overview: the Managers tab opens on it until Deep Mode opens the directory");
+    }
+
+    private static void HierarchyPay()
+    {
+        Check(HierarchyRules.ExecutiveAllowance(5000) == 100 && HierarchyRules.ExecutiveAllowance(0) == 0 && HierarchyRules.ExecutiveAllowance(-300) == 0
+              && HierarchyRules.ExecutiveAllowance(int.MaxValue) == 42949673 && HierarchyRules.ExecutiveAllowance(4999) == 100,
+            "executives' pay: a share of a working day at their going rate, whole money, never less than nothing, and no overflow at the most");
+        string executives = ModSource(@"Economy\Company\CompanyDirector.Executives.cs"), escalations = ModSource(@"Economy\Company\CompanyDirector.Escalations.cs");
+        string managers = ModSource(@"Economy\Company\CompanyDirector.Managers.cs"), game = ModSource(@"Economy\Company\CompanyGame.cs");
+        string pay = MemberText(executives, "private void ExecutivesPay(");
+        Check(pay.Contains("Cost(amount, CompanyGame.ExecutiveKey, null, x.Name, CostKind.Wages, day - 1") && pay.Contains("!x.Seen || x.From >= day")
+              && MemberText(escalations, "partial void HierarchyDay(").Contains("ExecutivesPay(day)") && game.Contains("ExecutiveKey = \"reallife_transaction_co_executive\"")
+              && MemberText(managers, "partial void ManagerDay(").Contains("Cost(amount, CompanyGame.ManagerKey"),
+            "executives' pay: each in a seat by yesterday is paid yesterday's allowance through the game's money as a business cost, as the managers and regional managers are");
+        Check(MemberText(executives, "private void ExecutivesMonth(").Contains("HierarchyLog.Paid") && MemberText(executives, "private Escalation Propose(").Contains("HierarchyLog.Proposed")
+              && ModSource(@"Economy\Company\CompanyDirector.Regions.cs").Contains("HierarchyLog.Appointed") && ModSource(@"Economy\Company\CompanyDirector.Regions.cs").Contains("HierarchyLog.Replaced")
+              && MemberText(escalations, "private bool MoveOne(").Contains("HierarchyLog.Moved") && MemberText(escalations, "private bool TopUp(").Contains("HierarchyLog.TopUp")
+              && MemberText(escalations, "private void Settled(").Contains("HierarchyLog.Settled") && MemberText(escalations, "private void PassUp(").Contains("HierarchyLog.Passed"),
+            "hierarchy log: every decision above the managers is written down, what it changed, by whom, and each executive's month's pay");
+        Dictionary<string, string>[] langs = LanguageWords(out string[] codes);
+        bool words = LanguagesRead("executives' pay", langs, codes);
+        foreach (string key in new[] { "reallife_transaction_co_executive", "reallife_transaction_co_executive_label", "reallife_hier_paid_month", "reallife_hier_paid_last", "reallife_hier_exec_cost" })
+        {
+            words &= LanguagesLacking(langs, codes, key).Length == 0;
+        }
+        Check(words && Array.TrueForAll(langs, w => w.TryGetValue("reallife_guide_economy_hierarchy", out string g) && g.Contains("{hier_exec_premium}")),
+            "executives' pay: its transaction, its rows and the Guide's line in every language");
+        Check(AnyChangesRow(langs[0], "A company policy over your managers") && !AnyChangesRow(langs[0], "New: A company policy"),
+            "hierarchy: What's new has the feature's line, with no prefix (in the next row, or its version's row once it is made)");
     }
 
     private static void HierarchyAreas()

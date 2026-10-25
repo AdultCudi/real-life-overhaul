@@ -45,6 +45,7 @@ namespace RealLifeOverhaul.Economy
                 _ownerNew = 0;
                 ExecutivesRead(true);
                 ExecutivesMonth();
+                ExecutivesPay(day);   // yesterday's allowances, through the game's money: in the books read tomorrow
                 Tally(day);
                 int raised = _hier.NextId;
                 for (int i = 0; i < _managed.Count; i++)

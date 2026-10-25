@@ -22,6 +22,7 @@ namespace RealLifeOverhaul.Economy
                 .Fact("hier_templates_most", () => Whole(PolicyCatalogue.TemplatesMost))
                 .Fact("hier_regions_most", () => Whole(HierarchyRules.CustomMost))
                 .Fact("hier_replace_score", () => Whole(RegionCatalogue.ReplaceScore))
+                .Fact("hier_exec_premium", () => CompanyText.Share(HierarchyRules.ExecutivePremium))
                 .Fact("hier_staff_hour", () => ManagerCatalogue.StaffHour.ToString("00", Inv));
         }
 
