@@ -201,6 +201,26 @@ The line a minute says the same of the minute: the minute's waits for the last f
 
 What the graphics card's figures are (`Diagnostics/SessionWatch.Timing`): on the long-frame line, the engine's own time for the card and for the render thread, the worst of the last few frames it has figures for (they come a few frames late); on the minute's line, the card's longest frame. They say how long the card took, not what it spent the time on.
 
+### The game's midnight
+
+The game runs every feature's day in the one frame it turns the day in (`GameManager.NewDay` calls the game's hour and day events), and then asks the engine to unload unused assets, which runs as "loading" in the next frame or two. With the record on, a line follows every midnight, whether or not the frame was long, naming every part of the mod's in that frame (a part inside another, such as `Event: EconomyDirector.OnDay` and `Economy: EconomyDirector.OnDay`, counts under both names and once in the total):
+
+```
+Session check (the game's midnight, day 10): the mod's scripts took 4.2 ms of the frame the game turned the day in (61 ms
+in all); by part (a part inside another counts under both): Event: EconomyDirector.OnDay 2.1 ms, ...; the day's code
+compiled ahead: yes (wanted: under 10 ms once it is): PASS
+```
+
+The day's code is compiled ahead a slice a frame, some twenty seconds after each load (`Core/DayWarm`, `Core/CodeWarm`): Mono compiles a method the first time it is called, and before this the first midnight of a session compiled every feature's day in that one frame (148.7 ms of the mod's at the first midnight of a session on 25 Oct 2026, ten to twenty times less at every midnight after). Its line, once it is done:
+
+```
+Day warm check (in play, a slice a frame): the mod's code for the game's midnight compiled ahead: 4618 of the mod's
+method(s) read, 7888 compiled, 85 refused (...), 282 with no code of their own; 610 ms over 505 frame(s), the most in a
+frame 13.1 ms (wanted: a slice of 1 ms, a long method alone in its frame): PASS.
+```
+
+Options > Tests, Performance, "Prepare the code for the game's midnight now" does the rest at once and writes the same line. A frame of several hundred milliseconds of "loading" right after midnight, with tens of thousands of page faults and a few milliseconds of the mod's, is the game's own `Resources.UnloadUnusedAssets()` at the end of `GameManager.NewDay`: Player.log has the engine's line for it just before ("Unloading N unused Assets ... Total: 934.9 ms (FindLiveObjects ... MarkObjects ...)"). Its time grows with the number of loaded objects and the managed heap; the mod does not start it.
+
 What the lines cannot say: which of the game's scripts, or another mod's, a long frame was spent in; how long the mod's own coroutines took (they run under "coroutines and timers" and are not timed one by one); what the graphics card spent its time on (which pass, which shader); and anything about the card at all on a build without the engine's frame timing.
 
 ## Clicks and moving furniture

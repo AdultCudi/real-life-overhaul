@@ -251,6 +251,7 @@ namespace RealLifeOverhaul
 
         private void OnDisable()
         {
+            LetGoOfDay();
             HotSpots.On = false;
             FrameSteps.Want(false);
             if (_collector.Valid)
@@ -332,6 +333,7 @@ namespace RealLifeOverhaul
             HotSpots.Settle(Time.frameCount);   // the mod's own scripts' figures for the frame before this one are complete
             // The time the frame before this one took, loading screens and pauses left out: they are not stutter.
             float took = Time.unscaledDeltaTime;
+            Midnight(took);
             int collections = GC.CollectionCount(0);
             int collectionsBefore = _collectionsLastFrame;
             _collectionsLastFrame = collections;

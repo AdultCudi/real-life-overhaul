@@ -1373,6 +1373,8 @@ namespace RealLifeOverhaul
             Guard.Step("the guard's notices", () => Guard.Add<GuardNotices>(_root));   // once the HUD is there
             Guard.Step("SessionWatch", () => SessionWatch.Logger = context.Logger);
             Guard.Step("SessionWatch", () => Guard.Add<SessionWatch>(_root));   // disabled unless Developer diagnostics is on
+            Guard.Step("DayWarm", () => DayWarm.Logger = context.Logger);
+            Guard.Step("DayWarm", () => Guard.Add<DayWarm>(_root));   // a slice a frame for some seconds after a load, then disabled
             Guard.Step("GoingPublicWatch", () => Guard.Add<GoingPublicWatch>(_root));   // once a second of real time
             Guard.Step("ScenePrewarm", () => Guard.Add<ScenePrewarm>(_root));   // disabled unless a piece is waiting
             Guard.Step("LoadHold", () => Guard.Add<LoadHold>(_root));   // disabled unless a piece is waiting

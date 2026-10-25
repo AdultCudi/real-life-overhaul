@@ -22509,7 +22509,7 @@
   "reallife_hire_test_orphan_fail": "Teste falhou: uma leitura dos negócios da cidade tropeçou num registro sem prédio. O log diz qual.",
   "reallife_hire_test_orphan_off": "Carregue um save primeiro. Este teste não roda numa sessão do Going Public.",
   "reallife_changes_next_title": "Próxima versão",
-  "reallife_changes_next": "O máximo de uma empresa que você pode ter virou uma opção nas opções do mercado de ações: 10% como antes, 25%, 50% ou tudo. A holding de um rival para no quarto que o magnata não possui, e uma posição acima de um valor reduzido é mantida. Comida para viagem e pratos: a comida que você leva numa sacola, e um prato de casa embalado para levar na lista de cozinhar, é comida quando você se senta. Clique numa cadeira ou num banco, descanse e aperte Comer: a sacola vira a bandeja do lugar, um prato na mesa ou um prato no seu colo.",
+  "reallife_changes_next": "O máximo de uma empresa que você pode ter virou uma opção nas opções do mercado de ações: 10% como antes, 25%, 50% ou tudo. A holding de um rival para no quarto que o magnata não possui, e uma posição acima de um valor reduzido é mantida. Comida para viagem e pratos: a comida que você leva numa sacola, e um prato de casa embalado para levar na lista de cozinhar, é comida quando você se senta. Clique numa cadeira ou num banco, descanse e aperte Comer: a sacola vira a bandeja do lugar, um prato na mesa ou um prato no seu colo. Corrigido: a primeira meia-noite depois de carregar um jogo salvo não dá mais travadinhas por causa do dia do mod. O código que cada recurso roda à meia-noite era preparado no mesmo quadro em que o dia virava; agora ele é preparado aos poucos nos primeiros trinta segundos depois do carregamento, e nada do que o dia faz muda.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Corrigido: quando todos os prédios que poderiam abrigar o escritório de serviços públicos são seus, as contas de luz e água são pedidas e religadas no app Contas, por telefone, pelos mesmos preços, e os avisos dizem isso; quando um prédio fica livre o escritório volta a abrir e o app diz onde. Corrigido: depois de retirar uma candidatura e se candidatar de novo à mesma vaga, o app Carreira abria a retirada e não dava para chegar à entrevista. Cada candidatura agora tem sua própria linha, e a entrevista, a oferta e a retirada vão para a ativa. Corrigido: um save com um registro de negócio cujo prédio a cidade não tem (outro mod pode deixar um para trás) não desliga mais o setor de tecnologia a cada carregamento. O mod agora deixa esse registro de fora sempre que lê os negócios da cidade, cita o endereço dele uma vez no log e não muda nada nele.",
   "reallife_co_mass_raise": "Dar aumento",
@@ -22597,5 +22597,8 @@
   "reallife_takeout_packed_burnt": "{meal}: queimou. O que deu para salvar foi embalado para você levar.",
   "reallife_takeout_carry_full": "{meal}: feito, mas você já leva {most} refeições embaladas. Ele foi guardado com as sobras.",
   "reallife_takeout_burnt_lost": "{meal}: queimou, e você já leva {most} refeições embaladas, então nada pôde ser embalado.",
-  "reallife_contract_part_takeout_plates": "Comer no painel de descanso do jogo num assento"
+  "reallife_contract_part_takeout_plates": "Comer no painel de descanso do jogo num assento",
+  "reallife_perf_test_daywarm": "Preparar agora o código da meia-noite do jogo",
+  "reallife_perf_test_daywarm_done": "O código do mod para a meia-noite do jogo está pronto. Com o Diagnóstico de desenvolvedor ligado, o Player.log traz os números.",
+  "reallife_perf_test_daywarm_none": "Carregue um jogo salvo primeiro: o código da meia-noite do jogo é preparado quando há uma cidade."
 }

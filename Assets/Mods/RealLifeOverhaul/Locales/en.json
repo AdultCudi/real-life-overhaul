@@ -22509,7 +22509,7 @@
   "reallife_hire_test_orphan_fail": "Test failed: a walk of the city's businesses tripped on a record with no building. The log says which.",
   "reallife_hire_test_orphan_off": "Load a save first. This test does not run in a Going Public session.",
   "reallife_changes_next_title": "Next version",
-  "reallife_changes_next": "The most of a company you may hold is an option under the stock market's options: 10% as before, 25%, 50% or all of it. A rival's holding company stops at the quarter its tycoon does not own, and a holding past a lowered figure is kept. Takeaway and plates: food you carry in a bag, and a home dish packed to take from the cooking list, is eaten when you sit down. Click a chair or a bench, rest, and press Eat: the bag becomes the place's tray, a plate on the table or a plate in your lap.",
+  "reallife_changes_next": "The most of a company you may hold is an option under the stock market's options: 10% as before, 25%, 50% or all of it. A rival's holding company stops at the quarter its tycoon does not own, and a holding past a lowered figure is kept. Takeaway and plates: food you carry in a bag, and a home dish packed to take from the cooking list, is eaten when you sit down. Click a chair or a bench, rest, and press Eat: the bag becomes the place's tray, a plate on the table or a plate in your lap. Fixed: the first midnight after loading a save no longer stutters from the mod's day. The code every feature runs at midnight was made ready in the very frame the day turned; it is now made ready a little at a time in the first half minute after the load, and nothing the day does changes.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Fixed: when every building that could hold the utilities office is yours, power and water accounts are applied for and reconnected in the Utilities app, by phone, at the same prices, and the notices say so; once a building is free the office opens again and the app says where. Fixed: after withdrawing an application and applying to the same post again, the Career app opened the withdrawn one and the interview could not be reached. Each application now has its own row, and the interview, offer and withdrawal go to the live one. Fixed: a save holding a business record whose building the city does not have (another mod can leave one behind) no longer switches the tech sector off at every load. The mod now leaves such a record out wherever it reads the city's businesses, names its address once in the log and changes nothing of it.",
   "reallife_co_mass_raise": "Give a raise",
@@ -22597,5 +22597,8 @@
   "reallife_takeout_packed_burnt": "{meal}: burnt. What could be saved is packed to take with you.",
   "reallife_takeout_carry_full": "{meal}: made, but you already carry {most} packed meals. It is put by with the leftovers.",
   "reallife_takeout_burnt_lost": "{meal}: burnt, and you already carry {most} packed meals, so nothing could be packed.",
-  "reallife_contract_part_takeout_plates": "Eat in the game's rest panel at a seat"
+  "reallife_contract_part_takeout_plates": "Eat in the game's rest panel at a seat",
+  "reallife_perf_test_daywarm": "Prepare the code for the game's midnight now",
+  "reallife_perf_test_daywarm_done": "The mod's code for the game's midnight is ready. With Developer diagnostics on, Player.log has the figures.",
+  "reallife_perf_test_daywarm_none": "Load a save first: the code for the game's midnight is prepared once a city is there."
 }

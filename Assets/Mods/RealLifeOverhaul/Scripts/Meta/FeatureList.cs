@@ -349,7 +349,8 @@ namespace RealLifeOverhaul.Meta
                 .Group("reallife_perf_header")
                 .About("reallife_guide_performance_about").Help("reallife_guide_performance")
                 .Owns(Settings.ShadowReachId, Settings.ShadowCascadesId, Settings.LodReachId)
-                .Test("reallife_perf_test_session", SessionWatch.TestSay);
+                .Test("reallife_perf_test_session", SessionWatch.TestSay)
+                .Test("reallife_perf_test_daywarm", DayWarm.TestNow);
             foreach (PerfTweak tweak in PerfTweaks.All)
             {
                 if (!tweak.Trial && !tweak.BySetting)
