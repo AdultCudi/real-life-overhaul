@@ -552,6 +552,14 @@ internal static partial class Program
         string all = mode + window + game + director + tests + rules + panel + layerTests;
         Check(!Regex.IsMatch(all, @"using System\.Linq|\.Where\(|\.Select\(|\.OrderBy\(|FindObjectsOfType|FindObjectsByType|GameObject\.Find\b|Physics\."), "build mode sources: no LINQ, no scene search, no physics query");
         Check(!Regex.IsMatch(rules, @"UnityEngine|SaveGameManager|GameManager"), "build mode sources: the rules are game-free");
+        // The game's GetBuildingRegistration throws for a free lot and adds a blank registration for one it has not met; the
+        // owner's first open of the fixed window died on it (26 Oct 2026). Build mode asks through HeldUnitsGame.Registration.
+        Check(!(mode + window + game + director + panel).Contains("BuildingHelper.GetBuildingRegistration(") && game.Contains("HeldUnitsGame.Registration(")
+              && MethodText(mode, "private void ReadFacts()").Contains("catch (Exception e)"),
+            "build mode sources: a lot's registration is read only where a building stands, and one lot that fails does not keep the window shut");
+        // The palette is made unreadable by Apply(false, true); reading it back threw on every tool pressed (26 Oct 2026).
+        Check(!Regex.IsMatch(mode + window + game + panel, @"\.GetPixels?\(") && MethodText(game, "public static Color32 Swatch(").Contains("layer.Colours"),
+            "build mode sources: the legend's colours come from the palette kept in memory, never read back from the unreadable texture");
         Check(MethodText(mode, "private void Awake()").Contains("enabled = false;") && mode.Contains("Guard.For(\"construction\", \"BuildMode\", typeof(BuildMode))")
               && MethodText(mode, "private void Update()").Contains("Guard.Fail(FrameGuard, e, this)") && MethodText(mode, "private void Update()").Contains("HotSpots.Time(HotUpdate)"),
             "build mode sources: its one Update guarded and timed, and not enabled until it opens: nothing a frame while closed");

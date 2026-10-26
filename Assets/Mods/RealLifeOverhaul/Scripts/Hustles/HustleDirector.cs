@@ -57,6 +57,7 @@ namespace RealLifeOverhaul.Hustles
             GameSprites.Want(AppGlyphs);   // asked for before the one look behind the loading screen (GameSprites.Prewarm)
             _onSave = OnSave;
             MakePanel();
+            MakeDoors();
         }
 
         private void OnDestroy()
@@ -70,6 +71,8 @@ namespace RealLifeOverhaul.Hustles
             {
                 Logger?.Error(e);
             }
+            _props?.Dispose();
+            _props = null;
             if (Instance == this)
             {
                 Instance = null;
@@ -157,6 +160,7 @@ namespace RealLifeOverhaul.Hustles
             _running = true;
             ReadCity();
             int lost = Reconcile();
+            Mend();
             Logger?.Info("Hustles: " + (fresh ? "opened for this save" : "state loaded (version " + version + ")") + " on day " + save.Day + ". " + _state.Listings.Count
                          + " listing(s), " + _state.Items.Count + " thing(s) of the player's, " + _state.Offers.Count + " offer(s), " + _state.Gigs.Count + " visit(s); " + _homes.Count
                          + " homes in the city, " + _cars.Count + " kind(s) of car" + (lost > 0 ? "; " + lost + " car(s) the save no longer has taken off" : string.Empty) + ".");
@@ -184,6 +188,7 @@ namespace RealLifeOverhaul.Hustles
             _running = false;
             CloseWork();
             HidePanel("the Marketplace stood down");
+            UnstageAll();
             RemoveApp();
             if (was && (tell || Verbose))
             {
@@ -402,6 +407,11 @@ namespace RealLifeOverhaul.Hustles
                 HustleEvent e = events[i];
                 Owned o = _state.Item(e.Id);
                 string thing = o != null ? HustleText.Thing(o.Thing, o.Car) : string.Empty;
+                if (e.Kind == HustleEventKind.Expired)
+                {
+                    Refund(e.Thing, e.Car, e.Amount, "was not collected from " + e.Who + " by its last day and went back");
+                    continue;
+                }
                 switch (e.Kind)
                 {
                     case HustleEventKind.Delivered:
@@ -461,6 +471,7 @@ namespace RealLifeOverhaul.Hustles
         {
             CloseWork();
             HidePanel("put away");
+            UnstageAll();
             RemoveApp();
         }
 

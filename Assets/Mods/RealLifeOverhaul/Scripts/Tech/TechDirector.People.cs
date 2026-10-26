@@ -63,10 +63,11 @@ namespace RealLifeOverhaul.Tech
             _moveAsked.Clear();
             _movesBooked = MovesGame.Booked();
             FollowMoves();
+            int mended = MendNames(save.Day, false);   // staff of one name, as a save from before the repair holds them: before they are read
             int made = ReadPeople(save.Day);
             MendWages();
             Logger?.Info("Tech: professionals " + (fresh ? "opened for this save" : "loaded (version " + version + ")") + " on day " + save.Day + ": " + _people.Count + " professional(s)"
-                         + (made > 0 ? ", " + made + " seen for the first time" : string.Empty) + ".");
+                         + (made > 0 ? ", " + made + " seen for the first time" : string.Empty) + (mended > 0 ? ", " + mended + " second bearer(s) of a name renamed" : string.Empty) + ".");
         }
 
         private void StopPeople(bool keep, bool unloading)
@@ -297,11 +298,12 @@ namespace RealLifeOverhaul.Tech
                 return 0;
             }
             int joined = 0;
+            HashSet<string> names = NameSet();
             for (int i = 0; i < count && _talent.People.Count < TalentStore.PeopleMost; i++)
             {
                 Profile p = TalentRules.Make(Seed, day * 53 + i * 7 + 3, role, Math.Max(0, level - (i == 0 ? 0 : 1)), day);
                 p.Id = "pro:" + _talent.NextPro++;
-                p.Name = VentureGame.Founder();
+                p.Name = VentureGame.Founder(names);
                 p.Place = place;
                 p.Work = (int)Arrangement.Hybrid;
                 p.Wage = Math.Max(TalentCatalogue.RateLeast, TalentRules.Going(TalentGame.GameRate(p.Def.GameSkill, p.Main / 1000), p.Def, Shortage(p.Def.Family), 0));
@@ -418,6 +420,7 @@ namespace RealLifeOverhaul.Tech
                 return;
             }
             float started = Time.realtimeSinceStartup;
+            int renamed = MendNames(day, true);
             int made = ReadPeople(day);
             Mentors(day);
             int reviews = 0, sick = 0, left = 0, approached = 0, courses = 0, payroll = 0;
@@ -523,6 +526,7 @@ namespace RealLifeOverhaul.Tech
                 Logger?.Info("Tech check (professionals, day " + day + "): " + _people.Count + " professional(s)" + (made > 0 ? ", " + made + " new" : string.Empty)
                     + ", " + reviews + " review(s), " + sick + " off sick, "
                              + approached + " approached by a rival, " + courses + " course(s) or exam(s) ended, " + left + " gone, " + payroll + " paid by the mod; "
+                             + (renamed > 0 ? renamed + " name(s) shared and renamed, " : string.Empty)
                              + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " ms: PASS");
             }
         }

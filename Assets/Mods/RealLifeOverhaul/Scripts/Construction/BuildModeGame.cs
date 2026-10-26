@@ -165,6 +165,7 @@ namespace RealLifeOverhaul.Construction
             public Vector2[] Uvs;
             public UnityEngine.Material Material;
             public Texture2D Palette;
+            public byte[][] Colours;   // the palette as written: the texture is made unreadable once sent to the card
             public int Cells;
         }
 
@@ -265,7 +266,7 @@ namespace RealLifeOverhaul.Construction
                          + LayerUp.ToString("0.00", Inv) + " m over the ground; the map's zone material '" + copied.name + "' ("
                          + (copied.shader != null ? copied.shader.name : "no shader") + ", queue " + copied.renderQueue + ") tests depth by " + (CompareFunction)(int)zTest
                          + ", the layer's copy by LessEqual.");
-            return new Layer { Object = go, Renderer = renderer, Mesh = mesh, Uvs = uvs, Material = material, Palette = palette, Cells = cells };
+            return new Layer { Object = go, Renderer = renderer, Mesh = mesh, Uvs = uvs, Material = material, Palette = palette, Colours = colours, Cells = cells };
         }
 
         private static void Corners(Vector3[] into, int at, float x1, float z1, float x2, float z2)
@@ -360,7 +361,9 @@ namespace RealLifeOverhaul.Construction
         {
             vacant = false;
             who = null;
-            BuildingRegistration reg = string.IsNullOrEmpty(street) ? null : BuildingHelper.GetBuildingRegistration(new Address(street, number));
+            // Through HeldUnitsGame.Registration: the game's own lookup throws for an address with no building (a free lot)
+            // and makes a blank registration in the save for one it has not met.
+            BuildingRegistration reg = string.IsNullOrEmpty(street) ? null : HeldUnitsGame.Registration(new Address(street, number), out _);
             if (reg == null)
             {
                 return false;
@@ -375,10 +378,11 @@ namespace RealLifeOverhaul.Construction
         /// <summary>The colour of a palette entry, for the legend's swatches (the game's colours read in).</summary>
         public static Color32 Swatch(Layer layer, int entry)
         {
-            if (layer != null && layer.Palette != null && entry >= 0 && entry < BuildModeRules.PaletteSize)
+            // From the colours kept beside the texture: GetPixel on it throws, as Apply made it unreadable.
+            if (layer != null && layer.Colours != null && entry >= 0 && entry < BuildModeRules.PaletteSize && entry < layer.Colours.Length)
             {
-                Color32 c = layer.Palette.GetPixel(entry, 0);
-                return new Color32(c.r, c.g, c.b, (byte)Math.Max((int)c.a, 200));
+                byte[] c = layer.Colours[entry];
+                return new Color32(c[0], c[1], c[2], (byte)Math.Max((int)c[3], 200));
             }
             return new Color32(0, 0, 0, 0);
         }

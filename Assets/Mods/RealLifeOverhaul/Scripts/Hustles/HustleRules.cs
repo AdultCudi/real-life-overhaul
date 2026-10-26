@@ -11,7 +11,8 @@ namespace RealLifeOverhaul.Hustles
         Offer,          // a buyer wrote in
         Lapsed,         // a buyer's offer ran out
         Missed,         // nobody came to a booked visit
-        HelperDone      // a helper finished a visit
+        HelperDone,     // a helper finished a visit
+        Expired         // a thing waiting at a seller's door was not collected in time: it leaves, the money returns
     }
 
     /// <summary>One thing the hour brought, for the notice the director shows: whose, how much and how many stars.</summary>
@@ -22,6 +23,8 @@ namespace RealLifeOverhaul.Hustles
         public int Amount;
         public int Stars;
         public string Who;
+        public string Thing;    // an expired thing's, which the list no longer holds
+        public bool Car;
     }
 
     /// <summary>
@@ -273,7 +276,7 @@ namespace RealLifeOverhaul.Hustles
             {
                 Id = s.Next(), Thing = l.Thing, Car = l.Car, Colour = l.Colour, Km = l.Km, Price = l.Price, Condition = l.Condition, Paid = price,
                 Spent = deliver ? fee : 0, State = deliver && !l.Car ? OwnedState.Delivering : OwnedState.Waiting, Street = l.Street, Number = l.Number,
-                Seller = l.Seller, Due = day + 1, Bought = day
+                Seller = l.Seller, Due = day + 1, Bought = day, Until = PickupRules.UntilFor(day)
             };
             s.Items.Add(o);
             return o;
@@ -497,7 +500,7 @@ namespace RealLifeOverhaul.Hustles
 
         /// <summary>
         /// One game hour: deliveries come, buyers write in and their offers lapse, booked visits nobody came to are missed,
-        /// helpers finish. <paramref name="worths"/> holds the worth of each of the player's things in the order of
+        /// helpers finish, things nobody collected from a seller in time go back and the money returns. <paramref name="worths"/> holds the worth of each of the player's things in the order of
         /// <see cref="HustleState.Items"/>. What happened goes into <paramref name="events"/>, for the player to be told.
         /// </summary>
         public static void Hour(HustleState s, int stamp, IList<int> worths, List<HustleEvent> events)
@@ -557,6 +560,7 @@ namespace RealLifeOverhaul.Hustles
                     events.Add(new HustleEvent { Kind = HustleEventKind.HelperDone, Id = g.Id, Amount = earned, Stars = g.Rating, Who = g.Client });
                 }
             }
+            PickupRules.Lapse(s, day, events);   // last: it takes things out of the list the rules above read in order
         }
 
         // ---------------------------------------------------------------- freelance work
