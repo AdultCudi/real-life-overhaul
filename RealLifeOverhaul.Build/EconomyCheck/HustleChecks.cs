@@ -27,6 +27,7 @@ internal static partial class Program
         HustleHourChecks();
         HustleVisitChecks();
         HustleStoreChecks();
+        HustlePickupChecks();
         HustleBalanceChecks();
         HustleTiming();
         HustleSource();

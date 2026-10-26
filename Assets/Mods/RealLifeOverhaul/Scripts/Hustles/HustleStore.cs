@@ -58,7 +58,7 @@ namespace RealLifeOverhaul.Hustles
                 Text(t, o.Thing, o.Colour);
                 Join(t, o.Km, o.Price, o.Condition, o.Paid, o.Spent, (int)o.State, (int)o.Plan, o.Number, o.Due, o.Asking, o.ListedDay, o.Cleaned ? 1 : 0, o.Bought, o.Test ? 1 : 0);
                 Text(t, o.Street, o.Seller);
-                t.Append(Clean(o.VehicleId));
+                t.Append(Clean(o.VehicleId)).Append('|').Append(o.Until.ToString(Inv));
             }
             t.Append("^b:");
             for (int i = 0; i < s.Offers.Count && i < HustleCatalogue.OffersMost; i++)
@@ -171,7 +171,7 @@ namespace RealLifeOverhaul.Hustles
                                     Condition = HustleCatalogue.Clamp(I(c, 6, 50), 1, 100), Paid = Math.Max(0, I(c, 7)), Spent = Math.Max(0, I(c, 8)),
                                     State = (OwnedState)HustleCatalogue.Clamp(I(c, 9), 0, 3), Plan = (OwnedPlan)HustleCatalogue.Clamp(I(c, 10), 0, 3), Number = I(c, 11), Due = I(c, 12),
                                     Asking = Math.Max(0, I(c, 13)), ListedDay = I(c, 14), Cleaned = I(c, 15) != 0, Bought = I(c, 16), Test = I(c, 17) != 0,
-                                    Street = c[18], Seller = c[19], VehicleId = NullIfEmpty(c[20])
+                                    Street = c[18], Seller = c[19], VehicleId = NullIfEmpty(c[20]), Until = Math.Max(0, I(c, 21))
                                 });
                             }
                             break;

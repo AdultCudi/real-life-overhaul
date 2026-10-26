@@ -98,6 +98,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Hustles\HustleStore.cs" Link="Mod\HustleStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Hustles\HustleRules.cs" Link="Mod\HustleRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\CityLife\StreetLifeRules.cs" Link="Mod\StreetLifeRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Hustles\PickupRules.cs" Link="Mod\PickupRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Calendar\MonthViewRules.cs" Link="Mod\MonthViewRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Seasons\SeasonRules.cs" Link="Mod\SeasonRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Seasons\SeasonLookRules.cs" Link="Mod\SeasonLookRules.cs" />

@@ -13,7 +13,7 @@ namespace RealLifeOverhaul.Hustles
                 .Group("reallife_hustle_header")
                 .About("reallife_guide_hustles_about").Help("reallife_guide_hustles")
                 .Owns(Settings.HustlesId)
-                .Test("reallife_hustle_test_collect", "reallife_hustle_test_car", "reallife_hustle_test_fix", "reallife_hustle_test_buyer", "reallife_hustle_test_gig",
+                .Test("reallife_hustle_test_collect", "reallife_hustle_test_pickup", "reallife_hustle_test_car", "reallife_hustle_test_fix", "reallife_hustle_test_buyer", "reallife_hustle_test_gig",
                     "reallife_hustle_test_helper")
                 .Data(HustleStore.Key)
                 .Fact("hustle_goods", () => Guide.Number(HustleCatalogue.GoodsADay))
@@ -121,6 +121,7 @@ namespace RealLifeOverhaul.Hustles
                 .AddToggle(Settings.HustlesId, "reallife_hustle_enabled", Settings.Hustles,
                     v => { Settings.Hustles = v; if (!v) { HustleDirector.Instance?.StopAll(); } })
                 .AddButton("reallife_hustle_test_collect", () => HustleDirector.Instance?.TestCollect())
+                .AddButton("reallife_hustle_test_pickup", () => HustleDirector.Instance?.TestPickup())
                 .AddButton("reallife_hustle_test_car", () => HustleDirector.Instance?.TestCar())
                 .AddButton("reallife_hustle_test_fix", () => HustleDirector.Instance?.TestFix())
                 .AddButton("reallife_hustle_test_buyer", () => HustleDirector.Instance?.TestBuyer())
