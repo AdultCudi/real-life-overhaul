@@ -1,8 +1,39 @@
-0.56.0
-
-New
-- Household staff for each home: in the Household staff contact's call you choose the home each person works at, move them to another home of yours and see who works where. Up to four homes can each have their own cleaner, cook, butler and mechanic, each paid per visit as before. The Guide is rewritten from the mod as it is now: over a hundred pages checked against the code, with every figure taken from it, what each feature needs and where to click, how a job offer's chance and pay are worked out, sleep, the goods a shop needs headquarters and a warehouse for, and install and update steps.
+0.56.1
 
 Fixed
-- Walking into or out of a building is quicker. At every door the mod looked through everyone in the game for characters in the detailed strand hair, a tenth of a second each time; it now starts from the hair being drawn and finds the same people in a fraction of that.
-- Household staff now come to a house in the Hamptons like any other home. They are seen at work inside the house rather than out in the garden or on the pavement, clean its own floor, and the butler and the mechanic see to the cars on its plot.
+- The Family contact is now always made while Family life is on, so a walk with the pushchair, a proposal outdoors and a wedding in the open air can always be asked for.
+- Asking your partner to move in from People now moves them in for Family life too, if your home has room.
+- After a wedding the couple move in together only if your home has room for them.
+- Outing costs with friends, pocket money, wedding catering, Mom's gifts and what friends lend now follow the price level.
+- When you lose touch with someone, the position they held in your network no longer passes to whoever takes their place.
+- The council's rent policy now works the right way round for property. Where landlords set their own rents, homes let dearer, and under rent control, cheaper.
+- The least you can finance a car or a mortgage for, and the least you can draw on a card, now follow the city's prices.
+- The taxi contact names the phone option by its own name when it takes no calls.
+- The refusal for too many franchised shops now says the limit counts the shops of all your brands together.
+- The City Ledger no longer speaks of newspaper kiosks on its subscriptions line or front page when kiosks are switched off.
+- The trading licence renewal no longer comes up as a business event while the Company app's licences are on, so licences are not charged twice.
+- The fish you catch are sold at the city's prices, as the bait is.
+- The regional manager policy text now gives the score the rule really uses.
+- Hire an influencer on an influencer's profile now lets you pick the business to hire for, not always the first.
+- A hired influencer now makes as many posts as the deal says and is priced for, not one every day.
+- The Flare notifications option now also silences the notices for a booked invitation, a camera that is busy or fails, and a ready selfie.
+- A launch deal now counts its fortnight from the day the business opened, not from when Flare first saw it.
+- The extra customers where the cleaners go now count inside Flare's cap of six per cent.
+- Posts about your office now help your approval while you are mayor, as they do on the council.
+- Forget the key no longer signs you out of ChatGPT when Ollama, LM Studio or Off is chosen.
+- The city's gossip and the net worth read are no longer skipped when time runs fast.
+- The RLO Texts test notice for a pack that writes only English no longer says it is only for now.
+- The Calendar no longer lists the seasons while they stand down for Alcware Seasons.
+- Fewer people are out on the street in rain, ice, snow and heat, as the Guide says.
+- A Marketplace request whose time has passed can no longer be booked or sent a helper.
+- A police report from a station's front desk now does something: the insurer pays a break-in's theft claim in full, and a car's next repair without the excess.
+- A warm top now keeps the cold off, so it costs no energy on foot in a cold snap or on ice.
+- The presets table and the Guide show a drop-down's choice by name and a slider with its unit, not a bare number.
+- Preparing a save for removing the mod now says what each kind of business became.
+- Days in a Going Public session no longer run down the time a buyer has to take over your sold company's businesses.
+- The Guide's Character and Navigation pages now list the skin and building-name options.
+- The driving school's closed notice names its real hours.
+- The note on undoing a preset names the right button.
+- The pavement cart's job card shows the day's offer.
+- Police move a busker on and warn a cart seller under one rule: the police and police presence both on.
+- Giving up a shift with nothing done now counts as a failed shift, as the Guide says.
