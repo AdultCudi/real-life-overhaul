@@ -10,7 +10,10 @@ in place of the one its material carries) and <id>_mask.png (HDRP mask: R metall
 
 Each material of the model is either a swatch of the atlas, named swatch_<name> (that finish, grimier towards the
 bottom, as the procedural props are painted), or the one painted material, whose picture goes into the set's atlas
-whole and whose UVs are drawn into its region. The model is read in Blender's own space, exactly as it was made: X
+whole and whose UVs are drawn into its region, or, for a building (README, "Buildings"), one the game draws with a
+material of its own: the model's .json lists those slots under "game", {"<slot>": {"kind": "brick", "tile": 1.65}}, and
+they become submeshes after the atlas's, keeping the model's world-scale UVs (its second UV map, 1 unit a metre) divided by
+`tile`, the metres one repeat of the game's picture covers. The model is read in Blender's own space, exactly as it was made: X
 right, Y forward (the prop's front looks along +Y), Z up, metres, the origin at the pivot; prop_kit turns that into
 Unity's on the way out, as for every prop.
 """
@@ -32,6 +35,7 @@ ID = re.compile(r"^[a-z][a-z0-9_]*$")
 SWATCH = re.compile(r"^swatch_([a-z0-9_]+?)(?:\.\d{3})?$")       # Blender adds .001 to a copied material's name
 NOT_SHIPPED = re.compile(r"^(?:UCX|UBX|UCP|USP)_|_LOD[1-9]\d*$", re.I)
 LARGEST_PICTURE = 1024      # pixels a side: a prop seen in the street needs 256 or 512
+GAME_KINDS = ("brick", "roof", "glass", "fence")   # what the mod's CampusLookRules names a game material for (Core/GameLook); one submesh each
 SIZE_RANGE = (0.01, 60.0)   # metres, the prop's largest side: outside it the export's scale is wrong (centimetres?)
 
 
@@ -116,10 +120,25 @@ def joined(meshes):
     return bm, names
 
 
-def kinds(names, model):
-    """Each material name -> ("swatch", name) or ("picture", region); a model has one painted material at most."""
+def game_slots(settings, model):
+    """The slots a building draws with the game's own materials: slot name -> (kind, metres one repeat covers)."""
+    out = {}
+    for slot, rule in (settings.get("game") or {}).items():
+        kind, tile = rule.get("kind"), float(rule.get("tile", 0))
+        if kind not in GAME_KINDS or tile <= 0:
+            raise SystemExit("models/%s: game slot %s wants a kind of %s and a tile size in metres above 0" % (model, slot, ", ".join(GAME_KINDS)))
+        out[slot] = (kind, tile)
+    return out
+
+
+def kinds(names, model, game=None):
+    """Each material name -> ("swatch", name), ("game", kind) or ("picture", region); a model has one painted material at most."""
     out, painted = {}, []
     for name in sorted(set(names)):
+        base = name.split(".")[0] if re.search(r"\.\d{3}$", name) else name
+        if game and base in game:
+            out[name] = ("game", game[base][0])
+            continue
         m = SWATCH.match(name)
         if m:
             out[name] = ("swatch", m.group(1))
@@ -160,6 +179,16 @@ def finish(material):
     return float(shader.inputs["Metallic"].default_value), 1.0 - float(shader.inputs["Roughness"].default_value)
 
 
+def finish_colour(material):
+    """A game material's stand-in when the game has none: the model's own colour (sRGB, 0..1), metallic and smoothness."""
+    shader = next((n for n in material.node_tree.nodes if n.type == "BSDF_PRINCIPLED"), None) if material and material.node_tree else None
+    if shader is None:
+        return [0.5, 0.5, 0.5], 0.0, 0.3
+    linear = list(shader.inputs["Base Color"].default_value)[:3]
+    srgb = [round(12.92 * c if c <= 0.0031308 else 1.055 * (c ** (1 / 2.4)) - 0.055, 3) for c in linear]
+    return srgb, float(shader.inputs["Metallic"].default_value), 1.0 - float(shader.inputs["Roughness"].default_value)
+
+
 def scan():
     """Writes build/models.json and each model's picture: what atlas.py paints for the set."""
     out = []
@@ -170,7 +199,7 @@ def scan():
         new, meshes = imported(path)
         try:
             names = sorted({slot.material.name if slot.material else "" for obj in meshes for slot in obj.material_slots} or {""})
-            used = kinds(names, model)
+            used = kinds(names, model, game_slots(settings, model))
             entry = {"id": model, "file": path, "swatches": sorted({v[1] for v in used.values() if v[0] == "swatch"}), "pictures": []}
             for name, (kind, region) in used.items():
                 if kind != "picture":
@@ -211,9 +240,33 @@ def maker(model):
             bm, names = joined(meshes)
         finally:
             tidy(new)
-        used = kinds(names, model)
+        game = game_slots(settings, model)
+        origin = {}
+        # A slot's faces above a height drawn with another game kind (a building's rooftop fence is the glass slot of the
+        # model): {"slot": ..., "above": metres, "kind": ..., "tile": ...}. A virtual slot of its own, after the model's.
+        for rule in settings.get("split") or []:
+            if rule.get("kind") not in GAME_KINDS or float(rule.get("tile", 0)) <= 0 or rule["slot"] not in game:
+                raise SystemExit("models/%s: a split of %s wants a kind of %s, a tile size above 0 and a slot that is a game slot" % (model, rule.get("slot"), ", ".join(GAME_KINDS)))
+            sources = [i for i, n in enumerate(names) if n.split(".")[0] == rule["slot"]]
+            names.append(rule["slot"] + "#" + rule["kind"])
+            origin[names[-1]] = rule["slot"]
+            game[names[-1]] = (rule["kind"], float(rule["tile"]))
+            for face in bm.faces:
+                if face.material_index in sources and face.calc_center_median().z > float(rule["above"]):
+                    face.material_index = len(names) - 1
+        used = kinds(names, model, game)
         prop = Prop(model, settings.get("material", "lit"), pivot=settings.get("pivot", "ground centre"), note=settings.get("note", ""))
-        uv = bm.loops.layers.uv.active
+        if game:
+            layers = bm.loops.layers.uv
+            if len(layers.keys()) < 2:
+                raise SystemExit("models/%s: a game material wants the model's second UV map (world scale, 1 unit a metre); it has one" % model)
+            world_source = layers.values()[1]
+            world = layers.new("world")                       # a layer of a name of its own: the kit's UVMap is made on each part
+            for face in bm.faces:
+                for loop in face.loops:
+                    loop[world].uv = loop[world_source].uv
+        uv = bm.loops.layers.uv.verify() if bm.loops.layers.uv.active is None else bm.loops.layers.uv.active
+        slots = [("atlas", None)]       # what each submesh is drawn with: the atlas's first, then each game kind once
         for index, name in enumerate(names):
             faces = [f for f in bm.faces if f.material_index == index]
             if not faces:
@@ -225,7 +278,17 @@ def maker(model):
                     for edge in face.edges:
                         edge.smooth = False
             kind, region = used[name]
-            if kind == "swatch":
+            submesh = 0
+            if kind == "game":
+                tile = next(t for s, (k, t) in game.items() if k == region)
+                if ("game", region) not in slots:
+                    slots.append(("game", region))
+                    prop.parts = prop.parts or [{"game": None}]
+                    colour, metallic, smoothness = finish_colour(bpy.data.materials.get(origin.get(name, name)))
+                    prop.parts.append({"game": region, "fallback": colour, "metallic": round(metallic, 3), "smoothness": round(smoothness, 3)})
+                submesh = slots.index(("game", region))
+                paint = Paint(None).world("world", 1.0 / tile)
+            elif kind == "swatch":
                 paint = Paint(region)
             else:
                 if uv is None:
@@ -240,7 +303,7 @@ def maker(model):
                                              "drawn once, never tiled" % (model, u, v))
                         loop[param].uv = (min(1.0, max(0.0, u)), min(1.0, max(0.0, v)))
                 paint = Paint(region).param(region)
-            prop.add(part, paint, sharp=float(settings.get("sharp", 50.0)), marked=True)
+            prop.add(part, paint, sharp=float(settings.get("sharp", 50.0)), marked=True, submesh=submesh)
         bm.free()
         low = [min(v.co[i] for v in prop.bm.verts) for i in range(3)]
         high = [max(v.co[i] for v in prop.bm.verts) for i in range(3)]

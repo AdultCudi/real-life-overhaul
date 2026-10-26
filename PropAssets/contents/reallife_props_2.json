@@ -1,15 +1,110 @@
 {
  "bundle": "reallife_props_2",
  "set": "second",
- "sha256": "45998a768beb6ae62beb551e79cf365a0904fef2c644ea437957c48fee186a1b",
- "bytes": 1298,
- "triangles": 0,
+ "sha256": "6ccd3dc44bb93b3e60e7250d8aba0bbc4ed55cdfde201f4418f7570c3697b4e0",
+ "bytes": 533720,
+ "triangles": 21102,
  "triangle_limit": 60000,
  "atlas": {
-  "width": 0,
-  "height": 0,
-  "used": 0
+  "width": 512,
+  "height": 256,
+  "used": 57
  },
- "textures": [],
- "props": []
+ "textures": [
+  "props_base",
+  "props_mask"
+ ],
+ "props": [
+  {
+   "id": "birchwood_hall",
+   "mesh": "birchwood_hall",
+   "triangles": 2576,
+   "material": "lit",
+   "size": [
+    30.8,
+    11.925,
+    26.0
+   ],
+   "parts": [
+    {
+     "game": null,
+     "triangles": 2180
+    },
+    {
+     "game": "brick",
+     "triangles": 72
+    },
+    {
+     "game": "roof",
+     "triangles": 60
+    },
+    {
+     "game": "glass",
+     "triangles": 264
+    }
+   ]
+  },
+  {
+   "id": "birchwood_junior",
+   "mesh": "birchwood_junior",
+   "triangles": 3740,
+   "material": "lit",
+   "size": [
+    30.8,
+    10.85,
+    27.6
+   ],
+   "parts": [
+    {
+     "game": null,
+     "triangles": 3092
+    },
+    {
+     "game": "brick",
+     "triangles": 72
+    },
+    {
+     "game": "roof",
+     "triangles": 12
+    },
+    {
+     "game": "glass",
+     "triangles": 492
+    },
+    {
+     "game": "fence",
+     "triangles": 72
+    }
+   ]
+  },
+  {
+   "id": "birchwood_main",
+   "mesh": "birchwood_main",
+   "triangles": 14786,
+   "material": "lit",
+   "size": [
+    40.8,
+    19.805,
+    34.5
+   ],
+   "parts": [
+    {
+     "game": null,
+     "triangles": 13018
+    },
+    {
+     "game": "brick",
+     "triangles": 232
+    },
+    {
+     "game": "roof",
+     "triangles": 84
+    },
+    {
+     "game": "glass",
+     "triangles": 1452
+    }
+   ]
+  }
+ ]
 }

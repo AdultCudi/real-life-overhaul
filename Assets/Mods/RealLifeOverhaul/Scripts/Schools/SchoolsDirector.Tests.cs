@@ -93,6 +93,7 @@ namespace RealLifeOverhaul.Schools
             {
                 _testRun = false;
             }
+            CompareTick();
             if (_takeUntil > 0f)
             {
                 if (Time.unscaledTime > _takeUntil)
@@ -131,12 +132,14 @@ namespace RealLifeOverhaul.Schools
                 int copies = 0;
                 for (int i = 0; i < d._copies.Count; i++)
                 {
-                    copies += d._copies[i] != null && d._copies[i].Ready ? 1 : 0;
+                    copies += d.LookStands(i + 1) || (d._copies[i] != null && d._copies[i].Ready) ? 1 : 0;
                 }
                 bool campus = CampusStands && main != null;
                 t.Append(campus ? "the main school at " + main.Address + " wearing " + main.Design + " (shown " + main.Shown + ")" : "the main school does not stand at this load");
                 t.Append("; ").Append(PiecesStood).Append(" of ").Append(d._pieces.Count).Append(" pieces of the game's own (missing: ").Append(PiecesMissing ?? "none").Append(')');
-                t.Append("; the hall and the junior block ").Append(copies).Append(" of ").Append(d._copies.Count).Append(" standing, ").Append(d._cutCopies).Append(" cut");
+                t.Append("; the hall and the junior block ").Append(copies).Append(" of ").Append(d._copies.Count).Append(" standing (")
+                    .Append((d.LookStands(1) ? 1 : 0) + (d.LookStands(2) ? 1 : 0)).Append(" from the models), ").Append(d._cutCopies).Append(" cut");
+                t.Append("; the main school's look ").Append(d.LookStands(0) ? "the model's" : "the copy engine's");
                 t.Append("; classrooms held ").Append(d._held).Append(", doors quietened on the last floor laid ").Append(SchoolFloors.Quietened);
                 int privatePupils = 0, overPlaces = 0;
                 for (int i = 0; i < SchoolRules.Count; i++)

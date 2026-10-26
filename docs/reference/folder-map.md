@@ -13,7 +13,8 @@ This is the mod, and the single source of truth: the Unity project and the comma
 | `Locales/en.json` | every player-facing string, flat keys prefixed reallife_; beside it `pt.json`, `zh-cn.json`, `de.json`, `fr.json`, `es.json`, `ru.json`, `nl.json` and `tr.json`, see [Texts and translation](../contributing/texts-and-translation.md) |
 | `Bundles/reallife_character` | meshes and textures for the player's new looks (built by `CharacterAssets`) |
 | `Bundles/reallife_props` | the modelled street props and their texture atlas (built by `PropAssets`; closed: it takes no new prop) |
-| `Bundles/reallife_props_2` | the props added since, modelled in Blender, with an atlas of their own (built by `PropAssets` from `PropAssets/models`) |
+| `Bundles/reallife_props_2` | the props added since, modelled in Blender (Birchwood School's three buildings), with an atlas of their own (built by `PropAssets` from `PropAssets/models`) |
+| `Bundles/reallife_props_site` | the building sites' props and Uptown's stadium, with an atlas of their own (built by `PropAssets`, the set `site`; closed) |
 | `Bundles/reallife_anim` | the mod's own Humanoid animation clips and how each tool sits in the hand (built by `CityAssets`) |
 | `Scripts/` | the code, one folder per feature |
 | `thumbnail.jpg` | the Workshop picture, installed with the mod |

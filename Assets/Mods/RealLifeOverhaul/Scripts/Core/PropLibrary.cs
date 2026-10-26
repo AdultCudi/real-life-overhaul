@@ -56,6 +56,22 @@ namespace RealLifeOverhaul
             public string mesh;
             public string material;
             public float[] size;
+            [Newtonsoft.Json.JsonProperty("parts")]
+            public PartFile[] Parts;   // a building: what each submesh is drawn with; null for a prop of one material
+        }
+
+        private sealed class PartFile
+        {
+            [Newtonsoft.Json.JsonProperty("game")]
+            public string Game;        // null: the bundle's atlas; else a kind of the game's own material (CampusLookRules.GameNames)
+            [Newtonsoft.Json.JsonProperty("fallback")]
+            public float[] Fallback;   // sRGB stand-in colour for when the game has no such material
+            [Newtonsoft.Json.JsonProperty("metallic")]
+            public float Metallic;
+            [Newtonsoft.Json.JsonProperty("smoothness")]
+            public float Smoothness;
+            [Newtonsoft.Json.JsonProperty("triangles")]
+            public int Triangles;
         }
         private sealed class MeshFile
         {
@@ -81,6 +97,7 @@ namespace RealLifeOverhaul
             public bool Glows;
             public Vector3 Size;
             public Bundle From;   // whose atlas it is drawn with
+            public PropPart[] Parts;   // a building's submeshes, in order (null for a prop of one material); the first is drawn with the atlas
         }
 
         // One bundle: its atlas and the two materials made on it, and a later bundle's props until the first is in.
@@ -95,6 +112,16 @@ namespace RealLifeOverhaul
             public bool Settled;               // read, failed or not installed: nothing more will come from it
             public ItemFile[] Pending;
             public Dictionary<string, Mesh> Meshes;
+        }
+
+        /// <summary>One submesh of a building prop: the bundle's atlas (<see cref="Game"/> null), or a kind of the game's own material.</summary>
+        public sealed class PropPart
+        {
+            public string Game;
+            public Color Fallback;     // what a plain stand-in is coloured when the game has no such material
+            public float Metallic;
+            public float Smoothness;
+            public int Triangles;
         }
 
         private enum State { NotStarted, Loading, Ready, Failed }
@@ -189,6 +216,30 @@ namespace RealLifeOverhaul
                 return false;
             }
             mesh = prop.Mesh;
+            return true;
+        }
+
+        /// <summary>
+        /// A building prop (PropAssets/README.md, "Buildings"): its shared mesh, whose submeshes are drawn each with one of the
+        /// returned parts' materials, the first with <paramref name="atlas"/>, the others with the game's own (a kind each:
+        /// the caller finds them). False if not ready, no such prop, or it is a prop of one material. Never logs.
+        /// </summary>
+        public static bool TryGetBuilding(string id, out Mesh mesh, out Material atlas, out PropPart[] parts)
+        {
+            mesh = null;
+            atlas = null;
+            parts = null;
+            if (_state != State.Ready || id == null || !Props.TryGetValue(id, out Prop prop) || prop.Parts == null)
+            {
+                return false;
+            }
+            atlas = Material(prop.Glows, prop.From);
+            if (atlas == null)
+            {
+                return false;
+            }
+            mesh = prop.Mesh;
+            parts = prop.Parts;
             return true;
         }
 
@@ -434,7 +485,7 @@ namespace RealLifeOverhaul
                         continue;
                     }
                     Props[file.id] = MakeProp(file, mesh, bundle);
-                    triangles += counted.Add(mesh) ? (int)mesh.GetIndexCount(0) / 3 : 0;
+                    triangles += counted.Add(mesh) ? Triangles(mesh) : 0;
                     added++;
                 }
                 said.Append(said.Length > 0 ? ", " : string.Empty).Append(bundle.Name).Append(' ').Append(added)
@@ -455,8 +506,43 @@ namespace RealLifeOverhaul
                 Mesh = mesh,
                 Glows = file.material == GlowKind,
                 Size = file.size != null && file.size.Length == 3 ? new Vector3(file.size[0], file.size[1], file.size[2]) : mesh.bounds.size,
-                From = from
+                From = from,
+                Parts = PartsOf(file, mesh)
             };
+        }
+
+        // A building's parts, one to a submesh; null for a prop of one material or a row that does not match its mesh (then drawn as one).
+        private static PropPart[] PartsOf(ItemFile file, Mesh mesh)
+        {
+            if (file.Parts == null || file.Parts.Length < 2 || file.Parts.Length != mesh.subMeshCount)
+            {
+                return null;
+            }
+            var parts = new PropPart[file.Parts.Length];
+            for (int i = 0; i < parts.Length; i++)
+            {
+                PartFile p = file.Parts[i];
+                float[] c = p.Fallback;
+                parts[i] = new PropPart
+                {
+                    Game = string.IsNullOrEmpty(p.Game) ? null : p.Game,
+                    Fallback = c != null && c.Length == 3 ? new Color(c[0], c[1], c[2], 1f) : new Color(0.5f, 0.5f, 0.5f, 1f),
+                    Metallic = p.Metallic,
+                    Smoothness = p.Smoothness,
+                    Triangles = p.Triangles
+                };
+            }
+            return parts;
+        }
+
+        private static int Triangles(Mesh mesh)
+        {
+            int count = 0;
+            for (int i = 0; i < mesh.subMeshCount; i++)
+            {
+                count += (int)mesh.GetIndexCount(i) / 3;
+            }
+            return count;
         }
 
         // Off the main thread, nothing of Unity's touched: the newer props' files, read and checked.

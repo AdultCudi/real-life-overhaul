@@ -63,6 +63,7 @@ class Paint:
         self.decals = []
         self.wrapped = None
         self.mapped = None
+        self.worlded = None
 
     def planar(self, name, normal, right, centre, size, facing=0.8, turns=0):
         normal, right = Vector(normal).normalized(), Vector(right).normalized()
@@ -74,11 +75,23 @@ class Paint:
         self.mapped = (name, repeat)
         return self
 
+    def world(self, layer, scale):
+        """For a building's game material (README, 'Buildings'): the faces keep the model's own world-scale UVs (1 unit a
+        metre in the layer `layer`), times `scale` (1 / the metres one repeat of the game's picture covers). No atlas region."""
+        self.worlded = (layer, scale)
+        return self
+
     def wrap(self, name, z0, z1):
         self.wrapped = (name, z0, z1)
         return self
 
     def apply(self, bm, uv):
+        if self.worlded:
+            own = bm.loops.layers.uv.get(self.worlded[0])
+            for face in bm.faces:
+                for loop in face.loops:
+                    loop[uv].uv = (loop[own].uv[0] * self.worlded[1], loop[own].uv[1] * self.worlded[1])
+            return
         low = Vector((min(v.co[i] for v in bm.verts) for i in range(3)))
         span = Vector((max(max(v.co[i] for v in bm.verts) - low[i], 1e-6) for i in range(3)))
         across = 0 if span.x >= span.y else 1
@@ -280,8 +293,10 @@ class Prop:
         self.name, self.material, self.pivot, self.note = name, material, pivot, note
         self.bm = bmesh.new()
         self.uv = self.bm.loops.layers.uv.new("UVMap")
+        self.parts = None             # a building: what each submesh is drawn with (models.py), submesh 0 the atlas's
+        self.triangle_part = None     # the submesh of each triangle arrays() returned
 
-    def add(self, part, paint, at=(0, 0, 0), rot=(0, 0, 0), sharp=50.0, scale=(1, 1, 1), marked=False):
+    def add(self, part, paint, at=(0, 0, 0), rot=(0, 0, 0), sharp=50.0, scale=(1, 1, 1), marked=False, submesh=0):
         """Adds a part: painted where it was made, then turned (degrees, XYZ) and moved into place. marked: the part's own
         sharp edges stay sharp (a model from Blender, whose author marked them), beside those over the `sharp` angle."""
         if isinstance(paint, str):
@@ -298,6 +313,7 @@ class Prop:
         for face in part.faces:
             copy = self.bm.faces.new([made[v.index] for v in face.verts])
             copy.smooth = True
+            copy.material_index = submesh
             for source, target in zip(face.loops, copy.loops):
                 target[self.uv].uv = source[uv].uv
             for source, target in zip(face.edges, copy.edges):
@@ -316,6 +332,7 @@ class Prop:
         uv = bm.loops.layers.uv.active
         vertices, normals, uvs, triangles, seen = [], [], [], [], {}
         corner = {}
+        submeshes = []
         for vert in bm.verts:
             # Faces round the vertex that are joined by smooth edges share one normal, weighted towards the large ones.
             group = {face.index: face.index for face in vert.link_faces}
@@ -346,7 +363,9 @@ class Prop:
                     uvs.append(tuple(t))
                 triangle.append(seen[key])
             triangles.append(triangle)
+            submeshes.append(face.material_index)
         bm.free()
+        self.triangle_part = np.array(submeshes, dtype=np.int64)
         return np.array(vertices), np.array(normals), np.array(uvs), np.array(triangles, dtype=np.int64)
 
 
@@ -360,6 +379,15 @@ def write_mesh(prop):
     vertices, normals, uvs, triangles = prop.arrays()
     os.makedirs(os.path.join(BUILD, "meshes"), exist_ok=True)
     unity = to_unity(vertices)
+    counts = None
+    if prop.parts:
+        # A building: its triangles grouped by what they are drawn with, one submesh each, in the order of prop.parts.
+        order = np.argsort(prop.triangle_part, kind="stable")
+        triangles = triangles[order]
+        counts = [int((prop.triangle_part == k).sum()) for k in range(len(prop.parts))]
+        empty = [k for k, n in enumerate(counts) if n == 0]
+        if empty:
+            raise SystemExit("%s: its part %s has no triangle" % (prop.name, ", ".join(str(prop.parts[k].get("game") or "atlas") for k in empty)))
     data = {
         "name": prop.name,
         "vertices": np.round(unity, 5).ravel().tolist(),
@@ -367,12 +395,17 @@ def write_mesh(prop):
         "uv": np.round(uvs, 5).ravel().tolist(),
         "triangles": triangles[:, ::-1].ravel().tolist(),
     }
+    if counts:
+        data["submeshes"] = counts
     with open(os.path.join(BUILD, "meshes", prop.name + ".json"), "w") as f:
         json.dump(data, f, separators=(",", ":"))
     low, high = unity.min(axis=0), unity.max(axis=0)
     print("mesh %-22s %5d vertices %5d triangles  %.3f x %.3f x %.3f m" % (prop.name, len(vertices), len(triangles), *(high - low)))
-    return {"id": prop.name, "mesh": prop.name, "material": prop.material, "triangles": int(len(triangles)), "vertices": int(len(vertices)),
-            "size": np.round(high - low, 4).tolist(), "centre": np.round((high + low) / 2, 4).tolist(), "pivot": prop.pivot, "note": prop.note}
+    row = {"id": prop.name, "mesh": prop.name, "material": prop.material, "triangles": int(len(triangles)), "vertices": int(len(vertices)),
+           "size": np.round(high - low, 4).tolist(), "centre": np.round((high + low) / 2, 4).tolist(), "pivot": prop.pivot, "note": prop.note}
+    if counts:
+        row["parts"] = [dict(part, triangles=counts[k]) for k, part in enumerate(prop.parts)]
+    return row
 
 
 # ---------------------------------------------------------------------------------------------- previews

@@ -43,6 +43,8 @@ namespace RealLifeOverhaul.Schools
                 .Check("reallife_schools_test_term", SchoolsDirector.TestTerm, "Schools check (term)")
                 .Check("reallife_schools_test_mine", SchoolsDirector.TestMine, "Schools check (make it mine)")
                 .Check("reallife_schools_test_enrol", SchoolsDirector.TestEnrol, "Schools check (enrol)")
+                .Check("reallife_schools_test_look", SchoolsDirector.TestLook, "Schools check (look)")
+                .Check("reallife_schools_test_compare", SchoolsDirector.TestCompare, "Schools check (compare)")
                 .Check("reallife_schools_test_back", SchoolsDirector.TestBack, "Schools check (back)", RunPlace.Here, RunPhase.End)
                 .Cleanup(() => SchoolsDirector.Instance?.StandDown("its things were put away"));
         }

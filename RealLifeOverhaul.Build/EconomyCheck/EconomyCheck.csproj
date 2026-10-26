@@ -602,6 +602,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Schools\SchoolRules.cs" Link="Mod\Schools\SchoolRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Schools\SchoolStore.cs" Link="Mod\Schools\SchoolStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Schools\SchoolGrounds.cs" Link="Mod\Schools\SchoolGrounds.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Schools\CampusLookRules.cs" Link="Mod\Schools\CampusLookRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\GroundSurvey.cs" Link="Mod\GroundSurvey.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Civic\CouncilZoning.cs" Link="Mod\CouncilZoning.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\RingRules.cs" Link="Mod\Construction\RingRules.cs" />

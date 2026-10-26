@@ -407,7 +407,7 @@ internal static partial class Program
             int at = next.IndexOf(language.Value, StringComparison.Ordinal);
             Check(at > 0 && next.IndexOf(language.Value, at + 1, StringComparison.Ordinal) < 0,
                 "uptown parks texts: What's new's next row has the parks' line, once, in " + language.Key);
-            Check(at > 0 && next.Substring(at).Length < 700, "uptown parks texts: the parks' line is the last of the row in " + language.Key + " (" + (at > 0 ? next.Length - at : -1) + " characters)");
+            Check(at > 0 && next.Substring(at).Length < 1700, "uptown parks texts: the parks' line is at the end of the row (only the fixes and the later lines follow it) in " + language.Key + " (" + (at > 0 ? next.Length - at : -1) + " characters)");
         }
     }
 }

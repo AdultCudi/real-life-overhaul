@@ -86,8 +86,9 @@ read that one table.
 |---|---|---|---|---|---|
 | `reallife_props` | the procedural modules (`scripts\props.py` and its modules) | **no**: closed, it keeps what it has | 130 000 | 4096 x 2048, fixed | 16 MB |
 | `reallife_props_2` | `models\<id>\`, one Blender export each | **yes** | 60 000 | grows by powers of two from 256 x 256 to 2048 x 2048 | 8 MB |
+| `reallife_props_site` (the set `site`) | the procedural modules `build` and `landmarks`: the building sites' props and Uptown's stadium | no: closed | 12 000 | 1024 x 512, fixed | 1 MB |
 
-**Which bundle a prop goes in.** A new prop goes in the second bundle (the last open row of `sets.json`). A prop of
+**Which bundle a prop goes in.** A new prop goes in the second bundle (the last open row of `sets.json`; the `site` row after it is closed). A prop of
 the first stays where it is; the build refuses a new id in a closed bundle. A prop's id is unique across the bundles:
 the build refuses an id another bundle's `contents\` list holds, the mod uses the earlier bundle's if two ever did,
 and StandardCheck fails on it. Callers never say which bundle: `PropLibrary.TryGet(id, ...)` looks in all of them.
@@ -110,6 +111,44 @@ shapes, as for any prop it lacks.
 **Shipped.** The build copies all of `Bundles\` into the mod, the installer and the zip take the whole mod folder,
 and the Workshop upload takes the release's whole folder; `INSTALL.md`, `RealLifeOverhaul.Build\Workshop\UPLOAD.md`,
 the Workshop credits and `docs\reference\folder-map.md` name every bundle. StandardCheck holds all of it.
+
+## Buildings: a model that draws with the game's own materials
+
+A building is too big and too plain-walled for the atlas: brick, roofing and glass should look like the game's own, and tile
+by the metre. A model's `<id>.json` therefore lists slots that the mod draws with a material of the game's, found by name at
+run time, and the rest stay swatches of the atlas:
+
+```
+"game": {"swatch_brick": {"kind": "brick", "tile": 1.65}, "swatch_roof": {"kind": "roof", "tile": 4}, "swatch_glass": {"kind": "glass", "tile": 2}},
+"split": [{"slot": "swatch_glass", "above": 7.5, "kind": "fence", "tile": 6.5}]
+```
+
+- **Kinds** are `brick`, `roof`, `glass` and `fence` (`models.py` GAME_KINDS, the same list as `CampusLookRules.Kinds`); the mod's
+  `CampusLookRules.GameNames(kind)` names the game's materials of each, best first (Build 3682: `M_Bricks_01`, `M_Roof_02`,
+  `M_GlassBlueHue`, `M_FenceWire_Occlussion`). A kind the game has none of is drawn as a plain colour, the model's own.
+- **`tile`** is the metres one repeat of the game's picture covers. The model carries its UVs at world scale on its **second UV map**
+  (1 unit a metre, box projected: it is exported as TEXCOORD_1); the build divides them by `tile`, so the picture repeats as the game's own
+  walls do. The first UV map is ignored for these slots, which have no atlas region.
+- **`split`** draws a slot's faces above a height (metres, Blender's Z) with another kind: the rooftop fence of the junior block is the model's
+  glass slot, so the faces of it above 7.5 m become chain-link.
+- **Submeshes.** The mesh gets one submesh for the atlas (all the swatch slots together, always the first) and one for each kind
+  used, in that order; the catalogue row lists them as `parts` (`game`, a stand-in colour, metallic, smoothness, triangles), and the
+  contents list carries `game` and `triangles` per part. One submesh is one draw call: a building is **4 or 5** (the atlas, brick, roof,
+  glass and, for the junior block, the fence). The tangents are computed in the bundle (the game's materials use normal maps).
+- **The mod** asks `PropLibrary.TryGetBuilding(id, ...)` for the mesh, the atlas material and the parts, finds each kind's material
+  once, behind the loading screen, with one search of the game's materials in memory by name (never a scene search in play), and draws
+  the mesh with an array of the atlas's material and the game's. Shared materials only; nothing is made per building.
+- **Why not bake brick into the atlas?** An atlas region is drawn once and never tiled: a metre of brick would need a picture a
+  metre wide, and a 40 m wall a 4096 pixel one, or a repeat the shader would have to be taught. The game's own brick is already in memory,
+  tiles by its UVs, has its normal map, and costs one more draw call.
+- **Orientation.** A model made for a plot keeps the front it has: **its front looks along -Z** in the mod (the plot's front, as
+  `CivicWorks.StartPlot` has it), the origin the middle of the front wall's foot, the building extending back along +Z. That is a
+  glTF front of +Z, so a building is exported as it is; nothing turns it. (A prop's front is +Y/+Z as the next section says; a building
+  is the exception, its code (`Schools/CampusLookRules`) knows where its door and its walls are.)
+
+The pipeline refuses nothing for a building's size: models up to 60 m a side and 60 000 triangles a bundle are allowed, and a mesh
+stays under 65 535 vertices (the main school's 14 786 triangles are 28 208). Its check stays: the sum of the parts must equal the
+mesh and the build and the bundle's verify step fail on an empty part, a missing stand-in colour or a submesh count that is not the row's.
 
 ## Adding a prop from Blender
 
@@ -167,12 +206,12 @@ With both set, several people can work on a module each at the same time without
 whole. Previews of single props: `blender -b -P scriptsuild_props.py -- id id`. A module may list `SIDES` (see the
 end of `props.py`): those props also get `previews\<id>_sides.png`, six views beside what they go over or who uses them.
 
-## The second bundle
+## The building sites' bundle (the set `site`)
 
 The first bundle is full (2,814 triangles and 6 % of its atlas left), so the building sites' props (`scripts\props_build.py`,
 painted by `paint_build.py`) go in a second one, `Bundles\reallife_props_site`, with an atlas of its own: 1024 x 512 colour
-and 512 x 256 mask, BC7, holding the shared swatches of `atlas.py` and the module's own finishes only. `PROPS_SET=second`
-switches the scripts to it: `atlas.py` paints that atlas, `build_props.py` builds only the second set's modules, `build` then
+and 512 x 256 mask, BC7, holding the shared swatches of `atlas.py` and the module's own finishes only. `PROPS_SET=site`
+(`build.ps1 -Set site`) switches the scripts to it: `atlas.py` paints that atlas, `build_props.py` builds only the second set's modules, `build` then
 `landmarks` (budget 12 000 triangles; 6 350 used, the atlas 69 %), and they write to `PROPS_BUILD` (`build_second\`, git-ignored). Unity builds it with
 `build_bundle.ps1 -BuildFolder build_second -BundleName reallife_props_site`; `build.ps1` does all of it after the first
 bundle. The mod reads it beside the first (`PropLibrary`: its props have their own two materials on its atlas), and draws

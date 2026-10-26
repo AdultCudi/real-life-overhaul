@@ -1,0 +1,20 @@
+{
+ "budget": 8000,
+ "material": "lit",
+ "pivot": "the middle of the front wall's foot at ground level; front towards -Z",
+ "note": "Birchwood School's gym hall: origin the middle of the front wall's foot, the front towards -Z, a door and the GYMNASIUM sign on it; no interior (Schools/CampusLook).",
+ "game": {
+  "swatch_brick": {
+   "kind": "brick",
+   "tile": 1.65
+  },
+  "swatch_roof": {
+   "kind": "roof",
+   "tile": 4.0
+  },
+  "swatch_glass": {
+   "kind": "glass",
+   "tile": 2.0
+  }
+ }
+}
