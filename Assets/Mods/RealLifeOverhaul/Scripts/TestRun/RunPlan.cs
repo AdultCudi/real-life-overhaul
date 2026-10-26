@@ -73,7 +73,8 @@ namespace RealLifeOverhaul.TestRun
             { "reallife_bld_mode_test_plot", "it opens build mode, glides the city map over a building and leaves its panel open for the player to look at, which would hold the run's own steps" },
             { "reallife_bld_test_cleared_build", "it builds on ground the player cleared by knocking a building of theirs down, which the run never does" },
             { "reallife_bld_test_extend", "it puts a storey on a building of the player's own for good, so only the player presses it" },
-            { "reallife_uptown_ground_test_surfaces", "it moves the player to the two places on 7th Street where the road flickered, which would carry the run off its own places; the surfaces' check is read at every load" },
+            { "reallife_uptown_ground_test_surfaces", "it moves the player to the two places on 7th Street where the road flickered, which would carry the run off "
+                + "its own places; the surfaces' check is read at every load" },
             { "reallife_bld_test_convert", "it changes a building of the player's own to another use for good, emptying it first, so only the player presses it" },
             { "reallife_bld_test_city_redevelop", "it has the city's developers knock down, build, extend and convert Uptown's own buildings for good, so only the player presses it" },
         };
