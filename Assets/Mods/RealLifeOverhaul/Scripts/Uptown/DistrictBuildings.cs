@@ -175,6 +175,29 @@ namespace RealLifeOverhaul.Uptown
             return LifeDirector.FinishOver(lotId, over, design, size, version, type, storeys, owner, price, out why);
         }
 
+        /// <summary>
+        /// A building handed to the district (<see cref="Finish"/>, <see cref="FinishOver"/>) stood now, in play: at once when none of its
+        /// ground is in the camera's picture and the player is not on it, else at the next black screen or the moment nobody sees it; the
+        /// building is made by the code that makes it at a load, put in the game's lists, its deed written, and the record marked so
+        /// the next load stands the same building and sets nothing up twice. True when it stands or waits to; false, with why, when it
+        /// is left to the next load (a Going Public session, the district not living, the make refused: Player.log says). Never changes
+        /// what is recorded: a refusal leaves the building as <see cref="Finish"/> made it.
+        /// </summary>
+        public static bool StandNow(string lotId, out string why)
+        {
+            return LifeDirector.StandNow(lotId, out why);
+        }
+
+        /// <summary>How many finished buildings wait to stand until nobody sees their ground or the screen is black.</summary>
+        public static int StandWaiting => LifeDirector.StandWaiting;
+
+        /// <summary>
+        /// A building stood on a ground in play (lot id, x and z from, to): whatever keeps the ground meanwhile gives it up in the same
+        /// moment (the construction sites' props and the finished building's look over it, Scripts/Civic). Set once at game start by
+        /// Wiring; unset: nothing is told.
+        /// </summary>
+        public static Action<string, float, float, float, float> GroundGiven;
+
         /// <summary>A building finished but not yet stood at any load taken back (a test's way back): false, with why, once a load has stood it.</summary>
         public static bool Withdraw(string lotId, out string why)
         {

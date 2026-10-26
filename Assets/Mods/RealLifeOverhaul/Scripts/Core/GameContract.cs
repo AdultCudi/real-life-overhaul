@@ -446,6 +446,12 @@ namespace RealLifeOverhaul
         public static readonly GameMember StreetLookup = StaticField(OwnBuildings, Game, "Streets.AddressHelper", "StreetDataDictionary", "Dictionary<String,StreetData>");
         public static readonly GameMember ClosestJob = Optional(StaticField(OwnBuildings, Game, "Buildings.ClosestBuildingFromPlayer", "ClosestCbcPositionJob", "ClosestPositionJob"));
         public static readonly GameMember DeliveryLeftOut = Optional(Field(OwnBuildings, Game, "Player.FoodDeliveryJob.FoodDeliveryJobConfig", "excludedDeliveryAddresses", "Address[]"));
+        // NewBuildings/MadeGame.City: a building made in play joins the city's list as the game's start of the city joins one: the private lookup of
+        // the controllers by address (CityManager.cs 38, which FindCityBuildingController reads) and the closest-building job's OnDestroy (it gives its
+        // arrays back and the next ask makes them from the longer list, ClosestBuildingFromPlayer.cs 130). Optional: without them a building made
+        // in play is not put in the city's list, and waits for the next load to be in it (the building stands all the same).
+        public static readonly GameMember CityLookup = Optional(Field(OwnBuildings, Game, "CityManager", "_cityBuildingControllersDictionary", "Dictionary<Address,CityBuildingController>"));
+        public static readonly GameMember ClosestReset = Optional(StaticMethod(OwnBuildings, Game, "Buildings.ClosestBuildingFromPlayer", "OnDestroy", "Void"));
         // Uptown/GroundGame: the street a road module's name label shows (Road.cs 13; its Start writes the label from it). Optional:
         // without it the copied modules' labels are hidden.
         public static readonly GameMember RoadStreetName = Optional(Field(UptownLabels, Game, "Road", "streetName", "String"));

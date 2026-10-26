@@ -87,7 +87,7 @@ namespace RealLifeOverhaul.Construction
         /// <summary>True while the district is a district of the game's at this load. Default: no.</summary>
         public static Func<bool> DistrictLives;
 
-        /// <summary>True when a building of the district stands on a lot, or one finished waits for the next load. Default: no.</summary>
+        /// <summary>True when a building of the district stands on a lot, or one finished waits to stand (for a moment nobody sees it, or the next load). Default: no.</summary>
         public static Func<string, bool> LotTaken;
 
         /// <summary>True when a building of the district stands on a lot at this load. Default: no.</summary>
@@ -102,7 +102,10 @@ namespace RealLifeOverhaul.Construction
         /// <summary>The district's price a square metre (its base price times its real estate multiplier). Default: not known.</summary>
         public static Func<double> LandPrice;
 
-        /// <summary>A finished building handed to the district: from the next load it is one of its buildings, the player's or the city's.</summary>
+        /// <summary>
+        /// A finished building handed to the district, the player's or the city's: it stands at once when nobody sees its ground,
+        /// else at the next black screen (from the next load only in a session).
+        /// </summary>
         public static FinishCall Finish;
 
         public delegate bool FinishCall(string lot, string design, string size, int version, string type, int storeys, bool player, double price, out string why);

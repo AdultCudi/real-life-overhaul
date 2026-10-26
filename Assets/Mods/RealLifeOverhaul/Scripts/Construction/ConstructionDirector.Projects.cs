@@ -1124,7 +1124,9 @@ namespace RealLifeOverhaul.Construction
             return p.PaceDays > 0 ? BuildCatalogue.Clamp(40 + p.PaceSum / Math.Max(1, p.PaceDays) / 40, 30, 90) : 50;
         }
 
-        // A plot's building becomes one of the district's from the next load: the player's, or its residents' when flats are sold.
+        // A plot's building becomes one of the district's: the player's, or its residents' when flats are sold. The district stands it as the
+        // scaffolding comes down, or at the next black screen if its ground is in view (the bridge's Finish asks it to stand now);
+        // from the next load only where it cannot (a Going Public session, a make refused), and Uptown's line in Player.log says which.
         private void HandToDistrict(ProjectFile p)
         {
             if (p.InDistrict || string.IsNullOrEmpty(p.Lot))
@@ -1159,13 +1161,14 @@ namespace RealLifeOverhaul.Construction
                 {
                     _state.Lots.Remove(lot);   // the residents' now: no more land tax of the player's
                 }
-                Logger?.Info("Construction: project " + p.Id + "'s building is the district's from the next load, " + (player ? "the player's" : "its residents'") + ".");
+                Logger?.Info("Construction: project " + p.Id + "'s building is the district's, " + (player ? "the player's" : "its residents'")
+                             + "; the district stands it now, or when nobody sees its ground (Uptown says which).");
                 return;
             }
             Logger?.Info("Construction: project " + p.Id + "'s building is not the district's yet (" + why + "); asked again each day.");
         }
 
-        /// <summary>Whether a finished plot's building is the player's (used, let or sold through BizMan from the next load) or its flats are sold. Before the handover only.</summary>
+        /// <summary>Whether a finished plot's building is the player's (used, let or sold through BizMan once it stands) or its flats are sold. Before the handover only.</summary>
         public string SetAfter(ProjectFile p, AfterUse after)
         {
             if (p == null || p.Kind != ProjectKind.Plot || p.InDistrict)

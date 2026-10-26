@@ -428,7 +428,7 @@ namespace RealLifeOverhaul.Construction
                 return Failed(RedoCheck, test, "reallife_bld_test_failed_log", "the new building was not handed to the district");
             }
             Passed(test, "reallife_bld_test_cleared_build", where + ": " + p.Size + " v" + p.Version + " (" + spaces + " space(s)) in " + p.Design + ", built by "
-                   + ConstructionText.T(BuildCatalogue.RivalKeys[p.Contractor]) + " for nothing and handed over now; the player's from the next load", TabProjects, p.Id);
+                   + ConstructionText.T(BuildCatalogue.RivalKeys[p.Contractor]) + " for nothing and handed over now; the player's, standing once the district stands it", TabProjects, p.Id);
             return true;
         }
 

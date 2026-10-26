@@ -126,6 +126,8 @@ namespace RealLifeOverhaul.Uptown
             Declared.Clear();
             BuiltLots.Clear();
             KeptLots.Clear();
+            Waiting.Clear();
+            _armed = false;
             ForgetLeases();
             ForgetSpecials();
             _stamp++;
@@ -246,15 +248,20 @@ namespace RealLifeOverhaul.Uptown
                     BuiltLots.Add(lot.Id);
                     KeptLots.Add(lot.Id);
                 }
-                BuildingsStructure structure;
-                SpecialPlace place = null;
-                Others.Clear();   // a finished building keeps the structure and design the construction game gave it
                 if (f != null)
                 {
-                    structure = new BuildingsStructure { Size = f.Size, Version = f.Version, Type = f.Type };
+                    // A finished building keeps the structure and design the construction game gave it: the declaration a move in play
+                    // makes from the same record (LifeDirector.Stand.cs), so the building stood now is the one this load stands.
+                    MadeSpec kept = FinishedSpec(lot, f);
+                    MadeBuildings.Declare(kept);
+                    Declared.Add(kept);
                     finished++;
+                    continue;
                 }
-                else if (SpecialStructure(lot, out structure, out place))
+                BuildingsStructure structure;
+                SpecialPlace place = null;
+                Others.Clear();
+                if (SpecialStructure(lot, out structure, out place))
                 {
                     special++;
                 }
@@ -278,7 +285,7 @@ namespace RealLifeOverhaul.Uptown
                     }
                 }
                 Lot plain = UptownLots.Get(lot.Id);
-                MadeSpec spec = LifeGame.Spec(GroundOf(lot, f), structure, Others, f != null ? f.Design : BuildingsRules.LookOf(lot.Class), f != null ? f.Storeys : 0, TrafficOf(lot.Id),
+                MadeSpec spec = LifeGame.Spec(lot, structure, Others, BuildingsRules.LookOf(lot.Class), 0, TrafficOf(lot.Id),
                     () => _known && !_down && UptownLots.Ready && plain != null && UptownLots.Open(plain));
                 if (place != null)
                 {
@@ -478,14 +485,14 @@ namespace RealLifeOverhaul.Uptown
             {
                 MadeBuilding made = Standing[i];
                 FinishedBuilding f = _state.On(made.Spec.Id);
-                if (f == null || f.Settled)
+                if (!StandRules.FirstLoadDue(f))
                 {
-                    continue;
+                    continue;   // set up already: at an earlier load, or as it stood in play (LifeDirector.Stand.cs)
                 }
                 string why = LifeGame.Settle(made, f.Owner, f.Price, save);
                 if (why == null)
                 {
-                    f.Settled = true;
+                    StandRules.SetUp(f);
                     settled++;
                 }
                 else
@@ -606,6 +613,10 @@ namespace RealLifeOverhaul.Uptown
             {
                 return;
             }
+            if (Waiting.Count > 0)
+            {
+                StandPending(false);   // a finished building waiting for a moment nobody sees its ground
+            }
             if (UptownLots.Closed)
             {
                 StandDown("its ground's feature has cleaned up", false);
@@ -725,6 +736,8 @@ namespace RealLifeOverhaul.Uptown
             LifeGame.Unload();
             Standing.Clear();
             StandingLots.Clear();
+            Waiting.Clear();
+            _armed = false;
             ForgetLeases();
             ForgetSpecials();
             _known = _lives = _down = false;

@@ -57,6 +57,32 @@ namespace RealLifeOverhaul
             return asked;
         }
 
+        /// <summary>
+        /// The looks of plots whose lot holds a building of the district now (it was stood in play, where the look stood in its stead)
+        /// given up at once, the copy taken away in whatever view; so the building and its look are never seen together.
+        /// </summary>
+        public int DropStood()
+        {
+            int dropped = 0;
+            for (int i = _state.Looks.Count - 1; i >= 0; i--)
+            {
+                if (_state.Looks[i].Kind == SiteKind.Plot && SiteBuilders.IsTaken(_state.Looks[i].Tag))
+                {
+                    CivicDirector.Logger?.Info("Construction: the finished building on lot " + _state.Looks[i].Tag + " stands in its own right now: its look is taken away.");
+                    _state.Looks.RemoveAt(i);
+                    dropped++;
+                }
+            }
+            for (int i = _stood.Count - 1; i >= 0; i--)
+            {
+                if (!Kept(_stood[i]))
+                {
+                    RemoveAt(i, true);
+                }
+            }
+            return dropped;
+        }
+
         /// <summary>One look stood (a handover): a copy of the same building or ground already standing goes first.</summary>
         public bool Stand(SiteLook look)
         {
@@ -139,14 +165,21 @@ namespace RealLifeOverhaul
             }
         }
 
-        private void RemoveAt(int i)
+        private void RemoveAt(int i, bool now = false)
         {
             object handle = _handles[i];
             _stood.RemoveAt(i);
             _handles.RemoveAt(i);
             try
             {
-                SiteBuilders.CopyRemove?.Invoke(handle);
+                if (now && SiteBuilders.CopyDrop != null)
+                {
+                    SiteBuilders.CopyDrop(handle);
+                }
+                else
+                {
+                    SiteBuilders.CopyRemove?.Invoke(handle);
+                }
             }
             catch (System.Exception e)
             {

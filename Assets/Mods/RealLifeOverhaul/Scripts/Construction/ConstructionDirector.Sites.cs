@@ -178,7 +178,7 @@ namespace RealLifeOverhaul.Construction
                     dev.SiteId = 0;
                     if (dev.Public && !dev.Handed && Lot(dev.Lot, out LotView lot))
                     {
-                        FinishDevelopment(dev, lot, BuildUse.Offices);   // a public building a rival put up: the city's offices from the next load
+                        FinishDevelopment(dev, lot, BuildUse.Offices);   // a public building a rival put up: the city's offices
                     }
                 }
             }

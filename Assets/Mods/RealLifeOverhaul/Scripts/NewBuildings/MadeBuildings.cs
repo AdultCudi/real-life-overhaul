@@ -218,6 +218,16 @@ namespace RealLifeOverhaul.NewBuildings
             Stamp++;
         }
 
+        // A made building the city has done with (a district's building knocked down in play) out of the city's list of them, so a
+        // building made at its address later is the one found there. Its controller stays where it is, hidden, until the city goes.
+        internal static void Drop(MadeBuilding made)
+        {
+            if (City.Remove(made))
+            {
+                Stamp++;
+            }
+        }
+
         internal static void Forget()
         {
             City.Clear();

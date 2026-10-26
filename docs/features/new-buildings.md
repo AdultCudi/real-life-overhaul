@@ -197,6 +197,8 @@ The copy stands in the scene of the building it copies, not under the mod's own 
 
 Nothing is saved: every made building is made again at every load, and a building no longer declared is simply not there.
 
+One made in play: a district's building (`MadeSpec.Life`) can be made after the load, by the same `Make` (`NewBuildingsDirector.MakeNow`, used by Uptown's `StandNow`, [Uptown](uptown.md), "A building handed over stands at once"): the city's designs and ground are measured already, and the copies the mod itself stands (a filler, a site's look) are not held against its ground. It joins the city's list as the game's start of the city joins one (`MadeGame.JoinCity`). `Retire` lets a district building knocked down in play go from the made buildings, with its ground, so one made on its lot later is found at that address.
+
 What names a made address in a save has one owner, the district save ([The district save](district-save.md)), whatever is switched off. At every save, as the last of the mod's steps in the game's save event, it takes out everything that names one and puts it back the moment the game has written its file, exactly where it was:
 
 - **inside a made building:** the save is written with no current address and the player outside its door, facing out (`MadeGame.NamePlaces` gives it the spot, 1.2 m in front of the door), so it loads with or without the mod with the player there; nothing of it is kept;

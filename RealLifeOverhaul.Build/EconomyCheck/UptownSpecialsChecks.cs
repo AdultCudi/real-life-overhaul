@@ -233,7 +233,7 @@ internal static partial class Program
         string guide = Read(@"Uptown\LifeGuide.cs"), rules = Read(@"Uptown\SpecialsRules.cs");
         Check(director.Length > 0 && specials.Length > 0 && game.Length > 0 && rules.Length > 0, "uptown specials: the rules, the director's part and the game's part are there");
         string declare = MemberText(director, "private static void Declare()");
-        int finished = declare.IndexOf("if (f != null)", StringComparison.Ordinal), special = declare.IndexOf("else if (SpecialStructure(lot, out structure, out place))", StringComparison.Ordinal);
+        int finished = declare.IndexOf("if (f != null)", StringComparison.Ordinal), special = declare.IndexOf("if (SpecialStructure(lot, out structure, out place))", StringComparison.Ordinal);
         int lease = declare.IndexOf("bool lease = LeaseOf(lot.Id) >= 0;", StringComparison.Ordinal), serve = declare.IndexOf("LifeGame.Serve(spec, place);", StringComparison.Ordinal);
         int declared = declare.IndexOf("MadeBuildings.Declare(spec);", StringComparison.Ordinal);
         Check(finished > 0 && special > finished && lease > special && serve > lease && declared > serve,

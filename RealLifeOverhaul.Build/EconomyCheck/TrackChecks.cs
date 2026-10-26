@@ -86,7 +86,7 @@ internal static partial class Program
         Check(TrackOf(s, f).Count == 0, "objectives: an abandoned project, a finished one opened and one whose opening day is gone are not under way");
         past.Opening = 34;
         List<TrackLine> lines = TrackOf(s, f);
-        Check(lines.Count == 1 && lines[0].Key == "reallife_bld_track_opening" && lines[0].Need == TrackNeed.Waiting && lines[0].Day == 34, "objectives: an opening still to come is a line, waiting, on its day");
+        Check(lines.Count == 1 && lines[0].Key == "reallife_bld_track_opening" && lines[0].Need == TrackNeed.Urgent && lines[0].Day == 34, "objectives: an opening still to come is a line, urgent from the handover, on its day");
         past.Opening = 30;
         lines = TrackOf(s, f);
         Check(lines.Count == 1 && lines[0].Key == "reallife_bld_track_opening_today" && lines[0].Need == TrackNeed.Urgent, "objectives: the opening today is urgent: the ribbon to cut");

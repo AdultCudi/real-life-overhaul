@@ -54,8 +54,8 @@ internal static partial class Program
     private static readonly Regex FeatureAdd = new Regex("Features\\.Add\\(\"([a-z_]+)\"", RegexOptions.Compiled);
     private static readonly Regex GuardFeature = new Regex("(?:Guard|FeatureGuards)\\.For\\(\"([a-z_]+)\"", RegexOptions.Compiled);
     private static readonly Regex OwnerFeature = new Regex("\\{ \"[A-Za-z.]+\", \"([a-z_]+)\" \\}", RegexOptions.Compiled);
-    private static readonly Regex CityList = new Regex("cityBuildingControllers", RegexOptions.Compiled);
-    private static readonly Regex CityListTest = new Regex("cityBuildingControllers(\\s*(==|!=)\\s*null|\\.Length)", RegexOptions.Compiled);
+    private static readonly Regex CityList = new Regex("cityBuildingControllers(?!Dictionary)", RegexOptions.Compiled);   // not the private lookup by address, which is no list to pick from
+    private static readonly Regex CityListTest = new Regex("cityBuildingControllers(?!Dictionary)(\\s*(==|!=)\\s*null|\\.Length)", RegexOptions.Compiled);
     private static readonly Regex DlcRead = new Regex("requiredDLC|DlcIsOwned|IsDlcInstalled|SteamAPI\\.|SteamApps\\.", RegexOptions.Compiled);
     private static readonly Regex BuildingLists = new Regex("BuildingHelper\\.(allBuildings|AllNeighbourhoodBuildings)|\\bBoatTypes?\\b", RegexOptions.Compiled);
 

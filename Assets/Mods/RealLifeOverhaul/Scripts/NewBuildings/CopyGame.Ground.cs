@@ -198,6 +198,22 @@ namespace RealLifeOverhaul.NewBuildings
             MadeNames.Add(name);
         }
 
+        /// <summary>
+        /// A made building taken down (a district's building knocked down in play) has let its ground go: a building made
+        /// there later is not held off by it. Nothing when no building of that name kept ground.
+        /// </summary>
+        public static void ReleaseMade(string name)
+        {
+            for (int i = MadeNames.Count - 1; i >= 0; i--)
+            {
+                if (string.Equals(MadeNames[i], name, System.StringComparison.Ordinal))
+                {
+                    MadeRects.RemoveRange(i * 5, 5);
+                    MadeNames.RemoveAt(i);
+                }
+            }
+        }
+
         // The layers of things that move or are only there to be walked or clicked on: what stands on a plot is anything else.
         private static int Moving()
         {
@@ -235,7 +251,7 @@ namespace RealLifeOverhaul.NewBuildings
         /// Why a design cannot stand on a lot now (English, for the log), or null when it can; then where its root stands,
         /// its turn and its door, at the height of the walkable ground at that door.
         /// </summary>
-        public static string GroundWhy(DesignEntry d, MadeLot lot, out Vector3 root, out float yaw, out Vector3 door)
+        public static string GroundWhy(DesignEntry d, MadeLot lot, out Vector3 root, out float yaw, out Vector3 door, bool inPlay = false)
         {
             NewBuildingsRules.Place(d, lot, out float x, out float z, out yaw);
             NewBuildingsRules.Footprint(d, lot, out float cx, out float cz, out float hw, out float hd);
@@ -314,7 +330,7 @@ namespace RealLifeOverhaul.NewBuildings
             for (int i = 0; i < found; i++)
             {
                 Collider hit = Hits[i];
-                if (hit != null && !(hit is TerrainCollider) && !OfMade(hit))
+                if (hit != null && !(hit is TerrainCollider) && !OfMade(hit) && !(inPlay && OfLook(hit)))
                 {
                     Hits[i] = null;
                     return "something solid stands there (" + hit.name + ")";
@@ -443,6 +459,14 @@ namespace RealLifeOverhaul.NewBuildings
             float fx = Mathf.Sin(f), fz = Mathf.Cos(f);
             x = cx + across * fz + outward * fx;
             z = cz - across * fx + outward * fz;
+        }
+
+        // A collider of a copy the mod stands for its look alone (a filler beside a building, a finished building's look over a
+        // site): in play, when a building is made after the load, the load's own order of things is gone (it makes the buildings
+        // first, the fillers after), and a copy of a look is no building to keep clear of; the building it stands for replaces it.
+        private static bool OfLook(Collider hit)
+        {
+            return hit.GetComponentInParent<CopyLook>() != null;
         }
 
         // A collider of one of the mod's own buildings: the made buildings keep apart by their footprints (RectsMeet), so a

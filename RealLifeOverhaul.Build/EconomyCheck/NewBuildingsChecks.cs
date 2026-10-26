@@ -635,7 +635,7 @@ internal static partial class Program
         int reg = enter.IndexOf("registrations[address] = registration;", StringComparison.Ordinal), rec = enter.IndexOf("buildings[address] = record;", StringComparison.Ordinal);
         Check(reg > 0 && rec > reg && enter.Contains("GameContract.RegistrationLookup.Field") && enter.Contains("GameContract.BuildingLookup.Field"),
             "new buildings: a made building's registration is in the game's private lookup before its record (the game's own lookup would otherwise add one to the save)");
-        string make = MemberText(director, "private bool Make(MadeSpec spec)");
+        string make = MemberText(director, "private bool Make(MadeSpec spec, bool inPlay = false)");
         int entered = make.IndexOf("MadeGame.Enter(record, registration, out why)", StringComparison.Ordinal), working = make.IndexOf("CopyGame.MakeWorking(", StringComparison.Ordinal);
         int claim = make.IndexOf("MadeGame.Claim(spec", StringComparison.Ordinal);
         Check(entered > 0 && working > entered && claim > working && make.Contains("MadeGame.Leave(record);") && Occurs(all, "MadeGame.Claim(") == 1,
@@ -751,7 +751,7 @@ internal static partial class Program
             "new buildings: the feature stands on New York's map (the city table: another city has none of it), and its picks are in ContractCheck's census of picks");
         Check(!Regex.IsMatch(all, "\"ba:street_") && MemberText(made, "public static int AddStreets()").Contains("GameContract.StreetLookup.Field") && MemberText(made, "public static int AddStreets()").Contains("CreateInstance<StreetData>()"),
             "new buildings: no street of the game's is ever used; the mod's own are put among the game's at every load");
-        Check(make.Contains("CopyGame.GroundWhy(designs[pick], each, out root, out yaw, out door)") && make.Contains("NewBuildingsRules.FirstFree(spec.Lots.Length, spec.Preferred,")
+        Check(make.Contains("CopyGame.GroundWhy(designs[pick], each, out root, out yaw, out door, inPlay)") && make.Contains("NewBuildingsRules.FirstFree(spec.Lots.Length, spec.Preferred,")
               && MemberText(director, "private bool MakeAll()").Contains("CopyGame.MeasureAll(") && MemberText(director, "private bool MakeAll()").Contains("CopyGame.MeasureOthers("),
             "new buildings: every lot's ground is checked at every load before a building is stood on it, and the next free lot is taken by the fixed rule");
         Check(make.Contains("NewBuildingsRules.Refusal(spec, MadeGame.StructureTakes, MadeGame.DistrictKnown, MadeGame.HomesLeftOut())") && make.Contains("MadeGame.GameHas(spec.Street, spec.Number)")

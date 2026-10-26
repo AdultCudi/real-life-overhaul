@@ -535,7 +535,7 @@ namespace RealLifeOverhaul.Construction
             return true;
         }
 
-        // The new building's last day: the district's from the next load, the city's (let to its businesses by the game's own
+        // The new building's last day: the district's (it stands now, or when nobody sees its ground), the city's (let to its businesses by the game's own
         // generator), its builder's record, the stock market's builder news, the building of the year.
         private void CityBuilt(RedevFile r, int day)
         {
@@ -589,7 +589,7 @@ namespace RealLifeOverhaul.Construction
             }
             Paper("reallife_bld_paper_city_built", CityName(r), 1 + extra);
             Logger?.Info("Construction: the city's " + r.Move + " on lot " + r.Lot + " is finished: " + r.Use + " in " + design.Name + (extra > 0 ? " and " + extra + " more" : string.Empty)
-                         + ", the city's from the next load.");
+                         + ", the city's.");
         }
 
         // A split's other lots, each a smaller building of its own; how many the district took.

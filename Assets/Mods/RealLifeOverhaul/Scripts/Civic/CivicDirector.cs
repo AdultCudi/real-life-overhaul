@@ -451,6 +451,17 @@ namespace RealLifeOverhaul
             return true;
         }
 
+        /// <summary>
+        /// A building has stood in play on a ground (x and z from, to): the construction sites' props on it and the look of the design
+        /// standing over it come down in the same moment, so the building and the scaffolding are never seen together. Asked once a
+        /// building, at its handover or at a black screen.
+        /// </summary>
+        public void GroundGiven(float x1, float z1, float x2, float z2)
+        {
+            _looks?.DropStood();
+            _sites?.ReleaseOn(x1, z1, x2, z2);
+        }
+
         // A handover added a look: it stands once out of view.
         private void LookAdded(SiteLook look)
         {

@@ -71,6 +71,8 @@ namespace RealLifeOverhaul
                 SiteBuilders.CopyOver = (building, design) => BuildingCopies.PlaceOver(building, design, null, Owner, true);
                 SiteBuilders.CopyOnPlot = (design, middle, yaw, width, depth) => BuildingCopies.PlaceOnPlot(design, null, middle, yaw, width, depth, Owner);
                 SiteBuilders.CopyRemove = handle => BuildingCopies.RemoveOutOfView(handle as CopyHandle);
+                SiteBuilders.CopyDrop = handle => BuildingCopies.Remove(handle as CopyHandle);
+                DistrictBuildings.GroundGiven = GroundGiven;
                 SiteBuilders.CopyGone = handle => !(handle is CopyHandle copy) || copy.Gone;
                 SiteBuilders.PlanningTopic = PlanningCall.Topic;
                 SiteBuilders.Notice = PlanningCall.Notice;
@@ -186,6 +188,7 @@ namespace RealLifeOverhaul
             internal static void Disconnect()
             {
                 SiteBuilders.Reset();
+                DistrictBuildings.GroundGiven = null;
                 DistrictBuildings.Lessee = null;
                 ConstructionBridges.RivalOffice = null;
                 ConstructionBridges.RivalOfficeGo = null;
@@ -538,7 +541,8 @@ namespace RealLifeOverhaul
                 why = null;
                 try
                 {
-                    return DistrictBuildings.FinishOver(lot, over, design, size, version, type, storeys, player ? FinishOwner.Player : FinishOwner.City, price, out why);
+                    bool done = DistrictBuildings.FinishOver(lot, over, design, size, version, type, storeys, player ? FinishOwner.Player : FinishOwner.City, price, out why);
+                    return done && Stand(lot);
                 }
                 catch (Exception e)
                 {
@@ -548,12 +552,42 @@ namespace RealLifeOverhaul
                 }
             }
 
+            // A building handed to the district stands now, as the scaffolding comes down (DistrictBuildings.StandNow): at once out of view,
+            // else at a black screen. One rule for every finished building the construction game hands over, a project's, a rival's
+            // development and the city's redevelopment. Handed over all the same when it cannot: it then stands from the next load.
+            private static bool Stand(string lot)
+            {
+                try
+                {
+                    DistrictBuildings.StandNow(lot, out _);
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.StandNow", e);
+                }
+                return true;
+            }
+
+            // The construction sites' props and the finished building's look over a ground a building has just stood on come down in the same moment.
+            private static void GroundGiven(string lot, float x1, float z1, float x2, float z2)
+            {
+                try
+                {
+                    CivicDirector.Instance?.GroundGiven(x1, z1, x2, z2);
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.GroundGiven", e);
+                }
+            }
+
             private static bool Finish(string lot, string design, string size, int version, string type, int storeys, bool player, double price, out string why)
             {
                 why = null;
                 try
                 {
-                    return DistrictBuildings.Finish(lot, design, size, version, type, storeys, player ? FinishOwner.Player : FinishOwner.City, price, out why);
+                    bool done = DistrictBuildings.Finish(lot, design, size, version, type, storeys, player ? FinishOwner.Player : FinishOwner.City, price, out why);
+                    return done && Stand(lot);
                 }
                 catch (Exception e)
                 {

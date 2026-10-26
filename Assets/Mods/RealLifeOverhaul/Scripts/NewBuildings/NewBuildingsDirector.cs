@@ -298,8 +298,60 @@ namespace RealLifeOverhaul.NewBuildings
             return false;
         }
 
+        /// <summary>
+        /// One building of a district made in play, by the code that makes every building at a load (<see cref="Make"/>), the
+        /// city's designs and ground already measured: the made building, or null with why (Player.log has the line). The caller
+        /// has arranged its declaration (Uptown's FrontageRules) and puts the building in its district's lists.
+        /// </summary>
+        internal MadeBuilding MakeNow(MadeSpec spec, out string why)
+        {
+            why = null;
+            if (spec == null || !spec.Life)
+            {
+                why = "only a district's building is made in play";
+                return null;
+            }
+            if (!CopyGame.Ready || CopyGame.DesignCount == 0 || MadeGame.Loading)
+            {
+                why = "the city's designs are not measured, or a load is under way";
+                return null;
+            }
+            int before = _made.Count;
+            _standWhy = null;
+            if (!Make(spec, true) || _made.Count <= before)
+            {
+                why = _standWhy ?? "it stood down";
+                return null;
+            }
+            return _made[_made.Count - 1];
+        }
+
+        private string _standWhy;   // why the last building made stood down: MakeNow says it
+
+        /// <summary>
+        /// A district's building knocked down in play, let go from the made buildings for good (it stays hidden where it stands, as a made
+        /// building's copy does, until the city goes): out of the game's lookup of its address, out of the list of the made buildings
+        /// and of the ground they keep, so a building made on its lot in play is found at that address and held off by nothing.
+        /// </summary>
+        internal void Retire(MadeBuilding old)
+        {
+            if (old == null)
+            {
+                return;
+            }
+            if (old.Building != null)
+            {
+                MadeGame.Leave(old.Building);
+            }
+            CopyGame.ReleaseMade(old.Spec.Id);
+            _made.Remove(old);
+            MadeBuildings.Drop(old);
+            Logger?.Info("Made buildings: '" + old.Spec.Id + "' (knocked down) let go from the made buildings; its ground and its address are free to build on in play.");
+        }
+
         // One building: refused, stood down or made. Every way it does not stand is one log line with the reason.
-        private bool Make(MadeSpec spec)
+        // inPlay: made after the load, so the copies the mod itself stands (fillers, a site's look) are not in its way.
+        private bool Make(MadeSpec spec, bool inPlay = false)
         {
             string why = NewBuildingsRules.Refusal(spec, MadeGame.StructureTakes, MadeGame.DistrictKnown, MadeGame.HomesLeftOut());
             if (why == null && MadeGame.GameHas(spec.Street, spec.Number))
@@ -308,6 +360,7 @@ namespace RealLifeOverhaul.NewBuildings
             }
             if (why != null)
             {
+                _standWhy = why;
                 Logger?.Info("Made buildings: '" + (spec != null ? spec.Id : "(none)") + "' stands down: " + why + ".");
                 return false;
             }
@@ -339,7 +392,7 @@ namespace RealLifeOverhaul.NewBuildings
                     int pick = NewBuildingsRules.Pick(designs, size, type, spec.Design, each.Width, each.Depth, spec.Id, spec.Whole);
                     noDesign &= pick < 0;
                     string ground = pick < 0 ? "no design of size " + NewBuildingsRules.StructureName(size, 0).TrimEnd('0') + " that can be copied fits the lot"
-                        : CopyGame.GroundWhy(designs[pick], each, out root, out yaw, out door);
+                        : CopyGame.GroundWhy(designs[pick], each, out root, out yaw, out door, inPlay);
                     if (ground != null)
                     {
                         _why.Append(_why.Length > 0 ? "; " : string.Empty).Append("lot ").Append(k).Append(": ").Append(ground);
@@ -352,7 +405,8 @@ namespace RealLifeOverhaul.NewBuildings
             }
             if (lot < 0)
             {
-                Logger?.Info("Made buildings: '" + spec.Id + "' stands down: none of its " + spec.Lots.Length + " lot(s) is free now (" + _why + ").");
+                _standWhy = "none of its " + spec.Lots.Length + " lot(s) is free now (" + _why + ")";
+                Logger?.Info("Made buildings: '" + spec.Id + "' stands down: " + _standWhy + ".");
                 return false;
             }
             if (took >= 0)
@@ -368,12 +422,14 @@ namespace RealLifeOverhaul.NewBuildings
             Building record = MadeGame.MakeRecord(spec, spec.DesignArea ? CopyGame.SourceArea(design) : 0, registration, fresh, out why);
             if (record == null)
             {
+                _standWhy = why;
                 MadeGame.Forsake(registration, fresh);
                 Logger?.Info("Made buildings: '" + spec.Id + "' stands down: " + why + ".");
                 return false;
             }
             if (!MadeGame.Enter(record, registration, out why))
             {
+                _standWhy = why;
                 MadeGame.Forsake(registration, fresh);
                 Logger?.Warn("Made buildings: '" + spec.Id + "' stands down: " + why + ".");
                 return false;
@@ -382,9 +438,10 @@ namespace RealLifeOverhaul.NewBuildings
             CityBuildingController copy = CopyGame.MakeWorking(design, root, yaw, record, registration, "RealLife Made " + spec.Id);
             if (copy == null)
             {
+                _standWhy = "the game's building of the design " + chosen.Name + " is gone";
                 MadeGame.Leave(record);
                 MadeGame.Forsake(registration, fresh);
-                Logger?.Warn("Made buildings: '" + spec.Id + "' stands down: the game's building of the design " + chosen.Name + " is gone.");
+                Logger?.Warn("Made buildings: '" + spec.Id + "' stands down: " + _standWhy + ".");
                 return false;
             }
             NewBuildingsRules.Footprint(chosen, spec.Lots[lot], out float cx, out float cz, out float hw, out float hd);

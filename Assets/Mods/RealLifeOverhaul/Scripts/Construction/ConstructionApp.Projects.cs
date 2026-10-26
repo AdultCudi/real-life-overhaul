@@ -666,7 +666,7 @@ namespace RealLifeOverhaul.Construction
                 }
                 else
                 {
-                    box.Note(ConstructionText.T(p.InDistrict ? "reallife_bld_yours_next_load" : "reallife_bld_district_waits"));
+                    box.Note(ConstructionText.T(!p.InDistrict ? "reallife_bld_district_waits" : ConstructionDirector.LotBuilt(p.Lot) ? "reallife_bld_yours_now" : "reallife_bld_yours_next_load"));
                 }
             }
             else if (p.Kind == ProjectKind.Rebuild)
