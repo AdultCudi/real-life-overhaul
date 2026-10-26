@@ -519,6 +519,7 @@ internal static partial class Program
         HiddenPanels(); // in a Going Public session, which hides the game's activity panel and presses Start for the player, a desk's class or exam begins (HiddenPanelChecks.cs)
         ShiftOpen();    // every job's week inside its workplace's opening hours, a save's put right at load, a day shut at its start excused, the rota's shut clients (ShiftOpenChecks.cs)
         Ladder();       // the management ladder at a city company: the ranks' powers, the company seeded, every task decided by the rank that may, promotion with its tools, the save (LadderChecks.cs)
+        AgencyDesk();   // a seat at a recruitment office's desk always offers the jobs board (never the Basic HR course) or recruitment (the course first), the game's dialogue taken while the working life is on (AgencyDeskChecks.cs)
         OptionKeysFix(); // the options kept under the mod's own id for every copy: the older copies' values brought over once, the running copy's first, the sources, the texts (OptionKeysChecks.cs)
         HomeFixes();    // home life: the roommate's talk test with no character, the door to social life nobody read, rain and sleep in a hotel room (HomeFixChecks.cs)
         LifeFixes();    // life events: news of the player's home, building, neighbours and landlord only to a player with a home (LifeFixChecks.cs)

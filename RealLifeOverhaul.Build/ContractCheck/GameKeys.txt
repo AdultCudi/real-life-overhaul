@@ -281,6 +281,7 @@ common_travel
 common_tuesday
 common_unknown
 common_wednesday
+dialog_recruitment_agency_npc_name
 educationdoorcontroller_closed
 ferris_wheel
 filebrowser_delete
