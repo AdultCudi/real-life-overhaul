@@ -28,7 +28,7 @@ using UnityEngine;
 public static class AnimBundleBuilder
 {
     public const string BundleName = "reallife_anim";
-    public const string PropBundleName = "reallife_props";
+    private const string PropSets = "../../PropAssets/sets.json";     // the props bundles, from this project's folder
     public const string CatalogueAsset = "clips";
 
     private const string Generated = "Assets/Generated";
@@ -146,6 +146,18 @@ public static class AnimBundleBuilder
     public class PropCatalogue
     {
         public PropItem[] items;
+    }
+
+    [Serializable]
+    public class PropSetTable
+    {
+        public PropSet[] sets;
+    }
+
+    [Serializable]
+    public class PropSet
+    {
+        public string bundle;
     }
 
     [Serializable]
@@ -386,7 +398,7 @@ public static class AnimBundleBuilder
             EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             AssetBundle bundle = AssetBundle.LoadFromFile(file);
             Check(bundle != null, "AssetBundle.LoadFromFile failed for " + file);
-            AssetBundle props = null;
+            var props = new List<AssetBundle>();
             try
             {
                 var clips = new Dictionary<string, AnimationClip>();
@@ -418,15 +430,24 @@ public static class AnimBundleBuilder
                     }
                 }
 
-                // The tools, from the prop bundle, when it is there.
+                // The tools, from every props bundle that is there, each drawn on its own bundle's atlas.
                 var toolMeshes = new Dictionary<string, Mesh>();
-                Texture2D atlas = null;
-                string propFile = Path.Combine(outFolder, PropBundleName);
-                if (File.Exists(propFile) && (props = AssetBundle.LoadFromFile(propFile)) != null)
+                var atlases = new Dictionary<Mesh, Texture2D>();
+                string setsPath = Path.Combine(Directory.GetParent(Application.dataPath).FullName, PropSets);
+                PropSet[] propSets = File.Exists(setsPath) ? JsonUtility.FromJson<PropSetTable>(File.ReadAllText(setsPath)).sets : new PropSet[0];
+                foreach (PropSet set in propSets)
                 {
+                    string propFile = Path.Combine(outFolder, set.bundle);
+                    AssetBundle loaded = File.Exists(propFile) ? AssetBundle.LoadFromFile(propFile) : null;
+                    if (loaded == null)
+                    {
+                        continue;
+                    }
+                    props.Add(loaded);
                     var meshes = new Dictionary<string, Mesh>();
                     TextAsset propCatalogue = null;
-                    foreach (UnityEngine.Object asset in props.LoadAllAssets())
+                    Texture2D atlas = null;
+                    foreach (UnityEngine.Object asset in loaded.LoadAllAssets())
                     {
                         if (asset is Mesh mesh) { meshes[mesh.name] = mesh; }
                         else if (asset is Texture2D texture && texture.name == "props_base") { atlas = texture; }
@@ -436,7 +457,11 @@ public static class AnimBundleBuilder
                     {
                         foreach (PropItem item in JsonUtility.FromJson<PropCatalogue>(propCatalogue.text).items)
                         {
-                            if (meshes.TryGetValue(item.mesh, out Mesh mesh)) { toolMeshes[item.id] = mesh; }
+                            if (meshes.TryGetValue(item.mesh, out Mesh mesh) && !toolMeshes.ContainsKey(item.id))
+                            {
+                                toolMeshes[item.id] = mesh;
+                                atlases[mesh] = atlas;
+                            }
                         }
                     }
                 }
@@ -446,7 +471,7 @@ public static class AnimBundleBuilder
                 Debug.Log(Tag + "stand-in: the game's skeleton, " + animator.transform.GetComponentsInChildren<Transform>().Length + " transforms, human scale " + animator.humanScale.ToString("F3"));
 
                 bool draw = SystemInfo.graphicsDeviceType != UnityEngine.Rendering.GraphicsDeviceType.Null;
-                Stage stage = draw ? new Stage(animator, atlas) : null;
+                Stage stage = draw ? new Stage(animator, atlases) : null;
                 int failures = 0;
                 float seconds = 0f;
                 foreach (ShippedClip row in catalogue.clips)
@@ -471,9 +496,9 @@ public static class AnimBundleBuilder
             {
                 ActivityAnimators.ReleaseAll();
                 bundle.Unload(true);
-                if (props != null)
+                foreach (AssetBundle loaded in props)
                 {
-                    props.Unload(true);
+                    loaded.Unload(true);
                 }
             }
         });
@@ -682,9 +707,13 @@ public static class AnimBundleBuilder
         private readonly Material _grey, _right, _left, _skin, _tool;
         private readonly Mesh _cube, _sphere;
         private readonly Transform _root;
+        private readonly Shader _shader;
+        private readonly Dictionary<Mesh, Texture2D> _atlases;                       // each tool's own bundle's atlas
+        private readonly Dictionary<Texture2D, Material> _onAtlas = new Dictionary<Texture2D, Material>();
 
-        public Stage(Animator animator, Texture2D atlas)
+        public Stage(Animator animator, Dictionary<Mesh, Texture2D> atlases)
         {
+            _atlases = atlases;
             _root = animator.transform;
             _cube = Resources.GetBuiltinResource<Mesh>("Cube.fbx");
             _sphere = Resources.GetBuiltinResource<Mesh>("Sphere.fbx");
@@ -693,8 +722,8 @@ public static class AnimBundleBuilder
             _right = Colour(shader, new Color(0.90f, 0.42f, 0.10f));
             _left = Colour(shader, new Color(0.16f, 0.38f, 0.80f));
             _skin = Colour(shader, new Color(0.82f, 0.66f, 0.55f));
-            _tool = Colour(shader, atlas != null ? Color.white : new Color(0.75f, 0.70f, 0.20f));
-            _tool.mainTexture = atlas;
+            _shader = shader;
+            _tool = Colour(shader, new Color(0.75f, 0.70f, 0.20f));     // a tool with no atlas, or none modelled
 
             foreach (Transform bone in animator.GetComponentsInChildren<Transform>())
             {
@@ -786,7 +815,14 @@ public static class AnimBundleBuilder
                 return;
             }
             tool.AddComponent<MeshFilter>().sharedMesh = mesh;
-            tool.AddComponent<MeshRenderer>().sharedMaterial = _tool;
+            Material material = _tool;
+            if (_atlases.TryGetValue(mesh, out Texture2D atlas) && atlas != null && !_onAtlas.TryGetValue(atlas, out material))
+            {
+                material = Colour(_shader, Color.white);
+                material.mainTexture = atlas;
+                _onAtlas[atlas] = material;
+            }
+            tool.AddComponent<MeshRenderer>().sharedMaterial = material ?? _tool;
         }
 
         // Eight moments of the clip in one picture: front quarter above, side below, and under those the hand

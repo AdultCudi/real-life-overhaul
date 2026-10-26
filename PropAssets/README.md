@@ -1,14 +1,22 @@
 # Prop assets
 
-The street props the mod places itself (cordon, stretcher, police and paramedic equipment, accident and
-crime-scene dressing), modelled by script in Blender and shipped with the mod as one asset bundle. Parallel to
-`CharacterAssets\` and independent of it: own scripts, own Unity project, own bundle.
+The props the mod places itself (cordon, stretcher, police and paramedic equipment, accident and crime-scene
+dressing, and everything since), shipped with the mod as two asset bundles: the first modelled by script in Blender,
+the second modelled by hand in Blender and exported (see "The bundles"). Parallel to `CharacterAssets\` and
+independent of it: own scripts, own Unity project, own bundles.
 
 ```
-build.ps1                 everything, start to finish (see below)
-build_bundle.ps1          only the last step: build\ -> the asset bundle, and the check that it loads
+sets.json                 THE BUNDLES: one row each, with its source, its limits and whether it takes new props
+build.ps1                 everything, start to finish, every bundle (see below)
+build_bundle.ps1          only the last step: a build folder -> its asset bundle, the check that it loads, its contents list
+contents\<bundle>.json    what each shipped bundle holds (props, triangles, atlas, SHA-256), written with it (committed)
+models\<id>\              the second bundle's props: a Blender export each (see "Adding a prop from Blender")
 scripts\
-  atlas.py                paints the one texture atlas (surface finishes and lettered faces) and says where each region is
+  sets.py                 the bundle being built (PROPS_SET), its folders and limits, and the rules on its ids
+  models.py               reads the models of a bundle: lists their pictures for the atlas, and builds each as a prop
+  contents.py             writes contents\<bundle>.json once Unity has built the bundle
+  test_models.py          two made-up models (a .glb and an .fbx) for build.ps1 -Test, which ships nothing
+  atlas.py                paints a bundle's texture atlas (surface finishes, lettered faces, models' pictures) and says where each region is
   prop_kit.py             the modelling kit: box, lathe, tube, prism, loft, grid; atlas mapping; export; preview renders
   props.py                THE PROPS: one function each, and the list with triangle budgets
   city_props.py           the city-life props (tools, things carried, the coffee cart): same rules, listed by props.py
@@ -21,10 +29,10 @@ scripts\
   newer_props.py          ships props remade since the bundle was last built beside it (Bundles\props_newer), while Unity cannot build it
   check_life.py           measures the handles and heights that animation clips rely on; the build fails if one has moved
   overview.py             stacks preview sheets into one image
-UnityProject\             a bare 2022.3 project whose only job is to turn build\ into the bundle
+UnityProject\             a bare 2022.3 project whose only job is to turn a build folder into its bundle
 previews\                 a render of every prop, and of a whole scene (committed: look at them)
 CREDITS.md                source and licence of every asset
-_reference\ _tools\ build\     generated, git-ignored
+_reference\ _tools\ build\ build_*\     generated, git-ignored
 ```
 
 ## Run it
@@ -36,10 +44,14 @@ version). The game is not needed. Then:
 powershell -File PropAssets\build.ps1
 ```
 
-It installs Pillow into `_tools\pylib` (nothing system-wide), paints the atlas, builds every mesh into `build\`,
-renders `previews\`, builds `Assets\Mods\RealLifeOverhaul\Bundles\reallife_props` and loads it back as a check
-(about two minutes, most of it Unity). `-SkipPreviews` and `-SkipBundle` shorten it. The dotnet build of the mod
-copies `Bundles\` into the installed mod folder.
+It installs Pillow into `_tools\pylib` (nothing system-wide), then for each bundle of `sets.json` in turn paints its
+atlas, builds every mesh into its build folder (`build\`, `build_2\`), renders `previews\`, builds
+`Assets\Mods\RealLifeOverhaul\Bundles\<bundle>`, loads it back as a check and writes `contents\<bundle>.json`
+(about two minutes a bundle, most of it Unity). `-Set second` builds one bundle; `-SkipPreviews` and `-SkipBundle`
+shorten it. `-Test` makes two models in Blender, exports them as `.glb` and `.fbx` and takes them through the second
+bundle's whole path into `build_test\`, Unity's load check included; nothing in `Bundles\` changes. The dotnet build
+of the mod copies `Bundles\` into the installed mod folder. Commit each rebuilt bundle with its `contents\` list:
+StandardCheck holds the one to the other by SHA-256.
 
 **Look at the renders before committing.** `previews\<id>.png` shows the prop from the front and the back, then
 beside a 1.8 m bar banded every 0.3 m. `scene_cordon.png`, `scene_cordon_street.png` and the `scene_*.png` of `scenes.py` (a precinct frontage, a bus stop
@@ -49,11 +61,11 @@ occlusion, and nothing else: no Blender-only shading.
 
 ## How it is made
 
-- **One atlas, two materials.** Every prop is one mesh with one material slot. All of them share
-  `props_base` (4096 x 2048, colour) and `props_mask` (2048 x 1024, HDRP mask map: metallic, occlusion, -,
-  smoothness). **Both sides of both must be powers of two:** Unity silently keeps any other size uncompressed
+- **One atlas a bundle, two materials on each.** Every prop is one mesh with one material slot. All the props of a
+  bundle share its `props_base` (the first's 4096 x 2048, colour) and `props_mask` (2048 x 1024, HDRP mask map:
+  metallic, occlusion, -, smoothness). **Both sides of both must be powers of two:** Unity silently keeps any other size uncompressed
   (the 2048 x 1280 atlas shipped as RGBA32, 17.5 MB of video memory, not the 4.2 MB this file used to claim);
-  the bundle check now fails if a texture is not BC7. The mod makes two materials from the game's `HDRP/Lit` at run time, both instanced: `lit`, and
+  the bundle check now fails if a texture is not BC7. The mod makes two materials on each bundle's atlas from the game's `HDRP/Lit` at run time, both instanced: `lit`, and
   `glow` (the same, lighting itself faintly in its own colours) for what must read at night. No normal map: the
   shapes carry chamfers and area-weighted normals instead, which is what gives the edges their highlight.
 - **Swatches and decals.** A swatch is one surface finish whose patch gets dirtier towards the bottom; a part
@@ -64,7 +76,70 @@ occlusion, and nothing else: no Blender-only shading.
 - **No colliders, scripts or materials in the bundle**, meshes are not kept readable, textures are BC7 with
   mipmaps. `PropLibrary` does nothing per frame.
 
-## Budgets (kept by the build: it fails if a prop, or the total, goes over)
+## The bundles
+
+`sets.json` lists the props bundles, in the order the mod reads them. Each has its own source folder, its own build
+folder, its own atlas and its own limits; the build, the mod's `Core/PropLibrary` and StandardCheck (RLO-PERF-016) all
+read that one table.
+
+| bundle | source | takes new props | triangles | atlas | disk |
+|---|---|---|---|---|---|
+| `reallife_props` | the procedural modules (`scripts\props.py` and its modules) | **no**: closed, it keeps what it has | 130 000 | 4096 x 2048, fixed | 16 MB |
+| `reallife_props_2` | `models\<id>\`, one Blender export each | **yes** | 60 000 | grows by powers of two from 256 x 256 to 2048 x 2048 | 8 MB |
+
+**Which bundle a prop goes in.** A new prop goes in the second bundle (the last open row of `sets.json`). A prop of
+the first stays where it is; the build refuses a new id in a closed bundle. A prop's id is unique across the bundles:
+the build refuses an id another bundle's `contents\` list holds, the mod uses the earlier bundle's if two ever did,
+and StandardCheck fails on it. Callers never say which bundle: `PropLibrary.TryGet(id, ...)` looks in all of them.
+
+**What the second costs.** Its atlas is as small as its props allow, so it costs video memory only for what it
+holds (BC7, one byte a pixel, a third more for the mipmaps; the mask is half each way):
+
+| atlas | colour | mask | in all |
+|---|---|---|---|
+| none (no props: what ships until the first model) | 0 | 0 | 0 |
+| 512 x 512 | 0.33 MB | 0.08 MB | 0.4 MB |
+| 1024 x 1024 | 1.3 MB | 0.3 MB | 1.7 MB |
+| 2048 x 2048 (its limit) | 5.3 MB | 1.3 MB | 6.7 MB |
+
+A 256 px picture is enough for a hand-held prop and 512 for a large one, so the full atlas holds some thirty to sixty
+props; 6.7 MB beside the first bundle's 14.0 MB. Its 60 000 triangles are about 3.4 MB of meshes at most. A missing
+second bundle (an older install) costs nothing: the mod writes one warning and its props are drawn as their plain
+shapes, as for any prop it lacks.
+
+**Shipped.** The build copies all of `Bundles\` into the mod, the installer and the zip take the whole mod folder,
+and the Workshop upload takes the release's whole folder; `INSTALL.md`, `RealLifeOverhaul.Build\Workshop\UPLOAD.md`,
+the Workshop credits and `docs\reference\folder-map.md` name every bundle. StandardCheck holds all of it.
+
+## Adding a prop from Blender
+
+1. **Model it** in Blender, in metres at scale 1: X right, Y forward, Z up. **The prop's front looks along +Y** (in
+   Blender's Front view you see its back), and **the origin is its pivot**, at the world origin: for anything that
+   stands, the ground under the middle of its footprint. Apply the object's rotation and scale (Ctrl A) before
+   exporting. Unity gets (x, z, y) on the way out, so +Y forward becomes +Z, as for every prop.
+2. **One mesh, one painted material.** Bake everything painted into one picture (256 px a side for a hand-held prop,
+   512 for a large one, 1024 at most) on UVs that stay inside 0..1: the picture is drawn once into the atlas, never
+   tiled. Plain finishes need no picture: name the material `swatch_<name>` after a swatch of `scripts\atlas.py`
+   (`swatch_paper`, `swatch_cardboard`, `swatch_aluminium`, ...) and the faces get that finish with its grime towards
+   the bottom. Metallic and smoothness come from the material's own values, or from `<id>_mask.png` (R metallic,
+   G occlusion, A smoothness) beside the model.
+3. **Hard edges.** Mark sharp edges in Blender (or shade faces flat); edges sharper than 50 degrees are hard anyway
+   (`"sharp"` in the settings changes that). Normals are made by the kit from those, area weighted, as for the
+   procedural props: no normal map.
+4. **No LODs, no collision, no rig.** Export one mesh at the detail it needs at street distance: the budget is the
+   limit. Objects named `*_LOD1` and the like, or `UCX_`/`UBX_`/`UCP_`/`USP_` collision meshes, stop the build; a
+   caller that must be hit gives the prop a box from `PropLibrary.SizeOf(id)`. Props are static.
+5. **Export** to `models\<id>\<id>.glb` (glTF binary, the default settings, +Y Up on, with its picture packed in) or
+   `<id>.fbx` (the default settings, the picture beside it as `<id>.png`; the build reads either back in Blender, so the axes come out as they were made). The id is the folder's
+   name: lower case letters, digits and `_`, new to every bundle. Beside it, `<id>.json`:
+   `{"budget": 400, "material": "lit", "pivot": "ground centre", "note": "what it is and how the code holds it"}`
+   (`"glow"` for what must read at night).
+6. **Build**: `powershell -File PropAssets\build.ps1 -Set second`. Look at `previews\<id>.png`, then commit the model's
+   folder, `Bundles\reallife_props_2` and `contents\reallife_props_2.json` together. Add a row for it below, in a
+   section for the second bundle, and ask for it by id in code (`PropLibrary.TryGet`), with a plain shape for while it
+   is missing.
+
+## Budgets of the first bundle (kept by the build: it fails if a prop, or the total, goes over)
 
 | | limit | now |
 |---|---|---|
@@ -81,9 +156,8 @@ a fire engine, hotels, street events, home and social life, a garage and a build
 them vehicle bodies of 3 700 to 6 300 triangles. None of it is drawn unless a feature places it, a placed prop is one
 instanced draw call with one of two materials, and a scene shows a dozen at most: the totals are what sits in memory,
 not what is rendered. Memory is the real cost: about 7.3 MB of meshes and 14.0 MB of texture, where the game's own
-city uses gigabytes. The atlas doubled in width only (BC7 keeps it at one byte a pixel); `PropLibrary` reads exactly
-one bundle with one colour and one mask texture, so a second bundle or a second atlas would have needed code and a
-third material. If the atlas fills again, 4096 x 4096 is the next step (27 MB); nothing else changes.
+city uses gigabytes. The atlas doubled in width only (BC7 keeps it at one byte a pixel). It is closed now: new props
+go in the second bundle, with an atlas and two materials of its own ("The bundles").
 
 ### Working on one module
 
@@ -139,6 +213,7 @@ Vector3 size = PropLibrary.SizeOf("cone");  // bounds in metres, zero if unknown
 ```
 
 `PropLibrary.Load(context)` is called when the city loads and `Dispose()` when it unloads (`Core\RealLifeOverhaulMod.cs`).
+It reads every bundle of `sets.json` behind the loading screen, once a session; an id is looked up in all of them.
 The load takes a moment: a prop built in the first second of a city gets `false`. Either build props when they
 are first needed (the cordon and stretcher already do) or check `PropLibrary.Ready`.
 

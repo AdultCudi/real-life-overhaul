@@ -28,9 +28,10 @@ The upload is done from inside the game. Everything else is prepared here. What 
    | `RealLifeOverhaul.dll` | about 3.1 MB |
    | `thumbnail.jpg` | about 216 KB |
    | `Locales\en.json` | about 0.7 MB |
-   | `Bundles\reallife_anim` | 6,279,755 bytes |
+   | `Bundles\reallife_anim` | 6,294,571 bytes |
    | `Bundles\reallife_character` | 44,520,019 bytes |
-   | `Bundles\reallife_props` | 11,053,441 bytes |
+   | `Bundles\reallife_props` | 12,023,742 bytes |
+   | `Bundles\reallife_props_2` | 1,298 bytes (the second props bundle: no props in it yet, so no atlas) |
 
    The whole folder is uploaded as it stands (about 66 MB), so delete anything else you find in it. There must be exactly one `.dll` in the folder's root, and `thumbnail.jpg` must be the only picture there: the game takes the first `.jpg`, `.jpg` or `.jpeg` in the root that is within its size limit (1 MB) as the thumbnail, whatever it is called.
 4. Play once from this folder with a save you care about and one new game. The welcome panel should appear once, "Show test tools" and "Developer diagnostics" should be off, and `Player.log` should have one line "Real Life Overhaul 0.1.0 initialised." and otherwise only warnings, if any.
