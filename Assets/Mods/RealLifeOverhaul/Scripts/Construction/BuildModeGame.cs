@@ -360,7 +360,9 @@ namespace RealLifeOverhaul.Construction
         {
             vacant = false;
             who = null;
-            BuildingRegistration reg = string.IsNullOrEmpty(street) ? null : BuildingHelper.GetBuildingRegistration(new Address(street, number));
+            // Through HeldUnitsGame.Registration: the game's own lookup throws for an address with no building (a free lot)
+            // and makes a blank registration in the save for one it has not met.
+            BuildingRegistration reg = string.IsNullOrEmpty(street) ? null : HeldUnitsGame.Registration(new Address(street, number), out _);
             if (reg == null)
             {
                 return false;

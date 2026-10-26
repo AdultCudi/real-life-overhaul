@@ -625,9 +625,25 @@ namespace RealLifeOverhaul.Construction
 
         private void ReadFacts()
         {
+            // One lot the game cannot answer for must not keep the window shut: it is drawn as unknown and logged once.
+            Exception first = null;
+            int failed = 0;
             for (int c = 0; c < _facts.Length; c++)
             {
-                _facts[c] = _d.FactsOf(c);
+                try
+                {
+                    _facts[c] = _d.FactsOf(c);
+                }
+                catch (Exception e)
+                {
+                    _facts[c] = default;
+                    first = first ?? e;
+                    failed++;
+                }
+            }
+            if (first != null)
+            {
+                Logger?.Warn("Construction: build mode could not read " + failed + " column(s) of land; they are drawn as unknown. The first: " + first.GetType().Name + ": " + first.Message);
             }
             if (_view == BuildView.Value || _valuesRead)
             {
