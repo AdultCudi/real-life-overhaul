@@ -370,6 +370,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextHang.cs" Link="Mod\TextHang.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextJsonTree.cs" Link="Mod\TextJsonTree.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextProviders.cs" Link="Mod\TextProviders.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextPlayer2.cs" Link="Mod\TextPlayer2.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextServiceRules.cs" Link="Mod\TextServiceRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextWeb.cs" Link="Mod\TextWeb.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextKeys.cs" Link="Mod\TextKeys.cs" />

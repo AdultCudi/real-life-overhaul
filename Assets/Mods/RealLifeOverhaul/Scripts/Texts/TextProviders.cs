@@ -20,7 +20,8 @@ namespace RealLifeOverhaul.Texts
         Cerebras = 8,
         OpenCodeZen = 9,
         Ollama = 10,
-        LmStudio = 11
+        LmStudio = 11,
+        Player2 = 12       // the Player2 App on this PC signs the player in; the web API answers (see TextPlayer2)
     }
 
     /// <summary>How a service is spoken to.</summary>
@@ -36,13 +37,14 @@ namespace RealLifeOverhaul.Texts
     {
         Key,         // an API key the player types
         SignIn,      // the player signs in in the browser (ChatGPT)
-        Local        // a program on this PC, on 127.0.0.1: nothing to type
+        Local,       // a program on this PC, on 127.0.0.1: nothing to type
+        App          // the player's own app on this PC signs the player in and hands out a key for a web API (Player2): held in memory, never kept
     }
 
     /// <summary>What forgetting lets go of for a service.</summary>
     public enum TextForget
     {
-        Nothing,     // Off, or a program on this PC: no key, no sign-in
+        Nothing,     // Off, a program on this PC, or the Player2 App: no key, no sign-in kept
         Key,         // the key the player typed for that service
         SignOut      // the ChatGPT sign-in
     }
@@ -61,6 +63,8 @@ namespace RealLifeOverhaul.Texts
         public string Reasoning;         // a low reasoning effort sent to the models that think first; null for none
         public string ReasoningFor;      // ...only to models whose name holds this; null for every model
         public bool Titled;              // the service is told the app's name in its own header (OpenRouter's X-Title)
+        public bool NoModel;             // the request names no model: the service chooses (Player2's chat request has no model field)
+        public bool Heartbeat;           // the service asks for its health call about once a minute while it is used (Player2)
     }
 
     /// <summary>The table of services as each one's documentation gives them; each default model a free or the cheapest fast one. Game-free.</summary>
@@ -117,7 +121,13 @@ namespace RealLifeOverhaul.Texts
                 Model = "deepseek-v4.1-flash"   // Zen's free models answer only OpenCode itself ("FreeTierError")
             },
             new TextProviderInfo { Id = TextProvider.Ollama, Name = "Ollama", Api = TextApi.Chat, Access = TextAccess.Local, Base = "http://127.0.0.1:11434/v1", Model = null },
-            new TextProviderInfo { Id = TextProvider.LmStudio, Name = "LM Studio", Api = TextApi.Chat, Access = TextAccess.Local, Base = "http://127.0.0.1:1234/v1", Model = null }
+            new TextProviderInfo { Id = TextProvider.LmStudio, Name = "LM Studio", Api = TextApi.Chat, Access = TextAccess.Local, Base = "http://127.0.0.1:1234/v1", Model = null },
+            new TextProviderInfo
+            {
+                Id = TextProvider.Player2, Name = "Player2", Api = TextApi.Chat, Access = TextAccess.App, Base = "https://api.player2.game/v1",
+                Model = "player2",   // only a name for the log and the status: the request names none
+                NoModel = true, Heartbeat = true
+            }
         };
 
         /// <summary>What "Forget the key or sign out" lets go of for the chosen service: its key, the ChatGPT sign-in, or nothing (Off and the programs on this PC keep neither).</summary>
@@ -143,7 +153,7 @@ namespace RealLifeOverhaul.Texts
         {
             "reallife_textsai_provider_0", "reallife_textsai_provider_1", "reallife_textsai_provider_2", "reallife_textsai_provider_3", "reallife_textsai_provider_4",
             "reallife_textsai_provider_5", "reallife_textsai_provider_6", "reallife_textsai_provider_7", "reallife_textsai_provider_8", "reallife_textsai_provider_9",
-            "reallife_textsai_provider_10", "reallife_textsai_provider_11"
+            "reallife_textsai_provider_10", "reallife_textsai_provider_11", "reallife_textsai_provider_12"
         };
 
         /// <summary>A copy of the options page's key for each entry, in order.</summary>

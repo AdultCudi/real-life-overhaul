@@ -126,9 +126,14 @@ namespace RealLifeOverhaul.Texts
                     break;
                 default:
                     r.Url = baseUrl + "/chat/completions";
-                    t.Append("{\"model\":");
-                    TextJson.Quote(model, t);
-                    t.Append(",\"messages\":[{\"role\":\"system\",\"content\":");
+                    t.Append('{');
+                    if (!p.NoModel)
+                    {
+                        t.Append("\"model\":");
+                        TextJson.Quote(model, t);
+                        t.Append(',');
+                    }
+                    t.Append("\"messages\":[{\"role\":\"system\",\"content\":");
                     TextJson.Quote(system, t);
                     t.Append("},{\"role\":\"user\",\"content\":");
                     TextJson.Quote(card, t);
@@ -174,8 +179,11 @@ namespace RealLifeOverhaul.Texts
             return r;
         }
 
-        /// <summary>The words of an answer by the service's API, or the fault.</summary>
-        public static TextServiceResult Read(TextApi api, TextWebAnswer a)
+        /// <summary>
+        /// The words of an answer by the service's API, or the fault; <paramref name="credits"/> is true for a service that answers 402
+        /// when the player's allowance is used up (Player2's joules).
+        /// </summary>
+        public static TextServiceResult Read(TextApi api, TextWebAnswer a, bool credits = false)
         {
             if (a == null || a.Status == 0)
             {
@@ -183,7 +191,12 @@ namespace RealLifeOverhaul.Texts
             }
             if (a.Status < 200 || a.Status > 299)
             {
-                return Refused(a);
+                TextServiceResult refused = Refused(a);
+                if (credits && a.Status == 402)
+                {
+                    refused.Fault = TextFault.UsageLimit;   // insufficient credits: rest long, tell the player once
+                }
+                return refused;
             }
             string words;
             string why;

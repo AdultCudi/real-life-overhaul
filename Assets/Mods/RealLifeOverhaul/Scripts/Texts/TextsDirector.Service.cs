@@ -16,6 +16,7 @@ namespace RealLifeOverhaul.Texts
         private const int KeyMost = 400;      // characters a key may be; the longest services' keys are about 170
         private const int ModelMost = 120;    // characters of a model's name
         private const int AddressMost = 200;  // characters of a local program's address
+        private const int ClientIdMost = 200; // characters of a Player2 game client id
         private const string ConfigFile = "service.txt";   // the models and addresses the player named, per service; nothing secret
 
         private static readonly ITextWeb Web = new TextWeb();
@@ -23,7 +24,7 @@ namespace RealLifeOverhaul.Texts
         private static TextKeys _keys;
         private static Dictionary<string, string> _config;
         private static int _serviceIndex = -1, _serviceVersion = -1, _version, _toldIndex;
-        private static bool _limitTold;
+        private static bool _limitTold, _appTold;
         private static TextSignIn _signIn;
         private static Action<string> _keyTyped, _modelTyped, _addressTyped;
 
@@ -53,11 +54,13 @@ namespace RealLifeOverhaul.Texts
             var start = new TextServiceStart
             {
                 Provider = p, Base = TextProviders.Base(p, Config("base." + index)), Model = Config("model." + index),
-                Key = p.Access == TextAccess.Key ? Keys.Get(KeyName(index)) : null, Keys = p.Access == TextAccess.SignIn ? Keys : null
+                Key = p.Access == TextAccess.Key ? Keys.Get(KeyName(index)) : null, Keys = p.Access == TextAccess.SignIn ? Keys : null,
+                ClientId = p.Access == TextAccess.App ? ClientIdFor(index) : null
             };
             _service = new TextService(ServiceQueue, start, Web, Log);
             Hub.Service = _service;
             _limitTold = false;
+            _appTold = false;
             _service.Start();
             Logger?.Info("Your own AI: cards go to " + p.Name + " (" + (start.Model ?? p.Model ?? "its first listed model") + ")"
                          + (p.Access == TextAccess.Local ? " on this PC" : string.Empty) + "; the pack or the written lines when it fails, is late or rests.");
@@ -75,13 +78,43 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        // Tells the player once a session when the ChatGPT plan's allowance is used up.
+        // Tells the player once a session when the ChatGPT plan's allowance (or Player2's joules) is used up, and once when the Player2 App
+        // gives no sign-in.
         private static void Watch()
         {
-            if (_service != null && !_limitTold && _service.Fault == TextFault.UsageLimit)
+            TextService s = _service;
+            if (s == null)
+            {
+                return;
+            }
+            if (!_limitTold && s.Fault == TextFault.UsageLimit)
             {
                 _limitTold = true;
-                TextsGame.Notice("reallife_textsai_chatgpt_limit", null, 16f);
+                TextsGame.Notice(s.Provider.Access == TextAccess.App ? "reallife_textsai_p2_joules" : "reallife_textsai_chatgpt_limit", null, 16f);
+            }
+            if (!_appTold && s.Provider.Access == TextAccess.App && s.AppState != TextAppState.SignedIn)
+            {
+                _appTold = true;
+                TextsGame.Notice(AppStateKey(s.AppState), null, 16f);
+            }
+        }
+
+        // The game client id the Player2 App is asked with: the player's own line in service.txt while the mod has none built in; null for none.
+        private static string ClientIdFor(int index)
+        {
+            string own = Config("clientid." + index);
+            string id = own ?? (TextPlayer2.ClientId.Length > 0 ? TextPlayer2.ClientId : null);
+            return id != null && id.Length <= ClientIdMost ? id : null;
+        }
+
+        private static string AppStateKey(TextAppState state)
+        {
+            switch (state)
+            {
+                case TextAppState.NotRunning: return "reallife_textsai_p2_state_missing";
+                case TextAppState.NoClientId: return "reallife_textsai_p2_state_noid";
+                case TextAppState.NotSignedIn: return "reallife_textsai_p2_state_signin";
+                default: return "reallife_textsai_p2_state_ok";
             }
         }
 
@@ -167,6 +200,11 @@ namespace RealLifeOverhaul.Texts
                 TextsGame.Notice("reallife_textsai_key_local", new Dictionary<string, string>(1) { { "service", p.Name } });
                 return;
             }
+            if (p.Access == TextAccess.App)
+            {
+                TextsGame.Notice("reallife_textsai_p2_nokey", null, 16f);
+                return;
+            }
             _keyTyped = _keyTyped ?? Guard.Wrap<string>(KeyTyped);
             if (!TextsGame.AskSecret("reallife_textsai_key_placeholder", "reallife_textsai_key_keep", _keyTyped, KeyMost))
             {
@@ -198,6 +236,11 @@ namespace RealLifeOverhaul.Texts
         /// <summary>Continue with ChatGPT: opens OpenAI's sign-in in the browser; the answer comes back to this PC.</summary>
         public static void SignIn()
         {
+            if (Chosen.Access == TextAccess.App)
+            {
+                TextsGame.Notice("reallife_textsai_p2_signin", null, 16f);   // Player2 signs in in its own App
+                return;
+            }
             if (!TextKeys.Sealable())
             {
                 TextsGame.Notice("reallife_textsai_key_not_kept", null, 16f);
@@ -256,6 +299,11 @@ namespace RealLifeOverhaul.Texts
             if (p.Id == TextProvider.Off)
             {
                 TextsGame.Notice("reallife_textsai_choose_first", null);
+                return;
+            }
+            if (p.NoModel)
+            {
+                TextsGame.Notice("reallife_textsai_p2_nomodel", null, 12f);
                 return;
             }
             _modelTyped = _modelTyped ?? Guard.Wrap<string>(ModelTyped);
@@ -348,7 +396,7 @@ namespace RealLifeOverhaul.Texts
 
         public static void ManageUsage()
         {
-            TextsGame.OpenUrl(TextChatGpt.UsageUrl);
+            TextsGame.OpenUrl(Chosen.Access == TextAccess.App ? TextPlayer2.SiteUrl : TextChatGpt.UsageUrl);
         }
 
         /// <summary>Sends a friend's small talk to the chosen service only and shows it as a notice, or why not.</summary>
@@ -400,8 +448,20 @@ namespace RealLifeOverhaul.Texts
 
         public static void ShowServiceStatus()
         {
+            if (Chosen.Access == TextAccess.App)
+            {
+                AskPlayer2(false);   // Player2: the App is looked for first, on a worker; the notice comes at the next look
+                return;
+            }
+            var data = new Dictionary<string, string>(6);
+            TextsGame.Notice(ServiceStatus(data), data, 16f);
+        }
+
+        // The status notice's key and values for the chosen service, from its runner.
+        private static string ServiceStatus(Dictionary<string, string> data)
+        {
             TextProviderInfo p = Chosen;
-            var data = new Dictionary<string, string>(6) { { "service", p.Name } };
+            data["service"] = p.Name;
             string key;
             TextService s = _service;
             if (p.Id == TextProvider.Off || s == null)
@@ -425,12 +485,102 @@ namespace RealLifeOverhaul.Texts
             else
             {
                 key = "reallife_textsai_status_ready";
-                data["model"] = s.Model ?? "?";
+                data["model"] = p.NoModel ? TextsText.T("reallife_textsai_p2_model") : s.Model ?? "?";
                 data["words"] = Hub.ServiceShown.ToString(CultureInfo.InvariantCulture);
                 data["fell"] = Hub.ServiceFell.ToString(CultureInfo.InvariantCulture);
                 data["seconds"] = s.Written > 0 ? s.MeanSeconds.ToString("0.0") : "?";
             }
-            TextsGame.Notice(key, data, 16f);
+            return key;
+        }
+
+        // ----- Player2: the status look and the Test, each a few calls on a worker, told at the next look
+
+        private sealed class PlayerTwoTold
+        {
+            public TextAppState State;
+            public TextPlayer2Report Report;   // the Test's; null for the status look
+        }
+
+        private static volatile PlayerTwoTold _p2Told;
+        private static int _p2Busy;   // 1 while a Player2 call is under way
+
+        // Player2's status (the App found and signed in or not, then the runner's own state) or its Test (the App, the web API's health
+        // call and one short reply), asked on a worker thread; nothing waits on the game's thread.
+        private static void AskPlayer2(bool test)
+        {
+            if (Interlocked.CompareExchange(ref _p2Busy, 1, 0) != 0)
+            {
+                TextsGame.Notice("reallife_textsai_p2_busy", null, 8f);
+                return;
+            }
+            string id = ClientIdFor((int)TextProvider.Player2);
+            ThreadPool.QueueUserWorkItem(_ =>
+            {
+                try
+                {
+                    if (test)
+                    {
+                        TextPlayer2Report r = TextPlayer2.Run(Web, id);
+                        if (r.Pass)
+                        {
+                            Logger?.Info(r.Line);
+                        }
+                        else
+                        {
+                            Logger?.Warn(r.Line);
+                        }
+                        _p2Told = new PlayerTwoTold { State = r.App, Report = r };
+                    }
+                    else
+                    {
+                        _p2Told = new PlayerTwoTold { State = TextPlayer2.Probe(Web, id, out string key) };
+                    }
+                }
+                catch (Exception e)
+                {
+                    Logger?.Warn("Player2 " + (test ? "test FAIL" : "look failed") + ": " + e.GetType().Name + ".");
+                    _p2Told = new PlayerTwoTold { State = TextAppState.NotRunning, Report = test ? new TextPlayer2Report { Why = "the check could not run" } : null };
+                }
+                finally
+                {
+                    Interlocked.Exchange(ref _p2Busy, 0);
+                }
+            });
+        }
+
+        /// <summary>Options > Tests: Player2's App found and signed in, its web API pinged, and one short reply asked; PASS or FAIL in Player.log.</summary>
+        public static void TestPlayer2()
+        {
+            AskPlayer2(true);
+        }
+
+        // At each look: a Player2 look's or Test's end told once, on the game's thread.
+        private static void PlayerTwoLook()
+        {
+            PlayerTwoTold told = _p2Told;
+            if (told == null)
+            {
+                return;
+            }
+            _p2Told = null;
+            if (told.Report != null)
+            {
+                TextsGame.Notice(told.Report.Pass ? "reallife_textsai_p2_test_pass" : "reallife_textsai_p2_test_fail",
+                    new Dictionary<string, string>(2) { { "seconds", told.Report.Seconds.ToString("0.0") }, { "why", Short(told.Report.Why) } }, 16f);
+                return;
+            }
+            if (told.State != TextAppState.SignedIn)
+            {
+                TextsGame.Notice(AppStateKey(told.State), null, 16f);
+                return;
+            }
+            var data = new Dictionary<string, string>(6);
+            string line = TextsText.T(ServiceStatus(data));
+            foreach (KeyValuePair<string, string> kv in data)
+            {
+                line = line.Replace("{" + kv.Key + "}", kv.Value);
+            }
+            TextsGame.Notice("reallife_textsai_p2_status", new Dictionary<string, string>(2) { { "state", TextsText.T(AppStateKey(told.State)) }, { "line", line } }, 20f);
         }
 
         // The tests' sample card: a friend's good news, as the pack's test asks it.

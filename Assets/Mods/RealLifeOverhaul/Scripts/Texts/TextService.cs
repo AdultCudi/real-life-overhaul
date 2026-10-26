@@ -19,6 +19,7 @@ namespace RealLifeOverhaul.Texts
         public string Model;              // the model named by the player; null for the provider's own, or the first listed
         public string Key;                // an API key; null for a sign-in or a program on this PC
         public TextKeys Keys;             // where the ChatGPT sign-in's tokens are kept
+        public string ClientId;           // the game client id the Player2 App is asked a key with; null for every other service
         public string Auth = TextProviders.ChatGptAuth;   // the sign-in's address; the checks point it at a pretend one
         public int Workers = TextService.Workers;
     }
@@ -50,6 +51,10 @@ namespace RealLifeOverhaul.Texts
         private int _inRow, _written, _missed;
         private int _closedLogged;   // 1 once the closing line is written: the workers share it
         private double _took;
+        private readonly object _appLock = new object();   // one worker asks the Player2 App for the key at a time
+        private string _appKey;                            // Player2's key for this player: in memory only, never kept, shown or logged
+        private double _beatAt;                            // the clock time the next health call is due
+        private volatile TextAppState _appState = TextAppState.SignedIn;
 
         public TextService(TextQueue queue, TextServiceStart start, ITextWeb web, Action<string> log)
         {
@@ -89,6 +94,9 @@ namespace RealLifeOverhaul.Texts
 
         public TextProviderInfo Provider => _start.Provider;
 
+        /// <summary>For the Player2 App: why it gives no key now (not running, nobody signed in); SignedIn otherwise.</summary>
+        public TextAppState AppState => _appState;
+
         /// <summary>Replies that came back with words, and the mean seconds each took.</summary>
         public int Written => _written;
         public int Missed => _missed;
@@ -115,6 +123,11 @@ namespace RealLifeOverhaul.Texts
             if (p.Access == TextAccess.SignIn && (_start.Keys == null || !TextSignIn.SignedIn(_start.Keys)))
             {
                 Stop(TextFault.Key, "not signed in to ChatGPT");
+                return;
+            }
+            if (p.Access == TextAccess.App && string.IsNullOrEmpty(_start.ClientId))
+            {
+                Stop(TextFault.Key, TextPlayer2.Why(TextAppState.NoClientId));
                 return;
             }
             if (string.IsNullOrEmpty(_start.Base))
@@ -296,8 +309,17 @@ namespace RealLifeOverhaul.Texts
                 request.Lines = read.Feed;
             }
             TextWebAnswer answer = _web.Send(request, (int)(Math.Max(0.05, TextServiceRules.Limit(job.Deadline, TextClock.Now)) * 1000.0));
-            TextServiceResult result = TextServiceRules.Read(_start.Provider.Api, answer);
+            bool app = _start.Provider.Access == TextAccess.App;
+            TextServiceResult result = TextServiceRules.Read(_start.Provider.Api, answer, app);
             double took = TextClock.Now - begun;
+            if (app && result.Fault == TextFault.Key)
+            {
+                result.Fault = TextFault.Network;   // the key lapsed or was withdrawn: the App is asked for it again after a rest, not a stop
+                lock (_appLock)
+                {
+                    _appKey = null;
+                }
+            }
             if (result.Fault == TextFault.None)
             {
                 Interlocked.Increment(ref _written);
@@ -308,6 +330,7 @@ namespace RealLifeOverhaul.Texts
                     _lastFault = TextFault.None;
                 }
                 _queue.Done(job, result.Words, took, null);
+                Beat(secret);
                 return;
             }
             Interlocked.Increment(ref _missed);
@@ -329,7 +352,62 @@ namespace RealLifeOverhaul.Texts
             {
                 case TextAccess.Key: return _start.Key;
                 case TextAccess.SignIn: return TextSignIn.Access(_web, _start.Keys, _start.Auth, out fault, out why);
+                case TextAccess.App: return AppKey(out fault, out why);
                 default: return null;
+            }
+        }
+
+        // Player2: the key the App holds for the signed-in player, asked on this PC when there is none yet or the last was refused, and kept
+        // in memory only. Nothing running, or nobody signed in, is a rest like a lost connection, not a stop: the App may be started later.
+        private string AppKey(out TextFault fault, out string why)
+        {
+            fault = TextFault.None;
+            why = null;
+            lock (_appLock)
+            {
+                if (_appKey != null)
+                {
+                    return _appKey;
+                }
+                TextWebAnswer a = _web.Send(TextPlayer2.Login(_start.ClientId), TextPlayer2.AppMs);
+                TextAppState state = TextPlayer2.State(a, _start.ClientId);
+                _appState = state;
+                if (state != TextAppState.SignedIn)
+                {
+                    fault = TextFault.Network;
+                    why = TextPlayer2.Why(state);
+                    return null;
+                }
+                _appKey = TextPlayer2.Key(a);
+                Log("Your own AI: the Player2 App signed in; its key is held in memory only.");
+                return _appKey;
+            }
+        }
+
+        // Player2 asks for its health call about once a minute while it is used, so the usage is counted for the game; sent after a
+        // reply is handed over, so it never delays words, and its answer matters only when it says the key is refused.
+        private void Beat(string key)
+        {
+            if (!_start.Provider.Heartbeat || key == null)
+            {
+                return;
+            }
+            double now = TextClock.Now;
+            lock (_lock)
+            {
+                if (now < _beatAt)
+                {
+                    return;
+                }
+                _beatAt = now + TextPlayer2.BeatSeconds;
+            }
+            TextWebAnswer a = _web.Send(TextPlayer2.Health(key), TextPlayer2.PingMs);
+            if (a != null && a.Status == 401)
+            {
+                lock (_appLock)
+                {
+                    _appKey = null;   // asked for again with the next request
+                }
             }
         }
 
@@ -404,7 +482,7 @@ namespace RealLifeOverhaul.Texts
         private string Clean(string line)
         {
             string[] tokens = _start.Keys != null ? _start.Keys.Secrets() : null;
-            string clean = TextServiceRules.Clean(line, _start.Key);
+            string clean = TextServiceRules.Clean(line, _start.Key, _start.ClientId, _appKey);
             return tokens != null ? TextServiceRules.Clean(clean, tokens) : clean;
         }
 
