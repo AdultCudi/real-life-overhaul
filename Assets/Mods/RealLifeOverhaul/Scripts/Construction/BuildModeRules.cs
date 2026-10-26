@@ -118,7 +118,8 @@ namespace RealLifeOverhaul.Construction
         public const int LineYours = 29;     // the player's land and buildings: their colour
         public const int LineWaits = 30;     // a use asked of the council
         public const int LinePicked = 31;
-        public const int PaletteSize = 32;
+        public const int Rival = 32;         // a rival's building in the city's own districts (build mode's plots, BuildModeCityRules): a fill after the lines
+        public const int PaletteSize = 33;
 
         /// <summary>
         /// The palette (red, green, blue, alpha, 0 to 255). The four uses, for sale and the player's colour are the game's own
@@ -158,7 +159,8 @@ namespace RealLifeOverhaul.Construction
             new byte[] { 235, 60, 60, 255 },    // demolished: red
             new byte[] { 178, 128, 255, 255 },  // yours
             new byte[] { 240, 190, 90, 255 },   // waits on the council
-            new byte[] { 255, 255, 255, 255 }   // picked
+            new byte[] { 255, 255, 255, 255 },  // picked
+            new byte[] { 225, 75, 95, 170 }     // a rival's building
         };
 
         /// <summary>Colours the mixed zoning may take: the first far from every colour the game gives its types and the player.</summary>

@@ -113,7 +113,15 @@ namespace RealLifeOverhaul.Construction
             int i = (int)step;
             UiClone.Words(_count, ConstructionText.Fill("reallife_bld_tour_count", "number", ConstructionText.N(i + 1), "count", ConstructionText.N(BuildModeHintRules.TourTitles.Length)));
             UiClone.Key(_title, BuildModeHintRules.TourTitles[i]);
-            UiClone.Key(_body, BuildModeHintRules.TourBodies[i]);
+            string more = BuildModeHintRules.TourMore[i];
+            if (more == null)
+            {
+                UiClone.Key(_body, BuildModeHintRules.TourBodies[i]);
+            }
+            else
+            {
+                UiClone.Words(_body, ConstructionText.T(BuildModeHintRules.TourBodies[i]) + " " + ConstructionText.T(more));   // the tools' step: and the rest of the city is built up
+            }
             UiClone.Key(_next.Label, step == TourStep.Demand ? "reallife_bld_tour_done" : "reallife_bld_tour_next");
             for (int d = 0; d < _dots.Length; d++)
             {

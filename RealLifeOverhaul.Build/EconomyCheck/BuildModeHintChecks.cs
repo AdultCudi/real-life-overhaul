@@ -17,6 +17,7 @@ internal static partial class Program
         BuildModeBarSourceChecks();
         BuildModeHintTextChecks();
         BuildModePolishChecks();
+        BuildModeCityChecks();   // build mode over the whole city: the plots, the tools by district, the pointer (BuildModeCityChecks.cs)
         BuildModePolishTextChecks();
     }
 
@@ -61,8 +62,8 @@ internal static partial class Program
             "build mode interface: no canvas of its own, no input read, nothing a frame of its own");
         Check(bar.Contains("ContentSizeFitter") && sheet.Contains("ContentSizeFitter") && !sheet.Contains("ScrollRect") && !Regex.IsMatch(parts, @"TextOverflowModes\.(Ellipsis|Truncate)")
               && kit.Contains("t.overflowMode = TextOverflowModes.Overflow;"), "build mode interface: the tool panel as tall as what it says (no scroll), texts never cut short by an ellipsis");
-        Check(window.Contains("BuildModeHintRules.Hint(f)") && window.Contains("BuildModeHintRules.ToolWhy((BuildTool)t, _holdings, _state.ViewOnly)")
-              && MethodText(window, "private void ToolPicked(int tool)").Contains("BuildModeHintRules.ToolWhy((BuildTool)tool, _holdings, _state.ViewOnly) != null"),
+        Check(window.Contains("BuildModeHintRules.Hint(f)") && window.Contains("BuildModeCityRules.ToolWhyAt((BuildTool)t, _holdings, _state.ViewOnly, _inUptown)")
+              && MethodText(window, "private void ToolPicked(int tool)").Contains("BuildModeCityRules.ToolWhyAt((BuildTool)tool, _holdings, _state.ViewOnly, _inUptown) != null"),
             "build mode interface: the hint bar and the greyed tools from the game-free rules; a greyed tool cannot be chosen");
         string update = MethodText(mode, "private void OnUpdate()");
         Check(update.Contains("_tour.Skip();") && update.Contains("CatalogueBack();") && update.IndexOf("_tour.Skip();", StringComparison.Ordinal) < update.IndexOf("CatalogueBack();", StringComparison.Ordinal)

@@ -48,6 +48,7 @@ namespace RealLifeOverhaul.Construction
         public Vector3 At;
         public int Contractor;
         public bool Known;      // the site is in the programme
+        public bool Mine;       // the refit the player ordered for their own shop
     }
 
     /// <summary>One of the district's buildings standing at this load, as redevelopment reads it (the new district's own buildings).</summary>
@@ -220,6 +221,9 @@ namespace RealLifeOverhaul.Construction
 
         /// <summary>What a site of the programme is now. Default: not known.</summary>
         public static Func<int, SiteFacts> Site;
+
+        /// <summary>Every site of the programme now, into the caller's list (cleared): build mode's plots under construction. Default: none.</summary>
+        public static Action<List<SiteFacts>> AllSites;
 
         /// <summary>A site's contractor set (a rival who won its tender). Default: nothing.</summary>
         public static Action<int, int> SetContractor;
@@ -475,6 +479,7 @@ namespace RealLifeOverhaul.Construction
             StartPlot = null;
             StartWorks = null;
             Site = null;
+            AllSites = null;
             SetContractor = null;
             SiteDone = null;
             FinishSite = null;

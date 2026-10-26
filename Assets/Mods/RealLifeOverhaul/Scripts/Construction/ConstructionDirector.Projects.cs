@@ -208,22 +208,10 @@ namespace RealLifeOverhaul.Construction
         /// <summary>An old building the player owns, rebuilt behind the game's scaffolding to a new look. Returns its id, or 0 with why not.</summary>
         public int NewRebuild(string street, int number, out string why)
         {
-            why = null;
-            if (!ConstructionGame.Owns(street, number) || !ConstructionGame.Building(street, number, out BuildingView b))
+            why = RebuildBlock(street, number);
+            if (why != null || !ConstructionGame.Building(street, number, out BuildingView b) || !Room(out why))
             {
-                why = "reallife_bld_answer_not_yours";
-                return 0;
-            }
-            for (int i = 0; i < _state.Projects.Count; i++)
-            {
-                if (_state.Projects[i].Live && _state.Projects[i].Street == street && _state.Projects[i].Number == number)
-                {
-                    why = "reallife_bld_answer_building_busy";
-                    return 0;
-                }
-            }
-            if (!Room(out why))
-            {
+                why = why ?? "reallife_bld_answer_not_yours";
                 return 0;
             }
             int use = BuildCatalogue.UseOf(b.Type);
@@ -237,6 +225,26 @@ namespace RealLifeOverhaul.Construction
             Logger?.Info("Construction: project " + p.Id + " made to rebuild " + street + " " + number + " (" + b.Type + ", " + b.TotalSqm + " m2).");
             Changed();
             return p.Id;
+        }
+
+        /// <summary>
+        /// Why a rebuild of a building cannot be planned now, as a text key, or null when it can: the player's own (the game's
+        /// deed), with no project of theirs on it. The check NewRebuild makes, asked by build mode's tool panel before the press.
+        /// </summary>
+        public string RebuildBlock(string street, int number)
+        {
+            if (!ConstructionGame.Owns(street, number) || !ConstructionGame.Building(street, number, out _))
+            {
+                return "reallife_bld_answer_not_yours";
+            }
+            for (int i = 0; i < _state.Projects.Count; i++)
+            {
+                if (_state.Projects[i].Live && _state.Projects[i].Street == street && _state.Projects[i].Number == number)
+                {
+                    return "reallife_bld_answer_building_busy";
+                }
+            }
+            return null;
         }
 
         private bool Room(out string why)

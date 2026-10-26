@@ -785,6 +785,55 @@ namespace RealLifeOverhaul.Construction
             return ConstructionGame.Unit(street, number, out UnitView u) ? QuoteFor(u).Price : 0L;
         }
 
+        // ------------------------------------------------------------------ the city's own districts (build mode's plots)
+
+        private readonly List<SiteFacts> _works = new List<SiteFacts>(64);
+
+        /// <summary>Uptown's lots' addresses (street + '#' + number) into the caller's set (cleared): left to its squares, never plots.</summary>
+        public void UptownAddresses(HashSet<string> into)
+        {
+            into.Clear();
+            IReadOnlyList<LotView> lots = Lots;
+            for (int i = 0; i < lots.Count; i++)
+            {
+                if (!string.IsNullOrEmpty(lots[i].Street))
+                {
+                    into.Add(lots[i].Street + "#" + lots[i].Number.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                }
+            }
+        }
+
+        /// <summary>
+        /// The works under way at the city's buildings (street + '#' + number to the share done, 0 to 100, and whether the player's)
+        /// into the caller's maps (cleared): every site of the city's programme at a building (the player's rebuilds and refits, the
+        /// works a rival builder won, the city's own), so the plots show the NPCs' works as the player's. Once at an opening.
+        /// </summary>
+        public void CityWorks(Dictionary<string, int> share, HashSet<string> mine)
+        {
+            share.Clear();
+            mine.Clear();
+            Action<List<SiteFacts>> all = ConstructionBridges.AllSites;
+            if (all == null)
+            {
+                return;
+            }
+            all(_works);
+            for (int i = 0; i < _works.Count; i++)
+            {
+                SiteFacts f = _works[i];
+                if (!f.Known || string.IsNullOrEmpty(f.Street) || f.Number <= 0)
+                {
+                    continue;
+                }
+                string key = f.Street + "#" + f.Number.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                share[key] = f.Hours <= 0f ? 100 : (int)Math.Max(0f, Math.Min(100f, f.Done * 100f / f.Hours));
+                if (f.Mine || (_state != null && _state.OnSite(f.Id) != null))
+                {
+                    mine.Add(key);
+                }
+            }
+        }
+
         // ------------------------------------------------------------------ opening
 
         /// <summary>Build mode opened over Uptown from the Construction app (the city map, time paused). Returns why not as a text key, or null.</summary>

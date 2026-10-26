@@ -20,7 +20,7 @@ namespace RealLifeOverhaul.Construction
     /// draws, coloured from a palette texture) and the ghost's tint. Nothing here runs a frame of its own: BuildMode asks while
     /// it is open.
     /// </summary>
-    internal static class BuildModeGame
+    internal static partial class BuildModeGame
     {
         public static IModLogger Logger;
 

@@ -228,6 +228,9 @@ namespace RealLifeOverhaul.Construction
             BuildModeGame.CloseMenu();
             _valuesRead = false;
             ReadFacts();
+            UptownRect(grid);
+            _inUptown = true;   // it opens over Uptown; the map's middle is looked at with the pointer from then on
+            MakePlots();
             _holdings = BuildModeHintRules.Holdings(_facts, _facts.Length);
             _state = BuildModeRules.Next(_state, BuildInput.Tool, BuildModeHintRules.FirstTool(_holdings, _state.ViewOnly), false);   // the next step not done yet
             _view = BuildModeRules.ViewFor(_state.Tool);
@@ -240,9 +243,11 @@ namespace RealLifeOverhaul.Construction
             BuildModeGame.LockTime(true);
             BuildModeGame.HideFootLabels(true);   // the game's FPS, address and neighbourhood lines drew over the toolbar
             BuildModeGame.Show(_layer, true);
+            BuildModeGame.ShowPlots(_plots, true);
             _bar.Show(true);
             Write(true);
             Colour();
+            ColourPlots();
             enabled = true;
             if (BuildModeHintRules.TourWanted(BuildModeTour.Seen, _state.ViewOnly))
             {
@@ -286,11 +291,15 @@ namespace RealLifeOverhaul.Construction
             BuildModeGame.HideFootLabels(false);
             BuildModeGame.Show(_layer, false);
             BuildModeGame.HideHover();
+            BuildModeGame.Pointer(BuildCursor.Normal);   // the game's own pointer back, on every way out
             _tour?.Hide();
             _catalogue?.Show(false);
             _bar?.Show(false);
             DropGhost();
             ClearPick();
+            DropPlots();   // the plots are read again at the next opening
+            _inUptown = true;
+            _pressOff = false;
             enabled = false;
             Vector3 now = ConstructionGame.Player;
             float moved = Vector3.Distance(now, _playerAt);
@@ -349,6 +358,13 @@ namespace RealLifeOverhaul.Construction
                 Leave("the map shut");
                 return;
             }
+            float now = Time.unscaledTime;
+            CursorTick(now);
+            if (_cardPlot >= 0)
+            {
+                BuildModeGame.PutCardAway(_plots, _cardPlot);   // the game's card opened on the click build mode took: its tool panel is the plot's
+                _cardPlot = -1;
+            }
             if (_state.Step == BuildStep.Confirming)
             {
                 return;
@@ -357,6 +373,7 @@ namespace RealLifeOverhaul.Construction
             {
                 BuildModeGame.HideHover();   // the pointer went onto the interface: the parts' own tooltips are the game's there
                 _hoverColumn = _hoverRow = -1;
+                _hoverPlot = -1;
             }
             bool tour = _tour != null && _tour.Running;
             bool window = CatalogueShown;
@@ -381,7 +398,6 @@ namespace RealLifeOverhaul.Construction
             {
                 return;   // the tour's tips and the design window hold the map
             }
-            float now = Time.unscaledTime;
             if (!_down && now >= _nextHover)
             {
                 _nextHover = now + HoverEvery;
@@ -403,6 +419,11 @@ namespace RealLifeOverhaul.Construction
             if (!_down && BuildModeGame.Pressed && !BuildModeGame.OverInterface && BuildModeGame.Pointed(out Vector3 point))
             {
                 CellAt cell = _d.Cells.At(point.x, point.z);
+                if (cell.None)
+                {
+                    PressOff();   // off Uptown's squares: a click picks the city's building under the pointer, a drag pans the map
+                    return;
+                }
                 _state = BuildModeRules.Next(_state, BuildInput.Press, _state.Tool, !cell.None);
                 if (!cell.None)
                 {
@@ -423,6 +444,10 @@ namespace RealLifeOverhaul.Construction
                     Changed(false);
                 }
                 return;
+            }
+            if (_pressOff && (BuildModeGame.Released || !BuildModeGame.Held))
+            {
+                ReleaseOff();
             }
             if (!_down)
             {
@@ -463,7 +488,7 @@ namespace RealLifeOverhaul.Construction
             }
         }
 
-        private bool HasPicks => _picked.Count > 0;
+        private bool HasPicks => _picked.Count > 0 || _plot >= 0;
 
         private bool Picks(CellAt cell) => !cell.None && cell.Column < _depth.Length && _depth[cell.Column] >= cell.Row;
 
@@ -603,15 +628,21 @@ namespace RealLifeOverhaul.Construction
         // The square under the pointer said in the game's own tooltip beside it: who holds it, its zoning, its price or its zone.
         private void Hover()
         {
+            Where();
             if (BuildModeGame.OverInterface || !BuildModeGame.Pointed(out Vector3 at))
             {
-                if (_hoverColumn >= 0)
+                if (_hoverColumn >= 0 || _hoverPlot >= 0)
                 {
                     _hoverColumn = _hoverRow = -1;
+                    _hoverPlot = -1;
                     _hoverWords = null;
                     BuildModeGame.HideHover();
                 }
                 return;
+            }
+            if (HoverPlot())
+            {
+                return;   // a building of the city's: its card in the game's tooltip
             }
             CellAt cell = _d.Cells.At(at.x, at.z);
             if (cell.Column == _hoverColumn && cell.Row == _hoverRow)
@@ -697,6 +728,11 @@ namespace RealLifeOverhaul.Construction
 
         private void ClearPick()
         {
+            if (_plot >= 0)
+            {
+                _plot = -1;
+                ColourPlots();
+            }
             _picked.Clear();
             for (int c = 0; c < _depth.Length; c++)
             {
@@ -837,7 +873,7 @@ namespace RealLifeOverhaul.Construction
         {
             for (int t = 0; t < (int)BuildTool.Count; t++)
             {
-                string why = BuildModeHintRules.ToolWhy((BuildTool)t, holdings, _state.ViewOnly);
+                string why = BuildModeCityRules.ToolWhyAt((BuildTool)t, holdings, _state.ViewOnly, _inUptown);
                 _toolNames[t] = T(BuildModeHintRules.ToolKeys[t]);
                 _toolLines[t] = T(BuildModeHintRules.ToolTips[t]);
                 _toolWhy[t] = why != null ? T(why) : null;
