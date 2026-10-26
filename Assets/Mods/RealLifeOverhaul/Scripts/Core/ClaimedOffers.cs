@@ -5,6 +5,7 @@ using Localizor;
 using Localizor.LanguageChangeEvent;
 using Streets;
 using UI;
+using UI.Smartphone.Apps.BizMan.StartBusiness;
 using UI.Smartphone.Apps.MarketInsider;
 using UnityEngine;
 
@@ -85,9 +86,12 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// On BizMan's presentation of a building: a building the mod has taken shows no offer to rent, buy or take over, and
-    /// says whose it is. The game's own boxes are kept hidden while it shows (the game shows them again from its own
-    /// buttons). COST: runs only while the page is open; two comparisons a frame, eight active flags while refused.
+    /// On BizMan's presentation of a building: a building the mod has taken shows no offer to rent, buy or take over and no
+    /// form to start a business, and says whose it is: the owner line by the feature's own facts (<see cref="SpecialFacts"/>:
+    /// the game's "Building owned by" words with the owner's name, never "Undefined"), the line the feature gives in the place
+    /// of "Taken by", and the kind of building as the card says it. The game's own boxes are kept hidden while it shows (the
+    /// game shows them again from its own buttons). COST: runs only while the page is open; two comparisons a frame, nine
+    /// active flags while refused.
     /// </summary>
     internal sealed class ClaimedPresentation : MonoBehaviour
     {
@@ -97,7 +101,8 @@ namespace RealLifeOverhaul
 
         private BizManPresentation _page;
         private BizManBusiness _business;
-        private GameObject _rent, _forSale, _buy, _notForSale, _offer, _owner, _hamptons, _line;
+        private GameObject _rent, _forSale, _buy, _notForSale, _offer, _owner, _hamptons, _line, _start;
+        private TextLocalizationComponent _type;   // the line above the address: what kind of building it is (the game writes it from the building's type)
         private BuildingRegistration _shown;   // the building last looked at
         private int _stamp = -1;
         private string _taken;                 // whose it is, while refused
@@ -124,6 +129,14 @@ namespace RealLifeOverhaul
             {
                 return false;
             }
+            // The form to start a business and the kind-of-building line are optional: a page without them keeps the rest of the refusal.
+            StartBusinessUI form = page.GetComponentInChildren<StartBusinessUI>(true);
+            _start = form != null ? form.gameObject : null;
+            if (_start == null)
+            {
+                SpecialBuildings.Logger?.Info("Special buildings: the form to start a business is not on BizMan's presentation.");
+            }
+            _type = TypeLabel(root);
             // The game's own "not for sale" line, copied asleep, under it.
             Transform dormant = GameUi.UiClone.Dormant(transform, "RealLifeOverhaul Dormant");
             _line = GameUi.UiClone.Asleep(label, dormant, LineName);
@@ -224,14 +237,18 @@ namespace RealLifeOverhaul
                 }
                 return;
             }
-            // The owner as BizManPresentation.LoadLeftSide says it; the game's own services have none.
+            // What the feature says of its building: who owns it, its own line, what kind of building it is (the card's words).
+            SpecialFacts says = SpecialBuildings.PageOf(registration, out string typeWords);
+            // The owner as BizManPresentation.LoadLeftSide says it, with the feature's owner's name where it gives one (the game writes "Undefined" for a
+            // building nobody owns in its registration); the game's own services have none.
             bool service = _business.building != null && _business.building.SpecialService != null;
             if (!service)
             {
                 var owner = _owner.GetComponent<TextLocalizationComponent>();
                 if (owner != null)
                 {
-                    owner.SetData(BusinessHelper.GetBuildingOwnerDescription(registration));
+                    string name = TakenPageRules.Owner(says, PlayerHelper.CharacterData != null ? PlayerHelper.CharacterData.name : null);
+                    owner.SetData(name != null ? "building_rival_owner_description".Localize(new { rivalName = name }) : BusinessHelper.GetBuildingOwnerDescription(registration));
                 }
             }
             if (_owner.activeSelf == service)
@@ -239,7 +256,11 @@ namespace RealLifeOverhaul
                 _owner.SetActive(!service);
             }
             _ownerHidden = service;
-            _words = "reallife_claimed_taken".GetLocalization().Replace("{name}", taken);
+            if (_type != null && typeWords != null)
+            {
+                GameUi.UiClone.Words(_type, typeWords);   // as the card says it: "School", not the game's "Office building" for the look it wears
+            }
+            _words = TakenPageRules.Line(says, "reallife_claimed_taken".GetLocalization().Replace("{name}", taken));
             GameUi.UiClone.Words(_line.GetComponent<TMPro.TMP_Text>(), _words);
             if (!was || !same)
             {
@@ -255,6 +276,10 @@ namespace RealLifeOverhaul
             Off(_buy);
             Off(_offer);
             Off(_hamptons);
+            if (_start != null && !TakenPageRules.OffersStart(_taken))
+            {
+                Off(_start);   // the game's form to start a business: never in a building a feature holds
+            }
             Off(_page.overtakeOfferPanel);
             Off(_page.sendOvertakeOfferPanel);
             if (!_notForSale.activeSelf)
@@ -274,6 +299,21 @@ namespace RealLifeOverhaul
             {
                 box.SetActive(false);
             }
+        }
+
+        // The line that says what kind of building it is: the game's "BuildingTypeLabel" beside its "AddressLabel" (BizManPresentation.LoadLeftSide). Once, at the bind.
+        private static TextLocalizationComponent TypeLabel(Transform root)
+        {
+            TextLocalizationComponent[] labels = root.GetComponentsInChildren<TextLocalizationComponent>(true);
+            for (int i = 0; i < labels.Length; i++)
+            {
+                if (labels[i].name == "BuildingTypeLabel" && labels[i].transform.parent != null && labels[i].transform.parent.Find("AddressLabel") != null)
+                {
+                    return labels[i];
+                }
+            }
+            SpecialBuildings.Logger?.Info("Special buildings: the line for the kind of building is not on BizMan's presentation.");
+            return null;
         }
 
         private static GameObject Find(Transform root, string path)

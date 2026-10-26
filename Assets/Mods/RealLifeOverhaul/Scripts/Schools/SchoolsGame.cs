@@ -60,7 +60,6 @@ namespace RealLifeOverhaul.Schools
             new PieceTemplate { Kind = (int)CampusPieceKind.Maple, Root = "Vegetation", Name = "Tree Maple", X = -144.69f, Z = 441.56f, Y = 0f, Within = TreeReach },
             new PieceTemplate { Kind = (int)CampusPieceKind.Bush, Root = "Vegetation", Name = "Broadleaf Bush L1", X = -182.53f, Z = 313.33f, Y = 0f, Within = TreeReach },
             new PieceTemplate { Kind = (int)CampusPieceKind.Bin, Root = "Trash Cans", Name = "SM_Trash Can", X = -87.00f, Z = 453.90f, Y = 0.06f, Within = TreeReach },
-            new PieceTemplate { Kind = (int)CampusPieceKind.Rack, Root = "Roads", Name = "Prefab_BikeRentalStand", X = -1852.53f, Z = -1283.52f, Y = 0.05f, Within = TreeReach },
             // Madison Square Park's table group: a round table and four chairs people sit on (the chairs are the game's OutsideInteractableItemToRest).
             new PieceTemplate { Kind = (int)CampusPieceKind.Table, Root = "Madison Square Park", Name = "Prefab_TableGroup", X = 272.70f, Z = 231.84f, Y = 0.03f, Within = TreeReach },
             // The Industry City playground's climbing frame: the one piece of it whose mesh is its own (the swings, stalls and roundabout are drawn in a static batch).

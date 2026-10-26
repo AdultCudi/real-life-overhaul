@@ -19,6 +19,8 @@ internal static partial class Program
         CampusCourtChecks();
         CampusLayoutChecks();
         CampusPeopleChecks();
+        CampusPageChecks();
+        CampusGroundChecks();
         CampusWiringChecks();
     }
 
@@ -221,7 +223,7 @@ internal static partial class Program
         Check(dressing.Where(p => p.Kind != CampusPieceKind.Hoop).All(p => !Inside(p.X, p.Z, courtGround, 0f)), "campus layout: nothing but the hoops stands on the court");
         CampusBox plaza = paths.First(p => Math.Abs(p.Z - (z0 + 60.8f)) < 0.5f && p.HalfX > 6f);
         Check(dressing.Where(p => p.Kind != CampusPieceKind.Hoop).All(p => paths.Where(r => r.X != plaza.X || r.Z != plaza.Z).All(r => !Inside(p.X, p.Z, r, 0.1f))),
-            "campus layout: no tree, bench, table, bin or bicycle stand stands on a path, but in the plaza's paved square");
+            "campus layout: no tree, bench, table or bin stands on a path, but in the plaza's paved square");
         // The playing field keeps its margin from the fence on every side, and clear of the green's furniture.
         float fenceW = x0 + SchoolGrounds.FenceIn, fenceE = x1 - SchoolGrounds.FenceIn, fenceN = z1 - SchoolGrounds.FenceIn;
         float margin = Math.Min(Math.Min(pitch.X - pitch.HalfX - fenceW, fenceE - (pitch.X + pitch.HalfX)), fenceN - (pitch.Z + pitch.HalfZ));
@@ -231,8 +233,8 @@ internal static partial class Program
         // What the dressing is, from the game's own pieces, by kind.
         Check(dressing.Count(p => p.Kind == CampusPieceKind.Oak || p.Kind == CampusPieceKind.Birch || p.Kind == CampusPieceKind.Beech || p.Kind == CampusPieceKind.Maple) >= 20, "campus layout: trees, twenty and more, of four kinds");
         Check(dressing.Count(p => p.Kind == CampusPieceKind.Bench) >= 10 && dressing.Count(p => p.Kind == CampusPieceKind.Table) >= 5 && dressing.Count(p => p.Kind == CampusPieceKind.Bin) >= 8
-              && dressing.Count(p => p.Kind == CampusPieceKind.Rack) >= 5 && dressing.Count(p => p.Kind == CampusPieceKind.Climb) >= 2,
-            "campus layout: benches, table groups, bins, bicycle stands and climbing frames: " + SchoolGrounds.Words(pieces));
+              && dressing.Count(p => p.Kind == CampusPieceKind.Climb) >= 2,
+            "campus layout: benches, table groups, bins and climbing frames: " + SchoolGrounds.Words(pieces));
         // The planters: four on the main school's forecourt 1.2 m in front of its front wall at 13.5 and 17.5 m either side of its middle, two by the junior block's door.
         var bushes = dressing.Where(p => p.Kind == CampusPieceKind.Bush).ToList();
         float wall = SchoolGrounds.DoorOf(z0, float.NaN) + SchoolGrounds.DoorBay;
@@ -357,7 +359,7 @@ internal static partial class Program
     private static void CampusWiringChecks()
     {
         string game = ModSource(@"Schools\SchoolsGame.cs"), look = ModSource(@"Schools\CampusLookRules.cs"), pieces = ModSource(@"Uptown\GamePieces.cs"), grounds = ModSource(@"Schools\SchoolGrounds.Dressing.cs");
-        foreach (string piece in new[] { "Tree Broadleaf L1", "Tree Birch", "Tree Broadleaf M1", "Tree Maple", "Broadleaf Bush L1", "SM_Trash Can", "Prefab_BikeRentalStand", "Prefab_TableGroup", "Playground_Climbing", "Playground_Fence_Modular" })
+        foreach (string piece in new[] { "Tree Broadleaf L1", "Tree Birch", "Tree Broadleaf M1", "Tree Maple", "Broadleaf Bush L1", "SM_Trash Can", "Prefab_TableGroup", "Playground_Climbing", "Playground_Fence_Modular" })
         {
             Check(game.Contains("Name = \"" + piece + "\""), "campus dressing: the game's '" + piece + "' is a template found by the shared finder");
         }

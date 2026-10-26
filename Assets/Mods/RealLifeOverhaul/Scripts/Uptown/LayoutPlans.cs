@@ -429,7 +429,7 @@ namespace RealLifeOverhaul.Uptown
         /// <summary>
         /// The pedestrians' walking ground: every pavement of the band's streets and avenues, the first block's from the old
         /// corners as the player's, 1st Avenue's continuations' north pavements, and the crosswalks over the avenues at
-        /// every junction. Never a carriageway nor a block. Seeds on 1st Avenue's north pavement.
+        /// every junction, the parks' paths and the school campus's block (Campus). Never a carriageway nor any other block. Seeds on 1st Avenue's north pavement.
         /// </summary>
         public static GroundPlan NpcGround()
         {
@@ -476,8 +476,19 @@ namespace RealLifeOverhaul.Uptown
                 plan.Seeds.Add(new GroundPoint(LayoutRules.StreetX(k) + LayoutRules.StreetPitch * 0.5f, SeedY, pavement));
             }
             Parks(plan.Boxes);
+            Campus(plan.Boxes);
             Area(plan.Area);
             return plan;
+        }
+
+        // The school campus's ground, walked by the pedestrians as the player walks it: its whole block, reaching PavementReach over the pavements round it. The campus's fence
+        // (carved out of both meshes along its runs) and its buildings and pieces shut it again, so people come in and go out by its three gates alone, where the fence is
+        // broken. Without it the pedestrians' mesh stopped at the block's edge and no one could walk the campus (Player.log, 26 Oct 2026: 0 of 9 routes for people, 9 for the player).
+        private static void Campus(List<GroundBox> into)
+        {
+            LayoutRules.Block(LayoutRules.CampusBlock / 100, LayoutRules.CampusBlock % 100, out float x0, out float z0, out float x1, out float z1);
+            float reach = ParksRules.PavementReach;
+            into.Add(Box(x0 - reach, z0 - reach, x1 + reach, z1 + reach));
         }
 
         // The parks' paths, walked by the pedestrians as the pavements are: each joined at the block's edge to the pavement it opens on.

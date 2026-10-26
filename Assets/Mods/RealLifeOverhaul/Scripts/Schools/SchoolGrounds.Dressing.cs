@@ -71,7 +71,7 @@ namespace RealLifeOverhaul.Schools
         /// <summary>
         /// Every piece stood on the campus (into the list, cleared; the fence's carving runs into <paramref name="runs"/>): the fence round the block in modules,
         /// broken by the main gate, the side gate and the field's gate, a post at each end of a run; the court as two half courts back to back with their hoops
-        /// and the fence round them; the playing field; the lawns dressed with trees, benches, table groups, bins, bicycle stands, climbing frames and planters.
+        /// and the fence round them; the playing field; the lawns dressed with trees, benches, table groups, bins, climbing frames and planters.
         /// The main school's door is at <paramref name="doorZ"/> (NaN: where the copy engine's door stands on its lot).
         /// </summary>
         public static void Pieces(List<CampusPiece> into, List<CampusFence> runs, float doorZ = float.NaN)
@@ -162,9 +162,8 @@ namespace RealLifeOverhaul.Schools
             float jv = MainDepth + 2f + 15f;   // the middle of the junior block's plot (Blocks: 2 m past the main school's lot and 15 m in)
             Put(into, CampusPieceKind.Bush, x0, z0, frontU, jv - 5.5f, 0f);
             Put(into, CampusPieceKind.Bush, x0, z0, frontU, jv + 5.5f, 0f);
-            // The main gate's flanks: a bicycle stand and a bin each side, inside the fence, off the walk and the gate's way in.
-            Put(into, CampusPieceKind.Rack, x0, z0, 25.5f, wallV - 1.15f, 0f);
-            Put(into, CampusPieceKind.Rack, x0, z0, 44.5f, wallV - 1.15f, 0f);
+            // The main gate's flanks: a bin each side, inside the fence, off the walk and the gate's way in. No bicycle stands: the game's only one is its bike-share dock,
+            // which stood as a bare black slab on the lawn in the owner's screenshots of 26 Oct 2026.
             Put(into, CampusPieceKind.Bin, x0, z0, 27.4f, wallV - 1.15f, 0f);
             Put(into, CampusPieceKind.Bin, x0, z0, 42.6f, wallV - 1.15f, 0f);
             // The two yards beside the main school: a path each (the front walk's), benches facing it, a table group, a climbing frame and trees.
@@ -180,7 +179,7 @@ namespace RealLifeOverhaul.Schools
             Put(into, CampusPieceKind.Oak, x0, z0, cu - 5.4f, 64.6f, 0f);
             Put(into, CampusPieceKind.Maple, x0, z0, cu + 5.4f, 64.6f, 0f);
             // The green north of the junior block and the hall, either side of the path to the field: benches along the cross path facing it, table groups,
-            // bins, trees along the fence and the field's sides, bicycle stands at the side gate and the field's gate.
+            // bins, trees along the fence and the field's sides.
             foreach (float u in new[] { 9f, 18f, 52f, 61f })
             {
                 Put(into, CampusPieceKind.Bench, x0, z0, u, 72.4f, South);
@@ -189,9 +188,6 @@ namespace RealLifeOverhaul.Schools
             Put(into, CampusPieceKind.Table, x0, z0, 46f, 74.6f, 0f);
             Put(into, CampusPieceKind.Bin, x0, z0, 30.2f, 72.4f, 0f);
             Put(into, CampusPieceKind.Bin, x0, z0, 40.2f, 72.4f, 0f);
-            Put(into, CampusPieceKind.Rack, x0, z0, 64.0f, 73.4f, 0f);
-            Put(into, CampusPieceKind.Rack, x0, z0, 30.0f, 117.2f, 0f);
-            Put(into, CampusPieceKind.Rack, x0, z0, 40.0f, 117.2f, 0f);
             CampusPieceKind[] kinds = { CampusPieceKind.Oak, CampusPieceKind.Birch, CampusPieceKind.Beech, CampusPieceKind.Maple };
             int k = 0;
             foreach (float v in new[] { 76f, 86f, 96f, 106f, 113f })
@@ -304,7 +300,7 @@ namespace RealLifeOverhaul.Schools
         /// <summary>The pieces laid, counted by kind in words for Player.log: "22 trees, 14 benches, ...".</summary>
         public static string Words(List<CampusPiece> pieces)
         {
-            int trees = 0, bushes = 0, benches = 0, tables = 0, bins = 0, racks = 0, climbs = 0, hoops = 0, courts = 0, modules = 0;
+            int trees = 0, bushes = 0, benches = 0, tables = 0, bins = 0, climbs = 0, hoops = 0, courts = 0, modules = 0;
             for (int i = 0; i < pieces.Count; i++)
             {
                 switch (pieces[i].Kind)
@@ -314,14 +310,13 @@ namespace RealLifeOverhaul.Schools
                     case CampusPieceKind.Bench: benches++; break;
                     case CampusPieceKind.Table: tables++; break;
                     case CampusPieceKind.Bin: bins++; break;
-                    case CampusPieceKind.Rack: racks++; break;
                     case CampusPieceKind.Climb: climbs++; break;
                     case CampusPieceKind.Hoop: hoops++; break;
                     case CampusPieceKind.Court: courts++; break;
                     case CampusPieceKind.Fence: modules++; break;
                 }
             }
-            return trees + " trees, " + bushes + " bushes, " + benches + " benches, " + tables + " table groups, " + bins + " bins, " + racks + " bicycle stands, " + climbs + " climbing frames, "
+            return trees + " trees, " + bushes + " bushes, " + benches + " benches, " + tables + " table groups, " + bins + " bins, " + climbs + " climbing frames, "
                    + courts + " half courts with " + hoops + " hoops, " + modules + " fence modules";
         }
 
@@ -373,7 +368,6 @@ namespace RealLifeOverhaul.Schools
                 case CampusPieceKind.Bench: across = 2.4f; deep = 0.8f; high = 1.2f; break;
                 case CampusPieceKind.Table: across = 3.0f; deep = 3.0f; high = 1.2f; break;
                 case CampusPieceKind.Climb: across = 4.2f; deep = 4.2f; high = 2.2f; break;
-                case CampusPieceKind.Rack: across = 1.0f; deep = 1.0f; high = 1.0f; break;
                 case CampusPieceKind.Bin: across = 0.6f; deep = 0.6f; high = 1.0f; break;
                 case CampusPieceKind.Oak:
                 case CampusPieceKind.Birch:
