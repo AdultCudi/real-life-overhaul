@@ -59,6 +59,23 @@ namespace RealLifeOverhaul
             }
         }
 
+        // True when a lit emergency vehicle is coming up behind it, in its lane or the next (EmergencyDriver.UnitComingUp).
+        private bool UnitBehind()
+        {
+            if (Vehicle == null)
+            {
+                return false;
+            }
+            Vehicle.Footprint(out Vector3 centre, out Vector3 forward, out _, out _);
+            return EmergencyDriver.UnitComingUp(centre, forward);
+        }
+
+        /// <summary>True while it stands at its stop in the lane, with no bay to stand in, and a lit emergency vehicle is coming up behind it: it should stand clear.</summary>
+        public bool StandsInTheWay()
+        {
+            return State == Phase.Standing && MakeWayRules.BusStandsClear(_bay, UnitBehind());
+        }
+
         // Its hold at the start let go because the player can see it (RideRules.StartHold): it drives on from this tick, what
         // it stood is what counts as held, and the director is told how early it now is. One line in the log.
         private void HoldLetGo()
