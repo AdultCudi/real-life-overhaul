@@ -151,7 +151,7 @@ namespace RealLifeOverhaul.Construction
         {
             for (int t = 0; t < (int)BuildTool.Count; t++)
             {
-                string why = BuildModeHintRules.ToolWhy((BuildTool)t, held, _mode.State.ViewOnly);
+                string why = BuildModeCityRules.ToolWhyAt((BuildTool)t, held, _mode.State.ViewOnly, _mode.InUptown);   // as the toolbar reads it where the map looks
                 bool greyed = _mode.ToolGreyed((BuildTool)t, out string line);
                 if (greyed != (why != null))
                 {

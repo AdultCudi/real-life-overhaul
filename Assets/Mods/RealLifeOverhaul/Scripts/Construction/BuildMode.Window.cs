@@ -95,7 +95,7 @@ namespace RealLifeOverhaul.Construction
             {
                 _toolNames[t] = T(BuildModeHintRules.ToolKeys[t]);
                 _toolLines[t] = T(BuildModeHintRules.ToolTips[t]);
-                string why = BuildModeHintRules.ToolWhy((BuildTool)t, _holdings, _state.ViewOnly);
+                string why = BuildModeCityRules.ToolWhyAt((BuildTool)t, _holdings, _state.ViewOnly, _inUptown);
                 _toolWhy[t] = why != null ? T(why) : null;
             }
             _bar.Tools(_state.Tool, _toolNames, _toolLines, _toolWhy);
@@ -131,7 +131,8 @@ namespace RealLifeOverhaul.Construction
             {
                 State = _state, Picked = _picked.Count > 0, SiteOk = _siteWhy == null && _picked.Count > 0, CanBuy = _canBuy,
                 PickedMine = _state.Tool == BuildTool.Place ? _pickMine : _targetSite != null, PickedForSale = PickedForSale,
-                PickedBuilding = _hasTarget, ZoneChosen = _zoneBrush >= 0, Designs = _designs.Count, MayBuild = BuildModeRules.MayBuild(_warnings)
+                PickedBuilding = _hasTarget, ZoneChosen = _zoneBrush >= 0, Designs = _designs.Count, MayBuild = BuildModeRules.MayBuild(_warnings), City = !_inUptown,
+                PlotPicked = _plot >= 0
             };
         }
 
@@ -141,7 +142,7 @@ namespace RealLifeOverhaul.Construction
             string key = BuildModeHintRules.Hint(f);
             string next = key == null ? string.Empty : ConstructionText.Fill(key, "cells", ConstructionText.N(PickedCells), "use", BrushName());
             string extra = BuildModeHintRules.HintExtra(f);
-            string esc = BuildModeHintRules.Esc(_state, _picked.Count > 0);
+            string esc = BuildModeHintRules.Esc(_state, HasPicks);
             string more = extra != null && esc != null ? T(extra) + " · " + T(esc) : extra != null ? T(extra) : esc != null ? T(esc) : null;
             _bar.Hint(BuildModeHintRules.HintStep(f), next, more);
         }
@@ -169,6 +170,20 @@ namespace RealLifeOverhaul.Construction
         private void WriteSheet()
         {
             BuildModeSheet s = _bar.Sheet;
+            if (_plot >= 0 && _plots != null && _plot < _plots.Count)
+            {
+                WritePlot(s);   // a building of the city's picked: its own tool panel, whatever the tool
+                s.End();
+                WriteLegend();
+                return;
+            }
+            if (!_inUptown && _picked.Count == 0)
+            {
+                WriteCityIdle(s);
+                s.End();
+                WriteLegend();
+                return;
+            }
             switch (_state.Tool)
             {
                 case BuildTool.Land: WriteLand(s); break;
@@ -195,7 +210,7 @@ namespace RealLifeOverhaul.Construction
             {
                 return;
             }
-            int n = BuildModeRules.Legend(_view, _keyFills, _keyLines, _keyWords);
+            int n = _inUptown ? BuildModeRules.Legend(_view, _keyFills, _keyLines, _keyWords) : BuildModeCityRules.Legend(_view, _keyFills, _keyLines, _keyWords);
             int shown = BuildModeRules.LegendShown(n);
             legend.Begin();
             _legendMore.Length = 0;
@@ -640,7 +655,7 @@ namespace RealLifeOverhaul.Construction
             {
                 return;
             }
-            if (BuildModeHintRules.ToolWhy((BuildTool)tool, _holdings, _state.ViewOnly) != null)
+            if (BuildModeCityRules.ToolWhyAt((BuildTool)tool, _holdings, _state.ViewOnly, _inUptown) != null)
             {
                 return;   // greyed: its tooltip says why
             }
@@ -652,6 +667,7 @@ namespace RealLifeOverhaul.Construction
             ReadFacts();
             Write(true);
             Colour();
+            ColourPlots();
         }
 
         private void ViewPicked(int view)
@@ -667,6 +683,7 @@ namespace RealLifeOverhaul.Construction
             }
             Write(false);
             Colour();
+            ColourPlots();
         }
 
         // A marker on the map pressed: the map glides there.
@@ -736,6 +753,10 @@ namespace RealLifeOverhaul.Construction
 
         private void Act(int id)
         {
+            if (ActPlot(id))
+            {
+                return;   // a button of a plot's panel
+            }
             switch (id)
             {
                 case RowClear:
@@ -848,7 +869,7 @@ namespace RealLifeOverhaul.Construction
         // Another tool chosen with the squares picked kept (Buy land from a pick of land for sale), read again for it.
         private void KeepPicksUnder(BuildTool tool)
         {
-            if (BuildModeHintRules.ToolWhy(tool, _holdings, _state.ViewOnly) != null || _picked.Count == 0)
+            if (BuildModeCityRules.ToolWhyAt(tool, _holdings, _state.ViewOnly, _inUptown) != null || _picked.Count == 0)
             {
                 return;
             }
@@ -898,6 +919,7 @@ namespace RealLifeOverhaul.Construction
             }
             Write(false);
             Colour();
+            ColourPlots();
         }
     }
 }

@@ -24,6 +24,8 @@ namespace RealLifeOverhaul.Construction
         public bool ZoneChosen;       // the Zone tool: a zone's swatch is chosen
         public int Designs;           // the Place tool: designs that fit the squares picked
         public bool MayBuild;         // ... the design picked has nothing in red that stops it
+        public bool City;             // the map looks over the rest of the city, not Uptown
+        public bool PlotPicked;       // a building of the city's is picked: its tool panel is up
     }
 
     /// <summary>The tour's steps on build mode's first opening: each a tooltip pointing at one part.</summary>
@@ -180,6 +182,14 @@ namespace RealLifeOverhaul.Construction
             {
                 return "reallife_bld_hint_confirming";
             }
+            if (f.PlotPicked)
+            {
+                return "reallife_bld_hint_city_picked";   // a building of the city's: its panel holds what can be done
+            }
+            if (f.City && !f.Picked)
+            {
+                return "reallife_bld_hint_city_idle";
+            }
             bool dragging = s.Step == BuildStep.Dragging;
             switch (s.Tool)
             {
@@ -255,9 +265,9 @@ namespace RealLifeOverhaul.Construction
         public static int HintStep(HintFacts f)
         {
             BuildModeState s = f.State;
-            if (!s.Open || s.ViewOnly)
+            if (!s.Open || s.ViewOnly || f.PlotPicked || (f.City && !f.Picked))
             {
-                return 0;
+                return 0;   // over the rest of the city there are no steps from bare ground
             }
             switch (s.Tool)
             {
@@ -279,6 +289,10 @@ namespace RealLifeOverhaul.Construction
             if (!s.Open || s.ViewOnly || s.Step == BuildStep.Confirming)
             {
                 return null;
+            }
+            if (f.PlotPicked || (f.City && !f.Picked))
+            {
+                return "reallife_bld_hint_extra_city";
             }
             switch (s.Tool)
             {
@@ -334,6 +348,12 @@ namespace RealLifeOverhaul.Construction
         public static readonly string[] TourBodies =
         {
             "reallife_bld_tour_hint_body", "reallife_bld_tour_tools_body", "reallife_bld_tour_views_body", "reallife_bld_tour_demand_body"
+        };
+
+        /// <summary>A second sentence after a tour step's words, or null: the tools' step says the rest of the city is built up.</summary>
+        public static readonly string[] TourMore =
+        {
+            null, "reallife_bld_tour_tools_city", null, null
         };
 
         /// <summary>True when the tour is shown at this opening: never seen before, and not in a Going Public session (nothing there to do).</summary>

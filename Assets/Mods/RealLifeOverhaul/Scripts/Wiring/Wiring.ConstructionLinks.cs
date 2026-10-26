@@ -110,6 +110,7 @@ namespace RealLifeOverhaul
                 ConstructionBridges.StartPlot = StartPlot;
                 ConstructionBridges.StartWorks = StartWorks;
                 ConstructionBridges.Site = Site;
+                ConstructionBridges.AllSites = AllSites;
                 ConstructionBridges.SetContractor = SetContractor;
                 ConstructionBridges.SiteDone = SiteDone;
                 ConstructionBridges.FinishSite = id => Works() is CivicWorks w && w.Finish(w.Find(id), TimeHelper.CurrentDay);
@@ -225,6 +226,7 @@ namespace RealLifeOverhaul
                 ConstructionBridges.StartPlot = null;
                 ConstructionBridges.StartWorks = null;
                 ConstructionBridges.Site = null;
+                ConstructionBridges.AllSites = null;
                 ConstructionBridges.SetContractor = null;
                 ConstructionBridges.SiteDone = null;
                 ConstructionBridges.FinishSite = null;
@@ -326,11 +328,29 @@ namespace RealLifeOverhaul
                 return site == null ? default(SiteFacts) : new SiteFacts
                 {
                     Id = site.Id, Kind = (int)site.Kind, Street = site.Street, Number = site.Number, Hours = site.Needed, Done = site.Done, At = new Vector3(site.X, site.Y, site.Z),
-                    Contractor = site.Contractor, Known = true
+                    Contractor = site.Contractor, Known = true, Mine = site.Mine
                 };
             }
 
             // ------------------------------------------------------------------ the builders ask the programme
+
+            // Every site of the programme, for build mode's plots under construction: once at an opening.
+            private static void AllSites(List<SiteFacts> into)
+            {
+                into.Clear();
+                try
+                {
+                    CivicWorks works = Works();
+                    for (int i = 0; works != null && i < works.State.Sites.Count; i++)
+                    {
+                        into.Add(Facts(works.State.Sites[i]));
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.AllSites", e);
+                }
+            }
 
             private static SiteFacts Site(int id)
             {
