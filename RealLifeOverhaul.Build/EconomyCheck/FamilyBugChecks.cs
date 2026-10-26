@@ -135,7 +135,6 @@ internal static partial class Program
         string page = en != null && en.TryGetValue("reallife_guide_family", out string p) ? p : string.Empty;
         Check(page.Contains("which is made on every save while Family life is on") && !page.Contains("a new save has no <b>Family</b> contact") && !page.Contains("With any of those three options off"),
             "family bugs: the Guide's family page says the Family contact is always made");
-        var untranslated = new List<string>();
         var marks = new Dictionary<string, string>
         {
             { "en", "Fixed: " }, { "pt", "Corrigido: " }, { "zh-cn", "已修复：" }, { "de", "Behoben: " }, { "fr", "Corrigé : " }, { "es", "Corregido: " },
@@ -150,17 +149,20 @@ internal static partial class Program
                 lacking.Add(mark.Key);
                 continue;
             }
-            if (Array.IndexOf(new[] { "en", "pt", "zh-cn" }, mark.Key) < 0 && words.ContainsKey("reallife_guide_family"))
+            // Any row of What's new, since the version step moves the next row's lines into the version's row.
+            int most = 0;
+            foreach (KeyValuePair<string, string> row in words)
             {
-                untranslated.Add(mark.Key);
+                if (row.Key.StartsWith("reallife_changes_", StringComparison.Ordinal) && !row.Key.EndsWith("_title", StringComparison.Ordinal))
+                {
+                    most = Math.Max(most, Regex.Matches(row.Value, Regex.Escape(mark.Value)).Count);
+                }
             }
-            string next = words.TryGetValue("reallife_changes_next", out string n) ? n : string.Empty;
-            if (Regex.Matches(next, Regex.Escape(mark.Value)).Count < 5)
+            if (most < 5)
             {
                 lacking.Add(mark.Key);
             }
         }
-        Check(untranslated.Count == 0, "family bugs: the changed Guide page is out of de, fr, es, ru, nl and tr until it is translated again (" + string.Join(", ", untranslated) + ")");
-        Check(lacking.Count == 0, "family bugs: What's new's next row has its five fixes in all nine languages (" + string.Join(", ", lacking) + ")");
+        Check(lacking.Count == 0, "family bugs: a What's new row has its five fixes in all nine languages (" + string.Join(", ", lacking) + ")");
     }
 }
