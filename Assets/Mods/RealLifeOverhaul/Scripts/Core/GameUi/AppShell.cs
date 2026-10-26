@@ -25,6 +25,11 @@ namespace RealLifeOverhaul.GameUi
             "ButtonEffects", "ToggleClickSound", "Badge", "HoverEffect", "ScrollBarDraggingComponent", "ScrollBarHandleSizeLimiter"
         };
 
+        /// <summary>Every app's shell made so far, for the in-game test of the left pane (InfoBox.Audit); never walked while a page is written.</summary>
+        public static readonly List<AppShell> Made = new List<AppShell>(32);
+
+        /// <summary>The app's id, as it was made.</summary>
+        public string Name { get; private set; }
         public GameObject Root { get; private set; }
         public Component Header { get; private set; }
         public InfoBox Box { get; private set; }
@@ -89,7 +94,9 @@ namespace RealLifeOverhaul.GameUi
                     return null;
                 }
                 shell.Scroller = list.GetComponentInChildren<EnhancedScroller>(true);
-                shell.Box = InfoBox.From(whiteBox, UiClone.Dormant(root.transform, "Templates"));
+                // The card's body scrolls as the table does: its own scroll's step, movement and bar (the table's ScrollRect, copied).
+                ScrollRect style = shell.Scroller != null ? shell.Scroller.GetComponent<ScrollRect>() : null;
+                shell.Box = InfoBox.From(whiteBox, UiClone.Dormant(root.transform, "Templates"), style);
                 if (shell.Scroller == null || shell.Box == null)
                 {
                     UiClone.Fallback(name + ": the game's scroller or its white box is not built as expected");
@@ -97,7 +104,9 @@ namespace RealLifeOverhaul.GameUi
                     return null;
                 }
 
+                shell.Name = name;
                 shell.Box.SetAccent(LookRules.Accent(name));   // the app icon's colour, over each page's title
+                Made.Add(shell);
                 shell.TakeFilter(filter, root.transform.Find("Templates"));
 
                 // The headline over the left column: wide enough for a sentence, cut with dots past that.

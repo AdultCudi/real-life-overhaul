@@ -12,15 +12,13 @@ namespace RealLifeOverhaul.GameUi
     public sealed partial class InfoBox
     {
         private Transform _parked;   // asleep under the templates: the parts laid aside
-        private readonly List<GameObject> _live = new List<GameObject>(48);       // the parts of the page showing that the box keeps
+        private readonly List<GameObject> _live = new List<GameObject>(48);       // the parts of the page showing that the box keeps, in the order they were written
         private readonly List<GameObject> _liveFrom = new List<GameObject>(48);   // the template each is of
         private readonly Dictionary<GameObject, List<GameObject>> _spare = new Dictionary<GameObject, List<GameObject>>(16);
 
         // What Restore sets back, read from the templates once.
         private Color _lineColour, _checkColour, _checkMarkColour;
-        private Vector4 _headerMargin;
         private Sprite _checkMarkSprite;
-        private Vector2 _checkMarkSize, _checkMarkAt;
         private bool _switchOn;
 
         // Read once the templates are made (From).
@@ -30,14 +28,10 @@ namespace RealLifeOverhaul.GameUi
             holder.transform.SetParent(templates, false);
             _parked = holder.transform;
             _lineColour = _bodyT.GetComponent<TMP_Text>().color;
-            _headerMargin = _headerT.GetComponent<TMP_Text>().margin;
-            _checkColour = _checkT.GetComponent<TMP_Text>().color;
+            _checkColour = _checkT.transform.Find("Text").GetComponent<TMP_Text>().color;
             var mark = _checkT.transform.Find("Mark").GetComponent<Image>();
             _checkMarkSprite = mark.sprite;
             _checkMarkColour = mark.color;
-            var markRect = (RectTransform)mark.transform;
-            _checkMarkSize = markRect.sizeDelta;
-            _checkMarkAt = markRect.anchoredPosition;
             Toggle toggle = _switch != null ? _switch.GetComponentInChildren<Toggle>(true) : null;
             _switchOn = toggle != null && toggle.isOn;
         }
@@ -46,12 +40,13 @@ namespace RealLifeOverhaul.GameUi
         private bool Kept(GameObject template)
         {
             return template != null && _parked != null
-                   && (template == _bodyT || template == _subT || template == _noteT || template == _headerT || template == _headingT || template == _pairT
-                       || template == _meterT || template == _checkT || template == _footT || template == _switch || template == _toggleT || template == _selector || template == _buttons);
+                   && (template == _bodyT || template == _subT || template == _noteT || template == _headerT || template == _groupT || template == _rowT || template == _pairT
+                       || template == _meterT || template == _entryT || template == _checkT || template == _guideT || template == _switch || template == _toggleT
+                       || template == _selector || template == _buttons);
         }
 
-        // A part of the template's kind laid aside, back in the box as its last child; null if none is.
-        private GameObject Reuse(GameObject template)
+        // A part of the template's kind laid aside, back in the target as its last child; null if none is.
+        private GameObject Reuse(GameObject template, Transform target)
         {
             if (!_spare.TryGetValue(template, out List<GameObject> spare))
             {
@@ -65,7 +60,7 @@ namespace RealLifeOverhaul.GameUi
                 {
                     continue;   // destroyed meanwhile with the box's whole panel
                 }
-                part.transform.SetParent(_box, false);   // the last of the box's children: the page's order
+                part.transform.SetParent(target, false);   // the last of the target's children: the page's order
                 if (!part.activeSelf)
                 {
                     part.SetActive(true);
@@ -97,7 +92,6 @@ namespace RealLifeOverhaul.GameUi
             }
             else if (template == _headerT)
             {
-                part.GetComponent<TMP_Text>().margin = _headerMargin;   // the room the chips took
                 Transform chips = part.transform.Find("Chips");
                 if (chips != null)
                 {
@@ -108,13 +102,11 @@ namespace RealLifeOverhaul.GameUi
             }
             else if (template == _checkT)
             {
-                part.GetComponent<TMP_Text>().color = _checkColour;   // a need not met is written in red
+                part.transform.Find("Text").GetComponent<TMP_Text>().color = _checkColour;   // a need not met is written in red
                 var mark = part.transform.Find("Mark").GetComponent<Image>();
                 mark.sprite = _checkMarkSprite;
                 mark.color = _checkMarkColour;
-                var rect = (RectTransform)mark.transform;
-                rect.sizeDelta = _checkMarkSize;
-                rect.anchoredPosition = _checkMarkAt;
+                mark.rectTransform.localScale = Vector3.one;
             }
             else if (template == _switch || template == _toggleT)
             {
@@ -129,9 +121,9 @@ namespace RealLifeOverhaul.GameUi
                 }
                 Prune(part.transform, template.transform);
             }
-            else if (template == _pairT || template == _selector || template == _buttons)
+            else if (template == _groupT || template == _pairT || template == _selector || template == _buttons)
             {
-                Prune(part.transform, template.transform);
+                Prune(part.transform, template.transform);   // a section card laid aside after its parts: only what no page keeps is left in it
             }
         }
 

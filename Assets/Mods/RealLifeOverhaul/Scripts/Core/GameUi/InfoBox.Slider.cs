@@ -49,10 +49,11 @@ namespace RealLifeOverhaul.GameUi
                     return;
                 }
                 shown = to;
-                row.text = RowMarkup(label, text(to), CellTone.Plain, false);
+                row.text = text(to);
                 changed(to);
             }));
             _headerText = null;
+            _headerRow = null;
             return true;
         }
 

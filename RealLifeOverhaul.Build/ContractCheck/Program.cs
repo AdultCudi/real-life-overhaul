@@ -71,6 +71,7 @@ internal static partial class Program
         Markers(scripts);
         Registrations(scripts);   // a registration with no building is read only through Core/GameRegistrations (RegistrationChecks.cs)
         LookChecks(scripts, Path.Combine(root, @"Assets\Mods\RealLifeOverhaul\Locales"));
+        LeftPaneChecks(scripts, Path.Combine(root, @"Assets\Mods\RealLifeOverhaul\Locales"));   // the apps' left pane: its rules, its frame and its callers (LeftPaneChecks.cs)
         ButtonChecks(scripts, Path.Combine(root, @"Assets\Mods\RealLifeOverhaul\Locales"));
         PagerChecks(scripts, Path.Combine(root, @"Assets\Mods\RealLifeOverhaul\Locales"));
         PhoneLayoutChecks(scripts, Path.Combine(root, @"Assets\Mods\RealLifeOverhaul\Locales"));   // the phone's folders, dock and moves (PhoneLayoutChecks.cs)

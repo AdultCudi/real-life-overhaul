@@ -735,7 +735,8 @@ what was typed read as digits and checked against the least and the most.
 
 ## 24. Lists in the table, one page in the box (the Finance app's Accounts and Borrow)
 
-The white box (`InfoBox`, section 2) is a vertical layout with no scroll view: what does not fit is cut off. The
+The white box (`InfoBox`, section 2) is a card of a header, a scrolling body and a foot (section 36), so a page of any length is
+reached by the wheel; the table beside it is the game's scroller and takes any number of rows. The
 table beside it is the game's scroller and takes any number of rows. So a tab that has a list of things with actions
 puts the list in the table and shows in the box only the row that is picked:
 
@@ -790,7 +791,7 @@ Proven: all of it, from the game's code. Not seen in a running game.
 
 ## 27. A page inside a tab, and what the game computes about prices, customers and districts
 
-**A page that is no tab** (the Finance app's "The city"). The white box does not scroll and the tab bar's width is
+**A page that is no tab** (the Finance app's "The city"). The white box's body scrolls but the tab bar's width is
 not known, so a sixth subject is a page of an existing tab, opened by a button in that tab's box: the same table and
 box are written again with other rows and other column titles (`AppShell.SetColumns` again, section 20), and
 `AppShell.ShowTab(-1)` leaves every tab clickable and unmarked, so the tab the page belongs to takes the player back.
@@ -1185,26 +1186,60 @@ Proven: the game's members and objects named, from the decompiled game and the s
 script:HelpSystem`, `script:ModOptionsToggleControl`, `name:ResetWindows`). Not seen running: the window inside the full
 menu, the drop-down's list over it, the rows' heights with long descriptions.
 
-## 36. The box's own look (`InfoBox.Look.cs`, `InfoBox.Parts.cs`, `LookRules`)
+## 36. The box's own look (`InfoBox.Frame.cs`, `InfoBox.Look.cs`, `InfoBox.Parts.cs`, `LookRules`, `LeftPaneRules`)
 
 The white box writes every app's page in one look of the mod's own, made from the game's box itself when it is taken:
 its line of text, its title, its headline's font and grey, its rule's grey, the round sprite and green of its
 satisfaction bar, the tick of its switch, and the game's red, orange and green (`GlobalReferences.colors`).
 
-- **A header:** the title with the app's colour in a short bar over it (`LookRules.Accent`, the deeper colour of the
-  app's icon), a muted line under it (`Subtitle`) and status chips at its right (`Chip`, in a `CellTone`).
-- **Sections:** a heading in small capitals over a hairline (`Section`); what follows stands in from it until the next
-  section, a row of buttons or the foot. `Headline` is a section.
-- **Rows:** a muted label at the left and the value at the right (`Row`, `RowWords`, `RowPair`), in one text: the
-  value is set on the label's line by a line height of nought and aligned right. A row whose two parts do not fit
-  one line has its value under its label (`LookRules.Stack`). An old "Label <b>value</b>" line is read as a row.
-- **Meters and needs:** a row with a short bar of the game's round sprite under its figure (`Meter`); a line with the
-  game's tick, or a red dot (`Check`).
-- **Notes and the foot:** smaller muted sentences (`Note`); the Guide's page under a hairline (`GuideLink`).
+**Why it was rebuilt (the left pane, 26 Oct 2026).** The game's white box is a fixed card with a `VerticalLayoutGroup` of
+no scroll. Given more than it holds, that layout takes every child's height down from its preferred towards its minimum,
+and a text's minimum is nothing: so each page that was too long for the card had every text squeezed, section heads were
+drawn over the text above them, wrapped lines over the next row, and the foot ran into the buttons. A page that fitted
+showed none of it. The fault was the card's, not any app's, and it was in all of them (130 source files write a page).
 
-Each part is one copy of a template, and as many texts as the game's box would use for the same page: a heading is two
-objects where the game's headline is seven. With Developer diagnostics on, each page writes its parts and time to
-Player.log ("Info box check"). ContractCheck fails the gate on a label and value written as one bare line.
+**The frame (`InfoBox.Frame.cs`)**, all Unity layout with no position or height of the mod's own:
+- the **head** (title, subtitle, chips) and the **foot** (the rows of buttons that close the page, then the Guide's page) ask for
+  the height their parts ask for; the **body** between them has a flexible height and none preferred, so the card's layout
+  never squeezes the head or the foot;
+- the body is a `ScrollRect` (the game's own table's step, movement and scroll bar, copied) over a masked viewport
+  that catches the wheel, whose content is a vertical layout under a `ContentSizeFitter`: as tall as its parts ask, so a page
+  of any length in any language overlaps nothing and scrolls;
+- the rows of buttons after the page's last heavy part stand in the foot (`LeftPaneRules.FootRows`), two to a line and
+  full width for an odd one (`ButtonRules`); a row in the middle of a page stays where it is;
+- the scroll goes to the top for another page (another title) and is kept for the same page written again (a press that
+  changed a figure), `LeftPaneRules.KeepOffset`.
+
+**The parts (`InfoBox.Look.cs`, `InfoBox.Parts.cs`)**:
+- **A header:** the title in a horizontal layout with its chips, so a long title wraps in the room the chips leave it, under a
+  short bar of the app's colour (`LookRules.Accent`); chips wider than 42% of the line go on a line under the title; a muted
+  line under it (`Subtitle`); chips in a `CellTone` (`Chip`).
+- **Sections:** a card in a tint of the rule's grey with its heading in small capitals over a hairline (`Section`); what
+  follows stands in the card until the next section, a row of buttons or the foot. `Headline` is a section.
+- **Facts:** the label at the left in grey and the value at the right (`Row`, `RowWords`, `RowPair`), two texts of one size
+  in a horizontal layout so that they share a baseline. The label is given the width its words measure
+  (`LeftPaneRules.LabelWidth`, from the text's own preferred width, so it holds for any language), the value takes the rest,
+  right aligned, wrapping under itself. A pair of facts is two such halves, or two facts one under the other when either does not
+  fit its half. An old "Label <b>value</b>" line is read as a fact.
+- **List entries (`Entry`):** a rung of a ladder: its name and figure on one line, what it asks under them in small muted
+  words; the current one on a tint of the app's colour with a mark at its left. The career app's professions use it.
+- **Meters and needs:** a fact with a bar of the game's round sprite under it, the card's whole width (`Meter`); a line with
+  the game's tick, or a red dot (`Check`).
+- **Notes and the foot:** smaller muted sentences (`Note`); the Guide's page in the foot under a hairline (`GuideLink`).
+
+Each part is one copy of a template, kept asleep between pages and reused (`InfoBox.Keep.cs`, a section card laid aside after
+its parts). Nothing runs a frame: a page is written on a click, and Unity lays it out once. With Developer diagnostics on, each
+page writes its parts and time to Player.log ("Info box check").
+
+**Checks.** ContractCheck (`LeftPaneChecks.cs`, `LookChecks.cs`): the rules above on made-up widths (the label's width always
+leaves the value its room; the foot takes the right rows; the scroll's place; when two boxes cross); and the sources: the
+frame is Unity's layout, the code that writes a page sets no position, size, offset or margin, no caller reaches into a part's
+transform or puts a label and a value on one line by mark-up, every caller writes with the card's own parts. In the game,
+Options > Tests > "Check the apps' left panes" (`Meta/LeftPaneTest.cs`, `LeftPaneFixture.cs`) opens every app of the mod on the
+phone and measures its card (`InfoBox.Audit`): no text taller than its place, no two texts' boxes crossing, nothing past the
+edge, the scroll reaching the page's end, for the page the app wrote, for Career's profession with the most rungs and Campus'
+longest courses, and for a page of every kind of part in the longest words of each of the mod's nine languages; one log line a
+page ("Left pane check (app, page): PASS"), and a last line that says PASS only if every page did.
 
 ## 37. Folders and a dock on the phone's home screen (`PhoneLayoutRules`, `PhoneFolders`, `PhoneGridPager`)
 
