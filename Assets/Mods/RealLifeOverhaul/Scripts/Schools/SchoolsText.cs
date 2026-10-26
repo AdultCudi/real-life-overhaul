@@ -126,6 +126,8 @@ namespace RealLifeOverhaul.Schools
         public const string TestMine = "reallife_schools_test_mine";
         public const string TestEnrol = "reallife_schools_test_enrol";
         public const string TestBack = "reallife_schools_test_back";
+        public const string TestLook = "reallife_schools_test_look";
+        public const string TestCompare = "reallife_schools_test_compare";
         public const string TestDone = "reallife_schools_test_done";              // the tests' notices
         public const string TestFailed = "reallife_schools_test_failed";
         public const string TestUnread = "reallife_schools_test_unread";

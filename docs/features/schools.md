@@ -20,9 +20,13 @@ SchoolGrounds        game-free: the main school's lot, the hall and the junior b
 SchoolsBridges       what it asks of family life and the council; filled by Wiring.SchoolLinks
 SchoolsGame          the one file that touches the game: the clock, money, notices, the main school declared and cut, the
                      pieces copied, the hall and the junior block, the families at the gates, the guider, the traffic
+CampusLookRules      game-free: the three models' facts, the game's materials by name, where a model stands on a door or a plot, what is solid and carved, the load's lines
+CampusLook           the game's side of the look: the materials found, the models stood (the main school over the copy engine's building, the blocks solid), measured, given back
 SchoolFloors         the main school as the floors core holds it, the game's school on three floors
 SchoolsDirector      the state and its timing, the save, the district save's view, the lift
   .Campus            the place at a load and once a second
+  .Look              the models at a load (or when the bundles are read), the fallback to the copy engine's designs
+  .LookTests         the look's two test entries
   .Market            a day's pass, the week's book and the player's levers
   .Paper             the City Ledger's pieces
   .Tests             the test entries
@@ -37,15 +41,26 @@ One line or a few each elsewhere: `Core/Settings.cs` (`uptown_campus`), `Meta/Op
 
 On block 202, the plan's west square, which was meant as a park and never laid as one: 70 by 120 m between Birch Street, Elm Street, Uptown Avenue and Summit Avenue.
 
-- **The main school** on Uptown Avenue: a made building of the copy engine (a K1 office's design picked by its id) at 1 Birchwood Green, a street of the mod's own, its front a forecourt back from the gate, three storeys, cut out of both walking meshes. The floors core holds it with the game's own school on each floor (structure D1, layout GarmentDistrictSchool): the juniors, the middle school and the seniors, five classrooms a floor; its door panel opens school days from 07:00 to 18:00. The game's classroom doors there belong to its business school's diplomas, so their colliders are switched off once a floor is laid.
-- **The hall** on Birch Street and **the junior block** on Elm Street: decorative copies of the city's designs fitted to their plots, cut out of the walking meshes once they stand.
-- **The courtyard:** the game's basketball court plane (with its markings, from Factory3's yard) stretched evenly to 24 by 15 m, its two hoops, four of the game's sittable benches and four street trees.
+- **The main school** on Uptown Avenue: a made building of the copy engine (a K1 office's design picked by its id) at 1 Birchwood Green, a street of the mod's own, its front a forecourt back from the gate, three storeys, cut out of both walking meshes. What is seen of it is its own model ("The look" below); the building's door, floors, walls and click are the engine's. The floors core holds it with the game's own school on each floor (structure D1, layout GarmentDistrictSchool): the juniors, the middle school and the seniors, five classrooms a floor; its door panel opens school days from 07:00 to 18:00. The game's classroom doors there belong to its business school's diplomas, so their colliders are switched off once a floor is laid.
+- **The hall** on Birch Street and **the junior block** on Elm Street: their own models ("The look" below), solid and cut out of the walking meshes, standing clear of the fence; the city's designs fitted to their plots are the fallback only.
+- **The courtyard:** between the hall's back and the junior block's (15.4 m, `SchoolGrounds.Courtyard`): the game's basketball court plane (with its markings, from Factory3's yard) stretched evenly to 19.2 by 12 m, its two hoops, four of the game's sittable benches (two each side of the court, in the strips beside it, and two at its north end) and four street trees.
 - **The playing field:** the building sites' bundle's pitch (Crest Field's), 52 by 40 m at the north end. No new prop.
 - **The fence:** the game's playground fence modules (Industry City's, 1.4 m each), end to end round the block in seven runs, open at the main gate on Uptown Avenue, the side gate on Elm Street and the field's gate on Summit Avenue; one carving box a run.
 - **The families:** in the school run's hours (07:30 to 09:00 and 14:45 to 16:15, Monday to Friday) and on a term's open day, while the player is within 300 m, the game's own pedestrians gather on the pavements before the main and side gates (`PeopleGame` zones).
 - **On the map:** a Schools row with a marker at the main gate.
 
 Every piece is the game's, found once a load behind the loading screen (the one of its name nearest a fixed place of the game's scene, never one in a static batch); a piece not found is left out with one line.
+
+## The look
+
+Birchwood School's three buildings are modelled by hand in Blender (not-in-repo, exported as glTF) and shipped as props of the second props bundle, `reallife_props_2` (`PropAssets/models/birchwood_main`, `_hall`, `_junior`; PropAssets/README.md, "Buildings"). `Schools/CampusLook` (the game's side), `CampusLookRules` (game-free) and `SchoolsDirector.Look` stand them behind the loading screen with the rest of the campus.
+
+- **Materials, and why.** Each model is one mesh with four or five submeshes, so four or five draw calls: the bundle's atlas for the limestone, frames, door, copper, lamps and the rest of the small parts (one tiny 512 x 256 atlas for all three), and the game's own **brick** (`M_Bricks_01`), **roof** (`M_Roof_02`) and **glass** (`M_GlassBlueHue`), the junior block's rooftop fence the game's **chain-link** (`M_FenceWire_Occlussion`). Found by name once a load, in one search of the game's materials in memory behind the loading screen (never in play); a kind the game does not have is a plain colour from the model. The other way, baking brick into the atlas, cannot tile (an atlas region is drawn once), so a wall would need a huge picture; the game's brick tiles by the model's world-scale UVs, has its normal map and costs one draw call. Triangles: the main school 14,786, the hall 2,576, the junior block 3,740 (21,102 of the bundle's 60,000), 521 KB on disk.
+- **The main school** keeps its copy-engine building: its controller, door, floors, walls and the click. Its own look is hidden by the engine's own path (`CopyGame.HideLook`, what a construction site's new look does) and the model stands over it with its **door on the building's own door**: the model's door (its front face 1.55 m in front of the front wall, in the middle) is put at `entranceDoors[0].doorTransform` and turned to face the way that door faces, so the click, the walk to the door, the way in, the saved place indoors, the floors core's panel and the door reach rules are untouched. The model's body then stands where that puts it: within 9 m across and 6 m along of where the copy engine's footprint stood, else the model is not stood and the building keeps the look it has, with one line. Its walking-mesh cut is the model's body and its entrance bay (the copy engine's footprint is not its shape). The model joins the building's see-through fade (its hide list) and the city map shows the model's box.
+- **The hall and the junior block** stand on `SchoolGrounds.Blocks()` plots, their front wall `Front + 0.5` m back from the block's edge so what stands out of it (the hall's porch, the junior block's canopy) ends inside the fence, in the middle of the plot's width, facing their street. Each has a box collider over its body, joined to the game's see-through fade through the same `CopyLook` the city's copies use, a carving obstacle, and the map's box. With the bundle or a model missing the copy engine's design is asked for as it was, with one line.
+- **Lit and faded as the city's copies:** the renderers take the lighting settings (probes, reflections, rendering layer) of the main school's own copy, the layer is the buildings', they are joined to the district's far squares (`FarDistricts.Include`), and the see-through fade is the game's (the models' atlas material has no reveal, so what fades is the model as a whole when the camera is blocked: it is hidden to its shadow, as the game's building is).
+- **Measured once a load**, one line in Player.log: each model's triangles and draw calls, the game's materials found (and how long the search took), the time to place all three, and what the design the main school's model replaced drew. Options > Tests has the comparison for the hall and the junior block (`Schools check (compare)`) and a test that stands the look again (`Schools check (look)`).
+- **Nothing per frame.** Going Public safe: a local look, nothing saved and nothing sent; old saves are unchanged; with the mod removed the game is the plain game.
 
 ## The market
 
@@ -100,6 +115,8 @@ Every piece is the game's, found once a load behind the loading screen (the one 
 | --- | --- |
 | What is this ground? (Uptown's entry, in the city expansion's run) | `Ground check (what is this ground)` |
 | Birchwood School: census | `Schools check (census)` |
+| Birchwood School: stand its own look again | `Schools check (look)` |
+| Birchwood School: compare its look with the city's designs | `Schools check (compare)` |
 | Birchwood School: take me to its gate | `Schools check (take me)` |
 | Birchwood School: the school run now | `Schools check (school run)` |
 | Birchwood School: results day now | `Schools check (results day)` |
@@ -115,4 +132,4 @@ EconomyCheck `SchoolChecks.cs` (`--schools` alone) and NavCheck `GroundSurveyChe
 
 ## Not verified without the game
 
-The designs the copy engine picks for the main school, the hall and the junior block and how they look side by side; the pieces' heights on the block's ground (the court plane, the hoops, the benches) and the court's markings when stretched; the fence's look and its carving; the floors core's panel at the main school's door; the families at the gates; the Schools tab's look in the Campus app.
+How the models look in the game (the game's brick, roof, glass and chain-link at the model's UV scale, the lamps, the limestone's grime), whether the game has the four materials by those names in memory at a load, where the main school's door puts its body against the copy engine's footprint, the models' lighting and fade next to the city's own copies, the junior block's fence (single sided?) and the copy engine's designs as the fallback (the hall's and the junior block's, side by side); the pieces' heights on the block's ground (the court plane, the hoops, the benches) and the court's markings when stretched; the fence's look and its carving; the floors core's panel at the main school's door; the families at the gates; the Schools tab's look in the Campus app.

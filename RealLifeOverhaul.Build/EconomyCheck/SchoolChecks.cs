@@ -27,6 +27,7 @@ internal static partial class Program
         SchoolStoreChecks();
         SchoolSourceChecks();
         SchoolTextChecks();
+        CampusLookChecks();
     }
 
     // ---------------------------------------------------------------- the campus on its block
@@ -437,7 +438,7 @@ internal static partial class Program
         Check(family.Contains("int fee = CampusFee(c);") && family.Contains("AtSchool(Errands.Add(Errands.SchoolRun") && ModSource(@"Family\Children.Growing.cs").Contains("SchoolStanding(c)")
               && ModSource(@"Family\FamilyBridges.cs").Contains("public interface ISchoolBridge"), "schools sources: family life charges the campus's fee, sends the school run there and reads its reports through its bridge");
         string tests = code["SchoolsDirector.Tests.cs"], guide = code["SchoolsGuide.cs"];
-        foreach (string line in new[] { "census", "take me", "school run", "results day", "inspection", "term", "make it mine", "enrol", "back" })
+        foreach (string line in new[] { "census", "take me", "school run", "results day", "inspection", "term", "make it mine", "enrol", "back" })   // the look's two are in CampusLookChecks
         {
             Check(tests.Contains("\"Schools check (" + line) && guide.Contains("\"Schools check (" + line + ")\""), "schools sources: the test '" + line + "' writes its line and is in Options > Tests");
         }
@@ -455,9 +456,9 @@ internal static partial class Program
         Check(awake.Success && !awake.Value.Contains("Ask()") && awake.Value.Contains("SchoolsGame.Declare(Wanted);"),
             "schools sources: the hall and the junior block are not asked of the copy engine in Awake, when it does not take requests yet");
         Match atLoad = Regex.Match(campusPart, @"private bool AtLoad\(\)\s*\{[\s\S]*?\n        \}");
-        Check(atLoad.Success && Regex.IsMatch(atLoad.Value, @"main == null \|\| main\.Controller == null[\s\S]*SchoolsGame\.Cut\(main\);\s*Ask\(\);"),
+        Check(atLoad.Success && Regex.IsMatch(atLoad.Value, @"main == null \|\| main\.Controller == null[\s\S]*cut = StandLooks\(main\) \|\| SchoolsGame\.Cut\(main\);\s*Ask\(\);"),
             "schools sources: they are asked behind the loading screen, once the main school stands");
-        Check(campusPart.Contains("_copies.Add(SchoolsGame.Plot(_plots[i]));") && !Regex.IsMatch(campusPart, @"handle != null\)\s*\{\s*_copies\.Add"),
+        Check(campusPart.Contains("_copies.Add(own ? null : SchoolsGame.Plot(_plots[i]));") && !Regex.IsMatch(campusPart, @"handle != null\)\s*\{\s*_copies\.Add"),
             "schools sources: a request the copy engine refused keeps its slot, so the plot is asked again and its outcome told");
         Check(campusPart.Contains("handle == null && SchoolsGame.CopiesAvailable") && campusPart.Contains("SchoolGrounds.BlockLine(") && Regex.IsMatch(campusPart, @"private void Campus\(\)[\s\S]*?Blocks\(\);"),
             "schools sources: each is asked again once the engine takes requests, and its outcome is written once, from the second's look");

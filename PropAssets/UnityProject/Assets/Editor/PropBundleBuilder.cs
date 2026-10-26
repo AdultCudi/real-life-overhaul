@@ -7,20 +7,18 @@ using UnityEngine.Rendering;
 
 /// <summary>
 /// Turns the interchange folder written by the Blender scripts (catalogue.json, meshes/*.json,
-/// textures/*.png) into the asset bundle of street props the mod ships. The bundle carries
-/// static meshes, the shared atlas textures and the catalogue only: no materials, shaders,
-/// colliders or scripts, so this project needs nothing of the game's. Run from the command
+/// textures/*.png) into one of the asset bundles of props the mod ships (PropAssets/sets.json
+/// names them). A bundle carries static meshes, its own atlas textures and the catalogue only:
+/// no materials, shaders, colliders or scripts, so this project needs nothing of the game's. A
+/// bundle with no props yet is built too, with its catalogue and no atlas. Run from the command
 /// line (see build_bundle.ps1):
 ///   Unity.exe -batchmode -quit -projectPath . -executeMethod PropBundleBuilder.Build
-///             [-buildFolder path] [-outFolder path]
-///   Unity.exe -batchmode -quit -projectPath . -executeMethod PropBundleBuilder.Verify [-outFolder path]
+///             [-buildFolder path] [-outFolder path] [-bundleName name]
+///   Unity.exe -batchmode -quit -projectPath . -executeMethod PropBundleBuilder.Verify [-outFolder path] [-bundleName name]
 /// </summary>
 public static class PropBundleBuilder
 {
     public const string FirstBundle = "reallife_props";
-
-    // -bundleName names the bundle built and checked: the first, or the second (README, "The second bundle").
-    private static string BundleName => Argument("-bundleName", FirstBundle);
     public const string CatalogueAsset = "catalogue";
 
     private const string Generated = "Assets/Generated";
@@ -53,6 +51,17 @@ public static class PropBundleBuilder
         public string material;     // lit | glow
         public int triangles;
         public float[] size;
+        public PartEntry[] parts;   // a building: what each submesh is drawn with (null for a prop of one material)
+    }
+
+    [Serializable]
+    public class PartEntry
+    {
+        public string game;         // null: the bundle's atlas; else the kind of the game's own material (brick, roof, glass, fence)
+        public float[] fallback;    // sRGB colour for the plain stand-in when the game has no such material
+        public float metallic;
+        public float smoothness;
+        public int triangles;
     }
 
     [Serializable]
@@ -63,6 +72,7 @@ public static class PropBundleBuilder
         public float[] normals;
         public float[] uv;
         public int[] triangles;
+        public int[] submeshes;     // a building: the triangles of each submesh, in order (they sum to the triangles above)
     }
 
     // ---------------------------------------------------------------- entry points
@@ -78,8 +88,11 @@ public static class PropBundleBuilder
             Check(File.Exists(cataloguePath), "no catalogue.json in " + buildFolder + ". Run the Blender scripts first.");
             string catalogueText = File.ReadAllText(cataloguePath);
             Catalogue catalogue = JsonUtility.FromJson<Catalogue>(catalogueText);
-            Check(catalogue.items != null && catalogue.items.Length > 0, "the catalogue has no items");
-            Check(catalogue.textures != null && catalogue.textures.Length > 0, "the catalogue has no textures");
+            string bundleName = BundleName();
+            Check(catalogue.items != null && catalogue.textures != null, "the catalogue has no list of items or of textures");
+            // An atlas with nothing drawn on it would be video memory for nothing.
+            Check(catalogue.items.Length > 0 || catalogue.textures.Length == 0, "the catalogue has textures and no items");
+            Check(catalogue.items.Length == 0 || catalogue.textures.Length > 0, "the catalogue has items and no textures");
 
             if (AssetDatabase.IsValidFolder(Generated))
             {
@@ -119,7 +132,7 @@ public static class PropBundleBuilder
                     string source = Path.Combine(buildFolder, "meshes", item.mesh + ".json");
                     Check(File.Exists(source), "mesh file missing: " + source);
                     Mesh mesh = BuildMesh(JsonUtility.FromJson<MeshFile>(File.ReadAllText(source)), item.mesh);
-                    triangles += (int)mesh.GetIndexCount(0) / 3;
+                    triangles += TriangleCount(mesh);
                     string target = Generated + "/Meshes/" + item.mesh + ".asset";
                     AssetDatabase.CreateAsset(mesh, target);
                     paths.Add(target);
@@ -138,7 +151,7 @@ public static class PropBundleBuilder
             Directory.CreateDirectory(staging);
             var bundle = new AssetBundleBuild
             {
-                assetBundleName = BundleName,
+                assetBundleName = bundleName,
                 assetNames = paths.ToArray(),
                 addressableNames = names.ToArray()
             };
@@ -149,8 +162,8 @@ public static class PropBundleBuilder
 
             // Only the bundle itself ships; Unity's manifest files stay in the staging folder.
             Directory.CreateDirectory(outFolder);
-            string shipped = Path.Combine(outFolder, BundleName);
-            File.Copy(Path.Combine(staging, BundleName), shipped, true);
+            string shipped = Path.Combine(outFolder, bundleName);
+            File.Copy(Path.Combine(staging, bundleName), shipped, true);
             Debug.Log(Tag + "BUILT " + shipped + "  " + (new FileInfo(shipped).Length / 1024) + " KB, " + meshes.Count + " meshes (" + triangles + " triangles), "
                       + textureNames.Count + " textures, " + catalogue.items.Length + " props");
         });
@@ -162,7 +175,7 @@ public static class PropBundleBuilder
         Run(() =>
         {
             string project = Directory.GetParent(Application.dataPath).FullName;
-            string shipped = Path.Combine(OutFolder(project), BundleName);
+            string shipped = Path.Combine(OutFolder(project), BundleName());
             Check(File.Exists(shipped), "no bundle at " + shipped);
             AssetBundle bundle = AssetBundle.LoadFromFile(shipped);
             Check(bundle != null, "AssetBundle.LoadFromFile failed for " + shipped);
@@ -179,8 +192,7 @@ public static class PropBundleBuilder
                     if (asset is Mesh mesh)
                     {
                         meshes[mesh.name] = mesh;
-                        Check(mesh.subMeshCount == 1, "mesh '" + mesh.name + "' has " + mesh.subMeshCount + " submeshes; a prop is drawn with one material");
-                        triangles += (int)mesh.GetIndexCount(0) / 3;
+                        triangles += TriangleCount(mesh);
                         meshBytes += UnityEngine.Profiling.Profiler.GetRuntimeMemorySizeLong(mesh);
                     }
                     else if (asset is Texture2D texture)
@@ -215,7 +227,16 @@ public static class PropBundleBuilder
                     Vector3 size = mesh.bounds.size;
                     Check(item.size != null && item.size.Length == 3, "prop '" + item.id + "' has no size");
                     Check((size - new Vector3(item.size[0], item.size[1], item.size[2])).magnitude < 0.002f, "prop '" + item.id + "': the mesh is " + size.ToString("F3") + ", the catalogue says otherwise");
-                    Check((int)mesh.GetIndexCount(0) / 3 == item.triangles, "prop '" + item.id + "': triangle count differs from the catalogue");
+                    Check(TriangleCount(mesh) == item.triangles, "prop '" + item.id + "': triangle count differs from the catalogue");
+                    // One submesh per material: a prop is drawn with one, a building with the parts its catalogue row lists (README, "Buildings").
+                    int wanted = item.parts != null && item.parts.Length > 1 ? item.parts.Length : 1;
+                    Check(mesh.subMeshCount == wanted, "prop '" + item.id + "': the mesh has " + mesh.subMeshCount + " submeshes, its catalogue row wants " + wanted);
+                    for (int part = 0; part < wanted && wanted > 1; part++)
+                    {
+                        Check(part > 0 || string.IsNullOrEmpty(item.parts[0].game), "prop '" + item.id + "': part 0 is the atlas's, it names no game material");
+                        Check((int)mesh.GetIndexCount(part) / 3 == item.parts[part].triangles, "prop '" + item.id + "': part " + part + "'s triangle count differs from the catalogue");
+                        Check(part == 0 || (item.parts[part].fallback != null && item.parts[part].fallback.Length == 3), "prop '" + item.id + "': part " + part + " has no stand-in colour");
+                    }
                     Debug.Log(Tag + "  prop " + item.id + ": " + mesh.vertexCount + " vertices, " + item.triangles + " triangles, " + size.x.ToString("F2") + " x " + size.y.ToString("F2")
                               + " x " + size.z.ToString("F2") + " m, " + item.material);
                 }
@@ -258,12 +279,43 @@ public static class PropBundleBuilder
         mesh.vertices = vertices;
         mesh.normals = normals;
         mesh.uv = uv;
-        mesh.SetTriangles(file.triangles, 0, false);
+        if (file.submeshes != null && file.submeshes.Length > 1)
+        {
+            int total = 0;
+            for (int part = 0; part < file.submeshes.Length; part++)
+            {
+                total += file.submeshes[part];
+            }
+            Check(total * 3 == file.triangles.Length, name + ": its submeshes do not add up to its triangles");
+            mesh.subMeshCount = file.submeshes.Length;
+            int start = 0;
+            for (int part = 0; part < file.submeshes.Length; part++)
+            {
+                var indices = new int[file.submeshes[part] * 3];
+                Array.Copy(file.triangles, start, indices, 0, indices.Length);
+                mesh.SetTriangles(indices, part, false);
+                start += indices.Length;
+            }
+        }
+        else
+        {
+            mesh.SetTriangles(file.triangles, 0, false);
+        }
         mesh.RecalculateBounds();
         mesh.RecalculateTangents();
         mesh.Optimize();
         mesh.UploadMeshData(true);      // static: no copy kept in main memory
         return mesh;
+    }
+
+    private static int TriangleCount(Mesh mesh)
+    {
+        int count = 0;
+        for (int part = 0; part < mesh.subMeshCount; part++)
+        {
+            count += (int)mesh.GetIndexCount(part) / 3;
+        }
+        return count;
     }
 
     // ---------------------------------------------------------------- textures
@@ -307,6 +359,11 @@ public static class PropBundleBuilder
         {
             throw new Exception(problem);
         }
+    }
+
+    private static string BundleName()
+    {
+        return Argument("-bundleName", FirstBundle);
     }
 
     private static string OutFolder(string project)

@@ -73,8 +73,8 @@ namespace RealLifeOverhaul.Schools
         public const float MainInset = 4f;        // m its front stands back from the block's edge: a forecourt inside the gate
         public const float GateWidth = 12f;       // m: the main gate on Uptown Avenue, before the main school's door
         public const float SideGate = 6f;         // m: the gate on Elm Street to the green, and the field's on Summit Avenue
-        public const float CourtLength = 24f;     // m: the court as stood, its long side running north
-        public const float CourtWidth = 15f;
+        public const float CourtLength = 19.2f;   // m: the court as stood, its long side running north (the game's court plane stretched evenly: 13.64 by 8.52 to 19.2 by 12)
+        public const float CourtWidth = 12f;      // m: the models' backs leave 15 m between them (CampusLookRules), the court and a bench each side fit
         public const float CourtBaseLength = 13.64f;   // m: the game's court plane's own size (its mesh, Build 3682)
         public const float CourtBaseWidth = 8.52f;
         public const float PitchWidth = 52f;      // m: the playing field west to east ...
@@ -156,13 +156,16 @@ namespace RealLifeOverhaul.Schools
             Run(into, runs, mid - SideGate * 0.5f, n, w, n);
             // West, on Birch Street: whole.
             Run(into, runs, w, n, w, s);
-            // The courtyard between the hall and the junior block: the court running north, a hoop at each end.
+            // The courtyard between the hall and the junior block: the court running north, a hoop at each end. It lies in the way
+            // between their backs (the models' own depths: CampusLookRules), which is not the block's middle.
+            Courtyard(out float courtX, out float strip);
             float courtZ = z0 + MainDepth + 2f + CourtLength * 0.5f + 3f;
-            into.Add(new CampusPiece { Kind = CampusPieceKind.Court, X = mid, Z = courtZ, Yaw = 90f, StretchX = CourtLength / CourtBaseLength, StretchZ = CourtWidth / CourtBaseWidth });
-            into.Add(new CampusPiece { Kind = CampusPieceKind.Hoop, X = mid, Z = courtZ - CourtLength * 0.5f + 0.6f, Yaw = 0f, StretchX = 1f, StretchZ = 1f });
-            into.Add(new CampusPiece { Kind = CampusPieceKind.Hoop, X = mid, Z = courtZ + CourtLength * 0.5f - 0.6f, Yaw = 180f, StretchX = 1f, StretchZ = 1f });
-            // The green round it: trees at its corners, benches along its sides facing the court.
-            float greenW = mid - CourtWidth * 0.5f - 3f, greenE = mid + CourtWidth * 0.5f + 3f;
+            into.Add(new CampusPiece { Kind = CampusPieceKind.Court, X = courtX, Z = courtZ, Yaw = 90f, StretchX = CourtLength / CourtBaseLength, StretchZ = CourtWidth / CourtBaseWidth });
+            into.Add(new CampusPiece { Kind = CampusPieceKind.Hoop, X = courtX, Z = courtZ - CourtLength * 0.5f + 0.6f, Yaw = 0f, StretchX = 1f, StretchZ = 1f });
+            into.Add(new CampusPiece { Kind = CampusPieceKind.Hoop, X = courtX, Z = courtZ + CourtLength * 0.5f - 0.6f, Yaw = 180f, StretchX = 1f, StretchZ = 1f });
+            // The green round it: trees at its ends, benches along its sides facing the court, in the strips beside it.
+            float side = CourtWidth * 0.5f + (strip - CourtWidth * 0.5f) * 0.5f;
+            float greenW = courtX - side, greenE = courtX + side;
             float greenS = courtZ - CourtLength * 0.5f, greenN = courtZ + CourtLength * 0.5f + 5f;
             Tree(into, greenW, greenS);
             Tree(into, greenE, greenS);
@@ -170,13 +173,27 @@ namespace RealLifeOverhaul.Schools
             Tree(into, greenE, greenN);
             into.Add(new CampusPiece { Kind = CampusPieceKind.Bench, X = greenW, Z = courtZ, Yaw = 90f, StretchX = 1f, StretchZ = 1f });
             into.Add(new CampusPiece { Kind = CampusPieceKind.Bench, X = greenE, Z = courtZ, Yaw = 270f, StretchX = 1f, StretchZ = 1f });
-            into.Add(new CampusPiece { Kind = CampusPieceKind.Bench, X = mid - 4f, Z = greenN, Yaw = 180f, StretchX = 1f, StretchZ = 1f });
-            into.Add(new CampusPiece { Kind = CampusPieceKind.Bench, X = mid + 4f, Z = greenN, Yaw = 180f, StretchX = 1f, StretchZ = 1f });
+            into.Add(new CampusPiece { Kind = CampusPieceKind.Bench, X = courtX - 4f, Z = greenN, Yaw = 180f, StretchX = 1f, StretchZ = 1f });
+            into.Add(new CampusPiece { Kind = CampusPieceKind.Bench, X = courtX + 4f, Z = greenN, Yaw = 180f, StretchX = 1f, StretchZ = 1f });
             // The playing field at the north end, behind the side gate, before the field's gate.
             into.Add(new CampusPiece
             {
                 Kind = CampusPieceKind.Pitch, X = mid, Z = z1 - 2f - PitchDepth * 0.5f, Yaw = 0f, StretchX = PitchWidth / PitchBaseWidth, StretchZ = PitchDepth / PitchBaseDepth
             });
+        }
+
+        /// <summary>
+        /// The way between the hall's back and the junior block's back, where the court lies: its middle x and its half width (m). The
+        /// models' fronts stand clear of the fence and their backs reach 24.4 m in from it (CampusLookRules.WallFromEdge, Depth).
+        /// </summary>
+        public static void Courtyard(out float x, out float halfWidth)
+        {
+            Ground(out float x0, out _, out float x1, out _);
+            LookModel hall = CampusLookRules.Models[1], junior = CampusLookRules.Models[2];
+            float west = x0 + CampusLookRules.WallFromEdge(hall) + hall.Depth;
+            float east = x1 - CampusLookRules.WallFromEdge(junior) - junior.Depth;
+            x = (west + east) * 0.5f;
+            halfWidth = (east - west) * 0.5f;
         }
 
         // A run of fence from one end to the other, its modules laid end to end, a post at each end; its carving box kept.

@@ -1,8 +1,13 @@
-"""Paints the one texture atlas every prop shares, and says where each region is.
+"""Paints the texture atlas the props of one bundle share, and says where each region is.
 
-    build/textures/props_base.png   4096 x 2048, colour
+    build/textures/props_base.png   4096 x 2048 (the first bundle), colour
     build/textures/props_mask.png   2048 x 1024, HDRP mask map: R metallic, G occlusion, B detail (unused), A smoothness
     build/atlas.json                region name -> [u0, v0, u1, v1]
+
+The set being built (sets.json, PROPS_SET) gives the folder and the size. The first bundle's atlas has a fixed size; a
+set whose atlas "grows" takes the smallest power-of-two size its regions fit, up to its limit, so it costs video
+memory only for what it holds, and none while it holds nothing. Such a set paints the swatches its models name and
+each model's own picture (models.py --scan lists them), and its procedural modules if it has any.
 
 A region is either a SWATCH (one surface finish: a colour that gets grimier towards the bottom of the patch, so a
 part mapped onto it by height picks up dirt and contact shadow where it meets the ground) or a DECAL (a painted
@@ -16,20 +21,20 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
-BUILD = os.environ.get("PROPS_BUILD") or os.path.join(ROOT, "build")      # PROPS_BUILD: a working folder of one's own (README, "Working on one module")
 sys.path.append(os.path.join(ROOT, "_tools", "pylib"))
 sys.path.insert(0, HERE)
 
 import numpy as np  # noqa: E402
 from PIL import Image, ImageDraw, ImageFilter, ImageFont  # noqa: E402
 
-WIDTH, HEIGHT = 4096, 2048        # powers of two, both: Unity leaves any other size uncompressed (RGBA32, four times the memory)
-# PROPS_SET=second: the second bundle's atlas (README, "The second bundle"): the shared swatches and its own modules only.
-SECOND_SET = os.environ.get("PROPS_SET") == "second"
-SECOND = ["build", "landmarks"]    # the second bundle's modules, painted in this order: the sites', then the stadium's
-if SECOND_SET:
-    WIDTH, HEIGHT = 1024, 512
-MASK_DIVISOR = 2          # the mask map is half the size of the colour
+import sets  # noqa: E402
+
+BUILD = sets.BUILD          # PROPS_BUILD: a working folder of one's own (README, "Working on one module")
+# Powers of two, both: Unity leaves any other size uncompressed (RGBA32, four times the memory). A set that grows
+# starts at the smallest and doubles to this limit.
+WIDTH, HEIGHT = sets.SET["atlas"]["width"], sets.SET["atlas"]["height"]
+MASK_DIVISOR = sets.SET["mask_divisor"]       # the mask map is this much smaller each way than the colour
+SMALLEST = 256
 PAD = 8                   # gutter round every region, filled with the region's own edge
 SS = 2                    # regions are painted at twice their size and reduced: smooth edges without a rasteriser
 GRIME = (0.23, 0.20, 0.17)
@@ -189,6 +194,30 @@ SWATCHES = {
     "bristle": ((0.36, 0.25, 0.12), 0.0, 0.08, 0.8),
     "paper": ((0.93, 0.92, 0.88), 0.0, 0.18, 0.1),
     "cardboard": ((0.62, 0.47, 0.30), 0.0, 0.12, 0.4),
+}
+
+def _srgb(linear):
+    return tuple(round(12.92 * c if c <= 0.0031308 else 1.055 * (c ** (1 / 2.4)) - 0.055, 3) for c in linear)
+
+
+# The plain finishes of the Birchwood School's models (models/birchwood_*), named swatch_<name> in them: only a later set that
+# a model names them in paints them, never the first (closed) set's atlas. Colours as the model has them (linear in Blender,
+# sRGB here); brick, roof and glass are the game's own materials (models.py, "game"), not painted.
+MODEL_SWATCHES = {
+    "stone": (_srgb((0.80, 0.76, 0.66)), 0.0, 0.2, 0.7),        # the limestone trim, bands and plinth
+    "frame": (_srgb((0.93, 0.92, 0.88)), 0.0, 0.2, 0.3),        # window frames and mullions
+    "door": (_srgb((0.20, 0.30, 0.22)), 0.0, 0.2, 0.3),
+    "copper": (_srgb((0.30, 0.55, 0.45)), 0.0, 0.2, 0.2),       # the cupola's patina
+    "letters": (_srgb((0.08, 0.10, 0.12)), 0.0, 0.5, 0.0),
+    "flag_red": (_srgb((0.55, 0.05, 0.06)), 0.0, 0.5, 0.0),
+    "flag_blue": (_srgb((0.05, 0.08, 0.25)), 0.0, 0.5, 0.0),
+    "accent": (_srgb((0.05, 0.45, 0.50)), 0.0, 0.5, 0.3),        # the junior block's teal canopy
+    "ground": (_srgb((0.35, 0.35, 0.34)), 0.0, 0.2, 0.5),        # the forecourt's slab
+    "metal": (_srgb((0.12, 0.12, 0.13)), 0.0, 0.5, 0.2),         # rails, the fire escape, the tank's legs
+    "wood": (_srgb((0.32, 0.20, 0.12)), 0.0, 0.5, 0.4),
+    "lamp": (_srgb((0.95, 0.85, 0.55)), 0.0, 0.5, 0.0),
+    "leaf": (_srgb((0.14, 0.32, 0.12)), 0.0, 0.5, 0.0),
+    "accent2": (_srgb((0.85, 0.62, 0.12)), 0.0, 0.5, 0.2),       # the junior block's yellow window panels
 }
 SWATCH_SIZE = (40, 80)     # a swatch is one finish and its grime, read 7 px in from its edges: smaller swatches leave the atlas room for more modules
 
@@ -1050,44 +1079,92 @@ def extra_modules():
     """The painting modules to use. PROPS_DEV=name[,name] limits them to those (working on one module without the
     others having to be whole); a module whose file is not there is skipped."""
     only = os.environ.get("PROPS_DEV")
-    names = SECOND if SECOND_SET else [n.strip() for n in only.split(",") if n.strip()] if only else EXTRA
+    names = [n.strip() for n in only.split(",") if n.strip()] if only else EXTRA
     return [__import__("paint_" + name) for name in names if os.path.exists(os.path.join(HERE, "paint_" + name + ".py"))]
 
 
 EXTRA.append("tech")       # the tech sector's buildings (paint_tech.py): a module of its own, painted after the others
 
 
-def build():
-    if SECOND_SET:
-        # Only the finishes every prop may name, then the second bundle's own regions: no lettering of the first's.
-        layers = {name: paint_swatch(name) for name in SWATCHES}
-    else:
+def add_module(layers, module):
+    """A painting module's regions (see EXTRA above), refused if it names one that exists."""
+    swatches, decals = module.register(sys.modules[__name__])
+    clash = [n for n in list(swatches) + list(decals) if n in layers or n in SWATCHES]
+    if clash:
+        raise SystemExit("%s names regions that exist already: %s" % (module.__name__, ", ".join(clash)))
+    SWATCHES.update(swatches)
+    layers.update({name: paint() for name, paint in decals.items()})
+    layers.update({name: paint_swatch(name) for name in swatches})
+    print("%s: %d regions, %d pixels with their gutters" % (module.__name__, len(swatches) + len(decals),
+          sum((layers[n].width + 2 * PAD) * (layers[n].height + 2 * PAD) for n in list(swatches) + list(decals))))
+
+
+class Picture:
+    """A model's own painted picture (models.py --scan saved it) as a region: its colour, and its mask map's metallic,
+    occlusion and smoothness from <id>_mask.png when the model has one, else its material's own two values."""
+
+    def __init__(self, entry):
+        self.colour = Image.open(entry["file"]).convert("RGB")
+        self.width, self.height = self.colour.size
+        self.mask = Image.open(entry["mask"]).convert("RGBA").resize(self.colour.size, Image.LANCZOS) if entry.get("mask") else None
+        self.metal, self.smooth = entry.get("metallic", 0.0), entry.get("smoothness", 0.3)
+
+    def images(self):
+        if self.mask is not None:
+            r, g, _, a = self.mask.split()
+            return [self.colour, r, g, a]
+        size = self.colour.size
+        return [self.colour, Image.new("L", size, _byte(self.metal)), Image.new("L", size, 255), Image.new("L", size, _byte(self.smooth))]
+
+
+def gather():
+    """The regions of the set being built: name -> something with width, height and images()."""
+    if sets.FIRST:
         layers = {"tape": paint_tape()}
         layers.update({name: paint() for name, paint in DECALS.items()})
         layers.update({name: paint_swatch(name) for name in SWATCHES if name not in LIFE_SWATCHES})
         layers.update({name: paint() for name, paint in LIFE_DECALS.items()})          # after the above: see LIFE_SWATCHES
         layers.update({name: paint_swatch(name) for name in LIFE_SWATCHES})
-    for module in extra_modules():
-        swatches, decals = module.register(sys.modules[__name__])
-        clash = [n for n in list(swatches) + list(decals) if n in layers or n in SWATCHES]
-        if clash:
-            raise SystemExit("%s names regions that exist already: %s" % (module.__name__, ", ".join(clash)))
-        SWATCHES.update(swatches)
-        layers.update({name: paint() for name, paint in decals.items()})
-        layers.update({name: paint_swatch(name) for name in swatches})
-        print("%s: %d regions, %d pixels with their gutters" % (module.__name__, len(swatches) + len(decals),
-              sum((layers[n].width + 2 * PAD) * (layers[n].height + 2 * PAD) for n in list(swatches) + list(decals))))
+        for module in extra_modules():
+            add_module(layers, module)
+        return layers
+    modules = [__import__("paint_" + name) for name in sets.SET.get("modules", [])]
+    scanned = os.path.join(BUILD, "models.json")
+    models = []
+    if sets.SET.get("models"):
+        if not os.path.exists(scanned):
+            raise SystemExit("no %s: run models.py --scan first (build.ps1 does)" % scanned)
+        with open(scanned, encoding="utf-8") as f:
+            models = json.load(f)["models"]
+    # The swatches its procedural modules may name (all of them), or only those its models name.
+    wanted = set(SWATCHES) if modules else set()
+    for model in models:
+        unknown = [s for s in model["swatches"] if s not in SWATCHES and s not in MODEL_SWATCHES]
+        if unknown:
+            raise SystemExit("model %s names swatches the atlas does not have: %s (README, 'Adding a prop from Blender')" % (model["id"], ", ".join(unknown)))
+        wanted.update(model["swatches"])
+    SWATCHES.update({name: MODEL_SWATCHES[name] for name in sorted(wanted) if name in MODEL_SWATCHES and name not in SWATCHES})
+    layers = {name: paint_swatch(name) for name in SWATCHES if name in wanted}
+    for module in modules:
+        add_module(layers, module)
+    for model in models:
+        for picture in model["pictures"]:
+            layers[picture["region"]] = Picture(picture)
+    return layers
 
-    # The tape is a row of its own with no gutter at its ends. The rest go, largest first, into the free
-    # rectangle each fits most tightly, which is then cut in two.
+
+def pack(layers, width, height):
+    """Where each region goes in a width x height atlas, or (None, the first that does not fit). The tape is a row of
+    its own with no gutter at its ends. The rest go, largest first, into the free rectangle each fits most tightly,
+    which is then cut in two."""
     places = {"tape": (0, PAD)} if "tape" in layers else {}
     top = PAD + layers["tape"].height + PAD if "tape" in layers else 0
-    free = [(0, top, WIDTH, HEIGHT - top)]
+    free = [(0, top, width, height - top)]
     for name in sorted((n for n in layers if n != "tape"), key=lambda n: (-layers[n].height * layers[n].width, n)):
         w, h = layers[name].width + 2 * PAD, layers[name].height + 2 * PAD
         fits = [r for r in free if r[2] >= w and r[3] >= h]
         if not fits:
-            raise SystemExit("the atlas is full: no room for " + name)
+            return None, name
         fx, fy, fw, fh = min(fits, key=lambda r: min(r[2] - w, r[3] - h))
         free.remove((fx, fy, fw, fh))
         if fw - w > fh - h:
@@ -1095,6 +1172,46 @@ def build():
         else:
             free += [(fx + w, fy, fw - w, h), (fx, fy + h, fw, fh - h)]
         places[name] = (fx + PAD, fy + PAD)
+    return places, None
+
+
+def sizes():
+    """The sizes to try: the set's own, or for one that grows each power of two up to it, square then twice as wide."""
+    if not sets.SET["atlas"].get("grows"):
+        return [(WIDTH, HEIGHT)]
+    out, w, h = [], SMALLEST, SMALLEST
+    while w <= WIDTH and h <= HEIGHT:
+        out.append((w, h))
+        w, h = (w * 2, h) if w == h else (w, h * 2)
+    return out
+
+
+def write_empty():
+    """A set with nothing in it ships no atlas at all: no video memory for nothing."""
+    for name in ("props_base.png", "props_mask.png"):
+        stale = os.path.join(BUILD, "textures", name)
+        if os.path.exists(stale):
+            os.remove(stale)
+    os.makedirs(BUILD, exist_ok=True)
+    with open(os.path.join(BUILD, "atlas.json"), "w") as f:
+        json.dump({"width": 0, "height": 0, "used": 0, "swatches": [], "regions": {}}, f, indent=1)
+    print("atlas: none, the set '%s' has no regions" % sets.NAME)
+
+
+def build():
+    global WIDTH, HEIGHT
+    layers = gather()
+    if not layers:
+        write_empty()
+        return
+    missing = None
+    for width, height in sizes():
+        places, missing = pack(layers, width, height)
+        if places is not None:
+            WIDTH, HEIGHT = width, height
+            break
+    else:
+        raise SystemExit("the atlas is full: no room for %s (the set '%s', %d x %d at most)" % (missing, sets.NAME, WIDTH, HEIGHT))
 
     base = np.full((HEIGHT, WIDTH, 3), 96, dtype=np.uint8)
     mask = np.zeros((HEIGHT, WIDTH, 4), dtype=np.uint8)
@@ -1119,9 +1236,10 @@ def build():
     os.makedirs(os.path.join(BUILD, "textures"), exist_ok=True)
     Image.fromarray(base, "RGB").save(os.path.join(BUILD, "textures", "props_base.png"))
     Image.fromarray(mask, "RGBA").resize((WIDTH // MASK_DIVISOR, HEIGHT // MASK_DIVISOR), Image.BOX).save(os.path.join(BUILD, "textures", "props_mask.png"))
+    percent = round(100 * used / (WIDTH * HEIGHT))
     with open(os.path.join(BUILD, "atlas.json"), "w") as f:
-        json.dump({"width": WIDTH, "height": HEIGHT, "swatches": sorted(SWATCHES), "regions": rects}, f, indent=1)
-    print("atlas %d x %d, %d regions, %d %% used" % (WIDTH, HEIGHT, len(rects), round(100 * used / (WIDTH * HEIGHT))))
+        json.dump({"width": WIDTH, "height": HEIGHT, "used": percent, "swatches": sorted(SWATCHES), "regions": rects}, f, indent=1)
+    print("atlas %d x %d, %d regions, %d %% used" % (WIDTH, HEIGHT, len(rects), percent))
 
 
 if __name__ == "__main__":

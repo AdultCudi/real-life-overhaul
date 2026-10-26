@@ -14,6 +14,7 @@ import numpy as np
 from city_props import CITY_PROPS
 from life_props import LIFE_PROPS
 from prop_kit import Paint, Prop, box, ellipse, fillet, grid, lathe, loft, moved, prism, rounded_rect, tube
+import sets  # the bundle being built (sets.json)
 
 # The stretcher's bed, as People/Stretcher.cs has it: 2 m long, the top of the mattress 0.7 m up, head end forward.
 BED_TOP = 0.70
@@ -419,19 +420,27 @@ PROPS = [
 # A module may also say SIDES = {prop id: {"references": ((size, centre), ...), "people": (((x, y), turn), ...)}}: such a
 # prop gets a second sheet, previews/<id>_sides.png, from six sides with what it goes over or beside (kit.turnaround).
 # "parts": ((prop id, (x, y, z), turn), ...) puts other props on it where the code does (a vehicle's wheels).
+# ALIASES = {id: id it is drawn as}: a name callers use for a prop that looks the same as another, kept as a second row of
+# the catalogue over the other's mesh, so nothing is stored twice and no caller changes.
 SIDES = {}
+ALIASES = {}
 EXTRA = ["civic", "service", "events", "everyday", "garage", "family", "site", "tow"]
 _only = os.environ.get("PROPS_DEV")
 EXTRA = EXTRA + ["tech"]   # the tech sector's buildings (props_tech.py)
-# PROPS_SET=second: the second bundle (README, "The second bundle"): its own modules and nothing of the first's.
-SECOND = ["build", "landmarks"]   # the building sites, then Uptown's stadium (props_landmarks.py)
-if os.environ.get("PROPS_SET") == "second":
+if not sets.FIRST:
+    # Another bundle (sets.json): its own procedural modules and models, nothing of the first's.
     PROPS = []
-for _name in (SECOND if os.environ.get("PROPS_SET") == "second" else [n.strip() for n in _only.split(",") if n.strip()] if _only else EXTRA):
+    EXTRA = list(sets.SET.get("modules", []))
+    _only = None
+for _name in ([n.strip() for n in _only.split(",") if n.strip()] if _only else EXTRA):
     if os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), "props_" + _name + ".py")):
         _module = __import__("props_" + _name)
         PROPS = PROPS + _module.PROPS
         SIDES.update(getattr(_module, "SIDES", {}))
+        ALIASES.update(getattr(_module, "ALIASES", {}))
+if sets.MODELS:
+    import models
+    PROPS = PROPS + models.PROPS()
 
 
 def build_all(only=None):

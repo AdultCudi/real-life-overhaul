@@ -57,8 +57,9 @@ namespace RealLifeOverhaul.Schools
             SchoolGrounds.Blocks(_plots);
             for (int i = 0; i < _plots.Count; i++)
             {
-                _copies.Add(SchoolsGame.Plot(_plots[i]));
-                _told.Add(false);
+                bool own = LookStands(i + 1);     // the model stands: the copy engine is not asked (it is only the fallback)
+                _copies.Add(own ? null : SchoolsGame.Plot(_plots[i]));
+                _told.Add(own);
             }
         }
 
@@ -79,6 +80,10 @@ namespace RealLifeOverhaul.Schools
             for (int i = 0; i < _copies.Count && i < _plots.Count; i++)
             {
                 CopyHandle handle = _copies[i];
+                if (LookStands(i + 1))
+                {
+                    continue;
+                }
                 if (handle == null && SchoolsGame.CopiesAvailable)
                 {
                     handle = _copies[i] = SchoolsGame.Plot(_plots[i]);
@@ -103,17 +108,32 @@ namespace RealLifeOverhaul.Schools
             if (!Wanted())
             {
                 DropCopies();
+                LeaveLook();
                 return true;
             }
             MadeBuilding main = SchoolsGame.Main;
             if (main == null || main.Controller == null)
             {
                 DropCopies();
+                LeaveLook();
                 Logger?.Info("Schools: Birchwood School does not stand at this load: its main school stood down (the made buildings' line says why); the market runs on.");
                 return true;
             }
-            bool cut = SchoolsGame.Cut(main);
-            Ask();
+            CampusLook.FindMaterials();      // the game's brick, roof, glass and chain-link, by name, once and only here: behind the loading screen
+            // The campus's own look from the second props bundle where it is read (else the copy engine's designs, the bundle waited for a moment
+            // at most); the main school's walking-mesh cut follows the shape that stands.
+            bool cut = false;
+            if (BundlesSettled)
+            {
+                _lookWait = false;
+                cut = StandLooks(main) || SchoolsGame.Cut(main);
+                Ask();
+            }
+            else
+            {
+                _lookWait = true;
+                _lookWaitEnd = Time.unscaledTime + LookWaitSeconds;
+            }
             PiecesMissing = SchoolsGame.FindTemplates();
             SchoolGrounds.Pieces(_pieces, _runs);
             _pieceRoot = SchoolsGame.Stand(_pieces, _runs, out int stood, out int missed);
@@ -122,7 +142,10 @@ namespace RealLifeOverhaul.Schools
             Hold(main);
             Logger?.Info("Schools: Birchwood School's campus stood at 1 Birchwood Green (the main school wears " + main.Design + ", " + (cut ? "cut out of the walking meshes" : "not cut") + "); "
                          + stood + " of " + _pieces.Count + " pieces of the game's own" + (missed > 0 ? " (" + missed + " not stood; not found: " + (PiecesMissing ?? "the pitch") + ")" : string.Empty)
-                         + ", " + _runs.Count + " runs of fence; the hall and the junior block asked of the copy engine (" + Asked() + " of " + _plots.Count + ").");
+                         + ", " + _runs.Count + " runs of fence; the hall and the junior block "
+                         + (_lookWait ? "wait for the props bundles"
+                             : LookStands(1) || LookStands(2) ? "from the models" + (Asked() > 0 ? " and asked of the copy engine (" + Asked() + ")" : string.Empty)
+                             : "asked of the copy engine (" + Asked() + " of " + _plots.Count + ")") + ".");
             return true;
         }
 
@@ -145,12 +168,13 @@ namespace RealLifeOverhaul.Schools
             {
                 return;
             }
+            LookTick();
             if (_cutCopies < _copies.Count)
             {
                 int cut = 0;
                 for (int i = 0; i < _copies.Count; i++)
                 {
-                    cut += SchoolsGame.CutCopy(_copies[i]) ? 1 : 0;
+                    cut += LookStands(i + 1) || SchoolsGame.CutCopy(_copies[i]) ? 1 : 0;    // a model is carved when it stands
                 }
                 _cutCopies = cut;
             }
@@ -322,6 +346,7 @@ namespace RealLifeOverhaul.Schools
             _crowding = false;
             Let(why);
             DropCopies();
+            LeaveLook();
             _places.Clear();
             _map?.Set(_places);
             _campusStood = false;

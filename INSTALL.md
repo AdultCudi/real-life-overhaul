@@ -48,7 +48,9 @@ To update, run the new version's setup the same way. To uninstall, see "Uninstal
        ├── Bundles
        │   ├── reallife_anim
        │   ├── reallife_character
-       │   └── reallife_props
+       │   ├── reallife_props
+       │   ├── reallife_props_2
+       │   └── reallife_props_site
        └── Locales
            ├── en.json
            ├── pt.json

@@ -382,8 +382,8 @@ namespace RealLifeOverhaul
         private bool Assemble(BikeDef def, Transform root, Vector3 headTop, int rgb)
         {
             Color wanted = GarageCar.FromRgb(rgb);
-            Material tint = PropLibrary.Tinted(new Color(Mathf.Clamp01(wanted.r / PaintBase.r), Mathf.Clamp01(wanted.g / PaintBase.g), Mathf.Clamp01(wanted.b / PaintBase.b)));
             string id = def.Prop;
+            Material tint = PropLibrary.Tinted(id + "_frame_paint", new Color(Mathf.Clamp01(wanted.r / PaintBase.r), Mathf.Clamp01(wanted.g / PaintBase.g), Mathf.Clamp01(wanted.b / PaintBase.b)));
             if (tint == null || Part(id + "_frame", root, null) == null)
             {
                 return false;

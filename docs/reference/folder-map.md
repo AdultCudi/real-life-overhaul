@@ -12,7 +12,9 @@ This is the mod, and the single source of truth: the Unity project and the comma
 | `RealLifeOverhaul.asmdef` | assembly definition and references |
 | `Locales/en.json` | every player-facing string, flat keys prefixed reallife_; beside it `pt.json`, `zh-cn.json`, `de.json`, `fr.json`, `es.json`, `ru.json`, `nl.json` and `tr.json`, see [Texts and translation](../contributing/texts-and-translation.md) |
 | `Bundles/reallife_character` | meshes and textures for the player's new looks (built by `CharacterAssets`) |
-| `Bundles/reallife_props` | the modelled street props and their texture atlas (built by `PropAssets`) |
+| `Bundles/reallife_props` | the modelled street props and their texture atlas (built by `PropAssets`; closed: it takes no new prop) |
+| `Bundles/reallife_props_2` | the props added since, modelled in Blender (Birchwood School's three buildings), with an atlas of their own (built by `PropAssets` from `PropAssets/models`) |
+| `Bundles/reallife_props_site` | the building sites' props and Uptown's stadium, with an atlas of their own (built by `PropAssets`, the set `site`; closed) |
 | `Bundles/reallife_anim` | the mod's own Humanoid animation clips and how each tool sits in the hand (built by `CityAssets`) |
 | `Scripts/` | the code, one folder per feature |
 | `thumbnail.jpg` | the Workshop picture, installed with the mod |
@@ -72,7 +74,7 @@ The built bundles are committed, so a code-only build needs neither Unity nor Bl
 | `PropAssets/` | asset pipeline for the street props |
 | `PropAssets/scripts/` | Blender scripts: paint the atlas, model every prop, render previews |
 | `PropAssets/UnityProject/` | small Unity project that only turns build/ into the asset bundle |
-| `PropAssets/build.ps1` | everything: atlas, props, previews, Bundles/reallife_props, load check |
+| `PropAssets/build.ps1` | everything, one bundle of `PropAssets/sets.json` after another: atlas, props, previews, Bundles/reallife_props and Bundles/reallife_props_2, load check, `PropAssets/contents` |
 | `CityAssets/` | asset pipeline for the animation clips |
 | `CityAssets/scripts/` | Blender scripts: the authoring rig, THE CLIPS, contact sheets, FBX |
 | `CityAssets/UnityProject/` | small Unity project: Humanoid import, the bundle, and the tests that prove the clips play |
