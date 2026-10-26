@@ -56,32 +56,32 @@ internal static partial class Program
         string box = Source(scripts, @"Core\GameUi\InfoBox.cs");
         string keep = Source(scripts, @"Core\GameUi\InfoBox.Keep.cs");
         string add = Body(box, "private GameObject Add(");
-        Check(add.Contains("parent == null && Kept(template)") && add.Contains("Reuse(template)") && Body(box, "public void Clear()").Contains("Park(part, _liveFrom[i])"),
+        Check(add.Contains("Kept(template) && Ours(target)") && add.Contains("Reuse(template, target)") && Body(box, "public void Clear()").Contains("Park(part, _liveFrom[i])"),
             "apps: a part is taken back only into the box, and the box's parts are laid aside when it is cleared");
         string kept = Body(keep, "private bool Kept(");
-        string[] kinds = { "_bodyT", "_subT", "_noteT", "_headerT", "_headingT", "_pairT", "_meterT", "_checkT", "_footT", "_switch", "_toggleT", "_selector", "_buttons" };
+        string[] kinds = { "_bodyT", "_subT", "_noteT", "_headerT", "_groupT", "_rowT", "_pairT", "_meterT", "_entryT", "_checkT", "_guideT", "_switch", "_toggleT", "_selector", "_buttons" };
         bool listed = true;
         foreach (string kind in kinds)
         {
             listed &= kept.Contains("template == " + kind);
         }
         Check(listed && !kept.Contains("_chipsT") && !kept.Contains("_chipT") && !kept.Contains("_title") && !kept.Contains("_line ") && !kept.Contains("_headline"),
-            "apps: the box keeps its own kinds of part (rows, lines, notes, headers, sections, pairs, meters, ticks, the foot, switches, settings switches, selectors, buttons), and no chip");
+            "apps: the box keeps its own kinds of part (facts, lines, notes, headers, section cards, pairs, list entries, meters, ticks, the Guide's page, switches, settings switches, selectors, buttons), and no chip");
         string restore = Body(keep, "private void Restore(");
         string[] setBack =
         {
-            "color = _lineColour", "margin = _headerMargin", "Find(\"Chips\")", "color = _checkColour", "mark.sprite = _checkMarkSprite", "mark.color = _checkMarkColour",
-            "sizeDelta = _checkMarkSize", "anchoredPosition = _checkMarkAt", "SetIsOnWithoutNotify(_switchOn)", "SetIsOnWithoutNotify(_toggleOn)", "template == _pairT || template == _selector || template == _buttons"
+            "color = _lineColour", "Find(\"Chips\")", "color = _checkColour", "mark.sprite = _checkMarkSprite", "mark.color = _checkMarkColour",
+            "localScale = Vector3.one", "SetIsOnWithoutNotify(_switchOn)", "SetIsOnWithoutNotify(_toggleOn)", "template == _groupT || template == _pairT || template == _selector || template == _buttons"
         };
         bool all = true;
         foreach (string piece in setBack)
         {
             all &= restore.Contains(piece);
         }
-        Check(all && Count(restore, "Prune(") == 2, "apps: a part laid aside is set back to its template: a line's colour, a header's margin and chips, a tick's colour and mark, a switch's state, and what was put under a part made of others");
+        Check(all && Count(restore, "Prune(") == 2, "apps: a part laid aside is set back to its template: a line's colour, a header's chips, a tick's colour, mark and size, a switch's state, and what was put under a part made of others");
         string reuse = Body(keep, "private GameObject Reuse(");
         string park = Body(keep, "private void Park(");
-        Check(reuse.Contains("SetParent(_box, false)") && park.IndexOf("Restore(part, template)", StringComparison.Ordinal) >= 0
+        Check(reuse.Contains("SetParent(target, false)") && park.IndexOf("Restore(part, template)", StringComparison.Ordinal) >= 0
               && park.IndexOf("Restore(part, template)", StringComparison.Ordinal) < park.IndexOf("SetParent(_parked", StringComparison.Ordinal),
             "apps: a part is set back while it is still awake, then laid aside, and taken back as the last of the box's children");
 

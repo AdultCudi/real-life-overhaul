@@ -257,7 +257,7 @@ namespace RealLifeOverhaul.Meta
                 .Owns(Settings.PhoneFoldersId)
                 .Fact("phone_dock", () => Whole(GameUi.PhoneLayoutRules.DockMost))
                 .Rows("reallife_phone_layout_reset")   // every app back in its folder: the player's, not a test
-                .Test("reallife_phone_test_check", "reallife_phone_test_folder");
+                .Test("reallife_phone_test_check", "reallife_phone_test_folder", "reallife_leftpane_test");
 
             Features.Add("ragdoll", "reallife_meta_title_ragdoll")
                 .About("reallife_guide_ragdoll_about").Help("reallife_guide_ragdoll")
