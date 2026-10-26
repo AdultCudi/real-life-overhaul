@@ -471,7 +471,7 @@ internal static partial class Program
         // The bench (Player.log, 26 Oct 2026: "not found: SleepingBench"): one place for the game's pavement bench; the campus's, the streets' and the parks' the same.
         string pieceCode = Bare(ModSource(@"Uptown\GamePieces.cs")), gameCode = Bare(ModSource(@"Schools\SchoolsGame.cs"));
         string streetCode = Bare(ModSource(@"Uptown\StreetsGame.cs")), parkCode = Bare(ModSource(@"Uptown\ParksGame.cs"));
-        Check(Regex.IsMatch(gameCode, @"Kind = \(int\)CampusPieceKind\.Bench, Root = GamePieces\.BenchRoot, Name = GamePieces\.BenchName, X = GamePieces\.BenchX, Z = GamePieces\.BenchZ,[^\n]*Within = GamePieces\.BenchReach")
+        Check(Regex.IsMatch(gameCode, @"Kind = \(int\)CampusPieceKind\.Bench, Root = GamePieces\.BenchRoot, Name = GamePieces\.BenchName, X = GamePieces\.BenchX, Z = GamePieces\.BenchZ,[^}]*Within = GamePieces\.BenchReach")
               && !gameCode.Contains("-397.79f") && !gameCode.Contains("Name = \"SleepingBench\""),
             "schools sources: the campus's bench is the game's pavement bench, asked for where the street furniture asks for it, not under BuildingBlocks");
         Check(pieceCode.Contains("BenchRoot = \"SleepingBench\"") && pieceCode.Contains("BenchX = 214.40f") && pieceCode.Contains("BenchZ = 99.39f") && pieceCode.Contains("BenchReach = 40f")
