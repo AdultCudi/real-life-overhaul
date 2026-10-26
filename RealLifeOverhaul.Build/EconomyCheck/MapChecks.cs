@@ -18,6 +18,8 @@ internal static partial class Program
         MapStepChecks();
         MapListChecks();
         MapSourceChecks();
+        MapSearchChecks();
+        MapOwnedSourceChecks();
         MapTextChecks();
     }
 
@@ -33,14 +35,26 @@ internal static partial class Program
         // The owner's warehouse at 2 Maple Street: the player's own (a deed), not to let, empty.
         var owned = new MapBuilding { Listed = true, Type = MapWarehouse, Owned = true, Business = MapEmpty };
         Check(MapRules.Rows(owned, MapOnRows(true)) == MapRow.ByYou, "map rows: a building the player owns is lit by Rented by you, with its deed and no tenant");
-        Check(MapRules.Rows(owned, MapOnRows(false, MapWarehouse)) == MapRow.None, "map rows: the Warehouse row lists warehouses to let, as the game's does: one the player owns and has not put up to let is not under it");
-        Check(MapRules.Rows(owned, MapOnRows(true, MapWarehouse)) == MapRow.ByYou && MapRules.Rows(owned, MapOnRows(false)) == MapRow.None,
-            "map rows: with both rows on it is lit once, by Rented by you, and with neither it is not lit");
+        Check(MapRules.Rows(owned, MapOnRows(false, MapWarehouse)) == MapRow.OwnType && MapRules.Rows(owned, MapOnRows(false, MapOffice)) == MapRow.None,
+            "map rows: an empty warehouse the player owns and has not put up to let is lit by the Warehouse row (the owner's decision), and not by the Office row");
+        Check(MapRules.Rows(owned, MapOnRows(true, MapWarehouse)) == (MapRow.ByYou | MapRow.OwnType) && MapRules.Rows(owned, MapOnRows(false)) == MapRow.None,
+            "map rows: with both rows on it is lit by both, and with neither it is not lit");
         var rented = new MapBuilding { Listed = true, Type = MapWarehouse, RentedByPlayer = true, Business = MapEmpty };
-        Check(MapRules.Rows(rented, MapOnRows(true)) == MapRow.ByYou && MapRules.Rows(rented, MapOnRows(false, MapWarehouse)) == MapRow.None, "map rows: a building the player rents is lit by Rented by you alone");
+        Check(MapRules.Rows(rented, MapOnRows(true)) == MapRow.ByYou && MapRules.Rows(rented, MapOnRows(false, MapWarehouse)) == MapRow.OwnType, "map rows: a building the player rents is lit by Rented by you, and by its type row too");
         var toLet = new MapBuilding { Listed = true, Type = MapWarehouse, AvailableForRent = true, Business = MapEmpty };
         Check(MapRules.Rows(toLet, MapOnRows(false, MapWarehouse)) == MapRow.ForRent && MapRules.Rows(toLet, MapOnRows(true)) == MapRow.None && MapRules.Rows(toLet, MapOnRows(false, MapOffice)) == MapRow.None,
             "map rows: a warehouse to let is lit by the Warehouse row, not by Rented by you and not by the Office row");
+        // To let stays as the game has it: the type row lights it, once, whoever holds it.
+        var ownToLet = new MapBuilding { Listed = true, Type = MapWarehouse, Owned = true, AvailableForRent = true, Business = MapEmpty };
+        Check(MapRules.Rows(ownToLet, MapOnRows(false, MapWarehouse)) == MapRow.ForRent, "map rows: a warehouse the player owns and has put up to let is lit by the Warehouse row as to let, as before, not twice");
+        // "Hide closed" hides an owned building that is shut, as the game hides one; a home or a building to let stays.
+        var closed = new MapOn { Types = new List<string> { MapWarehouse, "ba:buildingtype_residential" }, Businesses = new List<string>(), HideClosed = true };
+        var home = new MapBuilding { Listed = true, Type = "ba:buildingtype_residential", Owned = true, Business = MapEmpty };
+        Check(MapRules.Rows(owned, closed) == MapRow.None && MapRules.Rows(new MapBuilding { Listed = true, Type = MapWarehouse, Owned = true, Open = true, Business = MapEmpty }, closed) == MapRow.OwnType
+              && MapRules.Rows(home, closed) == MapRow.OwnType && MapRules.Rows(ownToLet, closed) == MapRow.ForRent,
+            "map rows: with Hide closed on, an owned empty warehouse is not lit by its type row, an open one and a home are");
+        // A building the player neither owns nor rents is lit by its type row only while to let, as before.
+        Check(MapRules.Rows(new MapBuilding { Listed = true, Type = MapWarehouse, Business = MapEmpty }, MapOnRows(true, MapWarehouse)) == MapRow.None, "map rows: a warehouse that is nobody's and not to let is lit by no row");
         // A change of use moves it to the new type's row: the filters read the record's type at each look.
         toLet.Type = MapOffice;
         Check(MapRules.Rows(toLet, MapOnRows(false, MapWarehouse)) == MapRow.None && MapRules.Rows(toLet, MapOnRows(false, MapOffice)) == MapRow.ForRent,
@@ -158,6 +172,39 @@ internal static partial class Program
         Check(ModSource(@"Core\GameContract.cs").Contains("public static readonly GameMember MapHidden = Optional(Field(OwnBuildings, Game, \"CityMapFilters\", \"_permanentPoisHidden\""), "map sources: the one private field of the game's the leaving needs is an optional line of the contract");
     }
 
+    private static void MapSearchChecks()
+    {
+        string line = MapRules.SearchLine("Rosa's Bakery", "2 Maple Street", "Retail", out string word);
+        Check(line == "<b><noparse>Rosa's Bakery</noparse></b><br><noparse>2 Maple Street</noparse>" && word == "Rosa's Bakery", "map search: a business is listed as the game lists it, its name over its address, and found by the name");
+        string empty = MapRules.SearchLine(null, "4 Maple Street", "Warehouse", out string emptyWord);
+        Check(empty == "<b><noparse>4 Maple Street</noparse></b><br><noparse>Warehouse</noparse>" && emptyWord == "4 Maple Street", "map search: an empty building is listed by its address over its type, and found by the address");
+        string blank = MapRules.SearchLine("  ", "6 Maple Street", null, out string blankWord);
+        Check(blank == "<b><noparse>6 Maple Street</noparse></b>" && blankWord == "6 Maple Street", "map search: a blank business name counts as none, and a building with no type name is listed by its address alone");
+    }
+
+    private static void MapOwnedSourceChecks()
+    {
+        string places = ModSource(@"Core\MapPlaces.cs"), owned = ModSource(@"Core\MapPlaces.Owned.cs"), driver = ModSource(@"Core\MapPlaces.Driver.cs"), names = ModSource(@"Core\SpecialNames.cs"), contract = ModSource(@"Core\GameContract.cs");
+        Check(owned.Length > 0 && places.Length > 0 && names.Length > 0, "map owned sources: the owned lighting, the map places, the search are there");
+        string light = MethodText(places, "private static void Light(");
+        int over = light.IndexOf("OwnedDue();", StringComparison.Ordinal), pass = light.IndexOf("LightOwned();", StringComparison.Ordinal), loop = light.IndexOf("for (int i = 0; i < Lights.Count; i++)", StringComparison.Ordinal);
+        Check(light.Contains("_gameLooking && !looking") && over > 0 && pass > over && loop > pass && light.Contains("if (_ownedDue && !looking)"),
+            "map owned sources: the owner's buildings are lit once the game's look at every building is over, never while it runs, and only when a look ran or the map opened");
+        string open = MethodText(places, "private static void OnMap(");
+        Check(open.Contains("OwnedDue();"), "map owned sources: opening the map has the owner's buildings lit after the game's look");
+        string walk = MethodText(owned, "private static void LightOwnedNow(");
+        Check(walk.Contains("MapRules.Rows(building, on)") && walk.Contains("MapRow.OwnType") && walk.Contains("GameDlc.Open(city)") && walk.Contains("RentedByPlayer") && !Regex.IsMatch(walk, @"\.AvailableForRent\s*="),
+            "map owned sources: which building is lit under its type row is MapRules' decision alone, from the city's list, and no rent flag is written");
+        Check(!Regex.IsMatch(owned, @"void Update\(|void LateUpdate\(|FindObjectsOfType|FindObjectsByType|using System\.Linq|\.Where\(|\.Select\(|Harmony|GoingPublic|Network"), "map owned sources: nothing per frame, no scene search, no LINQ, no Harmony, nothing sent");
+        Check(driver.Contains("|| _mapOpen;") && contract.Contains("Optional(Field(MapPlaces, Game, \"CityMapFilters\", \"_visibleBuildingTypes\"") && contract.Contains("Optional(Field(MapPlaces, Game, \"CityMapFilters\", \"_hideClosed\""),
+            "map owned sources: the driver runs while the map is open, and the two private rows read are optional lines of the contract");
+        string search = MethodText(names, "private void Search(");
+        Check(search.Contains("MapRules.SearchLine(name, address,") && !search.Substring(search.IndexOf("FoundAs(building)", StringComparison.Ordinal), search.IndexOf("MapRules.SearchLine(", StringComparison.Ordinal) - search.IndexOf("FoundAs(building)", StringComparison.Ordinal)).Contains("continue;") && ModSource(@"Core\SpecialBuildings.cs").Contains("internal static bool Searching => true;"),
+            "map search sources: every building of the city's list gets a line, named or not, by the one rule, and the mod always makes the search list");
+        Check(names.Contains("EventHold.Keep(ref GlobalEvents.onBuildingRegistrationChange, _onRegistration, ref _registrationSeen);") && names.Contains("SearchSoon()") && ModSource(@"NewBuildings\MadeGame.Map.cs").Contains("SpecialNames.SearchAgain();"),
+            "map search sources: the list is made again a frame after the game makes its own anew, while the map is open");
+    }
+
     private static void MapTextChecks()
     {
         Dictionary<string, string>[] words = LanguageWords(out string[] codes);
@@ -166,6 +213,10 @@ internal static partial class Program
             { "en", "registers with the city map's filters the moment it stands" }, { "pt", "se registra nos filtros do mapa da cidade no momento em que fica de pé" }, { "zh-cn", "就会登记到城市地图的筛选里" },
             { "de", "bei den Filtern der Stadtkarte angemeldet" }, { "fr", "s'inscrit désormais dans les filtres de la carte de la ville" }, { "es", "se registra en los filtros del mapa de la ciudad" },
             { "ru", "регистрируется в фильтрах карты города" }, { "nl", "aangemeld bij de filters van de stadskaart" }, { "tr", "şehir haritasının filtrelerine kaydoluyor" }
+        };
+        var owns = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            { "en", "also shows under its own type row on the city map" }, { "pt", "também aparece na linha do seu tipo no mapa da cidade" }, { "zh-cn", "也会显示在城市地图上它自己类型的那一行" }, { "de", "auch unter der Zeile seines Typs" }, { "fr", "apparaît aussi dans la ligne de son type sur la carte de la ville" }, { "es", "aparece también en la fila de su tipo en el mapa de la ciudad" }, { "ru", "и в строке своего типа" }, { "nl", "ook onder de rij van zijn type" }, { "tr", "kendi türünün satırında da görünüyor" }
         };
         bool fixes = true, plain = true;
         for (int l = 0; l < words.Length; l++)
@@ -183,6 +234,18 @@ internal static partial class Program
                 }
             }
             fixes &= count == 1;
+            if (owns.TryGetValue(codes[l], out string phrase2))
+            {
+                int count2 = 0;
+                foreach (KeyValuePair<string, string> row in words[l])
+                {
+                    if (row.Key.StartsWith("reallife_changes_", StringComparison.Ordinal) && !row.Key.EndsWith("_title", StringComparison.Ordinal))
+                    {
+                        count2 += Regex.Matches(row.Value, Regex.Escape(phrase2)).Count;
+                    }
+                }
+                fixes &= count2 == 1;
+            }
         }
         // The English line, wherever the release has put it (the next row, then a version's row): no exclamation mark and no dash.
         if (words.Length > 0 && words[0] != null)

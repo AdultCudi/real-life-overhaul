@@ -456,6 +456,11 @@ namespace RealLifeOverhaul
         // destroyed, and out of the filters' own list of permanent markers they hid (CityMapFilters.cs 63, which a shut map shows again: a destroyed marker
         // in it would throw there). Optional: without it the marker is only put out and left where it is.
         public static readonly GameMember MapHidden = Optional(Field(OwnBuildings, Game, "CityMapFilters", "_permanentPoisHidden", "List<PointOfInterest>"));
+        // Core/MapPlaces.Owned: the rows the game's filters have switched on, read after its look at the buildings so a building the player owns or rents is lit under
+        // its own type row too: the building types of the ticked rows (CityMapFilters.cs 85) and "Hide closed". Optional: without them the owner's buildings are lit
+        // by the game's rules alone.
+        public static readonly GameMember VisibleTypes = Optional(Field(MapPlaces, Game, "CityMapFilters", "_visibleBuildingTypes", "HashSet<String>"));
+        public static readonly GameMember HideClosedRow = Optional(Field(MapPlaces, Game, "CityMapFilters", "_hideClosed", "Boolean"));
         // Uptown/GroundGame: the street a road module's name label shows (Road.cs 13; its Start writes the label from it). Optional:
         // without it the copied modules' labels are hidden.
         public static readonly GameMember RoadStreetName = Optional(Field(UptownLabels, Game, "Road", "streetName", "String"));
