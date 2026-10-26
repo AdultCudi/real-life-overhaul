@@ -194,6 +194,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\SpecialNameBook.cs" Link="Mod\SpecialNameBook.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\HeldUnitsRules.cs" Link="Mod\HeldUnitsRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\NewBuildings\NewBuildingsRules.cs" Link="Mod\NewBuildingsRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\NewBuildings\ServiceDeskRules.cs" Link="Mod\ServiceDeskRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\NewBuildings\NewBuildingsText.cs" Link="Mod\NewBuildingsText.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\NewBuildings\NewBuildingsTestPlot.cs" Link="Mod\NewBuildingsTestPlot.cs" />
     <!-- Uptown's streets, among the mod's own streets (NewBuildingsRules' MadeStreets). -->
@@ -567,6 +568,9 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\DistrictSave\DistrictSaveDeflate.cs" Link="Mod\DistrictSaveDeflate.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\DistrictSave\DistrictSaveZip.cs" Link="Mod\DistrictSaveZip.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\DistrictValues.cs" Link="Mod\DistrictValues.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\DistrictSplit.cs" Link="Mod\DistrictSplit.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\DistrictCensus.cs" Link="Mod\DistrictCensus.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\SplitRules.cs" Link="Mod\SplitRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\BuildingsRules.cs" Link="Mod\BuildingsRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\FrontageRules.cs" Link="Mod\FrontageRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\SpecialsRules.cs" Link="Mod\SpecialsRules.cs" />
@@ -601,6 +605,10 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\FrontDeskRules.cs" Link="Mod\Construction\FrontDeskRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\TrackRules.cs" Link="Mod\Construction\TrackRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\CellRules.cs" Link="Mod\Construction\CellRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\ZoneRules.cs" Link="Mod\Construction\ZoneRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\GrowRules.cs" Link="Mod\Construction\GrowRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildState.Grow.cs" Link="Mod\Construction\BuildState.Grow.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildStore.Grow.cs" Link="Mod\Construction\BuildStore.Grow.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildModeRules.cs" Link="Mod\Construction\BuildModeRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildModeHintRules.cs" Link="Mod\Construction\BuildModeHintRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildModeCityRules.cs" Link="Mod\Construction\BuildModeCityRules.cs" />

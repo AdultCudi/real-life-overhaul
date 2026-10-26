@@ -30,7 +30,7 @@ namespace RealLifeOverhaul.Uptown
             Vector3 at = PlayerHelper.GetCityPosition();
             GroundAnswer a = GroundSurvey.At(at.x, at.z);
             string what = What(a, out string state);
-            string district = a.Kind == GroundKind.GameGround ? GameDistrict(at) : (a.Kind == GroundKind.PastWalls ? null : DistrictValues.Id.GetLocalization());
+            string district = a.Kind == GroundKind.GameGround ? GameDistrict(at) : (a.Kind == GroundKind.PastWalls ? null : DistrictSplit.IdOf(DistrictSplit.OfX(at.x)).GetLocalization());
             if (a.Kind == GroundKind.GameGround)
             {
                 GameStreets(at, out a.West, out a.East, out a.South, out a.North);

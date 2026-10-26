@@ -326,6 +326,7 @@ namespace RealLifeOverhaul.Construction
         {
             bool special = p.Contractor < 0 && FirmRules.Special(_state.Firm.Speciality, p.Model, p.Use, p.CivicKind);
             p.Grade = p.Contractor >= 0 ? BuildCatalogue.ContractorGrade : RefitRules.Grade(quality, special);
+            GrowRefurbished(p.Street, p.Number);   // a grown building refurbished: its condition as new
             LetOpen(p);
             string furnished = Furnished(p);
             bool business = p.Kind != ProjectKind.Refit || (ConstructionGame.Unit(p.Street, p.Number, out UnitView u) && u.Trading);
@@ -387,6 +388,7 @@ namespace RealLifeOverhaul.Construction
             {
                 return;
             }
+            GrowRefurbished(street, number);   // a grown building refurbished by the city's tender: its condition as new
             try
             {
                 if (!ConstructionGame.AiLayouts(street, number, _layouts, out int current))

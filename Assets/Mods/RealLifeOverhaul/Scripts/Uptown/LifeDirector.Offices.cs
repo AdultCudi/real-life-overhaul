@@ -70,7 +70,7 @@ namespace RealLifeOverhaul.Uptown
                     posts = DistrictWork.Openings(AnOffice, out open);
                 }
                 LifeGame.UnitsOf(Standing, "ba:buildingtype_retail", out int shops, out int shopsEmpty);
-                int shopShare = Helpers.CompetitionHelper.GetIdealPercentageOfEmptyBuildings("ba:buildingtype_retail", DistrictValues.Id);
+                int shopShare = Helpers.CompetitionHelper.GetIdealPercentageOfEmptyBuildings("ba:buildingtype_retail", DistrictSplit.UptownId);
                 string why = OfficesRules.Verdict(t, cityOffices, cityBusinesses);
                 if (why == null && !work)
                 {

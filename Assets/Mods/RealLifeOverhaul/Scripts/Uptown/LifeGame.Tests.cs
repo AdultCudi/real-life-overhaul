@@ -54,11 +54,12 @@ namespace RealLifeOverhaul.Uptown
 
         /// <summary>
         /// The game's own start of a new business in a district (CompetitionHelper.StartNewBusiness, the step of its daily
-        /// pass), run for Uptown alone over its buildings the game lists businesses in, as RunDaily calls it. The game's
-        /// next day for one; -1 with why when it cannot be asked.
+        /// pass), run for one of the band's districts alone over its buildings the game lists businesses in, as RunDaily calls it.
+        /// The game's next day for one; -1 with why when it cannot be asked.
         /// </summary>
-        public static int StartBusiness(out string why)
+        public static int StartBusiness(int district, out string why)
         {
+            string id = DistrictSplit.IdOf(district);
             why = null;
             MethodInfo start = GameContract.StartBusiness.Method;
             if (start == null)
@@ -66,7 +67,7 @@ namespace RealLifeOverhaul.Uptown
                 why = "the game's start of a business could not be reached (" + (GameContract.UptownDistrict.Why ?? "a game update?") + ")";
                 return -1;
             }
-            if (!BuildingHelper.AllNeighbourhoodBuildings.TryGetValue(DistrictValues.Id, out List<Building> all) || all == null || all.Count == 0)
+            if (!BuildingHelper.AllNeighbourhoodBuildings.TryGetValue(id, out List<Building> all) || all == null || all.Count == 0)
             {
                 why = "the district has no building in the game's lists";
                 return -1;
@@ -80,7 +81,7 @@ namespace RealLifeOverhaul.Uptown
                     listed.Add(all[i]);   // as RunDaily makes its list of a district's business buildings
                 }
             }
-            return (int)start.Invoke(null, new object[] { listed, DistrictValues.Id });
+            return (int)start.Invoke(null, new object[] { listed, id });
         }
 
         /// <summary>Each building's business type, by address, into the caller's dictionary (cleared): the business test compares before and after.</summary>
@@ -152,19 +153,19 @@ namespace RealLifeOverhaul.Uptown
             }
             for (int i = 0; save.NeighbourhoodStats != null && i < save.NeighbourhoodStats.Count; i++)
             {
-                stats += save.NeighbourhoodStats[i] != null && save.NeighbourhoodStats[i].name == DistrictValues.Id ? 1 : 0;
+                stats += save.NeighbourhoodStats[i] != null && DistrictSplit.Is(save.NeighbourhoodStats[i].name) ? 1 : 0;
             }
             for (int i = 0; save.productMarketEntries != null && i < save.productMarketEntries.Count; i++)
             {
                 List<NeighborhoodDemand> rowsOf = save.productMarketEntries[i] != null ? save.productMarketEntries[i].demandValues : null;
                 for (int k = 0; rowsOf != null && k < rowsOf.Count; k++)
                 {
-                    demand += rowsOf[k] != null && rowsOf[k].neighborhood == DistrictValues.Id ? 1 : 0;
+                    demand += rowsOf[k] != null && DistrictSplit.Is(rowsOf[k].neighborhood) ? 1 : 0;
                 }
             }
             for (int i = 0; save.SelectedCitymapFilters != null && i < save.SelectedCitymapFilters.Count; i++)
             {
-                rows += save.SelectedCitymapFilters[i] == DistrictValues.Id ? 1 : 0;
+                rows += DistrictSplit.Is(save.SelectedCitymapFilters[i]) ? 1 : 0;
             }
             player = DistrictSave.DistrictSaveRules.IsModId(save.CurrentStreetName)
                      || (save.customDestination != null && DistrictSave.DistrictSaveRules.IsModId(save.customDestination.streetName));

@@ -50,6 +50,7 @@
         public const string ConstructionRedevelopId = "construction_redevelop";    // ...knocking down, joining, extending and converting Uptown's buildings
         public const string ConstructionCityRedevelopId = "construction_city_redevelop";   // ...how often the city's developers do it to the city's own
         public const string ConstructionBuildModeId = "construction_buildmode";    // ...build mode: the zoning cells over the map, land, zones and buildings placed
+        public const string ConstructionGrowthId = "construction_growth";          // ...the city grows on its zoned land by demand, and Let it grow on the player's
         public const string ConstructionTrackId = "construction_track";            // ...its matters under way as lines in the game's objectives window
         public const string MealsTakeoutId = "meals_takeout";
         public const string HouseholdStaffId = "home_household";
@@ -411,6 +412,7 @@
         public static bool ConstructionRedevelop = true;   // Uptown's buildings knocked down, their ground joined or split and built on again, storeys added, uses changed
         public static int ConstructionCityRedevelop = 2;   // the city's developers redevelop Uptown's own buildings: 0 Off, 1 Slow, 2 Usual, 3 Lively
         public static bool ConstructionBuildMode = true;   // build mode from the Construction app: the city map over Uptown with its zoning cells
+        public static bool ConstructionGrowth = true;      // buildings that grow: the city's developers on the council's zoned land by demand, Let it grow on the player's
         public static bool ConstructionTrack = true;       // the construction matters under way shown in the game's objectives window
         public static bool MealsTakeout = true;  // food carried in a bag is eaten from a plate once seated; a home dish can be packed to take
         public static bool HouseholdStaff = true;   // a cleaner, a cook, a butler or a mechanic taken on for the home through the phone
@@ -819,6 +821,7 @@
             ConstructionCityRedevelop = System.Math.Max(0, System.Math.Min(3, Int(modId, ConstructionCityRedevelopId, ConstructionCityRedevelop)));
             ConstructionTrack = Bool(modId, ConstructionTrackId, ConstructionTrack);
             ConstructionBuildMode = Bool(modId, ConstructionBuildModeId, ConstructionBuildMode);
+            ConstructionGrowth = Bool(modId, ConstructionGrowthId, ConstructionGrowth);
             MealsTakeout = Bool(modId, MealsTakeoutId, MealsTakeout);
             HouseholdStaff = Bool(modId, HouseholdStaffId, HouseholdStaff);
             CameraFov = Int(modId, CameraFovId, CameraFov);

@@ -45,9 +45,43 @@ namespace RealLifeOverhaul.Uptown
         /// </summary>
         public readonly List<string> Cleared = new List<string>(8);
 
-        /// <summary>The district's market level (thousandths of its rents and values) the last market pass left, and its day; 0 before any (LifeDirector.Market).</summary>
+        /// <summary>
+        /// Uptown's market level (thousandths of its rents and values) the last market pass left, and its day; 0 before any (LifeDirector.Market). A line from
+        /// before the split holds the whole band's, which both districts start from.
+        /// </summary>
         public int MarketLevel;
         public int MarketDay;
+
+        /// <summary>Cedar Heights' own market level and its day; 0 before any (the first pass after the split starts from Uptown's).</summary>
+        public int CedarLevel;
+        public int CedarDay;
+
+        /// <summary>The split's generation this save has been through (DistrictSplit): 0 for a line from before it, whose records the first load after the split moves by position.</summary>
+        public int Split;
+
+        /// <summary>The rebalance's generation this save has been decided for (LayoutRules.RebalanceGeneration): 0 before; the lots in <see cref="Pinned"/> are the ones it kept as stores.</summary>
+        public int Rebalance;
+
+        /// <summary>M1 lots the rebalance leaves as stores in this save, because someone held them when it was decided (LayoutRules.Pin).</summary>
+        public readonly List<string> Pinned = new List<string>(4);
+
+        /// <summary>A district's market level and day.</summary>
+        public int LevelOf(int district) => district == DistrictSplit.CedarHeights ? CedarLevel : MarketLevel;
+
+        public int DayOf(int district) => district == DistrictSplit.CedarHeights ? CedarDay : MarketDay;
+
+        /// <summary>A district's market level and day set.</summary>
+        public void SetMarket(int district, int level, int day)
+        {
+            if (district == DistrictSplit.CedarHeights)
+            {
+                CedarLevel = level;
+                CedarDay = day;
+                return;
+            }
+            MarketLevel = level;
+            MarketDay = day;
+        }
 
         /// <summary>True for a lot whose building was knocked down and on which nothing has been finished since.</summary>
         public bool IsCleared(string lot)
@@ -133,6 +167,8 @@ namespace RealLifeOverhaul.Uptown
         public const int FinishedMost = 512;   // records read at most: more lots than the whole band north of Manhattan holds
         public const int OpenedMost = 512;     // lots a later opening pass is marked for at most: more than the band holds
         public const int ClearedMost = 512;    // lots marked cleared at most: more than the band holds
+        public const int PinnedMost = 64;      // M1 lots the rebalance leaves as stores at most: more than the plan has to swap
+        public const int SplitGeneration = 1;  // the split's generation (DistrictSplit): a line without it is of the one-district band
 
         private const int Fields = 10;
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
@@ -189,6 +225,34 @@ namespace RealLifeOverhaul.Uptown
                     string[] m = part.Substring(2).Split(',');
                     state.MarketLevel = Whole(m[0], 0, 0, 2000);
                     state.MarketDay = m.Length > 1 ? Whole(m[1], 0, 0, int.MaxValue) : 0;
+                    continue;
+                }
+                if (part.StartsWith("q:", StringComparison.Ordinal))
+                {
+                    string[] q = part.Substring(2).Split(',');
+                    state.CedarLevel = Whole(q[0], 0, 0, 2000);
+                    state.CedarDay = q.Length > 1 ? Whole(q[1], 0, 0, int.MaxValue) : 0;
+                    continue;
+                }
+                if (part.StartsWith("s:", StringComparison.Ordinal))
+                {
+                    state.Split = Whole(part.Substring(2), 0, 0, 99);
+                    continue;
+                }
+                if (part.StartsWith("r:", StringComparison.Ordinal))
+                {
+                    state.Rebalance = Whole(part.Substring(2), 0, 0, 99);
+                    continue;
+                }
+                if (part.StartsWith("k:", StringComparison.Ordinal))
+                {
+                    foreach (string lot in part.Substring(2).Split(','))
+                    {
+                        if (IsId(lot) && !state.Pinned.Contains(lot) && state.Pinned.Count < PinnedMost)
+                        {
+                            state.Pinned.Add(lot);
+                        }
+                    }
                     continue;
                 }
                 if (part == "o:1")
@@ -364,6 +428,26 @@ namespace RealLifeOverhaul.Uptown
             if (s.MarketLevel > 0)
             {
                 t.Append("^m:").Append(s.MarketLevel.ToString(Inv)).Append(',').Append(s.MarketDay.ToString(Inv));
+            }
+            if (s.CedarLevel > 0)
+            {
+                t.Append("^q:").Append(s.CedarLevel.ToString(Inv)).Append(',').Append(s.CedarDay.ToString(Inv));
+            }
+            if (s.Split > 0)
+            {
+                t.Append("^s:").Append(s.Split.ToString(Inv));
+            }
+            if (s.Rebalance > 0)
+            {
+                t.Append("^r:").Append(s.Rebalance.ToString(Inv));
+            }
+            if (s.Pinned.Count > 0)
+            {
+                t.Append("^k:");
+                for (int i = 0; i < s.Pinned.Count && i < PinnedMost; i++)
+                {
+                    t.Append(i > 0 ? "," : string.Empty).Append(Clean(s.Pinned[i]).Replace(',', ' '));
+                }
             }
             if (s.Mixed)
             {

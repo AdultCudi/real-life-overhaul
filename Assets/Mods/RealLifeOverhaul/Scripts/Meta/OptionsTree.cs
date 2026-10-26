@@ -403,8 +403,9 @@ namespace RealLifeOverhaul.Meta
                     .Also("show flat flats viewing viewings buyer buyers sales agent renovation renovate refit refurbish hoarding")
                     .Also("builder builders building company land lot lots plot plots project plans architect planning permission appeal inspector inspection")
                     .Also("crew crews foreman tender tenders developer developers rival rivals merchant materials crane yard flats loan investor ribbon"),
-                S("buildmode").Guide("construction").Need("construction").Opts("construction_buildmode")
-                    .Also("build mode zoning zone zones cells cell squares grid cities skylines demand bulldoze"),
+                S("buildmode").Guide("construction").Need("construction").Opts("construction_buildmode").Opt("construction_growth", "construction_buildmode")
+                    .Also("build mode zoning zone zones cells cell squares grid cities skylines demand bulldoze")
+                    .Also("grow growth growables let it grow tier basic standard premium tenants condition run down brush rectangle fill unzone"),
                 S("offices").For("office_space").Opts("office_conversion").Also("office offices shop shops empty space building buildings convert vacant"),
                 S("estate").For("economy_estate").Need("economy").Opts("economy_estate", "economy_estate_hotel", "economy_estate_hire", "economy_estate_rent")
                     .Also("buildings landlord tenant letting rent rental income").Also("economy_estate", "rent tenant landlord letting"),

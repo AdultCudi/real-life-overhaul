@@ -102,7 +102,8 @@ namespace RealLifeOverhaul.Schools
 
         public const int NewsOpened = 1, NewsSold = 2, NewsResults = 3, NewsInspected = 4, NewsPoached = 5, NewsOpenDay = 6;
 
-        private const string Uptown = "reallife_neighborhood_uptown";
+        // The campus's block (202, Birch to Elm Street) is in Cedar Heights (Uptown.DistrictSplit; the checks hold the two together).
+        private const string Uptown = "reallife_neighborhood_cedarheights";
 
         /// <summary>The city's twelve schools, in the order every pass goes through them.</summary>
         public static readonly SchoolDef[] Catalogue =

@@ -105,7 +105,7 @@ namespace RealLifeOverhaul.Uptown
             return new MadeSpec
             {
                 Id = ground.Id, Street = ground.Street, Number = ground.Number, Size = structure.Size, Version = structure.Version, Type = structure.Type,
-                District = DistrictValues.Id, Design = string.IsNullOrEmpty(design) ? null : design,
+                District = DistrictSplit.IdOfColumn(ground.Block % 100), Design = string.IsNullOrEmpty(design) ? null : design,
                 Lots = new[] { new MadeLot(ground.X, ground.Z, ground.Facing, ground.Width, ground.Depth) }, Preferred = 0,
                 Traffic = traffic, Floors = Math.Max(1, storeys), DesignArea = storeys <= 0, Life = true, Wanted = wanted, Others = instead
             };

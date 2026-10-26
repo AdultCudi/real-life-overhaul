@@ -16,6 +16,8 @@ namespace RealLifeOverhaul.Construction
         public bool Open;          // its ground is made at this load
         public int Traffic;        // the traffic index its building gets, 0 to 100
         public int Block;          // the block of the district it is in (row * 100 + column): the player's "lot", which holds many buildings
+        public int District;       // which of the band's two districts the block is in (0 Uptown, 1 Cedar Heights): each has its own demand, market, rents and growth
+        public string DistrictKey; // that district's name, as a locale key
         public int Strip;          // its strip of spaces along one side of the block, and its first space along it
         public int Index;
         public int Spaces;         // the spaces it takes: a site of several spaces bought side by side takes them all

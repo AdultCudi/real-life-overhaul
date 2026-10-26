@@ -113,6 +113,7 @@ namespace RealLifeOverhaul.NewBuildings
         public string ServiceEmployer; // the boss's name of a job the service offers (its contact's key with the type): the game's own boss is another place's
         public string[] ServiceGoods;  // an importer's own goods, its own settings with this list; null shares the game's settings
         public string PlainType;       // the type it stands as where it may not take the service (a player holds its lot); null: it then stands down
+        public bool ServiceStore;      // the copy is a vehicle store's: the dialog and settings of the game's, and the contact category its deliveries read (a dealership's cars)
     }
 
     /// <summary>What a district building's registration is to the game's service its declaration copies (<see cref="NewBuildingsRules.ServiceOf"/>).</summary>

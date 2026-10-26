@@ -515,7 +515,7 @@ internal static partial class Program
                 string text = langs[l][key];
                 all &= text.Length > 5 && (l == 0 || text != langs[0][key]) && !text.Contains("!") && !text.Contains("—") && !text.Contains("–") && !text.Contains(" - ");
             }
-            Check(all && codes.Length == ModLanguages.All.Length,
+            Check(all && codes.Length == ModLanguages.PerFeature.Length,
                 "morning news: " + key + " is in every language, each its own, with the English names in curly brackets, no dash and no exclamation mark");
         }
         Dictionary<string, string> en = langs[0];

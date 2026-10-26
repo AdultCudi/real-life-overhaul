@@ -71,13 +71,14 @@ namespace RealLifeOverhaul.Uptown
             return null;
         }
 
-        /// <summary>True when Uptown's zone is among the game's district zones, the one its row shows.</summary>
-        public static bool ZoneListed()
+        /// <summary>True when a district's zone is among the game's district zones, the one its row shows.</summary>
+        public static bool ZoneListed(int district)
         {
             CityMapNeighborhoodZones.CityMapNeighborhoodZone[] all = CityMapNeighborhoodZones.Zones;
+            string id = DistrictSplit.IdOf(district);
             for (int i = 0; all != null && i < all.Length; i++)
             {
-                if (all[i] != null && all[i].neighbourhood == DistrictValues.Id && all[i].zoneRenderer != null)
+                if (all[i] != null && all[i].neighbourhood == id && all[i].zoneRenderer != null)
                 {
                     return true;
                 }
@@ -85,18 +86,19 @@ namespace RealLifeOverhaul.Uptown
             return false;
         }
 
-        /// <summary>True when Uptown's row's data names the district: ticked, the game's filters show its zone.</summary>
-        public static bool RowNamesDistrict()
+        /// <summary>True when a district's row's data names the district: ticked, the game's filters show its zone.</summary>
+        public static bool RowNamesDistrict(int district)
         {
             UIs uis = InstanceBehavior<UIs>.IsInitialized ? InstanceBehavior<UIs>.Instance : null;
             var entries = uis != null && uis.mapFilters != null ? GameContract.FilterEntries.Field?.GetValue(uis.mapFilters) as Dictionary<string, CityMapFilter> : null;
-            return entries != null && entries.TryGetValue(DistrictValues.Id, out CityMapFilter row) && row != null && row.Data != null && row.Data.neighbourhood == DistrictValues.Id;
+            string id = DistrictSplit.IdOf(district);
+            return entries != null && entries.TryGetValue(id, out CityMapFilter row) && row != null && row.Data != null && row.Data.neighbourhood == id;
         }
 
-        /// <summary>The name the row shows: the district's id's text in the player's language, as the game names its own district rows.</summary>
-        public static string RowName()
+        /// <summary>The name a district's row shows: the district's id's text in the player's language, as the game names its own district rows.</summary>
+        public static string RowName(int district)
         {
-            return DistrictValues.Id.GetLocalization();
+            return DistrictSplit.IdOf(district).GetLocalization();
         }
 
         /// <summary>True when any part of the building is drawn by a camera now; how many of its parts are.</summary>

@@ -9,11 +9,14 @@ namespace RealLifeOverhaul.Construction
     /// </summary>
     public static class BuildModeBridges
     {
-        /// <summary>The district's demand for a use (BuildUse), 0 to 100, or -1 while not known. Default: not known.</summary>
-        public static Func<int, int> Demand;
+        /// <summary>A district's demand for a use (BuildUse; the district 0 Uptown, 1 Cedar Heights), 0 to 100, or -1 while not known. Default: not known.</summary>
+        public static Func<int, int, int> Demand;
 
-        /// <summary>The district's market level, thousandths of its rents and values. Default: even.</summary>
-        public static Func<int> MarketLevel;
+        /// <summary>A district's market level, thousandths of its rents and values. Default: even.</summary>
+        public static Func<int, int> MarketLevel;
+
+        /// <summary>The band's district a point on the ground (x, z) is in, 0 or 1; the map's middle looked at tells the demand bars which district they show. Default: 0.</summary>
+        public static Func<float, float, int> DistrictAt;
 
         /// <summary>
         /// The ghost: one look of a design (by name and size) standing on ground (its middle, the way its street lies, its width and
@@ -43,6 +46,7 @@ namespace RealLifeOverhaul.Construction
         {
             Demand = null;
             MarketLevel = null;
+            DistrictAt = null;
             GhostStand = null;
             GhostGone = null;
             CornerGhost = null;

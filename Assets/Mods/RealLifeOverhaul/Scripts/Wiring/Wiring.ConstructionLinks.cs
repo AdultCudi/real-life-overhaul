@@ -84,7 +84,7 @@ namespace RealLifeOverhaul
                 ConstructionBridges.LotBuilt = LotBuilt;
                 ConstructionBridges.LotRetired = UptownLots.OfEarlierPlan;
                 ConstructionBridges.SizeTaken = SizeTaken;
-                ConstructionBridges.LandPrice = () => DistrictBuildings.LandPricePerSqm;
+                ConstructionBridges.LandPrice = lot => DistrictBuildings.LandPricePerSqm(lot);
                 ConstructionBridges.Finish = Finish;
                 ConstructionBridges.FinishOver = FinishOver;
                 ConstructionBridges.SpacesOf = SpacesRules.SpacesOf;
@@ -98,6 +98,8 @@ namespace RealLifeOverhaul
                 ConstructionBridges.HideLook = HideLook;
                 ConstructionBridges.Extend = Extend;
                 ConstructionBridges.Convert = Convert;
+                ConstructionBridges.LetUnit = LetUnit;
+                ConstructionBridges.Retraffic = Retraffic;
                 ConstructionBridges.StandingAll = StandingAll;
                 ConstructionBridges.Holdings = Holdings;
                 DistrictBuildings.Lessee = RivalLease;   // whatever the options say: every machine leases the same offices
@@ -219,6 +221,8 @@ namespace RealLifeOverhaul
                 ConstructionBridges.HideLook = null;
                 ConstructionBridges.Extend = null;
                 ConstructionBridges.Convert = null;
+                ConstructionBridges.LetUnit = null;
+                ConstructionBridges.Retraffic = null;
                 ConstructionBridges.StandingAll = null;
                 ConstructionBridges.Holdings = null;
                 ConstructionBridges.Designs = null;
@@ -501,6 +505,7 @@ namespace RealLifeOverhaul
                         {
                             Id = l.Id, Street = l.Street, Number = l.Number, X = l.X, Y = UptownLots.GroundY, Z = l.Z, Yaw = l.Yaw, Width = l.Width, Depth = l.Depth,
                             Class = (int)l.Class, First = l.First, Open = UptownLots.Open(l), Traffic = Math.Max(0, DistrictBuildings.TrafficOf(l.Id)), Block = l.Block,
+                            District = l.District, DistrictKey = DistrictSplit.IdOf(l.District),
                             Strip = l.Strip, Index = l.Index, Spaces = l.Spaces, Size = l.Size, StreetLow = corners, StreetHigh = corners, EdgeLow = low, EdgeHigh = high
                         });
                     }
@@ -761,6 +766,32 @@ namespace RealLifeOverhaul
                 {
                     Fault("ConstructionLinks.Extend", e);
                     return "a fault";
+                }
+            }
+
+            private static string LetUnit(string lot)
+            {
+                try
+                {
+                    return DistrictBuildings.LetUnit(lot);
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.LetUnit", e);
+                    return "a fault";
+                }
+            }
+
+            private static bool Retraffic(string lot, int drop)
+            {
+                try
+                {
+                    return DistrictBuildings.Retraffic(lot, drop);
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.Retraffic", e);
+                    return false;
                 }
             }
 

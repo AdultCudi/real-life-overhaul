@@ -96,9 +96,9 @@ internal static partial class Program
                     && a.Floors == b.Floors && a.DesignArea == b.DesignArea && a.Traffic == b.Traffic && a.Lots.Length == 1 && b.Lots.Length == 1
                     && a.Lots[0].X == b.Lots[0].X && a.Lots[0].Z == b.Lots[0].Z && a.Lots[0].Width == b.Lots[0].Width && a.Lots[0].Depth == b.Lots[0].Depth;
         Check(same, "stand now: the declaration of a finished building is the same every time it is made from its record, as on every machine");
-        Check(a.Id == lot.Id && a.Street == lot.Street && a.Number == lot.Number && a.Size == f.Size && a.Version == f.Version && a.Type == f.Type && a.District == DistrictValues.Id
+        Check(a.Id == lot.Id && a.Street == lot.Street && a.Number == lot.Number && a.Size == f.Size && a.Version == f.Version && a.Type == f.Type && a.District == DistrictSplit.IdOfColumn(lot.Block % 100)
               && a.Design == "Factory4 (Warehouse)" && a.Life && a.Others == null && a.Preferred == 0 && a.Traffic == 31 && !a.Whole && a.Service == null,
-            "stand now: it is declared at its own address, in the structure and design the construction game gave it, filed under Uptown as the game's own, with no other structure to fall back on");
+            "stand now: it is declared at its own address, in the structure and design the construction game gave it, filed under its lot's district as the game's own, with no other structure to fall back on");
         Check(a.DesignArea && a.Floors == 1 && a.Lots[0].X == lot.X && a.Lots[0].Z == lot.Z && a.Lots[0].Width == lot.Width && a.Lots[0].Depth == lot.Depth && a.Lots[0].Facing == lot.Facing,
             "stand now: storeys 0 is the floor area of the building its design copies, on the lot's own ground");
         f.Storeys = 4;

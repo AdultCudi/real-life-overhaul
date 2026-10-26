@@ -45,10 +45,10 @@ internal static partial class Program
                             "cela compte une fois vraiment fait", "cuenta cuando está hecho de verdad", "засчитывается, только когда действительно сделано",
                             "het telt pas als het echt gedaan is", "ancak gerçekten yapıldığında sayılır" };
         Dictionary<string, string>[] langs = LanguageWords(out string[] codes);
-        bool every = codes.Length == ModLanguages.All.Length;
+        bool every = codes.Length == ModLanguages.PerFeature.Length;
         for (int l = 0; every && l < codes.Length; l++)
         {
-            int at2 = Array.IndexOf(ModLanguages.All, codes[l]);
+            int at2 = Array.IndexOf(ModLanguages.PerFeature, codes[l]);
             every &= at2 >= 0 && WhatsNewHas(langs[l], pieces[at2]);
         }
         Check(every, "family chores: What's new has the chores' line in every language");

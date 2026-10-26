@@ -170,6 +170,8 @@ namespace RealLifeOverhaul.Construction
             _testLots.Clear();
             _testOpening = false;
             _downLooks.Clear();   // a new load makes every building with its look
+            _growDropsDue = true;   // ... and every record at its own traffic: each grown building's drop asked again
+            _growChanged++;
             _state = state;
             _save = save;
             _loaded = true;

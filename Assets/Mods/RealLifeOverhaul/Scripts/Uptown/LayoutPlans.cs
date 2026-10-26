@@ -787,14 +787,15 @@ namespace RealLifeOverhaul.Uptown
 
         /// <summary>
         /// The bus termini, each on its avenue's south pavement between two streets: Uptown Avenue's in the middle of the
-        /// first block (between 5th and 4th Street), Summit Avenue's in the west of the band (between Maple and Cedar
-        /// Street) and Crest Avenue's in the east (between Ridge and Grove Street), so lines reach all of it.
+        /// first block (between 5th and 4th Street, in Uptown, which it is named for), the west one in the west of the band
+        /// (Summit Avenue's, between Maple and Cedar Street, in Cedar Heights, which it is named for) and Crest Avenue's in the east
+        /// (between Ridge and Grove Street, in Uptown), so lines reach all of it and each says the district it goes to.
         /// </summary>
         public static void Termini(List<PlanTerminus> into)
         {
             into.Clear();
             into.Add(Terminus(4, 1, GroundText.Terminus, "Uptown"));
-            into.Add(Terminus(-2, 2, LayoutStreets.Avenue(2).NameKey, "Summit Avenue"));
+            into.Add(Terminus(-2, 2, GroundText.TerminusCedar, "Cedar Heights"));
             into.Add(Terminus(10, 3, LayoutStreets.Avenue(3).NameKey, "Crest Avenue"));
         }
 

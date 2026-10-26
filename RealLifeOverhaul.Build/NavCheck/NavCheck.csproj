@@ -127,6 +127,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\GroundText.cs" Link="Mod\Uptown\GroundText.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\UptownLots.cs" Link="Mod\Uptown\UptownLots.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\LayoutRules.cs" Link="Mod\Uptown\LayoutRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\DistrictSplit.cs" Link="Mod\Uptown\DistrictSplit.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\DistrictValues.cs" Link="Mod\Uptown\DistrictValues.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\SpacesRules.cs" Link="Mod\Uptown\SpacesRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\LayoutPlans.cs" Link="Mod\Uptown\LayoutPlans.cs" />
     <!-- The road and ground surfaces at one height over one place (UptownSurfaceCheck.cs), game-free. -->

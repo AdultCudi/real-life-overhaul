@@ -353,6 +353,7 @@ namespace RealLifeOverhaul.Construction
             }
             p.InDistrict = true;
             _downLooks.Remove(p.Lot);
+            GrowGone(p.Lot);   // a grown building of the player's knocked down: its record let go
             int day = ConstructionGame.Day;
             LotFile land = _state.Lot(p.Lot);
             if (land == null && _state.Lots.Count < BuildCatalogue.LotsMost && Lot(p.Lot, out LotView lot))
