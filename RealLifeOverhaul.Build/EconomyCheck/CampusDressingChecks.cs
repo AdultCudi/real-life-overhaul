@@ -391,7 +391,7 @@ internal static partial class Program
         {
             { "en", "Fixed: Birchwood School's building card" }, { "pt", "Corrigido: o cartão do edifício da Birchwood School" }, { "zh-cn", "已修复：伯奇伍德学校的建筑卡片" },
             { "de", "Behoben: Die Gebäudekarte der Birchwood School" }, { "fr", "Corrigé : la fiche du bâtiment de Birchwood School" }, { "es", "Corregido: la ficha del edificio de Birchwood School" },
-            { "ru", "Исправлено: карточка здания школы Birchwood" }, { "nl", "Opgelost: de gebouwkaart van Birchwood School" }, { "tr", "Düzeltildi: Birchwood School'un bina kartı" }
+            { "ru", "Исправлено: карточка здания Birchwood School" }, { "nl", "Opgelost: de gebouwkaart van Birchwood School" }, { "tr", "Düzeltildi: Birchwood School'un bina kartı" }
         };
         for (int l = 0; l < codes.Length; l++)
         {

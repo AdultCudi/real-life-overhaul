@@ -284,7 +284,7 @@ internal static partial class Program
         var fragments = new Dictionary<string, string>
         {
             { "en", "Birchwood School has its own look." }, { "pt", "A Escola Birchwood ganhou visual próprio." }, { "zh-cn", "伯奇伍德学校有了自己的外观。" }, { "de", "Die Birchwood School hat ihr eigenes Aussehen." },
-            { "fr", "La Birchwood School a son propre aspect." }, { "es", "La Birchwood School tiene su propio aspecto." }, { "ru", "У школы Birchwood теперь собственный облик." },
+            { "fr", "La Birchwood School a son propre aspect." }, { "es", "La Birchwood School tiene su propio aspecto." }, { "ru", "У Birchwood School теперь собственный облик." },
             { "nl", "De Birchwood School heeft een eigen uiterlijk." }, { "tr", "Birchwood School'un kendi görünümü var." }
         };
         for (int l = 0; l < codes.Length; l++)
