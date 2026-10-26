@@ -157,7 +157,7 @@ namespace RealLifeOverhaul
 
             // ---------------------------------------------------------------- every reallife key in the mod source
             Section("Every reallife_* string literal in the mod source");
-            var notLocale = new Regex("^(reallife_sick|reallife_accident|reallife_[a-z0-9]+_calldialogtype|reallife_happinessmodifier_|reallife_ev_|reallife_transaction_|reallife_flare_dm_invite_|reallife_socialp|reallife_)$");   // reallife_ alone: NoticeKinds' prefix of every key of the mod's; reallife_flare_dm_invite_: FlareInviteRules.KeyStart; reallife_socialp: SocialRules.DialogTypeName's, a call dialog type
+            var notLocale = new Regex("^(reallife_sick|reallife_accident|reallife_[a-z0-9]+_calldialogtype|reallife_happinessmodifier_|reallife_ev_|reallife_transaction_|reallife_flare_dm_invite_|reallife_socialp|reallife_|reallife-|reallife_social_desc_)$");   // reallife- and reallife_social_desc_: ContactGroups' marks of the mod's contact ids and of the people's descriptions; reallife_ alone: NoticeKinds' prefix of every key of the mod's; reallife_flare_dm_invite_: FlareInviteRules.KeyStart; reallife_socialp: SocialRules.DialogTypeName's, a call dialog type
             int literals = 0;
             foreach (string file in Directory.GetFiles(src, "*.cs", SearchOption.AllDirectories))
             {
@@ -290,6 +290,7 @@ namespace RealLifeOverhaul
 
             CheckCrimes(src, locale);
             CheckContacts(src);
+            CheckContactGroups(src, locale);
             GigCheck.Run(Fail, locale);
             GigCheck.Sources(Fail, locale, src);
             SavedShiftCheck.Run(Fail, locale, src);

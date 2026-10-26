@@ -50,7 +50,7 @@ namespace RealLifeOverhaul
                     {
                         Logger?.Warn("Contacts: '" + id + "' is not in the contact catalogue (Phone/Contacts/ContactCatalogue.cs): it is given the game's own picture for an unknown logo.");
                     }
-                    look = ContactLook.Logo(id, "notfound", 86, 96, 108);
+                    look = ContactLook.Logo(id, ContactGroup.None, "notfound", 86, 96, 108);
                 }
                 Picture p;
                 string save = SaveKey();
@@ -72,7 +72,7 @@ namespace RealLifeOverhaul
         {
             try
             {
-                ContactLook look = ContactLook.Person(id, female, Mathf.Clamp(age, 18, 85));
+                ContactLook look = ContactLook.Person(id, ContactGroup.None, female, Mathf.Clamp(age, 18, 85));
                 string save = SaveKey();
                 Set(id, look, seed == 0 ? ContactCatalogue.Seed(id, save) : seed, save);
             }

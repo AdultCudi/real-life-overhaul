@@ -42,6 +42,7 @@ namespace RealLifeOverhaul
         public static readonly GamePart AppButtons = ContractBook.Part("app_buttons", "phone", "the buttons of the mod's phone apps");
         public static readonly GamePart ContactPictures = ContractBook.Part("contact_pictures", "phone", "the pictures of the mod's contacts");
         public static readonly GamePart ContactSearch = ContractBook.Part("contact_search", "phone", "the search box of the Contacts app");
+        public static readonly GamePart ContactGroupsPart = ContractBook.Part("contact_groups", "phone", "the mod's groups among the Contacts app's category buttons");
         public static readonly GamePart PhoneSkin = ContractBook.Part("phone_skin", "phone", "the phone's skin");
         public static readonly GamePart MapPicker = ContractBook.Part("map_picker", "navigation", "clicking the markers when choosing a place on the city map");
         public static readonly GamePart MapPlaces = ContractBook.Part("map_places", "navigation", "the mod's places in the city map's filters");
@@ -252,6 +253,9 @@ namespace RealLifeOverhaul
 
         // Phone/Contacts
         public static readonly GameMember ContactIcons = Optional(StaticField(ContactPictures, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "PredefinedContactIconSprites", "Dictionary<String,Sprite>"));   // else from the next load
+        public static readonly GameMember ContactCategories = Field(ContactGroupsPart, Game, "UI.Smartphone.Apps.Contacts.ContactCategorySelection", "categories", "List<ContactCategory>");
+        // Optional: else the mod's buttons keep the colour of their pictures
+        public static readonly GameMember ContactButtonIcon = Optional(Field(ContactGroupsPart, Game, "UI.Smartphone.Apps.Contacts.ContactCategoryButton", "iconImage", "Image"));
         public static readonly GameMember ContactsMarkAll = Field(ContactSearch, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "markAllAsReadButton", "Button");
         public static readonly GameMember TextInputField = Field(On(ContactSearch, KeyHidden), Game, "TextInputUI", "inputField", "TMP_InputField");   // also Texts/TextsGame.AskSecret
 

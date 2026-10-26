@@ -54,6 +54,7 @@ internal static partial class Program
         ("Navigation/NavBase.cs", "picture", "UnityEngine.Object.Destroy(_kept)", "the minimap's picture of the city, destroyed when another takes its place"),
         ("Navigation/NavGraph.cs", "picture", "UnityEngine.Object.Destroy(_keptPicture)", "the minimap's picture of the roads, destroyed when another takes its place"),
         ("People/ServiceKit.Measure.cs", "_bake", "private static Mesh _bake", "one mesh the uniforms are measured with, made once a session"),
+        ("Phone/Contacts/ContactGroupsGame.cs", "made", "_made[i] = made", "a Contacts group's category, made once a session and kept in the app's row list: the game's buttons read it"),
         ("Phone/Contacts/ContactPictures.cs", "Sprite", "Pictures.Add(id, p)", "a contact's picture, kept by its id for the run: the game's contact list holds the sprite"),
         ("Phone/PhoneSkin.cs", "sprite", "_frameSprite = MakeSprite(", "the phone's frame, screen and badge shapes, drawn once a session"),
         ("Photos/PhotosGame.cs", "profile", "CodeAssets.DropProfile(volume.sharedProfile)", "the camera's grade, destroyed with its settings when the grade is dropped"),

@@ -28,6 +28,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meta\SettingsRules.cs" Link="Mod\SettingsRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Phone\Contacts\ContactCatalogue.cs" Link="Mod\ContactCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Phone\Contacts\FixedPeople.cs" Link="Mod\FixedPeople.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Phone\Contacts\ContactGroups.cs" Link="Mod\ContactGroups.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\People\PersonLook.cs" Link="Mod\PersonLook.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\NoticeKinds.cs" Link="Mod\NoticeKinds.cs" />
     <Compile Include="..\Shared\ModLanguages.cs" Link="Shared\ModLanguages.cs" />
