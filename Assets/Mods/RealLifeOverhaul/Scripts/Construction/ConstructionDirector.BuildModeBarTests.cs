@@ -182,6 +182,11 @@ namespace RealLifeOverhaul.Construction
             {
                 yield break;
             }
+            bool zone = !_mode.ToolGreyed(BuildTool.Zone, out _);
+            if (zone)
+            {
+                _mode.UseTool(BuildTool.Zone);   // the tallest tool panel: the owner's test found the first tip over it
+            }
             yield return null;
             bool first = _mode.TourForTest(out string wrong);
             int tips = first ? 1 : 0;
@@ -198,7 +203,10 @@ namespace RealLifeOverhaul.Construction
             }
             bool seen = BuildModeTour.Seen;
             bool pass = wrong == null && tips == 4 && step == TourStep.Done && seen;
-            ModeLine(test, tips + " of 4 tip(s) shown, each on the screen and clear of its part, " + (step == TourStep.Done ? "then done" : "not done") + ", remembered " + Yes(seen)
+            _mode.UseTool(BuildTool.Land);
+            ModeLine(test, tips + " of 4 tip(s) shown" + (zone ? " over the Zone tool's panel" : string.Empty)
+                           + ", each on the screen, its words inside the card's padding, clear of its part, the tool panel, the legend and the game's HUD, "
+                           + (step == TourStep.Done ? "then done" : "not done") + ", remembered " + Yes(seen)
                            + (wrong != null ? " (" + wrong + ")" : string.Empty), pass, "reallife_bld_mode_test_fail");
         }
     }

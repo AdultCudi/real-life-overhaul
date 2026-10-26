@@ -25,7 +25,7 @@ namespace RealLifeOverhaul.Construction
     /// It runs before the game's own key handling, so the Esc it takes to clear a selection never also shuts the map.
     /// </summary>
     [DefaultExecutionOrder(-31000)]
-    public sealed partial class BuildMode : MonoBehaviour
+    public sealed partial class BuildMode : MonoBehaviour, CellRules.IRunKind
     {
         private static readonly FeatureGuard FrameGuard = Guard.For("construction", "BuildMode", typeof(BuildMode));   // its Update
         private static readonly int HotUpdate = HotSpots.Slot("Construction: BuildMode.Update");
@@ -62,6 +62,12 @@ namespace RealLifeOverhaul.Construction
         private CellAt _from, _to;
         private Vector2 _downAt, _rightAt;
         private bool _down, _rightDown, _removing, _letGo;
+        private bool _offStreet;                 // the pointer is off the street the drag began on (another street's squares, the road)
+        private int _took;                       // what the last drag left out (CellRules.Took*), said under the tool panel's heading
+        private readonly int[] _run = new int[RunMost];         // each space along a drag, from the press: what it is to the tool
+        private readonly int[] _runColumn = new int[RunMost];   // ... and its column (-1 past the strip's end)
+        private const int RunMost = 64;                         // spaces a drag reads along its street at most (a site takes seven)
+        private LotFile _runSite;                               // the player's site a drag's run began on (Zone, Place, Join)
         private float _nextDrag, _nextHover;
         private int _hoverColumn = -1, _hoverRow = -1;
         private string _hoverWords;
@@ -232,6 +238,7 @@ namespace RealLifeOverhaul.Construction
                 return false;
             }
             BuildModeGame.LockTime(true);
+            BuildModeGame.HideFootLabels(true);   // the game's FPS, address and neighbourhood lines drew over the toolbar
             BuildModeGame.Show(_layer, true);
             _bar.Show(true);
             Write(true);
@@ -276,6 +283,7 @@ namespace RealLifeOverhaul.Construction
             _down = _rightDown = false;
             BuildModeGame.HoldCamera(false);
             BuildModeGame.LockTime(false);
+            BuildModeGame.HideFootLabels(false);
             BuildModeGame.Show(_layer, false);
             BuildModeGame.HideHover();
             _tour?.Hide();
@@ -404,8 +412,13 @@ namespace RealLifeOverhaul.Construction
                     _downAt = BuildModeGame.Mouse;
                     _removing = BuildModeGame.Shift;
                     _letGo = !_removing && Picks(cell);   // a picked square pressed: a click lets it go
+                    if (!_removing && !_letGo && !Touches(cell))
+                    {
+                        ClearDepths();   // a press away from what is picked (another street, or apart along this one) starts afresh
+                    }
                     Array.Copy(_depth, _before, _depth.Length);
                     _from = _to = cell;
+                    _offStreet = false;
                     Drag();
                     Changed(false);
                 }
@@ -420,10 +433,15 @@ namespace RealLifeOverhaul.Construction
                 _nextDrag = now + DragEvery;
                 if (BuildModeGame.Pointed(out Vector3 at))
                 {
-                    CellAt cell = _d.Cells.At(at.x, at.z);
-                    if (!cell.None && (cell.Column != _to.Column || cell.Row != _to.Row) && _d.Cells.Columns[cell.Column].Strip == _d.Cells.Columns[_from.Column].Strip)
+                    // The pointer read along the street the drag began on (CellGrid.Project): over the block's corner, onto the
+                    // next street's squares or the road, the drag still picks along its own street (the owner, 26 Oct 2026).
+                    CellAt cell = _d.Cells.Project(_from.Column, at.x, at.z);
+                    CellAt under = _d.Cells.At(at.x, at.z);
+                    bool off = under.None || _d.Cells.Columns[under.Column].Strip != _d.Cells.Columns[_from.Column].Strip;
+                    if (!cell.None && (cell.Column != _to.Column || cell.Row != _to.Row || off != _offStreet))
                     {
                         _to = cell;
+                        _offStreet = off;
                         _letGo = false;   // a drag adds (or with shift lets a run go)
                         Drag();
                         Changed(false);
@@ -437,6 +455,7 @@ namespace RealLifeOverhaul.Construction
                 if ((BuildModeGame.Mouse - _downAt).sqrMagnitude <= ClickPixels * ClickPixels)
                 {
                     _to = _from;   // a click: the one cell (and those between it and the street), or let go if it was picked
+                    _offStreet = false;
                     Drag();
                 }
                 _state = BuildModeRules.Next(_state, BuildInput.Release, _state.Tool, false);
@@ -448,32 +467,77 @@ namespace RealLifeOverhaul.Construction
 
         private bool Picks(CellAt cell) => !cell.None && cell.Column < _depth.Length && _depth[cell.Column] >= cell.Row;
 
-        // The picks from the press: added from the street back to the deeper row along the strip, or let go from the shallower
-        // row back (a shift drag, or a click on a picked square); a press on another strip starts afresh.
+        // The picks from the press: let go from the shallower row back (a shift drag, or a click on a picked square); else added
+        // as Cities Skylines takes a drag (the owner, 26 Oct 2026: "selecting must be forgiving"): along the street the press began
+        // on, from the street back to the deeper row, every space the tool can take (BuildModeRules.Takes) between the press and
+        // the pointer, the spaces it cannot take left out (CellRules.Reach), a site's widest at most, one square alone taken a
+        // square deeper; what was left out kept to say under the tool panel's heading (_took). Before, a press on another street
+        // after a pick mixed both streets' squares (the reset read the picks of the drag's own first frame) and the whole pick was
+        // refused ("These squares make no site", the owner's test). COST: a walk over the run's spaces, no allocation.
         private void Drag()
         {
             Array.Copy(_before, _depth, _depth.Length);
             CellGrid grid = _d.Cells;
             CellColumn a = grid.Columns[_from.Column], b = grid.Columns[_to.Column];
-            bool remove = _removing || _letGo;
-            if (!remove && _picked.Count > 0 && grid.Columns[_picked[0].Column].Strip != a.Strip)
+            if (_removing || _letGo)
             {
-                for (int c = 0; c < _depth.Length; c++)
+                int low = Math.Min(a.Space, b.Space), high = Math.Max(a.Space, b.Space);
+                int shallow = Math.Min(_from.Row, _to.Row);
+                for (int space = low; space <= high; space++)
                 {
-                    _depth[c] = -1;   // a new strip: a new selection
+                    int column = grid.ColumnOf(a.Strip, space);
+                    if (column >= 0)
+                    {
+                        BuildModeRules.Toggle(_depth, column, Math.Min(shallow, grid.Columns[column].Rows - 1), true);
+                    }
                 }
+                _took = CellRules.TookAll;
+                Gather();
+                return;
             }
-            int low = Math.Min(a.Space, b.Space), high = Math.Max(a.Space, b.Space);
-            int row = remove ? Math.Min(_from.Row, _to.Row) : Math.Max(_from.Row, _to.Row);
-            for (int space = low; space <= high; space++)
+            _runSite = null;
+            bool deepen = _state.Tool == BuildTool.Land || _state.Tool == BuildTool.Place;   // a site's footprint: one square alone is none
+            int took = CellRules.DragPick(grid, _from, _to, this, BuildCatalogue.SiteSpacesMost, deepen, _depth, _run, _runColumn, out int first);
+            if (CellRules.TrimWide(grid, _depth, first, BuildCatalogue.SiteSpacesMost))
             {
-                int column = grid.ColumnOf(a.Strip, space);
-                if (column >= 0)
-                {
-                    BuildModeRules.Toggle(_depth, column, Math.Min(row, grid.Columns[column].Rows - 1), remove);
-                }
+                took = CellRules.TookWide;
             }
             Gather();
+            _took = took == CellRules.TookAll && _offStreet ? CellRules.TookStreet : took;
+        }
+
+        /// <summary>
+        /// What a space along a drag is to the tool in use (CellRules.IRunKind, asked in order from the pressed space): one it may
+        /// take (BuildModeRules.Takes), and for Zone, Place and Join of the one site of the player's the run began on.
+        /// </summary>
+        public int Kind(int column)
+        {
+            if (column < 0 || column >= _facts.Length || !BuildModeRules.Takes(_state.Tool, _facts[column]))
+            {
+                return CellRules.RunTaken;
+            }
+            if (_state.Tool == BuildTool.Zone || _state.Tool == BuildTool.Place || _state.Tool == BuildTool.Join)
+            {
+                _d.RowsHeld(column, out LotFile own);
+                if (own == null || (_runSite != null && own != _runSite))
+                {
+                    return CellRules.RunTaken;
+                }
+                _runSite = own;
+            }
+            return CellRules.RunOk;
+        }
+
+        // True when a press on this cell joins what is picked: on the same street, at or beside the picked squares (nothing picked: true).
+        private bool Touches(CellAt cell) => CellRules.Touches(_d.Cells, _depth, cell);
+
+        private void ClearDepths()
+        {
+            for (int c = 0; c < _depth.Length; c++)
+            {
+                _depth[c] = -1;
+            }
+            _picked.Clear();
         }
 
         // A right click: the square under the pointer and those behind it let go. True when anything changed.
@@ -485,6 +549,7 @@ namespace RealLifeOverhaul.Construction
             }
             BuildModeRules.Toggle(_depth, cell.Column, cell.Row, true);
             Gather();
+            _took = CellRules.TookAll;
             return true;
         }
 
@@ -639,6 +704,7 @@ namespace RealLifeOverhaul.Construction
             }
             _siteWhy = CellRules.NoCells;
             _site = default(CellSite);
+            _took = CellRules.TookAll;
             _targetSite = null;
             _hasTarget = false;
             _canBuy = _pickMine = false;
@@ -806,6 +872,37 @@ namespace RealLifeOverhaul.Construction
             _state = BuildModeRules.Next(BuildModeRules.Next(_state, BuildInput.Press, _state.Tool, true), BuildInput.Release, _state.Tool, false);
             Changed(true);
         }
+
+        /// <summary>
+        /// A drag as the pointer makes one (for the tests): pressed on a column's row, let go over a point on the ground (x, z), each
+        /// read as OnUpdate reads them, what was picked before kept as a press keeps it; true when anything is picked.
+        /// </summary>
+        public bool DragForTest(int column, int row, float x, float z)
+        {
+            if (column < 0 || column >= _depth.Length)
+            {
+                return false;
+            }
+            var cell = new CellAt(column, Math.Min(row, _d.Cells.Columns[column].Rows - 1));
+            _state = BuildModeRules.Next(_state, BuildInput.Press, _state.Tool, true);
+            _removing = _letGo = false;
+            if (!Touches(cell))
+            {
+                ClearDepths();   // as a press does: what is picked elsewhere let go first
+            }
+            Array.Copy(_depth, _before, _depth.Length);
+            _from = cell;
+            _to = _d.Cells.Project(column, x, z);
+            CellAt under = _d.Cells.At(x, z);
+            _offStreet = under.None || _d.Cells.Columns[under.Column].Strip != _d.Cells.Columns[column].Strip;
+            Drag();
+            _state = BuildModeRules.Next(_state, BuildInput.Release, _state.Tool, false);
+            Changed(true);
+            return _picked.Count > 0;
+        }
+
+        /// <summary>What the last drag left out (CellRules.Took*), for the tests.</summary>
+        public int Took => _took;
 
         /// <summary>Everything picked let go, as Esc does (for the tests).</summary>
         public void ClearForTest() => Clear();

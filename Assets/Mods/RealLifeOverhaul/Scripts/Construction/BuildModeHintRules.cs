@@ -1,3 +1,5 @@
+using System;
+
 namespace RealLifeOverhaul.Construction
 {
     /// <summary>What the player holds in the district, as the toolbar reads it (from the columns' facts). Saved nowhere.</summary>
@@ -17,6 +19,7 @@ namespace RealLifeOverhaul.Construction
         public bool SiteOk;           // ... and they make a site by the site rule
         public bool CanBuy;           // ... which may be bought now (the Land tab's own checks)
         public bool PickedMine;       // ... which is the player's own land (Zone, Join, Place)
+        public bool PickedForSale;    // ... which is land for sale (Zone, Join, Place: buy it first)
         public bool PickedBuilding;   // ... under a building of the player's (Bulldoze, Refurbish)
         public bool ZoneChosen;       // the Zone tool: a zone's swatch is chosen
         public int Designs;           // the Place tool: designs that fit the squares picked
@@ -48,6 +51,7 @@ namespace RealLifeOverhaul.Construction
         public const string WhyAllUsed = "reallife_bld_hint_why_all_used";
         public const string WhyNoBuilding = "reallife_bld_hint_why_no_building";
         public const string WhyNoSites = "reallife_bld_hint_why_no_sites";
+        public const string BuyFirst = "reallife_bld_hint_buy_first";   // Zone, Place or Join on land for sale: buy it first
 
         /// <summary>Each tool's name key, by BuildTool, in the toolbar's order (the order the steps are taken).</summary>
         public static readonly string[] ToolKeys =
@@ -200,7 +204,7 @@ namespace RealLifeOverhaul.Construction
                     }
                     if (!f.PickedMine)
                     {
-                        return "reallife_bld_hint_zone_not_yours";
+                        return f.PickedForSale ? BuyFirst : "reallife_bld_hint_zone_not_yours";
                     }
                     return f.ZoneChosen ? "reallife_bld_hint_zone_click" : "reallife_bld_hint_zone_pick_for";
                 case BuildTool.Place:
@@ -208,13 +212,13 @@ namespace RealLifeOverhaul.Construction
                     {
                         return "reallife_bld_hint_place_idle";
                     }
+                    if (!f.PickedMine)
+                    {
+                        return f.PickedForSale ? BuyFirst : "reallife_bld_hint_place_not_yours";   // whose land comes first: the site rule's words would not help
+                    }
                     if (!f.SiteOk)
                     {
                         return "reallife_bld_hint_place_bad";
-                    }
-                    if (!f.PickedMine)
-                    {
-                        return "reallife_bld_hint_place_not_yours";
                     }
                     if (s.Step == BuildStep.Ghost)
                     {
@@ -226,7 +230,7 @@ namespace RealLifeOverhaul.Construction
                     {
                         return "reallife_bld_hint_join_idle";
                     }
-                    return f.PickedMine ? "reallife_bld_hint_join_go" : "reallife_bld_hint_zone_not_yours";
+                    return f.PickedMine ? "reallife_bld_hint_join_go" : f.PickedForSale ? BuyFirst : "reallife_bld_hint_zone_not_yours";
                 case BuildTool.Bulldoze:
                     if (dragging || !f.Picked)
                     {
@@ -354,5 +358,156 @@ namespace RealLifeOverhaul.Construction
 
         /// <summary>A demand bar's fill, 0 to 1 (none known: empty).</summary>
         public static float DemandFill(int demand) => demand <= 0 ? 0f : demand >= 100 ? 1f : demand / 100f;
+
+        // ------------------------------------------------------------------ the owner's test of the interface (26 Oct 2026: "Fix those")
+
+        /// <summary>What a forgiving drag left out, in words for the tool panel (CellRules.Took*), or null for nothing to say.</summary>
+        public static string TookKey(BuildTool tool, int took)
+        {
+            switch (took)
+            {
+                case CellRules.TookWide: return "reallife_bld_took_wide";
+                case CellRules.TookGap: return "reallife_bld_took_gap";
+                case CellRules.TookStreet: return "reallife_bld_took_street";
+                case CellRules.TookDeeper: return "reallife_bld_took_deeper";
+                case CellRules.TookTaken:
+                    return tool == BuildTool.Land ? "reallife_bld_took_taken_land" : tool == BuildTool.Bulldoze || tool == BuildTool.Refurbish ? null : "reallife_bld_took_taken_mine";
+                default: return null;
+            }
+        }
+
+        /// <summary>How to put right squares that make no site or cannot be bought, in plain words under the reason; null where the reason says it.</summary>
+        public static string FixKey(string why)
+        {
+            switch (why)
+            {
+                case CellRules.TwoStrips: return "reallife_bld_fix_strips";
+                case CellRules.NotJoined: return "reallife_bld_fix_joined";
+                case CellRules.TooWide: return "reallife_bld_fix_wide";
+                case CellRules.TooFew: return "reallife_bld_fix_few";
+                case "reallife_bld_mode_refuse_owned": return "reallife_bld_fix_owned";
+                case "reallife_bld_answer_lot_taken": return "reallife_bld_fix_taken";
+                case "reallife_bld_mode_refuse_mixed": return "reallife_bld_fix_mixed";
+                case "reallife_bld_mode_refuse_two_sites": return "reallife_bld_fix_two_sites";
+                default: return null;
+            }
+        }
+
+        /// <summary>
+        /// The hint bar's two lines in one row of <paramref name="room"/> (the canvas's units): both as wide as their words when they fit;
+        /// else the quieter line wraps first (to no less than a quarter of the room), and only then the main one. -1: as wide as its words.
+        /// </summary>
+        public static void HintFit(float main, float more, float room, out float mainCap, out float moreCap)
+        {
+            mainCap = moreCap = -1f;
+            if (room <= 0f)
+            {
+                return;
+            }
+            if (more <= 0f)
+            {
+                mainCap = main > room ? room : -1f;
+                return;
+            }
+            if (main + more <= room)
+            {
+                return;
+            }
+            float least = Math.Min(more, room / 4f);
+            if (main + least <= room)
+            {
+                moreCap = room - main;
+                return;
+            }
+            moreCap = least < more ? least : -1f;
+            mainCap = room - least;
+        }
+
+        /// <summary>
+        /// Where a tour's card stands (the owner, 26 Oct 2026: it must not cover "the thing it points at or the tool panel"): on the
+        /// preferred side of its part (under the hint bar, over a part at the foot), else the other side, else beside it; along that
+        /// side centred on the part, else just past each part in the way. The first place on the screen that meets neither the part
+        /// nor any part in <paramref name="avoid"/>; false (the card centred on the screen) when none. Game-free; no allocation.
+        /// </summary>
+        public static bool TourCard(UiBox screen, UiBox part, UiBox[] avoid, int avoidCount, float wide, float high, float gap, bool below, out UiBox card)
+        {
+            for (int side = 0; side < 4; side++)
+            {
+                int which = side < 2 ? (below ? side : 1 - side) : side;   // 0 under, 1 over, 2 right, 3 left
+                for (int k = -1; k < avoidCount + 1; k++)
+                {
+                    for (int end = 0; end < 2; end++)
+                    {
+                        if (k < 0 && end > 0)
+                        {
+                            continue;   // centred is one place
+                        }
+                        UiBox by = k < 0 ? part : k < avoidCount ? avoid[k] : part;
+                        float x0, y0;
+                        if (which < 2)
+                        {
+                            y0 = which == 0 ? part.Y0 - gap - high : part.Y1 + gap;
+                            x0 = k < 0 ? (part.X0 + part.X1 - wide) * 0.5f : end == 0 ? by.X1 + gap : by.X0 - gap - wide;
+                        }
+                        else
+                        {
+                            x0 = which == 2 ? part.X1 + gap : part.X0 - gap - wide;
+                            y0 = k < 0 ? (part.Y0 + part.Y1 - high) * 0.5f : end == 0 ? by.Y1 + gap : by.Y0 - gap - high;
+                        }
+                        x0 = Math.Max(screen.X0 + gap, Math.Min(x0, screen.X1 - gap - wide));
+                        y0 = Math.Max(screen.Y0 + gap, Math.Min(y0, screen.Y1 - gap - high));
+                        var at = new UiBox(x0, y0, x0 + wide, y0 + high);
+                        if (Clear(at, part, avoid, avoidCount) && at.Inside(screen))
+                        {
+                            card = at;
+                            return true;
+                        }
+                    }
+                }
+            }
+            float cx = (screen.X0 + screen.X1 - wide) * 0.5f, cy = (screen.Y0 + screen.Y1 - high) * 0.5f;
+            card = new UiBox(cx, cy, cx + wide, cy + high);
+            return false;
+        }
+
+        private static bool Clear(UiBox at, UiBox part, UiBox[] avoid, int avoidCount)
+        {
+            if (at.Meets(part))
+            {
+                return false;
+            }
+            for (int i = 0; i < avoidCount && avoid != null && i < avoid.Length; i++)
+            {
+                if (at.Meets(avoid[i]))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
+
+    /// <summary>A rectangle of the interface (x to the right, y upwards), for the game-free layout rules.</summary>
+    public struct UiBox
+    {
+        public float X0, Y0, X1, Y1;
+
+        public UiBox(float x0, float y0, float x1, float y1)
+        {
+            X0 = x0;
+            Y0 = y0;
+            X1 = x1;
+            Y1 = y1;
+        }
+
+        public float Wide => X1 - X0;
+
+        public float High => Y1 - Y0;
+
+        /// <summary>True when the two share any area (touching edges do not).</summary>
+        public bool Meets(UiBox o) => X0 < o.X1 && o.X0 < X1 && Y0 < o.Y1 && o.Y0 < Y1;
+
+        /// <summary>True when this lies inside <paramref name="o"/> (half a unit's slack).</summary>
+        public bool Inside(UiBox o) => X0 >= o.X0 - 0.5f && X1 <= o.X1 + 0.5f && Y0 >= o.Y0 - 0.5f && Y1 <= o.Y1 + 0.5f;
     }
 }

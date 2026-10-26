@@ -19,8 +19,8 @@ namespace RealLifeOverhaul.Construction
     public sealed partial class BuildMode
     {
         // The panel's buttons.
-        private const int RowBuy = 1, RowClear = 2, RowChoose = 3, RowPaint = 10, RowPaintNone = 14, RowParking = 20, RowBuild = 21, RowOther = 22, RowDemolish = 30, RowJoin = 40,
-            RowSplit = 41, RowRefit = 50;
+        private const int RowBuy = 1, RowClear = 2, RowChoose = 3, RowGoBuy = 4, RowPaint = 10, RowPaintNone = 14, RowParking = 20, RowBuild = 21, RowOther = 22, RowDemolish = 30,
+            RowJoin = 40, RowSplit = 41, RowRefit = 50;
         private const int RowMark = 300;
         private const int BrushNone = (int)BuildUse.Count;   // the zone brush that takes a zone away
 
@@ -37,6 +37,7 @@ namespace RealLifeOverhaul.Construction
         private int _zoneBrush = -1;          // the Zone tool's chosen zone: a use, BrushNone, or -1 for none chosen
         private bool _canBuy, _pickMine;
         private int _landCells;               // squares of the player's own land, for the Zone panel
+        private readonly System.Text.StringBuilder _legendMore = new System.Text.StringBuilder(256);   // the legend's entries past those shown, for its tooltip
 
         // The design window's facts for each design that fits the footprint's ground: its warnings, estimate, days, whether it can be built, a corner building.
         private readonly int[] _dWarn = new int[BuildModeCatalogue.Most];
@@ -72,6 +73,7 @@ namespace RealLifeOverhaul.Construction
             {
                 return;
             }
+            _bar.Hud(BuildModeGame.Hud(_bar.Root));   // under the game's top bar and its needs, clear of the objectives, wherever they are drawn now
             _holdings = BuildModeHintRules.Holdings(_facts, _facts.Length);
             _landCells = 0;
             for (int c = 0; c < _facts.Length; c++)
@@ -128,7 +130,7 @@ namespace RealLifeOverhaul.Construction
             return new HintFacts
             {
                 State = _state, Picked = _picked.Count > 0, SiteOk = _siteWhy == null && _picked.Count > 0, CanBuy = _canBuy,
-                PickedMine = _state.Tool == BuildTool.Place ? _pickMine : _targetSite != null,
+                PickedMine = _state.Tool == BuildTool.Place ? _pickMine : _targetSite != null, PickedForSale = PickedForSale,
                 PickedBuilding = _hasTarget, ZoneChosen = _zoneBrush >= 0, Designs = _designs.Count, MayBuild = BuildModeRules.MayBuild(_warnings)
             };
         }
@@ -176,18 +178,48 @@ namespace RealLifeOverhaul.Construction
                 case BuildTool.Join: WriteJoin(s); break;
                 default: WriteBuilding(s, RowRefit); break;
             }
-            WriteLegend(s);
             s.End();
+            WriteLegend();
         }
 
         private string Count() => _picked.Count > 0 ? ConstructionText.Fill("reallife_bld_sheet_count", "cells", ConstructionText.N(PickedCells)) : null;
 
-        private void WriteLegend(BuildModeSheet s)
+        // True when the first square picked is land for sale: Zone, Place and Join then say to buy it first.
+        private bool PickedForSale => _picked.Count > 0 && _picked[0].Column < _facts.Length && _facts[_picked[0].Column].Free;
+
+        // The view's legend over the views (the owner, 26 Oct 2026: not in the tool panel): its first entries, the rest in its tooltip.
+        private void WriteLegend()
         {
+            BuildModeLegend legend = _bar.Legend;
+            if (legend == null)
+            {
+                return;
+            }
             int n = BuildModeRules.Legend(_view, _keyFills, _keyLines, _keyWords);
+            int shown = BuildModeRules.LegendShown(n);
+            legend.Begin();
+            _legendMore.Length = 0;
             for (int i = 0; i < n; i++)
             {
-                s.Legend(_keyFills[i] >= 0 ? Colour(_keyFills[i]) : Color.clear, Colour(_keyLines[i]), _keyFills[i] < 0, T(_keyWords[i]));
+                if (i < shown)
+                {
+                    legend.Add(_keyFills[i] >= 0 ? Colour(_keyFills[i]) : Color.clear, Colour(_keyLines[i]), _keyFills[i] < 0, T(_keyWords[i]));
+                }
+                else
+                {
+                    _legendMore.Append(_legendMore.Length > 0 ? "\n" : string.Empty).Append(T(_keyWords[i]));
+                }
+            }
+            legend.End(T(BuildModeRules.ViewKeys[(int)_view]), _legendMore.Length > 0 ? _legendMore.ToString() : T(BuildModeHintRules.ViewTips[(int)_view]));
+        }
+
+        // What the last drag left out, said under the heading (CellRules.Took*).
+        private void TookLine(BuildModeSheet s)
+        {
+            string key = _picked.Count > 0 ? BuildModeHintRules.TookKey(_state.Tool, _took) : null;
+            if (key != null)
+            {
+                s.Line(T(key), BuildModeBar.Amber);
             }
         }
 
@@ -199,9 +231,17 @@ namespace RealLifeOverhaul.Construction
                 s.Line(T("reallife_bld_sheet_land_none"), BuildModeBar.Soft);
                 return;
             }
+            TookLine(s);
             if (_siteWhy != null)
             {
+                // The squares make no site: what is known of them kept, and how to put it right in plain words (the owner's test).
                 s.Line(T(_siteWhy), BuildModeBar.Red);
+                string fix = BuildModeHintRules.FixKey(_siteWhy);
+                if (fix != null)
+                {
+                    s.Line(T(fix), BuildModeBar.Soft);
+                }
+                KnownFacts(s, _picked[0].Column);
                 s.Buttons(0, null, false, RowClear, T("reallife_bld_sheet_clear"), true);
                 return;
             }
@@ -223,9 +263,27 @@ namespace RealLifeOverhaul.Construction
             else if (block != null)
             {
                 s.Line(T(block), BuildModeBar.Red);
+                string fix = BuildModeHintRules.FixKey(block);
+                if (fix != null)
+                {
+                    s.Line(T(fix), BuildModeBar.Soft);
+                }
             }
             s.Buttons(RowBuy, ConstructionText.Fill("reallife_bld_sheet_buy", "amount", price > 0L ? ConstructionText.Money(price) : "-"), block == null && !_state.ViewOnly && price > 0L,
                 RowClear, T("reallife_bld_sheet_clear"), true);
+        }
+
+        // What is known of squares that make no site: their street, the council's zoning there and the height limit.
+        private void KnownFacts(BuildModeSheet s, int column)
+        {
+            if (!_d.LotOfColumn(column, out LotView lot))
+            {
+                return;
+            }
+            s.Line(Where(lot, false), BuildModeBar.Soft);
+            int zones = column < _facts.Length ? _facts[column].Zones : 0;
+            s.Fact(T("reallife_bld_sheet_zoned"), ConstructionDirector.UsesWords(zones), ZonedColour(zones));
+            s.Fact(T("reallife_bld_sheet_limit"), ConstructionText.Fill("reallife_bld_sheet_storeys", "storeys", ConstructionText.N(_d.UptownStoreys())), BuildModeBar.Text);
         }
 
         // Where the squares picked are: their street, and whether they hold its corner.
@@ -253,9 +311,11 @@ namespace RealLifeOverhaul.Construction
         {
             s.Begin(T("reallife_bld_mode_tool_zone"), ConstructionText.Fill("reallife_bld_sheet_zone_count", "cells", ConstructionText.N(_landCells)));
             LotFile site = _targetSite != null ? _d.State.Lot(_targetSite) : null;
-            if (_picked.Count > 0 && site == null)
+            bool notMine = _picked.Count > 0 && site == null;   // only the player's own land is zoned (the owner's test, 26 Oct 2026)
+            TookLine(s);
+            if (notMine)
             {
-                s.Line(T("reallife_bld_hint_zone_not_yours"), BuildModeBar.Red);
+                s.Line(T(PickedForSale ? BuildModeHintRules.BuyFirst : "reallife_bld_hint_zone_not_yours"), BuildModeBar.Red);
             }
             else if (site != null)
             {
@@ -267,12 +327,17 @@ namespace RealLifeOverhaul.Construction
             }
             for (int u = 0; u < (int)BuildUse.Count; u++)
             {
-                string status = ZoneStatus(site, (BuildUse)u, out Color colour);
+                Color colour = BuildModeBar.Soft;
+                string status = notMine ? null : ZoneStatus(site, (BuildUse)u, out colour);
                 string name = T(BuildCatalogue.UseKeys[u]);
                 bool chosen = _zoneBrush == u;
-                s.Swatch(RowPaint + u, Colour(BuildModeRules.Homes + u), chosen ? T("reallife_bld_sheet_zone_picked", "use", name) : name, status, colour, chosen, !_state.ViewOnly);
+                s.Swatch(RowPaint + u, Colour(BuildModeRules.Homes + u), chosen ? T("reallife_bld_sheet_zone_picked", "use", name) : name, status, colour, chosen, !_state.ViewOnly && !notMine);
             }
-            s.Swatch(RowPaintNone, Color.clear, T("reallife_bld_sheet_zone_remove"), null, BuildModeBar.Soft, _zoneBrush == BrushNone, !_state.ViewOnly);
+            s.Swatch(RowPaintNone, Color.clear, T("reallife_bld_sheet_zone_remove"), null, BuildModeBar.Soft, _zoneBrush == BrushNone, !_state.ViewOnly && !notMine);
+            if (notMine)
+            {
+                s.Buttons(PickedForSale ? RowGoBuy : 0, PickedForSale ? T("reallife_bld_sheet_go_buy") : null, PickedForSale && !_state.ViewOnly, RowClear, T("reallife_bld_sheet_clear"), true);
+            }
         }
 
         // Whether a use is allowed on the site picked (or on the player's land when none is): allowed here, on some of it, or City Hall's with its fee.
@@ -320,10 +385,17 @@ namespace RealLifeOverhaul.Construction
                 s.Line(T("reallife_bld_sheet_place_none"), BuildModeBar.Soft);
                 return;
             }
-            if (_siteWhy != null || !_pickMine)
+            TookLine(s);
+            if (!_pickMine || _siteWhy != null)
             {
-                s.Line(T(_siteWhy ?? "reallife_bld_hint_place_not_yours"), BuildModeBar.Red);
-                s.Buttons(0, null, false, RowClear, T("reallife_bld_sheet_clear"), true);
+                bool forSale = !_pickMine && PickedForSale;
+                s.Line(T(!_pickMine ? (forSale ? BuildModeHintRules.BuyFirst : "reallife_bld_hint_place_not_yours") : _siteWhy), BuildModeBar.Red);
+                string fix = _pickMine ? BuildModeHintRules.FixKey(_siteWhy) : null;
+                if (fix != null)
+                {
+                    s.Line(T(fix), BuildModeBar.Soft);
+                }
+                s.Buttons(forSale ? RowGoBuy : 0, forSale ? T("reallife_bld_sheet_go_buy") : null, forSale && !_state.ViewOnly, RowClear, T("reallife_bld_sheet_clear"), true);
                 return;
             }
             if (_designs.Count == 0)
@@ -411,8 +483,9 @@ namespace RealLifeOverhaul.Construction
             }
             if (_targetSite == null)
             {
-                s.Line(T("reallife_bld_hint_zone_not_yours"), BuildModeBar.Red);
-                s.Buttons(0, null, false, RowClear, T("reallife_bld_sheet_clear"), true);
+                bool forSale = PickedForSale;
+                s.Line(T(forSale ? BuildModeHintRules.BuyFirst : "reallife_bld_hint_zone_not_yours"), BuildModeBar.Red);
+                s.Buttons(forSale ? RowGoBuy : 0, forSale ? T("reallife_bld_sheet_go_buy") : null, forSale && !_state.ViewOnly, RowClear, T("reallife_bld_sheet_clear"), true);
                 return;
             }
             string join = _d.JoinBlock(_targetSite, out _);
@@ -671,6 +744,9 @@ namespace RealLifeOverhaul.Construction
                 case RowChoose:
                     OpenCatalogue();
                     return;
+                case RowGoBuy:
+                    KeepPicksUnder(BuildTool.Land);   // land for sale picked under Zone, Place or Join: on to Buy land with it still picked
+                    return;
                 case RowOther:
                     DropGhost();
                     _design = -1;
@@ -768,6 +844,26 @@ namespace RealLifeOverhaul.Construction
                     return;
             }
         }
+
+        // Another tool chosen with the squares picked kept (Buy land from a pick of land for sale), read again for it.
+        private void KeepPicksUnder(BuildTool tool)
+        {
+            if (BuildModeHintRules.ToolWhy(tool, _holdings, _state.ViewOnly) != null || _picked.Count == 0)
+            {
+                return;
+            }
+            _state = BuildModeRules.Next(_state, BuildInput.Tool, tool, false);
+            _state = BuildModeRules.Next(BuildModeRules.Next(_state, BuildInput.Press, tool, true), BuildInput.Release, tool, false);
+            _view = BuildModeRules.ViewFor(tool);
+            _zoneBrush = -1;
+            _took = CellRules.TookAll;
+            Pick();
+            Write(false);
+            Colour();
+        }
+
+        /// <summary>On to Buy land with the squares picked kept, as the panel's Buy land button does (for the tests).</summary>
+        public void GoBuyForTest() => KeepPicksUnder(BuildTool.Land);
 
         // The game's question box: the price named; yes runs the action.
         private static void Ask(string headerKey, string bodyKey, long amount, Action yes, Action no = null)
