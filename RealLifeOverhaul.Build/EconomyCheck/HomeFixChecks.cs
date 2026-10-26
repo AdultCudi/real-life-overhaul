@@ -68,11 +68,11 @@ internal static partial class Program
             "home fix: What's new has the hotel night's sleep line, with its fix mark, in some row of every language");
     }
 
-    // A fix's line, by a piece of it in each language (in the order of ModLanguages.All: en, pt, zh-cn, de, fr, es, ru, nl, tr),
+    // A fix's line, by a piece of it in each language (in the order of ModLanguages.PerFeature: en, pt, zh-cn, de, fr, es, ru, nl, tr),
     // in some What's new row of each with the language's fix mark: the next row until a release numbers it into its own.
     private static bool FixLineEverywhere(params string[] pieces)
     {
-        string[] order = ModLanguages.All;
+        string[] order = ModLanguages.PerFeature;
         Dictionary<string, string>[] langs = LanguageWords(out string[] codes);
         bool all = codes.Length == order.Length && pieces.Length == order.Length;
         for (int l = 0; all && l < codes.Length; l++)

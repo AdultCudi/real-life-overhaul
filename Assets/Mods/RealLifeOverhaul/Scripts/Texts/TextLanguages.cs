@@ -23,8 +23,8 @@ namespace RealLifeOverhaul.Texts
         /// <summary>The seven, in the mod's order (RealLifeOverhaul.Build/Shared/ModLanguages).</summary>
         public static readonly string[] All = { "en", "pt", "zh-cn", "de", "fr", "es", "ru" };
 
-        /// <summary>The mod's other languages, which no pack writes, so a game in one keeps every written line.</summary>
-        public static readonly string[] Unwritten = { "nl", "tr" };
+        /// <summary>The mod's other languages (Dutch, Turkish, Polish, Korean), which no pack writes, so a game in one keeps every written line.</summary>
+        public static readonly string[] Unwritten = { "nl", "tr", "pl", "ko" };
 
         /// <summary>The language a card is written in for the game's: a known one as itself, else English, as the mod reads it.</summary>
         public static string Of(string locale)
