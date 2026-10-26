@@ -51,6 +51,9 @@ The lane beside it is closed through a `SceneCordon` of the director's own.
 
 Twenty seconds after the flames, or at once on a 911 call, a fire engine is sent: a pooled truck dressed by `EngineLivery`, driven by `EmergencyDriver` to `SceneCordon.Stand` 12 m short of the fire in its lane.
 
+Held up on the way (a stopped bus, a wreck, a queue) it does not wait for the scene's 85 s (`Traffic/MakeWayRules`): it looks a lane over after a moment and two lanes over after 2.5 s, standing traffic in its way is moved on (`MakeWay`), a bus of the mod's own makes way for it, and held up for 9 s with 120 m or less of its route left it stands where it is and its crew walks the rest, the fire put out as ever.
+Each hold is one `Emergency way` line in the log, and Options > Tests has a bin fire with a stopped bus in the engine's lane (`Fire check (stopped bus)`: PASS or FAIL).
+
 With the modelled `fire_engine` in the bundle a Delivery Truck wears it: the body is made to that truck (the same 7.43 m, the same axles), so it wears the body with its wheels on the truck's own.
 Any other truck, or a van, and every truck without the bundle, is repainted red with a light bar instead.
 

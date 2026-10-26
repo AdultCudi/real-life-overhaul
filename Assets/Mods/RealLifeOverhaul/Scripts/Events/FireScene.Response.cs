@@ -20,6 +20,7 @@ namespace RealLifeOverhaul.Events
             if (engine.Dispatch(_director.Cordon, _lanePoint, EngineBack + (_kind == FireKind.Car ? _footprints[0].HalfLength : 0f)))
             {
                 _engineSent = true;
+                PlaceBlockingBus(engine, now);
                 _engineDue = now + 85f;
                 _patrolAt = now + 6f;
                 Notifications.Show(NotificationType.Info, _called ? "reallife_fire_engine_called" : Random.value < 0.5f ? "reallife_fire_engine_coming_a" : "reallife_fire_engine_coming_b", null, 7f);
@@ -48,27 +49,34 @@ namespace RealLifeOverhaul.Events
                     engine.Release(true, false);
                     Enter(Phase.BurnOut, now, 45f);
                     EventDirector.Logger?.Info("Fire: the engine's truck was taken back by the traffic pool on its way; the fire is left to burn out.");
+                    BlockedFailed("the engine's truck was taken back by the traffic pool");
                     return;
                 }
+                ClearTheWay(driver, "the fire engine", ref _engineMoved, now, ref _engineWayAt);
                 // How far it still has to go is measured along its route, never as the crow flies: a truck on the next street is not near.
-                bool waiting = driver.Active && !driver.Arrived && (driver.HeldFor > 9f || now >= _engineDue);
+                // Held up behind something that will not move (a bus, a wreck) it stands where it is and its crew walks the rest.
+                bool waiting = driver.Active && !driver.Arrived && (driver.HeldFor > MakeWayRules.StandAfter || now >= _engineDue);
                 float away = waiting ? driver.RouteLeft : Mathf.Sqrt(CitySpots.Flat(engine.Car.transform.position - _lanePoint));
-                bool held = waiting && driver.HeldFor > 9f && away < 45f;
+                bool held = waiting && MakeWayRules.Stands(driver.HeldFor, away);
                 if (driver.Arrived || !driver.Active || held || (now >= _engineDue && away < 60f))
                 {
+                    float stood = driver.HeldFor;
                     engine.Park();
                     _engineParked = true;
                     PlanCrew(engine.Car);
                     _director.Cordon.Raise(now);
                     Taper();
                     Enter(Phase.Attack, now, 0f);
-                    EventDirector.Logger?.Info($"Fire: the engine is parked {away:F0} m from the fire{(held ? " (held up there by what is in front of it)" : "")}; crew out.");
+                    string why = held ? $" (held up there for {stood:F0} s by what is in front of it: its crew walks the rest)" : "";
+                    EventDirector.Logger?.Info($"Fire: the engine is parked {away:F0} m from the fire{why}; crew out.");
+                    BlockedArrival(engine, now, away, held);
                 }
                 else if (now >= _engineDue)
                 {
                     engine.Release(true, false);
                     Enter(Phase.BurnOut, now, 40f);
                     EventDirector.Logger?.Info($"Fire: the engine was still {away:F0} m away after 85 s; it is stood down and the fire is left to burn out.");
+                    BlockedFailed($"it was still {away:F0} m from the fire after 85 s");
                 }
             }
 
@@ -96,6 +104,10 @@ namespace RealLifeOverhaul.Events
             if (_patrolSent && !_patrolParked && patrol.InUse && _phase != Phase.Leave)
             {
                 EmergencyDriver driver = patrol.Driver;
+                if (!patrol.IsLost)
+                {
+                    ClearTheWay(driver, "the patrol car", ref _patrolMoved, now, ref _patrolWayAt);
+                }
                 if (patrol.IsLost)
                 {
                     patrol.Release(true, false);

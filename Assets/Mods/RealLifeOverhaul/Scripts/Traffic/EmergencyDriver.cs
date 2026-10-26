@@ -259,6 +259,7 @@ namespace RealLifeOverhaul
             _room = float.MaxValue;
             _ahead = null;
             _aheadPerson = false;
+            ResetWay();
             MayPass = true;
             CruiseSpeed = DefaultCruiseSpeed;
             Arrived = false;
@@ -448,6 +449,7 @@ namespace RealLifeOverhaul
             {
                 _nextSense = Time.time + SenseInterval;
                 Sense(position, roadRight, goalSqr);
+                TellWay(position, roadRight);
                 _bend = CruiseSpeed > FastFrom || _bendGrip > 0f ? BendLimit(position) : float.MaxValue;
                 _hold = _holdAt >= 0 ? HoldLimit(toPoint) : float.MaxValue;
                 if (_blocked && !_following && _nearEnough > 0f && Time.time - _blockedSince > StopPatience
