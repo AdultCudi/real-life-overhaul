@@ -205,6 +205,7 @@ namespace RealLifeOverhaul.NewBuildings
             try
             {
                 populate.Invoke(uis.mapFilters, new object[] { null });
+                SpecialNames.SearchAgain();   // the game's list holds only named businesses: ours (every building) again while the map is open
             }
             catch (Exception e)
             {
