@@ -1295,3 +1295,31 @@ with the scene: the next write makes the group again. Nothing runs a frame.
 
 Proven: every member named here (decompiled `TasksUI.cs`, `MissionTasksUI.cs`, `SideQuestUI.cs`, `WorkoutPlanUI.cs`).
 Inferred: how a long line wraps in the entry and how the added headline button takes a press.
+
+## 39. A toolbar over the map, the game's tooltips, and a tour (`Construction/BuildModeKit`, `BuildModeBar`, `BuildModeTip`, `BuildModeTour`)
+
+Build mode's interface over the city map is made of the interior designer's own parts (`UIs.interiorDesignerUI`,
+`Canvases/InteriorDesignerUI`, a canvas of order 3 scaled to 3840 by 2160): its toolbar's `Topbar/Section` (the box, sprite
+`Box-Darker-Small-125` at 0.949, a horizontal layout and a content size fitter), one of its tool buttons (a `Button` with the
+game's `ButtonEffects`, its child `SelectedBackground` in `Button-Blue` and its `Icon` of 64), a `Divider`
+(`Square-With-Padding-8`) and a label of its panels (`ActionPanels/QueuePanel/NoPointOfSaleItemsLabel`, TextMeshPro 32 in
+the game's font). `BuildModeKit` copies them asleep and takes every script of the game's off them but `ButtonEffects` and
+the text component (the designer's `ToolButton`, `ActionKeyTooltip` and `ConfigurableControlsHintsToggler` are in
+`BigAmbitions.InteriorDesigner.dll` and other assemblies, so `UiClone.StripGameScripts`, which takes the main assembly's,
+would leave them). The icons are the designer's toolbar's (read from it: `Icon-Palette`, `Icon-Coin`,
+`Icon-CopyOutline-64`, `Icon-Close`, `Icon-Walls`...) or others by name through `GameSprites`. A coloured fill is the
+designer's colour picker's `white-round` tinted. The parts stand on the help's canvas (order 20, over the HUD and under
+the question box and the tooltips, both 21).
+
+The game's tooltip (`Tooltip.TooltipSystem`, its own canvas of order 21, following the pointer) shows for any
+`TooltipTarget` a tenth of a second after the pointer rests on it, and a disabled button still gets the pointer, so a
+greyed tool's tooltip can say why. `BuildModeTip` is a `TooltipTarget` whose `ShowTooltip` writes a header (a text that is
+not a key is written as it is, `TooltipSystem.SetHeader`) and a line in final words. The same system can be driven
+without a target (`TooltipSystem.Show`, `AddHeader`, `AddSplitter`, `AddLabel`, `Hide`): build mode says the square under
+the pointer that way, written only when the square changes, taken away as the pointer goes onto the interface.
+
+Proven: every object, size, sprite and member named here (the scene data, `uitree.py name:InteriorDesignerUI 5`; decompiled
+`TooltipSystem.cs`, `TooltipTarget.cs`, `BasicTooltip.cs`; `ilspycmd -t BigAmbitions.InteriorDesigner.ToolButton`). Inferred:
+how the copies look at the foot of the map, the tooltip beside the pointer over the map, and the layout's sizes in a
+language with longer words.
+

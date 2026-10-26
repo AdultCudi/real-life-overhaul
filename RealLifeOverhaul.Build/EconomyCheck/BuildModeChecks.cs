@@ -23,6 +23,7 @@ internal static partial class Program
         BuildModeStoreChecks();
         BuildModeSourceChecks();
         BuildModeTextChecks();
+        BuildModeHintChecks();
     }
 
     private static List<LotView> BuildModePlan()
@@ -547,9 +548,12 @@ internal static partial class Program
         string director = ModSource(@"Construction\ConstructionDirector.BuildMode.cs");
         string tests = ModSource(@"Construction\ConstructionDirector.BuildModeTests.cs");
         string panel = ModSource(@"Construction\BuildModePanel.cs");
-        string layerTests = ModSource(@"Construction\ConstructionDirector.BuildModeLayerTests.cs");
-        string rules = ModSource(@"Construction\CellRules.cs") + ModSource(@"Construction\BuildModeRules.cs") + ModSource(@"Uptown\CompleteRules.cs") + ModSource(@"Uptown\DemandRules.cs");
-        string all = mode + window + game + director + tests + rules + panel + layerTests;
+        string layerTests = ModSource(@"Construction\ConstructionDirector.BuildModeLayerTests.cs") + ModSource(@"Construction\ConstructionDirector.BuildModeBarTests.cs");
+        string rules = ModSource(@"Construction\CellRules.cs") + ModSource(@"Construction\BuildModeRules.cs") + ModSource(@"Uptown\CompleteRules.cs") + ModSource(@"Uptown\DemandRules.cs")
+                       + ModSource(@"Construction\BuildModeHintRules.cs") + ModSource(@"Construction\BuildModeCatalogue.cs");
+        string interfaceParts = ModSource(@"Construction\BuildModeBar.cs") + ModSource(@"Construction\BuildModeSheet.cs") + ModSource(@"Construction\BuildModeTour.cs")
+                                + ModSource(@"Construction\BuildModeKit.cs") + ModSource(@"Construction\BuildModeTip.cs");
+        string all = mode + window + game + director + tests + rules + panel + layerTests + interfaceParts;
         Check(!Regex.IsMatch(all, @"using System\.Linq|\.Where\(|\.Select\(|\.OrderBy\(|FindObjectsOfType|FindObjectsByType|GameObject\.Find\b|Physics\."), "build mode sources: no LINQ, no scene search, no physics query");
         Check(!Regex.IsMatch(rules, @"UnityEngine|SaveGameManager|GameManager"), "build mode sources: the rules are game-free");
         // The game's GetBuildingRegistration throws for a free lot and adds a blank registration for one it has not met; the
@@ -595,7 +599,7 @@ internal static partial class Program
               && guide.Contains("AddToggle(Settings.ConstructionBuildModeId, \"reallife_bld_mode_option\"") && director.Contains("if (!Settings.ConstructionBuildMode)")
               && ModSource(@"Construction\ConstructionApp.Overview.cs").Contains("if (!Settings.ConstructionBuildMode)"), "build mode sources: its option on by default, read, in the options' section; off, no button and no opening");
         foreach (string t in new[] { "TestBuildModeOpenNow", "TestBuildModePriceNow", "TestBuildModeBuyNow", "TestBuildModeZoneNow", "TestBuildModePlaceNow", "TestBuildModeBulldozeNow", "TestBuildModeCompleteNow", "TestBuildModeStandNow",
-                     "TestBuildModeLayerNow", "TestBuildModeZoningNow", "TestBuildModeWindowNow" })
+                     "TestBuildModeLayerNow", "TestBuildModeZoningNow", "TestBuildModeWindowNow", "TestBuildModeHintsNow", "TestBuildModeToolsNow", "TestBuildModeTourNow" })
         {
             Check(guide.Contains("ConstructionDirector." + t + "()") && ((tests + layerTests).Contains("public static void " + t + "()") || (tests + layerTests).Contains("public static bool " + t + "()")),
                 "build mode sources: the test " + t + " is in the feature list and a public static method");
@@ -609,11 +613,11 @@ internal static partial class Program
               && MethodText(game, "public static byte[][] GameColours()").Contains("filters.playerFilterColor") && MethodText(game, "public static byte[][] GameColours()").Contains("BuildModeRules.MixedColour(taken)"),
             "build mode colours: the uses, for sale and the player's read from the game's own map filters; mixed a colour apart from them");
         Check(mode.Contains("[DefaultExecutionOrder(-31000)]") && MethodText(mode, "private void OnUpdate()").Contains("BuildModeGame.TakeCancel();") && game.Contains("PlayerAction.Cancel.Reset()")
-              && MethodText(mode, "private void OnUpdate()").IndexOf("BuildModeGame.CancelPressed && (HasPicks", StringComparison.Ordinal) >= 0,
+              && MethodText(mode, "private void OnUpdate()").IndexOf("BuildModeGame.CancelPressed && (tour || window || HasPicks", StringComparison.Ordinal) >= 0,
             "build mode picks: Esc clears what is picked first and is taken before the game's own key handling sees it; with nothing picked the game's Esc leaves");
-        Check(panel.Contains("HelpFrame.Make(") && panel.Contains("OptionRows.Take(") && panel.Contains("GameBar.Make(") && panel.Contains("_frame.Search.gameObject.SetActive(false);")
-              && !Regex.IsMatch(panel, @"new Canvas|AddComponent<Canvas>|(?<![A-Za-z])Input\.|EventSystem") && MethodText(mode, "private void OnUpdate()").Contains("_panel.Fold(true);"),
-            "build mode window: the game's help screen in the middle with the settings menu's rows and the top bar's bars, no search field, no canvas of its own; it steps aside while squares are picked");
+        Check(panel.Contains("HelpFrame.Make(") && panel.Contains("_frame.Search.gameObject.SetActive(false);") && panel.Contains("GridLayoutGroup")
+              && !Regex.IsMatch(panel, @"new Canvas|AddComponent<Canvas>|(?<![A-Za-z])Input\.|EventSystem") && !mode.Contains("_panel.Fold("),
+            "build mode window: the game's help screen in the middle only to choose a design (its cards in a grid), no search field, no canvas of its own; nothing steps aside any more");
         Check(MethodText(mode, "private void Awake()").Contains("enabled = false;") && !panel.Contains("void Update(") && !panel.Contains("void LateUpdate("),
             "build mode window: nothing a frame of its own; the page written on a pick or an action");
         Check(Regex.Matches(tests, "ModeLine\\(").Count >= 16 && tests.Contains("\"Construction check (build mode: \""), "build mode sources: each test writes its check line");
@@ -632,7 +636,8 @@ internal static partial class Program
         var keys = new SortedSet<string>(StringComparer.Ordinal);
         foreach (string name in new[] { @"Construction\BuildMode.cs", @"Construction\BuildMode.Window.cs", @"Construction\CellRules.cs", @"Construction\BuildModeRules.cs",
                      @"Construction\ConstructionDirector.BuildMode.cs", @"Construction\ConstructionDirector.BuildModeTests.cs", @"Construction\BuildModePanel.cs",
-                     @"Construction\ConstructionDirector.BuildModeLayerTests.cs" })
+                     @"Construction\ConstructionDirector.BuildModeLayerTests.cs", @"Construction\ConstructionDirector.BuildModeBarTests.cs", @"Construction\BuildModeBar.cs",
+                     @"Construction\BuildModeSheet.cs", @"Construction\BuildModeTour.cs" })
         {
             foreach (Match m in Regex.Matches(ModSource(name), "\"(reallife_bld_mode_[a-z0-9_]+[a-z0-9])\""))
             {
@@ -642,7 +647,7 @@ internal static partial class Program
         keys.Add("reallife_bld_button_build_mode");
         keys.Add("reallife_opt_tip_construction_buildmode");
         keys.Add("reallife_uptown_incomplete");
-        foreach (string t in new[] { "open", "price", "buy", "zone", "place", "bulldoze", "complete", "stand", "layer", "zoning", "window" })
+        foreach (string t in new[] { "open", "price", "buy", "zone", "place", "bulldoze", "complete", "stand", "layer", "zoning", "window", "hints", "tools", "tour" })
         {
             keys.Add("reallife_bld_mode_test_" + t);
         }

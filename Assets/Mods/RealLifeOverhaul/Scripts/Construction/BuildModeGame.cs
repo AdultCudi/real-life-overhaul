@@ -154,6 +154,51 @@ namespace RealLifeOverhaul.Construction
             return help != null && help.container != null ? help.container.transform.parent : null;
         }
 
+        /// <summary>The game's interior designer's interface (Canvases/InteriorDesignerUI): build mode's toolbar and buttons are copies of its own.</summary>
+        public static Transform Designer()
+        {
+            UIs uis = InstanceBehavior<UIs>.Instance;
+            return uis != null && uis.interiorDesignerUI != null ? uis.interiorDesignerUI.transform : null;
+        }
+
+        private static bool _hoverShown;
+
+        /// <summary>
+        /// The square under the pointer said in the game's own tooltip beside the pointer (TooltipSystem, as a part of the game's
+        /// interface says itself): a header and lines. Written only when the square changes; the game's tooltip follows the pointer.
+        /// </summary>
+        public static void ShowHover(string head, string line1, string line2)
+        {
+            Tooltip.TooltipSystem.Show();   // starts afresh: the parts of the last are taken away
+            Tooltip.TooltipSystem.AddHeader(new Localizor.LanguageChangeEvent.LanguageChangeEventDataHolder { Key = head ?? string.Empty });
+            if (!string.IsNullOrEmpty(line1) || !string.IsNullOrEmpty(line2))
+            {
+                Tooltip.TooltipSystem.AddSplitter();
+            }
+            if (!string.IsNullOrEmpty(line1))
+            {
+                Tooltip.TooltipSystem.AddLabel(line1, new Color(0.79f, 0.82f, 0.84f, 1f));
+            }
+            if (!string.IsNullOrEmpty(line2))
+            {
+                Tooltip.TooltipSystem.AddLabel(line2, new Color(0.79f, 0.82f, 0.84f, 1f));
+            }
+            _hoverShown = true;
+        }
+
+        /// <summary>The square's tooltip taken away (the pointer left the squares, went over the interface, or build mode closed); nothing if it is not up.</summary>
+        public static void HideHover()
+        {
+            if (_hoverShown)
+            {
+                _hoverShown = false;
+                Tooltip.TooltipSystem.Hide();
+            }
+        }
+
+        /// <summary>True while the square's tooltip is up.</summary>
+        public static bool HoverShown => _hoverShown;
+
         // ------------------------------------------------------------------ the land layer
 
         /// <summary>The land layer: one mesh of every cell as an inside and an edge, their colours from a palette texture by UVs.</summary>

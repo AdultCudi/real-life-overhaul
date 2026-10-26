@@ -357,6 +357,7 @@ namespace RealLifeOverhaul.Construction
             public int Zones;        // the uses the council zones the column for (BuildCatalogue.Zone bits)
             public int MainUse;      // the plan's main use there (BuildCatalogue.ClassUse), -1 for none
             public int ValueStep;    // its land's price among the district's, 0 (lowest) to ValueSteps - 1
+            public bool HasProject;  // a project of the player's on their land there (any stage): no second building placed on it
         }
 
         /// <summary>

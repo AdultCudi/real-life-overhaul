@@ -109,10 +109,13 @@ namespace RealLifeOverhaul.Construction
                 pass, "reallife_bld_mode_test_fail");
         }
 
-        /// <summary>Test: the window in the middle with each tool and each view: every part below the one before it, no text cut short, the list's links apart.</summary>
+        /// <summary>
+        /// Test: the interface over the map with each tool and each view, and while squares are picked: no part meets another or runs
+        /// off the screen, no text cut short, the map's centre clear; the design window too when the player's land takes a design.
+        /// </summary>
         public static void TestBuildModeWindowNow()
         {
-            ConstructionDirector d = ModeReady("the window");
+            ConstructionDirector d = ModeReady("the interface");
             if (d != null)
             {
                 d.StartCoroutine(Guard.Routine(d.WindowTest()));
@@ -121,32 +124,100 @@ namespace RealLifeOverhaul.Construction
 
         private IEnumerator WindowTest()
         {
-            const string test = "the window";
+            const string test = "the interface";
             if (!OpenOver(test))
             {
                 yield break;
             }
             string wrong = null;
-            int looked = 0;
+            int looked = 0, greyed = 0;
             for (int t = 0; t < (int)BuildTool.Count && wrong == null; t++)
             {
+                if (_mode.ToolGreyed((BuildTool)t, out _))
+                {
+                    greyed++;   // it cannot be chosen yet: its button and tooltip are the tools test's
+                    continue;
+                }
                 _mode.UseTool((BuildTool)t);
-                _mode.Unfold();
                 yield return null;
-                string w = _mode.WindowOverlap();
+                wrong = Measured(ConstructionText.T(BuildMode.ToolKey((BuildTool)t)));
                 looked++;
-                wrong = w != null ? ConstructionText.T(BuildMode.ToolKey((BuildTool)t)) + ": " + w : null;
             }
             for (int v = 0; v < (int)BuildView.Count && wrong == null; v++)
             {
                 _mode.UseView((BuildView)v);
                 yield return null;
-                string w = _mode.WindowOverlap();
+                wrong = Measured(ConstructionText.T(BuildModeRules.ViewKeys[v]));
                 looked++;
-                wrong = w != null ? ConstructionText.T(BuildModeRules.ViewKeys[v]) + ": " + w : null;
             }
+            int free = FreeColumn(2);
+            bool picked = false;
+            if (wrong == null && free >= 0)
+            {
+                _mode.UseTool(BuildTool.Land);
+                _mode.PickForTest(free, 2, 0);
+                yield return null;
+                picked = _mode.PickedCells > 0;
+                wrong = Measured(ConstructionText.T("reallife_bld_mode_tool_land") + " with " + _mode.PickedCells + " squares picked");
+                looked++;
+            }
+            string window = "the design window not looked at (no land of the player's takes a design here)";
+            int own = OwnFootprint(out int count);
+            if (wrong == null && own >= 0 && !_mode.ToolGreyed(BuildTool.Place, out _))
+            {
+                _mode.UseTool(BuildTool.Place);
+                _mode.PickForTest(own, count, 0);
+                yield return null;
+                if (_mode.CatalogueShown)
+                {
+                    string w = _mode.CatalogueOverlap();
+                    window = "the design window " + (w ?? "laid out well");
+                    wrong = w != null ? "the design window: " + w : null;
+                    _mode.ShutCatalogue();
+                }
+                else
+                {
+                    window = "no design fits the player's land picked, so no design window";
+                }
+            }
+            _mode.ClearForTest();
             _mode.UseTool(BuildTool.Land);
-            ModeLine(test, looked + " page(s) looked at, each tool and each view: " + (wrong ?? "nothing overlaps and no text is cut short"), wrong == null, "reallife_bld_mode_test_fail");
+            ModeLine(test, looked + " look(s), each open tool, each view" + (picked ? " and with squares picked" : string.Empty) + " (" + greyed + " tool(s) greyed); " + window + ": "
+                           + (wrong ?? "nothing meets, runs off or is cut short, the map's centre clear"), wrong == null, "reallife_bld_mode_test_fail");
+        }
+
+        // The interface measured now: null when well, else what is wrong under its name.
+        private string Measured(string what)
+        {
+            string w = _mode.WindowOverlap();
+            if (w != null)
+            {
+                return what + ": " + w;
+            }
+            return _mode.CoversCentre(out string part) ? what + ": '" + part + "' covers the map's centre" : null;
+        }
+
+        // The first column of a site of the player's with no project on it and a use in force, and its columns; -1 for none.
+        private int OwnFootprint(out int count)
+        {
+            count = 0;
+            CellGrid grid = Cells;
+            for (int c = 0; c < grid.Columns.Count; c++)
+            {
+                BuildModeRules.ColumnFacts f = FactsOf(c);
+                if (!f.Mine || f.HasProject || f.UnderWay || !BuildModeHintRules.InForce(f) || RowsHeld(c, out LotFile site) == 0 || site == null)
+                {
+                    continue;
+                }
+                int at = c;
+                while (at >= 0 && RowsHeld(at, out LotFile s) > 0 && s == site && count < BuildCatalogue.SiteSpacesMost)
+                {
+                    count++;
+                    at = grid.Next(at);
+                }
+                return c;
+            }
+            return -1;
         }
 
         // Build mode open over Uptown for a test; false with its line when it would not open.
