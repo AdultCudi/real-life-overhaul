@@ -12,7 +12,7 @@ namespace RealLifeOverhaul.Uptown
         Street = 0,      // the game's SM_RoadModule- 120-70: 100 m of a street, its pavements and parking lane
         Avenue = 1,      // SM_RoadModule 120-160-70: 50 m of an avenue
         Crossing = 2,    // SM_RoadModule Intersection_4-2 Lanes: an avenue crossing a street, its lights and crosswalks
-        Ground = 3       // SM_120-70 GroundPlane: a block's ground, where the backdrop has none
+        Ground = 3       // SM_120-70 GroundPlane: a block's ground, one to every block of the grid (the backdrop's own are put away under it)
     }
 
     /// <summary>
@@ -598,9 +598,10 @@ namespace RealLifeOverhaul.Uptown
 
         /// <summary>
         /// The game's pieces copied along the band: each street's 100 m between its avenues, each avenue's 50 m between its
-        /// streets, each crossing, 1st Avenue's continuations, and a block's ground on every block of the band and of the
-        /// row of scenery round it (the game's side lays one only where the backdrop keeps none); past the walls, the
-        /// streets go on north one length and the avenues west and east one, as scenery.
+        /// streets, each crossing, 1st Avenue's continuations, and a block's ground on every block of the band (the first
+        /// block's too) and of the row of scenery round it, each on the grid's own place, the backdrop's block grounds
+        /// under them put away (they lay off the grid, at the pavements' own height); past the walls, the streets go on
+        /// north one length and the avenues west and east one, as scenery.
         /// </summary>
         public static void Modules(List<ModulePlace> into)
         {
@@ -647,10 +648,6 @@ namespace RealLifeOverhaul.Uptown
                     int west = LayoutRules.WestStreet(column);
                     float x = (LayoutRules.StreetX(west) + LayoutRules.StreetX(west + 1)) * 0.5f;
                     float z = (LayoutRules.AvenueZ(row - 1) + LayoutRules.AvenueZ(row)) * 0.5f;
-                    if (band && LayoutRules.IsFirst(row, column))
-                    {
-                        continue;   // the first block's ground is the backdrop's own
-                    }
                     into.Add(new ModulePlace(ModuleKind.Ground, x, z, west, row, -1, ring));
                 }
             }
@@ -733,7 +730,8 @@ namespace RealLifeOverhaul.Uptown
         /// Where the backdrop's pieces are put away (a piece whose middle lies in one): each old dead end with its dressing,
         /// 1st Avenue's two ends with theirs, the first block's main area behind 1st Avenue's buildings, the band west of 9th
         /// and east of 1st Street, the rows north of Uptown Avenue, and the scenery's ground past the walls. Its block grounds
-        /// stay: they are the lots' ground. 1st Avenue's own buildings and corners are no piece of the backdrop's.
+        /// are not among them: each is put away by the ground laid over its block (GroundGame.CopyArt), which stands on the
+        /// grid's own place. 1st Avenue's own buildings and corners are no piece of the backdrop's.
         /// </summary>
         public static void Hides(List<GroundRect> into)
         {

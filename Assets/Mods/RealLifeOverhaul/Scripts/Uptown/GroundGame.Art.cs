@@ -9,8 +9,9 @@ namespace RealLifeOverhaul.Uptown
 {
     /// <summary>
     /// Uptown's street art, the game's own: its road modules copied along the band's streets and avenues (a street's 100 m,
-    /// an avenue's 50 m, an avenue crossing a street) and a block's ground on every block the backdrop keeps none (its ring of
-    /// slabs laid as its middle, as the backdrop's own over the band: GroundGame.Paving.cs), each copy
+    /// an avenue's 50 m, an avenue crossing a street) and a block's ground on every block of the grid (its ring of slabs
+    /// laid as its middle: GroundGame.Paving.cs; the backdrop's own block grounds under it put away, GroundGame.Surfaces.cs
+    /// says why), each copy
     /// made asleep and stripped before it wakes, so nothing of the template's own runs for it; past the band's walls the
     /// streets and avenues go on one length more and the blocks round it get their ground, as scenery, so the camera never
     /// looks out on nothing. A street's name over it is the district's; a crossing's light poles hang their red, yellow and
@@ -49,7 +50,6 @@ namespace RealLifeOverhaul.Uptown
         private static readonly List<ParkingLaneGenerator> Lanes = new List<ParkingLaneGenerator>(256);
         private static readonly List<StationaryAiSpawner> Zones = new List<StationaryAiSpawner>(128);
         private static readonly List<PlanBox> ZoneBoxes = new List<PlanBox>(128);
-        private static readonly List<Bounds> KeptGrounds = new List<Bounds>(64);   // the backdrop's own block grounds, which stay
         private static readonly List<GroundRect> Mouths = new List<GroundRect>(4);  // where a car crosses into a big special place (BigPlacesRules.Mouths)
         private static readonly float[] WayX = new float[4];      // one junction's ways: the summed heading of their stop points
         private static readonly float[] WayZ = new float[4];
@@ -61,6 +61,9 @@ namespace RealLifeOverhaul.Uptown
 
         /// <summary>The pieces copied at this load, and of them the blocks' grounds and the scenery past the walls.</summary>
         public static int Copied => Copies.Count;
+
+        /// <summary>The backdrop's own block grounds put away at this load, each under the ground laid over its block.</summary>
+        public static int GroundsHidden { get; private set; }
 
         /// <summary>The copied art's holder at this load, or null: what is laid under it (the street furniture) goes with the art.</summary>
         public static Transform ArtRoot => _art != null ? _art.transform : null;
@@ -104,8 +107,8 @@ namespace RealLifeOverhaul.Uptown
         /// The game's pieces the art is copied from, found once a load before anything changes: 9th Street's 100 m south
         /// of 1st Avenue, 1st Avenue's 50 m east of it, each street's own crossing at 1st Avenue (a plain one; where the game
         /// has none of the plain kind, any of them), and a block's ground among Manhattan's own (one in no static batch).
-        /// Each must be the size of its kind. Null, or why not. A block's ground missing leaves the blocks the backdrop has
-        /// none on bare, said in the log; the district stands all the same.
+        /// Each must be the size of its kind. Null, or why not. A block's ground missing leaves the backdrop's own block
+        /// grounds as they are, said in the log; the district stands all the same.
         /// </summary>
         public static string FindTemplates()
         {
@@ -134,7 +137,6 @@ namespace RealLifeOverhaul.Uptown
                 return "none of the game's crossings to copy (" + CrossingModule + ", of its size) was found on 1st Avenue";
             }
             _groundPlane = GroundTemplate();
-            KeptGrounds.Clear();
             KeptPlanes.Clear();
             Transform kept = _backdrop != null ? _backdrop.Find(KeptName) : null;
             Renderer[] planes = kept != null ? kept.GetComponentsInChildren<Renderer>(false) : new Renderer[0];
@@ -142,7 +144,6 @@ namespace RealLifeOverhaul.Uptown
             {
                 if (planes[i] != null)
                 {
-                    KeptGrounds.Add(planes[i].bounds);
                     KeptPlanes.Add(planes[i]);
                 }
             }
@@ -249,8 +250,9 @@ namespace RealLifeOverhaul.Uptown
         /// <summary>
         /// Copies the game's pieces along the band once its streets are among the traffic's: each made asleep under one
         /// holder in the template's scene, its parking lanes taken out (new ground's copies come later), its name, lights,
-        /// crosswalks and signs made the district's, a block's ground only where the backdrop keeps none; then all woken
-        /// together. Returns how many were copied.
+        /// crosswalks and signs made the district's, each at the height of its kind (SurfaceRules.Lift) so no two surfaces
+        /// that overlap lie at one height, a block's ground on every block with the backdrop's own over it put away; then
+        /// all woken together. Returns how many were copied.
         /// </summary>
         public static int CopyArt(RoadBuild build)
         {
@@ -267,14 +269,14 @@ namespace RealLifeOverhaul.Uptown
             {
                 ModulePlace place = Places[i];
                 GameObject template = Template(place);
-                if (template == null || (place.Kind == ModuleKind.Ground && Kept(place.X, place.Z)))
+                if (template == null)
                 {
                     continue;
                 }
                 GameObject copy = Object.Instantiate(template, _art.transform);
                 copy.name = ArtName + " " + place.Kind + " " + place.Street + " " + place.Row;
                 Vector3 offset = place.Kind == ModuleKind.Ground ? template.transform.position - Middle(template) : Vector3.zero;   // a road module's pivot is its middle
-                copy.transform.SetPositionAndRotation(new Vector3(place.X + offset.x, template.transform.position.y, place.Z + offset.z), template.transform.rotation);
+                copy.transform.SetPositionAndRotation(new Vector3(place.X + offset.x, SurfaceRules.Lift(place.Kind), place.Z + offset.z), template.transform.rotation);
                 Strip(copy);
                 ClearMouths(copy);
                 switch (place.Kind)
@@ -293,6 +295,7 @@ namespace RealLifeOverhaul.Uptown
                     case ModuleKind.Ground:
                         GroundsLaid++;
                         Unpave(copy.GetComponent<Renderer>(), false);   // a copy goes with the art: nothing to give back
+                        HideKept(place.X, place.Z);
                         break;
                     default:
                         if (place.Kind == ModuleKind.Street || place.Row > 0)
@@ -333,18 +336,26 @@ namespace RealLifeOverhaul.Uptown
             return template.TryGetComponent(out Renderer shown) ? shown.bounds.center : template.transform.position;
         }
 
-        // True where one of the backdrop's own block grounds, which stay, already covers a block's middle.
-        private static bool Kept(float x, float z)
+        // The backdrop's own block grounds whose middle lies on a block the copy's ground now covers are put away (they are shown
+        // again with the rest of the backdrop): they lie off the grid by up to a few metres and at the pavements' own height, 0.05518
+        // m, so each fought the street and avenue pavements it reached over (SurfaceRules).
+        private static void HideKept(float x, float z)
         {
-            for (int i = 0; i < KeptGrounds.Count; i++)
+            for (int i = 0; i < KeptPlanes.Count; i++)
             {
-                Bounds b = KeptGrounds[i];
-                if (x >= b.min.x && x <= b.max.x && z >= b.min.z && z <= b.max.z)
+                Renderer plane = KeptPlanes[i];
+                if (plane == null || !plane.gameObject.activeSelf)
                 {
-                    return true;
+                    continue;
+                }
+                Vector3 middle = plane.bounds.center;
+                if (Mathf.Abs(middle.x - x) <= BlockWide * 0.5f && Mathf.Abs(middle.z - z) <= BlockDeep * 0.5f)
+                {
+                    plane.gameObject.SetActive(false);
+                    Hidden.Add(plane.gameObject);
+                    GroundsHidden++;
                 }
             }
-            return false;
         }
 
         // The big special places' mouths, from fixed data once a load: whether or not a place stands at this load (the
@@ -692,7 +703,6 @@ namespace RealLifeOverhaul.Uptown
             Copies.Clear();
             CopyPlace.Clear();
             Places.Clear();
-            KeptGrounds.Clear();
             _street = null;
             _avenue = null;
             _anyCrossing = null;
@@ -706,6 +716,7 @@ namespace RealLifeOverhaul.Uptown
             SignsDown = 0;
             GroundsLaid = 0;
             SceneryLaid = 0;
+            GroundsHidden = 0;
         }
     }
 }

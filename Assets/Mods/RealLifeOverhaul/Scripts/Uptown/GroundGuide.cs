@@ -5,7 +5,7 @@ namespace RealLifeOverhaul.Uptown
 {
     /// <summary>
     /// Uptown's entry in the feature list, its keys written out whole as the options checks read them: its option (read
-    /// at the next load), its ground's four tests (the map fog's in the city expansion's test run too) and its clean-up. It
+    /// at the next load), its ground's five tests (the map fog's in the city expansion's test run too) and its clean-up. It
     /// registers itself (<see cref="DescribesFeatureAttribute"/>); the district's other features add their own tests to the
     /// same entry.
     /// </summary>
@@ -23,6 +23,7 @@ namespace RealLifeOverhaul.Uptown
                 .Test("reallife_uptown_ground_test_traffic", GroundDirector.TestTraffic)
                 .Check("reallife_uptown_ground_test_fog", GroundDirector.TestFog, "Uptown check (map fog)")
                 .Check("reallife_uptown_ground_test_what", GroundDirector.TestWhatGround, "Ground check (what is this ground)")
+                .Test("reallife_uptown_ground_test_surfaces", GroundDirector.TestSurfaces)
                 .Cleanup(() => GroundDirector.Instance?.Close("its feature's clean-up (the options page, faults in a row, the save tools or another city)"));
         }
     }

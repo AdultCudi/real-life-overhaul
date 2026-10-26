@@ -9,9 +9,9 @@ namespace RealLifeOverhaul.Uptown
     /// round its middle of grass or asphalt, laid inside the streets' own pavements. In Manhattan the game's buildings stand
     /// over it from the pavement's back edge, edge to edge, so it never shows; between the district's buildings, on its open
     /// lots and round its corners it showed as a second pavement up to 8.6 m wide, so every building seemed to stand in the
-    /// pavement. Each block ground of the band, the copies and the backdrop's own over it, draws its ring with its middle's
-    /// material, so the pavement ends where the buildings' fronts stand; the backdrop's get their own back on every way out
-    /// (DropArt). COST: at the load, one look at each block ground's materials; nothing per frame.
+    /// pavement. Each block ground of the band, the copies and, where no ground of the game's could be copied, the backdrop's own,
+    /// draws its ring with its middle's material, so the pavement ends where the buildings' fronts stand; the backdrop's get their
+    /// own back on every way out (DropArt). COST: at the load, one look at each block ground's materials; nothing per frame.
     /// </summary>
     public static partial class GroundGame
     {
@@ -60,14 +60,15 @@ namespace RealLifeOverhaul.Uptown
             return true;
         }
 
-        // The backdrop's own block grounds whose middle is on the band laid as the copies are (the first block's, and those the
-        // backdrop keeps further out); those round the band stay as the game has them.
+        // The backdrop's own block grounds whose middle is on the band and which are still shown (every one under a copy's ground is put
+        // away, so these are the grounds of a load with no ground of the game's to copy) laid as the copies are; those round the band
+        // stay as the game has them.
         private static void UnpaveKept()
         {
             for (int i = 0; i < KeptPlanes.Count; i++)
             {
                 Renderer plane = KeptPlanes[i];
-                if (plane == null || !plane.name.StartsWith(GroundPlane, System.StringComparison.Ordinal))
+                if (plane == null || !plane.gameObject.activeInHierarchy || !plane.name.StartsWith(GroundPlane, System.StringComparison.Ordinal))
                 {
                     continue;
                 }

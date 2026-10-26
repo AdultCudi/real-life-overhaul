@@ -22429,7 +22429,7 @@
   "reallife_hire_test_orphan_fail": "Test failed: a walk of the city's businesses tripped on a record with no building. The log says which.",
   "reallife_hire_test_orphan_off": "Load a save first. This test does not run in a Going Public session.",
   "reallife_changes_next_title": "Next version",
-  "reallife_changes_next": "Nothing yet.",
+  "reallife_changes_next": "Fixed: the road in Uptown flickered in places, 7th Street among them. A block's ground lay at the same height as the pavements it overlapped, and the picture jumped between the two. Each block now has one ground, a hair lower than the pavements, and each avenue sits a hair higher than its crossings.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Fixed: when every building that could hold the utilities office is yours, power and water accounts are applied for and reconnected in the Utilities app, by phone, at the same prices, and the notices say so; once a building is free the office opens again and the app says where. Fixed: after withdrawing an application and applying to the same post again, the Career app opened the withdrawn one and the interview could not be reached. Each application now has its own row, and the interview, offer and withdrawal go to the live one. Fixed: a save holding a business record whose building the city does not have (another mod can leave one behind) no longer switches the tech sector off at every load. The mod now leaves such a record out wherever it reads the city's businesses, names its address once in the log and changes nothing of it.",
   "reallife_co_mass_raise": "Give a raise",
@@ -25359,5 +25359,8 @@
   "reallife_bld_mode_test_cursor": "Build mode: the pointer over the map",
   "reallife_bld_mode_test_plot": "Build mode: a building's card and tools",
   "reallife_changes_057_1_title": "0.57.1",
-  "reallife_changes_057_1": "Build mode over the whole city: outside Uptown each of the game's buildings is a plot on the map, coloured by who holds it and by its type in every view, with its address, owner, price and state under the pointer. Click one to buy or rent it in BizMan, or to refurbish or rebuild one of yours; squares, zoning and new buildings stay in Uptown. The pointer is a cross over the map, as in Cities Skylines."
+  "reallife_changes_057_1": "Build mode over the whole city: outside Uptown each of the game's buildings is a plot on the map, coloured by who holds it and by its type in every view, with its address, owner, price and state under the pointer. Click one to buy or rent it in BizMan, or to refurbish or rebuild one of yours; squares, zoning and new buildings stay in Uptown. The pointer is a cross over the map, as in Cities Skylines.",
+  "reallife_uptown_ground_test_surfaces": "Uptown: road surfaces at two spots",
+  "reallife_uptown_ground_surfaces_clear": "Uptown: no two road or ground surfaces lie at the same height over one place. You stand near {where}. Player.log has the check.",
+  "reallife_uptown_ground_surfaces_over": "Uptown: {count} places in the district still have two road or ground surfaces at the same height. You stand near {where}. Player.log names the worst."
 }
