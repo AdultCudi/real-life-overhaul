@@ -20,7 +20,6 @@ namespace RealLifeOverhaul.Schools
         Maple = 10,
         Bush = 11,     // the game's broadleaf bush: a planter's, and along the fence
         Bin = 12,      // the game's litter bin
-        Rack = 13,     // the game's bicycle stand (the street furniture's docks)
         Table = 14,    // the game's table group of Madison Square Park: a round table and four chairs people sit on
         Climb = 15,    // the game's climbing frame of the Industry City playground, the one piece of its playground not drawn in a static batch
         Pavement = 16  // the ground the game's pavement material is taken from (a template only: never laid)

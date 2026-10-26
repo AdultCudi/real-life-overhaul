@@ -886,10 +886,11 @@ internal static partial class Program
             for (int column = 1; column <= LayoutRules.Columns; column++)
             {
                 LayoutRules.Block(row, column, out float x0, out float z0, out float x1, out float z1);
-                kept &= ParksRules.IsPark(row * 100 + column) || !UptownCovered(npc.Boxes, (x0 + x1) * 0.5f, (z0 + z1) * 0.5f);   // a park's paths are walked too (UptownParksCheck.cs)
+                kept &= ParksRules.IsPark(row * 100 + column) || row * 100 + column == LayoutRules.CampusBlock || !UptownCovered(npc.Boxes, (x0 + x1) * 0.5f, (z0 + z1) * 0.5f);   // a park's paths and the campus's block are walked too (UptownParksCheck.cs, the campus check below)
             }
         }
-        Check(kept, "uptown walking: the pedestrians keep to the pavements, crossing each avenue at every junction on both sides, off the carriageways and the blocks but the parks' paths");
+        Check(kept, "uptown walking: the pedestrians keep to the pavements, crossing each avenue at every junction on both sides, off the carriageways and the blocks but the parks' paths and the school campus's");
+        UptownCampusWalkChecks(player, npc);
         // Inside its edge: every box off the walls by the edge's clearance, north of 1st Avenue's kerbs.
         float west = LayoutPlans.RingWest + LayoutPlans.EdgeClear - 0.01f, east = LayoutPlans.RingEast - LayoutPlans.EdgeClear + 0.01f, north = LayoutPlans.RingNorth - LayoutPlans.EdgeClear + 0.01f;
         bool inside = player.Boxes.Concat(npc.Boxes).All(b =>
@@ -1021,6 +1022,57 @@ internal static partial class Program
             }
         }
         return last;
+    }
+
+    // Birchwood School's campus (26 Oct 2026, Player.log of the owner's test: "people can walk 0 of 9 routes ... the player 9", nobody on the lawns while pedestrians walked the
+    // street): the pedestrians' mesh must cover the campus's whole block as the player's does, joined to the pavements round it, so people walk in at the gates (the fence is
+    // carved out of both meshes at a load) and reach the yards, the court, the plaza, the hall's and the junior block's ends and the field.
+    private static void UptownCampusWalkChecks(GroundPlan player, GroundPlan npc)
+    {
+        LayoutRules.Block(LayoutRules.CampusBlock / 100, LayoutRules.CampusBlock % 100, out float x0, out float z0, out float x1, out float z1);
+        float mid = (x0 + x1) * 0.5f, pave = 1.85f;   // the middle of a 3.7 m pavement round the block
+        (float, float, string)[] inside =
+        {
+            (mid, z0 + 20f, "the forecourt and the main school's door"), (x0 + 7.3f, z0 + 20f, "the west yard"), (x1 - 7.3f, z0 + 20f, "the east yard"),
+            (mid, z0 + 55f, "the court"), (mid, z0 + 61f, "the plaza"), (x0 + 14f, z0 + 70f, "the hall's north end"), (x1 - 14f, z0 + 70f, "the junior block's north end"),
+            (mid, z1 - 25f, "the field"), (x0 + 1f, z0 + 1f, "the south-west corner"), (x1 - 1f, z1 - 1f, "the north-east corner")
+        };
+        (float, float, string)[] gates =
+        {
+            (mid, z0 - pave, "the main gate's pavement on Uptown Avenue"), (x1 + pave, z0 + 70f, "the side gate's pavement on Elm Street"), (mid, z1 + pave, "the field's gate's pavement on Summit Avenue")
+        };
+        string missed = null;
+        foreach ((float x, float z, string name) in inside)
+        {
+            if (!UptownCovered(npc.Boxes, x, z) || !UptownCovered(player.Boxes, x, z))
+            {
+                missed = (missed == null ? string.Empty : missed + ", ") + name;
+            }
+        }
+        foreach ((float x, float z, string name) in gates)
+        {
+            if (!UptownCovered(npc.Boxes, x, z) || !UptownCovered(player.Boxes, x, z))
+            {
+                missed = (missed == null ? string.Empty : missed + ", ") + name;
+            }
+        }
+        Check(missed == null, "uptown campus walking: the pedestrians' ground covers the campus as the player's does (" + inside.Length + " places inside, " + gates.Length + " gates' pavements)"
+            + (missed == null ? string.Empty : "; not covered: " + missed));
+        // Joined to the pavement it opens on: a box of the campus's block reaches onto the pavement round it, so the meshes meet at the gates, and no further than the pavement.
+        bool reaches = false, kerbSafe = true;
+        foreach (GroundBox b in npc.Boxes)
+        {
+            b.Extent(out float bx0, out float bz0, out float bx1, out float bz1);
+            if (bx0 < x0 - 0.01f && bx1 > x1 + 0.01f && bz0 < z0 - 0.01f && bz1 > z1 + 0.01f)
+            {
+                reaches = true;
+                kerbSafe &= x0 - bx0 <= ParksRules.PavementReach + 0.01f && bx1 - x1 <= ParksRules.PavementReach + 0.01f && z0 - bz0 <= ParksRules.PavementReach + 0.01f && bz1 - z1 <= ParksRules.PavementReach + 0.01f;
+            }
+        }
+        Check(reaches && kerbSafe, "uptown campus walking: the campus's block reaches over the pavements round it by " + ParksRules.PavementReach + " m, no further, so the meshes join at the gates and not onto a carriageway");
+        // The one surface: still every box of the pedestrians' plan joined to the rest (checked above for the whole plan); the campus's box meets the pavements on all four sides.
+        Check(UptownCovered(npc.Boxes, mid, z0 - 0.2f) && UptownCovered(npc.Boxes, x1 + 0.2f, z0 + 70f) && UptownCovered(npc.Boxes, mid, z1 + 0.2f) && UptownCovered(npc.Boxes, x0 - 0.2f, z0 + 70f),
+            "uptown campus walking: a pedestrian's ground runs across each edge of the campus's block (the gates on three sides, the fence on the fourth)");
     }
 
     private static void UptownJoinChecks()
