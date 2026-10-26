@@ -71,6 +71,7 @@ namespace RealLifeOverhaul.Uptown
             // Everything of the game asks the record's type (the businesses that may start there, the map, the rent, the
             // customers); the interior goes by its size and version alone, which stay (Offices/ConversionGame's way).
             made.Building.BuildingType = type;
+            Mapped(made, "changed in use");   // the map's filters read the record's type at each look: its marker and the search list follow at once
             WriteState();
             _stamp++;
             DistrictPlaces.Changed();

@@ -168,6 +168,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--map")
+        {
+            MapFilterChecks();   // (the city map's filters and a building that stands or goes, while working on them: MapChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--stand")
         {
             StandNowChecks();   // (a building handed over stands at once, and the opening day alone, while working on them: StandChecks.cs)
@@ -548,6 +554,7 @@ internal static partial class Program
         Hire();         // a builder of the city's hired by the player: the quotes, the contract's money, the penalty, the pace, the line, the sources, the texts (HireChecks.cs)
         BuilderDesk();  // the front desks: what the desk talks about first, the front desk picked, the office's visitors, the one quote and hire, the click, the tests, the texts (BuilderDeskChecks.cs)
         Track();        // Show on map and the construction objectives: what is under way, each line's words, the order, the cap, the claim kept, the one way to the destination, the game's objectives window, the texts (TrackChecks.cs)
+        MapFilterChecks();   // a building the construction game finishes registers with the city map's filters when it stands and leaves them when it goes: the rows, the steps, the list, the sources, the text (MapChecks.cs)
         StandNowChecks();   // a building handed over stands at once, and the opening day is not missed: when it stands, the one declaration, the record set up once, the sources, the texts (StandChecks.cs)
         ShowFlats();    // show flats and renovations: viewings, buyers and prices, a refit's hours, grade and quote, the fittings' decor, the lines, the game's residential designs, the sources, the texts (ShowFlatsChecks.cs)
         Redevelop();    // redevelopment: refurnishing with the game's designs and its price, an AI business's new layout, the lines, the sources, the texts (RedevelopChecks.cs)

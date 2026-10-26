@@ -331,7 +331,8 @@ namespace RealLifeOverhaul.NewBuildings
         /// <summary>
         /// A district's building knocked down in play, let go from the made buildings for good (it stays hidden where it stands, as a made
         /// building's copy does, until the city goes): out of the game's lookup of its address, out of the list of the made buildings
-        /// and of the ground they keep, so a building made on its lot in play is found at that address and held off by nothing.
+        /// and of the ground they keep, so a building made on its lot in play is found at that address and held off by nothing. It leaves
+        /// the city's list and the city map's filters with it (MadeGame.LeaveCity), so no marker is left on the map where it stood.
         /// </summary>
         internal void Retire(MadeBuilding old)
         {
@@ -342,6 +343,10 @@ namespace RealLifeOverhaul.NewBuildings
             if (old.Building != null)
             {
                 MadeGame.Leave(old.Building);
+            }
+            if (!MadeGame.LeaveCity(old, out string mapWhy))
+            {
+                Logger?.Warn("Made buildings: '" + old.Spec.Id + "' (knocked down) could not leave the city's list and the map's filters (" + mapWhy + "); it leaves them at the next load.");
             }
             CopyGame.ReleaseMade(old.Spec.Id);
             _made.Remove(old);

@@ -12,7 +12,8 @@ namespace RealLifeOverhaul.NewBuildings
     /// building, a door, the Market's walkers), in the private lookup of those by address (FindCityBuildingController, which BizMan,
     /// the guiders and the building card read), the closest-building job made again from the longer list, and its sign and its
     /// lights set. The game's other lists made once at a load (the city map's search of the businesses by name, built when the
-    /// map first opens) are read from the list at their use, so they follow. Nothing here runs a frame: one call a building made in play.
+    /// map first opens) are read from the list at their use, so they follow. The map's marker for a building the player rents or owns, the game's event for a
+    /// registration that changed and the building's leaving the list when it is knocked down are MadeGame.Map.cs's. Nothing here runs a frame: one call a building made in play.
     /// What only a load makes: the minimap's picture of the mod's buildings (read at a load from the mod's folder) and the game's
     /// generator's first businesses for a district building, which a finished building never had.
     /// </summary>

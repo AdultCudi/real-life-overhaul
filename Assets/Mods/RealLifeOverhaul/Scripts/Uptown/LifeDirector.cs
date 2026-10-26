@@ -494,6 +494,7 @@ namespace RealLifeOverhaul.Uptown
                 {
                     StandRules.SetUp(f);
                     settled++;
+                    Mapped(made, "set up at its first load");   // the game's marker for the deed or the letting, which its own start of the map made before it
                 }
                 else
                 {

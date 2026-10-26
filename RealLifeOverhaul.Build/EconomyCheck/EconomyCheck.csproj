@@ -591,6 +591,8 @@
     <!-- A building handed over stands at once, and the opening day is not missed (StandChecks.cs). -->
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\OpeningRules.cs" Link="Mod\Construction\OpeningRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\StandRules.cs" Link="Mod\StandRules.cs" />
+    <!-- A building the construction game finishes registers with the city map's filters when it stands and leaves them when it goes (MapChecks.cs). -->
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\NewBuildings\MapRules.cs" Link="Mod\MapRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Designs\ShowFlatDesigns.cs" Link="Mod\ShowFlatDesigns.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Civic\WrapRules.cs" Link="Mod\WrapRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Civic\PlotRules.cs" Link="Mod\PlotRules.cs" />
