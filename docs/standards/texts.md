@@ -7,7 +7,7 @@ Every word a player reads comes from the locale files in `Assets/Mods/RealLifeOv
 | `en.json` | English, the source | 19,748 | Every key |
 | `pt.json` | Brazilian Portuguese | 19,748 | Every key of `en.json` |
 | `zh-cn.json` | Simplified Chinese | 19,748 | Every key of `en.json` |
-| `de.json`, `fr.json`, `es.json`, `ru.json`, `nl.json`, `tr.json` | German, French, Spanish, Russian, Dutch, Turkish | 19,748 | May lack keys; the game then reads the English |
+| `de.json`, `fr.json`, `es.json`, `ru.json`, `nl.json`, `tr.json`, `pl.json`, `ko.json` | German, French, Spanish, Russian, Dutch, Turkish, Polish, Korean | 19,748 | May lack keys; the game then reads the English |
 
 ### RLO-TXT-001: Every player text is a locale key
 
@@ -27,7 +27,7 @@ Checked by: StandardCheck (against the `en.json` your branch started from), `loc
 
 ### RLO-TXT-003: English, Portuguese and Chinese in the same change
 
-**MUST.** Write the `pt` and `zh-cn` text of every new or changed English text in the same change. **MUST NOT** add keys to `de.json`, `fr.json`, `es.json`, `ru.json`, `nl.json` or `tr.json` by hand; they are translated in batches. If you change an English text's `{placeholders}`, tags or lines, mend the key in those six files too, or take it out of them.
+**MUST.** Write the `pt` and `zh-cn` text of every new or changed English text in the same change. **MUST NOT** add keys to `de.json`, `fr.json`, `es.json`, `ru.json`, `nl.json`, `tr.json`, `pl.json` or `ko.json` by hand; they are translated in batches. If you change an English text's `{placeholders}`, tags or lines, mend the key in those eight files too, or take it out of them.
 
 Why: the two are required languages, and a key missing from either fails `locales.py`.
 

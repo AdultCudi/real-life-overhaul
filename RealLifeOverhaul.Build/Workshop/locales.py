@@ -43,7 +43,7 @@ REQUIRED = ('en', 'pt', 'zh-cn')
 # empty next row), the checkers (ModLanguages.FirstBatch, held to this list by ContractCheck and EconomyCheck) do not ask it for a complete
 # translation, and the Workshop description, the README, the Guide's Known limits page and the installer do not name it yet. Merge its
 # translation (merge.py <code>), then take it out of this tuple and out of ModLanguages.FirstBatch: from then on every rule applies.
-FIRST_BATCH = ('pl', 'ko')
+FIRST_BATCH = ()
 # What's new's next row when nothing is in it yet; the release scripts (make_version.py, next_join.py, next_dedupe.py) know these.
 NOTHING = {'en': 'Nothing yet.', 'pt': 'Nada ainda.', 'zh-cn': '还没有。', 'de': 'Noch nichts.', 'fr': "Rien pour l'instant.",
            'es': 'Nada todavía.', 'ru': 'Пока ничего.', 'nl': 'Nog niets.', 'tr': 'Henüz yok.', 'pl': 'Jeszcze nic.', 'ko': '아직 없음.'}

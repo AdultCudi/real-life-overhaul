@@ -29,7 +29,7 @@ namespace RealLifeOverhaul
         public static readonly string[] PerFeature = { "en", "pt", "zh-cn", "de", "fr", "es", "ru", "nl", "tr" };
 
         /// <summary>The languages whose first full translation is not merged yet (Workshop/locales.py's FIRST_BATCH holds the same list).</summary>
-        public static readonly string[] FirstBatch = { "pl", "ko" };
+        public static readonly string[] FirstBatch = { };
 
         /// <summary>True for a language in its first batch.</summary>
         public static bool InFirstBatch(string code)

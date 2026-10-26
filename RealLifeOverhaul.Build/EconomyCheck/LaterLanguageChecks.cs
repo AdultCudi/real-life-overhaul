@@ -13,7 +13,7 @@ using RealLifeOverhaul;
 // their files are as complete as the other translations: every key German, French, Spanish and Russian all have, and no text
 // left as the English unless its key is on locales.py's ENGLISH_OK. Then their What's new rows: every numbered row the others
 // have, under the same version title, with the language's own fix mark as often as the English has "Fixed: ", and the next row
-// as locales.py wants it. Last, What's new tells of Dutch and Turkish in every language.
+// as locales.py wants it. Last, What's new tells of Dutch and Turkish, and of Polish and Korean, in every language.
 //
 // Polish and Korean are held by these whole-file rules and by locales.py, never by a line written by hand in each feature's
 // check: every What's new row of the English must be in their file under the same key, with their own fix marks as often as the
@@ -34,6 +34,17 @@ internal static partial class Program
         "El mod ya se puede leer también en neerlandés y turco", "Мод теперь можно читать на нидерландском и турецком",
         "De mod kan nu ook in het Nederlands en Turks worden gelezen", "Mod artık Felemenkçe ve Türkçe dillerinde de okunabiliyor"
     };
+
+    // The line for Polish and Korean (added to the mod 27 Oct 2026): by a piece of it in the nine languages (the order of
+    // ModLanguages.PerFeature), then in Polish and Korean, whose files the whole-file rules hold.
+    private static readonly string[] PolishKoreanLine =
+    {
+        "The mod can now be read in Polish and Korean too", "O mod agora pode ser lido também em polonês e coreano", "本模组现在也可以用波兰语和韩语阅读",
+        "Die Mod lässt sich jetzt auch auf Polnisch und Koreanisch lesen", "Le mod peut désormais être lu aussi en polonais et en coréen",
+        "El mod ya se puede leer también en polaco y coreano", "Мод теперь можно читать и на польском, и на корейском",
+        "De mod kan nu ook in het Pools en Koreaans worden gelezen", "Mod artık Lehçe ve Korece dillerinde de okunabiliyor"
+    };
+    private static readonly string[] PolishKoreanOwnLine = { "Moda można teraz czytać także po polsku i po koreańsku", "이제 모드를 폴란드어와 한국어로도 읽을 수 있습니다" };
 
     private static void LaterLanguages()
     {
@@ -80,6 +91,13 @@ internal static partial class Program
             }
         }
         Check(LineEverywhere(AddedLanguagesLine), "later languages: What's new tells of Dutch and Turkish in some row of every language");
+        Check(LineEverywhere(PolishKoreanLine), "later languages: What's new tells of Polish and Korean in some row of the first nine languages");
+        for (int i = 0; i < 2; i++)
+        {
+            string own = i == 0 ? "pl" : "ko";
+            Dictionary<string, string> ownWords = LoadWords(IoPath.Combine(folder, own + ".json"));
+            Check(ownWords != null && WhatsNewHas(ownWords, PolishKoreanOwnLine[i]), "later languages: What's new tells of Polish and Korean in some row of " + own);
+        }
     }
 
     // A feature's line (no fix mark), by a piece of it in each language in the order of ModLanguages.PerFeature, in some What's new
