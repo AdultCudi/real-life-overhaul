@@ -88,7 +88,7 @@ namespace RealLifeOverhaul.Tech
                     Share = x.Int(100), Launched = x.Int(), Hype = x.Int(), Scope = x.Int(), Revenue = x.Long(), RivalFeatures = x.Int(), RivalTier = TalentCatalogue.Clamp(x.Int(1), 0, 2),
                     LastRelease = x.Int(), Carry = x.Long(), Compute = x.Long(), Train = x.Int(2)
                 };
-                if (f.Products.Count < FirmsCatalogue.ProductsMost * 2)
+                if (f.Products.Count < FirmsCatalogue.ProductsStored * 4)   // every record up to a sane size: the withdrawn are trimmed below, so a live one late in the list is not lost
                 {
                     f.Products.Add(p);
                 }
@@ -106,6 +106,7 @@ namespace RealLifeOverhaul.Tech
                     f.Contracts.Add(c);
                 }
             }
+            FirmsRules.TrimWithdrawn(f);   // a list an older version let grow keeps its newest withdrawn products only (up to ProductsStored in all)
             return f;
         }
     }

@@ -330,7 +330,7 @@ namespace RealLifeOverhaul.Meta
                 .Group("reallife_talent_header")
                 .About("reallife_guide_tech_people_about").Help("reallife_guide_tech_people")
                 .Owns(Settings.TechPeopleId)
-                .Test("reallife_talent_test_review", "reallife_talent_test_offer", "reallife_talent_test_course")
+                .Test("reallife_talent_test_review", "reallife_talent_test_offer", "reallife_talent_test_course", "reallife_names_test")
                 .Data(Tech.TalentStore.Key, Tech.TechNews.Key)
                 .Cleanup(() => Tech.TechDirector.Instance?.StopAll(), -2)
                 .ResetData(() => Tech.TechDirector.Instance?.Forget()));

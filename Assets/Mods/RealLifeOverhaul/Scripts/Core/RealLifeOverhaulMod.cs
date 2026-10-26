@@ -1039,6 +1039,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_talent_test_review", () => Tech.TechDirector.Instance?.TestReview())
                 .AddButton("reallife_talent_test_offer", () => Tech.TechDirector.Instance?.TestOffer())
                 .AddButton("reallife_talent_test_course", () => Tech.TechDirector.Instance?.TestCourse())
+                .AddButton("reallife_names_test", () => Tech.TechDirector.Instance?.TestNames())
                 .AddToggle(Settings.TechJobsId, "reallife_hire_enabled", Settings.TechJobs,
                     v => Settings.TechJobs = v)
                 .AddButton("reallife_hire_test_applicants", () => Tech.TechDirector.Instance?.TestApplicants())

@@ -115,7 +115,7 @@ namespace RealLifeOverhaul.Tech
             {
                 Seeker s = HiringRules.NewSeeker(_hiring.Seed, _hiring.Next(), Save.Day, false, ad.Role, ad.Level, _rate,
                     ShortageOf(TalentCatalogue.Role(ad.Role).Family), _districts.Count > 0 ? _districts[0] : string.Empty);
-                HiringGame.Name(s);
+                HiringGame.Name(s, NameSet());
                 _hiring.Seekers.Add(s);
                 _hiring.Applicants.Add(new Applicant { Id = _hiring.Next(), Seeker = s.Id, Ad = ad.Id, Day = Save.Day, Interest = HiringRules.Interest(s, ad) });
                 ad.Came++;

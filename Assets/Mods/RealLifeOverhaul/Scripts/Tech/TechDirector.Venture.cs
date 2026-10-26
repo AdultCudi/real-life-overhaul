@@ -52,10 +52,11 @@ namespace RealLifeOverhaul.Tech
             if (fresh)
             {
                 int hype = VentureRules.Hype(file.Seed, save.Day, Year);
+                HashSet<string> names = NameSet();
                 for (int i = 0; i < 6; i++)
                 {
                     Startup s = VentureRules.Born(file, save.Day - i * 20, hype);
-                    s.Founder = VentureGame.Founder();
+                    s.Founder = VentureGame.Founder(names);
                     file.Startups.Add(s);
                 }
             }
@@ -102,7 +103,7 @@ namespace RealLifeOverhaul.Tech
             if (alive < VentureCatalogue.StartupsMost && TechRandom.Mille(_venture.Seed, day, 3) < VentureCatalogue.BirthChance * mood / 1000)
             {
                 Startup s = VentureRules.Born(_venture, day, hype);
-                s.Founder = VentureGame.Founder();
+                s.Founder = VentureGame.Founder(NameSet());
                 _venture.Startups.Add(s);
                 if (s.Sector == (int)Venture.Ai)
                 {
@@ -347,7 +348,7 @@ namespace RealLifeOverhaul.Tech
             }
             Profile chief = TalentRules.Make(_venture.Seed, day * 31 + 7, TalentCatalogue.ChiefExecutive, TalentCatalogue.Principal, day);
             chief.Id = "pro:" + _talent.NextPro++;
-            chief.Name = VentureGame.Founder();
+            chief.Name = VentureGame.Founder(NameSet());
             chief.Place = c.Place;
             chief.Work = (int)Arrangement.Hybrid;
             chief.Wage = TalentRules.Going(TalentGame.GameRate(TalentCatalogue.RateSkill, chief.Main / 1000), chief.Def, 1000, 0);
