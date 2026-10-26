@@ -54,6 +54,7 @@ internal static partial class Program
         Solid();
         Crew(Array.IndexOf(args, "--crew") >= 0);
         CarExit();
+        TestStall();   // the school's car that will not move: mended, then the drive called off; the examiner who never boards; time stopped (TestStallCheck.cs)
         Station();
         StationFurnish();   // a station's walkway rule walked once with the same answers, timed, and where the furnishing runs (StationFurnishCheck.cs)
         Tow();

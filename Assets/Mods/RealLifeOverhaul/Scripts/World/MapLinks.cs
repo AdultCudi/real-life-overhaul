@@ -21,6 +21,7 @@ namespace RealLifeOverhaul
         private const float FeedEvery = 0.2f;     // seconds between batches of markers while some are still to be made
         private const int FeedAtOnce = 6;         // markers made per kind per batch
         private const int ManyStops = 40;         // more bus stops than this: their row starts unticked
+        private const int ManyHiring = 12;        // more buildings hiring than this: their row starts unticked
 
         public static IModLogger Logger;
 
@@ -35,6 +36,7 @@ namespace RealLifeOverhaul
             public Func<bool> Enabled;                   // the feature's own options
             public Func<long> Stamp;                     // cheap; changes when the places do
             public Action<List<MapPlace>> Fill;          // the places as they are now
+            public bool Found;                           // its places' names (MapPlace.Alias) are also found by the city map's search
             public MapPlaces.Category Category;          // made the first time there is a place
             public readonly List<MapPlace> Waiting = new List<MapPlace>(8);   // read, not yet on the map
             public int Fed;                              // how many of Waiting are on the map
@@ -109,6 +111,10 @@ namespace RealLifeOverhaul
                 if (stamp != 0L)
                 {
                     link.Fill(_scratch);
+                }
+                if (link.Found)
+                {
+                    SpecialBuildings.Aliases(link.Id, _scratch);   // empty when the kind is off: the words go with it
                 }
                 link.Waiting.Clear();
                 link.Fed = 0;
@@ -377,7 +383,7 @@ namespace RealLifeOverhaul
             // Jobs and careers: each employer's office (its help-wanted board), by the employer's name.
             _links.Add(new Link
             {
-                Id = "job_offices", TitleKey = "reallife_map_row_job_offices", Colour = new Color(0.20f, 0.62f, 0.95f), Icon = MapIcon.Briefcase,
+                Id = "job_offices", TitleKey = "reallife_map_row_job_offices", Colour = new Color(0.20f, 0.62f, 0.95f), Icon = MapIcon.Briefcase, Found = true,
                 Enabled = () => Settings.Jobs && Settings.Careers,
                 Stamp = () =>
                 {
@@ -402,10 +408,25 @@ namespace RealLifeOverhaul
                         int board = jobs.Career.DepotOf(e);
                         if (CareerOfficeRules.ShowMeOffered(board, boards.Count))
                         {
-                            places.Add(new MapPlace(boards.Front(board), At(T(CareerCatalogue.All[e].NameKey), boards.Address(board))) { Lit = boards.Building(board) });
+                            string employer = T(CareerCatalogue.All[e].NameKey);
+                            places.Add(new MapPlace(boards.Front(board), At(employer, boards.Address(board)))
+                            {
+                                Lit = boards.Building(board),
+                                Alias = employer,   // found by the employer's name in the map's search, the shop its board stands at under it
+                                AliasUnder = At(T("reallife_map_row_job_offices"), boards.Address(board))
+                            });
                         }
                     }
                 }
+            });
+            // Careers: the buildings with a professional post open today, by the employer's name (a shop, an office, a public building).
+            _links.Add(new Link
+            {
+                Id = "hiring", TitleKey = "reallife_map_row_hiring", Colour = new Color(0.12f, 0.55f, 0.50f), Icon = MapIcon.Briefcase, InStreet = true,
+                TickedByDefault = count => count <= ManyHiring,
+                Enabled = () => Settings.CareersJobs,
+                Stamp = () => Careers.CareersDirector.Instance != null ? Careers.CareersDirector.Instance.HiringStamp() : 0L,
+                Fill = HiringPlaces
             });
             // The City Ledger: the newspaper kiosks near the player's home; the building each stands in front of lights up.
             _links.Add(new Link
@@ -582,6 +603,59 @@ namespace RealLifeOverhaul
                     door = b.entranceDoors[0].doorTransform.position;
                 }
                 places.Add(new MapPlace(door, isSchool ? school : At(ward, b.building.Address.ToFormattedString())) { Lit = b });
+            }
+        }
+
+        // The buildings with a post open: one marker each, under the employer's name and the number of posts, its building lit on the open map.
+        private readonly List<Careers.Opening> _posts = new List<Careers.Opening>(64);
+
+        private void HiringPlaces(List<MapPlace> places)
+        {
+            if (Careers.CareersDirector.Instance == null || !Careers.CareersDirector.Instance.Hiring(_posts))
+            {
+                return;
+            }
+            CityBuildingController[] all = GameDlc.Open(InstanceBehavior<CityManager>.Instance);
+            if (all == null)
+            {
+                return;
+            }
+            for (int p = 0; p < _posts.Count; p++)
+            {
+                Careers.Opening post = _posts[p];
+                bool seen = false;
+                for (int q = 0; q < p && !seen; q++)
+                {
+                    seen = _posts[q].Number == post.Number && _posts[q].Street == post.Street;   // the building's first post made its marker
+                }
+                if (seen)
+                {
+                    continue;
+                }
+                int count = 0;
+                for (int q = p; q < _posts.Count; q++)
+                {
+                    count += _posts[q].Number == post.Number && _posts[q].Street == post.Street ? 1 : 0;
+                }
+                CityBuildingController building = null;
+                for (int i = 0; i < all.Length && building == null; i++)
+                {
+                    Address at = all[i] != null && all[i].building != null ? all[i].building.Address : null;
+                    building = at != null && at.streetNumber == post.Number && at.streetName == post.Street ? all[i] : null;
+                }
+                Vector3 door;
+                if (building == null || !JobSpots.Front(building, out door))
+                {
+                    if (building == null || building.entranceDoors == null || building.entranceDoors.Length == 0 || building.entranceDoors[0] == null
+                        || building.entranceDoors[0].doorTransform == null)
+                    {
+                        continue;   // a post at an address the city has no door for: not on the map
+                    }
+                    door = building.entranceDoors[0].doorTransform.position;
+                }
+                string what = T(count == 1 ? "reallife_map_hiring_one" : "reallife_map_hiring_many").Replace("{employer}", Careers.CareersText.Employer(post.Employer))
+                    .Replace("{count}", count.ToString());
+                places.Add(new MapPlace(door, At(what, building.building.Address.ToFormattedString())) { Lit = building });
             }
         }
 

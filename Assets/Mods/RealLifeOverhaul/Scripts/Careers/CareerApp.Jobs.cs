@@ -162,6 +162,7 @@ namespace RealLifeOverhaul.Careers
             {
                 InfoBox.Button(buttons, InfoBox.Positive, "reallife_career_button_apply", () => Do(() => _director.Apply(id)));
             }
+            MapButton(buttons, () => _director.ShowPost(o));
             InfoBox.Button(buttons, InfoBox.Additional, "common_close", ClosePick);
             Meta.Guide.Point(box, JobsGuide);
         }

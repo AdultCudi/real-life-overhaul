@@ -49,6 +49,8 @@ namespace RealLifeOverhaul
                 CareersBridges.Claim = (amount, employer) => RestraintClaims.File(amount, employer);
                 CareersBridges.Credit = Credit;
                 CareersBridges.Children = Children;
+                CareersBridges.Boards = BoardEmployers;
+                CareersBridges.ShowBoard = ShowBoard;
                 TechBridges.CourseShareBp = () => CareersDirector.Instance != null && CareersDirector.Instance.HasAcademy() ? StudyCatalogue.AcademyStaffCourseBp : 10000;
                 TechBridges.DegreeFee = DegreeFee;
                 TechBridges.AcademyType = () => CareersDirector.FamilyOn ? AcademyType.Type : null;
@@ -90,6 +92,59 @@ namespace RealLifeOverhaul
                 Economy.OwnBankBridges.Qualified = null;
                 News.Extra = _paperBefore;
                 _paperBefore = null;
+            }
+
+            // The gig work's own employers (Scripts/Jobs) and where each one's help-wanted board stands, for the Career app's Show on map.
+            // An employer with a board has an address; one without has none in this city and is hired through the phone. The building trades
+            // (no board: their works sites and floors) are not listed.
+            private static void BoardEmployers(List<BoardEmployer> into)
+            {
+                try
+                {
+                    JobDirector jobs = JobDirector.Instance;
+                    CareerDirector career = jobs != null ? jobs.Career : null;
+                    if (career == null || !CareerDirector.On)
+                    {
+                        return;
+                    }
+                    for (int e = 0; e < CareerCatalogue.All.Length; e++)
+                    {
+                        Employer employer = CareerCatalogue.All[e];
+                        if (employer.Premises.Length == 0)
+                        {
+                            continue;
+                        }
+                        into.Add(new BoardEmployer { Index = e, Name = JobText.T(employer.NameKey), Address = career.OfficeAddress(e) });
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("CareersLinks.BoardEmployers", e);
+                }
+            }
+
+            // The destination marker on an employer's board: the employer's own show-me-the-office, the phone closed so the marker shows.
+            private static string ShowBoard(int employer)
+            {
+                try
+                {
+                    JobDirector jobs = JobDirector.Instance;
+                    CareerDirector career = jobs != null ? jobs.Career : null;
+                    if (career == null || !CareerDirector.On || employer < 0 || employer >= CareerCatalogue.All.Length)
+                    {
+                        return "reallife_career_why_route";
+                    }
+                    if (!career.ShowOffice(employer))
+                    {
+                        return career.OfficeAddress(employer) == null ? "reallife_career_why_no_board" : "reallife_career_why_board_busy";
+                    }
+                    return null;
+                }
+                catch (Exception e)
+                {
+                    Fault("CareersLinks.ShowBoard", e);
+                    return "reallife_career_why_route";
+                }
             }
 
             // The places that teach courses, as an academy's competitors: the game's school, and the university while it is open.
