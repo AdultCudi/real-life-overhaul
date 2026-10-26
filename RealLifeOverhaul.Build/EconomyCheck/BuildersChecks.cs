@@ -732,7 +732,8 @@ internal static partial class Program
             Check(words[l].TryGetValue("reallife_guide_construction", out string page) && page.Contains("{bld_licence_fee}") && page.Contains("{bld_land_share}") && page.Contains("{bld_bribe_days}"),
                 "builders texts: the Guide's page in " + codes[l] + " has its figures");
         }
-        // What's new: the company's line in every language, before the row's first fix.
+        // What's new: the company's line in every language, before the first fix of the row that holds it (the next row before a
+        // release, the version's own row after it: the version script moves the lines).
         var starts = new Dictionary<string, string>(StringComparer.Ordinal)
         {
             { "en", "Your own construction company:" }, { "pt", "Sua própria construtora:" }, { "zh-cn", "你自己的建筑公司：" }, { "de", "Deine eigene Baufirma:" },
@@ -741,10 +742,10 @@ internal static partial class Program
         };
         for (int l = 0; l < words.Length; l++)
         {
-            string next = words[l].TryGetValue("reallife_changes_next", out string row) ? row : string.Empty;
-            int line = starts.TryGetValue(codes[l], out string start) ? next.IndexOf(start, StringComparison.Ordinal) : -1;
+            string next = starts.TryGetValue(codes[l], out string start) ? FixRow(words[l], start) : string.Empty;
+            int line = start != null ? next.IndexOf(start, StringComparison.Ordinal) : -1;
             int fix = FixMarks.TryGetValue(codes[l], out string mark) ? next.IndexOf(mark, StringComparison.Ordinal) : -1;
-            Check(line >= 0 && (fix < 0 || line < fix), "builders texts: What's new's next row in " + codes[l] + " has the construction company, before its fixes");
+            Check(line >= 0 && (fix < 0 || line < fix), "builders texts: What's new in " + codes[l] + " has the construction company, before its row's fixes");
         }
         string guide = ModSource(@"Construction\ConstructionGuide.cs");
         foreach (Match m in Regex.Matches(words[0]["reallife_guide_construction"], @"\{(bld_[a-z_]+)\}"))
