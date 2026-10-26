@@ -1,8 +1,7 @@
-0.57.2
+0.58.0
+
+New
+- The mod can now be read in Polish and Korean too. Buildings that grow: Uptown's developers and rival tycoons build on free land the council zones where a use is wanted, a few at a time, and their buildings find tenants and fall into poor condition when left empty; Let it grow puts a building on your own zoned land at a basic, standard or premium budget, with tenants paying you rent; and zoning goes square by square, with fill, rectangle, brush and unzone tools; Uptown is now two districts, Uptown and Cedar Heights, cut along 5th Street, each with its own people, customers, rents, demand and market and far fewer of the largest stores; a save from before moves to them by position, keeping its rents and deeds.
 
 Fixed
-- When the business you work for closes, is bought or loses its building, you are now laid off at once with redundancy pay and a good reference, with no quit, sacking or missed day against you and no wait before you apply again; if it moves, your job moves with it. A quit or sacking that followed a closing is put right as a redundancy when you load.
-- An invitation in the Planner, such as an evening with investors, did not say where to go. Every invitation from Standing is now a video call. The Planner says so, and you join it from the Standing page in the Finance app while it runs, instead of it starting by itself wherever you stand.
-- The road in Uptown flickered in places, 7th Street among them. A block's ground lay at the same height as the pavements it overlapped, and the picture jumped between the two. Each block now has one ground, a hair lower than the pavements, and each avenue sits a hair higher than its crossings.
-- The driving school's car could be left standing with the drive unable to begin. If the examiner cannot walk to the car they are now taken to be aboard once you are at the wheel; a game left paused, or with its time controls locked, says so and is freed; and a car that does not move with the accelerator held is looked over and mended where it can be, and the drive is called off with the fee returned if it still will not go.
-- Employers were hard to find. The Career app has Show on map for each employer at a help-wanted board, with the address of its board, and for every vacancy, application and job; the city map has an Employers hiring row; and the map's search finds an employer such as Fairway Markets by its name.
+- Sitting at the desk of Crest Motors, the car dealership in Uptown, froze the game and left you stuck in the chair, and its purchase panel came up empty, with no cars and no prices. The dealership now has the vehicle store its desk asks for, with its cars and their prices, and a desk that fails closes its panel and stands you up.
