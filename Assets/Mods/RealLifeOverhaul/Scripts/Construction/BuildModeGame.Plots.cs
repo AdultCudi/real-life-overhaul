@@ -460,7 +460,10 @@ namespace RealLifeOverhaul.Construction
             }
         }
 
-        /// <summary>The game's BizMan opened on a building's own page, as the map's building card does (its buy offer and its rent are there, with the game's checks). False if it could not be.</summary>
+        /// <summary>
+        /// The game's BizMan opened on a building's own page, as the map's building card does (its buy offer and its rent are
+        /// there, with the game's checks). False if it could not be.
+        /// </summary>
         public static bool OpenBizMan(string street, int number)
         {
             UIs uis = InstanceBehavior<UIs>.Instance;

@@ -132,7 +132,10 @@ namespace RealLifeOverhaul.Construction
                            + (again != null ? "; build mode would not open again (" + again + ")" : string.Empty), pass, "reallife_bld_mode_test_fail");
         }
 
-        /// <summary>Test: a known building of the city's: its card gives its address, type, size, owner, price and state; clicked, its tool panel's actions each open or greyed as the rules and the construction game say.</summary>
+        /// <summary>
+        /// Test: a known building of the city's: its card gives its address, type, size, owner, price and state; clicked, its
+        /// tool panel's actions each open or greyed as the rules and the construction game say.
+        /// </summary>
         public static void TestBuildModePlotNow()
         {
             ConstructionDirector d = ModeReady("a building's plot");
