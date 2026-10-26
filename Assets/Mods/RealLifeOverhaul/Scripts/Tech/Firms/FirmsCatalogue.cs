@@ -117,7 +117,10 @@ namespace RealLifeOverhaul.Tech
         public const int DebtPerFeature = 35;                  // thousandths of debt a feature adds when juniors build it alone
         public const int DebtPerPoint = 4;                     // thousandths a point of paying down takes out
         public const int SoftwarePerSeat = 300;                // tools and licences a day per professional at a tech firm, cents
-        public const int ProductsMost = 16;                    // products across the player's firms
+        public const int ProductsMost = 36;                    // products being built or on sale across the player's firms (it was 16 for all firms together)
+        public const int ProductsPerFirm = 12;                 // ...and at any one firm, so a third firm is not locked out by the first two
+        public const int WithdrawnKept = 12;                   // withdrawn products kept in the list; the oldest go when more are withdrawn
+        public const int ProductsStored = ProductsMost + WithdrawnKept;   // the most the save reads back, live and withdrawn together
 
         // Games
         public static readonly int[] GameScope = { 600, 1800, 4500 };        // work points: a small game, a mid-sized one, a big one

@@ -44,11 +44,11 @@ namespace RealLifeOverhaul.Tech
             return new TransactionInfo(key, new Dictionary<string, string>(2) { { "name", name ?? string.Empty } });
         }
 
-        /// <summary>A founder's name, the game's own way.</summary>
-        public static string Founder()
+        /// <summary>A founder's name, the game's own way and one nobody in <paramref name="taken"/> has.</summary>
+        public static string Founder(System.Collections.Generic.HashSet<string> taken)
         {
             var s = new Seeker();
-            HiringGame.Name(s);
+            HiringGame.Name(s, taken);
             return s.P.Name;
         }
     }
