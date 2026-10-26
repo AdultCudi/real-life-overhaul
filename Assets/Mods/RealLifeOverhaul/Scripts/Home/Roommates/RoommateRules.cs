@@ -272,6 +272,32 @@ namespace RealLifeOverhaul.Roommates
             return new Flatmate { Person = p, Traits = set, Known = set, SharePct = SharePct(share, room), Answers = 0, Friend = friend.Index };
         }
 
+        /// <summary>
+        /// One identity for one person: a roommate who is one of the social life's people (<see cref="Flatmate.Friend"/>) keeps a copy
+        /// of that person, which an older save may hold with another look than the record (the copy is made once, the record has been
+        /// put right since). The copy takes the record's gender, age and look seed; for Mom and Alex it takes the fixed look of
+        /// FixedPeople, with or without the record. <paramref name="record"/> is the social life's person in that place, or null if
+        /// it is not known (yet). True if the copy changed.
+        /// </summary>
+        public static bool Mend(Flatmate mate, SocialPerson record)
+        {
+            if (mate == null || mate.Person == null || mate.Friend < 0)
+            {
+                return false;
+            }
+            SocialPerson copy = mate.Person;
+            if (FixedPeople.TryGet(mate.Friend, out FixedPeople.Entry fixedLook))
+            {
+                bool changed = copy.Female != fixedLook.Female || copy.Age != fixedLook.Age || copy.Seed != fixedLook.Seed;
+                copy.Female = fixedLook.Female;
+                copy.Age = fixedLook.Age;
+                copy.Seed = fixedLook.Seed;
+                copy.Look = null;
+                return changed;
+            }
+            return record != null && string.Equals(record.Name, copy.Name, StringComparison.Ordinal) && SocialCatalogue.SameAs(record, copy);
+        }
+
         /// <summary>True if a friend would move in: a friend or closer who is not family, not the player's partner, and trusts them enough.</summary>
         public static bool FriendWould(SocialPerson friend)
         {

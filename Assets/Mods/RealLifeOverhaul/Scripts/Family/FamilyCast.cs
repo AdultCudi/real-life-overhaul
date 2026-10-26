@@ -25,7 +25,7 @@ namespace RealLifeOverhaul.Family
         private const float HideBehind = 6f;       // metres behind the camera
         private const float TurnRate = 240f;       // degrees a second
         private const float MaxBuild = 0.55f;      // the mod's clips are made for slim to average
-        private const int MotherSeed = FixedLooks.MomSeed;   // Mom's one look in every game, as on her contact and in the street
+        private const int MotherSeed = FixedPeople.MomSeed;   // Mom's one look in every game, as on her contact and in the street
 
         private static readonly AppearanceTag[] Casual = { AppearanceTag.Casual };
         private static readonly AppearanceTag[] Formal = { AppearanceTag.Formal };
@@ -292,13 +292,13 @@ namespace RealLifeOverhaul.Family
                 case FamilyLook.PartnerFormal:
                     seed = Partner.Seed != 0 ? Partner.Seed : 1;
                     female = Partner.Female;
-                    age = PartnerAge(seed);
+                    age = Partner.LookAge;   // the age of the one record of them, as the social life draws them
                     formal = look == FamilyLook.PartnerFormal;
                     break;
                 case FamilyLook.Mother:
                     seed = MotherSeed;
-                    female = FixedLooks.MomFemale;
-                    age = FixedLooks.MomAge;
+                    female = FixedPeople.MomFemale;
+                    age = FixedPeople.MomAge;
                     formal = true;
                     break;
                 case FamilyLook.Officiant:

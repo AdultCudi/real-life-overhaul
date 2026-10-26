@@ -151,7 +151,7 @@ internal static partial class Program
               && PersonLooks.TryGet(seed, out PersonLook known) && SameLook(known, SampleLook()),
             "street look: after a save and a load the person met in the street has the same look and seed, known again to everything that draws them");
         SocialPerson momBack = SocialState.ByOrigin(SocialOrigin.Family);
-        Check(momBack.Look == null && momBack.Seed == FixedLooks.MomSeed && SocialState.Get(1).Look == null && SocialState.Get(1).Seed == FixedLooks.AlexSeed,
+        Check(momBack.Look == null && momBack.Seed == FixedPeople.MomSeed && SocialState.Get(1).Look == null && SocialState.Get(1).Seed == FixedPeople.AlexSeed,
             "street look: Mom and Alex keep their one look of every game (a look set on them is let go)");
 
         PersonLooks.Forget();

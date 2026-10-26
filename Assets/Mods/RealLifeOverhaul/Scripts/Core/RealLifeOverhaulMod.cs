@@ -606,6 +606,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_social_test_moving", () => SocialDirector.Instance?.TestOuting(PlanKind.Moving))
                 .AddButton("reallife_social_test_stop", () => SocialDirector.Instance?.TestStop())
                 .AddButton("reallife_social_test_lose", () => SocialDirector.Instance?.TestLoseTouch())
+                .AddButton("reallife_social_test_looks", () => SocialDirector.Instance?.TestOneLook())
                 .AddSplitter()
                 .AddHeader("reallife_ledger_header")
                 .AddToggle(Settings.SocialNewspaperId, "reallife_social_newspaper", Settings.SocialNewspaper,

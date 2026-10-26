@@ -364,22 +364,53 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        /// <summary>Mom and Alex get the look that is the same in every game (Phone/Contacts/FixedLooks). True if anything changed.</summary>
+        /// <summary>
+        /// Mom and Alex get the one fixed look of Phone/Contacts/FixedPeople, the same in every game: their gender, age and seed
+        /// are set from there and nowhere else, and a look kept from the street is dropped. True if anything changed.
+        /// </summary>
         public static bool FixLook(SocialPerson p)
         {
-            if (p == null || (p.Origin != SocialOrigin.Family && p.Origin != SocialOrigin.OldFriend))
+            if (p == null || (p.Origin != SocialOrigin.Family && p.Origin != SocialOrigin.OldFriend) || !FixedPeople.TryGet((int)p.Origin, out FixedPeople.Entry fixedLook))
             {
                 return false;
             }
-            bool mom = p.Origin == SocialOrigin.Family;
-            bool female = mom ? FixedLooks.MomFemale : FixedLooks.AlexFemale;
-            int age = mom ? FixedLooks.MomAge : FixedLooks.AlexAge;
-            int seed = mom ? FixedLooks.MomSeed : FixedLooks.AlexSeed;
-            bool changed = p.Female != female || p.Age != age || p.Seed != seed || p.Look != null;
-            p.Female = female;
-            p.Age = age;
-            p.Seed = seed;
+            bool changed = p.Female != fixedLook.Female || p.Age != fixedLook.Age || p.Seed != fixedLook.Seed || p.Look != null;
+            p.Female = fixedLook.Female;
+            p.Age = fixedLook.Age;
+            p.Seed = fixedLook.Seed;
             p.Look = null;
+            return changed;
+        }
+
+        /// <summary>
+        /// As <see cref="FixLook"/>, at the moment somebody is stood in the world or drawn: the record is put right if it is one
+        /// of the two, and the repair is noted (FixedPeople.Mended) for the log and the one notice. Allocates nothing unless it repaired.
+        /// </summary>
+        public static bool FixedFor(SocialPerson p, string where)
+        {
+            if (!FixLook(p))
+            {
+                return false;
+            }
+            FixedPeople.Mended(p.Name, where, p.Female, p.Age, p.Seed);
+            return true;
+        }
+
+        /// <summary>
+        /// One identity for one person: a copy of a person's record (the roommate keeps one) takes the record's gender, age and
+        /// look seed. The record is the one the player met first, so it wins. True if the copy changed.
+        /// </summary>
+        public static bool SameAs(SocialPerson record, SocialPerson copy)
+        {
+            if (record == null || copy == null || ReferenceEquals(record, copy))
+            {
+                return false;
+            }
+            bool changed = copy.Female != record.Female || copy.Age != record.Age || copy.Seed != record.Seed;
+            copy.Female = record.Female;
+            copy.Age = record.Age;
+            copy.Seed = record.Seed;
+            copy.Look = record.Look;
             return changed;
         }
 

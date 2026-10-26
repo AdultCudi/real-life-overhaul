@@ -240,6 +240,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Wiring\Wiring.TextsMemoryFacts.cs" Link="Mod\Wiring.TextsMemoryFacts.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Life\LifeEventCatalogue*.cs" Link="Mod\%(Filename)%(Extension)" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Phone\Contacts\ContactCatalogue.cs" Link="Mod\ContactCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Phone\Contacts\FixedPeople.cs" Link="Mod\FixedPeople.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\People\PersonLook.cs" Link="Mod\PersonLook.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Home\Roommates\RoommateRules.cs" Link="Mod\RoommateRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Home\Roommates\RoommateState.cs" Link="Mod\RoommateState.cs" />

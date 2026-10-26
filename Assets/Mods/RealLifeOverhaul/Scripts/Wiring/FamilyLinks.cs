@@ -91,6 +91,7 @@ namespace RealLifeOverhaul
                     Name = p.Name,
                     LookSeed = p.Seed,
                     Female = p.Female,
+                    Age = p.Age,
                     Affection = p.Affection,
                     Trust = p.Trust,
                     Stage = (int)p.Stage,

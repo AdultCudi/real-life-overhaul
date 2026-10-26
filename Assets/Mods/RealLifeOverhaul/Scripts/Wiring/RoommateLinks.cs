@@ -53,6 +53,7 @@ namespace RealLifeOverhaul
                 RoommateBridges.MakeFriend = MakeFriend;
                 RoommateBridges.Introduce = Introduce;
                 RoommateBridges.IsPartner = IsPartner;
+                RoommateBridges.Record = SocialState.Get;
                 SocialLinks.LivesWith = LivesWith;
                 PlannerDirector.Instance?.AddSource(Source);
             }
