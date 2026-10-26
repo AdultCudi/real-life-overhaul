@@ -75,6 +75,7 @@ namespace RealLifeOverhaul
         public static readonly GamePart SpecialHeadline = ContractBook.Part("special_headline", null, "a special building's own name over the game's building panel");
         public static readonly GamePart SpecialSearch = ContractBook.Part("special_search", null, "the special buildings' own names in the city map's search");
         public static readonly GamePart RideToggle = ContractBook.Part("ride_toggle", "transport", "the fast forward switch of the bus ride");
+        public static readonly GamePart TakeoutPlates = ContractBook.Part("takeout_plates", "meals", "Eat in the game's rest panel at a seat");
         public static readonly GamePart CustomersKept = ContractBook.Part("customers_kept", null, "the customers of the hour under way kept when the mod draws a day's customers again");
         public static readonly GamePart InteriorCustomers = ContractBook.Part("interior_customers", "interiors", "the basket and the day's customers on the Interior tab");
         public static readonly GamePart InteriorTabPart = ContractBook.Part("interior_tab", "interiors", "the Interior tab in BizMan");
@@ -115,6 +116,7 @@ namespace RealLifeOverhaul
         public static readonly GamePart UptownBigTests = ContractBook.Part("uptown_big_tests", "uptown",
             "the tests of Uptown's wholesale store and filling station: a delivery and a fill-up the game's own way");
         public static readonly GamePart ShopHelp = ContractBook.Part("shop_help", "newshops", "the new kinds of shop's pages in the game's help");
+        public static readonly GamePart PickedRaises = ContractBook.Part("picked_raises", "economy_company", "a raise for several employees picked in the game's My Employees app");
 
         // The pieces, each group under the code that reads it.
 
@@ -340,6 +342,9 @@ namespace RealLifeOverhaul
         // Transport/BusRidePanel: the game's fast forward switch on its activity panel
         public static readonly GameMember FastForward = Field(RideToggle, Game, "PlayerActivity.PlayerActivityUI", "fastForwardToggle", "Toggle");
 
+        // Meals/TakeoutButton: the activity panel's button template, copied once per city for Eat at a seat
+        public static readonly GameMember ActivityButtons = Field(TakeoutPlates, Game, "PlayerActivity.PlayerActivityUI", "buttonTemplate", "Button");
+
         // Core/CustomerDraw: the game's list of a day's customers at each business
         public static readonly GameMember CustomerTable = StaticField(On(CustomersKept, InteriorCustomers), Game, "AI.Customers.CustomerEntries.CustomerEntriesHelper", "BusinessCustomerEntries", "Dictionary<Address,List<CustomerEntry>>");
 
@@ -487,6 +492,13 @@ namespace RealLifeOverhaul
         // Shops/ShopsGame: the language tables the game's texts are read from, given each new kind of shop's help page
         // under the keys the game's help reads (else BizMan's requirement link opens a page of bare keys)
         public static readonly GameMember LocaleTables = Optional(StaticField(ShopHelp, Hg, "Localizor.LocalizorManager", "LocalizationDictionary", "Dictionary<String,Dictionary<String,String>>"));
+
+        // Economy/Company/PickedRaiseGame: the game's list of the actions for several picked employees, and which its tabs offer,
+        // so a raise for them stands in My Employees' own drop-down beside paying bonuses
+        public static readonly GameMember MassActions = StaticField(PickedRaises, Game, "UI.Smartphone.Apps.MyEmployees.EmployeeMassActionHelper",
+            "MassActionsDict", "Dictionary<String,EmployeeMassAction>");
+        public static readonly GameMember MassActionTabs = StaticField(PickedRaises, Game, "UI.Smartphone.Apps.MyEmployees.EmployeeMassActionHelper",
+            "MassActionsByTabDict", "Dictionary<String,String[]>");
 
         /// <summary>The five pieces Build 3675 lacks (the funeral helper's two properties are one, its type).</summary>
         public static readonly GameMember[] LackedBy3675 = { PlayerDead, FuneralActive, FenceIndex, ResumeTarget, StationNameKey, ConfirmByKey };

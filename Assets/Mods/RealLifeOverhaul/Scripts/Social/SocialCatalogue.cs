@@ -10,7 +10,8 @@ namespace RealLifeOverhaul
         public string Name;            // locale key: "coffee"
         public string Offer;           // what they say when it is proposed, with {place} and {cost}
         public string[] Match;         // parts of the game's business type names that will do as the venue; null = anywhere
-        public int Cost;               // per head
+        public int BaseCost;           // per head, at the start's prices
+        public int Cost => Prices.At(BaseCost);   // per head, at the prices of now (Prices.Level)
         public int Minutes;            // game minutes spent inside
         public bool SeatedRest;        // rested as in the game's own cinema seat through the time skip (before the settlement)
         public string MealItem;        // the game's food item whose saturation fills the player after a completed outing
@@ -435,7 +436,7 @@ namespace RealLifeOverhaul
             new OutingDef
             {
                 Kind = PlanKind.Coffee, Name = "reallife_social_outing_coffee", Offer = "reallife_social_offer_coffee", Match = new[] { "coffeeshop" },
-                Cost = 6, Minutes = 25, From = 7, To = 19, Energy = 6f, Familiarity = 6f, Affection = 5f, Trust = 2f,
+                BaseCost = 6, Minutes = 25, From = 7, To = 19, Energy = 6f, Familiarity = 6f, Affection = 5f, Trust = 2f,
                 Caption = "reallife_social_tm_coffee", Transaction = "reallife_transaction_social_coffee", Memory = MemoryCode.Coffee,
                 After = new[] { "reallife_social_after_coffee_1", "reallife_social_after_coffee_2", "reallife_social_after_coffee_3" }, Invite = "reallife_social_invite_coffee"
             },
@@ -443,14 +444,14 @@ namespace RealLifeOverhaul
             {
                 Kind = PlanKind.Meal, Name = "reallife_social_outing_meal", Offer = "reallife_social_offer_meal", Match = new[] { "restaurant" },
                 MealItem = "ba:itemname_burger",
-                Cost = 24, Minutes = 70, From = 11, To = 23, Energy = 10f, Familiarity = 8f, Affection = 7f, Trust = 3f,
+                BaseCost = 24, Minutes = 70, From = 11, To = 23, Energy = 10f, Familiarity = 8f, Affection = 7f, Trust = 3f,
                 Caption = "reallife_social_tm_meal", Transaction = "reallife_transaction_social_meal", Memory = MemoryCode.Meal,
                 After = new[] { "reallife_social_after_meal_1", "reallife_social_after_meal_2", "reallife_social_after_meal_3" }, Invite = "reallife_social_invite_meal"
             },
             new OutingDef
             {
                 Kind = PlanKind.Drinks, Name = "reallife_social_outing_drinks", Offer = "reallife_social_offer_drinks", Match = new[] { "nightclub" },
-                Cost = 32, Minutes = 110, From = 19, To = 27, Energy = -6f, Familiarity = 8f, Affection = 8f, Trust = 2f, Needs = SocialStage.Friend,
+                BaseCost = 32, Minutes = 110, From = 19, To = 27, Energy = -6f, Familiarity = 8f, Affection = 8f, Trust = 2f, Needs = SocialStage.Friend,
                 Caption = "reallife_social_tm_drinks", Transaction = "reallife_transaction_social_drinks", Memory = MemoryCode.Drinks,
                 After = new[] { "reallife_social_after_drinks_1", "reallife_social_after_drinks_2", "reallife_social_after_drinks_3" }, Invite = "reallife_social_invite_drinks"
             },
@@ -458,49 +459,49 @@ namespace RealLifeOverhaul
             {
                 Kind = PlanKind.Cinema, Name = "reallife_social_outing_cinema", Offer = "reallife_social_offer_cinema", Match = new[] { "cinema", "theater" },
                 SeatedRest = true,
-                Cost = 18, Minutes = 130, From = 12, To = 24, Energy = 2f, Familiarity = 7f, Affection = 6f, Trust = 2f,
+                BaseCost = 18, Minutes = 130, From = 12, To = 24, Energy = 2f, Familiarity = 7f, Affection = 6f, Trust = 2f,
                 Caption = "reallife_social_tm_cinema", Transaction = "reallife_transaction_social_cinema", Memory = MemoryCode.Cinema,
                 After = new[] { "reallife_social_after_cinema_1", "reallife_social_after_cinema_2", "reallife_social_after_cinema_3" }, Invite = "reallife_social_invite_cinema"
             },
             new OutingDef
             {
                 Kind = PlanKind.Walk, Name = "reallife_social_outing_walk", Offer = "reallife_social_offer_walk", Match = null,
-                Cost = 0, Minutes = 0, From = 7, To = 22, Energy = -3f, Familiarity = 7f, Affection = 6f, Trust = 3f,
+                BaseCost = 0, Minutes = 0, From = 7, To = 22, Energy = -3f, Familiarity = 7f, Affection = 6f, Trust = 3f,
                 Caption = null, Transaction = null, Memory = MemoryCode.Walk,
                 After = new[] { "reallife_social_after_walk_1", "reallife_social_after_walk_2", "reallife_social_after_walk_3" }, Invite = "reallife_social_invite_walk"
             },
             new OutingDef
             {
                 Kind = PlanKind.Drive, Name = "reallife_social_outing_drive", Offer = "reallife_social_offer_drive", Match = null,
-                Cost = 0, Minutes = 0, From = 8, To = 24, Energy = 0f, Familiarity = 7f, Affection = 6f, Trust = 4f, Needs = SocialStage.Friend,
+                BaseCost = 0, Minutes = 0, From = 8, To = 24, Energy = 0f, Familiarity = 7f, Affection = 6f, Trust = 4f, Needs = SocialStage.Friend,
                 Caption = null, Transaction = null, Memory = MemoryCode.Drive,
                 After = new[] { "reallife_social_after_drive_1", "reallife_social_after_drive_2", "reallife_social_after_drive_3" }, Invite = "reallife_social_invite_drive"
             },
             new OutingDef
             {
                 Kind = PlanKind.Workout, Name = "reallife_social_outing_workout", Offer = "reallife_social_offer_workout", Match = new[] { "gym" },
-                Cost = 15, Minutes = 60, From = 6, To = 22, Energy = -14f, Familiarity = 8f, Affection = 5f, Trust = 4f,
+                BaseCost = 15, Minutes = 60, From = 6, To = 22, Energy = -14f, Familiarity = 8f, Affection = 5f, Trust = 4f,
                 Caption = "reallife_social_tm_workout", Transaction = "reallife_transaction_social_workout", Memory = MemoryCode.Workout,
                 After = new[] { "reallife_social_after_workout_1", "reallife_social_after_workout_2", "reallife_social_after_workout_3" }, Invite = "reallife_social_invite_workout"
             },
             new OutingDef
             {
                 Kind = PlanKind.Business, Name = "reallife_social_outing_business", Offer = "reallife_social_offer_business", Match = null,
-                Cost = 0, Minutes = 30, From = 8, To = 22, Energy = 0f, Familiarity = 6f, Affection = 6f, Trust = 5f, Needs = SocialStage.Friend,
+                BaseCost = 0, Minutes = 30, From = 8, To = 22, Energy = 0f, Familiarity = 6f, Affection = 6f, Trust = 5f, Needs = SocialStage.Friend,
                 Caption = "reallife_social_tm_business", Transaction = null, Memory = MemoryCode.Business,
                 After = new[] { "reallife_social_after_business_1", "reallife_social_after_business_2", "reallife_social_after_business_3" }, Invite = "reallife_social_invite_business"
             },
             new OutingDef
             {
                 Kind = PlanKind.Lift, Name = "reallife_social_outing_lift", Offer = "reallife_social_offer_lift", Match = null,
-                Cost = 0, Minutes = 0, From = 0, To = 24, Energy = 0f, Familiarity = 4f, Affection = SocialRules.FavourAffection, Trust = SocialRules.FavourTrust,
+                BaseCost = 0, Minutes = 0, From = 0, To = 24, Energy = 0f, Familiarity = 4f, Affection = SocialRules.FavourAffection, Trust = SocialRules.FavourTrust,
                 Caption = null, Transaction = "reallife_transaction_social_lift", Memory = MemoryCode.Lift,
                 After = new[] { "reallife_social_after_lift_1", "reallife_social_after_lift_2", "reallife_social_after_lift_3" }, Invite = "reallife_social_invite_lift"
             },
             new OutingDef
             {
                 Kind = PlanKind.Moving, Name = "reallife_social_outing_moving", Offer = "reallife_social_offer_moving", Match = null,
-                Cost = 0, Minutes = 0, From = 0, To = 24, Energy = -12f, Familiarity = 6f, Affection = SocialRules.FavourAffection + 2f, Trust = SocialRules.FavourTrust + 2f,
+                BaseCost = 0, Minutes = 0, From = 0, To = 24, Energy = -12f, Familiarity = 6f, Affection = SocialRules.FavourAffection + 2f, Trust = SocialRules.FavourTrust + 2f,
                 Caption = null, Transaction = "reallife_transaction_social_moving", Memory = MemoryCode.Moving,
                 After = new[] { "reallife_social_after_moving_1", "reallife_social_after_moving_2", "reallife_social_after_moving_3" }, Invite = "reallife_social_invite_moving"
             }

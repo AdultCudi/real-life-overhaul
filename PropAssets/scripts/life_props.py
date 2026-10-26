@@ -263,19 +263,6 @@ def notebook():
     return p
 
 
-def radio_handset():
-    p = Prop("radio_handset", "lit", pivot="centre of its base; it stands", note="body 0.06 x 0.035 x 0.13 m held round its middle at 0.06 m; antenna to 0.21 m; grille and display on +Y")
-    face = flat("plastic_grey").planar("handset_face", (0, 1, 0), (-1, 0, 0), (0, 0, 0.065), (0.045, 0.13))
-    rings = [[(x * s, y * s, z) for x, y in rounded_rect(0.060, 0.035, 0.0075, 2)] for z, s in ((0.0, 0.94), (0.004, 1.0), (0.126, 1.0), (0.130, 0.94))]
-    p.add(loft(rings, cap_start=True, cap_end=True), face, sharp=40)
-    p.add(lathe([(0.0085, 0.128), (0.0085, 0.140), (0.0062, 0.144), (0.0050, 0.207), (0.0, 0.210)], 8), flat("rubber_black"), at=(-0.018, 0, 0), sharp=40)
-    p.add(lathe([(0.0090, 0.129), (0.0090, 0.144), (0.0075, 0.148), (0.0, 0.148)], 8), flat("steel_dark"), at=(0.016, 0, 0), sharp=40)
-    p.add(lathe([(0.0045, 0.129), (0.0045, 0.136), (0.0, 0.137)], 6), flat("orange_plastic"), at=(-0.001, 0.004, 0), sharp=40)
-    p.add(box(0.005, 0.016, 0.036, bevel=0.0015), flat("rubber_black"), at=(-0.0315, 0.002, 0.088))
-    p.add(box(0.024, 0.005, 0.070, bevel=0.0015), flat("steel_dark"), at=(0, -0.0195, 0.082))
-    return p
-
-
 def newspaper():
     p = Prop("newspaper", "lit", pivot="bottom of the centre fold; it stands in the XZ plane",
              note="open broadsheet 0.58 x 0.40 m held up to read from -Y; hands at (-0.25, 0, 0.13) and (0.25, 0, 0.13); front and back page face +Y")
@@ -359,22 +346,6 @@ def shelf_box():
             p.add(tin, Paint("aluminium", grade=False).wrap("can_label", 0.10, 0.20), at=((i - 1.5) * 0.094, (j - 1) * 0.092, 0), sharp=40)
             p.add(lathe([(0.040, 0.20), (0.0, 0.2005)], 8), flat("chrome"), at=((i - 1.5) * 0.094, (j - 1) * 0.092, 0), sharp=180)
     sticker(p, "parcel_label", (0.09, -0.15, 0.065), (0, -1, 0), (1, 0, 0), (0.12, 0.0825))
-    return p
-
-
-def food_bag():
-    p = Prop("food_bag", "lit", note="insulated delivery backpack 0.42 x 0.44 x 0.30 m; the straps (+Y) go against the wearer's back, the logo faces -Y")
-    p.add(box(0.42, 0.30, 0.36, bevel=0.018), "nylon_orange", at=(0, 0, 0.18))
-    p.add(box(0.424, 0.304, 0.090, bevel=0.018), flat("nylon_black"), at=(0, 0, 0.395))
-    p.add(box(0.428, 0.308, 0.007), flat("steel_dark"), at=(0, 0, 0.352))
-    p.add(box(0.016, 0.012, 0.022, bevel=0.003), flat("chrome"), at=(0.150, -0.156, 0.352))
-    p.add(box(0.424, 0.304, 0.034), flat("reflective_white"), at=(0, 0, 0.075))
-    sticker(p, "food_logo", (0, -0.150, 0.215), (0, -1, 0), (1, 0, 0), (0.24, 0.207))
-    for side in (-1, 1):
-        strap = [(side * 0.105, 0.150, 0.405), (side * 0.105, 0.176, 0.37), (side * 0.110, 0.186, 0.24), (side * 0.118, 0.172, 0.10), (side * 0.118, 0.150, 0.045)]
-        p.add(ribbon(smooth(strap, 3), lambda q: (0, 1, 0.2 if q.z > 0.3 else -0.2), 0.058, 0.014), flat("nylon_black"), sharp=60)
-        p.add(box(0.03, 0.006, 0.05), flat("nylon_black"), at=(side * 0.118, 0.152, 0.05))
-    pipe(p, [(-0.07, 0.10, 0.435), (-0.07, 0.10, 0.475), (0.07, 0.10, 0.475), (0.07, 0.10, 0.435)], 0.008, "nylon_black", 5, bend=0.02)
     return p
 
 
@@ -804,9 +775,9 @@ def newspaper_kiosk():
 
 # (maker, triangle budget), as in props.py.
 LIFE_PROPS = [
-    (mop, 290), (rake, 680), (paint_roller, 450), (watering_can, 550), (guitar, 760), (notebook, 300), (radio_handset, 330), (newspaper, 140), (map_folded, 60),
+    (mop, 290), (rake, 680), (paint_roller, 450), (watering_can, 550), (guitar, 760), (notebook, 300), (newspaper, 140), (map_folded, 60),
     (umbrella, 800), (carton("parcel_s", 0.22, 0.16, 0.10, False), 100), (carton("parcel_m", 0.38, 0.28, 0.24, True), 100), (carton("parcel_l", 0.50, 0.36, 0.32, True), 100),
     (shelf_box, 620), (hand_truck, 830), (pushchair, 1300), (stretcher_push_bar, 640),
-    (food_bag, 500), (taxi_sign, 150), (flyer, 64), (flyer_stack, 60), (job_board, 610), (mop_bucket, 780), (guitar_case, 1070), (vendor_cart, 2250), (vendor_umbrella, 870),
+    (taxi_sign, 150), (flyer, 64), (flyer_stack, 60), (job_board, 610), (mop_bucket, 780), (guitar_case, 1070), (vendor_cart, 2250), (vendor_umbrella, 870),
     (mail_satchel, 670), (step_ladder, 490), (chess_table, 1700), (fruit_stand, 1700), (newspaper_kiosk, 800),
 ]

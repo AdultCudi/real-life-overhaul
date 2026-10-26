@@ -112,6 +112,38 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
+        /// <summary>
+        /// A police report on a break-in was handed over at a front desk: the insurer takes its number, and the newest theft claim
+        /// still to be paid within <paramref name="days"/> days pays in full, the excess too. True if a claim changed.
+        /// </summary>
+        public bool PoliceReport(int days)
+        {
+            if (!On(CompanyPart.Cover) || Save == null)
+            {
+                return false;
+            }
+            try
+            {
+                Claim c = CoverRules.NewestTheft(_state.Claims, Save.Day, days);
+                if (!CoverRules.Reported(c))
+                {
+                    return false;
+                }
+                Logger?.Info("Company: claim " + c.Id + " (" + CompanyText.Cover(c.Kind) + " at " + c.Name + ") has a police report: the excess is waived, it pays " + c.Payout + ".");
+                Tell(NotificationType.Success, "reallife_co_note_claim_reported", new Dictionary<string, string>
+                {
+                    { "insurer", CompanyText.Insurer(c.Insurer) }, { "business", c.Name }, { "amount", CompanyText.Money(c.Payout) }
+                }, TabCover, "claim:" + c.Id);
+                Changed();
+                return true;
+            }
+            catch (System.Exception e)
+            {
+                PartFault(CompanyPart.Cover, "a police report", e);
+                return false;
+            }
+        }
+
         /// <summary>What an insurer would charge a day for a kind of cover today, the last term's claims here counted.</summary>
         public int Quote(CompanyShop shop, int kind, int insurer)
         {

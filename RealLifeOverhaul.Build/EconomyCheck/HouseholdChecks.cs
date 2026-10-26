@@ -5,9 +5,10 @@ using System.Text.RegularExpressions;
 using RealLifeOverhaul.Household;
 
 // Household staff (Scripts/Home/Household): the four kinds and their hours, wages from the city's going rate, the cook's
-// dishes from home cooking's own table, the agency's candidates, who is shown at home, unpaid visits and leaving, the
-// hours a late look makes up, the save's line; then, over the sources, that money moves only through the game's own call,
-// that the Game file is the only one touching the game's cars and the floor, and the texts in every language.
+// dishes from home cooking's own table, the agency's candidates, staff per home (hiring, moving, a home given up), who is
+// shown at which home, unpaid visits and leaving, the hours a late look makes up, the save's line and its migration from
+// one home to each member's own; then, over the sources, that money moves only through the game's own call, that the Game
+// file is the only one touching the game's cars and the floor, the Hamptons paths, and the texts in every language.
 internal static partial class Program
 {
     private static void Household()
@@ -16,6 +17,7 @@ internal static partial class Program
         HouseholdWageChecks();
         HouseholdCookChecks();
         HouseholdCandidateChecks();
+        HouseholdHomeChecks();
         HouseholdVisitChecks();
         HouseholdStoreChecks();
         HouseholdSourceChecks();
@@ -24,7 +26,8 @@ internal static partial class Program
 
     private static void HouseholdRoleChecks()
     {
-        Check(HouseholdRules.Roles.Length == 4 && HouseholdRules.Most == 4, "household: four kinds, one of each on the staff at most");
+        Check(HouseholdRules.Roles.Length == 4 && HouseholdRules.HomesMost == 4 && HouseholdRules.Most == HouseholdRules.HomesMost * HouseholdRules.Roles.Length,
+            "household: four kinds, one of each at each of four homes at most");
         var seen = new HashSet<StaffKind>();
         foreach (StaffRole r in HouseholdRules.Roles)
         {
@@ -133,15 +136,87 @@ internal static partial class Program
               || HouseholdRules.Candidate(1, StaffKind.Cleaner, 0).Seed != HouseholdRules.Candidate(1, StaffKind.Butler, 0).Seed, "household: each kind has candidates of its own");
 
         var staff = new List<StaffMember>();
-        Check(HouseholdRules.NextOpen(StaffKind.None, staff) == StaffKind.Cleaner && HouseholdRules.NextOpen(StaffKind.Cleaner, staff) == StaffKind.Cook
-              && HouseholdRules.NextOpen(StaffKind.Mechanic, staff) == StaffKind.Cleaner, "household: the hiring page goes round the kinds");
-        staff.Add(new StaffMember { Kind = StaffKind.Cook });
-        Check(HouseholdRules.NextOpen(StaffKind.Cleaner, staff) == StaffKind.Butler, "household: a kind on the staff is skipped");
-        staff.Add(new StaffMember { Kind = StaffKind.Cleaner });
-        staff.Add(new StaffMember { Kind = StaffKind.Butler });
-        Check(HouseholdRules.NextOpen(StaffKind.Mechanic, staff) == StaffKind.Mechanic, "household: with one kind left, that one again");
-        staff.Add(new StaffMember { Kind = StaffKind.Mechanic });
-        Check(HouseholdRules.NextOpen(StaffKind.None, staff) == StaffKind.None, "household: none when every kind is on the staff");
+        Check(HouseholdRules.NextOpen(StaffKind.None, staff, "st", 1) == StaffKind.Cleaner && HouseholdRules.NextOpen(StaffKind.Cleaner, staff, "st", 1) == StaffKind.Cook
+              && HouseholdRules.NextOpen(StaffKind.Mechanic, staff, "st", 1) == StaffKind.Cleaner, "household: the hiring page goes round the kinds");
+        staff.Add(At(StaffKind.Cook, "st", 1));
+        Check(HouseholdRules.NextOpen(StaffKind.Cleaner, staff, "st", 1) == StaffKind.Butler, "household: a kind on the home's staff is skipped");
+        Check(HouseholdRules.NextOpen(StaffKind.Cleaner, staff, "st", 2) == StaffKind.Cook, "household: a kind at another home is not");
+        staff.Add(At(StaffKind.Cleaner, "st", 1));
+        staff.Add(At(StaffKind.Butler, "st", 1));
+        Check(HouseholdRules.NextOpen(StaffKind.Mechanic, staff, "st", 1) == StaffKind.Mechanic, "household: with one kind left, that one again");
+        staff.Add(At(StaffKind.Mechanic, "st", 1));
+        Check(HouseholdRules.NextOpen(StaffKind.None, staff, "st", 1) == StaffKind.None && HouseholdRules.NextOpen(StaffKind.None, staff, "st", 2) == StaffKind.Cleaner,
+            "household: none when every kind is at that home, all of them at another");
+    }
+
+    private static StaffMember At(StaffKind kind, string street, int number, string name = "Ada")
+    {
+        return new StaffMember { Kind = kind, Name = name, HomeStreet = street, HomeNumber = number, OnDay = -1, Dish = -1, Seed = 1 };
+    }
+
+    // Staff per home: one of each kind at each home, at most four homes, moves and a home given up.
+    private static void HouseholdHomeChecks()
+    {
+        var staff = new List<StaffMember>();
+        Check(HouseholdRules.CanHire(staff, StaffKind.Cleaner, null, 0) == HireRefusal.NoHome && HouseholdRules.CanHire(staff, StaffKind.Cleaner, "", 3) == HireRefusal.NoHome,
+            "household homes: no home, nobody taken on");
+        Check(HouseholdRules.CanHire(staff, StaffKind.Cleaner, "flat", 1) == HireRefusal.None && HouseholdRules.CanHire(staff, StaffKind.None, "flat", 1) == HireRefusal.Taken,
+            "household homes: a cleaner for a first home; no such kind");
+        StaffMember flatCleaner = At(StaffKind.Cleaner, "flat", 1, "Ada");
+        staff.Add(flatCleaner);
+        Check(HouseholdRules.CanHire(staff, StaffKind.Cleaner, "flat", 1) == HireRefusal.Taken, "household homes: a second cleaner at the same home is refused");
+        Check(HouseholdRules.CanHire(staff, StaffKind.Cleaner, "villa", 2) == HireRefusal.None, "household homes: a cleaner at the flat and another at the villa");
+        Check(HouseholdRules.CanHire(staff, StaffKind.Cleaner, "flat", 2) == HireRefusal.None, "household homes: the same street, another number, is another home");
+        StaffMember villaCleaner = At(StaffKind.Cleaner, "villa", 2, "Bea");
+        staff.Add(villaCleaner);
+        staff.Add(At(StaffKind.Cook, "c", 3, "Cy"));
+        staff.Add(At(StaffKind.Butler, "d", 4, "Di"));
+        Check(HouseholdRules.HomesStaffed(staff) == 4 && HouseholdRules.HomesStaffed(staff, villaCleaner) == 3, "household homes: four homes with staff, three leaving the villa's one out");
+        Check(HouseholdRules.CanHire(staff, StaffKind.Cleaner, "e", 5) == HireRefusal.HomesFull, "household homes: a fifth home is refused");
+        Check(HouseholdRules.CanHire(staff, StaffKind.Mechanic, "villa", 2) == HireRefusal.None, "household homes: more staff at a home that has some, at the most homes");
+        Check(HouseholdRules.Staffed(staff, "villa", 2) && !HouseholdRules.Staffed(staff, "villa", 2, villaCleaner) && !HouseholdRules.Staffed(staff, "e", 5),
+            "household homes: a home has staff, or none leaving one out");
+        Check(HouseholdRules.FindAt(staff, StaffKind.Cleaner, "villa", 2) == villaCleaner && HouseholdRules.FindAt(staff, StaffKind.Cleaner, "flat", 1) == flatCleaner
+              && HouseholdRules.FindAt(staff, StaffKind.Cook, "flat", 1) == null, "household homes: each home's own cleaner");
+
+        Check(!HouseholdRules.CanMove(staff, villaCleaner, "flat", 1), "household homes: no move to a home that has one of their kind");
+        Check(!HouseholdRules.CanMove(staff, villaCleaner, "villa", 2) && !HouseholdRules.CanMove(staff, villaCleaner, null, 0) && !HouseholdRules.CanMove(staff, null, "c", 3),
+            "household homes: no move to where they are, to no home, or of nobody");
+        Check(HouseholdRules.CanMove(staff, villaCleaner, "c", 3), "household homes: a move to a staffed home without their kind");
+        Check(HouseholdRules.CanMove(staff, villaCleaner, "e", 5), "household homes: alone at their home, a move to a home with nobody yet keeps four homes");
+        staff.Add(At(StaffKind.Cook, "villa", 2, "Ed"));
+        Check(!HouseholdRules.CanMove(staff, villaCleaner, "e", 5), "household homes: not alone, a move to a fifth home is refused");
+
+        // A home given up: the first of the player's homes that can take them, counting only the homes still theirs.
+        var homes = new List<HomeKey> { new HomeKey("flat", 1), new HomeKey("c", 3), new HomeKey("d", 4) };
+        Check(HouseholdRules.Rehome(staff, villaCleaner, homes) == 1, "household homes: a cleaner of a home given up goes to the first home without a cleaner");
+        var two = new List<StaffMember> { At(StaffKind.Cleaner, "gone", 9, "Fay"), At(StaffKind.Cleaner, "flat", 1, "Gus") };
+        Check(HouseholdRules.Rehome(two, two[0], new List<HomeKey> { new HomeKey("flat", 1) }) == -1, "household homes: no home without their kind, and they leave");
+        Check(HouseholdRules.Rehome(two, two[0], new List<HomeKey>()) == -1 && HouseholdRules.Rehome(two, null, homes) == -1 && HouseholdRules.Rehome(two, two[0], null) == -1,
+            "household homes: no homes left, nobody, or no list: they leave");
+        var full = new List<StaffMember> { At(StaffKind.Cook, "gone", 9, "Hal"), At(StaffKind.Cook, "gone", 9, "Ida") };
+        full[1].Kind = StaffKind.Cleaner;
+        full.Add(At(StaffKind.Cook, "a", 1, "J"));
+        full.Add(At(StaffKind.Cook, "b", 2, "K"));
+        full.Add(At(StaffKind.Cook, "c", 3, "L"));
+        var four = new List<HomeKey> { new HomeKey("a", 1), new HomeKey("b", 2), new HomeKey("c", 3), new HomeKey("e", 5) };
+        Check(HouseholdRules.Rehome(full, full[0], four) == 3, "household homes: the home given up holds no place, so a fourth home can take them");
+        Check(HouseholdRules.Rehome(full, full[1], four) == 0, "household homes: and another of that home goes where their kind is missing first");
+        bool same = true;
+        for (int i = 0; i < 50; i++)
+        {
+            same &= HouseholdRules.Rehome(staff, villaCleaner, homes) == 1;
+        }
+        Check(same, "household homes: the same home every time, on every machine");
+
+        // Who is shown: only the staff of the home the player is in.
+        var shown = new List<StaffMember> { At(StaffKind.Butler, "flat", 1, "Mo"), At(StaffKind.Cleaner, "villa", 2, "Nia") };
+        shown[0].OnDay = 5;
+        shown[1].OnDay = 5;
+        Check(HouseholdRules.OnShow(shown, 5, 0, 11, "villa", 2) == shown[1] && HouseholdRules.OnShow(shown, 5, 0, 11, "flat", 1) == shown[0],
+            "household homes: the villa's cleaner at the villa, the flat's butler at the flat");
+        Check(HouseholdRules.OnShow(shown, 5, 0, 11, "other", 7) == null && HouseholdRules.OnShow(shown, 5, 0, 11, null, 0) == null,
+            "household homes: nobody shown at a home without staff");
     }
 
     private static void HouseholdVisitChecks()
@@ -150,14 +225,19 @@ internal static partial class Program
         var cook = new StaffMember { Kind = StaffKind.Cook, OnDay = 5 };
         var butler = new StaffMember { Kind = StaffKind.Butler, OnDay = 5 };
         var mechanic = new StaffMember { Kind = StaffKind.Mechanic, OnDay = 5 };
+        foreach (StaffMember one in new[] { cleaner, cook, butler, mechanic })
+        {
+            one.HomeStreet = "st";
+            one.HomeNumber = 1;
+        }
         var staff = new List<StaffMember> { cleaner, cook, mechanic };
-        Check(HouseholdRules.OnShow(staff, 5, 0, 11) == cleaner, "household: the cleaner is shown during the cleaning");
-        Check(HouseholdRules.OnShow(staff, 5, 0, 17) == cook, "household: the cook during the cooking");
-        Check(HouseholdRules.OnShow(staff, 5, 0, 14) == null && HouseholdRules.OnShow(staff, 6, 0, 11) == null, "household: nobody between visits, or on a day not paid for");
-        Check(HouseholdRules.OnShow(staff, 5, 5, 10) == null, "household: the mechanic is never shown: they work at the cars outside");
+        Check(HouseholdRules.OnShow(staff, 5, 0, 11, "st", 1) == cleaner, "household: the cleaner is shown during the cleaning");
+        Check(HouseholdRules.OnShow(staff, 5, 0, 17, "st", 1) == cook, "household: the cook during the cooking");
+        Check(HouseholdRules.OnShow(staff, 5, 0, 14, "st", 1) == null && HouseholdRules.OnShow(staff, 6, 0, 11, "st", 1) == null, "household: nobody between visits, or on a day not paid for");
+        Check(HouseholdRules.OnShow(staff, 5, 5, 10, "st", 1) == null, "household: the mechanic is never shown: they work at the cars outside");
         staff.Add(butler);
-        Check(HouseholdRules.OnShow(staff, 5, 0, 11) == butler && HouseholdRules.OnShow(staff, 5, 0, 17) == butler, "household: the butler before the others");
-        Check(HouseholdRules.OnShow(null, 5, 0, 11) == null, "household: no staff, nobody shown");
+        Check(HouseholdRules.OnShow(staff, 5, 0, 11, "st", 1) == butler && HouseholdRules.OnShow(staff, 5, 0, 17, "st", 1) == butler, "household: the butler before the others");
+        Check(HouseholdRules.OnShow(null, 5, 0, 11, "st", 1) == null, "household: no staff, nobody shown");
 
         var m = new StaffMember { Kind = StaffKind.Cleaner };
         HouseholdRules.Paid(m, 3, 34);
@@ -185,42 +265,78 @@ internal static partial class Program
 
     private static void HouseholdStoreChecks()
     {
-        var s = new HouseholdState { Seed = 4242, LastStamp = 1234, HomeStreet = "ba:street_5th|av;e^", HomeNumber = 17, NoteDay = 51, Note = "Ada cleaned the home (34). Ben | cooked; ^" };
+        var s = new HouseholdState { Seed = 4242, LastStamp = 1234, NoteDay = 51, Note = "Ada cleaned the home (34). Ben | cooked; ^" };
         s.Rolls[1] = 3;
         s.Rolls[4] = 1;
         s.Staff.Add(new StaffMember
         {
             Kind = StaffKind.Cleaner, Name = "Ada Bianchi|;^", Female = true, Age = 34, Seed = 99, Skill = 71, Hourly = 1140, HiredDay = 40, Visits = 5, Missed = 1,
-            PaidTotal = 170, OnDay = 51, Dish = -1, Charged = 34
+            PaidTotal = 170, OnDay = 51, Dish = -1, Charged = 34, HomeStreet = "ba:street_5th|av;e^", HomeNumber = 17
         });
-        s.Staff.Add(new StaffMember { Kind = StaffKind.Cook, Name = "Ben Okafor", Age = 50, Seed = 7, Skill = 60, Hourly = 1400, HiredDay = 41, OnDay = -1, Dish = 3, Charged = 74 });
+        s.Staff.Add(new StaffMember
+        {
+            Kind = StaffKind.Cook, Name = "Ben Okafor", Age = 50, Seed = 7, Skill = 60, Hourly = 1400, HiredDay = 41, OnDay = -1, Dish = 3, Charged = 74,
+            HomeStreet = "ba:street_legacyavenue", HomeNumber = 4
+        });
+        s.Staff.Add(new StaffMember { Kind = StaffKind.Cleaner, Name = "Cy Dee", Age = 30, Seed = 8, Skill = 50, Hourly = 1200, HomeStreet = "ba:street_legacyavenue", HomeNumber = 4 });
         string line = HouseholdStore.Write(s);
         HouseholdState r = HouseholdStore.Read(line, out int version);
-        Check(r != null && version == HouseholdStore.Version, "household store: the line is read back");
+        Check(r != null && version == HouseholdStore.Version && HouseholdStore.Version == 2, "household store: the line is read back, version 2");
         if (r != null)
         {
-            Check(r.Seed == 4242 && r.LastStamp == 1234 && r.HomeStreet == s.HomeStreet && r.HomeNumber == 17 && r.NoteDay == 51 && r.Note == s.Note,
-                "household store: the header and the note round trip, escaped");
+            Check(r.Seed == 4242 && r.LastStamp == 1234 && r.NoteDay == 51 && r.Note == s.Note, "household store: the header and the note round trip, escaped");
             Check(r.Rolls[1] == 3 && r.Rolls[2] == 0 && r.Rolls[4] == 1, "household store: the candidates put forward by kind");
-            Check(r.Staff.Count == 2, "household store: both people");
+            Check(r.Staff.Count == 3, "household store: all three people, two cleaners at two homes");
             StaffMember a = r.Staff.Count > 0 ? r.Staff[0] : null;
             Check(a != null && a.Kind == StaffKind.Cleaner && a.Name == "Ada Bianchi|;^" && a.Female && a.Age == 34 && a.Seed == 99 && a.Skill == 71 && a.Hourly == 1140
-                  && a.HiredDay == 40 && a.Visits == 5 && a.Missed == 1 && a.PaidTotal == 170 && a.OnDay == 51 && a.Dish == -1 && a.Charged == 34,
-                "household store: every field of a person round trips");
+                  && a.HiredDay == 40 && a.Visits == 5 && a.Missed == 1 && a.PaidTotal == 170 && a.OnDay == 51 && a.Dish == -1 && a.Charged == 34
+                  && a.HomeStreet == "ba:street_5th|av;e^" && a.HomeNumber == 17, "household store: every field of a person round trips, their home escaped");
             StaffMember b = r.Staff.Count > 1 ? r.Staff[1] : null;
-            Check(b != null && b.Kind == StaffKind.Cook && b.OnDay == -1 && b.Dish == 3 && b.Charged == 74 && !b.Female, "household store: the second person too");
+            Check(b != null && b.Kind == StaffKind.Cook && b.OnDay == -1 && b.Dish == 3 && b.Charged == 74 && !b.Female && b.WorksAt("ba:street_legacyavenue", 4),
+                "household store: the second person too, at their own home");
+            Check(r.Staff.Count > 2 && r.Staff[2].WorksAt("ba:street_legacyavenue", 4) && r.Staff[2].Kind == StaffKind.Cleaner, "household store: the second home's cleaner");
             Check(HouseholdStore.Write(r) == line, "household store: written again, the same line");
         }
+        Check(line.StartsWith("v=2^h:4242|1234|17|ba%3Astreet_5th%7Cav%3Be%5E|"), "household store: the header names the first person's home, for an older reader");
         Check(HouseholdStore.Read(null, out _) == null && HouseholdStore.Read("x", out _) == null && HouseholdStore.Read("v=0^h:1", out _) == null
               && HouseholdStore.Read("v=1^s:1|A|0|30|1|50|1000|1|0|0|0|-1|-1", out _) == null, "household store: a line that is not this feature's, or has no header, is not read");
+
+        // Version 1: one home for everybody, in the header. On load it becomes each member's own; nothing else changes.
+        HouseholdState migrated = HouseholdStore.Read("v=1^h:5|10|3|ba%3Astreet|2|0|0|1|9^s:1|Ada|1|30|8|50|1200|2|1|0|12|-1|-1|7;"
+            + "2|Ben|0|40|9|60|1500|3|4|0|60|-1|2|20;4|Cal|0|50|3|70|0|3|1|0|95|-1|-1|95", out int v1);
+        Check(migrated != null && v1 == 1 && migrated.Staff.Count == 3, "household store: a version 1 save keeps all its staff");
+        bool allThere = migrated != null;
+        for (int i = 0; migrated != null && i < migrated.Staff.Count; i++)
+        {
+            allThere &= migrated.Staff[i].WorksAt("ba:street", 3);
+        }
+        Check(allThere, "household store: the one home of a version 1 save is each member's own");
+        Check(migrated != null && migrated.Seed == 5 && migrated.LastStamp == 10 && migrated.Rolls[1] == 2 && migrated.Rolls[4] == 1 && migrated.NoteDay == 9
+              && migrated.Staff[1].Dish == 2 && migrated.Staff[1].Charged == 20 && migrated.Staff[0].Charged == 7, "household store: every other field of a version 1 save as it was");
+        HouseholdState again = migrated != null ? HouseholdStore.Read(HouseholdStore.Write(migrated), out _) : null;
+        Check(again != null && again.Staff.Count == 3 && again.Staff[2].WorksAt("ba:street", 3), "household store: a migrated save written and read again, the same");
         HouseholdState older = HouseholdStore.Read("v=1^h:5|10|3|ba%3Astreet|0|0|0|0|0^s:2|Cy%20Dee|0|30|8|50|1200|2|1|0|12|-1|-1", out _);
-        Check(older != null && older.Staff.Count == 1 && older.Staff[0].Charged == 0 && older.Staff[0].Name == "Cy Dee", "household store: a person written without the last field still reads");
-        HouseholdState newer = HouseholdStore.Read("v=2^h:5|10|3|ba%3Astreet|0|0|0|0|0|77^s:2|Cy|0|30|8|50|1200|2|1|0|12|-1|-1|5|99^z:later", out int v2);
-        Check(newer != null && v2 == 2 && newer.Staff.Count == 1 && newer.Staff[0].Charged == 5, "household store: a newer line's fields at the end and new parts are passed over");
+        Check(older != null && older.Staff.Count == 1 && older.Staff[0].Charged == 0 && older.Staff[0].Name == "Cy Dee" && older.Staff[0].WorksAt("ba:street", 3),
+            "household store: a person written without the last field still reads");
+        HouseholdState newer = HouseholdStore.Read("v=3^h:5|10|3|ba%3Astreet|0|0|0|0|0|77^s:2|Cy|0|30|8|50|1200|2|1|0|12|-1|-1|5|6|own|99^z:later", out int v3);
+        Check(newer != null && v3 == 3 && newer.Staff.Count == 1 && newer.Staff[0].Charged == 5 && newer.Staff[0].WorksAt("own", 6),
+            "household store: a newer line's fields at the end and new parts are passed over");
         HouseholdState homeless = HouseholdStore.Read("v=1^h:5|10|0||0|0|0|0|0^s:1|Ada|1|30|8|50|1200|2|1|0|12|-1|-1", out _);
-        Check(homeless != null && homeless.Staff.Count == 0 && homeless.HomeStreet == null, "household store: people without a home to work at are nobody on the staff");
+        Check(homeless != null && homeless.Staff.Count == 0, "household store: people without a home to work at are nobody on the staff");
+        HouseholdState ownHome = HouseholdStore.Read("v=2^h:5|10|0||0|0|0|0|0^s:1|Ada|1|30|8|50|1200|2|1|0|12|-1|-1|0|2|villa", out _);
+        Check(ownHome != null && ownHome.Staff.Count == 1 && ownHome.Staff[0].WorksAt("villa", 2), "household store: a person's own home needs none in the header");
         HouseholdState twice = HouseholdStore.Read("v=1^h:5|10|3|st|0|0|0|0|0^s:1|Ada|1|30|8|50|1200|2|1|0|12|-1|-1;1|Bea|1|30|8|50|1200|2|1|0|12|-1|-1;9|Zed|1|30|8|50|1200|2|1|0|12|-1|-1", out _);
-        Check(twice != null && twice.Staff.Count == 1 && twice.Staff[0].Name == "Ada", "household store: one of a kind, and no unknown kind");
+        Check(twice != null && twice.Staff.Count == 1 && twice.Staff[0].Name == "Ada", "household store: one of a kind at a home, and no unknown kind");
+        HouseholdState apart = HouseholdStore.Read("v=2^h:5|10|3|st|0|0|0|0|0^s:1|Ada|1|30|8|50|1200|2|1|0|12|-1|-1|0|3|st;1|Bea|1|30|8|50|1200|2|1|0|12|-1|-1|0|8|st", out _);
+        Check(apart != null && apart.Staff.Count == 2, "household store: one of a kind at each of two homes");
+        var many = new System.Text.StringBuilder("v=2^h:5|10|0||0|0|0|0|0^s:");
+        for (int h = 0; h < 6; h++)
+        {
+            many.Append(h > 0 ? ";" : string.Empty).Append("1|P" + h + "|1|30|8|50|1200|2|1|0|12|-1|-1|0|" + (h + 1) + "|st");
+        }
+        HouseholdState capped = HouseholdStore.Read(many.ToString(), out _);
+        Check(capped != null && capped.Staff.Count == HouseholdRules.HomesMost && HouseholdRules.HomesStaffed(capped.Staff) == HouseholdRules.HomesMost,
+            "household store: never more homes with staff than the most");
         HouseholdState wild = HouseholdStore.Read("v=1^h:5|10|3|st|0|0|0|0|0^s:1|Ada|1|300|0|500|1200|2|1|9|12|-9|40", out _);
         Check(wild != null && wild.Staff[0].Age == 99 && wild.Staff[0].Skill == 100 && wild.Staff[0].Missed == HouseholdRules.QuitAfter && wild.Staff[0].OnDay == -1
               && wild.Staff[0].Dish == HouseholdRules.CookDishes.Length - 1 && wild.Staff[0].Seed == 1, "household store: every figure inside its bounds");
@@ -281,6 +397,22 @@ internal static partial class Program
         string tidy = ModSource(@"Home\HomeTidy.cs");
         Check(tidy.Contains("public static void Change(BuildingRegistration home, float points)") && tidy.Contains("Change(Home(), points);"),
             "household sources: home life tidies the home the staff work at by the same rule as its own");
+        Check(tidy.Contains("public static float ReadOf(BuildingRegistration home)") && game.Contains("return HomeTidy.ReadOf(home);"),
+            "household sources: a cleaning is read back from the home cleaned, not the home home life counts");
+
+        // A house in the Hamptons is the city building itself: its floor, its plot and its inside are read through the game's
+        // Hamptons paths, and the look follows the home the player is in, whichever of theirs it is.
+        Check(game.Contains("BuildingCleanlinessHelper.GetDirtSpotsForBuilding(") && game.Contains("HamptonsFloor(home);"),
+            "household sources: a Hamptons house's floor is laid out through the game's own helper before a cleaning");
+        Check(game.Contains("h.hamptonsHouse.plotBounds") && game.Contains("city.FindCityBuildingController(home.Address)"),
+            "household sources: the cars at a Hamptons house are the ones on its plot, found through the game's own table");
+        string atHome = code["HouseholdAtHome.cs"];
+        Check(atHome.Contains("_house = manager.interiorBounds;") && atHome.Contains("type == NavMeshHelperIds.Npc && InHouse(spot)") && atHome.Contains("BesideFurniture("),
+            "household sources: in a Hamptons house a place is on its indoor floor, inside its walls, beside its furniture first");
+        Check(director.Contains("HouseholdGame.InsideHome(out string street, out int number) && HouseholdRules.Staffed(_state.Staff, street, number)")
+              && director.Contains("AtWorkNow(now, street, number)"), "household sources: the look is in whichever staffed home the player is in, for that home's staff");
+        Check(director.Contains("BuildingRegistration home = WorkPlace(m, day);") && !director.Contains("_state.HomeStreet"),
+            "household sources: every member works at their own home; there is no one home of the staff left");
     }
 
     private static void HouseholdTextChecks()

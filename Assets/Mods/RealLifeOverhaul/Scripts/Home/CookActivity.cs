@@ -110,7 +110,12 @@ namespace RealLifeOverhaul
             bool burnt = Random.value < Cooking.BurnChance(_plan, worn) * easy;
             bool full = Mathf.RoundToInt(save.Hunger) >= 100;   // where the game's own eating says "too stuffed"
             int fill = burnt ? Mathf.RoundToInt(_plan.Fill * HomeBalance.BurntYield) : _plan.Fill;
-            if (!full)
+            // Taken with the player: the portion that would be eaten now is packed instead and eaten later at a seat
+            // (Meals' Eat), so it fills then and only then; with no room left to carry it, it goes with the leftovers.
+            bool pack = _plan.Pack && Settings.MealsTakeout;
+            int packed = pack ? HomeState.Pack(1, dish != null ? dish.Number : HomeState.LeftoverDish, fill) : 0;
+            bool eats = !full && !pack;
+            if (eats)
             {
                 Host.OwnMeal = burnt ? Meal.Plain : Meal.Home;   // the game's "food eaten" event comes straight back to the director
                 bool atTable = HomeBridges.ServedAtTable != null && HomeBridges.ServedAtTable(fill);   // carried to a seat and eaten there (Meals)
@@ -120,40 +125,43 @@ namespace RealLifeOverhaul
                 }
                 InstanceBehavior<GameManager>.Instance.ChangeHunger(fill);
             }
-            // What was not eaten is put by: nothing of a burnt meal, everything when the player could not eat.
-            int extra = burnt ? 0 : full ? _plan.Portions : _plan.Portions - 1;
+            // What was not eaten or packed is put by: nothing of a burnt meal, everything when the player could not eat.
+            int extra = burnt ? 0 : _plan.Portions - (eats ? 1 : 0) - packed;
             if (_together && extra > 0)
             {
                 extra--;   // the partner's plate
             }
             int kept = extra > 0 ? HomeState.PutBy(extra, dish != null ? dish.Number : HomeState.LeftoverDish, _plan.Fill) : 0;
-            HomeDirector.Logger?.Info("Home: " + _plan.NameKey + " done: " + (burnt ? "burnt, " : string.Empty) + (full ? "not eaten (full), " : "filled " + fill + ", ")
+            HomeDirector.Logger?.Info("Home: " + _plan.NameKey + " done: " + (burnt ? "burnt, " : string.Empty)
+                                      + (pack ? packed + " portion packed to take (" + HomeState.Takeout + " carried), " : full ? "not eaten (full), " : "filled " + fill + ", ")
                                       + kept + " of " + extra + " portion(s) put by, leftovers now " + HomeState.Leftovers + ".");
             if (burnt)
             {
                 ModState.AddModifier(ModState.MoodDown);
-                Toast(NotificationType.Warning, full ? "reallife_home_cook_burnt_full" : "reallife_home_cook_burnt", "meal", _name);
+                string burntKey = pack ? (packed > 0 ? "reallife_takeout_packed_burnt" : "reallife_takeout_burnt_lost") : full ? "reallife_home_cook_burnt_full" : "reallife_home_cook_burnt";
+                Toast(NotificationType.Warning, burntKey, "meal", _name, "most", HomeBalance.TakeoutMost.ToString());
             }
             else
             {
                 if (dish != null)
                 {
                     HomeState.Stress = HomeState.Clamp(HomeState.Stress - dish.Calm, 0f, 100f);
-                    if (!full)
+                    if (eats)
                     {
                         ModState.AddModifier(ModState.HomeCooked);
                     }
                 }
-                string key = full ? "reallife_home_cook_served_full" : kept > 0 ? "reallife_home_cook_served_leftovers" : "reallife_home_cook_served";
-                Toast(NotificationType.Success, key, "meal", _name, "count", kept.ToString());
+                string key = pack ? (packed > 0 ? "reallife_takeout_packed" : "reallife_takeout_carry_full")
+                    : full ? "reallife_home_cook_served_full" : kept > 0 ? "reallife_home_cook_served_leftovers" : "reallife_home_cook_served";
+                Toast(NotificationType.Success, key, "meal", _name, pack ? "most" : "count", pack ? HomeBalance.TakeoutMost.ToString() : kept.ToString());
             }
             if (_together)
             {
                 CookingTogether.Finish(true);   // burnt or not, it was cooked and eaten together
             }
-            if (full)
+            if (!eats)
             {
-                return;
+                return;   // nothing eaten now: a packed portion is eaten later through Meals, without the kitchen's risk
             }
             float poison = (burnt ? HomeBalance.PoisonFromBurnt : 0f) + (HomeState.Tidy < HomeBalance.MessLow ? HomeBalance.PoisonFromFilth : 0f);
             if (poison > 0f && Random.value < poison * easy)

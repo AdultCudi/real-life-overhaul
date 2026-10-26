@@ -25,12 +25,12 @@ Real Life Overhaul adds everyday life to the city of Big Ambitions: things happe
 [*][b]Running a business.[/b] Staff who ask for raises and may strike, insurance, marketing, a quarterly tax return, licences and a rota planner. Professional staff with skills, and a jobs board your rivals hire from too.
 [*][b]Growing a business.[/b] Brands and franchises that keep their prices, online shops, investors, selling a business, your own bank and your own car dealership.
 [*][b]Interiors and decor.[/b] Walls, floors and decor bring customers and let you charge a little more, each district expects its own standard, finishes wear, and an Interior tab in BizMan shows what to add next.
-[*][b]The tech sector.[/b] Software and game studios, IT consultancies, security firms and AI labs, startups and venture capital, data centres, a cloud and in time a hyperscaler. Your data centres fill with server racks, and the city's tech companies have headquarters you can walk into.
+[*][b]The tech sector.[/b] Software and game studios, IT consultancies, security firms and AI labs, startups and venture capital, data centres, a cloud and in time a hyperscaler.
+[*][b]Uptown and construction.[/b] A new district with a school, parks and landmarks. Buy land in build mode, zone it and place buildings, or run a construction company.
 [*][b]Property.[/b] Buy, let and sell buildings with a tenant in each unit, set your rental income, run an estate agency or a hotel, and hire out cars.
 [*][b]Permadeath, if you want it.[/b] Off unless you switch it on: rare deaths after warnings, hunger among them, and an obituary in the City Ledger.
 [*][b]Tools.[/b] A Planner and a Guide on your phone, presets, tables that sort and filter, settings export and import, every key rebindable, and a tool that takes the mod out of a save.
 [/list]
-The Guide in the game has a page for every feature.
 
 [h1]How to start[/h1]
 [list]
@@ -46,7 +46,7 @@ Apart from the cameras, buses in view and hair in motion, the mod does its work 
 [list]
 [*]Made for the current build of Big Ambitions on Steam's public branch. On an older build the mod says so, and how to update the game. Windows only.
 [*]The mod follows the game's language. Any other language, or a text not yet translated, is in English.
-[*]One DLL, a text file for each language and three asset files. No game files are replaced. It can be added to an existing save.
+[*]One DLL, a text file for each language and five asset files. No game files are replaced. It can be added to an existing save.
 [*]Made to work with Going Public, the multiplayer mod: what would put players out of step, such as fast forward, is set aside in a session.
 [*]Works beside Empire Motors, Meaningful Interiors and Meaningful Ambience: where those already do something, this mod's part stays off. While a camera mod such as "Immersion - RPG Camera" drives the camera, this mod's cameras stand aside.
 [/list]
@@ -58,7 +58,7 @@ In each save you want to keep, press "Prepare this save for removing the mod" un
 Some journeys, hotels, indoor outings, court and prison pass under a fade or as text, and children are never seen. The Guide's "Known limits" page has the full list.
 
 [h1]Reporting a problem[/h1]
-Switch on "Developer diagnostics" under Troubleshooting, make the problem happen again, and send Player.log from %USERPROFILE%\AppData\LocalLow\Hovgaard Games\Big Ambitions with a screenshot, the mod version (0.53.1) and your other mods.
+Switch on "Developer diagnostics" under Troubleshooting, make the problem happen again, and send Player.log from %USERPROFILE%\AppData\LocalLow\Hovgaard Games\Big Ambitions with a screenshot, the mod version (0.56.2) and your other mods.
 
 [h1]Source and contributions[/h1]
 The mod is open source under the MIT licence. Report problems and send changes here: https://github.com/AdultCudi/real-life-overhaul

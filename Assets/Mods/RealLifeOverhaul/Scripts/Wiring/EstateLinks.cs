@@ -19,7 +19,7 @@ namespace RealLifeOverhaul
 
             internal static void Connect()
             {
-                EstateBridges.RentLever = () => Policy(Lever.Rent);
+                EstateBridges.RentLever = () => EstateRules.FromCouncil(Policy(Lever.Rent));
                 EstateBridges.PermitLever = () => Policy(Lever.Permits);
                 EstateBridges.EventOn = EventOn;
                 HotelReception.Owner = EstateDirector.OwnsHotel;

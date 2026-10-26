@@ -50,6 +50,7 @@ internal static partial class Program
         Polish();
         Hitch();
         Hair();
+        HairWearersChecks();
         Solid();
         Crew(Array.IndexOf(args, "--crew") >= 0);
         CarExit();
@@ -71,6 +72,7 @@ internal static partial class Program
         PointGrids();
         TestRoutes();   // the driving school's route: planned round lanes an accident has closed, and what the player is told (TestRouteCheck.cs)
         LoadPace();
+        DayWarms();      // the mod's code for the game's midnight compiled ahead: what the walk takes in, sliced as whole, the budget (DayWarmCheck.cs)
         AppsSources();   // the phone apps: panels built when first opened, the box's parts kept, tables written as they scroll (AppsCheck.cs)
         Cordons();       // who is inside a cordon's tape and where they are put outside it, and every cordon running that rule (CordonCheck.cs)
         MapRows();       // the mod's places on the city map: a row and an icon for every kind, a row of its own for every claimed building, nothing before the map can take it (MapRowCheck.cs)

@@ -409,12 +409,8 @@ Clips (Humanoid, in place, from and back to the standing idle unless said):
 | `goodbye_wave_walk` | 1.4 s | once, right arm | a wave over the shoulder while walking away |
 
 Props (pivot at the grip unless said): `wine_glass` 0.07 x 0.20 x 0.07, pivot the middle of the stem.
-`beer_bottle` 0.07 x 0.24 x 0.07, pivot 0.08 m up.
 `takeaway_box` 0.14 x 0.09 x 0.11, pivot the middle of the underside.
-`popcorn_tub` 0.16 x 0.20 x 0.16, pivot the middle of the underside.
-`gift_box` 0.20 x 0.14 x 0.20 with a ribbon, ground centre.
 
-`flowers_bunch` 0.22 x 0.42 x 0.22, pivot the wrapped stems 0.10 m up.
-`gym_bag` 0.50 x 0.26 x 0.24, pivot the middle of the handles.
+`beer_bottle`, `popcorn_tub`, `gift_box`, `flowers_bunch` and `gym_bag` were made for this list and, as nothing placed them, taken out of the props bundle on 26 Oct 2026 as nothing placed it; a feature that wants it models it anew in the second bundle (PropAssets/README.md, "Adding a prop from Blender").
 `moving_box` 0.45 x 0.35 x 0.35 printed "FRAGILE" (until then `parcel_m`), ground centre.
 `newspaper_ledger` (the `newspaper` prop with the Ledger's masthead), as `newspaper`.

@@ -73,6 +73,7 @@ namespace RealLifeOverhaul
         public static int EvadedCheckFine => Prices.At(400);      // added at the next stop
         public static int ImpoundFee => Law.LawBook.ImpoundFee;
         public const int ArrestFromCount = 3;        // the third time caught within the window is an arrest
+        public const int SuspendedArrestFromCount = 2;   // while suspended, the second time caught within the window is (the Guide: "being caught again within that time is enough")
         public const int RepeatWindowDays = 30;
         public const int ArrestHours = 6;
 

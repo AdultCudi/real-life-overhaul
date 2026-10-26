@@ -33,6 +33,7 @@ namespace RealLifeOverhaul
                 EconomyBridges.LegalReady = () => JusticeState.Loaded;
                 EconomyBridges.OtherDebts = AddDebts;
                 PlannerDirector.Instance?.AddSource(Source);
+                DayWarm.FeatureDays = () => EconomyDirector.AfterDay + EconomyDirector.AfterHour;   // the features' days the economy shares out in the game's midnight frame
             }
 
             private static bool GivenBack(string type) => type == CivicBridges.FareGivenBack || type == LentVehicle.RefundKey;
@@ -68,6 +69,7 @@ namespace RealLifeOverhaul
             internal static void Disconnect()
             {
                 Prices.Factor = null;
+                DayWarm.FeatureDays = null;
                 LifeAccounts.Card = null;
                 LifeAccounts.Accountant = null;
                 EconomyBridges.Reset();   // DebtLinks' bridges too; the Planner's director goes with the city, and its sources with it

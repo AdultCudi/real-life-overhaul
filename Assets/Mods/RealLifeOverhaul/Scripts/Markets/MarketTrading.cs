@@ -63,6 +63,34 @@ namespace RealLifeOverhaul.Markets
     /// </summary>
     public static class MarketTrading
     {
+        /// <summary>
+        /// The option's most of a company, in bp, set by the director from Settings.MarketsHolding once a second. One static
+        /// value because every sizing of a holding (orders, worked orders, dividends put back, bots, share options, a rival's
+        /// holding) goes through <see cref="MostHeld"/>, so none can follow an older figure. It bounds only the player's own
+        /// positions, filled on their own machine, so in a Going Public session each player's choice is theirs and nothing is sent.
+        /// </summary>
+        public static int HoldingBp { get; private set; } = MarketCatalogue.HoldingShareBp;
+
+        /// <summary>The option's choice (0 a tenth ... 3 all of it); anything else, as from an edited settings file, is read as the nearest.</summary>
+        public static void HoldTo(int choice)
+        {
+            HoldingBp = MarketCatalogue.HoldingCapBp[Math.Max(0, Math.Min(MarketCatalogue.HoldingCapBp.Length - 1, choice))];
+        }
+
+        /// <summary>
+        /// The most of one company the player may hold, in bp. A player's listed company keeps the tenth: there the founder's
+        /// stake and the takeover and activist rules are counted against the other holders, and another player's company is
+        /// theirs. A rival's holding has only its free float to sell, so a larger choice stops there.
+        /// </summary>
+        public static int MostHeldBp(Stock s)
+        {
+            if (s.Own != null)
+            {
+                return MarketCatalogue.HoldingShareBp;
+            }
+            return s.Def != null && s.Def.Holding ? Math.Min(HoldingBp, MarketCatalogue.HoldingFloatBp) : HoldingBp;
+        }
+
         public static double DayVol(MarketState state, Stock s)
         {
             double m = MarketCatalogue.IndexDayVol * s.Def.Beta / 100.0;
@@ -363,7 +391,7 @@ namespace RealLifeOverhaul.Markets
 
         public static long MostHeld(Stock s)
         {
-            return Math.Max(1L, s.Shares * MarketCatalogue.HoldingShareBp / 10000L);
+            return Math.Max(1L, s.Shares * MostHeldBp(s) / 10000L);
         }
 
         public static int OpenOrders(MarketState state)

@@ -334,7 +334,7 @@ namespace RealLifeOverhaul.Leisure
         private void Land(float now)
         {
             _landed++;
-            int value = Mathf.RoundToInt(_grams / 1000f * _fish.ValuePerKilo);
+            int value = Mathf.RoundToInt(Prices.At(_grams / 1000f * _fish.ValuePerKilo));   // the per-kilo values are the start's prices, as the bait is
             _sold += value;
             bool first = LeisureState.Catch(_fish.Id);
             _newKind |= first && _fish.ValuePerKilo > 0;

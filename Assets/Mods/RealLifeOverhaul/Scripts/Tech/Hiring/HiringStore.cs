@@ -7,11 +7,12 @@ namespace RealLifeOverhaul.Tech
     /// The labour market and the player's hiring in the save: one line under <see cref="Key"/> in <see cref="TechWriter"/>'s
     /// format, a header (h) then seekers (s), ads (a), rivals' ads (r), applicants (p), the office's campaigns (o) and candidates'
     /// files (c), fields in the order <see cref="Write"/> writes them. Every list is capped, so the line stays small.
+    /// Version 2 adds a data centre's crew search to an ad, its last two fields: a version 1 line reads as senior searches only.
     /// </summary>
     public static class HiringStore
     {
         public const string Key = "reallife:tech_hiring";
-        public const int Version = 1;
+        public const int Version = 2;
 
         public static HiringFile Load(Dictionary<string, string> data, out int version) => TechLines.Load(data, Key, Version, Read, out version);
 
@@ -30,7 +31,7 @@ namespace RealLifeOverhaul.Tech
             foreach (JobAd a in f.Ads)
             {
                 w.Record().Add(a.Id).Place(a.Place).Add(a.Role).Add(a.Level).Add(a.PayLeast).Add(a.PayMost).Add(a.MinSkill).Add(a.Work).Add(a.From).Add(a.To).Add(a.Boost).Add(a.Came)
-                    .Add(a.Search).Add(a.Fee).Add(a.FeePaid).Add(a.Due);
+                    .Add(a.Search).Add(a.Fee).Add(a.FeePaid).Add(a.Due).Add(a.Crew).Add(a.Hired);
             }
             w.Part('r');
             foreach (RivalAd r in f.RivalAds)
@@ -96,7 +97,7 @@ namespace RealLifeOverhaul.Tech
                 s.Notice = x.Int();
                 s.Taken = x.Bool();
                 s.Passive = x.Bool();
-                if (f.Seekers.Count < HiringCatalogue.SeekersMost + HiringCatalogue.SearchCandidates * HiringCatalogue.SearchesMost)
+                if (f.Seekers.Count < HiringCatalogue.SeekersMost + HiringCatalogue.SearchSeekersMost)
                 {
                     f.Seekers.Add(s);
                 }
@@ -109,7 +110,9 @@ namespace RealLifeOverhaul.Tech
                     PayLeast = x.Int(), PayMost = x.Int(), MinSkill = x.Int(), Work = x.Int(), From = x.Int(), To = x.Int(), Boost = x.Bool(), Came = x.Int(), Search = x.Bool(), Fee = x.Int(),
                     FeePaid = x.Int(), Due = x.Int()
                 };
-                if (f.Ads.Count < HiringCatalogue.AdsMost + HiringCatalogue.SearchesMost)
+                a.Crew = TalentCatalogue.Clamp(x.Int(), 0, HiringCatalogue.CrewMost);
+                a.Hired = Math.Max(0, x.Int());
+                if (f.Ads.Count < HiringCatalogue.AdsMost + HiringCatalogue.SearchesMost + HiringCatalogue.CrewSearchesMost)
                 {
                     f.Ads.Add(a);
                 }
@@ -128,7 +131,7 @@ namespace RealLifeOverhaul.Tech
                     Id = x.Int(), Seeker = x.Int(), Ad = x.Int(), Day = x.Int(), Stage = x.Int(), Refs = x.Bool(), Background = x.Bool(), Interviewed = x.Bool(), Interest = x.Int(500),
                     Offer = x.Int(), OfferDay = x.Int(), Counter = x.Int(), RivalBid = x.Int(), RivalBy = x.Text(), Start = x.Int(), Revealed = x.Int()
                 };
-                if (f.Applicants.Count < HiringCatalogue.ApplicantsMost + HiringCatalogue.SearchCandidates * HiringCatalogue.SearchesMost)
+                if (f.Applicants.Count < HiringCatalogue.ApplicantsMost + HiringCatalogue.SearchSeekersMost)
                 {
                     f.Applicants.Add(a);
                 }

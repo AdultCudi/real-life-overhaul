@@ -31,6 +31,7 @@ namespace RealLifeOverhaul.Utilities
                 bool live = a != null && a.State != SupplyState.Closed;
                 Provider p = live ? InternetRules.Get(a.Provider) : null;
                 bool needs = UtilitiesDirector.NeedsNet(place);
+                bool orders = !needs && ShopAt(place);
                 bool down = live && (a.State == SupplyState.Cut || InternetRules.InOutage(a, hour));
                 if (live && a.State == SupplyState.Active)
                 {
@@ -44,7 +45,8 @@ namespace RealLifeOverhaul.Utilities
                 row.Set(4, live ? (InternetRules.InOutage(a, hour) ? UtilitiesText.T("reallife_net_state_outage") : UtilitiesText.State(a, today)) : "-", down ? TableRow.Red : TableRow.Plain);
                 row.Set(5, live ? (a.ContractUntil > today ? UtilitiesText.Day(a.ContractUntil) : UtilitiesText.T("reallife_net_month_by_month")) : "-",
                     live && a.ContractUntil > today ? a.ContractUntil : double.NaN);
-                row.Set(6, UtilitiesText.T(needs ? "reallife_net_needed" : "reallife_net_not_needed"), needs && !live ? TableRow.Red : TableRow.Plain);
+                row.Set(6, UtilitiesText.T(needs ? "reallife_net_needed" : orders ? "reallife_net_needed_orders" : "reallife_net_not_needed"),
+                    (needs || orders) && !live ? TableRow.Red : TableRow.Plain);
             }
             UiClone.Words(_shell.Header, UtilitiesText.T("reallife_net_headline", "count", connected.ToString(), "places", places.Count.ToString()));
             if (!picked.HasValue)
@@ -59,6 +61,10 @@ namespace RealLifeOverhaul.Utilities
                 }
                 box.Note(UtilitiesText.T("reallife_net_box_intro"));
                 box.Note(UtilitiesText.T("reallife_net_box_needs_note"));
+                if (Settings.UtilitiesNetSpeed)
+                {
+                    box.Note(UtilitiesText.T("reallife_net_box_speed_note"));
+                }
                 Meta.Guide.Point(box, GuideTitle);
                 return;
             }
@@ -81,6 +87,15 @@ namespace RealLifeOverhaul.Utilities
                         "day", UtilitiesText.Day(state.GraceUntil - 1)));
                 }
             }
+            else if (ShopAt(place))
+            {
+                box.Line(UtilitiesText.T("reallife_net_box_needs_orders"));
+                if (InternetRules.InGrace(state, place.Place, today) && (a == null || a.State != SupplyState.Active))
+                {
+                    box.Line(UtilitiesText.T("reallife_net_box_grace_shop", "left", InternetRules.GraceLeft(state, today).ToString(), "days", InternetCatalogue.GraceDays.ToString(),
+                        "day", UtilitiesText.Day(state.GraceUntil - 1)));
+                }
+            }
             if (live && !_choosing)
             {
                 Provider p = InternetRules.Get(a.Provider);
@@ -94,6 +109,7 @@ namespace RealLifeOverhaul.Utilities
                 if (p != null)
                 {
                     box.Row("reallife_net_box_plan", UtilitiesText.T("reallife_net_mbps", "mbps", p.Mbps[Math.Min(a.Plan, p.Mbps.Length - 1)].ToString()));
+                    SpeedLines(box, place, p.Mbps[Math.Min(a.Plan, p.Mbps.Length - 1)]);
                 }
                 box.Row("reallife_net_box_contract", a.ContractUntil > today
                     ? UtilitiesText.T("reallife_net_box_contract_until", "day", UtilitiesText.Day(a.ContractUntil), "fee", UtilitiesText.Money(_director.NetExitFee(place)))
@@ -179,6 +195,7 @@ namespace RealLifeOverhaul.Utilities
             }
             bool same = live && a.Provider == provider && a.State != SupplyState.Cut;
             box.Row("reallife_net_box_price", UtilitiesText.Money(_director.NetPrice(place, provider, _plan, _contract && !ours) / 100f));
+            SpeedLines(box, place, p.Mbps[_plan]);
             if (!same)
             {
                 box.Line(ours ? UtilitiesText.T("reallife_net_box_install_own") : _contract ? UtilitiesText.T("reallife_net_box_install_free")
@@ -219,6 +236,31 @@ namespace RealLifeOverhaul.Utilities
             {
                 box.Note(UtilitiesText.T("reallife_net_box_contract_note", "months", InternetCatalogue.ContractMonths.ToString()));
             }
+        }
+
+        // What a plan's speed means for the work there, from the same rules the work goes by (NetSpeedRules): for the player's
+        // tech firm or online shop at the place, or what it would mean for one; nothing at a home or while speed does not count.
+        private static void SpeedLines(InfoBox box, PlaceInfo place, int mbps)
+        {
+            if (!Settings.UtilitiesNetSpeed || place.Kind == PlaceKind.Home)
+            {
+                return;
+            }
+            Func<BuildingRegistration, int, int> firmWork = UtilitiesBridges.FirmWork, shopMost = UtilitiesBridges.ShopMost;
+            int work = firmWork != null ? firmWork(place.Reg, mbps) : -1, most = shopMost != null ? shopMost(place.Reg, mbps) : -1;
+            box.Line(work >= 0 ? UtilitiesText.T("reallife_net_speed_firm", "work", UtilitiesText.Percent(work))
+                : UtilitiesText.T("reallife_net_speed_tech", "work", UtilitiesText.Percent(NetSpeedRules.Factor(mbps, NetSpeedRules.Usual)),
+                    "light", UtilitiesText.Percent(NetSpeedRules.Factor(mbps, NetSpeedRules.Light)), "heavy", UtilitiesText.Percent(NetSpeedRules.Factor(mbps, NetSpeedRules.Heavy)),
+                    "heaviest", UtilitiesText.Percent(NetSpeedRules.Factor(mbps, NetSpeedRules.Heaviest))));
+            box.Line(most >= 0 ? UtilitiesText.T("reallife_net_speed_shop_here", "most", most.ToString())
+                : UtilitiesText.T("reallife_net_speed_shop", "share", UtilitiesText.Percent(NetSpeedRules.Factor(mbps, NetSpeedRules.Shop))));
+        }
+
+        // The player's online shop runs from the place (asked of the shops; none with them off).
+        private static bool ShopAt(PlaceInfo place)
+        {
+            Func<BuildingRegistration, int, int> shopMost = UtilitiesBridges.ShopMost;
+            return Settings.UtilitiesNetSpeed && place.Kind != PlaceKind.Home && shopMost != null && shopMost(place.Reg, NetSpeedRules.Unknown) >= 0;
         }
 
         private void Reach(PlaceInfo place)

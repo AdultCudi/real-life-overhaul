@@ -571,12 +571,21 @@ namespace RealLifeOverhaul.Hustles
                    || (g.Stage == GigStage.Loaded && stamp < g.Until + HustleCatalogue.GigWindow);
         }
 
-        public static void Book(Gig g)
+        /// <summary>Whether a request can still be said yes to, or sent a helper to: the client waits until <see cref="Gig.Until"/>, and after it the visit is gone.</summary>
+        public static bool Takeable(Gig g, int stamp)
         {
-            if (g.Stage == GigStage.Offered)
+            return stamp < g.Until;
+        }
+
+        /// <summary>A request taken on. False, and nothing changed, if it is not on offer or its time has passed.</summary>
+        public static bool Book(Gig g, int stamp)
+        {
+            if (g.Stage != GigStage.Offered || !Takeable(g, stamp))
             {
-                g.Stage = GigStage.Booked;
+                return false;
             }
+            g.Stage = GigStage.Booked;
+            return true;
         }
 
         /// <summary>A booking called off: the client remembers it.</summary>
@@ -603,12 +612,12 @@ namespace RealLifeOverhaul.Hustles
             return (minutes + 59) / 60;
         }
 
-        /// <summary>A helper sent in the player's place: they start when the client wants them and are done after the visit's hours.</summary>
-        public static void SendHelper(HustleState s, Gig g, int stamp)
+        /// <summary>A helper sent in the player's place: they start when the client wants them and are done after the visit's hours. False if the client's time has passed.</summary>
+        public static bool SendHelper(HustleState s, Gig g, int stamp)
         {
-            if (g.Stage != GigStage.Booked && g.Stage != GigStage.Offered)
+            if ((g.Stage != GigStage.Booked && g.Stage != GigStage.Offered) || !Takeable(g, stamp))
             {
-                return;
+                return false;
             }
             GigDef def = HustleCatalogue.Gig(g.Kind);
             g.Stage = GigStage.Helper;
@@ -617,6 +626,7 @@ namespace RealLifeOverhaul.Hustles
             var dice = new DealerDice(s.Seed, g.Id, SaltRating, 1);
             int roll = dice.Range(0, 99);
             g.HelperRating = roll < 25 ? 3 : roll < 75 ? 4 : 5;   // a helper of the city's: a steady hand, now and then a star better or worse
+            return true;
         }
 
         /// <summary>A helper's visit done: the client pays, the helper takes their share, the rating counts. Returns what the player keeps.</summary>

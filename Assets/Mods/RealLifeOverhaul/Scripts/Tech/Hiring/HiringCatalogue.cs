@@ -77,6 +77,18 @@ namespace RealLifeOverhaul.Tech
         public const int SearchCandidates = 3;
         public const int SearchLeastLevel = TalentCatalogue.Senior;
 
+        // A data centre's crew by a search firm, briefed from the player's headquarters: juniors to staff level, a fee a hire
+        public const string Headquarters = "ba:businesstype_headquarters";      // the game's business type of a company's headquarters
+        public static readonly int[] CrewRoles = { TalentCatalogue.Technician, TalentCatalogue.NetworkEngineer };   // who looks after racks on site
+        public const int CrewLeastLevel = TalentCatalogue.Junior, CrewMostLevel = TalentCatalogue.Staff;
+        public static readonly int[] CrewFeeBp = { 800, 1000, 1300, 1600 };      // a share of a year's pay at the going rate, a hire, junior to staff
+        public const int CrewSearchesMost = 3;                                     // crew searches open at once, beside the senior searches
+        public const int CrewMost = 8;                                             // technicians one brief asks for
+        public const int CrewCandidatesMost = 12;                                  // candidates one brief brings at most
+        public const int CrewDaysLeast = 2, CrewDaysMost = 4;                      // days the firm takes
+        /// <summary>The candidates of every search open at once, held besides the open market: the caps of the seekers and applicants.</summary>
+        public const int SearchSeekersMost = SearchCandidates * SearchesMost + CrewCandidatesMost * CrewSearchesMost;
+
         /// <summary>The fictional companies of the city that hire professionals, beside the game's own rivals.</summary>
         public static readonly string[] RivalFirms =
         {

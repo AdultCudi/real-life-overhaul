@@ -235,12 +235,11 @@ namespace RealLifeOverhaul.Meta
             ModOption option = RowOf(line)?.Option;
             if (option is SliderOption slider)
             {
-                string format = string.IsNullOrEmpty(slider.ValueLabelKey) ? SettingsTable.SliderValue : slider.ValueLabelKey;
-                return format.GetLocalization().Replace("{value}", value.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                return OptionValueRules.Slider(slider.ValueLabelKey, value, Presets.Words);
             }
             if (option is DropdownOption dropdown)
             {
-                return value >= 0 && value < dropdown.ChoiceKeys.Length ? dropdown.ChoiceKeys[value].GetLocalization() : string.Empty;
+                return OptionValueRules.Choice(dropdown.ChoiceKeys, value, Presets.Words);
             }
             return (value != 0 ? "reallife_meta_on" : "reallife_meta_off").GetLocalization();
         }

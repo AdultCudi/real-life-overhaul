@@ -77,6 +77,7 @@ internal static partial class Program
             }
         }
         TickPathChecks();
+        GameFontChecks();
         // RLO-PERF-012: a component's summary (on any part of it) says what it costs a frame.
         foreach (KeyValuePair<string, List<(SourceFile File, SourceType Type)>> kv in components)
         {

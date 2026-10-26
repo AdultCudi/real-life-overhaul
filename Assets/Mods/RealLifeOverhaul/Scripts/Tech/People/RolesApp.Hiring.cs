@@ -414,6 +414,9 @@ namespace RealLifeOverhaul.Tech
             TableRow add = Row(NewSearchRow);
             add.Pinned = true;
             add.Set(0, TechText.T("reallife_hire_row_new_search"));
+            TableRow crew = Row(NewCrewRow);
+            crew.Pinned = true;
+            crew.Set(0, TechText.T("reallife_crew_row_new"));
             JobAd picked = null;
             string id = Picked(_picked, SearchRow);
             for (int i = 0; i < f.Ads.Count; i++)
@@ -425,7 +428,7 @@ namespace RealLifeOverhaul.Tech
                 }
                 BuildingRegistration at = TalentGame.Find(ad.Place);
                 TableRow row = Row(SearchRow + ad.Id);
-                row.Set(0, TechText.Role(ad.Role));
+                row.Set(0, ad.CrewSearch ? TechText.T("reallife_crew_row", "role", TechText.Role(ad.Role), "count", ad.Crew.ToString()) : TechText.Role(ad.Role));
                 row.Set(1, TechText.Level(ad.Level), ad.Level);
                 row.Set(2, at != null ? TalentGame.NameOf(at) : "-");
                 row.Set(3, TechText.Cents(ad.Fee), ad.Fee / 100.0);
@@ -438,6 +441,14 @@ namespace RealLifeOverhaul.Tech
             if (_picked == NewSearchRow)
             {
                 WriteNewSearch(box);
+            }
+            else if (_picked == NewCrewRow)
+            {
+                WriteNewCrew(box);
+            }
+            else if (picked != null && picked.CrewSearch)
+            {
+                WriteCrewSearch(box, picked);
             }
             else if (picked != null)
             {

@@ -139,7 +139,7 @@ namespace RealLifeOverhaul.Flare
             }
             m.Data += FlareInviteRules.BookedMark;
             Logger?.Info("Flare: " + m.Name + " said yes; the plan is booked: " + b.Kind + " at " + b.Place + ", minute " + b.At + ".");
-            Tell(NotificationType.Info, "reallife_flare_note_invite_booked", _openMessages, "name", m.Name, "outing", FlareInviteRules.Value(m.Data, "outing"),
+            Notice(NotificationType.Info, "reallife_flare_note_invite_booked", _openMessages, "name", m.Name, "outing", FlareInviteRules.Value(m.Data, "outing"),
                 "place", b.Place, "time", FlareInviteRules.Value(m.Data, "time"));
         }
 

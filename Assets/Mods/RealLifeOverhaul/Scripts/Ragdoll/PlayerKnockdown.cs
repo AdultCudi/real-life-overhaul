@@ -22,8 +22,8 @@ namespace RealLifeOverhaul
         private const float SenseInterval = 0.1f;       // seconds
         private const float SenseRadius = 0.55f;        // around the chest: the vehicle has to be touching
         private const float MinSpeed = 2f;              // m/s; slower than this is a bump, not a hit
-        private const float InjurySpeed = 15f / 3.6f;   // m/s
-        private const float HospitalSpeed = 35f / 3.6f; // m/s
+        internal const float InjurySpeed = 15f / 3.6f;   // m/s
+        internal const float HospitalSpeed = 35f / 3.6f; // m/s
         private const float DownAtLeast = 2.4f;         // seconds on the ground
         private const float DownAtMost = 5f;            // seconds
         private const float PathHalfWidth = 1.1f;       // metres either side of the vehicle's line of travel

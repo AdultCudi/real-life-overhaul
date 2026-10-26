@@ -17,6 +17,7 @@ namespace RealLifeOverhaul.Faults
             Features.Add("faults", "reallife_meta_title_faults")
                 .Group("reallife_faults_header")
                 .About("reallife_guide_faults_about").Help("reallife_guide_faults")
+                .Fact("faults_litter_days_cut", () => FaultRules.LitterDaysCut.ToString(Inv))
                 .Owns(Settings.CityFaultsId, Settings.CityFaultsCountId, Settings.CityFaultsFalseCostId)
                 .Preset(Settings.CityFaultsCountId, 0, 2, 2)
                 .Data(FaultStore.Key)

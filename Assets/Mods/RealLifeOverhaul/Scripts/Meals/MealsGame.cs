@@ -42,7 +42,8 @@ namespace RealLifeOverhaul.Meals
             Option = default;
         }
 
-        public string Kind => Spot != null ? "a table's own seat (" + Item.itemName + ")" : Bench != null ? "a street bench" : "a seat (" + Item.itemName + ")" + (Top ? " at a table" : string.Empty);
+        public string Kind => Spot != null && Item != null ? "a table's own seat (" + Item.itemName + ")" : Bench != null ? "a street bench"
+            : Item != null ? "a seat (" + Item.itemName + ")" + (Top ? " at a table" : string.Empty) : "a seat of the street";
     }
 
     /// <summary>
@@ -387,6 +388,81 @@ namespace RealLifeOverhaul.Meals
             return length;
         }
 
+        /// <summary>
+        /// The seat the game's own rest has the player on (<paramref name="place"/>, the character's sitting place), measured
+        /// as <see cref="Find"/> measures one: a table's own seat with its tray, a chair with a table top ahead, a street bench,
+        /// or any other seat of the game's. Run once, when Eat is pressed; no walk is measured, the player is there.
+        /// </summary>
+        public static MealSeat Here(PlayerController player, Transform place)
+        {
+            if (player == null || place == null)
+            {
+                return null;
+            }
+            MealSeat seat = Seats[0];
+            seat.Clear();
+            seat.Place = place;
+            seat.Stand = player.transform.position;
+            OutsideBenchController bench = place.GetComponentInParent<OutsideBenchController>();
+            ItemController item = bench == null ? place.GetComponentInParent<ItemController>() : null;
+            seat.Bench = bench;
+            seat.Item = item;
+            SeatSpot spot = item != null ? SpotOf(item) : null;
+            if (spot != null && spot.seatAttachmentPoint != null && spot.seatAttachmentPoint.foodDisplay != null)
+            {
+                seat.Spot = spot;
+                seat.Display = spot.seatAttachmentPoint.foodDisplay;
+                seat.Top = true;
+                seat.PlateAt = seat.Display.position;
+                seat.PlateTurn = Quaternion.LookRotation(Flat(place.forward));
+            }
+            else if (item != null)
+            {
+                TableAhead(seat, player);
+            }
+            seat.Option = new SeatOption { Free = true, Table = seat.Top, Path = 0f };
+            return seat;
+        }
+
+        // The table's seat a chair belongs to, found as the game's rest finds it (RestActivity.OccupySeat): the chair's own
+        // seat spots, then its parent table's. Nothing allocated.
+        private static SeatSpot SpotOf(ItemController chair)
+        {
+            SeatSpot found = SpotIn(chair.SeatSpots, chair);
+            if (found == null && chair.parentItemController != null)
+            {
+                found = SpotIn(chair.parentItemController.SeatSpots, chair);
+            }
+            return found;
+        }
+
+        private static SeatSpot SpotIn(SeatSpot[] spots, ItemController chair)
+        {
+            for (int i = 0; spots != null && i < spots.Length; i++)
+            {
+                if (spots[i] != null && spots[i].GetAttachedChair == chair)
+                {
+                    return spots[i];
+                }
+            }
+            return null;
+        }
+
+        /// <summary>Where a plate rests in the lap of somebody on this seat (<see cref="MealsRules.LapAhead"/>, <see cref="MealsRules.LapUp"/>); false without a place.</summary>
+        public static bool Lap(MealSeat seat, out Vector3 at, out Quaternion turn)
+        {
+            at = Vector3.zero;
+            turn = Quaternion.identity;
+            if (seat == null || seat.Place == null)
+            {
+                return false;
+            }
+            Vector3 ahead = Flat(seat.Place.forward);
+            at = seat.Place.position + ahead * MealsRules.LapAhead + Vector3.up * MealsRules.LapUp;
+            turn = Quaternion.LookRotation(ahead);
+            return true;
+        }
+
         // A table top in front of a plain seat, by one ray down onto the spot the plate would take.
         private static void TableAhead(MealSeat seat, PlayerController player)
         {
@@ -400,7 +476,7 @@ namespace RealLifeOverhaul.Meals
             {
                 RaycastHit hit = Hits[i];
                 Hits[i] = default;
-                if (hit.collider == null || (body != null && hit.collider.transform.IsChildOf(body)) || hit.collider.transform.IsChildOf(seat.Item.transform))
+                if (hit.collider == null || (body != null && hit.collider.transform.IsChildOf(body)) || (seat.Item != null && hit.collider.transform.IsChildOf(seat.Item.transform)))
                 {
                     continue;
                 }

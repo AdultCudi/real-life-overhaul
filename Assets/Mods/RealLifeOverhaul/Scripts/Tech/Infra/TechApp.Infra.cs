@@ -110,15 +110,28 @@ namespace RealLifeOverhaul.Tech
             }
             box.Line(TechText.Fill("reallife_infra_fit_cost", "sqm", sqm.ToString(), "racks", (sqm / InfraCatalogue.SqmPerRack).ToString(),
                 "cost", TechText.Cents(_director.Level(InfraRules.FitCost(sqm, _fitTier, TechDirector.BuyScale)))));
+            // The same three the data centre's page shows, before the money goes: it may be fitted out without them, and goes down until they come.
+            box.Line(TechText.Fill("reallife_infra_fit_supply", "supplied", TechText.T(TechBridges.SuppliedAt(reg, 0) ? "reallife_infra_yes" : "reallife_infra_no"),
+                "water", TechText.T(TechBridges.SuppliedAt(reg, 1) ? "reallife_infra_yes" : "reallife_infra_no"),
+                "net", TechText.T(TechBridges.FastEnough(reg, InfraCatalogue.NetNeeded) ? "reallife_infra_yes" : "reallife_infra_no"), "mbps", InfraCatalogue.NetNeeded.ToString()));
+            InfraFile f = _director.Infra;
+            int block = f != null ? InfraRules.FitBlock(f.Centres.Count, f.CentreAt(place) != null) : InfraRules.FitAlready;
+            if (block != InfraRules.FitFree)
+            {
+                box.Line(TechText.T(block == InfraRules.FitAlready ? "reallife_infra_fit_already" : "reallife_infra_fit_most"), CellTone.Red);
+            }
             Transform buttons = box.ButtonRow();
             int tier = _fitTier;
-            InfoBox.Button(buttons, InfoBox.Positive, "reallife_infra_button_fit", () => Do(() =>
+            if (block == InfraRules.FitFree)
             {
-                if (_director.FitOut(place, tier))
+                InfoBox.Button(buttons, InfoBox.Positive, "reallife_infra_button_fit", () => Do(() =>
                 {
-                    _picked = CentreRow + place;
-                }
-            }));
+                    if (_director.FitOut(place, tier))
+                    {
+                        _picked = CentreRow + place;
+                    }
+                }));
+            }
             InfoBox.Button(buttons, InfoBox.Additional, "common_close", ClosePick);
             Meta.Guide.Point(box, SectorGuide);
         }
@@ -174,6 +187,7 @@ namespace RealLifeOverhaul.Tech
             {
                 _director.OpenRoles(TechDirector.TabJobs, null);
             });
+            InfoBox.Button(more, InfoBox.Additional, "reallife_crew_button_brief", () => _director.BriefCrew(place));   // the search firm, briefed from headquarters
             InfoBox.Button(more, InfoBox.Additional, "common_close", ClosePick);
             box.Line(TechText.Fill("reallife_infra_centre_prices", "rack", TechText.Cents(_director.Level(InfraRules.RackPrice(false, buy))),
                 "gpu", TechText.Cents(_director.Level(InfraRules.RackPrice(true, buy)))));

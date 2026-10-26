@@ -21,7 +21,7 @@ namespace RealLifeOverhaul.Household
                 .Data(HouseholdStore.Key, HouseholdDirector.TestKey)
                 .Contact(HouseholdPhone.ContactId)
                 .Test("reallife_household_test_hire", "reallife_household_test_day", "reallife_household_test_show", "reallife_household_test_mechanic",
-                    "reallife_household_test_back")
+                    "reallife_household_test_hamptons", "reallife_household_test_homes", "reallife_household_test_back")
                 .Fact("hh_cleaner_from", () => Hour(StaffKind.Cleaner, false))
                 .Fact("hh_cleaner_to", () => Hour(StaffKind.Cleaner, true))
                 .Fact("hh_cook_from", () => Hour(StaffKind.Cook, false))
@@ -69,6 +69,8 @@ namespace RealLifeOverhaul.Household
                 .AddButton("reallife_household_test_day", () => HouseholdDirector.Instance?.TestDay())
                 .AddButton("reallife_household_test_show", () => HouseholdDirector.Instance?.TestShow())
                 .AddButton("reallife_household_test_mechanic", () => HouseholdDirector.Instance?.TestMechanic())
+                .AddButton("reallife_household_test_hamptons", () => HouseholdDirector.Instance?.TestHamptons())
+                .AddButton("reallife_household_test_homes", () => HouseholdDirector.Instance?.TestHomes())
                 .AddButton("reallife_household_test_back", () => HouseholdDirector.Instance?.TestBack())
                 .AddSplitter();
         }

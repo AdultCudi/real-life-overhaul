@@ -568,7 +568,7 @@ internal static partial class Program
         var starts = new Dictionary<string, string>(StringComparer.Ordinal)
         {
             { "en", "Uptown's landmarks:" }, { "pt", "Marcos de Uptown:" }, { "zh-cn", "上城地标：" }, { "de", "Uptowns Wahrzeichen:" }, { "fr", "Les monuments d'Uptown :" },
-            { "es", "Los monumentos de Uptown:" }, { "ru", "Достопримечательности Аптауна:" }, { "nl", "De bezienswaardigheden van Uptown:" }, { "tr", "Uptown'ın simgeleri:" }
+            { "es", "Los monumentos de Uptown:" }, { "ru", "Достопримечательности Uptown:" }, { "nl", "De bezienswaardigheden van Uptown:" }, { "tr", "Uptown'ın simgeleri:" }
         };
         for (int l = 0; l < words.Length; l++)
         {

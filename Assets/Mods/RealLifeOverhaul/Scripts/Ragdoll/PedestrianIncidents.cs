@@ -22,9 +22,9 @@ namespace RealLifeOverhaul
 
         private const float CheckInterval = 20f;         // seconds between rolls for a staged incident
         private const float TickInterval = 0.25f;        // seconds
-        private const float KnockSpeed = 15f / 3.6f;     // m/s: below this nobody is hurt
-        private const float InjurySpeed = 35f / 3.6f;    // ...below this nobody dies
-        private const float DeadlySpeed = 60f / 3.6f;    // ...above this most do
+        internal const float KnockSpeed = 15f / 3.6f;     // m/s: below this nobody is hurt
+        internal const float InjurySpeed = 35f / 3.6f;    // ...below this nobody dies
+        internal const float DeadlySpeed = 60f / 3.6f;    // ...above this most do
         internal const float KnockedBelow = KnockSpeed * 0.9f;   // m/s: the most a two-wheeler's strike counts for
         private const float StagedShare = 0.4f;          // staged incidents per staged car accident
         private const float StagedDeathChance = 0.35f;   // of a staged incident

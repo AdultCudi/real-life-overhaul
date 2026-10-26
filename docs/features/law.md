@@ -131,7 +131,7 @@ The record (a second page: both reputations, then a note for each line, newest f
 Collect a car from the pound (see custody; 250, brought to the kerb when the player steps outside).
 
 Apply for a licence (only if `Law.Bridges.Licensing` is set).
-A police report after a break-in or a car break-in in the last seven days (15; reference `PR-<precinct>-<day>-<number>`; handed to `Law.Bridges.PoliceReport` if set); hand yourself in (see below); visiting hours.
+A police report after a break-in or a car break-in in the last seven days (15; reference `PR-<precinct>-<day>-<number>`; handed to `Law.Bridges.PoliceReport`, which `Wiring.ReportLinks` answers: the insurers take it); hand yourself in (see below); visiting hours.
 
 ```csharp
 Law.Bridges.Licensing = () => ...;                    // the desk then offers "Apply for a licence or permit"

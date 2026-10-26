@@ -16,6 +16,7 @@ namespace RealLifeOverhaul.Household
         public string Text;      // {text}: a line built elsewhere
         public string From;      // {from}: an hour of the day
         public string To;        // {to}
+        public string Where;     // {where}: a home's address, already formatted
 
         public static StaffFill For(string name) => new StaffFill { Name = name };
 
@@ -23,6 +24,7 @@ namespace RealLifeOverhaul.Household
         public StaffFill Count(int n) { N = n.ToString(); return this; }
         public StaffFill With(string text) { Text = text; return this; }
         public StaffFill Hours(StaffRole role) { From = HouseholdText.Hour(role.From); To = HouseholdText.Hour(role.From + role.Hours); return this; }
+        public StaffFill At(string where) { Where = where; return this; }
     }
 
     /// <summary>Text for household staff: a key and its fill as a notice, a text message or a page of the call; never built on a timer.</summary>
@@ -41,6 +43,8 @@ namespace RealLifeOverhaul.Household
         public const string Quit = "reallife_household_note_quit";
         public const string Moved = "reallife_household_moved";
         public const string NoHome = "reallife_household_no_home_left";
+        public const string MovedOne = "reallife_household_moved_one";
+        public const string LeftNoRoom = "reallife_household_left_no_room";
 
         // Written out in full for the locale check.
         public static readonly string[] Keys =
@@ -62,7 +66,13 @@ namespace RealLifeOverhaul.Household
             "reallife_household_test_not_home", "reallife_household_test_no_cars", "reallife_household_test_not_shown",
             "reallife_transaction_household_cleaner", "reallife_transaction_household_cook", "reallife_transaction_household_butler",
             "reallife_transaction_household_mechanic", "reallife_opt_sec_household", "reallife_opt_tip_home_household",
-            Title, Header, Enabled, About, Guide, ContactDesc, Welcome, Note, Arrived, Unpaid, Quit, Moved, NoHome
+            "reallife_household_no_homes_most", "reallife_household_do_staff", "reallife_household_page_home", "reallife_household_page_pick_home",
+            "reallife_household_page_home_nobody", "reallife_household_page_home_staff", "reallife_household_do_this_home", "reallife_household_do_other_home",
+            "reallife_household_page_all_hired_here", "reallife_household_hired_at", "reallife_household_member_at", "reallife_household_do_manage",
+            "reallife_household_page_manage", "reallife_household_page_manage_stay", "reallife_household_do_move", "reallife_household_page_move",
+            "reallife_household_do_move_here", "reallife_household_moved_done", "reallife_household_test_hamptons", "reallife_household_test_homes",
+            "reallife_household_test_not_hamptons", "reallife_household_test_hamptons_done", "reallife_household_test_two_homes", "reallife_household_test_homes_done",
+            Title, Header, Enabled, About, Guide, ContactDesc, Welcome, Note, Arrived, Unpaid, Quit, Moved, NoHome, MovedOne, LeftNoRoom
         };
 
         /// <summary>Notices, each at most 240 characters in English (the text check measures them).</summary>
@@ -70,7 +80,8 @@ namespace RealLifeOverhaul.Household
         {
             Arrived, Unpaid, Quit, Moved, NoHome, "reallife_household_test_hired", "reallife_household_test_day_done", "reallife_household_test_shown",
             "reallife_household_test_mechanic_done", "reallife_household_test_back_done", "reallife_household_test_nobody", "reallife_household_test_not_home",
-            "reallife_household_test_no_cars", "reallife_household_test_not_shown"
+            "reallife_household_test_no_cars", "reallife_household_test_not_shown", MovedOne, LeftNoRoom, "reallife_household_test_not_hamptons",
+            "reallife_household_test_hamptons_done", "reallife_household_test_two_homes", "reallife_household_test_homes_done"
         };
 
         public static string Money(int amount) => ((float)amount).ToCurrencyFormat();
@@ -87,7 +98,8 @@ namespace RealLifeOverhaul.Household
                 return text;
             }
             return text.Replace("{name}", f.Name ?? string.Empty).Replace("{amount}", f.Amount ?? string.Empty).Replace("{n}", f.N ?? string.Empty)
-                .Replace("{text}", f.Text ?? string.Empty).Replace("{from}", f.From ?? string.Empty).Replace("{to}", f.To ?? string.Empty);
+                .Replace("{text}", f.Text ?? string.Empty).Replace("{from}", f.From ?? string.Empty).Replace("{to}", f.To ?? string.Empty)
+                .Replace("{where}", f.Where ?? string.Empty);
         }
 
         public static LanguageChangeEventDataHolder Say(string key, in StaffFill f)
@@ -99,17 +111,18 @@ namespace RealLifeOverhaul.Household
                 n = f.N ?? string.Empty,
                 text = f.Text ?? string.Empty,
                 from = f.From ?? string.Empty,
-                to = f.To ?? string.Empty
+                to = f.To ?? string.Empty,
+                where = f.Where ?? string.Empty
             });
         }
 
         // A new dictionary each time: the game keeps hold of it for as long as the notice or the message is listed.
         private static Dictionary<string, string> Data(in StaffFill f)
         {
-            return new Dictionary<string, string>(6)
+            return new Dictionary<string, string>(7)
             {
                 { "name", f.Name ?? string.Empty }, { "amount", f.Amount ?? string.Empty }, { "n", f.N ?? string.Empty },
-                { "text", f.Text ?? string.Empty }, { "from", f.From ?? string.Empty }, { "to", f.To ?? string.Empty }
+                { "text", f.Text ?? string.Empty }, { "from", f.From ?? string.Empty }, { "to", f.To ?? string.Empty }, { "where", f.Where ?? string.Empty }
             };
         }
 

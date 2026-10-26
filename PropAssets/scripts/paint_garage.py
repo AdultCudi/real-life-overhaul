@@ -1,11 +1,7 @@
 """The finishes and painted faces of the garage props (props_garage.py): bicycles, motorbikes, helmets, wheel faces,
 car parts and the bike-share dock. See atlas.py, "the later rounds".
-
-Lettering that has to be read from across a street (the kiosk's header) is 0.12 m high on the prop and 48 px here.
 """
 import math
-
-import numpy as np
 
 
 def register(a):
@@ -27,25 +23,6 @@ def register(a):
         layer.text("RL0", (12, 8, 100, 38), BLACK, weight=0.07, spacing=0.06)
         layer.text("47K", (12, 42, 100, 72), BLACK, weight=0.07, spacing=0.06)
         return layer.finish(grime=0.25, grain=0.03, blotch=0.05)
-
-    def fairing():
-        """The sport bike seen from its side, nose to the LEFT: 1.20 m by 0.75 m. Red over white with a black
-        swoosh between, the vents and the fasteners. No lettering: the other side shows it mirrored."""
-        red, white = swatches["garage_red"][0], swatches["garage_white"][0]
-        w, h = 384, 240
-        layer = a.Layer(w, h, red, swatches["garage_red"][1], 0.86)
-        lower = [(0, 150), (70, 132), (170, 128), (260, 150), (384, 196), (384, 240), (0, 240)]
-        layer.poly(lower, white, metal=0.1, smooth=0.86)
-        band = [(0, 141), (70, 123), (170, 119), (262, 141), (384, 186), (384, 198), (260, 153), (170, 131), (70, 135), (0, 153)]
-        layer.poly(band, (0.03, 0.03, 0.035), metal=0.0, smooth=0.8)
-        layer.poly([(40, 98), (150, 86), (228, 104), (150, 100), (40, 112)], white, metal=0.1, smooth=0.86)      # a flash on the upper cowl
-        for k in range(4):                                                         # the vent behind the front wheel
-            x = 150 + k * 17
-            layer.poly([(x, 160), (x + 9, 160), (x + 21, 206), (x + 12, 206)], (0.02, 0.02, 0.025), metal=0.0, smooth=0.3)
-        for x, y in ((112, 146), (236, 160), (300, 190), (122, 222), (250, 226)):  # fasteners
-            layer.disc(x, y, 2.6, (0.55, 0.56, 0.58), metal=1.0, smooth=0.7)
-            layer.disc(x, y, 1.0, (0.15, 0.15, 0.16))
-        return layer.finish(grime=0.22, grain=0.02, blotch=0.04)
 
     def pictogram(layer, cx, cy, size, colour, width=None):
         """A bicycle seen from its side, `size` wide."""
@@ -76,13 +53,6 @@ def register(a):
             layer.line([(16, y), (96 - 22 * k, y)], WHITE, width=2.0)
         return layer.finish(grime=0.2, grain=0.03, blotch=0.04, scratches=6)
 
-    def kiosk_header():
-        green = swatches["garage_bay"][0]
-        layer = a.Layer(192, 64, green, 0.0, 0.5)
-        layer.rect(0, 58, 192, 64, WHITE)
-        layer.text("BIKES", (10, 6, 182, 54), WHITE, weight=0.075, spacing=0.07)          # 48 px: 0.12 m on the 0.48 m panel
-        return layer.finish(grime=0.1, grain=0.03, blotch=0.04)
-
     def kiosk_screen():
         dark, glow = (0.03, 0.05, 0.07), (0.55, 0.85, 0.80)
         layer = a.Layer(176, 144, (0.05, 0.05, 0.06), 0.0, 0.9)
@@ -99,37 +69,9 @@ def register(a):
         layer.text("RETURN", (98, 113, 154, 125), (0.80, 0.82, 0.84), weight=0.05)
         return layer.finish(grain=0.015, blotch=0.03)
 
-    def kiosk_map():
-        rng = np.random.default_rng(417)
-        land, road, water, park = (0.90, 0.88, 0.80), (0.99, 0.98, 0.95), (0.56, 0.74, 0.86), (0.66, 0.80, 0.56)
-        layer = a.Layer(176, 240, (0.95, 0.95, 0.93), 0.0, 0.5)
-        layer.rect(8, 30, 168, 196, land)
-        layer.poly([(8, 150), (60, 138), (110, 160), (168, 150), (168, 196), (8, 196)], water)
-        layer.rect(96, 48, 150, 96, park, radius=6)
-        for x in (30, 58, 88, 122, 152):
-            layer.line([(x, 30), (x + rng.uniform(-6, 6), 150)], road, width=3.0)
-        for y in (52, 78, 104, 128):
-            layer.line([(8, y), (168, y + rng.uniform(-5, 5))], road, width=3.0)
-        layer.line([(8, 118), (70, 96), (168, 40)], (0.98, 0.84, 0.36), width=4.0)
-        green = swatches["garage_bay"][0]
-        for x, y in ((30, 52), (88, 78), (122, 128), (58, 104), (152, 52), (140, 104), (30, 128)):      # the docks
-            layer.disc(x, y, 5.5, WHITE)
-            layer.disc(x, y, 4.0, green)
-        layer.disc(88, 104, 7.5, (0.82, 0.10, 0.08))                                # you are here
-        layer.disc(88, 104, 3.0, WHITE)
-        layer.rect(8, 6, 168, 26, green)
-        layer.text("FIND A DOCK", (16, 9, 160, 23), WHITE, weight=0.06, spacing=0.04)
-        for k, y in enumerate(range(204, 234, 7)):
-            layer.disc(13, y, 2.2, green)
-            layer.line([(20, y), (150 - (k * 23) % 50, y)], (0.35, 0.36, 0.38), width=1.5)
-        return layer.finish(grime=0.12, grain=0.03, blotch=0.04, edge=0.1)
-
     decals = {
         "garage_plate": plate,
-        "garage_fairing": fairing,
         "garage_dock_panel": dock_panel,
-        "garage_kiosk_header": kiosk_header,
         "garage_kiosk_screen": kiosk_screen,
-        "garage_kiosk_map": kiosk_map,
     }
     return swatches, decals

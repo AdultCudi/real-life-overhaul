@@ -387,7 +387,7 @@ namespace RealLifeOverhaul
             }
             int byDensity = Settings.CityDensity <= 3 ? 1 : Settings.CityDensity <= 7 ? 2 : MaxSites;
             bool quiet = hour < 7 || hour >= 22;
-            return quiet ? Mathf.Min(1, byDensity) : byDensity;
+            return StreetLifeRules.Sites(quiet ? Mathf.Min(1, byDensity) : byDensity, Events.Weather.StreetLifeFactor);   // fewer out in rain, ice, snow and heat
         }
 
         private bool Ready()

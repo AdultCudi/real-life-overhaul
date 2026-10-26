@@ -26,8 +26,8 @@ namespace RealLifeOverhaul
         private static readonly FeatureGuard FrameGuard = Guard.For("diagnostics", "SessionWatch", typeof(SessionWatch));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
 
         private const float Every = 60f;           // seconds between two lines
-        private const float LongFrame = 0.080f;    // seconds: a frame this long gets a line of its own
-        private const int LongFramesPerMinute = 12;   // lines for long frames in one minute; the rest are only counted
+        internal const float LongFrame = 0.080f;    // seconds: a frame this long gets a line of its own
+        internal const int LongFramesPerMinute = 12;   // lines for long frames in one minute; the rest are only counted
         private const int MarkLastsFrames = 3;     // a piece of work named this many frames back still explains a long frame (loading finishes a frame or two later)
         private const float CutWindow = 1f;        // seconds before a long frame in which a changed navigation obstacle is counted (the engine cuts about half a second after the change)
         private const float NewsLasts = 5f;        // seconds a walk into or out of a building, or a scene coming or going, is still mentioned in a long frame's line
@@ -251,6 +251,7 @@ namespace RealLifeOverhaul
 
         private void OnDisable()
         {
+            LetGoOfDay();
             HotSpots.On = false;
             FrameSteps.Want(false);
             if (_collector.Valid)
@@ -332,6 +333,7 @@ namespace RealLifeOverhaul
             HotSpots.Settle(Time.frameCount);   // the mod's own scripts' figures for the frame before this one are complete
             // The time the frame before this one took, loading screens and pauses left out: they are not stutter.
             float took = Time.unscaledDeltaTime;
+            Midnight(took);
             int collections = GC.CollectionCount(0);
             int collectionsBefore = _collectionsLastFrame;
             _collectionsLastFrame = collections;

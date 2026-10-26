@@ -9,7 +9,7 @@ using System.Text.RegularExpressions;
 // bundle is the one its committed list (PropAssets/contents/<bundle>.json) describes, held to it by SHA-256, and keeps
 // its set's limits; a prop id is in one bundle only; the mod reads every bundle and nothing else reads them; every file
 // that ships or lists the mod's files carries every bundle; every prop the code asks for by name is in a bundle; and a
-// prop taken out of a bundle is named by no code again.
+// prop taken out of a bundle is named by no code again, unless it is modelled anew in another.
 internal static partial class Program
 {
     private const string Rule = "RLO-PERF-016";
@@ -47,7 +47,7 @@ internal static partial class Program
         SetRows(sets);
 
         var heldBy = new Dictionary<string, string>(StringComparer.Ordinal);
-        var removed = new HashSet<string>(StringComparer.Ordinal);
+        var removed = new Dictionary<string, string>(StringComparer.Ordinal);   // id -> the bundle it was taken out of
         var bundles = new List<string>();
         foreach (JsonElement set in sets)
         {
@@ -57,7 +57,7 @@ internal static partial class Program
             {
                 foreach (JsonElement r in gone.EnumerateArray())
                 {
-                    removed.Add(r.GetString());
+                    removed[r.GetString()] = bundle;
                 }
             }
             Bundle(set, bundle, heldBy);
@@ -259,7 +259,7 @@ internal static partial class Program
 
     // Every prop the code asks for by a whole name is in a bundle (a name ending in _ is the start of names built from
     // parts, and some prop must start so), and no code names a prop taken out of the bundles.
-    private static void Asked(Dictionary<string, string> heldBy, HashSet<string> removed)
+    private static void Asked(Dictionary<string, string> heldBy, Dictionary<string, string> removed)
     {
         var sources = new List<(string Rel, string Text, Regex Pattern)>();
         foreach (SourceFile f in Scripts)
@@ -281,29 +281,26 @@ internal static partial class Program
                 string id = m.Groups[1].Value;
                 string subject = "prop " + id;
                 Examine(Rule, subject);
-                if (removed.Contains(id))
+                if (id.EndsWith("_", StringComparison.Ordinal) ? StartsAny(heldBy, id) : heldBy.ContainsKey(id))
                 {
-                    Hit(Rule, subject, 0, rel + " asks for it, and it was taken out of the bundles (sets.json, removed): model it in the open set");
+                    continue;
                 }
-                else if (id.EndsWith("_", StringComparison.Ordinal) ? !StartsAny(heldBy, id) : !heldBy.ContainsKey(id))
-                {
-                    Hit(Rule, subject, 0, rel + " asks for it, and no bundle holds it (PropAssets/contents)");
-                }
+                Hit(Rule, subject, 0, rel + " asks for it, and no bundle holds it" + (removed.ContainsKey(id) ? ": it was taken out (sets.json, removed); model it anew in the open set" : " (PropAssets/contents)"));
             }
-            foreach (string id in removed)
+            foreach (string id in removed.Keys)
             {
-                if (Regex.IsMatch(text, "\"" + Regex.Escape(id) + "\""))
+                if (!heldBy.ContainsKey(id) && Regex.IsMatch(text, "\"" + Regex.Escape(id) + "\""))
                 {
                     Hit(Rule, "prop " + id, 0, rel + " names it, and it was taken out of the bundles (sets.json, removed)");
                 }
             }
         }
-        foreach (string id in removed)
+        foreach (KeyValuePair<string, string> gone in removed)
         {
-            Examine(Rule, "prop " + id);
-            if (heldBy.TryGetValue(id, out string bundle))
+            Examine(Rule, "prop " + gone.Key);
+            if (heldBy.TryGetValue(gone.Key, out string bundle) && bundle == gone.Value)
             {
-                Hit(Rule, "prop " + id, 0, "is listed as removed and " + bundle + " still holds it");
+                Hit(Rule, "prop " + gone.Key, 0, "is listed as taken out of " + bundle + ", which still holds it");
             }
         }
     }

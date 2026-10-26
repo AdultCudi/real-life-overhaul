@@ -303,11 +303,12 @@ namespace RealLifeOverhaul.Texts
             TextsGame.Notice("reallife_textsai_model_kept", new Dictionary<string, string>(2) { { "service", p.Name }, { "model", address.Length > 0 ? address : p.Base } });
         }
 
-        /// <summary>Forgets the chosen service's kept key, or signs out of ChatGPT, revoked at OpenAI.</summary>
+        /// <summary>Forgets the chosen service's kept key, or with ChatGPT chosen signs out of it, revoked at OpenAI; nothing for Off and the programs on this PC.</summary>
         public static void Forget()
         {
             TextProviderInfo p = Chosen;
-            if (p.Access == TextAccess.Key)
+            TextForget what = TextProviders.Forgets(p);
+            if (what == TextForget.Key)
             {
                 Keys.Set(KeyName((int)p.Id), null);
                 _version++;
@@ -315,9 +316,9 @@ namespace RealLifeOverhaul.Texts
                 TextsGame.Notice("reallife_textsai_key_forgotten", new Dictionary<string, string>(1) { { "service", p.Name } });
                 return;
             }
-            if (!TextSignIn.SignedIn(Keys))
+            if (what == TextForget.Nothing || !TextSignIn.SignedIn(Keys))
             {
-                TextsGame.Notice("reallife_textsai_nothing_kept", null);
+                TextsGame.Notice("reallife_textsai_nothing_kept", null);   // only what the chosen service keeps is let go: Ollama, LM Studio and Off never sign the player out of ChatGPT
                 return;
             }
             TextKeys keys = Keys;

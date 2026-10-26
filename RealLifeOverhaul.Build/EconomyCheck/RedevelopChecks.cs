@@ -619,7 +619,7 @@ internal static partial class Program
         {
             { "en", "Put storeys on a building of yours in Uptown" }, { "pt", "Acrescente andares a um prédio seu em Uptown" }, { "zh-cn", "可以给你在上城的建筑加建楼层" },
             { "de", "Setz einem Gebäude von dir in Uptown Stockwerke auf" }, { "fr", "Ajoutez des étages à un de vos bâtiments d'Uptown" }, { "es", "Añade plantas a un edificio tuyo en Uptown" },
-            { "ru", "Надстраивайте этажи на своём здании в Аптауне" }, { "nl", "Zet verdiepingen op een gebouw van je in Uptown" }, { "tr", "Uptown'daki bir binanıza imar kurallarının sınırına kadar kat çıkın" }
+            { "ru", "Надстраивайте этажи на своём здании в Uptown" }, { "nl", "Zet verdiepingen op een gebouw van je in Uptown" }, { "tr", "Uptown'daki bir binanıza imar kurallarının sınırına kadar kat çıkın" }
         };
         for (int l = 0; l < words.Length; l++)
         {
@@ -638,7 +638,7 @@ internal static partial class Program
         var down = new Dictionary<string, string>(StringComparer.Ordinal)
         {
             { "en", "Knock down a building of yours in Uptown" }, { "pt", "Demola um prédio seu em Uptown" }, { "zh-cn", "可以拆除你在上城的建筑" }, { "de", "Reiß ein Gebäude ab, das dir in Uptown gehört" },
-            { "fr", "Démolissez un bâtiment qui vous appartient à Uptown" }, { "es", "Derriba un edificio tuyo en Uptown" }, { "ru", "Снесите своё здание в Аптауне" },
+            { "fr", "Démolissez un bâtiment qui vous appartient à Uptown" }, { "es", "Derriba un edificio tuyo en Uptown" }, { "ru", "Снесите своё здание в Uptown" },
             { "nl", "Sloop een gebouw van je in Uptown" }, { "tr", "Uptown'daki size ait bir binayı yıkın" }
         };
         for (int l = 0; l < words.Length; l++)

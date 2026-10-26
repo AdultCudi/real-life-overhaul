@@ -348,13 +348,23 @@ namespace RealLifeOverhaul.Meta
             report.Add("- " + "reallife_meta_report_data".GetLocalization().Replace("{count}", removed.DataKeys.Count.ToString(CultureInfo.InvariantCulture))
                        + DataNames(removed.DataKeys));
             report.Add("- " + "reallife_meta_report_notifications".GetLocalization().Replace("{count}", removed.Notifications.ToString(CultureInfo.InvariantCulture)));
-            if (removed.BusinessTypes > 0)
-            {
-                report.Add("- " + "reallife_meta_report_business_types".GetLocalization().Replace("{count}", removed.BusinessTypes.ToString(CultureInfo.InvariantCulture)));
-            }
+            // Each says what it became: the five are not the same kind of business.
+            AppendType(report, "reallife_meta_report_business_types", removed.TechTypes);
+            AppendType(report, "reallife_meta_report_types_academies", removed.Academies);
+            AppendType(report, "reallife_meta_report_types_branches", removed.Branches);
+            AppendType(report, "reallife_meta_report_types_construction", removed.Builders);
+            AppendType(report, "reallife_meta_report_types_shops", removed.ShopKinds);
             if (removed.Transactions > 0)
             {
                 report.Add("- " + "reallife_meta_report_transactions".GetLocalization().Replace("{count}", removed.Transactions.ToString(CultureInfo.InvariantCulture)));
+            }
+        }
+
+        private static void AppendType(List<string> report, string key, int count)
+        {
+            if (count > 0)
+            {
+                report.Add("- " + key.GetLocalization().Replace("{count}", count.ToString(CultureInfo.InvariantCulture)));
             }
         }
 

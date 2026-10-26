@@ -7,6 +7,9 @@ namespace RealLifeOverhaul.Utilities
     /// <summary>The utilities' internet part: the providers' month, outages, businesses that need a connection, the grace, and plans bought, changed, cancelled or reconnected.</summary>
     public sealed partial class UtilitiesDirector
     {
+        private readonly List<BuildingRegistration> _shopRegs = new List<BuildingRegistration>(12);
+        private readonly List<string> _shopPlaces = new List<string>(12);
+
         // The providers' month: each rival's price walks (InternetRules.NextPromo), held down where the player's company has
         // taken customers (BroadbandRules.AnswerCap); a plan out of contract is priced again; the market moves.
         private void NewMonth(int day, int level)
@@ -87,6 +90,7 @@ namespace RealLifeOverhaul.Utilities
                     }
                 }
             }
+            graced += ShopsGraced(today);
             if (graced > 0 && InternetRules.GraceLeft(_state, today) < InternetCatalogue.GraceDays)   // on its first day the notice that began it has just said so
             {
                 UtilitiesText.Toast(NotificationType.Warning, UtilitiesText.T("reallife_net_toast_grace_left", "left", InternetRules.GraceLeft(_state, today).ToString(),
@@ -132,6 +136,102 @@ namespace RealLifeOverhaul.Utilities
             {
                 Logger?.Info("Utilities: the clock went from day " + seen + " to day " + today + " without those days played; the internet's grace period now ends on day " + _state.GraceUntil + ".");
             }
+        }
+
+        // Speed counts for the online shops for the first time in this save (the switch on, the shops running): those whose
+        // building has no working connection join the internet's grace, so a shop that took orders yesterday is not stopped
+        // without warning. Told once and kept in the save; asked each hour until the shops can answer, then never again.
+        private void MeetSpeed(int today)
+        {
+            Func<List<BuildingRegistration>, bool> shops = UtilitiesBridges.Shops;
+            if (_state.SpeedMet > 0 || !Settings.UtilitiesNetSpeed || shops == null)
+            {
+                return;
+            }
+            _shopRegs.Clear();
+            if (!shops(_shopRegs))
+            {
+                return;
+            }
+            _shopPlaces.Clear();
+            for (int i = 0; i < _shopRegs.Count; i++)
+            {
+                string place = UtilitiesGame.Place(_shopRegs[i]);
+                Account a = _state.Find(place, Service.Internet);
+                if (a == null || a.State != SupplyState.Active)
+                {
+                    _shopPlaces.Add(place);
+                }
+            }
+            int added = InternetRules.AddGrace(_state, _shopPlaces, today);
+            _state.SpeedMet = Math.Max(1, today);
+            _shopRegs.Clear();
+            _shopPlaces.Clear();
+            Logger?.Info("Utilities: internet speed counts for the online shops from day " + today + "; " + added + " shop(s) with no working connection joined the grace"
+                         + (added > 0 ? " until day " + _state.GraceUntil : string.Empty) + ".");
+            if (added == 0)
+            {
+                return;
+            }
+            var data = new Dictionary<string, string>(3)
+            {
+                { "count", added.ToString() },
+                { "days", InternetCatalogue.GraceDays.ToString() },
+                { "day", UtilitiesText.Day(_state.GraceUntil - 1) }
+            };
+            UtilitiesText.Toast(NotificationType.Warning, UtilitiesText.T("reallife_net_toast_shop_grace", "count", data["count"], "days", data["days"], "day", data["day"]), 20f);
+            UtilitiesBridges.Record?.Invoke("reallife_net_toast_shop_grace", data);
+        }
+
+        // The online shops still in the grace with no working connection, besides those counted as businesses that need one to open.
+        private int ShopsGraced(int today)
+        {
+            Func<List<BuildingRegistration>, bool> shops = UtilitiesBridges.Shops;
+            if (_state.GraceUntil <= 0 || shops == null || !Settings.UtilitiesNetSpeed)
+            {
+                return 0;
+            }
+            _shopRegs.Clear();
+            if (!shops(_shopRegs))
+            {
+                return 0;
+            }
+            int count = 0;
+            for (int i = 0; i < _shopRegs.Count; i++)
+            {
+                BuildingRegistration reg = _shopRegs[i];
+                string place = UtilitiesGame.Place(reg);
+                Account a = _state.Find(place, Service.Internet);
+                count += Array.IndexOf(InternetCatalogue.Needs, reg.businessTypeName) < 0 && (a == null || a.State != SupplyState.Active) && InternetRules.InGrace(_state, place, today)
+                    ? 1 : 0;
+            }
+            _shopRegs.Clear();
+            return count;
+        }
+
+        /// <summary>
+        /// A building's internet speed for the work over it, Mbps (NetSpeedRules): the plan's while it works, 0 with none,
+        /// one being installed, one cut, or (for an hour asked, 0 or more) an outage then; NetSpeedRules.Grace for a place in
+        /// the grace with no working plan, and for an online shop before speed has counted for the shops in this save.
+        /// </summary>
+        public int Speed(BuildingRegistration reg, int hour, bool shop)
+        {
+            if (_state == null || reg == null)
+            {
+                return NetSpeedRules.Unknown;
+            }
+            string place = UtilitiesGame.Place(reg);
+            Account a = _state.Find(place, Service.Internet);
+            if (a == null || a.State != SupplyState.Active)
+            {
+                return InternetRules.InGrace(_state, place, UtilitiesGame.Today) || (shop && _state.SpeedMet == 0) ? NetSpeedRules.Grace : 0;
+            }
+            if (hour >= 0 && InternetRules.InOutage(a, hour))
+            {
+                return 0;
+            }
+            Provider p = InternetRules.Get(a.Provider);
+            return p != null && a.Plan >= 0 && a.Plan < p.Mbps.Length ? p.Mbps[a.Plan] : 0;
         }
 
         /// <summary>A business that cannot open without a connection (web design, software, the headquarters).</summary>

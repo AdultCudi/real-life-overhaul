@@ -135,6 +135,13 @@ namespace RealLifeOverhaul
         public const float LicenceLate = 1.5f;
         public const int LicenceClosedHours = 6;
 
+        /// <summary>
+        /// Whether the Company app renews the licences itself (food, alcohol, late opening, signage, each with its own fee and
+        /// fine). A trading licence to renew on top of those would charge the same thing twice, so the pressure's licence renewal
+        /// stands aside while they run.
+        /// </summary>
+        public static bool CompanyKeepsLicences(bool economy, bool company, bool licences) => economy && company && licences;
+
         // Staff
         public const float StrikeGap = 0.12f;                // average shortfall against the game's own wage formula that starts it
         public const float StrikeRaiseTo = 0.95f;            // agreeing brings each underpaid wage to this share of the formula...

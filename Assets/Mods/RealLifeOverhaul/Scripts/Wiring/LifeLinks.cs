@@ -10,8 +10,8 @@ namespace RealLifeOverhaul
         /// <summary>
         /// Everyday life: the social life, careers, the courts, travel, home life and the garage with each other. Left at
         /// their defaults because the other side has nothing to answer with (docs/reference/wiring.md): CareerLinks.Social,
-        /// TravelBridges.Transport and Leisure, Justice.Bridges.Transport, GarageBridges.PoliceNotice and RiderFalls,
-        /// Events.Weather.Wardrobe.
+        /// TravelBridges.Transport and Leisure, Justice.Bridges.Transport, GarageBridges.PoliceNotice and RiderFalls. The
+        /// cold's energy cost asks what the player wears (Events.Weather.Wardrobe) once an hour.
         /// </summary>
         public static class LifeLinks
         {
@@ -35,6 +35,7 @@ namespace RealLifeOverhaul
                 HomeBridges.Sheltered = () => TravelState.InRoom;
                 HomeBridges.SleepingAway = () => HotelStay.SleepingBed;
                 LifeAccounts.Home = HasHome;
+                Events.Weather.Wardrobe = PlayerWardrobe;
             }
 
             internal static void Disconnect()
@@ -51,6 +52,29 @@ namespace RealLifeOverhaul
                 HomeBridges.Sheltered = null;
                 HomeBridges.SleepingAway = null;
                 LifeAccounts.Home = null;
+                Events.Weather.Wardrobe = null;
+            }
+
+            private static readonly Events.IWardrobe PlayerWardrobe = new WornForWeather();
+
+            // Whether the player is dressed for the cold: a warm top of the game's own or the mod's bomber.
+            private sealed class WornForWeather : Events.IWardrobe
+            {
+                public bool WearingCoat
+                {
+                    get
+                    {
+                        try
+                        {
+                            return CharacterCatalogue.WearingWarmTop();
+                        }
+                        catch (Exception e)
+                        {
+                            Fault("LifeLinks.WearingCoat", e);
+                            return false;
+                        }
+                    }
+                }
             }
 
             private static bool HasHome()

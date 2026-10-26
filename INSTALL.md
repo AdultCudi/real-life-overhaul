@@ -65,7 +65,7 @@ The first time you load a save that has never had mods, the game offers to keep 
 
 ## If you are also subscribed on the Workshop
 
-Unsubscribe from the Workshop item (or untick it under **Mods** in the game's main menu), or uninstall the copy in `ModsLocal`. With both, the game starts the mod twice. The mod notices and the second copy does nothing, but you cannot be sure which version is the one that runs.
+Unsubscribe from the Workshop item (or untick it under **Mods** in the game's main menu), or uninstall the copy in `ModsLocal`. With both, the game loads neither: it finds two mods with the same assembly name and refuses both, and the Mods menu names the duplicate.
 
 ## Update
 
@@ -85,7 +85,7 @@ Your saves and the mod's options are not in that folder, so they are kept.
 Each release lists the SHA-256 of its setup and its zip. To check yours, in PowerShell (with the name of the file you downloaded):
 
 ```
-Get-FileHash "$env:USERPROFILE\Downloads\RealLifeOverhaul-0.53.1-setup.exe" -Algorithm SHA256
+Get-FileHash "$env:USERPROFILE\Downloads\RealLifeOverhaul-0.56.2-setup.exe" -Algorithm SHA256
 ```
 
 The value must match the one on the release page. Only download the mod from the Workshop page or this repository's Releases.

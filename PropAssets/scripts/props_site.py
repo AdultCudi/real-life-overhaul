@@ -22,9 +22,6 @@ Kit numbers that other things rely on (checks_site.py measures them):
     scaffold_bay_upper   the same plan; deck z 1.97 to 2.00; guard rails 1.00 and 0.50 m up, toe board to 0.15 m
     campaign_poster_n    the printed side is +Y; the mount reaches 0.010 m behind the pivot (the code hangs the pivot 0.012 m
                          off the wall, which would otherwise show as a gap)
-
-Also here, not asked for by the code (made for an earlier wish-list; kept because they are done): tower_crane,
-campaign_lawn_sign, gavel, gavel_block.
 """
 import math
 
@@ -259,18 +256,6 @@ def polling_sign():
         f.poly([(-0.012, -0.215), (0.075, -0.190), (0.047, -0.095), (-0.040, -0.120)], 0.0132, "paper")    # the ballot
         f.poly([(-0.004, -0.150), (0.010, -0.168), (0.046, -0.128), (0.038, -0.122), (0.011, -0.152), (0.002, -0.142)], 0.0146, "paint_blue")   # a tick on it
         f.panel(-0.28, -0.445, 0.28, -0.405, 0.0125, "paint_blue")
-    return p
-
-
-def campaign_lawn_sign():
-    p = Prop("campaign_lawn_sign", "lit",
-             note="yard sign, not asked for by code: the poster of party 1 (0.60 x 0.85 m) on both faces of a board 0.02 thick from z 0.22 to 1.07, on a wire stake")
-    p.add(box(0.60, 0.020, 0.85), flat(party(1)), at=(0, 0, 0.645))
-    for turn in (0, 180):
-        poster_art(Face(p, at=(0, 0, 0.645), rot=(0, 0, turn)), 1, 0.010)
-    for side in (-1, 1):
-        rod(p, (side * 0.20, 0, 0.0), (side * 0.20, 0, 0.225), 0.004, "steel_dark", 4)
-    rod(p, (-0.20, 0, 0.10), (0.20, 0, 0.10), 0.004, "steel_dark", 4)
     return p
 
 
@@ -785,16 +770,7 @@ def litter_pile():
     return p
 
 
-# ---------------------------------------------------------------------------------------------- not asked for by code
-
-def tower_crane():
-    p = Prop("tower_crane", "lit",
-             note="not asked for by code (Civic's README: no empty lot to build on). Static tower crane: lattice mast 2 x 2 m to the slewing ring 40 m up, cab at "
-                  "+X, 30 m jib along +Y at 41.6 to 42.9 m, 10 m counter-jib along -Y with its weights, tower top to 47.5 m, trolley 18 m out, hook block 26 m up")
-    crane_mast(p)
-    crane_slew(p)
-    return p
-
+# ---------------------------------------------------------------- the tower crane's parts (the building sites' bundle)
 
 def crane_mast(p):
     """The tower crane's base and lattice mast to the slewing ring 40 m up (also the second bundle's tower_crane_mast)."""
@@ -913,7 +889,6 @@ PROPS = [
     (site_hoarding, 240), (site_hoarding_notice, 300), (site_notice_board, 500), (skip_bin, 760),
     (road_sign_works, 500), (trench_cover, 260), (spoil_heap, 220), (road_marking, 40), (asphalt_patch, 24), (works_tent, 540), (manhole_open, 360), (manhole_lid, 130),
     (office_desk, 1000), (evidence_door, 660),
-    (tower_crane, 1500), (campaign_lawn_sign, 330), (gavel, 330), (gavel_block, 140),
 ]
 
 SIDES = {
@@ -931,5 +906,4 @@ SIDES = {
     "works_tent": {"people": (((0.0, 1.35), 180),)},
     "office_desk": {"references": (((2.4, 0.1, 2.4), (0, -0.40, 1.2)),), "people": (((-0.3, 0.75), 180),)},
     "evidence_door": {"references": (((2.4, 0.1, 2.4), (0, -0.05, 1.2)),), "people": (((0.95, 0.5), 180),)},
-    "tower_crane": {"references": (((3.0, 3.0, 3.0), (6.0, 0.0, 1.5)),), "people": (((9.0, 0.0), 0),)},
 }

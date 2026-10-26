@@ -114,7 +114,7 @@ namespace RealLifeOverhaul
 
         public override bool OwnsInteractKey => Ctx.Stand.Standing;
 
-        public override bool QuitIsFailure => _came > 0 && _served * 2 < _came;
+        public override bool QuitIsFailure => _served * 2 < Mathf.Max(1, _came);
 
         private int LeftToServe => Mathf.Max(0, _customers - _served - _lost);
 
@@ -170,9 +170,7 @@ namespace RealLifeOverhaul
             if (card != null)
             {
                 card.Title(Ctx.Shift != null ? JobText.T(Ctx.Shift.Rank.TitleKey) : _title);
-                card.Line(0, Ctx.Shift != null
-                    ? JobText.T("reallife_job_card_employer", "employer", JobText.T(Ctx.Shift.Employer.NameKey), "time", CareerClock.Span(CareerState.RotaHour))
-                    : JobText.T("reallife_job_card_gig"), WorldPanel.White());
+                card.Line(0, ShiftFigures.FirstLine(Ctx), WorldPanel.White());
             }
             Card(now);
             if (Meta.Dev.Verbose)

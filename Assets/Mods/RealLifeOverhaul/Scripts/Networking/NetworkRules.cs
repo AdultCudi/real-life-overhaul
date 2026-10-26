@@ -57,6 +57,15 @@ namespace RealLifeOverhaul.Networking
             return origin == OriginWork ? ChanceWork : origin == OriginEvent ? ChanceEvening : ChanceStreet;
         }
 
+        /// <summary>
+        /// The seed a person is rolled with: the save's, mixed with the person's own, so that a person who takes a lost slot of the
+        /// cast does not draw what the one before them did. The save's alone when the person's is not known.
+        /// </summary>
+        public static int SeedOf(int castSeed, int personSeed)
+        {
+            return personSeed == 0 ? castSeed : unchecked(castSeed ^ (personSeed * 16777619));
+        }
+
         /// <summary>The position of person <paramref name="person"/> of the cast, met this way; None for most.</summary>
         public static NetRole RoleOf(int castSeed, int person, int origin, NetVia via)
         {

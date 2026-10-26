@@ -71,6 +71,10 @@ namespace RealLifeOverhaul
 
         /// <summary>RLO Texts: the player lost touch with the person in this slot; what they remembered of the player goes with them.</summary>
         public static Action<int> TextsForget;
+
+        /// <summary>The networking life: the player lost touch with the person in this slot; the position they held goes with them.</summary>
+        public static Action<int> NetworkForget;
+
         /// <summary>The networking life: somebody has just been met, and who brought them along (null for nobody).</summary>
         public static Action<SocialPerson, SocialPerson> Met;
 

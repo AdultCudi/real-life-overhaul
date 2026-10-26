@@ -10,6 +10,23 @@ namespace RealLifeOverhaul.Meals
         public bool Free;       // nobody sits there and the game lets the player sit
     }
 
+    /// <summary>Where the food is put in front of a seated player: the order <see cref="MealsRules.Serve"/> tries them in.</summary>
+    public enum Plate
+    {
+        Tray,    // the table's own tray, as the place gives its customers
+        Table,   // a plate on the table top in front of the seat
+        Lap,     // a plate in the lap: a bench, a sofa or a chair with no table
+        Hand     // nothing to put down: eaten from the hand
+    }
+
+    /// <summary>What Eat at a seat would eat (<see cref="MealsRules.Choose"/>).</summary>
+    public enum TakeoutFood
+    {
+        None,
+        Bag,      // a meal of the game's in the bag in the player's hand
+        Packed    // a home portion packed to take
+    }
+
     /// <summary>
     /// The rules of eating seated, the home-cooked plate and dancing to the music, game-free: which seat a meal is taken to,
     /// whether the walk keeps to the same room, how long the meal is watched, and how often dancing lifts the mood. The
@@ -31,6 +48,8 @@ namespace RealLifeOverhaul.Meals
         public const float TableLow = 0.55f;        // m above the seat's floor: the lowest table top a plate is put on
         public const float TableHigh = 1.05f;       // m: the highest
         public const float PlateAhead = 0.40f;      // m in front of the seat's middle: where the plate goes on a table top
+        public const float LapAhead = 0.30f;        // m in front of the seat's place: a plate on the thighs of somebody seated
+        public const float LapUp = 0.62f;           // m above the seat's floor: the top of the thighs on a seat of ordinary height
 
         public const int DanceAtLeast = 15;         // game minutes danced to the music before the mood lifts
         public const int DanceGapHours = 8;         // game hours before dancing can lift the mood again (as long as the lift lasts)
@@ -131,6 +150,43 @@ namespace RealLifeOverhaul.Meals
         public static bool TableTop(float height)
         {
             return height >= TableLow && height <= TableHigh;
+        }
+
+        /// <summary>
+        /// Where the food goes at a seat: the table's own tray before anything (never for a dish of the player's own, which
+        /// comes on a plate), then a plate on a table top, then a plate in the lap, else the hand.
+        /// </summary>
+        public static Plate Serve(bool tray, bool ownDish, bool tableTop, bool lap)
+        {
+            if (tray && !ownDish)
+            {
+                return Plate.Tray;
+            }
+            return tableTop ? Plate.Table : lap ? Plate.Lap : Plate.Hand;
+        }
+
+        /// <summary>
+        /// True when something in the player's bag can be eaten at a seat: bought (paid), opened, something the game lets
+        /// the player eat or drink, and a meal worth sitting down to; the game's own inventory asks the same of its Eat.
+        /// </summary>
+        public static bool Eatable(bool paid, bool sealedUp, bool consumable, float saturation)
+        {
+            return paid && !sealedUp && consumable && Wanted(saturation);
+        }
+
+        /// <summary>What Eat at a seat eats: the meal in the bag in hand first (it is what the player holds), then a packed home portion.</summary>
+        public static TakeoutFood Choose(bool bagMeal, int packed)
+        {
+            return bagMeal ? TakeoutFood.Bag : packed > 0 ? TakeoutFood.Packed : TakeoutFood.None;
+        }
+
+        /// <summary>
+        /// True when the game's rest panel shows Eat: the option on, the player seated by the game's own rest (a chair, a
+        /// bench), no meal already on, and something to eat.
+        /// </summary>
+        public static bool Offered(bool option, bool seatedResting, bool mealOn, TakeoutFood food)
+        {
+            return option && seatedResting && !mealOn && food != TakeoutFood.None;
         }
 
         /// <summary>

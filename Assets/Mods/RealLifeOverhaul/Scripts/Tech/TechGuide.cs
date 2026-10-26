@@ -41,6 +41,8 @@ namespace RealLifeOverhaul.Tech
                 .Fact("talent_course_days", () => Whole(TalentCatalogue.CourseDays))
                 .Fact("talent_course_gain", () => Whole(TalentCatalogue.CourseGain))
                 .Fact("talent_exam_pass", () => Whole(TalentCatalogue.ExamPassBase) + "%")
+                .Fact("talent_rise_days", () => Whole(WageRules.PeriodDays))
+                .Fact("talent_wage_cap", () => (WageRules.CapBp / 10000f).ToString("0.#", Inv))
                 .Fact("talent_certs", Certs);
         }
 
@@ -230,6 +232,11 @@ namespace RealLifeOverhaul.Tech
                 .Fact("hire_search_least", () => Whole(HiringCatalogue.SearchDaysLeast))
                 .Fact("hire_search_most", () => Whole(HiringCatalogue.SearchDaysMost))
                 .Fact("hire_search_level", () => TechText.Level(HiringCatalogue.SearchLeastLevel))
+                .Fact("crew_fee_least", () => Bp(HiringCatalogue.CrewFeeBp[0]))
+                .Fact("crew_fee_most", () => Bp(HiringCatalogue.CrewFeeBp[HiringCatalogue.CrewFeeBp.Length - 1]))
+                .Fact("crew_days_least", () => Whole(HiringCatalogue.CrewDaysLeast))
+                .Fact("crew_days_most", () => Whole(HiringCatalogue.CrewDaysMost))
+                .Fact("crew_most", () => Whole(HiringCatalogue.CrewMost))
                 .Fact("hire_rivals", () => Whole(HiringCatalogue.RivalAdsByCycle[1]));
         }
 

@@ -196,8 +196,10 @@ namespace RealLifeOverhaul.Markets
         public const double ImpactPermanent = 0.25;      // the part of it that stays in the price
         public const double ImpactMemorySteps = 12.0;    // steps: recent trading in a company counts towards the next order
         public const int OrderShareOfVolumePct = 20;     // one order: at most this share of a day's usual volume
-        public const int HoldingShareBp = 1000;          // at most 10% of a company's shares
+        public const int HoldingShareBp = 1000;          // at most 10% of a company's shares: the option's default, and always so in a player's listed company
+        public static readonly int[] HoldingCapBp = { HoldingShareBp, 2500, 5000, 10000 };   // the option's choices (Settings.MarketsHolding): a tenth, a quarter, half, all
         public const int HoldingFounderBp = 7500;        // a rival tycoon's own stake in their holding; the rest is free float
+        public const int HoldingFloatBp = 10000 - HoldingFounderBp;   // ...so no outside holder of it can have more than this
         public const int ParticipationPct = 25;          // a resting order takes at most this share of a step's volume
         public const int GoodTillDays = 60;              // market days an order "until cancelled" stays open
         public const int OrdersMost = 60;

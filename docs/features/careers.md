@@ -160,8 +160,8 @@ The clips are already asked for by id, before today's stand-in, so they drop in 
 | clip `desk_plan` | standing at a waist-high desk, moving markers on a board, 6 s loop, upper body | `DispatchJob` (today `clipboard_write` over the upper body) |
 
 | clip `staff_struggle` | hands on hips, a shake of the head, looking down at something, 6 s loop | `LeadJob`'s "stuck" (today `arms_crossed`) |
-| prop `dispatch_desk` | a lectern-height desk with a wall map, 1.2 x 1.4 x 0.5 m, read from +Z | (needs placement code) stood by the board on a dispatcher shift |
-| prop `employer_sign` | a small wall plaque (0.6 x 0.3 m), six variants, one per employer name | (needs placement code) above each office's board |
+| prop `dispatch_desk` | a lectern-height desk with a wall map, 1.2 x 1.4 x 0.5 m, read from +Z | taken out of the props bundle on 26 Oct 2026 as nothing placed it; a feature that wants it models it anew in the second bundle (PropAssets/README.md, "Adding a prop from Blender") |
+| prop `employer_sign` | a small wall plaque (0.6 x 0.3 m), six variants, one per employer name | taken out of the props bundle on 26 Oct 2026 as nothing placed it; a feature that wants it models it anew in the second bundle (PropAssets/README.md, "Adding a prop from Blender") |
 
 ## Where the professions work
 

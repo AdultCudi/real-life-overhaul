@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Globalization;
 using Localizor;
 
@@ -116,9 +117,15 @@ namespace RealLifeOverhaul.Economy.Brands
             return T(AskKeys[BrandCatalogue.Clamp((int)ask, 0, AskKeys.Length - 1)]);
         }
 
+        /// <summary>The names the refusals fill in: the limit that "full" speaks of, counted over every brand's franchised shops together.</summary>
+        public static Dictionary<string, string> RefusalData()
+        {
+            return new Dictionary<string, string> { { "most", BrandCatalogue.FranchisesMost.ToString(Inv) } };
+        }
+
         public static string Answer(Refusal refusal)
         {
-            return T(RefusalKeys[BrandCatalogue.Clamp((int)refusal, 0, RefusalKeys.Length - 1)]);
+            return T(RefusalKeys[BrandCatalogue.Clamp((int)refusal, 0, RefusalKeys.Length - 1)], "most", BrandCatalogue.FranchisesMost.ToString(Inv));
         }
 
         public static string Push(int kind)

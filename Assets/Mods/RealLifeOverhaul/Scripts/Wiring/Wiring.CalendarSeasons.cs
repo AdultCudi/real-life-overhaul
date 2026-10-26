@@ -25,7 +25,7 @@ namespace RealLifeOverhaul
             {
                 public string Id => "seasons";
 
-                public bool Available => Settings.Seasons && SaveGameManager.Current != null;
+                public bool Available => Settings.Seasons && !SeasonDirector.StandingDown && SaveGameManager.Current != null;
 
                 public void Collect(int fromDay, int toDay, CalendarList into)
                 {

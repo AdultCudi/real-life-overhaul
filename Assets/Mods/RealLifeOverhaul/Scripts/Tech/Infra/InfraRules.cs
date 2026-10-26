@@ -369,6 +369,48 @@ namespace RealLifeOverhaul.Tech
         /// <summary>A model's customers' use of AI compute a day, units.</summary>
         public static int Inference(Product p) => (int)Math.Min(int.MaxValue, (p.Users + p.Free / 20) * InfraCatalogue.InferencePerCustomer / 1000);
 
+        /// <summary>Why a warehouse cannot be fitted out now: <see cref="FitFree"/>, already a data centre, or the most there may be.</summary>
+        public const int FitFree = 0, FitAlready = 1, FitMost = 2;
+
+        /// <summary>The one rule both ways to a fit-out answer by (the Infra tab, and the question when a warehouse is taken); the cash is asked last, at the payment.</summary>
+        public static int FitBlock(int centres, bool already)
+        {
+            return already ? FitAlready : centres >= InfraCatalogue.CentresMost ? FitMost : FitFree;
+        }
+
+        /// <summary>What the city does not give a warehouse yet, a bit each: 1 power, 2 water, 4 the business connection. It may be fitted out without; it goes down until they come.</summary>
+        public static int SupplyMissing(bool power, bool water, bool net)
+        {
+            return (power ? 0 : 1) | (water ? 0 : 2) | (net ? 0 : 4);
+        }
+
+        /// <summary>
+        /// The warehouses the player has taken since the last look (in <paramref name="now"/>, not in <paramref name="known"/>), in
+        /// the order the game lists them; each is then known, so it is asked about once. The first look only learns them.
+        /// </summary>
+        public static int Taken(ICollection<string> known, IList<string> now, bool first, List<string> into)
+        {
+            into.Clear();
+            for (int i = 0; now != null && i < now.Count; i++)
+            {
+                if (!known.Contains(now[i]))
+                {
+                    known.Add(now[i]);
+                    if (!first)
+                    {
+                        into.Add(now[i]);
+                    }
+                }
+            }
+            return into.Count;
+        }
+
+        /// <summary>The technicians a data centre lacks for its racks; one at the least, for a search briefed before the racks come.</summary>
+        public static int CrewLacking(DataCentre d)
+        {
+            return Math.Max(1, TechniciansNeeded(d) - Math.Max(0, d.Technicians));
+        }
+
         /// <summary>A day's takings rolled into a data centre's last thirty days.</summary>
         public static void Roll(DataCentre d, int day, long takings)
         {

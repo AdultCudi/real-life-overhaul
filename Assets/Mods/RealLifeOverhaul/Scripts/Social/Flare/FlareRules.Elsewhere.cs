@@ -46,6 +46,24 @@ namespace RealLifeOverhaul.Flare
             return p.Viral ? 4 : p.Reach >= 5000 ? 3 : p.Reach >= 1000 ? 2 : 1;
         }
 
+        /// <summary>
+        /// What Flare's talk adds to a business's customers: the talk of its posts and what the cleaners' round adds, together inside the cap,
+        /// which is "all of it together".
+        /// </summary>
+        public static int Footfall(int talk, int clean)
+        {
+            return Clamp(talk + clean, -BuzzMost, BuzzMost);
+        }
+
+        /// <summary>
+        /// The day a business opened, for a launch's fortnight: the game's own creation day of it; for a business that has none (-1, an old save's),
+        /// the day Flare first saw it, or Flare's first day.
+        /// </summary>
+        public static int OpenedOn(int created, int fallback)
+        {
+            return created > 0 ? created : fallback;
+        }
+
         /// <summary>Talk about a business from today, added within the cap either way. The business's figure now.</summary>
         public static int AddBuzz(FlareFile f, string place, int percent, int day, int days)
         {

@@ -226,7 +226,7 @@ namespace RealLifeOverhaul
             int gift = 0;
             if (wentWell && (_kind == PlanKind.Lift || _kind == PlanKind.Moving) && !_who.Has(SocialTrait.Careful))
             {
-                gift = _kind == PlanKind.Lift ? 10 + Mathf.RoundToInt(_metres / 100f) : 25;
+                gift = Prices.At(_kind == PlanKind.Lift ? 10 + Mathf.RoundToInt(_metres / 100f) : 25);
             }
 
             SocialStage before = _who.Stage;

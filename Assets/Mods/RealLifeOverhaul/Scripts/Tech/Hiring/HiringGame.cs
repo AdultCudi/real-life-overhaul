@@ -252,6 +252,21 @@ namespace RealLifeOverhaul.Tech
 
         public static string Id(EmployeeInstance e) => e != null ? e.id : string.Empty;
 
+        /// <summary>The player's headquarters, the first the game lists (the same on every machine), or null with none: it briefs a data centre's crew search.</summary>
+        public static BuildingRegistration Headquarters()
+        {
+            List<BuildingRegistration> all = Save != null ? Save.BuildingRegistrations : null;
+            for (int i = 0; all != null && i < all.Count; i++)
+            {
+                BuildingRegistration reg = all[i];
+                if (reg != null && reg.RentedByPlayer && GoingPublic.Mine(reg) && reg.HasValidAddress && reg.businessTypeName == HiringCatalogue.Headquarters && GameRegistrations.Found(reg))
+                {
+                    return reg;
+                }
+            }
+            return null;
+        }
+
         /// <summary>A recruiting cost of a business, cents: deductible, refused if the cash does not cover it.</summary>
         public static bool Pay(int cents, string key, BuildingRegistration at, string name)
         {

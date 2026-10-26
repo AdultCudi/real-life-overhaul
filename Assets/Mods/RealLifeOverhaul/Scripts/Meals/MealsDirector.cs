@@ -10,8 +10,9 @@ namespace RealLifeOverhaul.Meals
     /// Meals and music. When the player eats (anything the game feeds them, or a meal cooked at home) and a free seat is
     /// near in the same room, the player walks there, sits down with the food in front of them (the table's own tray, as
     /// the game's customers have it, or a plate), eats for a short while and gets up; the food's effect is the game's own
-    /// and happens once, before any of this. Dancing to the speakers' music is in <c>MealsDirector.Dance.cs</c>. Nothing
-    /// is saved or sent: everything is what this machine shows. Cost: idle, one time comparison a frame and a look once a
+    /// and happens once, before any of this. Food carried to a seat the player sat on themselves is eaten there through
+    /// Eat in the game's rest panel (<c>MealsDirector.Takeout.cs</c>), by the same steps without the walk. Dancing to the
+    /// speakers' music is in <c>MealsDirector.Dance.cs</c>. Nothing is saved or sent: everything is what this machine shows. Cost: idle, one time comparison a frame and a look once a
     /// second; during a meal (a few seconds), a handful of field reads a frame.
     /// </summary>
     public sealed partial class MealsDirector : MonoBehaviour
@@ -32,6 +33,8 @@ namespace RealLifeOverhaul.Meals
         private Step _step;
         private MealSeat _seat;
         private bool _cooked;            // a plate from the home's cooker, carried over
+        private bool _here;              // at the seat the game's own rest has the player on: no walk, and no sitting down or getting up of ours
+        private bool _own;               // a dish of the player's own (packed at home): a plate, never the place's tray
         private float _fill;             // what the meal filled, of the game's 100: how long it is eaten
         private float _until;            // game seconds (Time.time): the step's last moment
         private float _began;            // real seconds: when the meal began, for its line
@@ -61,7 +64,9 @@ namespace RealLifeOverhaul.Meals
             MealsGame.Answers(Arrived, Moved, Blocked);
             _onGameEvent = Guard.Wrap<string>(OnGameEvent);
             _onSave = OnSave;
+            _onSitting = Guard.Wrap<bool>(OnSitting);
             DanceButton.Logger = Logger;
+            TakeoutButton.Logger = Logger;
         }
 
         private void OnDisable()
@@ -75,6 +80,8 @@ namespace RealLifeOverhaul.Meals
             End(false, "the city is unloading", true);
             StopDancing("the city is unloading", false);
             DanceButton.Remove();
+            TakeoutButton.Remove();
+            Unbind();
             SaveHook.Drop(_onSave);
             GameEvent.onGameEventTriggered -= _onGameEvent;
             _props.Dispose();
@@ -132,12 +139,14 @@ namespace RealLifeOverhaul.Meals
                 StopDancing("a load", false);
                 _hungerKnown = false;
                 _armed = null;
+                _hereArmed = null;
                 return;
             }
             SaveHook.Keep(_onSave);
             EventHold.Keep(ref GameEvent.onGameEventTriggered, _onGameEvent, ref _gameEventSeen);
             PlayerController player = MealsGame.Player();
             _body.Bind(player);
+            Bind(player);
             _lastHunger = MealsGame.Hunger();
             _hungerKnown = true;
             if (_armed != null && now > _armedUntil)
@@ -149,6 +158,11 @@ namespace RealLifeOverhaul.Meals
             {
                 DanceButton.Install();   // once per city; a field read once it is in
             }
+            if (Settings.MealsTakeout)
+            {
+                TakeoutButton.Install();   // once per city, the same
+            }
+            TestLapse(now);
         }
 
         // ---------------------------------------------------------------- a meal, step by step
@@ -167,6 +181,13 @@ namespace RealLifeOverhaul.Meals
                 MealSeat seat = _armed;
                 _armed = null;
                 Begin(seat, true, _armedFill, "a meal cooked at home");
+                return;
+            }
+            if (_hereArmed != null)
+            {
+                MealSeat seat = _hereArmed;
+                _hereArmed = null;
+                Begin(seat, false, rise, _hereArmedWhat, true, _hereArmedOwn);
                 return;
             }
             if (!Settings.MealsSeated || _step != Step.None || !MealsRules.Wanted(rise))
@@ -226,7 +247,7 @@ namespace RealLifeOverhaul.Meals
             }
         }
 
-        private void Begin(MealSeat seat, bool cooked, float fill, string what)
+        private void Begin(MealSeat seat, bool cooked, float fill, string what, bool here = false, bool own = false)
         {
             PlayerController player = MealsGame.Player();
             if (player == null || seat == null)
@@ -235,21 +256,27 @@ namespace RealLifeOverhaul.Meals
             }
             _seat = seat;
             _cooked = cooked;
+            _here = here;
+            _own = own;
             _fill = fill;
             _player = player;
             _inside = MealsGame.Inside;
             _in = MealsGame.Building();
             _began = Time.unscaledTime;
             _food = null;
-            MealsGame.Reserve(seat, true);
+            if (!here)
+            {
+                MealsGame.Reserve(seat, true);   // at a seat of the game's rest, the game has kept it for the player already
+            }
             _step = Step.Waiting;
             _until = Time.time + MealsRules.WaitMost;
             _nextLook = 0f;
-            Logger?.Info("Meals: " + what + " (" + fill.ToString("0", Inv) + ") is taken to " + seat.Kind + ", " + seat.Option.Flat.ToString("0.0", Inv) + " m away ("
-                         + seat.Option.Path.ToString("0.0", Inv) + " m on foot).");
+            Logger?.Info(here ? "Meals: " + what + " (" + fill.ToString("0", Inv) + ") is put in front of the player at " + seat.Kind + ", where they rest."
+                : "Meals: " + what + " (" + fill.ToString("0", Inv) + ") is taken to " + seat.Kind + ", " + seat.Option.Flat.ToString("0.0", Inv) + " m away ("
+                  + seat.Option.Path.ToString("0.0", Inv) + " m on foot).");
         }
 
-        private bool Wanted => _cooked ? Settings.MealsCooked : Settings.MealsSeated;
+        private bool Wanted => _here ? Settings.MealsTakeout : _cooked ? Settings.MealsCooked : Settings.MealsSeated;
 
         // Every frame while a meal is on: what ends it, then its step.
         private void Meal()
@@ -268,6 +295,11 @@ namespace RealLifeOverhaul.Meals
             if (MealsGame.Inside != _inside || !ReferenceEquals(MealsGame.Building(), _in))
             {
                 End(false, "the player went through a door or travelled", true);
+                return;
+            }
+            if (_here)
+            {
+                HereStep(player);
                 return;
             }
             switch (_step)
@@ -361,7 +393,19 @@ namespace RealLifeOverhaul.Meals
                 return;
             }
             _benchBefore = MealsGame.Bench(_seat, true, false);
-            if (!_cooked && MealsGame.ShowDisplay(_seat, true, ref _shown))
+            Serve();
+        }
+
+        /// <summary>
+        /// The food put in front of the seated player and the eating begun: the table's own tray, a plate on the table, a
+        /// plate in the lap, or the hand (<see cref="MealsRules.Serve"/>). The one path for a meal walked to a seat and for
+        /// food eaten at the seat the player rests on.
+        /// </summary>
+        private void Serve()
+        {
+            bool lap = MealsGame.Lap(_seat, out Vector3 lapAt, out Quaternion lapTurn);
+            Plate plate = MealsRules.Serve(_seat.Display != null, _cooked || _own, _seat.Top, lap);
+            if (plate == Plate.Tray && MealsGame.ShowDisplay(_seat, true, ref _shown))
             {
                 _body.PlateAway();
                 _food = "the table's own tray";
@@ -370,15 +414,19 @@ namespace RealLifeOverhaul.Meals
             {
                 _food = "a plate on the table";
             }
+            else if (lap && _body.PlateOn(lapAt, lapTurn))
+            {
+                _food = "no table in front of the seat: a plate in the lap";
+            }
             else
             {
                 _body.PlateAway();
-                _food = "no table in front of the seat: the meal in hand";
+                _food = "no table and no plate to hand: the meal in hand";
             }
             bool eats = _body.Eat();
             _step = Step.Seated;
             _until = Time.time + MealsRules.EatSeconds(_fill);
-            Say("seated at " + _seat.Kind + " with " + _food + "; eating by " + _body.EatingBy + " for " + MealsRules.EatSeconds(_fill).ToString("0", Inv) + " s", eats && _body.Seated);
+            Say("seated at " + _seat.Kind + " with " + _food + "; eating by " + _body.EatingBy + " for " + MealsRules.EatSeconds(_fill).ToString("0", Inv) + " s", eats && (_here || _body.Seated));
         }
 
         // The game's own event for a new walk order or a movement key: on the way, the player has gone elsewhere.
@@ -416,6 +464,8 @@ namespace RealLifeOverhaul.Meals
             }
             Step was = _step;
             _step = Step.None;
+            bool here = _here;
+            _here = false;
             PlayerController player = _player;
             MealSeat seat = _seat;
             _seat = null;
@@ -443,10 +493,10 @@ namespace RealLifeOverhaul.Meals
             _body.Release();
             try
             {
-                if (seat != null)
+                if (seat != null && !here)
                 {
                     MealsGame.Bench(seat, false, _benchBefore);
-                    MealsGame.Reserve(seat, false);
+                    MealsGame.Reserve(seat, false);   // a seat of the game's rest stays the game's: the player still rests there
                 }
             }
             catch (Exception e)
@@ -454,9 +504,14 @@ namespace RealLifeOverhaul.Meals
                 Logger?.Error(e);
             }
             _shown = null;
-            Say((_cooked ? "a home-cooked plate" : "a meal") + " ended after " + (Time.unscaledTime - _began).ToString("0.0", Inv) + " s at the " + was.ToString().ToLowerInvariant()
-                + " step (" + why + "); the player is on their feet, the seat and the table given back", !_body.Seated && !_body.PlateOut);
+            Say((_cooked ? "a home-cooked plate" : here ? "a meal at the seat the player rests on" : "a meal") + " ended after " + (Time.unscaledTime - _began).ToString("0.0", Inv)
+                + " s at the " + was.ToString().ToLowerInvariant() + " step (" + why + ")"
+                + (here ? "; the plate and the tray put away, the player still resting there" : "; the player is on their feet, the seat and the table given back"), !_body.Seated && !_body.PlateOut);
             _nextLook = 0f;
+            if (here)
+            {
+                HereEnded(eaten, why);
+            }
         }
 
         /// <summary>A meal is on: walking to a seat, or seated at it.</summary>
@@ -483,6 +538,8 @@ namespace RealLifeOverhaul.Meals
             End(false, why, true);
             StopDancing(why, true);
             _armed = null;
+            _hereArmed = null;
+            _testArmed = false;
         }
     }
 }

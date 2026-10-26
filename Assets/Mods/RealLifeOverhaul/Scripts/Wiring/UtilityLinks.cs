@@ -26,6 +26,9 @@ namespace RealLifeOverhaul
                 UtilitiesBridges.Release = reg => BusinessDirector.Instance?.Release(reg, ClosureSource.Utilities);
                 BusinessDirector.UtilitiesOn = () => Settings.Utilities && !UtilitiesDirector.Failed;
                 UtilitiesBridges.Record = (key, data) => BusinessDesk.Text(key, data, notify: false);
+                UtilitiesBridges.FirmWork = FirmWork;
+                UtilitiesBridges.ShopMost = ShopMost;
+                UtilitiesBridges.Shops = Shops;
                 LifeAccounts.Power = () => UtilitiesDirector.HasPowerAccount;
                 HomeTidy.HasPower = reg => UtilitiesDirector.Supplied(reg, Service.Power);
                 HomeTidy.HasWater = reg => UtilitiesDirector.Supplied(reg, Service.Water);
@@ -47,6 +50,74 @@ namespace RealLifeOverhaul
                 HomeTidy.UtilitiesByPhone = null;
                 Family.HomeLife.Bills = null;
                 Roommates.RoommateGame.Bills = null;
+            }
+
+            /// <summary>
+            /// The one read of a building's internet speed for the work over it (NetSpeedRules), for the tech firms and the
+            /// online shops alike: unknown with the utilities or the speed switch off, so both run exactly as before speed
+            /// counted. An hour of 0 or more counts an outage then; -1 asks for the plan, outages aside.
+            /// </summary>
+            internal static int Speed(BuildingRegistration reg, int hour, bool shop)
+            {
+                try
+                {
+                    UtilitiesDirector d = UtilitiesDirector.Instance;
+                    if (!Settings.Utilities || !Settings.UtilitiesNetSpeed || UtilitiesDirector.Failed || d == null || d.State == null || reg == null)
+                    {
+                        return NetSpeedRules.Unknown;
+                    }
+                    return d.Speed(reg, hour, shop);
+                }
+                catch (Exception e)
+                {
+                    Fault("UtilityLinks.Speed", e);
+                    return NetSpeedRules.Unknown;
+                }
+            }
+
+            // The work the player's tech firm at a place would do at a speed, for the plan picker; -1 with none there.
+            private static int FirmWork(BuildingRegistration reg, int mbps)
+            {
+                try
+                {
+                    Tech.TechDirector tech = Tech.TechDirector.Instance;
+                    Tech.FirmPlace firm = tech != null && tech.Firms != null && reg != null ? tech.FirmOf(Tech.TalentGame.Place(reg)) : null;
+                    return firm != null ? Tech.FirmsRules.Connection(firm.File.Kind, mbps) : -1;
+                }
+                catch (Exception e)
+                {
+                    Fault("UtilityLinks.FirmWork", e);
+                    return -1;
+                }
+            }
+
+            // The orders a day the player's online shop at a place could take at a speed, for the plan picker; -1 with none there.
+            private static int ShopMost(BuildingRegistration reg, int mbps)
+            {
+                try
+                {
+                    Economy.OnlineDirector online = Economy.OnlineDirector.Instance;
+                    return online != null && Settings.Economy && Settings.EconomyOnline ? online.MostAt(reg, mbps) : -1;
+                }
+                catch (Exception e)
+                {
+                    Fault("UtilityLinks.ShopMost", e);
+                    return -1;
+                }
+            }
+
+            private static bool Shops(List<BuildingRegistration> into)
+            {
+                try
+                {
+                    Economy.OnlineDirector online = Economy.OnlineDirector.Instance;
+                    return online != null && Settings.Economy && Settings.EconomyOnline && online.Buildings(into);
+                }
+                catch (Exception e)
+                {
+                    Fault("UtilityLinks.Shops", e);
+                    return false;
+                }
             }
 
             private static readonly UtilitiesSource Source = new UtilitiesSource();

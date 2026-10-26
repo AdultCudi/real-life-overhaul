@@ -61,7 +61,12 @@ namespace RealLifeOverhaul.Markets
                 .Fact("lst_bid_most", () => Guide.Percent((float)ListingCatalogue.OwnTakeoverPremiumMost))
                 .Fact("lst_handover_days", () => Whole(ListingCatalogue.HandOverDays))
                 .Fact("lst_dividend_tax", () => Bp(ListingCatalogue.DividendTaxBp))
-                .Fact("lst_dividend_tax_step", () => Bp(ListingCatalogue.DividendTaxStepBp));
+                .Fact("lst_dividend_tax_step", () => Bp(ListingCatalogue.DividendTaxStepBp))
+                .Fact("lst_exchange_least", () => Guide.Money(Prices.At((float)ListingCatalogue.ListingFeeLeastAtStart)))
+                .Fact("lst_yearly_least", () => Guide.Money(Prices.At((float)ListingCatalogue.YearlyFeeLeastAtStart)))
+                .Fact("lst_bid_days_least", () => Whole(ListingCatalogue.OwnTakeoverDaysLeast))
+                .Fact("lst_bid_days_most", () => Whole(ListingCatalogue.OwnTakeoverDaysMost))
+                .Fact("lst_sale_days", () => Whole(ListingCatalogue.SaleBidDays));
         }
 
         private static int Year()
