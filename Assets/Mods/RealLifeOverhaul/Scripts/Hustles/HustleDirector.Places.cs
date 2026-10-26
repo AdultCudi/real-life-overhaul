@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using Helpers;
 using RealLifeOverhaul.GameUi;
 using UI.Notification;
 using UnityEngine;
@@ -14,25 +15,10 @@ namespace RealLifeOverhaul.Hustles
     /// </summary>
     public sealed partial class HustleDirector
     {
-        private const float Reach = 3.5f;          // metres from the pavement at a door that count as at it
-        private const float Rise = 3f;             // ...and up or down
         private const float PanelUp = 2.2f;        // metres over the door or the player the panel stands
-        private const int FrontsKept = 48;         // doors measured once and remembered, while the city lasts
-        private const int LooksASecond = 2;        // buildings looked up in the city's list a second: many new doors are spread over seconds
-        private const float MeasureWithin = 80f;   // metres from a building the player is to be before its pavement is measured
 
         private enum At { None, Collect, Gig, Shop, Home }
 
-        private struct FrontSpot
-        {
-            public string Street;
-            public int Number;
-            public CityBuildingController Building;   // null: the city has no such building
-            public bool Has;                          // the pavement at its door was measured
-            public Vector3 Front;
-        }
-
-        private readonly List<FrontSpot> _fronts = new List<FrontSpot>(FrontsKept);
         private DoorPanel _door;
         private Action _onFirst, _onSecond;
         private Func<string> _doorWhat;
@@ -55,7 +41,6 @@ namespace RealLifeOverhaul.Hustles
         }
 
         private bool WorkOpen => _skip != null && _skip.Open;
-        private int _looks;
 
         private void Places()
         {
@@ -78,10 +63,16 @@ namespace RealLifeOverhaul.Hustles
                 return;
             }
             Vector3 here = player.transform.position;
+            Stage(here);
+            Retarget(here);
             if (HustleGame.OnFootOutside && FindDoor(here))
             {
                 Present(here);
                 return;
+            }
+            if (!BuildingManager.IsInsideBuilding && PlayerHelper.IsUsingVehicle)
+            {
+                Nudge(here);
             }
             if (HustleGame.AtOwnPlace && FindHomeWork())
             {
@@ -147,73 +138,6 @@ namespace RealLifeOverhaul.Hustles
             _atStreet = street;
             _atNumber = number;
             return true;
-        }
-
-        private bool Near(string street, int number, Vector3 here)
-        {
-            if (string.IsNullOrEmpty(street) || !FrontOf(street, number, here, false, out Vector3 front))
-            {
-                return false;
-            }
-            Vector3 d = front - here;
-            if (Mathf.Abs(d.y) > Rise)
-            {
-                return false;
-            }
-            d.y = 0f;
-            if (d.sqrMagnitude > Reach * Reach)
-            {
-                return false;
-            }
-            _atFront = front;
-            return true;
-        }
-
-        // A door's pavement, measured once and remembered: a building is looked up in the city's list once, a few a second, and
-        // its pavement measured once the player is near it (far off, the walking mesh there may not be ready); a miss is tried again.
-        private bool FrontOf(string street, int number, Vector3 near, bool now, out Vector3 front)
-        {
-            front = default;
-            int at = -1;
-            for (int i = 0; i < _fronts.Count && at < 0; i++)
-            {
-                at = _fronts[i].Number == number && string.Equals(_fronts[i].Street, street, StringComparison.Ordinal) ? i : -1;
-            }
-            if (at < 0)
-            {
-                if (!now && _looks <= 0)
-                {
-                    return false;
-                }
-                _looks--;
-                if (_fronts.Count >= FrontsKept)
-                {
-                    _fronts.Clear();
-                }
-                _fronts.Add(new FrontSpot { Street = street, Number = number, Building = HustleGame.Building(street, number) });
-                at = _fronts.Count - 1;
-            }
-            FrontSpot spot = _fronts[at];
-            if (spot.Has)
-            {
-                front = spot.Front;
-                return true;
-            }
-            if (spot.Building == null || (!now && JobSpots.Flat(spot.Building.transform.position, near) > MeasureWithin) || !JobSpots.Front(spot.Building, out front))
-            {
-                return false;
-            }
-            spot.Has = true;
-            spot.Front = front;
-            _fronts[at] = spot;
-            return true;
-        }
-
-        /// <summary>The pavement at an address's door, measured now if need be, for the tests and the hired van; false if the city has none.</summary>
-        internal bool DoorAt(string street, int number, out Vector3 front)
-        {
-            PlayerController player = HustleGame.Player;
-            return FrontOf(street, number, player != null ? player.transform.position : Vector3.zero, true, out front);
         }
 
         private void HidePanel(string why)
@@ -419,6 +343,10 @@ namespace RealLifeOverhaul.Hustles
                 taken++;
             }
             HidePanel("collected");
+            if (!WaitingAt(street, number))
+            {
+                Unstage(_doors.Find(street, number));
+            }
             if (taken > 0)
             {
                 HustleText.Note(NotificationType.Success, cars > 0 ? "reallife_hustle_note_car_collected" : "reallife_hustle_note_collected", "thing", last,
@@ -501,7 +429,7 @@ namespace RealLifeOverhaul.Hustles
             if (g.Stage == GigStage.Loaded)
             {
                 HustleText.Note(NotificationType.Info, "reallife_hustle_note_loaded", "place", HustleText.Place(g.Street2, g.Number2), 10f);
-                HustleGame.Guide(g.Street2, g.Number2);
+                Route(g.Street2, g.Number2);
                 Logger?.Info("Hustles check (visit, first stop): the move for " + g.Client + " is loaded; the second address is " + g.Street2 + " " + g.Number2 + ": PASS");
             }
             else

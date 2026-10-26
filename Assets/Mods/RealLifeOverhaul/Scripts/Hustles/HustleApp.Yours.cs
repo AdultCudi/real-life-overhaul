@@ -63,7 +63,7 @@ namespace RealLifeOverhaul.Hustles
             switch (o.State)
             {
                 case OwnedState.Waiting: return Where(o.Street, o.Number);
-                case OwnedState.Delivering: return HustleText.T("reallife_hustle_where_on_way", "day", FinanceText.Day(o.Due));
+                case OwnedState.Delivering: return HustleText.T("reallife_hustle_where_on_way", "day", o.Due.ToString(CultureInfo.InvariantCulture));
                 default:
                     return o.Plan == OwnedPlan.Shop ? Where(o.Street, o.Number) : HustleText.T(o.Car ? "reallife_hustle_where_your_car" : "reallife_hustle_where_yours");
             }
@@ -73,7 +73,7 @@ namespace RealLifeOverhaul.Hustles
         {
             switch (o.State)
             {
-                case OwnedState.Waiting: return HustleText.T("reallife_hustle_state_to_collect");
+                case OwnedState.Waiting: return HustleText.T("reallife_hustle_state_to_collect_by", "day", o.Until.ToString(CultureInfo.InvariantCulture));
                 case OwnedState.Delivering: return HustleText.T("reallife_hustle_state_delivering");
                 case OwnedState.Listed: return HustleText.T("reallife_hustle_state_listed");
             }
@@ -93,7 +93,7 @@ namespace RealLifeOverhaul.Hustles
             int id = o.Id;
             string thing = HustleText.Thing(o.Thing, o.Car);
             box.Title(thing);
-            box.Subtitle(HustleText.T("reallife_hustle_item_from", "seller", o.Seller, "day", FinanceText.Day(o.Bought)));
+            box.Subtitle(HustleText.T("reallife_hustle_item_from", "seller", o.Seller, "day", o.Bought.ToString(CultureInfo.InvariantCulture)));
             box.Chip(StateOf(o), o.State == OwnedState.Listed ? CellTone.Green : o.State == OwnedState.Waiting ? CellTone.Yellow : CellTone.Plain);
             box.Section("reallife_ibox_sec_money");
             box.Row("reallife_hustle_row_paid", HustleText.Money(o.Paid));
@@ -110,11 +110,14 @@ namespace RealLifeOverhaul.Hustles
             switch (o.State)
             {
                 case OwnedState.Waiting:
-                    box.Line(HustleText.T(o.Car ? "reallife_hustle_item_collect_car" : "reallife_hustle_item_collect", "place", Where(o.Street, o.Number)));
+                    bool stands = HustleGame.Stands(o.Street, o.Number);
+                    string held = o.Car ? "reallife_hustle_item_collect_car_by" : "reallife_hustle_item_collect_by";
+                    box.Line(HustleText.T(stands ? held : "reallife_hustle_item_collect_missing", "place", Where(o.Street, o.Number), "day", o.Until.ToString(CultureInfo.InvariantCulture)),
+                        stands ? CellTone.Plain : CellTone.Yellow);
                     InfoBox.Button(box.ButtonRow(), InfoBox.Positive, "reallife_hustle_button_way", () => _director.ShowWay(o.Street, o.Number));
                     break;
                 case OwnedState.Delivering:
-                    box.Line(HustleText.T("reallife_hustle_item_delivering", "day", FinanceText.Day(o.Due)));
+                    box.Line(HustleText.T("reallife_hustle_item_delivering", "day", o.Due.ToString(CultureInfo.InvariantCulture)));
                     break;
                 case OwnedState.Listed:
                     WriteListed(box, o, worth);

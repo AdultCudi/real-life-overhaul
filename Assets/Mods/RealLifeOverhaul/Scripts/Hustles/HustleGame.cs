@@ -7,6 +7,7 @@ using RealLifeOverhaul.Economy.Dealership;
 using Streets;
 using UI.Guiders;
 using UnityEngine;
+using UnityEngine.AI;
 using Vehicles.VehicleTypes;
 
 namespace RealLifeOverhaul.Hustles
@@ -134,12 +135,114 @@ namespace RealLifeOverhaul.Hustles
             return string.IsNullOrEmpty(street) ? string.Empty : new Address(street, number).ToFormattedString();
         }
 
-        /// <summary>The game's own destination marker on an address, as the player would set it on the map.</summary>
-        public static void Guide(string street, int number)
+        public const int SpotFront = 0, SpotWide = 1, SpotMesh = 2, SpotDoor = 3;   // how well a pickup point was found: the best first
+
+        /// <summary>
+        /// Where a thing is collected at a building: the pavement a step out from its door when there is one (JobSpots.Front), else
+        /// the pavement within 14 m of the door with a parked car on it allowed, else the walking mesh within 8 m (a stoop, a yard),
+        /// else the ground under the door itself. Always a point once the building has a door; <paramref name="kind"/> says how good.
+        /// </summary>
+        public static bool PickupSpot(CityBuildingController building, out Vector3 spot, out Vector3 door, out int kind)
         {
-            if (!string.IsNullOrEmpty(street))
+            spot = default;
+            kind = SpotDoor;
+            if (!JobSpots.DoorOf(building, out door))
             {
-                GuidersManager.SetGuiderTarget(new Address(street, number), DirectionGuiderType.Destination);
+                return false;
+            }
+            if (JobSpots.Front(building, out spot))
+            {
+                kind = SpotFront;
+            }
+            else if (StreetSpots.OnPavement(door, 14f, out spot))
+            {
+                kind = SpotWide;
+            }
+            else if (NavMesh.SamplePosition(door, out NavMeshHit hit, 8f, NavMesh.AllAreas))
+            {
+                spot = hit.position;
+                kind = SpotMesh;
+            }
+            else
+            {
+                StreetSpots.Ground(door, out float ground);
+                spot = new Vector3(door.x, ground, door.z);
+            }
+            return true;
+        }
+
+        /// <summary>True while one of the city's buildings stands at the address.</summary>
+        public static bool Stands(string street, int number)
+        {
+            CityManager city = InstanceBehavior<CityManager>.Instance;
+            return city != null && !string.IsNullOrEmpty(street) && city.FindCityBuildingController(new Address(street, number)) != null;
+        }
+
+        /// <summary>
+        /// The game's own destination at an address, as its Set destination does: the building's address kept in the save, then, when
+        /// the pickup point is known, the marker moved onto that point so the route ends where the thing is. A spot with no
+        /// building (one the city no longer has) is marked alone and the save keeps none. False if nothing was marked.
+        /// </summary>
+        public static bool Route(string street, int number, bool haveSpot, Vector3 spot)
+        {
+            GuidersManager guiders = InstanceBehavior<GuidersManager>.Instance;
+            if (Save == null || guiders == null || guiders.destinationGuider == null || string.IsNullOrEmpty(street))
+            {
+                return false;
+            }
+            bool address = false;
+            if (Stands(street, number))
+            {
+                try
+                {
+                    GuidersManager.SetGuiderTarget(new Address(street, number), DirectionGuiderType.Destination);   // sets the save's destination too
+                    address = true;
+                }
+                catch (Exception)
+                {
+                    address = false;   // the game's call faulted (no registration for the address): the spot below is marked alone
+                }
+            }
+            if (haveSpot)
+            {
+                if (!address)
+                {
+                    Save.customDestination = null;
+                }
+                DirectionGuider look = guiders.destinationGuider;
+                GuidersManager.SetGuiderTarget(spot + Vector3.up * PickupRules.MarkerLift, Name(street, number), look.poiICon, look.poiBackgroundColor, DirectionGuiderType.Destination);
+            }
+            return guiders.destinationGuider.target != null;
+        }
+
+        /// <summary>
+        /// Where the destination marker stands now and whether it is still this pickup's: 0 not this address's (the player set
+        /// another, leave it), 1 on the point, 2 on the building the game restored from the save (move it onto the point).
+        /// </summary>
+        public static int RouteState(string street, int number, Vector3 spot, out Vector3 end)
+        {
+            GuidersManager guiders = InstanceBehavior<GuidersManager>.Instance;
+            Transform target = guiders != null && guiders.destinationGuider != null ? guiders.destinationGuider.target : null;
+            end = target != null ? target.position : default;
+            if (target == null || Save == null)
+            {
+                return 0;
+            }
+            Address kept = Save.customDestination;
+            if (kept == null || kept.streetNumber != number || !string.Equals(kept.streetName, street, StringComparison.Ordinal))
+            {
+                return 0;
+            }
+            Address now = guiders.destinationGuider.CurrentAddress;
+            return now != null && now.streetNumber == number && string.Equals(now.streetName, street, StringComparison.Ordinal) ? 2 : 1;
+        }
+
+        /// <summary>Money back for a thing that went back to its seller, booked as its own transaction.</summary>
+        public static void Refund(int amount, string transaction)
+        {
+            if (amount > 0 && Save != null)
+            {
+                GameManager.ChangeMoneySafe(amount, new TransactionInfo(transaction), null, null, true);
             }
         }
 
