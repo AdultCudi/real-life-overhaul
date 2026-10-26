@@ -92,7 +92,7 @@ namespace RealLifeOverhaul.Careers
                 return;
             }
             WorkFile w = _study.Work;
-            if (j.NonCompete && why != LeaveReason.Retired && why != LeaveReason.Redundant)
+            if (j.NonCompete && ClosureRules.Restrains(why))
             {
                 w.RestraintUntil = day + TalentCatalogue.Scaled(OwnRules.RestraintDays, Year);
                 w.RestraintProf = j.Post.Prof;

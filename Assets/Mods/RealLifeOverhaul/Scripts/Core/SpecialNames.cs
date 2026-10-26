@@ -47,6 +47,7 @@ namespace RealLifeOverhaul
         private List<string> _searchOptions;          // the search list last given to the map (null: the game's own)
         private int _searchStamp = -1;               // the book's stamp when that list was made
         private bool _searchFailed;
+        private readonly List<SpecialBuildings.SearchAlias> _aliases = new List<SpecialBuildings.SearchAlias>(16);   // the words besides the names, for the list being made
         private bool _on;
         private int _stamp = -1;
         private Action<Address> _onEnter;
@@ -516,6 +517,16 @@ namespace RealLifeOverhaul
                         words.Add(tenants[t]);
                         listed.Add(building);
                     }
+                }
+                // Words a building is found by besides its own name: an employer whose office is a board outside a shop, by the employer's name.
+                _aliases.Clear();
+                SpecialBuildings.AllAliases(_aliases);
+                for (int a = 0; a < _aliases.Count; a++)
+                {
+                    SpecialBuildings.SearchAlias alias = _aliases[a];
+                    options.Add("<b><noparse>" + alias.Word + "</noparse></b>" + (string.IsNullOrWhiteSpace(alias.Under) ? string.Empty : "<br><noparse>" + alias.Under + "</noparse>"));
+                    words.Add(alias.Word);
+                    listed.Add(alias.Building);
                 }
                 drop.SetOptions(options, false, -1, words);
                 _searchOptions = options;

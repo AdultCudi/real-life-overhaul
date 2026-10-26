@@ -267,7 +267,8 @@ namespace RealLifeOverhaul
                             if (into.WantText)
                             {
                                 e.Title = FameText.InviteName(v.Kind);
-                                e.What = PlannerText.T("reallife_fame_plan_invite_what");
+                                e.Where = PlannerText.T("reallife_fame_where_call");   // every invitation is a video call, opened from the phone (FamePress.Held)
+                                e.What = PlannerText.T("reallife_fame_plan_call_what");
                                 e.IfMissed = PlannerText.T("reallife_fame_plan_invite_missed");
                             }
                         }

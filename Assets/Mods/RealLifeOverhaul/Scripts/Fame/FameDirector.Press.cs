@@ -93,9 +93,14 @@ namespace RealLifeOverhaul.Fame
             {
                 FameInvite invite = _file.Invites[i];
                 FameInviteState before = invite.State;
-                if (FamePress.Due(_file, invite, day, hour, Free()))
+                if (FamePress.Due(_file, invite, day, hour, true))
                 {
-                    StartScene(invite);
+                    // a video call: it is joined from the Standing page, never started by itself; told once, at its hour
+                    if (day == invite.Day && hour == invite.Hour)
+                    {
+                        Logger?.Info("Standing: the " + invite.Kind + " call is on; it is joined from the Standing page in the Finance app.");
+                        Tell(NotificationType.Info, "reallife_fame_note_call_on", _openPage, "what", FameText.InviteName(invite.Kind), "time", FameText.Hour((invite.Hour + 2) % 24));
+                    }
                 }
                 else if (invite.State == FameInviteState.Missed && before != FameInviteState.Missed)
                 {
@@ -301,6 +306,22 @@ namespace RealLifeOverhaul.Fame
             }
             invite.State = accept ? FameInviteState.Accepted : FameInviteState.Declined;
             Logger?.Info("Standing: the invitation (" + invite.Kind + ", day " + invite.Day + ") is " + invite.State + ".");
+        }
+
+        /// <summary>The player joins an accepted invitation's video call from the Standing page, while it runs.</summary>
+        public void JoinInvite(int id)
+        {
+            FameInvite invite = Running && Save != null ? _file.Invite(id) : null;
+            if (invite == null || _scene != null || !FamePress.Joinable(invite, Save.Day, Save.Hour))
+            {
+                return;
+            }
+            if (!Free())
+            {
+                Tell(NotificationType.Warning, "reallife_fame_join_busy", null);
+                return;
+            }
+            StartScene(invite);
         }
 
         // Nothing of the game's or the mod's holds the player, and they are not at the wheel.

@@ -34,6 +34,12 @@ namespace RealLifeOverhaul
         /// <summary>Optional, for a building: locale keys for the card's two lines on what the unit is and that it is to let.</summary>
         public string CardTypeKey;
         public string CardStateKey;
+        /// <summary>
+        /// Optional: a name the place's building (<see cref="Lit"/> or <see cref="Building"/>) is also found by in the city map's search, as an
+        /// employer is by its name when its office is a board outside a shop; <see cref="AliasUnder"/> is the line shown under it.
+        /// </summary>
+        public string Alias;
+        public string AliasUnder;
 
         internal Transform Anchor;
         internal PointOfInterest Marker;

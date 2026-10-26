@@ -103,7 +103,8 @@ namespace RealLifeOverhaul.Uptown
                                    + (_people ? _peopleWalk + ", " + _peopleMs.ToString("F0", Inv) + " ms" : "not (" + _peopleWhy + ")") + "; the backdrop: " + _hidden
                                    + " pieces and " + _strays + " strays put away, " + _opened + " of " + LayoutPlans.OldWallCount + " walls opened, " + GroundGame.Built
                                    + " walls and colliders built; the art: " + pieces + " of " + modules + " modules (" + scenery + " past the walls), " + GroundGame.GroundsLaid
-                                   + " blocks' grounds where the backdrop keeps none" + (GroundGame.HasGroundTemplate ? string.Empty : " (no block's ground of the game's to copy found)")
+                                   + " blocks' grounds (" + GroundGame.GroundsHidden + " of the backdrop's own put away under them)"
+                                   + (GroundGame.HasGroundTemplate ? string.Empty : " (no block's ground of the game's to copy found)")
                                    + ", " + GroundGame.Lights + " of " + arms + " light poles hung and " + GroundGame.Crossings + " of " + arms + " crosswalks linked at " + crossings
                                    + " crossings, " + GroundGame.SignsDown + " signs down, in " + _artMs.ToString("F0", Inv) + " ms; " + GroundGame.ParkingLanes + " of "
                                    + LayoutPlans.ParkingCount + " parking lanes (" + GroundGame.LanesKeptOff + " kept off the big special places' mouths, " + GroundGame.LitterAway

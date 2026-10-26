@@ -188,6 +188,7 @@ namespace RealLifeOverhaul
             _desk = desk;
             Array.Clear(_faults, 0, _faults.Length);
             ResetSampling();
+            WatchBegin();
             _next = 0;
             _aboard = false;
             _passed = false;
@@ -300,6 +301,7 @@ namespace RealLifeOverhaul
                 Tick(now);
                 Hud(now);
             }
+            Watch();
         }
 
         private bool Driving

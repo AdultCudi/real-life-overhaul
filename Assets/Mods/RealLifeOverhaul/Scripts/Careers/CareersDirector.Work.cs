@@ -38,6 +38,8 @@ namespace RealLifeOverhaul.Careers
             KeepShifts(Save.Day, true);   // a save from before the weeks were fitted, or a place whose hours changed while it was away
             LadderKeep(Save.Day);         // the company of a job at one of the city's businesses, there for the Career app at once
             Guard.Step("the recruitment desk's two ways", AgencyDesk.Take);   // sitting at a recruitment office's desk offers the jobs board or recruitment
+            MendSpells(Save.Day);           // a job that ended in a quit or a sacking after the employer had closed reads as the redundancy it was
+            EmployerKeep(Save.Day, true);   // a job whose employer is gone (a save from before this look, or a business closed while the mod was away) ends as a lay-off
             Logger?.Info("Careers: the working life " + (w.LastDay < 0 ? "opened" : "loaded") + " on day " + Save.Day + ": " + w.Openings.Count + " vacancies, " + w.Applications.Count
                          + " application(s), " + (w.Job != null ? "a job at " + w.Job.Post.Employer : "no job") + ".");
         }
@@ -71,6 +73,7 @@ namespace RealLifeOverhaul.Careers
             WorkFile w = _study.Work;
             int minute = hour * 60;
             AgencyEnds(w, day, hour);
+            EmployerKeep(day, false);   // before the day is settled: a closed employer's day is never a missed one
             Job j = w.Job;
             if (j != null)
             {
@@ -132,6 +135,7 @@ namespace RealLifeOverhaul.Careers
             WorkFile w = _study.Work;
             int last = w.LastDay;
             w.LastDay = day;
+            EmployerKeep(day, false);   // (the hour's look has seen it already; a morning with no hour event, a load across days, is caught here)
             Job j = w.Job;
             if (j != null)
             {
@@ -288,7 +292,7 @@ namespace RealLifeOverhaul.Careers
                         if (ProRules.Screened(a.Score, ProRules.Luck(StudySeed, a.Post.Id, 1, ProRules.ScreenLuck)))
                         {
                             a.Stage = (int)ApplyStep.Interview;
-                            a.InterviewDay = Weekday(day + ProRules.InterviewAfterDays);
+                            a.InterviewDay = Weekday(day + ClosureRules.InterviewAfter(w, day));
                             a.InterviewHour = TechRandom.Range(StudySeed, 8402, a.Post.Id, 0, ProRules.InterviewHourLeast, ProRules.InterviewHourMost);
                             a.Lapse = a.InterviewDay;
                             Tell2(NotificationType.Success, "reallife_work_note_invited", Data("employer", employer, "title", title, "day", CareersText.Day(a.InterviewDay)),

@@ -60,6 +60,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Traffic\Drivers\DriverRules.Road.cs" Link="Mod\DriverRules.Road.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Licences\Driving\CarExitRules.cs" Link="Mod\CarExitRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Licences\Driving\TestRouteRules.cs" Link="Mod\TestRouteRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Licences\Driving\TestStallRules.cs" Link="Mod\TestStallRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Law\StationGrid.cs" Link="Mod\StationGrid.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Law\StationReach.cs" Link="Mod\StationReach.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Traffic\Tow\TowRules.cs" Link="Mod\TowRules.cs" />
@@ -130,6 +131,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\DistrictValues.cs" Link="Mod\Uptown\DistrictValues.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\SpacesRules.cs" Link="Mod\Uptown\SpacesRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\LayoutPlans.cs" Link="Mod\Uptown\LayoutPlans.cs" />
+    <!-- The road and ground surfaces at one height over one place (UptownSurfaceCheck.cs), game-free. -->
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\SurfaceRules.cs" Link="Mod\Uptown\SurfaceRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\LayoutStreets.cs" Link="Mod\Uptown\LayoutStreets.cs" />
     <!-- "What is this ground?" (GroundSurveyCheck.cs): the district's ground read at a spot, game-free. -->
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\GroundSurvey.cs" Link="Mod\Uptown\GroundSurvey.cs" />

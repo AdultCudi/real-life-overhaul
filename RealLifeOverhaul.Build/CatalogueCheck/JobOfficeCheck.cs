@@ -103,7 +103,7 @@ namespace RealLifeOverhaul
             Check(director.Contains("_officeMark.Show(") && director.Contains("GuideMark"), "Show me puts the game's destination marker (GuideMark) on the board");
             int at0 = links.IndexOf("Id = \"job_offices\"", StringComparison.Ordinal);
             string row = at0 < 0 ? string.Empty : links.Substring(at0, Math.Min(links.Length - at0, 2200));
-            Check(row.Contains("reallife_map_row_job_offices") && row.Contains("CareerOfficeRules.ShowMeOffered(") && row.Contains("CareerCatalogue.All.Length") && row.Contains("{ Lit = boards.Building(board) }"),
+            Check(row.Contains("reallife_map_row_job_offices") && row.Contains("CareerOfficeRules.ShowMeOffered(") && row.Contains("CareerCatalogue.All.Length") && row.Contains("Lit = boards.Building(board)"),
                 "the map's Job offices row lists the board of every employer and lights its building");
 
             // ---- the guide and What's new

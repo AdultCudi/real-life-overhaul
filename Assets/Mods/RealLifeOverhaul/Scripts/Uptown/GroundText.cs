@@ -13,6 +13,7 @@ namespace RealLifeOverhaul.Uptown
         public const string TestTraffic = "reallife_uptown_ground_test_traffic";
         public const string TestFog = "reallife_uptown_ground_test_fog";
         public const string TestWhat = "reallife_uptown_ground_test_what";        // "What is this ground?"
+        public const string TestSurfaces = "reallife_uptown_ground_test_surfaces";   // the road surfaces at the two places the road flickered
 
         public const string Laid = "reallife_uptown_ground_census_laid";           // the notices the tests show
         public const string NotLaid = "reallife_uptown_ground_not_laid";
@@ -23,6 +24,8 @@ namespace RealLifeOverhaul.Uptown
         public const string CountBusy = "reallife_uptown_ground_traffic_busy";
         public const string FogCut = "reallife_uptown_ground_fog_cut";
         public const string FogOver = "reallife_uptown_ground_fog_over";
+        public const string SurfacesClear = "reallife_uptown_ground_surfaces_clear";
+        public const string SurfacesOver = "reallife_uptown_ground_surfaces_over";
 
         public const string WhatNotice = "reallife_uptown_ground_what";             // "What is this ground?": the notice, and what the ground is
         public const string WhatNone = "reallife_uptown_ground_what_none";

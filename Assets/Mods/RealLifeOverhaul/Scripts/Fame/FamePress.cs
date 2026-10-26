@@ -29,6 +29,14 @@ namespace RealLifeOverhaul.Fame
         CityEvent = 3        // a reception at City Hall
     }
 
+    /// <summary>How an invitation is held: by a video call from the phone, or at a place. Nowhere is a fault.</summary>
+    public enum FameHeld
+    {
+        Nowhere = 0,
+        Call = 1,
+        Place = 2
+    }
+
     /// <summary>Where an invitation stands. Saved as a number.</summary>
     public enum FameInviteState
     {
@@ -406,7 +414,36 @@ namespace RealLifeOverhaul.Fame
             return null;
         }
 
-        /// <summary>True if an accepted invitation starts now; one whose time has gone is marked lapsed or missed.</summary>
+        /// <summary>
+        /// Where an invitation is held. Every kind is a video call on the phone: it begins from the Standing page of the Finance
+        /// app, never by itself wherever the player stands. A kind with Nowhere would be a meeting in the Planner with no place.
+        /// </summary>
+        public static FameHeld Held(FameInviteKind kind)
+        {
+            switch (kind)
+            {
+                case FameInviteKind.Show:
+                case FameInviteKind.Magazine:
+                case FameInviteKind.Investors:
+                case FameInviteKind.CityEvent:
+                    return FameHeld.Call;
+                default:
+                    return FameHeld.Nowhere;
+            }
+        }
+
+        /// <summary>True while an accepted invitation can be joined: from its hour until the late hours are over.</summary>
+        public static bool Joinable(FameInvite invite, int day, int hour)
+        {
+            if (invite.State != FameInviteState.Accepted)
+            {
+                return false;
+            }
+            int now = day * 24 + hour, from = invite.Day * 24 + invite.Hour;
+            return now >= from && now <= from + LateHours;
+        }
+
+        /// <summary>True if an accepted invitation can be joined now; one whose time has gone is marked lapsed or missed.</summary>
         public static bool Due(FameFile f, FameInvite invite, int day, int hour, bool free)
         {
             if (invite.State == FameInviteState.Offered && day > invite.AnswerBy)
@@ -419,7 +456,7 @@ namespace RealLifeOverhaul.Fame
                 return false;
             }
             int now = day * 24 + hour, from = invite.Day * 24 + invite.Hour;
-            if (now >= from && now <= from + LateHours && free)
+            if (Joinable(invite, day, hour) && free)
             {
                 return true;
             }
