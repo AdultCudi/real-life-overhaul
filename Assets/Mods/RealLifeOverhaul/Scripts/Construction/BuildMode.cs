@@ -11,12 +11,15 @@ namespace RealLifeOverhaul.Construction
     /// Build mode (plans/build-mode.md; the owner, 26 Oct 2026: "can we make buildings like zoning in Cities Skylines? You go into
     /// build mode after you want to buy some land, then building on it"): the game's city map opened over Uptown from the
     /// Construction app, the time paused and its controls locked, the district's zoning cells drawn as one mesh coloured by what
-    /// each is in the view chosen (the land's status, the zoning, land value, occupancy, what is under way), a big window in the
-    /// middle in the game's own style (BuildModePanel) with the tools, the views, what is picked with its figures and the actions,
-    /// which steps aside while the player picks on the map, and a tinted ghost of a design on its footprint. Every action is the
-    /// construction game's own call. A picked square pressed again, or right-clicked, lets it and those behind it go; a drag with
-    /// shift lets a run go; Esc clears what is picked first and leaves only when nothing is. Esc with nothing picked, the window's
-    /// close button, or anything else that shuts the map leaves it and gives back the camera and the time; the player never moves.
+    /// each is in the view chosen (the land's status, the zoning, land value, occupancy, what is under way). The map stays in full
+    /// view (the owner, 26 Oct 2026: "when a new user sees it they must not feel where to click"): a hint bar at the top saying
+    /// what to do next, the tools in their order at the foot with the views and the demand beside them, a small panel for the
+    /// tool in use over the toolbar (BuildModeBar), the square under the pointer in the game's own tooltip, a window in the middle
+    /// only to choose a design (BuildModePanel), a tour at the first opening (BuildModeTour), and a tinted ghost of a design on its
+    /// footprint. Every action is the construction game's own call. A picked square pressed again, or right-clicked, lets it and
+    /// those behind it go; a drag with shift lets a run go; Esc ends the tour, shuts the design window, lets a design or the
+    /// squares go, and leaves only when nothing is left. The leave button, or anything else that shuts the map, leaves it and
+    /// gives back the camera and the time; the player never moves.
     /// COST: nothing at all while closed (not enabled); while open, the mouse's buttons each frame, the cell under the pointer ten
     /// times a second (twenty while dragging); the layer coloured again and the window written only when something changes.
     /// It runs before the game's own key handling, so the Esc it takes to clear a selection never also shuts the map.
@@ -33,11 +36,13 @@ namespace RealLifeOverhaul.Construction
         private const float HoverEvery = 0.1f;   // seconds (real time) between looks at the cell under the pointer otherwise
         private const float ClickPixels = 8f;    // a press and release closer than this is a click on one cell
         private const int MarksShown = 12;       // sites and developments listed and marked at once
-        private const int DesignsListed = 8;
 
         private ConstructionDirector _d;
         private MapPicker _map;                  // the map opened and its markers, its own window kept hidden
-        private BuildModePanel _panel;
+        private BuildModeKit _kit;               // the parts, copies of the game's interior designer's
+        private BuildModeBar _bar;               // the interface over the map
+        private BuildModePanel _catalogue;       // the design window
+        private BuildModeTour _tour;
         private BuildModeGame.Layer _layer;
         private int[] _cellStart = new int[0];   // each column's first cell in the layer
         private byte[] _fills = new byte[0];
@@ -109,6 +114,7 @@ namespace RealLifeOverhaul.Construction
         private void Awake()
         {
             enabled = false;   // runs only while open
+            GameSprites.Want(BuildModeKit.Names);   // the icons found in the one look behind the loading screen
         }
 
         private void Update()
@@ -140,11 +146,13 @@ namespace RealLifeOverhaul.Construction
                 _map.Destroy();
                 _map = null;
             }
-            if (_panel != null)
-            {
-                _panel.Destroy();
-                _panel = null;
-            }
+            _catalogue?.Destroy();
+            _catalogue = null;
+            _bar?.Destroy();
+            _bar = null;
+            _tour = null;
+            _kit?.Destroy();
+            _kit = null;
         }
 
         // ------------------------------------------------------------------ opening and leaving
@@ -171,14 +179,19 @@ namespace RealLifeOverhaul.Construction
                 }
                 _map.Windowless = true;   // the map and the markers only: the window is the panel
             }
-            if (_panel == null || !_panel.Alive)
+            if (_bar == null || !_bar.Alive)
             {
-                BuildModePanel.Logger = Logger;
-                _panel = BuildModePanel.Make(BuildModeGame.WindowCanvas(), ToolPicked, ViewPicked, Picked, FoldPressed, Close);
-                if (_panel == null)
+                BuildModePanel.Logger = BuildModeBar.Logger = BuildModeKit.Logger = Logger;
+                Transform canvas = BuildModeGame.WindowCanvas();
+                _kit?.Destroy();
+                _kit = canvas != null ? BuildModeKit.Take(UiClone.Dormant(canvas, "RealLife Build Mode parts (asleep)")) : null;
+                _bar = _kit != null ? BuildModeBar.Make(canvas, _kit, ToolPicked, ViewPicked, Picked, Close) : null;
+                if (_bar == null)
                 {
                     return false;
                 }
+                _tour = new BuildModeTour(_kit, _bar);
+                _catalogue = null;   // made at its first opening, on the same parts
             }
             if (_layer == null || _layer.Object == null || _layer.Cells != grid.CellCount)
             {
@@ -203,12 +216,15 @@ namespace RealLifeOverhaul.Construction
                 _values = new int[grid.Columns.Count];
             }
             _state = BuildModeRules.Next(_state, GoingPublic.InSession ? BuildInput.OpenInSession : BuildInput.Open, BuildTool.Land, false);
-            _view = BuildModeRules.ViewFor(_state.Tool);
+            _zoneBrush = -1;
             ClearPick();
             _playerAt = ConstructionGame.Player;
             BuildModeGame.CloseMenu();
             _valuesRead = false;
             ReadFacts();
+            _holdings = BuildModeHintRules.Holdings(_facts, _facts.Length);
+            _state = BuildModeRules.Next(_state, BuildInput.Tool, BuildModeHintRules.FirstTool(_holdings, _state.ViewOnly), false);   // the next step not done yet
+            _view = BuildModeRules.ViewFor(_state.Tool);
             WriteMarks();
             if (!_map.Open(Centre(grid), MarkPicked, Closed))   // the picker runs each pick and its close in its own guard (UiClone.Safe)
             {
@@ -217,11 +233,14 @@ namespace RealLifeOverhaul.Construction
             }
             BuildModeGame.LockTime(true);
             BuildModeGame.Show(_layer, true);
-            _panel.Fold(false);
-            _panel.Show(true);
+            _bar.Show(true);
             Write(true);
             Colour();
             enabled = true;
+            if (BuildModeHintRules.TourWanted(BuildModeTour.Seen, _state.ViewOnly))
+            {
+                _tour.Start();   // the first opening: four tips, remembered once seen
+            }
             Logger?.Info("Construction: build mode opened over Uptown (" + grid.Columns.Count + " spaces, " + grid.CellCount + " cells)" + (_state.ViewOnly
                 ? ", view only in this session" : string.Empty)
                          + "; the time paused " + (BuildModeGame.Paused ? "YES" : "not yet") + "; the view " + _view + ".");
@@ -258,7 +277,10 @@ namespace RealLifeOverhaul.Construction
             BuildModeGame.HoldCamera(false);
             BuildModeGame.LockTime(false);
             BuildModeGame.Show(_layer, false);
-            _panel?.Show(false);
+            BuildModeGame.HideHover();
+            _tour?.Hide();
+            _catalogue?.Show(false);
+            _bar?.Show(false);
             DropGhost();
             ClearPick();
             enabled = false;
@@ -323,11 +345,33 @@ namespace RealLifeOverhaul.Construction
             {
                 return;
             }
-            if (BuildModeGame.CancelPressed && (HasPicks || _state.Step == BuildStep.Ghost))
+            if (BuildModeGame.HoverShown && BuildModeGame.OverInterface)
             {
-                BuildModeGame.TakeCancel();   // Esc clears what is picked; the game's own Esc (shutting the map) waits for nothing picked
-                Clear();
+                BuildModeGame.HideHover();   // the pointer went onto the interface: the parts' own tooltips are the game's there
+                _hoverColumn = _hoverRow = -1;
+            }
+            bool tour = _tour != null && _tour.Running;
+            bool window = CatalogueShown;
+            if (BuildModeGame.CancelPressed && (tour || window || HasPicks || _state.Step == BuildStep.Ghost))
+            {
+                BuildModeGame.TakeCancel();   // Esc ends the tour, shuts the design window, then clears; the game's own Esc (shutting the map) waits for nothing left
+                if (tour)
+                {
+                    _tour.Skip();
+                }
+                else if (window)
+                {
+                    CatalogueBack();
+                }
+                else
+                {
+                    Clear();
+                }
                 return;
+            }
+            if (tour || window)
+            {
+                return;   // the tour's tips and the design window hold the map
             }
             float now = Time.unscaledTime;
             if (!_down && now >= _nextHover)
@@ -355,10 +399,7 @@ namespace RealLifeOverhaul.Construction
                 if (!cell.None)
                 {
                     BuildModeGame.HoldCamera(true);   // the map's left drag would pan it
-                    if (_panel != null && !_panel.Folded)
-                    {
-                        _panel.Fold(true);            // the window steps aside while squares are picked
-                    }
+                    BuildModeGame.HideHover();
                     _down = true;
                     _downAt = BuildModeGame.Mouse;
                     _removing = BuildModeGame.Shift;
@@ -482,16 +523,19 @@ namespace RealLifeOverhaul.Construction
             {
                 Pick();
                 Write(false);
+                Colour();
+                AfterPick();
+                return;
             }
-            else
+            _siteWhy = CellRules.Site(_d.Cells, _picked, BuildCatalogue.SiteSpacesMost, out _site);
+            if (_bar != null)
             {
-                _siteWhy = CellRules.Site(_d.Cells, _picked, BuildCatalogue.SiteSpacesMost, out _site);
-                _panel?.Status(Summary());
+                WriteHint();   // while dragging: the line alone; the panel waits for the release
             }
             Colour();
         }
 
-        // The square under the pointer said in the top bar: its zoning, height limit, price and who holds it.
+        // The square under the pointer said in the game's own tooltip beside it: who holds it, its zoning, its price or its zone.
         private void Hover()
         {
             if (BuildModeGame.OverInterface || !BuildModeGame.Pointed(out Vector3 at))
@@ -500,7 +544,7 @@ namespace RealLifeOverhaul.Construction
                 {
                     _hoverColumn = _hoverRow = -1;
                     _hoverWords = null;
-                    _panel?.Status(Summary());
+                    BuildModeGame.HideHover();
                 }
                 return;
             }
@@ -512,30 +556,18 @@ namespace RealLifeOverhaul.Construction
             _hoverColumn = cell.Column;
             _hoverRow = cell.Row;
             _hoverWords = cell.None ? null : _d.CellWords(cell.Column, cell.Row);
-            _panel?.Status(_hoverWords ?? Summary());
+            if (!cell.None && _d.HoverCard(cell.Column, cell.Row, out string head, out string zoning, out string more))
+            {
+                BuildModeGame.ShowHover(head, zoning, more);
+            }
+            else
+            {
+                BuildModeGame.HideHover();
+            }
         }
 
         /// <summary>The cell under the pointer in words, for the tests (null for none).</summary>
         public string HoverWords => _hoverWords;
-
-        // What is picked in a line: its squares and spaces and, for land, its price; or why it makes no site.
-        private string Summary()
-        {
-            if (_picked.Count == 0)
-            {
-                return T(_state.ViewOnly ? "reallife_bld_mode_view_only" : "reallife_bld_mode_status_none");
-            }
-            if (_siteWhy != null)
-            {
-                return T(_siteWhy);
-            }
-            string line = ConstructionText.Fill("reallife_bld_mode_status_picked", "cells", ConstructionText.N(_site.Cells), "spaces", ConstructionText.N(_site.Count));
-            if (_state.Tool == BuildTool.Land && _d.CellsBlock(_site, out long price, out _, out _, out _) == null && price > 0L)
-            {
-                line += ", " + ConstructionText.Money(price);
-            }
-            return line;
-        }
 
         // What the cells picked are to the tool: a site to buy, the player's site, a footprint, a building.
         private void Pick()
@@ -543,13 +575,16 @@ namespace RealLifeOverhaul.Construction
             _siteWhy = CellRules.Site(_d.Cells, _picked, BuildCatalogue.SiteSpacesMost, out _site);
             _targetSite = null;
             _hasTarget = false;
+            _canBuy = _pickMine = false;
             DropGhost();
             _design = -1;
+            _designs.Clear();
             if (_picked.Count == 0)
             {
                 return;
             }
             int column = _picked[0].Column;
+            _canBuy = _siteWhy == null && _state.Tool == BuildTool.Land && _d.CellsBlock(_site, out _, out _, out _, out _) == null;
             switch (_state.Tool)
             {
                 case BuildTool.Zone:
@@ -564,12 +599,18 @@ namespace RealLifeOverhaul.Construction
                 case BuildTool.Place:
                     _d.RowsHeld(column, out LotFile site);
                     _use = site != null && site.Paint > 0 ? (BuildUse)(site.Paint - 1) : FirstZoned(site);
-                    if (_siteWhy == null)
+                    _pickMine = site != null;
+                    for (int i = 1; i < _picked.Count && _pickMine; i++)
+                    {
+                        _d.RowsHeld(_picked[i].Column, out LotFile other);
+                        _pickMine = other == site;   // every square the player's, of one site
+                    }
+                    if (_siteWhy == null && _pickMine)
                     {
                         _d.FootprintDesigns(_site.FirstColumn, _site.Count, _site.MinRows, _use, _designs);
-                        if (_designs.Count > DesignsListed)
+                        if (_designs.Count > BuildModeCatalogue.Most)
                         {
-                            _designs.RemoveRange(DesignsListed, _designs.Count - DesignsListed);
+                            _designs.RemoveRange(BuildModeCatalogue.Most, _designs.Count - BuildModeCatalogue.Most);
                         }
                     }
                     break;
@@ -600,6 +641,7 @@ namespace RealLifeOverhaul.Construction
             _site = default(CellSite);
             _targetSite = null;
             _hasTarget = false;
+            _canBuy = _pickMine = false;
             _design = -1;
             _designs.Clear();
             DropGhost();
@@ -704,17 +746,99 @@ namespace RealLifeOverhaul.Construction
         /// <summary>Whether the map's camera draws the layer now, and why not.</summary>
         public bool LayerSeen(out string why) => BuildModeGame.LayerSeen(_layer, out why);
 
-        /// <summary>The window as laid out now, for the tests: null when nothing overlaps or is cut short.</summary>
-        public string WindowOverlap() => _panel != null ? _panel.Overlap() : "no window";
+        /// <summary>The interface as laid out now, for the tests: null when nothing overlaps, runs off the screen or is cut short.</summary>
+        public string WindowOverlap() => _bar != null ? _bar.Overlap() : "no interface";
 
-        /// <summary>A tool chosen, as its link in the window does (for the tests).</summary>
+        /// <summary>The design window as laid out now, for the tests: null when nothing is cut short or meets.</summary>
+        public string CatalogueOverlap() => _catalogue != null ? _catalogue.Overlap() : "no design window";
+
+        /// <summary>True when a part of the interface covers the map's centre, with which, for the tests.</summary>
+        public bool CoversCentre(out string what)
+        {
+            what = null;
+            return _bar != null && _bar.CoversCentre(out what);
+        }
+
+        /// <summary>A tool's button greyed now, and the reason its tooltip gives, for the tests.</summary>
+        public bool ToolGreyed(BuildTool tool, out string why)
+        {
+            why = null;
+            return _bar != null && _bar.ToolGreyed(tool, out why);
+        }
+
+        /// <summary>The tools as greyed for these holdings, for the tests (Write puts the real ones back).</summary>
+        public void ShowToolsFor(BuildHoldings holdings)
+        {
+            for (int t = 0; t < (int)BuildTool.Count; t++)
+            {
+                string why = BuildModeHintRules.ToolWhy((BuildTool)t, holdings, _state.ViewOnly);
+                _toolNames[t] = T(BuildModeHintRules.ToolKeys[t]);
+                _toolLines[t] = T(BuildModeHintRules.ToolTips[t]);
+                _toolWhy[t] = why != null ? T(why) : null;
+            }
+            _bar?.Tools(_state.Tool, _toolNames, _toolLines, _toolWhy);
+        }
+
+        /// <summary>The interface written again as it stands, for the tests.</summary>
+        public void Rewrite() => Write(false);
+
+        /// <summary>What the player holds as the toolbar reads it now, for the tests.</summary>
+        public BuildHoldings Holdings => _holdings;
+
+        /// <summary>A tool chosen, as its button does (for the tests); a greyed one is not.</summary>
         public void UseTool(BuildTool tool) => ToolPicked((int)tool);
 
-        /// <summary>A view chosen, as its link in the window does (for the tests).</summary>
+        /// <summary>A view chosen, as its toggle does (for the tests).</summary>
         public void UseView(BuildView view) => ViewPicked((int)view);
 
-        /// <summary>The window brought back to the middle, as its arrow does (for the tests).</summary>
-        public void Unfold() => _panel?.Fold(false);
+        /// <summary>Squares picked as a press and release on the map pick them: so many columns from a first, each so many rows (0: every row), for the tests.</summary>
+        public void PickForTest(int first, int count, int rows)
+        {
+            ClearPick();
+            CellGrid grid = _d.Cells;
+            int at = first;
+            for (int k = 0; k < count && at >= 0; k++, at = grid.Next(at))
+            {
+                int r = rows <= 0 ? grid.Columns[at].Rows : Math.Min(rows, grid.Columns[at].Rows);
+                _depth[at] = r - 1;
+            }
+            Gather();
+            _state = BuildModeRules.Next(BuildModeRules.Next(_state, BuildInput.Press, _state.Tool, true), BuildInput.Release, _state.Tool, false);
+            Changed(true);
+        }
+
+        /// <summary>Everything picked let go, as Esc does (for the tests).</summary>
+        public void ClearForTest() => Clear();
+
+        /// <summary>The design window shut, as its Back to the map does (for the tests).</summary>
+        public void ShutCatalogue() => CatalogueBack();
+
+        /// <summary>The tour started again from its first tip, for the tests; true when a tip is up and placed well (why not in <paramref name="wrong"/>).</summary>
+        public bool TourForTest(out string wrong)
+        {
+            wrong = "no tour";
+            if (_tour == null)
+            {
+                return false;
+            }
+            _tour.Start();
+            wrong = _tour.Check();
+            return wrong == null;
+        }
+
+        /// <summary>The tour moved on (or ended after its last tip), for the tests; the step it shows then.</summary>
+        public TourStep TourNextForTest(out string wrong)
+        {
+            wrong = null;
+            if (_tour == null)
+            {
+                wrong = "no tour";
+                return TourStep.Done;
+            }
+            _tour.Next();
+            wrong = _tour.Running ? _tour.Check() : null;
+            return _tour.Step;
+        }
 
         private void StandGhost()
         {

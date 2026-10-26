@@ -125,6 +125,7 @@ namespace RealLifeOverhaul.Construction
                 f.PaintWaits = site.Paint > 0 && !LandRules.Zoned(f.Zones, (BuildUse)(site.Paint - 1));
                 f.Cleared = ClearedGround(site.Id);
                 ProjectFile p = _state.OnLot(site.Id);
+                f.HasProject = p != null;
                 f.UnderWay = p != null && p.Stage == ProjectStage.Building;
                 f.Progress = f.UnderWay ? Built(p) : 0;
                 if (!f.UnderWay && !f.Cleared && LotTaken(lot.Id))
@@ -226,6 +227,65 @@ namespace RealLifeOverhaul.Construction
             int zones = f.Paint > 0 && !f.PaintWaits ? BuildCatalogue.Zone((BuildUse)(f.Paint - 1)) : f.Zones;
             return ConstructionText.Fill("reallife_bld_mode_cell", "address", LotWords(lot.Id), "row", ConstructionText.N(row + 1), "holder", holder, "uses", UsesWords(zones),
                 "storeys", ConstructionText.N(UptownStoreys()), "price", cell);
+        }
+
+        /// <summary>
+        /// One cell as the tooltip beside the pointer says it: who holds it and where, the council's zoning with the height limit, and
+        /// a cell's price or the use painted on the player's own land (and whether City Hall is asked for it). False off the grid.
+        /// </summary>
+        public bool HoverCard(int column, int row, out string head, out string zoning, out string more)
+        {
+            head = zoning = more = null;
+            CellGrid grid = Cells;
+            if (column < 0 || column >= grid.Columns.Count || !LotOfColumn(column, out LotView lot))
+            {
+                return false;
+            }
+            BuildModeRules.ColumnFacts f = FactsOf(column);
+            string holder;
+            if (f.Mine && row < f.MineRows)
+            {
+                holder = ConstructionText.T("reallife_bld_mode_cell_yours");
+            }
+            else if (f.Building)
+            {
+                holder = f.MyBuilding ? ConstructionText.T("reallife_bld_mode_cell_your_building")
+                    : BuildModeGame.Occupant(lot.Street, lot.Number, out _, out string who) && !string.IsNullOrEmpty(who) ? who : ConstructionText.T("reallife_bld_mode_key_taken");
+            }
+            else if (f.Free || f.Mine)
+            {
+                holder = ConstructionText.T("reallife_bld_mode_key_forsale");
+            }
+            else
+            {
+                holder = ConstructionText.T("reallife_bld_mode_cell_kept");
+            }
+            head = ConstructionText.Fill("reallife_bld_hover_head", "holder", holder, "address", LotWords(lot.Id));
+            int council = f.Zones;
+            zoning = ConstructionText.Fill("reallife_bld_hover_zoning", "uses", UsesWords(council), "storeys", ConstructionText.N(UptownStoreys()));
+            if (f.Mine && f.Paint > 0)
+            {
+                string use = ConstructionText.T(BuildCatalogue.UseKeys[Math.Min((int)BuildUse.Count - 1, f.Paint - 1)]);
+                more = ConstructionText.Fill(f.PaintWaits ? "reallife_bld_hover_painted_waits" : "reallife_bld_hover_painted", "use", use);
+            }
+            else if (f.Free || (f.Mine && row >= f.MineRows))
+            {
+                long price = LotPrice(lot);
+                more = price > 0L ? ConstructionText.Fill("reallife_bld_hover_price", "price", ConstructionText.Money(CellRules.ColumnPrice(price, 1, grid.Columns[column].Rows))) : null;
+            }
+            if (f.Developer)
+            {
+                more = (more != null ? more + ". " : string.Empty) + ConstructionText.T("reallife_bld_mode_mark_developer");
+            }
+            return true;
+        }
+
+        /// <summary>The working days a design's building takes at the city's own pace under the code in force (what the builders bid around).</summary>
+        public int PlaceDays(DesignChoice design, BuildUse use)
+        {
+            int storeys = PlansRules.Storeys(design.Height);
+            int hours = PlansRules.Hours(use, Math.Max(1, design.TotalSqm), storeys, ProjectKind.Plot);
+            return CommissionRules.UsualDays(hours, Permits());
         }
 
         /// <summary>A zoning's uses in words, joined by commas ("-" for none).</summary>

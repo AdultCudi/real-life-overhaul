@@ -9,91 +9,64 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.Construction
 {
     /// <summary>
-    /// Build mode's window (the owner, 26 Oct 2026: "The right pane is not enough, open it as a proper big center modal"): a
-    /// copy of the game's help screen (GameUi.HelpFrame, 2400 by 1600 at the middle, in the mod's dark colours) on the help's own
-    /// canvas over the map. On the left the tools and the views, as the help's categories and links, the one in use in the
-    /// game's blue; on the right a page that changes with the tool, written from the game's own parts: the help's topic header
-    /// and paragraphs, the settings menu's rows with their buttons (GameUi.OptionRows), the top bar's bars for the demand
-    /// (GameUi.GameBar), and a legend of plain swatches. While the player picks squares or places a design the window steps aside:
-    /// it slides down until only its top bar shows at the foot of the screen, with the selection or the square under the pointer
-    /// in it, and comes back from its arrow. Laid out by the page's own layout group and scroll, so nothing overlaps at any
-    /// length of text. Built at the first opening; a page written only after a pick or an action; nothing runs a frame of its own.
+    /// Build mode's one big window (the owner, 26 Oct 2026: the map first, a window in the middle only to choose among many
+    /// designs): "Choose a building", a copy of the game's help screen (GameUi.HelpFrame, 2400 by 1600 in the middle, in the
+    /// mod's dark colours). Its list on the left holds the filters as the help's links (Fits here, Corner designs, City designs,
+    /// each with its count), its page a line saying for which squares, then the designs as cards in a grid of three (the game's
+    /// picture of the use, the name, the kind and use, storeys and floor area, the estimate; one that cannot be built there
+    /// greyed with the reason), and a foot that stays in view with the design picked in one line, "Back to the map" and "Place it
+    /// on the map". The cards and the foot's buttons are the designer's tool button (BuildModeKit). Closed, the map is all there
+    /// is. Built at its first opening; written when a filter or a card is picked; nothing runs a frame of its own.
     /// </summary>
     internal sealed class BuildModePanel
     {
         public static IModLogger Logger;
 
-        private const float DemandHigh = 56f;      // a demand row, in the help canvas's units (3840 by 2160)
-        private const float LabelWide = 420f;      // a demand row's name, before its bar
-        private const float KeyHigh = 46f;         // a legend row
-        private const float SwatchSize = 38f;      // a legend row's square: its edge, and inside it its fill
-        private const float SwatchEdge = 7f;
-        private const float FootGap = 24f;         // between the screen's foot and the top bar when the window has stepped aside
-        private const float TextSize = 28f;        // the help's own text size
+        private const float FootHigh = 150f;    // the foot that stays in view, in the help canvas's units
+        private const float FootGap = 40f;      // ... from the window's edges
+        private const float CardHigh = 480f;
+        private const float CardGap = 36f;
+        private const float PictureHigh = 150f;
 
-        private sealed class Part
+        private sealed class Card
         {
-            public OptionRow Row;
-            public int Id;
-        }
-
-        private sealed class DemandRow
-        {
-            public GameObject Root;
-            public TMP_Text Name, Value;
-            public GameBar Bar;
-            public Image Fill;
-        }
-
-        private sealed class KeyRow
-        {
-            public GameObject Root;
-            public Image Edge, Inside;
-            public TMP_Text Name;
+            public KitButton Button;
+            public Image Picture;
+            public TMP_Text Name, Kind, Size, Cost;
+            public int Index;
         }
 
         private HelpFrame _frame;
-        private OptionRows _kit;
+        private BuildModeKit _kit;
         private GameObject _holder;
-        private RectTransform _root;
-        private HelpLink[] _tools;
-        private HelpLink[] _views;
-        private Button _fold;
-        private Transform _foldIcon;
-        private float _canvasHigh, _windowHigh, _barHigh;
-        private Action<int> _onTool, _onView, _onRow;
-        private Action _onFold, _onClose;
-        private readonly List<Part> _buttons = new List<Part>(16);
-        private readonly List<Part> _switches = new List<Part>(2);
-        private readonly List<TMP_Text> _paragraphs = new List<TMP_Text>(16);
-        private readonly List<TMP_Text> _headings = new List<TMP_Text>(8);
-        private readonly DemandRow[] _demand = new DemandRow[4];
-        private readonly List<KeyRow> _keys = new List<KeyRow>(BuildModeRules.LegendMost);
-        private int _buttonsUsed, _switchesUsed, _paragraphsUsed, _headingsUsed, _keysUsed;
+        private RectTransform _root, _grid, _foot;
+        private GridLayoutGroup _gridLayout;
+        private TMP_Text _context, _summary;
+        private KitButton _back, _place;
+        private HelpLink[] _filters;
+        private Action<int> _onFilter, _onCard;
+        private Action _onBack, _onPlace;
+        private readonly List<Card> _cards = new List<Card>(32);
+        private int _cardsUsed;
 
         public bool Alive => _root != null;
 
-        /// <summary>True while the window is up (stepped aside or not).</summary>
         public bool Shown => _root != null && _root.gameObject.activeSelf;
 
-        /// <summary>True while it has stepped aside to its top bar.</summary>
-        public bool Folded { get; private set; }
-
-        /// <summary>The window, hidden, on the help's canvas. Null, with one line in Player.log, if the game's help or settings menu is not built as expected.</summary>
-        public static BuildModePanel Make(Transform canvas, Action<int> onTool, Action<int> onView, Action<int> onRow, Action onFold, Action onClose)
+        /// <summary>The window, hidden, on the help's canvas. Null, with one line in Player.log, if the game's help is not built as expected.</summary>
+        public static BuildModePanel Make(Transform canvas, BuildModeKit kit, Action<int> onFilter, Action<int> onCard, Action onBack, Action onPlace)
         {
-            if (canvas == null)
+            if (canvas == null || kit == null)
             {
-                UiClone.Fallback("the game's help screen has no canvas to stand build mode's window on");
+                UiClone.Fallback("the game's help screen has no canvas to stand build mode's design window on");
                 return null;
             }
-            var panel = new BuildModePanel { _onTool = onTool, _onView = onView, _onRow = onRow, _onFold = onFold, _onClose = onClose };
+            var panel = new BuildModePanel { _kit = kit, _onFilter = onFilter, _onCard = onCard, _onBack = onBack, _onPlace = onPlace };
             try
             {
-                panel._holder = UiClone.Dormant(canvas, "RealLife Build Mode (asleep)").gameObject;
-                panel._frame = HelpFrame.Make(panel._holder.transform, "RealLife Build Mode");
-                panel._kit = panel._frame != null ? OptionRows.Take(panel._holder.transform) : null;
-                if (panel._frame == null || panel._kit == null)
+                panel._holder = UiClone.Dormant(canvas, "RealLife Build Mode designs (asleep)").gameObject;
+                panel._frame = HelpFrame.Make(panel._holder.transform, "RealLife Build Mode designs");
+                if (panel._frame == null)
                 {
                     panel.Destroy();
                     return null;
@@ -104,7 +77,7 @@ namespace RealLifeOverhaul.Construction
             catch (Exception e)
             {
                 Logger?.Error(e);
-                UiClone.Fallback("build mode's window could not be built from the game's help screen");
+                UiClone.Fallback("build mode's design window could not be built from the game's help screen");
                 panel.Destroy();
                 return null;
             }
@@ -118,56 +91,91 @@ namespace RealLifeOverhaul.Construction
             _root.anchorMin = _root.anchorMax = _root.pivot = new Vector2(0.5f, 0.5f);
             _root.sizeDelta = size.x > 1f ? size : new Vector2(2400f, 1600f);
             _root.anchoredPosition = Vector2.zero;
-            _root.SetAsLastSibling();
-            _windowHigh = _root.sizeDelta.y;
-            _canvasHigh = ((RectTransform)canvas).rect.height > 1f ? ((RectTransform)canvas).rect.height : 2160f;
-            UiClone.Key(_frame.Headline, "reallife_bld_mode_title");
+            UiClone.Key(_frame.Headline, "reallife_bld_cat_title");
             UiClone.Words(_frame.Status, string.Empty);
-            UiClone.Rewire(_frame.Close, _onClose);
-            _frame.Back.gameObject.SetActive(false);      // no pages to go back through
-            _frame.Search.gameObject.SetActive(false);    // nothing to look for: the stray "Name" field of the first window is gone
-            // The forward button, turned, becomes the arrow that sends the window aside and brings it back, in the top bar.
-            Transform bar = _frame.Close.transform.parent;
-            _barHigh = bar is RectTransform barRect && barRect.rect.height > 1f ? barRect.rect.height : 120f;
-            var fold = (RectTransform)_frame.Forward.transform;
-            fold.SetParent(bar, false);
-            fold.anchorMin = fold.anchorMax = fold.pivot = new Vector2(1f, 0.5f);
-            fold.anchoredPosition = new Vector2(-(136f + 1300f + 24f), 0f);   // left of the status (HelpFrame: 1300 wide, 136 from the right)
-            _fold = UiClone.Rewire(_frame.Forward, _onFold);
-            _foldIcon = fold.Find("Icon");
-            // The tools and the views as the help's categories, each always open; a link is a tool or a view.
-            HelpGroup tools = _frame.AddGroup("Tools");
-            UiClone.Key(tools.Name, "reallife_bld_mode_tools");
-            tools.SetOpen(true);
-            _tools = new HelpLink[(int)BuildTool.Count];
-            for (int t = 0; t < _tools.Length; t++)
+            UiClone.Rewire(_frame.Close, _onBack);
+            _frame.Back.gameObject.SetActive(false);
+            _frame.Forward.gameObject.SetActive(false);
+            _frame.Search.gameObject.SetActive(false);
+            if (_frame.TopicGlyph != null && _frame.TopicGlyph.transform.parent != null)
             {
-                int tool = t;
-                _tools[t] = tools.Add("Tool " + t);
-                UiClone.Key(_tools[t].Name, BuildMode.ToolKey((BuildTool)t));
-                UiClone.Rewire(_tools[t].Button, () => _onTool?.Invoke(tool));
+                _frame.TopicGlyph.transform.parent.parent.gameObject.SetActive(false);   // the help's topic header: the page starts with what it is for
             }
-            UiClone.Rewire(tools.Button, null);
-            HelpGroup views = _frame.AddGroup("Views");
-            UiClone.Key(views.Name, "reallife_bld_mode_views");
-            views.SetOpen(true);
-            _views = new HelpLink[(int)BuildView.Count];
-            for (int v = 0; v < _views.Length; v++)
+
+            // The filters as the help's links.
+            HelpGroup group = _frame.AddGroup("Filters");
+            UiClone.Key(group.Name, "reallife_bld_cat_show");
+            group.SetOpen(true);
+            UiClone.Rewire(group.Button, null);
+            _filters = new HelpLink[BuildModeCatalogue.FilterCount];
+            for (int f = 0; f < _filters.Length; f++)
             {
-                int view = v;
-                _views[v] = views.Add("View " + v);
-                UiClone.Key(_views[v].Name, BuildModeRules.ViewKeys[v]);
-                UiClone.Rewire(_views[v].Button, () => _onView?.Invoke(view));
+                int filter = f;
+                _filters[f] = group.Add("Filter " + f);
+                UiClone.Rewire(_filters[f].Button, () => _onFilter?.Invoke(filter));
             }
-            UiClone.Rewire(views.Button, null);
-            for (int u = 0; u < _demand.Length; u++)
-            {
-                _demand[u] = MakeDemand(u);
-            }
-            _root.gameObject.SetActive(false);   // the holder stays, asleep: the help's and the menu's templates sleep in it for the parts made later
+
+            // The page: what it is for, then the grid.
+            _context = _frame.NewParagraph();
+            _context.fontSize = 34f;
+            var grid = new GameObject("Designs", typeof(RectTransform));
+            grid.layer = _frame.Page.gameObject.layer;
+            grid.transform.SetParent(_frame.Page, false);
+            _grid = (RectTransform)grid.transform;
+            _gridLayout = grid.AddComponent<GridLayoutGroup>();
+            _gridLayout.spacing = new Vector2(CardGap, CardGap);
+            _gridLayout.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+            _gridLayout.constraintCount = 3;
+            _gridLayout.cellSize = new Vector2(500f, CardHigh);
+            _gridLayout.childAlignment = TextAnchor.UpperLeft;
+
+            // The foot that stays in view: the design picked, back to the map, place it.
+            var page = (RectTransform)_frame.PageScroll.transform;
+            page.offsetMin = new Vector2(page.offsetMin.x, page.offsetMin.y + FootHigh + FootGap);
+            _foot = BuildModeKit.Strip(_root, "Foot", true, new RectOffset(40, 40, 20, 20), 28f, TextAnchor.MiddleLeft);
+            _foot.anchorMin = new Vector2(0f, 0f);
+            _foot.anchorMax = new Vector2(1f, 0f);
+            _foot.pivot = new Vector2(0.5f, 0f);
+            _foot.offsetMin = new Vector2(FootGap, FootGap);
+            _foot.offsetMax = new Vector2(-FootGap, FootGap + FootHigh);
+            BuildModeKit.Picture(_foot, "Ground", _kit.White ?? _kit.Line, DarkLook.Sunk, 0f, 0f).GetComponent<LayoutElement>().ignoreLayout = true;
+            Stretch((RectTransform)_foot.GetChild(0));
+            _summary = _kit.Text(_foot, "Picked", 34f, DarkLook.Soft, false, true);
+            _summary.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1f;
+            _back = FootButton("reallife_bld_cat_back", () => _onBack?.Invoke(), 400f, false);
+            _place = FootButton("reallife_bld_cat_place", () => _onPlace?.Invoke(), 480f, true);
+            _root.gameObject.SetActive(false);
         }
 
-        // ------------------------------------------------------------------ showing
+        private KitButton FootButton(string key, Action click, float wide, bool main)
+        {
+            KitButton b = _kit.Button(_foot, key, click, wide, 108f);
+            if (b.Icon != null)
+            {
+                b.Icon.gameObject.SetActive(false);
+            }
+            b.Label = _kit.Text(b.Root, "Words", 38f, Color.white, true, false);
+            Stretch((RectTransform)b.Label.transform);
+            b.Label.alignment = TextAlignmentOptions.Center;
+            b.Label.enableAutoSizing = true;
+            b.Label.fontSizeMin = 24f;
+            b.Label.fontSizeMax = 38f;
+            UiClone.Key(b.Label, key);
+            BuildModeBar.Paint(b, main ? _kit.Blue : _kit.White ?? _kit.Line, main ? Color.white : BuildModeBar.ButtonGrey);
+            return b;
+        }
+
+        private static void Stretch(RectTransform r)
+        {
+            r.anchorMin = Vector2.zero;
+            r.anchorMax = Vector2.one;
+            r.offsetMin = new Vector2(16f, 0f);
+            r.offsetMax = new Vector2(-16f, 0f);
+            var e = r.GetComponent<LayoutElement>() ?? r.gameObject.AddComponent<LayoutElement>();
+            e.ignoreLayout = true;
+        }
+
+        // ------------------------------------------------------------------ showing and writing
 
         public void Show(bool shown)
         {
@@ -181,29 +189,107 @@ namespace RealLifeOverhaul.Construction
             }
         }
 
-        /// <summary>Steps aside (only the top bar shows, at the foot of the screen) or comes back to the middle.</summary>
-        public void Fold(bool folded)
+        /// <summary>Starts the page: what it is for, the filters' names with their counts and the one chosen.</summary>
+        public void Begin(string context, string[] filterNames, int chosen)
         {
-            if (_root == null)
+            UiClone.Words(_context, context);
+            for (int f = 0; f < _filters.Length; f++)
             {
-                return;
+                UiClone.Words(_filters[f].Name, filterNames[f]);
+                _filters[f].SetChosen(f == chosen);
             }
-            Folded = folded;
-            float y = folded ? -_canvasHigh * 0.5f + _barHigh + FootGap - _windowHigh * 0.5f : 0f;
-            _root.anchoredPosition = new Vector2(0f, y);
-            if (_foldIcon != null)
+            LayoutRebuilder.ForceRebuildLayoutImmediate(_frame.Page);
+            float width = _frame.Page.rect.width > 600f ? _frame.Page.rect.width : 1600f;
+            _gridLayout.cellSize = new Vector2(Mathf.Floor((width - CardGap * 2f - 8f) / 3f), CardHigh);
+            _cardsUsed = 0;
+        }
+
+        /// <summary>A design's card: the game's picture of its use, its name, kind and use (or why it cannot go there), its size and its estimate.</summary>
+        public void Add(int index, Sprite picture, string name, string kind, string size, string cost, bool usable, bool chosen)
+        {
+            Card c;
+            if (_cardsUsed < _cards.Count)
             {
-                _foldIcon.localEulerAngles = new Vector3(0f, 0f, folded ? 90f : -90f);   // up: bring it back; down: send it aside
+                c = _cards[_cardsUsed];
+            }
+            else
+            {
+                c = MakeCard();
+                _cards.Add(c);
+            }
+            _cardsUsed++;
+            c.Index = index;
+            c.Picture.sprite = picture;
+            c.Picture.gameObject.SetActive(picture != null);
+            UiClone.Words(c.Name, name);
+            UiClone.Words(c.Kind, kind);
+            c.Kind.color = usable ? DarkLook.Soft : BuildModeTip.Why;
+            UiClone.Words(c.Size, size);
+            UiClone.Words(c.Cost, cost);
+            c.Button.SetChosen(chosen);
+            c.Button.SetUsable(usable);
+            c.Button.Root.SetAsLastSibling();
+            c.Button.Show(true);
+        }
+
+        private Card MakeCard()
+        {
+            var c = new Card();
+            Card wired = c;
+            c.Button = _kit.Button(_grid, "Card", () => _onCard?.Invoke(wired.Index), -1f, -1f);
+            BuildModeBar.Paint(c.Button, _kit.White ?? _kit.Line, DarkLook.Raised);
+            if (c.Button.Chosen != null)
+            {
+                c.Button.Chosen.GetComponent<Image>().color = new Color(1f, 1f, 1f, 0.6f);
+                ((RectTransform)c.Button.Chosen.transform).sizeDelta = Vector2.zero;
+                BuildModeKit.Size(c.Button.Chosen, 0f, 0f).ignoreLayout = true;
+            }
+            if (c.Button.Icon != null)
+            {
+                c.Button.Icon.gameObject.SetActive(false);
+                BuildModeKit.Size(c.Button.Icon.gameObject, 0f, 0f).ignoreLayout = true;
+            }
+            var layout = c.Button.Root.gameObject.AddComponent<VerticalLayoutGroup>();
+            layout.padding = new RectOffset(24, 24, 24, 24);
+            layout.spacing = 12f;
+            layout.childControlWidth = layout.childControlHeight = true;
+            layout.childForceExpandWidth = true;
+            layout.childForceExpandHeight = false;
+            Image ground = BuildModeKit.Picture(c.Button.Root, "Picture", _kit.White ?? _kit.Line, DarkLook.Sunk, -1f, PictureHigh);
+            c.Picture = BuildModeKit.Picture(ground.transform, "Use", null, new Color(0.62f, 0.78f, 0.91f, 1f), 110f, 110f);
+            var pic = (RectTransform)c.Picture.transform;
+            pic.anchorMin = pic.anchorMax = pic.pivot = new Vector2(0.5f, 0.5f);
+            pic.anchoredPosition = Vector2.zero;
+            c.Picture.GetComponent<LayoutElement>().ignoreLayout = true;
+            c.Name = _kit.Text(c.Button.Root, "Name", 40f, DarkLook.Text, true, true);
+            c.Kind = _kit.Text(c.Button.Root, "Kind", 30f, DarkLook.Soft, false, true);
+            RectTransform row = BuildModeKit.Strip(c.Button.Root, "Figures", true, new RectOffset(), 16f, TextAnchor.MiddleLeft);
+            c.Size = _kit.Text(row, "Size", 30f, DarkLook.Muted, false, true);
+            c.Size.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1f;
+            c.Cost = _kit.Text(row, "Cost", 30f, DarkLook.Text, true, false);
+            return c;
+        }
+
+        /// <summary>Ends the page: the cards not written hidden, the foot's line, Place usable or not, scrolled to the top when asked.</summary>
+        public void End(string summary, bool placeUsable, bool top)
+        {
+            for (int i = _cardsUsed; i < _cards.Count; i++)
+            {
+                _cards[i].Button.Show(false);
+            }
+            UiClone.Words(_summary, summary);
+            _place.SetUsable(placeUsable);
+            LayoutRebuilder.ForceRebuildLayoutImmediate(_frame.Page);
+            LayoutRebuilder.ForceRebuildLayoutImmediate(_foot);
+            if (top)
+            {
+                _frame.Page.anchoredPosition = new Vector2(_frame.Page.anchoredPosition.x, 0f);
+                _frame.PageScroll.velocity = Vector2.zero;
             }
         }
 
         public void Destroy()
         {
-            for (int u = 0; u < _demand.Length; u++)
-            {
-                _demand[u]?.Bar?.Destroy();
-                _demand[u] = null;
-            }
             if (_root != null)
             {
                 UnityEngine.Object.Destroy(_root.gameObject);
@@ -214,429 +300,68 @@ namespace RealLifeOverhaul.Construction
             }
             _root = null;
             _holder = null;
-            _buttons.Clear();
-            _switches.Clear();
-            _paragraphs.Clear();
-            _headings.Clear();
-            _keys.Clear();
-        }
-
-        // ------------------------------------------------------------------ writing a page
-
-        /// <summary>Starts a page: the tool and the view chosen in the list, the header's square, its small capitals, its name and note.</summary>
-        public void Begin(BuildTool tool, BuildView view, Sprite glyph, Color square, string group, string name, string note)
-        {
-            for (int t = 0; t < _tools.Length; t++)
-            {
-                _tools[t].SetChosen(t == (int)tool);
-            }
-            for (int v = 0; v < _views.Length; v++)
-            {
-                _views[v].SetChosen(v == (int)view);
-            }
-            if (_frame.TopicGlyph != null)
-            {
-                if (glyph != null)
-                {
-                    _frame.TopicGlyph.sprite = glyph;
-                }
-                Image back = _frame.TopicGlyph.transform.parent != null ? _frame.TopicGlyph.transform.parent.GetComponent<Image>() : null;
-                if (back != null)
-                {
-                    back.color = square;
-                }
-            }
-            UiClone.Words(_frame.TopicCategory, group);
-            UiClone.Words(_frame.TopicName, name);
-            UiClone.Words(_frame.TopicNote, note ?? string.Empty);
-            _buttonsUsed = _switchesUsed = _paragraphsUsed = _headingsUsed = _keysUsed = 0;
-            for (int u = 0; u < _demand.Length; u++)
-            {
-                if (_demand[u] != null && _demand[u].Root.activeSelf)
-                {
-                    _demand[u].Root.SetActive(false);
-                }
-            }
-        }
-
-        /// <summary>The line in the top bar: the selection, or the square under the pointer.</summary>
-        public void Status(string text)
-        {
-            UiClone.Words(_frame.Status, text ?? string.Empty);
-        }
-
-        public void Heading(string text)
-        {
-            TMP_Text t = Take(_headings, ref _headingsUsed, true);
-            if (t != null)
-            {
-                UiClone.Words(t, text);
-            }
-        }
-
-        public void Paragraph(string text)
-        {
-            TMP_Text t = Take(_paragraphs, ref _paragraphsUsed, false);
-            if (t != null)
-            {
-                UiClone.Words(t, text);
-            }
-        }
-
-        /// <summary>A row of the settings menu's with its button: a name, a line under it, the button's word; tinted in a colour, or the game's own look.</summary>
-        public void Button(int id, string name, string note, string caption, bool usable, Color? tint = null)
-        {
-            Part part = TakeRow(_buttons, ref _buttonsUsed, OptionRowKind.Button);
-            part.Id = id;
-            UiClone.Words(part.Row.Name, name);
-            if (part.Row.Note != null)
-            {
-                part.Row.Note.gameObject.SetActive(!string.IsNullOrEmpty(note));
-                UiClone.Words(part.Row.Note, note ?? string.Empty);
-            }
-            UiClone.Words(part.Row.Caption, caption);
-            part.Row.SetUsable(usable);
-            if (part.Row.Button != null && part.Row.Button.image != null)
-            {
-                part.Row.Button.image.color = tint ?? Color.white;   // a zone's button in its colour; any other the game's own
-            }
-        }
-
-        /// <summary>A switch row of the settings menu's.</summary>
-        public void Switch(int id, string name, string note, bool on, bool usable)
-        {
-            Part part = TakeRow(_switches, ref _switchesUsed, OptionRowKind.Switch);
-            part.Id = id;
-            UiClone.Words(part.Row.Name, name);
-            if (part.Row.Note != null)
-            {
-                part.Row.Note.gameObject.SetActive(!string.IsNullOrEmpty(note));
-                UiClone.Words(part.Row.Note, note ?? string.Empty);
-            }
-            part.Row.Switch.SetIsOnWithoutNotify(on);
-            part.Row.SetUsable(usable);
-        }
-
-        /// <summary>A use's demand as one of the top bar's bars, in the use's colour, with its name and its figure.</summary>
-        public void Demand(int use, string name, int value, Color colour)
-        {
-            DemandRow d = use >= 0 && use < _demand.Length ? _demand[use] : null;
-            if (d == null)
-            {
-                return;
-            }
-            d.Root.transform.SetAsLastSibling();
-            d.Root.SetActive(true);
-            UiClone.Words(d.Name, name);
-            UiClone.Words(d.Value, value < 0 ? "-" : value.ToString(System.Globalization.CultureInfo.InvariantCulture));
-            if (d.Fill != null)
-            {
-                d.Fill.color = new Color(colour.r, colour.g, colour.b, 1f);
-            }
-            if (d.Bar != null)
-            {
-                d.Bar.Show(true);
-                d.Bar.Fill(Mathf.Clamp01(Math.Max(0, value) / 100f));
-            }
-        }
-
-        /// <summary>A legend row: a square of the fill inside its edge's colour (an edge alone: the window's own colour inside), and its words.</summary>
-        public void Key(Color fill, Color edge, bool edgeOnly, string text)
-        {
-            KeyRow k;
-            if (_keysUsed < _keys.Count)
-            {
-                k = _keys[_keysUsed];
-            }
-            else
-            {
-                k = MakeKey();
-                _keys.Add(k);
-            }
-            _keysUsed++;
-            k.Root.transform.SetAsLastSibling();
-            k.Root.SetActive(true);
-            k.Edge.color = new Color(edge.r, edge.g, edge.b, 1f);
-            k.Inside.color = edgeOnly ? DarkLook.Back : new Color(fill.r, fill.g, fill.b, 1f);
-            UiClone.Words(k.Name, text);
-        }
-
-        /// <summary>Ends a page: the parts not written hidden, the page laid out at once, scrolled to its top when asked.</summary>
-        public void End(bool top)
-        {
-            Hide(_buttons, _buttonsUsed);
-            Hide(_switches, _switchesUsed);
-            HideTexts(_paragraphs, _paragraphsUsed);
-            HideTexts(_headings, _headingsUsed);
-            for (int i = _keysUsed; i < _keys.Count; i++)
-            {
-                if (_keys[i].Root.activeSelf)
-                {
-                    _keys[i].Root.SetActive(false);
-                }
-            }
-            LayoutRebuilder.ForceRebuildLayoutImmediate(_frame.Page);
-            if (top)
-            {
-                _frame.Page.anchoredPosition = new Vector2(_frame.Page.anchoredPosition.x, 0f);
-                _frame.PageScroll.velocity = Vector2.zero;
-            }
-        }
-
-        // ------------------------------------------------------------------ the parts
-
-        private TMP_Text Take(List<TMP_Text> pool, ref int used, bool heading)
-        {
-            TMP_Text t;
-            if (used < pool.Count)
-            {
-                t = pool[used];
-            }
-            else
-            {
-                t = heading ? _frame.NewSmall() : _frame.NewParagraph();
-                if (t == null)
-                {
-                    return null;
-                }
-                pool.Add(t);
-            }
-            used++;
-            t.transform.SetAsLastSibling();
-            if (!t.gameObject.activeSelf)
-            {
-                t.gameObject.SetActive(true);
-            }
-            return t;
-        }
-
-        private Part TakeRow(List<Part> pool, ref int used, OptionRowKind kind)
-        {
-            Part part;
-            if (used < pool.Count)
-            {
-                part = pool[used];
-            }
-            else
-            {
-                part = new Part { Row = _kit.Make(kind, _frame.Page) };
-                Part wired = part;
-                if (kind == OptionRowKind.Switch)
-                {
-                    part.Row.Switch.onValueChanged.AddListener(_ => UiClone.Safe(() => _onRow?.Invoke(wired.Id)));
-                }
-                else
-                {
-                    UiClone.Rewire(part.Row.Button, () => _onRow?.Invoke(wired.Id));
-                }
-                pool.Add(part);
-            }
-            used++;
-            part.Row.Root.transform.SetAsLastSibling();
-            part.Row.Show(true);
-            return part;
-        }
-
-        private static void Hide(List<Part> pool, int used)
-        {
-            for (int i = used; i < pool.Count; i++)
-            {
-                pool[i].Row.Show(false);
-            }
-        }
-
-        private static void HideTexts(List<TMP_Text> pool, int used)
-        {
-            for (int i = used; i < pool.Count; i++)
-            {
-                if (pool[i].gameObject.activeSelf)
-                {
-                    pool[i].gameObject.SetActive(false);
-                }
-            }
-        }
-
-        // A row of the page laid by hand inside: a fixed height for the page's layout, its parts placed from its left.
-        private GameObject Strip(string name, float high)
-        {
-            var go = new GameObject(name, typeof(RectTransform), typeof(LayoutElement));
-            go.layer = _frame.Page.gameObject.layer;
-            go.transform.SetParent(_frame.Page, false);
-            var element = go.GetComponent<LayoutElement>();
-            element.minHeight = element.preferredHeight = high;
-            element.flexibleWidth = 1f;
-            return go;
-        }
-
-        // A one-line text of the help's paragraph, placed in a strip from its left.
-        private TMP_Text Words(Transform strip, float from, float wide, TextAlignmentOptions align)
-        {
-            TMP_Text t = _frame.NewParagraph();
-            if (t == null)
-            {
-                return null;
-            }
-            t.transform.SetParent(strip, false);
-            var element = t.GetComponent<LayoutElement>();
-            if (element != null)
-            {
-                element.ignoreLayout = true;
-            }
-            var rect = (RectTransform)t.transform;
-            rect.anchorMin = new Vector2(0f, 0f);
-            rect.anchorMax = new Vector2(0f, 1f);
-            rect.pivot = new Vector2(0f, 0.5f);
-            rect.anchoredPosition = new Vector2(from, 0f);
-            rect.sizeDelta = new Vector2(wide, 0f);
-            t.fontSize = TextSize;
-            t.alignment = align;
-            t.textWrappingMode = TextWrappingModes.NoWrap;
-            t.overflowMode = TextOverflowModes.Ellipsis;
-            return t;
-        }
-
-        private DemandRow MakeDemand(int use)
-        {
-            GameObject strip = Strip("Demand " + use, DemandHigh);
-            var d = new DemandRow { Root = strip };
-            d.Name = Words(strip.transform, 0f, LabelWide - 20f, TextAlignmentOptions.MidlineLeft);
-            d.Bar = GameBar.Make(strip.transform, "Demand bar " + use);
-            float barWide = 600f;
-            if (d.Bar != null)
-            {
-                RectTransform r = d.Bar.Rect;
-                r.anchorMin = r.anchorMax = new Vector2(0f, 0.5f);
-                r.pivot = new Vector2(0f, 0.5f);
-                r.anchoredPosition = new Vector2(LabelWide, 0f);
-                barWide = r.sizeDelta.x;
-                d.Fill = r.childCount > 0 ? r.GetChild(0).GetComponent<Image>() : null;   // the filler, tinted the use's colour
-                Canvas own = r.GetComponent<Canvas>();
-                if (own != null)
-                {
-                    UnityEngine.Object.DestroyImmediate(own);   // drawn with the page, so the page's scroll clips it as it clips the rest
-                }
-            }
-            d.Value = Words(strip.transform, LabelWide + barWide + 24f, 120f, TextAlignmentOptions.MidlineLeft);
-            strip.SetActive(false);
-            return d;
-        }
-
-        private KeyRow MakeKey()
-        {
-            GameObject strip = Strip("Key", KeyHigh);
-            var k = new KeyRow { Root = strip };
-            k.Edge = Square(strip.transform, "Edge", SwatchSize, 0f);
-            k.Inside = Square(k.Edge.transform, "Inside", SwatchSize - SwatchEdge * 2f, 0f);
-            ((RectTransform)k.Inside.transform).anchorMin = ((RectTransform)k.Inside.transform).anchorMax = ((RectTransform)k.Inside.transform).pivot = new Vector2(0.5f, 0.5f);
-            ((RectTransform)k.Inside.transform).anchoredPosition = Vector2.zero;
-            k.Name = Words(strip.transform, SwatchSize + 24f, 1400f, TextAlignmentOptions.MidlineLeft);
-            return k;
-        }
-
-        // A plain square of colour, looked at only (it takes no pointer).
-        private static Image Square(Transform parent, string name, float size, float from)
-        {
-            var go = new GameObject(name, typeof(RectTransform), typeof(Image));
-            go.layer = parent.gameObject.layer;
-            go.transform.SetParent(parent, false);
-            var rect = (RectTransform)go.transform;
-            rect.anchorMin = rect.anchorMax = new Vector2(0f, 0.5f);
-            rect.pivot = new Vector2(0f, 0.5f);
-            rect.anchoredPosition = new Vector2(from, 0f);
-            rect.sizeDelta = new Vector2(size, size);
-            var image = go.GetComponent<Image>();
-            image.raycastTarget = false;
-            return image;
+            _cards.Clear();
         }
 
         // ------------------------------------------------------------------ the test's measure
 
-        /// <summary>
-        /// The page as drawn now, for the test: every part shown stands below the one before it with no overlap, no text is cut
-        /// short or runs out of its box, and the list's links do not overlap. Null when all is well, else what is wrong.
-        /// </summary>
+        /// <summary>The window as drawn now: no text cut short, no card over another or past the page's sides, the foot apart from the page. Null when all is well.</summary>
         public string Overlap()
         {
             if (_root == null || !_root.gameObject.activeInHierarchy)
             {
-                return "the window is not up";
+                return "the design window is not up";
             }
             Canvas.ForceUpdateCanvases();
             LayoutRebuilder.ForceRebuildLayoutImmediate(_frame.Page);
-            string wrong = Stacked(_frame.Page, "the page");
-            if (wrong != null)
+            foreach (TMP_Text t in _root.GetComponentsInChildren<TMP_Text>(false))
             {
-                return wrong;
-            }
-            foreach (TMP_Text t in _frame.Page.GetComponentsInChildren<TMP_Text>(false))
-            {
-                if (string.IsNullOrEmpty(t.text))
+                if (string.IsNullOrEmpty(t.text) || !t.transform.IsChildOf(_grid) && !t.transform.IsChildOf(_foot))
                 {
                     continue;
                 }
                 t.ForceMeshUpdate();
                 RectTransform r = t.rectTransform;
-                if (t.isTextTruncated || (t.textWrappingMode != TextWrappingModes.NoWrap && t.preferredHeight > r.rect.height + 2f))
+                if (t.isTextTruncated || t.preferredHeight > r.rect.height + 2f || (t.textWrappingMode == TextWrappingModes.NoWrap && !t.enableAutoSizing && t.preferredWidth > r.rect.width + 2f))
                 {
-                    return "'" + Short(t.text) + "' is cut short (" + t.preferredHeight.ToString("0") + " high in " + r.rect.height.ToString("0") + ")";
+                    return "'" + (t.text.Length > 40 ? t.text.Substring(0, 40) : t.text) + "' is cut short";
                 }
             }
-            for (int i = 0; i < _tools.Length; i++)
+            Rect page = BuildModeBar.World((RectTransform)_grid.parent);
+            Rect foot = BuildModeBar.World(_foot);
+            Rect view = BuildModeBar.World((RectTransform)_frame.PageScroll.transform);
+            if (view.Overlaps(foot))
             {
-                for (int k = 0; k < _views.Length; k++)
+                return "the page runs under the foot";
+            }
+            for (int i = 0; i < _cardsUsed; i++)
+            {
+                Rect a = BuildModeBar.World(_cards[i].Button.Root);
+                if (a.xMin < page.xMin - 0.5f || a.xMax > page.xMax + 0.5f)
                 {
-                    if (Meets((RectTransform)_tools[i].Root.transform, (RectTransform)_views[k].Root.transform))
+                    return "a card runs past the page's side";
+                }
+                foreach (Transform part in _cards[i].Button.Root)
+                {
+                    var r = part as RectTransform;
+                    if (r != null && part.gameObject.activeSelf && (part.GetComponent<LayoutElement>() == null || !part.GetComponent<LayoutElement>().ignoreLayout))
                     {
-                        return "the list's links meet (" + i + ", " + k + ")";
+                        Rect p = BuildModeBar.World(r);
+                        if (p.yMin < a.yMin - 0.5f)
+                        {
+                            return "a card's '" + part.name + "' runs out of its card";
+                        }
+                    }
+                }
+                for (int k = i + 1; k < _cardsUsed; k++)
+                {
+                    if (a.Overlaps(BuildModeBar.World(_cards[k].Button.Root)))
+                    {
+                        return "two cards meet";
                     }
                 }
             }
             return null;
         }
-
-        // Each shown child below the one before it.
-        private static string Stacked(RectTransform parent, string what)
-        {
-            float lastBottom = float.MaxValue;
-            string lastName = null;
-            var corners = new Vector3[4];
-            for (int i = 0; i < parent.childCount; i++)
-            {
-                var child = parent.GetChild(i) as RectTransform;
-                if (child == null || !child.gameObject.activeSelf)
-                {
-                    continue;
-                }
-                var element = child.GetComponent<LayoutElement>();
-                if (element != null && element.ignoreLayout)
-                {
-                    continue;
-                }
-                child.GetWorldCorners(corners);
-                float top = corners[1].y, bottom = corners[0].y;
-                if (lastName != null && top > lastBottom + 0.5f)
-                {
-                    return what + ": '" + child.name + "' overlaps '" + lastName + "' by " + (top - lastBottom).ToString("0.0");
-                }
-                lastBottom = bottom;
-                lastName = child.name;
-            }
-            return null;
-        }
-
-        private static bool Meets(RectTransform a, RectTransform b)
-        {
-            if (!a.gameObject.activeInHierarchy || !b.gameObject.activeInHierarchy)
-            {
-                return false;
-            }
-            var ca = new Vector3[4];
-            var cb = new Vector3[4];
-            a.GetWorldCorners(ca);
-            b.GetWorldCorners(cb);
-            return ca[0].x < cb[2].x - 0.5f && cb[0].x < ca[2].x - 0.5f && ca[0].y < cb[1].y - 0.5f && cb[0].y < ca[1].y - 0.5f;
-        }
-
-        private static string Short(string text) => text.Length > 40 ? text.Substring(0, 40) : text;
     }
 }

@@ -10,45 +10,46 @@ using UnityEngine;
 namespace RealLifeOverhaul.Construction
 {
     /// <summary>
-    /// What build mode's window says (BuildModePanel, a copy of the game's help screen in the middle): the tool and the view in
-    /// the list, the tool's page (a short help, what is picked as a card of figures with its actions, the zones as buttons in
-    /// their colours, the designs with their size and cost), the district's demand as bars, the view's legend and the sites under
-    /// way, each with its marker on the map. Written again only after a pick or an action. Each action is the construction game's
-    /// own call, a cost asked first in the game's question box.
+    /// What build mode's interface says (BuildModeBar over the map, BuildModePanel for the designs): the hint bar's line for where
+    /// build mode stands (BuildModeHintRules), the tools with the reason each cannot be used yet, the views, the demand, the tool
+    /// panel for the tool in use (what is picked with its figures and the one or two things to press), and the design window.
+    /// Written again only after a pick or an action. Each action is the construction game's own call, a cost asked first in the
+    /// game's question box.
     /// </summary>
     public sealed partial class BuildMode
     {
-        // Row ids.
-        private const int RowBuy = 1, RowClear = 2, RowFold = 3, RowPaint = 10, RowPaintNone = 14, RowParking = 20, RowBuild = 21, RowDemolish = 30, RowJoin = 40, RowSplit = 41, RowRefit = 50;
-        private const int RowDesign = 200, RowMark = 300;
-
-        private const string Red = "<color=#FF6B6B>";
-        private const string Shut = "</color>";
-
-        private static readonly string[] ToolKeys =
-        {
-            "reallife_bld_mode_tool_land", "reallife_bld_mode_tool_zone", "reallife_bld_mode_tool_place", "reallife_bld_mode_tool_bulldoze", "reallife_bld_mode_tool_join",
-                "reallife_bld_mode_tool_refurbish"
-        };
-
-        private static readonly string[] ToolHelp =
-        {
-            "reallife_bld_mode_help_land", "reallife_bld_mode_help_zone", "reallife_bld_mode_help_place", "reallife_bld_mode_help_bulldoze", "reallife_bld_mode_help_join",
-                "reallife_bld_mode_help_refurbish"
-        };
-
-        // Each tool's square in the header: the game's own colours where it has one for the thing (for sale, the player's, a use).
-        private static readonly int[] ToolSquare =
-        {
-            BuildModeRules.ForSale, BuildModeRules.LineZoned, BuildModeRules.Offices, BuildModeRules.LineDemolished, BuildModeRules.LineYours, BuildModeRules.UnderWayDone
-        };
+        // The panel's buttons.
+        private const int RowBuy = 1, RowClear = 2, RowChoose = 3, RowPaint = 10, RowPaintNone = 14, RowParking = 20, RowBuild = 21, RowOther = 22, RowDemolish = 30, RowJoin = 40,
+            RowSplit = 41, RowRefit = 50;
+        private const int RowMark = 300;
+        private const int BrushNone = (int)BuildUse.Count;   // the zone brush that takes a zone away
 
         private readonly int[] _keyFills = new int[BuildModeRules.LegendMost];
         private readonly int[] _keyLines = new int[BuildModeRules.LegendMost];
         private readonly string[] _keyWords = new string[BuildModeRules.LegendMost];
+        private readonly string[] _toolNames = new string[(int)BuildTool.Count];
+        private readonly string[] _toolLines = new string[(int)BuildTool.Count];
+        private readonly string[] _toolWhy = new string[(int)BuildTool.Count];
+        private readonly string[] _viewNames = new string[(int)BuildView.Count];
+        private readonly string[] _viewLines = new string[(int)BuildView.Count];
+        private readonly string[] _filterNames = new string[BuildModeCatalogue.FilterCount];
+        private BuildHoldings _holdings;
+        private int _zoneBrush = -1;          // the Zone tool's chosen zone: a use, BrushNone, or -1 for none chosen
+        private bool _canBuy, _pickMine;
+        private int _landCells;               // squares of the player's own land, for the Zone panel
+
+        // The design window's facts for each design that fits the footprint's ground: its warnings, estimate, days, whether it can be built, a corner building.
+        private readonly int[] _dWarn = new int[BuildModeCatalogue.Most];
+        private readonly long[] _dCost = new long[BuildModeCatalogue.Most];
+        private readonly int[] _dDays = new int[BuildModeCatalogue.Most];
+        private readonly bool[] _dFits = new bool[BuildModeCatalogue.Most];
+        private readonly bool[] _dCorner = new bool[BuildModeCatalogue.Most];
+        private readonly int[] _dOrder = new int[BuildModeCatalogue.Most];
+        private int _filter;
+        private int _card = -1;               // the card picked in the window, not placed yet
 
         /// <summary>A tool's name key.</summary>
-        internal static string ToolKey(BuildTool tool) => ToolKeys[(int)tool];
+        internal static string ToolKey(BuildTool tool) => BuildModeHintRules.ToolKeys[(int)tool];
 
         private static string T(string key) => ConstructionText.T(key);
 
@@ -64,42 +65,368 @@ namespace RealLifeOverhaul.Construction
             return new Color32(p[0], p[1], p[2], 255);
         }
 
+        /// <summary>Everything written again: the tools, the views, the demand, the tool panel, the hint bar, the map's markers.</summary>
         private void Write(bool top)
         {
-            if (_panel == null || !_panel.Alive)
+            if (_bar == null || !_bar.Alive)
             {
                 return;
             }
-            _panel.Begin(_state.Tool, _view, ConstructionDirector.BuildingGlyph, Colour(ToolSquare[(int)_state.Tool]), T(BuildModeRules.ViewKeys[(int)_view]), T(ToolKeys[(int)_state.Tool]),
-                _picked.Count > 0 ? Summary() : null);
-            _panel.Paragraph(_state.ViewOnly ? T("reallife_bld_mode_view_only") : T(ToolHelp[(int)_state.Tool]));
-            _panel.Button(RowFold, T("reallife_bld_mode_row_pick"), T("reallife_bld_mode_row_pick_note"), T("reallife_bld_mode_button_pick_map"), true);
+            _holdings = BuildModeHintRules.Holdings(_facts, _facts.Length);
+            _landCells = 0;
+            for (int c = 0; c < _facts.Length; c++)
+            {
+                _landCells += _facts[c].Mine ? _facts[c].MineRows : 0;
+            }
+            WriteTools();
+            WriteViews();
+            WriteDemand();
+            WriteSheet();
+            WriteHint();
+            WriteMarks();
+            _bar.Place();
+        }
+
+        private void WriteTools()
+        {
+            for (int t = 0; t < (int)BuildTool.Count; t++)
+            {
+                _toolNames[t] = T(BuildModeHintRules.ToolKeys[t]);
+                _toolLines[t] = T(BuildModeHintRules.ToolTips[t]);
+                string why = BuildModeHintRules.ToolWhy((BuildTool)t, _holdings, _state.ViewOnly);
+                _toolWhy[t] = why != null ? T(why) : null;
+            }
+            _bar.Tools(_state.Tool, _toolNames, _toolLines, _toolWhy);
+        }
+
+        private void WriteViews()
+        {
+            for (int v = 0; v < (int)BuildView.Count; v++)
+            {
+                _viewNames[v] = T(BuildModeRules.ViewKeys[v]);
+                _viewLines[v] = T(BuildModeHintRules.ViewTips[v]);
+            }
+            _bar.Views(_view, _viewNames, _viewLines);
+        }
+
+        // The district's demand for each use as a short read-only bar in the use's colour (Cities Skylines' demand), from the district's own count.
+        private void WriteDemand()
+        {
+            for (int u = 0; u < (int)BuildUse.Count; u++)
+            {
+                int demand = _d.DemandFor((BuildUse)u);
+                string name = T(BuildCatalogue.UseKeys[u]);
+                string title = demand < 0 ? name : ConstructionText.Fill("reallife_bld_tip_demand_title", "use", name, "value", ConstructionText.N(demand));
+                _bar.Demand(u, demand, Colour(BuildModeRules.Homes + u), title, T(BuildModeHintRules.DemandWords(demand)));
+            }
+        }
+
+        // ------------------------------------------------------------------ the hint bar
+
+        private HintFacts Facts()
+        {
+            return new HintFacts
+            {
+                State = _state, Picked = _picked.Count > 0, SiteOk = _siteWhy == null && _picked.Count > 0, CanBuy = _canBuy,
+                PickedMine = _state.Tool == BuildTool.Place ? _pickMine : _targetSite != null,
+                PickedBuilding = _hasTarget, ZoneChosen = _zoneBrush >= 0, Designs = _designs.Count, MayBuild = BuildModeRules.MayBuild(_warnings)
+            };
+        }
+
+        private void WriteHint()
+        {
+            HintFacts f = Facts();
+            string key = BuildModeHintRules.Hint(f);
+            string next = key == null ? string.Empty : ConstructionText.Fill(key, "cells", ConstructionText.N(PickedCells), "use", BrushName());
+            string extra = BuildModeHintRules.HintExtra(f);
+            string esc = BuildModeHintRules.Esc(_state, _picked.Count > 0);
+            string more = extra != null && esc != null ? T(extra) + " · " + T(esc) : extra != null ? T(extra) : esc != null ? T(esc) : null;
+            _bar.Hint(BuildModeHintRules.HintStep(f), next, more);
+        }
+
+        private string BrushName()
+        {
+            return _zoneBrush >= 0 && _zoneBrush < (int)BuildUse.Count ? T(BuildCatalogue.UseKeys[_zoneBrush]) : T("reallife_bld_mode_zone_none");
+        }
+
+        /// <summary>The hint bar's words now, for the tests.</summary>
+        public string HintShown => _bar != null ? _bar.HintWords : null;
+
+        /// <summary>The hint bar's words build mode's rules want now, for the tests.</summary>
+        public string HintWanted
+        {
+            get
+            {
+                string key = BuildModeHintRules.Hint(Facts());
+                return key == null ? null : ConstructionText.Fill(key, "cells", ConstructionText.N(PickedCells), "use", BrushName());
+            }
+        }
+
+        // ------------------------------------------------------------------ the tool panel
+
+        private void WriteSheet()
+        {
+            BuildModeSheet s = _bar.Sheet;
             switch (_state.Tool)
             {
-                case BuildTool.Land: WriteLand(); break;
-                case BuildTool.Zone: WriteZone(); break;
-                case BuildTool.Place: WritePlace(); break;
-                case BuildTool.Bulldoze: WriteBuilding(RowDemolish, "reallife_bld_mode_row_demolish"); break;
-                case BuildTool.Join: WriteJoin(); break;
-                default: WriteBuilding(RowRefit, "reallife_bld_mode_row_refit"); break;
+                case BuildTool.Land: WriteLand(s); break;
+                case BuildTool.Zone: WriteZone(s); break;
+                case BuildTool.Place: WritePlace(s); break;
+                case BuildTool.Bulldoze: WriteBuilding(s, RowDemolish); break;
+                case BuildTool.Join: WriteJoin(s); break;
+                default: WriteBuilding(s, RowRefit); break;
             }
-            if (_picked.Count > 0)
+            WriteLegend(s);
+            s.End();
+        }
+
+        private string Count() => _picked.Count > 0 ? ConstructionText.Fill("reallife_bld_sheet_count", "cells", ConstructionText.N(PickedCells)) : null;
+
+        private void WriteLegend(BuildModeSheet s)
+        {
+            int n = BuildModeRules.Legend(_view, _keyFills, _keyLines, _keyWords);
+            for (int i = 0; i < n; i++)
             {
-                _panel.Button(RowClear, T("reallife_bld_mode_row_clear"), T("reallife_bld_mode_row_clear_note"), T("reallife_bld_mode_button_clear"), true);
+                s.Legend(_keyFills[i] >= 0 ? Colour(_keyFills[i]) : Color.clear, Colour(_keyLines[i]), _keyFills[i] < 0, T(_keyWords[i]));
             }
-            WriteDemand();
-            WriteLegend();
-            WriteMarks();
-            for (int i = 0; i < _marks.Count && i < MarksShown; i++)
+        }
+
+        private void WriteLand(BuildModeSheet s)
+        {
+            s.Begin(T("reallife_bld_mode_tool_land"), Count());
+            if (_picked.Count == 0)
             {
-                if (i == 0)
+                s.Line(T("reallife_bld_sheet_land_none"), BuildModeBar.Soft);
+                return;
+            }
+            if (_siteWhy != null)
+            {
+                s.Line(T(_siteWhy), BuildModeBar.Red);
+                s.Buttons(0, null, false, RowClear, T("reallife_bld_sheet_clear"), true);
+                return;
+            }
+            string block = _d.CellsBlock(_site, out long price, out _, out _, out LotFile mine);
+            _d.LotOfColumn(_site.FirstColumn, out LotView first);
+            bool corner = CellRules.Corner(_d.Cells, _site.FirstColumn, _site.Count, out _, out _);
+            int zones = mine != null ? _d.ZonesNow(mine) : LandRules.ZonesOf(_site.Count >= 3 ? 3 : _site.Count == 2 ? 1 : 0);   // a site's class by its spaces, as Joined gives it
+            long tax = price > 0L ? LandRules.LandTax(price, ConstructionGame.DaysPerYear, ConstructionGame.DaysPerYear, false, ConstructionDirector.Code) : 0L;   // a year's, as the Land tab says it
+            s.Line(Where(first, corner), BuildModeBar.Soft);
+            s.Fact(T("reallife_bld_sheet_price"), price > 0L ? ConstructionText.Money(price) : "-", BuildModeBar.Text);
+            s.Fact(T("reallife_bld_sheet_tax"), ConstructionText.Money(tax), BuildModeBar.Text);
+            s.Fact(T("reallife_bld_sheet_zoned"), ConstructionDirector.UsesWords(zones), ZonedColour(zones));
+            s.Fact(T("reallife_bld_sheet_limit"), ConstructionText.Fill("reallife_bld_sheet_storeys", "storeys", ConstructionText.N(_d.UptownStoreys())), BuildModeBar.Text);
+            s.Fact(T("reallife_bld_sheet_corner"), T(corner ? "reallife_bld_sheet_corner_yes" : "reallife_bld_sheet_corner_no"), BuildModeBar.Text);
+            if (_state.ViewOnly)
+            {
+                s.Line(T(BuildModeHintRules.WhySession), BuildModeBar.Amber);
+            }
+            else if (block != null)
+            {
+                s.Line(T(block), BuildModeBar.Red);
+            }
+            s.Buttons(RowBuy, ConstructionText.Fill("reallife_bld_sheet_buy", "amount", price > 0L ? ConstructionText.Money(price) : "-"), block == null && !_state.ViewOnly && price > 0L,
+                RowClear, T("reallife_bld_sheet_clear"), true);
+        }
+
+        // Where the squares picked are: their street, and whether they hold its corner.
+        private string Where(LotView first, bool corner)
+        {
+            string street = string.IsNullOrEmpty(first.Street) ? _d.LotWords(first.Id) : first.Street;
+            return ConstructionText.Fill(corner ? "reallife_bld_sheet_where_corner" : "reallife_bld_sheet_where", "street", street);
+        }
+
+        // A zoning's figure in its use's colour when it is one use; the panel's words otherwise.
+        private Color ZonedColour(int zones)
+        {
+            for (int u = 0; u < (int)BuildUse.Count; u++)
+            {
+                if (zones == BuildCatalogue.Zone((BuildUse)u))
                 {
-                    _panel.Heading(T("reallife_bld_mode_heading_underway"));
+                    Color c = Colour(BuildModeRules.Homes + u);
+                    return Color.Lerp(c, Color.white, 0.25f);   // a little lighter, to read on the dark box
                 }
-                _panel.Button(RowMark + i, _marks[i].Name, _marks[i].Detail, T("reallife_bld_mode_button_look"), true);
             }
-            _panel.End(top);
-            _panel.Status(_hoverWords ?? Summary());
+            return BuildModeBar.Text;
+        }
+
+        private void WriteZone(BuildModeSheet s)
+        {
+            s.Begin(T("reallife_bld_mode_tool_zone"), ConstructionText.Fill("reallife_bld_sheet_zone_count", "cells", ConstructionText.N(_landCells)));
+            LotFile site = _targetSite != null ? _d.State.Lot(_targetSite) : null;
+            if (_picked.Count > 0 && site == null)
+            {
+                s.Line(T("reallife_bld_hint_zone_not_yours"), BuildModeBar.Red);
+            }
+            else if (site != null)
+            {
+                s.Line(ConstructionText.Fill("reallife_bld_sheet_zone_site", "uses", ConstructionDirector.UsesWords(_d.ZonesNow(site))), BuildModeBar.Soft);
+            }
+            else
+            {
+                s.Line(T("reallife_bld_sheet_zone_line"), BuildModeBar.Soft);
+            }
+            for (int u = 0; u < (int)BuildUse.Count; u++)
+            {
+                string status = ZoneStatus(site, (BuildUse)u, out Color colour);
+                string name = T(BuildCatalogue.UseKeys[u]);
+                bool chosen = _zoneBrush == u;
+                s.Swatch(RowPaint + u, Colour(BuildModeRules.Homes + u), chosen ? T("reallife_bld_sheet_zone_picked", "use", name) : name, status, colour, chosen, !_state.ViewOnly);
+            }
+            s.Swatch(RowPaintNone, Color.clear, T("reallife_bld_sheet_zone_remove"), null, BuildModeBar.Soft, _zoneBrush == BrushNone, !_state.ViewOnly);
+        }
+
+        // Whether a use is allowed on the site picked (or on the player's land when none is): allowed here, on some of it, or City Hall's with its fee.
+        private string ZoneStatus(LotFile site, BuildUse use, out Color colour)
+        {
+            int allowed = 0, sites = 0;
+            if (site != null)
+            {
+                sites = 1;
+                allowed = LandRules.Zoned(_d.ZonesNow(site), use) ? 1 : 0;
+            }
+            else
+            {
+                for (int i = 0; i < _d.State.Lots.Count; i++)
+                {
+                    LotFile l = _d.State.Lots[i];
+                    sites++;
+                    allowed += LandRules.Zoned(_d.ZonesNow(l), use) ? 1 : 0;
+                }
+            }
+            if (sites > 0 && allowed == sites)
+            {
+                colour = BuildModeBar.Good;
+                return T("reallife_bld_sheet_zone_allowed");
+            }
+            if (allowed > 0)
+            {
+                colour = BuildModeBar.Good;
+                return T("reallife_bld_sheet_zone_some");
+            }
+            colour = BuildModeBar.Amber;
+            return T("reallife_bld_sheet_zone_ask", "fee", ConstructionText.Money(ConstructionDirector.ZoneFee));
+        }
+
+        private void WritePlace(BuildModeSheet s)
+        {
+            if (_state.Step == BuildStep.Ghost || _state.Step == BuildStep.Confirming)
+            {
+                WriteGhost(s);
+                return;
+            }
+            s.Begin(T("reallife_bld_mode_tool_place"), Count());
+            if (_picked.Count == 0)
+            {
+                s.Line(T("reallife_bld_sheet_place_none"), BuildModeBar.Soft);
+                return;
+            }
+            if (_siteWhy != null || !_pickMine)
+            {
+                s.Line(T(_siteWhy ?? "reallife_bld_hint_place_not_yours"), BuildModeBar.Red);
+                s.Buttons(0, null, false, RowClear, T("reallife_bld_sheet_clear"), true);
+                return;
+            }
+            if (_designs.Count == 0)
+            {
+                s.Line(T("reallife_bld_mode_place_none"), BuildModeBar.Red);
+                s.Buttons(0, null, false, RowClear, T("reallife_bld_sheet_clear"), true);
+                return;
+            }
+            s.Line(ConstructionText.Fill("reallife_bld_sheet_place_fit", "count", ConstructionText.N(_designs.Count), "cells", ConstructionText.N(PickedCells), "use",
+                T(BuildCatalogue.UseKeys[(int)_use])), BuildModeBar.Soft);
+            s.Buttons(RowChoose, T("reallife_bld_cat_title"), !_state.ViewOnly, RowClear, T("reallife_bld_sheet_clear"), true);
+        }
+
+        private void WriteGhost(BuildModeSheet s)
+        {
+            if (_design < 0 || _design >= _designs.Count)
+            {
+                s.Begin(T("reallife_bld_mode_tool_place"), Count());
+                return;
+            }
+            DesignChoice d = _designs[_design];
+            s.Begin(SizeName(d), Count());
+            s.Fact(T("reallife_bld_sheet_cost"), ConstructionText.Money(_estimate), BuildModeBar.Text);
+            s.Fact(T("reallife_bld_sheet_days"), ConstructionText.Fill("reallife_bld_sheet_days_value", "days", ConstructionText.N(_d.PlaceDays(d, _use))), BuildModeBar.Text);
+            int storeys = PlansRules.Storeys(d.Height);
+            s.Fact(T("reallife_bld_sheet_storeys_name"), ConstructionText.Fill("reallife_bld_sheet_storeys_of", "storeys", ConstructionText.N(storeys), "limit", ConstructionText.N(_limit)),
+                _limit > 0 && storeys > _limit ? BuildModeBar.Amber : BuildModeBar.Text);
+            s.Fact(T("reallife_bld_sheet_area"), ConstructionText.Fill("reallife_bld_sheet_area_value", "area", ConstructionText.N(d.TotalSqm)), BuildModeBar.Text);
+            for (int b = 0; b < BuildModeRules.WarnCount; b++)
+            {
+                int bit = 1 << b;
+                if ((_warnings & bit) != 0)
+                {
+                    s.Line(T(BuildModeRules.WarnKeys[b]), (BuildModeRules.Stops & bit) != 0 ? BuildModeBar.Red : BuildModeBar.Amber);
+                }
+            }
+            s.Buttons(0, null, false, RowParking, T(_parking ? "reallife_bld_sheet_parking_on" : "reallife_bld_sheet_parking_off"), !_state.ViewOnly);
+            s.Buttons(RowBuild, T("reallife_bld_mode_button_build"), BuildModeRules.MayBuild(_warnings) && !_state.ViewOnly && _state.Step == BuildStep.Ghost, RowOther,
+                T("reallife_bld_sheet_other"), _state.Step == BuildStep.Ghost);
+        }
+
+        // A design as the window names it: its size and version as the game's blueprints do ("C1"), and its type; a corner building by its name.
+        private static string SizeName(DesignChoice d)
+        {
+            if (!string.IsNullOrEmpty(d.Look))
+            {
+                return string.IsNullOrEmpty(d.LookKey) ? d.Look : T(d.LookKey);
+            }
+            string size = string.IsNullOrEmpty(d.Size) ? "?" : char.ToUpperInvariant(d.Size[d.Size.Length - 1]).ToString() + d.Version.ToString(CultureInfo.InvariantCulture);
+            return size + ", " + (string.IsNullOrEmpty(d.Type) ? string.Empty : d.Type.GetLocalization());
+        }
+
+        private void WriteBuilding(BuildModeSheet s, int row)
+        {
+            bool demolish = row == RowDemolish;
+            if (_picked.Count == 0 || !_hasTarget)
+            {
+                s.Begin(T(demolish ? "reallife_bld_mode_tool_bulldoze" : "reallife_bld_mode_tool_refurbish"), null);
+                s.Line(T(demolish ? "reallife_bld_hint_bulldoze_idle" : "reallife_bld_hint_refurbish_idle"), BuildModeBar.Soft);
+                if (_picked.Count > 0)
+                {
+                    s.Line(T("reallife_bld_hint_building_not_yours"), BuildModeBar.Red);
+                    s.Buttons(0, null, false, RowClear, T("reallife_bld_sheet_clear"), true);
+                }
+                return;
+            }
+            string block = demolish ? _d.DemolishBlock(_target.Street, _target.Number) : _d.RefitBlock(_target.Street, _target.Number);
+            s.Begin(ConstructionGame.AddressText(_target.Street, _target.Number), null);
+            if (block != null)
+            {
+                s.Line(T(block), BuildModeBar.Red);
+            }
+            string main = demolish ? T("reallife_bld_mode_row_demolish")
+                : ConstructionText.Fill("reallife_bld_sheet_refit", "amount", ConstructionText.Money(_d.RefitPrice(_target.Street, _target.Number)));
+            s.Buttons(row, main, block == null && !_state.ViewOnly, RowClear, T("reallife_bld_sheet_clear"), true);
+        }
+
+        private void WriteJoin(BuildModeSheet s)
+        {
+            s.Begin(T("reallife_bld_mode_tool_join"), Count());
+            if (_picked.Count == 0)
+            {
+                s.Line(T("reallife_bld_hint_join_idle"), BuildModeBar.Soft);
+                return;
+            }
+            if (_targetSite == null)
+            {
+                s.Line(T("reallife_bld_hint_zone_not_yours"), BuildModeBar.Red);
+                s.Buttons(0, null, false, RowClear, T("reallife_bld_sheet_clear"), true);
+                return;
+            }
+            string join = _d.JoinBlock(_targetSite, out _);
+            string split = _d.SplitBlock(_targetSite);
+            if (join != null)
+            {
+                s.Line(T(join), BuildModeBar.Amber);
+            }
+            if (split != null)
+            {
+                s.Line(T(split), BuildModeBar.Amber);
+            }
+            s.Buttons(RowJoin, T("reallife_bld_mode_row_join"), join == null && !_state.ViewOnly, 0, null, false);
+            s.Buttons(0, null, false, RowSplit, T("reallife_bld_mode_row_split"), split == null && !_state.ViewOnly);
         }
 
         // The sites under way as the map's own markers (the picker's, its window hidden).
@@ -122,177 +449,117 @@ namespace RealLifeOverhaul.Construction
             }
         }
 
-        // The district's demand for each use as the game's bars in the use's colour (Cities Skylines' demand), from the district's own count.
-        private void WriteDemand()
+        // ------------------------------------------------------------------ the design window
+
+        // The designs that fit the footprint's ground looked at: each one's warnings, estimate and days; then the window opened on the first filter that shows any.
+        private void OpenCatalogue()
         {
-            bool any = false;
-            for (int u = 0; u < (int)BuildUse.Count; u++)
+            if (_catalogue == null || !_catalogue.Alive)
             {
-                int demand = _d.DemandFor((BuildUse)u);
-                if (demand < 0)
+                _catalogue = BuildModePanel.Make(BuildModeGame.WindowCanvas(), _kit, FilterPicked, CardPicked, CatalogueBack, CataloguePlace);
+                if (_catalogue == null)
+                {
+                    return;
+                }
+            }
+            int n = Math.Min(_designs.Count, BuildModeCatalogue.Most);
+            for (int i = 0; i < n; i++)
+            {
+                _dWarn[i] = _d.PlaceWarnings(_site.FirstColumn, _site.Count, _designs[i], true, _use, _parking, out _dCost[i], out _);
+                _dFits[i] = BuildModeRules.MayBuild(_dWarn[i]);
+                _dCorner[i] = !string.IsNullOrEmpty(_designs[i].Look);
+                _dDays[i] = _d.PlaceDays(_designs[i], _use);
+            }
+            BuildModeCatalogue.Order(_dCost, _dFits, n, _dOrder);
+            _filter = BuildModeCatalogue.First(_dCorner, _dFits, n);
+            _card = _design >= 0 && _design < n ? _design : -1;
+            BuildModeGame.HideHover();
+            _catalogue.Show(true);
+            WriteCatalogue(true);
+        }
+
+        private void WriteCatalogue(bool top)
+        {
+            if (_catalogue == null || !_catalogue.Shown)
+            {
+                return;
+            }
+            int n = Math.Min(_designs.Count, BuildModeCatalogue.Most);
+            for (int f = 0; f < BuildModeCatalogue.FilterCount; f++)
+            {
+                _filterNames[f] = ConstructionText.Fill(BuildModeCatalogue.FilterKeys[f], "count", ConstructionText.N(BuildModeCatalogue.Count(f, _dCorner, _dFits, n)));
+            }
+            _d.LotOfColumn(_site.FirstColumn, out LotView first);
+            bool corner = CellRules.Corner(_d.Cells, _site.FirstColumn, _site.Count, out _, out _);
+            string street = string.IsNullOrEmpty(first.Street) ? _d.LotWords(first.Id) : first.Street;
+            _catalogue.Begin(ConstructionText.Fill(corner ? "reallife_bld_cat_context_corner" : "reallife_bld_cat_context", "cells", ConstructionText.N(PickedCells), "street", street, "use",
+                T(BuildCatalogue.UseKeys[(int)_use]), "storeys", ConstructionText.N(_d.UptownStoreys())), _filterNames, _filter);
+            string use = T(BuildCatalogue.UseKeys[(int)_use]);
+            Sprite picture = _kit.Icon(BuildModeCatalogue.Picture((int)_use), "Icon-Building");
+            for (int k = 0; k < n; k++)
+            {
+                int i = _dOrder[k];
+                if (!BuildModeCatalogue.Shows(_filter, _dCorner[i], _dFits[i]))
                 {
                     continue;
                 }
-                if (!any)
-                {
-                    _panel.Heading(T("reallife_bld_mode_demand"));
-                    any = true;
-                }
-                _panel.Demand(u, T(BuildCatalogue.UseKeys[u]), demand, Colour(BuildModeRules.Homes + u));
-            }
-        }
-
-        private void WriteLegend()
-        {
-            int n = BuildModeRules.Legend(_view, _keyFills, _keyLines, _keyWords);
-            _panel.Heading(T("reallife_bld_mode_heading_legend"));
-            for (int i = 0; i < n; i++)
-            {
-                _panel.Key(_keyFills[i] >= 0 ? Colour(_keyFills[i]) : Color.clear, Colour(_keyLines[i]), _keyFills[i] < 0, T(_keyWords[i]));
-            }
-        }
-
-        private void WriteLand()
-        {
-            if (_picked.Count == 0)
-            {
-                return;
-            }
-            _panel.Heading(T("reallife_bld_mode_heading_picked"));
-            if (_siteWhy != null)
-            {
-                _panel.Paragraph(Red + T(_siteWhy) + Shut);
-                return;
-            }
-            string block = _d.CellsBlock(_site, out long price, out _, out _, out LotFile mine);
-            _d.LotOfColumn(_site.FirstColumn, out LotView first);
-            int zones = mine != null ? _d.ZonesNow(mine) : LandRules.ZonesOf(_site.Count >= 3 ? 3 : _site.Count == 2 ? 1 : 0);   // a site's class by its spaces, as Joined gives it
-            long tax = price > 0L ? LandRules.LandTax(price, ConstructionGame.DaysPerYear, ConstructionGame.DaysPerYear, false, ConstructionDirector.Code) : 0L;   // a year's, as the Land tab says it
-            string card = ConstructionText.Fill("reallife_bld_mode_land_card", "cells", ConstructionText.N(_site.Cells), "spaces", ConstructionText.N(_site.Count), "name", _d.LotWords(first.Id),
-                "uses", ConstructionDirector.UsesWords(zones), "storeys", ConstructionText.N(_d.UptownStoreys()), "price", price > 0L ? ConstructionText.Money(price) : "-",
-                "tax", ConstructionText.Money(tax));
-            _panel.Paragraph(card);
-            if (block != null)
-            {
-                _panel.Paragraph(Red + T(block) + Shut);
-            }
-            _panel.Button(RowBuy, T("reallife_bld_mode_row_buy"), price > 0L ? ConstructionText.Money(price) : null, T("reallife_bld_mode_button_buy"), block == null && !_state.ViewOnly);
-        }
-
-        private void WriteZone()
-        {
-            if (_picked.Count == 0)
-            {
-                return;
-            }
-            LotFile site = _targetSite != null ? _d.State.Lot(_targetSite) : null;
-            if (site == null)
-            {
-                _panel.Paragraph(Red + T("reallife_bld_mode_zone_not_yours") + Shut);
-                return;
-            }
-            int zones = _d.ZonesNow(site);
-            _panel.Heading(T("reallife_bld_mode_heading_zone"));
-            _panel.Paragraph(T("reallife_bld_mode_land_zoned", "uses", ConstructionDirector.UsesWords(zones)));
-            for (int u = 0; u < (int)BuildUse.Count; u++)
-            {
-                bool allowed = LandRules.Zoned(zones, (BuildUse)u);
-                string detail = allowed ? T("reallife_bld_mode_zone_allowed") : T("reallife_bld_mode_zone_ask", "fee", ConstructionText.Money(ConstructionDirector.ZoneFee));
-                _panel.Button(RowPaint + u, T(BuildCatalogue.UseKeys[u]), detail, T("reallife_bld_mode_button_paint"), !_state.ViewOnly && site.Paint != u + 1, Colour(BuildModeRules.Homes + u));
-            }
-            _panel.Button(RowPaintNone, T("reallife_bld_mode_zone_none"), null, T("reallife_bld_mode_button_paint"), !_state.ViewOnly && site.Paint != 0, Colour(BuildModeRules.NoZone));
-        }
-
-        private void WritePlace()
-        {
-            if (_picked.Count == 0)
-            {
-                return;
-            }
-            if (_siteWhy != null)
-            {
-                _panel.Paragraph(Red + T(_siteWhy) + Shut);
-                return;
-            }
-            _panel.Heading(T("reallife_bld_mode_heading_designs"));
-            _panel.Paragraph(ConstructionText.T("reallife_bld_mode_place_footprint", "wide", ConstructionText.N(_site.Count), "deep", ConstructionText.N(_site.MinRows), "use",
-                T(BuildCatalogue.UseKeys[(int)_use])));
-            if (_designs.Count == 0)
-            {
-                _panel.Paragraph(Red + T("reallife_bld_mode_place_none") + Shut);
-            }
-            for (int i = 0; i < _designs.Count; i++)
-            {
                 DesignChoice d = _designs[i];
-                string detail = ConstructionText.T("reallife_bld_mode_place_design", "storeys", ConstructionText.N(PlansRules.Storeys(d.Height)), "area", ConstructionText.N(d.TotalSqm));
-                _panel.Button(RowDesign + i, SizeName(d), detail, T(i == _design ? "reallife_bld_mode_button_picked" : "reallife_bld_mode_button_pick"), i != _design);
+                string why = BuildModeCatalogue.Why(_dWarn[i]);
+                string kind = why != null ? T(why) : ConstructionText.Fill(_dCorner[i] ? "reallife_bld_cat_kind_corner" : "reallife_bld_cat_kind_city", "use", use);
+                string size = ConstructionText.Fill("reallife_bld_cat_size", "storeys", ConstructionText.N(PlansRules.Storeys(d.Height)), "area", ConstructionText.N(d.TotalSqm));
+                _catalogue.Add(i, picture, SizeName(d), kind, size, ConstructionText.Money(_dCost[i]), why == null && !_state.ViewOnly, i == _card);
             }
-            if (_design < 0)
-            {
-                return;
-            }
-            _panel.Paragraph(T("reallife_bld_mode_place_estimate", "amount", ConstructionText.Money(_estimate)) + "\n" + T("reallife_bld_mode_land_limit", "storeys", ConstructionText.N(_limit)));
-            for (int b = 0; b < BuildModeRules.WarnCount; b++)
-            {
-                if ((_warnings & (1 << b)) != 0)
-                {
-                    _panel.Paragraph(Red + T(BuildModeRules.WarnKeys[b]) + Shut);
-                }
-            }
-            _panel.Switch(RowParking, T("reallife_bld_mode_row_parking"), null, _parking, !_state.ViewOnly);
-            _panel.Button(RowBuild, T("reallife_bld_mode_row_build"), ConstructionText.Money(_estimate), T("reallife_bld_mode_button_build"), BuildModeRules.MayBuild(_warnings) && !_state.ViewOnly);
+            string summary = _card >= 0 && _card < n
+                ? ConstructionText.Fill("reallife_bld_cat_summary", "name", SizeName(_designs[_card]), "cost", ConstructionText.Money(_dCost[_card]), "days", ConstructionText.N(_dDays[_card]))
+                : T(BuildModeCatalogue.Count(_filter, _dCorner, _dFits, n) == 0 ? "reallife_bld_cat_none" : "reallife_bld_cat_pick");
+            _catalogue.End(summary, _card >= 0 && _card < n && _dFits[_card] && !_state.ViewOnly, top);
         }
 
-        // A design as the window names it: its size and version as the game's blueprints do ("C1"), and its type; a corner building by its name.
-        private static string SizeName(DesignChoice d)
+        private void FilterPicked(int filter)
         {
-            if (!string.IsNullOrEmpty(d.Look))
+            if (filter >= 0 && filter < BuildModeCatalogue.FilterCount)
             {
-                return (string.IsNullOrEmpty(d.LookKey) ? d.Look : T(d.LookKey)) + ", " + (string.IsNullOrEmpty(d.Type) ? string.Empty : d.Type.GetLocalization());
+                _filter = filter;
+                WriteCatalogue(true);
             }
-            string size = string.IsNullOrEmpty(d.Size) ? "?" : char.ToUpperInvariant(d.Size[d.Size.Length - 1]).ToString() + d.Version.ToString(CultureInfo.InvariantCulture);
-            return size + ", " + (string.IsNullOrEmpty(d.Type) ? string.Empty : d.Type.GetLocalization());
         }
 
-        private void WriteBuilding(int row, string key)
+        private void CardPicked(int index)
         {
-            if (_picked.Count == 0)
+            if (BuildModeCatalogue.Valid(index, _designs.Count) && _dFits[index])
             {
-                return;
+                _card = index;
+                WriteCatalogue(false);
             }
-            if (!_hasTarget)
-            {
-                _panel.Paragraph(Red + T("reallife_bld_mode_building_not_yours") + Shut);
-                return;
-            }
-            string block = row == RowDemolish ? _d.DemolishBlock(_target.Street, _target.Number) : _d.RefitBlock(_target.Street, _target.Number);
-            _panel.Heading(ConstructionGame.AddressText(_target.Street, _target.Number));
-            if (block != null)
-            {
-                _panel.Paragraph(Red + T(block) + Shut);
-            }
-            string detail = row == RowRefit ? ConstructionText.Money(_d.RefitPrice(_target.Street, _target.Number)) : null;
-            _panel.Button(row, T(key), detail, T("reallife_bld_mode_button_go"), block == null && !_state.ViewOnly);
         }
 
-        private void WriteJoin()
+        // Back to the map: the window shut, the squares and any design placed before kept.
+        private void CatalogueBack()
         {
-            if (_picked.Count == 0)
-            {
-                return;
-            }
-            if (_targetSite == null)
-            {
-                _panel.Paragraph(Red + T("reallife_bld_mode_zone_not_yours") + Shut);
-                return;
-            }
-            string join = _d.JoinBlock(_targetSite, out _);
-            string split = _d.SplitBlock(_targetSite);
-            _panel.Button(RowJoin, T("reallife_bld_mode_row_join"), join != null ? T(join) : null, T("reallife_bld_mode_button_go"), join == null && !_state.ViewOnly);
-            _panel.Button(RowSplit, T("reallife_bld_mode_row_split"), split != null ? T(split) : null, T("reallife_bld_mode_button_go"), split == null && !_state.ViewOnly);
+            _catalogue?.Show(false);
+            Write(false);
         }
 
-        // ------------------------------------------------------------------ the list and the rows
+        // The design picked put on the map: the window shut, its ghost on the footprint, Build here in the tool panel.
+        private void CataloguePlace()
+        {
+            if (!BuildModeCatalogue.Valid(_card, _designs.Count) || !_dFits[_card])
+            {
+                return;
+            }
+            _catalogue?.Show(false);
+            _design = _card;
+            _state = BuildModeRules.Next(_state, BuildInput.Design, _state.Tool, false);
+            Assess();
+            StandGhost();
+            Write(false);
+            Colour();
+        }
+
+        /// <summary>True while the design window is up.</summary>
+        public bool CatalogueShown => _catalogue != null && _catalogue.Shown;
+
+        // ------------------------------------------------------------------ the toolbar, the views and the panel's buttons
 
         private void ToolPicked(int tool)
         {
@@ -300,8 +567,14 @@ namespace RealLifeOverhaul.Construction
             {
                 return;
             }
+            if (BuildModeHintRules.ToolWhy((BuildTool)tool, _holdings, _state.ViewOnly) != null)
+            {
+                return;   // greyed: its tooltip says why
+            }
             _state = BuildModeRules.Next(_state, BuildInput.Tool, (BuildTool)tool, false);
             _view = BuildModeRules.ViewFor(_state.Tool);   // Buy land and Zone open on the zoning
+            _zoneBrush = -1;
+            _catalogue?.Show(false);
             ClearPick();
             ReadFacts();
             Write(true);
@@ -323,15 +596,6 @@ namespace RealLifeOverhaul.Construction
             Colour();
         }
 
-        // The arrow in the window's top bar: aside to pick on the map, or back to the middle.
-        private void FoldPressed()
-        {
-            if (_panel != null)
-            {
-                _panel.Fold(!_panel.Folded);
-            }
-        }
-
         // A marker on the map pressed: the map glides there.
         private void MarkPicked(int id)
         {
@@ -351,18 +615,6 @@ namespace RealLifeOverhaul.Construction
             if (id >= RowMark)
             {
                 MarkPicked(id);
-                _panel.Fold(true);   // aside, so the place is seen
-                return;
-            }
-            if (id >= RowDesign)
-            {
-                _design = id - RowDesign;
-                _state = BuildModeRules.Next(_state, BuildInput.Design, _state.Tool, false);
-                Assess();
-                StandGhost();
-                Write(false);
-                Colour();
-                _panel.Fold(true);   // aside, so the ghost is seen; the arrow brings Build here back
                 return;
             }
             Act(id);
@@ -375,20 +627,73 @@ namespace RealLifeOverhaul.Construction
             _warnings = _d.PlaceWarnings(_site.FirstColumn, _site.Count, has ? _designs[_design] : default(DesignChoice), has, _use, _parking, out _estimate, out _limit);
         }
 
+        // After a release: a zone chosen goes on the land picked; squares of the player's own picked for a building open the design window.
+        private void AfterPick()
+        {
+            if (_state.ViewOnly)
+            {
+                return;
+            }
+            if (_state.Tool == BuildTool.Zone && _zoneBrush >= 0 && _targetSite != null)
+            {
+                Zone(_targetSite, _zoneBrush);
+            }
+            else if (_state.Tool == BuildTool.Place && _siteWhy == null && _pickMine && _designs.Count > 0)
+            {
+                OpenCatalogue();
+            }
+        }
+
+        // A zone put on a site of the player's: one its zoning allows at once; one City Hall must allow asked first in the game's question box, its fee named.
+        private void Zone(string siteId, int brush)
+        {
+            LotFile site = _d.State.Lot(siteId);
+            if (site == null)
+            {
+                return;
+            }
+            int use = brush >= (int)BuildUse.Count ? -1 : brush;
+            if (use >= 0 && !LandRules.Zoned(_d.ZonesNow(site), (BuildUse)use))
+            {
+                Ask("reallife_bld_zone_confirm", "reallife_bld_zone_confirm_body", ConstructionDirector.ZoneFee, () => Refresh(_d.PaintSite(siteId, use)));
+                return;
+            }
+            Refresh(_d.PaintSite(siteId, use));
+        }
+
         private void Act(int id)
         {
             switch (id)
             {
-                case RowFold:
-                    _panel.Fold(true);
-                    return;
                 case RowClear:
                     Clear();
+                    return;
+                case RowChoose:
+                    OpenCatalogue();
+                    return;
+                case RowOther:
+                    DropGhost();
+                    _design = -1;
+                    _state = BuildModeRules.Next(_state, BuildInput.Clear, _state.Tool, false);
+                    OpenCatalogue();
+                    Colour();
                     return;
                 case RowBuy:
                     if (_d.CellsBlock(_site, out long price, out _, out _, out _) == null)
                     {
-                        Ask("reallife_bld_mode_confirm_buy", "reallife_bld_mode_confirm_buy_body", price, () => Refresh(_d.BuyCells(_site)));
+                        Ask("reallife_bld_mode_confirm_buy", "reallife_bld_mode_confirm_buy_body", price, () =>
+                        {
+                            string answer = _d.BuyCells(_site);
+                            if (answer == "reallife_bld_mode_bought")
+                            {
+                                // The next step: the land just bought stays picked, under Zone, where its zoning is shown and can be changed.
+                                _state = BuildModeRules.Next(_state, BuildInput.Tool, BuildTool.Zone, false);
+                                _state = BuildModeRules.Next(BuildModeRules.Next(_state, BuildInput.Press, BuildTool.Zone, true), BuildInput.Release, BuildTool.Zone, false);
+                                _view = BuildModeRules.ViewFor(_state.Tool);
+                                _zoneBrush = -1;
+                            }
+                            Refresh(answer);
+                        });
                     }
                     return;
                 case RowParking:
@@ -404,6 +709,7 @@ namespace RealLifeOverhaul.Construction
                     }
                     _state = BuildModeRules.Next(_state, BuildInput.Confirm, _state.Tool, false);
                     DesignChoice d = _designs[_design];
+                    WriteHint();
                     Ask("reallife_bld_mode_confirm_build", "reallife_bld_mode_confirm_build_body", _estimate, () =>
                     {
                         int project = _d.PlaceProject(_site.FirstColumn, _site.Count, d, _use, _parking, out string why);
@@ -415,6 +721,7 @@ namespace RealLifeOverhaul.Construction
                     }, () =>
                     {
                         _state = BuildModeRules.Next(_state, BuildInput.No, _state.Tool, false);
+                        Write(false);
                     });
                     return;
                 case RowDemolish:
@@ -446,9 +753,17 @@ namespace RealLifeOverhaul.Construction
                     Refresh(_targetSite != null ? _d.Split(_targetSite) : null);
                     return;
                 default:
-                    if (id >= RowPaint && id <= RowPaintNone && _targetSite != null)
+                    if (id >= RowPaint && id <= RowPaintNone)
                     {
-                        Refresh(_d.PaintSite(_targetSite, id == RowPaintNone ? -1 : id - RowPaint));
+                        _zoneBrush = id - RowPaint;   // a use, or BrushNone
+                        if (_targetSite != null)
+                        {
+                            Zone(_targetSite, _zoneBrush);   // land picked first: zoned at once
+                        }
+                        else
+                        {
+                            Write(false);
+                        }
                     }
                     return;
             }
@@ -462,7 +777,7 @@ namespace RealLifeOverhaul.Construction
             GameConfirm.Show(header, body, () => UiClone.Safe(yes), no != null ? (Action)(() => UiClone.Safe(no)) : null, null, null, true, false);
         }
 
-        // After an action: its answer in a notice, the facts read again, the picks looked at again, the window and the layer written.
+        // After an action: its answer in a notice, the facts read again, the picks looked at again, the interface and the layer written.
         private void Refresh(string key)
         {
             if (!string.IsNullOrEmpty(key))
