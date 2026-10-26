@@ -445,6 +445,38 @@ internal static partial class Program
               && ModSource(@"Meta\FeatureCities.cs").Contains("new Line(\"schools\", CityScope.NewYork"), "schools sources: its option under the district's options, its city line");
         Check(ModSource(@"Core\RealLifeOverhaulMod.cs").IndexOf("Guard.Add<Schools.SchoolsDirector>", StringComparison.Ordinal) < ModSource(@"Core\RealLifeOverhaulMod.cs").IndexOf("Guard.Add<NewBuildings.NewBuildingsDirector>", StringComparison.Ordinal),
             "schools sources: the director is there before the made buildings are made, so its main school is declared in time");
+        // The hall and the junior block (Player.log, 26 Oct 2026: "asked of the copy engine (0)"): the director is made before the copy
+        // engine's, which takes no request until it is made, so a request in Awake was answered with none. They are asked behind the
+        // loading screen, once the main school stands, a slot a plot kept even when refused, asked again when the engine takes requests,
+        // and each outcome written once with the design or the reason.
+        string Bare(string text) => Regex.Replace(text, @"//[^\n]*", " ");
+        string campusDirector = Bare(ModSource(@"Schools\SchoolsDirector.cs")), campusPart = Bare(ModSource(@"Schools\SchoolsDirector.Campus.cs"));
+        Match awake = Regex.Match(campusDirector, @"private void Awake\(\)\s*\{[\s\S]*?\n        \}");
+        Check(awake.Success && !awake.Value.Contains("Ask()") && awake.Value.Contains("SchoolsGame.Declare(Wanted);"),
+            "schools sources: the hall and the junior block are not asked of the copy engine in Awake, when it does not take requests yet");
+        Match atLoad = Regex.Match(campusPart, @"private bool AtLoad\(\)\s*\{[\s\S]*?\n        \}");
+        Check(atLoad.Success && Regex.IsMatch(atLoad.Value, @"main == null \|\| main\.Controller == null[\s\S]*SchoolsGame\.Cut\(main\);\s*Ask\(\);"),
+            "schools sources: they are asked behind the loading screen, once the main school stands");
+        Check(campusPart.Contains("_copies.Add(SchoolsGame.Plot(_plots[i]));") && !Regex.IsMatch(campusPart, @"handle != null\)\s*\{\s*_copies\.Add"),
+            "schools sources: a request the copy engine refused keeps its slot, so the plot is asked again and its outcome told");
+        Check(campusPart.Contains("handle == null && SchoolsGame.CopiesAvailable") && campusPart.Contains("SchoolGrounds.BlockLine(") && Regex.IsMatch(campusPart, @"private void Campus\(\)[\s\S]*?Blocks\(\);"),
+            "schools sources: each is asked again once the engine takes requests, and its outcome is written once, from the second's look");
+        Check(campusPart.Contains("Asked() + \" of \" + _plots.Count") && !campusPart.Contains("asked of the copy engine (\" + _copies.Count"),
+            "schools sources: the load's line counts the requests the engine took, not the slots");
+        Check(SchoolGrounds.BlockLine("the hall", true, true, "SM_Office_7", null) == "the hall stands as the city's design SM_Office_7"
+              && SchoolGrounds.BlockLine("the hall", true, false, null, "no design that can be copied fits 30 by 24 m") == "the hall was not made: no design that can be copied fits 30 by 24 m"
+              && SchoolGrounds.BlockLine("the junior block", false, false, null, "its option is off") == "the junior block was not asked of the copy engine: its option is off"
+              && SchoolGrounds.BlockLine("the hall", true, false, null, null) == "the hall was not made: no reason given",
+            "schools ground: a building of the campus is told in one line: the design it wears, or why it was not made or asked");
+        // The bench (Player.log, 26 Oct 2026: "not found: SleepingBench"): one place for the game's pavement bench; the campus's, the streets' and the parks' the same.
+        string pieceCode = Bare(ModSource(@"Uptown\GamePieces.cs")), gameCode = Bare(ModSource(@"Schools\SchoolsGame.cs"));
+        string streetCode = Bare(ModSource(@"Uptown\StreetsGame.cs")), parkCode = Bare(ModSource(@"Uptown\ParksGame.cs"));
+        Check(Regex.IsMatch(gameCode, @"Kind = \(int\)CampusPieceKind\.Bench, Root = GamePieces\.BenchRoot, Name = GamePieces\.BenchName, X = GamePieces\.BenchX, Z = GamePieces\.BenchZ,[^\n]*Within = GamePieces\.BenchReach")
+              && !gameCode.Contains("-397.79f") && !gameCode.Contains("Name = \"SleepingBench\""),
+            "schools sources: the campus's bench is the game's pavement bench, asked for where the street furniture asks for it, not under BuildingBlocks");
+        Check(pieceCode.Contains("BenchRoot = \"SleepingBench\"") && pieceCode.Contains("BenchX = 214.40f") && pieceCode.Contains("BenchZ = 99.39f") && pieceCode.Contains("BenchReach = 40f")
+              && streetCode.Contains("Root = \"SleepingBench\", Name = \"SleepingBench\", X = 214.40f, Z = 99.39f") && parkCode.Contains("Root = \"SleepingBench\", Name = \"SleepingBench\", X = 214.40f, Z = 99.39f"),
+            "schools sources: the bench's place is the same for the campus, the street furniture and the parks");
     }
 
     // ---------------------------------------------------------------- the texts

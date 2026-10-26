@@ -17,7 +17,8 @@ namespace RealLifeOverhaul.Schools
         private const float CrowdNear = 300f;   // m from the campus within which the families gather at its gates: the game's pedestrians are wanted elsewhere further off
         private static readonly Color MapColour = new Color(0.30f, 0.52f, 0.30f);   // the playing field's green
 
-        private readonly List<CopyHandle> _copies = new List<CopyHandle>(2);
+        private readonly List<CopyHandle> _copies = new List<CopyHandle>(2);   // one slot a plot, in Blocks' order; null while the copy engine could not be asked
+        private readonly List<bool> _told = new List<bool>(2);                 // the slot's outcome is in Player.log
         private readonly List<CampusBlockPlot> _plots = new List<CampusBlockPlot>(2);
         private readonly List<CampusPiece> _pieces = new List<CampusPiece>(320);
         private readonly List<CampusFence> _runs = new List<CampusFence>(8);
@@ -41,10 +42,14 @@ namespace RealLifeOverhaul.Schools
         /// <summary>True when the main school stood at this load and its campus is out.</summary>
         public static bool CampusStands => Instance != null && Instance._campusStood;
 
-        // While the city loads: the campus's two other buildings asked of the copy engine, so they stand behind the loading screen.
+        // Behind the loading screen, once the main school stands: the campus's two other buildings asked of the copy engine. Not in
+        // Awake: this director is made before the copy engine's (the main school must be declared first), so there the engine does
+        // not take requests yet and answers with none (Player.log, 26 Oct 2026: "asked of the copy engine (0)"). The engine stands what
+        // is asked of it in the late call that follows this one, the loading screen still up.
         private void Ask()
         {
             _copies.Clear();
+            _told.Clear();
             if (!Wanted())
             {
                 return;
@@ -52,11 +57,41 @@ namespace RealLifeOverhaul.Schools
             SchoolGrounds.Blocks(_plots);
             for (int i = 0; i < _plots.Count; i++)
             {
-                CopyHandle handle = SchoolsGame.Plot(_plots[i]);
-                if (handle != null)
+                _copies.Add(SchoolsGame.Plot(_plots[i]));
+                _told.Add(false);
+            }
+        }
+
+        private int Asked()
+        {
+            int asked = 0;
+            for (int i = 0; i < _copies.Count; i++)
+            {
+                asked += _copies[i] != null ? 1 : 0;
+            }
+            return asked;
+        }
+
+        // Once a second: a building the copy engine could not be asked for is asked again as soon as it takes requests (its option
+        // switched on), and each one's outcome, the design it wears or why it was not made, is written once.
+        private void Blocks()
+        {
+            for (int i = 0; i < _copies.Count && i < _plots.Count; i++)
+            {
+                CopyHandle handle = _copies[i];
+                if (handle == null && SchoolsGame.CopiesAvailable)
                 {
-                    _copies.Add(handle);
+                    handle = _copies[i] = SchoolsGame.Plot(_plots[i]);
+                    _told[i] = false;
                 }
+                if (_told[i] || (handle != null && !handle.Ready && !handle.Gone))
+                {
+                    continue;
+                }
+                _told[i] = true;
+                string line = SchoolGrounds.BlockLine(_plots[i].Name, handle != null, handle != null && handle.Ready, handle?.Wears,
+                    handle != null ? handle.Why : "its option, New buildings, is off or its director is not made");
+                Logger?.Info("Schools: " + line + ".");
             }
         }
 
@@ -78,6 +113,7 @@ namespace RealLifeOverhaul.Schools
                 return true;
             }
             bool cut = SchoolsGame.Cut(main);
+            Ask();
             PiecesMissing = SchoolsGame.FindTemplates();
             SchoolGrounds.Pieces(_pieces, _runs);
             _pieceRoot = SchoolsGame.Stand(_pieces, _runs, out int stood, out int missed);
@@ -86,7 +122,7 @@ namespace RealLifeOverhaul.Schools
             Hold(main);
             Logger?.Info("Schools: Birchwood School's campus stood at 1 Birchwood Green (the main school wears " + main.Design + ", " + (cut ? "cut out of the walking meshes" : "not cut") + "); "
                          + stood + " of " + _pieces.Count + " pieces of the game's own" + (missed > 0 ? " (" + missed + " not stood; not found: " + (PiecesMissing ?? "the pitch") + ")" : string.Empty)
-                         + ", " + _runs.Count + " runs of fence; the hall and the junior block asked of the copy engine (" + _copies.Count + ").");
+                         + ", " + _runs.Count + " runs of fence; the hall and the junior block asked of the copy engine (" + Asked() + " of " + _plots.Count + ").");
             return true;
         }
 
@@ -97,6 +133,7 @@ namespace RealLifeOverhaul.Schools
                 SchoolsGame.Remove(_copies[i]);
             }
             _copies.Clear();
+            _told.Clear();
             _cutCopies = 0;
         }
 
@@ -117,6 +154,7 @@ namespace RealLifeOverhaul.Schools
                 }
                 _cutCopies = cut;
             }
+            Blocks();
             MadeBuilding main = SchoolsGame.Main;
             if (main != null && main.Shown != _held)
             {

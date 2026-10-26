@@ -71,7 +71,6 @@ namespace RealLifeOverhaul.Schools
             _onSave = OnSave;
             _loaded = false;
             SchoolsGame.Declare(Wanted);
-            Ask();
             ScenePrewarm.AddLate("schools: Birchwood School's campus stood, its classrooms held", AtLoad);
         }
 
