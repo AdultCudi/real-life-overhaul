@@ -1,14 +1,14 @@
 {
  "bundle": "reallife_props_2",
  "set": "second",
- "sha256": "6ccd3dc44bb93b3e60e7250d8aba0bbc4ed55cdfde201f4418f7570c3697b4e0",
- "bytes": 533720,
- "triangles": 21102,
+ "sha256": "6009737216311337f36f8117e3ceac57c845cea534b8ecd916e2724b7a99f4a0",
+ "bytes": 541182,
+ "triangles": 21246,
  "triangle_limit": 60000,
  "atlas": {
   "width": 512,
   "height": 256,
-  "used": 57
+  "used": 62
  },
  "textures": [
   "props_base",
@@ -18,7 +18,7 @@
   {
    "id": "birchwood_hall",
    "mesh": "birchwood_hall",
-   "triangles": 2576,
+   "triangles": 2756,
    "material": "lit",
    "size": [
     30.8,
@@ -28,7 +28,7 @@
    "parts": [
     {
      "game": null,
-     "triangles": 2180
+     "triangles": 2360
     },
     {
      "game": "brick",
@@ -47,7 +47,7 @@
   {
    "id": "birchwood_junior",
    "mesh": "birchwood_junior",
-   "triangles": 3740,
+   "triangles": 3684,
    "material": "lit",
    "size": [
     30.8,
@@ -57,7 +57,7 @@
    "parts": [
     {
      "game": null,
-     "triangles": 3092
+     "triangles": 3036
     },
     {
      "game": "brick",
@@ -80,7 +80,7 @@
   {
    "id": "birchwood_main",
    "mesh": "birchwood_main",
-   "triangles": 14786,
+   "triangles": 14806,
    "material": "lit",
    "size": [
     40.8,
@@ -90,7 +90,7 @@
    "parts": [
     {
      "game": null,
-     "triangles": 13018
+     "triangles": 13038
     },
     {
      "game": "brick",

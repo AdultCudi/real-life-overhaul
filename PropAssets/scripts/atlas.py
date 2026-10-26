@@ -218,6 +218,7 @@ MODEL_SWATCHES = {
     "lamp": (_srgb((0.95, 0.85, 0.55)), 0.0, 0.5, 0.0),
     "leaf": (_srgb((0.14, 0.32, 0.12)), 0.0, 0.5, 0.0),
     "accent2": (_srgb((0.85, 0.62, 0.12)), 0.0, 0.5, 0.2),       # the junior block's yellow window panels
+    "sash": (_srgb((0.025, 0.04, 0.032)), 0.0, 0.35, 0.3),       # the window frames and sashes: the dark green black of the city's old windows
 }
 SWATCH_SIZE = (40, 80)     # a swatch is one finish and its grime, read 7 px in from its edges: smaller swatches leave the atlas room for more modules
 
