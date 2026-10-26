@@ -44,6 +44,10 @@ namespace RealLifeOverhaul.Uptown
         /// </summary>
         public readonly List<string> Cleared = new List<string>(8);
 
+        /// <summary>The district's market level (thousandths of its rents and values) the last market pass left, and its day; 0 before any (LifeDirector.Market).</summary>
+        public int MarketLevel;
+        public int MarketDay;
+
         /// <summary>True for a lot whose building was knocked down and on which nothing has been finished since.</summary>
         public bool IsCleared(string lot)
         {
@@ -112,7 +116,7 @@ namespace RealLifeOverhaul.Uptown
     /// <summary>
     /// The district's line in the save, game-free: one line under <see cref="Key"/>, "v=1^f:finished" and "^o:1" once the
     /// opening pass has run, "^x:1" once the mix pass has, "^n:lot,lot" for the lots a later pass has been over, "^c:lot,lot" for
-    /// the lots whose building was knocked down, and "^g:2" the plan's generation its lots are of (none: the first plan,
+    /// the lots whose building was knocked down, "^m:level,day" the market level the last day's pass left, and "^g:2" the plan's generation its lots are of (none: the first plan,
     /// LifeStore.PlanOf), records divided by ';'
     /// and fields by '|' (lot, size, version, type, design, storeys, owner, price, day, settled, the other lots it stands over joined by ','), in the order
     /// <see cref="Write"/> joins them. A newer version adds fields at the end of a record, or a part with a new letter: this
@@ -177,6 +181,13 @@ namespace RealLifeOverhaul.Uptown
                 if (part.StartsWith("g:", StringComparison.Ordinal))
                 {
                     state.Plan = Whole(part.Substring(2), 1, 1, 99);
+                    continue;
+                }
+                if (part.StartsWith("m:", StringComparison.Ordinal))
+                {
+                    string[] m = part.Substring(2).Split(',');
+                    state.MarketLevel = Whole(m[0], 0, 0, 2000);
+                    state.MarketDay = m.Length > 1 ? Whole(m[1], 0, 0, int.MaxValue) : 0;
                     continue;
                 }
                 if (part == "o:1")
@@ -342,6 +353,10 @@ namespace RealLifeOverhaul.Uptown
             if (s.Opened)
             {
                 t.Append("^o:1");
+            }
+            if (s.MarketLevel > 0)
+            {
+                t.Append("^m:").Append(s.MarketLevel.ToString(Inv)).Append(',').Append(s.MarketDay.ToString(Inv));
             }
             if (s.Mixed)
             {

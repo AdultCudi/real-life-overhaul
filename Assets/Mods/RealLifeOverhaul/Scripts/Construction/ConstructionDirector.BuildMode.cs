@@ -103,24 +103,37 @@ namespace RealLifeOverhaul.Construction
             return CellRules.RowsAt(site.Rows, c.Space - first.Index, c.Rows);
         }
 
-        /// <summary>What a column is, for its cells' colours.</summary>
+        /// <summary>What a column is, for its cells' colours: who holds it, its zoning, a building's use, occupancy and fall, a site's share built.</summary>
         public BuildModeRules.ColumnFacts FactsOf(int column)
         {
-            var f = new BuildModeRules.ColumnFacts { Use = -1 };
+            var f = new BuildModeRules.ColumnFacts { Use = -1, MainUse = -1 };
             if (!LotOfColumn(column, out LotView lot))
             {
                 return f;
             }
+            int lotClass = BuildCatalogue.Clamp(lot.Class, 0, BuildCatalogue.ClassCount - 1);
+            f.MainUse = (int)BuildCatalogue.ClassUse[lotClass];
+            f.Zones = LandRules.ZonesOf(lotClass);
             f.MineRows = RowsHeld(column, out LotFile site);
             f.Mine = site != null;
             f.Developer = DeveloperOn(lot.Id);
+            f.Demolishing = Demolishing(lot);
             if (f.Mine)
             {
+                f.Zones = ZonesNow(site);
                 f.Paint = site.Paint;
-                f.PaintWaits = site.Paint > 0 && !LandRules.Zoned(ZonesNow(site), (BuildUse)(site.Paint - 1));
+                f.PaintWaits = site.Paint > 0 && !LandRules.Zoned(f.Zones, (BuildUse)(site.Paint - 1));
                 f.Cleared = ClearedGround(site.Id);
                 ProjectFile p = _state.OnLot(site.Id);
                 f.UnderWay = p != null && p.Stage == ProjectStage.Building;
+                f.Progress = f.UnderWay ? Built(p) : 0;
+                if (!f.UnderWay && !f.Cleared && LotTaken(lot.Id))
+                {
+                    f.Mine = false;   // a building of the player's stands on their land: their building, not bare land
+                    f.Building = f.MyBuilding = true;
+                    f.Use = f.Paint > 0 ? f.Paint - 1 : f.MainUse;
+                    f.Vacant = BuildModeGame.Occupant(lot.Street, lot.Number, out bool empty, out _) && empty;
+                }
                 return f;
             }
             f.Free = FreeSpace(lot);
@@ -128,10 +141,105 @@ namespace RealLifeOverhaul.Construction
             if (f.Building)
             {
                 f.MyBuilding = ConstructionGame.Owns(lot.Street, lot.Number);
-                f.Use = (int)BuildCatalogue.ClassUse[BuildCatalogue.Clamp(lot.Class, 0, BuildCatalogue.ClassCount - 1)];
-                f.UnderWay = _state.Development(lot.Id) != null && _state.Development(lot.Id).SiteId > 0;
+                f.Use = f.MainUse;
+                DevFile dev = _state.Development(lot.Id);
+                f.UnderWay = dev != null && dev.SiteId > 0 && !dev.Handed;
+                f.Vacant = BuildModeGame.Occupant(lot.Street, lot.Number, out bool empty, out _) && empty;
             }
             return f;
+        }
+
+        // A building of the lot coming down: a demolition the player or the city has under way there.
+        private bool Demolishing(LotView lot)
+        {
+            for (int i = 0; i < _state.Projects.Count; i++)
+            {
+                ProjectFile p = _state.Projects[i];
+                if (p.Live && p.Kind == ProjectKind.Demolition && (p.Lot == lot.Id || (p.Number == lot.Number && p.Street == lot.Street)))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private int Built(ProjectFile p)
+        {
+            _trackFacts = _trackFacts ?? new TrackFacts(this);
+            return _trackFacts.Percent(p);
+        }
+
+        /// <summary>Each column's land value step among the district's prices (BuildModeRules.ValueStepOf), into <paramref name="into"/>; worked once a view needs it.</summary>
+        public void ValueSteps(int[] into)
+        {
+            CellGrid grid = Cells;
+            long least = long.MaxValue, most = 0L;
+            for (int c = 0; c < grid.Columns.Count && c < into.Length; c++)
+            {
+                long price = LotOfColumn(c, out LotView lot) ? LotPrice(lot) : 0L;
+                into[c] = price > long.MaxValue / 8 ? -1 : (int)Math.Min(int.MaxValue, price / Math.Max(1, grid.Columns[c].Rows));
+                if (price > 0L)
+                {
+                    least = Math.Min(least, into[c]);
+                    most = Math.Max(most, into[c]);
+                }
+            }
+            for (int c = 0; c < grid.Columns.Count && c < into.Length; c++)
+            {
+                into[c] = BuildModeRules.ValueStepOf(into[c], least == long.MaxValue ? 0L : least, most);
+            }
+        }
+
+        /// <summary>One cell in words for the pointer: its address and row, who holds it, its zoning, the height limit and a cell's price.</summary>
+        public string CellWords(int column, int row)
+        {
+            CellGrid grid = Cells;
+            if (column < 0 || column >= grid.Columns.Count || !LotOfColumn(column, out LotView lot))
+            {
+                return null;
+            }
+            BuildModeRules.ColumnFacts f = FactsOf(column);
+            string holder;
+            if (f.Mine && row < f.MineRows)
+            {
+                holder = ConstructionText.T("reallife_bld_mode_cell_yours");
+            }
+            else if (f.Building)
+            {
+                holder = f.MyBuilding ? ConstructionText.T("reallife_bld_mode_cell_your_building")
+                    : BuildModeGame.Occupant(lot.Street, lot.Number, out _, out string who) && !string.IsNullOrEmpty(who) ? who : ConstructionText.T("reallife_bld_mode_key_taken");
+            }
+            else if (f.Free || f.Mine)
+            {
+                holder = ConstructionText.T("reallife_bld_mode_key_forsale");
+            }
+            else
+            {
+                holder = ConstructionText.T("reallife_bld_mode_cell_kept");
+            }
+            if (f.Developer)
+            {
+                holder += ", " + ConstructionText.T("reallife_bld_mode_mark_developer");
+            }
+            long price = LotPrice(lot);
+            string cell = price > 0L ? ConstructionText.Money(CellRules.ColumnPrice(price, 1, grid.Columns[column].Rows)) : "-";
+            int zones = f.Paint > 0 && !f.PaintWaits ? BuildCatalogue.Zone((BuildUse)(f.Paint - 1)) : f.Zones;
+            return ConstructionText.Fill("reallife_bld_mode_cell", "address", LotWords(lot.Id), "row", ConstructionText.N(row + 1), "holder", holder, "uses", UsesWords(zones),
+                "storeys", ConstructionText.N(UptownStoreys()), "price", cell);
+        }
+
+        /// <summary>A zoning's uses in words, joined by commas ("-" for none).</summary>
+        public static string UsesWords(int zones)
+        {
+            var words = new List<string>(4);
+            for (int u = 0; u < (int)BuildUse.Count; u++)
+            {
+                if (LandRules.Zoned(zones, (BuildUse)u))
+                {
+                    words.Add(ConstructionText.T(BuildCatalogue.UseKeys[u]));
+                }
+            }
+            return words.Count == 0 ? "-" : string.Join(", ", words.ToArray());
         }
 
         // ------------------------------------------------------------------ the district's demand
@@ -615,6 +723,7 @@ namespace RealLifeOverhaul.Construction
             if (_mode == null)
             {
                 BuildMode.Logger = Logger;
+                BuildModeGame.Logger = Logger;
                 _mode = gameObject.AddComponent<BuildMode>();
             }
             return _mode.Open(this) ? null : "reallife_bld_mode_no_map";

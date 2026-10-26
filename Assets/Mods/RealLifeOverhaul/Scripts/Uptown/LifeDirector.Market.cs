@@ -40,18 +40,46 @@ namespace RealLifeOverhaul.Uptown
                 return;
             }
             _marketDay = day;
-            DistrictMarket m = LifeGame.Market(Standing);
+            DistrictMarket m = LifeGame.Market(Standing, _state, day);
             for (int use = 0; use < DemandRules.Uses; use++)
             {
                 DemandNow[use] = DemandRules.Demand(m, use);
             }
             int wanted = GoingPublic.InSession ? 1000 : DemandRules.DistrictLevel(m);
-            _level = _marketSet ? DemandRules.Step(_level, wanted) : wanted;   // the first pass of a load: the buildings' own level, no step
+            int from = 1000;
+            if (GoingPublic.InSession)
+            {
+                _level = 1000;   // even in a session: every machine's district alike, nothing written
+            }
+            else
+            {
+                // From the level the save kept (1000 in a save from before it was kept), a step a day at most from the first day on:
+                // a load never jumps the rents to the level the count asks for.
+                from = _state != null && _state.MarketLevel > 0 ? _state.MarketLevel : 1000;
+                _level = _state != null && _state.MarketDay == day && _state.MarketLevel > 0 ? from : DemandRules.Step(from, wanted);
+                if (_state != null && !_stateUnread && (_state.MarketLevel != _level || _state.MarketDay != day))
+                {
+                    _state.MarketLevel = _level;
+                    _state.MarketDay = day;
+                    WriteState();
+                }
+            }
             _marketSet = true;
             LifeGame.ApplyLevel(_level);
             Logger?.Info("Uptown: the market on day " + day + ": demand homes " + DemandNow[0] + ", shops " + DemandNow[1] + ", offices " + DemandNow[2] + ", warehouses " + DemandNow[3]
-                         + "; vacant " + DemandRules.VacancyPermille(m, 0) / 10 + "%, " + DemandRules.VacancyPermille(m, 1) / 10 + "%, " + DemandRules.VacancyPermille(m, 2) / 10 + "%, "
-                         + DemandRules.VacancyPermille(m, 3) / 10 + "%; rents and values at " + _level + " in 1000 (wanted " + wanted + ").");
+                         + "; vacant " + Shares(m, false) + " against normal " + Shares(m, true) + ", still being let " + m.Filling[0] + ", " + m.Filling[1] + ", " + m.Filling[2] + ", "
+                         + m.Filling[3] + " unit(s); rents and values at " + _level + " in 1000 (from " + from + ", wanted " + wanted + ", " + DemandRules.LevelStep + " a day at most).");
+        }
+
+        // Each use's vacancy, or its normal share, as whole per cent.
+        private static string Shares(DistrictMarket m, bool normal)
+        {
+            string s = string.Empty;
+            for (int use = 0; use < DemandRules.Uses; use++)
+            {
+                s += (use > 0 ? ", " : string.Empty) + (normal ? DemandRules.NormalPermille(m, use) : DemandRules.VacancyPermille(m, use)) / 10 + "%";
+            }
+            return s;
         }
 
         // A new load: the market is counted afresh.

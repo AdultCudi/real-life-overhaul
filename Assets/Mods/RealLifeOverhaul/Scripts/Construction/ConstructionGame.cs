@@ -499,7 +499,7 @@ namespace RealLifeOverhaul.Construction
         /// <summary>A skill of the game's in the player's language (its name is its text key).</summary>
         internal static string SkillWords(string skill) => string.IsNullOrEmpty(skill) ? string.Empty : skill.GetLocalization();
 
-        private static string Words(BuildingRegistration reg)
+        internal static string Words(BuildingRegistration reg)
         {
             try
             {

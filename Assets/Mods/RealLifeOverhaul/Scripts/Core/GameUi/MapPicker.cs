@@ -79,6 +79,9 @@ namespace RealLifeOverhaul.GameUi
 
         public bool IsOpen { get; private set; }
 
+        /// <summary>The map and the markers only, the window itself kept hidden: for an owner with a window of its own (build mode's).</summary>
+        public bool Windowless { get; set; }
+
         /// <summary>True while the window's objects are there: the game's interface is rebuilt with the city.</summary>
         public bool Alive => _root != null;
 
@@ -460,7 +463,11 @@ namespace RealLifeOverhaul.GameUi
                     _cancel.Suffix = PlayerAction.Cancel.AsSuffix();   // the player's own binding, as the game's windows write it
                 }
                 _search.SetTextWithoutNotify(string.Empty);
-                _root.SetActive(true);
+                _root.SetActive(true);   // its watch runs on it, so the map shut by any means closes it
+                CanvasGroup group = _root.GetComponent<CanvasGroup>() ?? _root.AddComponent<CanvasGroup>();
+                group.alpha = Windowless ? 0f : 1f;   // windowless: the map and the markers, nothing of the window seen or clicked
+                group.blocksRaycasts = !Windowless;
+                group.interactable = !Windowless;
             }
             Unpoint();
             Filter(_search.text);
