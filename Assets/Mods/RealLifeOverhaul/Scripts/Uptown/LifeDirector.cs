@@ -324,6 +324,7 @@ namespace RealLifeOverhaul.Uptown
         /// </summary>
         public static void Settle()
         {
+            MarketForget();
             Standing.Clear();
             StandingLots.Clear();
             if (!_known)
@@ -529,6 +530,7 @@ namespace RealLifeOverhaul.Uptown
                          + "; " + specials + " of " + SpecialsRules.All.Length + " special places with the game's services.");
             Census("the load");
             SpecialsCensus("the load", false, out int _);
+            CompleteAll("the load");   // every finished building checked as a whole building of the game's, once a load (LifeDirector.Complete)
             return true;
         }
 
@@ -618,6 +620,7 @@ namespace RealLifeOverhaul.Uptown
             {
                 StandPending(false);   // a finished building waiting for a moment nobody sees its ground
             }
+            MarketPass();   // once a game day: the district's demand and its market level (LifeDirector.Market)
             if (UptownLots.Closed)
             {
                 StandDown("its ground's feature has cleaned up", false);
@@ -735,6 +738,7 @@ namespace RealLifeOverhaul.Uptown
             }
             ShowHidden();
             LifeGame.Unload();
+            MarketForget();
             Standing.Clear();
             StandingLots.Clear();
             Waiting.Clear();

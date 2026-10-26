@@ -589,6 +589,10 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\CommissionRules.cs" Link="Mod\Construction\CommissionRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\FrontDeskRules.cs" Link="Mod\Construction\FrontDeskRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\TrackRules.cs" Link="Mod\Construction\TrackRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\CellRules.cs" Link="Mod\Construction\CellRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildModeRules.cs" Link="Mod\Construction\BuildModeRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\CompleteRules.cs" Link="Mod\CompleteRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\DemandRules.cs" Link="Mod\DemandRules.cs" />
     <!-- A building handed over stands at once, and the opening day is not missed (StandChecks.cs). -->
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\OpeningRules.cs" Link="Mod\Construction\OpeningRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\StandRules.cs" Link="Mod\StandRules.cs" />

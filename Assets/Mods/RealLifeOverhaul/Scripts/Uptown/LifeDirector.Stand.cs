@@ -221,6 +221,10 @@ namespace RealLifeOverhaul.Uptown
             {
                 StandCheck(made, f, listed, ms);
             }
+            if (!CompleteOne(made, f, "its stand"))
+            {
+                LifeGame.SayIncomplete(1);   // a building handed over now that is not yet whole: Player.log names the items
+            }
             return true;
         }
 

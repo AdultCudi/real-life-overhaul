@@ -10,6 +10,7 @@ The construction game: a construction company of the player's (a business type o
 - `ConstructionDirector.cs`: the state and its timing; its parts are named for what they do (`.Projects`, `.Sites`, `.Day`, `.Market`, `.Actions`, `.App`, `.Asks`, `.Tests`, and `.Hire` and `.HireTests` for a builder the player hires, with or without a company, `.Desk` and `.DeskTests` for the front desks, `.Map` and `.MapTests` for Show on map, `.Track` and `.TrackTests` for the objectives in the game's objectives window through `Core/GameUi/TaskGroup.cs`).
 - `ConstructionBridges.cs`: everything it asks of the rest of the mod, each with a default; `Wiring/Wiring.ConstructionLinks.cs` fills them in.
 - `ConstructionGame.cs`: the one file that reads or changes the game; the front desks' own side of it is `BuilderDeskGame.cs`, with the person to point at (`BuilderDeskPointer.cs`) and the conversation in the game's dialogue panel (`BuilderDesk.cs`).
+- Build mode (docs/features/construction.md, "Build mode"): `CellRules.cs` (the zoning cells over the district's lots) and `BuildModeRules.cs` (the state machine, colours, warnings), game-free and checked by `EconomyCheck/BuildModeChecks.cs`; `ConstructionDirector.BuildMode.cs` (cells bought, zones painted, a design placed, the marks) and `.BuildModeTests.cs`; `BuildMode.cs` and `BuildMode.Window.cs` (the mode on the city map and its window); `BuildModeGame.cs` (the map, the mouse, the time controls, the land layer, the ghost's tint); `BuildModeBridges.cs`, filled in by `Wiring/Wiring.BuildModeLinks.cs`.
 
 ## Documentation
 

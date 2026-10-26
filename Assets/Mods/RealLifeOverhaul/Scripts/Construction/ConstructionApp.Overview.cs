@@ -56,6 +56,7 @@ namespace RealLifeOverhaul.Construction
                 Transform client = box.ButtonRow();
                 InfoBox.Button(client, InfoBox.Positive, "reallife_bld_button_land", () => ShowTab(ConstructionDirector.TabLand));
                 InfoBox.Button(client, InfoBox.Additional, "reallife_bld_button_rivals", () => ShowTab(ConstructionDirector.TabRivals));
+                BuildModeButton(box);
                 if (office)
                 {
                     InfoBox.Button(box.ButtonRow(), InfoBox.Negative, "reallife_bld_button_found", () => Answer(_director.Found()));
@@ -101,7 +102,25 @@ namespace RealLifeOverhaul.Construction
                 InfoBox.Button(buttons, InfoBox.Positive, "reallife_bld_button_city_hall", () => PlanningCall.Open(0));
             }
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_bld_button_land", () => ShowTab(ConstructionDirector.TabLand));
+            BuildModeButton(box);
             Guide(box);
+        }
+
+        // Build mode (the city map over Uptown with its zoning cells), from anywhere: a row of its own while its option is on.
+        private void BuildModeButton(InfoBox box)
+        {
+            if (!Settings.ConstructionBuildMode)
+            {
+                return;
+            }
+            InfoBox.Button(box.ButtonRow(), InfoBox.Positive, "reallife_bld_button_build_mode", () =>
+            {
+                string why = _director.OpenBuildMode();
+                if (why != null)
+                {
+                    Answer(why);
+                }
+            });
         }
     }
 }

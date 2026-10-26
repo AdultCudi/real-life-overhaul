@@ -192,6 +192,22 @@ namespace RealLifeOverhaul.Uptown
         public static int StandWaiting => LifeDirector.StandWaiting;
 
         /// <summary>
+        /// The building finished on a lot checked now as a whole building of the game's (plans/build-mode.md section 4): its address,
+        /// name, type, owner, market, card, BizMan page, the map's filters and search, listings, door and occupants, one line in
+        /// Player.log. False when an item fails or no finished building stands there.
+        /// </summary>
+        public static bool CompleteNow(string lotId)
+        {
+            return LifeDirector.CompleteNow(lotId, "a test");
+        }
+
+        /// <summary>Every finished building standing now checked as a whole building of the game's; how many failed an item.</summary>
+        public static int CompleteAll()
+        {
+            return LifeDirector.CompleteAll("a test");
+        }
+
+        /// <summary>
         /// A building stood on a ground in play (lot id, x and z from, to): whatever keeps the ground meanwhile gives it up in the same
         /// moment (the construction sites' props and the finished building's look over it, Scripts/Civic). Set once at game start by
         /// Wiring; unset: nothing is told.
@@ -279,6 +295,15 @@ namespace RealLifeOverhaul.Uptown
         }
 
         /// <summary>The price of a square metre of Uptown's land, as the game prices a building there before its type and traffic (base price times the district's multiplier).</summary>
-        public static float LandPricePerSqm => DistrictValues.LandPerSqm(LifeGame.Figures);
+        public static float LandPricePerSqm => DistrictValues.LandPerSqm(LifeGame.Figures) * LifeDirector.MarketLevel / 1000f;   // the district's market level (LifeDirector.Market)
+
+        /// <summary>
+        /// A use's demand in the district now, 0 to 100 (homes, shops, offices, warehouses: Construction's BuildUse order), or -1
+        /// while not known (a Going Public session, not counted yet).
+        /// </summary>
+        public static int Demand(int use) => LifeDirector.DemandOf(use);
+
+        /// <summary>The district's market level, thousandths of its rents and values.</summary>
+        public static int MarketLevel => LifeDirector.MarketLevel;
     }
 }
