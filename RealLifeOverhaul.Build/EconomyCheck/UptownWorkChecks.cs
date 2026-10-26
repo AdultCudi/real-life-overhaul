@@ -184,9 +184,9 @@ internal static partial class Program
         string another = MemberText(director, "private static bool Another(MadeBuilding made)");
         Check(another.Contains("LeaseOf(made.Spec.Id)") && another.Contains("SpecialBuildings.TakenBy("), "uptown open: the pass leaves a lease's lot and a place the mod holds alone");
         string ours = MemberText(opening, "private static bool Ours(MadeBuilding made, string type, Func<MadeBuilding, bool> skip)");
-        string mixType = MemberText(opening, "private static int MixType(string type, List<MadeBuilding> units, Func<MadeBuilding, bool> skip, string seed, GameInstance save, ref string said)");
+        string mixType = MemberText(opening, "private static int MixType(string type, List<MadeBuilding> units, int district, Func<MadeBuilding, bool> skip, string seed, GameInstance save, ref string said)");
         Check(ours.Contains("record.SpecialService == null") && ours.Contains("!reg.RentedByPlayer && !reg.BuildingOwnedByPlayer && !GoingPublic.Foreign(reg)")
-              && mixType.Contains("CompetitionHelper.GetIdealPercentageOfEmptyBuildings(type, DistrictValues.Id)") && mixType.Contains("MixRules.Change("),
+              && mixType.Contains("CompetitionHelper.GetIdealPercentageOfEmptyBuildings(type, DistrictSplit.IdOf(district))") && mixType.Contains("MixRules.Change("),
             "uptown open: never a special building, the player's or another player's, and the district's own share to let kept");
         string open = MemberText(opening, "private static bool Open(MadeBuilding made, string seed, GameInstance save)");
         Check(open.Contains("UnityEngine.Random.InitState(") && open.Contains("finally") && open.Contains("UnityEngine.Random.state = was")

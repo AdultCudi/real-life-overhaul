@@ -7,9 +7,10 @@ using RealLifeOverhaul.NewBuildings;
 namespace RealLifeOverhaul.Uptown
 {
     /// <summary>
-    /// The game's side of the district's market (LifeDirector.Market): its standing buildings counted by use from their
-    /// registrations, and the market level written into Uptown's own record of the game's, which the game's rent and price
-    /// arithmetic reads (Building.GetMarketPricePerSqm, its rent a square metre). Nothing here runs a frame: once a game day.
+    /// The game's side of a district's market (LifeDirector.Market): its standing buildings counted by use from their
+    /// registrations, and the market level written into the district's own record of the game's, which the game's rent and price
+    /// arithmetic reads (Building.GetMarketPricePerSqm, its rent a square metre). Each of the band's two districts has a market of
+    /// its own. Nothing here runs a frame: once a game day.
     /// </summary>
     internal static partial class LifeGame
     {
@@ -19,12 +20,12 @@ namespace RealLifeOverhaul.Uptown
         public static int Today => SaveGameManager.Current != null ? SaveGameManager.Current.Day : -1;
 
         /// <summary>
-        /// The district's units of each use, its vacant ones (for rent, nobody in), those of them in a building finished within
+        /// A district's units of each use, its vacant ones (for rent, nobody in), those of them in a building finished within
         /// DemandRules.FillingDays (still being let), its average traffic, and the share of each use's units that reads as normal:
-        /// the larger of the game's own ideal share kept free to let in Uptown (its third for homes, shops and offices, the mix's)
+        /// the larger of the game's own ideal share kept free to let there (its third for homes, shops and offices, the mix's)
         /// and the share the city's own districts stand empty at now (the city's warehouses stand nearly half empty).
         /// </summary>
-        public static DistrictMarket Market(IList<MadeBuilding> standing, LifeState state, int today)
+        public static DistrictMarket Market(IList<MadeBuilding> standing, LifeState state, int today, int district)
         {
             var m = new DistrictMarket { Units = new int[DemandRules.Uses], Vacant = new int[DemandRules.Uses], Filling = new int[DemandRules.Uses], Normal = new int[DemandRules.Uses] };
             long traffic = 0;
@@ -32,7 +33,7 @@ namespace RealLifeOverhaul.Uptown
             for (int i = 0; standing != null && i < standing.Count; i++)
             {
                 MadeBuilding made = standing[i];
-                if (made == null || made.Building == null)
+                if (made == null || made.Building == null || DistrictSplit.Index(DistrictOfRecord(made)) != district)
                 {
                     continue;
                 }
@@ -55,7 +56,7 @@ namespace RealLifeOverhaul.Uptown
                 counted++;
             }
             m.Traffic = counted > 0 ? (int)(traffic / counted) : 50;
-            Normal(m.Normal);
+            Normal(m.Normal, district);
             return m;
         }
 
@@ -65,8 +66,8 @@ namespace RealLifeOverhaul.Uptown
             return reg != null && reg.AvailableForRent && !reg.RentedByPlayer && (string.IsNullOrEmpty(reg.businessTypeName) || reg.businessTypeName == EmptyType);
         }
 
-        // Each use's normal share free to let, thousandths: the game's ideal for Uptown (else its city-wide one) or the city's own districts' now, the larger.
-        private static void Normal(int[] into)
+        // Each use's normal share free to let, thousandths: the game's ideal for the district (else its city-wide one) or the city's own districts' now, the larger.
+        private static void Normal(int[] into, int district)
         {
             var units = new int[DemandRules.Uses];
             var vacant = new int[DemandRules.Uses];
@@ -75,7 +76,7 @@ namespace RealLifeOverhaul.Uptown
             {
                 CityBuildingController c = all[i];
                 Building b = c != null ? c.building : null;
-                if (b == null || b.SpecialService != null || b.Neighbourhood == DistrictValues.Id || b.IsHamptonsHouse())
+                if (b == null || b.SpecialService != null || DistrictSplit.Is(b.Neighbourhood) || b.IsHamptonsHouse())
                 {
                     continue;
                 }
@@ -93,12 +94,12 @@ namespace RealLifeOverhaul.Uptown
             for (int use = 0; use < DemandRules.Uses; use++)
             {
                 int city = units[use] > 0 ? (int)(1000L * vacant[use] / units[use]) : -1;
-                into[use] = Math.Max(Ideal(DemandRules.TypeOfUse(use)), city);
+                into[use] = Math.Max(Ideal(DemandRules.TypeOfUse(use), district), city);
             }
         }
 
-        // The game's ideal share of a type kept free to let in Uptown (else its city-wide one), thousandths; -1 for none.
-        private static int Ideal(string type)
+        // The game's ideal share of a type kept free to let in a district (else its city-wide one), thousandths; -1 for none.
+        private static int Ideal(string type, int district)
         {
             BuildingTypeData data = string.IsNullOrEmpty(type) ? null : BuildingTypeHelper.GetData(type);
             IdealAvailableBuildingsInNeighborhood[] ideal = data != null ? data.idealAvailableBuildingsInNeighborhood : null;
@@ -109,7 +110,7 @@ namespace RealLifeOverhaul.Uptown
                 {
                     continue;
                 }
-                if (ideal[i].neighbourhood == DistrictValues.Id)
+                if (ideal[i].neighbourhood == DistrictSplit.IdOf(district))
                 {
                     return ideal[i].idealAvailableBuildingsPercentage * 10;
                 }
@@ -123,16 +124,20 @@ namespace RealLifeOverhaul.Uptown
 
         private const string GlobalNeighbourhood = "ba:neighborhood_global";   // the game's entry for every district without its own (CompetitionHelper)
 
-        /// <summary>The market level (thousandths) written into Uptown's record: its rent a square metre for a dollar of price, and its buildings' value, from the district's own figures.</summary>
-        public static void ApplyLevel(int level)
+        /// <summary>
+        /// The market level (thousandths) written into a district's record: its rent a square metre for a dollar of price, and its
+        /// buildings' value, from the district's own figures.
+        /// </summary>
+        public static void ApplyLevel(int district, int level)
         {
-            if (_record == null)
+            NeighborhoodData record = Record(district);
+            if (record == null)
             {
                 return;
             }
-            DistrictFigures f = Figures;
-            _record.rentMultiplierPerSqmPrice = f.RentPerPrice * level / 1000f;
-            _record.realEstateMultiplier = f.RealEstate * level / 1000f;
+            DistrictFigures f = Figures(district);
+            record.rentMultiplierPerSqmPrice = f.RentPerPrice * level / 1000f;
+            record.realEstateMultiplier = f.RealEstate * level / 1000f;
         }
     }
 }

@@ -204,7 +204,7 @@ namespace RealLifeOverhaul.Construction
                 GrowLine(test, GrowName(g) + " did not stand (" + GrowStageWords(g) + "; Player.log has why)", false);
                 return;
             }
-            int letOn = g.Until, demand = DemandFor(g.Use);
+            int letOn = g.Until, demand = DemandFor(g.Use, g.Lot);
             bool before = StandingOnLot(g.Lot, out StandingView b) && BuildModeGame.Occupant(b.Street, b.Number, out bool vacantBefore, out _) && vacantBefore;
             GrowStep(g, letOn - 1, false);   // the day before its tenant's: still for rent
             bool waited = g.Stage == GrowStage.Letting;

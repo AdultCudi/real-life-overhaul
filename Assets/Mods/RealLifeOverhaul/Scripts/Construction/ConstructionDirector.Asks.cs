@@ -109,11 +109,11 @@ namespace RealLifeOverhaul.Construction
             }
         }
 
-        internal static double LandPrice()
+        internal static double LandPrice(string lot)
         {
             try
             {
-                return !Down("LandPrice") && ConstructionBridges.LandPrice != null ? ConstructionBridges.LandPrice() : double.NaN;
+                return !Down("LandPrice") && ConstructionBridges.LandPrice != null ? ConstructionBridges.LandPrice(lot) : double.NaN;
             }
             catch (Exception e)
             {

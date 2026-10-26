@@ -89,7 +89,7 @@ namespace RealLifeOverhaul.Construction
                 {
                     continue;   // nothing of the city's fits this lot
                 }
-                if (state == 1 && host && dev.SiteId == 0 && shown < BuildCatalogue.DevSitesMost && SiteCount() < BuildCatalogue.SitesMost && DemandWants(use))
+                if (state == 1 && host && dev.SiteId == 0 && shown < BuildCatalogue.DevSitesMost && SiteCount() < BuildCatalogue.SitesMost && DemandWants(use, lot.District))
                 {
                     StartDevelopment(dev, lot, use, k, day);
                     shown += dev.SiteId > 0 ? 1 : 0;

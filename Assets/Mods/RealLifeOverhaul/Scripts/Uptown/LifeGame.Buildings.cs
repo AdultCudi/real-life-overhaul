@@ -157,7 +157,8 @@ namespace RealLifeOverhaul.Uptown
             return new MadeSpec
             {
                 Id = place.Lot, Street = ground.Street, Number = ground.Number, Size = place.Size, Version = place.Version, Type = BigPlacesRules.SpecialType,
-                District = DistrictValues.Id, Design = place.Design, Whole = true, Lots = new[] { lot }, Preferred = 0, Service = place.Service, ServiceName = place.Name, PlainType = null,
+                District = DistrictSplit.IdOfColumn(ground.Block % 100), Design = place.Design, Whole = true, Lots = new[] { lot }, Preferred = 0, Service = place.Service,
+                ServiceName = place.Name, PlainType = null,
                 Traffic = traffic, Floors = 1, DesignArea = true, Life = true, Wanted = wanted
             };
         }
@@ -178,10 +179,11 @@ namespace RealLifeOverhaul.Uptown
             {
                 BuildingHelper.allBuildings.Add(record);
             }
-            if (!BuildingHelper.AllNeighbourhoodBuildings.TryGetValue(DistrictValues.Id, out List<Building> district) || district == null)
+            string id = DistrictOfRecord(made);
+            if (!BuildingHelper.AllNeighbourhoodBuildings.TryGetValue(id, out List<Building> district) || district == null)
             {
                 district = new List<Building>();
-                BuildingHelper.AllNeighbourhoodBuildings[DistrictValues.Id] = district;
+                BuildingHelper.AllNeighbourhoodBuildings[id] = district;
             }
             if (!district.Contains(record))
             {
@@ -201,7 +203,22 @@ namespace RealLifeOverhaul.Uptown
             {
                 inCity += Entered[i] != null && BuildingHelper.allBuildings.Contains(Entered[i]) ? 1 : 0;
             }
-            inDistrict = BuildingHelper.AllNeighbourhoodBuildings.TryGetValue(DistrictValues.Id, out List<Building> district) && district != null ? district.Count : 0;
+            inDistrict = 0;
+            for (int d = 0; d < DistrictSplit.Count; d++)
+            {
+                inDistrict += BuildingHelper.AllNeighbourhoodBuildings.TryGetValue(DistrictSplit.Ids[d], out List<Building> district) && district != null ? district.Count : 0;
+            }
+        }
+
+        // The district a made building is filed under: the one its declaration names (the lot's, by its block), else the building record's own.
+        private static string DistrictOfRecord(MadeBuilding made)
+        {
+            string id = made != null && made.Spec != null ? made.Spec.District : null;
+            if (!DistrictSplit.Is(id) && made != null && made.Building != null)
+            {
+                id = made.Building.Neighbourhood;
+            }
+            return DistrictSplit.Is(id) ? id : DistrictSplit.UptownId;
         }
 
         /// <summary>
@@ -214,9 +231,12 @@ namespace RealLifeOverhaul.Uptown
             {
                 BuildingHelper.allBuildings.Remove(Entered[i]);
             }
-            if (BuildingHelper.AllNeighbourhoodBuildings.TryGetValue(DistrictValues.Id, out List<Building> district) && district != null)
+            for (int d = 0; d < DistrictSplit.Count; d++)
             {
-                district.Clear();
+                if (BuildingHelper.AllNeighbourhoodBuildings.TryGetValue(DistrictSplit.Ids[d], out List<Building> district) && district != null)
+                {
+                    district.Clear();
+                }
             }
             Entered.Clear();
         }
@@ -234,7 +254,7 @@ namespace RealLifeOverhaul.Uptown
                 return 0;
             }
             BuildingHelper.allBuildings.Remove(record);
-            if (BuildingHelper.AllNeighbourhoodBuildings.TryGetValue(DistrictValues.Id, out List<Building> district) && district != null)
+            if (BuildingHelper.AllNeighbourhoodBuildings.TryGetValue(DistrictOfRecord(made), out List<Building> district) && district != null)
             {
                 district.Remove(record);
             }
@@ -389,33 +409,61 @@ namespace RealLifeOverhaul.Uptown
         public static int Carved => Cuts.Count;
 
         /// <summary>
-        /// Uptown's stats among the game's districts' (its daily pass of new businesses and swaps runs only for a district
-        /// with them): made when the save has none, its first days spread as the game's own AddMissingNeighborhoodStats spreads
-        /// them, from the save's seed rather than chance. True when made now.
+        /// The band's districts' stats among the game's districts' (its daily pass of new businesses and swaps runs only for a district
+        /// with them): made for each district the save has none for, its first days spread as the game's own AddMissingNeighborhoodStats
+        /// spreads them, from the save's seed rather than chance. A save from before the split has the whole band's stats under
+        /// Uptown's id alone: Cedar Heights' are then a copy of them (the same days, so the old pace of new businesses and swaps is
+        /// kept for its half). How many rows were made now.
         /// </summary>
-        public static bool Stats(GameInstance save)
+        public static int Stats(GameInstance save)
         {
             List<NeighbourhoodStats> all = save != null ? save.NeighbourhoodStats : null;
             if (all == null)
             {
-                return false;
+                return 0;
             }
+            NeighbourhoodStats first = StatsOf(all, DistrictSplit.UptownId);
+            int made = 0;
+            for (int d = 0; d < DistrictSplit.Count; d++)
+            {
+                string id = DistrictSplit.Ids[d];
+                if (StatsOf(all, id) != null)
+                {
+                    continue;
+                }
+                if (d != DistrictSplit.Uptown && first != null)
+                {
+                    all.Add(new NeighbourhoodStats
+                    {
+                        name = id, nextNewBusinessDay = first.nextNewBusinessDay, nextResidentialSwapDay = first.nextResidentialSwapDay,
+                        nextWarehouseSwapDay = first.nextWarehouseSwapDay, nextForceShutdownDay = first.nextForceShutdownDay
+                    });
+                    made++;
+                    continue;
+                }
+                uint h = NewBuildingsRules.Hash(id + "|stats|" + save.seed);
+                all.Add(new NeighbourhoodStats
+                {
+                    name = id,
+                    nextNewBusinessDay = save.Day + 2 + (int)(h % 8u),                 // the game's day + 2 to + 9
+                    nextResidentialSwapDay = save.Day + 5 + (int)((h >> 8) % 10u),     // + 5 to + 14
+                    nextWarehouseSwapDay = save.Day + 5 + (int)((h >> 16) % 15u)       // + 5 to + 19
+                });
+                made++;
+            }
+            return made;
+        }
+
+        private static NeighbourhoodStats StatsOf(List<NeighbourhoodStats> all, string id)
+        {
             for (int i = 0; i < all.Count; i++)
             {
-                if (all[i] != null && all[i].name == DistrictValues.Id)
+                if (all[i] != null && all[i].name == id)
                 {
-                    return false;
+                    return all[i];
                 }
             }
-            uint h = NewBuildingsRules.Hash(DistrictValues.Id + "|stats|" + save.seed);
-            all.Add(new NeighbourhoodStats
-            {
-                name = DistrictValues.Id,
-                nextNewBusinessDay = save.Day + 2 + (int)(h % 8u),                 // the game's day + 2 to + 9
-                nextResidentialSwapDay = save.Day + 5 + (int)((h >> 8) % 10u),     // + 5 to + 14
-                nextWarehouseSwapDay = save.Day + 5 + (int)((h >> 16) % 15u)       // + 5 to + 19
-            });
-            return true;
+            return null;
         }
 
         /// <summary>
@@ -442,18 +490,24 @@ namespace RealLifeOverhaul.Uptown
             return false;
         }
 
-        /// <summary>True when the save has Uptown's stats: its district has lived in this save before (its buildings were set up then).</summary>
+        /// <summary>True when the save has the stats of either of the band's districts: the band has lived in this save before (its buildings were set up then).</summary>
         public static bool HasStats(GameInstance save)
         {
             List<NeighbourhoodStats> all = save != null ? save.NeighbourhoodStats : null;
             for (int i = 0; all != null && i < all.Count; i++)
             {
-                if (all[i] != null && all[i].name == DistrictValues.Id)
+                if (all[i] != null && DistrictSplit.Is(all[i].name))
                 {
                     return true;
                 }
             }
             return false;
+        }
+
+        /// <summary>True when the save has a district's own stats.</summary>
+        public static bool HasStats(GameInstance save, int district)
+        {
+            return save != null && save.NeighbourhoodStats != null && StatsOf(save.NeighbourhoodStats, DistrictSplit.IdOf(district)) != null;
         }
 
         /// <summary>
@@ -465,11 +519,15 @@ namespace RealLifeOverhaul.Uptown
         public static void Populate(GameInstance save)
         {
             UnityEngine.Random.State was = UnityEngine.Random.state;
-            UnityEngine.Random.InitState((int)NewBuildingsRules.Hash(DistrictValues.Id + "|first|" + (save != null ? save.seed : string.Empty)));
             try
             {
-                CityGenerator.InitializeCity(DistrictValues.Id);
-                CityGenerator.DistributeBuildingsToRivals(DistrictValues.Id);
+                for (int d = 0; d < DistrictSplit.Count; d++)
+                {
+                    string id = DistrictSplit.Ids[d];
+                    UnityEngine.Random.InitState((int)NewBuildingsRules.Hash(id + "|first|" + (save != null ? save.seed : string.Empty)));
+                    CityGenerator.InitializeCity(id);
+                    CityGenerator.DistributeBuildingsToRivals(id);
+                }
             }
             finally
             {
@@ -493,13 +551,20 @@ namespace RealLifeOverhaul.Uptown
                 return 0;
             }
             Fresh.Clear();
-            uint seed = NewBuildingsRules.Hash(DistrictValues.Id + "|more|" + (save != null ? save.seed : string.Empty));
+            var seeds = new uint[DistrictSplit.Count];
+            var any = new bool[DistrictSplit.Count];
+            for (int d = 0; d < DistrictSplit.Count; d++)
+            {
+                seeds[d] = NewBuildingsRules.Hash(DistrictSplit.Ids[d] + "|more|" + (save != null ? save.seed : string.Empty));
+            }
             for (int i = 0; i < fresh.Count; i++)
             {
                 if (fresh[i] != null && fresh[i].Building != null)
                 {
                     Fresh.Add(fresh[i].Building);
-                    seed = unchecked(seed * 16777619u ^ NewBuildingsRules.Hash(fresh[i].Spec.Id));
+                    int d = Math.Max(0, DistrictSplit.Index(DistrictOfRecord(fresh[i])));
+                    seeds[d] = unchecked(seeds[d] * 16777619u ^ NewBuildingsRules.Hash(fresh[i].Spec.Id));
+                    any[d] = true;
                 }
             }
             AllWas.Clear();
@@ -513,11 +578,18 @@ namespace RealLifeOverhaul.Uptown
                 }
             }
             UnityEngine.Random.State was = UnityEngine.Random.state;
-            UnityEngine.Random.InitState((int)seed);
             try
             {
-                CityGenerator.InitializeCity(DistrictValues.Id);
-                CityGenerator.DistributeBuildingsToRivals(DistrictValues.Id);
+                for (int d = 0; d < DistrictSplit.Count; d++)
+                {
+                    if (!any[d])
+                    {
+                        continue;
+                    }
+                    UnityEngine.Random.InitState((int)seeds[d]);
+                    CityGenerator.InitializeCity(DistrictSplit.Ids[d]);
+                    CityGenerator.DistributeBuildingsToRivals(DistrictSplit.Ids[d]);
+                }
             }
             finally
             {

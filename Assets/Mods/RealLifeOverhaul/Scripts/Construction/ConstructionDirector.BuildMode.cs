@@ -274,7 +274,7 @@ namespace RealLifeOverhaul.Construction
             {
                 holder = ConstructionText.T("reallife_bld_mode_cell_kept");
             }
-            head = ConstructionText.Fill("reallife_bld_hover_head", "holder", holder, "address", LotWords(lot.Id));
+            head = ConstructionText.Fill("reallife_bld_hover_head", "holder", holder, "address", LotWords(lot.Id), "district", ConstructionText.T(DistrictKeyOf(lot.District)));
             int council = BuildModeRules.ZonesAt(f, row);   // the square's own: a paint in force, the council's use of free land, else the site's
             zoning = ConstructionText.Fill("reallife_bld_hover_zoning", "uses", UsesWords(council), "storeys", ConstructionText.N(UptownStoreys()));
             int squarePaint = f.Mine && row < f.MineRows ? BuildModeRules.PaintAt(f, row) : 0;
@@ -322,19 +322,34 @@ namespace RealLifeOverhaul.Construction
             return words.Count == 0 ? "-" : string.Join(", ", words.ToArray());
         }
 
-        // ------------------------------------------------------------------ the district's demand
+        // ------------------------------------------------------------------ the districts' demand
 
-        /// <summary>The district's demand for a use, 0 to 100, or -1 while it is not known (a Going Public session, the district not counted).</summary>
-        public int DemandFor(BuildUse use)
+        /// <summary>A district's name as a locale key.</summary>
+        public static string DistrictKeyOf(int district) => BuildCatalogue.DistrictKeys[Math.Max(0, Math.Min(BuildCatalogue.Districts - 1, district))];
+
+        /// <summary>The district a lot is in (0 Uptown, 1 Cedar Heights), Uptown for one not there.</summary>
+        public int DistrictOfLot(string lotId)
         {
-            Func<int, int> ask = BuildModeBridges.Demand;
+            return Lot(lotId, out LotView lot) ? lot.District : 0;
+        }
+
+        /// <summary>The district the lot a column of cells is part of is in.</summary>
+        public int DistrictOfColumn(int column)
+        {
+            return LotOfColumn(column, out LotView lot) ? lot.District : 0;
+        }
+
+        /// <summary>A district's demand for a use, 0 to 100, or -1 while it is not known (a Going Public session, the district not counted).</summary>
+        public int DemandFor(BuildUse use, int district)
+        {
+            Func<int, int, int> ask = BuildModeBridges.Demand;
             if (ask == null || Down("Demand"))
             {
                 return -1;
             }
             try
             {
-                return ask((int)use);
+                return ask((int)use, district);
             }
             catch (Exception e)
             {
@@ -343,11 +358,14 @@ namespace RealLifeOverhaul.Construction
             }
         }
 
-        // The developers start a building only where its use is wanted (as before where demand is not known).
-        private bool DemandWants(BuildUse use) => BuildModeRules.DeveloperMay(DemandFor(use));
+        /// <summary>The demand for a use in the district a lot is in.</summary>
+        public int DemandFor(BuildUse use, string lotId) => DemandFor(use, DistrictOfLot(lotId));
 
-        // A rezoning's odds lifted by the district's demand for the use.
-        private int DemandLift(BuildUse use) => BuildModeRules.CouncilLift(DemandFor(use));
+        // The developers start a building only where its use is wanted in the lot's district (as before where demand is not known).
+        private bool DemandWants(BuildUse use, int district) => BuildModeRules.DeveloperMay(DemandFor(use, district));
+
+        // A rezoning's odds lifted by the demand for the use in the lot's district.
+        private int DemandLift(BuildUse use, int district) => BuildModeRules.CouncilLift(DemandFor(use, district));
 
         // ------------------------------------------------------------------ buying cells
 
@@ -661,7 +679,8 @@ namespace RealLifeOverhaul.Construction
                 ask.ParkingNeeded = PlansRules.ParkingNeeded(use, area, code);
                 var probe = new ProjectFile
                 {
-                    Kind = ProjectKind.Plot, Use = use, Area = area, Storeys = ask.Storeys, ParkingUnder = parkingUnder, District = string.Empty, Lot = site != null ? site.Id : string.Empty
+                    Kind = ProjectKind.Plot, Use = use, Area = area, Storeys = ask.Storeys, ParkingUnder = parkingUnder,
+                    District = site != null ? DistrictKeyOf(DistrictOfLot(site.Id)) : string.Empty, Lot = site != null ? site.Id : string.Empty
                 };
                 estimate = Preview(probe, out _, out _, out _, out _).Total;
             }

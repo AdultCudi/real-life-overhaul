@@ -110,18 +110,49 @@ namespace RealLifeOverhaul.Construction
                 _state.NextGrowDay = day + GrowRules.FirstDay;   // the first look: the market is counted first
                 return;
             }
-            if (GrowRules.MayStart(_state.GrowingNow(), day, _state.NextGrowDay) && SiteCount() < BuildCatalogue.SitesMost && GrowBegin(day, -1) != null)
+            // Each district grows by its own demand and under its own cap (GrowRules.SitesMost sites at once): the day's turn goes to one
+            // first and the other next, so neither is always the one that waits.
+            for (int k = 0; k < BuildCatalogue.Districts; k++)
             {
-                _state.NextGrowDay = day + GrowRules.GapDays;
+                int district = (day + k) % BuildCatalogue.Districts;
+                if (GrowRules.MayStart(GrowingIn(district), day, _state.NextGrowDay) && SiteCount() < BuildCatalogue.SitesMost && GrowBegin(day, -1, district) != null)
+                {
+                    _state.NextGrowDay = day + GrowRules.GapDays;
+                    break;
+                }
             }
         }
 
-        /// <summary>
-        /// A new grown site: the use that grows (or the one asked, for a test), the land picked, a design that fills it, the land
-        /// bought from the city. Null when nothing is wanted, no land is zoned for it, or the city's designs are being read.
-        /// </summary>
-        internal GrowFile GrowBegin(int day, int asked)
+        /// <summary>Grown sites under way now in a district (the player's own are not the city's to count).</summary>
+        public int GrowingIn(int district)
         {
+            int n = 0;
+            for (int i = 0; i < _state.Grows.Count; i++)
+            {
+                n += _state.Grows[i].UnderWay && DistrictOfLot(_state.Grows[i].Lot) == district ? 1 : 0;
+            }
+            return n;
+        }
+
+        /// <summary>
+        /// A new grown site in a district (or in the first that has one, for a test that asks for none): the use that grows (or the one
+        /// asked, for a test), the land picked, a design that fills it, the land bought from the city. Null when nothing is wanted, no
+        /// land is zoned for it, or the city's designs are being read.
+        /// </summary>
+        internal GrowFile GrowBegin(int day, int asked, int district = -1)
+        {
+            if (district < 0)
+            {
+                for (int d = 0; d < BuildCatalogue.Districts; d++)
+                {
+                    GrowFile one = GrowBegin(day, asked, d);
+                    if (one != null)
+                    {
+                        return one;
+                    }
+                }
+                return null;
+            }
             CellGrid grid = Cells;
             if (grid.Columns.Count == 0)
             {
@@ -133,12 +164,12 @@ namespace RealLifeOverhaul.Construction
             }
             for (int u = 0; u < _growDemand.Length; u++)
             {
-                _growDemand[u] = DemandFor((BuildUse)u);
+                _growDemand[u] = DemandFor((BuildUse)u, district);
                 _growFree[u] = 0;
             }
             for (int c = 0; c < grid.Columns.Count; c++)
             {
-                bool free = IsFreeColumn(c);
+                bool free = IsFreeColumn(c) && DistrictOfColumn(c) == district;   // only the land of the district whose turn it is
                 int use = free ? CouncilColumnUse(c) : -1;
                 _growCols[c] = new GrowColumn { Free = free, Use = use, Growing = LotOfColumn(c, out LotView lot) && GrowUnderWayOn(lot.Id) };
                 if (use >= 0)
@@ -242,7 +273,7 @@ namespace RealLifeOverhaul.Construction
             {
                 return false;
             }
-            int pick = byTier ? BySize(_choices, GrowRules.TierPick(_choices.Count, tier, DemandFor(use))) : DevelopmentRules.DesignPick(site.Id, _choices.Count);
+            int pick = byTier ? BySize(_choices, GrowRules.TierPick(_choices.Count, tier, DemandFor(use, site.District))) : DevelopmentRules.DesignPick(site.Id, _choices.Count);
             design = pick >= 0 ? KeptName(_choices[pick]) : NoDesign;
             return true;
         }
@@ -404,7 +435,7 @@ namespace RealLifeOverhaul.Construction
             RivalNews(g.Rival, RivalDeveloped, 1);   // the district grew: its builder, and a little every listed builder
             int quality = g.Owner == GrowOwner.Holding ? GrowRules.TierQuality[(int)g.Tier] : Math.Min(95, _state.Rivals[g.Rival].Reputation + 10);
             NoteFinished(AwardEntry.OfDevelopers, null, g.Lot, site.Street, site.Number, g.Use, g.Rival, quality, 0, day);
-            int demand = DemandFor(g.Use);
+            int demand = DemandFor(g.Use, g.Lot);
             g.Stage = GrowStage.Letting;
             g.Until = day + GrowRules.LetDays(demand, _state.Seed, g.Id);
             GrowsChanged();
@@ -520,7 +551,7 @@ namespace RealLifeOverhaul.Construction
                 int weeks = (day - g.Handed) / 7;
                 if (weeks < GrowRules.FillWeeks && let < most)
                 {
-                    let = ConstructionGame.DeedFill(b.Street, b.Number, GrowRules.WeekFill(DemandFor(g.Use), g.Tier));   // the developer's lettings beside the game's own
+                    let = ConstructionGame.DeedFill(b.Street, b.Number, GrowRules.WeekFill(DemandFor(g.Use, g.Lot), g.Tier));   // the developer's lettings beside the game's own
                 }
                 empty = let < GrowRules.MostlyEmptyBelow;
             }

@@ -579,7 +579,7 @@ internal static partial class Program
         string place = MethodText(director, "public int PlaceProject(");
         Check(place.Contains("NewPlot(siteId, out why)") && place.Contains("SetUse(p, use)") && place.Contains("SetDesign(p, i)") && place.Contains("SetParking(p, parkingUnder)") && place.Contains("Split(siteId)")
               && place.Contains("BuildModeRules.MayBuild(warnings)"), "build mode sources: Build here makes the project through the app's own calls, the footprint split and joined to its own site first");
-        Check(ModSource(@"Construction\ConstructionDirector.Market.cs").Contains("&& DemandWants(use))") && ModSource(@"Construction\ConstructionDirector.City.cs").Contains("+ DemandLift(use)"),
+        Check(ModSource(@"Construction\ConstructionDirector.Market.cs").Contains("&& DemandWants(use, lot.District))") && ModSource(@"Construction\ConstructionDirector.City.cs").Contains("+ DemandLift(use, lot.District)"),
             "build mode sources: the developers start where their use is wanted, and the council weighs the demand");
         Check(ModSource(@"Construction\ConstructionDirector.Projects.cs").Contains("lot = WithRows(id, lot);") && ModSource(@"Construction\ConstructionDirector.Join.cs").Contains("CellRules.JoinRows(a.Rows, a.Spaces, b.Rows, b.Spaces, stripRows)"),
             "build mode sources: a site's ground follows its rows, and joining keeps each lot's rows");
@@ -627,8 +627,8 @@ internal static partial class Program
         string complete = ModSource(@"Uptown\LifeDirector.Complete.cs");
         Check(complete.Contains("f.Owner == FinishOwner.City && !GoingPublic.InSession") && complete.Contains("LifeGame.MendOwner(made, OwnerRivals)"), "whole buildings sources: a city's building with no owner given one, never in a session");
         string market = ModSource(@"Uptown\LifeDirector.Market.cs");
-        Check(market.Contains("int wanted = GoingPublic.InSession ? 1000 : DemandRules.DistrictLevel(m);") && ModSource(@"Uptown\LifeGame.Market.cs").Contains("_record.rentMultiplierPerSqmPrice = f.RentPerPrice * level / 1000f;")
-              && ModSource(@"Uptown\DistrictBuildings.cs").Contains("* LifeDirector.MarketLevel / 1000f"), "build mode market: the level feeds Uptown's record and its land price, even in a session");
+        Check(market.Contains("int wanted = GoingPublic.InSession ? 1000 : DemandRules.DistrictLevel(m);") && ModSource(@"Uptown\LifeGame.Market.cs").Contains("record.rentMultiplierPerSqmPrice = f.RentPerPrice * level / 1000f;")
+              && ModSource(@"Uptown\DistrictBuildings.cs").Contains("* LifeDirector.MarketLevelOf(district) / 1000f"), "build mode market: each district's level feeds its own record and its land price, even in a session");
     }
 
     private static void BuildModeTextChecks()

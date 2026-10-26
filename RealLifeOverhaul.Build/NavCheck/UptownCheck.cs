@@ -133,7 +133,7 @@ internal static partial class Program
         {
             // On whole spaces: as many as its size takes (one for an open run's), each the standard or a metre or two wider.
             SpaceSize size = SpacesRules.Of(l.Size, l.Version);
-            bool ok = (l.Open ? l.Size == null && l.Spaces == 1 : size != null && size.Spaces == l.Spaces && l.Depth >= size.DepthClass && size.Class == l.Class)
+            bool ok = (l.Open ? l.Size == null && l.Spaces == 1 : size != null && size.Spaces == l.Spaces && l.Depth >= size.DepthClass && (size.Class == l.Class || (l.Rebalanced && l.Class == LotClass.Big && size.Class == LotClass.Office)))   // a rebalanced lot: an M1 store's five spaces built as a J1 office
                       && l.Width >= l.Spaces * SpacesRules.SpaceWidth && l.Width <= l.Spaces * (SpacesRules.SpaceWidth + 2) && l.Yaw % 90 == 0 && Near(l.Facing, (l.Yaw + 180) % 360);
             LayoutRules.Block(l.Row, l.Column, out float x0, out float z0, out float x1, out float z1);
             Corners(l, out float lx0, out float lz0, out float lx1, out float lz1);
@@ -1302,9 +1302,10 @@ internal static partial class Program
         var termini = new List<PlanTerminus>();
         LayoutPlans.Termini(termini);
         Check(termini.Count == 3 && termini.All(t => UptownCovered(npc.Boxes, t.X, t.Z)) && termini.Select(t => t.NameKey).Distinct().Count() == 3
-              && termini[0].NameKey == GroundText.Terminus && termini[0].X > LayoutRules.StreetX(0) && termini[0].X < LayoutRules.StreetX(LayoutRules.FirstColumns)
+              && termini[0].NameKey == GroundText.Terminus && termini[1].NameKey == GroundText.TerminusCedar && DistrictSplit.OfX(termini[0].X) == DistrictSplit.Uptown
+              && DistrictSplit.OfX(termini[1].X) == DistrictSplit.CedarHeights && DistrictSplit.OfX(termini[2].X) == DistrictSplit.Uptown && termini[0].X > LayoutRules.StreetX(0) && termini[0].X < LayoutRules.StreetX(LayoutRules.FirstColumns)
               && termini.Select(t => (int)Math.Round((t.Z - LayoutRules.FirstAvenueZ) / LayoutRules.AvenuePitch)).SequenceEqual(new[] { 1, 2, 3 }),
-            "uptown buses: three termini, one on each avenue's south pavement, Uptown Avenue's in the first block, each named");
+            "uptown buses: three termini, one on each avenue's south pavement, Uptown Avenue's in the first block, each named for the district it is in");
         LayoutPlans.MapBounds(out float west, out float east, out float north);
         Check(LayoutRules.Lots.All(l => l.X - 40f >= west && l.X + 40f <= east && l.Z + 40f <= north), "uptown map: the city map's bounds reach 40 m past every lot, as a made building needs");
     }

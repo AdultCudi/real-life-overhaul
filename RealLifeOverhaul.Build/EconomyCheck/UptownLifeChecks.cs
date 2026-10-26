@@ -41,6 +41,7 @@ internal static partial class Program
         UptownSpacesChecks();
         UptownWorkChecks();
         UptownMixChecks();
+        UptownSplitChecks();
     }
 
     // ---------------------------------------------------------------- its values
@@ -283,10 +284,10 @@ internal static partial class Program
             int t = traffic[lot.Id];
             bounded &= t >= BuildingsRules.TrafficLeast && t <= BuildingsRules.TrafficMost;
             int steps = Math.Max(0, Math.Min(BuildingsRules.TrafficStepsMost, (int)Math.Floor((lot.Z - near) / BuildingsRules.TrafficStepMetres)));
-            int plain = (lot.Avenue ? BuildingsRules.AvenueTraffic : BuildingsRules.StreetTraffic) - BuildingsRules.TrafficStep * steps;
+            int plain = (lot.Avenue ? BuildingsRules.AvenueTraffic : BuildingsRules.StreetTraffic) - BuildingsRules.TrafficStep * steps + DistrictSplit.TrafficShift(DistrictSplit.OfBlock(lot.Block));
             close &= Math.Abs(t - plain) <= BuildingsRules.TrafficJitter;
         }
-        Check(bounded && close, "uptown: every lot's traffic index is 10 to 60, its road's less 2 a step of 25 m from Manhattan, within 3 of that by its id");
+        Check(bounded && close, "uptown: every lot's traffic index is 10 to 60, its road's less 2 a step of 25 m from Manhattan, a little more in Uptown and less in Cedar Heights, within 3 of that by its id");
         var nearLot = new BuildingsLot { Id = "a", Avenue = true, Z = 500f };
         var farLot = new BuildingsLot { Id = "a", Avenue = true, Z = 1500f };
         var sideLot = new BuildingsLot { Id = "a", Avenue = false, Z = 500f };
@@ -619,9 +620,9 @@ internal static partial class Program
         Check(code.Length > 0 && noLinq && noHarmony, "uptown: no LINQ and no Harmony in the district's files");
         Check(oneFrame && noSend, "uptown: of the district's files only its director has a frame method, and none sends anything over Going Public");
         Check(noChance && Occurs(code, "UnityEngine.Random.InitState(") == 5 && Occurs(code, "UnityEngine.Random.state = was;") == 5
-              && code.Contains("NewBuildingsRules.Hash(DistrictValues.Id + \"|first|\"") && code.Contains("NewBuildingsRules.Hash(DistrictValues.Id + \"|more|\"")
+              && code.Contains("NewBuildingsRules.Hash(id + \"|first|\"") && code.Contains("NewBuildingsRules.Hash(DistrictSplit.Ids[d] + \"|more|\"")
               && code.Contains("NewBuildingsRules.Hash(lease.BusinessType + \"|\" + lease.Owner + \"|\" + index.ToString(")
-              && code.Contains("NewBuildingsRules.Hash(DistrictValues.Id + \"|stats|\" + save.seed)")
+              && code.Contains("NewBuildingsRules.Hash(id + \"|stats|\" + save.seed)")
               && code.Contains("NewBuildingsRules.Hash(made.Spec.Id + \"|opened|\" + seed)"),
             "uptown: nothing of its is chance: the game's own generator (for the district, or its buildings new to a save alone), its start of a leased business and the opening pass's run with "
             + "the engine's chance seeded from the save, put back after; its stats' days from the save's seed");
@@ -636,7 +637,7 @@ internal static partial class Program
             string trimmed = line.TrimStart();
             if (line.Contains("AllNeighbourhoodBuildings") && !trimmed.StartsWith("//", StringComparison.Ordinal))
             {
-                ownList &= line.Contains("DistrictValues.Id");
+                ownList &= line.Contains("DistrictSplit.Ids[d]") || line.Contains("(id,") || line.Contains("[id]") || line.Contains("DistrictOfRecord(") || line.Contains("ContainsKey(id)");
             }
         }
         Check(ownList, "uptown: of the game's lists of buildings by district it writes its own alone (never one a held unit is in)");
@@ -662,16 +663,16 @@ internal static partial class Program
 
         // The district among the game's at once with a list of its buildings (its stats never meet a missing one), its map row once its zone is in.
         string know = MemberText(lifeGame, "public static bool Know(out string why)");
-        Check(know.Contains("BuildingHelper.AllNeighbourhoodBuildings[DistrictValues.Id] = new List<Building>();") && know.Contains("lookup[DistrictValues.Id] = _record;")
-              && lifeGame.Contains("d.hasCityMapFilter = false;") && lifeGame.Contains("_record.hasCityMapFilter = true;"),
+        Check(know.Contains("BuildingHelper.AllNeighbourhoodBuildings[id] = new List<Building>();") && know.Contains("lookup[id] = Records[d];")
+              && lifeGame.Contains("d.hasCityMapFilter = false;") && lifeGame.Contains("record.hasCityMapFilter = true;"),
             "uptown: among the game's districts with a list of its buildings at once, its map row only once its zone is in");
-        string rows = MemberText(lifeGame, "private static void PeopleRows(DistrictFigures f)");
-        Check(rows.Contains("shares.Count > 0 && !shares.ContainsKey(DistrictValues.Id)") && rows.Contains("prices.Count > 0 && !prices.ContainsKey(DistrictValues.Id)"),
+        string rows = MemberText(lifeGame, "private static void PeopleRows(int district, DistrictFigures f)");
+        Check(rows.Contains("shares.Count > 0 && !shares.ContainsKey(id)") && rows.Contains("prices.Count > 0 && !prices.ContainsKey(id)"),
             "uptown: its rows go into the game's run-long class tables only once the game has made them (its own start throws on a row put there before it)");
         string unload = MemberText(lifeGame, "public static void Unload()");
-        Check(unload.Contains("Unlist();") && unload.Contains("UnityEngine.Object.Destroy(_record);") && unload.IndexOf("Unlist();", StringComparison.Ordinal) < unload.IndexOf("Destroy(_record)", StringComparison.Ordinal),
+        Check(unload.Contains("Unlist();") && unload.Contains("UnityEngine.Object.Destroy(record);") && unload.IndexOf("Unlist();", StringComparison.Ordinal) < unload.IndexOf("Destroy(record)", StringComparison.Ordinal),
             "uptown: when its city goes, nothing of it stays in the game's lists, and its record goes last");
-        string map = MemberText(lifeGame, "public static bool Map(float x1, float z1, float x2, float z2, out string why)");
+        string map = MemberText(lifeGame, "private static bool MapOne(int district, float x1, float z1, float x2, float z2, out string why)");
         Check(map.Contains("DistrictValues.SouthClear(") && map.IndexOf("SouthClear(", StringComparison.Ordinal) < map.IndexOf("DistrictValues.ZoneOver(", StringComparison.Ordinal),
             "uptown: its quad is cleared of the game's zones before it is laid");
         string plan = MemberText(lifeGame, "private static void Add(IReadOnlyList<Lot> all, List<BuildingsLot> into)");
@@ -684,7 +685,7 @@ internal static partial class Program
               && director.Contains("public const string PlacesOwner = \"uptown\";"),
             "uptown: it names its places to the district save with an early step, and the save tools keep its line with the district's records");
         string fill = MemberText(director, "private static void Fill(PlaceSet set)");
-        Check(fill.Contains("set.District(DistrictValues.Id);") && fill.Contains("set.Street(") && fill.Contains("set.Ground(") && fill.Contains("set.Exit(") && fill.Contains("set.Door(")
+        Check(fill.Contains("set.District(DistrictSplit.Ids[d]);") && fill.Contains("set.Street(") && fill.Contains("set.Ground(") && fill.Contains("set.Exit(") && fill.Contains("set.Door(")
               && fill.Contains("exit.District);") && fill.IndexOf("if (!_known)", StringComparison.Ordinal) < fill.IndexOf("set.District", StringComparison.Ordinal),
             "uptown: its fill names its district once it is among the game's, then its streets, ground, way out and every standing door, a car inside one parked in a game district");
         string knowWhen = MemberText(director, "private static void Know(string when)");
@@ -743,7 +744,7 @@ internal static partial class Program
         {
             keys.Add(m.Groups[1].Value);
         }
-        bool there = en != null && pt != null && zh != null && keys.Count == 55 && LifeText.District == UptownId;
+        bool there = en != null && pt != null && zh != null && keys.Count == 57 && LifeText.District == UptownId;
         string missing = null;
         bool short240 = true;
         foreach (string key in keys)
@@ -762,8 +763,8 @@ internal static partial class Program
         Check(short240, "uptown: every notice is at most 240 characters in English");
         // The feature's title is Uptown's ground's key (GroundText.Title), shared by the district's features: this side's texts
         // never define it, and its words are the district's name.
-        Check(en != null && en.TryGetValue("reallife_meta_title_uptown", out string title) && en.TryGetValue(UptownId, out string district) && title == district
+        Check(en != null && en.TryGetValue("reallife_meta_title_uptown", out string title) && en.TryGetValue(UptownId, out string district) && title.Contains(district)
               && !keysText.Contains("reallife_meta_title_uptown"),
-            "uptown: the feature's title is the ground's key, not this side's, in the district's name");
+            "uptown: the feature's title is the ground's key, not this side's, and names the district");
     }
 }

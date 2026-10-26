@@ -118,7 +118,7 @@ namespace RealLifeOverhaul.Construction
         {
             for (int u = 0; u < (int)BuildUse.Count; u++)
             {
-                int demand = _d.DemandFor((BuildUse)u);
+                int demand = _d.DemandFor((BuildUse)u, BarDistrict());
                 string name = T(BuildCatalogue.UseKeys[u]);
                 string title = demand < 0 ? name : ConstructionText.Fill("reallife_bld_tip_demand_title", "use", name, "value", ConstructionText.N(demand));
                 _bar.Demand(u, demand, Colour(BuildModeRules.Homes + u), title, T(BuildModeHintRules.DemandWords(demand)));

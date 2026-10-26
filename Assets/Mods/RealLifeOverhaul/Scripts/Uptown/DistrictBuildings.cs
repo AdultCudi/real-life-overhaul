@@ -366,16 +366,41 @@ namespace RealLifeOverhaul.Uptown
             LifeDirector.LiftsChanged();
         }
 
-        /// <summary>The price of a square metre of Uptown's land, as the game prices a building there before its type and traffic (base price times the district's multiplier).</summary>
-        public static float LandPricePerSqm => DistrictValues.LandPerSqm(LifeGame.Figures) * LifeDirector.MarketLevel / 1000f;   // the district's market level (LifeDirector.Market)
+        /// <summary>The index of the band's district a lot is in (<see cref="DistrictSplit.Uptown"/> or <see cref="DistrictSplit.CedarHeights"/>); Uptown for a lot not in the plan.</summary>
+        public static int DistrictOf(string lotId)
+        {
+            Lot lot = UptownLots.Get(lotId);
+            return lot != null ? lot.District : DistrictSplit.Uptown;
+        }
+
+        /// <summary>The id of the game's district a lot is in ("reallife_neighborhood_uptown" or "reallife_neighborhood_cedarheights"), also its name's locale key.</summary>
+        public static string DistrictIdOf(string lotId)
+        {
+            return DistrictSplit.IdOf(DistrictOf(lotId));
+        }
 
         /// <summary>
-        /// A use's demand in the district now, 0 to 100 (homes, shops, offices, warehouses: Construction's BuildUse order), or -1
-        /// while not known (a Going Public session, not counted yet).
+        /// The price of a square metre of the land of the district a lot is in, as the game prices a building there before its type and
+        /// traffic (base price times the district's multiplier).
         /// </summary>
-        public static int Demand(int use) => LifeDirector.DemandOf(use);
+        public static float LandPricePerSqm(string lotId) => LandPricePerSqm(DistrictOf(lotId));
 
-        /// <summary>The district's market level, thousandths of its rents and values.</summary>
-        public static int MarketLevel => LifeDirector.MarketLevel;
+        /// <summary>The price of a square metre of a district's land (base price times its multiplier, at its market level, LifeDirector.Market).</summary>
+        public static float LandPricePerSqm(int district) => DistrictValues.LandPerSqm(DistrictSplit.Figures(district)) * LifeDirector.MarketLevelOf(district) / 1000f;
+
+        /// <summary>
+        /// A use's demand in a district now, 0 to 100 (homes, shops, offices, warehouses: Construction's BuildUse order), or -1
+        /// while not known (a Going Public session, not counted yet). Each of the band's two districts has its own.
+        /// </summary>
+        public static int Demand(int use, int district) => LifeDirector.DemandOf(use, district);
+
+        /// <summary>A use's demand in the district a lot is in.</summary>
+        public static int Demand(int use, string lotId) => LifeDirector.DemandOf(use, DistrictOf(lotId));
+
+        /// <summary>A district's market level, thousandths of its rents and values.</summary>
+        public static int MarketLevel(int district) => LifeDirector.MarketLevelOf(district);
+
+        /// <summary>The market level of the district a lot is in.</summary>
+        public static int MarketLevel(string lotId) => LifeDirector.MarketLevelOf(DistrictOf(lotId));
     }
 }

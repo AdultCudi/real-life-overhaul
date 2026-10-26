@@ -15,6 +15,7 @@ namespace RealLifeOverhaul.Uptown
         public const string TestOfficeCensus = "reallife_uptown_test_office_census";
         public const string TestOfficeJob = "reallife_uptown_test_office_job";
         public const string TestMix = "reallife_uptown_test_mix";
+        public const string TestSplit = "reallife_uptown_test_split";             // the two districts' census against the old districts
 
         public const string ClosedSession = "reallife_uptown_closed_session";     // the notice when a session stops being one of this mod
         public const string NotLiving = "reallife_uptown_test_not_living";        // the notices the tests show
@@ -41,6 +42,7 @@ namespace RealLifeOverhaul.Uptown
         public const string OfficeJobNone = "reallife_uptown_test_office_job_none";
         public const string OfficeJobNoWork = "reallife_uptown_test_office_job_no_work";
         public const string MixDone = "reallife_uptown_test_mix_done";
+        public const string SplitDone = "reallife_uptown_test_split_done";
         public const string TestSpecials = "reallife_uptown_test_specials";        // the special places' tests and their notices
         public const string TestSpecialGo = "reallife_uptown_test_special_go";
         public const string SpecialsDone = "reallife_uptown_test_specials_done";

@@ -84,7 +84,7 @@ namespace RealLifeOverhaul.Construction
                 place.Number = lot.Number;
                 place.Building = !string.IsNullOrEmpty(lot.Street) && ConstructionGame.Stands(lot.Street, lot.Number);
                 place.Spot = LotFront(lot);
-                place.District = ConstructionText.T("reallife_neighborhood_uptown");
+                place.District = ConstructionText.T(string.IsNullOrEmpty(lot.DistrictKey) ? BuildCatalogue.DistrictKeys[0] : lot.DistrictKey);
                 return true;
             }
             if (!string.IsNullOrEmpty(street))

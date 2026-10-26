@@ -39,7 +39,7 @@ namespace RealLifeOverhaul.Construction
                         carried = PaintOfSquare(at, r, out bool waits) == u + 1 && !waits;
                     }
                 }
-                int demand = DemandFor((BuildUse)u);
+                int demand = DemandFor((BuildUse)u, DistrictOfColumn(firstColumn));
                 if (carried && demand > bestDemand)
                 {
                     best = u;
@@ -80,7 +80,7 @@ namespace RealLifeOverhaul.Construction
                     _growChoices.RemoveAt(i);   // the builder builds nothing the code or the squares stop
                 }
             }
-            int pick = BySize(_growChoices, GrowRules.TierPick(_growChoices.Count, tier, DemandFor(use)));
+            int pick = BySize(_growChoices, GrowRules.TierPick(_growChoices.Count, tier, DemandFor(use, DistrictOfColumn(firstColumn))));
             if (pick < 0)
             {
                 return false;

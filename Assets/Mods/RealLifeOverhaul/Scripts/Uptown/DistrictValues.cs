@@ -46,9 +46,87 @@ namespace RealLifeOverhaul.Uptown
         public const string RetailType = "ba:buildingtype_retail";
 
         public const float ZoneAlpha = 100f / 255f;  // the game's own zones' alpha on the city map: 100 of 255
-        public const float ZoneRed = 0.30f;          // a green-blue no zone of the game's has: the widest gap between their hues (110 to 195 degrees)
-        public const float ZoneGreen = 0.85f;
-        public const float ZoneBlue = 0.57f;
+        // The two districts' colours (the zone's tint and the disc of its toggle in the map's list), each as far as the palette allows from the game's
+        // seven and from the other (CIE76 distance 44 and 40 or more from every one of them; the game's own pairs are 39.7 or more apart).
+        public const float ZoneRed = 0.24f;          // Uptown's mint, 165 degrees
+        public const float ZoneGreen = 0.95f;
+        public const float ZoneBlue = 0.77f;
+        public const float CedarZoneRed = 0.49f;     // Cedar Heights' violet, 261 degrees
+        public const float CedarZoneGreen = 0.24f;
+        public const float CedarZoneBlue = 0.95f;
+        public const double ColourLeast = 35.0;      // CIE76 distance two districts' colours must keep (the game's own least is 39.7)
+
+        /// <summary>The game's seven districts' zone colours as Build 3682 has them (NeighborhoodData.cityMapZoneColor), by the district's id.</summary>
+        public static readonly KeyValuePair<string, float[]>[] GameColours =
+        {
+            new KeyValuePair<string, float[]>("ba:neighborhood_garmentdistrict", new[] { 0.356f, 0.802f, 0.314f }),
+            new KeyValuePair<string, float[]>("ba:neighborhood_thehamptons", new[] { 0.867f, 0.678f, 0.243f }),
+            new KeyValuePair<string, float[]>("ba:neighborhood_industrycity", new[] { 1.000f, 0.486f, 0.108f }),
+            new KeyValuePair<string, float[]>("ba:neighborhood_hellskitchen", new[] { 0.316f, 0.411f, 0.849f }),
+            new KeyValuePair<string, float[]>("ba:neighborhood_midtown", new[] { 0.933f, 0.365f, 0.886f }),
+            new KeyValuePair<string, float[]>("ba:neighborhood_lowermanhattan", new[] { 0.366f, 0.804f, 0.934f }),
+            new KeyValuePair<string, float[]>("ba:neighborhood_murrayhill", new[] { 0.896f, 0.351f, 0.351f })
+        };
+
+        /// <summary>A district of the band's colour: red, green, blue, 0 to 1.</summary>
+        public static float[] ColourOf(int district)
+        {
+            return district == 1 ? new[] { CedarZoneRed, CedarZoneGreen, CedarZoneBlue } : new[] { ZoneRed, ZoneGreen, ZoneBlue };
+        }
+
+        /// <summary>How far apart two colours (red, green, blue, 0 to 1) look: the distance in CIE L*a*b* (CIE76), 0 for the same, about 2.3 for the least a person sees.</summary>
+        public static double ColourDistance(float[] a, float[] b)
+        {
+            double[] x = Lab(a), y = Lab(b);
+            double dl = x[0] - y[0], da = x[1] - y[1], db = x[2] - y[2];
+            return Math.Sqrt(dl * dl + da * da + db * db);
+        }
+
+        private static double[] Lab(float[] rgb)
+        {
+            double r = Linear(rgb[0]), g = Linear(rgb[1]), b = Linear(rgb[2]);
+            double x = (0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047, y = 0.2126 * r + 0.7152 * g + 0.0722 * b, z = (0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883;
+            double fx = F(x), fy = F(y), fz = F(z);
+            return new[] { 116.0 * fy - 16.0, 500.0 * (fx - fy), 200.0 * (fy - fz) };
+        }
+
+        private static double Linear(double c)
+        {
+            return c <= 0.04045 ? c / 12.92 : Math.Pow((c + 0.055) / 1.055, 2.4);
+        }
+
+        private static double F(double t)
+        {
+            return t > 0.008856 ? Math.Pow(t, 1.0 / 3.0) : 7.787 * t + 16.0 / 116.0;
+        }
+
+        /// <summary>
+        /// Null when no two of the colours are nearer than <paramref name="least"/>; else which two and how far apart. The list of every
+        /// district's colour as one line for the log goes into <paramref name="line"/>.
+        /// </summary>
+        public static string ColourWhy(IList<string> names, IList<float[]> colours, double least, out string line)
+        {
+            var c = CultureInfo.InvariantCulture;
+            var text = new System.Text.StringBuilder(256);
+            string why = null;
+            double nearest = double.MaxValue;
+            for (int i = 0; i < names.Count; i++)
+            {
+                text.Append(i > 0 ? ", " : string.Empty).Append(names[i]).Append(" (").Append(colours[i][0].ToString("0.00", c)).Append(' ').Append(colours[i][1].ToString("0.00", c)).Append(' ')
+                    .Append(colours[i][2].ToString("0.00", c)).Append(')');
+                for (int k = 0; k < i; k++)
+                {
+                    double d = ColourDistance(colours[i], colours[k]);
+                    nearest = Math.Min(nearest, d);
+                    if (d < least && why == null)
+                    {
+                        why = names[i] + " and " + names[k] + " are " + d.ToString("0.0", c) + " apart, under " + least.ToString("0", c);
+                    }
+                }
+            }
+            line = text + "; the two nearest are " + (nearest == double.MaxValue ? "-" : nearest.ToString("0.0", c)) + " apart";
+            return why;
+        }
 
         // The game's own price index of a class (CitizenHelper.Init): what each class pays at most, relative to the market.
         private const float WorkingIndex = 1.1999999f;

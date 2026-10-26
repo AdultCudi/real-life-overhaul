@@ -119,8 +119,8 @@ namespace RealLifeOverhaul.Construction
         /// <summary>True when a lot of the district takes a building of one of the game's sizes (its class's sizes). Default: any size.</summary>
         public static Func<string, string, bool> SizeTaken;
 
-        /// <summary>The district's price a square metre (its base price times its real estate multiplier). Default: not known.</summary>
-        public static Func<double> LandPrice;
+        /// <summary>The price a square metre of the land of the district a lot is in (its base price times its real estate multiplier, at its market level). Default: not known.</summary>
+        public static Func<string, double> LandPrice;
 
         /// <summary>
         /// A finished building handed to the district, the player's or the city's: it stands at once when nobody sees its ground,

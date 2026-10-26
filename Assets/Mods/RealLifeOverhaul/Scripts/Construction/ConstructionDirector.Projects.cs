@@ -168,7 +168,7 @@ namespace RealLifeOverhaul.Construction
         }
 
         // The district's price a square metre for a lot: a test lot's is the price where it was made.
-        private double PriceOf(LotView lot) => IsTestLot(lot.Id) ? _testPrice : LandPrice();
+        private double PriceOf(LotView lot) => IsTestLot(lot.Id) ? _testPrice : LandPrice(lot.Id);
 
         // ------------------------------------------------------------------ a project made
 
@@ -195,7 +195,7 @@ namespace RealLifeOverhaul.Construction
             var p = new ProjectFile
             {
                 Id = _state.NewId(), Kind = ProjectKind.Plot, Stage = ProjectStage.Design, Created = ConstructionGame.Day, Lot = lotId, Use = use, Width = lot.Width, Depth = lot.Depth,
-                District = string.Empty, Architect = ArchitectKind.Firm, Firm = 1
+                District = lot.DistrictKey ?? string.Empty, Architect = ArchitectKind.Firm, Firm = 1
             };
             DefaultDesign(p);
             _state.Projects.Add(p);

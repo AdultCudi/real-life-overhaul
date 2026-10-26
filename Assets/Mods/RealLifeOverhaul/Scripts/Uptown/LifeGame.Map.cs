@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using BigAmbitions.Neighborhoods;
 using City.CityMap;
 using Localizor;
 using UI;
@@ -10,48 +11,114 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.Uptown
 {
     /// <summary>
-    /// Uptown on the game's city map, as a district of the game is there: its quad among the map's district zones (a copy of
-    /// Midtown's, scaled over the district's ground and given its own colour), which the game shows when its row is ticked
-    /// and asks for that row's focus (CityMapNeighborhoodZones.First throws for a district without one), and its row in the
-    /// map's filter list among the game's district rows, made by the game's own method as it makes them and stood where the
+    /// The band's districts on the game's city map, as a district of the game is there: each one's quad among the map's district
+    /// zones (a copy of Midtown's, scaled over the district's ground and given its own colour), which the game shows when its row
+    /// is ticked and asks for that row's focus (CityMapNeighborhoodZones.First throws for a district without one), and its row in
+    /// the map's filter list among the game's district rows, made by the game's own method as it makes them and stood where the
     /// game stands its own: the game builds the list once, when its UI scene first starts (the filters' object is active in
-    /// that scene, its Start builds the list), before the city's step gives Uptown its zone, and a row its CreateFilter makes
-    /// afterwards is put at the end of the whole list, under the last category; so the row is moved up to the end of the
-    /// districts' own rows. A list the game builds after the zone is in makes the row itself (the record says it has one).
-    /// Nothing here runs a frame: once at a load, and once when Uptown stands down.
+    /// that scene, its Start builds the list), before the city's step gives the districts their zones, and a row its
+    /// CreateFilter makes afterwards is put at the end of the whole list, under the last category; so the row is moved up to the
+    /// end of the districts' own rows. A list the game builds after the zone is in makes the row itself (the record says it has
+    /// one). Each district has a zone and a row of its own, cut along 5th Street (DistrictSplit.Bounds). Nothing here runs a
+    /// frame: once at a load, and once when the band stands down.
     /// </summary>
     internal static partial class LifeGame
     {
         private const string NeighborhoodsCategory = "common_neighborhoods";   // the game's category of its district rows (CityMapFilters.CreateNeighborhoodsCategory)
         private static readonly int ZoneColour = Shader.PropertyToID("_UnlitColor");   // the property the game colours its zones by (CityMapNeighborhoodZones)
 
-        private static GameObject _zone;       // Uptown's quad, destroyed when the city goes
-        private static CityMapFilter _row;     // its row, if this load made it (the game's own list keeps it)
+        private static readonly GameObject[] Zones = new GameObject[DistrictSplit.Count];     // each district's quad, destroyed when the city goes
+        private static readonly CityMapFilter[] RowsMade = new CityMapFilter[DistrictSplit.Count];   // each row, if this load made it (the game's own list keeps it)
         private static MaterialPropertyBlock _block;
+        private static readonly Sprite[] Icons = new Sprite[DistrictSplit.Count];   // each district's toggle disc, in its colour, destroyed when the city goes
+        private const int IconSize = 64;                                             // pixels
 
-        /// <summary>True when Uptown has its quad among the map's district zones at this load.</summary>
-        public static bool Zoned => _zone != null;
-
-        /// <summary>True when the map's filter list has Uptown's row (made by the game, or at this load).</summary>
-        public static bool Rowed()
+        // The disc on a district's row in the map's list, drawn once a load in the district's own colour (the game's rows show a disc of theirs).
+        private static Sprite Icon(int district)
         {
-            UIs uis = InstanceBehavior<UIs>.IsInitialized ? InstanceBehavior<UIs>.Instance : null;
-            var toggles = uis != null && uis.mapFilters != null ? GameContract.FilterToggles.Field?.GetValue(uis.mapFilters) as Dictionary<string, Toggle> : null;
-            return toggles != null && toggles.ContainsKey(DistrictValues.Id);
+            if (Icons[district] != null)
+            {
+                return Icons[district];
+            }
+            float[] colour = DistrictValues.ColourOf(district);
+            var tint = new Color(colour[0], colour[1], colour[2], 1f);
+            var disc = new Texture2D(IconSize, IconSize, TextureFormat.RGBA32, false);
+            var pixels = new Color[IconSize * IconSize];
+            float radius = IconSize / 2f - 2f;
+            for (int y = 0; y < IconSize; y++)
+            {
+                for (int x = 0; x < IconSize; x++)
+                {
+                    Color pixel = tint;
+                    pixel.a = Mathf.Clamp01(radius - Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), new Vector2(IconSize / 2f, IconSize / 2f)));
+                    pixels[y * IconSize + x] = pixel;
+                }
+            }
+            disc.SetPixels(pixels);
+            disc.Apply();
+            Sprite icon = Sprite.Create(disc, new Rect(0, 0, IconSize, IconSize), new Vector2(0.5f, 0.5f));
+            icon.name = DistrictSplit.IdOf(district);
+            Icons[district] = icon;
+            return icon;
         }
 
         /// <summary>
-        /// True when Uptown's row stands among the game's district rows: under the districts' category, right after its line
+        /// Every district's zone colour, the game's seven and the band's two as the game holds them now, as one line for the log, and null when no
+        /// two are nearer than DistrictValues.ColourLeast; else which two are. Asked once a load.
+        /// </summary>
+        public static string ColourWhy(out string line)
+        {
+            var names = new List<string>(12);
+            var colours = new List<float[]>(12);
+            NeighborhoodData[] all = NeighborhoodHelper.NeighborhoodsData;
+            for (int i = 0; all != null && i < all.Length; i++)
+            {
+                if (all[i] != null && all[i].hasCityMapFilter)
+                {
+                    names.Add(all[i].neighbourhood.Replace("ba:neighborhood_", string.Empty).Replace("reallife_neighborhood_", string.Empty));
+                    colours.Add(new[] { all[i].cityMapZoneColor.r, all[i].cityMapZoneColor.g, all[i].cityMapZoneColor.b });
+                }
+            }
+            return DistrictValues.ColourWhy(names, colours, DistrictValues.ColourLeast, out line);
+        }
+
+        /// <summary>True when every district has its quad among the map's district zones at this load.</summary>
+        public static bool Zoned
+        {
+            get
+            {
+                for (int i = 0; i < Zones.Length; i++)
+                {
+                    if (Zones[i] == null)
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        }
+
+        /// <summary>True when the map's filter list has a district's row (made by the game, or at this load).</summary>
+        public static bool Rowed(int district)
+        {
+            UIs uis = InstanceBehavior<UIs>.IsInitialized ? InstanceBehavior<UIs>.Instance : null;
+            var toggles = uis != null && uis.mapFilters != null ? GameContract.FilterToggles.Field?.GetValue(uis.mapFilters) as Dictionary<string, Toggle> : null;
+            return toggles != null && toggles.ContainsKey(DistrictSplit.IdOf(district));
+        }
+
+        /// <summary>
+        /// True when a district's row stands among the game's district rows: under the districts' category, right after its line
         /// with nothing but district rows before it, and named by the district's own text; else why not.
         /// </summary>
-        public static bool RowPlaced(out string why)
+        public static bool RowPlaced(int district, out string why)
         {
             why = null;
+            string id = DistrictSplit.IdOf(district);
             UIs uis = InstanceBehavior<UIs>.IsInitialized ? InstanceBehavior<UIs>.Instance : null;
             CityMapFilters filters = uis != null ? uis.mapFilters : null;
             var entries = filters != null ? GameContract.FilterEntries.Field?.GetValue(filters) as Dictionary<string, CityMapFilter> : null;
             CityMapFilterCategory under = filters != null ? filters.GetCategory(NeighborhoodsCategory) : null;
-            if (entries == null || under == null || !entries.TryGetValue(DistrictValues.Id, out CityMapFilter row) || row == null)
+            if (entries == null || under == null || !entries.TryGetValue(id, out CityMapFilter row) || row == null)
             {
                 why = "the map's list has no row of it, or no category of districts";
                 return false;
@@ -77,8 +144,8 @@ namespace RealLifeOverhaul.Uptown
                     return false;
                 }
             }
-            string name = DistrictValues.Id.GetLocalization();
-            if (string.IsNullOrEmpty(name) || name == DistrictValues.Id)
+            string name = id.GetLocalization();
+            if (string.IsNullOrEmpty(name) || name == id)
             {
                 why = "the district's name has no text in this language";
                 return false;
@@ -116,13 +183,41 @@ namespace RealLifeOverhaul.Uptown
         }
 
         /// <summary>
-        /// Uptown's zone over a rectangle of the world (its ground's bounds), then its row once the map's filter list is
-        /// built. True when the zone is there (its row is made then or by the game); false with why.
+        /// The districts' zones over their halves of the band's ground (DistrictSplit.Bounds), then their rows once the map's
+        /// filter list is built. True when the zones are there (their rows are made then or by the game); false with why.
         /// </summary>
-        public static bool Map(float x1, float z1, float x2, float z2, out string why)
+        public static bool Map(IReadOnlyList<GroundRect> ground, out string why)
         {
             why = null;
-            if (_record == null)
+            if (!AnyRecord)
+            {
+                why = "the district is not among the game's districts";
+                return false;
+            }
+            bool all = true;
+            for (int d = 0; d < DistrictSplit.Count; d++)
+            {
+                if (!DistrictSplit.Bounds(d, ground, out float x1, out float z1, out float x2, out float z2))
+                {
+                    why = "the ground has nothing in " + DistrictSplit.IdOf(d);
+                    all = false;
+                    continue;
+                }
+                if (!MapOne(d, x1, z1, x2, z2, out string one))
+                {
+                    why = one;
+                    all = false;
+                }
+            }
+            return all;
+        }
+
+        private static bool MapOne(int district, float x1, float z1, float x2, float z2, out string why)
+        {
+            why = null;
+            string id = DistrictSplit.IdOf(district);
+            NeighborhoodData record = Record(district);
+            if (record == null)
             {
                 why = "the district is not among the game's districts";
                 return false;
@@ -144,10 +239,14 @@ namespace RealLifeOverhaul.Uptown
                 {
                     continue;
                 }
-                if (all[i].neighbourhood == DistrictValues.Id)
+                if (all[i].neighbourhood == id)
                 {
-                    Row(x1, z1, x2, z2, out why);   // the zone there from earlier in this load: its row, if the list was not built then
+                    Row(district, x1, z1, x2, z2, out why);   // the zone there from earlier in this load: its row, if the list was not built then
                     return true;
+                }
+                if (DistrictSplit.Is(all[i].neighbourhood))
+                {
+                    continue;   // the other half of the band: its quad is no template and no ground of the game's to keep clear of
                 }
                 if (template == null || all[i].neighbourhood == DistrictValues.Midtown)
                 {
@@ -176,49 +275,52 @@ namespace RealLifeOverhaul.Uptown
                 why = "the game's district zones have no extent";
                 return false;
             }
-            _zone = UnityEngine.Object.Instantiate(from.gameObject, from.parent, false);   // the game's zones sleep until their row is ticked: so does the copy
-            _zone.name = "Uptown";
-            Transform t = _zone.transform;
+            GameObject made = UnityEngine.Object.Instantiate(from.gameObject, from.parent, false);   // the game's zones sleep until their row is ticked: so does the copy
+            made.name = district == DistrictSplit.CedarHeights ? "Cedar Heights" : "Uptown";
+            Zones[district] = made;
+            Transform t = made.transform;
             Vector3 parent = from.parent != null ? from.parent.lossyScale : Vector3.one;
             t.position = new Vector3(x, from.position.y, z);
             t.rotation = from.rotation;
             t.localScale = new Vector3(scaleX / Mathf.Max(parent.x, 1e-4f), from.localScale.y, scaleZ / Mathf.Max(parent.z, 1e-4f));
-            MeshRenderer look = _zone.GetComponent<MeshRenderer>();
+            MeshRenderer look = made.GetComponent<MeshRenderer>();
             _block = _block ?? new MaterialPropertyBlock();
             look.GetPropertyBlock(_block);
-            _block.SetColor(ZoneColour, _record.cityMapZoneColor);   // as the game colours its own at their Start
+            _block.SetColor(ZoneColour, record.cityMapZoneColor);   // as the game colours its own at their Start
             look.SetPropertyBlock(_block);
             var now = new CityMapNeighborhoodZones.CityMapNeighborhoodZone[all.Length + 1];
             Array.Copy(all, now, all.Length);
-            now[all.Length] = new CityMapNeighborhoodZones.CityMapNeighborhoodZone { neighbourhood = DistrictValues.Id, zoneRenderer = look };
+            now[all.Length] = new CityMapNeighborhoodZones.CityMapNeighborhoodZone { neighbourhood = id, zoneRenderer = look };
             field.SetValue(zones, now);
-            _record.hasCityMapFilter = true;   // a list built from here on makes its row as for any district
-            Row(x1, z1, x2, z2, out why);
+            record.hasCityMapFilter = true;   // a list built from here on makes its row as for any district
+            Row(district, x1, z1, x2, z2, out why);
             return true;
         }
 
         // Its row among the game's district rows, once the list is built (the game builds it when the map's filters first start).
-        private static bool Row(float x1, float z1, float x2, float z2, out string why)
+        private static bool Row(int district, float x1, float z1, float x2, float z2, out string why)
         {
             why = null;
+            string id = DistrictSplit.IdOf(district);
+            NeighborhoodData record = Record(district);
             UIs uis = InstanceBehavior<UIs>.IsInitialized ? InstanceBehavior<UIs>.Instance : null;
             CityMapFilters filters = uis != null ? uis.mapFilters : null;
             var toggles = filters != null ? GameContract.FilterToggles.Field?.GetValue(filters) as Dictionary<string, Toggle> : null;
             MethodInfo create = GameContract.FilterCreate.Method;
-            if (filters == null || toggles == null || create == null)
+            if (filters == null || toggles == null || create == null || record == null)
             {
                 why = "the city map's filter list could not be reached (" + (GameContract.MapPlaces.Why ?? "not in the scene") + ")";
                 return false;
             }
             if (toggles.Count == 0)
             {
-                return true;   // not built yet: the game makes Uptown's row with the rest, in its place
+                return true;   // not built yet: the game makes the district's row with the rest, in its place
             }
             CityMapFilterCategory under = filters.GetCategory(NeighborhoodsCategory);
-            if (toggles.ContainsKey(DistrictValues.Id))
+            if (toggles.ContainsKey(id))
             {
                 var entries = GameContract.FilterEntries.Field?.GetValue(filters) as Dictionary<string, CityMapFilter>;
-                if (entries != null && entries.TryGetValue(DistrictValues.Id, out CityMapFilter made))
+                if (entries != null && entries.TryGetValue(id, out CityMapFilter made))
                 {
                     Place(made, under);   // made at an earlier step of this load
                 }
@@ -232,47 +334,57 @@ namespace RealLifeOverhaul.Uptown
             }
             object languageData = Activator.CreateInstance(parameters[4].ParameterType);   // default, as the game's own district rows: the label is the district's id's text
             Vector3? focus = new Vector3((x1 + x2) * 0.5f, UptownLots.GroundY, (z1 + z2) * 0.5f);   // the middle of the district's ground
-            _row = create.Invoke(filters, new object[] { DistrictValues.Id, _record.cityMapIcon, new CityMapFilterData { neighbourhood = DistrictValues.Id }, under, languageData, focus, null })
+            CityMapFilter row = create.Invoke(filters, new object[] { id, record.cityMapIcon, new CityMapFilterData { neighbourhood = id }, under, languageData, focus, null })
                 as CityMapFilter;
-            if (_row == null)
+            RowsMade[district] = row;
+            if (row == null)
             {
                 why = "the game's own row came back empty";
                 return false;
             }
-            Place(_row, under);
+            Place(row, under);
             under.UpdateToggleAllState();
             return true;
         }
 
-        /// <summary>Uptown stood down in play: its row unticked and put away, its zone hidden; its record stays for what still holds its id.</summary>
+        /// <summary>The band stood down in play: its rows unticked and put away, its zones hidden; the records stay for what still holds an id.</summary>
         public static void Unmap()
         {
-            if (_record != null)
-            {
-                _record.hasCityMapFilter = false;
-            }
             UIs uis = InstanceBehavior<UIs>.IsInitialized ? InstanceBehavior<UIs>.Instance : null;
             var toggles = uis != null && uis.mapFilters != null ? GameContract.FilterToggles.Field?.GetValue(uis.mapFilters) as Dictionary<string, Toggle> : null;
-            if (toggles != null && toggles.TryGetValue(DistrictValues.Id, out Toggle toggle) && toggle != null)
+            for (int d = 0; d < DistrictSplit.Count; d++)
             {
-                toggle.isOn = false;   // through the game's own handler, so its zone and its buildings' outlines go and the save's list loses its name
-                toggle.gameObject.SetActive(false);
-            }
-            if (_zone != null)
-            {
-                _zone.SetActive(false);
+                NeighborhoodData record = Record(d);
+                if (record != null)
+                {
+                    record.hasCityMapFilter = false;
+                }
+                if (toggles != null && toggles.TryGetValue(DistrictSplit.Ids[d], out Toggle toggle) && toggle != null)
+                {
+                    toggle.isOn = false;   // through the game's own handler, so its zone and its buildings' outlines go and the save's list loses its name
+                    toggle.gameObject.SetActive(false);
+                }
+                if (Zones[d] != null)
+                {
+                    Zones[d].SetActive(false);
+                }
             }
         }
 
-        // The city goes: the zone is the mod's own copy (the game's array goes with the scene).
+        // The city goes: the zones are the mod's own copies (the game's array goes with the scene).
         private static void UnloadMap()
         {
-            if (_zone != null)
+            for (int d = 0; d < DistrictSplit.Count; d++)
             {
-                UnityEngine.Object.Destroy(_zone);
+                if (Zones[d] != null)
+                {
+                    UnityEngine.Object.Destroy(Zones[d]);
+                }
+                Zones[d] = null;
+                RowsMade[d] = null;
+                CodeAssets.DropSprite(Icons[d]);
+                Icons[d] = null;
             }
-            _zone = null;
-            _row = null;
         }
     }
 }

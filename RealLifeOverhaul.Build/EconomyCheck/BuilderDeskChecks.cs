@@ -200,8 +200,8 @@ internal static partial class Program
         Check(ModSource(@"Core\GameContract.cs").Contains("\"click_builder_desk\", \"construction\", \"" + part + "\""), "front desk texts: the contract part's words are its English in the game contract");
         var guideLines = new Dictionary<string, string>(StringComparer.Ordinal)
         {
-            { "en", "- Or go to a builder's office in Uptown and click the person at the front desk:" }, { "pt", "- Ou vá ao escritório de uma construtora em Uptown" },
-            { "zh-cn", "- 也可以去上城一家建筑商的办公室" }
+            { "en", "- Or go to a builder's office in Uptown or Cedar Heights and click the person at the front desk:" }, { "pt", "- Ou vá ao escritório de uma construtora em Uptown" },
+            { "zh-cn", "- 也可以去上城或雪松高地的一家建筑商的办公室" }
         };
         for (int l = 0; l < words.Length && l < 3; l++)
         {

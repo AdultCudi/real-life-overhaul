@@ -22,7 +22,8 @@ namespace RealLifeOverhaul
             internal static void Connect()
             {
                 BuildModeBridges.Demand = Demand;
-                BuildModeBridges.MarketLevel = () => DistrictBuildings.MarketLevel;
+                BuildModeBridges.MarketLevel = district => DistrictBuildings.MarketLevel(district);
+                BuildModeBridges.DistrictAt = (x, z) => DistrictSplit.OfX(x);   // the demand bars show the district the map's middle is over
                 BuildModeBridges.GhostStand = GhostStand;
                 BuildModeBridges.GhostGone = GhostGone;
                 BuildModeBridges.CompleteNow = DistrictBuildings.CompleteNow;
@@ -36,6 +37,7 @@ namespace RealLifeOverhaul
             {
                 BuildModeBridges.Demand = null;
                 BuildModeBridges.MarketLevel = null;
+                BuildModeBridges.DistrictAt = null;
                 BuildModeBridges.GhostStand = null;
                 BuildModeBridges.GhostGone = null;
                 BuildModeBridges.CompleteNow = null;
@@ -45,11 +47,11 @@ namespace RealLifeOverhaul
                 BuildModeBridges.CornerCheck = null;
             }
 
-            private static int Demand(int use)
+            private static int Demand(int use, int district)
             {
                 try
                 {
-                    return DistrictBuildings.Lives ? DistrictBuildings.Demand(use) : -1;
+                    return DistrictBuildings.Lives ? DistrictBuildings.Demand(use, district) : -1;
                 }
                 catch (Exception e)
                 {

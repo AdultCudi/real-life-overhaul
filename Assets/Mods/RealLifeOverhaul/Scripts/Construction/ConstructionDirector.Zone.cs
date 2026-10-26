@@ -205,15 +205,23 @@ namespace RealLifeOverhaul.Construction
             {
                 return;
             }
+            for (int d = 0; d < BuildCatalogue.Districts; d++)
+            {
+                CouncilSitting(day, d);   // the same sitting for each of the band's districts, by its own demand and its own free land
+            }
+        }
+
+        private void CouncilSitting(int day, int district)
+        {
             CellGrid grid = Cells;
             for (int u = 0; u < _demandNow.Length; u++)
             {
-                _demandNow[u] = DemandFor((BuildUse)u);
+                _demandNow[u] = DemandFor((BuildUse)u, district);
                 _freeColumns[u] = 0;
             }
             for (int c = 0; c < grid.Columns.Count; c++)
             {
-                if (IsFreeColumn(c))
+                if (IsFreeColumn(c) && DistrictOfColumn(c) == district)
                 {
                     int use = CouncilColumnUse(c);
                     _freeColumns[Math.Max(0, use)] += use >= 0 ? 1 : 0;
@@ -223,7 +231,7 @@ namespace RealLifeOverhaul.Construction
             {
                 return;
             }
-            BuildRandom random = BuildRandom.Of(_state.Seed, day, 0x7A0E);
+            BuildRandom random = BuildRandom.Of(_state.Seed, day, 0x7A0E + district);   // a draw of its own for each district
             if (!random.Chance(ZoneRules.RezoneOdds(_demandNow[to])))
             {
                 Logger?.Info("Construction: the council's sitting on day " + day + " kept the zoning (" + (BuildUse)to + " wanted at " + _demandNow[to] + ", " + (BuildUse)from + " at "
@@ -236,11 +244,11 @@ namespace RealLifeOverhaul.Construction
             for (int k = 0; k < grid.Columns.Count && done == 0; k++)
             {
                 int c = (start + k) % grid.Columns.Count;
-                if (!IsFreeColumn(c) || CouncilColumnUse(c) != from || (grid.Prev(c) >= 0 && IsFreeColumn(grid.Prev(c)) && CouncilColumnUse(grid.Prev(c)) == from))
+                if (!IsFreeColumn(c) || DistrictOfColumn(c) != district || CouncilColumnUse(c) != from || (grid.Prev(c) >= 0 && IsFreeColumn(grid.Prev(c)) && CouncilColumnUse(grid.Prev(c)) == from))
                 {
                     continue;
                 }
-                for (int at = c; at >= 0 && done < ZoneRules.RezoneMost && IsFreeColumn(at) && CouncilColumnUse(at) == from; at = grid.Next(at))
+                for (int at = c; at >= 0 && done < ZoneRules.RezoneMost && IsFreeColumn(at) && DistrictOfColumn(at) == district && CouncilColumnUse(at) == from; at = grid.Next(at))
                 {
                     CellColumn col = grid.Columns[at];
                     _state.CouncilCells[CellRules.Key(col.Strip, col.Space)] = ZoneRules.CouncilColumn(col.Rows, to + 1);
@@ -256,9 +264,10 @@ namespace RealLifeOverhaul.Construction
                 return;
             }
             _cellsFactsStamp++;
-            Paper("reallife_grow_paper_rezoned", ConstructionText.Fill("reallife_grow_rezoned_name", "street", street ?? ConstructionText.T("reallife_neighborhood_uptown"), "use",
+            Paper("reallife_grow_paper_rezoned", ConstructionText.Fill("reallife_grow_rezoned_name", "street", street ?? ConstructionText.T(DistrictKeyOf(district)), "use",
                 ConstructionText.T(BuildCatalogue.UseKeys[to])), done);
-            Logger?.Info("Construction: the council rezoned " + done + " free column(s) on " + (street ?? "?") + " from " + (BuildUse)from + " to " + (BuildUse)to + " on day " + day + " (demand "
+            Logger?.Info("Construction: the council rezoned " + done + " free column(s) on " + (street ?? "?") + " in district " + district + " from " + (BuildUse)from + " to " + (BuildUse)to
+                         + " on day " + day + " (demand "
                          + _demandNow[to] + " against " + _demandNow[from] + ").");
             Changed();
         }

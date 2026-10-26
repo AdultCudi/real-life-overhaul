@@ -5,7 +5,8 @@ namespace RealLifeOverhaul.Uptown
     {
         public const string Title = "reallife_meta_title_uptown";                  // the feature's name, the district's features share it
         public const string Enabled = "reallife_uptown_ground_enabled";            // the option
-        public const string Terminus = "reallife_uptown_ground_terminus";          // where a bus line to the district says it goes
+        public const string Terminus = "reallife_uptown_ground_terminus";          // where a bus line to Uptown says it goes
+        public const string TerminusCedar = "reallife_uptown_ground_terminus_cedar";   // ... and one to Cedar Heights, the west half
 
         public const string TestCensus = "reallife_uptown_ground_test_census";     // the test buttons
         public const string TestPath = "reallife_uptown_ground_test_path";

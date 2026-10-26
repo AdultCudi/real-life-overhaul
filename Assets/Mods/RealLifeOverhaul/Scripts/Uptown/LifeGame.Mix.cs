@@ -11,7 +11,7 @@ using UnityEngine;
 namespace RealLifeOverhaul.Uptown
 {
     /// <summary>
-    /// The mix pass: once a save, after the game's own generator has set the district up, Uptown's shops, offices and homes
+    /// The mix pass: once a save, after the game's own generator has set the districts up, each of the band's districts' shops, offices and homes
     /// stand at exactly the share kept free for the player to rent (MixRules.ToLetShare, a third), and its shops hold a wide
     /// mix of kinds. A shop or office empty past the share is given a business as the game's generator opens one (the game's
     /// own start of a business, of a type whose AI businesses have a layout for its structure, run by a rival of its goods
@@ -52,11 +52,17 @@ namespace RealLifeOverhaul.Uptown
             string seed = save != null ? save.seed ?? string.Empty : string.Empty;
             CountStreets(all, skip);
             int changed = 0;
-            for (int t = 0; t < BusinessTypes.Length; t++)
+            for (int d = 0; d < DistrictSplit.Count; d++)
             {
-                changed += MixType(BusinessTypes[t], units, skip, seed, save, ref said);
+                string before = said;
+                said = string.Empty;
+                for (int t = 0; t < BusinessTypes.Length; t++)
+                {
+                    changed += MixType(BusinessTypes[t], units, d, skip, seed, save, ref said);
+                }
+                changed += MixHomes(units, d, skip, seed, ref said);
+                said = before + (before.Length > 0 ? " | " : string.Empty) + DistrictSplit.IdOf(d) + ": " + said;
             }
-            changed += MixHomes(units, skip, seed, ref said);
             Units.Clear();
             Free.Clear();
             Held.Clear();
@@ -101,7 +107,7 @@ namespace RealLifeOverhaul.Uptown
         }
 
         // Shops or offices at the share: opened past it, let go short of it, then a street's surplus of one kind given others.
-        private static int MixType(string type, List<MadeBuilding> units, Func<MadeBuilding, bool> skip, string seed, GameInstance save, ref string said)
+        private static int MixType(string type, List<MadeBuilding> units, int district, Func<MadeBuilding, bool> skip, string seed, GameInstance save, ref string said)
         {
             Units.Clear();
             Free.Clear();
@@ -109,7 +115,7 @@ namespace RealLifeOverhaul.Uptown
             for (int i = 0; i < units.Count; i++)
             {
                 MadeBuilding made = units[i];
-                if (!Ours(made, type, skip))
+                if (!Ours(made, type, skip) || DistrictSplit.Index(DistrictOfRecord(made)) != district)
                 {
                     continue;
                 }
@@ -124,7 +130,7 @@ namespace RealLifeOverhaul.Uptown
                     Held.Add(made);
                 }
             }
-            int share = CompetitionHelper.GetIdealPercentageOfEmptyBuildings(type, DistrictValues.Id);
+            int share = CompetitionHelper.GetIdealPercentageOfEmptyBuildings(type, DistrictSplit.IdOf(district));
             int change = MixRules.Change(Units.Count, Free.Count, share);
             int opened = 0, none = 0, freed = 0, spread = 0;
             if (change > 0)
@@ -186,20 +192,20 @@ namespace RealLifeOverhaul.Uptown
         }
 
         // Homes at the share: let to residents past it, freed short of it, as the game's own swap of homes sets them.
-        private static int MixHomes(List<MadeBuilding> units, Func<MadeBuilding, bool> skip, string seed, ref string said)
+        private static int MixHomes(List<MadeBuilding> units, int district, Func<MadeBuilding, bool> skip, string seed, ref string said)
         {
             Units.Clear();
             Free.Clear();
             Held.Clear();
             for (int i = 0; i < units.Count; i++)
             {
-                if (Ours(units[i], MixRules.HomeType, skip))
+                if (Ours(units[i], MixRules.HomeType, skip) && DistrictSplit.Index(DistrictOfRecord(units[i])) == district)
                 {
                     Units.Add(units[i]);
                     (units[i].Registration.AvailableForRent ? Free : Held).Add(units[i]);
                 }
             }
-            int share = CompetitionHelper.GetIdealPercentageOfEmptyBuildings(MixRules.HomeType, DistrictValues.Id);
+            int share = CompetitionHelper.GetIdealPercentageOfEmptyBuildings(MixRules.HomeType, DistrictSplit.IdOf(district));
             int change = MixRules.Change(Units.Count, Free.Count, share), done = 0;
             List<MadeBuilding> from = change > 0 ? Free : Held;
             ByOrder(from, change > 0 ? "residents" : "vacate", seed);

@@ -84,7 +84,7 @@ namespace RealLifeOverhaul
                 ConstructionBridges.LotBuilt = LotBuilt;
                 ConstructionBridges.LotRetired = UptownLots.OfEarlierPlan;
                 ConstructionBridges.SizeTaken = SizeTaken;
-                ConstructionBridges.LandPrice = () => DistrictBuildings.LandPricePerSqm;
+                ConstructionBridges.LandPrice = lot => DistrictBuildings.LandPricePerSqm(lot);
                 ConstructionBridges.Finish = Finish;
                 ConstructionBridges.FinishOver = FinishOver;
                 ConstructionBridges.SpacesOf = SpacesRules.SpacesOf;
@@ -505,6 +505,7 @@ namespace RealLifeOverhaul
                         {
                             Id = l.Id, Street = l.Street, Number = l.Number, X = l.X, Y = UptownLots.GroundY, Z = l.Z, Yaw = l.Yaw, Width = l.Width, Depth = l.Depth,
                             Class = (int)l.Class, First = l.First, Open = UptownLots.Open(l), Traffic = Math.Max(0, DistrictBuildings.TrafficOf(l.Id)), Block = l.Block,
+                            District = l.District, DistrictKey = DistrictSplit.IdOf(l.District),
                             Strip = l.Strip, Index = l.Index, Spaces = l.Spaces, Size = l.Size, StreetLow = corners, StreetHigh = corners, EdgeLow = low, EdgeHigh = high
                         });
                     }

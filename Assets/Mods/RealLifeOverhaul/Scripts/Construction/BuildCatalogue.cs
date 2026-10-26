@@ -331,6 +331,8 @@ namespace RealLifeOverhaul.Construction
         public const int ExitVeryTallFrom = 9;                                  // storeys: from here three
         public const int ExitCostPermille = 6;                                  // of the build's cost, for each exit after the first
         public const double StoreyHeight = 3.6;                                 // m: a storey of a design's height, as the sites' frames are
+        public static readonly string[] DistrictKeys = { "reallife_neighborhood_uptown", "reallife_neighborhood_cedarheights" };   // their names, as locale keys
+        public const int Districts = 2;                                         // the band's districts (Uptown 0, Cedar Heights 1): each has its own demand, market and cap on grown sites
         public const int UptownHeightLimit = 12;                                // storeys: the new district's limit
 
         /// <summary>Storeys a district allows, by the game's district ids; any other has <see cref="DefaultHeightLimit"/>.</summary>
