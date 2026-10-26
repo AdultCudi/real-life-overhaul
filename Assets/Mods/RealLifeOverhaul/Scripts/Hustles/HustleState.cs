@@ -80,6 +80,7 @@ namespace RealLifeOverhaul.Hustles
         public bool Cleaned;               // a clean is once only
         public int Bought;                 // the day
         public bool Test;                  // made by a test button: selling it moves no money
+        public int Until;                  // while waiting: the last day the seller holds it (PickupRules); 0 in a save from before, set on load
     }
 
     /// <summary>A buyer's offer for a thing the player has listed.</summary>

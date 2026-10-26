@@ -2,6 +2,7 @@ using System.Globalization;
 using Helpers;
 using UI.Notification;
 using UnityEngine;
+using UnityEngine.AI;
 
 namespace RealLifeOverhaul.Hustles
 {
@@ -65,10 +66,82 @@ namespace RealLifeOverhaul.Hustles
             o.Street = door.Street;
             o.Number = door.Number;
             o.Seller = HustleText.T("reallife_hustle_test_seller");
-            HustleGame.Guide(door.Street, door.Number);
+            Route(door.Street, door.Number);
             HustleText.Note(NotificationType.Info, "reallife_hustle_test_collect_done", "place", HustleText.Place(door.Street, door.Number), 10f);
             Logger?.Info("Hustles check (test: collect): a laptop waits at " + door.Street + " " + door.Number + "; the door's panel offers Collect: PASS");
             Changed();
+        }
+
+        /// <summary>
+        /// The whole of a pickup, end to end, on a laptop bought for nothing at the nearest door: the route is made and must end on the
+        /// pickup point, the point must be on the walking mesh, the parcel must stand there, the door's panel must offer Collect to
+        /// someone standing at the point, and Collect must put the laptop in the player's things. PASS or FAIL in the log.
+        /// </summary>
+        public void TestPickup()
+        {
+            if (!TestReady(true) || !TestDoor(out HustlePlace door))
+            {
+                return;
+            }
+            Owned o = TestThing("laptop", 35);
+            o.State = OwnedState.Waiting;
+            o.Street = door.Street;
+            o.Number = door.Number;
+            o.Seller = HustleText.T("reallife_hustle_test_seller");
+            string fail = PickupTravel(o, out string facts);
+            if (fail == null)
+            {
+                int taken = Collect(door.Street, door.Number);
+                fail = taken == 1 && o.State == OwnedState.Kept ? null : "pressing Collect took " + taken + " thing(s) and the laptop is " + o.State;
+            }
+            Logger?.Info("Hustles check (test: pickup): " + door.Street + " " + door.Number + ", " + facts + ": " + (fail == null ? "PASS" : "FAIL (" + fail + ")"));
+            HustleText.Note(fail == null ? NotificationType.Success : NotificationType.Warning, fail == null ? "reallife_hustle_test_pickup_pass" : "reallife_hustle_test_pickup_fail",
+                "place", HustleText.Place(door.Street, door.Number), "why", fail ?? string.Empty, 12f);
+            Changed();
+        }
+
+        // The travel part of the check: null if all holds, else what does not.
+        private string PickupTravel(Owned o, out string facts)
+        {
+            facts = "no point";
+            Vector3 here = HustleGame.Player.transform.position;
+            bool marked = Route(o.Street, o.Number);
+            Door d = Spot(o.Street, o.Number, here, true);
+            if (d == null || !d.Has)
+            {
+                return d == null || d.Building == null ? "the city has no building at the address" : "no pickup point could be found at its door";
+            }
+            bool onMesh = NavMesh.SamplePosition(d.Front, out NavMeshHit hit, 0.75f, NavMesh.AllAreas);
+            int state = HustleGame.RouteState(o.Street, o.Number, d.Front, out Vector3 end);
+            float gap = JobSpots.Flat(end, d.Front);
+            Unstage(d);
+            Stand(d, o);
+            bool parcel = d.Parcel != null && d.Parcel.gameObject.activeInHierarchy;
+            bool offered = FindDoor(d.Front) && _at == At.Collect && _atId == o.Id;
+            HidePanel("the pickup check");
+            string kind = d.Kind == HustleGame.SpotFront ? "on the pavement" : d.Kind == HustleGame.SpotWide ? "on the wider pavement"
+                : d.Kind == HustleGame.SpotMesh ? "on the walking mesh" : "under the door";
+            facts = "the point " + kind
+                    + ", " + JobSpots.Flat(d.Front, d.DoorAt).ToString("F1", CultureInfo.InvariantCulture) + " m from the door, on the mesh " + (onMesh ? "yes" : "no") + ", the route ends "
+                    + gap.ToString("F1", CultureInfo.InvariantCulture) + " m from it, a parcel " + (parcel ? "stands" : "is missing") + ", the panel "
+                    + (offered ? "offers" : "does not offer") + " Collect";
+            if (!marked || state == 0)
+            {
+                return "the route could not be marked";
+            }
+            if (!onMesh)
+            {
+                return "the point is not on the walking mesh";
+            }
+            if (!PickupRules.RouteArrives(gap))
+            {
+                return "the route ends " + gap.ToString("F1", CultureInfo.InvariantCulture) + " m from the point";
+            }
+            if (!parcel)
+            {
+                return "no parcel stands at the point";
+            }
+            return offered ? null : "the door's panel does not offer Collect at the point";
         }
 
         /// <summary>A used car bought for nothing and waiting at the nearest door: press Take the keys and it is put at the kerb.</summary>
@@ -159,7 +232,7 @@ namespace RealLifeOverhaul.Hustles
             }
             Gig g = TestVisit(door);
             g.Stage = GigStage.Booked;
-            HustleGame.Guide(door.Street, door.Number);
+            Route(door.Street, door.Number);
             HustleText.Note(NotificationType.Info, "reallife_hustle_test_gig_done", "place", HustleText.Place(door.Street, door.Number), 10f);
             Logger?.Info("Hustles check (test: a visit): odd jobs for " + g.Client + " booked at " + door.Street + " " + door.Number + " from now; the door's panel offers Start the job: PASS");
             Changed();
@@ -195,7 +268,7 @@ namespace RealLifeOverhaul.Hustles
             var o = new Owned
             {
                 Id = _state.Next(), Thing = thing, Condition = condition, Paid = 0, State = OwnedState.Kept, Seller = HustleText.T("reallife_hustle_test_seller"),
-                Bought = HustleGame.Day, Test = true
+                Bought = HustleGame.Day, Until = PickupRules.UntilFor(HustleGame.Day), Test = true
             };
             if (_state.Items.Count >= HustleCatalogue.OwnedMost)
             {
