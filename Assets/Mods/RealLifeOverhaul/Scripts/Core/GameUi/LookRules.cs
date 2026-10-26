@@ -1,36 +1,28 @@
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// The rules of the white box's look: a text's width in letters, when a value goes under its label, labels and old
+    /// The rules of the white box's look: the type scale, a text's width in letters, labels and old
     /// "Label <b>value</b>" lines, meters, weekday runs and each app's accent. Game-free; checked offline (ContractCheck LookChecks).
     /// </summary>
     public static class LookRules
     {
-        // The type scale and spacing, in canvas pixels of the game's 3840 x 2160.
+        // The type scale and spacing, in canvas pixels of the game's 3840 x 2160. A fact's label and value are one size, so
+        // that they stand on one baseline; the label is told from its value by its grey, the value by its weight.
         public const float SubtitleSize = 27f;    // the line under the title: who and where
-        public const float BodySize = 28.68f;     // the game's own line of the box (MyEmployees' Age): rows' values and sentences
-        public const float LabelSize = 27f;       // a row's label, a step under its value
-        public const float HeadingSize = 25f;     // a section's heading, in small capitals
+        public const float BodySize = 28.68f;     // the game's own line of the box (MyEmployees' Age): facts, values and sentences
+        public const float LabelSize = BodySize;  // a fact's label: the value's size, in grey
+        public const float HeadingSize = 24f;     // a section's heading, in small capitals
         public const float ChipSize = 21f;        // a status chip's word, in capitals
-        public const float NoteSize = 24f;        // notes and the Guide's page, at the foot
+        public const float NoteSize = 24f;        // notes, a list entry's requirement and the Guide's page, at the foot
+        public const float LineSpacing = 8f;      // extra between the lines of a wrapped text, in percent (the game's own line of the box has far more)
 
-        public const float BoxSpacing = 12f;      // between the box's parts (the game's box has 30 for every kind of line)
-        public const float SectionGap = 26f;      // above a section's heading, on top of BoxSpacing
-        public const float Indent = 28f;          // a section's rows stand in from its heading
         public const float RuleHeight = 2f;       // a hairline: one pixel on a 1920 screen
         public const float AccentWidth = 88f;     // the app's colour over the title
         public const float AccentHeight = 8f;
-        public const float MeterWidth = 220f;     // a short meter, beside its figure
-        public const float MeterHeight = 14f;
+        public const float MeterHeight = 14f;     // a meter's bar, under its row, the card's whole width
         public const float MarkSize = 30f;        // a tick or a dot in front of a need
         public const float HeadingTracking = 6f;  // letter spacing of a heading (TextMeshPro's em/100)
         public const float ChipTracking = 4f;
-
-        /// <summary>The share of an em an average letter of the game's body font (Rubik) takes, a little over.</summary>
-        public const float LetterEm = 0.55f;
-
-        /// <summary>A row's width in the phone apps' box (MyEmployees' 949 less 80 a side and an indent), for a box not yet laid out.</summary>
-        public const float DefaultWidth = 761f;
 
         /// <summary>A text's width in letters: Latin or Cyrillic one, a square CJK character two, mark-up in angle brackets nothing.</summary>
         public static int Units(string text)
@@ -64,46 +56,6 @@ namespace RealLifeOverhaul.GameUi
         {
             return (c >= 'ᄀ' && c <= 'ᅟ') || (c >= '⺀' && c <= '꓏') || (c >= '가' && c <= '힣')
                 || (c >= '豈' && c <= '﫿') || (c >= '︰' && c <= '﹏') || (c >= '＀' && c <= '｠') || (c >= '￠' && c <= '￦');
-        }
-
-        /// <summary>The letters a line of the box holds: its width over an average letter of the body font.</summary>
-        public static int Capacity(float width, float fontSize)
-        {
-            if (!(width > 0f) || !(fontSize > 0f))
-            {
-                return 0;
-            }
-            return (int)(width / (fontSize * LetterEm));
-        }
-
-        /// <summary>A row's value goes under its label: the two and a gap of four letters do not fit; never for a box of unknown width (0).</summary>
-        public static bool Stack(string label, string value, int capacity)
-        {
-            if (capacity <= 0)
-            {
-                return false;
-            }
-            if ((label != null && label.IndexOf('\n') >= 0) || (value != null && value.IndexOf('\n') >= 0))
-            {
-                return true;   // a value or label of several lines stands under its label
-            }
-            return Units(label) + Units(value) + 4 > capacity;
-        }
-
-        /// <summary>A chip's width in canvas pixels: its word in capitals, its letter spacing and padding.</summary>
-        public static float ChipWidth(string words)
-        {
-            float em = 0f;
-            int letters = 0;
-            if (!string.IsNullOrEmpty(words))
-            {
-                for (int i = 0; i < words.Length; i++)
-                {
-                    em += Wide(words[i]) ? 1f : 0.68f;
-                    letters++;
-                }
-            }
-            return em * ChipSize + letters * ChipSize * ChipTracking / 100f + 36f;
         }
 
         /// <summary>A label without the colon (or Chinese full-width colon) and spaces it ends in: a row's column says what the colon did.</summary>

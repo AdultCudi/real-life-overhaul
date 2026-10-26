@@ -24,11 +24,8 @@ namespace RealLifeOverhaul.GameUi
         private Color _accent = new Color(0.349f, 0.412f, 0.459f, 1f);
         private bool _medium;   // the body font has a medium weight: values in it, else in bold
 
-        // A row's mark-up, made once: the label's size and grey, the value's weight, each tone's colour.
-        private string _labelOpen, _valueOpen, _valueClose;
-        private readonly string[] _toneOpen = new string[4];
-
-        private GameObject _bodyT, _subT, _noteT, _headerT, _chipsT, _chipT, _headingT, _pairT, _meterT, _checkT, _footT;
+        // The parts a page is written with, each a template asleep among the box's own; copied once, laid aside between pages.
+        private GameObject _bodyT, _subT, _noteT, _headerT, _chipsT, _chipT, _groupT, _rowT, _pairT, _meterT, _entryT, _checkT, _guideT;
 
         /// <summary>The app's colour: the bar over each page's title and its plain chips (LookRules.Accent).</summary>
         public void SetAccent(int rgb)
@@ -136,59 +133,36 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        private static string Hex(Color colour)
-        {
-            return "<color=#" + ColorUtility.ToHtmlStringRGB(colour) + ">";
-        }
-
-        // One small gap between parts; a heading, a header and the foot make their own room.
-        private void Space(Transform box)
-        {
-            var layout = box != null ? box.GetComponent<VerticalLayoutGroup>() : null;
-            if (layout != null)
-            {
-                layout.spacing = LookRules.BoxSpacing;
-            }
-            var rect = box as RectTransform;
-            var padding = layout != null ? layout.padding : null;
-            float width = rect != null ? rect.rect.width - (padding != null ? padding.left + padding.right : 0) - LookRules.Indent : 0f;
-            _capacity = LookRules.Capacity(width > 200f ? width : LookRules.DefaultWidth, LookRules.BodySize);   // a box not laid out yet: the phone's width
-        }
-
+        // Every part is a layout the box's vertical layout sizes: a text asks for the height its words take at the width it is
+        // given, a fact is a horizontal layout of its label and its value, and no part has a position or a height of its own.
         private void MakeLook(Transform templates)
         {
-            _labelOpen = "<size=" + LookRules.LabelSize.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + ">" + Hex(_muted);
-            _valueOpen = _medium ? "<font-weight=500>" : "<b>";
-            _valueClose = _medium ? "</font-weight>" : "</b>";
-            _toneOpen[(int)CellTone.Plain] = string.Empty;
-            _toneOpen[(int)CellTone.Green] = Hex(Ink(CellTone.Green));
-            _toneOpen[(int)CellTone.Yellow] = Hex(Ink(CellTone.Yellow));
-            _toneOpen[(int)CellTone.Red] = Hex(Ink(CellTone.Red));
-
             _bodyT = Words(templates, "Line", LookRules.BodySize, _ink, FontStyles.Normal, false);
             _subT = Words(templates, "Subtitle", LookRules.SubtitleSize, _muted, FontStyles.Normal, false);
-            _subT.GetComponent<TMP_Text>().margin = new Vector4(0f, 0f, 0f, 6f);
             _noteT = Words(templates, "Note", LookRules.NoteSize, _muted, FontStyles.Normal, false);
+            _guideT = Words(templates, "Guide", LookRules.NoteSize, _muted, FontStyles.Normal, false);
 
-            // The header: the title under a short bar of the app's colour; chips at its right.
-            _headerT = UnityEngine.Object.Instantiate(_title, templates, false);
-            _headerT.name = "Header";
-            Plain(_headerT);
-            var titleLayout = _headerT.GetComponent<LayoutElement>();
-            if (titleLayout != null)
-            {
-                titleLayout.minHeight = -1f;   // the game's name keeps room for one line of 90; a title is as tall as its lines
-            }
-            _headerT.GetComponent<TMP_Text>().margin = new Vector4(0f, LookRules.AccentHeight + 16f, 0f, 0f);
+            // The header: a title that wraps in the room the chips leave it, under a short bar of the app's colour.
+            _headerT = Holder(templates, "Header", 16f, new RectOffset(0, 0, (int)(LookRules.AccentHeight + 14f), 0), TextAnchor.UpperLeft);
+            GameObject title = UnityEngine.Object.Instantiate(_title, _headerT.transform, false);
+            title.name = "Title";
+            Plain(title);
+            var titleText = title.GetComponent<TMP_Text>();
+            titleText.margin = Vector4.zero;
+            titleText.raycastTarget = false;
+            titleText.alignment = TextAlignmentOptions.TopLeft;
+            var titleSize = title.GetComponent<LayoutElement>() ?? title.AddComponent<LayoutElement>();
+            titleSize.minHeight = titleSize.preferredHeight = -1f;   // the game's name keeps room for one line of 90; a title is as tall as its lines
+            titleSize.minWidth = 0f;
+            titleSize.flexibleWidth = 1f;
             Image accent = Picture(_headerT.transform, "Accent", _round, _accent);
             Pin((RectTransform)accent.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), Vector2.zero, new Vector2(LookRules.AccentWidth, LookRules.AccentHeight));
             Round(accent, LookRules.AccentHeight);
 
-            _chipsT = Holder(templates, "Chips", 10f, new RectOffset(0, 0, 0, 0), TextAnchor.UpperRight);
-            var fit = _chipsT.AddComponent<ContentSizeFitter>();
-            fit.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
-            fit.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-            _chipsT.AddComponent<LayoutElement>().ignoreLayout = true;
+            // Chips: pills in a row, at the title's right, or under it when they are too many or too wide (LeftPaneRules.ChipsBelow).
+            _chipsT = Holder(templates, "Chips", 10f, new RectOffset(0, 0, 10, 0), TextAnchor.UpperRight);
+            var chipsSize = _chipsT.AddComponent<LayoutElement>();
+            chipsSize.flexibleWidth = 0f;
             _chipT = Holder(templates, "Chip", 0f, new RectOffset(18, 18, 6, 6), TextAnchor.MiddleCenter);
             Image ground = _chipT.AddComponent<Image>();
             ground.sprite = _round;
@@ -201,33 +175,57 @@ namespace RealLifeOverhaul.GameUi
             chipText.textWrappingMode = TextWrappingModes.NoWrap;
             chipText.alignment = TextAlignmentOptions.Center;
 
-            // A section's heading: small capitals in grey, room above, the hairline under it.
-            _headingT = Words(templates, "Heading", LookRules.HeadingSize, _muted, FontStyles.SmallCaps | FontStyles.Bold, true);
-            var headingText = _headingT.GetComponent<TMP_Text>();
+            // A section: a card in a tint of the rule's grey, its heading in small capitals over a hairline, its parts under them.
+            _groupT = Column(templates, "Group", new RectOffset((int)LeftPaneRules.GroupPadX, (int)LeftPaneRules.GroupPadX, (int)LeftPaneRules.GroupPadTop, (int)LeftPaneRules.GroupPadBottom),
+                LeftPaneRules.GroupSpacing);
+            Image card = _groupT.AddComponent<Image>();
+            card.sprite = _round;
+            card.type = Image.Type.Sliced;
+            card.color = Color.Lerp(_rule, Color.white, 0.8f);
+            card.raycastTarget = false;
+            Round(card, 48f);
+            GameObject heading = Words(_groupT.transform, "Heading", LookRules.HeadingSize, _muted, FontStyles.SmallCaps | FontStyles.Bold, true);
+            var headingText = heading.GetComponent<TMP_Text>();
             headingText.characterSpacing = LookRules.HeadingTracking;
-            headingText.margin = new Vector4(0f, LookRules.SectionGap, 0f, 10f);
+            headingText.lineSpacing = 0f;
             if (_headingFont != null)
             {
                 headingText.font = _headingFont;
             }
-            Rule(_headingT.transform, false);
+            Bar(_groupT.transform, "Rule", null, _rule, LookRules.RuleHeight);
 
-            // Two rows side by side, each half the line.
-            _pairT = Holder(templates, "RowPair", 40f, new RectOffset(0, 0, 0, 0), TextAnchor.UpperLeft);
-            _pairT.GetComponent<HorizontalLayoutGroup>().childForceExpandWidth = true;
+            // A fact: the label at the left in grey, the value at the right in the box's ink, one size so that they share a baseline;
+            // the label keeps what it needs, the value takes the rest and wraps under itself, right aligned.
+            _rowT = Holder(templates, "Row", LeftPaneRules.RowGap, new RectOffset(0, 0, 0, 0), TextAnchor.UpperLeft);
+            Words(_rowT.transform, "Label", LookRules.LabelSize, _muted, FontStyles.Normal, false);
+            GameObject value = Words(_rowT.transform, "Value", LookRules.BodySize, _ink, _medium ? FontStyles.Normal : FontStyles.Bold, false);
+            var valueText = value.GetComponent<TMP_Text>();
+            valueText.alignment = TextAlignmentOptions.TopRight;
+            if (_medium)
+            {
+                valueText.fontWeight = FontWeight.Medium;
+            }
+            var labelSize = _rowT.transform.GetChild(0).gameObject.AddComponent<LayoutElement>();
+            labelSize.flexibleWidth = 0f;   // its width is set for each fact (LeftPaneRules.LabelWidth)
+            var valueSize = value.AddComponent<LayoutElement>();
+            valueSize.minWidth = 0f;
+            valueSize.flexibleWidth = 1f;
+
+            // Two facts side by side, each half the line.
+            _pairT = Holder(templates, "RowPair", LeftPaneRules.PairGap, new RectOffset(0, 0, 0, 0), TextAnchor.UpperLeft);
             for (int i = 0; i < 2; i++)
             {
-                GameObject half = Words(_pairT.transform, "Half", LookRules.BodySize, _ink, FontStyles.Normal, false);
+                GameObject half = UnityEngine.Object.Instantiate(_rowT, _pairT.transform, false);
+                half.name = "Half";
                 var share = half.AddComponent<LayoutElement>();
                 share.minWidth = share.preferredWidth = 0f;   // the halves share the line equally, whatever their words
                 share.flexibleWidth = 1f;
             }
 
-            // A meter: a row with a short bar of the round sprite under the figure.
-            _meterT = Words(templates, "Meter", LookRules.BodySize, _ink, FontStyles.Normal, false);
-            _meterT.GetComponent<TMP_Text>().margin = new Vector4(0f, 0f, 0f, LookRules.MeterHeight + 10f);
-            Image track = Picture(_meterT.transform, "Bar", _round, Color.Lerp(_rule, Color.white, 0.35f));
-            Pin((RectTransform)track.transform, new Vector2(1f, 0f), new Vector2(1f, 0f), Vector2.zero, new Vector2(LookRules.MeterWidth, LookRules.MeterHeight));
+            // A meter: a fact, and under it a bar of the round sprite the card's whole width.
+            _meterT = Column(templates, "Meter", new RectOffset(0, 0, 0, 0), 8f);
+            UnityEngine.Object.Instantiate(_rowT, _meterT.transform, false).name = "Row";
+            Image track = Bar(_meterT.transform, "Track", _round, Color.Lerp(_rule, Color.white, 0.35f), LookRules.MeterHeight);
             Round(track, LookRules.MeterHeight);
             Image fill = Picture(track.transform, "Fill", _round, _good);
             Round(fill, LookRules.MeterHeight);
@@ -237,18 +235,49 @@ namespace RealLifeOverhaul.GameUi
             fillRect.pivot = new Vector2(0f, 0.5f);
             fillRect.offsetMin = fillRect.offsetMax = Vector2.zero;
 
-            // A need: the game's tick before the words, or a dot in its tone.
-            _checkT = Words(templates, "Check", LookRules.BodySize, _ink, FontStyles.Normal, false);
-            _checkT.GetComponent<TMP_Text>().margin = new Vector4(LookRules.MarkSize + 14f, 0f, 0f, 0f);
-            Image mark = Picture(_checkT.transform, "Mark", _tick ?? _round, _good);
-            mark.preserveAspect = true;
-            mark.type = Image.Type.Simple;
-            Pin((RectTransform)mark.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 2f), new Vector2(LookRules.MarkSize, LookRules.MarkSize));
+            // A list entry (a rung of a ladder): its name and its figure on one line, what it asks under them in small grey; the
+            // current one on a tint of the app's colour with a mark at its left.
+            _entryT = Column(templates, "Entry", new RectOffset((int)LeftPaneRules.EntryPadLeft, (int)LeftPaneRules.EntryPadRight, (int)LeftPaneRules.EntryPadY, (int)LeftPaneRules.EntryPadY), 4f);
+            Image back = _entryT.AddComponent<Image>();
+            back.sprite = _round;
+            back.type = Image.Type.Sliced;
+            back.color = Color.clear;
+            back.raycastTarget = false;
+            Round(back, 36f);
+            GameObject top = UnityEngine.Object.Instantiate(_rowT, _entryT.transform, false);
+            top.name = "Top";
+            var entryName = top.transform.GetChild(0).GetComponent<TMP_Text>();
+            entryName.color = _ink;
+            entryName.fontStyle = _medium ? FontStyles.Normal : FontStyles.Bold;
+            if (_medium)
+            {
+                entryName.fontWeight = FontWeight.Medium;
+            }
+            Words(_entryT.transform, "Detail", LookRules.NoteSize, _muted, FontStyles.Normal, false);
+            Image mark = Picture(_entryT.transform, "Mark", _round, _accent);
+            var markRect = (RectTransform)mark.transform;
+            markRect.anchorMin = new Vector2(0f, 0f);
+            markRect.anchorMax = new Vector2(0f, 1f);
+            markRect.pivot = new Vector2(0f, 0.5f);
+            markRect.offsetMin = new Vector2(2f, 8f);
+            markRect.offsetMax = new Vector2(2f + LeftPaneRules.MarkWidth, -8f);
+            Round(mark, LeftPaneRules.MarkWidth * 2f);
+            mark.gameObject.SetActive(false);
 
-            // The foot: a hairline, then the Guide's page in the note's style.
-            _footT = Words(templates, "Foot", LookRules.NoteSize, _muted, FontStyles.Normal, false);
-            _footT.GetComponent<TMP_Text>().margin = new Vector4(0f, 18f, 0f, 0f);
-            Rule(_footT.transform, true);
+            // A need: the game's tick before the words, or a dot in its tone.
+            _checkT = Holder(templates, "Check", 14f, new RectOffset(0, 0, 0, 0), TextAnchor.UpperLeft);
+            Image tick = Picture(_checkT.transform, "Mark", _tick ?? _round, _good);
+            tick.preserveAspect = true;
+            tick.type = Image.Type.Simple;
+            var tickSize = tick.GetComponent<LayoutElement>();
+            tickSize.ignoreLayout = false;
+            tickSize.minWidth = tickSize.preferredWidth = LookRules.MarkSize;
+            tickSize.minHeight = tickSize.preferredHeight = LookRules.BodySize * 1.3f;   // as tall as a line, so the tick stands on it
+            tickSize.flexibleWidth = 0f;
+            GameObject words = Words(_checkT.transform, "Text", LookRules.BodySize, _ink, FontStyles.Normal, false);
+            var wordsSize = words.AddComponent<LayoutElement>();
+            wordsSize.minWidth = 0f;
+            wordsSize.flexibleWidth = 1f;
         }
 
         // A copy of the box's line of text set for one part. Its localisation component goes (parts are written in final
@@ -270,6 +299,8 @@ namespace RealLifeOverhaul.GameUi
             text.overflowMode = TextOverflowModes.Overflow;
             text.raycastTarget = false;
             text.margin = Vector4.zero;
+            text.lineSpacing = LookRules.LineSpacing;   // the game's line of the box has far more, which the layout counts but a long note then fills
+            text.paragraphSpacing = 0f;
             text.richText = true;
             return made;
         }
@@ -330,17 +361,15 @@ namespace RealLifeOverhaul.GameUi
             image.pixelsPerUnitMultiplier = Mathf.Max(0.01f, image.sprite.border.x * 2f / height);
         }
 
-        // A solid hairline in the rule grey, at a text's foot (a heading) or top (the foot).
-        private void Rule(Transform text, bool top)
+        // A bar that the layout gives the whole width and a height: a section's rule, a meter's track.
+        private static Image Bar(Transform parent, string name, Sprite sprite, Color colour, float height)
         {
-            Image line = Picture(text, "Rule", null, _rule);
-            var rect = (RectTransform)line.transform;
-            float y = top ? 1f : 0f;
-            rect.anchorMin = new Vector2(0f, y);
-            rect.anchorMax = new Vector2(1f, y);
-            rect.pivot = new Vector2(0.5f, y);
-            rect.anchoredPosition = Vector2.zero;
-            rect.sizeDelta = new Vector2(0f, LookRules.RuleHeight);
+            Image made = Picture(parent, name, sprite, colour);
+            var size = made.GetComponent<LayoutElement>();
+            size.ignoreLayout = false;
+            size.minHeight = size.preferredHeight = height;
+            size.flexibleWidth = 1f;
+            return made;
         }
     }
 }

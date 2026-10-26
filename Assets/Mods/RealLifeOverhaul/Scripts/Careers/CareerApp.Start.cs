@@ -161,15 +161,16 @@ namespace RealLifeOverhaul.Careers
             {
                 box.Line(CareersText.T("reallife_career_prof_none_now"), CellTone.Yellow);
             }
-            // The ladder: each rung's title and pay as a row (the rung the player is on in green), and under it what it asks.
+            // The ladder: each rung an entry, its title and pay on one line and what it asks under them in small grey; the rung the
+            // player is on in green and marked, or the first post marked while they are not on this ladder.
             box.Section("reallife_career_prof_ladder");
             int now = w.Job != null && w.Job.Post.Prof == p.Id ? w.Job.Post.Rank : -1;
+            int marked = now >= 0 ? now : 0;
             var line = new StringBuilder(160);
             for (int r = 0; r < p.Ranks.Length; r++)
             {
                 ProRank rank = p.Ranks[r];
                 int need = ProRules.Need(f, p, r), points = ProRules.Points(f, p, r);
-                box.RowWords(CareersText.Title(p.Id, r), CareersText.T("reallife_career_row_rate", "rate", CareersText.Rate(Prices.At(rank.Pay))), r == now ? CellTone.Green : CellTone.Plain);
                 line.Length = 0;
                 line.Append(CareersText.Fill("reallife_ibox_rung_asks", "need", need.ToString(), "points", points.ToString()));
                 string needs = rank.Quals.Length > 0 || rank.Cert >= 0 ? RungNeeds(rank) : string.Empty;
@@ -185,7 +186,8 @@ namespace RealLifeOverhaul.Careers
                 {
                     line.Append(' ').Append(CareersText.T("reallife_career_prof_here"));
                 }
-                box.Note(line.ToString());
+                box.Entry(CareersText.Title(p.Id, r), CareersText.T("reallife_career_row_rate", "rate", CareersText.Rate(Prices.At(rank.Pay))), line.ToString(),
+                    r == now ? CellTone.Green : CellTone.Plain, r == marked);
             }
             Transform buttons = box.ButtonRow();
             if (c != null)
