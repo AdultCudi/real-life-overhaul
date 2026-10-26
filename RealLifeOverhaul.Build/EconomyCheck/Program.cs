@@ -280,6 +280,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--one-person")
+        {
+            OnePerson();   // (one face for one person alone, while working on it: OnePersonChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--lose-touch")
         {
             LoseTouch();   // (losing touch alone, while working on it: LoseTouchChecks.cs)
@@ -516,6 +522,7 @@ internal static partial class Program
         PeopleAge();    // the People page: each person's age, a year more at each birthday, in every language; the Guide names People as a contact (PeopleAgeChecks.cs)
         MorePeople();   // more people to meet: the first eight kept, every place bringing somebody new up to 400, the later people's own record, the circle (MorePeopleChecks.cs)
         LoseTouch();    // losing touch: who can go and why not, the slot given to somebody new, a full cast making room, Flare letting go (LoseTouchChecks.cs)
+        OnePerson();    // one face for one person: Alex and Mom fixed, a roommate's copy following the record, an old save mended once, every scene reading it (OnePersonChecks.cs)
         CinemaFixes();  // a film with a friend: rested as in the game's own cinema seat, given back on every way out (CinemaFixChecks.cs)
         PartnerTalk();    // the partner: Social's calls, texts and outings count as talking for family life (PartnerTalkChecks.cs)
         MealFixes();    // a completed meal fills once by the game's food and records bought food through the bridge

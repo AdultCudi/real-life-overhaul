@@ -168,7 +168,7 @@ namespace RealLifeOverhaul.Family
         {
             if (id == PartnerId && Partner.Seed != 0)
             {
-                ContactPictures.Person(PartnerId, Partner.Female, FamilyCast.PartnerAge(Partner.Seed), Partner.Seed);
+                ContactPictures.Person(PartnerId, Partner.Female, Partner.LookAge, Partner.Seed);
                 return;
             }
             ContactPictures.Add(id);

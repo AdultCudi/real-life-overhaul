@@ -33,20 +33,6 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The looks of Mom (a woman of 58) and Alex, the old friend (a man of 30), the same in every game and wherever they are
-    /// shown: the game builds a look from its seed alone. Game-free.
-    /// </summary>
-    public static class FixedLooks
-    {
-        public const int MomSeed = 77171;        // the wedding's mother has always had this look
-        public const int MomAge = 58;            // years
-        public const bool MomFemale = true;
-        public const int AlexSeed = 52817;
-        public const int AlexAge = 30;           // years
-        public const bool AlexFemale = false;
-    }
-
-    /// <summary>
     /// Every phone contact the mod adds, and its picture: a logo on a square of colour, or a face from the game's portrait
     /// camera (people another feature gives a look are drawn from that, ContactPictures.Person). Game-free: CatalogueCheck
     /// holds every registered contact id and every shape against this table.
@@ -65,8 +51,8 @@ namespace RealLifeOverhaul
             // The emergency line, the doctor, an old friend and Mom (Mom and Alex take the social life's look when it is on)
             ContactLook.Logo("reallife-911", "lawfirm2", 186, 42, 42),
             ContactLook.Person("reallife-doctor", true, 46),
-            ContactLook.Person("reallife-friend", FixedLooks.AlexFemale, FixedLooks.AlexAge, FixedLooks.AlexSeed),
-            ContactLook.Person("reallife-mom", FixedLooks.MomFemale, FixedLooks.MomAge, FixedLooks.MomSeed),
+            ContactLook.Person("reallife-friend", FixedPeople.AlexFemale, FixedPeople.AlexAge, FixedPeople.AlexSeed),
+            ContactLook.Person("reallife-mom", FixedPeople.MomFemale, FixedPeople.MomAge, FixedPeople.MomSeed),
             // Money: the collections agency is a firm; the private lender and the adviser are people
             ContactLook.Logo("reallife-collections", "bank2", 128, 40, 52),
             ContactLook.Person("reallife-lender", false, 44),

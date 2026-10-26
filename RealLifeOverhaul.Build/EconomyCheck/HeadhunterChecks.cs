@@ -354,8 +354,8 @@ internal static partial class Program
             string nameLine = mark + NameFixStarts[codes[l]], productLine = mark + ProductFixStarts[codes[l]];
             both = WhatsNewHas(words[l], nameLine) && WhatsNewHas(words[l], productLine) && HunterCount(row, nameLine) == 1 && HunterCount(row, productLine) == 1;
             int nameAt = row.IndexOf(nameLine, StringComparison.Ordinal), productAt = row.IndexOf(productLine, StringComparison.Ordinal);
-            // each line once, the names line then the products line, at the end of the row, no double space (any row of What's new has them, as a release numbers the row)
-            Check(both && nameAt >= 0 && productAt > nameAt && row.IndexOf(mark, productAt + mark.Length, StringComparison.Ordinal) < 0 && !row.Contains("  ") && firstFix >= 0 && count >= 2,
+            // each line once, the names line then the products line (later fixes may follow them), no double space (any row of What's new has them, as a release numbers the row)
+            Check(both && nameAt >= 0 && productAt > nameAt && !row.Contains("  ") && firstFix >= 0 && count >= 2,
                 "names and products texts: What's new's next row ends with the two fixes, once each, the names first, no double spaces, in " + codes[l]);
             string productFix = productAt >= 0 ? row.Substring(productAt) : string.Empty;
             Check(productFix.Contains("16") && productFix.Contains("12") && productFix.Contains("36") && productFix.Contains("24"),
