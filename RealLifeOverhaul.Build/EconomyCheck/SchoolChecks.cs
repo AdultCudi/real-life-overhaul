@@ -539,8 +539,8 @@ internal static partial class Program
         var lines = new Dictionary<string, string>
         {
             { "en", "Birchwood School: a school for ages 5 to 17 on Uptown's west square" }, { "pt", "Escola Birchwood: uma escola para idades de 5 a 17 anos" },
-            { "zh-cn", "伯奇伍德学校：Uptown 西侧广场上一所招收 5 到 17 岁学生的学校" }, { "de", "Birchwood School: eine Schule für 5 bis 17 Jahre" },
-            { "fr", "Birchwood School : une école de 5 à 17 ans" }, { "es", "Birchwood School: una escuela de 5 a 17 años" }, { "ru", "Школа Birchwood: школа для детей от 5 до 17 лет" },
+            { "zh-cn", "伯奇伍德学校：Uptown 西侧广场上一所招收 5 到 17 岁学生的学校" }, { "de", "Birchwood School: eine Schule für Kinder von 5 bis 17 Jahren" },
+            { "fr", "Birchwood School : une école de 5 à 17 ans" }, { "es", "Birchwood School: una escuela de 5 a 17 años" }, { "ru", "Birchwood School: школа для детей от 5 до 17 лет" },
             { "nl", "Birchwood School: een school voor 5 tot 17 jaar" }, { "tr", "Birchwood School: Uptown'un batı meydanında" }
         };
         for (int l = 0; l < codes.Length; l++)
