@@ -186,6 +186,63 @@ namespace RealLifeOverhaul.Fame
             Guarded(() => StartTestScene(_testRequest++ % 2 == 0 ? FameInviteKind.Investors : FameInviteKind.CityEvent));
         }
 
+        /// <summary>
+        /// Makes an accepted invitation of every kind at this hour, asks the Planner for them, and checks each entry says where it
+        /// is held and that the Standing page offers the call to join; the invitations are taken away again.
+        /// </summary>
+        public void TestMeetings()
+        {
+            if (!TestReady("Standing invitations"))
+            {
+                return;
+            }
+            Guarded(() =>
+            {
+                Planner.PlannerDirector planner = Planner.PlannerDirector.Instance;
+                if (planner == null)
+                {
+                    TestRefusals.Tell(Logger, "Standing invitations", TestRefusal.FeatureOff);
+                    return;
+                }
+                int lastInvite = _file.InviteDay;
+                var made = new List<FameInvite>();
+                foreach (FameInviteKind kind in Enum.GetValues(typeof(FameInviteKind)))
+                {
+                    FameInvite invite = FamePress.Offer(_file, kind, Save.Day - FamePress.InviteAhead, Save.Hour);
+                    invite.State = FameInviteState.Accepted;
+                    made.Add(invite);
+                }
+                var list = new Planner.PlannerList();
+                planner.LookFor(list, Save.Day, Save.Day + 1, id => id == "standing");
+                string bad = null;
+                for (int i = 0; i < made.Count; i++)
+                {
+                    Planner.PlannerEntry e = list.Find(new Planner.EntryId("standing", 1, made[i].Id));
+                    bool placed = e != null && !string.IsNullOrEmpty(e.Where);
+                    bool offered = FamePress.Held(made[i].Kind) != FameHeld.Nowhere && FamePress.Joinable(made[i], Save.Day, Save.Hour);
+                    Logger?.Info("Standing invitations: " + made[i].Kind + ": " + (e == null ? "not in the Planner" : "in the Planner, where: '" + e.Where + "'")
+                                 + ", " + (offered ? "joined from the Standing page" : "no way to join it") + ".");
+                    if (!placed || !offered)
+                    {
+                        bad = bad ?? FameText.InviteName(made[i].Kind);
+                    }
+                }
+                for (int i = 0; i < made.Count; i++)
+                {
+                    _file.Invites.Remove(made[i]);
+                }
+                _file.InviteDay = lastInvite;
+                if (bad == null)
+                {
+                    Tell(NotificationType.Success, "reallife_fame_test_meetings_ok", _openPage, "count", made.Count.ToString());
+                }
+                else
+                {
+                    Tell(NotificationType.Error, "reallife_fame_test_meetings_bad", _openPage, "what", bad);
+                }
+            });
+        }
+
         private void StartTestScene(FameInviteKind kind)
         {
             MakeParts();

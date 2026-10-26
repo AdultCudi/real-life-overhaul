@@ -711,6 +711,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_fame_test_promises", () => Fame.FameDirector.Instance?.TestPromises())
                 .AddButton("reallife_fame_test_request", () => Fame.FameDirector.Instance?.TestRequest())
                 .AddButton("reallife_fame_test_evening", () => Fame.FameDirector.Instance?.TestEvening())
+                .AddButton("reallife_fame_test_meetings", () => Fame.FameDirector.Instance?.TestMeetings())
                 .AddButton("reallife_fame_test_bribe", () => Fame.FameDirector.Instance?.TestBribe())
                 .AddButton("reallife_fame_test_council", () => Fame.FameDirector.Instance?.TestCouncil())
                 .AddButton("reallife_fame_test_back", () => Fame.FameDirector.Instance?.TestBack())
