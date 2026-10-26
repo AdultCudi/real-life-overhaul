@@ -48,8 +48,8 @@ internal static partial class Program
         f.Net.Dms.Add(new FlareDm { Id = 2, With = "c:124", Mine = true, Text = "hello" });
         var people = new List<FlarePerson>
         {
-            new FlarePerson { Index = 0, First = "Mom", Female = FixedLooks.MomFemale, Age = FixedLooks.MomAge, LookSeed = FixedLooks.MomSeed },
-            new FlarePerson { Index = 1, First = "Alex", Female = FixedLooks.AlexFemale, Age = FixedLooks.AlexAge, LookSeed = FixedLooks.AlexSeed },
+            new FlarePerson { Index = 0, First = "Mom", Female = FixedPeople.MomFemale, Age = FixedPeople.MomAge, LookSeed = FixedPeople.MomSeed },
+            new FlarePerson { Index = 1, First = "Alex", Female = FixedPeople.AlexFemale, Age = FixedPeople.AlexAge, LookSeed = FixedPeople.AlexSeed },
             new FlarePerson { Index = 5, First = "Sam", Female = true, Age = 29, LookSeed = 4455, Partner = true }
         };
         return new FlareAvatarFacts { File = f, People = people, CitySeed = FlareLiveRules.CitySeed(f), MyBusinesses = new List<string>() };
@@ -76,7 +76,7 @@ internal static partial class Program
         int n = FlareFaceAheadRules.Likely(facts, 30, FlareFaceAheadRules.LoadMost, plans);
         FlareAvatarPlan partner = FlareAvatarRules.Plan("p5", facts), mom = FlareAvatarRules.Plan("f0", facts), alex = FlareAvatarRules.Plan("f1", facts);
         Check(n == plans.Count && n > 0 && plans[0].Picture == partner.Picture && plans[1].Picture == mom.Picture && plans[2].Picture == alex.Picture
-              && mom.Seed == FixedLooks.MomSeed && alex.Seed == FixedLooks.AlexSeed,
+              && mom.Seed == FixedPeople.MomSeed && alex.Seed == FixedPeople.AlexSeed,
             "Flare faces at load: the partner first, then the people met (Mom and Alex among them, each with their one look)");
         FlareAvatarPlan one = FlareAvatarRules.Plan("i:1", facts), gone = FlareAvatarRules.Plan("i:2", facts), three = FlareAvatarRules.Plan("i:3", facts);
         Check(plans[3].Picture == one.Picture && plans[4].Picture == three.Picture && !HasFace(plans, gone),
@@ -415,7 +415,7 @@ internal static partial class Program
         {
             unchanged &= data.TryGetValue(pair.Key, out string v) && v == pair.Value;
         }
-        Check(same && unchanged && met[0].Seed == FixedLooks.MomSeed && met[1].Seed == FixedLooks.AlexSeed,
+        Check(same && unchanged && met[0].Seed == FixedPeople.MomSeed && met[1].Seed == FixedPeople.AlexSeed,
             "Flare faces at load: the people met are read from the save as the social life will read them (Mom and Alex with their one look), the save untouched");
         data["reallife:social_people"] = data["reallife:social_people"].Substring(0, data["reallife:social_people"].Length / 2);
         SocialState.PeekMet(data, met);

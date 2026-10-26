@@ -11,6 +11,7 @@ namespace RealLifeOverhaul.Family
         public string Name;
         public int LookSeed;         // the seed their look is built from (AppearanceSetter.RandomizeElements)
         public bool Female;
+        public int Age;              // years, as their look has it (the owner's one record of them); 0: the owner keeps none, the look's age is rolled from the seed
         public float Affection;      // 0..100
         public float Trust;          // 0..100
         public int Stage;            // 0 stranger, 1 acquaintance, 2 friend, 3 close friend, 4 dating, 5 partner

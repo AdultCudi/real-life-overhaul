@@ -38,6 +38,12 @@ namespace RealLifeOverhaul.Family
         public static string Name => string.IsNullOrEmpty(FamilyState.S.PName) ? FamilyText.T("reallife_family_someone") : FamilyState.S.PName;
         public static int Seed => FamilyState.S.PSeed;
         public static bool Female => FamilyState.S.PFemale;
+        /// <summary>
+        /// The age their face is drawn at, in the city and on their contact's picture: the age of Social's record of them while it
+        /// keeps them (the same face at home, at a gathering and in People), else rolled from their seed. Called when they are dressed
+        /// or drawn, never per frame.
+        /// </summary>
+        public static int LookAge => Kept(out PersonInfo p) && p.Age >= 18 ? Mathf.Min(p.Age, 85) : FamilyCast.PartnerAge(FamilyState.S.PSeed);
         /// <summary>What they do for a living: their job in People while Social keeps them, else the trade Family gave them.</summary>
         public static string JobKey => !string.IsNullOrEmpty(FamilyState.S.PJobKey) ? FamilyState.S.PJobKey : Trades[Mathf.Clamp(FamilyState.S.PJob, 0, Trades.Length - 1)];
         /// <summary>Retired in People: they do not work and bring in nothing.</summary>

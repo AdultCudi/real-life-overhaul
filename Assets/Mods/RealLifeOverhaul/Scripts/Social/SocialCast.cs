@@ -392,9 +392,11 @@ namespace RealLifeOverhaul
             return new CityPerson(character);
         }
 
-        // From the person's seed, the same every time, or the look kept from the street. One mesh merge.
+        // From the person's seed, the same every time, or the look kept from the street. One mesh merge. Mom and Alex are the
+        // two fixed characters (Phone/Contacts/FixedPeople): whatever the record says, they are dressed as they are there.
         private static void Dress(CityPerson person, SocialPerson who)
         {
+            SocialCatalogue.FixedFor(who, "a scene with them");
             person.Look = CityLook.Civilian;
             AppearanceSetter appearance = person.Character.appearanceSetter;
             CityOutfits.Restore(person.Dyes);

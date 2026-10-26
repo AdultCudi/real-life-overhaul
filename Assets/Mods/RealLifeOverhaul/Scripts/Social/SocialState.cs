@@ -59,6 +59,7 @@ namespace RealLifeOverhaul
             Offer.Clear();
             CastSeed = 0;
             PersonLooks.Forget();
+            FixedPeople.Forget();
             Day = 0;
             TextsDay = 0;
             TextsToday = 0;
@@ -561,7 +562,7 @@ namespace RealLifeOverhaul
             ReadLook(p, f);
             p.AgeDay = AgeDayOf(f, day);
             ReadFollow(p, f);
-            SocialCatalogue.FixLook(p);   // before a later version's origin is read as an old friend below
+            SocialCatalogue.FixedFor(p, "the social life's people");   // the one fixed look, before a later version's origin is read as an old friend below
             if (p.Origin < SocialOrigin.Family || p.Origin > SocialOrigin.Street)
             {
                 p.Origin = SocialOrigin.OldFriend;   // a later version's place of meeting: never a number past the tables

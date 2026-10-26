@@ -206,6 +206,11 @@ namespace RealLifeOverhaul
                              + (SocialState.Plan.Active ? "on" : "none") + "; paper of day " + News.PaperDay + ".");
             }
 
+            if (FixedPeople.Waiting)
+            {
+                TellFixedPeople();   // Alex or Mom put right on load, here or in the roommate's record
+            }
+
             // The game clears its event hub on every load; Core/SaveHook allocates nothing while the event is unchanged.
             SaveHook.Keep(_onSave ?? (_onSave = OnSaveGame));
 
