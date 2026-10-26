@@ -348,7 +348,7 @@ internal static partial class Program
         foreach (string lang in langs)
         {
             Dictionary<string, string> words = LoadWords(System.IO.Path.Combine(folder, lang + ".json"));
-            bool found = words != null && words.TryGetValue("reallife_changes_next", out string next) && next.Contains("Northgate Wholesale") && next.Contains("Summit Fuel");
+            bool found = words != null && FixRow(words, "Northgate Wholesale").Contains("Northgate Wholesale") && FixRow(words, "Northgate Wholesale").Contains("Summit Fuel");
             all &= found;
             missing = found ? missing : missing ?? lang;
         }

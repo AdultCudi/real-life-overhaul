@@ -286,9 +286,9 @@ internal static partial class Program
         foreach (string lang in langs)
         {
             Dictionary<string, string> words = LoadWords(System.IO.Path.Combine(folder, lang + ".json"));
-            bool found = words != null && words.TryGetValue("reallife_changes_next", out string next) && next.Contains("Vantander Bank");
+            bool found = words != null && FixRow(words, "Vantander Bank").Contains("Uptown") && WhatsNewHas(words, "Vantander Bank");
             lineMissing = found ? lineMissing : lineMissing ?? lang;
         }
-        Check(lineMissing == null, "uptown specials: What's new's next row tells of the special places in all nine languages" + (lineMissing != null ? " (not in " + lineMissing + ")" : string.Empty));
+        Check(lineMissing == null, "uptown specials: What's new tells of the special places in all nine languages" + (lineMissing != null ? " (not in " + lineMissing + ")" : string.Empty));
     }
 }
