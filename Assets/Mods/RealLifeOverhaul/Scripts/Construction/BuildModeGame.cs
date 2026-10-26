@@ -251,17 +251,20 @@ namespace RealLifeOverhaul.Construction
             {
                 UnityEngine.Object.Destroy(layer.Object);
             }
-            if (layer.Mesh != null)
+            Mesh mesh = layer.Mesh;   // what MakeLayer made, by the names it made them under
+            UnityEngine.Material material = layer.Material;
+            Texture2D palette = layer.Palette;
+            if (mesh != null)
             {
-                UnityEngine.Object.Destroy(layer.Mesh);
+                UnityEngine.Object.Destroy(mesh);
             }
-            if (layer.Material != null)
+            if (material != null)
             {
-                UnityEngine.Object.Destroy(layer.Material);
+                UnityEngine.Object.Destroy(material);
             }
-            if (layer.Palette != null)
+            if (palette != null)
             {
-                UnityEngine.Object.Destroy(layer.Palette);
+                UnityEngine.Object.Destroy(palette);
             }
         }
 
