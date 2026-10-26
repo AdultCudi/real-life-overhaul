@@ -41,7 +41,10 @@ namespace RealLifeOverhaul.Uptown
         private static MadeSpec FinishedSpec(BuildingsLot lot, FinishedBuilding f)
         {
             Lot plain = UptownLots.Get(lot.Id);
-            return StandRules.Spec(GroundOf(lot, f), f, TrafficOf(lot.Id), () => _known && !_down && UptownLots.Ready && plain != null && UptownLots.Open(plain));
+            BuildingsLot ground = GroundOf(lot, f);
+            MadeSpec spec = StandRules.Spec(ground, f, TrafficOf(lot.Id), () => _known && !_down && UptownLots.Ready && plain != null && UptownLots.Open(plain));
+            LookGround(spec, f, ground);   // a building wearing another feature's look stands beneath it on the ground the look gives it
+            return spec;
         }
 
         /// <summary>
@@ -187,6 +190,7 @@ namespace RealLifeOverhaul.Uptown
                 return false;
             }
             Declared.Add(spec);
+            WearLook(made);   // a look of another feature's over it, its door at the look's entrance, before the game's lists read it
             LifeGame.Enter(made);
             bool cut = LifeGame.Cut(made);
             Standing.Add(made);

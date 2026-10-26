@@ -18,6 +18,10 @@ namespace RealLifeOverhaul.Construction
         public float Inward;     // +1 or -1: the way into the block from the front line
         public float Depth;      // m: the strip's depth here
         public int Rows;         // its depth rows
+        public bool StreetLow;   // a cross street runs past its strip's low end: the block's corner (LotView.StreetLow)
+        public bool StreetHigh;  // ... past its high end
+        public float EdgeLow;    // m on the strip's axis: the block's edge at the low end
+        public float EdgeHigh;   // ... at the high end
     }
 
     /// <summary>A cell: one depth row of one column, by the column's place in the grid.</summary>
@@ -44,6 +48,17 @@ namespace RealLifeOverhaul.Construction
         public int Cells;         // cells in all
         public int MinRows;       // its shallowest column's rows
         public int[] Rows;        // rows in each column, from the first (length Count)
+    }
+
+    /// <summary>A site at a block's corner (plans/build-mode.md section 12): its ground as one lot facing its street, and which end of its strip the corner is.</summary>
+    public struct CellCorner
+    {
+        public float X, Z;        // m: the site's ground's middle, cut to its shallowest column's rows
+        public int Facing;        // degrees: the way its street lies
+        public float Width;       // m along its street
+        public float Depth;       // m back from it: its shallowest column's rows
+        public bool Low;          // the corner is at the strip's low end (west or south)
+        public float Edge;        // m on the strip's axis: the block's edge there, the cross street's building line
     }
 
     /// <summary>
@@ -98,7 +113,8 @@ namespace RealLifeOverhaul.Construction
                     var column = new CellColumn
                     {
                         LotId = lot.Id, LotColumn = c, Strip = lot.Strip, Space = lot.Index + c, Block = lot.Block, Facing = facing, A = lo + each * c, B = lo + each * (c + 1),
-                        Front = front, Inward = inward, Depth = lot.Depth, Rows = rows
+                        Front = front, Inward = inward, Depth = lot.Depth, Rows = rows, StreetLow = lot.StreetLow, StreetHigh = lot.StreetHigh, EdgeLow = lot.EdgeLow,
+                        EdgeHigh = lot.EdgeHigh
                     };
                     grid._byKey[key] = grid.Columns.Count;
                     grid.Columns.Add(column);
@@ -424,6 +440,77 @@ namespace RealLifeOverhaul.Construction
             bool alongX = first.Facing == 0 || first.Facing == 180;
             x = alongX ? along : across;
             z = alongX ? across : along;
+        }
+
+        // ------------------------------------------------------------------ corner sites (plans/build-mode.md section 12)
+
+        public const float CornerSlack = 1f;   // m: a site's end this near the block's edge is at the corner (a strip's spaces leave under a metre at its ends)
+
+        /// <summary>
+        /// Which end of its strip a run of ground from <paramref name="lo"/> to <paramref name="hi"/> (m on the strip's axis) meets a cross
+        /// street at: its low end within <see cref="CornerSlack"/> of the block's edge there, else its high end; the edge at that end.
+        /// False for ground that meets no cross street (Scripts/Corners' CornerRules.End answers the same).
+        /// </summary>
+        public static bool CornerEnd(float lo, float hi, bool streetLow, float edgeLow, bool streetHigh, float edgeHigh, out bool low, out float edge)
+        {
+            low = false;
+            edge = 0f;
+            if (streetLow && Math.Abs(lo - edgeLow) <= CornerSlack)
+            {
+                low = true;
+                edge = edgeLow;
+                return true;
+            }
+            if (streetHigh && Math.Abs(edgeHigh - hi) <= CornerSlack)
+            {
+                edge = edgeHigh;
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// The corner a run of columns stands at: a corner site is a set of cells touching both streets at a block's corner, which is
+        /// a run of the strip's corner column and its neighbours along the avenue (every site runs from the street back, so its first
+        /// row touches the avenue, and the corner column's side the cross street). False for a run at no corner.
+        /// </summary>
+        public static bool Corner(CellGrid grid, int firstColumn, int count, out bool low, out float edge)
+        {
+            low = false;
+            edge = 0f;
+            if (grid == null || firstColumn < 0 || firstColumn >= grid.Columns.Count || count <= 0)
+            {
+                return false;
+            }
+            CellColumn first = grid.Columns[firstColumn];
+            int at = firstColumn;
+            for (int i = 1; i < count; i++)
+            {
+                at = grid.Next(at);
+                if (at < 0)
+                {
+                    return false;
+                }
+            }
+            CellColumn last = grid.Columns[at];
+            return CornerEnd(first.A, last.B, first.StreetLow, first.EdgeLow, last.StreetHigh, last.EdgeHigh, out low, out edge);
+        }
+
+        /// <summary>The corner a lot of the plan stands at (the developers' and the city's lots), by its ground along its strip; false for none.</summary>
+        public static bool Corner(LotView lot, out bool low, out float edge)
+        {
+            int facing = ((lot.Yaw + 180) % 360 + 360) % 360;
+            float mid = facing == 0 || facing == 180 ? lot.X : lot.Z;
+            return CornerEnd(mid - lot.Width * 0.5f, mid + lot.Width * 0.5f, lot.StreetLow, lot.EdgeLow, lot.StreetHigh, lot.EdgeHigh, out low, out edge);
+        }
+
+        /// <summary>A corner site's ground as one lot (as <see cref="Trim"/> cut it) with its corner.</summary>
+        public static CellCorner CornerGround(LotView site, bool low, float edge)
+        {
+            return new CellCorner
+            {
+                X = site.X, Z = site.Z, Facing = ((site.Yaw + 180) % 360 + 360) % 360, Width = site.Width, Depth = site.Depth, Low = low, Edge = edge
+            };
         }
     }
 }

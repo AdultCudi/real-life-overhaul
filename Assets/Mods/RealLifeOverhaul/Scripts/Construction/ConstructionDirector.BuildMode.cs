@@ -507,7 +507,11 @@ namespace RealLifeOverhaul.Construction
             return true;
         }
 
-        /// <summary>The designs of the city's own that fill a footprint of cells for a use, the best covering first; false while they are being looked through.</summary>
+        /// <summary>
+        /// The designs that fit a footprint of cells for a use: at a block's corner the corner buildings that stand on it first (the
+        /// owner's seven, Scripts/Corners), then the designs of the city's own that fill it, the best covering first; false while they
+        /// are being looked through.
+        /// </summary>
         public bool FootprintDesigns(int firstColumn, int count, int rows, BuildUse use, List<DesignChoice> into)
         {
             into.Clear();
@@ -515,11 +519,23 @@ namespace RealLifeOverhaul.Construction
             {
                 return true;
             }
+            bool ready = true;
+            if (CellRules.Corner(Cells, firstColumn, count, out bool low, out float edge))
+            {
+                ready = CornerDesigns(site, low, edge, use, into);   // a corner site over two streets: the corner buildings that fit it
+            }
+            int corners = into.Count;
             SiteGround(site, out float width, out float depth);
-            bool ready = ReadDesigns(width, depth, BuildCatalogue.UseTypes[(int)use], DesignsAsked, into);
-            KeepFitting(site, into);
+            ready &= ReadDesigns(width, depth, BuildCatalogue.UseTypes[(int)use], DesignsAsked, _cityDesigns);
+            KeepFitting(site, _cityDesigns);
+            into.AddRange(_cityDesigns);
+            _cityDesigns.Clear();
+            Logger?.Info("Construction: build mode's designs for " + count + " space(s) by " + rows + " row(s) from " + site.Id + ": " + corners + " corner building(s), "
+                         + (into.Count - corners) + " of the city's.");
             return ready;
         }
+
+        private readonly List<DesignChoice> _cityDesigns = new List<DesignChoice>(32);
 
         /// <summary>A placed design's warnings (BuildModeRules' bits), its estimate and the storeys the code allows.</summary>
         public int PlaceWarnings(int firstColumn, int count, DesignChoice design, bool hasDesign, BuildUse use, bool parkingUnder, out long estimate, out int limit)
@@ -629,7 +645,13 @@ namespace RealLifeOverhaul.Construction
                 why = used;
                 return id;
             }
-            if (DesignChoices(p, _choices))
+            if (!string.IsNullOrEmpty(design.Look))
+            {
+                // A corner building: its model over the design of the city's that fits the ground it leaves (offered on this footprint
+                // alone, so never among those that fill the whole site), worn as the design list's pick is.
+                Wear(p, design);
+            }
+            else if (DesignChoices(p, _choices))
             {
                 for (int i = 0; i < _choices.Count; i++)
                 {
@@ -641,8 +663,8 @@ namespace RealLifeOverhaul.Construction
                 }
             }
             SetParking(p, parkingUnder);
-            Logger?.Info("Construction: build mode placed " + design.Name + " (" + use + ", " + PlansRules.Storeys(design.Height) + " storeys) on " + count + " space(s) from " + siteId
-                         + ": project " + id + ".");
+            Logger?.Info("Construction: build mode placed " + (string.IsNullOrEmpty(design.Look) ? design.Name : design.Look + " over " + design.Name) + " (" + use + ", "
+                         + PlansRules.Storeys(design.Height) + " storeys) on " + count + " space(s) from " + siteId + ": project " + id + ".");
             Changed();
             return id;
         }

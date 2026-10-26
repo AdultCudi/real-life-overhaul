@@ -88,6 +88,8 @@ namespace RealLifeOverhaul
                 ConstructionBridges.Finish = Finish;
                 ConstructionBridges.FinishOver = FinishOver;
                 ConstructionBridges.SpacesOf = SpacesRules.SpacesOf;
+                ConstructionBridges.CornerOffers = CornerLinks.Offers;   // the corner buildings that fit a corner site (Wiring.CornerLinks)
+                ConstructionBridges.CornerName = CornerLinks.Name;
                 BuildModeLinks.Connect();   // build mode: the district's demand, the ghost, the whole-building check (Wiring.BuildModeLinks)
                 ConstructionBridges.StandingAt = StandingAt;
                 ConstructionBridges.StandingOn = StandingOn;
@@ -207,6 +209,8 @@ namespace RealLifeOverhaul
                 ConstructionBridges.Finish = null;
                 ConstructionBridges.FinishOver = null;
                 ConstructionBridges.SpacesOf = null;
+                ConstructionBridges.CornerOffers = null;
+                ConstructionBridges.CornerName = null;
                 ConstructionBridges.StandingAt = null;
                 ConstructionBridges.StandingOn = null;
                 ConstructionBridges.Demolish = null;
@@ -472,11 +476,12 @@ namespace RealLifeOverhaul
                     for (int i = 0; all != null && i < all.Count; i++)
                     {
                         Lot l = all[i];
+                        bool corners = LayoutRules.StreetEnds(l.Row, l.Column, (int)l.Facing, out float low, out float high);   // the block's corners on an avenue's strip
                         into.Add(new LotView
                         {
                             Id = l.Id, Street = l.Street, Number = l.Number, X = l.X, Y = UptownLots.GroundY, Z = l.Z, Yaw = l.Yaw, Width = l.Width, Depth = l.Depth,
                             Class = (int)l.Class, First = l.First, Open = UptownLots.Open(l), Traffic = Math.Max(0, DistrictBuildings.TrafficOf(l.Id)), Block = l.Block,
-                            Strip = l.Strip, Index = l.Index, Spaces = l.Spaces, Size = l.Size
+                            Strip = l.Strip, Index = l.Index, Spaces = l.Spaces, Size = l.Size, StreetLow = corners, StreetHigh = corners, EdgeLow = low, EdgeHigh = high
                         });
                     }
                 }
@@ -538,12 +543,12 @@ namespace RealLifeOverhaul
 
             // A site of several spaces: its building over all of them, as a landmark's stands over its block's lots.
             private static bool FinishOver(string lot, IList<string> over, string design, string size, int version, string type, int storeys, bool player, double price,
-                                           out string why)
+                                           string look, out string why)
             {
                 why = null;
                 try
                 {
-                    bool done = DistrictBuildings.FinishOver(lot, over, design, size, version, type, storeys, player ? FinishOwner.Player : FinishOwner.City, price, out why);
+                    bool done = DistrictBuildings.FinishOver(lot, over, design, size, version, type, storeys, player ? FinishOwner.Player : FinishOwner.City, price, look, out why);
                     return done && Stand(lot);
                 }
                 catch (Exception e)
@@ -583,12 +588,12 @@ namespace RealLifeOverhaul
                 }
             }
 
-            private static bool Finish(string lot, string design, string size, int version, string type, int storeys, bool player, double price, out string why)
+            private static bool Finish(string lot, string design, string size, int version, string type, int storeys, bool player, double price, string look, out string why)
             {
                 why = null;
                 try
                 {
-                    bool done = DistrictBuildings.Finish(lot, design, size, version, type, storeys, player ? FinishOwner.Player : FinishOwner.City, price, out why);
+                    bool done = DistrictBuildings.Finish(lot, design, size, version, type, storeys, player ? FinishOwner.Player : FinishOwner.City, price, look, out why);
                     return done && Stand(lot);
                 }
                 catch (Exception e)

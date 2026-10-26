@@ -24,6 +24,15 @@ namespace RealLifeOverhaul.Construction
         /// <summary>The ghost taken away. Default: nothing.</summary>
         public static Action<Transform> GhostGone;
 
+        /// <summary>The ghost of a corner building: its model at the street corner (x, z), turned (degrees); its root, or null. Default: none.</summary>
+        public static Func<string, float, float, int, Transform> CornerGhost;
+
+        /// <summary>A corner building's ghost taken away. Default: nothing.</summary>
+        public static Action<Transform> CornerGhostGone;
+
+        /// <summary>Test: every corner building standing checked now; how many failed, -1 for none standing. Default: -2, not asked.</summary>
+        public static Func<int> CornerCheck;
+
         /// <summary>Test: the building finished on a lot checked now as a whole building of the game's. Default: not checked (false).</summary>
         public static Func<string, bool> CompleteNow;
 
@@ -36,6 +45,9 @@ namespace RealLifeOverhaul.Construction
             MarketLevel = null;
             GhostStand = null;
             GhostGone = null;
+            CornerGhost = null;
+            CornerGhostGone = null;
+            CornerCheck = null;
             CompleteNow = null;
             CompleteAll = null;
         }

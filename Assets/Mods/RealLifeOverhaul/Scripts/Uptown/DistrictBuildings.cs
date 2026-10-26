@@ -163,6 +163,17 @@ namespace RealLifeOverhaul.Uptown
         }
 
         /// <summary>
+        /// As above, the building wearing <paramref name="look"/> (null for none): another feature's look over it (Scripts/Corners: a
+        /// corner building's model), kept in its record and stood over it at every load and as it stands in play (<see cref="LookStand"/>).
+        /// Its building beneath stands on the ground the look gives it (<see cref="LookGround"/>), so its size need only stand on the
+        /// lot's spaces.
+        /// </summary>
+        public static bool Finish(string lotId, string design, string size, int version, string type, int storeys, FinishOwner owner, double price, string look, out string why)
+        {
+            return LifeDirector.Finish(lotId, design, size, version, type, storeys, owner, price, look, out why);
+        }
+
+        /// <summary>
         /// As <see cref="Finish"/>, the building standing over <paramref name="over"/> as well: other empty lots of the same block
         /// (a landmark's site). Its address is its own lot's, its ground the rectangle round all of them, its door on its own
         /// lot's street; its size need not be one its own lot's class takes, as its design stands only on ground it fits. Every lot
@@ -173,6 +184,48 @@ namespace RealLifeOverhaul.Uptown
                                       out string why)
         {
             return LifeDirector.FinishOver(lotId, over, design, size, version, type, storeys, owner, price, out why);
+        }
+
+        /// <summary>As the call above, wearing <paramref name="look"/> (null for none).</summary>
+        public static bool FinishOver(string lotId, IList<string> over, string design, string size, int version, string type, int storeys, FinishOwner owner, double price,
+                                      string look, out string why)
+        {
+            return LifeDirector.FinishOver(lotId, over, design, size, version, type, storeys, owner, price, look, out why);
+        }
+
+        // ---------------------------------------------------------------- a look of another feature's over a finished building
+
+        /// <summary>
+        /// The ground the copy engine's building beneath a look stands on (Scripts/Corners: the corner site less the corner its entrance
+        /// keeps): the look's id, the lot's id and its ground (the rectangle round every lot it stands over); false to stand it on the
+        /// lot's own ground. Set once at game start by Wiring; unset: none.
+        /// </summary>
+        public static LookGroundCall LookGround;
+
+        public delegate bool LookGroundCall(string look, string lotId, BuildingsLot ground, out MadeLot copy);
+
+        /// <summary>
+        /// A look stood over a finished building made at a load or in play, before it joins the game's lists (its door moved to the look's
+        /// entrance, its own look hidden): null when it stands, else why not (its own look is kept). Set once at game start by Wiring.
+        /// </summary>
+        public static Func<MadeBuilding, string, string> LookStand;
+
+        /// <summary>What <see cref="LookStand"/> answers while it waits for its parts (the props bundles): <see cref="LooksTick"/> is asked once a second until it is done.</summary>
+        public const string LookWaits = "the props bundles are not read yet";
+
+        /// <summary>Once a second while a look waits (<see cref="LookWaits"/>): true when nothing waits any more. Set once at game start by Wiring.</summary>
+        public static Func<bool> LooksTick;
+
+        /// <summary>A building wearing a look knocked down: its look taken away. Set once at game start by Wiring.</summary>
+        public static Action<MadeBuilding> LookGone;
+
+        /// <summary>A load's buildings about to be set in place, behind the loading screen: what the looks keep from the last city let go. Set once at game start by Wiring.</summary>
+        public static Action LooksLoading;
+
+        /// <summary>The look a finished building on a lot wears (its record's), or null.</summary>
+        public static string LookOn(string lotId)
+        {
+            return LifeDirector.LookOn(lotId);
         }
 
         /// <summary>

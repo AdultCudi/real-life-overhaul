@@ -19,6 +19,7 @@ namespace RealLifeOverhaul.Uptown
         public int Day;              // the game day it was finished
         public bool Settled;         // its first load's setting up is done (the deed, or let to the city): never done twice
         public string[] Over;        // the other lots of its block it stands over too (a landmark's), or null: its own lot alone
+        public string Look;          // a look another feature wears over it (Scripts/Corners: a corner building's model id), or null for the copy engine's own
     }
 
     /// <summary>What the district keeps in the save: the buildings the construction game finished.</summary>
@@ -266,7 +267,8 @@ namespace RealLifeOverhaul.Uptown
                 Price = double.TryParse(f[7], NumberStyles.Float, Inv, out double price) && price >= 0 && !double.IsInfinity(price) ? price : 0,
                 Day = Whole(f[8], 0, 0, int.MaxValue),
                 Settled = f[9] == "1",
-                Over = f.Length > Fields ? Lots(f[Fields]) : null
+                Over = f.Length > Fields ? Lots(f[Fields]) : null,
+                Look = f.Length > Fields + 1 && IsId(f[Fields + 1]) ? f[Fields + 1] : null   // after the lots it stands over: an older line has none
             };
         }
 
@@ -340,12 +342,17 @@ namespace RealLifeOverhaul.Uptown
                  .Append(f.Price.ToString("R", Inv)).Append('|')
                  .Append(f.Day.ToString(Inv)).Append('|')
                  .Append(f.Settled ? '1' : '0');
-                if (f.Over != null && f.Over.Length > 0)
+                bool look = IsId(f.Look);
+                if ((f.Over != null && f.Over.Length > 0) || look)
                 {
                     t.Append('|');
-                    for (int k = 0; k < f.Over.Length; k++)
+                    for (int k = 0; f.Over != null && k < f.Over.Length; k++)
                     {
                         t.Append(k > 0 ? "," : string.Empty).Append(Clean(f.Over[k]).Replace(',', ' '));
+                    }
+                    if (look)
+                    {
+                        t.Append('|').Append(f.Look);   // after the lots it stands over (empty for none): an older reader stops before it
                     }
                 }
             }

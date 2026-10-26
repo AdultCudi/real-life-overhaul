@@ -727,6 +727,46 @@ namespace RealLifeOverhaul.NewBuildings
         private static readonly Dictionary<CityBuildingController, List<Renderer>> Hidden = new Dictionary<CityBuildingController, List<Renderer>>(8);
         private static readonly Dictionary<CityBuildingController, List<Light>> HiddenLights = new Dictionary<CityBuildingController, List<Light>>(8);
 
+        // A look of another feature's worn over a building (Scripts/Corners: a corner building's model): the building's own stays
+        // hidden under it, and hiding or showing the building's look (a demolition's wrap, the frame cost test) hides or shows the
+        // look worn instead, so nothing ever shows the building's own look through it.
+        private sealed class Wearer
+        {
+            public Action<bool> Shown;   // the worn look shown (true) or hidden
+            public bool Hidden;          // hidden now
+        }
+
+        private static readonly Dictionary<CityBuildingController, Wearer> Worn = new Dictionary<CityBuildingController, Wearer>(8);
+
+        /// <summary>
+        /// A look of another feature's worn over one of the game's buildings: the building's own look hidden (as <see cref="HideLook"/>)
+        /// and kept hidden; from now on <see cref="HideLook"/> and <see cref="ShowLook"/> on it hide and show the worn look through
+        /// <paramref name="shown"/>. Returns whether the building's own look was hidden by this (false: it was already).
+        /// </summary>
+        public static bool WearOver(CityBuildingController c, Action<bool> shown)
+        {
+            if (c == null)
+            {
+                return false;
+            }
+            Worn.Remove(c);
+            bool hid = HideLook(c);
+            Worn[c] = new Wearer { Shown = shown };
+            return hid;
+        }
+
+        /// <summary>The worn look taken off: the building's own look stays hidden (a building knocked down), or is shown again with <paramref name="showOwn"/>.</summary>
+        public static void TakeOff(CityBuildingController c, bool showOwn)
+        {
+            if (c != null && Worn.Remove(c) && showOwn)
+            {
+                ShowLook(c);
+            }
+        }
+
+        /// <summary>True while a look of another feature's is worn over the building.</summary>
+        public static bool Wears(CityBuildingController c) => c != null && Worn.ContainsKey(c);
+
         /// <summary>
         /// Hides one of the game's buildings' look: every renderer under it and its box (the shadow in the street, the whole
         /// building on the city map) kept from drawing, and the lights of its signs off; its controller, colliders, door and
@@ -737,6 +777,16 @@ namespace RealLifeOverhaul.NewBuildings
         /// </summary>
         public static bool HideLook(CityBuildingController c)
         {
+            if (c != null && Worn.TryGetValue(c, out Wearer w))
+            {
+                if (w.Hidden)
+                {
+                    return false;
+                }
+                w.Hidden = true;
+                w.Shown?.Invoke(false);   // the look worn over it hides; its own stays hidden
+                return true;
+            }
             if (c == null || Hidden.ContainsKey(c))
             {
                 return false;
@@ -773,6 +823,16 @@ namespace RealLifeOverhaul.NewBuildings
         /// <summary>Shows a look hidden by <see cref="HideLook"/> again, as the far districts' saving has its square now. False if it was not hidden.</summary>
         public static bool ShowLook(CityBuildingController c)
         {
+            if (c != null && Worn.TryGetValue(c, out Wearer w))
+            {
+                if (!w.Hidden)
+                {
+                    return false;
+                }
+                w.Hidden = false;
+                w.Shown?.Invoke(true);   // the look worn over it shows again; its own stays hidden
+                return true;
+            }
             if (c == null || !Hidden.TryGetValue(c, out List<Renderer> list))
             {
                 return false;
@@ -802,6 +862,11 @@ namespace RealLifeOverhaul.NewBuildings
         /// <summary>Every hidden look shown again (the option switched off, the city going); how many.</summary>
         public static int ShowAllLooks()
         {
+            foreach (Wearer w in Worn.Values)
+            {
+                w.Shown?.Invoke(false);   // the looks worn over buildings go with the copies' feature: the buildings show their own
+            }
+            Worn.Clear();
             int shown = 0;
             while (Hidden.Count > 0)
             {

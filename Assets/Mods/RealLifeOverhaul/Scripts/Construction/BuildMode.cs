@@ -70,6 +70,7 @@ namespace RealLifeOverhaul.Construction
         private long _estimate;
         private int _limit;
         private Transform _ghost;
+        private bool _ghostCorner;               // the ghost is a corner building's model, taken away by its own call
         private int _lastProject;
         private Vector3 _playerAt;
 
@@ -709,7 +710,11 @@ namespace RealLifeOverhaul.Construction
             CellRules.FootprintLot(_d.Cells, _site.FirstColumn, _site.Count, out float x, out float z, out float facing, out float width, out float depth);
             try
             {
-                _ghost = BuildModeBridges.GhostStand(_designs[_design].Name, _designs[_design].Size, x, z, facing, width, depth);
+                DesignChoice d = _designs[_design];
+                _ghostCorner = !string.IsNullOrEmpty(d.Look);
+                _ghost = _ghostCorner
+                    ? BuildModeBridges.CornerGhost?.Invoke(d.Look, d.LookX, d.LookZ, d.LookYaw)   // the corner building's model, turned to the corner's two streets
+                    : BuildModeBridges.GhostStand(d.Name, d.Size, x, z, facing, width, depth);
                 BuildModeGame.Tint(_ghost, _layer, _warnings == 0);
             }
             catch (Exception e)
@@ -723,7 +728,7 @@ namespace RealLifeOverhaul.Construction
         {
             if (_ghost != null)
             {
-                Action<Transform> gone = BuildModeBridges.GhostGone;
+                Action<Transform> gone = _ghostCorner ? BuildModeBridges.CornerGhostGone : BuildModeBridges.GhostGone;
                 try
                 {
                     gone?.Invoke(_ghost);
@@ -734,6 +739,7 @@ namespace RealLifeOverhaul.Construction
                 }
             }
             _ghost = null;
+            _ghostCorner = false;
         }
 
         /// <summary>The ghost standing now, for the tests.</summary>

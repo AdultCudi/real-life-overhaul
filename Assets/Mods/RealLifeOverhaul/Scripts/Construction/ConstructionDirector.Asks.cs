@@ -122,12 +122,13 @@ namespace RealLifeOverhaul.Construction
             }
         }
 
-        internal static bool FinishLot(string lot, string design, string size, int version, string type, int storeys, bool player, double price, out string why)
+        internal static bool FinishLot(string lot, string design, string size, int version, string type, int storeys, bool player, double price, string look, out string why)
         {
             why = "the district takes no buildings in this version";
             try
             {
-                return !Down("Finish") && ConstructionBridges.Finish != null && ConstructionBridges.Finish(lot, design, size, version, type, storeys, player, price, out why);
+                return !Down("Finish") && ConstructionBridges.Finish != null
+                       && ConstructionBridges.Finish(lot, design, size, version, type, storeys, player, price, string.IsNullOrEmpty(look) ? null : look, out why);
             }
             catch (Exception e)
             {
@@ -138,13 +139,13 @@ namespace RealLifeOverhaul.Construction
         }
 
         internal static bool FinishOverLot(string lot, IList<string> over, string design, string size, int version, string type, int storeys, bool player, double price,
-                                           out string why)
+                                           string look, out string why)
         {
             why = "the district takes no buildings over several spaces in this version";
             try
             {
                 return !Down("FinishOver") && ConstructionBridges.FinishOver != null
-                       && ConstructionBridges.FinishOver(lot, over, design, size, version, type, storeys, player, price, out why);
+                       && ConstructionBridges.FinishOver(lot, over, design, size, version, type, storeys, player, price, string.IsNullOrEmpty(look) ? null : look, out why);
             }
             catch (Exception e)
             {

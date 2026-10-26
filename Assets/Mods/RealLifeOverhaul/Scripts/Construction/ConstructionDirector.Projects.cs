@@ -411,6 +411,7 @@ namespace RealLifeOverhaul.Construction
         private void Wear(ProjectFile p, DesignChoice d)
         {
             p.Design = d.Name;
+            p.Look = d.Look ?? string.Empty;   // a corner building's model over the design, or none: any other design worn takes it off
             p.Height = Mathf.RoundToInt(d.Height);
             p.Storeys = PlansRules.Storeys(d.Height);
             if (p.Kind != ProjectKind.Rebuild)
@@ -1153,8 +1154,8 @@ namespace RealLifeOverhaul.Construction
             OverOf(p.Lot, _over);
             string why;
             bool handed = _over.Count > 0
-                ? FinishOverLot(p.Lot, _over, p.Design, p.Size, p.Version, BuildCatalogue.UseTypes[(int)p.Use], 0, player, player ? paid : 0.0, out why)
-                : FinishLot(p.Lot, p.Design, p.Size, p.Version, BuildCatalogue.UseTypes[(int)p.Use], 0, player, player ? paid : 0.0, out why);
+                ? FinishOverLot(p.Lot, _over, p.Design, p.Size, p.Version, BuildCatalogue.UseTypes[(int)p.Use], 0, player, player ? paid : 0.0, p.Look, out why)
+                : FinishLot(p.Lot, p.Design, p.Size, p.Version, BuildCatalogue.UseTypes[(int)p.Use], 0, player, player ? paid : 0.0, p.Look, out why);
             if (handed)
             {
                 p.InDistrict = true;

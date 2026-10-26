@@ -61,6 +61,7 @@ namespace RealLifeOverhaul.TestRun
             { "reallife_bld_mode_test_open", "it opens and shuts the city map over two seconds, which would hold the run's own steps, so only the player presses it" },
             { "reallife_bld_mode_test_bulldoze", "it needs an emptied Uptown building of the player's own, which the run never has" },
             { "reallife_bld_mode_test_stand", "it hands a building to the district for good, which only the player decides" },
+            { "reallife_corner_test_stand", "it hands a corner building to the district on a free corner for good, which only the player decides" },
             { "reallife_bld_mode_test_layer", "it opens build mode over the city map and leaves it open for the player to look at, which would hold the run's own steps" },
             { "reallife_bld_mode_test_zoning", "it opens build mode over the city map and leaves it open for the player to look at, which would hold the run's own steps" },
             { "reallife_bld_mode_test_window", "it opens build mode's window over the city map and goes through every page, which would hold the run's own steps" },

@@ -194,6 +194,7 @@ namespace RealLifeOverhaul.Construction
         public int NoticeUntil;                      // the last day of the notice given to a building's tenants and business before its works; 0 for none
         public long BuyOut;                          // what buying its tenants and business out cost, paid as the notice ran out; -1 when nothing was due, 0 before
         public int Added;                            // an extension's storeys on top of those its building has
+        public string Look = string.Empty;           // a corner building's model worn over its design (Scripts/Corners); empty for the design's own look
 
         public bool Live => Stage != ProjectStage.Finished && Stage != ProjectStage.Abandoned;
 

@@ -530,8 +530,12 @@ namespace RealLifeOverhaul.Construction
                 return false;
             }
             KeepFitting(site, _choices);
+            if (!CityCorners(site, use, _choices))
+            {
+                return false;   // the corner buildings' designs are being looked through
+            }
             int pick = DevelopmentRules.DesignPick(site.Id, _choices.Count);
-            design = pick >= 0 ? _choices[pick].Name : NoDesign;
+            design = pick >= 0 ? KeptName(_choices[pick]) : NoDesign;
             return true;
         }
 
@@ -559,12 +563,12 @@ namespace RealLifeOverhaul.Construction
             {
                 _over.Clear();
                 _over.Add(r.Lots[0]);
-                handed = FinishOverLot(r.Lot, _over, design.Name, design.Size, design.Version, type, 0, false, 0.0, out why);
+                handed = FinishOverLot(r.Lot, _over, design.Name, design.Size, design.Version, type, 0, false, 0.0, design.Look, out why);
                 _over.Clear();
             }
             else
             {
-                handed = FinishLot(r.Lot, design.Name, design.Size, design.Version, type, 0, false, 0.0, out why);
+                handed = FinishLot(r.Lot, design.Name, design.Size, design.Version, type, 0, false, 0.0, design.Look, out why);
             }
             if (!handed)
             {
@@ -588,7 +592,7 @@ namespace RealLifeOverhaul.Construction
                 r.SiteId = 0;
             }
             Paper("reallife_bld_paper_city_built", CityName(r), 1 + extra);
-            Logger?.Info("Construction: the city's " + r.Move + " on lot " + r.Lot + " is finished: " + r.Use + " in " + design.Name + (extra > 0 ? " and " + extra + " more" : string.Empty)
+            Logger?.Info("Construction: the city's " + r.Move + " on lot " + r.Lot + " is finished: " + r.Use + " in " + KeptName(design) + (extra > 0 ? " and " + extra + " more" : string.Empty)
                          + ", the city's.");
         }
 
@@ -604,7 +608,7 @@ namespace RealLifeOverhaul.Construction
                 }
                 BuildUse use = DevelopmentRules.Use(lot.Id, lot.Class);
                 if (CityDesign(lot, use, out string name) && name != NoDesign && DesignOf(lot, use, name, out DesignChoice d)
-                    && FinishLot(lot.Id, d.Name, d.Size, d.Version, BuildCatalogue.UseTypes[(int)use], 0, false, 0.0, out _))
+                    && FinishLot(lot.Id, d.Name, d.Size, d.Version, BuildCatalogue.UseTypes[(int)use], 0, false, 0.0, d.Look, out _))
                 {
                     done++;
                 }

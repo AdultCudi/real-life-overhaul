@@ -507,7 +507,8 @@ namespace RealLifeOverhaul.Uptown
 
         /// <summary>
         /// As above; <paramref name="cleared"/>: the lot's building was knocked down (a demolition), so its spaces are free ground
-        /// and take a building of any size of the grid that stands on no more of them than the lot holds, not only its plan's.
+        /// and take a building of any size of the grid that stands on no more of them than the lot holds, not only its plan's; the
+        /// same for a building wearing another feature's look (a corner building's model), which stands on the ground the look gives it.
         /// </summary>
         public static string FinishRefusal(BuildingsLot lot, bool known, bool taken, string size, int version, string type, int storeys, FinishOwner owner,
                                            double price, bool structure, bool lives, bool inSession, bool spanned, bool cleared)
