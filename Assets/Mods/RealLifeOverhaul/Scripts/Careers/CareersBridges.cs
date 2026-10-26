@@ -191,9 +191,17 @@ namespace RealLifeOverhaul.Careers
         /// <summary>The Campus app's Schools tab, written by the schools (Wiring.SchoolLinks). Default: the tab says the schools are away.</summary>
         public static SchoolsTabWriter SchoolsTab;
 
+        /// <summary>The employers that hire at a help-wanted board (the gig work's own, Scripts/Jobs), into the list given. Default: none.</summary>
+        public static Action<List<BoardEmployer>> Boards;
+
+        /// <summary>The destination marker put on an employer's board (an index of <see cref="Boards"/>): null if done, else a reason key. Default: not possible.</summary>
+        public static Func<int, string> ShowBoard;
+
         public static void Reset()
         {
             SchoolsTab = null;
+            Boards = null;
+            ShowBoard = null;
             OthersPicked = null;
             Headquarters = null;
             HeadquartersStamp = null;
@@ -215,6 +223,14 @@ namespace RealLifeOverhaul.Careers
             Standing = null;
             Reputation = null;
         }
+    }
+
+    /// <summary>One employer that hires at a help-wanted board, as the Career app lists it.</summary>
+    public struct BoardEmployer
+    {
+        public int Index;        // for <see cref="CareersBridges.ShowBoard"/>
+        public string Name;      // the employer's name
+        public string Address;   // where its board stands, or null: this city has none for it and the phone is the only way
     }
 
     /// <summary>One rival's ad on the jobs board, as careers read it.</summary>

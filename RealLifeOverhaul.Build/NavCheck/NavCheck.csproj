@@ -60,6 +60,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Traffic\Drivers\DriverRules.Road.cs" Link="Mod\DriverRules.Road.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Licences\Driving\CarExitRules.cs" Link="Mod\CarExitRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Licences\Driving\TestRouteRules.cs" Link="Mod\TestRouteRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Licences\Driving\TestStallRules.cs" Link="Mod\TestStallRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Law\StationGrid.cs" Link="Mod\StationGrid.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Law\StationReach.cs" Link="Mod\StationReach.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Traffic\Tow\TowRules.cs" Link="Mod\TowRules.cs" />

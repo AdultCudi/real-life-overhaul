@@ -343,6 +343,7 @@ namespace RealLifeOverhaul.Careers
                     box.Note(CareersText.T("reallife_career_app_over"));
                     break;
             }
+            MapButton(box.ButtonRow(), () => _director.ShowPost(a.Post));
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "common_close", ClosePick);
             Meta.Guide.Point(box, JobsGuide);
         }
@@ -433,7 +434,7 @@ namespace RealLifeOverhaul.Careers
             {
                 InfoBox.Button(buttons, InfoBox.Positive, "reallife_career_button_work", () => Do(_director.StartWorkDay));
             }
-            InfoBox.Button(buttons, InfoBox.Additional, "common_setdestination", () => Do(_director.DeskRoute));
+            MapButton(buttons, _director.ShowWork);
             JobButtons(buttons, j, day);
             Transform leave = box.ButtonRow();
             if (j.NoticeEnd <= 0)
