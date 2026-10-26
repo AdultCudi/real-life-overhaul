@@ -434,10 +434,10 @@ internal static partial class Program
         };
         for (int l = 0; l < words.Length; l++)
         {
-            string next = words[l].TryGetValue("reallife_changes_next", out string row) ? row : string.Empty;
-            int line = starts.TryGetValue(codes[l], out string start) ? next.IndexOf(start, StringComparison.Ordinal) : -1;
+            string next = starts.TryGetValue(codes[l], out string start) ? FixRow(words[l], start) : string.Empty;   // the row that holds it
+            int line = start != null ? next.IndexOf(start, StringComparison.Ordinal) : -1;
             int fix = FixMarks.TryGetValue(codes[l], out string mark) ? next.IndexOf(mark, StringComparison.Ordinal) : -1;
-            Check(line >= 0 && (fix < 0 || line < fix), "civic build texts: What's new's next row in " + codes[l] + " has the city around the company, before its fixes");
+            Check(line >= 0 && (fix < 0 || line < fix), "civic build texts: What's new in " + codes[l] + " has the city around the company, before its fixes");
         }
     }
 }

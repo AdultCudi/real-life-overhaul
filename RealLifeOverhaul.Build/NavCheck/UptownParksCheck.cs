@@ -413,7 +413,7 @@ internal static partial class Program
         foreach (var language in line)
         {
             using JsonDocument doc = JsonDocument.Parse(File.ReadAllText(Path.Combine(locales, language.Key + ".json")));
-            string next = doc.RootElement.GetProperty("reallife_changes_next").GetString();
+            string next = WhatsNewRow(doc.RootElement, language.Value);
             int at = next.IndexOf(language.Value, StringComparison.Ordinal);
             // The last feature line: fixes follow the features (a fix line may come after it), so the line is measured up to the first fix mark.
             int end = next.Length;
@@ -423,7 +423,7 @@ internal static partial class Program
                 end = fix > 0 && fix < end ? fix : end;
             }
             Check(at > 0 && next.IndexOf(language.Value, at + 1, StringComparison.Ordinal) < 0,
-                "uptown parks texts: What's new's next row has the parks' line, once, in " + language.Key);
+                "uptown parks texts: What's new has the parks' line, once, in " + language.Key);
             Check(at > 0 && end - at < 700, "uptown parks texts: the parks' line is the last feature line of the row in " + language.Key + " (" + (at > 0 ? end - at : -1) + " characters)");
         }
     }

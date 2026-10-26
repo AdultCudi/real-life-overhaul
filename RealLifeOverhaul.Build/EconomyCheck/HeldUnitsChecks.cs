@@ -261,13 +261,18 @@ internal static partial class Program
         }
         Check(texts, "held units: the test's button and notices are in en, pt and zh-cn, each notice in en at or under 240 characters, and each used");
         bool news = true;
-        foreach (string code in new[] { "en", "pt", "zh-cn", "de", "fr", "es", "ru", "nl", "tr" })
+        // The fix line's opening in each language, in whichever row of What's new holds it (the next row, or the version's once numbered).
+        var opens = new Dictionary<string, string>
         {
-            Dictionary<string, string> words = LoadWords(System.IO.Path.Combine(LocalesFolder(), code + ".json"));
-            news &= words != null && words.TryGetValue("reallife_changes_next", out string next)
-                    && (next.Contains("police") || next.Contains("delegacias") || next.Contains("警察局") || next.Contains("Polizeiwachen") || next.Contains("commissariats")
-                        || next.Contains("comisarías") || next.Contains("полицейские") || next.Contains("politiebureaus") || next.Contains("polis karakolları"));
+            { "en", "Fixed: the mod's police stations" }, { "pt", "Corrigido: as delegacias" }, { "zh-cn", "已修复：模组的警察局" }, { "de", "Behoben: Die Polizeiwachen" },
+            { "fr", "Corrigé : les commissariats" }, { "es", "Corregido: las comisarías" }, { "ru", "Исправлено: полицейские участки" },
+            { "nl", "Opgelost: de politiebureaus" }, { "tr", "Düzeltildi: modun polis karakolları" }
+        };
+        foreach (KeyValuePair<string, string> open in opens)
+        {
+            Dictionary<string, string> words = LoadWords(System.IO.Path.Combine(LocalesFolder(), open.Key + ".json"));
+            news &= words != null && WhatsNewHas(words, open.Value);
         }
-        Check(news, "held units: What's new's next row says it in all nine languages");
+        Check(news, "held units: What's new says it in all nine languages");
     }
 }

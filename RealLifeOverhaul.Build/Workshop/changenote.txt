@@ -1,10 +1,40 @@
-0.56.2
+0.57.0
+
+New
+- Uptown: Manhattan carries on north past 1st Avenue into a new district of three rows of blocks from Willow to Lake Street, with pavements, lamps, traffic lights, parking, people and traffic. It can be switched off under Uptown in the options.
+- Uptown is built up from the first day, with businesses, homes and offices to rent or buy in BizMan, and a third of its units free to rent.
+- Build mode from the Construction app: buy land square by square, zone it and place one of the city's designs, with demand bars for each use and the city's developers building where a use is wanted.
+- Corner buildings in build mode, seven of them, with live shop signs: the business's name, For lease, and the address number.
+- Your own construction company in the Construction app, or one of the city's eight builders hired to build for you: plans, planning permission, three inspections and the handover.
+- Construction sites that rebuild whole buildings, wrapped to the roof in the game's own scaffolding.
+- The building trades at a works site, from labourer to the city's building inspector, an architects' practice, new courses and three new employers.
+- The city around construction: the building code set by the elected government, rigged tenders, unpaid bills in court and the City Ledger's building of the year.
+- Show flats for blocks sold off plan, and refits of any unit you rent or own.
+- Redevelopment in Uptown: knock down, build anew, join, split, extend and convert, by you and by the city's developers.
+- Uptown's landmarks: Summit Tower, Uptown Galleria and Crest Field, put out to tender, with Uptown FC at home every Saturday.
+- Five of the rival builders on the stock market, building materials on the raw materials exchange and a project's hedge.
+- Uptown's own special places: a Vantander Bank branch, agencies, stores, a supermarket, a clinic, a car dealership, an importer, a wholesale store and a petrol station.
+- Uptown's offices are employers in the Career app, and its builders have someone at the front desk to quote and be hired.
+- Two new bus lines from the subway at 9th and 2nd Street, and benches, bins and trees on Uptown's pavements.
+- Two parks in Uptown with lawns, paths, a fountain, a statue and benches.
+- Birchwood School on Uptown's west square, with its own hand-made buildings: buy it and run it, and enrol your children from the Campus app's Schools tab.
+- Show on map in the Construction app, and the construction game's next steps in the game's objectives.
+- Contact groups in the Contacts app, with search across every group.
 
 Fixed
-- A short stutter the first time some phone and computer panels opened while playing. The game's font is now found again by its name, never by a search of the whole scene.
-- The left pane of the apps, the white card beside the tables, drew section heads over the text above them and wrapped lines over the next row, because the card had a fixed height and Unity's layout squeezed every text to fit. The card is now rebuilt and scrolls: the title, its line and its status chips stay at the top, the buttons and the Guide link at the foot, and what lies between scrolls with the mouse wheel. Each section is a card with its own heading, each fact is a label and a value on one line (a long value wraps under itself), and a career ladder is a list of rungs with the pay beside each name, what it asks under it and your own rung marked, whatever the language or the length of the text.
-- Sitting at a recruitment office's desk without the Basic HR course gave you nothing. The desk now always offers two choices: register with the jobs board, which needs no course, or recruitment, which shows the Basic HR page if that course is not complete.
-- A thing bought on the Marketplace now has a clear way to be collected. The route ends on the pickup point at the seller's door, a parcel stands there, and the door's panel offers Collect, also after a load. If you come by car, a notice tells you to get out. The seller holds it for three days, the Yours tab says until when, and after that the money returns to you.
-- Two people in your company could have the same name. The game checks a new name only against the staff it knew when it first looked, so seekers, candidates waiting and your tech payroll were missed. Every new name in the tech sector is now checked against all names in use, and people who already share a name are given a new one, with a notice. A hire the game turns down no longer leaves a candidate waiting in the staff app, and an applicant who cannot start, because the business is gone or the game will not take them on, is now reported to you.
-- A limit on products in tech firms was too low and not explained. Your firms could have only 16 products being built or on sale between them, and withdrawn products piled up in the list. Each firm can now have 12 and all your firms 36, the 12 newest withdrawn products are kept, and the Tech app says how many you have and why another cannot be started. A product holds 24 features at most, and its page and the Guide now say so.
-- Alex and Mom now have one fixed look for every player, in a new game and in an old save, and Alex, a woman, is the same at home as your roommate, at gatherings and on the phone. A roommate who is one of your friends keeps that friend's look, and your partner is drawn at the same age at home as when you go out. A save that held two looks for one person is put right on load, with a notice.
+- The mod's police stations, hotels, tech towers and other places no longer lose their buildings.
+- Scaffolding goes up at buildings whose door stands out on the pavement.
+- Building sites no longer stand still at the end of a stage.
+- Birchwood School's hall and junior block stand every time the city loads.
+- A finished building stands the moment it is handed over.
+- Birchwood School's building card says it is a school, who runs it and its hours.
+- Birchwood School's page in BizMan names its owner and reads School.
+- Pupils and families now walk Birchwood School's campus.
+- No black slab on the campus lawn.
+- A building the construction game finishes shows on the city map's filters at once.
+- Benches on Uptown's pavements, in its parks and on the campus can be sat on.
+- A building you own also shows under its own type on the city map, and the search finds any building by address.
+- Build mode's squares show on empty land too, and Uptown's demand no longer sits at 0.
+- Build mode is easier to find your way in, with a hint bar, a toolbar in order and a short tour.
+- Fire engines, ambulances, patrol cars and tow trucks on a call no longer wait behind a stopped bus.
+- Build mode's hint bar, tour, zone buttons, legend and drag tidied after the first test.

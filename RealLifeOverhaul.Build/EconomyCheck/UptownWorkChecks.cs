@@ -239,7 +239,7 @@ internal static partial class Program
         for (int i = 0; i < langs.Length; i++)
         {
             Dictionary<string, string> words = LoadWords(System.IO.Path.Combine(folder, langs[i] + ".json"));
-            bool found = words != null && words.TryGetValue("reallife_changes_next", out string next) && next.Contains(UptownWorkMark[i]);
+            bool found = words != null && WhatsNewHas(words, UptownWorkMark[i]);
             lineMissing = found ? lineMissing : lineMissing ?? langs[i];
         }
         Check(lineMissing == null && UptownWorkMark.Length == langs.Length, "uptown work: What's new says Uptown's offices are places to work in all nine languages"

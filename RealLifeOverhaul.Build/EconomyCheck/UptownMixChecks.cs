@@ -139,7 +139,7 @@ internal static partial class Program
         for (int i = 0; i < langs.Length; i++)
         {
             Dictionary<string, string> words = LoadWords(System.IO.Path.Combine(folder, langs[i] + ".json"));
-            bool found = words != null && words.TryGetValue("reallife_changes_next", out string next) && next.Contains(UptownMixMark[i]);
+            bool found = words != null && WhatsNewHas(words, UptownMixMark[i]);
             missing = found ? missing : missing ?? langs[i];
         }
         Check(missing == null, "uptown mix: What's new says a third of Uptown is free to rent in all nine languages" + (missing != null ? " (not in " + missing + ")" : string.Empty));

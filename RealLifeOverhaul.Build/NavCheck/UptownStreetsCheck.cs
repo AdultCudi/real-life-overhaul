@@ -574,9 +574,9 @@ internal static partial class Program
         foreach (var language in line)
         {
             using JsonDocument doc = JsonDocument.Parse(File.ReadAllText(Path.Combine(locales, language.Key + ".json")));
-            string next = doc.RootElement.TryGetProperty("reallife_changes_next", out JsonElement row) ? row.GetString() : string.Empty;
+            string next = WhatsNewRow(doc.RootElement, language.Value.Item1);
             int at = next.IndexOf(language.Value.Item1, StringComparison.Ordinal), fix = next.IndexOf(language.Value.Item2, StringComparison.Ordinal);
-            Check(at >= 0 && (fix < 0 || at < fix), "uptown streets texts: What's new's next row tells of Uptown's buses and pavements in " + language.Key + ", before its fixes");
+            Check(at >= 0 && (fix < 0 || at < fix), "uptown streets texts: What's new tells of Uptown's buses and pavements in " + language.Key + ", before its fixes");
         }
     }
 }
