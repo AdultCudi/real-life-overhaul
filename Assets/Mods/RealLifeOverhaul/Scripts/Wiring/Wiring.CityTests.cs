@@ -86,11 +86,14 @@ namespace RealLifeOverhaul
                     }
                     g.Set(Lever.Permits, was, false);
                     g.LeversChanged?.Invoke();
-                    int uptown = civic.Office != null ? civic.Office.DistrictIndex(Uptown.DistrictValues.Id) : -1;
+                    // Both of the band's districts are wards, each leaning to growth as the new districts do.
+                    int uptown = civic.Office != null ? civic.Office.DistrictIndex(Uptown.DistrictSplit.UptownId) : -1;
+                    int cedar = civic.Office != null ? civic.Office.DistrictIndex(Uptown.DistrictSplit.CedarId) : -1;
                     float lean = uptown >= 0 ? g.DistrictLean(uptown, (int)Issue.Growth) : CouncilZoning.NewDistrictGrowth;
-                    pass &= ConstructionDirector.Code == was && lean >= CouncilZoning.NewDistrictGrowth;
-                    Logger?.Info("Civic check (building code): " + line + "; the policy back at " + was + "; the new district's care for growth " + lean.ToString("0.00",
-                        System.Globalization.CultureInfo.InvariantCulture) + (uptown >= 0 ? string.Empty : " (not a ward at this load)") + ": " + (pass ? "PASS" : "FAIL") + ".");
+                    float leanCedar = cedar >= 0 ? g.DistrictLean(cedar, (int)Issue.Growth) : CouncilZoning.NewDistrictGrowth;
+                    pass &= ConstructionDirector.Code == was && lean >= CouncilZoning.NewDistrictGrowth && leanCedar >= CouncilZoning.NewDistrictGrowth;
+                    Logger?.Info("Civic check (building code): " + line + "; the policy back at " + was + "; the new districts' care for growth " + lean.ToString("0.00",
+                        System.Globalization.CultureInfo.InvariantCulture) + (uptown >= 0 && cedar >= 0 ? string.Empty : " (not a ward at this load)") + ": " + (pass ? "PASS" : "FAIL") + ".");
                     CivicText.Toast(pass ? NotificationType.Success : NotificationType.Warning, "reallife_civic_test_code", "code", CivicText.Code(1), 12f);
                     return pass;
                 }

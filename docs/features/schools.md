@@ -2,7 +2,7 @@
 
 ## In a sentence
 
-A school for ages 5 to 17 on Uptown's west square, built of the city's own designs and the game's own pieces, and the city's twelve schools as one market: the player may buy Birchwood School and run it (its fee, classes, teachers' pay, scholarships and headteacher) against four education trusts and the council, who run theirs by the same rules, with terms, results day, inspections and a league table in the City Ledger; the player's own children can go there.
+A school for ages 5 to 17 on the west square of Cedar Heights (Uptown's west half, a district of its own since 27 Oct 2026), built of the city's own designs and the game's own pieces, and the city's twelve schools as one market: the player may buy Birchwood School and run it (its fee, classes, teachers' pay, scholarships and headteacher) against four education trusts and the council, who run theirs by the same rules, with terms, results day, inspections and a league table in the City Ledger; the player's own children can go there.
 
 ## Where the code is
 
@@ -54,7 +54,7 @@ On block 202, the plan's west square, which was meant as a park and never laid a
 
 ## The card
 
-The game's building card (BuildingResume) read the main school as the K1 office it is built from: "1 Birchwood Green, 30, 660 m2 (K1), 50, OFFICE, Neighborhood: Uptown, CLOSED, right click for options", closed because the registration holds no business and so no hours (Player.log of 26 Oct 2026, a Friday at 14:56). The main school is now filed in the mod's one card path, `SpecialBuildings` (the university's, the precincts', the courthouse's and the hotels'), `SchoolsDirector.FileCard`: its **name** Birchwood School, its **kind** "School" (`reallife_schools_card_type`), the state line the game's own for a business (`buildingresume_open_closing_in_hours` and its three kin: "Open, closing in 4 hours" in green, "Closed, opening in 61 hours" in red) **by the school's own hours** (`SchoolRules.Open`: a school day, 07:00 to 18:00, whole game hours as the game's cards count them; the floors core's door opens by the same rule), **who runs it** in the card's owner line ("Run by the council", "Run by Meridian Schools", "Run by you", from the school's file) and the card's "click to enter" while it is open. `SpecialBuildings.Facts` gives an entry a callback the card asks once a second; `SpecialNames.Facts` writes the lines. Only what the card shows changes, never the save; with the option off the game's own card is back. The right-click options are the game's (the building's info in BizMan and, on the city map, set destination): renting is refused for every building of the mod's own book. The hall and the junior block are looks with no controller, so the game shows no card for them; the Schools row of the map's filters and the map's search list the school as the book names it.
+The game's building card (BuildingResume) read the main school as the K1 office it is built from: "1 Birchwood Green, 30, 660 m2 (K1), 50, OFFICE, Neighborhood: Cedar Heights, CLOSED, right click for options", closed because the registration holds no business and so no hours (Player.log of 26 Oct 2026, a Friday at 14:56). The main school is now filed in the mod's one card path, `SpecialBuildings` (the university's, the precincts', the courthouse's and the hotels'), `SchoolsDirector.FileCard`: its **name** Birchwood School, its **kind** "School" (`reallife_schools_card_type`), the state line the game's own for a business (`buildingresume_open_closing_in_hours` and its three kin: "Open, closing in 4 hours" in green, "Closed, opening in 61 hours" in red) **by the school's own hours** (`SchoolRules.Open`: a school day, 07:00 to 18:00, whole game hours as the game's cards count them; the floors core's door opens by the same rule), **who runs it** in the card's owner line ("Run by the council", "Run by Meridian Schools", "Run by you", from the school's file) and the card's "click to enter" while it is open. `SpecialBuildings.Facts` gives an entry a callback the card asks once a second; `SpecialNames.Facts` writes the lines. Only what the card shows changes, never the save; with the option off the game's own card is back. The right-click options are the game's (the building's info in BizMan and, on the city map, set destination): renting is refused for every building of the mod's own book. The hall and the junior block are looks with no controller, so the game shows no card for them; the Schools row of the map's filters and the map's search list the school as the book names it.
 
 ## BizMan's page
 
@@ -108,7 +108,7 @@ Birchwood School's three buildings are modelled by hand in Blender (not-in-repo,
 
 | School | Kind | District | First owner |
 | --- | --- | --- | --- |
-| Birchwood School | the campus | Uptown | the council, for sale |
+| Birchwood School | the campus | Cedar Heights | the council, for sale |
 | Meridian Prep, Ashford House, Northbridge Academy, Calder College | private | Midtown, Murray Hill, Lower Manhattan, the Hamptons | the four trusts |
 | The council's school of each district | free | the game's seven | the council |
 

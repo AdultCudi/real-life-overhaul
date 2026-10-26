@@ -33,6 +33,7 @@ namespace RealLifeOverhaul.Construction
         private Vector2 _pressAt;
         private int _cardPlot = -1;                // the game's building card to put away next frame (it opens after build mode's click)
         private bool _inUptown = true;             // the map's middle is over Uptown
+        private int _lookDistrict;                 // the band's district the map's middle is over: the demand bars show its
         private float _nextCursor;
         private float _uMinX, _uMinZ, _uMaxX, _uMaxZ;
         private readonly HashSet<string> _uptownAddresses = new HashSet<string>(StringComparer.Ordinal);
@@ -151,11 +152,19 @@ namespace RealLifeOverhaul.Construction
                 return;
             }
             bool uptown = BuildModeCityRules.InRect(at.x, at.z, _uMinX, _uMinZ, _uMaxX, _uMaxZ);
+            Func<float, float, int> districtAt = BuildModeBridges.DistrictAt;
+            int district = uptown && districtAt != null ? Math.Max(0, Math.Min(BuildCatalogue.Districts - 1, districtAt(at.x, at.z))) : _lookDistrict;
             if (uptown == _inUptown)
             {
+                if (district != _lookDistrict)
+                {
+                    _lookDistrict = district;
+                    Write(false);   // the demand bars show the district the map's middle is over now
+                }
                 return;
             }
             _inUptown = uptown;
+            _lookDistrict = district;
             if (BuildModeCityRules.ToolWhyAt(_state.Tool, _holdings, _state.ViewOnly, _inUptown) != null)
             {
                 _state = BuildModeRules.Next(_state, BuildInput.Tool, BuildTool.Land, false);
@@ -166,6 +175,12 @@ namespace RealLifeOverhaul.Construction
                 ColourPlots();
             }
             Write(false);
+        }
+
+        // The district whose demand the bars show: that of the first square picked, else the one the map's middle is over.
+        private int BarDistrict()
+        {
+            return _picked.Count > 0 ? _d.DistrictOfColumn(_picked[0].Column) : _lookDistrict;
         }
 
         /// <summary>The map's middle looked at now, as the pointer's look does (for the tests); true over Uptown.</summary>

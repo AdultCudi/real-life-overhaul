@@ -418,14 +418,15 @@ namespace RealLifeOverhaul.Uptown
         /// A lot's traffic index, the Building.trafficIndex its building gets: <see cref="AvenueTraffic"/> on an avenue,
         /// <see cref="StreetTraffic"/> on a side street, <see cref="TrafficStep"/> less for each <see cref="TrafficStepMetres"/>
         /// further from Manhattan than <paramref name="nearest"/> (at most <see cref="TrafficStepsMost"/> steps), then up to
-        /// <see cref="TrafficJitter"/> more or less from its id's hash, kept from <see cref="TrafficLeast"/> to <see cref="TrafficMost"/>.
+        /// <see cref="TrafficJitter"/> more or less from its id's hash, and its district's shift (<see cref="DistrictSplit.TrafficShift"/>: Uptown a
+        /// little busier, Cedar Heights a little quieter), kept from <see cref="TrafficLeast"/> to <see cref="TrafficMost"/>.
         /// </summary>
         public static int Traffic(BuildingsLot lot, float nearest, float awayX, float awayZ)
         {
             float along = lot.X * awayX + lot.Z * awayZ - nearest;
             int steps = Math.Max(0, Math.Min(TrafficStepsMost, (int)Math.Floor(along / TrafficStepMetres)));
             int jitter = (int)(NewBuildingsRules.Hash(lot.Id) % (uint)(2 * TrafficJitter + 1)) - TrafficJitter;
-            int index = (lot.Avenue ? AvenueTraffic : StreetTraffic) - TrafficStep * steps + jitter;
+            int index = (lot.Avenue ? AvenueTraffic : StreetTraffic) - TrafficStep * steps + jitter + DistrictSplit.TrafficShift(DistrictSplit.OfBlock(lot.Block));
             return Math.Max(TrafficLeast, Math.Min(TrafficMost, index));
         }
 

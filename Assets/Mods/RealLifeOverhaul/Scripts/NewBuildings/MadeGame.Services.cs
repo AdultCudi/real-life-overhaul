@@ -120,6 +120,7 @@ namespace RealLifeOverhaul.NewBuildings
                 Served.Add(own);
             }
             Served.Add(copy);
+            Complete(copy, spec);
             if (verdict == ServiceVerdict.Fill)
             {
                 if (!fresh)
@@ -134,6 +135,24 @@ namespace RealLifeOverhaul.NewBuildings
                 Branches.Add(new Branch { Own = new Address(spec.Street, spec.Number), Head = head.Address, Name = copy.businessName, Type = copy.businessTypeName });
             }
             return copy;
+        }
+
+        // The copy completed for its layout's desks and, for a vehicle store, its dialog and settings (MadeGame.Desks). A build without
+        // one of the game members it reads leaves the copy as the game has it and says so; the place stands either way.
+        private static void Complete(SpecialService copy, MadeSpec spec)
+        {
+            try
+            {
+                string did = CompleteDesks(copy, spec);
+                if (did.Length > 0)
+                {
+                    Logger?.Info("Made buildings: '" + spec.Id + "' copies " + spec.Service + " completed for its desk and its cars: " + did + ".");
+                }
+            }
+            catch (Exception e)
+            {
+                Logger?.Warn("Made buildings: '" + spec.Id + "' copies " + spec.Service + " as the game has it: its desks and cars could not be completed (" + e.GetType().Name + ").");
+            }
         }
 
         // The goods the game knows, in the declaration's order; a name a later build lacks is left out (Player.log says which).
@@ -319,6 +338,14 @@ namespace RealLifeOverhaul.NewBuildings
             }
             Served.Clear();
             Branches.Clear();
+            try
+            {
+                DropStock();
+            }
+            catch (Exception)
+            {
+                // a build without the game's list of a store's cars made none of them
+            }
         }
     }
 }

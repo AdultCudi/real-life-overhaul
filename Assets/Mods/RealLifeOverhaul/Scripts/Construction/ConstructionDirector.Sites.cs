@@ -45,6 +45,10 @@ namespace RealLifeOverhaul.Construction
             {
                 return pace;   // the city's redevelopment (ConstructionDirector.CityRedevelop): its schedule hands it over on its day
             }
+            if (GrowPace(siteId, done, needed, hours, out pace))
+            {
+                return pace;   // a grown site (ConstructionDirector.Grow): its schedule hands it over on its day
+            }
             DevFile dev = DevOnSite(siteId);
             if (dev != null)
             {
@@ -78,7 +82,7 @@ namespace RealLifeOverhaul.Construction
             {
                 return p.Kind != ProjectKind.Contract || p.Source != TenderSource.CityWorks;
             }
-            return DevOnSite(siteId) != null || _state.CityRedevSite(siteId) != null;
+            return DevOnSite(siteId) != null || _state.CityRedevSite(siteId) != null || _state.GrowSite(siteId) != null;
         }
 
         /// <summary>False for a builder's site while the construction game is off: it is put away with it.</summary>
@@ -93,7 +97,7 @@ namespace RealLifeOverhaul.Construction
             ProjectFile p = Ready() ? _state.OnSite(siteId) : null;
             if (p == null)
             {
-                return Ready() ? CityBoard(siteId) : null;   // the city's redevelopment shows its developer; the city's own works none
+                return Ready() ? CityBoard(siteId) ?? GrowBoard(siteId) : null;   // the city's redevelopment or a grown site shows its developer; the city's own works none
             }
             if (p.Contractor >= 0)
             {
@@ -125,7 +129,12 @@ namespace RealLifeOverhaul.Construction
                 return !string.IsNullOrEmpty(dev.Design) ? dev.Design : null;
             }
             RedevFile r = _state.CityRedevSite(siteId);
-            return r != null && r.Stage == CityStage.Building && !string.IsNullOrEmpty(r.Design) && r.Design != NoDesign ? r.Design : null;
+            if (r == null)
+            {
+                GrowFile g = _state.GrowSite(siteId);
+                return g != null && g.Stage == GrowStage.Building && !string.IsNullOrEmpty(g.Design) && g.Design != NoDesign ? g.Design : null;
+            }
+            return r.Stage == CityStage.Building && !string.IsNullOrEmpty(r.Design) && r.Design != NoDesign ? r.Design : null;
         }
 
         /// <summary>A plot's finished building's lot in the district, or null.</summary>
@@ -147,7 +156,8 @@ namespace RealLifeOverhaul.Construction
             }
             DevFile dev = DevOnSite(siteId);
             RedevFile r = dev == null ? _state.CityRedevSite(siteId) : null;
-            return dev != null ? dev.Lot : r != null ? r.Lot : null;
+            GrowFile g = dev == null && r == null ? _state.GrowSite(siteId) : null;
+            return dev != null ? dev.Lot : r != null ? r.Lot : g != null ? g.Lot : null;
         }
 
         /// <summary>
@@ -172,6 +182,7 @@ namespace RealLifeOverhaul.Construction
                 }
                 RivalHanded(siteId, day);   // a rival's works from a tender: the stock market hears whether on time
                 CityHanded(siteId);         // the city's redevelopment: its schedule ends the rest on its day
+                GrowSiteHanded(siteId);     // a grown site: alike
                 DevFile dev = DevOnSite(siteId);
                 if (dev != null)
                 {

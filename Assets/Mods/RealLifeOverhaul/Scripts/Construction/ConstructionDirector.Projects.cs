@@ -168,7 +168,7 @@ namespace RealLifeOverhaul.Construction
         }
 
         // The district's price a square metre for a lot: a test lot's is the price where it was made.
-        private double PriceOf(LotView lot) => IsTestLot(lot.Id) ? _testPrice : LandPrice();
+        private double PriceOf(LotView lot) => IsTestLot(lot.Id) ? _testPrice : LandPrice(lot.Id);
 
         // ------------------------------------------------------------------ a project made
 
@@ -195,7 +195,7 @@ namespace RealLifeOverhaul.Construction
             var p = new ProjectFile
             {
                 Id = _state.NewId(), Kind = ProjectKind.Plot, Stage = ProjectStage.Design, Created = ConstructionGame.Day, Lot = lotId, Use = use, Width = lot.Width, Depth = lot.Depth,
-                District = string.Empty, Architect = ArchitectKind.Firm, Firm = 1
+                District = lot.DistrictKey ?? string.Empty, Architect = ArchitectKind.Firm, Firm = 1
             };
             DefaultDesign(p);
             _state.Projects.Add(p);
@@ -566,7 +566,7 @@ namespace RealLifeOverhaul.Construction
             {
                 p.PlansDay = ConstructionGame.Day + Math.Max(1, days);
             }
-            p.Quality = quote.Quality;
+            p.Quality = p.Grow > 0 ? GrowRules.TierQuality[BuildCatalogue.Clamp(p.Grow - 1, 0, (int)GrowTier.Count - 1)] : quote.Quality;   // Let it grow: the tier's
             Logger?.Info("Construction: project " + p.Id + "'s plans asked of " + p.Architect + (p.Architect == ArchitectKind.Firm ? " " + p.Firm : string.Empty) + " for " + fee + ", ready on day "
                          + (p.PlansDay == int.MaxValue ? "the player designs" : p.PlansDay.ToString()) + ".");
             Changed();
@@ -1167,6 +1167,10 @@ namespace RealLifeOverhaul.Construction
             if (handed)
             {
                 p.InDistrict = true;
+                if (player)
+                {
+                    GrowHandedToPlayer(p, ConstructionGame.Day);   // Let it grow: one of the city's grown buildings from now, the player's
+                }
                 if (!player && lot != null)
                 {
                     _state.Lots.Remove(lot);   // the residents' now: no more land tax of the player's

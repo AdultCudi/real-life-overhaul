@@ -93,24 +93,33 @@ namespace RealLifeOverhaul.Uptown
             LifeGame.Counted(out int inCity, out int inDistrict);
             int registrations = LifeGame.InSaveList(Standing);
             string rowWhy = null;
-            bool zone = LifeGame.Zoned, row = LifeGame.Rowed(), placed = !row || LifeGame.RowPlaced(out rowWhy), stats = LifeGame.HasStats(save);
+            bool zone = LifeGame.Zoned, row = true, placed = true;
+            for (int d = 0; d < DistrictSplit.Count; d++)
+            {
+                bool rowOf = LifeGame.Rowed(d);
+                row &= rowOf;
+                string oneWhy = null;
+                bool placedOne = !rowOf || LifeGame.RowPlaced(d, out oneWhy);
+                placed &= placedOne;
+                rowWhy = rowWhy ?? oneWhy;
+            }
+            bool stats = LifeGame.HasStats(save, DistrictSplit.Uptown) && LifeGame.HasStats(save, DistrictSplit.CedarHeights);
             bool pass = !_known ? !Lives
                         : _down ? found && !listed && inCity == 0 && inDistrict == 0 && registrations == 0   // out of the game's lists, its record kept for what holds its id
                         : found && listed && built > 0 && zone && placed && inCity == built && inDistrict == built && registrations == built && stats && looks == built
                           && leased == leases;
             string line = "Uptown check (census, " + when + "): " + (!_known
                               ? "not a district of the game at this load (" + (_notWhy ?? "not asked for") + ")"
-                              : "the district " + DistrictValues.Id + " found by the game's GetData " + Yes(found) + ", in its list of districts " + Yes(listed)
+                              : "the districts " + DistrictSplit.UptownId + " and " + DistrictSplit.CedarId + " found by the game's GetData " + Yes(found) + ", in its list of districts " + Yes(listed)
                                 + ", its zone on the city map " + Yes(zone) + ", its filter row " + Yes(row) + (row ? " under the map's districts " + Yes(placed) : string.Empty)
                                 + (placed ? string.Empty : " (" + rowWhy + ")") + ", " + built + " building(s) built (" + dayOne + " from the first day, " + kept
                                 + " kept from an earlier load, " + finished + " finished by the construction game), " + open + " lot(s) open of " + Plan.Count + ", "
                                 + leased + " of " + leases + " leased offices with their businesses, " + looks + " of " + built + " looking as the game's own (the city map's box "
                                 + "drawn only as a shadow while the map is shut" + (lookWhy != null ? "; not: " + lookWhy : string.Empty) + "), in the game's lists "
                                 + inCity + " in allBuildings and " + inDistrict + " in the district's, " + registrations + " registration(s) in the save's list, its stats " + Yes(stats)
-                                + (_down ? ", stood down in this city" : string.Empty) + "; its figures "
-                                + (LifeGame.FiguresLive ? "Midtown's and Hell's Kitchen's as the game has them" : "Build 3682's")
-                                + (LifeGame.FiguresChanged != null ? " (changed since Build 3682: " + LifeGame.FiguresChanged + ")" : string.Empty) + ": "
-                                + DistrictValues.Describe(LifeGame.Figures) + (built == 0 && _notWhy != null ? "; no building because " + _notWhy : string.Empty))
+                                + (_down ? ", stood down in this city" : string.Empty) + "; Uptown's figures: " + DistrictValues.Describe(LifeGame.Figures(DistrictSplit.Uptown))
+                                + "; Cedar Heights': " + DistrictValues.Describe(LifeGame.Figures(DistrictSplit.CedarHeights))
+                                + (built == 0 && _notWhy != null ? "; no building because " + _notWhy : string.Empty))
                           + ": " + (pass ? "PASS" : "FAIL");
             if (!pass)
             {
@@ -167,7 +176,14 @@ namespace RealLifeOverhaul.Uptown
                 }
                 int empty = LifeGame.EmptyUnits(Standing), open = LifeGame.Businesses(Standing);
                 LifeGame.BusinessesBy(Standing, Before);
-                int next = LifeGame.StartBusiness(out string why);
+                int next = -1;
+                string why = null;
+                for (int d = 0; d < DistrictSplit.Count; d++)
+                {
+                    int dayOf = LifeGame.StartBusiness(d, out string whyOf);   // the game's daily pass, once for each of the two districts
+                    next = dayOf >= 0 ? dayOf : next;
+                    why = why ?? whyOf;
+                }
                 LifeGame.BusinessesBy(Standing, After);
                 string started = null, kind = null;
                 foreach (KeyValuePair<string, string> now in After)
@@ -180,7 +196,7 @@ namespace RealLifeOverhaul.Uptown
                     }
                 }
                 bool pass = started != null;
-                string line = "Uptown check (a business opens): the game's own daily pass for Uptown alone (CompetitionHelper.StartNewBusiness over its "
+                string line = "Uptown check (a business opens): the game's own daily pass for each of the band's two districts (CompetitionHelper.StartNewBusiness over its "
                               + Standing.Count + " building(s)) " + (why != null ? "could not run (" + why + ")"
                                   : pass ? "started a business of the type " + kind + " at " + started + " (empty units " + empty + " before, " + LifeGame.EmptyUnits(Standing)
                                            + " after; businesses " + open + " before, " + LifeGame.Businesses(Standing) + " after; the game's next new business there on day " + next + ")"
@@ -253,7 +269,8 @@ namespace RealLifeOverhaul.Uptown
                 bool inSave = LifeGame.InSaveList(one) == 1;
                 string line = "Uptown check (rent): " + (rented
                                   ? "the player rented " + unit.Address + " through the game's own BizMan: its rent $" + LifeGame.RentOf(unit).ToString("F0", Plain)
-                                    + " a day, its registration in the save's list " + Yes(inSave) + ", the district " + DistrictValues.Id + ": " + (inSave ? "PASS" : "FAIL")
+                                    + " a day, its registration in the save's list " + Yes(inSave) + ", the district "
+                                    + (unit.Building != null ? unit.Building.Neighbourhood : DistrictValues.Id) + ": " + (inSave ? "PASS" : "FAIL")
                                   : "not rented within " + (RentWatch / 60f).ToString("F0", Plain) + " minutes" + (Lives ? string.Empty : " (Uptown stood down)") + ": FAIL");
                 if (rented && inSave)
                 {

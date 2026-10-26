@@ -23,6 +23,7 @@ internal static partial class Program
         UptownSpecialsSaves();
         UptownSpecialsSources();
         UptownSpecialsTexts();
+        UptownDealerChecks();   // Crest Motors' desk and every special place's desk: the rules, the game's layouts, the sources, the texts (UptownDealerChecks.cs)
     }
 
     private static void UptownSpecialsTable(List<BuildingsLot> plan)

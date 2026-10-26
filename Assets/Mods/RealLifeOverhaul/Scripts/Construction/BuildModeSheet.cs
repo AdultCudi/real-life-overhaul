@@ -56,7 +56,18 @@ namespace RealLifeOverhaul.Construction
         private readonly List<FactPart> _facts = new List<FactPart>(8);
         private readonly List<SwatchPart> _swatches = new List<SwatchPart>(6);
         private readonly List<Actions> _actions = new List<Actions>(3);
-        private int _linesUsed, _factsUsed, _swatchesUsed, _actionsUsed;
+        private readonly List<ChoiceRow> _choices = new List<ChoiceRow>(2);
+        private int _linesUsed, _factsUsed, _swatchesUsed, _actionsUsed, _choicesUsed;
+
+        private sealed class ChoiceRow
+        {
+            public RectTransform Root;
+            public readonly KitButton[] Buttons = new KitButton[ChoicesMost];
+            public int FirstId;
+        }
+
+        public const int ChoicesMost = 4;           // buttons a row of choices holds (the Zone tool's four ways of picking, Let it grow's three tiers)
+        private const float ChoiceHigh = 92f;
 
         public RectTransform Rect => _rect;
 
@@ -98,7 +109,7 @@ namespace RealLifeOverhaul.Construction
         {
             UiClone.Words(_title, title);
             UiClone.Words(_count, count ?? string.Empty);
-            _linesUsed = _factsUsed = _swatchesUsed = _actionsUsed = 0;
+            _linesUsed = _factsUsed = _swatchesUsed = _actionsUsed = _choicesUsed = 0;
         }
 
         /// <summary>A line of words, wrapping.</summary>
@@ -233,6 +244,49 @@ namespace RealLifeOverhaul.Construction
             Last(a.Root);
         }
 
+        /// <summary>
+        /// A row of up to four plain buttons side by side sharing its width, the one chosen with the blue edge (the Zone tool's ways of
+        /// picking squares, Let it grow's tiers): button i answers <paramref name="firstId"/> + i. Names past the first null are not shown.
+        /// </summary>
+        public void Choices(int firstId, string[] names, int chosen, bool usable)
+        {
+            ChoiceRow c;
+            if (_choicesUsed < _choices.Count)
+            {
+                c = _choices[_choicesUsed];
+            }
+            else
+            {
+                c = new ChoiceRow { Root = BuildModeKit.Strip(_rect, "Choices", true, new RectOffset(0, 0, 4, 4), 16f, TextAnchor.MiddleLeft) };
+                ChoiceRow wired = c;
+                for (int i = 0; i < ChoicesMost; i++)
+                {
+                    int at = i;
+                    KitButton b = Wide(c.Root, () => _onRow?.Invoke(wired.FirstId + at));
+                    BuildModeKit.Size(b.Root.gameObject, -1f, ChoiceHigh).flexibleWidth = 1f;
+                    b.ChosenBlue = false;
+                    _kit.Frame(b, BuildModeBar.ButtonGrey, false);
+                    b.Label.fontSizeMax = 32f;
+                    c.Buttons[i] = b;
+                }
+                _choices.Add(c);
+            }
+            _choicesUsed++;
+            c.FirstId = firstId;
+            for (int i = 0; i < ChoicesMost; i++)
+            {
+                bool shown = names != null && i < names.Length && !string.IsNullOrEmpty(names[i]);
+                c.Buttons[i].Show(shown);
+                if (shown)
+                {
+                    UiClone.Words(c.Buttons[i].Label, names[i]);
+                    c.Buttons[i].SetChosen(i == chosen);
+                    c.Buttons[i].SetUsable(usable);
+                }
+            }
+            Last(c.Root);
+        }
+
         private KitButton Wide(Transform parent, Action click)
         {
             KitButton b = _kit.Button(parent, "Button", click, -1f, ButtonHigh);
@@ -273,6 +327,10 @@ namespace RealLifeOverhaul.Construction
             for (int i = _actionsUsed; i < _actions.Count; i++)
             {
                 Off(_actions[i].Root.gameObject);
+            }
+            for (int i = _choicesUsed; i < _choices.Count; i++)
+            {
+                Off(_choices[i].Root.gameObject);
             }
             LayoutRebuilder.ForceRebuildLayoutImmediate(_rect);
         }

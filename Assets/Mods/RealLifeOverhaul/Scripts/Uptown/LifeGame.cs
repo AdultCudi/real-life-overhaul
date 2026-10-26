@@ -11,60 +11,93 @@ using UnityEngine;
 namespace RealLifeOverhaul.Uptown
 {
     /// <summary>
-    /// Uptown's side of the game, the only place the district touches it (with .Buildings, .Map and .Tests). Here: the
-    /// game's record of a district (NeighborhoodData), made with ScriptableObject.CreateInstance from its two neighbours'
-    /// own figures and put wherever the game finds a district: its private lookup (NeighborhoodHelper.GetData throws on an
-    /// id it lacks), its list and its array of districts, an empty list of its buildings (CompetitionHelper.RunDaily reads
-    /// AllNeighbourhoodBuildings for every district with stats and throws on one it lacks), its people's class table and
-    /// price index and the wholesalers' table (both made by the game once a run, so Uptown's rows go in only when the game
-    /// has made them and lacks it: CitizenHelper.Init would throw on a key put there before it), and its share of offices
-    /// and shops kept empty to let (BuildingTypeData's per-district targets; without one the game keeps none empty). The
-    /// game makes its lookups and lists of districts again at every load; what lasts a run (the tables, BuildingTypeData's
-    /// arrays) is given back as the game had it when the city goes. Nothing here runs a frame.
+    /// The band's side of the game, the only place its districts touch it (with .Buildings, .Map and .Tests). Here: the game's
+    /// record of each of the band's two districts (NeighborhoodData; Uptown and Cedar Heights, DistrictSplit), made with
+    /// ScriptableObject.CreateInstance from the district's own figures (DistrictSplit.Figures) and put wherever the game finds a
+    /// district: its private lookup (NeighborhoodHelper.GetData throws on an id it lacks), its list and its array of districts,
+    /// an empty list of its buildings (CompetitionHelper.RunDaily reads AllNeighbourhoodBuildings for every district with stats
+    /// and throws on one it lacks), its people's class table and price index and the wholesalers' table (both made by the game
+    /// once a run, so a district's rows go in only when the game has made them and lacks it: CitizenHelper.Init would throw on
+    /// a key put there before it), and its share of offices and shops kept empty to let (BuildingTypeData's per-district
+    /// targets; without one the game keeps none empty). The game makes its lookups and lists of districts again at every load;
+    /// what lasts a run (the tables, BuildingTypeData's arrays) is given back as the game had it when the city goes. Nothing
+    /// here runs a frame.
     /// </summary>
     internal static partial class LifeGame
     {
-        private static NeighborhoodData _record;   // Uptown's own record at this load, destroyed when the city goes
+        private static readonly NeighborhoodData[] Records = new NeighborhoodData[DistrictSplit.Count];   // each district's own record at this load, destroyed when the city goes
         private static readonly Dictionary<BuildingTypeData, IdealAvailableBuildingsInNeighborhood[]> TargetsWas =
             new Dictionary<BuildingTypeData, IdealAvailableBuildingsInNeighborhood[]>(2);   // each type's targets as the game had them
-        private static bool _sharesPut, _pricePut, _wholesalePut;   // Uptown's rows this load put in the game's run-long tables
+        private static readonly bool[] SharesPut = new bool[DistrictSplit.Count];     // each district's rows this load put in the game's run-long tables
+        private static readonly bool[] PricePut = new bool[DistrictSplit.Count];
+        private static readonly bool[] WholesalePut = new bool[DistrictSplit.Count];
         private static readonly List<int> Classes = new List<int>(3);
         private static readonly List<float> Shares = new List<float>(3);
 
-        /// <summary>Uptown's figures at this load: its neighbours' own, half and half, or Build 3682's when theirs cannot be read.</summary>
-        public static DistrictFigures Figures { get; private set; } = DistrictValues.Written;
+        /// <summary>A district's figures at this load: the ones its design gives it (DistrictSplit.Figures).</summary>
+        public static DistrictFigures Figures(int district)
+        {
+            return DistrictSplit.Figures(district);
+        }
 
-        /// <summary>True when <see cref="Figures"/> come from the game's own neighbours at this load.</summary>
-        public static bool FiguresLive { get; private set; }
+        /// <summary>A district's record as the game has it at this load, or null.</summary>
+        public static NeighborhoodData Record(int district)
+        {
+            return district >= 0 && district < Records.Length ? Records[district] : null;
+        }
 
-        /// <summary>The neighbours whose figures differ from Build 3682's (for the census line), or null when none do.</summary>
-        public static string FiguresChanged { get; private set; }
+        /// <summary>True when any of the band's districts has its record at this load.</summary>
+        public static bool AnyRecord
+        {
+            get
+            {
+                for (int i = 0; i < Records.Length; i++)
+                {
+                    if (Records[i] != null)
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }
 
-        /// <summary>Uptown's record as the game has it at this load, or null.</summary>
-        public static NeighborhoodData Record => _record;
-
-        /// <summary>True when the game's own lookup finds Uptown's record (what the census test asks first).</summary>
+        /// <summary>True when the game's own lookup finds the record of every district of the band (what the census test asks first).</summary>
         public static bool GetDataFinds()
         {
             var lookup = GameContract.DistrictLookup.Field?.GetValue(null) as Dictionary<string, NeighborhoodData>;
-            return lookup != null && lookup.TryGetValue(DistrictValues.Id, out NeighborhoodData data) && data != null && data == _record;
+            for (int d = 0; d < DistrictSplit.Count; d++)
+            {
+                if (lookup == null || !lookup.TryGetValue(DistrictSplit.Ids[d], out NeighborhoodData data) || data == null || data != Records[d])
+                {
+                    return false;
+                }
+            }
+            return true;
         }
 
-        /// <summary>True when Uptown is in the game's list of districts.</summary>
+        /// <summary>True when every district of the band is in the game's list of districts.</summary>
         public static bool Listed()
         {
             List<string> list = NeighborhoodHelper.Neighborhoods;
-            return list != null && list.Contains(DistrictValues.Id);
+            for (int d = 0; d < DistrictSplit.Count; d++)
+            {
+                if (list == null || !list.Contains(DistrictSplit.Ids[d]))
+                {
+                    return false;
+                }
+            }
+            return true;
         }
 
-        // ---------------------------------------------------------------- the district in the game's lookups
+        // ---------------------------------------------------------------- the districts in the game's lookups
 
         /// <summary>
-        /// Uptown as a district the game knows, at the district save's early step (a save read, its city not yet built) or at
-        /// the city load: its record in the game's lookup, list and array of districts, an empty list of its buildings, its
-        /// rows in the run-long tables when the game has made them, its targets of units kept to let. Its row on the city
-        /// map waits for its zone (<see cref="Map"/>). True when it is there; false with why when the game's lookups cannot
-        /// be reached. Done once a load; a second call finds it there and changes nothing.
+        /// The band's districts as districts the game knows, at the district save's early step (a save read, its city not yet
+        /// built) or at the city load: each record in the game's lookup, list and array of districts, an empty list of its
+        /// buildings, its rows in the run-long tables when the game has made them, its targets of units kept to let. Their rows
+        /// on the city map wait for their zones (<see cref="Map"/>). True when they are there; false with why when the game's
+        /// lookups cannot be reached. Done once a load; a second call finds them there and changes nothing.
         /// </summary>
         public static bool Know(out string why)
         {
@@ -77,109 +110,63 @@ namespace RealLifeOverhaul.Uptown
                 why = "the game's lookups of districts could not be reached (" + (GameContract.UptownDistrict.Why ?? "not loaded yet") + ")";
                 return false;
             }
-            if (lookup.TryGetValue(DistrictValues.Id, out NeighborhoodData there) && there != null && there != _record)
+            for (int d = 0; d < DistrictSplit.Count; d++)
             {
-                why = "the game, or another mod, has a district of the id " + DistrictValues.Id + " already";
-                return false;
-            }
-            DistrictFigures f = ReadFigures(lookup);
-            if (_record == null)
-            {
-                _record = ScriptableObject.CreateInstance<NeighborhoodData>();   // destroyed when the city goes (Unload)
-                Shape(_record, f, lookup);
-            }
-            lookup[DistrictValues.Id] = _record;
-            if (!list.Contains(DistrictValues.Id))
-            {
-                list.Add(DistrictValues.Id);
-            }
-            NeighborhoodData[] was = NeighborhoodHelper.NeighborhoodsData;
-            if (Array.IndexOf(was, _record) < 0)
-            {
-                var now = new NeighborhoodData[was.Length + 1];
-                Array.Copy(was, now, was.Length);
-                now[was.Length] = _record;
-                setArray.Invoke(null, new object[] { now });
-            }
-            if (!BuildingHelper.AllNeighbourhoodBuildings.ContainsKey(DistrictValues.Id))
-            {
-                BuildingHelper.AllNeighbourhoodBuildings[DistrictValues.Id] = new List<Building>();   // the game's daily pass reads it for every district with stats
-            }
-            PeopleRows(f);
-            WholesaleRow();
-            Targets(f);
-            return true;
-        }
-
-        // The figures from the game's own neighbours, half and half; Build 3682's when either cannot be read.
-        private static DistrictFigures ReadFigures(Dictionary<string, NeighborhoodData> lookup)
-        {
-            bool midtown = Figure(lookup, DistrictValues.Midtown, out DistrictFigures a);
-            bool kitchen = Figure(lookup, DistrictValues.HellsKitchen, out DistrictFigures b);
-            FiguresLive = midtown && kitchen;
-            FiguresChanged = null;
-            if (FiguresLive)
-            {
-                bool midtownChanged = !DistrictValues.Same(a, DistrictValues.Midtown3682), kitchenChanged = !DistrictValues.Same(b, DistrictValues.HellsKitchen3682);
-                string changed = (midtownChanged ? "Midtown" : string.Empty) + (kitchenChanged ? (midtownChanged ? " and " : string.Empty) + "Hell's Kitchen" : string.Empty);
-                FiguresChanged = changed.Length > 0 ? changed : null;
-            }
-            DistrictFigures f = FiguresLive ? DistrictValues.Blend(a, b) : DistrictValues.Written;
-            if (!DistrictValues.Sound(f))
-            {
-                FiguresChanged = (FiguresChanged ?? "the game's") + " figures make no district the game can take, so Build 3682's are used";
-                f = DistrictValues.Written;
-            }
-            f.EmptyOffices = f.EmptyShops = MixRules.ToLetShare;   // a third free to rent (the owner, 25 Oct 2026), not the neighbours' blend
-            Figures = f;
-            return f;
-        }
-
-        private static bool Figure(Dictionary<string, NeighborhoodData> lookup, string id, out DistrictFigures f)
-        {
-            f = default;
-            if (!lookup.TryGetValue(id, out NeighborhoodData d) || d == null)
-            {
-                return false;
-            }
-            f = new DistrictFigures
-            {
-                Working = d.workingClassPercentage, Middle = d.middleClassPercentage, Upper = d.upperClassClassPercentage, RealEstate = d.realEstateMultiplier,
-                Parking = d.parkingPrice, Demand = d.customerDemandsWeight, CarTraffic = d.vehicleTrafficDensityPercentage, InteriorScore = d.minimumInteriorScore,
-                BasePrice = d.baseBuildingPricePerSqm, RentPerPrice = d.rentMultiplierPerSqmPrice, Marketing = d.marketingStrength, ShutDownBelow = d.maxDailyIncomeToShutDownBusiness,
-                Offices = d.hasOfficeBusinesses, EmptyOffices = Target(DistrictValues.OfficeType, id), EmptyShops = Target(DistrictValues.RetailType, id)
-            };
-            return true;
-        }
-
-        // The game's own target of a type's units kept empty in a district, as CompetitionHelper.GetIdealPercentageOfEmptyBuildings reads it (the district's
-        // own entry; this is only ever asked for the two neighbours, which have one).
-        private static int Target(string type, string district)
-        {
-            BuildingTypeData data = BuildingTypeHelper.GetData(type);
-            IdealAvailableBuildingsInNeighborhood[] all = data != null ? data.idealAvailableBuildingsInNeighborhood : null;
-            for (int i = 0; all != null && i < all.Length; i++)
-            {
-                if (all[i] != null && all[i].neighbourhood == district)
+                if (lookup.TryGetValue(DistrictSplit.Ids[d], out NeighborhoodData there) && there != null && there != Records[d])
                 {
-                    return all[i].idealAvailableBuildingsPercentage;
+                    why = "the game, or another mod, has a district of the id " + DistrictSplit.Ids[d] + " already";
+                    return false;
                 }
             }
-            return 0;
+            for (int d = 0; d < DistrictSplit.Count; d++)
+            {
+                string id = DistrictSplit.Ids[d];
+                DistrictFigures f = DistrictSplit.Figures(d);
+                if (Records[d] == null)
+                {
+                    NeighborhoodData record = ScriptableObject.CreateInstance<NeighborhoodData>();   // destroyed when the city goes (Unload)
+                    Shape(d, record, f, lookup);
+                    Records[d] = record;
+                }
+                lookup[id] = Records[d];
+                if (!list.Contains(id))
+                {
+                    list.Add(id);
+                }
+                NeighborhoodData[] was = NeighborhoodHelper.NeighborhoodsData;
+                if (Array.IndexOf(was, Records[d]) < 0)
+                {
+                    var now = new NeighborhoodData[was.Length + 1];
+                    Array.Copy(was, now, was.Length);
+                    now[was.Length] = Records[d];
+                    setArray.Invoke(null, new object[] { now });
+                }
+                if (!BuildingHelper.AllNeighbourhoodBuildings.ContainsKey(id))
+                {
+                    BuildingHelper.AllNeighbourhoodBuildings[id] = new List<Building>();   // the game's daily pass reads it for every district with stats
+                }
+                PeopleRows(d, f);
+                WholesaleRow(d);
+                Targets(d, f);
+            }
+            return true;
         }
 
-        // Uptown's record, its row and its look on the city map (its zone's colour, Midtown's icon), its name for the game's business names.
-        private static void Shape(NeighborhoodData d, DistrictFigures f, Dictionary<string, NeighborhoodData> lookup)
+        // A district's record, its row and its look on the city map (its zone's colour, Midtown's icon), its name for the game's business names.
+        private static void Shape(int district, NeighborhoodData d, DistrictFigures f, Dictionary<string, NeighborhoodData> lookup)
         {
-            d.name = "RealLife Uptown";
+            string id = DistrictSplit.Ids[district];
+            d.name = district == DistrictSplit.CedarHeights ? "RealLife Cedar Heights" : "RealLife Uptown";
             d.hideFlags = HideFlags.DontUnloadUnusedAsset;   // the engine's sweep of unused assets would take a record only the mod holds
-            d.neighbourhood = DistrictValues.Id;
+            d.neighbourhood = id;
             d.hasCityMapFilter = false;   // until its zone is on the city map: the game's district rows ask the zone for their focus (CityMapNeighborhoodZones.First throws without one)
-            d.cityMapIcon = lookup.TryGetValue(DistrictValues.Midtown, out NeighborhoodData midtown) && midtown != null ? midtown.cityMapIcon : null;
-            d.cityMapZoneColor = new Color(DistrictValues.ZoneRed, DistrictValues.ZoneGreen, DistrictValues.ZoneBlue, DistrictValues.ZoneAlpha);
+            d.cityMapIcon = Icon(district);   // a disc of its own colour: Midtown's icon would show Midtown's colour on its toggle
+            float[] colour = DistrictValues.ColourOf(district);
+            d.cityMapZoneColor = new Color(colour[0], colour[1], colour[2], DistrictValues.ZoneAlpha);
             Apply(d, f);
-            string name = DistrictValues.Id.GetLocalization();
-            d.aliases = new[] { string.IsNullOrEmpty(name) || name == DistrictValues.Id ? "Uptown" : name };   // the game names businesses after their district
+            string name = id.GetLocalization();
+            string plain = district == DistrictSplit.CedarHeights ? "Cedar Heights" : "Uptown";
+            d.aliases = new[] { string.IsNullOrEmpty(name) || name == id ? plain : name };   // the game names businesses after their district
         }
 
         private static void Apply(NeighborhoodData d, DistrictFigures f)
@@ -200,10 +187,11 @@ namespace RealLifeOverhaul.Uptown
         }
 
         // The people's class table and price index, as CitizenHelper.Init makes them for every district once a run: put in only once the game made them.
-        private static void PeopleRows(DistrictFigures f)
+        private static void PeopleRows(int district, DistrictFigures f)
         {
+            string id = DistrictSplit.Ids[district];
             var shares = GameContract.ClassShares.Field?.GetValue(null) as Dictionary<string, List<(SocialClass, float)>>;
-            if (shares != null && shares.Count > 0 && !shares.ContainsKey(DistrictValues.Id))
+            if (shares != null && shares.Count > 0 && !shares.ContainsKey(id))
             {
                 DistrictValues.ClassOrder(f.Working, f.Middle, f.Upper, Classes, Shares);
                 var row = new List<(SocialClass, float)>(3);
@@ -211,41 +199,42 @@ namespace RealLifeOverhaul.Uptown
                 {
                     row.Add((Classes[i] == 0 ? SocialClass.Working : Classes[i] == 1 ? SocialClass.Middle : SocialClass.Upper, Shares[i]));
                 }
-                shares[DistrictValues.Id] = row;
-                _sharesPut = true;
+                shares[id] = row;
+                SharesPut[district] = true;
             }
             Dictionary<string, float> prices = CitizenHelper.averagePriceIndicesInNeighborhoods;
-            if (prices != null && prices.Count > 0 && !prices.ContainsKey(DistrictValues.Id))
+            if (prices != null && prices.Count > 0 && !prices.ContainsKey(id))
             {
-                prices[DistrictValues.Id] = DistrictValues.PriceIndex(f.Working, f.Middle, f.Upper);
-                _pricePut = true;
+                prices[id] = DistrictValues.PriceIndex(f.Working, f.Middle, f.Upper);
+                PricePut[district] = true;
             }
         }
 
-        // The wholesalers' goods by district, made once a run on first asking: Uptown's row as the game makes one for a district with no wholesale store yet.
-        private static void WholesaleRow()
+        // The wholesalers' goods by district, made once a run on first asking: a district's row as the game makes one for a district with no wholesale store yet.
+        private static void WholesaleRow(int district)
         {
+            string id = DistrictSplit.Ids[district];
             var table = GameContract.WholesalersByDistrict.Field?.GetValue(null) as Dictionary<string, HashSet<string>>;
-            if (table != null && !table.ContainsKey(DistrictValues.Id))
+            if (table != null && !table.ContainsKey(id))
             {
-                table[DistrictValues.Id] = new HashSet<string>();
-                _wholesalePut = true;
+                table[id] = new HashSet<string>();
+                WholesalePut[district] = true;
             }
         }
 
-        // The share of offices, shops and homes the game keeps empty to let in Uptown: an entry for it in each type's targets, the
-        // owner's third (MixRules.ToLetShare) whatever its neighbours keep (its figures' shares say so); a warehouses' falls back to
-        // the game's own city-wide one. The generator, the game's daily swaps of homes and its new businesses all read them. Each
-        // array as the game had it is kept to be given back.
-        private static void Targets(DistrictFigures f)
+        // The share of offices, shops and homes the game keeps empty to let in a district: an entry for it in each type's targets, the
+        // owner's third (MixRules.ToLetShare) whatever the figures say; a warehouses' falls back to the game's own city-wide one. The
+        // generator, the game's daily swaps of homes and its new businesses all read them. Each array as the game had it is kept to be given back.
+        private static void Targets(int district, DistrictFigures f)
         {
-            Target(DistrictValues.OfficeType, f.EmptyOffices);
-            Target(DistrictValues.RetailType, f.EmptyShops);
-            Target(MixRules.HomeType, MixRules.ToLetShare);
+            Target(district, DistrictValues.OfficeType, f.EmptyOffices);
+            Target(district, DistrictValues.RetailType, f.EmptyShops);
+            Target(district, MixRules.HomeType, MixRules.ToLetShare);
         }
 
-        private static void Target(string type, int percent)
+        private static void Target(int district, string type, int percent)
         {
+            string id = DistrictSplit.Ids[district];
             BuildingTypeData data = BuildingTypeHelper.GetData(type);
             if (data == null)
             {
@@ -254,7 +243,7 @@ namespace RealLifeOverhaul.Uptown
             IdealAvailableBuildingsInNeighborhood[] was = data.idealAvailableBuildingsInNeighborhood ?? new IdealAvailableBuildingsInNeighborhood[0];
             for (int i = 0; i < was.Length; i++)
             {
-                if (was[i] != null && was[i].neighbourhood == DistrictValues.Id)
+                if (was[i] != null && was[i].neighbourhood == id)
                 {
                     return;   // there from earlier in this run
                 }
@@ -265,39 +254,42 @@ namespace RealLifeOverhaul.Uptown
             }
             var now = new IdealAvailableBuildingsInNeighborhood[was.Length + 1];
             Array.Copy(was, now, was.Length);
-            now[was.Length] = new IdealAvailableBuildingsInNeighborhood { neighbourhood = DistrictValues.Id, idealAvailableBuildingsPercentage = percent };
+            now[was.Length] = new IdealAvailableBuildingsInNeighborhood { neighbourhood = id, idealAvailableBuildingsPercentage = percent };
             data.idealAvailableBuildingsInNeighborhood = now;
         }
 
         /// <summary>
-        /// Uptown out of the game's lists of districts in play (it stood down): out of the list and the array, so the game
-        /// makes no demand of it and starts nothing there; its record stays in the lookup, so anything still holding its id
+        /// The band out of the game's lists of districts in play (it stood down): out of the list and the array, so the game
+        /// makes no demand of it and starts nothing there; the records stay in the lookup, so anything still holding an id
         /// (a passer-by made for it) still finds it.
         /// </summary>
         public static void Unlist()
         {
-            NeighborhoodHelper.Neighborhoods?.Remove(DistrictValues.Id);
-            NeighborhoodData[] was = NeighborhoodHelper.NeighborhoodsData;
             MethodInfo setArray = GameContract.DistrictArray.Setter;
-            int at = was != null && _record != null ? Array.IndexOf(was, _record) : -1;
-            if (at >= 0 && setArray != null)
+            for (int d = 0; d < DistrictSplit.Count; d++)
             {
-                var now = new NeighborhoodData[was.Length - 1];
-                for (int i = 0, k = 0; i < was.Length; i++)
+                NeighborhoodHelper.Neighborhoods?.Remove(DistrictSplit.Ids[d]);
+                NeighborhoodData[] was = NeighborhoodHelper.NeighborhoodsData;
+                int at = was != null && Records[d] != null ? Array.IndexOf(was, Records[d]) : -1;
+                if (at >= 0 && setArray != null)
                 {
-                    if (i != at)
+                    var now = new NeighborhoodData[was.Length - 1];
+                    for (int i = 0, k = 0; i < was.Length; i++)
                     {
-                        now[k++] = was[i];
+                        if (i != at)
+                        {
+                            now[k++] = was[i];
+                        }
                     }
+                    setArray.Invoke(null, new object[] { now });
                 }
-                setArray.Invoke(null, new object[] { now });
             }
         }
 
         /// <summary>
-        /// The city goes: what lasts a run is given back as the game had it (each type's targets, Uptown's rows in the run-long
-        /// tables), the district out of the game's lookup, list and array of districts (which the game makes again when the
-        /// next save is read), and the record destroyed.
+        /// The city goes: what lasts a run is given back as the game had it (each type's targets, the districts' rows in the run-long
+        /// tables), the districts out of the game's lookup, list and array of districts (which the game makes again when the
+        /// next save is read), and the records destroyed.
         /// </summary>
         public static void Unload()
         {
@@ -310,31 +302,39 @@ namespace RealLifeOverhaul.Uptown
                 }
             }
             TargetsWas.Clear();
-            if (_sharesPut)
-            {
-                (GameContract.ClassShares.Field?.GetValue(null) as Dictionary<string, List<(SocialClass, float)>>)?.Remove(DistrictValues.Id);
-                _sharesPut = false;
-            }
-            if (_pricePut)
-            {
-                CitizenHelper.averagePriceIndicesInNeighborhoods.Remove(DistrictValues.Id);
-                _pricePut = false;
-            }
-            if (_wholesalePut)
-            {
-                (GameContract.WholesalersByDistrict.Field?.GetValue(null) as Dictionary<string, HashSet<string>>)?.Remove(DistrictValues.Id);
-                _wholesalePut = false;
-            }
-            Unlist();   // nothing of the district left in the game's lists until the next load makes them again
             var lookup = GameContract.DistrictLookup.Field?.GetValue(null) as Dictionary<string, NeighborhoodData>;
-            if (lookup != null && lookup.TryGetValue(DistrictValues.Id, out NeighborhoodData there) && there == _record)
+            for (int d = 0; d < DistrictSplit.Count; d++)
             {
-                lookup.Remove(DistrictValues.Id);
+                string id = DistrictSplit.Ids[d];
+                if (SharesPut[d])
+                {
+                    (GameContract.ClassShares.Field?.GetValue(null) as Dictionary<string, List<(SocialClass, float)>>)?.Remove(id);
+                    SharesPut[d] = false;
+                }
+                if (PricePut[d])
+                {
+                    CitizenHelper.averagePriceIndicesInNeighborhoods.Remove(id);
+                    PricePut[d] = false;
+                }
+                if (WholesalePut[d])
+                {
+                    (GameContract.WholesalersByDistrict.Field?.GetValue(null) as Dictionary<string, HashSet<string>>)?.Remove(id);
+                    WholesalePut[d] = false;
+                }
             }
-            if (_record != null)
+            Unlist();   // nothing of the districts left in the game's lists until the next load makes them again
+            for (int d = 0; d < DistrictSplit.Count; d++)
             {
-                UnityEngine.Object.Destroy(_record);
-                _record = null;
+                if (lookup != null && lookup.TryGetValue(DistrictSplit.Ids[d], out NeighborhoodData there) && there == Records[d])
+                {
+                    lookup.Remove(DistrictSplit.Ids[d]);
+                }
+                NeighborhoodData record = Records[d];
+                if (record != null)
+                {
+                    UnityEngine.Object.Destroy(record);
+                    Records[d] = null;
+                }
             }
             UnloadMap();
             UnloadBuildings();

@@ -73,8 +73,10 @@ namespace RealLifeOverhaul.Construction
             _strip.AddRange(_joinNext);
             LotView joined = Joined(_strip);
             int stripRows = CellRules.RowsFor(_strip[0].Depth);
+            int[] aRows = (int[])SiteRows(a).Clone(), bRows = (int[])SiteRows(b).Clone();
+            a.Cells = ZoneRules.Join(a.Cells, a.Spaces, aRows, a.Paint, b.Cells, b.Spaces, bRows, b.Paint);   // each square's zone kept, each site's paint on its own squares
             a.Rows = CellRules.JoinRows(a.Rows, a.Spaces, b.Rows, b.Spaces, stripRows);   // build mode's cells: each lot's rows kept
-            a.Paint = a.Paint != 0 ? a.Paint : b.Paint;
+            a.Paint = a.Cells.Length > 0 ? ZoneRules.Main(a.Cells, a.Paint) : a.Paint != 0 ? a.Paint : b.Paint;
             a.Spaces += b.Spaces;
             a.Paid += b.Paid;
             a.Zones |= b.Zones | LandRules.ZonesOf(joined.Class);   // what each was zoned for, and what a site of the joined spaces is
@@ -165,10 +167,12 @@ namespace RealLifeOverhaul.Construction
                 _state.Lots.Add(new LotFile
                 {
                     Id = _strip[i].Id, Bought = a.Bought, Paid = _shares[i], Zones = a.Zones | LandRules.ZonesOf(_strip[i].Class), TaxedTo = a.TaxedTo, EmptySince = a.EmptySince, Spaces = 1,
-                    Rows = CellRules.SplitRows(a.Rows, i, stripRows), Paint = a.Paint
+                    Rows = CellRules.SplitRows(a.Rows, i, stripRows), Paint = ZoneRules.Main(ZoneRules.SplitOne(a.Cells, i), a.Paint), Cells = ZoneRules.SplitOne(a.Cells, i)
                 });
             }
             a.Rows = CellRules.SplitRows(a.Rows, 0, stripRows);
+            a.Cells = ZoneRules.SplitOne(a.Cells, 0);   // each lot keeps its own squares' zones
+            a.Paint = ZoneRules.Main(a.Cells, a.Paint);
             a.Paid = _shares[0];
             a.Spaces = 1;
             a.Zones |= LandRules.ZonesOf(_strip[0].Class);

@@ -35,6 +35,7 @@ namespace RealLifeOverhaul.Construction
         public int Spaces = 1;      // the spaces bought side by side from this one along its strip: one site, one building
         public string Rows = string.Empty;   // the zoning cells' rows bought in each of its spaces, as digits from the first ("5543"); empty: every row (CellRules)
         public int Paint;           // the use painted on its cells in build mode: BuildUse + 1, or 0 for none
+        public string Cells = string.Empty;   // the zone painted on each of its squares (ZoneRules: a group a column, a digit a row); empty: every square takes Paint
     }
 
     /// <summary>A crew the company employs: a foreman and the people of a gang, their skill, morale, day rate and where they work.</summary>
@@ -195,6 +196,7 @@ namespace RealLifeOverhaul.Construction
         public long BuyOut;                          // what buying its tenants and business out cost, paid as the notice ran out; -1 when nothing was due, 0 before
         public int Added;                            // an extension's storeys on top of those its building has
         public string Look = string.Empty;           // a corner building's model worn over its design (Scripts/Corners); empty for the design's own look
+        public int Grow;                             // Let it grow's tier and one (GrowTier); 0 for a project the player planned themselves
 
         public bool Live => Stage != ProjectStage.Finished && Stage != ProjectStage.Abandoned;
 
