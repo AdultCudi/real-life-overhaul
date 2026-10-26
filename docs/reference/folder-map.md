@@ -100,7 +100,7 @@ The command-line build and checks.
 | `EconomyCheck/` | checks the economy's game-free parts: the rating, the terms, the fee, the credit file and its line in the save, the loans (see [the economy pages](../features/README.md#economy)), and every other feature's game-free rules |
 | `ContractCheck/` | checks the mod against a version of the game on disk: the game contract, the compiled references, the game's keys (see [After a game update](../contributing/after-a-game-update.md)) |
 | `StandardCheck/` | the rules of the engineering standard (`docs/standards`) that a program can check, against its `baseline.txt` (see [Checks](../contributing/checks.md)) |
-| `Shared/ModLanguages.cs` | the mod's nine languages by the game's codes (en, pt, zh-cn, de, fr, es, ru, nl, tr), linked into the checkers; de, fr, es, ru, nl and tr may lack keys, which the game reads in English (its fallback language) |
+| `Shared/ModLanguages.cs` | the mod's languages by the game's codes (en, pt, zh-cn, de, fr, es, ru, nl, tr, then pl and ko, which are listed in `FirstBatch` until their translation is merged), linked into the checkers; every language but en, pt and zh-cn may lack keys, which the game reads in English (its fallback language) |
 | `Workshop/locales.py` | the locale check of every language that is there (the gate's "LOCALES OK") |
 | `Workshop/` | the Workshop page's texts, [the style sheet](../../RealLifeOverhaul.Build/Workshop/STYLE.md), `check.pl` and the upload steps (`UPLOAD.md`) |
 | `Installer/` | the installer for players without the Workshop: `build-installer.ps1` and `RealLifeOverhaul.iss` |

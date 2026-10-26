@@ -7,8 +7,8 @@
 #                                English texts, so that those two are never short of a key; what it filled is listed as still
 #                                English until somebody translates it.
 #
-# The mod has nine languages (LANGUAGES). en, pt and zh-cn (REQUIRED) must be there with every key. German, French, Spanish,
-# Russian, Dutch and Turkish are checked as soon as their file is there, and may lack keys: a language without a file, or a key its file
+# The mod has eleven languages (LANGUAGES). en, pt and zh-cn (REQUIRED) must be there with every key. German, French, Spanish,
+# Russian, Dutch, Turkish, Polish and Korean are checked as soon as their file is there, and may lack keys: a language without a file, or a key its file
 # lacks, is read in English. The game looks a key up in the player's language and then in its fallback language, English
 # (Localizor.LocalizorManager.GetLocalization; LocalizorSettings.fallbackLanguage is "en"), and it reads a mod's
 # Locales/<code>.json for both (ContractCheck's LanguageChecks holds the game to this). What they lack is translated later
@@ -20,9 +20,10 @@
 # empty, has a dash or has more exclamation marks than the English; a notification (a key the sources raise with a
 # NotificationType, as CatalogueCheck's NoticeCheck finds them) is at most 240 characters; What's new's empty next row is that
 # language's NOTHING text, and its fixes are marked with that language's FIXED as often as the English marks them; and a text
-# is in the language's own words: Chinese and Russian texts must hold their own script, and a German, French, Spanish,
-# Portuguese, Dutch or Turkish text of four words or more may not be the English unchanged, unless its key is on ENGLISH_OK (texts that are only
-# names, kept in Latin letters). not-in-repo/translate/merge.py imports this file and refuses a translation by the same rules.
+# is in the language's own words: Chinese, Russian and Korean texts must hold their own script (Han, Cyrillic, Hangul), a Polish
+# text of twelve Latin words or more must hold a Polish letter (ą ć ę ł ń ó ś ź ż; the game's own pl.json has no text of that
+# length without one), and a German, French, Spanish, Portuguese, Dutch, Turkish or Polish text of four words or more may not
+# be the English unchanged, unless its key is on ENGLISH_OK (texts that are only names, kept in Latin letters). not-in-repo/translate/merge.py imports this file and refuses a translation by the same rules.
 import io
 import json
 import os
@@ -35,17 +36,27 @@ LOC = os.path.join(MOD, 'Locales')
 FILL = '--fill' in sys.argv
 # The mod's languages: the game's code (the file name), the language's name in English. English is the source.
 LANGUAGES = (('en', 'English'), ('pt', 'Brazilian Portuguese'), ('zh-cn', 'Simplified Chinese'), ('de', 'German'),
-             ('fr', 'French'), ('es', 'Spanish'), ('ru', 'Russian'), ('nl', 'Dutch'), ('tr', 'Turkish'))
+             ('fr', 'French'), ('es', 'Spanish'), ('ru', 'Russian'), ('nl', 'Dutch'), ('tr', 'Turkish'), ('pl', 'Polish'), ('ko', 'Korean'))
 REQUIRED = ('en', 'pt', 'zh-cn')
+# Languages whose first full translation is not merged yet (27 Oct 2026: Polish and Korean were added to the mod; the translation kit
+# in not-in-repo/translate fills their files). While a language is listed here its file holds only what the gate needs (What's new's
+# empty next row), the checkers (ModLanguages.FirstBatch, held to this list by ContractCheck and EconomyCheck) do not ask it for a complete
+# translation, and the Workshop description, the README, the Guide's Known limits page and the installer do not name it yet. Merge its
+# translation (merge.py <code>), then take it out of this tuple and out of ModLanguages.FirstBatch: from then on every rule applies.
+FIRST_BATCH = ('pl', 'ko')
 # What's new's next row when nothing is in it yet; the release scripts (make_version.py, next_join.py, next_dedupe.py) know these.
 NOTHING = {'en': 'Nothing yet.', 'pt': 'Nada ainda.', 'zh-cn': '还没有。', 'de': 'Noch nichts.', 'fr': "Rien pour l'instant.",
-           'es': 'Nada todavía.', 'ru': 'Пока ничего.', 'nl': 'Nog niets.', 'tr': 'Henüz yok.'}
+           'es': 'Nada todavía.', 'ru': 'Пока ничего.', 'nl': 'Nog niets.', 'tr': 'Henüz yok.', 'pl': 'Jeszcze nic.', 'ko': '아직 없음.'}
 # What's new: each fix begins with this (the change note and next_dedupe.py split on it). zh-cn's rows before 0.9 have none.
+# Polish and Korean follow the game's own words for a fix (its pl.json "naprawić" a bug, its ko.json 수정 in "호환성 수정", Compatibility Fix).
 FIXED = {'en': 'Fixed: ', 'pt': 'Corrigido: ', 'zh-cn': '已修复：', 'de': 'Behoben: ', 'fr': 'Corrigé : ', 'es': 'Corregido: ',
-         'ru': 'Исправлено: ', 'nl': 'Opgelost: ', 'tr': 'Düzeltildi: '}
+         'ru': 'Исправлено: ', 'nl': 'Opgelost: ', 'tr': 'Düzeltildi: ', 'pl': 'Naprawiono: ', 'ko': '수정: '}
 CHANGES = re.compile(r'reallife_changes_\d{3}_\d+$')
-SCRIPT = {'zh-cn': '[一-鿿]', 'ru': '[А-Яа-яЁё]'}   # a text in these languages must hold their own script
-SCRIPT_WORDS = {'zh-cn': 1, 'ru': 3}               # ... once it has this many Latin words (fewer: a name or a unit, as "Mbps")
+SCRIPT = {'zh-cn': '[一-鿿]', 'ru': '[А-Яа-яЁё]', 'ko': '[가-힣]',   # a text in these languages must hold their own script ...
+          'pl': '[ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]'}                       # ... (Polish: one of its own letters)
+SCRIPT_WORDS = {'zh-cn': 1, 'ru': 3, 'ko': 4, 'pl': 12}   # ... once it has this many Latin words (fewer: a name or a unit, as "Mbps"; the game's own ko.json
+                                                          # has no text of 4 Latin words without Hangul, nor its pl.json one of 12 without a Polish letter)
+SCRIPT_ONLY = ('zh-cn', 'ru', 'ko')                       # languages whose own script cannot be the English unchanged (the others also fail on the English unchanged)
 SAME_WORDS = 4                                     # a Latin-script translation identical to an English text of this many words is untranslated
 NOTICE_MOST = 240                                  # characters: a toast holds about 240 (Workshop/STYLE.md, NoticeCheck)
 # Texts that may stay as the English in any translation: placeholders alone, version numbers, and invented names kept in Latin letters.
@@ -181,7 +192,7 @@ def text_faults(code, key, v, t, notices=()):
         if code in SCRIPT:
             if latin_words(t) >= SCRIPT_WORDS[code] and (t == v or not re.search(SCRIPT[code], t)):
                 bad.append('not translated (no %s letters; if the text is only a name, its key goes on ENGLISH_OK in locales.py)' % dict(LANGUAGES)[code])
-        elif t == v and latin_words(v) >= SAME_WORDS:
+        if code not in SCRIPT_ONLY and t == v and latin_words(v) >= SAME_WORDS:
             bad.append('the English unchanged (if the text is only a name, its key goes on ENGLISH_OK in locales.py)')
     return bad
 

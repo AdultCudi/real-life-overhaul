@@ -5,21 +5,28 @@ using IoPath = System.IO.Path;
 using System.Text.RegularExpressions;
 using RealLifeOverhaul;
 
-// Dutch and Turkish (nl, tr), the two languages added after German, French, Spanish and Russian. First, every list of the
-// mod's languages names them where it names the others: ModLanguages, Workshop/locales.py's languages, What's new marks and
-// empty rows (held to the checkers' own FixMarks and NothingYet), the installer's languages and each of its messages, the
-// Workshop description's and the README's languages line and the Guide's Known limits page. Then their files are as complete
-// as the other translations: every key German, French, Spanish and Russian all have, and no text left as the English unless
-// its key is on locales.py's ENGLISH_OK. Then their What's new rows: every numbered row the others have, under the same
-// version title, with the language's own fix mark as often as the English has "Fixed: ", and the next row as locales.py
-// wants it. Last, What's new tells of the two languages in every language.
+// Dutch and Turkish (nl, tr), the two languages added after German, French, Spanish and Russian, and Polish and Korean (pl,
+// ko), added after them. First, every list of the mod's languages names them where it names the others: ModLanguages,
+// Workshop/locales.py's languages and FIRST_BATCH, What's new marks and empty rows (held to the checkers' own FixMarks and
+// NothingYet), the installer's languages and each of its messages, the Workshop description's and the README's languages line
+// and the Guide's Known limits page (these three and the installer name the languages out of their first batch only). Then
+// their files are as complete as the other translations: every key German, French, Spanish and Russian all have, and no text
+// left as the English unless its key is on locales.py's ENGLISH_OK. Then their What's new rows: every numbered row the others
+// have, under the same version title, with the language's own fix mark as often as the English has "Fixed: ", and the next row
+// as locales.py wants it. Last, What's new tells of Dutch and Turkish in every language.
+//
+// Polish and Korean are held by these whole-file rules and by locales.py, never by a line written by hand in each feature's
+// check: every What's new row of the English must be in their file under the same key, with their own fix marks as often as the
+// English, so a feature's line is in them whenever the row is. While a language is in its first batch (ModLanguages.FirstBatch,
+// locales.py's FIRST_BATCH: its translation is not merged yet) its file holds only what the gate needs, and the rules that
+// want a complete translation wait; empty the two lists when it is merged and every one of them applies.
 internal static partial class Program
 {
     // The languages added on 18 Oct 2026, and the ones whose keys they are held to.
-    private static readonly string[] AddedLanguages = { "nl", "tr" };
+    private static readonly string[] AddedLanguages = { "nl", "tr", "pl", "ko" };
     private static readonly string[] EarlierLaterLanguages = { "de", "fr", "es", "ru" };
 
-    // What's new's line for the two languages, by a piece of it in each language (in the order of ModLanguages.All).
+    // What's new's line for the two languages, by a piece of it in each language (in the order of ModLanguages.PerFeature).
     private static readonly string[] AddedLanguagesLine =
     {
         "The mod can now be read in Dutch and Turkish too", "O mod agora pode ser lido em holandês e turco", "本模组现在也可以用荷兰语和土耳其语阅读",
@@ -63,6 +70,11 @@ internal static partial class Program
             Check(words != null, "later languages: Locales/" + code + ".json is there");
             if (words != null)
             {
+                if (ModLanguages.InFirstBatch(code))
+                {
+                    FirstBatchLanguage(code, en, words);
+                    continue;
+                }
                 LaterLanguageComplete(code, en, words, earlier, englishOk);
                 LaterLanguageWhatsNew(code, en, words, earlier.Count > 0 ? earlier[0] : null);
             }
@@ -70,15 +82,15 @@ internal static partial class Program
         Check(LineEverywhere(AddedLanguagesLine), "later languages: What's new tells of Dutch and Turkish in some row of every language");
     }
 
-    // A feature's line (no fix mark), by a piece of it in each language in the order of ModLanguages.All, in some What's new
+    // A feature's line (no fix mark), by a piece of it in each language in the order of ModLanguages.PerFeature, in some What's new
     // row of each: the next row until a release numbers it into its own.
     private static bool LineEverywhere(string[] pieces)
     {
         Dictionary<string, string>[] langs = LanguageWords(out string[] codes);
-        bool all = codes.Length == ModLanguages.All.Length && pieces.Length == ModLanguages.All.Length;
+        bool all = codes.Length == ModLanguages.PerFeature.Length && pieces.Length == ModLanguages.PerFeature.Length;
         for (int l = 0; all && l < codes.Length; l++)
         {
-            all &= WhatsNewHas(langs[l], pieces[Array.IndexOf(ModLanguages.All, codes[l])]);
+            all &= WhatsNewHas(langs[l], pieces[Array.IndexOf(ModLanguages.PerFeature, codes[l])]);
         }
         return all;
     }
@@ -93,9 +105,13 @@ internal static partial class Program
     private static void LaterLanguagesListed(string root, string folder)
     {
         var all = new List<string>(ModLanguages.All);
-        Check(all.Count == 9 && all.IndexOf("nl") == 7 && all.IndexOf("tr") == 8, "later languages: ModLanguages.All ends with nl and tr (" + string.Join(", ", all) + ")");
+        var listed = new List<string>(ModLanguages.Listed());
+        Check(all.Count == 11 && all.IndexOf("nl") == 7 && all.IndexOf("tr") == 8 && all.IndexOf("pl") == 9 && all.IndexOf("ko") == 10 && string.Join(",", all.GetRange(0, 9)) == string.Join(",", ModLanguages.PerFeature),
+            "later languages: ModLanguages.All is the nine languages the feature checks write by hand, then pl and ko (" + string.Join(", ", all) + ")");
         Check(FixMarks.Count == all.Count && NothingYet.Count == all.Count && all.TrueForAll(c => FixMarks.ContainsKey(c) && NothingYet.ContainsKey(c)),
             "later languages: the checkers' What's new marks and empty rows have every language");
+        Check(ModLanguages.FirstBatch.Length == 0 || Array.TrueForAll(ModLanguages.FirstBatch, c => c == "pl" || c == "ko"),
+            "later languages: only pl and ko may be in their first batch (" + string.Join(", ", ModLanguages.FirstBatch) + ")");
 
         // locales.py: its languages with their names, its NOTHING and FIXED, the same as the checkers'.
         string locales = ReadOr(IoPath.Combine(root, @"RealLifeOverhaul.Build\Workshop\locales.py"));
@@ -107,6 +123,13 @@ internal static partial class Program
             names.Add(m.Groups[2].Value);
         }
         Check(string.Join(",", codes) == string.Join(",", all), "later languages: locales.py's LANGUAGES are ModLanguages.All (" + string.Join(", ", codes) + ")");
+        Match first = Regex.Match(locales, @"^FIRST_BATCH = \(([^)]*)\)", RegexOptions.Multiline);
+        var firstBatch = new List<string>();
+        foreach (Match m in Regex.Matches(first.Groups[1].Value, @"'([a-z-]+)'"))
+        {
+            firstBatch.Add(m.Groups[1].Value);
+        }
+        Check(first.Success && string.Join(",", firstBatch) == string.Join(",", ModLanguages.FirstBatch), "later languages: locales.py's FIRST_BATCH (" + string.Join(", ", firstBatch) + ") is ModLanguages.FirstBatch (" + string.Join(", ", ModLanguages.FirstBatch) + ")");
         foreach ((string dict, Dictionary<string, string> want) in new[] { ("NOTHING", NothingYet), ("FIXED", FixMarks) })
         {
             Dictionary<string, string> got = PythonDict(locales, dict);
@@ -129,7 +152,7 @@ internal static partial class Program
         {
             setup.Add(m.Groups[1].Value);
         }
-        var wantSetup = all.FindAll(c => c != "zh-cn");
+        var wantSetup = listed.FindAll(c => c != "zh-cn");
         Check(string.Join(",", setup) == string.Join(",", wantSetup), "later languages: the installer has a language for each of the mod's but Simplified Chinese (" + string.Join(", ", setup) + ")");
         var lacking = new List<string>();
         foreach (Match m in Regex.Matches(iss, @"^en\.([A-Za-z]+)=", RegexOptions.Multiline))
@@ -146,13 +169,22 @@ internal static partial class Program
             "later languages: every installer message is there in each of its languages" + (lacking.Count > 0 ? " (lacking: " + string.Join(", ", lacking) + ")" : string.Empty));
 
         // The languages line, as one list: the Workshop description, the README and the Guide's Known limits page.
-        string list = names.Count > 1 ? string.Join(", ", names.GetRange(0, names.Count - 1)) + " and " + names[names.Count - 1] : string.Empty;
+        // Only the languages out of their first batch: the players are told of Polish and Korean when their translation is in.
+        var shownNames = new List<string>();
+        for (int i = 0; i < codes.Count && i < names.Count; i++)
+        {
+            if (listed.Contains(codes[i]))
+            {
+                shownNames.Add(names[i]);
+            }
+        }
+        string list = shownNames.Count > 1 ? string.Join(", ", shownNames.GetRange(0, shownNames.Count - 1)) + " and " + shownNames[shownNames.Count - 1] : string.Empty;
         Check(names.Count == all.Count && ReadOr(IoPath.Combine(root, @"RealLifeOverhaul.Build\Workshop\description.txt")).Contains("[b]Languages: " + list + "[/b]"),
-            "later languages: the Workshop description's languages line names every language (" + list + ")");
-        Check(names.Count == all.Count && ReadOr(IoPath.Combine(root, "README.md")).Contains(list + ";"), "later languages: the README's languages line names every language");
+            "later languages: the Workshop description's languages line names every language out of its first batch (" + list + ")");
+        Check(names.Count == all.Count && ReadOr(IoPath.Combine(root, "README.md")).Contains(list + ";"), "later languages: the README's languages line names every language out of its first batch");
         Dictionary<string, string> en = LoadWords(IoPath.Combine(folder, "en.json"));
         Check(en != null && names.Count == all.Count && en.TryGetValue("reallife_guide_limits", out string limits) && limits.Contains("- " + list + ". "),
-            "later languages: the Guide's Known limits page names every language");
+            "later languages: the Guide's Known limits page names every language out of its first batch");
     }
 
     // A Python dict of code and text, as locales.py writes NOTHING and FIXED (single or double quotes).
@@ -165,6 +197,27 @@ internal static partial class Program
             got[m.Groups[1].Value] = m.Groups[2].Success ? m.Groups[2].Value : m.Groups[3].Value;
         }
         return got;
+    }
+
+    // ---------------------------------------------------------------- a language in its first batch
+
+    // What the gate wants of a language whose translation is not merged yet: only keys of the English, and What's new's next
+    // row as locales.py has it. Its file holds nothing else yet (the rest reads in English, as the game reads a missing key).
+    private static void FirstBatchLanguage(string code, Dictionary<string, string> en, Dictionary<string, string> words)
+    {
+        var extra = new List<string>();
+        foreach (string key in words.Keys)
+        {
+            if (!en.ContainsKey(key))
+            {
+                extra.Add(key);
+            }
+        }
+        Check(extra.Count == 0, "later languages: " + code + ".json (first batch) has no key the English lacks" + (extra.Count > 0 ? " (" + string.Join(", ", extra.GetRange(0, Math.Min(6, extra.Count))) + ")" : string.Empty));
+        string next = en.TryGetValue("reallife_changes_next", out string n) ? n : null;
+        string own = words.TryGetValue("reallife_changes_next", out string o) ? o : null;
+        Check(next != null && own != null && (next != NothingYet["en"] || own == NothingYet[code]) && Count(own, FixMarks[code]) <= Count(next, FixMarks["en"]),
+            "later languages: " + code + " (first batch) has What's new's next row as the empty text, or its fixes marked " + FixMarks[code].Trim() + " no more often than the English marks them");
     }
 
     // ---------------------------------------------------------------- as complete as the other translations
