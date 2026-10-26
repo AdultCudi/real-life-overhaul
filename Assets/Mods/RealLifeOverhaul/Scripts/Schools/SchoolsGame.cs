@@ -40,7 +40,13 @@ namespace RealLifeOverhaul.Schools
             new PieceTemplate { Kind = (int)CampusPieceKind.Post, Root = "Roads", Name = "Playground_Fence_ModularFinal", X = -1659.65f, Z = -1168.76f, Y = 0f, Room = Vector3.zero },
             new PieceTemplate { Kind = (int)CampusPieceKind.Court, Root = "BuildingBlocks", Name = "SM_BasketballCourt", X = -452.71f, Z = -326.32f, Y = 0.03f, Room = Vector3.zero },
             new PieceTemplate { Kind = (int)CampusPieceKind.Hoop, Root = "BuildingBlocks", Name = "Prefab_BasketballHoop", X = -454.67f, Z = -326.22f, Y = 1.15f, Room = new Vector3(1.2f, 3f, 0.9f) },
-            new PieceTemplate { Kind = (int)CampusPieceKind.Bench, Root = "BuildingBlocks", Name = "SleepingBench", X = -397.79f, Z = -269.32f, Y = 0.03f, Room = new Vector3(2.4f, 1.2f, 0.8f) },
+            // The game keeps its pavement benches under a scene root of their own, "SleepingBench" (props_scan, 25 Oct 2026: SleepingBench/SleepingBench (11)),
+            // the one the street furniture and the parks take. The campus once looked for it under BuildingBlocks at a place no bench stands.
+            new PieceTemplate
+            {
+                Kind = (int)CampusPieceKind.Bench, Root = GamePieces.BenchRoot, Name = GamePieces.BenchName, X = GamePieces.BenchX, Z = GamePieces.BenchZ, Y = 0.03f,
+                Room = new Vector3(2.4f, 1.2f, 0.8f), Within = GamePieces.BenchReach
+            },
             new PieceTemplate
             {
                 Kind = (int)CampusPieceKind.Tree, Root = "Vegetation", Name = "SM_PavementHoleforTrees_Broadleaf M1", X = 148.67f, Z = 475.57f, Y = 0.05f, Room = new Vector3(1.2f, 3f, 1.2f)
@@ -187,8 +193,12 @@ namespace RealLifeOverhaul.Schools
         /// <summary>One of the campus's own buildings as a design of the city's fitted to its plot (no door: the school's own).</summary>
         internal static CopyHandle Plot(CampusBlockPlot plot)
         {
+            // Null while the copy engine is not there (its option off, or its director not made yet): the caller asks again when it is.
             return BuildingCopies.PlaceOnPlot(null, null, new Vector3(plot.X, UptownLots.GroundY, plot.Z), plot.Yaw, (int)plot.Width, (int)plot.Depth, Owner);
         }
+
+        /// <summary>True while the copy engine takes requests: its option is on and its director is made.</summary>
+        internal static bool CopiesAvailable => BuildingCopies.Available;
 
         /// <summary>A copy's footprint cut out of the walking meshes once it stands: its walls' box, a little inside. False while it does not stand.</summary>
         internal static bool CutCopy(CopyHandle handle)

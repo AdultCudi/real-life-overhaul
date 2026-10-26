@@ -121,6 +121,18 @@ namespace RealLifeOverhaul.Schools
         }
 
         /// <summary>
+        /// The one line for Player.log about a building of the campus that is the city's look alone, said once it is known:
+        /// the design it wears, or why it was not made, or why the copy engine was never asked.
+        /// </summary>
+        public static string BlockLine(string name, bool asked, bool stands, string design, string why)
+        {
+            string reason = string.IsNullOrEmpty(why) ? "no reason given" : why;
+            return !asked ? name + " was not asked of the copy engine: " + reason
+                : stands ? name + " stands as the city's design " + (design ?? "?")
+                : name + " was not made: " + reason;
+        }
+
+        /// <summary>
         /// Every piece stood on the campus (into the list, cleared): the fence round the block in modules, broken by the main
         /// gate, the side gate and the field's gate, a post at each side of a gate; the court and its hoops in the courtyard;
         /// trees and benches round it; the playing field at the north end.

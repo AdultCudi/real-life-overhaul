@@ -35,6 +35,15 @@ namespace RealLifeOverhaul.Uptown
     {
         public const float DefaultWithin = 6f;   // m from its fixed place a template must be: farther, and the game's scene has moved
 
+        // The game's pavement bench (OutsideBenchController), as the street furniture, the parks and the campus all take it: kept under a scene root of its
+        // own, "SleepingBench", whose copy "SleepingBench (11)" stands at this place (props_scan, 25 Oct 2026, Build 3682). The whole group is
+        // switched on or off with the far districts, so the reach is wide.
+        public const string BenchRoot = "SleepingBench";
+        public const string BenchName = "SleepingBench";
+        public const float BenchX = 214.40f;   // m: where the one taken stands
+        public const float BenchZ = 99.39f;
+        public const float BenchReach = 40f;   // m from that place a bench may be: farther, and the game's scene has moved
+
         private static readonly List<GameObject> SceneRoots = new List<GameObject>(64);
         private static readonly List<string> Names = new List<string>(16);
         private static readonly List<bool> Seen = new List<bool>(16);
