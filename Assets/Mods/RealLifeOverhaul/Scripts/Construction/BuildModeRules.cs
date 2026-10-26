@@ -25,6 +25,17 @@ namespace RealLifeOverhaul.Construction
         Confirming = 5    // the game's question box is up
     }
 
+    /// <summary>What the layer shows, as Cities Skylines' info views (the modal's view buttons). Saved nowhere.</summary>
+    public enum BuildView
+    {
+        Status = 0,      // for sale, the player's land and buildings, other owners', sites under way
+        Zoning = 1,      // every cell by its council zoning, in the game's colours for its building types
+        Value = 2,       // land value: each cell's price among the district's
+        Occupancy = 3,   // buildings with room to let, and full ones
+        UnderWay = 4,    // buildings under construction, their share built
+        Count = 5
+    }
+
     /// <summary>What happens to build mode.</summary>
     public enum BuildInput
     {
@@ -76,46 +87,156 @@ namespace RealLifeOverhaul.Construction
     /// </summary>
     public static class BuildModeRules
     {
-        // ---- the palette: one texel each in the layer's colour map
+        // ---- the palette: one texel each in the layer's colour map; a cell's inside takes a fill entry, its edge a line entry
 
-        public const int ForSale = 0;
-        public const int Taken = 1;
-        public const int Yours = 2;
-        public const int Homes = 3;        // Yours painted, or a building's use, by BuildUse + Homes
-        public const int Shops = 4;
-        public const int Offices = 5;
-        public const int Warehouses = 6;
-        public const int Cleared = 7;
-        public const int UnderWay = 8;     // a site under construction
-        public const int Developer = 9;    // the city's developers' or a redevelopment's
-        public const int Yard = 10;        // behind a building, its own
-        public const int Picked = 11;
-        public const int PickedBad = 12;
-        public const int ZoneWaits = 13;   // a use asked of the council
-        public const int Footprint = 14;   // the ghost's cells
-        public const int Nothing = 15;     // not drawn
-        public const int PaletteSize = 16;
+        public const int ForSale = 0;        // free land the player may buy
+        public const int Taken = 1;          // another owner's building
+        public const int YourLand = 2;       // the player's land with no building: a light fill in their colour
+        public const int YourBuilding = 3;   // the player's building: a solid fill in their colour
+        public const int Homes = 4;          // a use's zoning, by BuildUse + Homes, in the game's own colour for its building type
+        public const int Shops = 5;
+        public const int Offices = 6;
+        public const int Warehouses = 7;
+        public const int Mixed = 8;          // zoned for several uses, the plan's main one not among them
+        public const int NoZone = 9;         // zoned for nothing
+        public const int UnderWay = 10;      // a site under construction, the part still to build
+        public const int UnderWayDone = 11;  // ... the part built, rows by the share done
+        public const int Developer = 12;     // the city's developers' or a redevelopment's
+        public const int Yard = 13;          // ground nobody sells (kept by the plan)
+        public const int Picked = 14;
+        public const int PickedBad = 15;
+        public const int Footprint = 16;     // the ghost's cells
+        public const int Vacant = 17;        // occupancy: a building with room to let
+        public const int Let = 18;           // occupancy: a building with nobody to find
+        public const int Nothing = 19;       // not drawn
+        public const int Value = 20;         // land value: Value + 0 (lowest) to Value + ValueSteps - 1 (highest)
+        public const int ValueSteps = 5;
+        public const int LinePlain = 25;     // the thin grid line between cells
+        public const int LineForSale = 26;   // round land for sale: bright, so buyable land reads on the dark map
+        public const int LineZoned = 27;     // the player's land with a use in force: green (the owner, 26 Oct 2026)
+        public const int LineDemolished = 28; // ground cleared, or a building coming down: red (the owner, 26 Oct 2026)
+        public const int LineYours = 29;     // the player's land and buildings: their colour
+        public const int LineWaits = 30;     // a use asked of the council
+        public const int LinePicked = 31;
+        public const int PaletteSize = 32;
 
-        /// <summary>The palette's colours (red, green, blue, alpha, 0 to 255): white for sale, grey taken, the zones as Cities Skylines colours them.</summary>
+        /// <summary>
+        /// The palette (red, green, blue, alpha, 0 to 255). The four uses, for sale and the player's colour are the game's own
+        /// (BuildingTypeData.mapFilterColor, CityMapFilters.forSaleFilterColor and playerFilterColor), written over these at the
+        /// first opening (BuildModeGame.GameColours); these stand offline and wherever the game's colour is not found.
+        /// </summary>
         public static readonly byte[][] Palette =
         {
-            new byte[] { 242, 242, 242, 90 },   // for sale
-            new byte[] { 90, 92, 98, 60 },      // taken
-            new byte[] { 178, 128, 255, 130 },  // yours
-            new byte[] { 76, 217, 89, 140 },    // homes
-            new byte[] { 64, 128, 255, 140 },   // shops
-            new byte[] { 51, 217, 230, 140 },   // offices
-            new byte[] { 255, 204, 38, 140 },   // warehouses
-            new byte[] { 217, 140, 77, 130 },   // cleared
-            new byte[] { 255, 128, 26, 150 },   // under way
-            new byte[] { 230, 77, 77, 115 },    // the developers'
-            new byte[] { 64, 64, 64, 40 },      // yard
-            new byte[] { 255, 255, 255, 190 },  // picked
-            new byte[] { 255, 38, 38, 180 },    // picked, no site
-            new byte[] { 204, 204, 128, 115 },  // a use waits on the council
-            new byte[] { 102, 255, 102, 180 },  // the ghost's cells
-            new byte[] { 0, 0, 0, 0 }           // nothing
+            new byte[] { 242, 242, 242, 120 },  // for sale
+            new byte[] { 60, 64, 72, 120 },     // another owner's building
+            new byte[] { 178, 128, 255, 80 },   // your land
+            new byte[] { 178, 128, 255, 205 },  // your building
+            new byte[] { 76, 217, 89, 150 },    // homes
+            new byte[] { 255, 160, 64, 150 },   // shops
+            new byte[] { 64, 128, 255, 150 },   // offices (blue in the game)
+            new byte[] { 255, 204, 38, 150 },   // warehouses
+            new byte[] { 214, 90, 214, 150 },   // mixed
+            new byte[] { 150, 150, 150, 70 },   // no zoning
+            new byte[] { 255, 140, 30, 110 },   // under way, still to build
+            new byte[] { 255, 170, 60, 220 },   // under way, built
+            new byte[] { 130, 130, 150, 140 },  // the developers'
+            new byte[] { 50, 50, 50, 50 },      // ground nobody sells
+            new byte[] { 255, 255, 255, 200 },  // picked
+            new byte[] { 255, 60, 60, 190 },    // picked, no site
+            new byte[] { 110, 255, 110, 190 },  // the ghost's cells
+            new byte[] { 240, 190, 90, 175 },   // vacant
+            new byte[] { 90, 200, 140, 150 },   // let
+            new byte[] { 0, 0, 0, 0 },          // nothing
+            new byte[] { 40, 60, 140, 160 },    // land value, lowest
+            new byte[] { 50, 130, 190, 160 },
+            new byte[] { 90, 190, 150, 160 },
+            new byte[] { 200, 210, 90, 160 },
+            new byte[] { 255, 170, 60, 170 },   // land value, highest
+            new byte[] { 255, 255, 255, 70 },   // the plain grid line
+            new byte[] { 255, 255, 255, 190 },  // round land for sale
+            new byte[] { 70, 220, 100, 255 },   // zoned: green
+            new byte[] { 235, 60, 60, 255 },    // demolished: red
+            new byte[] { 178, 128, 255, 255 },  // yours
+            new byte[] { 240, 190, 90, 255 },   // waits on the council
+            new byte[] { 255, 255, 255, 255 }   // picked
         };
+
+        /// <summary>Colours the mixed zoning may take: the first far from every colour the game gives its types and the player.</summary>
+        public static readonly byte[][] MixedChoices =
+        {
+            new byte[] { 214, 90, 214 }, new byte[] { 255, 110, 170 }, new byte[] { 150, 100, 255 }, new byte[] { 120, 255, 230 }, new byte[] { 255, 255, 140 }
+        };
+
+        public const int ColourApart = 9000;   // squared red, green and blue distance two colours of the layer keep to read apart
+
+        /// <summary>The squared distance between two colours (red, green, blue).</summary>
+        public static int Apart(byte[] a, byte[] b)
+        {
+            int r = a[0] - b[0], g = a[1] - b[1], u = a[2] - b[2];
+            return r * r + g * g + u * u;
+        }
+
+        /// <summary>The first of the mixed zoning's choices far from every one of <paramref name="taken"/> (the game's colours); the farthest when none is.</summary>
+        public static byte[] MixedColour(byte[][] taken)
+        {
+            byte[] best = MixedChoices[0];
+            int bestNear = -1;
+            for (int i = 0; i < MixedChoices.Length; i++)
+            {
+                int near = int.MaxValue;
+                for (int k = 0; taken != null && k < taken.Length; k++)
+                {
+                    if (taken[k] != null)
+                    {
+                        near = Math.Min(near, Apart(MixedChoices[i], taken[k]));
+                    }
+                }
+                if (near >= ColourApart)
+                {
+                    return MixedChoices[i];
+                }
+                if (near > bestNear)
+                {
+                    bestNear = near;
+                    best = MixedChoices[i];
+                }
+            }
+            return best;
+        }
+
+        /// <summary>The views' names, by BuildView (the modal's view buttons, as Cities Skylines' info views).</summary>
+        public static readonly string[] ViewKeys =
+        {
+            "reallife_bld_mode_view_status", "reallife_bld_mode_view_zoning", "reallife_bld_mode_view_value", "reallife_bld_mode_view_occupancy", "reallife_bld_mode_view_underway"
+        };
+
+        /// <summary>The view a tool opens on: Buy land and Zone on the zoning (the owner, 26 Oct 2026: "How do I see the zoning?"), the rest on the land's status.</summary>
+        public static BuildView ViewFor(BuildTool tool) => tool == BuildTool.Land || tool == BuildTool.Zone ? BuildView.Zoning : BuildView.Status;
+
+        /// <summary>The palette entry a zoning shows in: a use painted, else none, else the plan's main use where it is zoned, else the one use, else mixed.</summary>
+        public static int ZoneFill(int zones, int paint, int mainUse)
+        {
+            if (paint > 0)
+            {
+                return Homes + Math.Min(3, paint - 1);
+            }
+            if (zones == 0)
+            {
+                return NoZone;
+            }
+            if (mainUse >= 0 && mainUse < 4 && (zones & (1 << mainUse)) != 0)
+            {
+                return Homes + mainUse;
+            }
+            for (int u = 0; u < 4; u++)
+            {
+                if (zones == 1 << u)
+                {
+                    return Homes + u;
+                }
+            }
+            return Mixed;
+        }
 
         // The warnings of a placed design (bits).
         public const int WarnNotYours = 1;
@@ -226,45 +347,210 @@ namespace RealLifeOverhaul.Construction
             public bool PaintWaits;  // the paint's use is asked of the council
             public bool Cleared;     // ground the player cleared
             public bool UnderWay;    // a site under construction on it
+            public int Progress;     // ... its share built, 0 to 100
             public bool Developer;   // the city's developers or a redevelopment on it
             public bool Building;    // a building of the district stands there
             public bool MyBuilding;  // ... the player's
+            public bool Demolishing; // ... coming down (a demolition under way)
+            public bool Vacant;      // ... with room to let (for rent, nobody in)
             public int Use;          // that building's use (BuildUse), -1 for none known
-            public bool Back;        // its rows past MineRows are behind the player's site (for sale only to the player)
+            public int Zones;        // the uses the council zones the column for (BuildCatalogue.Zone bits)
+            public int MainUse;      // the plan's main use there (BuildCatalogue.ClassUse), -1 for none
+            public int ValueStep;    // its land's price among the district's, 0 (lowest) to ValueSteps - 1
         }
 
-        /// <summary>The palette entry of one cell of a column: a site under way and the developers' whole, the player's rows by their paint, a building's by its use under the zone tool.</summary>
-        public static int Status(ColumnFacts c, int row, BuildTool tool)
+        /// <summary>
+        /// One cell's look in a view: its fill and its edge. The player's land and their building read apart (a light fill in their
+        /// colour, a solid one), another owner's building in grey, land for sale white with a bright edge; a zoned cell's edge is
+        /// green, a demolished or falling one's red (the owner, 26 Oct 2026); a site under way shows its share built by its rows.
+        /// </summary>
+        public static void Look(ColumnFacts c, int row, int rows, BuildView view, out int fill, out int line)
         {
+            line = LinePlain;
+            bool behind = c.Mine && row >= c.MineRows;   // behind the player's rows: theirs to buy deeper, nobody else's
+            switch (view)
+            {
+                case BuildView.Zoning:
+                    if (c.Mine && !behind)
+                    {
+                        fill = ZoneFill(c.Zones, c.PaintWaits ? 0 : c.Paint, c.MainUse);
+                        line = c.Cleared ? LineDemolished : c.Paint > 0 ? (c.PaintWaits ? LineWaits : LineZoned) : LineYours;
+                        return;
+                    }
+                    if (c.Building)
+                    {
+                        fill = c.Use >= 0 ? Homes + Math.Min(3, c.Use) : ZoneFill(c.Zones, 0, c.MainUse);
+                        line = c.Demolishing ? LineDemolished : c.MyBuilding ? LineYours : LinePlain;
+                        return;
+                    }
+                    fill = ZoneFill(c.Zones, 0, c.MainUse);
+                    line = c.Free || behind ? LineForSale : LinePlain;
+                    return;
+                case BuildView.Value:
+                    fill = Value + Math.Max(0, Math.Min(ValueSteps - 1, c.ValueStep));
+                    line = c.Free || behind ? LineForSale : c.Mine ? LineYours : LinePlain;
+                    return;
+                case BuildView.Occupancy:
+                    if (c.Building)
+                    {
+                        fill = c.Vacant ? Vacant : Let;
+                        line = c.MyBuilding ? LineYours : LinePlain;
+                        return;
+                    }
+                    fill = Nothing;
+                    line = c.Free || behind ? LineForSale : c.Mine ? LineYours : LinePlain;
+                    return;
+                case BuildView.UnderWay:
+                    if (c.UnderWay)
+                    {
+                        fill = Built(row, rows, c.Progress) ? UnderWayDone : UnderWay;
+                        line = c.Demolishing ? LineDemolished : c.Mine || c.MyBuilding ? LineYours : LinePlain;
+                        return;
+                    }
+                    fill = c.Developer ? Developer : Nothing;
+                    line = c.Demolishing ? LineDemolished : LinePlain;
+                    return;
+            }
             if (c.UnderWay)
             {
-                return UnderWay;
+                fill = Built(row, rows, c.Progress) ? UnderWayDone : UnderWay;
+                line = c.Demolishing ? LineDemolished : c.Mine || c.MyBuilding ? LineYours : LinePlain;
+                return;
             }
             if (c.Developer)
             {
-                return Developer;
+                fill = Developer;
+                return;
             }
             if (c.Mine)
             {
-                if (row >= c.MineRows)
+                if (behind)
                 {
-                    return ForSale;   // behind the player's rows: theirs to buy deeper, nobody else's
+                    fill = ForSale;
+                    line = LineForSale;
+                    return;
+                }
+                if (c.Cleared)
+                {
+                    fill = YourLand;
+                    line = LineDemolished;
+                    return;
                 }
                 if (c.Paint > 0)
                 {
-                    return c.PaintWaits ? ZoneWaits : Homes + Math.Min(3, c.Paint - 1);
+                    fill = c.PaintWaits ? YourLand : Homes + Math.Min(3, c.Paint - 1);
+                    line = c.PaintWaits ? LineWaits : LineZoned;
+                    return;
                 }
-                return c.Cleared ? Cleared : Yours;
+                fill = YourLand;
+                line = LineYours;
+                return;
             }
             if (c.Building)
             {
-                if (c.MyBuilding)
-                {
-                    return tool == BuildTool.Zone && c.Use >= 0 ? Homes + Math.Min(3, c.Use) : Yours;
-                }
-                return tool == BuildTool.Zone && c.Use >= 0 ? Homes + Math.Min(3, c.Use) : Taken;
+                fill = c.MyBuilding ? YourBuilding : Taken;
+                line = c.Demolishing ? LineDemolished : c.MyBuilding ? LineYours : LinePlain;
+                return;
             }
-            return c.Free ? ForSale : Taken;
+            fill = c.Free ? ForSale : Yard;
+            line = c.Free ? LineForSale : LinePlain;
+        }
+
+        // A site under way is built from the street back: its first rows by the share done.
+        private static bool Built(int row, int rows, int progress)
+        {
+            int done = rows <= 0 ? 0 : (Math.Max(0, Math.Min(100, progress)) * rows + 50) / 100;
+            return row < done;
+        }
+
+        /// <summary>A price's land value step among the district's least and most (0 to ValueSteps - 1; all alike: the middle).</summary>
+        public static int ValueStepOf(long price, long least, long most)
+        {
+            if (most <= least)
+            {
+                return ValueSteps / 2;
+            }
+            long step = (Math.Max(least, Math.Min(most, price)) - least) * ValueSteps / (most - least + 1);
+            return (int)Math.Max(0, Math.Min(ValueSteps - 1, step));
+        }
+
+        /// <summary>A view's legend into the arrays given: each entry a fill (-1 for an edge alone), an edge and its text key; returns how many.</summary>
+        public static int Legend(BuildView view, int[] fills, int[] lines, string[] keys)
+        {
+            int n = 0;
+            switch (view)
+            {
+                case BuildView.Zoning:
+                    n = Key(fills, lines, keys, n, Homes, LinePlain, "reallife_bld_use_homes");
+                    n = Key(fills, lines, keys, n, Shops, LinePlain, "reallife_bld_use_shops");
+                    n = Key(fills, lines, keys, n, Offices, LinePlain, "reallife_bld_use_offices");
+                    n = Key(fills, lines, keys, n, Warehouses, LinePlain, "reallife_bld_use_warehouses");
+                    n = Key(fills, lines, keys, n, Mixed, LinePlain, "reallife_bld_mode_key_mixed");
+                    n = Key(fills, lines, keys, n, NoZone, LinePlain, "reallife_bld_mode_key_nozone");
+                    n = Key(fills, lines, keys, n, -1, LineForSale, "reallife_bld_mode_key_forsale_edge");
+                    n = Key(fills, lines, keys, n, -1, LineZoned, "reallife_bld_mode_key_zoned");
+                    n = Key(fills, lines, keys, n, -1, LineWaits, "reallife_bld_mode_key_waits");
+                    n = Key(fills, lines, keys, n, -1, LineDemolished, "reallife_bld_mode_key_demolished");
+                    break;
+                case BuildView.Value:
+                    n = Key(fills, lines, keys, n, Value, LinePlain, "reallife_bld_mode_key_value_low");
+                    n = Key(fills, lines, keys, n, Value + ValueSteps - 1, LinePlain, "reallife_bld_mode_key_value_high");
+                    n = Key(fills, lines, keys, n, -1, LineForSale, "reallife_bld_mode_key_forsale_edge");
+                    break;
+                case BuildView.Occupancy:
+                    n = Key(fills, lines, keys, n, Let, LinePlain, "reallife_bld_mode_key_let");
+                    n = Key(fills, lines, keys, n, Vacant, LinePlain, "reallife_bld_mode_key_vacant");
+                    n = Key(fills, lines, keys, n, -1, LineYours, "reallife_bld_mode_key_yours_edge");
+                    break;
+                case BuildView.UnderWay:
+                    n = Key(fills, lines, keys, n, UnderWayDone, LinePlain, "reallife_bld_mode_key_built");
+                    n = Key(fills, lines, keys, n, UnderWay, LinePlain, "reallife_bld_mode_key_tobuild");
+                    n = Key(fills, lines, keys, n, Developer, LinePlain, "reallife_bld_mode_key_developer");
+                    n = Key(fills, lines, keys, n, -1, LineDemolished, "reallife_bld_mode_key_demolished");
+                    break;
+                default:
+                    n = Key(fills, lines, keys, n, ForSale, LineForSale, "reallife_bld_mode_key_forsale");
+                    n = Key(fills, lines, keys, n, YourLand, LineYours, "reallife_bld_mode_key_yourland");
+                    n = Key(fills, lines, keys, n, YourBuilding, LineYours, "reallife_bld_mode_key_yourbuilding");
+                    n = Key(fills, lines, keys, n, Taken, LinePlain, "reallife_bld_mode_key_taken");
+                    n = Key(fills, lines, keys, n, UnderWay, LinePlain, "reallife_bld_mode_key_underway");
+                    n = Key(fills, lines, keys, n, Developer, LinePlain, "reallife_bld_mode_key_developer");
+                    n = Key(fills, lines, keys, n, -1, LineZoned, "reallife_bld_mode_key_zoned");
+                    n = Key(fills, lines, keys, n, -1, LineDemolished, "reallife_bld_mode_key_demolished");
+                    break;
+            }
+            return n;
+        }
+
+        public const int LegendMost = 12;   // entries a view's legend has at most
+
+        private static int Key(int[] fills, int[] lines, string[] keys, int n, int fill, int line, string key)
+        {
+            if (n >= fills.Length || n >= lines.Length || n >= keys.Length)
+            {
+                return n;
+            }
+            fills[n] = fill;
+            lines[n] = line;
+            keys[n] = key;
+            return n + 1;
+        }
+
+        /// <summary>
+        /// The cells picked as each column's depth (-1 none): a cell added takes its column to it from the street; a picked cell
+        /// pressed again lets it and every cell behind it go (the add rule reversed); a column of another strip starts afresh.
+        /// Returns true when anything changed.
+        /// </summary>
+        public static bool Toggle(int[] depth, int column, int row, bool remove)
+        {
+            if (column < 0 || column >= depth.Length || row < 0)
+            {
+                return false;
+            }
+            int had = depth[column];
+            int now = remove ? (had >= row ? row - 1 : had) : Math.Max(had, row);
+            depth[column] = now;
+            return now != had;
         }
 
         /// <summary>The warnings of a design placed on a footprint (bits of the Warn constants).</summary>
