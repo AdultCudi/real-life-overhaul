@@ -744,7 +744,7 @@ internal static partial class Program
         {
             keys.Add(m.Groups[1].Value);
         }
-        bool there = en != null && pt != null && zh != null && keys.Count == 57 && LifeText.District == UptownId;
+        bool there = en != null && pt != null && zh != null && keys.Count == 65 && LifeText.District == UptownId;
         string missing = null;
         bool short240 = true;
         foreach (string key in keys)

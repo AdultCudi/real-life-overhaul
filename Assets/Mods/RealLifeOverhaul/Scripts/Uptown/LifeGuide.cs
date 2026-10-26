@@ -27,6 +27,8 @@ namespace RealLifeOverhaul.Uptown
                 .Test("reallife_uptown_test_save", LifeDirector.TestSave)
                 .Check("reallife_uptown_test_specials", LifeDirector.TestSpecials, "Uptown check (special places)")
                 .Test("reallife_uptown_test_special_go", LifeDirector.TestSpecialGo)
+                .Check("reallife_uptown_test_dealer", LifeDirector.TestDealer, "Uptown check (dealership)")
+                .Test("reallife_uptown_test_dealer_sit", LifeDirector.TestDealerSit)
                 .Check("reallife_uptown_test_offices", LifeDirector.TestOffices, "Uptown check (builders' offices)")
                 .Check("reallife_uptown_test_row", LifeDirector.TestRow, "Uptown check (map row)")
                 .Check("reallife_uptown_test_cost", LifeDirector.TestCost, "Uptown check (frame cost)", RunPlace.UptownLot)

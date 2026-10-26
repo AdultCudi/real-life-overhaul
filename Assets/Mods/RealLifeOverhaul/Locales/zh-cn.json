@@ -22429,7 +22429,7 @@
   "reallife_hire_test_orphan_fail": "测试失败：读取城市商家时被一条没有建筑的记录绊住了。日志中写明了是哪一处。",
   "reallife_hire_test_orphan_off": "请先读取存档。此测试不能在 Going Public 联机中运行。",
   "reallife_changes_next_title": "下一版本",
-  "reallife_changes_next": "会生长的建筑：上城的开发商和对手大亨会在市议会分区、需要某种用途的空地上建造，一次建几栋，他们的建筑会找到租户，空置时则会变得破败；“让它生长”会按基础、标准或高档预算，在你自己已分区的土地上建一栋楼，租户向你付租金；分区现在逐个方格进行，有填充、矩形、画笔和取消分区工具；上城现在分成两个街区，上城和雪松高地，沿 5th Street 划分，各有自己的居民、顾客、租金、需求和市场，最大的商店也少了很多；旧存档会按位置迁入，租金和房契保持不变。",
+  "reallife_changes_next": "会生长的建筑：上城的开发商和对手大亨会在市议会分区、需要某种用途的空地上建造，一次建几栋，他们的建筑会找到租户，空置时则会变得破败；“让它生长”会按基础、标准或高档预算，在你自己已分区的土地上建一栋楼，租户向你付租金；分区现在逐个方格进行，有填充、矩形、画笔和取消分区工具；上城现在分成两个街区，上城和雪松高地，沿 5th Street 划分，各有自己的居民、顾客、租金、需求和市场，最大的商店也少了很多；旧存档会按位置迁入，租金和房契保持不变。 已修复：在上城的汽车经销店 Crest Motors 的办公桌前坐下会让游戏卡死，你被困在椅子上，购买面板也是空的，没有车辆也没有价格。经销店现在有了办公桌所需的车辆商店，带有车辆和价格；办公桌出错时会关闭面板并让你站起来。",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "已修复：当所有能容纳公用事业办公室的建筑都归你所有时，电力和供水账户改在公用事业应用中通过电话申请和恢复，价格不变，通知也会这样说明；一旦有建筑空出，办公室重新开放，应用会告诉你地点。 已修复：撤回申请后再次申请同一职位时，职业应用会打开已撤回的申请，无法参加面试。现在每份申请都有自己的一行，面试、录用和撤回都作用于有效的那份。 已修复：存档中若有一条营业记录对应的建筑在城市中不存在（可能是其他模组留下的），科技行业不再在每次读档时被关闭。模组现在在读取城市的商家时会跳过这类记录，在日志中只提一次它的地址，并且不改动它。",
   "reallife_co_mass_raise": "加薪",
@@ -25483,5 +25483,13 @@
   "reallife_neighborhood_cedarheights": "雪松高地",
   "reallife_uptown_ground_terminus_cedar": "雪松高地",
   "reallife_uptown_test_split": "上城：两个街区的普查",
-  "reallife_uptown_test_split_done": "街区普查：上城的顾客量为 {uptown}，雪松高地为 {cedar}，老街区最高为 {volume}，大型商店最多 {large} 家。普查详见 Player.log。"
+  "reallife_uptown_test_split_done": "街区普查：上城的顾客量为 {uptown}，雪松高地为 {cedar}，老街区最高为 {volume}，大型商店最多 {large} 家。普查详见 Player.log。",
+  "reallife_uptown_test_dealer": "上城：经销店的购买面板",
+  "reallife_uptown_test_dealer_sit": "上城：在经销店的办公桌前坐下再站起来",
+  "reallife_uptown_test_dealer_done": "{name}：购买面板列出了 {count} 辆车，第一辆 {price} 起。面板已再次关闭。",
+  "reallife_uptown_test_dealer_fail": "{name}：购买面板是空的。Player.log 会说明里面有什么。",
+  "reallife_uptown_test_dealer_none": "本次加载中没有经销店成为特殊场所，所以没有面板可打开。",
+  "reallife_uptown_test_dealer_away": "请先走进经销店，再按一次。",
+  "reallife_uptown_test_dealer_sit_done": "你在 {name} 坐下又站了起来，即使面板里什么都没有。",
+  "reallife_uptown_test_dealer_sit_fail": "有东西把你困在了 {name} 的办公桌前。Player.log 会说明原因。"
 }

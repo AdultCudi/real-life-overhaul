@@ -131,6 +131,7 @@ namespace RealLifeOverhaul.Uptown
             _armed = false;
             ForgetLeases();
             ForgetSpecials();
+            LifeGame.WatchReset();
             _stamp++;
         }
 
@@ -628,6 +629,7 @@ namespace RealLifeOverhaul.Uptown
             {
                 return;
             }
+            WatchDesk(now);   // a desk's dialog gone wrong closed, a player left seated stood up (LifeDirector.Dealer)
             if (Waiting.Count > 0)
             {
                 StandPending(false);   // a finished building waiting for a moment nobody sees its ground

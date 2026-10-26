@@ -2,13 +2,16 @@ using System.Collections.Generic;
 using Blueprints;
 using Buildings;
 using BusinessLayoutSets;
+using Dialogs;
 using Helpers;
 using Localizor;
 using RealLifeOverhaul.NewBuildings;
 using Streets;
 using UI;
+using UI.Smartphone.Apps.Contacts;
 using UnityEngine;
 using UnityEngine.UI;
+using LayoutItem = BusinessLayoutSets.Item;
 
 namespace RealLifeOverhaul.Uptown
 {
@@ -36,6 +39,7 @@ namespace RealLifeOverhaul.Uptown
             spec.ServiceEmployer = place.Employer;
             spec.ServiceGoods = place.Goods;
             spec.PlainType = place.PlainType;
+            spec.ServiceStore = place.Staff == SpecialStaff.Showroom;   // a dealership's copy is a vehicle store's, so its desk and its cars' panel have what the game's read
         }
 
         /// <summary>
@@ -61,7 +65,30 @@ namespace RealLifeOverhaul.Uptown
             {
                 return "it has no spot at the kerb for a car bought on its floor";
             }
-            return null;
+            return place.Staff == SpecialStaff.Showroom ? Stock(made) : null;
+        }
+
+        // A dealership's cars in the game's list of a vehicle store's (the panel of its desk asks that list first), from the showcases of
+        // its layout, by its address and its contact's key. Null when listed, else why not.
+        private static string Stock(MadeBuilding made)
+        {
+            try
+            {
+                Building record = made.Building;
+                BuildingRegistration reg = made.Registration;
+                BusinessLayoutSet layout = string.IsNullOrEmpty(reg.Layout) ? null
+                    : BusinessLayoutSetHelper.GetOrLoadBusinessLayoutSet(reg.businessTypeName, new BuildingSizeInfo(record), reg.Layout, warnIfNotFound: false);
+                var cars = new List<string>(12);
+                if (MadeGame.FloorCars(layout, cars) == 0)
+                {
+                    return "its layout has no showcase of a car the game has, so its purchase panel would list none";
+                }
+                return MadeGame.Stock(record.Address, reg.BusinessName, cars) ? null : "the game's list of a vehicle store's cars did not take its cars";
+            }
+            catch (System.Exception e)
+            {
+                return "the game's list of a vehicle store's cars could not be reached (" + e.GetType().Name + ")";
+            }
         }
 
         // A car bought on a showroom's floor stands at the building's first custom position (ShowcaseVehicleController.Purchase),
@@ -151,15 +178,73 @@ namespace RealLifeOverhaul.Uptown
                     return "its contact's address is " + contact.ToFormattedString() + ", not the head office's " + head.ToFormattedString();
                 }
             }
+            string desks = DesksWhy(layout, service);
+            if (desks != null)
+            {
+                return desks;
+            }
             if (place.Staff == SpecialStaff.Showroom && (made.Controller == null || made.Controller.customPositions == null || made.Controller.customPositions.Count == 0))
             {
                 return "it has no spot at the kerb for a car bought on its floor";
+            }
+            if (place.Staff == SpecialStaff.Showroom)
+            {
+                string store = StoreWhy(made, service);
+                if (store != null)
+                {
+                    return store;
+                }
             }
             if (place.ServiceType == "ba:businesstype_clinic" && !service.hasRecoverySpawnPoint)
             {
                 return "the game's clinic it copies has no spot for a player who faints";
             }
             return null;
+        }
+
+        // Null when every desk of the layout has the dialog its person speaks in the service (a desk on a service with none opens the game's panel
+        // on nothing, seats the player and pauses the game), else why not.
+        private static string DesksWhy(BusinessLayoutSet layout, SpecialService service)
+        {
+            for (int i = 0; layout != null && layout.Items != null && i < layout.Items.Count; i++)
+            {
+                LayoutItem item = layout.Items[i];
+                if (item == null || !ServiceDeskRules.IsDesk(item.itemName))
+                {
+                    continue;
+                }
+                string kind = ServiceDeskRules.EmployeeOf(item.customValue), dialog = service.dialogType.ToString();
+                DeskVerdict verdict = ServiceDeskRules.Verdict(kind, dialog);
+                if (verdict != DeskVerdict.Fine)
+                {
+                    return ServiceDeskRules.Why(kind, dialog, verdict);
+                }
+            }
+            return null;
+        }
+
+        // Null when a dealership has all its vehicle store's panel reads: the store's dialog, its settings, its contact under the category
+        // the game's delivery looks up, and its cars in the game's list. A small method of its own: a build without one of those game members
+        // fails it alone.
+        private static string StoreWhy(MadeBuilding made, SpecialService service)
+        {
+            try
+            {
+                if (service.dialogType != CallDialogType.VehicleStoreDialog || !(service.settings is VehicleStoreSettings))
+                {
+                    return "its service has not the vehicle store's dialog and settings its desk's panel reads";
+                }
+                if (service.contactCategory != ContactCategoryName.FurnitureAndEquipment)
+                {
+                    return "its contact is not filed as a store's, where the game's delivery of a bought car looks it up";
+                }
+                int listed = MadeGame.Listed(made.Building.Address);
+                return listed > 0 ? null : "the game's list of a vehicle store's cars holds none of its cars";
+            }
+            catch (System.Exception e)
+            {
+                return "the game's vehicle store could not be read (" + e.GetType().Name + ")";
+            }
         }
 
         // True when the layout has what the place's staff work at.

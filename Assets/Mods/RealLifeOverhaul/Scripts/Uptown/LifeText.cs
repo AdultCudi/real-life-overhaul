@@ -48,6 +48,14 @@ namespace RealLifeOverhaul.Uptown
         public const string SpecialsDone = "reallife_uptown_test_specials_done";
         public const string SpecialsNone = "reallife_uptown_test_specials_none";
         public const string SpecialGo = "reallife_uptown_test_special_go_done";
+        public const string TestDealer = "reallife_uptown_test_dealer";           // the dealership's desk tests and their notices
+        public const string TestDealerSit = "reallife_uptown_test_dealer_sit";
+        public const string DealerDone = "reallife_uptown_test_dealer_done";
+        public const string DealerFail = "reallife_uptown_test_dealer_fail";
+        public const string DealerNone = "reallife_uptown_test_dealer_none";
+        public const string DealerAway = "reallife_uptown_test_dealer_away";
+        public const string DealerSitDone = "reallife_uptown_test_dealer_sit_done";
+        public const string DealerSitFail = "reallife_uptown_test_dealer_sit_fail";
 
         public const string TestStore = "reallife_uptown_test_store";            // the big special places' test buttons
         public const string TestOrder = "reallife_uptown_test_store_order";

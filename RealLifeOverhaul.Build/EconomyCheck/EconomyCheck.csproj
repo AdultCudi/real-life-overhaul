@@ -194,6 +194,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\SpecialNameBook.cs" Link="Mod\SpecialNameBook.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\HeldUnitsRules.cs" Link="Mod\HeldUnitsRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\NewBuildings\NewBuildingsRules.cs" Link="Mod\NewBuildingsRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\NewBuildings\ServiceDeskRules.cs" Link="Mod\ServiceDeskRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\NewBuildings\NewBuildingsText.cs" Link="Mod\NewBuildingsText.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\NewBuildings\NewBuildingsTestPlot.cs" Link="Mod\NewBuildingsTestPlot.cs" />
     <!-- Uptown's streets, among the mod's own streets (NewBuildingsRules' MadeStreets). -->
