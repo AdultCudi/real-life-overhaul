@@ -8,23 +8,49 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// The white box the game shows one employee in (MyEmployees, "Left/WhiteBox") as a page written again and again. Its
-    /// own parts (title, line, headline, switch, selector, buttons) are kept asleep as templates; the mod's look (InfoBox.Look,
-    /// InfoBox.Parts, LookRules) is copies of templates made once in From, reused from page to page (InfoBox.Keep). A page
-    /// is written only on a click.
+    /// The white card the game shows one employee in (MyEmployees, "Left/WhiteBox"), as a page written again and again. It is a
+    /// frame of three parts that Unity's layout sizes (InfoBox.Frame): the header at the top and the buttons and the Guide's page
+    /// at the foot stay where they are, and the body between them scrolls. Its own parts (title, line, headline, switch,
+    /// selector, buttons) are kept asleep as templates; the mod's look (InfoBox.Look, InfoBox.Parts, LookRules, LeftPaneRules)
+    /// is copies of templates made once in From, reused from page to page (InfoBox.Keep). A page is written only on a click.
     /// </summary>
     public sealed partial class InfoBox
     {
         public static IModLogger Logger;
 
-        private Transform _box;
+        private Transform _box;   // the white box; for a box written into a scroll view of the game's, that view's content
         private GameObject _title, _line, _headline, _switch, _selector, _buttons;
 
         public bool HasSelector => _selector != null;
         public bool HasSwitch => _switch != null;
 
-        /// <summary>Takes the box's parts as templates and empties it. Null if the parts no page can do without are missing.</summary>
-        public static InfoBox From(Transform whiteBox, Transform templates)
+        /// <summary>
+        /// Takes the box's parts as templates and sets the card's frame up: header, scrolling body and foot, the scroll in the style
+        /// of <paramref name="style"/> (the game's own table's). Null if the parts no page can do without are missing.
+        /// </summary>
+        public static InfoBox From(Transform whiteBox, Transform templates, ScrollRect style = null)
+        {
+            InfoBox box = Make(whiteBox, templates);
+            if (box != null)
+            {
+                box.Frame(whiteBox, style);
+            }
+            return box;
+        }
+
+        /// <summary>The same parts written into an object that lays out its children (a scroll view's content, so a long page scrolls).</summary>
+        public static InfoBox Into(Transform whiteBox, Transform templates, Transform box)
+        {
+            InfoBox made = box != null ? Make(whiteBox, templates) : null;
+            if (made != null)
+            {
+                made._box = box;
+                made.Inside(box);
+            }
+            return made;
+        }
+
+        private static InfoBox Make(Transform whiteBox, Transform templates)
         {
             var box = new InfoBox { _box = whiteBox, _templatesAt = templates };
             box._title =Take(whiteBox, "EmployeePersonalData/EmployeeName", templates, "Title");
@@ -46,21 +72,8 @@ namespace RealLifeOverhaul.GameUi
             box.PrepareSwitch();
             PrepareButtons(box._buttons);
             box.MakeLook(templates);
-            box.Space(whiteBox);
             box.Keep(templates);
             return box;
-        }
-
-        /// <summary>The same parts written into an object that lays out its children (a scroll view's content, so a long page scrolls).</summary>
-        public static InfoBox Into(Transform whiteBox, Transform templates, Transform box)
-        {
-            InfoBox made = box != null ? From(whiteBox, templates) : null;
-            if (made != null)
-            {
-                made._box = box;
-                made.Space(box);
-            }
-            return made;
         }
 
         private static GameObject Take(Transform whiteBox, string path, Transform templates, string name)
@@ -190,41 +203,60 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>Empties the box for a new page: parts of its own kinds are laid aside for the next page, the rest destroyed.</summary>
+        /// <summary>
+        /// Empties the box for a new page: parts of its own kinds are laid aside for the next page (the last written first, so a
+        /// section card is empty when it is laid aside), the rest destroyed. Where the body is scrolled to is remembered.
+        /// </summary>
         public void Clear()
         {
             Begin();
             using var own = Timed();
-            for (int i = 0; i < _live.Count; i++)
+            LeaveScroll();
+            for (int i = _live.Count - 1; i >= 0; i--)
             {
                 GameObject part = _live[i];
-                if (part != null && part.transform.parent == _box)
+                if (part != null)
                 {
                     Park(part, _liveFrom[i]);
                 }
             }
             _live.Clear();
             _liveFrom.Clear();
-            for (int i = _box.childCount - 1; i >= 0; i--)
+            _group = null;
+            Sweep(_head);
+            Sweep(_content);
+            Sweep(_foot);
+        }
+
+        // What no page keeps, destroyed: it leaves the layout at once and is gone at the end of the frame. The background,
+        // the foot's hairline and the frame's own parts stay.
+        private static void Sweep(Transform under)
+        {
+            if (under == null)
             {
-                Transform child = _box.GetChild(i);
-                if (child.name != "Background")
+                return;
+            }
+            for (int i = under.childCount - 1; i >= 0; i--)
+            {
+                Transform child = under.GetChild(i);
+                if (child.name != "Background" && child.name != HairlineName)
                 {
-                    child.gameObject.SetActive(false);   // out of the layout now; gone at the end of the frame
+                    child.gameObject.SetActive(false);
                     UnityEngine.Object.Destroy(child.gameObject);
                 }
             }
         }
 
-        // A copy of a template, in the box unless a parent is given. In the box, a kind the box keeps comes from what Clear
-        // laid aside if it can (Restore sets it as a new copy), else it is a new copy.
+        // A copy of a template, in the page's place unless a parent is given. In the box, a kind the box keeps comes from what
+        // Clear laid aside if it can (Restore sets it as a new copy), else it is a new copy.
         private GameObject Add(GameObject template, Transform parent = null)
         {
-            bool kept = parent == null && Kept(template);
-            GameObject made = kept ? Reuse(template) : null;
+            Transform target = parent ?? Body();
+            bool kept = Kept(template) && Ours(target);
+            GameObject made = kept ? Reuse(template, target) : null;
             if (made == null)
             {
-                made = UnityEngine.Object.Instantiate(template, parent ?? _box, false);
+                made = UnityEngine.Object.Instantiate(template, target, false);
                 made.name = template.name;
                 made.SetActive(true);
             }
@@ -256,7 +288,7 @@ namespace RealLifeOverhaul.GameUi
             return title.GetComponent<TMP_Text>();
         }
 
-        /// <summary>A line of text; an old "Label <b>value</b>" line is written as a row.</summary>
+        /// <summary>A line of text; an old "Label <b>value</b>" line is written as a fact.</summary>
         public TMP_Text Line(string words)
         {
             using var own = Timed();
@@ -290,7 +322,7 @@ namespace RealLifeOverhaul.GameUi
                 return null;
             }
             var row = new GameObject("Picture", typeof(RectTransform), typeof(RawImage), typeof(LayoutElement));
-            row.transform.SetParent(_box, false);
+            row.transform.SetParent(Body(), false);
             _parts++;
             var image = row.GetComponent<RawImage>();
             image.texture = texture;
@@ -429,7 +461,10 @@ namespace RealLifeOverhaul.GameUi
             return null;
         }
 
-        /// <summary>A row of action buttons (kinds 0 positive, 1 negative, 2 additional), laid out by ButtonFlow on as many lines as needed.</summary>
+        /// <summary>
+        /// A row of action buttons (kinds 0 positive, 1 negative, 2 additional), laid out by ButtonFlow on as many lines as needed.
+        /// The rows after the page's last heavy part stand in the card's foot (InfoBox.Frame), two to a line, full width for an odd one.
+        /// </summary>
         public Transform ButtonRow(Transform parent = null)
         {
             using var own = Timed();
@@ -488,15 +523,19 @@ namespace RealLifeOverhaul.GameUi
             return button;
         }
 
-        /// <summary>For the log: the height the page asks for against the box's. Works the layout out at once.</summary>
+        /// <summary>For the log: the height the page asks for against what the body shows. Works the layout out at once.</summary>
         public string Fit()
         {
             var rect = (RectTransform)_box;
             LayoutRebuilder.ForceRebuildLayoutImmediate(rect);
-            float asks = LayoutUtility.GetPreferredHeight(rect), has = rect.rect.height;
-            float room = rect.parent is RectTransform outer ? outer.rect.height : has;
-            return "the page asks for " + Mathf.RoundToInt(asks) + " px, the box is " + Mathf.RoundToInt(has) + " px in " + Mathf.RoundToInt(room) + " px"
-                   + (asks > room + 1f ? ": ITS FOOT IS CUT OFF" : string.Empty);
+            if (_viewport == null)
+            {
+                float asks = LayoutUtility.GetPreferredHeight(rect), has = rect.rect.height;
+                return "the page asks for " + Mathf.RoundToInt(asks) + " px, the box is " + Mathf.RoundToInt(has) + " px";
+            }
+            float page = LayoutUtility.GetPreferredHeight(_contentRect), view = _viewport.rect.height;
+            return "the page asks for " + Mathf.RoundToInt(page) + " px, the body shows " + Mathf.RoundToInt(view) + " px of the card"
+                   + (page > view + 1f ? " and scrolls" : string.Empty);
         }
 
         /// <summary>Marks the layout for rebuilding: a page is written in one go and shown at once.</summary>
@@ -505,6 +544,7 @@ namespace RealLifeOverhaul.GameUi
             using (Timed())
             {
                 LayoutRebuilder.MarkLayoutForRebuild((RectTransform)_box);
+                Settle();
             }
             Finish();
         }

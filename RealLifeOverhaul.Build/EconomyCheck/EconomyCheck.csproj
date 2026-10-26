@@ -98,6 +98,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Hustles\HustleStore.cs" Link="Mod\HustleStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Hustles\HustleRules.cs" Link="Mod\HustleRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\CityLife\StreetLifeRules.cs" Link="Mod\StreetLifeRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Hustles\PickupRules.cs" Link="Mod\PickupRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Calendar\MonthViewRules.cs" Link="Mod\MonthViewRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Seasons\SeasonRules.cs" Link="Mod\SeasonRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Seasons\SeasonLookRules.cs" Link="Mod\SeasonLookRules.cs" />
@@ -239,6 +240,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Wiring\Wiring.TextsMemoryFacts.cs" Link="Mod\Wiring.TextsMemoryFacts.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Life\LifeEventCatalogue*.cs" Link="Mod\%(Filename)%(Extension)" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Phone\Contacts\ContactCatalogue.cs" Link="Mod\ContactCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Phone\Contacts\FixedPeople.cs" Link="Mod\FixedPeople.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\People\PersonLook.cs" Link="Mod\PersonLook.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Home\Roommates\RoommateRules.cs" Link="Mod\RoommateRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Home\Roommates\RoommateState.cs" Link="Mod\RoommateState.cs" />
@@ -417,6 +419,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\People\TalentRules.cs" Link="Mod\TalentRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\People\TalentStore.cs" Link="Mod\TalentStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\People\PlaceRules.cs" Link="Mod\PlaceRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\People\StaffNameRules.cs" Link="Mod\StaffNameRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Hiring\HiringCatalogue.cs" Link="Mod\HiringCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Hiring\HiringModel.cs" Link="Mod\HiringModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Hiring\HiringRules.cs" Link="Mod\HiringRules.cs" />
@@ -451,6 +454,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\CareersStore.cs" Link="Mod\CareersStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\ProCatalogue.cs" Link="Mod\ProCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\ProRules.cs" Link="Mod\ProRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\AgencyRules.cs" Link="Mod\AgencyRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\DeskRules.cs" Link="Mod\DeskRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\InterviewRules.cs" Link="Mod\InterviewRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\Kinds\CartQueueRules.cs" Link="Mod\CartQueueRules.cs" />

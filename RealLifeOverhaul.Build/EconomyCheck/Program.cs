@@ -173,6 +173,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--one-person")
+        {
+            OnePerson();   // (one face for one person alone, while working on it: OnePersonChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--lose-touch")
         {
             LoseTouch();   // (losing touch alone, while working on it: LoseTouchChecks.cs)
@@ -413,6 +419,7 @@ internal static partial class Program
         PeopleAge();    // the People page: each person's age, a year more at each birthday, in every language; the Guide names People as a contact (PeopleAgeChecks.cs)
         MorePeople();   // more people to meet: the first eight kept, every place bringing somebody new up to 400, the later people's own record, the circle (MorePeopleChecks.cs)
         LoseTouch();    // losing touch: who can go and why not, the slot given to somebody new, a full cast making room, Flare letting go (LoseTouchChecks.cs)
+        OnePerson();    // one face for one person: Alex and Mom fixed, a roommate's copy following the record, an old save mended once, every scene reading it (OnePersonChecks.cs)
         CinemaFixes();  // a film with a friend: rested as in the game's own cinema seat, given back on every way out (CinemaFixChecks.cs)
         PartnerTalk();    // the partner: Social's calls, texts and outings count as talking for family life (PartnerTalkChecks.cs)
         MealFixes();    // a completed meal fills once by the game's food and records bought food through the bridge
@@ -428,6 +435,7 @@ internal static partial class Program
         HiddenPanels(); // in a Going Public session, which hides the game's activity panel and presses Start for the player, a desk's class or exam begins (HiddenPanelChecks.cs)
         ShiftOpen();    // every job's week inside its workplace's opening hours, a save's put right at load, a day shut at its start excused, the rota's shut clients (ShiftOpenChecks.cs)
         Ladder();       // the management ladder at a city company: the ranks' powers, the company seeded, every task decided by the rank that may, promotion with its tools, the save (LadderChecks.cs)
+        AgencyDesk();   // a seat at a recruitment office's desk always offers the jobs board (never the Basic HR course) or recruitment (the course first), the game's dialogue taken while the working life is on (AgencyDeskChecks.cs)
         OptionKeysFix(); // the options kept under the mod's own id for every copy: the older copies' values brought over once, the running copy's first, the sources, the texts (OptionKeysChecks.cs)
         HomeFixes();    // home life: the roommate's talk test with no character, the door to social life nobody read, rain and sleep in a hotel room (HomeFixChecks.cs)
         LifeFixes();    // life events: news of the player's home, building, neighbours and landlord only to a player with a home (LifeFixChecks.cs)
@@ -447,6 +455,7 @@ internal static partial class Program
         MoodBuffs();    // the mod's moods: a cap from each catalogue entry, a load puts saved moods back as saved (never through Going Public's scaled add), a save past the cap trimmed once (MoodBuffChecks.cs)
         LaterLanguages(); // Dutch and Turkish: listed wherever the other languages are, as complete as the other translations, What's new numbered and marked (LaterLanguageChecks.cs)
         RivalOffers();  // a rival's offer whose employee has left loses its buttons, every way of leaving, an older save (RivalOfferChecks.cs)
+        HeadhunterAndProducts(); // names no two people share (a list of everyone in use, doubled names mended), a hire the game refuses, a start that fails said; product limits 12 a firm and 36 together, withdrawn kept 12, said in the app and the Guide (HeadhunterChecks.cs)
         StaffLeaving(); // an employee the mod lets go leaves once, with one wage and one notice; one rival's offer to an employee at a time (StaffLeaveChecks.cs)
         HardTimesTriggers(); // a difficult moment at home comes of what is going on: each one's causes, nothing when all is well, a cause gone, the options, the save, the same state (HardTimesChecks.cs)
         MorningNotices(); // the morning line only from a sleep the game ended, with its hours; the city's news of the night packed into it; four notices' switches (MorningNewsChecks.cs)

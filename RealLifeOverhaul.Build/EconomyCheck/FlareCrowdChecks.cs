@@ -27,7 +27,7 @@ internal static partial class Program
         CrowdShare();
         CrowdInfluencers();
         CrowdRetire();
-        CrowdFixedLooks();
+        CrowdFixedPeople();
         CrowdTexts();
     }
 
@@ -623,7 +623,7 @@ internal static partial class Program
 
     // ---------------------------------------------------------------- Mom and Alex
 
-    private static void CrowdFixedLooks()
+    private static void CrowdFixedPeople()
     {
         var people = new SocialPerson[SocialRules.BaseCast];
         bool fixedAll = true, others = false;
@@ -632,14 +632,14 @@ internal static partial class Program
         {
             SocialCatalogue.MakeCast(people, seed, 0, 112, 9);
             SocialPerson mom = people[(int)SocialOrigin.Family], alex = people[(int)SocialOrigin.OldFriend];
-            fixedAll &= mom.Name == "Mom" && mom.Female && mom.Age == FixedLooks.MomAge && mom.Seed == FixedLooks.MomSeed;
-            fixedAll &= alex.Name == "Alex" && alex.Female == FixedLooks.AlexFemale && alex.Age == FixedLooks.AlexAge && alex.Seed == FixedLooks.AlexSeed;
+            fixedAll &= mom.Name == "Mom" && mom.Female && mom.Age == FixedPeople.MomAge && mom.Seed == FixedPeople.MomSeed;
+            fixedAll &= alex.Name == "Alex" && alex.Female == FixedPeople.AlexFemale && alex.Age == FixedPeople.AlexAge && alex.Seed == FixedPeople.AlexSeed;
             others |= firstOther != 0 && people[2].Seed != firstOther;
             firstOther = firstOther == 0 ? people[2].Seed : firstOther;
         }
-        Check(fixedAll && others && FixedLooks.MomSeed != FixedLooks.AlexSeed, "Flare crowd: Mom (a woman of " + FixedLooks.MomAge + ") and Alex (a man of " + FixedLooks.AlexAge
+        Check(fixedAll && others && FixedPeople.MomSeed != FixedPeople.AlexSeed, "Flare crowd: Mom (a woman of " + FixedPeople.MomAge + ") and Alex (a woman of " + FixedPeople.AlexAge
                                                                             + ") have the same look for every new game's seed, and the people to be met are still each game's own");
-        // A save from before, with Alex rolled a woman of 33 and Mom of 61, each a seed of their own: mended as it is read, and only that.
+        // A save from before, with Alex a man of 33 and Mom of 61, each a seed of their own: mended as it is read, and only that.
         SocialCatalogue.MakeCast(people, 4242, 0, 112, 9);
         var data = new Dictionary<string, string>();
         SocialState.Load(data, 0, 112, 9, 4242);
@@ -649,7 +649,7 @@ internal static partial class Program
         records[0] = Field(records[0], 2, "1");
         records[0] = Field(records[0], 3, "61");
         records[0] = Field(records[0], 4, "998877");
-        records[1] = Field(records[1], 2, "1");
+        records[1] = Field(records[1], 2, "0");
         records[1] = Field(records[1], 3, "33");
         records[1] = Field(records[1], 4, "112233");
         data["reallife:social_people"] = string.Join("\n", records);
@@ -657,23 +657,23 @@ internal static partial class Program
         string thirdName = SocialState.Get(2).Name;
         SocialState.Load(data, 5, 112, 9, 999);
         SocialPerson m2 = SocialState.Get(0), a2 = SocialState.Get(1);
-        Check(m2 != null && a2 != null && m2.Seed == FixedLooks.MomSeed && m2.Age == FixedLooks.MomAge && m2.Female && a2.Seed == FixedLooks.AlexSeed && a2.Age == FixedLooks.AlexAge
-              && a2.Female == FixedLooks.AlexFemale && m2.Name == "Mom" && a2.Name == "Alex" && SocialState.Get(2).Seed == thirdSeed && SocialState.Get(2).Name == thirdName,
+        Check(m2 != null && a2 != null && m2.Seed == FixedPeople.MomSeed && m2.Age == FixedPeople.MomAge && m2.Female && a2.Seed == FixedPeople.AlexSeed && a2.Age == FixedPeople.AlexAge
+              && a2.Female == FixedPeople.AlexFemale && m2.Name == "Mom" && a2.Name == "Alex" && SocialState.Get(2).Seed == thirdSeed && SocialState.Get(2).Name == thirdName,
             "Flare crowd: a save from before has Mom's and Alex's own looks changed to the one of every game as it is read, their names and everybody else as they were");
         var again = new Dictionary<string, string>();
         SocialState.Save(again);
-        Check(again["reallife:social_people"].Split('\n')[1].Split('|')[4] == FixedLooks.AlexSeed.ToString(), "Flare crowd: and saved so");
+        Check(again["reallife:social_people"].Split('\n')[1].Split('|')[4] == FixedPeople.AlexSeed.ToString(), "Flare crowd: and saved so");
         // The contacts: with the social life off, Mom's and the old friend's pictures are the same look, never a seed of the save's.
         bool contacts = ContactCatalogue.TryGet("reallife-mom", out ContactLook momLook) && ContactCatalogue.TryGet("reallife-friend", out ContactLook friendLook)
-                        && momLook.Seed == FixedLooks.MomSeed && momLook.Age == FixedLooks.MomAge && momLook.Female == FixedLooks.MomFemale
-                        && friendLook.Seed == FixedLooks.AlexSeed && friendLook.Age == FixedLooks.AlexAge && friendLook.Female == FixedLooks.AlexFemale;
+                        && momLook.Seed == FixedPeople.MomSeed && momLook.Age == FixedPeople.MomAge && momLook.Female == FixedPeople.MomFemale
+                        && friendLook.Seed == FixedPeople.AlexSeed && friendLook.Age == FixedPeople.AlexAge && friendLook.Female == FixedPeople.AlexFemale;
         Check(contacts, "Flare crowd: Mom's and the old friend's contact pictures (the social life off) have the same look as in the street");
         // Every place that builds their face takes it from the one look: the street, the contact, the wedding's mother.
         string scripts = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts"));
         string family = File.ReadAllText(System.IO.Path.Combine(scripts, "Family", "FamilyCast.cs"));
         string social = File.ReadAllText(System.IO.Path.Combine(scripts, "Social", "SocialCast.cs"));
         string pictures = File.ReadAllText(System.IO.Path.Combine(scripts, "Phone", "Contacts", "ContactPictures.cs"));
-        Check(family.Contains("MotherSeed = FixedLooks.MomSeed") && family.Contains("age = FixedLooks.MomAge") && social.Contains("UnityEngine.Random.InitState(who.Seed)")
+        Check(family.Contains("MotherSeed = FixedPeople.MomSeed") && family.Contains("age = FixedPeople.MomAge") && social.Contains("UnityEngine.Random.InitState(who.Seed)")
               && pictures.Contains("look.Seed != 0 ? look.Seed : ContactCatalogue.Seed(id, save)"),
             "Flare crowd: the wedding's mother, the street character (with the beard's dice from the seed) and the contact all draw Mom and Alex from the one look");
     }

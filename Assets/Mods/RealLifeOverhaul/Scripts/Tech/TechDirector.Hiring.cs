@@ -101,11 +101,12 @@ namespace RealLifeOverhaul.Tech
 
         private void NameSeekers()
         {
+            HashSet<string> names = null;
             for (int i = 0; i < _hiring.Seekers.Count; i++)
             {
                 if (string.IsNullOrEmpty(_hiring.Seekers[i].P.Name))
                 {
-                    HiringGame.Name(_hiring.Seekers[i]);
+                    HiringGame.Name(_hiring.Seekers[i], names ?? (names = NameSet()));   // one list for the whole batch; each name goes into it
                 }
             }
         }
@@ -244,6 +245,13 @@ namespace RealLifeOverhaul.Tech
                 if (s == null || ad == null || at == null)
                 {
                     a.Stage = (int)ApplyStage.Withdrawn;   // the business is no longer the player's
+                    if (s != null)
+                    {
+                        Tell(NotificationType.Warning, "reallife_hire_note_start_lost", Data("name", s.P.Name, "day", a.Start.ToString()), TabApplicants,
+                            RolesApp.ApplicantRow + a.Id);
+                    }
+                    Logger?.Info("Tech: " + (s != null ? s.P.Name : "an applicant") + " was to start on day " + a.Start + " but "
+                                 + (at == null ? "the business is no longer the player's" : "the ad is gone") + ".");
                     continue;
                 }
                 // A data centre's crew is on the payroll: the game has no shifts at a warehouse to give its own employee.
@@ -257,13 +265,25 @@ namespace RealLifeOverhaul.Tech
                 {
                     EmployeeInstance candidate = HiringGame.Candidate(s, at, null);
                     ok = candidate != null && HiringGame.Hire(candidate, a.Offer);
+                    if (candidate != null && !ok)
+                    {
+                        HiringGame.Discard(candidate);   // not left waiting in the staff app, to be hired a second time or to expire there
+                    }
                     if (ok)
                     {
                         File(HiringGame.Id(candidate), s.P, day, ad.Work);
+                        HiringGame.Arrived(candidate, at, s.P.Name, day);
                     }
                 }
                 if (!ok)
                 {
+                    if (day >= a.Start + HiringCatalogue.StartTries)
+                    {
+                        a.Stage = (int)ApplyStage.Withdrawn;   // said, not tried for ever in silence
+                        Tell(NotificationType.Warning, "reallife_hire_note_start_failed", Data("name", s.P.Name, "business", TalentGame.NameOf(at)), TabApplicants,
+                            RolesApp.ApplicantRow + a.Id);
+                        Logger?.Info("Tech: " + s.P.Name + " could not start at " + TalentGame.NameOf(at) + " in " + HiringCatalogue.StartTries + " day(s); the applicant has withdrawn.");
+                    }
                     continue;   // tried again tomorrow
                 }
                 if (ad.CrewSearch)
@@ -398,7 +418,7 @@ namespace RealLifeOverhaul.Tech
                         }
                         s = HiringRules.NewSeeker(_hiring.Seed, _hiring.Next(), day, false, role, -1, _rate, 1000, _districts.Count > 0 ? _districts[0] : string.Empty);
                         s.P.Main = Math.Max(s.P.Main, HiringCatalogue.OfficeSkillFloor * 1000);
-                        HiringGame.Name(s);
+                        HiringGame.Name(s, NameSet());
                     }
                     EmployeeInstance candidate = HiringGame.Candidate(s, business, game.agencyAddress);
                     if (candidate == null)

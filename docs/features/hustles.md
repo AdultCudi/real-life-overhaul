@@ -15,6 +15,7 @@ An app on the phone where the city's people sell used goods and cars that the pl
 | `HustleState` | the day's listings, the player's things, buyers' offers, sales, visits and ratings (game-free) |
 | `HustleStore` | the save's line `reallife:hustles` (game-free) |
 | `HustleRules` | the morning's listings and requests, worth, haggling, repairs and cleaning, buyers and their counters, the hour, ratings and helpers (game-free) |
+| `PickupRules` | collecting what was bought: the days a seller holds it, how near the player and the route must be, the doors asked for again, the repair of a save and the refund of what lapsed (game-free) |
 | `HustleGame` | the game: the clock, money, the city's homes and doors, skills and energy, cars made, read and removed the game's own way, a van at a door, the repair shops |
 | `HustleDirector` | the one component: the state, the hour, the save; its parts are Places (the panels at doors and the work on the clock), Actions (what the app calls) and Tests |
 | `HustleWork` | a piece of work on the game's work panel (Jobs/ShiftSkip) |
@@ -42,6 +43,17 @@ Each morning the city's people put up `GoodsADay` (9) goods and `CarsADay` (2) c
 - The listing shows what the seller says and what that would be worth. The truth is seen once it is the player's.
 - An offer from 65 % of the asking price up: taken at their least or their last counter, else countered at their least and 30 % of the gap above it, never above the last counter; after three offers they sell to someone else. Negotiation skill brings their least down by up to 6 % of the asking price.
 - Paid at once. Goods are collected at the seller's door (the door's panel: Collect) or brought home the next morning from 8 for 25 plus 5 % of the price. A car is collected: Take the keys makes it at a free stretch of kerb by the player.
+
+## Collecting
+
+- A seller holds what was bought for three days: the last day is the day of the purchase plus three (`PickupRules.HoldDays`). The Yours tab says `Collect by day N`; the thing's page says where, until when, and what happens after. At midnight after the last day the thing goes back to its seller and what was paid returns, as its own transaction (`Marketplace refund`) and a notice; a test thing returns nothing. Goods brought home never lapse.
+- The pickup point is found once for a door and remembered: the pavement a step out from the door (`JobSpots.Front`), else the pavement within 14 m (a parked car there does not take it away), else the walking mesh within 8 m (a stoop, a yard), else the ground under the door. So a building the city has always has a point. A point found by a wider search is measured again once the player is within 25 m. A building the city's list lacks (a district standing late, a load not finished, a building taken down) is asked for again every four seconds, never remembered as missing.
+- The route (a purchase, Show the way, a booked visit, the repair shop) is the game's own destination: the address is kept in the save as the game's Set destination does, and the marker is moved onto the pickup point, so it ends where the thing is. A route the game restores from the save after a load stands on the building and is moved onto the point once, never over a destination the player has set since.
+- A parcel (the prop library's parcel_s, parcel_m or parcel_l by the kind of thing, stood from the jobs' props) stands at the point while the player is within 80 m, and goes when they are 140 m away or the thing is collected. Within 4.5 m of the point, on foot and outside, the door's panel offers Collect (or Take the keys for a car). By vehicle the panel does not show, so a notice says to get out, once, until the player leaves the place.
+- Collect puts goods in the Yours tab (the Marketplace's own list of the player's things); a car is made at a free stretch of kerb by the player, as the game makes a bought vehicle. No goods become the game's items.
+- A save from before things lapsed has its waiting things held three days from the day it loads; a waiting thing with no address to go to leaves the list and its money returns. A line in Player.log (`Hustles check (pickups on load)`) says how many.
+- Going Public: nothing is sent. The point, the parcel and the route are this machine's own; a door is the city's building, which every machine has alike.
+- NPC buyers: a buyer of the player's listed thing pays in the app (an offer answered on the Offers tab) and a car is taken by the buyer; nobody collects from a door, so the rules above have no NPC side.
 
 ## Fixing it up
 
@@ -95,6 +107,7 @@ Option `hustles` (Marketplace app: used goods and cars to flip, and freelance vi
 Test buttons (Options, Test tools), each writing a `Hustles check (...)` line:
 
 - Marketplace: a laptop to collect at the nearest door
+- Marketplace: check a pickup (buy, route, collect): a laptop bought for nothing at the nearest door; the route must end within 3 m of the point, the point must be on the walking mesh, a parcel must stand there, the door's panel must offer Collect at the point, and Collect must take the laptop. `Hustles check (test: pickup)` says PASS or FAIL and why
 - Marketplace: a used car to collect at the nearest door
 - Marketplace: fix a broken phone here (the place a repair is begun is waived)
 - Marketplace: list a jacket with a buyer's offer now (opens the Offers tab on it)

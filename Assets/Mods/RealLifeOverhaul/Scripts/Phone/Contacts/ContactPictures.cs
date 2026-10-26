@@ -82,6 +82,23 @@ namespace RealLifeOverhaul
             }
         }
 
+        /// <summary>The face a contact's picture is (or will be) drawn from: false for a logo or a contact with none. For the people tests.</summary>
+        public static bool TryLook(string id, out bool female, out int age, out int seed)
+        {
+            Picture p;
+            if (Pictures.TryGetValue(id, out p) && p.Look.Kind == PictureKind.Person)
+            {
+                female = p.Look.Female;
+                age = p.Look.Age;
+                seed = p.Seed;
+                return true;
+            }
+            female = false;
+            age = 0;
+            seed = 0;
+            return false;
+        }
+
         // The save's own name for the character: a seed of its own for every playthrough.
         private static string SaveKey()
         {

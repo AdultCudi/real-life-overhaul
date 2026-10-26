@@ -365,6 +365,7 @@ namespace RealLifeOverhaul.Roommates
                     return;
                 }
             }
+            RoommateDirector.Instance?.Mend();   // the same look as the social life's record of them (once a visit, not per frame)
             CityPerson person = _cast.Put(s.Mate.Person, spot, wasHome ? _faces[at] : player, AgentType);
             if (person == null)
             {

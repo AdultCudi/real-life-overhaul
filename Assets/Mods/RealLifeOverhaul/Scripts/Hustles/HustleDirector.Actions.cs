@@ -1,4 +1,5 @@
 using System.Globalization;
+using RealLifeOverhaul.Economy;
 using RealLifeOverhaul.Economy.Dealership;
 using UI.Notification;
 
@@ -56,8 +57,8 @@ namespace RealLifeOverhaul.Hustles
             }
             else
             {
-                HustleGame.Guide(o.Street, o.Number);
-                HustleText.Note(NotificationType.Success, "reallife_hustle_note_bought_collect", "thing", thing, "place", HustleText.Place(o.Street, o.Number), 10f);
+                Route(o.Street, o.Number);
+                HustleText.Note(NotificationType.Success, "reallife_hustle_note_bought_hold", "thing", thing, "place", HustleText.Place(o.Street, o.Number), "day", FinanceText.Day(o.Until), 10f);
             }
             Logger?.Info("Hustles: bought a " + o.Thing + " from " + o.Seller + " for " + price + (fee > 0 ? " and " + fee + " to deliver" : string.Empty) + "; it is "
                          + (o.Condition < l.Shown ? o.Condition + "%, not the " + l.Shown + "% they said" : o.Condition + "%, as they said") + ".");
@@ -68,8 +69,10 @@ namespace RealLifeOverhaul.Hustles
         /// <summary>The game's destination marker on a thing's door, a visit's next address or a repair shop.</summary>
         internal void ShowWay(string street, int number)
         {
-            HustleGame.Guide(street, number);
-            HustleText.Note(NotificationType.Info, "reallife_hustle_note_way", "place", HustleText.Place(street, number), 6f);
+            if (Route(street, number))
+            {
+                HustleText.Note(NotificationType.Info, "reallife_hustle_note_way", "place", HustleText.Place(street, number), 6f);
+            }
         }
 
         /// <summary>A repair or a clean by hand, at home or at another place of the player's: the panel there offers it.</summary>
@@ -101,7 +104,7 @@ namespace RealLifeOverhaul.Hustles
             o.Plan = OwnedPlan.Shop;
             o.Street = shop.Street;
             o.Number = shop.Number;
-            HustleGame.Guide(shop.Street, shop.Number);
+            Route(shop.Street, shop.Number);
             HustleText.Note(NotificationType.Info, "reallife_hustle_note_plan_shop", "thing", HustleText.Thing(o.Thing, false), "shop", name, 10f);
             Changed();
         }
@@ -239,7 +242,7 @@ namespace RealLifeOverhaul.Hustles
                 Passed(g);
                 return;
             }
-            HustleGame.Guide(g.Street, g.Number);
+            Route(g.Street, g.Number);
             HustleText.Note(NotificationType.Success, "reallife_hustle_note_booked", "who", g.Client, "time", HustleText.Clock(g.From), "place", HustleText.Place(g.Street, g.Number), 10f);
             Changed();
         }

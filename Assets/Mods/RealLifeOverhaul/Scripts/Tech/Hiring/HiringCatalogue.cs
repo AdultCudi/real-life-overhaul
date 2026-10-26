@@ -60,6 +60,7 @@ namespace RealLifeOverhaul.Tech
         public const int OfferDays = 3;             // days an applicant takes to answer
         public const int ApplicantDays = 21;        // an application not acted on lapses after this
         public const int StartLeast = 1, StartUnemployedMost = 3;
+        public const int StartTries = 3;   // days past the first day that a start the game refuses is tried again before the applicant withdraws, and the player is told
         public const int ApplicantsMost = 120;
 
         // The recruitment office

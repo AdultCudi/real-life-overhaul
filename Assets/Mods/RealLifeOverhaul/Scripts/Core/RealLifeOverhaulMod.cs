@@ -207,6 +207,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_phone_layout_reset", GameUi.PhoneMove.ResetAll)
                 .AddButton("reallife_phone_test_check", GameUi.PhoneMove.TestCheck)
                 .AddButton("reallife_phone_test_folder", GameUi.PhoneMove.TestFolder)
+                .AddButton("reallife_leftpane_test", Meta.LeftPaneTest.Run)
                 .AddToggle(Settings.NoticeLookId, "reallife_notice_look", Settings.NoticeLook,
                     v => Settings.NoticeLook = v)
                 .AddButton("reallife_test_notice_look", GameUi.NoticeLook.Test)
@@ -605,6 +606,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_social_test_moving", () => SocialDirector.Instance?.TestOuting(PlanKind.Moving))
                 .AddButton("reallife_social_test_stop", () => SocialDirector.Instance?.TestStop())
                 .AddButton("reallife_social_test_lose", () => SocialDirector.Instance?.TestLoseTouch())
+                .AddButton("reallife_social_test_looks", () => SocialDirector.Instance?.TestOneLook())
                 .AddSplitter()
                 .AddHeader("reallife_ledger_header")
                 .AddToggle(Settings.SocialNewspaperId, "reallife_social_newspaper", Settings.SocialNewspaper,
@@ -1032,6 +1034,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_talent_test_review", () => Tech.TechDirector.Instance?.TestReview())
                 .AddButton("reallife_talent_test_offer", () => Tech.TechDirector.Instance?.TestOffer())
                 .AddButton("reallife_talent_test_course", () => Tech.TechDirector.Instance?.TestCourse())
+                .AddButton("reallife_names_test", () => Tech.TechDirector.Instance?.TestNames())
                 .AddToggle(Settings.TechJobsId, "reallife_hire_enabled", Settings.TechJobs,
                     v => Settings.TechJobs = v)
                 .AddButton("reallife_hire_test_applicants", () => Tech.TechDirector.Instance?.TestApplicants())
