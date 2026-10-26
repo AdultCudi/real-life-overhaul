@@ -61,6 +61,8 @@ SAME_WORDS = 4                                     # a Latin-script translation 
 NOTICE_MOST = 240                                  # characters: a toast holds about 240 (Workshop/STYLE.md, NoticeCheck)
 # Texts that may stay as the English in any translation: placeholders alone, version numbers, and invented names kept in Latin letters.
 ENGLISH_OK = {
+    # 27 Oct 2026, the Polish and Korean batch: the cinema film titles are names
+    'reallife_leisure_film_1', 'reallife_leisure_film_2', 'reallife_leisure_film_3', 'reallife_leisure_film_4', 'reallife_leisure_film_5', 'reallife_leisure_film_6', 'reallife_leisure_film_7', 'reallife_leisure_film_8', 'reallife_leisure_film_9', 'reallife_leisure_film_10', 'reallife_leisure_film_11', 'reallife_leisure_film_12',
     # 26 Oct 2026, the 0.57.2 language batch: the construction game firms and investors, two football clubs and a school trust are names
     'reallife_bld_plant_firm', 'reallife_bld_engineer_firm', 'reallife_bld_firm_0', 'reallife_bld_firm_1', 'reallife_bld_merchant_0', 'reallife_bld_merchant_1', 'reallife_bld_merchant_2', 'reallife_bld_investor_0', 'reallife_bld_investor_1', 'reallife_lmk_club_4', 'reallife_lmk_club_5', 'reallife_schools_trust_1',
     'reallife_study_campus_school', 'reallife_work_employer_school', 'reallife_study_campus_university', 'reallife_map_row_university', 'reallife_study_sign', 'reallife_ledger_masthead', 'reallife_ledger_online_name_ledger', 'reallife_ledger_online_name_exchange', 'reallife_ledger_online_name_street', 'reallife_ledger_online_name_review', 'reallife_flare_ledger_name',
