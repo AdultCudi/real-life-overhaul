@@ -219,7 +219,7 @@ namespace RealLifeOverhaul.Careers
         /// <summary>A reference: none, poor, fair, good.</summary>
         public static string Reference(int reference) => T(Mod + "_work_reference_" + (reference < 0 ? 0 : reference > 3 ? 3 : reference).ToString(Inv));
 
-        public static string Leaving(int why) => T(Mod + "_work_leaving_" + ((LeaveReason)(why < 0 ? 0 : why > 8 ? 8 : why)).ToString().ToLowerInvariant());
+        public static string Leaving(int why) => T(Mod + "_work_leaving_" + ((LeaveReason)(why < 0 ? 0 : why > 9 ? 9 : why)).ToString().ToLowerInvariant());
 
         /// <summary>The key of an office matter's words (reallife_life_matter_{key}), or of one of its answers (with "_a" or "_b").</summary>
         public static string MatterKey(Matter m, string answer = "") => Mod + "_life_matter_" + m.Key + answer;

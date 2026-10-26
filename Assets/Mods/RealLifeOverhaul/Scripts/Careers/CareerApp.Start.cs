@@ -94,6 +94,7 @@ namespace RealLifeOverhaul.Careers
             box.Section("reallife_ibox_sec_how");
             box.Note(CareersText.Fill("reallife_career_start_steps", "least", ProRules.AnswerDaysLeast.ToString(), "most", ProRules.AnswerDaysMost.ToString(),
                 "after", ProRules.InterviewAfterDays.ToString(), "days", ProRules.OfferDays.ToString()));
+            WriteBoards(box);
             Transform buttons = box.ButtonRow();
             InfoBox.Button(buttons, open > 0 ? InfoBox.Positive : InfoBox.Additional, "reallife_career_button_vacancies", () => ShowTab(CareersDirector.TabJobs));
             if (course >= 0)

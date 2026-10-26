@@ -36,6 +36,7 @@ internal static partial class Program
         UptownGameSourceChecks(scripts);
         UptownTextChecks(scripts);
         UptownFogChecks(scripts);   // the city map's fog cut away over the band (UptownFogCheck.cs)
+        UptownSurfaceChecks(scripts);   // no two road or ground surfaces at one height over one place (UptownSurfaceCheck.cs)
     }
 
     // ---------------------------------------------------------------- the streets
@@ -1173,8 +1174,8 @@ internal static partial class Program
         LayoutPlans.Modules(modules);
         int Count(ModuleKind kind, bool scenery) => modules.Count(m => m.Kind == kind && m.Scenery == scenery);
         Check(Count(ModuleKind.Street, false) == 57 && Count(ModuleKind.Street, true) == 19 && Count(ModuleKind.Avenue, false) == 64 && Count(ModuleKind.Avenue, true) == 8
-              && Count(ModuleKind.Crossing, false) == 67 && Count(ModuleKind.Crossing, true) == 0 && Count(ModuleKind.Ground, false) == 46 && Count(ModuleKind.Ground, true) == 28,
-            "uptown art: 57 street lengths, 64 avenue lengths, 67 crossings and 46 blocks' grounds of the game's own pieces, and past the walls 19 streets, 8 avenues and 28 grounds as scenery");
+              && Count(ModuleKind.Crossing, false) == 67 && Count(ModuleKind.Crossing, true) == 0 && Count(ModuleKind.Ground, false) == 54 && Count(ModuleKind.Ground, true) == 28,
+            "uptown art: 57 street lengths, 64 avenue lengths, 67 crossings and 54 blocks' grounds of the game's own pieces, and past the walls 19 streets, 8 avenues and 28 grounds as scenery");
         Check(modules.Where(m => m.Kind == ModuleKind.Street).All(m => Near(m.Z - LayoutRules.StreetModule * 0.5f, LayoutRules.AvenueZ(m.Row - 1) + LayoutRules.CrossingHalfZ, 0.01f)
                                                                        && Near(m.X, LayoutRules.StreetX(m.Street)) && m.Scenery == (m.Row > LayoutRules.Rows)),
             "uptown art: each street length fills its street from one avenue's crossing to the next, the row past Crest Avenue scenery");
@@ -1187,9 +1188,9 @@ internal static partial class Program
               && crossings.Select(m => m.Junction).Distinct().Count() == LayoutPlans.JunctionCount,
             "uptown art: every crossing one of the plan's junctions, each junction one crossing, its lights theirs");
         var grounds = modules.Where(m => m.Kind == ModuleKind.Ground).ToList();
-        Check(grounds.All(m => !(m.Row == 1 && m.Street >= 0 && m.Street < LayoutRules.FirstColumns)) && grounds.Select(m => m.X + "," + m.Z).Distinct().Count() == grounds.Count
+        Check(grounds.Count(m => m.Row == 1 && m.Street >= 0 && m.Street < LayoutRules.FirstColumns) == LayoutRules.FirstColumns && grounds.Select(m => m.X + "," + m.Z).Distinct().Count() == grounds.Count
               && grounds.Where(m => !m.Scenery).All(m => LayoutRules.OnGround(m.X, m.Z)),
-            "uptown art: a block's ground on every block of the band but the first block's, which keeps the backdrop's, and round it past the walls");
+            "uptown art: a block's ground on every block of the band, the first block's too, and round it past the walls");
         var walls = new List<PlanBox>();
         LayoutPlans.NewWalls(walls);
         GroundPlan player = LayoutPlans.PlayerGround(), npc = LayoutPlans.NpcGround();

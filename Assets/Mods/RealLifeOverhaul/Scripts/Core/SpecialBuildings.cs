@@ -27,7 +27,7 @@ namespace RealLifeOverhaul
         public static int Count => Book.Count;
 
         /// <summary>Changes whenever the book or its names do.</summary>
-        public static int Stamp => Book.Stamp * 31 + FindableTypes.Count;
+        public static int Stamp => unchecked((Book.Stamp * 31 + FindableTypes.Count) * 31 + _aliasStamp);
 
         /// <summary>True while names are given at all: the option is on and some building is in the book.</summary>
         public static bool Active => Settings.SpecialNames && Book.Count > 0;
@@ -320,6 +320,56 @@ namespace RealLifeOverhaul
             return type != null && FindableTypes.Contains(type) ? type.GetLocalization() : null;
         }
 
+        /// <summary>A word a building is found by in the city map's search besides its own name, and the line shown under it.</summary>
+        internal struct SearchAlias
+        {
+            public CityBuildingController Building;
+            public string Word;
+            public string Under;
+        }
+
+        private static readonly Dictionary<string, List<SearchAlias>> Aliased = new Dictionary<string, List<SearchAlias>>(4);
+        private static int _aliasStamp;
+
+        /// <summary>
+        /// The words the places of one kind (<see cref="MapPlace.Alias"/>) are found by in the city map's search, in place of what that kind had:
+        /// an employer whose office is a help-wanted board outside a shop is found by the employer's name, with the shop under it. An empty
+        /// or null list takes them away. The search is made again when the map is open (a shut map makes it when it opens).
+        /// </summary>
+        internal static void Aliases(string kind, List<MapPlace> places)
+        {
+            Aliased.TryGetValue(kind, out List<SearchAlias> list);
+            bool had = list != null && list.Count > 0;
+            if (list == null)
+            {
+                list = new List<SearchAlias>(8);
+                Aliased[kind] = list;
+            }
+            list.Clear();
+            for (int i = 0; places != null && i < places.Count; i++)
+            {
+                MapPlace place = places[i];
+                if (place != null && !string.IsNullOrWhiteSpace(place.Alias) && place.LitBuilding != null)
+                {
+                    list.Add(new SearchAlias { Building = place.LitBuilding, Word = place.Alias, Under = place.AliasUnder });
+                }
+            }
+            if (had || list.Count > 0)
+            {
+                _aliasStamp++;
+                SpecialNames.SearchAgain();
+            }
+        }
+
+        /// <summary>Every alias of every kind, for the map's search list.</summary>
+        internal static void AllAliases(List<SearchAlias> into)
+        {
+            foreach (KeyValuePair<string, List<SearchAlias>> kind in Aliased)
+            {
+                into.AddRange(kind.Value);
+            }
+        }
+
         internal static void Forget()
         {
             Book.Forget();
@@ -329,6 +379,8 @@ namespace RealLifeOverhaul
         {
             Book.Clear();
             FindableTypes.Clear();
+            Aliased.Clear();
+            _aliasStamp++;
             HeldUnits.BookChanged();
         }
 

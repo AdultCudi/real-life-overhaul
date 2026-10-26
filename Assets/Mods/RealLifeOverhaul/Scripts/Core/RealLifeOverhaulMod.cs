@@ -342,6 +342,8 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_work_test_vacancies", () => Careers.CareersDirector.Instance?.TestVacancies())
                 .AddButton("reallife_work_test_shift_hours", () => Careers.CareersDirector.Instance?.TestShiftHours())
                 .AddButton("reallife_work_test_forklift", () => Careers.CareersDirector.Instance?.TestForklift())
+                .AddButton("reallife_work_test_closed", () => Careers.CareersDirector.Instance?.TestClosed())
+                .AddButton("reallife_work_test_moved", () => Careers.CareersDirector.Instance?.TestMoved())
                 .AddToggle(Settings.CareersAgencyNoteId, "reallife_work_opt_agency_note", Settings.CareersAgencyNote,
                     v => Settings.CareersAgencyNote = v)
                 .AddToggle(Settings.CareersRejectReasonId, "reallife_work_opt_reject_reason", Settings.CareersRejectReason,
@@ -711,6 +713,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_fame_test_promises", () => Fame.FameDirector.Instance?.TestPromises())
                 .AddButton("reallife_fame_test_request", () => Fame.FameDirector.Instance?.TestRequest())
                 .AddButton("reallife_fame_test_evening", () => Fame.FameDirector.Instance?.TestEvening())
+                .AddButton("reallife_fame_test_meetings", () => Fame.FameDirector.Instance?.TestMeetings())
                 .AddButton("reallife_fame_test_bribe", () => Fame.FameDirector.Instance?.TestBribe())
                 .AddButton("reallife_fame_test_council", () => Fame.FameDirector.Instance?.TestCouncil())
                 .AddButton("reallife_fame_test_back", () => Fame.FameDirector.Instance?.TestBack())

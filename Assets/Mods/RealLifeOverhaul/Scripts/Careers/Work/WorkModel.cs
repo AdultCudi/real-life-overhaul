@@ -12,7 +12,8 @@ namespace RealLifeOverhaul.Careers
         Declined = 4,     // the player said no
         Rejected = 5,     // the employer said no
         Lapsed = 6,       // nobody answered in time, or the interview was missed
-        Withdrawn = 7
+        Withdrawn = 7,
+        Closed = 8        // the employer closed, was bought or lost its building before the answer, the interview, the offer or the start
     }
 
     /// <summary>How a vacancy reached the player: the saved number of <see cref="Opening.Via"/>.</summary>
@@ -28,7 +29,8 @@ namespace RealLifeOverhaul.Careers
     /// <summary>Why a job ended: the saved number of <see cref="Job.Leaving"/> and <see cref="Spell.Leaving"/>.</summary>
     public enum LeaveReason
     {
-        None = 0, Resigned = 1, Dismissed = 2, Redundant = 3, Poached = 4, Retired = 5, WalkedOut = 6, SpunOut = 7, Misconduct = 8
+        None = 0, Resigned = 1, Dismissed = 2, Redundant = 3, Poached = 4, Retired = 5, WalkedOut = 6, SpunOut = 7, Misconduct = 8,
+        EmployerClosed = 9   // the employer closed, was bought or lost its building: a lay-off with pay and a good reference, never a quit or a sacking
     }
 
     /// <summary>A vacancy: one post at one employer. Game-free.</summary>
@@ -205,6 +207,8 @@ namespace RealLifeOverhaul.Careers
         public bool RestraintTested; // the former employer has looked at what the player did
         public int ColleaguesUntil, ColleaguesCount, ColleaguesProf = -1, ColleaguesLevel;   // former colleagues waiting to join the player's firm
         public int PracticeAfter = -1;   // a practice of this profession to open when the notice ends
+        public int LaidOffDay;        // the day an employer's closing let the player go (ClosureRules); 0 never
+        public string LaidOffFrom = string.Empty;   // ...and that employer's name as the vacancies kept it
 
         public const int OpeningsMost = 40, ApplicationsMost = 24, HistoryMost = 16;
 
