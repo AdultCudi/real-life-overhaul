@@ -48,6 +48,7 @@ namespace RealLifeOverhaul.Construction
                 t.Append(i > 0 ? ";" : string.Empty).Append(Esc(l.Id)).Append('|');
                 Join(t, l.Bought, l.Zones, l.ZoneAsk, l.ZoneDay, l.TaxedTo, l.EmptySince);
                 t.Append('|').Append(l.Paid.ToString(Inv)).Append('|').Append(l.Spaces.ToString(Inv));
+                t.Append('|').Append(Esc(l.Rows)).Append('|').Append(l.Paint.ToString(Inv));   // build mode's cells and paint, after the spaces
             }
             t.Append("^c:");
             for (int i = 0; i < s.Crews.Count && i < BuildCatalogue.CrewsMost; i++)
@@ -234,6 +235,8 @@ namespace RealLifeOverhaul.Construction
                                 l.EmptySince = r.I(0);
                                 l.Paid = Math.Max(0L, r.L(0L));
                                 l.Spaces = BuildCatalogue.Clamp(r.I(1), 1, BuildCatalogue.SiteSpacesMost);   // a line from before the spaces: one
+                                l.Rows = CellRules.CleanRows(r.S(), l.Spaces);   // a line from before build mode: every row
+                                l.Paint = BuildCatalogue.Clamp(r.I(0), 0, (int)BuildUse.Count);
                                 if (l.Id.Length > 0)
                                 {
                                     s.Lots.Add(l);

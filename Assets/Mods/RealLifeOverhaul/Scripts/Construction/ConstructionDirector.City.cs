@@ -47,7 +47,7 @@ namespace RealLifeOverhaul.Construction
         {
             BuildUse use = AskedUse(l.ZoneAsk);
             Lot(l.Id, out LotView lot);
-            int suit = BuildCatalogue.ZoneOdds[(int)use][BuildCatalogue.Clamp(lot.Class, 0, BuildCatalogue.ClassCount - 1)];
+            int suit = BuildCatalogue.Clamp(BuildCatalogue.ZoneOdds[(int)use][BuildCatalogue.Clamp(lot.Class, 0, BuildCatalogue.ClassCount - 1)] + DemandLift(use), 0, 1000);   // the council weighs the district's demand for the use
             int vote = CouncilVote(l.Id, lot.Class, use, suit, _state.Firm.Reputation, now, out int ayes, out int noes);
             if (vote == -1)
             {
@@ -61,7 +61,7 @@ namespace RealLifeOverhaul.Construction
             if (vote == -2)
             {
                 // No council of the city's answers (its elections switched off): the planners decide as the city came.
-                int odds = LandRules.ZoneOdds(use, lot.Class, Permits(), _state.Firm.Reputation);
+                int odds = BuildCatalogue.Clamp(LandRules.ZoneOdds(use, lot.Class, Permits(), _state.Firm.Reputation) + DemandLift(use), 0, 1000);
                 ZoneDecided(l.Id, (int)use, PlanningRules.ZoneVote(_state.Seed, l.Id, use, odds), -1, -1);
                 return;
             }
@@ -97,6 +97,10 @@ namespace RealLifeOverhaul.Construction
             if (carried)
             {
                 l.Zones |= l.ZoneAsk;
+            }
+            else if (l.Paint == use + 1)
+            {
+                l.Paint = 0;   // build mode's paint of the use refused falls back to none
             }
             l.ZoneAsk = 0;
             NoteVote(ayes, noes, carried);

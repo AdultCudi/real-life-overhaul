@@ -396,6 +396,8 @@ namespace RealLifeOverhaul.Meta
                     .Opt("construction_redevelop", "construction").Opt("construction_city_redevelop", "construction")
                     .Also("demolish demolition knock down redevelop redevelopment join assemble split extension storeys convert conversion change of use cleared")
                     .Opt("construction_track", "construction")
+                    .Opt("construction_buildmode", "construction")
+                    .Also("build mode zoning zone zones cells cell grid cities skylines demand bulldoze")
                     .Also("objectives objective tasks task hud show on map destination where marker")
                     .Also("show flat flats viewing viewings buyer buyers sales agent renovation renovate refit refurbish hoarding")
                     .Also("builder builders building company land lot lots plot plots project plans architect planning permission appeal inspector inspection")

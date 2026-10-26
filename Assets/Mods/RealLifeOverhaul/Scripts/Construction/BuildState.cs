@@ -33,6 +33,8 @@ namespace RealLifeOverhaul.Construction
         public int TaxedTo;         // the last day its land tax was charged for
         public int EmptySince;      // the day it last had no works under way; 0 while works are
         public int Spaces = 1;      // the spaces bought side by side from this one along its strip: one site, one building
+        public string Rows = string.Empty;   // the zoning cells' rows bought in each of its spaces, as digits from the first ("5543"); empty: every row (CellRules)
+        public int Paint;           // the use painted on its cells in build mode: BuildUse + 1, or 0 for none
     }
 
     /// <summary>A crew the company employs: a foreman and the people of a gang, their skill, morale, day rate and where they work.</summary>

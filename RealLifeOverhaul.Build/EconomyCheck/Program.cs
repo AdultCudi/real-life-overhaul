@@ -174,6 +174,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--build-mode")
+        {
+            BuildModeChecks();   // (build mode alone, while working on it: BuildModeChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--track")
         {
             Track();   // (Show on map and the construction objectives alone, while working on them: TrackChecks.cs)
@@ -547,6 +553,7 @@ internal static partial class Program
         Builders();     // the construction game: the catalogue, the land, the plans and planning, a site, the money, tenders and rivals, the developers, the frame, the store's line, the sources and wiring, the texts (BuildersChecks.cs)
         Hire();         // a builder of the city's hired by the player: the quotes, the contract's money, the penalty, the pace, the line, the sources, the texts (HireChecks.cs)
         BuilderDesk();  // the front desks: what the desk talks about first, the front desk picked, the office's visitors, the one quote and hire, the click, the tests, the texts (BuilderDeskChecks.cs)
+        BuildModeChecks();   // build mode: the zoning cells on the real plan, sites, prices, rows, the state machine, colours, warnings, demand and the market, whole buildings, the store, the sources, the texts (BuildModeChecks.cs)
         Track();        // Show on map and the construction objectives: what is under way, each line's words, the order, the cap, the claim kept, the one way to the destination, the game's objectives window, the texts (TrackChecks.cs)
         StandNowChecks();   // a building handed over stands at once, and the opening day is not missed: when it stands, the one declaration, the record set up once, the sources, the texts (StandChecks.cs)
         ShowFlats();    // show flats and renovations: viewings, buyers and prices, a refit's hours, grade and quote, the fittings' decor, the lines, the game's residential designs, the sources, the texts (ShowFlatsChecks.cs)

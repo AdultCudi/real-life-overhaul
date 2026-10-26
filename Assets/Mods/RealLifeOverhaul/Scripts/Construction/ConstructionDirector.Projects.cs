@@ -64,6 +64,7 @@ namespace RealLifeOverhaul.Construction
         {
             if (JoinedSite(id, out lot))
             {
+                lot = WithRows(id, lot);   // build mode's cells: a site bought short of its strip's depth
                 return true;   // a site of several spaces: one lot to its projects, its plot and its building
             }
             IReadOnlyList<LotView> lots = Lots;
@@ -71,7 +72,7 @@ namespace RealLifeOverhaul.Construction
             {
                 if (lots[i].Id == id)
                 {
-                    lot = lots[i];
+                    lot = WithRows(id, lots[i]);
                     return true;
                 }
             }

@@ -82,7 +82,7 @@ namespace RealLifeOverhaul.Uptown
         /// <summary>The lot's traffic index by the rules, lifted by what stands near it (DistrictBuildings.TrafficLift); -1 for a lot not in the plan.</summary>
         public static int TrafficOf(string lotId)
         {
-            return FindLot(lotId, out BuildingsLot lot) ? BuildingsRules.Lifted(BuildingsRules.Traffic(lot, _nearest, LifeGame.AwayX, LifeGame.AwayZ), Lift(lotId)) : -1;
+            return FindLot(lotId, out BuildingsLot lot) ? BuildingsRules.Lifted(BuildingsRules.Traffic(lot, _nearest, LifeGame.AwayX, LifeGame.AwayZ), Lift(lotId) + Density(lot)) : -1;   // and a packed block's people (LifeDirector.Market)
         }
 
         // What stands near a lot lifts its traffic, as the feature that set the lift says; nothing when unset, or after a fault (said once).

@@ -60,5 +60,6 @@ namespace RealLifeOverhaul.Uptown
         public const string FillDone = "reallife_uptown_test_fill_done";
         public const string FillCar = "reallife_uptown_test_fill_car";
         public const string FillFailed = "reallife_uptown_test_fill_failed";
+        public const string Incomplete = "reallife_uptown_incomplete";          // a building handed over that is not yet a whole building of the game's
     }
 }

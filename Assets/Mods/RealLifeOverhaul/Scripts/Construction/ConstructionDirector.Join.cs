@@ -72,6 +72,9 @@ namespace RealLifeOverhaul.Construction
             SiteSpaces(nextId, b.Spaces, _joinNext);
             _strip.AddRange(_joinNext);
             LotView joined = Joined(_strip);
+            int stripRows = CellRules.RowsFor(_strip[0].Depth);
+            a.Rows = CellRules.JoinRows(a.Rows, a.Spaces, b.Rows, b.Spaces, stripRows);   // build mode's cells: each lot's rows kept
+            a.Paint = a.Paint != 0 ? a.Paint : b.Paint;
             a.Spaces += b.Spaces;
             a.Paid += b.Paid;
             a.Zones |= b.Zones | LandRules.ZonesOf(joined.Class);   // what each was zoned for, and what a site of the joined spaces is
@@ -156,13 +159,16 @@ namespace RealLifeOverhaul.Construction
                 _weights[i] = Math.Max(1L, LotPrice(_strip[i]));
             }
             RedevelopRules.Shares(a.Paid, _weights, n, _shares);
+            int stripRows = CellRules.RowsFor(_strip[0].Depth);
             for (int i = 1; i < n; i++)
             {
                 _state.Lots.Add(new LotFile
                 {
-                    Id = _strip[i].Id, Bought = a.Bought, Paid = _shares[i], Zones = a.Zones | LandRules.ZonesOf(_strip[i].Class), TaxedTo = a.TaxedTo, EmptySince = a.EmptySince, Spaces = 1
+                    Id = _strip[i].Id, Bought = a.Bought, Paid = _shares[i], Zones = a.Zones | LandRules.ZonesOf(_strip[i].Class), TaxedTo = a.TaxedTo, EmptySince = a.EmptySince, Spaces = 1,
+                    Rows = CellRules.SplitRows(a.Rows, i, stripRows), Paint = a.Paint
                 });
             }
+            a.Rows = CellRules.SplitRows(a.Rows, 0, stripRows);
             a.Paid = _shares[0];
             a.Spaces = 1;
             a.Zones |= LandRules.ZonesOf(_strip[0].Class);

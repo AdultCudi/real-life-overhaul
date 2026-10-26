@@ -88,6 +88,7 @@ namespace RealLifeOverhaul
                 ConstructionBridges.Finish = Finish;
                 ConstructionBridges.FinishOver = FinishOver;
                 ConstructionBridges.SpacesOf = SpacesRules.SpacesOf;
+                BuildModeLinks.Connect();   // build mode: the district's demand, the ghost, the whole-building check (Wiring.BuildModeLinks)
                 ConstructionBridges.StandingAt = StandingAt;
                 ConstructionBridges.StandingOn = StandingOn;
                 ConstructionBridges.Demolish = Demolish;
@@ -187,6 +188,7 @@ namespace RealLifeOverhaul
 
             internal static void Disconnect()
             {
+                BuildModeLinks.Disconnect();
                 SiteBuilders.Reset();
                 DistrictBuildings.GroundGiven = null;
                 DistrictBuildings.Lessee = null;
