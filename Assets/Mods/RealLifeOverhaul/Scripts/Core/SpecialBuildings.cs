@@ -32,8 +32,11 @@ namespace RealLifeOverhaul
         /// <summary>True while names are given at all: the option is on and some building is in the book.</summary>
         public static bool Active => Settings.SpecialNames && Book.Count > 0;
 
-        /// <summary>True while the mod makes the city map's search: names are given, or a kind is to be found by its word.</summary>
-        internal static bool Searching => Active || FindableTypes.Count > 0;
+        /// <summary>
+        /// True: the mod always makes the city map's search, so any building is found by its address, empty or not (the game lists only a
+        /// building with a business name), with the special names and kinds found by their word besides.
+        /// </summary>
+        internal static bool Searching => true;
 
         /// <summary>Puts a building in the book under the feature's id, in place of what it held; false if refused (logged).</summary>
         public static bool Set(string id, CityBuildingController building, SpecialKind kind, string nameKey, string typeKey = null, Func<bool> shown = null)

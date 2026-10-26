@@ -81,7 +81,7 @@ namespace RealLifeOverhaul
                 }
                 UIs uis = InstanceBehavior<UIs>.Instance;
                 _card = uis != null ? uis.buildingResume : null;
-                enabled = ByBuilding.Count > 0 || Lights.Count > 0;
+                enabled = ByBuilding.Count > 0 || Lights.Count > 0 || _mapOpen;   // the open map: the player's buildings under their type rows (Owned)
                 if (!_filterFailed && uis != null && uis.mapFilters != null)
                 {
                     bool missing = !ReferenceEquals(_filters, uis.mapFilters);

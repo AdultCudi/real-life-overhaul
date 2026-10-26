@@ -11,7 +11,8 @@ namespace RealLifeOverhaul.NewBuildings
         ByYou = 1,      // "Rented by you": the player rents it or holds its deed
         ForRent = 2,    // a row of the buildings for rent, by type (Warehouse, Office, Retail, Residential ...): it is to let and of that type
         Business = 4,   // a row of a business type (the special buildings, the active businesses)
-        OnSale = 8      // "Buildings for sale": on the game's list and not the player's
+        OnSale = 8,     // "Buildings for sale": on the game's list and not the player's
+        OwnType = 16    // a type row, for a building the player owns or rents that is not to let (the game lights only one to let); the mod lights it after the game's look
     }
 
     /// <summary>What the city map's filters read of a building: its record's type and its registration's status.</summary>
@@ -24,6 +25,7 @@ namespace RealLifeOverhaul.NewBuildings
         public bool AvailableForRent;   // the registration's
         public bool OnSale;             // on the save's list of buildings for sale
         public string Business;         // the registration's business type ("ba:businesstype_empty" for none)
+        public bool Open;               // open for business now (BusinessHelper.IsBusinessOpen), asked only when "Hide closed" is on
     }
 
     /// <summary>The rows the player has switched on.</summary>
@@ -33,6 +35,7 @@ namespace RealLifeOverhaul.NewBuildings
         public bool OnSale;
         public ICollection<string> Types;        // building types whose "for rent" row is on
         public ICollection<string> Businesses;   // business types whose row is on
+        public bool HideClosed;                  // the "Hide closed" row is on
     }
 
     /// <summary>What a registration with the city map does, in the order it does it (<see cref="MapRules.Register"/>, <see cref="MapRules.Leave"/>).</summary>
@@ -52,7 +55,8 @@ namespace RealLifeOverhaul.NewBuildings
     /// The city map's filters and the registration of a building with them, game-free so EconomyCheck holds them (docs/features/uptown.md,
     /// "On the map"). The map keeps no list of its own: every time it opens or a row is switched, it walks CityManager's list of controllers once
     /// and lights each building by its record's type and its registration's status (<see cref="Rows"/> is that walk's decision, copied from
-    /// CityMapFilters.ApplyFilters). So a building the construction game finishes shows under the right rows the moment it is in that list with
+    /// CityMapFilters.ApplyFilters, with the owner's addition: a building the player owns or rents shows under its own type row too, which
+    /// MapPlaces.Owned lights once the game's look is over). So a building the construction game finishes shows under the right rows the moment it is in that list with
     /// the registration the game reads, and it must leave the list when it is knocked down, or its marker stays on the map. What the game
     /// does besides when a registration changes (its marker made permanent for a building the player rents or owns, which a load does once
     /// for each in CityMap.SetupPois) is <see cref="Register"/>'s. COST: nothing per frame; a few comparisons a call.
@@ -61,8 +65,9 @@ namespace RealLifeOverhaul.NewBuildings
     {
         /// <summary>
         /// The rows that light a building, as CityMapFilters.ApplyFilters decides: "Rented by you" for a building the player rents or holds the
-        /// deed of; the building's type row only while it is to let; a business row for the business in it; "for sale" for one on the list
-        /// that the player does not own. A building outside the list is lit by nothing: the walk never reaches it.
+        /// deed of; the building's type row while it is to let, and (the owner's decision) also for one the player owns or rents, lit by the mod
+        /// after the game's look; a business row for the business in it; "for sale" for one on the list that the player does not own.
+        /// A building outside the list is lit by nothing: the walk never reaches it.
         /// </summary>
         public static MapRow Rows(MapBuilding b, MapOn on)
         {
@@ -79,6 +84,10 @@ namespace RealLifeOverhaul.NewBuildings
             {
                 rows |= MapRow.ForRent;
             }
+            else if ((b.Owned || b.RentedByPlayer) && b.Type != null && on.Types != null && on.Types.Contains(b.Type) && !HiddenAsClosed(b, on))
+            {
+                rows |= MapRow.OwnType;   // the owner's decision: a building the player owns or rents also shows under its own type row, to let or not
+            }
             if (!string.IsNullOrEmpty(b.Business) && on.Businesses != null && on.Businesses.Contains(b.Business))
             {
                 rows |= MapRow.Business;
@@ -88,6 +97,30 @@ namespace RealLifeOverhaul.NewBuildings
                 rows |= MapRow.OnSale;
             }
             return rows;
+        }
+
+        // The game's "Hide closed" (ApplyFilters): a building not to let, not residential and not open for business is not lit.
+        private static bool HiddenAsClosed(MapBuilding b, MapOn on)
+        {
+            return on.HideClosed && !b.AvailableForRent && b.Type != ResidentialType && !b.Open;
+        }
+
+        private const string ResidentialType = "ba:buildingtype_residential";
+
+        /// <summary>
+        /// One line of the map's search list (CityMapFilters.PopulateSearchDropdown) and the word it is found by. A building with a business
+        /// name is listed as the game lists it, "name" over its address, found by the name. Any other building is listed too, by its
+        /// address over its type, found by the address. Nothing is left out of the search for being empty.
+        /// </summary>
+        public static string SearchLine(string businessName, string address, string typeName, out string word)
+        {
+            if (!string.IsNullOrWhiteSpace(businessName))
+            {
+                word = businessName;
+                return "<b><noparse>" + businessName + "</noparse></b><br><noparse>" + address + "</noparse>";
+            }
+            word = address;
+            return "<b><noparse>" + address + "</noparse></b>" + (string.IsNullOrWhiteSpace(typeName) ? "" : "<br><noparse>" + typeName + "</noparse>");
         }
 
         /// <summary>

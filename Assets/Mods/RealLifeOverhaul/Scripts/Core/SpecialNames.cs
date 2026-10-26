@@ -6,6 +6,7 @@ using Helpers;
 using Localizor;
 using Localizor.LanguageChangeEvent;
 using RealLifeOverhaul.GameUi;
+using RealLifeOverhaul.NewBuildings;
 using Streets;
 using TMPro;
 using UI;
@@ -52,6 +53,8 @@ namespace RealLifeOverhaul
         private Action<Address> _enterSeen;
         private Action<bool> _onMap;
         private Action<bool> _mapSeen;
+        private Action<Address> _onRegistration;
+        private Action<Address> _registrationSeen;
         private Action _onLanguage;
 
         private static FieldInfo _headlineField, _searchListField, _searchDropField, _optionsField;
@@ -77,6 +80,13 @@ namespace RealLifeOverhaul
                 if (open)
                 {
                     Search();
+                }
+            });
+            _onRegistration = Guard.Wrap<Address>(_ =>
+            {
+                if (CityMap.IsOpen)
+                {
+                    StartCoroutine(Guard.Routine(SearchSoon()));   // the game made its own list anew: ours again, after its handler
                 }
             });
             _onLanguage = Guard.Wrap(() =>
@@ -139,6 +149,22 @@ namespace RealLifeOverhaul
             }
         }
 
+        // A registration changed while the map is open: the game made its search list anew (its handler may run after ours), so a frame on ours is made again.
+        private IEnumerator SearchSoon()
+        {
+            yield return null;
+            Search();
+        }
+
+        /// <summary>The game's search list was made anew by the mod (a building left): ours again, only while the map is open (a shut map makes it when it opens).</summary>
+        internal static void SearchAgain()
+        {
+            if (_instance != null && CityMap.IsOpen)
+            {
+                _instance.Search();
+            }
+        }
+
         private IEnumerator Soon()
         {
             yield return null;   // after the game's own handlers of the same event have written their words
@@ -165,6 +191,7 @@ namespace RealLifeOverhaul
             }
             EventHold.Keep(ref GlobalEvents.onEnterBuilding, _onEnter, ref _enterSeen);
             EventHold.Keep(ref GlobalEvents.onCityMapToggle, _onMap, ref _mapSeen);
+            EventHold.Keep(ref GlobalEvents.onBuildingRegistrationChange, _onRegistration, ref _registrationSeen);
             ClaimedOffers.Keep();   // the mod's buildings off the market: two null tests once its pages are watched
             ClaimedMap.Keep();      // ...and out of the city map's rows to let and for sale: set up once
             FrontSigns.Keep();      // their fronts: no "For rent", their own sign: a few flag reads a building
@@ -470,14 +497,17 @@ namespace RealLifeOverhaul
                     if (string.IsNullOrWhiteSpace(name))
                     {
                         name = SpecialBuildings.FoundAs(building);   // a school or a hospital with no business name
-                        if (string.IsNullOrWhiteSpace(name))
-                        {
-                            continue;
-                        }
                     }
-                    options.Add("<b><noparse>" + name + "</noparse></b><br><noparse>" + building.building.Address.ToFormattedString() + "</noparse>");
-                    words.Add(name);
+                    string address = building.building.Address.ToFormattedString();
+                    string type = building.building.BuildingType;
+                    // Any other building too, by its address and type: MapRules.SearchLine is the one rule for a line.
+                    options.Add(MapRules.SearchLine(name, address, string.IsNullOrEmpty(type) ? null : type.ToLower().GetLocalization(), out string word));
+                    words.Add(word);
                     listed.Add(building);
+                    if (string.IsNullOrWhiteSpace(name))
+                    {
+                        continue;
+                    }
                     string[] tenants = SpecialBuildings.TenantsOf(building);
                     for (int t = 0; tenants != null && t < tenants.Length; t++)
                     {

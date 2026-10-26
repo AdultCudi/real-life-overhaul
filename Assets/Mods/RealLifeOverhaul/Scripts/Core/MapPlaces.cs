@@ -505,7 +505,8 @@ namespace RealLifeOverhaul
         {
             CityManager city = InstanceBehavior<CityManager>.Instance;
             var game = InstanceBehavior<GameManager>.Instance;
-            if (_quiet || _lightFailed || Lights.Count == 0 || city == null || city.cityMap == null || city.cityMap.isSubwayMode || UI.Smartphone.FullMenu.IsOpen
+            bool idle = Lights.Count == 0 && !_ownedDue && !_gameLooking && !CityMapFilters.Work.HasPendingWork;   // nothing to light, nothing to wait for
+            if (_quiet || _lightFailed || idle || city == null || city.cityMap == null || city.cityMap.isSubwayMode || UI.Smartphone.FullMenu.IsOpen
                 || (game != null && game.buildingOutdoorsCameraCaptureController != null && game.buildingOutdoorsCameraCaptureController.gameObject.activeSelf))
             {
                 _gameLooking = false;
@@ -516,8 +517,13 @@ namespace RealLifeOverhaul
             {
                 _lightLook++;   // the game's look at every building is over
                 RealLifeOverhaul.SpecialBuildings.Unlist();   // the mod's buildings out of the to-let rows, lit again below where ours want
+                OwnedDue();
             }
             _gameLooking = looking;
+            if (_ownedDue && !looking)
+            {
+                LightOwned();   // the player's buildings under their type rows, once, after the game's look
+            }
             for (int i = 0; i < Lights.Count; i++)
             {
                 MapPlace place = Lights[i];
@@ -564,6 +570,10 @@ namespace RealLifeOverhaul
             _mapOpen = open;
             _lightLook++;   // every place lit afresh on the map just opened
             _gameLooking = false;
+            if (open)
+            {
+                OwnedDue();   // and the player's buildings under their type rows, once the game's look is over
+            }
             try
             {
                 for (int i = 0; i < Categories.Count; i++)
@@ -621,6 +631,8 @@ namespace RealLifeOverhaul
             ByBuilding.Clear();
             Lights.Clear();
             _lightFailed = false;
+            _ownedFailed = false;
+            _ownedDue = false;
             _gameLooking = false;
             if (_onMap != null)
             {
