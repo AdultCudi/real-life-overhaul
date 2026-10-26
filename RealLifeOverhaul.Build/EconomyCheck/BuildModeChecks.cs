@@ -557,6 +557,9 @@ internal static partial class Program
         Check(!(mode + window + game + director + panel).Contains("BuildingHelper.GetBuildingRegistration(") && game.Contains("HeldUnitsGame.Registration(")
               && MethodText(mode, "private void ReadFacts()").Contains("catch (Exception e)"),
             "build mode sources: a lot's registration is read only where a building stands, and one lot that fails does not keep the window shut");
+        // The palette is made unreadable by Apply(false, true); reading it back threw on every tool pressed (26 Oct 2026).
+        Check(!Regex.IsMatch(mode + window + game + panel, @"\.GetPixels?\(") && MethodText(game, "public static Color32 Swatch(").Contains("layer.Colours"),
+            "build mode sources: the legend's colours come from the palette kept in memory, never read back from the unreadable texture");
         Check(MethodText(mode, "private void Awake()").Contains("enabled = false;") && mode.Contains("Guard.For(\"construction\", \"BuildMode\", typeof(BuildMode))")
               && MethodText(mode, "private void Update()").Contains("Guard.Fail(FrameGuard, e, this)") && MethodText(mode, "private void Update()").Contains("HotSpots.Time(HotUpdate)"),
             "build mode sources: its one Update guarded and timed, and not enabled until it opens: nothing a frame while closed");
