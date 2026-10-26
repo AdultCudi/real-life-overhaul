@@ -42,7 +42,11 @@ namespace RealLifeOverhaul.Schools
             new PieceTemplate { Kind = (int)CampusPieceKind.Hoop, Root = "BuildingBlocks", Name = "Prefab_BasketballHoop", X = -454.67f, Z = -326.22f, Y = 1.15f, Room = new Vector3(1.2f, 3f, 0.9f) },
             // The game keeps its pavement benches under a scene root of their own, "SleepingBench" (props_scan, 25 Oct 2026: SleepingBench/SleepingBench (11)),
             // the one the street furniture and the parks take. The campus once looked for it under BuildingBlocks at a place no bench stands.
-            new PieceTemplate { Kind = (int)CampusPieceKind.Bench, Root = GamePieces.BenchRoot, Name = GamePieces.BenchName, X = GamePieces.BenchX, Z = GamePieces.BenchZ, Y = 0.03f, Room = new Vector3(2.4f, 1.2f, 0.8f), Within = GamePieces.BenchReach },
+            new PieceTemplate
+            {
+                Kind = (int)CampusPieceKind.Bench, Root = GamePieces.BenchRoot, Name = GamePieces.BenchName, X = GamePieces.BenchX, Z = GamePieces.BenchZ, Y = 0.03f,
+                Room = new Vector3(2.4f, 1.2f, 0.8f), Within = GamePieces.BenchReach
+            },
             new PieceTemplate
             {
                 Kind = (int)CampusPieceKind.Tree, Root = "Vegetation", Name = "SM_PavementHoleforTrees_Broadleaf M1", X = 148.67f, Z = 475.57f, Y = 0.05f, Room = new Vector3(1.2f, 3f, 1.2f)

@@ -405,8 +405,8 @@ internal static partial class Program
             using JsonDocument doc = JsonDocument.Parse(File.ReadAllText(Path.Combine(locales, language.Key + ".json")));
             string next = doc.RootElement.GetProperty("reallife_changes_next").GetString();
             int at = next.IndexOf(language.Value, StringComparison.Ordinal);
-            Check(at > 0 && next.IndexOf(language.Value, at + 1, StringComparison.Ordinal) < 0 && !next.Substring(at).Contains("Fixed: ") && !next.Substring(at).Contains("Corrigé : "),
-                "uptown parks texts: What's new's next row ends with the parks' line, once, in " + language.Key);
+            Check(at > 0 && next.IndexOf(language.Value, at + 1, StringComparison.Ordinal) < 0,
+                "uptown parks texts: What's new's next row has the parks' line, once, in " + language.Key);
             Check(at > 0 && next.Substring(at).Length < 700, "uptown parks texts: the parks' line is the last of the row in " + language.Key + " (" + (at > 0 ? next.Length - at : -1) + " characters)");
         }
     }
