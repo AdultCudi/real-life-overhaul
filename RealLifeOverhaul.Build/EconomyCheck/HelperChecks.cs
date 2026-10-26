@@ -59,7 +59,7 @@ internal static partial class Program
         Check(sent == 1 && f.Work.AgencyTold == until, "helpers, office: one reminder in the whole last day, a reload after it included (" + sent + ")");
         string line = CareersStore.Write(f);
         Check(CareersStore.Read(line, out _).Work.AgencyTold == until, "helpers, office: the day it was told comes back from the save");
-        string old = line.Replace("|" + until + "~", "~");
+        string old = line.Replace("|" + until + "|0|~", "~");   // (a save from before the day told held neither it nor the day laid off and the employer after it: LayoffChecks)
         StudyFile was = CareersStore.Read(old, out _);
         Check(old != line && was.Work.AgencyTold == 0 && was.Work.AgencyUntil == until && ProRules.AgencyEnds(was.Work.AgencyUntil, was.Work.AgencyTold, until, h),
             "helpers, office: an old save without the field loads with nothing told");

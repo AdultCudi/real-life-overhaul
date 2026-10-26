@@ -9,15 +9,6 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Careers
 {
-    /// <summary>One employer of the city as the vacancies are made from it: a business, an office, a public building.</summary>
-    public sealed class EmployerRef
-    {
-        public string Name = string.Empty, Street = string.Empty, Type = string.Empty, Rival = string.Empty;
-        public int Number;
-        public EmployerKind Kind;
-        public long Professions;   // the professions its type employs (ProCatalogue.EmployedBy), read once a day
-    }
-
     /// <summary>What the working life reads of the city: its employers, a rival's name and whether the player is at work; lists made once a game day.</summary>
     internal static class WorkGame
     {
@@ -89,6 +80,71 @@ namespace RealLifeOverhaul.Careers
             }
             return null;
         }
+
+        /// <summary>
+        /// What the city says of the premises at an address now (<see cref="ClosureRules.Employs"/> judges the post by it), found in the
+        /// save's own list because the game's lookup (BuildingHelper.GetBuildingRegistration) makes a registration for a building that
+        /// has none and throws for one that is gone. False where nothing can be told yet: no save, no city, no registrations, or a
+        /// registration whose building the city does not have now (a district of the mod's own not standing at this load). A pass over the
+        /// save's registrations, asked once a game hour for each post.
+        /// </summary>
+        public static bool PremisesAt(string street, int number, out Premises at)
+        {
+            at = new Premises { Name = string.Empty, Rival = string.Empty };
+            List<BuildingRegistration> all = Save != null ? Save.BuildingRegistrations : null;
+            if (all == null || all.Count == 0 || string.IsNullOrEmpty(street) || InstanceBehavior<CityManager>.Instance == null)
+            {
+                return false;
+            }
+            if (TestShut != null && TestShut.Street == street && TestShut.Number == number)
+            {
+                at.Stands = true;   // a test's closed business (Options > Tests): the building stands and no business trades in it
+                return true;
+            }
+            for (int i = 0; i < all.Count; i++)
+            {
+                BuildingRegistration reg = all[i];
+                if (reg == null || reg.StreetNumber != number || reg.StreetName != street)
+                {
+                    continue;
+                }
+                if (!GameRegistrations.Found(reg))
+                {
+                    return false;
+                }
+                string type = reg.businessTypeName ?? string.Empty;
+                at.Stands = true;
+                at.Trades = !reg.RentedByPlayer && reg.HasEstablishedBusiness && type.Length > 0 && type != "ba:businesstype_empty";
+                at.Name = at.Trades ? TalentGame.NameOf(reg) : string.Empty;
+                at.Rival = at.Trades ? reg.businessOwnerRivalId ?? string.Empty : string.Empty;
+                return true;
+            }
+            at.Stands = BuildingHelper.GetBuilding(new Address(street, number)) != null;   // no registration: it stands only if the city still has the building (a demolition lets its records go)
+            return true;
+        }
+
+        /// <summary>
+        /// The day the game recorded a business closing (a market event of its own, kept some two months) whose business is the one
+        /// named, inside the days given; -1 for none. Names match the business's, or the rival's for a post the jobs board offered.
+        /// One walk over a short list, at a load.
+        /// </summary>
+        public static int ClosedOn(string name, int from, int to)
+        {
+            List<Entities.MarketEvent> events = Save != null ? Save.marketEvents : null;
+            int found = -1;
+            for (int i = 0; events != null && !string.IsNullOrEmpty(name) && i < events.Count; i++)
+            {
+                Entities.MarketEvent e = events[i];
+                if (e != null && e.type == Entities.MarketEventType.BusinessClosed && e.startDay >= from && e.startDay <= to && (e.businessName == name || e.rivalName == name))
+                {
+                    found = Math.Max(found, e.startDay);
+                }
+            }
+            return found;
+        }
+
+        /// <summary>A place a test has closed in the Careers tests (Options > Tests): <see cref="PremisesAt"/> reads it as shut. Null for none.</summary>
+        public static EmployerRef TestShut;
 
         private static string SafeType(BuildingRegistration reg)
         {

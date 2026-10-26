@@ -110,6 +110,10 @@ namespace RealLifeOverhaul.Careers
             {
                 return "reallife_work_why_gone";
             }
+            if (Gone(o))
+            {
+                return "reallife_work_why_gone";   // its business closed since the board was read
+            }
             if (w.Applied(o) != null)
             {
                 return "reallife_work_why_applied";
@@ -149,7 +153,7 @@ namespace RealLifeOverhaul.Careers
             var a = new Application { Day = day, Stage = (int)ApplyStep.Sent };
             o.CopyTo(a.Post);
             a.Score = ProRules.HireScore(CandidateFor(o));
-            a.Answer = day + TechRandom.Range(StudySeed, 8401, o.Id, 0, ProRules.AnswerDaysLeast, ProRules.AnswerDaysMost);
+            a.Answer = ClosureRules.AnswerDay(w, day, TechRandom.Range(StudySeed, 8401, o.Id, 0, ProRules.AnswerDaysLeast, ProRules.AnswerDaysMost));   // someone laid off is answered the next morning
             if (o.Via == (int)Via.Headhunter)
             {
                 Offer(a, day);

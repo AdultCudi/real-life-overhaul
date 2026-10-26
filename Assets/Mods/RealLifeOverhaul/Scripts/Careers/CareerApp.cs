@@ -354,6 +354,10 @@ namespace RealLifeOverhaul.Careers
             if (j == null)
             {
                 box.Title(CareersText.T("reallife_career_job_none_title"));
+                if (ClosureRules.Shown(w, day))
+                {
+                    LaidOffNote(box, w, day);   // who closed, and the way to the open roles at once
+                }
                 box.Note(CareersText.T(w.Retired > 0 ? "reallife_career_job_retired" : "reallife_career_job_none"));
                 NoJobMore(box, w, day);
                 Meta.Guide.Point(box, LifeGuide);

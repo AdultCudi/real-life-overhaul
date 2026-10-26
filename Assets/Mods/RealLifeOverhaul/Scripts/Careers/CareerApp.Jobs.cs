@@ -52,6 +52,10 @@ namespace RealLifeOverhaul.Careers
             box.Title(CareersText.T("reallife_career_jobs_title"));
             box.Note(CareersText.T("reallife_career_jobs_about"));
             box.Section("reallife_ibox_sec_now");
+            if (ClosureRules.Priority(w, day))
+            {
+                box.Line(CareersText.T("reallife_career_laid_off_priority", "day", CareersText.Day(w.LaidOffDay + ClosureRules.PriorityDays)), CellTone.Green);
+            }
             box.Row("reallife_career_sum_open", open.ToString(), open > 0 ? CellTone.Green : CellTone.Plain);
             if (open == 0)
             {

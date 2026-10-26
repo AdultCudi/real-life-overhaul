@@ -342,6 +342,8 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_work_test_vacancies", () => Careers.CareersDirector.Instance?.TestVacancies())
                 .AddButton("reallife_work_test_shift_hours", () => Careers.CareersDirector.Instance?.TestShiftHours())
                 .AddButton("reallife_work_test_forklift", () => Careers.CareersDirector.Instance?.TestForklift())
+                .AddButton("reallife_work_test_closed", () => Careers.CareersDirector.Instance?.TestClosed())
+                .AddButton("reallife_work_test_moved", () => Careers.CareersDirector.Instance?.TestMoved())
                 .AddToggle(Settings.CareersAgencyNoteId, "reallife_work_opt_agency_note", Settings.CareersAgencyNote,
                     v => Settings.CareersAgencyNote = v)
                 .AddToggle(Settings.CareersRejectReasonId, "reallife_work_opt_reject_reason", Settings.CareersRejectReason,
