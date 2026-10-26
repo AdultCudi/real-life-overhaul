@@ -21,7 +21,7 @@
    "source": "models/<id>/: a Blender export each (README, 'Adding a prop from Blender')",
    "models": "models",
    "modules": [],
-   "triangles": 60000,
+   "triangles": 100000,
    "atlas": {"width": 2048, "height": 2048, "grows": true},
    "mask_divisor": 2,
    "decals": false,

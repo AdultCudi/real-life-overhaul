@@ -85,7 +85,7 @@ read that one table.
 | bundle | source | takes new props | triangles | atlas | disk |
 |---|---|---|---|---|---|
 | `reallife_props` | the procedural modules (`scripts\props.py` and its modules) | **no**: closed, it keeps what it has | 130 000 | 4096 x 2048, fixed | 16 MB |
-| `reallife_props_2` | `models\<id>\`, one Blender export each | **yes** | 60 000 | grows by powers of two from 256 x 256 to 2048 x 2048 | 8 MB |
+| `reallife_props_2` | `models\<id>\`, one Blender export each | **yes** | 100 000 | grows by powers of two from 256 x 256 to 2048 x 2048 | 8 MB |
 | `reallife_props_site` (the set `site`) | the procedural modules `build` and `landmarks`: the building sites' props and Uptown's stadium | no: closed | 12 000 | 1024 x 512, fixed | 1 MB |
 
 **Which bundle a prop goes in.** A new prop goes in the second bundle (the last open row of `sets.json`; the `site` row after it is closed). A prop of
@@ -104,7 +104,7 @@ holds (BC7, one byte a pixel, a third more for the mipmaps; the mask is half eac
 | 2048 x 2048 (its limit) | 5.3 MB | 1.3 MB | 6.7 MB |
 
 A 256 px picture is enough for a hand-held prop and 512 for a large one, so the full atlas holds some thirty to sixty
-props; 6.7 MB beside the first bundle's 14.0 MB. Its 60 000 triangles are about 3.4 MB of meshes at most. A missing
+props; 6.7 MB beside the first bundle's 14.0 MB. Its 100 000 triangles are about 15 MB of meshes at most (the ten buildings it holds now, 83 786 triangles, are 12.8 MB in memory and 1.9 MB on disk). A missing
 second bundle (an older install) costs nothing: the mod writes one warning and its props are drawn as their plain
 shapes, as for any prop it lacks.
 
@@ -146,9 +146,30 @@ run time, and the rest stay swatches of the atlas:
   glTF front of +Z, so a building is exported as it is; nothing turns it. (A prop's front is +Y/+Z as the next section says; a building
   is the exception, its code (`Schools/CampusLookRules`) knows where its door and its walls are.)
 
-The pipeline refuses nothing for a building's size: models up to 60 m a side and 60 000 triangles a bundle are allowed, and a mesh
+The pipeline refuses nothing for a building's size: models up to 80 m a side (the glass corner tower's mast is 71 m) and 100 000 triangles a bundle are allowed, and a mesh
 stays under 65 535 vertices (the main school's 14 786 triangles are 28 208). Its check stays: the sum of the parts must equal the
 mesh and the build and the bundle's verify step fail on an empty part, a missing stand-in colour or a submesh count that is not the row's.
+
+## The corner buildings (build mode)
+
+Seven buildings for the block corners of build mode (`Scripts/Corners`, CornerRules), each a look over the copy engine's building
+of the right type: its own look hidden, its door moved to the model's entrance, the shop letters drawn live by the mod (the
+business's name on the model's sign anchors). **Pivot: the street corner at ground level**; front A along +X facing -Z, front B
+along +Z facing -X, the building in the +X +Z quarter (the mod turns it by a quarter turn for each of a block's four corners).
+`swatch_brick` is the game's `M_Bricks_01` and `swatch_glass` the game's glass (`M_Glass`, else `M_GlassBlueHue`), the rest
+the atlas's swatches. A model with no second UV map (the bodega's and the diner's exports) has each face box projected at world
+scale by the build. No levels of detail: the build refuses `_LOD` objects (one mesh, the budget is the limit), and each building
+is one draw for each material it uses: the atlas, brick and glass, three at most.
+
+| id | size (m) | triangles | draws | uses | entrance |
+|---|---|---|---|---|---|
+| `corner_bodega` | 15.6 x 24.5 x 13.6 | 6 425 | 3 | shops (homes above) | the cut corner |
+| `corner_bank` | 19.8 x 20.2 x 17.8 | 9 488 | 2 | offices, shops | the cut corner |
+| `corner_deco` | 20.8 x 61.2 x 18.8 | 14 396 | 2 | offices | the cut corner |
+| `corner_loft` | 17.6 x 31.8 x 15.4 | 10 297 | 3 | warehouses, shops | front A beside the corner |
+| `corner_prewar` | 21.6 x 33.7 x 22.0 | 14 036 | 3 | homes | the cut corner |
+| `corner_diner` | 16.1 x 10.6 x 14.4 | 2 730 | 3 | shops | the cut corner |
+| `corner_glass` | 23.3 x 70.7 x 21.3 | 5 168 | 2 | offices | the cut corner |
 
 ## Adding a prop from Blender
 

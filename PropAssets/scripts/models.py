@@ -12,7 +12,8 @@ Each material of the model is either a swatch of the atlas, named swatch_<name> 
 bottom, as the procedural props are painted), or the one painted material, whose picture goes into the set's atlas
 whole and whose UVs are drawn into its region, or, for a building (README, "Buildings"), one the game draws with a
 material of its own: the model's .json lists those slots under "game", {"<slot>": {"kind": "brick", "tile": 1.65}}, and
-they become submeshes after the atlas's, keeping the model's world-scale UVs (its second UV map, 1 unit a metre) divided by
+they become submeshes after the atlas's, keeping the model's world-scale UVs (its second UV map, 1 unit a metre, or a box
+projection of each face at world scale where the export has none) divided by
 `tile`, the metres one repeat of the game's picture covers. The model is read in Blender's own space, exactly as it was made: X
 right, Y forward (the prop's front looks along +Y), Z up, metres, the origin at the pivot; prop_kit turns that into
 Unity's on the way out, as for every prop.
@@ -36,7 +37,7 @@ SWATCH = re.compile(r"^swatch_([a-z0-9_]+?)(?:\.\d{3})?$")       # Blender adds 
 NOT_SHIPPED = re.compile(r"^(?:UCX|UBX|UCP|USP)_|_LOD[1-9]\d*$", re.I)
 LARGEST_PICTURE = 1024      # pixels a side: a prop seen in the street needs 256 or 512
 GAME_KINDS = ("brick", "roof", "glass", "fence")   # what the mod's CampusLookRules names a game material for (Core/GameLook); one submesh each
-SIZE_RANGE = (0.01, 60.0)   # metres, the prop's largest side: outside it the export's scale is wrong (centimetres?)
+SIZE_RANGE = (0.01, 80.0)   # metres, the prop's largest side: outside it the export's scale is wrong (centimetres?); the glass corner tower's mast is 71 m
 
 
 def folders():
@@ -258,11 +259,18 @@ def maker(model):
         prop = Prop(model, settings.get("material", "lit"), pivot=settings.get("pivot", "ground centre"), note=settings.get("note", ""))
         if game:
             layers = bm.loops.layers.uv
-            if len(layers.keys()) < 2:
-                raise SystemExit("models/%s: a game material wants the model's second UV map (world scale, 1 unit a metre); it has one" % model)
-            world_source = layers.values()[1]
+            world_source = layers.values()[1] if len(layers.keys()) >= 2 else None
             world = layers.new("world")                       # a layer of a name of its own: the kit's UVMap is made on each part
             for face in bm.faces:
+                if world_source is None:
+                    # No second UV map in the export: each face's own box projection at world scale, 1 unit a metre, on the
+                    # two axes its normal lies across (a wall along X takes x and z, along Y takes y and z, a roof x and y).
+                    n = face.normal
+                    ax, ay, az = abs(n.x), abs(n.y), abs(n.z)
+                    for loop in face.loops:
+                        c = loop.vert.co
+                        loop[world].uv = (c.y, c.z) if ax >= ay and ax >= az else (c.x, c.z) if ay >= az else (c.x, c.y)
+                    continue
                 for loop in face.loops:
                     loop[world].uv = loop[world_source].uv
         uv = bm.loops.layers.uv.verify() if bm.loops.layers.uv.active is None else bm.loops.layers.uv.active

@@ -219,6 +219,19 @@ MODEL_SWATCHES = {
     "leaf": (_srgb((0.14, 0.32, 0.12)), 0.0, 0.5, 0.0),
     "accent2": (_srgb((0.85, 0.62, 0.12)), 0.0, 0.5, 0.2),       # the junior block's yellow window panels
     "sash": (_srgb((0.025, 0.04, 0.032)), 0.0, 0.35, 0.3),       # the window frames and sashes: the dark green black of the city's old windows
+    # The corner buildings of build mode (models/corner_*): their own finishes; brick and glass are the game's materials.
+    "brick2": (_srgb((0.55, 0.36, 0.26)), 0.0, 0.15, 0.6),      # the art deco tower's tan brick
+    "lime": (_srgb((0.86, 0.83, 0.75)), 0.0, 0.2, 0.6),         # the bank's pale limestone
+    "awning": (_srgb((0.08, 0.32, 0.18)), 0.0, 0.25, 0.4),      # canvas awnings and the bodega's fascia board
+    "sign": (_srgb((0.10, 0.10, 0.10)), 0.0, 0.4, 0.2),         # sign boards the live signs are drawn on
+    "roof": (_srgb((0.22, 0.22, 0.23)), 0.0, 0.15, 0.5),        # flat roofs and parapet caps
+    "neon": (_srgb((1.0, 0.25, 0.35)), 0.0, 0.7, 0.0),          # the diner's neon tubes
+    "red": (_srgb((0.62, 0.08, 0.08)), 0.0, 0.55, 0.2),         # the diner's enamel panels
+    "cream": (_srgb((0.90, 0.86, 0.74)), 0.0, 0.3, 0.5),        # cream brick, render and panels
+    "iron": (_srgb((0.30, 0.32, 0.30)), 0.5, 0.35, 0.4),        # the loft's cast iron
+    "steel": (_srgb((0.45, 0.48, 0.52)), 0.7, 0.55, 0.2),       # mullions, masts and the glass tower's frame
+    "teal": (_srgb((0.10, 0.45, 0.45)), 0.0, 0.4, 0.3),
+    "terra": (_srgb((0.70, 0.45, 0.30)), 0.0, 0.25, 0.5),       # the pre-war block's terracotta
 }
 SWATCH_SIZE = (40, 80)     # a swatch is one finish and its grime, read 7 px in from its edges: smaller swatches leave the atlas room for more modules
 

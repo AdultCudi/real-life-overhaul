@@ -1,0 +1,16 @@
+{
+ "budget": 5600,
+ "material": "lit",
+ "pivot": "the street corner at ground level: front A along +X facing -Z, front B along +Z facing -X (Unity), the building in the +X +Z quarter",
+ "note": "Build mode's corner building: a glass office tower with a steel frame and a mast (71 m), its lobby on the cut corner. The look only: the copy engine's building of the right type stands under it with its look hidden, its door moved to this model's entrance (Construction/CornerLookRules, Uptown/CornerLook). The shop letters are live signs drawn by the mod on the anchors of CornerLookRules.",
+ "game": {
+  "swatch_brick": {
+   "kind": "brick",
+   "tile": 1.65
+  },
+  "swatch_glass": {
+   "kind": "glass",
+   "tile": 2.0
+  }
+ }
+}
