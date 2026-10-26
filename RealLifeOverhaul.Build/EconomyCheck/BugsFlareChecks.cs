@@ -193,7 +193,7 @@ internal static partial class Program
               && TextProviders.Forgets(TextProviders.Of(TextProvider.Off)) == TextForget.Nothing,
             "RLO Texts: Forget the key lets go of nothing with Ollama, LM Studio or Off chosen (it signed the player out of ChatGPT)");
         Check(TextProviders.Forgets(TextProviders.Of(TextProvider.ChatGpt)) == TextForget.SignOut && TextProviders.Forgets(TextProviders.Of(TextProvider.OpenAi)) == TextForget.Key
-              && TextProviders.Forgets(TextProviders.Of(TextProvider.Anthropic)) == TextForget.Key,
+              && TextProviders.Forgets(TextProviders.Of(TextProvider.Gemini)) == TextForget.Key,
             "RLO Texts: ChatGPT chosen signs out, a service with a key forgets its key");
     }
 
