@@ -184,8 +184,14 @@ namespace RealLifeOverhaul.Construction
             {
                 box.Row("reallife_bld_row_use", ConstructionText.T(BuildCatalogue.UseKeys[(int)p.Use]));
             }
-            bool ready = p.Kind == ProjectKind.Extension || _director.DesignChoices(p, _designs);
-            if (p.Kind == ProjectKind.Extension)
+            // A corner building of build mode wears its model over its design: it is changed in build mode, so no list of the city's designs here.
+            string corner = p.Kind == ProjectKind.Plot ? ConstructionDirector.CornerName(p.Look) : null;
+            bool ready = p.Kind == ProjectKind.Extension || corner != null || _director.DesignChoices(p, _designs);
+            if (corner != null)
+            {
+                box.Row("reallife_corner_project_row", corner);
+            }
+            else if (p.Kind == ProjectKind.Extension)
             {
                 StoreysSelector(box, p, asked);   // ConstructionApp.Redevelop.cs: floors on top, the front its own
             }

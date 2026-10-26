@@ -70,6 +70,8 @@ namespace RealLifeOverhaul
             Guard.Step("the landmarks' places and their lift of Uptown's traffic", () => Landmarks.LandmarksDirector.Register(context.Logger));
             // After the landmarks': the campus's name lifts Uptown's traffic after theirs.
             Guard.Step("the schools' street and their lift of Uptown's traffic", () => Schools.SchoolsDirector.Register(context.Logger));
+            // After Uptown's: its finished buildings that wear a corner building's model ask for it while the city loads.
+            Guard.Step("the corner buildings over Uptown's finished buildings", () => Corners.CornerLook.Register(context.Logger));
             Guard.Step("the city expansion's test run, if one waits for its load", () => TestRun.RunDirector.Begin(context.Logger));   // before any save is read: it hears the load's own lines
 
             var options = new ModOptions()

@@ -27,6 +27,9 @@ namespace RealLifeOverhaul
                 BuildModeBridges.GhostGone = GhostGone;
                 BuildModeBridges.CompleteNow = DistrictBuildings.CompleteNow;
                 BuildModeBridges.CompleteAll = DistrictBuildings.CompleteAll;
+                BuildModeBridges.CornerGhost = CornerLinks.Ghost;   // a corner building's model as the ghost, and the corner buildings' check (Wiring.CornerLinks)
+                BuildModeBridges.CornerGhostGone = CornerLinks.GhostGone;
+                BuildModeBridges.CornerCheck = CornerLinks.Check;
             }
 
             internal static void Disconnect()
@@ -37,6 +40,9 @@ namespace RealLifeOverhaul
                 BuildModeBridges.GhostGone = null;
                 BuildModeBridges.CompleteNow = null;
                 BuildModeBridges.CompleteAll = null;
+                BuildModeBridges.CornerGhost = null;
+                BuildModeBridges.CornerGhostGone = null;
+                BuildModeBridges.CornerCheck = null;
             }
 
             private static int Demand(int use)

@@ -163,13 +163,17 @@ namespace RealLifeOverhaul.Construction
             Join(t, p.HireDays, p.HirePace, p.HireStages, p.HireFree ? 1 : 0);   // a hired builder's contract, after every field an older reader knows
             t.Append('|').Append(p.HirePaid.ToString(Inv)).Append('|').Append(p.HirePenalty.ToString(Inv));
             t.Append('|').Append(p.ClaimCase.ToString(Inv));   // a claim over faults, after every field an older reader knows
-            if (p.FitDesign.Length > 0 || p.NoticeUntil > 0 || p.BuyOut != 0L || p.Added > 0)
+            if (p.FitDesign.Length > 0 || p.NoticeUntil > 0 || p.BuyOut != 0L || p.Added > 0 || p.Look.Length > 0)
             {
                 // Redevelopment's fields, after every field an older reader knows, and only when one is set: a record without them is as before.
                 t.Append('|').Append(Esc(p.FitDesign)).Append('|').Append(Esc(p.FitType)).Append('|').Append(p.NoticeUntil.ToString(Inv)).Append('|').Append(p.BuyOut.ToString(Inv));
-                if (p.Added > 0)
+                if (p.Added > 0 || p.Look.Length > 0)
                 {
                     t.Append('|').Append(p.Added.ToString(Inv));
+                }
+                if (p.Look.Length > 0)
+                {
+                    t.Append('|').Append(Esc(p.Look));   // a corner building's model, after the extension's storeys: an older reader stops before it
                 }
             }
         }
@@ -542,7 +546,9 @@ namespace RealLifeOverhaul.Construction
             p.FitType = r.S();
             p.NoticeUntil = Math.Max(0, r.I(0));
             p.BuyOut = Math.Max(-1L, r.L(0L));
-            p.Added = p.Kind == ProjectKind.Extension ? BuildCatalogue.Clamp(r.I(0), 0, RedevelopRules.StoreysMost) : 0;
+            int added = r.I(0);
+            p.Added = p.Kind == ProjectKind.Extension ? BuildCatalogue.Clamp(added, 0, RedevelopRules.StoreysMost) : 0;
+            p.Look = p.Kind == ProjectKind.Plot ? r.S() : string.Empty;   // a corner building's model; a line without it has none
             if (p.FitDesign.Length == 0)
             {
                 p.FitType = string.Empty;   // no design, nothing to install

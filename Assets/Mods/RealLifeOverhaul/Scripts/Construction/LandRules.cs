@@ -20,6 +20,10 @@ namespace RealLifeOverhaul.Construction
         public int Index;
         public int Spaces;         // the spaces it takes: a site of several spaces bought side by side takes them all
         public string Size;        // the game's size planned on it, or null for a free space the construction game sells
+        public bool StreetLow;     // a cross street runs past its strip's low end (west or south): the block's corner there (Uptown's LayoutRules.StreetEnds)
+        public bool StreetHigh;    // ... past its high end (east or north)
+        public float EdgeLow;      // m on its strip's axis: the block's edge at the low end, the cross street's building line
+        public float EdgeHigh;     // ... at the high end
     }
 
     /// <summary>

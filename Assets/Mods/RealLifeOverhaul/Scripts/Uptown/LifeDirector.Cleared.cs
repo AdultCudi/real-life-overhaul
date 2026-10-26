@@ -185,6 +185,7 @@ namespace RealLifeOverhaul.Uptown
             int records = DistrictSaveDirector.Clear(made.Spec.Street, made.Spec.Number, made.DoorX + Mathf.Sin(turn) * OutsideDoor, made.DoorY,
                 made.DoorZ + Mathf.Cos(turn) * OutsideDoor, made.DoorFacing, UptownLots.Exit.District, "it was knocked down");
             int fillers = LifeGame.Leave(made, ClearSpan);
+            LookGone(made);   // a look worn over it goes with it
             CopyGame.Show(made.Controller, false);
             made.Shown = false;
             MadeBuildings.Changed();

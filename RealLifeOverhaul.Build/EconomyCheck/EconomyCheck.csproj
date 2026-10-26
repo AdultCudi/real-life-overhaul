@@ -616,6 +616,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Schools\SchoolGrounds.cs" Link="Mod\Schools\SchoolGrounds.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Schools\SchoolGrounds.Dressing.cs" Link="Mod\Schools\SchoolGrounds.Dressing.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Schools\CampusLookRules.cs" Link="Mod\Schools\CampusLookRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Corners\CornerRules.cs" Link="Mod\Corners\CornerRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\GroundSurvey.cs" Link="Mod\GroundSurvey.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Civic\CouncilZoning.cs" Link="Mod\CouncilZoning.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\RingRules.cs" Link="Mod\Construction\RingRules.cs" />

@@ -111,6 +111,8 @@ namespace RealLifeOverhaul.Construction
                 .Test("reallife_bld_mode_test_layer", () => ConstructionDirector.TestBuildModeLayerNow())
                 .Test("reallife_bld_mode_test_zoning", () => ConstructionDirector.TestBuildModeZoningNow())
                 .Test("reallife_bld_mode_test_window", () => ConstructionDirector.TestBuildModeWindowNow())
+                .Test("reallife_corner_test_stand", () => ConstructionDirector.TestCornerStandNow())
+                .Check("reallife_corner_test_check", () => ConstructionDirector.TestCornerCheckNow(), "Construction check (corner buildings: check)", RunPlace.Here)
                 .Check("reallife_bld_test_show_flat", () => ConstructionDirector.TestShowFlatNow(), "Show flats check (a show flat at the test project now)", RunPlace.Here)
                 .Check("reallife_bld_test_viewing", () => ConstructionDirector.TestViewingNow(), "Show flats check (a viewing now)", RunPlace.Here)
                 .Check("reallife_bld_test_show_buyer", () => ConstructionDirector.TestShowBuyerNow(), "Show flats check (a buyer at the show flat now)", RunPlace.Here)

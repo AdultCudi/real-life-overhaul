@@ -232,6 +232,24 @@ namespace RealLifeOverhaul.Uptown
             z0 = IsFirst(row, column) ? FirstBacks[column - FirstColumn] + BackGap : AvenueZ(row - 1) + AvenueHalf;
         }
 
+        /// <summary>
+        /// A strip's two corners: true for a strip along an avenue of a block of the band (the plan gives the corners to the avenues'
+        /// strips, which run the block's whole width), with the block's west and east edges, where its two cross streets' building
+        /// lines run; false for a street's strip (its ends meet the avenues' strips, no street), a ring block's or a square's.
+        /// <paramref name="facing"/>: the way the strip's street lies (0 north, 180 south). Build mode's corner sites (Scripts/Corners).
+        /// </summary>
+        public static bool StreetEnds(int row, int column, int facing, out float low, out float high)
+        {
+            low = high = 0f;
+            int f = ((facing % 360) + 360) % 360;
+            if ((f != 0 && f != 180) || row < 1 || row > Rows || column < 1 || column > Columns || IsRing(row, column) || IsSquare(row, column))
+            {
+                return false;
+            }
+            Block(row, column, out low, out _, out high, out _);
+            return true;
+        }
+
         // ---- the lots
 
         /// <summary>Every lot of the band, in id order.</summary>

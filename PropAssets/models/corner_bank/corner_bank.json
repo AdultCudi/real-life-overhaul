@@ -1,0 +1,16 @@
+{
+ "budget": 10300,
+ "material": "lit",
+ "pivot": "the street corner at ground level: front A along +X facing -Z, front B along +Z facing -X (Unity), the building in the +X +Z quarter",
+ "note": "Build mode's corner building: a corner bank: limestone and granite, columns and a frieze on its avenue front, its door on the cut corner. The look only: the copy engine's building of the right type stands under it with its look hidden, its door moved to this model's entrance (Construction/CornerLookRules, Uptown/CornerLook). The shop letters are live signs drawn by the mod on the anchors of CornerLookRules.",
+ "game": {
+  "swatch_brick": {
+   "kind": "brick",
+   "tile": 1.65
+  },
+  "swatch_glass": {
+   "kind": "glass",
+   "tile": 2.0
+  }
+ }
+}

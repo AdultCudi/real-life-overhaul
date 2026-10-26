@@ -111,7 +111,13 @@ namespace RealLifeOverhaul.Uptown
         /// <summary>A building finished on an empty lot, kept in the district's line, a district building from the next load (DistrictBuildings.Finish).</summary>
         public static bool Finish(string lotId, string design, string size, int version, string type, int storeys, FinishOwner owner, double price, out string why)
         {
-            return FinishOver(lotId, null, design, size, version, type, storeys, owner, price, out why);
+            return FinishOver(lotId, null, design, size, version, type, storeys, owner, price, null, out why);
+        }
+
+        /// <summary>As the call above, wearing a look of another feature's (DistrictBuildings.LookStand), or none.</summary>
+        public static bool Finish(string lotId, string design, string size, int version, string type, int storeys, FinishOwner owner, double price, string look, out string why)
+        {
+            return FinishOver(lotId, null, design, size, version, type, storeys, owner, price, look, out why);
         }
 
         /// <summary>
@@ -121,10 +127,22 @@ namespace RealLifeOverhaul.Uptown
         public static bool FinishOver(string lotId, IList<string> over, string design, string size, int version, string type, int storeys, FinishOwner owner, double price,
                                       out string why)
         {
+            return FinishOver(lotId, over, design, size, version, type, storeys, owner, price, null, out why);
+        }
+
+        /// <summary>
+        /// As above, wearing <paramref name="look"/>, another feature's look over the building (Scripts/Corners: a corner building's model),
+        /// or none. A look's building stands beneath it on the ground the look gives it, so its size need only stand on the lot's spaces.
+        /// </summary>
+        public static bool FinishOver(string lotId, IList<string> over, string design, string size, int version, string type, int storeys, FinishOwner owner, double price,
+                                      string look, out string why)
+        {
             bool known = FindLot(lotId, out BuildingsLot lot);
             bool structure = known && MadeGame.StructureTakes(size, version, type);
             bool spanned = over != null && over.Count > 0;
-            why = BuildingsRules.FinishRefusal(lot, known, Taken(lotId), size, version, type, storeys, owner, price, structure, Lives, GoingPublic.InSession, spanned, Cleared(lotId));
+            bool worn = !string.IsNullOrEmpty(look);
+            why = BuildingsRules.FinishRefusal(lot, known, Taken(lotId), size, version, type, storeys, owner, price, structure, Lives, GoingPublic.InSession, spanned,
+                Cleared(lotId) || worn);
             if (why == null && spanned)
             {
                 why = SpanWhy(lotId, over);
@@ -152,12 +170,13 @@ namespace RealLifeOverhaul.Uptown
             _state.Finished.Add(new FinishedBuilding
             {
                 Lot = lotId, Size = size, Version = version, Type = type, Design = design ?? string.Empty, Storeys = storeys, Owner = owner,
-                Price = owner == FinishOwner.Player ? price : 0, Day = save != null ? save.Day : 0, Settled = false, Over = also
+                Price = owner == FinishOwner.Player ? price : 0, Day = save != null ? save.Day : 0, Settled = false, Over = also, Look = worn ? look : null
             });
             WriteState();
             _stamp++;
             Logger?.Info("Uptown: a building finished on lot " + lotId + (spanned ? " and over " + also.Length + " lot(s) of its block" : string.Empty) + " ("
                          + NewBuildingsRules.StructureName(size, version) + ", " + type + ", " + (owner == FinishOwner.Player ? "the player's own" : "the city's")
+                         + (worn ? ", wearing " + look : string.Empty)
                          + ") stands there as a district building from the next load.");
             return true;
         }

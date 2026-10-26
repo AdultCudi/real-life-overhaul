@@ -178,7 +178,7 @@ internal static partial class Program
             "stand now sources: the site's props and the look over its ground come down in the same moment, and the wiring is taken off with the rest");
         // The load and the move in play make the same declaration and set up the same way.
         string declare = MethodText(director, "private static void Declare(");
-        Check(declare.Contains("MadeSpec kept = FinishedSpec(lot, f);") && declare.Contains("MadeBuildings.Declare(kept);") && stand.Contains("StandRules.Spec(GroundOf(lot, f), f, TrafficOf(lot.Id)")
+        Check(declare.Contains("MadeSpec kept = FinishedSpec(lot, f);") && declare.Contains("MadeBuildings.Declare(kept);") && stand.Contains("BuildingsLot ground = GroundOf(lot, f);") && stand.Contains("StandRules.Spec(ground, f, TrafficOf(lot.Id)")
               && ModSource(@"Uptown\LifeGame.Buildings.cs").Contains("return StandRules.Spec(lot, structure, others, design, storeys, traffic, wanted);"),
             "stand now sources: the load declares a finished building from the same function a move in play does");
         Check(MethodText(director, "private static bool FirstLife(").Contains("if (!StandRules.FirstLoadDue(f))") && MethodText(director, "private static bool FirstLife(").Contains("StandRules.SetUp(f);")

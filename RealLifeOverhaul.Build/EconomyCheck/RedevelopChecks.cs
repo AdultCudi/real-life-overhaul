@@ -290,7 +290,8 @@ internal static partial class Program
             "cleared ground: a site offers a design of its own spaces, or of fewer that fills its frontage, never one wider");
         string lots = ModSource(@"Uptown\LifeDirector.Lots.cs"), land = ModSource(@"Construction\ConstructionApp.Land.cs"), demolish = ModSource(@"Construction\ConstructionDirector.Demolish.cs");
         string tests = ModSource(@"Construction\ConstructionDirector.RedevelopTests.cs"), guide = ModSource(@"Construction\ConstructionGuide.cs");
-        Check(MethodText(lots, "public static bool FinishOver(").Contains("spanned, Cleared(lotId))"), "cleared ground: the district takes a building of any size that fits on a lot knocked down");
+        Check(lots.Contains("spanned,\r\n                Cleared(lotId) || worn);") || lots.Contains("spanned,\n                Cleared(lotId) || worn);"),
+            "cleared ground: the district takes a building of any size that fits on a lot knocked down (and under a corner building's model)");
         Check(MethodText(demolish, "public bool ClearedGround(").Contains("_state.Lot(lot) != null && AskCleared(lot)") && land.Contains("_director.ClearedGround(lot.Id) ? \"reallife_bld_land_state_cleared\""),
             "cleared ground: the Land tab says the player's ground is cleared and ready to build on");
         string build = MethodText(tests, "private bool ClearedBuildNow(");
@@ -506,8 +507,8 @@ internal static partial class Program
             "the city redevelops sources: their permission, notice, objections, decision and works are the player's own rules");
         string works = MethodText(city, "private void CityWorksDone("), built = MethodText(city, "private void CityBuilt(");
         Check(works.Contains("CityDemolish(r.Lot)") && MethodText(city, "private static string CityDemolish(").Contains("ConstructionBridges.Demolish(lot)") && works.Contains("ConstructionBridges.Extend(r.Lot, r.Storeys)")
-              && works.Contains("ConstructionBridges.Convert(r.Lot, BuildCatalogue.UseTypes[(int)r.Use])") && built.Contains("FinishOverLot(r.Lot, _over, design.Name, design.Size, design.Version, type, 0, false, 0.0, out why)")
-              && built.Contains("FinishLot(r.Lot, design.Name, design.Size, design.Version, type, 0, false, 0.0, out why)") && built.Contains("RivalNews(r.Rival, RivalDeveloped, 1)"),
+              && works.Contains("ConstructionBridges.Convert(r.Lot, BuildCatalogue.UseTypes[(int)r.Use])") && built.Contains("FinishOverLot(r.Lot, _over, design.Name, design.Size, design.Version, type, 0, false, 0.0, design.Look, out why)")
+              && built.Contains("FinishLot(r.Lot, design.Name, design.Size, design.Version, type, 0, false, 0.0, design.Look, out why)") && built.Contains("RivalNews(r.Rival, RivalDeveloped, 1)"),
             "the city redevelops sources: the district takes their works by the player's own calls, and what they build is the city's, its builder's record and the market's news");
         string let = MethodText(estate, "internal static bool LetAgain(");
         Check(works.Contains("ConstructionGame.LetAgain(r.Street, r.Number)") && let.Contains("reg.RentedByPlayer || GoingPublic.Foreign(reg) || DeedOf(street, number) != null")

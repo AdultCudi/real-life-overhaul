@@ -15,6 +15,25 @@ namespace RealLifeOverhaul.Construction
         public float Width;     // m along its door's side
         public float Depth;     // m back from it
         public int TotalSqm;    // the floor area of the city's own building it is measured on
+        public string Look;     // a corner building's model worn over it (Scripts/Corners), or null for the design's own look
+        public string LookKey;  // that corner building's name, a text key
+        public float LookX;     // m: where it stands, its root at the street corner
+        public float LookZ;
+        public int LookYaw;     // degrees: its turn to the corner's two streets
+    }
+
+    /// <summary>A corner building the corner buildings offer a corner site (Scripts/Corners): its model, where it stands, and the ground of the game's building beneath it.</summary>
+    public struct CornerOffer
+    {
+        public string Look;          // the model's prop id
+        public string NameKey;       // its name, a text key
+        public int Uses;             // bits of the BuildUse values it is offered for
+        public float X, Z;           // m: its root, the street corner
+        public int Yaw;              // degrees: 0, 90, 180 or 270
+        public float CopyX, CopyZ;   // m: the middle of the ground the game's building beneath it stands on
+        public float CopyWidth;      // m along the site's street
+        public float CopyDepth;      // m back from it
+        public float Height;         // m: its body's height, the storeys the plans count
     }
 
     /// <summary>What a site of the city's programme is, for a tender: its kind, address, hours and place.</summary>
@@ -108,12 +127,26 @@ namespace RealLifeOverhaul.Construction
         /// </summary>
         public static FinishCall Finish;
 
-        public delegate bool FinishCall(string lot, string design, string size, int version, string type, int storeys, bool player, double price, out string why);
+        public delegate bool FinishCall(string lot, string design, string size, int version, string type, int storeys, bool player, double price, string look, out string why);
 
         /// <summary>A finished building handed to the district standing over a site's other spaces as well as its first: one building, one address. Default: none.</summary>
         public static FinishOverCall FinishOver;
 
-        public delegate bool FinishOverCall(string lot, IList<string> over, string design, string size, int version, string type, int storeys, bool player, double price, out string why);
+        public delegate bool FinishOverCall(string lot, IList<string> over, string design, string size, int version, string type, int storeys, bool player, double price, string look,
+                                            out string why);
+
+        // ------------------------------------------------------------------ the corner buildings (Scripts/Corners)
+
+        /// <summary>
+        /// The corner buildings that stand on a corner site's ground (plans/build-mode.md section 12), into the caller's list (cleared): each
+        /// model that fits it, turned to its two streets, with the ground the game's building beneath it takes. Default: none.
+        /// </summary>
+        public static CornerOffersCall CornerOffers;
+
+        public delegate void CornerOffersCall(CellCorner ground, List<CornerOffer> into);
+
+        /// <summary>A corner building's name in the player's language by its model's id, or null for none. Default: none.</summary>
+        public static Func<string, string> CornerName;
 
         /// <summary>The spaces of the district's grid a size and version takes, 0 for one off the grid. Default: none known.</summary>
         public static Func<string, int, int> SpacesOf;
@@ -414,6 +447,8 @@ namespace RealLifeOverhaul.Construction
             Lots = null;
             LotsStamp = null;
             DistrictLives = null;
+            CornerOffers = null;
+            CornerName = null;
             LotTaken = null;
             LotBuilt = null;
             LotRetired = null;

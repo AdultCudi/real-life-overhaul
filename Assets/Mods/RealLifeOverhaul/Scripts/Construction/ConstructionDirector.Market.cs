@@ -107,8 +107,12 @@ namespace RealLifeOverhaul.Construction
                 return false;
             }
             KeepFitting(lot, _choices);
+            if (!CityCorners(lot, use, _choices))
+            {
+                return false;   // the corner buildings' designs are being looked through: the next day's pass
+            }
             int pick = DevelopmentRules.DesignPick(lot.Id, _choices.Count);
-            dev.Design = pick >= 0 ? _choices[pick].Name : NoDesign;
+            dev.Design = pick >= 0 ? KeptName(_choices[pick]) : NoDesign;
             if (pick < 0)
             {
                 Logger?.Info("Construction: no design of the city's own fits lot " + lot.Id + " (" + lot.Width + " by " + lot.Depth + " m) for " + use + "; the developers pass it over.");
@@ -125,9 +129,13 @@ namespace RealLifeOverhaul.Construction
                 return false;
             }
             KeepFitting(lot, _choices);
+            if (!CityCorners(lot, use, _choices))
+            {
+                return false;
+            }
             for (int i = 0; i < _choices.Count; i++)
             {
-                if (_choices[i].Name == name)
+                if (Named(_choices[i], name))
                 {
                     design = _choices[i];
                     return true;
@@ -164,7 +172,7 @@ namespace RealLifeOverhaul.Construction
             {
                 return;   // the designs are being looked through: the next day's pass
             }
-            if (!FinishLot(lot.Id, design.Name, design.Size, design.Version, BuildCatalogue.UseTypes[(int)use], 0, false, 0.0, out string why))
+            if (!FinishLot(lot.Id, design.Name, design.Size, design.Version, BuildCatalogue.UseTypes[(int)use], 0, false, 0.0, design.Look, out string why))
             {
                 Logger?.Info("Construction: the developers' building on lot " + lot.Id + " is not the district's yet (" + why + ").");
                 return;
@@ -183,7 +191,7 @@ namespace RealLifeOverhaul.Construction
                 FinishSite(dev.SiteId);   // the frame comes down and the building's look stands, out of view
                 dev.SiteId = 0;
             }
-            Logger?.Info("Construction: the city's developers (" + rival + ") finished lot " + lot.Id + " (" + use + ", " + design.Name + ").");
+            Logger?.Info("Construction: the city's developers (" + rival + ") finished lot " + lot.Id + " (" + use + ", " + KeptName(design) + ").");
         }
 
         // ------------------------------------------------------------------ tenders

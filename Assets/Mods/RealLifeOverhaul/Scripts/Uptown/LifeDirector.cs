@@ -348,6 +348,7 @@ namespace RealLifeOverhaul.Uptown
             }
             long began = System.Diagnostics.Stopwatch.GetTimestamp();
             int cut = 0;
+            LooksLoading();   // the looks worn over finished buildings let go the last city's, behind the loading screen
             for (int i = 0; i < Declared.Count; i++)
             {
                 MadeBuilding made = MadeBuildings.Get(Declared[i].Id);
@@ -355,6 +356,7 @@ namespace RealLifeOverhaul.Uptown
                 {
                     continue;   // it stood down: Player.log says why
                 }
+                WearLook(made);   // a look of another feature's over a finished building, its door at the look's entrance
                 LifeGame.Enter(made);
                 cut += LifeGame.Cut(made) ? 1 : 0;
                 Standing.Add(made);
@@ -619,6 +621,10 @@ namespace RealLifeOverhaul.Uptown
             if (Waiting.Count > 0)
             {
                 StandPending(false);   // a finished building waiting for a moment nobody sees its ground
+            }
+            if (_looksWait)
+            {
+                LooksTicked();   // a look over a finished building waiting for its parts (the props bundles)
             }
             MarketPass();   // once a game day: the district's demand and its market level (LifeDirector.Market)
             if (UptownLots.Closed)

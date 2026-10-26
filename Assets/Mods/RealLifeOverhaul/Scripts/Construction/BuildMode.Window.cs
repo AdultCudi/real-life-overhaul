@@ -243,9 +243,13 @@ namespace RealLifeOverhaul.Construction
             _panel.Button(RowBuild, T("reallife_bld_mode_row_build"), ConstructionText.Money(_estimate), T("reallife_bld_mode_button_build"), BuildModeRules.MayBuild(_warnings) && !_state.ViewOnly);
         }
 
-        // A design as the window names it: its size and version as the game's blueprints do ("C1"), and its type.
+        // A design as the window names it: its size and version as the game's blueprints do ("C1"), and its type; a corner building by its name.
         private static string SizeName(DesignChoice d)
         {
+            if (!string.IsNullOrEmpty(d.Look))
+            {
+                return (string.IsNullOrEmpty(d.LookKey) ? d.Look : T(d.LookKey)) + ", " + (string.IsNullOrEmpty(d.Type) ? string.Empty : d.Type.GetLocalization());
+            }
             string size = string.IsNullOrEmpty(d.Size) ? "?" : char.ToUpperInvariant(d.Size[d.Size.Length - 1]).ToString() + d.Version.ToString(CultureInfo.InvariantCulture);
             return size + ", " + (string.IsNullOrEmpty(d.Type) ? string.Empty : d.Type.GetLocalization());
         }
