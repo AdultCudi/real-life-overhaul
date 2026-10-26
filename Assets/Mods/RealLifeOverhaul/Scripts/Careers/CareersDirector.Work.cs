@@ -37,6 +37,7 @@ namespace RealLifeOverhaul.Careers
             WorkFile w = _study.Work;
             KeepShifts(Save.Day, true);   // a save from before the weeks were fitted, or a place whose hours changed while it was away
             LadderKeep(Save.Day);         // the company of a job at one of the city's businesses, there for the Career app at once
+            Guard.Step("the recruitment desk's two ways", AgencyDesk.Take);   // sitting at a recruitment office's desk offers the jobs board or recruitment
             Logger?.Info("Careers: the working life " + (w.LastDay < 0 ? "opened" : "loaded") + " on day " + Save.Day + ": " + w.Openings.Count + " vacancies, " + w.Applications.Count
                          + " application(s), " + (w.Job != null ? "a job at " + w.Job.Post.Employer : "no job") + ".");
         }
@@ -54,6 +55,7 @@ namespace RealLifeOverhaul.Careers
             }
             DeskRelease("the working life stopped");
             DeskGame.Remove();
+            Guard.Step("the recruitment desk's two ways", AgencyDesk.Give);   // the game's own dialogue again
             _employers.Clear();
             _offices.Clear();
             if (!unloading && _careerApp != null)
