@@ -451,6 +451,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\CareersStore.cs" Link="Mod\CareersStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\ProCatalogue.cs" Link="Mod\ProCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\ProRules.cs" Link="Mod\ProRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\AgencyRules.cs" Link="Mod\AgencyRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\DeskRules.cs" Link="Mod\DeskRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\InterviewRules.cs" Link="Mod\InterviewRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\Kinds\CartQueueRules.cs" Link="Mod\CartQueueRules.cs" />
