@@ -75,7 +75,7 @@ namespace RealLifeOverhaul.Uptown
             {
                 if (all[i] != null && all[i].hasCityMapFilter)
                 {
-                    names.Add(all[i].neighbourhood.Replace("ba:neighborhood_", string.Empty).Replace("reallife_neighborhood_", string.Empty));
+                    names.Add(all[i].neighbourhood.Substring(all[i].neighbourhood.LastIndexOf('_') + 1));
                     colours.Add(new[] { all[i].cityMapZoneColor.r, all[i].cityMapZoneColor.g, all[i].cityMapZoneColor.b });
                 }
             }
@@ -382,7 +382,8 @@ namespace RealLifeOverhaul.Uptown
                 }
                 Zones[d] = null;
                 RowsMade[d] = null;
-                CodeAssets.DropSprite(Icons[d]);
+                Sprite icon = Icons[d];
+                CodeAssets.DropSprite(icon);
                 Icons[d] = null;
             }
         }

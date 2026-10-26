@@ -178,7 +178,7 @@ internal static partial class Program
         Check(DistrictValues.ColourWhy(names, same, DistrictValues.ColourLeast, out string _) != null && DistrictValues.ColourWhy(names, near, DistrictValues.ColourLeast, out string _) != null
               && DistrictValues.ColourDistance(colours[0], colours[0]) == 0.0, "uptown split colours: a district in another's colour, or a hair from it, is told");
         string mapSource = SplitSource(@"Uptown\LifeGame.Map.cs") + SplitSource(@"Uptown\LifeGame.cs");
-        Check(mapSource.Contains("d.cityMapIcon = Icon(district);") && !mapSource.Contains("midtown.cityMapIcon") && mapSource.Contains("CodeAssets.DropSprite(Icons[d]);")
+        Check(mapSource.Contains("d.cityMapIcon = Icon(district);") && !mapSource.Contains("midtown.cityMapIcon") && mapSource.Contains("CodeAssets.DropSprite(icon);")
               && SplitSource(@"Uptown\LifeDirector.cs").Contains("Uptown check (district colours): "), "uptown split colours: each district's toggle disc is drawn in its own colour (never Midtown's icon), let go with the city, and the colours listed once a load");
         bool shift = DistrictSplit.TrafficShift(DistrictSplit.Uptown) > 0 && DistrictSplit.TrafficShift(DistrictSplit.CedarHeights) < 0;
         BuildingsLot sample = new BuildingsLot { Id = "x", Avenue = true, Z = 500f, Block = 110 };
