@@ -66,6 +66,7 @@ namespace RealLifeOverhaul
                 {
                     ModState.Load();
                     PhoneContacts.Setup();
+                    ContactGroupsGame.Install();   // after every contact the mod adds at a load is made: the groups of the Contacts app
                 }
                 catch (Exception e)
                 {

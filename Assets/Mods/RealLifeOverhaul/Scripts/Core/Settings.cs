@@ -80,6 +80,7 @@
         public const string SolidStreetsId = "solid_streets";
         public const string CityDriversId = "city_drivers";
         public const string PhoneContactsId = "phone_contacts";
+        public const string PhoneContactGroupsId = "phone_contact_groups";
         public const string PhoneSkinId = "phone_skin";
         public const string PhoneFoldersId = "phone_folders";
         public const string NoticeLookId = "notice_look";
@@ -433,6 +434,7 @@
         public static bool SolidStreets = true;          // traffic brakes for people in the road, sounds its horn and waits
         public static bool CityDrivers = true;           // the city's cars slow in good time, leave room to park and let the player out
         public static bool PhoneContacts = true;
+        public static bool PhoneContactGroups = true;   // the Contacts app's category buttons hold the mod's contacts in groups; off, they stay in General as before
         public static bool CarTuning = true;         // each car gets the acceleration and top speed of its kind
         public static int CarTopSpeed = 100;         // percent of the car's own target top speed
         public static int CarAcceleration = 100;     // percent: at 150 a car reaches 100 km/h in two thirds of its own target time
@@ -838,6 +840,7 @@
             SolidStreets = Bool(modId, SolidStreetsId, SolidStreets);
             CityDrivers = Bool(modId, CityDriversId, CityDrivers);
             PhoneContacts = Bool(modId, PhoneContactsId, PhoneContacts);
+            PhoneContactGroups = Bool(modId, PhoneContactGroupsId, PhoneContactGroups);
             PhoneSkin = Bool(modId, PhoneSkinId, PhoneSkin);
             PhoneFolders = Bool(modId, PhoneFoldersId, PhoneFolders);
             NoticeLook = Bool(modId, NoticeLookId, NoticeLook);

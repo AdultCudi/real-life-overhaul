@@ -202,8 +202,15 @@ namespace RealLifeOverhaul
                     v => Settings.CityDrivers = v)
                 .AddToggle(Settings.PhoneContactsId, "reallife_phone_contacts", Settings.PhoneContacts,
                     v => Settings.PhoneContacts = v)
+                .AddToggle(Settings.PhoneContactGroupsId, "reallife_phone_contact_groups", Settings.PhoneContactGroups,
+                    v =>
+                    {
+                        Settings.PhoneContactGroups = v;
+                        ContactGroupsGame.Apply();   // the buttons and the list follow at once
+                    })
                 .AddButton("reallife_contacts_test_pictures", ContactPictures.TestReport)
                 .AddButton("reallife_contacts_test_redraw", ContactPictures.TestRedraw)
+                .AddButton("reallife_contacts_test_groups", ContactGroupsTest.Run)
                 .AddToggle(Settings.PhoneSkinId, "reallife_phone_skin", Settings.PhoneSkin,
                     v => Settings.PhoneSkin = v)
                 .AddToggle(Settings.PhoneFoldersId, "reallife_phone_folders", Settings.PhoneFolders,
@@ -1355,6 +1362,7 @@ namespace RealLifeOverhaul
             Guard.Step("Jaywalker", () => Jaywalker.Logger = context.Logger);
             Guard.Step("PlayerKnockdown", () => PlayerKnockdown.Logger = context.Logger);
             Guard.Step("PhoneContacts", () => PhoneContacts.Logger = context.Logger);
+            Guard.Step("ContactGroups", () => ContactGroupsGame.Logger = context.Logger);
             Guard.Step("GameFurniture", () => GameFurniture.Logger = context.Logger);
             Guard.Step("GameRegistrations", () => GameRegistrations.Logger = context.Logger);
             Guard.Step("ContactPictures", () => ContactPictures.Logger = context.Logger);
@@ -1641,6 +1649,7 @@ namespace RealLifeOverhaul
         private static void WantPictures()
         {
             GameUi.GameSprites.Want("Circle-20", "circle", GameUi.PhoneGridPager.MoreGlyph, "Icon-SetDestination");
+            GameUi.GameSprites.Want(ContactGroups.Glyphs);   // the Contacts app's group buttons
             GameUi.NoticeLook.WantPictures();
             Meta.GuideApp.WantPictures();
             Meta.SettingsApp.WantPictures();
