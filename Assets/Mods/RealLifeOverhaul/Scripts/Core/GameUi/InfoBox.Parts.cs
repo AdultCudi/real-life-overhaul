@@ -1,7 +1,6 @@
 using System;
 using System.Diagnostics;
 using System.Globalization;
-using System.Text;
 using Localizor;
 using TMPro;
 using UnityEngine;
@@ -10,9 +9,10 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// The box's own parts as a page writes them (Header, Section, Row, Meter, Check, Note and the rest), each a copy of its
-    /// template; after a section's heading the parts stand in until the next. With diagnostics on, each page logs the box's
-    /// own time (<see cref="BoxClock"/>, opened by <see cref="Timed"/>).
+    /// The box's own parts as a page writes them (Header, Section, Row, Entry, Meter, Check, Note and the rest), each a copy of its
+    /// template; after a section's heading the parts stand in its card until the next. Where a part stands and how tall it is
+    /// is the layout's (InfoBox.Frame, InfoBox.Look): no part is given a position or a height here. With diagnostics on, each page
+    /// logs the box's own time (<see cref="BoxClock"/>, opened by <see cref="Timed"/>).
     /// </summary>
     public sealed partial class InfoBox
     {
@@ -20,16 +20,15 @@ namespace RealLifeOverhaul.GameUi
         public const double FillBudgetMs = 3.0;   // milliseconds: a page of forty parts
 
         private TMP_Text _headerText;     // the page's header, while it is the last thing written
+        private Transform _headerRow;     // the row the header's title and chips stand in
         private Transform _chips;
         private float _chipsWidth;
-        private bool _inSection;          // what is written now stands in under a heading
+        private bool _chipsBelow;
         private bool _footMade;
-        private int _capacity;            // letters a row of the box holds (LookRules.Capacity)
         private int _parts;
         private bool _begun;
         private readonly BoxClock _clock = new BoxClock();
         private static InfoBox _writing;   // the box whose page is being written, Clear to Done: a row's buttons count to it
-        private readonly StringBuilder _words = new StringBuilder(160);
 
         /// <summary>One of the box's own calls, timed while it runs; a struct, so nothing is allocated.</summary>
         private struct Own : IDisposable
@@ -62,9 +61,12 @@ namespace RealLifeOverhaul.GameUi
         private void Begin()
         {
             _headerText = null;
+            _headerRow = null;
             _chips = null;
             _chipsWidth = 0f;
-            _inSection = false;
+            _chipsBelow = false;
+            _group = null;
+            _bodyStarted = false;
             _footMade = false;
             _parts = 0;
             _begun = true;
@@ -91,21 +93,24 @@ namespace RealLifeOverhaul.GameUi
             _begun = false;
         }
 
-        // How far what is written now stands in: a section's indent, or nothing.
-        private float Indent => _inSection ? LookRules.Indent : 0f;
-
         /// <summary>The page's header: the title under a short bar of the app's colour, to which Subtitle and Chip add; a second one starts anew.</summary>
         public TMP_Text Header(string words)
         {
             using var own = Timed();
             EndSection();
-            GameObject header = Add(_headerT);
+            GameObject header = Add(_headerT, Head());
             header.transform.Find("Accent").GetComponent<Image>().color = _accent;   // by name: a text grows children of its own when it draws
-            var title = header.GetComponent<TMP_Text>();
+            var title = header.transform.Find("Title").GetComponent<TMP_Text>();
             title.text = words ?? string.Empty;
+            if (_pageKey == null)
+            {
+                _pageKey = title.text;   // the same title is the same page written again: its scroll is kept
+            }
             _headerText = title;
+            _headerRow = header.transform;
             _chips = null;
             _chipsWidth = 0f;
+            _chipsBelow = false;
             return title;
         }
 
@@ -113,33 +118,31 @@ namespace RealLifeOverhaul.GameUi
         public TMP_Text Subtitle(string words)
         {
             using var own = Timed();
-            TMP_Text text = Text(_subT, words, false);
-            text.margin = new Vector4(Indent, 0f, 0f, 6f);
-            return text;
+            return Text(_subT, words, Head(), false);
         }
 
-        /// <summary>A status chip right of the title, a short word on a pill of its tone (Plain: the app's colour); a line of its own without a header.</summary>
+        /// <summary>
+        /// A status chip right of the title, a short word on a pill of its tone (Plain: the app's colour); under the title when it
+        /// would squeeze it; a line of its own without a header.
+        /// </summary>
         public TMP_Text Chip(string words, CellTone tone = CellTone.Plain)
         {
             using var own = Timed();
             words = words ?? string.Empty;
             if (_chips == null)
             {
-                Transform under = _headerText != null ? _headerText.transform : null;
-                GameObject chips = Add(_chipsT, under);
-                if (under != null)
+                if (_headerRow != null)
                 {
-                    var rect = (RectTransform)chips.transform;
-                    rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(1f, 1f);
-                    rect.anchoredPosition = new Vector2(0f, -(LookRules.AccentHeight + 16f) - 11f);   // level with the title's first line
+                    _chips = Add(_chipsT, _headerRow).transform;
                 }
                 else
                 {
-                    chips.GetComponent<LayoutElement>().ignoreLayout = false;
-                    chips.GetComponent<ContentSizeFitter>().enabled = false;
-                    chips.GetComponent<HorizontalLayoutGroup>().childAlignment = TextAnchor.UpperLeft;
+                    _chips = Add(_chipsT, Body()).transform;
+                    var line = _chips.GetComponent<HorizontalLayoutGroup>();
+                    line.childAlignment = TextAnchor.UpperLeft;
+                    line.padding = new RectOffset(0, 0, 0, 0);
+                    _chipsBelow = true;
                 }
-                _chips = chips.transform;
             }
             GameObject chip = Add(_chipT, _chips);
             Color paint = Paint(tone);
@@ -147,50 +150,73 @@ namespace RealLifeOverhaul.GameUi
             var text = chip.transform.Find("Text").GetComponent<TMP_Text>();
             text.color = tone == CellTone.Plain ? _accent : Ink(tone);
             text.text = words;
-            if (_headerText != null && _chips.parent == _headerText.transform)
+            if (!_chipsBelow)
             {
-                _chipsWidth += LookRules.ChipWidth(words) + (_chipsWidth > 0f ? 10f : 0f);
-                Vector4 margin = _headerText.margin;
-                margin.z = _chipsWidth + 24f;
-                _headerText.margin = margin;
+                _chipsWidth += text.preferredWidth + 36f + (_chipsWidth > 0f ? 10f : 0f);   // the word, the pill's padding, the gap
+                var size = _chips.GetComponent<LayoutElement>();
+                size.minWidth = size.preferredWidth = _chipsWidth;   // chips keep their width; the title gives way
+                if (LeftPaneRules.ChipsBelow(_chipsWidth, Room()))
+                {
+                    ChipsUnder();
+                }
             }
             return text;
         }
 
-        /// <summary>A section: its heading (a locale key) in small capitals over a hairline; what follows stands in under it.</summary>
+        // Too many or too wide to stand at the title's right: a line of their own under it, before the subtitle.
+        private void ChipsUnder()
+        {
+            Transform row = _headerRow;
+            _chipsBelow = true;
+            if (row == null || row.parent == null)
+            {
+                return;
+            }
+            _chips.SetParent(row.parent, false);
+            _chips.SetSiblingIndex(row.GetSiblingIndex() + 1);
+            var size = _chips.GetComponent<LayoutElement>();
+            size.minWidth = size.preferredWidth = -1f;
+            var line = _chips.GetComponent<HorizontalLayoutGroup>();
+            line.childAlignment = TextAnchor.UpperLeft;
+            line.padding = new RectOffset(0, 0, 4, 0);
+        }
+
+        /// <summary>A section: its heading (a locale key) in small capitals over a hairline, in a card; what follows stands in the card until the next section.</summary>
         public Transform Section(string key)
         {
             using var own = Timed();
-            GameObject heading = OpenSection();
-            UiClone.Key(heading.transform, key);
-            return heading.transform;
+            GameObject card = OpenSection();
+            UiClone.Key(card.transform.Find("Heading"), key);
+            return card.transform;
         }
 
         /// <summary>The same with the heading in final words.</summary>
         public Transform SectionWords(string words)
         {
             using var own = Timed();
-            GameObject heading = OpenSection();
-            UiClone.Words(heading.transform, words);
-            return heading.transform;
+            GameObject card = OpenSection();
+            UiClone.Words(card.transform.Find("Heading"), words);
+            return card.transform;
         }
 
         private GameObject OpenSection()
         {
             EndSection();
-            GameObject heading = Add(_headingT);
-            _inSection = true;
-            return heading;
+            _bodyStarted = true;
+            GameObject card = Add(_groupT, _content);
+            _group = card.transform;
+            return card;
         }
 
-        /// <summary>What follows no longer stands in under the last heading.</summary>
+        /// <summary>What follows no longer stands in the last section's card.</summary>
         public void EndSection()
         {
-            _inSection = false;
+            _group = null;
             _headerText = null;
+            _headerRow = null;
         }
 
-        /// <summary>A row: the label (a locale key, colon dropped) left in grey, the value right, under the label when the two do not fit one line.</summary>
+        /// <summary>A fact: the label (a locale key, colon dropped) at the left in grey, the value at the right, on one baseline; the value wraps under itself, not under the label.</summary>
         public TMP_Text Row(string labelKey, string value, CellTone tone = CellTone.Plain)
         {
             using var own = Timed();
@@ -204,54 +230,99 @@ namespace RealLifeOverhaul.GameUi
             return RowWords(label, value, CellTone.Plain);
         }
 
-        /// <summary>The same with the label in final words, in a tone.</summary>
+        /// <summary>The same with the label in final words, in a tone. Returns the value's text.</summary>
         public TMP_Text RowWords(string label, string value, CellTone tone)
         {
             using var own = Timed();
-            label = LookRules.Label(label);
-            value = value ?? string.Empty;
-            TMP_Text text = Text(_bodyT, RowMarkup(label, value, tone, LookRules.Stack(label, value, _capacity)));
-            text.margin = new Vector4(Indent, 0f, 0f, 0f);
-            return text;
+            GameObject row = Add(_rowT);
+            return Fill(row.transform, LookRules.Label(label), value ?? string.Empty, tone, Room(), out float labelWidth, out float valueWidth);
         }
 
-        // Beside: the value on the label's own line (a line height of nought), aligned right. Stacked: the next line.
-        private string RowMarkup(string label, string value, CellTone tone, bool stacked)
+        // Writes a fact's two texts and gives the label the width it needs (LeftPaneRules.LabelWidth) in the room: measured from
+        // the texts themselves, in whatever language, not guessed from letters. Returns the value's text.
+        private TMP_Text Fill(Transform row, string label, string value, CellTone tone, float room, out float labelWidth, out float valueWidth)
         {
-            _words.Length = 0;
-            _words.Append(_labelOpen).Append(label).Append("</color></size>");
-            _words.Append(stacked ? "\n" : "<line-height=0>\n</line-height><align=right>");
-            _words.Append(_toneOpen[(int)tone]).Append(_valueOpen).Append(value).Append(_valueClose);
-            if (tone != CellTone.Plain)
-            {
-                _words.Append("</color>");
-            }
-            return _words.ToString();
+            var name = row.GetChild(0).GetComponent<TMP_Text>();
+            var figure = row.GetChild(1).GetComponent<TMP_Text>();
+            bool named = label.Length > 0;
+            name.gameObject.SetActive(named);   // no label, no gap before the value
+            name.text = label;
+            figure.text = value;
+            figure.color = Ink(tone);
+            labelWidth = named ? name.preferredWidth + LeftPaneRules.Slack : 0f;
+            valueWidth = value.Length > 0 ? figure.preferredWidth + LeftPaneRules.Slack : 0f;
+            var size = name.GetComponent<LayoutElement>();
+            size.minWidth = size.preferredWidth = LeftPaneRules.LabelWidth(labelWidth, valueWidth, room, LeftPaneRules.RowGap);
+            return figure;
         }
 
-        /// <summary>Two rows side by side in half the line each; one under the other where either does not fit its half.</summary>
+        /// <summary>Two facts side by side in half the line each; one under the other where either does not fit its half on one line.</summary>
         public void RowPair(string labelKey, string value, string labelKey2, string value2)
         {
             using var own = Timed();
-            string label = LookRules.Label(labelKey.GetLocalization()), label2 = LookRules.Label(labelKey2.GetLocalization());
-            value = value ?? string.Empty;
-            value2 = value2 ?? string.Empty;
-            int half = _capacity / 2 - 2;
-            if (_capacity <= 0 || LookRules.Stack(label, value, half) || LookRules.Stack(label2, value2, half))
-            {
-                RowWords(label, value, CellTone.Plain);
-                RowWords(label2, value2, CellTone.Plain);
-                return;
-            }
-            GameObject pair = Add(_pairT);
-            var group = pair.GetComponent<HorizontalLayoutGroup>();
-            group.padding = new RectOffset((int)Indent, 0, 0, 0);
-            pair.transform.GetChild(0).GetComponent<TMP_Text>().text = RowMarkup(label, value, CellTone.Plain, false);
-            pair.transform.GetChild(1).GetComponent<TMP_Text>().text = RowMarkup(label2, value2, CellTone.Plain, false);
-            _headerText = null;
+            RowPairWords(labelKey.GetLocalization(), value, labelKey2.GetLocalization(), value2);
         }
 
-        /// <summary>A meter: a row of its label and figure over a short bar filled to <paramref name="share"/> (0 to 1) in a tone, Plain green.</summary>
+        /// <summary>The same with both labels in final words.</summary>
+        public void RowPairWords(string label, string value, string label2, string value2)
+        {
+            using var own = Timed();
+            label = LookRules.Label(label);
+            label2 = LookRules.Label(label2);
+            value = value ?? string.Empty;
+            value2 = value2 ?? string.Empty;
+            float half = LeftPaneRules.Half(Room());
+            GameObject pair = Add(_pairT);
+            Fill(pair.transform.GetChild(0), label, value, CellTone.Plain, half, out float labelA, out float valueA);
+            Fill(pair.transform.GetChild(1), label2, value2, CellTone.Plain, half, out float labelB, out float valueB);
+            if (LeftPaneRules.OneLine(labelA, valueA, half, LeftPaneRules.RowGap) && LeftPaneRules.OneLine(labelB, valueB, half, LeftPaneRules.RowGap))
+            {
+                _headerText = null;
+                return;
+            }
+            Unwrite(pair, _pairT);
+            RowWords(label, value, CellTone.Plain);
+            RowWords(label2, value2, CellTone.Plain);
+        }
+
+        // The part just written is taken back: laid aside as if it had not been written.
+        private void Unwrite(GameObject part, GameObject template)
+        {
+            int last = _live.Count - 1;
+            if (last >= 0 && _live[last] == part)
+            {
+                _live.RemoveAt(last);
+                _liveFrom.RemoveAt(last);
+            }
+            _parts--;
+            Park(part, template);
+        }
+
+        /// <summary>
+        /// A list entry, a rung of a ladder: its name and its figure on one line, what it asks under them in small muted words;
+        /// <paramref name="current"/> is the one the player is on or aims at, on a tint of the app's colour with a mark at its left.
+        /// Returns the figure's text.
+        /// </summary>
+        public TMP_Text Entry(string title, string figure, string detail, CellTone tone = CellTone.Plain, bool current = false)
+        {
+            using var own = Timed();
+            GameObject entry = Add(_entryT);
+            float room = Room() - LeftPaneRules.EntryPadLeft - LeftPaneRules.EntryPadRight;
+            TMP_Text value = Fill(entry.transform.GetChild(0), LookRules.Label(title), figure ?? string.Empty, tone, room, out float titleWidth, out float figureWidth);
+            var note = entry.transform.GetChild(1).GetComponent<TMP_Text>();
+            bool asks = !string.IsNullOrEmpty(detail);
+            note.gameObject.SetActive(asks);
+            if (asks)
+            {
+                note.text = detail;
+            }
+            entry.GetComponent<Image>().color = current ? new Color(_accent.r, _accent.g, _accent.b, 0.12f) : Color.clear;
+            entry.transform.GetChild(2).gameObject.SetActive(current);
+            _headerText = null;
+            return value;
+        }
+
+        /// <summary>A meter: a fact of its label and figure over a bar the card's width, filled to <paramref name="share"/> (0 to 1) in a tone, Plain green.</summary>
         public TMP_Text Meter(string labelKey, float share, string figure, CellTone tone)
         {
             using var own = Timed();
@@ -262,32 +333,28 @@ namespace RealLifeOverhaul.GameUi
         public TMP_Text MeterWords(string label, float share, string figure, CellTone tone)
         {
             using var own = Timed();
-            TMP_Text text = Text(_meterT, RowMarkup(LookRules.Label(label), figure ?? string.Empty, tone, false));
-            Vector4 margin = text.margin;
-            margin.x = Indent;
-            text.margin = margin;
-            var fill = (RectTransform)text.transform.Find("Bar/Fill");
+            GameObject meter = Add(_meterT);
+            TMP_Text value = Fill(meter.transform.GetChild(0), LookRules.Label(label), figure ?? string.Empty, tone, Room(), out float labelWidth, out float valueWidth);
+            var fill = (RectTransform)meter.transform.Find("Track/Fill");
             float f = LookRules.Clamp(share);
             fill.anchorMax = new Vector2(f, 1f);
             fill.offsetMin = fill.offsetMax = Vector2.zero;
             var paint = fill.GetComponent<Image>();
             paint.color = Paint(tone == CellTone.Plain ? CellTone.Green : tone);
             paint.enabled = f > 0f;
-            return text;
+            _headerText = null;
+            return value;
         }
 
         /// <summary>A need and whether it is met: the game's tick in green before it, or a red dot and the words in red.</summary>
         public TMP_Text Check(string words, bool met)
         {
             using var own = Timed();
-            TMP_Text text = Text(_checkT, words);
-            float indent = Indent;
-            Vector4 margin = text.margin;
-            margin.x = indent + LookRules.MarkSize + 14f;
-            text.margin = margin;
-            var mark = text.transform.Find("Mark").GetComponent<Image>();
-            var rect = (RectTransform)mark.transform;
-            rect.anchoredPosition = new Vector2(indent, rect.anchoredPosition.y);
+            GameObject check = Add(_checkT);
+            var text = check.transform.Find("Text").GetComponent<TMP_Text>();
+            text.text = words ?? string.Empty;
+            var mark = check.transform.Find("Mark").GetComponent<Image>();
+            _headerText = null;
             if (met && _tick != null)
             {
                 mark.color = Ink(CellTone.Green);
@@ -296,8 +363,7 @@ namespace RealLifeOverhaul.GameUi
             // No tick: a dot of the round sprite, half the size.
             mark.sprite = _round;
             mark.color = met ? Ink(CellTone.Green) : _bad;
-            rect.sizeDelta = new Vector2(LookRules.MarkSize * 0.5f, LookRules.MarkSize * 0.5f);
-            rect.anchoredPosition = new Vector2(indent + LookRules.MarkSize * 0.25f, -LookRules.MarkSize * 0.35f);
+            mark.rectTransform.localScale = new Vector3(0.5f, 0.5f, 1f);
             if (!met)
             {
                 text.color = _bad;
@@ -310,7 +376,6 @@ namespace RealLifeOverhaul.GameUi
         {
             using var own = Timed();
             TMP_Text text = Text(_bodyT, words);
-            text.margin = new Vector4(Indent, 0f, 0f, 0f);
             if (tone != CellTone.Plain)
             {
                 text.color = Ink(tone);
@@ -322,33 +387,33 @@ namespace RealLifeOverhaul.GameUi
         public TMP_Text Note(string words)
         {
             using var own = Timed();
-            TMP_Text text = Text(_noteT, words);
-            text.margin = new Vector4(Indent, 0f, 0f, 0f);
-            return text;
+            return Text(_noteT, words);
         }
 
-        /// <summary>The Guide's page for the app at the foot under a hairline ("Guide: Professional jobs"); a note written after joins it.</summary>
+        /// <summary>The Guide's page for the app at the foot of the card ("Guide: Professional jobs"); a note written after joins the page.</summary>
         public TMP_Text GuideLink(string pageWords)
         {
             using var own = Timed();
             EndSection();
             string label = "reallife_guide_app".GetLocalization();
+            string words = label + LookRules.Colon(label) + "<b>" + pageWords + "</b>";
             if (_footMade)
             {
-                return Note(label + LookRules.Colon(label) + "<b>" + pageWords + "</b>");
+                return Note(words);
             }
             _footMade = true;
-            return Text(_footT, label + LookRules.Colon(label) + "<b>" + pageWords + "</b>");
+            return Text(_guideT, words, _foot);
         }
 
-        // Into the box. Anything but a subtitle ends the header.
-        private TMP_Text Text(GameObject template, string words, bool endsHeader = true)
+        // Into the page (or the place given). Anything but a subtitle ends the header.
+        private TMP_Text Text(GameObject template, string words, Transform parent = null, bool endsHeader = true)
         {
             if (endsHeader)
             {
                 _headerText = null;
+                _headerRow = null;
             }
-            GameObject made = Add(template);
+            GameObject made = Add(template, parent);
             var text = made.GetComponent<TMP_Text>();
             text.text = words ?? string.Empty;
             return text;

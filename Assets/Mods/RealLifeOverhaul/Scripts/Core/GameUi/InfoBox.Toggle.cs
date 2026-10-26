@@ -50,7 +50,7 @@ namespace RealLifeOverhaul.GameUi
             return true;
         }
 
-        // Words in the box's font, size and colours, indented as a section's rows, the control's column the switch's width.
+        // Words in the box's font, size and colours, as a section's rows stand, the control's column the switch's width.
         private void MakeToggle()
         {
             _toggleTried = true;
@@ -88,7 +88,7 @@ namespace RealLifeOverhaul.GameUi
             var line = row.GetComponent<HorizontalLayoutGroup>();
             if (line != null)
             {
-                line.padding = new RectOffset((int)LookRules.Indent, 0, 4, 4);
+                line.padding = new RectOffset(0, 0, 4, 4);
             }
             _toggleT = row;
             _toggleOn = toggle.isOn;
