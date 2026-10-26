@@ -93,7 +93,9 @@ namespace RealLifeOverhaul.Schools
                 case "roof":
                     return new[] { "M_Roof_02", "M_Roof_01", "M_Roof" };                          // the game's flat roofing, laid by world position
                 case "glass":
-                    return new[] { "M_GlassBlueHue", "M_Glass_01", "M_Glass" };                   // opaque, reflective, pale blue: the game's window glass
+                    // M_Glass: opaque, metallic, grey-blue (0.48, 0.53, 0.56), smoothness 0.87: it reflects the street and reads dark.
+                    // M_GlassBlueHue (0.43, 0.60, 0.65) is the bright teal it replaces.
+                    return new[] { "M_Glass", "M_GlassBlueHue", "M_Glass_01" };
                 case "fence":
                     return new[] { "M_FenceWire_Occlussion", "M_FenceWire" };                     // chain-link, cut out by its alpha
                 default:

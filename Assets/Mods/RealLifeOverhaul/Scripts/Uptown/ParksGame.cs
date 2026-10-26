@@ -39,7 +39,11 @@ namespace RealLifeOverhaul.Uptown
 
         private static readonly PieceTemplate[] Templates =
         {
-            new PieceTemplate { Root = "SleepingBench", Name = "SleepingBench", X = 214.40f, Z = 99.39f, Y = 0.03f, Within = Reach },
+            new PieceTemplate
+            {
+                Root = GamePieces.BenchRoot, Name = GamePieces.BenchName, X = GamePieces.BenchX, Z = GamePieces.BenchZ, Y = 0.03f, Within = Reach,
+                AltRoot = GamePieces.BenchAltRoot, AltX = GamePieces.BenchAltX, AltZ = GamePieces.BenchAltZ
+            },
             new PieceTemplate { Root = "Vegetation", Name = "Tree Broadleaf L1", X = -327.16f, Z = 313.58f, Y = 0f, Within = Reach },
             new PieceTemplate { Root = "Vegetation", Name = "Tree Birch", X = 4.05f, Z = -129.34f, Y = 0f, Within = Reach },
             new PieceTemplate { Root = "Vegetation", Name = "Tree Broadleaf M1", X = 440.06f, Z = -369.64f, Y = 0f, Within = Reach },
@@ -222,7 +226,29 @@ namespace RealLifeOverhaul.Uptown
         // The game's pavement material, from the ground it is found on; null where the ground or the material is not there.
         private static Material PavingOf()
         {
-            GameObject ground = Found[Pavement];
+            return PavingFrom(Found[Pavement]);
+        }
+
+        // A park's paths laid as one flat surface, a quad to each rectangle, the pavement texture repeating every few metres
+        // across the whole of it (by the ground's own x and z, so two rectangles meet without a seam).
+        private static bool Pave(int block, Transform parent, Material material)
+        {
+            ParksRules.Paths(block, Rects);
+            Mesh mesh = PavingMesh(Rects, HolderName + " paths " + block, out float area);
+            Paved += area;
+            Meshes.Add(mesh);
+            var paving = new GameObject(HolderName + " paths " + block);
+            paving.transform.SetParent(parent, false);
+            paving.AddComponent<MeshFilter>().sharedMesh = mesh;
+            var shown = paving.AddComponent<MeshRenderer>();
+            shown.sharedMaterial = material;
+            shown.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            return true;
+        }
+
+        /// <summary>The game's pavement material, from the ground it is found on (the parks' and the campus's paths); null where the ground or the material is not there.</summary>
+        public static Material PavingFrom(GameObject ground)
+        {
             Renderer renderer = ground != null ? ground.GetComponent<Renderer>() : null;
             Material[] materials = renderer != null ? renderer.sharedMaterials : null;
             for (int i = 0; materials != null && i < materials.Length; i++)
@@ -235,20 +261,31 @@ namespace RealLifeOverhaul.Uptown
             return null;
         }
 
-        // A park's paths laid as one flat surface, a quad to each rectangle, the pavement texture repeating every few metres
-        // across the whole of it (by the ground's own x and z, so two rectangles meet without a seam).
-        private static bool Pave(int block, Transform parent, Material material)
+        /// <summary>The ground the game's pavement material is taken from: the template a feature asks GamePieces for (Grand Central's ground plane).</summary>
+        public static PieceTemplate PavingTemplate(int kind) => new PieceTemplate
         {
-            ParksRules.Paths(block, Rects);
-            var vertices = new Vector3[Rects.Count * 4];
+            Kind = kind, Root = "AdditionalGroundPlanes", Name = "SM_GrandCentralStation GroundPlane 01", X = 47.53f, Z = 312.87f, Y = 0f, Within = Reach
+        };
+
+        /// <summary>The height above the ground the game's pavement lies at: over the block ground's plane (its grass top is 0.0552 m, Build 3682), a hair under a walker's knee.</summary>
+        public const float PavingRise = PathRise;
+
+        /// <summary>
+        /// A flat surface cut to rectangles on the ground, one quad each, the pavement texture repeating every few metres across the whole of it (by the
+        /// ground's own x and z, so two rectangles meet without a seam). The mesh is the caller's to destroy; <paramref name="area"/> is the square metres.
+        /// </summary>
+        public static Mesh PavingMesh(List<PlanBox> rects, string name, out float area)
+        {
+            area = 0f;
+            var vertices = new Vector3[rects.Count * 4];
             var uvs = new Vector2[vertices.Length];
             var normals = new Vector3[vertices.Length];
             var tangents = new Vector4[vertices.Length];
-            var triangles = new int[Rects.Count * 6];
+            var triangles = new int[rects.Count * 6];
             float y = UptownLots.GroundY + PathRise;
-            for (int i = 0; i < Rects.Count; i++)
+            for (int i = 0; i < rects.Count; i++)
             {
-                PlanBox r = Rects[i];
+                PlanBox r = rects[i];
                 float x0 = r.X - r.HalfX, z0 = r.Z - r.HalfZ, x1 = r.X + r.HalfX, z1 = r.Z + r.HalfZ;
                 int v = i * 4;
                 vertices[v] = new Vector3(x0, y, z0);
@@ -268,23 +305,16 @@ namespace RealLifeOverhaul.Uptown
                 triangles[t + 3] = v;
                 triangles[t + 4] = v + 2;
                 triangles[t + 5] = v + 3;
-                Paved += (x1 - x0) * (z1 - z0);
+                area += (x1 - x0) * (z1 - z0);
             }
-            var mesh = new Mesh { name = HolderName + " paths " + block };
+            var mesh = new Mesh { name = name };
             mesh.vertices = vertices;
             mesh.uv = uvs;
             mesh.normals = normals;
             mesh.tangents = tangents;
             mesh.triangles = triangles;
             mesh.RecalculateBounds();
-            Meshes.Add(mesh);
-            var paving = new GameObject(HolderName + " paths " + block);
-            paving.transform.SetParent(parent, false);
-            paving.AddComponent<MeshFilter>().sharedMesh = mesh;
-            var shown = paving.AddComponent<MeshRenderer>();
-            shown.sharedMaterial = material;
-            shown.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            return true;
+            return mesh;
         }
     }
 }

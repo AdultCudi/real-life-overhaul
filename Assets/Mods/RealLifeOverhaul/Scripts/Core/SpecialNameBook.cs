@@ -18,9 +18,47 @@ namespace RealLifeOverhaul
         RivalBusiness   // a rival's business: it keeps the rival's name
     }
 
+    /// <summary>Whether a special place is open, for the line the game's card gives it.</summary>
+    public enum CardState
+    {
+        None = 0,     // the game's own line stands
+        Open = 1,
+        Closed = 2
+    }
+
+    /// <summary>
+    /// What a feature says on the game's card of its building beyond the name and the kind: whether it is open by its own hours (and the hours to the
+    /// next change and the hour of it, as the game's own card gives them), who runs it, and whether the card may say "click to enter". Filled by the
+    /// feature's callback (<see cref="SpecialEntry.Facts"/>) each time the card is written: once a second at most.
+    /// </summary>
+    public sealed class SpecialFacts
+    {
+        public CardState State;
+        public int Hours;          // to the next change of the state
+        public int AtHour;         // the hour of the day it changes
+        public string RunLine;     // "Run by the council": the card's owner line; null for none
+        public bool CanEnter;      // the card's "click to enter" is shown (a door that is open and can be walked in at)
+
+        /// <summary>The game's own key for the card's state line (BuildingResume.UpdateOpenStateLabel): open and closing in hours, or closed and opening in hours; null for none.</summary>
+        public static string StateKey(CardState state, int hours)
+        {
+            return state == CardState.Open ? (hours == 1 ? "buildingresume_open_closing_in_hour" : "buildingresume_open_closing_in_hours")
+                : state == CardState.Closed ? (hours == 1 ? "buildingresume_closed_opening_in_hour" : "buildingresume_closed_opening_in_hours") : null;
+        }
+
+        public void Clear()
+        {
+            State = CardState.None;
+            Hours = AtHour = 0;
+            RunLine = null;
+            CanEnter = false;
+        }
+    }
+
     /// <summary>One special building as the book holds it.</summary>
     public sealed class SpecialEntry
     {
+        public Action<SpecialFacts> Facts;   // the feature's say on the card's open state and owner line; null for the game's own
         public string Id;          // the feature's own name for it ("utilities", "police_2"); one building per id
         public string Street;
         public int Number;

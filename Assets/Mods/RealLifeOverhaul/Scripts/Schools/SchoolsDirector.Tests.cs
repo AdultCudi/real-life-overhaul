@@ -229,7 +229,7 @@ namespace RealLifeOverhaul.Schools
             {
                 return;
             }
-            d._crowding = false;
+            d._crowded = false;
             d.NoCrowds();
             d.Crowds();
             int stood = 0;

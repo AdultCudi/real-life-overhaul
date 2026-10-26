@@ -14,7 +14,7 @@ namespace RealLifeOverhaul.Schools
     {
         public const string HostId = "schools_birchwood";
         public const string FeatureId = "schools";
-        public const int OpenFrom = 7, OpenTo = 18;   // game hours the doors are open: the school run's first to the last club's end
+        public const int OpenFrom = SchoolRules.OpensAt, OpenTo = SchoolRules.ClosesAt;   // game hours the doors are open (the card says the same: SchoolRules.Open)
 
         public SchoolHost() : base(HostId, FeatureId, "Schools check (main school door)", "Schools check (main school lift)")
         {
@@ -23,8 +23,7 @@ namespace RealLifeOverhaul.Schools
 
         public override bool Open()
         {
-            int hour = SchoolsGame.Hour;
-            return hour >= OpenFrom && hour < OpenTo && SchoolRules.SchoolDay(SchoolsGame.Day);
+            return SchoolRules.Open(SchoolsGame.Day, SchoolsGame.Hour);
         }
 
         public override bool ShowsDoor(bool open) => true;   // closed, its floors are offered greyed with its hours

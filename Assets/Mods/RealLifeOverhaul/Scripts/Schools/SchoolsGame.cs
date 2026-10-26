@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using BA_Packages.Rivals.Scripts;
 using Controllers;
+using Extensions;
 using Helpers;
 using Localizor;
 using RealLifeOverhaul.NewBuildings;
@@ -32,26 +33,42 @@ namespace RealLifeOverhaul.Schools
         private const string Owner = "schools";              // the copy engine's log names the feature that asked
         private const float CutInset = 0.5f;                 // m inside a footprint each side: a carve reaches the walker's radius past its box
 
-        // Build 3682, read from the game's level files (not-in-repo scratch scan of 25 Oct 2026): every one of these is drawn
-        // on its own, never in a static batch. Found and copied by GamePieces, as Uptown's street furniture and parks are.
+        // The height flat pieces lie at over the ground: the block ground's grass top is 0.0552 m (its mesh, Build 3682), so a piece laid at 0.03 (the court as it
+        // was, Player.log of 26 Oct 2026 and the owner's screenshot: "the hoops stand on bare grass") is under the lawn. The parks' paths lie at the same 0.09.
+        private const float Surface = ParksGame.PavingRise;
+
+        // Build 3682, read from the game's level files (not-in-repo scratch scan of 25 and 26 Oct 2026): every one of these is drawn on its own, never in a
+        // static batch (a mesh of its own, never "Combined Mesh"). Found and copied by GamePieces, as Uptown's street furniture and parks are.
         private static readonly PieceTemplate[] Templates =
         {
-            new PieceTemplate { Kind = (int)CampusPieceKind.Fence, Root = "Roads", Name = "Playground_Fence_Modular", X = -1600.71f, Z = -1168.75f, Y = 0f, Room = Vector3.zero },
-            new PieceTemplate { Kind = (int)CampusPieceKind.Post, Root = "Roads", Name = "Playground_Fence_ModularFinal", X = -1659.65f, Z = -1168.76f, Y = 0f, Room = Vector3.zero },
-            new PieceTemplate { Kind = (int)CampusPieceKind.Court, Root = "BuildingBlocks", Name = "SM_BasketballCourt", X = -452.71f, Z = -326.32f, Y = 0.03f, Room = Vector3.zero },
-            new PieceTemplate { Kind = (int)CampusPieceKind.Hoop, Root = "BuildingBlocks", Name = "Prefab_BasketballHoop", X = -454.67f, Z = -326.22f, Y = 1.15f, Room = new Vector3(1.2f, 3f, 0.9f) },
+            new PieceTemplate { Kind = (int)CampusPieceKind.Fence, Root = "Roads", Name = "Playground_Fence_Modular", X = -1600.71f, Z = -1168.75f, Y = 0f },
+            new PieceTemplate { Kind = (int)CampusPieceKind.Post, Root = "Roads", Name = "Playground_Fence_ModularFinal", X = -1659.65f, Z = -1168.76f, Y = 0f },
+            // The game's court is a HALF court (SchoolGrounds): its plane lies at the surface, over the grass.
+            new PieceTemplate { Kind = (int)CampusPieceKind.Court, Root = "BuildingBlocks", Name = "SM_BasketballCourt", X = -452.71f, Z = -326.32f, Y = Surface },
+            new PieceTemplate { Kind = (int)CampusPieceKind.Hoop, Root = "BuildingBlocks", Name = "Prefab_BasketballHoop", X = -454.67f, Z = -326.22f, Y = 1.15f },
             // The game keeps its pavement benches under a scene root of their own, "SleepingBench" (props_scan, 25 Oct 2026: SleepingBench/SleepingBench (11)),
-            // the one the street furniture and the parks take. The campus once looked for it under BuildingBlocks at a place no bench stands.
+            // the one the street furniture and the parks take, and Madison Square Park's group beside it when that is not there at a load.
             new PieceTemplate
             {
                 Kind = (int)CampusPieceKind.Bench, Root = GamePieces.BenchRoot, Name = GamePieces.BenchName, X = GamePieces.BenchX, Z = GamePieces.BenchZ, Y = 0.03f,
-                Room = new Vector3(2.4f, 1.2f, 0.8f), Within = GamePieces.BenchReach
+                Within = GamePieces.BenchReach, AltRoot = GamePieces.BenchAltRoot, AltX = GamePieces.BenchAltX, AltZ = GamePieces.BenchAltZ
             },
-            new PieceTemplate
-            {
-                Kind = (int)CampusPieceKind.Tree, Root = "Vegetation", Name = "SM_PavementHoleforTrees_Broadleaf M1", X = 148.67f, Z = 475.57f, Y = 0.05f, Room = new Vector3(1.2f, 3f, 1.2f)
-            }
+            // The free trees and bushes of the Vegetation root, the parks' own, a few of each kind.
+            new PieceTemplate { Kind = (int)CampusPieceKind.Oak, Root = "Vegetation", Name = "Tree Broadleaf L1", X = -327.16f, Z = 313.58f, Y = 0f, Within = TreeReach },
+            new PieceTemplate { Kind = (int)CampusPieceKind.Birch, Root = "Vegetation", Name = "Tree Birch", X = 4.05f, Z = -129.34f, Y = 0f, Within = TreeReach },
+            new PieceTemplate { Kind = (int)CampusPieceKind.Beech, Root = "Vegetation", Name = "Tree Broadleaf M1", X = 440.06f, Z = -369.64f, Y = 0f, Within = TreeReach },
+            new PieceTemplate { Kind = (int)CampusPieceKind.Maple, Root = "Vegetation", Name = "Tree Maple", X = -144.69f, Z = 441.56f, Y = 0f, Within = TreeReach },
+            new PieceTemplate { Kind = (int)CampusPieceKind.Bush, Root = "Vegetation", Name = "Broadleaf Bush L1", X = -182.53f, Z = 313.33f, Y = 0f, Within = TreeReach },
+            new PieceTemplate { Kind = (int)CampusPieceKind.Bin, Root = "Trash Cans", Name = "SM_Trash Can", X = -87.00f, Z = 453.90f, Y = 0.06f, Within = TreeReach },
+            new PieceTemplate { Kind = (int)CampusPieceKind.Rack, Root = "Roads", Name = "Prefab_BikeRentalStand", X = -1852.53f, Z = -1283.52f, Y = 0.05f, Within = TreeReach },
+            // Madison Square Park's table group: a round table and four chairs people sit on (the chairs are the game's OutsideInteractableItemToRest).
+            new PieceTemplate { Kind = (int)CampusPieceKind.Table, Root = "Madison Square Park", Name = "Prefab_TableGroup", X = 272.70f, Z = 231.84f, Y = 0.03f, Within = TreeReach },
+            // The Industry City playground's climbing frame: the one piece of it whose mesh is its own (the swings, stalls and roundabout are drawn in a static batch).
+            new PieceTemplate { Kind = (int)CampusPieceKind.Climb, Root = "BuildingBlock(1,1)", Name = "Playground_Climbing", X = -1655.96f, Z = -1178.12f, Y = 0f, Within = TreeReach },
+            ParksGame.PavingTemplate((int)CampusPieceKind.Pavement)
         };
+
+        private const float TreeReach = 40f;   // m from its fixed place a free piece may be: farther, and the game's scene has moved (the parks' reach)
 
         private static readonly GameObject[] Found = new GameObject[Templates.Length];
 
@@ -275,13 +292,13 @@ namespace RealLifeOverhaul.Schools
         }
 
         /// <summary>
-        /// The campus's pieces stood under a root of their own (made asleep, woken together): each a copy of the game's piece
-        /// of its kind, drawn as the game draws it; the pitch the building sites' bundle's; a run of fence, a hoop, a bench and a
-        /// tree cut out of both walking meshes. Returns the root, or null when nothing stood.
+        /// The campus's pieces stood under a root of their own (made asleep, woken together): each a copy of the game's piece of its kind, drawn as the game
+        /// draws it; the pitch the building sites' bundle's; the paths the game's pavement material on a flat surface cut to rectangles; the two hoops each with a
+        /// net; a run of fence, a hoop, a bench, a table group, a bush and a tree cut out of both walking meshes. Returns the root, or null when nothing stood.
         /// </summary>
-        internal static GameObject Stand(List<CampusPiece> pieces, List<CampusFence> runs, out int stood, out int missed)
+        internal static GameObject Stand(List<CampusPiece> pieces, List<CampusFence> runs, List<CampusBox> paths, out int stood, out int missed, out int paved, out int nets)
         {
-            stood = missed = 0;
+            stood = missed = paved = nets = 0;
             var root = new GameObject(RootName);
             root.SetActive(false);
             for (int i = 0; i < pieces.Count; i++)
@@ -294,12 +311,17 @@ namespace RealLifeOverhaul.Schools
                     continue;
                 }
                 stood++;
+                if (p.Kind == CampusPieceKind.Hoop && Net(made))
+                {
+                    nets++;
+                }
             }
             for (int i = 0; i < runs.Count; i++)
             {
                 Fence(runs[i], root.transform);
             }
-            if (stood == 0)
+            paved = Pave(paths, root.transform);
+            if (stood == 0 && paved == 0)
             {
                 UnityEngine.Object.Destroy(root);
                 return null;
@@ -317,16 +339,35 @@ namespace RealLifeOverhaul.Schools
             {
                 return null;
             }
-            GameObject copy = GamePieces.Stand(template, parent, RootName + " " + p.Kind, new Vector3(p.X, UptownLots.GroundY + Templates[t].Y, p.Z), p.Yaw);
+            Vector3 at = new Vector3(p.X, UptownLots.GroundY + Templates[t].Y, p.Z);
+            // A table group is a prefab turned on its side with its children turned back: its own turn is kept, the campus's yaw put on it.
+            GameObject copy = p.Kind == CampusPieceKind.Table
+                ? GamePieces.StandAligned(template, parent, RootName + " " + p.Kind, at, p.Yaw)
+                : GamePieces.Stand(template, parent, RootName + " " + p.Kind, at, p.Yaw);
             if (p.Kind == CampusPieceKind.Court)
             {
-                copy.transform.localScale = new Vector3(p.StretchX, 1f, p.StretchZ);
+                copy.transform.localScale = copy.transform.localScale * p.StretchX;   // the game's own scale, stretched evenly
             }
-            if (Templates[t].Room != Vector3.zero)
+            SchoolGrounds.RoomOf(p.Kind, out float across, out float deep, out float high);
+            if (across > 0f)
             {
-                GamePieces.Block(copy, Templates[t].Room);
+                Obstacle(parent, new Vector3(p.X, UptownLots.GroundY, p.Z), p.Yaw, new Vector3(across, high, deep));
             }
             return copy;
+        }
+
+        // What stands in the way: the walking meshes are cut round a piece laid after they were grown, on a holder of its own (the piece may be turned on its side).
+        private static void Obstacle(Transform parent, Vector3 at, float yaw, Vector3 size)
+        {
+            var holder = new GameObject(RootName + " room");
+            holder.transform.SetParent(parent, false);
+            holder.transform.SetPositionAndRotation(at, Quaternion.Euler(0f, yaw, 0f));
+            var cut = holder.AddComponent<NavMeshObstacle>();
+            cut.shape = NavMeshObstacleShape.Box;
+            cut.center = new Vector3(0f, size.y * 0.5f, 0f);
+            cut.size = size;
+            cut.carveOnlyStationary = true;
+            cut.carving = true;
         }
 
         private static int TemplateOf(CampusPieceKind kind)
@@ -350,7 +391,7 @@ namespace RealLifeOverhaul.Schools
             }
             var piece = new GameObject(RootName + " pitch");
             piece.transform.SetParent(parent, false);
-            piece.transform.SetPositionAndRotation(new Vector3(p.X, UptownLots.GroundY + 0.02f, p.Z), Quaternion.Euler(0f, p.Yaw, 0f));
+            piece.transform.SetPositionAndRotation(new Vector3(p.X, UptownLots.GroundY + Surface, p.Z), Quaternion.Euler(0f, p.Yaw, 0f));
             piece.transform.localScale = new Vector3(p.StretchX, 1f, p.StretchZ);
             piece.AddComponent<MeshFilter>().sharedMesh = mesh;
             var renderer = piece.AddComponent<MeshRenderer>();
@@ -359,6 +400,92 @@ namespace RealLifeOverhaul.Schools
             renderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
             renderer.shadowCastingMode = ShadowCastingMode.Off;
             return piece;
+        }
+
+        // ------------------------------------------------------------------ the paths
+
+        private static readonly List<Mesh> Made = new List<Mesh>(2);   // the paving's meshes, destroyed with the campus
+        private static readonly List<PlanBox> Rects = new List<PlanBox>(12);
+        private static Mesh _net;                                       // the hoops' net, one for both
+
+        /// <summary>The paths laid as one flat surface of the game's pavement material, the parks' way; the square metres laid (0 where the material was not found).</summary>
+        private static int Pave(List<CampusBox> paths, Transform parent)
+        {
+            int t = TemplateOf(CampusPieceKind.Pavement);
+            Material material = t >= 0 ? ParksGame.PavingFrom(Found[t]) : null;
+            if (material == null || paths == null || paths.Count == 0)
+            {
+                return 0;
+            }
+            Rects.Clear();
+            for (int i = 0; i < paths.Count; i++)
+            {
+                Rects.Add(new PlanBox(paths[i].X - paths[i].HalfX, paths[i].Z - paths[i].HalfZ, paths[i].X + paths[i].HalfX, paths[i].Z + paths[i].HalfZ, 0f));
+            }
+            Mesh mesh = ParksGame.PavingMesh(Rects, RootName + " paths", out float area);
+            Made.Add(mesh);
+            var paving = new GameObject(RootName + " paths");
+            paving.transform.SetParent(parent, false);
+            paving.AddComponent<MeshFilter>().sharedMesh = mesh;
+            var shown = paving.AddComponent<MeshRenderer>();
+            shown.sharedMaterial = material;
+            shown.shadowCastingMode = ShadowCastingMode.Off;
+            return Mathf.RoundToInt(area);
+        }
+
+        // ------------------------------------------------------------------ the hoops' nets
+
+        /// <summary>
+        /// A net hung from a hoop's rim: the game has no netted hoop it draws on its own (its Skatepark's and Sunset Park's are drawn in a static batch, its
+        /// one hoop prefab has a bare rim), so a short cone of twelve sides drawn with the game's own chain-link material, found by name once a load.
+        /// False where the material was not found.
+        /// </summary>
+        private static bool Net(GameObject hoop)
+        {
+            Material material = CampusLook.NetMaterial;
+            if (hoop == null || material == null)
+            {
+                return false;
+            }
+            if (_net == null)
+            {
+                BuildNet();
+            }
+            var net = new GameObject(RootName + " net");
+            net.transform.SetParent(hoop.transform, false);
+            net.AddComponent<MeshFilter>().sharedMesh = _net;
+            var shown = net.AddComponent<MeshRenderer>();
+            shown.sharedMaterial = material;
+            shown.shadowCastingMode = ShadowCastingMode.Off;
+            return true;
+        }
+
+        // A tapering ring of strands in the hoop's own frame (y up, z the way it faces): wide at the rim, narrow at the foot; both faces.
+        private static void BuildNet()
+        {
+            int sides = SchoolGrounds.NetSides;
+            var vertices = new Vector3[(sides + 1) * 2];
+            var uvs = new Vector2[vertices.Length];
+            var triangles = new int[sides * 12];
+            for (int i = 0; i <= sides; i++)
+            {
+                float a = i * 2f * Mathf.PI / sides, sin = Mathf.Sin(a), cos = Mathf.Cos(a);
+                vertices[i] = new Vector3(sin * SchoolGrounds.NetTopRadius, SchoolGrounds.NetTop, SchoolGrounds.NetOut + cos * SchoolGrounds.NetTopRadius);
+                vertices[sides + 1 + i] = new Vector3(sin * SchoolGrounds.NetFootRadius, SchoolGrounds.NetTop - SchoolGrounds.NetLength, SchoolGrounds.NetOut + cos * SchoolGrounds.NetFootRadius);
+                uvs[i] = new Vector2(i * 3f / sides, 1f);
+                uvs[sides + 1 + i] = new Vector2(i * 3f / sides, 0f);
+            }
+            for (int i = 0; i < sides; i++)
+            {
+                int t0 = i, t1 = i + 1, b0 = sides + 1 + i, b1 = sides + 2 + i, k = i * 12;
+                triangles[k] = t0; triangles[k + 1] = b0; triangles[k + 2] = t1;
+                triangles[k + 3] = t1; triangles[k + 4] = b0; triangles[k + 5] = b1;
+                triangles[k + 6] = t0; triangles[k + 7] = t1; triangles[k + 8] = b0;
+                triangles[k + 9] = t1; triangles[k + 10] = b1; triangles[k + 11] = b0;
+            }
+            _net = new Mesh { name = RootName + " net", vertices = vertices, uv = uvs, triangles = triangles };
+            _net.RecalculateNormals();
+            _net.RecalculateBounds();
         }
 
         // A run of fence cut out of the walking meshes: one thin box from end to end.
@@ -390,6 +517,19 @@ namespace RealLifeOverhaul.Schools
                 UnityEngine.Object.Destroy(root);
             }
             root = null;
+            for (int i = 0; i < Made.Count; i++)
+            {
+                if (Made[i] != null)
+                {
+                    UnityEngine.Object.Destroy(Made[i]);
+                }
+            }
+            Made.Clear();
+            if (_net != null)
+            {
+                UnityEngine.Object.Destroy(_net);
+                _net = null;
+            }
         }
 
         // ------------------------------------------------------------------ inside the main school
@@ -427,6 +567,42 @@ namespace RealLifeOverhaul.Schools
         {
             PeopleGame.Unzone(ref zone);
         }
+
+        // ------------------------------------------------------------------ whether people can walk it
+
+        private static NavMeshPath _route;
+
+        /// <summary>
+        /// True when someone of the agent type can walk from one spot to the other on the walking mesh as it is now: both spots on it within 2.5 m and a whole
+        /// path between. <paramref name="why"/> says which end or the path failed. One path, reused; asked once a load.
+        /// </summary>
+        internal static bool Reaches(Vector3 from, Vector3 to, int agentType, out string why)
+        {
+            why = null;
+            _route = _route ?? new NavMeshPath();
+            var filter = new NavMeshQueryFilter { agentTypeID = agentType, areaMask = NavMesh.AllAreas };
+            if (!NavMesh.SamplePosition(from, out NavMeshHit start, 2.5f, filter))
+            {
+                why = "its start is off the walking mesh";
+                return false;
+            }
+            if (!NavMesh.SamplePosition(to, out NavMeshHit end, 2.5f, filter))
+            {
+                why = "its end is off the walking mesh";
+                return false;
+            }
+            if (!NavMesh.CalculatePath(start.position, end.position, filter, _route) || _route.status != NavMeshPathStatus.PathComplete)
+            {
+                why = "no whole path (" + _route.status + ")";
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>The game's agent type of the pedestrians and every other person on foot but the player, and the player's own.</summary>
+        internal static int NpcAgent => NavMeshHelper.NpcAgentTypeId;
+
+        internal static int PlayerAgent => NavMeshHelper.PlayerAgentTypeId;
 
         // ------------------------------------------------------------------ taking the player there
 

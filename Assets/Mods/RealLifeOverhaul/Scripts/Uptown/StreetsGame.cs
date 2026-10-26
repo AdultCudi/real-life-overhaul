@@ -26,7 +26,11 @@ namespace RealLifeOverhaul.Uptown
         // piece needs, half each way, turned with it: nothing of the game's may stand there.
         private static readonly PieceTemplate[] Templates =
         {
-            new PieceTemplate { Root = "SleepingBench", Name = "SleepingBench", X = 214.40f, Z = 99.39f, Room = new Vector3(0.95f, 0.6f, 0.4f), Y = 0.03f, Within = Reach },
+            new PieceTemplate
+            {
+                Root = GamePieces.BenchRoot, Name = GamePieces.BenchName, X = GamePieces.BenchX, Z = GamePieces.BenchZ, Room = new Vector3(0.95f, 0.6f, 0.4f), Y = 0.03f, Within = Reach,
+                AltRoot = GamePieces.BenchAltRoot, AltX = GamePieces.BenchAltX, AltZ = GamePieces.BenchAltZ
+            },
             new PieceTemplate { Root = "Trash Cans", Name = "SM_Trash Can", X = -87.00f, Z = 453.90f, Room = new Vector3(0.35f, 0.6f, 0.35f), Y = 0.06f, Within = Reach },
             new PieceTemplate { Root = "Vegetation", Name = "SM_PavementHoleforTrees_Broadleaf M1", X = 148.67f, Z = 475.57f, Room = new Vector3(0.7f, 0.9f, 0.7f), Y = 0.05f, Within = Reach },
             new PieceTemplate { Root = "Vegetation", Name = "SM_PavementHoleforTrees_02 Birch", X = 346.53f, Z = 475.57f, Room = new Vector3(0.7f, 0.9f, 0.7f), Y = 0.05f, Within = Reach },

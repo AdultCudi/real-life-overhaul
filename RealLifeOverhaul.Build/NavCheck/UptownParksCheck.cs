@@ -341,7 +341,9 @@ internal static partial class Program
             "uptown pieces sources: every piece is laid through GamePieces.Stand");
         foreach (string template in new[] { "SleepingBench", "SM_Trash Can", "SM_PavementHoleforTrees_Broadleaf M1", "SM_PavementHoleforTrees_02 Birch", "SM_PavementHoleforTrees_02 Broadleaf L1", "Prefab_BikeRentalStand" })
         {
-            Check(Regex.Matches(streets, "Name = \"" + Regex.Escape(template) + "\"").Count == 1, "uptown pieces sources: the street furniture asks for " + template + " once");
+            // The bench is asked for through the shared constants (GamePieces.BenchName), the same for the streets, the parks and the campus.
+            string asked = template == "SleepingBench" ? "Name = GamePieces.BenchName" : "Name = \"" + template + "\"";
+            Check(Regex.Matches(streets, Regex.Escape(asked)).Count == 1, "uptown pieces sources: the street furniture asks for " + template + " once");
         }
         Check(streets.Contains("FoundWords = GamePieces.Words(Templates, Found)") && director.Contains("StreetsGame.FoundWords") && director.Contains("ParksGame.FoundWords"),
             "uptown pieces sources: what the street furniture and the parks found and missed is said once a load");

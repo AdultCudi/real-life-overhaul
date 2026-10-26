@@ -33,6 +33,7 @@ internal static partial class Program
         { "\"hotel_\"", "hotels" },
         { "\"utilities_office\"", "utilities_office" },
         { "CityReserves.UtilitiesId", "utilities_office" },   // (Core/CityReserves: "utilities_office", also its building's reservation)
+        { "SchoolsGame.MainId", "schools" },   // (Schools/SchoolsDirector.Campus: Birchwood School's main school, on the card as a school; its row of the map's filters)
         { "ClaimPrefix", "floors" },   // (Floors/FloorsDirector.Book: a building taken for places that found no spare floor)
         { "LeaseHold", GameRow + "Construction/ConstructionType.cs" },   // (Uptown/LifeGame.Leases: a rival builder's office, a business of the game's of that type)
     };

@@ -28,6 +28,7 @@ internal static partial class Program
         SchoolSourceChecks();
         SchoolTextChecks();
         CampusLookChecks();
+        CampusDressingChecks();
     }
 
     // ---------------------------------------------------------------- the campus on its block
@@ -70,21 +71,21 @@ internal static partial class Program
         var runs = new List<CampusFence>();
         SchoolGrounds.Pieces(pieces, runs);
         Check(pieces.All(p => SchoolGrounds.On(p.X, p.Z)), "schools ground: every piece stands on the campus");
-        Check(pieces.Where(p => p.Kind != CampusPieceKind.Fence && p.Kind != CampusPieceKind.Post).All(p => boxes.All(b => !Within(p.X, p.Z, b.Item2, b.Item3, b.Item4, b.Item5))),
-            "schools ground: the court, hoops, trees, benches and pitch stand clear of the buildings");
-        Check(pieces.Count(p => p.Kind == CampusPieceKind.Court) == 1 && pieces.Count(p => p.Kind == CampusPieceKind.Hoop) == 2 && pieces.Count(p => p.Kind == CampusPieceKind.Pitch) == 1
-              && pieces.Count(p => p.Kind == CampusPieceKind.Bench) == 4 && pieces.Count(p => p.Kind == CampusPieceKind.Tree) == 4,
-            "schools ground: a court with two hoops, four benches, four trees and the pitch");
+        Check(pieces.Where(p => p.Kind != CampusPieceKind.Fence && p.Kind != CampusPieceKind.Post && p.Kind != CampusPieceKind.Bush).All(p => boxes.Skip(1).All(b => !Within(p.X, p.Z, b.Item2, b.Item3, b.Item4, b.Item5))),
+            "schools ground: the court, hoops, trees, benches and pitch stand clear of the hall's and the junior block's plots (the dressing's own checks are in CampusDressingChecks)");
+        Check(pieces.Count(p => p.Kind == CampusPieceKind.Court) == 2 && pieces.Count(p => p.Kind == CampusPieceKind.Hoop) == 2 && pieces.Count(p => p.Kind == CampusPieceKind.Pitch) == 1,
+            "schools ground: a court of two half courts with two hoops, and the pitch");
         CampusPiece court = pieces.First(p => p.Kind == CampusPieceKind.Court);
-        Check(Math.Abs(court.StretchX * SchoolGrounds.CourtBaseLength - SchoolGrounds.CourtLength) < 0.01f && Math.Abs(court.StretchZ * SchoolGrounds.CourtBaseWidth - SchoolGrounds.CourtWidth) < 0.01f
-              && Math.Abs(court.StretchX - court.StretchZ) < 0.02f, "schools ground: the game's court plane stretched evenly to " + SchoolGrounds.CourtLength + " by " + SchoolGrounds.CourtWidth + " m");
+        Check(Math.Abs(court.StretchX - court.StretchZ) < 0.001f && Math.Abs(court.StretchX - SchoolGrounds.CourtScale) < 0.001f
+              && Math.Abs(SchoolGrounds.HalfCourtAcross * SchoolGrounds.CourtScale - SchoolGrounds.CourtWidth) < 0.05f && Math.Abs(2f * SchoolGrounds.HalfCourtDeep * SchoolGrounds.CourtScale - SchoolGrounds.CourtLength) < 0.05f,
+            "schools ground: the game's half court stretched evenly by " + SchoolGrounds.CourtScale + " to " + SchoolGrounds.CourtWidth + " by " + SchoolGrounds.CourtLength / 2f + " m, two back to back");
         float courtHalfAcross = SchoolGrounds.CourtWidth * 0.5f;
         Check(court.X - courtHalfAcross > plots.Min(p => p.X) + 12f && court.X + courtHalfAcross < plots.Max(p => p.X) - 12f, "schools ground: the court lies in the courtyard between the hall and the junior block");
         CampusPiece pitch = pieces.First(p => p.Kind == CampusPieceKind.Pitch);
         Check(Within(pitch.X - SchoolGrounds.PitchWidth * 0.5f, pitch.Z - SchoolGrounds.PitchDepth * 0.5f, x0, z0, x1, z1) && Within(pitch.X + SchoolGrounds.PitchWidth * 0.5f, pitch.Z + SchoolGrounds.PitchDepth * 0.5f, x0, z0, x1, z1)
-              && pitch.Z - SchoolGrounds.PitchDepth * 0.5f > court.Z + SchoolGrounds.CourtLength * 0.5f, "schools ground: the playing field lies whole at the campus's north end, north of the court");
+              && pitch.Z - SchoolGrounds.PitchDepth * 0.5f > pieces.Where(p => p.Kind == CampusPieceKind.Court).Max(p => p.Z) + SchoolGrounds.CourtLength * 0.25f, "schools ground: the playing field lies whole at the campus's north end, north of the court");
         // The fence: modules end to end along each run, a run's ends inside the block's edge, the three gates open.
-        Check(runs.Count == 7, "schools ground: seven runs of fence round the block, broken by three gates: " + runs.Count);
+        Check(runs.Count == 12, "schools ground: seven runs of fence round the block, broken by three gates, and five round the court (its north baseline open): " + runs.Count);
         float midX = (x0 + x1) * 0.5f;
         Check(!Fenced(runs, midX, z0 + SchoolGrounds.FenceIn) && !Fenced(runs, midX, z1 - SchoolGrounds.FenceIn), "schools ground: the main gate on Uptown Avenue and the field's gate on Summit Avenue are open");
         Check(Fenced(runs, x0 + SchoolGrounds.FenceIn, (z0 + z1) * 0.5f), "schools ground: Birch Street's side is fenced");
@@ -114,8 +115,9 @@ internal static partial class Program
         Check(Math.Abs(backZ - south.Z0) < 0.01f && backX >= south.X0 - 0.01f && backX < firstModule.X, "schools ground: the first module reaches back to the run's start, not past it");
         var crowds = new List<CampusCrowd>();
         SchoolGrounds.Crowds(crowds);
-        Check(crowds.Count == 2 && crowds.All(c => !SchoolGrounds.On(c.X, c.Z)) && crowds.All(c => GroundSurvey.At(c.X, c.Z).Kind == GroundKind.Street || GroundSurvey.At(c.X, c.Z).Kind == GroundKind.Avenue),
-            "schools ground: the families' two squares are on the pavements outside the gates");
+        Check(crowds.Count == SchoolGrounds.CrowdCount && crowds.Take(2).All(c => !SchoolGrounds.On(c.X, c.Z)) && crowds.Take(2).All(c => GroundSurvey.At(c.X, c.Z).Kind == GroundKind.Street || GroundSurvey.At(c.X, c.Z).Kind == GroundKind.Avenue)
+              && crowds.Skip(2).All(c => c.Inside && SchoolGrounds.On(c.X, c.Z)),
+            "schools ground: the families' two squares are on the pavements outside the gates, the seven others on the campus");
         SchoolGrounds.Gate(out float gx, out float gz, out _);
         Check(GroundSurvey.At(gx, gz).Kind == GroundKind.Avenue && gz < z0 && gz > z0 - LayoutRules.AvenueHalf + LayoutRules.AvenueKerb, "schools ground: the gate's spot is on Uptown Avenue's north pavement");
         Check(GroundSurvey.At((x0 + x1) * 0.5f, (z0 + z1) * 0.5f).Kind == GroundKind.Campus, "schools ground: the campus reads as the campus in What is this ground?");
@@ -396,7 +398,7 @@ internal static partial class Program
     {
         string[] files =
         {
-            "SchoolRules.cs", "SchoolState.cs", "SchoolStore.cs", "SchoolGrounds.cs", "SchoolsBridges.cs", "SchoolsGame.cs", "SchoolFloors.cs", "SchoolsDirector.cs",
+            "SchoolRules.cs", "SchoolState.cs", "SchoolStore.cs", "SchoolGrounds.cs", "SchoolGrounds.Dressing.cs", "SchoolsBridges.cs", "SchoolsGame.cs", "SchoolFloors.cs", "SchoolsDirector.cs",
             "SchoolsDirector.Campus.cs", "SchoolsDirector.Market.cs", "SchoolsDirector.Paper.cs", "SchoolsDirector.Tests.cs", "SchoolsPage.cs", "SchoolsText.cs", "SchoolsGuide.cs"
         };
         var code = new Dictionary<string, string>();
@@ -410,7 +412,7 @@ internal static partial class Program
         Check(!Regex.IsMatch(all, @"FindObjectsOfType|FindObjectsByType|GameObject\.Find\b|OverlapSphere\(|RaycastAll\(|\bHarmony\b|\bMPClient\b|\bMPServer\b|DlcIsOwned|requiredDLC|SteamApps"),
             "schools sources: no whole-scene search, no patch, nothing sent over the network, no DLC read");
         Check(!Regex.IsMatch(all, @"\bTODO\b|\bFIXME\b|NotImplementedException"), "schools sources: no stub");
-        foreach (string name in new[] { "SchoolRules.cs", "SchoolState.cs", "SchoolStore.cs", "SchoolGrounds.cs" })
+        foreach (string name in new[] { "SchoolRules.cs", "SchoolState.cs", "SchoolStore.cs", "SchoolGrounds.cs", "SchoolGrounds.Dressing.cs" })
         {
             Check(!Regex.IsMatch(code[name], @"\bUnityEngine\b|\bRandom\.|\bnew Random\b|DateTime|TickCount|\bTime\.|GetHashCode"), "schools sources: " + name + " is game-free and leaves nothing to chance");
         }
@@ -476,8 +478,12 @@ internal static partial class Program
               && !gameCode.Contains("-397.79f") && !gameCode.Contains("Name = \"SleepingBench\""),
             "schools sources: the campus's bench is the game's pavement bench, asked for where the street furniture asks for it, not under BuildingBlocks");
         Check(pieceCode.Contains("BenchRoot = \"SleepingBench\"") && pieceCode.Contains("BenchX = 214.40f") && pieceCode.Contains("BenchZ = 99.39f") && pieceCode.Contains("BenchReach = 40f")
-              && streetCode.Contains("Root = \"SleepingBench\", Name = \"SleepingBench\", X = 214.40f, Z = 99.39f") && parkCode.Contains("Root = \"SleepingBench\", Name = \"SleepingBench\", X = 214.40f, Z = 99.39f"),
+              && streetCode.Contains("Root = GamePieces.BenchRoot, Name = GamePieces.BenchName, X = GamePieces.BenchX, Z = GamePieces.BenchZ") && parkCode.Contains("Root = GamePieces.BenchRoot, Name = GamePieces.BenchName, X = GamePieces.BenchX, Z = GamePieces.BenchZ"),
             "schools sources: the bench's place is the same for the campus, the street furniture and the parks");
+        // Player.log, 26 Oct 2026: the bench's own scene root was not found at the load while Vegetation, Trash Cans and Street Lamp beside it were: all three look in Madison Square Park's too.
+        Check(pieceCode.Contains("BenchAltRoot = \"Madison Square Park\"") && pieceCode.Contains("BenchAltX = 192.79f") && pieceCode.Contains("BenchAltZ = 269.00f") && pieceCode.Contains("second[t]")
+              && streetCode.Contains("AltRoot = GamePieces.BenchAltRoot") && parkCode.Contains("AltRoot = GamePieces.BenchAltRoot") && gameCode.Contains("AltRoot = GamePieces.BenchAltRoot"),
+            "schools sources: the bench is looked for in Madison Square Park's group too when its own root is not there (the campus's, the streets' and the parks')");
     }
 
     // ---------------------------------------------------------------- the texts

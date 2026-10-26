@@ -13,7 +13,17 @@ namespace RealLifeOverhaul.Schools
         Hoop = 3,      // the game's basketball hoop
         Bench = 4,     // the game's sittable bench (OutsideBenchController)
         Tree = 5,      // the game's street tree in its pavement hole
-        Pitch = 6      // the building sites' bundle's pitch: grass, lines and a track
+        Pitch = 6,     // the building sites' bundle's pitch: grass, lines and a track
+        Oak = 7,       // the game's free trees of the Vegetation root (the parks take them too): broadleaf large, birch, broadleaf medium and maple
+        Birch = 8,
+        Beech = 9,
+        Maple = 10,
+        Bush = 11,     // the game's broadleaf bush: a planter's, and along the fence
+        Bin = 12,      // the game's litter bin
+        Rack = 13,     // the game's bicycle stand (the street furniture's docks)
+        Table = 14,    // the game's table group of Madison Square Park: a round table and four chairs people sit on
+        Climb = 15,    // the game's climbing frame of the Industry City playground, the one piece of its playground not drawn in a static batch
+        Pavement = 16  // the ground the game's pavement material is taken from (a template only: never laid)
     }
 
     /// <summary>One piece stood on the campus: its kind, its middle on the ground, its turn and its stretch along its own x and z.</summary>
@@ -44,6 +54,8 @@ namespace RealLifeOverhaul.Schools
     {
         public string Name;
         public float X, Z, Yaw, Width, Depth;
+        public CrowdWhen When;     // the moments of the school day people are there (SchoolRules.CrowdMoments)
+        public bool Inside;        // on the campus's own ground (its paths and lawns), not on the pavement outside a gate
     }
 
     /// <summary>
@@ -53,7 +65,7 @@ namespace RealLifeOverhaul.Schools
     /// the plan's block and fixed figures, so the campus stands the same on every machine. Game-free (EconomyCheck's
     /// SchoolChecks). COST: lists filled once a load.
     /// </summary>
-    public static class SchoolGrounds
+    public static partial class SchoolGrounds
     {
         public const int Row = LayoutRules.CampusBlock / 100;
         public const int Column = LayoutRules.CampusBlock % 100;
@@ -73,14 +85,32 @@ namespace RealLifeOverhaul.Schools
         public const float MainInset = 4f;        // m its front stands back from the block's edge: a forecourt inside the gate
         public const float GateWidth = 12f;       // m: the main gate on Uptown Avenue, before the main school's door
         public const float SideGate = 6f;         // m: the gate on Elm Street to the green, and the field's on Summit Avenue
-        public const float CourtLength = 19.2f;   // m: the court as stood, its long side running north (the game's court plane stretched evenly: 13.64 by 8.52 to 19.2 by 12)
-        public const float CourtWidth = 12f;      // m: the models' backs leave 15 m between them (CampusLookRules), the court and a bench each side fit
-        public const float CourtBaseLength = 13.64f;   // m: the game's court plane's own size (its mesh, Build 3682)
-        public const float CourtBaseWidth = 8.52f;
-        public const float PitchWidth = 52f;      // m: the playing field west to east ...
-        public const float PitchDepth = 40f;      // ... and south to north
+        // The game's basketball court is a HALF court: its plane (SM_BasketballCourt, Factory3's yard and the Skatepark's two, which stand back to back) is 7.73 m
+        // across and 5.13 m deep at the scale it is placed at (its mesh 13.64 by 8.52 along its own x and z, local scale 0.567 and 0.602, Build 3682), with the hoop
+        // 0.6 m in from its baseline, at the middle of it. The campus stands two, back to back as the Skatepark does, each stretched evenly by CourtScale.
+        public const float CourtScale = 1.55f;    // the game's half court, stretched evenly: 11.98 m across and 7.95 m deep, so two stand in the 12 m the courtyard gives the court
+        public const float HalfCourtAcross = 7.73f;   // m: the game's half court, across (along its baseline), as the game places it
+        public const float HalfCourtDeep = 5.13f;     // m: ... and from its baseline to its middle line
+        public const float HoopToCentre = 1.96f;      // m from the game's hoop to the middle of the half court it stands at, along the way the hoop faces
+        public const float HoopSide = 0.10f;          // m the court's middle lies to the hoop's right of the line it faces along (the game's own offset)
+        public const float CourtWidth = 12f;          // m: the court across, the hoops' baselines (a half court's width at CourtScale: 11.98)
+        public const float CourtLength = 15.9f;       // m: two half courts, baseline to baseline (2 x 7.95)
+        public const float CourtFrom = 38.5f;         // m north of the block's south edge the court's south baseline is: 4.1 m of the courtyard behind the main school's back wall
+        public const float CourtGap = 3.6f;           // m: the opening in the middle of the court fence's north baseline, to the plaza
+        public const float PitchScale = 0.76f;    // the pitch prop stretched evenly (its lines are 46 by 30 m in the middle of it), so the field keeps its shape and its margins
         public const float PitchBaseWidth = 52f;  // the bundle's pitch's own size (LandmarkRules.PitchWidth, PitchDepth)
         public const float PitchBaseDepth = 48f;
+        public const float PitchWidth = PitchBaseWidth * PitchScale;   // m: the playing field west to east (39.5) ...
+        public const float PitchDepth = PitchBaseDepth * PitchScale;   // ... and south to north (36.5)
+        public const float PitchNorth = 6f;       // m the playing field's north end keeps from the block's north edge (and the fence): a margin to walk and plant in
+        public const float DoorBay = 1.55f;       // m the main school's front wall is behind its door (CampusLookRules.MainModel's DoorOut)
+        public const int NetSides = 12;           // the hoops' net: a cone of twelve sides ...
+        public const float NetTop = 1.30f;        // m: the hoop prefab's rim height in its own frame (its mesh: the rim ring is at 1.30, 0.54 out from the pole, Build 3682)
+        public const float NetOut = 0.54f;        // m: the rim's middle in front of the pole, the way the hoop faces
+        public const float NetTopRadius = 0.20f;  // m: ... as wide as the rim ...
+        public const float NetFootRadius = 0.11f; // m: ... narrowing to this
+        public const float NetLength = 0.36f;     // m: and this long
+        public const float PlanterBack = 1.2f;    // m in front of the main school's front wall its four planters stand
         public const float PavementIn = 1.85f;    // m from a block's edge to the middle of the pavement round it (half a 3.7 m pavement)
 
         /// <summary>The campus's ground: the square's west, south, east and north edges (m).</summary>
@@ -133,56 +163,6 @@ namespace RealLifeOverhaul.Schools
         }
 
         /// <summary>
-        /// Every piece stood on the campus (into the list, cleared): the fence round the block in modules, broken by the main
-        /// gate, the side gate and the field's gate, a post at each side of a gate; the court and its hoops in the courtyard;
-        /// trees and benches round it; the playing field at the north end.
-        /// </summary>
-        public static void Pieces(List<CampusPiece> into, List<CampusFence> runs)
-        {
-            into.Clear();
-            runs.Clear();
-            Ground(out float x0, out float z0, out float x1, out float z1);
-            float mid = (x0 + x1) * 0.5f;
-            float s = z0 + FenceIn, n = z1 - FenceIn, w = x0 + FenceIn, e = x1 - FenceIn;
-            float sideGate = z0 + MainDepth + 2f + 30f + 3f;   // between the junior block and the field
-            // South, on Uptown Avenue: the main gate before the main school's door.
-            Run(into, runs, w, s, mid - GateWidth * 0.5f, s);
-            Run(into, runs, mid + GateWidth * 0.5f, s, e, s);
-            // East, on Elm Street: the side gate to the green.
-            Run(into, runs, e, s, e, sideGate - SideGate * 0.5f);
-            Run(into, runs, e, sideGate + SideGate * 0.5f, e, n);
-            // North, on Summit Avenue: the field's gate.
-            Run(into, runs, e, n, mid + SideGate * 0.5f, n);
-            Run(into, runs, mid - SideGate * 0.5f, n, w, n);
-            // West, on Birch Street: whole.
-            Run(into, runs, w, n, w, s);
-            // The courtyard between the hall and the junior block: the court running north, a hoop at each end. It lies in the way
-            // between their backs (the models' own depths: CampusLookRules), which is not the block's middle.
-            Courtyard(out float courtX, out float strip);
-            float courtZ = z0 + MainDepth + 2f + CourtLength * 0.5f + 3f;
-            into.Add(new CampusPiece { Kind = CampusPieceKind.Court, X = courtX, Z = courtZ, Yaw = 90f, StretchX = CourtLength / CourtBaseLength, StretchZ = CourtWidth / CourtBaseWidth });
-            into.Add(new CampusPiece { Kind = CampusPieceKind.Hoop, X = courtX, Z = courtZ - CourtLength * 0.5f + 0.6f, Yaw = 0f, StretchX = 1f, StretchZ = 1f });
-            into.Add(new CampusPiece { Kind = CampusPieceKind.Hoop, X = courtX, Z = courtZ + CourtLength * 0.5f - 0.6f, Yaw = 180f, StretchX = 1f, StretchZ = 1f });
-            // The green round it: trees at its ends, benches along its sides facing the court, in the strips beside it.
-            float side = CourtWidth * 0.5f + (strip - CourtWidth * 0.5f) * 0.5f;
-            float greenW = courtX - side, greenE = courtX + side;
-            float greenS = courtZ - CourtLength * 0.5f, greenN = courtZ + CourtLength * 0.5f + 5f;
-            Tree(into, greenW, greenS);
-            Tree(into, greenE, greenS);
-            Tree(into, greenW, greenN);
-            Tree(into, greenE, greenN);
-            into.Add(new CampusPiece { Kind = CampusPieceKind.Bench, X = greenW, Z = courtZ, Yaw = 90f, StretchX = 1f, StretchZ = 1f });
-            into.Add(new CampusPiece { Kind = CampusPieceKind.Bench, X = greenE, Z = courtZ, Yaw = 270f, StretchX = 1f, StretchZ = 1f });
-            into.Add(new CampusPiece { Kind = CampusPieceKind.Bench, X = courtX - 4f, Z = greenN, Yaw = 180f, StretchX = 1f, StretchZ = 1f });
-            into.Add(new CampusPiece { Kind = CampusPieceKind.Bench, X = courtX + 4f, Z = greenN, Yaw = 180f, StretchX = 1f, StretchZ = 1f });
-            // The playing field at the north end, behind the side gate, before the field's gate.
-            into.Add(new CampusPiece
-            {
-                Kind = CampusPieceKind.Pitch, X = mid, Z = z1 - 2f - PitchDepth * 0.5f, Yaw = 0f, StretchX = PitchWidth / PitchBaseWidth, StretchZ = PitchDepth / PitchBaseDepth
-            });
-        }
-
-        /// <summary>
         /// The way between the hall's back and the junior block's back, where the court lies: its middle x and its half width (m). The
         /// models' fronts stand clear of the fence and their backs reach 24.4 m in from it (CampusLookRules.WallFromEdge, Depth).
         /// </summary>
@@ -228,17 +208,32 @@ namespace RealLifeOverhaul.Schools
         }
 
         /// <summary>
-        /// The pavements where the families wait: before the main gate on Uptown Avenue, and before the side gate on Elm
-        /// Street (the game's pedestrians walk the pavements alone, never the campus's ground).
+        /// The squares of ground the game's pedestrians gather in, and when (<see cref="SchoolRules.CrowdMoments"/>): the pavements before the main gate on Uptown
+        /// Avenue and the side gate on Elm Street for the school run (the game's pedestrians walk the pavements alone, never the campus's ground), then the
+        /// campus's own: the forecourt before the main door, the courtyard's plaza, the court, the green's tables, the field and the two yards. The gates are
+        /// the ways in and out: the walking meshes join the campus to the pavements there, and the fence is cut out of them everywhere else.
         /// </summary>
         public static void Crowds(List<CampusCrowd> into)
         {
             into.Clear();
             Ground(out float x0, out float z0, out float x1, out _);
+            Courtyard(out float courtX, out _);
             float mid = (x0 + x1) * 0.5f;
-            float sideGate = z0 + MainDepth + 2f + 30f + 3f;
-            into.Add(new CampusCrowd { Name = "the main gate", X = mid, Z = z0 - PavementIn, Yaw = 0f, Width = GateWidth + 6f, Depth = 2.6f });
-            into.Add(new CampusCrowd { Name = "the side gate", X = x1 + PavementIn, Z = sideGate, Yaw = 90f, Width = SideGate + 6f, Depth = 2.6f });
+            float sideGate = z0 + SideGateV;
+            into.Add(new CampusCrowd { Name = "the main gate", X = mid, Z = z0 - PavementIn, Yaw = 0f, Width = GateWidth + 6f, Depth = 2.6f, When = CrowdWhen.Run | CrowdWhen.OpenDay });
+            into.Add(new CampusCrowd { Name = "the side gate", X = x1 + PavementIn, Z = sideGate, Yaw = 90f, Width = SideGate + 6f, Depth = 2.6f, When = CrowdWhen.Run | CrowdWhen.OpenDay });
+            into.Add(Square("the forecourt", mid, z0 + 2.4f, 22f, 2.2f, CrowdWhen.Run | CrowdWhen.OpenDay | CrowdWhen.Lunch));
+            into.Add(Square("the plaza", courtX, z0 + 60.8f, 13f, 9f, CrowdWhen.Break | CrowdWhen.Lunch));
+            into.Add(Square("the court", courtX, z0 + CourtFrom + CourtLength * 0.5f, 10.5f, 14f, CrowdWhen.Break | CrowdWhen.Lunch | CrowdWhen.After));
+            into.Add(Square("the green", mid, z0 + 75.4f, 36f, 3f, CrowdWhen.Lunch));
+            into.Add(Square("the field", mid, z0 + PitchMiddleV, PitchWidth - 6f, PitchDepth - 6f, CrowdWhen.After));
+            into.Add(Square("the west yard", x0 + 11.3f, z0 + 17f, 5f, 18f, CrowdWhen.Break | CrowdWhen.Lunch));
+            into.Add(Square("the east yard", x1 - 11.3f, z0 + 17f, 5f, 18f, CrowdWhen.Break | CrowdWhen.Lunch));
+        }
+
+        private static CampusCrowd Square(string name, float x, float z, float width, float depth, CrowdWhen when)
+        {
+            return new CampusCrowd { Name = name, X = x, Z = z, Yaw = 0f, Width = width, Depth = depth, When = when, Inside = true };
         }
 
         /// <summary>True when the spot is on the campus's own ground (inside the fence's line).</summary>
