@@ -76,7 +76,7 @@ Laid with the campus behind the loading screen from the game's own pieces by the
 - **Trees** (the Vegetation root's broadleaf, birch, beech and maple), **benches** (the pavement bench, found in Madison Square Park's group where its own root is not there at a load), **table groups** (Madison Square Park's round table with four chairs people sit on), **litter bins**, **climbing frames** (the Industry City playground's, the one piece of it not drawn in a static batch) and **planters** (the game's broadleaf bush: four on the forecourt 1.2 m in front of the main school's front wall at 13.5 and 17.5 m either side of its middle, two 1.0 m in front of the junior block's door).
 - **Clear:** 0.9 m from the fence line, nothing in a gate's way, off the paths (the plaza's paved square aside), off the buildings' bodies, the court and the field.
 
-There are no bicycle stands: the game's only one is its bike-share dock (`Prefab_BikeRentalStand`), which stood as a tall bare black slab on the green in the owner's screenshots of 26 Oct 2026 (the one at 64 m across and 73 m along the block), so the campus has none. Uptown's street furniture still lays that dock along its pavements.
+There are no bicycle stands: the game's only one is its bike-share dock (`Prefab_BikeRentalStand`), which stood as a tall bare black slab on the green in the owner's screenshots of 26 Oct 2026 (the one at 64 m across and 73 m along the block), so the campus has none, and Uptown's street furniture no longer lays it either (the same copy; the cause was not visible from the scene's files: its materials, its LOD group or a shader may all be at fault, so it is left out rather than shown wrong).
 
 ## The people
 

@@ -5,9 +5,9 @@ namespace RealLifeOverhaul.Uptown
 {
     /// <summary>
     /// The Game file of Uptown's street furniture, the only one of the streets' files that touches the scene: the game's own
-    /// pavement bench, litter bin and three street trees in their holes from Manhattan's pavements, and its bicycle dock
-    /// from Industry City's (Manhattan's docks and stands are in the scene's static batches, whose copies would draw the
-    /// batch's mesh: Industry City's docks are not), each found once a load (the piece of its name nearest a fixed place of
+    /// pavement bench, litter bin and three street trees in their holes from Manhattan's pavements (no bike-share dock: the
+    /// one Industry City's scene gives drew as a bare black slab on the campus lawn, 26 Oct 2026, and the mod's own docks are the
+    /// garage's), each found once a load (the piece of its name nearest a fixed place of
     /// the game's scene, so every machine copies the same, switched off or on: GamePieces), copied at the places of
     /// StreetsRules.Furniture under the art's holder, so they go with the art when the city goes or the district stands down.
     /// They are laid behind the loading screen before the walking ground grows, so both meshes are grown round them as round
@@ -29,18 +29,17 @@ namespace RealLifeOverhaul.Uptown
             new PieceTemplate
             {
                 Root = GamePieces.BenchRoot, Name = GamePieces.BenchName, X = GamePieces.BenchX, Z = GamePieces.BenchZ, Room = new Vector3(0.95f, 0.6f, 0.4f), Y = 0.03f, Within = Reach,
-                AltRoot = GamePieces.BenchAltRoot, AltX = GamePieces.BenchAltX, AltZ = GamePieces.BenchAltZ
+                AltRoot = GamePieces.BenchAltRoot, AltX = GamePieces.BenchAltX, AltZ = GamePieces.BenchAltZ, Sittable = true
             },
             new PieceTemplate { Root = "Trash Cans", Name = "SM_Trash Can", X = -87.00f, Z = 453.90f, Room = new Vector3(0.35f, 0.6f, 0.35f), Y = 0.06f, Within = Reach },
             new PieceTemplate { Root = "Vegetation", Name = "SM_PavementHoleforTrees_Broadleaf M1", X = 148.67f, Z = 475.57f, Room = new Vector3(0.7f, 0.9f, 0.7f), Y = 0.05f, Within = Reach },
             new PieceTemplate { Root = "Vegetation", Name = "SM_PavementHoleforTrees_02 Birch", X = 346.53f, Z = 475.57f, Room = new Vector3(0.7f, 0.9f, 0.7f), Y = 0.05f, Within = Reach },
-            new PieceTemplate { Root = "Vegetation", Name = "SM_PavementHoleforTrees_02 Broadleaf L1", X = 278.95f, Z = 328.38f, Room = new Vector3(0.7f, 0.9f, 0.7f), Y = 0.05f, Within = Reach },
-            new PieceTemplate { Root = "Roads", Name = "Prefab_BikeRentalStand", X = -1852.53f, Z = -1283.52f, Room = new Vector3(0.3f, 0.5f, 0.3f), Y = 0.05f, Within = Reach }
+            new PieceTemplate { Root = "Vegetation", Name = "SM_PavementHoleforTrees_02 Broadleaf L1", X = 278.95f, Z = 328.38f, Room = new Vector3(0.7f, 0.9f, 0.7f), Y = 0.05f, Within = Reach }
         };
 
         private const float ClearFrom = 0.15f;     // m above the pavement the room is looked at from: over its kerb, under nothing
 
-        private static readonly GameObject[] Found = new GameObject[6];
+        private static readonly GameObject[] Found = new GameObject[5];
         private static readonly List<StreetPlace> Plan = new List<StreetPlace>(1024);
         private static readonly List<TransitPlan.Route> Routes = new List<TransitPlan.Route>(4);
         private static int[,] _laid = new int[StreetsRules.FirstAvenue + 1, StreetsRules.Kinds];
@@ -141,10 +140,8 @@ namespace RealLifeOverhaul.Uptown
                     return 0;
                 case StreetPiece.Bin:
                     return 1;
-                case StreetPiece.Tree:
-                    return 2 + place.Variant % StreetsRules.TreeKinds;
                 default:
-                    return 5;
+                    return 2 + place.Variant % StreetsRules.TreeKinds;
             }
         }
     }

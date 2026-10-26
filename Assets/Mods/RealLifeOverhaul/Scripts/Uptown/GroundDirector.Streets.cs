@@ -217,36 +217,34 @@ namespace RealLifeOverhaul.Uptown
                 TestRefusals.TellKey(Logger, FurnitureTest, GroundText.NotLaid, UptownLots.Why);
                 return;
             }
-            int benches = 0, bins = 0, trees = 0, racks = 0, most = -1, mostCount = -1;
+            int benches = 0, bins = 0, trees = 0, most = -1, mostCount = -1;
             var streets = new StringBuilder(1024);
             for (int s = 0; s <= StreetsRules.FirstAvenue; s++)
             {
-                int b = StreetsGame.Count(s, StreetPiece.Bench), n = StreetsGame.Count(s, StreetPiece.Bin), t = StreetsGame.Count(s, StreetPiece.Tree), r = StreetsGame.Count(s, StreetPiece.BikeRack);
+                int b = StreetsGame.Count(s, StreetPiece.Bench), n = StreetsGame.Count(s, StreetPiece.Bin), t = StreetsGame.Count(s, StreetPiece.Tree);
                 benches += b;
                 bins += n;
                 trees += t;
-                racks += r;
-                if (b + n + t + r > mostCount && s < StreetsRules.FirstAvenue)
+                if (b + n + t > mostCount && s < StreetsRules.FirstAvenue)
                 {
-                    mostCount = b + n + t + r;
+                    mostCount = b + n + t;
                     most = s;
                 }
                 streets.Append(s > 0 ? "; " : string.Empty).Append(s < StreetsRules.FirstAvenue ? LayoutStreets.All[s].Abbreviation : "1st Avenue").Append(' ')
-                       .Append(b).Append('/').Append(n).Append('/').Append(t).Append('/').Append(r);
+                       .Append(b).Append('/').Append(n).Append('/').Append(t);
             }
             bool pass = StreetsGame.Missing == null && StreetsGame.Laid > 0 && StreetsGame.Laid + StreetsGame.Occupied + StreetsGame.Mouths == StreetsGame.Planned;
             if (Meta.Dev.Verbose)
             {
                 Logger?.Info("Uptown check (street furniture): " + FurnitureWords() + " (the game's pieces " + (StreetsGame.FoundWords ?? "none") + "); benches " + benches
-                             + ", bins " + bins + ", trees " + trees + ", bicycle docks " + racks
-                             + "; by street (benches/bins/trees/docks): " + streets + ": " + (pass ? "PASS" : "FAIL") + ".");
+                             + ", bins " + bins + ", trees " + trees
+                             + "; by street (benches/bins/trees): " + streets + ": " + (pass ? "PASS" : "FAIL") + ".");
             }
-            Notice(StreetsText.FurnitureDone, new Dictionary<string, string>(5)
+            Notice(StreetsText.FurnitureDone, new Dictionary<string, string>(4)
             {
                 { "benches", benches.ToString(Inv) },
                 { "bins", bins.ToString(Inv) },
                 { "trees", trees.ToString(Inv) },
-                { "racks", racks.ToString(Inv) },
                 { "street", most >= 0 ? LayoutStreets.All[most].NameKey.GetLocalization() : "?" }
             });
         }
