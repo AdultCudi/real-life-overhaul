@@ -50,12 +50,13 @@ namespace RealLifeOverhaul
             VehicleComponent car = body != null ? body.GetComponent<VehicleComponent>() : null;
             bool holderStill = body == null || body.velocity.sqrMagnitude < 0.25f;
             bool yields = car != null && WaitsForBus(car) && !OnCarsWay(car, body);   // that car is told to go on (YieldTo) instead
-            if (!RideRules.GoRound(closed, still, holderStill, yields, _hold.Rounded))
+            bool unitBehind = !closed && UnitBehind();   // a lit emergency vehicle waits behind it: it makes way at once
+            if (!RideRules.GoRound(closed, still, holderStill, yields, _hold.Rounded, unitBehind))
             {
                 return false;
             }
             _hold.Rounded = true;
-            string what = closed ? "a lane ahead that a scene or the works has closed" : Describe(by);
+            string what = (closed ? "a lane ahead that a scene or the works has closed" : Describe(by)) + (unitBehind ? ", with a lit emergency vehicle coming up behind it" : "");
             if (_bayTo > 0 || _awaitGap || State == Phase.Standing)
             {
                 return false;   // pulling out of its bay, or at its stop: nothing to go round

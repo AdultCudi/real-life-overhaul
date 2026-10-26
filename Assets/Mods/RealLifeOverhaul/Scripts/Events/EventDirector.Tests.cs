@@ -47,19 +47,33 @@ namespace RealLifeOverhaul.Events
         /// <summary>Options-page test: stages a fire of a kind near the player, now.</summary>
         public void TestFire(FireKind kind)
         {
+            TestFire(kind, false);
+        }
+
+        /// <summary>
+        /// Options-page test: a bin fire with its engine sent at once and a stopped bus of the mod's own standing in the engine's lane
+        /// ahead of it; the log's "Fire check (stopped bus)" line says PASS if the engine comes to a stop within the time wanted.
+        /// </summary>
+        public void TestFireBlocked()
+        {
+            TestFire(FireKind.Bin, true);
+        }
+
+        private void TestFire(FireKind kind, bool blocked)
+        {
             try
             {
-                if (!TestReady("Fire", out PlayerController player))
+                if (!TestReady(blocked ? "Fire engine behind a bus" : "Fire", out PlayerController player))
                 {
                     return;
                 }
-                if (_fire.Stage(kind, player.transform.position, Ahead(player, 14f), true, Time.time))
+                if (_fire.Stage(kind, player.transform.position, Ahead(player, 14f), true, Time.time, blocked))
                 {
                     Begin(_fire, 600f);
                     return;
                 }
                 EndSceneQuietly();
-                TestRefusals.Tell(Logger, kind + " fire", _fire.Why, _fire.WhyMetres, _fire.Refusal);
+                TestRefusals.Tell(Logger, blocked ? "Fire engine behind a bus" : kind + " fire", _fire.Why, _fire.WhyMetres, _fire.Refusal);
             }
             catch (Exception e)
             {

@@ -169,15 +169,16 @@ namespace RealLifeOverhaul
 
         /// <summary>
         /// Whether a bus held up goes round what holds it (BusDetour): a lane closed ahead after a moment, something standing
-        /// still in its lane after half a minute (not a car that only stands for the bus: that one is told to go on), once a hold.
+        /// still in its lane after half a minute, or a moment when a lit emergency vehicle waits behind it (MakeWayRules.RoundWaits;
+        /// not a car that only stands for the bus: that one is told to go on), once a hold.
         /// </summary>
-        public static bool GoRound(bool closed, float heldFor, bool holderStill, bool waitsForBus, bool tried)
+        public static bool GoRound(bool closed, float heldFor, bool holderStill, bool waitsForBus, bool tried, bool unitBehind = false)
         {
             if (tried)
             {
                 return false;
             }
-            return closed ? heldFor >= RoundClosedAfter : holderStill && !waitsForBus && heldFor >= RoundStillAfter;
+            return closed ? heldFor >= RoundClosedAfter : holderStill && !waitsForBus && heldFor >= MakeWayRules.RoundWaits(RoundStillAfter, unitBehind);
         }
 
         /// <summary>How long a bus has stood still, looked at four times a second; what is done once a hold is kept here and forgotten with it.</summary>

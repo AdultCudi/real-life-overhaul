@@ -30,6 +30,7 @@ namespace RealLifeOverhaul
         private const float WalkAllow = 14f;          // seconds the operator is given for any walk
         private const float OnwardMetres = 300f;      // metres of road it is given at a time to drive away along
         private const float AwayMost = 240f;          // seconds driving away after which it is still only taken off out of sight (it keeps driving)
+        private const int MoveMost = 6;                // ordinary cars standing in the truck's way that are moved on for one wreck at the most
         private const float ClearMost = 90f;          // seconds a wreck that gets no truck waits to be out of sight before it goes anyway
         private const float PanelStand = 0.46f;       // metres out from the knobs the operator stands (pump_panel: the panel 0.50 ahead, the hand 0.16 right)
         private const float DoorOut = 0.80f;          // metres out from the cab's side the operator gets out and in
@@ -473,6 +474,7 @@ namespace RealLifeOverhaul
             if (planned && TowRoads.PickStart(_plan) && MakeTruck())
             {
                 _seenBeacon = false;
+                _moved = 0;
                 _truck.Place(_plan.Start, _plan.StartAlong);
                 _driver.Take(_truck);
                 _driver.CruiseSpeed = 10f;
@@ -530,6 +532,24 @@ namespace RealLifeOverhaul
                 Arrive(now);
                 return;
             }
+            float held = _driver.HeldFor;
+            if (held > 0f)
+            {
+                // Held up behind standing traffic it is moved on, as for an accident's units; held up for good it gives the wreck up now.
+                Collider by = _driver.HeldBy;
+                if (MakeWay.ClearStanding(by != null ? by.attachedRigidbody : null, held, "the tow truck", ref _moved, MoveMost) && _moved == 1)
+                {
+                    Logger?.Info("Tow: the truck has been held up " + held.ToString("F0") + " s by standing traffic with " + left.ToString("F0") + " m to go; what is in its way is moved on.");
+                }
+                if (MakeWayRules.TowGivesUp(held))
+                {
+                    Logger?.Info("Tow: the truck has stood held up " + held.ToString("F0") + " s (" + left.ToString("F0") + " m short of the wreck); it drives off and the wreck goes as before.");
+                    Clear(_job);
+                    _job = null;
+                    Leave(now);
+                    return;
+                }
+            }
             if (now - _stepAt > DriveMost)
             {
                 Logger?.Info("Tow: the truck did not reach the wreck in " + DriveMost.ToString("F0") + " s (" + left.ToString("F0") + " m short); it drives off and the wreck goes as before.");
@@ -540,6 +560,7 @@ namespace RealLifeOverhaul
         }
 
         private bool _seenBeacon;
+        private int _moved;               // ordinary cars moved on for the wreck being served
 
         // At its stand: hazards on, the operator out at the door on the side away from the lane it came by, to the levers.
         private void Arrive(float now)
