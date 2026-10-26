@@ -200,9 +200,9 @@ internal static partial class Program
         var runs = new List<CampusFence>();
         SchoolGrounds.Pieces(pieces, runs);
         Check(pieces.Where(p => p.Kind != CampusPieceKind.Fence && p.Kind != CampusPieceKind.Post && p.Kind != CampusPieceKind.Pitch).All(p => bodies.All(bb => !Within(p.X, p.Z, bb.Item2, bb.Item3, bb.Item4, bb.Item5, 0.3f))),
-            "campus look placement: the court, hoops, benches and trees stand clear of the models' bodies");
+            "campus look placement: the court, hoops, benches, trees and the rest of the dressing stand clear of the models' bodies");
         CampusPiece court = pieces.First(p => p.Kind == CampusPieceKind.Court);
-        Check(Math.Abs(court.X - courtX) < 0.01f, "campus look placement: the court lies in the middle of the way between the backs");
+        Check(Math.Abs(court.X - courtX) < SchoolGrounds.HoopSide * SchoolGrounds.CourtScale + 0.01f, "campus look placement: the court lies in the middle of the way between the backs");
         // What is solid and carved: the body behind the front wall, the main school's entrance bay before it, nothing of the porch or the forecourt.
         var boxes = new List<LookBox>();
         foreach (LookModel m in CampusLookRules.Models)

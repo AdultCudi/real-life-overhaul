@@ -5,7 +5,7 @@ Birchwood School and the city's schools: a campus on Uptown's west square (block
 ## Read first
 
 - `SchoolRules.cs`: every rule of the market, game-free (checked by EconomyCheck's `SchoolChecks.cs`); `SchoolState.cs` its records.
-- `SchoolGrounds.cs`: where everything of the campus stands on its block, game-free.
+- `SchoolGrounds.cs` and `SchoolGrounds.Dressing.cs`: where everything of the campus stands on its block (the court, the paths, the lawns, the squares people gather in), game-free.
 - `SchoolsDirector.cs`, then its parts: `.Campus` (the place), `.Market` (a day's pass and the player's levers), `.Paper` (the City Ledger), `.Tests`.
 - `SchoolsGame.cs`: the only file that touches the game's scene, the player, the clock and money.
 

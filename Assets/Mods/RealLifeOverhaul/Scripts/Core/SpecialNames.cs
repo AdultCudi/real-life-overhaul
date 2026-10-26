@@ -2,7 +2,10 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+using Helpers;
 using Localizor;
+using Localizor.LanguageChangeEvent;
+using RealLifeOverhaul.GameUi;
 using Streets;
 using TMPro;
 using UI;
@@ -275,11 +278,49 @@ namespace RealLifeOverhaul
                 {
                     _card.businessTypeLabel.Key = type;
                 }
+                SpecialEntry entry = SpecialBuildings.EntryFor(building);
+                if (entry != null && entry.Facts != null)
+                {
+                    Facts(entry);
+                }
             }
             catch (Exception e)
             {
                 SpecialBuildings.Logger?.Error(e);
                 _cardFailed = true;   // the card is not as expected: left alone from here on
+            }
+        }
+
+        private static readonly SpecialFacts Said = new SpecialFacts();
+
+        // What a feature says on the card besides the name: open or closed by its own hours (the game's own lines for them, so the card reads as any
+        // business's does), who runs it in the card's owner line, and the card's "click to enter" where the door may be walked in at. Once a second.
+        private void Facts(SpecialEntry entry)
+        {
+            Said.Clear();
+            entry.Facts(Said);
+            if (Said.State != CardState.None && _card.openStateLabel != null)
+            {
+                bool open = Said.State == CardState.Open;
+                string key = SpecialFacts.StateKey(Said.State, Said.Hours);
+                _card.openStateLabel.gameObject.SetActive(true);
+                _card.openStateLabel.Prefix = string.Empty;
+                _card.openStateLabel.SetData(LanguageChangeEventDataHolder.Create(key, new { hours = Said.Hours, time = Said.AtHour.GetFormattedTime() }, open ? "common_open" : "common_closed"));
+                _card.openStateLabel.TextContainer.color = open ? WorldPanel.Green() : WorldPanel.Red();
+            }
+            if (_card.rivalBusinessOwner != null)
+            {
+                bool run = !string.IsNullOrEmpty(Said.RunLine);
+                _card.rivalBusinessOwner.gameObject.SetActive(run);
+                if (run)
+                {
+                    _card.rivalBusinessOwner.SetData(LanguageChangeEventDataHolder.Create("reallife_campus_card_state", new { state = Said.RunLine }, "common_unknown"));
+                }
+            }
+            _card.rivalBuildingOwner?.gameObject.SetActive(false);
+            if (_card.clickToEnterLabel != null && Said.State != CardState.None)
+            {
+                _card.clickToEnterLabel.gameObject.SetActive(Said.CanEnter && !CityMap.IsOpen && !PlayerHelper.IsUsingVehicle);
             }
         }
 

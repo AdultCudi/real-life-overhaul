@@ -85,6 +85,30 @@ namespace RealLifeOverhaul
             return Book.ReservedFor(street, number);
         }
 
+        /// <summary>
+        /// Gives the building filed under the id a say on the game's card beyond its name and kind: open or closed by the feature's own hours and who runs
+        /// it (<see cref="SpecialFacts"/>, filled by <paramref name="facts"/> each time the card is written, once a second at most). False when the id
+        /// holds nothing. Only what the card shows changes, never the save.
+        /// </summary>
+        public static bool Facts(string id, Action<SpecialFacts> facts)
+        {
+            SpecialEntry entry = Book.Of(id);
+            if (entry == null)
+            {
+                return false;
+            }
+            entry.Facts = facts;
+            SpecialNames.Changed();
+            return true;
+        }
+
+        /// <summary>The book's entry for a building while its feature shows it, or null: what the game's card writes from.</summary>
+        internal static SpecialEntry EntryFor(CityBuildingController building)
+        {
+            Address address = Active && building != null && building.building != null ? building.building.Address : null;
+            return address == null || Players(building) ? null : Book.At(address.streetName, address.streetNumber);
+        }
+
         /// <summary>The id of the feature put in the book at a building, leaving reservations aside; null for none.</summary>
         public static string FiledAt(CityBuildingController building)
         {

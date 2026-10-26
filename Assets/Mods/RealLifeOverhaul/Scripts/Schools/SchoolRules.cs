@@ -600,10 +600,72 @@ namespace RealLifeOverhaul.Schools
         /// <summary>Monday to Friday (the game's day 1 is a Monday).</summary>
         public static bool SchoolDay(int day) => (Math.Max(1, day) - 1) % 7 < 5;
 
+        public const int OpensAt = 7, ClosesAt = 18;   // game hours the main school is open on a school day: the school run's first to the last club's end
+
+        /// <summary>True while the main school is open: a school day, from <see cref="OpensAt"/> to <see cref="ClosesAt"/> (whole game hours, as the game's cards count them).</summary>
+        public static bool Open(int day, int hour) => SchoolDay(day) && hour >= OpensAt && hour < ClosesAt;
+
+        /// <summary>
+        /// Hours to the next change of the main school's state from this hour of this day, and the hour of the day it changes at: while open, the hours
+        /// to its closing; while closed, the hours to the next opening, over the nights and the weekend (never more than 3 days: the week has school days).
+        /// </summary>
+        public static int HoursToChange(int day, int hour, out int atHour)
+        {
+            hour = Math.Max(0, Math.Min(23, hour));
+            if (Open(day, hour))
+            {
+                atHour = ClosesAt;
+                return ClosesAt - hour;
+            }
+            atHour = OpensAt;
+            int hours = 0;
+            int d = Math.Max(1, day);
+            int h = hour;
+            while (hours < 24 * 8)
+            {
+                h++;
+                hours++;
+                if (h == 24)
+                {
+                    h = 0;
+                    d++;
+                }
+                if (Open(d, h))
+                {
+                    return hours;
+                }
+            }
+            return hours;
+        }
+
         /// <summary>True in the school run's hours of a school day (minutes of the day).</summary>
         public static bool SchoolRun(int day, int minute)
         {
             return SchoolDay(day) && ((minute >= RunMorningFrom && minute < RunMorningTo) || (minute >= RunAfternoonFrom && minute < RunAfternoonTo));
+        }
+
+        public const int BreakFrom = 630, BreakTo = 650;     // minutes of a school day: the morning break, 10:30 to 10:50 ...
+        public const int LunchFrom = 750, LunchTo = 810;     // ... lunch, 12:30 to 13:30 ...
+        public const int AfterFrom = 930, AfterTo = 1050;    // ... and the afternoon's clubs and games, 15:30 to 17:30
+
+        /// <summary>
+        /// Who is out on the campus at a minute of a day, as <see cref="CrowdWhen"/> flags: the school run's hours (families and pupils at the gates and the
+        /// door), the morning break and lunch (the courtyard, the court, the green and the yards), the afternoon's clubs and games (the court and the field),
+        /// and a term's open day. None on a weekend, and none at night: the school is quiet.
+        /// </summary>
+        public static CrowdWhen CrowdMoments(int day, int minute, int year)
+        {
+            if (!SchoolDay(day))
+            {
+                return CrowdWhen.None;
+            }
+            CrowdWhen f = CrowdWhen.None;
+            f |= SchoolRun(day, minute) ? CrowdWhen.Run : CrowdWhen.None;
+            f |= minute >= BreakFrom && minute < BreakTo ? CrowdWhen.Break : CrowdWhen.None;
+            f |= minute >= LunchFrom && minute < LunchTo ? CrowdWhen.Lunch : CrowdWhen.None;
+            f |= minute >= AfterFrom && minute < AfterTo ? CrowdWhen.After : CrowdWhen.None;
+            f |= OpenDay(day, year) && minute >= OpenDayFrom * 60 && minute < OpenDayTo * 60 ? CrowdWhen.OpenDay : CrowdWhen.None;
+            return f;
         }
 
         /// <summary>A term's open day: its third day, in its hours.</summary>

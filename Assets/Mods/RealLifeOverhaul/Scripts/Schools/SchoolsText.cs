@@ -25,6 +25,10 @@ namespace RealLifeOverhaul.Schools
         public const string FloorMiddle = "reallife_schools_floor_middle";
         public const string FloorSeniors = "reallife_schools_floor_seniors";
         public const string DoorLine = "reallife_schools_door_line";
+        public const string CardType = "reallife_schools_card_type";              // the game's building card: what it is ...
+        public const string CardRunPlayer = "reallife_schools_card_run_player";   // ... and who runs it
+        public const string CardRunCouncil = "reallife_schools_card_run_council";
+        public const string CardRunTrust = "reallife_schools_card_run_trust";
 
         public const string Tab = "reallife_schools_tab";                         // the Campus app's Schools tab
         public const string ColSchool = "reallife_schools_col_school";
@@ -158,6 +162,9 @@ namespace RealLifeOverhaul.Schools
 
         /// <summary>Who runs a school, in words.</summary>
         public static string Owner(int owner) => owner == SchoolOwner.Player ? T(OwnerPlayer) : owner == SchoolOwner.Council ? T(OwnerCouncil) : Trust(owner);
+
+        /// <summary>The card's line for who runs the main school: "Run by you", "Run by the council", "Run by Meridian Schools".</summary>
+        public static string CardRun(int owner) => owner == SchoolOwner.Player ? T(CardRunPlayer) : owner == SchoolOwner.Council ? T(CardRunCouncil) : Fill(CardRunTrust, "who", Trust(owner));
 
         /// <summary>A rank as words for the league table: "3 of 12".</summary>
         public static string Rank(int rank, int count) => Fill("reallife_schools_rank", "rank", rank.ToString(Plain), "count", count.ToString(Plain));

@@ -19,6 +19,8 @@ namespace RealLifeOverhaul.Uptown
         public float X, Z, Y;
         public Vector3 Room;
         public float Within;   // m from its fixed place a piece may be: farther, and the game's scene has moved (0: GamePieces.DefaultWithin)
+        public string AltRoot; // a second scene root the same piece (the same name) is looked for under when the first has none: the first's group may not be there at a load
+        public float AltX, AltZ;   // the place of the one taken there
     }
 
     /// <summary>
@@ -43,6 +45,12 @@ namespace RealLifeOverhaul.Uptown
         public const float BenchX = 214.40f;   // m: where the one taken stands
         public const float BenchZ = 99.39f;
         public const float BenchReach = 40f;   // m from that place a bench may be: farther, and the game's scene has moved
+        // The same bench in Madison Square Park's own group (level 5, "Madison Square Park/Benches/SleepingBench (45)", Build 3682), the one the parks' fountain is found
+        // in: the first root was not found at the owner's load of 26 Oct 2026 ("not found: SleepingBench" in all three of the streets', the parks' and the campus's lines)
+        // while the roots beside it (Vegetation, Trash Cans, Street Lamp) were, so the bench is looked for there when it is not in its own.
+        public const string BenchAltRoot = "Madison Square Park";
+        public const float BenchAltX = 192.79f;
+        public const float BenchAltZ = 269.00f;
 
         private static readonly List<GameObject> SceneRoots = new List<GameObject>(64);
         private static readonly List<string> Names = new List<string>(16);
@@ -55,6 +63,7 @@ namespace RealLifeOverhaul.Uptown
         public static string Find(PieceTemplate[] templates, GameObject[] found)
         {
             System.Array.Clear(found, 0, found.Length);
+            GameObject[] second = null;
             for (int s = 0; s < SceneManager.sceneCount; s++)
             {
                 Scene scene = SceneManager.GetSceneAt(s);
@@ -71,12 +80,21 @@ namespace RealLifeOverhaul.Uptown
                     {
                         if (root.name == templates[t].Root)
                         {
-                            Take(root.transform, templates, t, found);
+                            Take(root.transform, templates, t, found, templates[t].X, templates[t].Z);
+                        }
+                        if (!string.IsNullOrEmpty(templates[t].AltRoot) && root.name == templates[t].AltRoot)
+                        {
+                            second = second ?? new GameObject[templates.Length];
+                            Take(root.transform, templates, t, second, templates[t].AltX, templates[t].AltZ);
                         }
                     }
                 }
             }
             SceneRoots.Clear();
+            for (int t = 0; second != null && t < templates.Length; t++)
+            {
+                found[t] = found[t] != null ? found[t] : second[t];
+            }
             string missing = null;
             for (int t = 0; t < templates.Length; t++)
             {
@@ -102,11 +120,11 @@ namespace RealLifeOverhaul.Uptown
         }
 
         // The nearest piece of the template's name under a root, within its reach; includeInactive is the point of this call.
-        private static void Take(Transform root, PieceTemplate[] templates, int t, GameObject[] found)
+        private static void Take(Transform root, PieceTemplate[] templates, int t, GameObject[] found, float wantX, float wantZ)
         {
             PieceTemplate want = templates[t];
             float within = want.Within > 0f ? want.Within : DefaultWithin;
-            float best = found[t] != null ? PieceRules.Flat(found[t].transform.position.x, found[t].transform.position.z, want.X, want.Z) : PieceRules.Start(within);
+            float best = found[t] != null ? PieceRules.Flat(found[t].transform.position.x, found[t].transform.position.z, wantX, wantZ) : PieceRules.Start(within);
             Transform[] parts = root.GetComponentsInChildren<Transform>(true);
             for (int i = 0; i < parts.Length; i++)
             {
@@ -116,7 +134,7 @@ namespace RealLifeOverhaul.Uptown
                     continue;
                 }
                 Vector3 at = part.position;
-                float d = PieceRules.Flat(at.x, at.z, want.X, want.Z);
+                float d = PieceRules.Flat(at.x, at.z, wantX, wantZ);
                 if (PieceRules.Takes(d, best, within))
                 {
                     best = d;
@@ -141,6 +159,18 @@ namespace RealLifeOverhaul.Uptown
             {
                 renderers[i].forceRenderingOff = false;
             }
+            return copy;
+        }
+
+        /// <summary>
+        /// As <see cref="Stand"/>, for a prefab that is turned on its side with its children turned back (Madison Square Park's table groups): the piece keeps
+        /// its own turn and the yaw is put on it, about the vertical.
+        /// </summary>
+        public static GameObject StandAligned(GameObject template, Transform parent, string name, Vector3 at, float yaw)
+        {
+            Quaternion own = template.transform.rotation;
+            GameObject copy = Stand(template, parent, name, at, yaw);
+            copy.transform.rotation = Quaternion.Euler(0f, yaw, 0f) * own;
             return copy;
         }
 

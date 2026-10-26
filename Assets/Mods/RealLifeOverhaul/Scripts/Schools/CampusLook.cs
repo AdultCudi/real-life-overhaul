@@ -89,6 +89,9 @@ namespace RealLifeOverhaul.Schools
 
         // ---------------------------------------------------------------- the game's materials
 
+        /// <summary>The game's chain-link material the hoops' nets are drawn with, or null where it was not found.</summary>
+        public static Material NetMaterial => Found.TryGetValue("fence", out Material own) ? own : null;
+
         /// <summary>
         /// The game's brick, roof, glass and chain-link materials found by name in memory (a search of the game's loaded materials, so only
         /// behind the loading screen or a pause), once a load. A kind the game has none of is stood in for by a plain colour.
