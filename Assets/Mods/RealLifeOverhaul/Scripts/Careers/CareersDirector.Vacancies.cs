@@ -48,7 +48,7 @@ namespace RealLifeOverhaul.Careers
             {
                 // the employer moved (another tower, or a save from before the towers): the job goes with it
                 Logger?.Info("Careers: the player's employer " + w.Job.Post.Employer + " is now at " + w.Job.Post.Street + " " + w.Job.Post.Number + "; the job and its desk follow it.");
-                Tell(NotificationType.Info, "reallife_career_note_employer_moved",
+                Tell2(NotificationType.Info, "reallife_career_note_employer_moved",
                     Data("employer", CareersText.Employer(w.Job.Post.Employer), "address", WorkGame.Address(w.Job.Post.Street, w.Job.Post.Number)), TabJob, null);
             }
         }

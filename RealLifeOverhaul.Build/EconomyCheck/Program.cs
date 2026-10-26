@@ -547,6 +547,7 @@ internal static partial class Program
         ClassCounts();  // a class, homework or exam being sat is never lost: settled once by its own record, the hourly pass asks the book, the clock's minutes, the school desk's keys (ClassCountChecks.cs)
         DeskStarts();   // a classroom door, a school desk and the Campus app begin a class or exam by one rule; no button the game's panel cannot fill or dim (DeskStartChecks.cs)
         HiddenPanels(); // in a Going Public session, which hides the game's activity panel and presses Start for the player, a desk's class or exam begins (HiddenPanelChecks.cs)
+        Layoff();       // an employer that closes, is bought, loses its building or moves: the job ends as a lay off with pay and a good reference, or follows it (LayoffChecks.cs)
         ShiftOpen();    // every job's week inside its workplace's opening hours, a save's put right at load, a day shut at its start excused, the rota's shut clients (ShiftOpenChecks.cs)
         Ladder();       // the management ladder at a city company: the ranks' powers, the company seeded, every task decided by the rank that may, promotion with its tools, the save (LadderChecks.cs)
         AgencyDesk();   // a seat at a recruitment office's desk always offers the jobs board (never the Basic HR course) or recruitment (the course first), the game's dialogue taken while the working life is on (AgencyDeskChecks.cs)
