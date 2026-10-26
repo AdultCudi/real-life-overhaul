@@ -342,8 +342,8 @@ internal static partial class Program
             "names and products texts: the figures in the product pages are filled from the catalogue, not written in the texts");
         for (int l = 0; l < words.Length; l++)
         {
-            string row = words[l].TryGetValue("reallife_changes_next", out string next) ? next : string.Empty;
             string mark = FixMarks[codes[l]];
+            string row = FixRow(words[l], mark + NameFixStarts[codes[l]]);
             int firstFix = row.IndexOf(mark, StringComparison.Ordinal);
             bool both = true;
             int count = 0;
@@ -364,8 +364,8 @@ internal static partial class Program
         // a line is never repeated within the next row
         for (int l = 0; l < words.Length; l++)
         {
-            string row = words[l]["reallife_changes_next"];
             string mark = FixMarks[codes[l]];
+            string row = FixRow(words[l], mark + NameFixStarts[codes[l]]);
             var seen = new HashSet<string>(StringComparer.Ordinal);
             bool repeated = false;
             string[] parts = row.Split(new[] { mark }, StringSplitOptions.None);
@@ -402,6 +402,19 @@ internal static partial class Program
         { "de", "Die Grenze für Produkte in Technikfirmen" }, { "fr", "la limite de produits des entreprises technologiques" }, { "es", "el límite de productos de las empresas tecnológicas" },
         { "ru", "предел числа продуктов в технологических фирмах" }, { "nl", "de grens voor producten bij techbedrijven" }, { "tr", "teknoloji şirketlerindeki ürün sınırı" }
     };
+
+    /// <summary>The What's new row that holds a line: the next row before a release, the version's own row after it (the version script moves the lines).</summary>
+    private static string FixRow(Dictionary<string, string> words, string line)
+    {
+        foreach (KeyValuePair<string, string> row in words)
+        {
+            if (row.Key.StartsWith("reallife_changes_", StringComparison.Ordinal) && !row.Key.EndsWith("_title", StringComparison.Ordinal) && row.Value.Contains(line))
+            {
+                return row.Value;
+            }
+        }
+        return words.TryGetValue("reallife_changes_next", out string next) ? next : string.Empty;
+    }
 
     private static int HunterCount(string text, string piece)
     {
