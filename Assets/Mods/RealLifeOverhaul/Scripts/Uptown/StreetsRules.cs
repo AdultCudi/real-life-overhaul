@@ -8,8 +8,7 @@ namespace RealLifeOverhaul.Uptown
     {
         Bench,      // the game's pavement bench (SleepingBench, OutsideBenchController): sat on through the game's own rest
         Bin,        // its litter bin (SM_Trash Can)
-        Tree,       // a tree in its pavement hole (SM_PavementHolefor*)
-        BikeRack    // its bicycle dock (Prefab_BikeRentalStand), in a row as Manhattan's stand
+        Tree        // a tree in its pavement hole (SM_PavementHolefor*)
     }
 
     /// <summary>One piece of furniture: its kind, where it stands, its turn in whole degrees, the street whose pavement it is on.</summary>
@@ -29,8 +28,9 @@ namespace RealLifeOverhaul.Uptown
     /// block within <see cref="ReachWanted"/> of a stop, its far corners included, from beside the two Manhattan subway
     /// entrances nearest the district; the reach of a set of stops over the band's blocks; and the furniture of every
     /// pavement at Manhattan's own spacing, measured from the game's scene (Build 3682: the lamps, bins, trees, benches and
-    /// bicycle stands on Midtown's, Hell's Kitchen's, the Garment District's and Murray Hill's 72 street and 72 avenue
-    /// faces, per 100 m of pavement; the bicycle docks as its rental docks stand), clear of the crossings, of the places the routes stop and of the copied modules'
+    /// benches on Midtown's, Hell's Kitchen's, the Garment District's and Murray Hill's 72 street and 72 avenue
+    /// faces, per 100 m of pavement; its bike-share docks are left out: the one Industry City's scene gives is drawn as a bare black
+    /// slab), clear of the crossings, of the places the routes stop and of the copied modules'
     /// own lamps. The same on every machine and in every version. Checked by NavCheck (UptownStreetsCheck.cs).
     /// </summary>
     public static class StreetsRules
@@ -51,11 +51,9 @@ namespace RealLifeOverhaul.Uptown
         public const float BenchIn = 0.95f;
         public const float BinIn = 0.8f;
         public const float TreeIn = 1.0f;
-        public const float RackIn = 0.4f;
 
         // Along a street's face (94 m between its crossings' clearances), metres from its south end: between the copied
         // module's own lamps (at 13.3, 37.2, 58.0 and 81.9 m on both pavements), as Manhattan's stand round theirs.
-        private static readonly float[] StreetRacks = { 3.0f, 4.05f, 5.1f, 6.15f };   // a row of docks 1.05 m apart, on a face in four: 1.06 per 100 m (Manhattan's 1.17)
         private static readonly float[] StreetTrees = { 19.2f, 31.2f, 64.0f, 76.0f };  // its trees 12 to 13 m apart, on a face in three
         private static readonly float[] StreetBenches = { 25.2f, 50.5f };              // a pair on a face in seven: 0.30 per 100 m (Manhattan's 0.28)
         private static readonly float[] StreetBins = { 43.0f, 88.0f };                 // 45 m apart on five faces in six: 1.77 per 100 m (Manhattan's 1.75)
@@ -65,9 +63,8 @@ namespace RealLifeOverhaul.Uptown
         private const float AvenueBench = 15.0f;                            // on a face in four: 0.57 per 100 m (Manhattan's 0.53)
         private const float AvenueBin = 24.5f;                              // on every face, and a second
         private const float AvenueSecondBin = 6.5f;                         // on a face in three: 3.0 per 100 m (Manhattan's 2.75)
-        private static readonly float[] AvenueRacks = { 33.5f, 34.55f, 35.6f };   // on a face in eight: 0.85 per 100 m (Manhattan's 0.81)
 
-        public const int Kinds = 4;              // the kinds of StreetPiece
+        public const int Kinds = 3;              // the kinds of StreetPiece
         public static readonly int FirstAvenue = LayoutStreets.All.Length;   // where 1st Avenue's continuations are counted: no street of the district's
         public const int TreeKinds = 3;          // the game's street trees in holes Manhattan's pavements have most: Broadleaf M1, Birch, Broadleaf L1
 
@@ -382,10 +379,6 @@ namespace RealLifeOverhaul.Uptown
             int away = side == 0 ? 270 : 90;   // a bench's back to the road, as Manhattan's stand on its streets
             int rule = FaceRule(street, row, side);
             int kept = 0;
-            if (rule % 4 == 2)
-            {
-                kept += Along(StreetPiece.BikeRack, StreetRacks, 0, kerb + inward * RackIn, from, true, 0, index, 0, middle, wantedX, wantedZ, into);
-            }
             if (rule % 3 == 0)
             {
                 kept += Along(StreetPiece.Tree, StreetTrees, 0, kerb + inward * TreeIn, from, true, 0, index, rule, middle, wantedX, wantedZ, into);
@@ -422,10 +415,6 @@ namespace RealLifeOverhaul.Uptown
             }
             kept += Along(StreetPiece.Bin, rule % 3 == 1 ? new[] { AvenueSecondBin, AvenueBin } : new[] { AvenueBin }, 0, kerb + inward * BinIn, from, false, 0, street, 0, middle,
                 wantedX, wantedZ, into);
-            if (rule % 8 == 5)
-            {
-                kept += Along(StreetPiece.BikeRack, AvenueRacks, 0, kerb + inward * RackIn, from, false, 90, street, 0, middle, wantedX, wantedZ, into);
-            }
             return kept;
         }
 

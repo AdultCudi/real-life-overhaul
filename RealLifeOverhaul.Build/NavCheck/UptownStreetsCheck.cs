@@ -327,14 +327,13 @@ internal static partial class Program
     {
         { StreetPiece.Bench, (0.28f, 0.53f) },
         { StreetPiece.Bin, (1.75f, 2.75f) },
-        { StreetPiece.Tree, (1.52f, 1.56f) },
-        { StreetPiece.BikeRack, (1.17f, 0.81f) }
+        { StreetPiece.Tree, (1.52f, 1.56f) }
     };
 
     // Metres in from the kerb Manhattan's own pieces of each kind stand, the medians of the same faces.
     private static readonly Dictionary<StreetPiece, float> ManhattanIn = new Dictionary<StreetPiece, float>
     {
-        { StreetPiece.Bench, 0.95f }, { StreetPiece.Bin, 0.8f }, { StreetPiece.Tree, 1.0f }, { StreetPiece.BikeRack, 0.4f }
+        { StreetPiece.Bench, 0.95f }, { StreetPiece.Bin, 0.8f }, { StreetPiece.Tree, 1.0f }
     };
 
     // Metres along the pavement a stop needs clear either side: its pole up to 7.5 m from the bus's middle, its shelter
@@ -348,7 +347,7 @@ internal static partial class Program
         int kept = StreetsRules.Furniture(routes, all);
         var again = new List<StreetPlace>();
         StreetsRules.Furniture(routes, again);
-        Check(all.Count > 600 && all.SequenceEqual(again), "uptown furniture: the same pieces in the same order every time (" + all.Count + ")");
+        Check(all.Count > 500 && all.SequenceEqual(again), "uptown furniture: the same pieces in the same order every time (" + all.Count + ")");
         Check(kept > 0, "uptown furniture: pieces kept off the routes' stops (" + kept + ")");
         // The rates, from the plan with no stop kept clear, against Manhattan's.
         var plain = new List<StreetPlace>();
@@ -385,7 +384,6 @@ internal static partial class Program
                 }
                 stops &= !wx.Where((x, k) => Math.Abs(x - mid) < 1f && Math.Abs(wz[k] - p.Z) < StopRoom).Any();
                 yaw &= p.Kind != StreetPiece.Bench || p.Yaw == (p.X < mid ? 270 : 90);
-                yaw &= p.Kind != StreetPiece.BikeRack || p.Yaw == 0;
                 index &= p.Street == s - LayoutStreets.WestMost;
             }
             else
@@ -399,7 +397,6 @@ internal static partial class Program
                 }
                 stops &= !wx.Where((x, k) => Math.Abs(wz[k] - mid) < 1f && Math.Abs(x - p.X) < StopRoom).Any();
                 yaw &= p.Kind != StreetPiece.Bench || p.Yaw == (p.Z < mid ? 180 : 0);
-                yaw &= p.Kind != StreetPiece.BikeRack || p.Yaw == 90;
                 index &= row == 0 ? p.Street == StreetsRules.FirstAvenue : p.Street == LayoutStreets.EastMost - LayoutStreets.WestMost + row;
                 firstAvenue &= row > 0 || (p.Z > mid && (p.X < LayoutRules.StreetX(0) || p.X > LayoutRules.StreetX(LayoutRules.FirstColumns)));
             }
@@ -407,7 +404,7 @@ internal static partial class Program
         Check(strip, "uptown furniture: every piece on its kerb's strip, as far in as Manhattan's of its kind stand (within 0.2 m of their median), the pavement behind it clear to the doors");
         Check(crossings, "uptown furniture: none on a crossing's module or within " + StreetsRules.CrossingClear + " m of it: the corners and crosswalks clear");
         Check(stops, "uptown furniture: none within " + StopRoom + " m of a stop the routes want, on either pavement of its road");
-        Check(yaw, "uptown furniture: the benches' backs to the road and the docks along the kerb, as Manhattan's stand");
+        Check(yaw, "uptown furniture: the benches' backs to the road, as Manhattan's stand");
         Check(index, "uptown furniture: every piece counted with its own street, 1st Avenue's continuations apart");
         Check(firstAvenue, "uptown furniture: on 1st Avenue only its continuations' north pavements, the game's own avenue between 9th and 1st Street left as it is");
         // Clear of one another and of the copied modules' lamps.
@@ -420,11 +417,10 @@ internal static partial class Program
             for (int i = 1; i < sorted.Count; i++)
             {
                 float gap = OnAStreet(sorted[i]) ? sorted[i].Z - sorted[i - 1].Z : sorted[i].X - sorted[i - 1].X;
-                bool docks = sorted[i].Kind == StreetPiece.BikeRack && sorted[i - 1].Kind == StreetPiece.BikeRack;
-                apart &= gap >= (docks ? 1.0f : 3.5f);
+                apart &= gap >= 3.5f;
             }
         }
-        Check(apart, "uptown furniture: every piece 3.5 m from the next along its pavement, a row of docks 1.05 m apart");
+        Check(apart, "uptown furniture: every piece 3.5 m from the next along its pavement");
         bool clearOfLamps = true;
         foreach (StreetPlace p in all)
         {
@@ -455,10 +451,10 @@ internal static partial class Program
                 sum += counts[s, k];
             }
         }
-        Check(counts.GetLength(0) == LayoutStreets.All.Length + 1 && counts.GetLength(1) == 4 && sum == all.Count, "uptown furniture: counted by street and kind, every piece once");
+        Check(counts.GetLength(0) == LayoutStreets.All.Length + 1 && counts.GetLength(1) == StreetsRules.Kinds && StreetsRules.Kinds == 3 && sum == all.Count, "uptown furniture: counted by street and kind, every piece once");
         Check(all.Where(p => p.Kind == StreetPiece.Tree).Select(p => p.Variant).Distinct().Count() == StreetsRules.TreeKinds && all.Where(p => p.Kind != StreetPiece.Tree).All(p => p.Variant == 0),
             "uptown furniture: the game's three kinds of street tree among the trees");
-        Check(LayoutStreets.All.Take(LayoutStreets.EastMost - LayoutStreets.WestMost + 1).Select((s, i) => i).All(i => Enumerable.Range(0, 4).Sum(k => counts[i, k]) > 0),
+        Check(LayoutStreets.All.Take(LayoutStreets.EastMost - LayoutStreets.WestMost + 1).Select((s, i) => i).All(i => Enumerable.Range(0, StreetsRules.Kinds).Sum(k => counts[i, k]) > 0),
             "uptown furniture: something on every street's pavements");
     }
 

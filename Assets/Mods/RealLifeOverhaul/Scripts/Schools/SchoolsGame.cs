@@ -51,7 +51,7 @@ namespace RealLifeOverhaul.Schools
             new PieceTemplate
             {
                 Kind = (int)CampusPieceKind.Bench, Root = GamePieces.BenchRoot, Name = GamePieces.BenchName, X = GamePieces.BenchX, Z = GamePieces.BenchZ, Y = 0.03f,
-                Within = GamePieces.BenchReach, AltRoot = GamePieces.BenchAltRoot, AltX = GamePieces.BenchAltX, AltZ = GamePieces.BenchAltZ
+                Within = GamePieces.BenchReach, AltRoot = GamePieces.BenchAltRoot, AltX = GamePieces.BenchAltX, AltZ = GamePieces.BenchAltZ, Sittable = true
             },
             // The free trees and bushes of the Vegetation root, the parks' own, a few of each kind.
             new PieceTemplate { Kind = (int)CampusPieceKind.Oak, Root = "Vegetation", Name = "Tree Broadleaf L1", X = -327.16f, Z = 313.58f, Y = 0f, Within = TreeReach },

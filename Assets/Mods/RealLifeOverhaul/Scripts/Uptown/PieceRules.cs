@@ -28,6 +28,15 @@ namespace RealLifeOverhaul.Uptown
             return name.Length == want.Length || name[want.Length] == ' ';
         }
 
+        /// <summary>
+        /// True when a mesh called <paramref name="meshName"/> is the piece's own: Unity names the mesh of a static batch "Combined Mesh (root: ...)", and a copy
+        /// of a piece in one draws the whole batch.
+        /// </summary>
+        public static bool OwnMesh(string meshName)
+        {
+            return !string.IsNullOrEmpty(meshName) && !meshName.StartsWith("Combined Mesh", StringComparison.Ordinal);
+        }
+
         /// <summary>The squared flat distance from a piece to the place its template is looked for.</summary>
         public static float Flat(float x, float z, float wantX, float wantZ)
         {
