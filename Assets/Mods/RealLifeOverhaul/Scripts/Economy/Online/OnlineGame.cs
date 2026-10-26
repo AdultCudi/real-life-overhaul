@@ -254,7 +254,7 @@ namespace RealLifeOverhaul.Economy
                 Counts.Add(0);
             }
             CityManager city = InstanceBehavior<CityManager>.Instance;
-            CityBuildingController[] buildings = city != null ? city.cityBuildingControllers : null;
+            CityBuildingController[] buildings = GameDlc.Open(city);
             for (int i = 0; buildings != null && i < buildings.Length; i++)
             {
                 CityBuildingController b = buildings[i];

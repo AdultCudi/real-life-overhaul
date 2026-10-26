@@ -109,6 +109,7 @@ namespace RealLifeOverhaul
                 }
                 Join(text, Suits[i].Number, Suits[i].Claim, Suits[i].DueDay, Suits[i].Injury ? 1 : 0, Suits[i].Contested ? 1 : 0, Suits[i].Seed);
             }
+            WriteClaims(text);
             return text.ToString();
         }
 
@@ -216,6 +217,9 @@ namespace RealLifeOverhaul
                                 Suits.Add(suit);
                             }
                         }
+                        break;
+                    case 'O':
+                        ParseClaims(body);
                         break;
                 }
             }

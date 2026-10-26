@@ -53,7 +53,7 @@ namespace RealLifeOverhaul.Hustles
         {
             into.Clear();
             CityManager city = InstanceBehavior<CityManager>.Instance;
-            CityBuildingController[] all = city != null ? city.cityBuildingControllers : null;
+            CityBuildingController[] all = GameDlc.Open(city);
             for (int i = 0; all != null && i < all.Length; i++)
             {
                 CityBuildingController b = all[i];
@@ -73,13 +73,13 @@ namespace RealLifeOverhaul.Hustles
         private static bool Door(CityBuildingController b)
         {
             return b != null && b.building != null && b.entranceDoors != null && b.entranceDoors.Length > 0 && b.entranceDoors[0] != null
-                   && b.building.SpecialService == null && !GameMembers.Fenced(b.building) && (int)b.building.requiredDLC == 0 && !b.building.IsHamptonsHouse();
+                   && b.building.SpecialService == null && !GameMembers.Fenced(b.building) && !GameDlc.Gated(b.building) && !b.building.IsHamptonsHouse();
         }
 
         public static CityBuildingController Building(string street, int number)
         {
             CityManager city = InstanceBehavior<CityManager>.Instance;
-            CityBuildingController[] all = city != null ? city.cityBuildingControllers : null;
+            CityBuildingController[] all = GameDlc.Open(city);
             for (int i = 0; all != null && i < all.Length; i++)
             {
                 CityBuildingController b = all[i];
@@ -98,7 +98,7 @@ namespace RealLifeOverhaul.Hustles
             front = default;
             PlayerController player = PlayerHelper.PlayerController;
             CityManager city = InstanceBehavior<CityManager>.Instance;
-            CityBuildingController[] all = city != null ? city.cityBuildingControllers : null;
+            CityBuildingController[] all = GameDlc.Open(city);
             if (player == null || all == null)
             {
                 return false;

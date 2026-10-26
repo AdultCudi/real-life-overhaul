@@ -247,10 +247,14 @@ namespace RealLifeOverhaul
                 site.Write(w);
                 site.Mine = mine;
             }
+            SiteLook.WriteAll(w, s.Looks, true);   // after the sites, where a guest of an older version stops reading
             return w.ToString();
         }
 
-        /// <summary>The host's programme applied to a guest's: the host's sites, and the guest's own refit kept. False, and nothing changed, for a line that cannot be read.</summary>
+        /// <summary>
+        /// The host's programme applied to a guest's: the host's sites and finished looks, and the guest's own refit and
+        /// looks kept. False, and nothing changed, for a line that cannot be read.
+        /// </summary>
         public static bool ApplyWorks(WorksState mine, string text)
         {
             if (mine == null || string.IsNullOrEmpty(text))
@@ -258,6 +262,7 @@ namespace RealLifeOverhaul
                 return false;
             }
             var sites = new List<SiteState>(8);
+            var looks = new List<SiteLook>(4);
             int nextId, completed;
             try
             {
@@ -280,7 +285,7 @@ namespace RealLifeOverhaul
                     site.Mine = false;
                     sites.Add(site);
                 }
-                if (r.Failed)
+                if (r.Failed || !SiteLook.ReadAll(r, looks))
                 {
                     return false;
                 }
@@ -288,6 +293,18 @@ namespace RealLifeOverhaul
             catch (Exception)
             {
                 return false;
+            }
+            for (int i = mine.Looks.Count - 1; i >= 0; i--)
+            {
+                if (!mine.Looks[i].Mine)
+                {
+                    mine.Looks.RemoveAt(i);   // the host's, as the host has them now
+                }
+            }
+            for (int i = 0; i < looks.Count && mine.Looks.Count < SiteLook.Most; i++)
+            {
+                looks[i].Mine = false;
+                mine.Looks.Add(looks[i]);
             }
             int own = NextOwnId(mine);
             // The guest's own refit keeps an id the host's programme never gives; a site of the host's that the guest already has

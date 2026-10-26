@@ -1,0 +1,28 @@
+{
+ "budget": 8000,
+ "material": "lit",
+ "pivot": "the middle of the front wall's foot at ground level; front towards -Z",
+ "note": "Birchwood School's junior block: origin the middle of the front wall's foot, the front towards -Z, a teal canopy and the JUNIOR SCHOOL sign; no interior (Schools/CampusLook). Its rooftop playground's fence is the glass slot above 7.5 m: split off and drawn with the game's chain-link.",
+ "game": {
+  "swatch_brick": {
+   "kind": "brick",
+   "tile": 1.65
+  },
+  "swatch_roof": {
+   "kind": "roof",
+   "tile": 4.0
+  },
+  "swatch_glass": {
+   "kind": "glass",
+   "tile": 2.0
+  }
+ },
+ "split": [
+  {
+   "slot": "swatch_glass",
+   "above": 7.5,
+   "kind": "fence",
+   "tile": 6.5
+  }
+ ]
+}

@@ -2,7 +2,7 @@
 
 ## In a sentence
 
-The city's stock market in the **Stocks** app: the player's own businesses listed as a company with shareholders, orders that wait (stop loss, take profit, limits), trading bots the player can hire, and the raw materials exchange with its futures and options.
+The city's stock market in the **Stocks** app: the player's own businesses listed as a company with shareholders, orders that wait (stop loss, take profit, limits), trading bots the player can hire, the raw materials exchange with its futures and options, and the city's builders listed with a project's materials hedged.
 
 ## Where the code is
 
@@ -15,6 +15,7 @@ The city's stock market in the **Stocks** app: the player's own businesses liste
 - The market calls no other feature and none calls it: `Wiring/MarketLinks.cs` reads the city on a market day, the events that move prices, the game's rivals, the banks and the Planner's rows.
 - `Wiring/ListingLinks.cs` gives the listed company the player's books, its businesses and a sale's hand-over.
 - `Wiring/MarketLinks.cs` and `Wiring/CityLinks.cs` give the raw materials exchange the city's own prices of its goods and the city's economy the exchange's prices to write as the importers' ([Futures and options](#futures-and-options-scriptsmarketsderivatives)).
+- `Wiring/Wiring.MarketsBuildLinks.cs` gives the market the construction game's news of its rival builders and the construction game a project's hedge ([The city's builders and hedging a project](#the-citys-builders-and-hedging-a-project-buildermarket-hedgerules)).
 
 ## Your company on the market (`Scripts/Markets/Listing`)
 
@@ -364,3 +365,73 @@ A line without them reads with no exchange and no contracts; a market with neith
 ### Not verified (the game could not be run)
 
 That nine tabs fit the Stocks app's bar and a ticket (five selectors, three lines and a button) the white box; the notifications on screen; the transactions' names in Finance and EconoView; that `ItemHelper.DeliverCargoToBuilding` puts a future's goods on a factory's pallets as it does a warehouse's; that the importers charge the exchange's price from the close (read from the game's code: `ImportProduct.Price`); how the prices feel over a long game.
+
+## The city's builders and hedging a project (`BuilderMarket`, `HedgeRules`)
+
+The construction game's rival builders on the stock market, moved by what they do in it; the exchange's own building materials; and a project's materials hedged with futures from the Construction app (option "Builders on the market and hedging materials", id `markets_builders`, under the stock market's header, on by default).
+
+No Update and no Harmony patch: the builder news waits in a list of 32 at most and goes onto the tape once a second (`MarketDirector.BuildersSecond`), the engine plays it at the next moment and draws a builder's own news at the close, and the Construction app writes its page when it is opened.
+
+### Who is listed
+
+| Rival builder (Civic's contractors, in their order) | On the market |
+| --- | --- |
+| Dunmore and Pike Civil | Dunmore and Pike Civil (DPC, 147), mid |
+| Hartwell Groundworks | Hartwell Groundworks (HWG, 149), small |
+| Calloway Brothers Scaffolding | private, a family firm |
+| Ostrander Building Co. | Ostrander Building Co. (OBC, 146), mid |
+| Tri-Street Utilities | Tri-Street Utilities (TSU, 148), small |
+| Mercer Shopfitters | private |
+| Ironbridge Contracting | Ironbridge Civil Works (IBW, 32): its contracting arm, so the sector never has two companies of the name |
+| Fenwick and Daughters | private, a family firm |
+
+The four new rows (`BuilderMarket.OwnRows`) are catalogue companies of the construction sector like any other: quarterly dividends, results, the bots, options on shares. They join a market only while the option is on (`MarketSetup.Open` and `Join`); once listed they stay. Gorsebank Construction is the construction company's trade (`MarketInputs.Trades`' newest, "construction").
+
+### What moves them (`BuilderMarket`, `MarketEngine.Builders.cs`)
+
+| News | From | Its move |
+| --- | --- | --- |
+| A tender won | `ConstructionDirector.Award`, weight 1 the city's works, 2 a business's building or refit, 3 a public building, 4 one of Uptown's landmarks (the largest) | the winner's mood up 160 bp a weight times 7/8, every other listed builder's down 160/8 a weight: they add up to nothing, as the market expects each to win its share; the player's company winning takes the 20 a weight off them all |
+| Works handed over | `SiteHanded` of a rival's tender site, against the days it bid (`RivalHanded`) | on time 40 bp a weight, late minus 120 a weight |
+| A building finished in the district | `FinishDevelopment` | its builder 50 bp, every other listed builder 6 |
+| A bribe come out, a strike | drawn at the close from the day's secret (`MarketRandom.BuilderNews`), 5% and 10% a year a listed builder, only in a market that lists the builders' own rows | minus 350 bp and 6% of its usual margin for good; minus 150 bp |
+| A tender ring found out, a building of the year | the city's inquiry finding a ring (`ConstructionDirector.Rings`' `RingFound`, each listed member, as the City Ledger's `reallife_bld_paper_ring_found` story names them); the building of the year's builder (`ConstructionDirector.Award`) | minus 450 bp and 10% of its margin; plus 220 bp and 2% |
+
+A move's size is scaled by the company's size (60% large, 150% small) and held to 600 bp. The mood fades as the market's moods do; a margin's move is priced at once, as a crisis's. Each named move is a piece of market news (`MarketNewsKind.Builder`: A the kind, B the move in bp, C the weight), a notification for a builder the player holds or watches, and a piece in the City Ledger's markets section.
+
+### Building materials on the exchange
+
+The game's recipes have no cement, steel, bricks or timber, so the exchange has its own (`DerivCatalogue.BuildingNames`, each name its word's key), in a group of their own (`MaterialGroup.Building`: 2.8% a day, half-life 16 market days): cement and steel a tonne (450 and 1600 at the start's prices), bricks a thousand (1100), timber a cubic metre (560), the save's price multiplier on each, moving with the city's price level as every material does. A merchant's lorry load is a round number of them. Glass is the game's own. They are settled in cash, never delivered, and trade without the city's economy (which writes the game's goods only).
+
+The construction game's merchants price their loads by them (`BuildCatalogue.ExchangeItem`). `MarketDirector.MaterialMove` gives the construction game a material's move against its own price at the price level: a load's list price already follows the price level (`PlansRules.LoadPrice`), so the level is no longer counted twice, as it was with `MaterialFactor`.
+
+### Hedging a project (`HedgeRules`, `MarketEngine.Hedge.cs`, `MarketDirector.Hedge.cs`)
+
+A project ready to build or building has **Materials and hedge** in the Construction app (`ConstructionApp.Hedge.cs`): what it will still buy of each material from its stages (`Construction/ExposureRules`: the stage under way what it lacks and has not ordered, at once; each later stage's loads on the day its stage begins by the project's schedule; the usual merchant's price, the speciality's saving, the exchange's moves), and the futures that would hedge it.
+
+**Hedge** buys a long future for each material and Friday: a purchase on a day is hedged to the last Friday on offer before it (that close's price is what the merchants charge the week after), one before the first is too near, one past the last is hedged to the last; units are the purchase's money at today's prices over the material's price today, so the future's gain or loss is the purchase's dearer or cheaper price (EconomyCheck holds the money to the future's price whatever the price does). Every rule of a future holds: in a session, caught up and not held after a load, the margin and commission, 40 contracts at once and 100,000 units on one material (the legs are held to the room), the broker's calls. A project with futures still open is not hedged again; once they have settled, what is left can be.
+
+The project keeps its futures' ids and what each had made (`ProjectFile.Hedges`, `HedgeEnded`, the construction line), looked at each day and when its page is written; at the handover a notice says what the hedge saved or cost, and the finished page keeps it.
+
+### A company of the player's with a construction business
+
+A construction company's money is the player's own (`ConstructionGame.Take`), not its office's statement, which holds only its wages and rent; so the listed company's books (`ListingLinks.Statements`) add the construction company's own takings and costs by day (`BuildState.Books`, kept 400 days, counted by `TakeIn` and `PayOut` wherever the company's `Earned` and `Spent` were), and a company whose largest business is a construction company is placed in the construction sector. A company listed before this keeps the sector it was listed in.
+
+### Going Public
+
+The builders' news is the tape's own event kind (`MarketInputs.EventBuilder`, A the builder, B the kind and weight): the host's construction game tells it, every machine plays it at the same moment from the host's tape, and a guest's own is dropped by its engine as every guest's event is. A builder's own news is drawn from the day's secret and only where the builders' own rows are listed, which the host's market decides. The building materials are in part `m` of the city's line. Nothing new is sent; each player's hedge is their own futures (part `q`) and their own project. The test entries refuse in a session.
+
+### Tests (options page, the stock market's tests)
+
+"A rival builder wins a public building's tender now", "A bribery scandal at a rival builder now", "Put the builders' share prices back as before the tests"; "Hedge the test project's materials with futures now" (a block of homes ready to build, the test tools' own, hedged by contracts marked as theirs at any hour), "The test project ends now: what its hedge saved or cost" (its futures settled at today's prices), "Put the hedge tests back: futures undone, test project gone" (every test contract closed and its money given back, to the broker's rounding); "Check how a company with a construction business is listed". Each is a public static method and writes one `Builders on the market check (...)`, `Hedging check (...)` or `Listing check (...)` line. All seven are in the city expansion's test run (`.Check(...)` in `BuildersGuide`, where the player stands, before the load), the two put backs last of them.
+
+### Log lines
+
+- `Builders on the market check (a rival builder wins a tender now): Ostrander Building Co. (OBC) 28.00 to 29.18 (+4.21%, wanted up), 4 of the 4 other listed builder(s) down, its news in the market's: PASS`
+- `Stock market: a hedge of 7 of 7 future(s) bought for 1712000 of purchases to come, margin 361000, commission 1712.`
+- `Construction: project 12's hedge saved 4310.`
+- `Hedging check (the test project's end): 7 of 7 future(s) settled at today's prices; the hedge cost 2210, 0 still open: PASS`
+
+### Not verified (the game could not be run)
+
+The Materials and hedge page's length in the white box (five materials, up to five futures' lines, a quote and two notes), the notifications on screen, the builders' news in the City Ledger, the units' words, a hedge's futures on the Futures tab, the transactions in Finance; how often the construction game gives the market news in a long game, and how the builders' prices feel with it.

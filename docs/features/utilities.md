@@ -34,7 +34,7 @@ The rules are game-free and checked by EconomyCheck (`UtilitiesCatalogue`, `Util
 - **A cut.** A business without power closes (Business's own switch, `UtilitiesBridges.CloseFor`, hour by hour), as one without water does where it needs water (food and drink, salons, gyms).
   At home the shower and the sink give nothing without water, screens and the mod's cooking nothing without power (`HomeTidy.HasPower`, `HasWater`), and a mood modifier stands for each (`ModState.NoPower`, `NoWater`); hygiene and its colds follow by themselves.
 - **The office.** The largest office building of the city that no other feature has made its own (not the courthouse), with a lettered sign by its door; the desk is the game's own list (`DeskList`, `UtilitiesDesk`): pay a bill, apply for an account or a reconnection, the accounts that connect tomorrow.
-  It lights up on the city map.
+  It lights up on the city map. Its building, and 13 7th Street while it is reserved for it, are held from the game's own letting ([the game's own letting](../reference/map-places.md#the-games-own-letting-leaves-them-alone)).
 - **The app.** Every account with where it stands, the month so far, what is owed and when, and auto debit; the white box has the picked account's use, bills and deposit, the auto debit switch and "Pay now".
 
 - **The internet.** Four rival providers (`InternetCatalogue`: cable for the whole city but The Hamptons, fibre in three districts only, fixed wireless and a copper line everywhere), each with its plans, reliability and a price that walks month by month within bounds (a promotion now and then: `InternetRules.NextPromo`).

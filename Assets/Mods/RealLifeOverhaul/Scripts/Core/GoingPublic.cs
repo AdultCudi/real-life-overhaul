@@ -24,8 +24,9 @@ namespace RealLifeOverhaul
     /// as rented by the player (<see cref="Mine"/>); a guest's traffic is the host's (<see cref="TrafficMirrored"/>);
     /// the mod's city economy is the host's, through Core/SharedCity.
     /// It is known by its assembly (<see cref="OtherMods"/>), then through delegates made once by reflection over
-    /// MPServer.IsRunning, MPClient.IsClientInWorld and GameStatePatcher.HideFromOwnAssetLists; a missing one means not
-    /// there, a fault is logged once and the mod goes on as if alone.
+    /// MPServer.IsRunning, MPClient.IsClientInWorld and GameStatePatcher.HideFromOwnAssetLists, and its mod check
+    /// (MPConfig.RefuseModMismatch, MPClient.ModMismatchVsHost) for what must be on every machine or on none; a missing one
+    /// means not there, a fault is logged once and the mod goes on as if alone.
     /// COST: one comparison a frame (<see cref="Tick"/>); two property reads of the other mod's a real second;
     /// <see cref="Role"/> and all built on it are field reads.
     /// </summary>
@@ -41,9 +42,12 @@ namespace RealLifeOverhaul
         private static Func<bool> _inWorld;
         private static Func<BuildingRegistration, bool> _hidden;
         private static Func<List<Transform>> _remotes;   // the other players' figures on this machine
+        private static Func<bool> _refusesMods;          // the host's own setting: a player whose mods differ is refused
+        private static FieldInfo _modsAgainstHost;       // a guest's: how its mods differ from the host's, empty when they do not
         private static bool _remotesFailed;
         private static bool _readFailed;
         private static bool _ownerFailed;
+        private static bool _modsFailed;
         private static GoingPublicRole _role = GoingPublicRole.Absent;
         private static GoingPublicRole _pretend = GoingPublicRole.Absent;   // the test's: Host or Guest, Absent while no test
         private static float _next;
@@ -67,6 +71,38 @@ namespace RealLifeOverhaul
 
         /// <summary>True while the traffic here is the host's: nothing of it is taken, stopped or steered.</summary>
         public static bool TrafficMirrored => _role == GoingPublicRole.Guest;
+
+        /// <summary>
+        /// True on a host whose Going Public refuses a player whose mods differ from its own (its own setting), so every guest
+        /// runs this mod in this version; false where that cannot be read, and in the test's pretence. Not per frame.
+        /// </summary>
+        public static bool RefusesOtherMods => IsHost && _pretend == GoingPublicRole.Absent && _refusesMods != null && ReadMods(true);
+
+        /// <summary>
+        /// True on a guest whose mods Going Public did not find to differ from the host's; false where they differ, where
+        /// that cannot be read, and in the test's pretence. Not per frame.
+        /// </summary>
+        public static bool ModsAsHost => IsGuest && _pretend == GoingPublicRole.Absent && _modsAgainstHost != null && ReadMods(false);
+
+        // One read of the other mod's mod check, the host's setting or the guest's difference; a fault is logged once.
+        private static bool ReadMods(bool host)
+        {
+            if (_modsFailed)
+            {
+                return false;
+            }
+            try
+            {
+                return host ? _refusesMods() : string.IsNullOrEmpty(_modsAgainstHost.GetValue(null) as string);
+            }
+            catch (Exception e)
+            {
+                _modsFailed = true;
+                Logger?.Warn("Other mods: Going Public's check of the players' mods could not be read (" + e.GetType().Name + ": " + e.Message
+                             + "); the session is taken as one where not every machine runs this mod in this version.");
+                return false;
+            }
+        }
 
         /// <summary>
         /// True for a building rented by the player that is not another player's (Going Public puts those on this machine
@@ -191,6 +227,16 @@ namespace RealLifeOverhaul
                 {
                     _hidden = (Func<BuildingRegistration, bool>)Delegate.CreateDelegate(typeof(Func<BuildingRegistration, bool>), hidden);
                 }
+                // Its mod check, for what must be on every machine of a session or on none: the host's own setting that
+                // refuses a player whose mods differ, and what the host told a guest of how its mods differ.
+                Type config = assembly != null ? assembly.GetType("BigAmbitionsMP.MPConfig", false) : null;
+                MethodInfo refuses = config?.GetProperty("RefuseModMismatch", Static)?.GetGetMethod(true);
+                FieldInfo against = client?.GetField("ModMismatchVsHost", Static);
+                if (refuses != null && refuses.ReturnType == typeof(bool))
+                {
+                    _refusesMods = (Func<bool>)Delegate.CreateDelegate(typeof(Func<bool>), refuses);
+                }
+                _modsAgainstHost = against != null && against.FieldType == typeof(string) ? against : null;
                 if (_hosting == null)
                 {
                     Logger?.Warn("Other mods: Going Public is switched on but whether a session is on cannot be read (a newer version of it?); this mod acts as if alone.");

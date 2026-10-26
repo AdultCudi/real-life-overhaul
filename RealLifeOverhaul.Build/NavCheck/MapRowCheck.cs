@@ -33,7 +33,15 @@ internal static partial class Program
         { "\"hotel_\"", "hotels" },
         { "\"utilities_office\"", "utilities_office" },
         { "CityReserves.UtilitiesId", "utilities_office" },   // (Core/CityReserves: "utilities_office", also its building's reservation)
+        { "SchoolsGame.MainId", "schools" },   // (Schools/SchoolsDirector.Campus: Birchwood School's main school, on the card as a school; its row of the map's filters)
+        { "ClaimPrefix", "floors" },   // (Floors/FloorsDirector.Book: a building taken for places that found no spare floor)
+        { "LeaseHold", GameRow + "Construction/ConstructionType.cs" },   // (Uptown/LifeGame.Leases: a rival builder's office, a business of the game's of that type)
     };
+
+    // A claimed building holding a business of a type of the mod's own, registered with the game: the game's own filters give that
+    // type a row (CityMapFilters.CreateActiveBusinessesCategory, for a type players may start that brings in money) which lights
+    // every building of it on the open map. The value names the source file that makes the type.
+    private const string GameRow = "game's own row of the business type made in ";
 
     private sealed class MapRow
     {
@@ -197,6 +205,15 @@ internal static partial class Program
                 Check(known, "map rows: the building claimed as " + token + " (" + name + ") has a row of its own on the city map (add it to ClaimRows with its row)");
                 if (!known)
                 {
+                    continue;
+                }
+                if (rowId.StartsWith(GameRow, StringComparison.Ordinal))
+                {
+                    string type = Source(scripts, rowId.Substring(GameRow.Length).Replace('/', '\\'));
+                    Check(type.Contains("ModdingAPI.RegisterModBusinessType(") && type.Contains("AddTag(\"ba:businesstag_allowplayercreation\"")
+                          && type.Contains("AddTag(\"ba:businesstag_generatesrevenue\""),
+                        "map rows: the building claimed as " + token + " (" + name + ") holds a business of a type the game gives a row of its own (registered, one players may start, "
+                        + "bringing in money: " + rowId.Substring(GameRow.Length) + ")");
                     continue;
                 }
                 MapRow row = rows.Find(r => r.Id == rowId);

@@ -73,10 +73,12 @@ namespace RealLifeOverhaul.Events
         public TestRefusal Why { get; private set; }
         public int WhyMetres { get; private set; }
 
-        public bool Stage(FireKind kind, Vector3 player, Vector3 near, bool test, float now)
+        /// <param name="blockEngine">A test: a stopped bus of the mod's own is stood in the engine's lane ahead of it (FireScene.Blocked.cs), and the engine is sent at once.</param>
+        public bool Stage(FireKind kind, Vector3 player, Vector3 near, bool test, float now, bool blockEngine = false)
         {
             _kind = kind;
             _test = test;
+            ResetBlocked(blockEngine);
             _refusal = null;
             Why = TestRefusal.NothingFits;
             WhyMetres = 0;
@@ -99,7 +101,7 @@ namespace RealLifeOverhaul.Events
             _phase = Phase.Smoulder;
             _phaseUntil = now + (kind == FireKind.Car ? 14f : 7f);
             _nextSecond = now;
-            _engineAt = now + (kind == FireKind.Car ? 14f : 7f) + DispatchAfter;
+            _engineAt = now + (kind == FireKind.Car ? 14f : 7f) + (blockEngine ? 0f : DispatchAfter);
             _flameSize = kind == FireKind.Bin ? 0.55f : kind == FireKind.Car ? 1.0f : 1.4f;
             FireEffects effects = _director.Effects;
             effects.Smoke(0, _seat + Vector3.up * 0.3f, true, 7f);   // the first wisps are pale
@@ -246,7 +248,7 @@ namespace RealLifeOverhaul.Events
         {
             _door = stand + outward * 1.5f;
             var city = InstanceBehavior<CityManager>.Instance;
-            CityBuildingController[] buildings = city != null ? city.cityBuildingControllers : null;
+            CityBuildingController[] buildings = GameDlc.Open(city);
             float nearest = 14f * 14f;
             CityBuildingController owner = null;
             for (int i = 0; buildings != null && i < buildings.Length; i++)
@@ -624,6 +626,7 @@ namespace RealLifeOverhaul.Events
                 _watcherNext[i] = 0f;
             }
             _driver = null;
+            RemoveBlockingBus();
             _director.People.ReleaseAll();
             _director.Officers[0].Exit();
             ReleaseWreck(trafficRunning);

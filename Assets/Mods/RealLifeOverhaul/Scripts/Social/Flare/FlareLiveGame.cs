@@ -86,7 +86,7 @@ namespace RealLifeOverhaul.Flare
         private static bool Shop(BuildingRegistration reg)
         {
             return reg != null && !reg.RentedByPlayer && reg.HasValidAddress && !string.IsNullOrEmpty(reg.BusinessName) && reg.businessTypeName != EmptyBusiness
-                   && GameRegistrations.Found(reg);
+                   && GameRegistrations.Found(reg) && !GameDlc.Gated(reg);
         }
 
         public static FlareBiz Biz(BuildingRegistration reg, bool mine)

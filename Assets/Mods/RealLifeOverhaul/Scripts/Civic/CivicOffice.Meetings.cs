@@ -80,19 +80,20 @@ namespace RealLifeOverhaul
 
         private void Add(OfficeMotion m)
         {
-            if (State.Agenda.Count >= OfficeState.AgendaMost)
+            // Zoning matters have room of their own (CouncilZoning.AgendaMost): the policies and the budget count alone.
+            if (State.Agenda.Count - State.ZoningCount() >= OfficeState.AgendaMost)
             {
                 // the oldest of the city's own items makes way
                 for (int i = 0; i < State.Agenda.Count; i++)
                 {
-                    if (State.Agenda[i].By == OfficeMotion.ByCity)
+                    if (State.Agenda[i].By == OfficeMotion.ByCity && !State.Agenda[i].Zoning)
                     {
                         State.Agenda.RemoveAt(i);
                         break;
                     }
                 }
             }
-            if (State.Agenda.Count < OfficeState.AgendaMost)
+            if (State.Agenda.Count - State.ZoningCount() < OfficeState.AgendaMost)
             {
                 State.Agenda.Add(m);
             }
@@ -108,6 +109,10 @@ namespace RealLifeOverhaul
         public MotionVote Decide(OfficeMotion m, int vote, bool declaredAside, int day, int speak = 0)
         {
             var result = new MotionVote();
+            if (m.Zoning)
+            {
+                return DecideZoning(m, vote, declaredAside, day, speak);
+            }
             bool mayorTabled = m.By == OfficeMotion.ByMayor || (m.By == OfficeMotion.ByPlayer && State.Holds == OfficeRace.Mayor);
             bool playerTabled = m.By == OfficeMotion.ByPlayer;
             float support = m.Kind == OfficeMotion.KindBudget ? Mathf.Clamp01(0.5f - BudgetDeficit(m.Budget) * 0.3f) : _gov.Support(m.Policy);

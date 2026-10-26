@@ -155,6 +155,7 @@ namespace RealLifeOverhaul
                     JudgeSuit(suit);
                 }
             }
+            OwnClaims.Day(today);   // the claims the player brings, heard on their day
             if (JusticeSettings.Aftermath && JusticeState.Priors > 0 && JusticeState.OpenCount == 0 && !JusticeState.OnProbation(today) && !JusticeState.InPrison
                 && today - JusticeState.LastConvictionDay >= JusticeLaw.SealAfterCleanDays)
             {

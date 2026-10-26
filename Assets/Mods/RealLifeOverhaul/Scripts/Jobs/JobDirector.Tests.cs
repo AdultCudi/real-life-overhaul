@@ -29,7 +29,7 @@ namespace RealLifeOverhaul
             {
                 EndJob(JobEnd.Interrupted, null);
             }
-            if (!Free(out string reason) || !StartJob(def, true, out reason))
+            if (!Free(out string reason, def) || !StartJob(def, true, out reason))
             {
                 Logger?.Info("Jobs: test of '" + id + "' could not start (" + reason + ").");
                 JobText.Toast(NotificationType.Warning, reason ?? "reallife_job_no_now");

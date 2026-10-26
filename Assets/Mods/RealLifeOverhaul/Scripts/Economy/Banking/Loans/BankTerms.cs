@@ -64,6 +64,20 @@ namespace RealLifeOverhaul.Economy
         /// <summary>What is owed on business loans at the banks with these settings (the desk's): a bank's cap rises by it, so they do not use up unsecured lending.</summary>
         public static Func<BankSettings, float> Secured;
 
+        // True when one of the game's own buildings carries these settings: a made branch then shares its head office's.
+        private static bool OfTheCity(BankSettings settings)
+        {
+            foreach (KeyValuePair<Address, Building> pair in BuildingHelper.SpecialServiceBuildings)
+            {
+                if (pair.Key != null && !NewBuildings.MadeStreets.IsMine(pair.Key.streetName) && pair.Value != null && pair.Value.SpecialService != null
+                    && pair.Value.SpecialService.settings == settings)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         /// <summary>Finds the city's banks (one look through the game's special buildings) and notes each one's own terms. Returns how many.</summary>
         public static int Find()
         {
@@ -77,6 +91,10 @@ namespace RealLifeOverhaul.Economy
                 if (settings == null || pair.Key == null)
                 {
                     continue;
+                }
+                if (NewBuildings.MadeStreets.IsMine(pair.Key.streetName) && OfTheCity(settings))
+                {
+                    continue;   // a branch of one of the city's banks (Scripts/Uptown): its loans are the head office's, so it lends nothing of its own
                 }
                 BuildingRegistration registration = BuildingHelper.GetBuildingRegistration(pair.Key);
                 if (registration == null)

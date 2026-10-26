@@ -248,7 +248,7 @@ namespace RealLifeOverhaul.Household
                 _doorNumber = home.StreetNumber;
                 _doorKnown = false;
                 _plot = null;
-                CityBuildingController c = city != null ? city.FindCityBuildingController(home.Address) : null;
+                CityBuildingController c = city != null && !string.IsNullOrEmpty(home.StreetName) ? city.FindCityBuildingController(home.Address) : null;
                 if (c != null)
                 {
                     _door = c.transform.position;

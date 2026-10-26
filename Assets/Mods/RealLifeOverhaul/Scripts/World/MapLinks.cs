@@ -492,7 +492,7 @@ namespace RealLifeOverhaul
                         {
                             what = T("reallife_map_row_construction");   // a site from a save with a project this catalogue does not have
                         }
-                        places.Add(new MapPlace(new Vector3(site.X, site.Y, site.Z), At(what, CivicCity.AddressText(site.Street, site.Number)))
+                        places.Add(new MapPlace(new Vector3(site.X, site.Y, site.Z), At(what, CivicWorks.PlaceText(site)))
                         {
                             Lit = CivicCity.Find(site.Street, site.Number)   // the building being worked on; null for a plot with none
                         });
@@ -561,7 +561,7 @@ namespace RealLifeOverhaul
             SpecialBuildings.Findable(Careers.CareersGame.SchoolType);
             SpecialBuildings.Findable(HospitalType);
             SpecialBuildings.Findable(ClinicType);
-            CityBuildingController[] all = InstanceBehavior<CityManager>.Instance.cityBuildingControllers;
+            CityBuildingController[] all = GameDlc.Open(InstanceBehavior<CityManager>.Instance);
             string school = T("reallife_study_campus_school");
             string ward = T("reallife_map_study_ward");
             for (int i = 0; i < all.Length; i++)

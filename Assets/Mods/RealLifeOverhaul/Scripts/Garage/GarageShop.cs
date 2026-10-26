@@ -144,7 +144,7 @@ namespace RealLifeOverhaul
                 return;
             }
             int truck = 0;
-            foreach (CityBuildingController building in city.cityBuildingControllers)
+            foreach (CityBuildingController building in GameDlc.Open(city))
             {
                 GasStationController station = building != null ? building.GetComponent<GasStationController>() : null;
                 if (station == null || station.repairStationTriggers == null)

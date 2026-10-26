@@ -16,12 +16,13 @@ namespace RealLifeOverhaul.Markets
     /// <summary>
     /// A new market for a save: every catalogue company listed at the start and up to four rivals' holdings, each with a
     /// made-up history; a company brought over keeps its price and closes. The index and every sector start at 1,000. Seeded
-    /// by the playthrough and the day, so it is the same twice.
+    /// by the playthrough and the day, so it is the same twice. The builders' own rows (BuilderMarket.OwnRows) are listed
+    /// only while their option is on.
     /// </summary>
     public static class MarketSetup
     {
         public static MarketState Open(ulong id, int day, int minute, int year, in MarketEnv env, ulong seed, IList<string> rivalNames, IList<string> rivalIds,
-            IList<CarriedPrice> carried)
+            IList<CarriedPrice> carried, bool builders = true)
         {
             year = Math.Max(8, year);
             var state = new MarketState
@@ -36,7 +37,7 @@ namespace RealLifeOverhaul.Markets
             for (int i = 0; i < MarketCatalogue.All.Length; i++)
             {
                 CompanyDef d = MarketCatalogue.All[i];
-                if (d.Pipeline)
+                if (d.Pipeline || (!builders && BuilderMarket.OwnRow(d.Id)))
                 {
                     continue;
                 }
@@ -120,9 +121,10 @@ namespace RealLifeOverhaul.Markets
 
         /// <summary>
         /// Catalogue companies a save's market never had, made now as a new market makes them, seeded by the save's id; the
-        /// index takes them without a jump. Returns how many joined. Once a load.
+        /// index takes them without a jump. Returns how many joined. Once a load. The builders' own rows join only with
+        /// <paramref name="builders"/>; once listed they stay.
         /// </summary>
-        public static int Join(MarketState state)
+        public static int Join(MarketState state, bool builders = true)
         {
             int year = Math.Max(8, state.YearDays);
             var joined = new List<Stock>(8);
@@ -131,7 +133,7 @@ namespace RealLifeOverhaul.Markets
             for (int i = 0; i < MarketCatalogue.All.Length && state.Stocks.Count < MarketCatalogue.CompaniesMost; i++)
             {
                 CompanyDef d = MarketCatalogue.All[i];
-                if (d.Pipeline || state.Stock(d.Id) != null)
+                if (d.Pipeline || state.Stock(d.Id) != null || (!builders && BuilderMarket.OwnRow(d.Id)))
                 {
                     continue;
                 }

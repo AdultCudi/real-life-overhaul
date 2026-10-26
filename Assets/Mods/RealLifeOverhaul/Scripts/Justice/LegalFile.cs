@@ -28,7 +28,8 @@ namespace RealLifeOverhaul
         {
             int day = TimeHelper.CurrentDay;
             JusticeCase next = JusticeState.NextOpen;
-            if (next == null && JusticeState.Owed == 0 && !JusticeState.OnProbation(day) && JusticeState.Suits.Count == 0 && JusticeState.CommunityHours == 0)
+            if (next == null && JusticeState.Owed == 0 && !JusticeState.OnProbation(day) && JusticeState.Suits.Count == 0 && JusticeState.CommunityHours == 0
+                && JusticeState.ClaimsOpen == 0)
             {
                 return JusticeText.T("reallife_justice_brief_nothing");
             }
@@ -58,6 +59,10 @@ namespace RealLifeOverhaul
             if (JusticeState.Suits.Count > 0)
             {
                 text.Append(' ').Append(JusticeText.T("reallife_justice_brief_suit"));
+            }
+            if (JusticeState.ClaimsOpen > 0)
+            {
+                text.Append(' ').Append(JusticeText.T("reallife_justice_brief_claim"));
             }
             if (JusticeState.CommunityHours > 0)
             {
@@ -158,6 +163,15 @@ namespace RealLifeOverhaul
                 JusticeSuit suit = JusticeState.Suits[i];
                 _text.Append('\n').Append(JusticeText.T(suit.Contested ? "reallife_justice_file_suit_contested" : "reallife_justice_file_suit",
                     "amount", JusticeText.Money(suit.Claim), "day", JusticeText.N(suit.DueDay)));
+            }
+            for (int i = 0; i < JusticeState.Claims.Count; i++)
+            {
+                JusticeClaim claim = JusticeState.Claims[i];
+                if (claim.Result < 0)
+                {
+                    _text.Append('\n').Append(JusticeText.T("reallife_justice_file_claim", "defendant", claim.Defendant, "amount", JusticeText.Money(claim.Amount),
+                        "day", JusticeText.N(claim.HearDay)));
+                }
             }
             JusticeCase appeal = JusticeSettings.Aftermath ? JusticeState.Appealable(day) : null;
             if (appeal != null)

@@ -98,6 +98,12 @@ internal static partial class Program
         RenderLevels();   // the performance section's picture settings: the game's own until moved, their limits, the trials (RenderLevelCheck.cs)
         FlareHours();     // Flare's hour a step a frame, in its order, finished first by the save and the day (FlareHourCheck.cs)
         SlowSpots();      // the interact key's flags only on a press, the bus zones' parking laid out a lane a tick (SlowSpotCheck.cs)
+        Wraps();          // the game's scaffolding round a building and a new plot's stages: layout, doors, stages, pace, the fade link (WrapCheck.cs)
+        NewGrounds();     // new ground: the road generator never off the grid, the walking rules and lines, and the sources (NewGroundCheck.cs)
+        Uptowns(Array.IndexOf(args, "--uptown") >= 0);   // Uptown's ground: the band's lots, the first block's streets through 1st Avenue, its walking ground (UptownCheck.cs)
+        UptownStreets(Array.IndexOf(args, "--uptown") >= 0);  // Uptown's streets: its buses' two routes and their reach over every block, its street furniture at Manhattan's spacing (UptownStreetsCheck.cs)
+        UptownParks(Array.IndexOf(args, "--parks") >= 0);    // Uptown's parks: laid in their squares, walked end to end, the search for the game's pieces, the sources and the texts (UptownParksCheck.cs)
+        GroundSurveys();  // "What is this ground?": the bare blocks, every lot read back as itself, the streets, the game's own city, the sources, the texts (GroundSurveyCheck.cs)
         HotSpotsFull();   // last of all: the session record's names once all are given, "others" a slot of its own (HotSpotsFullCheck.cs)
         if (Array.IndexOf(args, "--sites") >= 0)
         {

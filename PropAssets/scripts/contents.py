@@ -42,7 +42,8 @@ def main():
         "atlas": catalogue.get("atlas", {"width": 0, "height": 0, "used": 0}),
         "textures": [t["name"] for t in catalogue["textures"]],
         "props": [dict({"id": i["id"], "mesh": i["mesh"], "triangles": i["triangles"], "material": i["material"], "size": i["size"]},
-                       **({"alias_of": i["alias_of"]} if "alias_of" in i else {})) for i in catalogue["items"]],
+                       **({"alias_of": i["alias_of"]} if "alias_of" in i else {}),
+                       **({"parts": [{"game": p.get("game"), "triangles": p["triangles"]} for p in i["parts"]]} if i.get("parts") else {})) for i in catalogue["items"]],
     }
     target = sys.argv[3] if len(sys.argv) > 3 else sets.contents_path(entry)
     os.makedirs(os.path.dirname(target), exist_ok=True)

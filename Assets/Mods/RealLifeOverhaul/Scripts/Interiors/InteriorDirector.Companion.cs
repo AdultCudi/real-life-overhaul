@@ -28,7 +28,7 @@ namespace RealLifeOverhaul.Interiors
                 {
                     continue;
                 }
-                int income = InteriorGame.CompanionIncome(district.neighbourhood);
+                int income = InteriorGame.IncomeOf(district.neighbourhood);
                 districts.Add(CompanionSnapshot.Row("districtId", district.neighbourhood,
                     "income", income, "nativeMinimum", district.minimumInteriorScore,
                     "requiredScore", InteriorRules.Standard(income, district.minimumInteriorScore)));

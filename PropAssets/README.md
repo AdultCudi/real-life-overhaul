@@ -85,9 +85,10 @@ read that one table.
 | bundle | source | takes new props | triangles | atlas | disk |
 |---|---|---|---|---|---|
 | `reallife_props` | the procedural modules (`scripts\props.py` and its modules) | **no**: closed, it keeps what it has | 130 000 | 4096 x 2048, fixed | 16 MB |
-| `reallife_props_2` | `models\<id>\`, one Blender export each | **yes** | 60 000 | grows by powers of two from 256 x 256 to 2048 x 2048 | 8 MB |
+| `reallife_props_2` | `models\<id>\`, one Blender export each | **yes** | 100 000 | grows by powers of two from 256 x 256 to 2048 x 2048 | 8 MB |
+| `reallife_props_site` (the set `site`) | the procedural modules `build` and `landmarks`: the building sites' props and Uptown's stadium | no: closed | 12 000 | 1024 x 512, fixed | 1 MB |
 
-**Which bundle a prop goes in.** A new prop goes in the second bundle (the last open row of `sets.json`). A prop of
+**Which bundle a prop goes in.** A new prop goes in the second bundle (the last open row of `sets.json`; the `site` row after it is closed). A prop of
 the first stays where it is; the build refuses a new id in a closed bundle. A prop's id is unique across the bundles:
 the build refuses an id another bundle's `contents\` list holds, the mod uses the earlier bundle's if two ever did,
 and StandardCheck fails on it. Callers never say which bundle: `PropLibrary.TryGet(id, ...)` looks in all of them.
@@ -103,13 +104,72 @@ holds (BC7, one byte a pixel, a third more for the mipmaps; the mask is half eac
 | 2048 x 2048 (its limit) | 5.3 MB | 1.3 MB | 6.7 MB |
 
 A 256 px picture is enough for a hand-held prop and 512 for a large one, so the full atlas holds some thirty to sixty
-props; 6.7 MB beside the first bundle's 14.0 MB. Its 60 000 triangles are about 3.4 MB of meshes at most. A missing
+props; 6.7 MB beside the first bundle's 14.0 MB. Its 100 000 triangles are about 15 MB of meshes at most (the ten buildings it holds now, 83 786 triangles, are 12.8 MB in memory and 1.9 MB on disk). A missing
 second bundle (an older install) costs nothing: the mod writes one warning and its props are drawn as their plain
 shapes, as for any prop it lacks.
 
 **Shipped.** The build copies all of `Bundles\` into the mod, the installer and the zip take the whole mod folder,
 and the Workshop upload takes the release's whole folder; `INSTALL.md`, `RealLifeOverhaul.Build\Workshop\UPLOAD.md`,
 the Workshop credits and `docs\reference\folder-map.md` name every bundle. StandardCheck holds all of it.
+
+## Buildings: a model that draws with the game's own materials
+
+A building is too big and too plain-walled for the atlas: brick, roofing and glass should look like the game's own, and tile
+by the metre. A model's `<id>.json` therefore lists slots that the mod draws with a material of the game's, found by name at
+run time, and the rest stay swatches of the atlas:
+
+```
+"game": {"swatch_brick": {"kind": "brick", "tile": 1.65}, "swatch_roof": {"kind": "roof", "tile": 4}, "swatch_glass": {"kind": "glass", "tile": 2}},
+"split": [{"slot": "swatch_glass", "above": 7.5, "kind": "fence", "tile": 6.5}]
+```
+
+- **Kinds** are `brick`, `roof`, `glass` and `fence` (`models.py` GAME_KINDS, the same list as `CampusLookRules.Kinds`); the mod's
+  `CampusLookRules.GameNames(kind)` names the game's materials of each, best first (Build 3682: `M_Bricks_01`, `M_Roof_02`,
+  `M_GlassBlueHue`, `M_FenceWire_Occlussion`). A kind the game has none of is drawn as a plain colour, the model's own.
+- **`tile`** is the metres one repeat of the game's picture covers. The model carries its UVs at world scale on its **second UV map**
+  (1 unit a metre, box projected: it is exported as TEXCOORD_1); the build divides them by `tile`, so the picture repeats as the game's own
+  walls do. The first UV map is ignored for these slots, which have no atlas region.
+- **`split`** draws a slot's faces above a height (metres, Blender's Z) with another kind: the rooftop fence of the junior block is the model's
+  glass slot, so the faces of it above 7.5 m become chain-link.
+- **Submeshes.** The mesh gets one submesh for the atlas (all the swatch slots together, always the first) and one for each kind
+  used, in that order; the catalogue row lists them as `parts` (`game`, a stand-in colour, metallic, smoothness, triangles), and the
+  contents list carries `game` and `triangles` per part. One submesh is one draw call: a building is **4 or 5** (the atlas, brick, roof,
+  glass and, for the junior block, the fence). The tangents are computed in the bundle (the game's materials use normal maps).
+- **The mod** asks `PropLibrary.TryGetBuilding(id, ...)` for the mesh, the atlas material and the parts, finds each kind's material
+  once, behind the loading screen, with one search of the game's materials in memory by name (never a scene search in play), and draws
+  the mesh with an array of the atlas's material and the game's. Shared materials only; nothing is made per building.
+- **Why not bake brick into the atlas?** An atlas region is drawn once and never tiled: a metre of brick would need a picture a
+  metre wide, and a 40 m wall a 4096 pixel one, or a repeat the shader would have to be taught. The game's own brick is already in memory,
+  tiles by its UVs, has its normal map, and costs one more draw call.
+- **Orientation.** A model made for a plot keeps the front it has: **its front looks along -Z** in the mod (the plot's front, as
+  `CivicWorks.StartPlot` has it), the origin the middle of the front wall's foot, the building extending back along +Z. That is a
+  glTF front of +Z, so a building is exported as it is; nothing turns it. (A prop's front is +Y/+Z as the next section says; a building
+  is the exception, its code (`Schools/CampusLookRules`) knows where its door and its walls are.)
+
+The pipeline refuses nothing for a building's size: models up to 80 m a side (the glass corner tower's mast is 71 m) and 100 000 triangles a bundle are allowed, and a mesh
+stays under 65 535 vertices (the main school's 14 786 triangles are 28 208). Its check stays: the sum of the parts must equal the
+mesh and the build and the bundle's verify step fail on an empty part, a missing stand-in colour or a submesh count that is not the row's.
+
+## The corner buildings (build mode)
+
+Seven buildings for the block corners of build mode (`Scripts/Corners`, CornerRules), each a look over the copy engine's building
+of the right type: its own look hidden, its door moved to the model's entrance, the shop letters drawn live by the mod (the
+business's name on the model's sign anchors). **Pivot: the street corner at ground level**; front A along +X facing -Z, front B
+along +Z facing -X, the building in the +X +Z quarter (the mod turns it by a quarter turn for each of a block's four corners).
+`swatch_brick` is the game's `M_Bricks_01` and `swatch_glass` the game's glass (`M_Glass`, else `M_GlassBlueHue`), the rest
+the atlas's swatches. A model with no second UV map (the bodega's and the diner's exports) has each face box projected at world
+scale by the build. No levels of detail: the build refuses `_LOD` objects (one mesh, the budget is the limit), and each building
+is one draw for each material it uses: the atlas, brick and glass, three at most.
+
+| id | size (m) | triangles | draws | uses | entrance |
+|---|---|---|---|---|---|
+| `corner_bodega` | 15.6 x 24.5 x 13.6 | 6 425 | 3 | shops (homes above) | the cut corner |
+| `corner_bank` | 19.8 x 20.2 x 17.8 | 9 488 | 2 | offices, shops | the cut corner |
+| `corner_deco` | 20.8 x 61.2 x 18.8 | 14 396 | 2 | offices | the cut corner |
+| `corner_loft` | 17.6 x 31.8 x 15.4 | 10 297 | 3 | warehouses, shops | front A beside the corner |
+| `corner_prewar` | 21.6 x 33.7 x 22.0 | 14 036 | 3 | homes | the cut corner |
+| `corner_diner` | 16.1 x 10.6 x 14.4 | 2 730 | 3 | shops | the cut corner |
+| `corner_glass` | 23.3 x 70.7 x 21.3 | 5 168 | 2 | offices | the cut corner |
 
 ## Adding a prop from Blender
 
@@ -177,6 +237,36 @@ size (handcuffs, duty belt, the bikes, the wheels) are all seen from a step away
 With both set, several people can work on a module each at the same time without the others' files having to be
 whole. Previews of single props: `blender -b -P scriptsuild_props.py -- id id`. A module may list `SIDES` (see the
 end of `props.py`): those props also get `previews\<id>_sides.png`, six views beside what they go over or who uses them.
+
+## The building sites' bundle (the set `site`)
+
+The first bundle is full (2,814 triangles and 6 % of its atlas left), so the building sites' props (`scripts\props_build.py`,
+painted by `paint_build.py`) go in a second one, `Bundles\reallife_props_site`, with an atlas of its own: 1024 x 512 colour
+and 512 x 256 mask, BC7, holding the shared swatches of `atlas.py` and the module's own finishes only. `PROPS_SET=site`
+(`build.ps1 -Set site`) switches the scripts to it: `atlas.py` paints that atlas, `build_props.py` builds only the second set's modules, `build` then
+`landmarks` (budget 12 000 triangles; 6 350 used, the atlas 69 %), and they write to `PROPS_BUILD` (`build_second\`, git-ignored). Unity builds it with
+`build_bundle.ps1 -BuildFolder build_second -BundleName reallife_props_site`; `build.ps1` does all of it after the first
+bundle. The mod reads it beside the first (`PropLibrary`: its props have their own two materials on its atlas), and draws
+each prop's stand-in (`Scripts\Civic\CivicProps.cs`) while the bundle is not installed. Building it takes a Unity licence,
+as the first does; the first bundle is not touched by it.
+
+| id | size (m) | triangles | pivot and facing | use |
+|---|---|---|---|---|
+| `tower_crane_mast` | 6.0 x 40.0 x 6.0 | 600 | ground centre | the tower crane below its slewing ring (`props_site.crane_mast`) |
+| `tower_crane_jib` | 4.0 x 22.4 x 40.1 | 868 | **the slewing ring's middle**; the jib along +Z | the rest (`props_site.crane_slew`), let down by the ring's 40 m: SiteDresser hangs it 40 m up the mast and the engine's Animation turns it about Y (`Scripts\Civic\CraneSlew.cs`) |
+| `site_cabin` | 6.06 x 2.6 x 2.93 | 232 | ground centre; door and windows on +Z | the welfare cabin against the yard's fence (`PlotRules.YardSpots`) |
+| `site_toilet` | 1.18 x 2.28 x 1.31 | 124 | ground centre; door on +Z | beside the cabin |
+| `site_stack_blocks` | 1.2 x 1.04 x 1.0 | 336 | ground centre | concrete blocks on a pallet |
+| `site_stack_timber` | 1.0 x 0.57 x 3.6 | 168 | ground centre; along Z | sawn timber on bearers |
+| `site_stack_rebar` | 1.0 x 0.32 x 4.0 | 300 | ground centre; along Z | bundled steel bars |
+| `site_earthworks` | 10.0 x 0.37 x 10.0 | 800 | ground centre | the dig, stretched over a frame's footprint (`PlotRules.EarthSpot`) |
+| `hammer` | 0.16 x 0.34 x 0.03 | 120 | the handle's end; the handle up | the tool of the clip `hammer_nail` |
+| `stadium_stand` | 10.0 x 15.0 x 12.05 | 1 332 | ground centre; **its seats face +Z** (the pitch) | Crest Field's main stands (`props_landmarks.py`): a section of nine rows, the back wall to the street with the district's band and two gates, a roof held by two masts and their ties; sections stand side by side north and south of the pitch, stretched along X (`Scripts\Landmarks\LandmarkRules.Stadium`) |
+| `stadium_end` | 10.0 x 7.6 x 9.05 | 984 | ground centre; its seats face +Z | the end stands west and east: seven rows, open to the sky |
+| `stadium_corner` | 8.8 x 9.5 x 11.8 | 236 | ground centre; alike from every side | a stair tower in each corner of the bowl, stood unturned |
+| `stadium_floodlight` | 5.6 x 34.0 x 1.97 | 104 | ground centre; its lamp frame looks down towards +Z | a mast at each outer corner, turned to the middle of the pitch |
+| `stadium_lamps` | 5.4 x 2.84 x 1.18 (34 m up) | 144 | the mast's pivot | the frame's twelve lamps, the **glow** material, stood where the mast stands |
+| `stadium_pitch` | 52.0 x 0 x 48.0 | 2 | ground centre, 4 cm up | the field: grass in stripes, a pitch's lines and a running track (`paint_landmarks.py`'s `stadium_pitch`), stretched to the field the stands leave |
 
 ## Using a prop
 

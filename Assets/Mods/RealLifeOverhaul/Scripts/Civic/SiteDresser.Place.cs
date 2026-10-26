@@ -10,11 +10,20 @@ namespace RealLifeOverhaul
         {
             SiteState site = dressed.Site;
             var door = new Vector3(site.X, site.Y, site.Z);
+            if (site.Kind == SiteKind.Plot)
+            {
+                return ResolvePlot(dressed);   // ground given: no door, no pavement asked for
+            }
             if (!CitySpots.Pavement(door, 8f, out Vector3 pavement))
             {
                 return SiteRefusal.NoPavement;
             }
-            return InRoad(site.Kind) ? ResolveRoad(dressed, pavement) : ResolveWall(dressed, pavement, door, site.Kind == SiteKind.Refit);
+            if (InRoad(site.Kind))
+            {
+                return ResolveRoad(dressed, pavement);
+            }
+            SiteRefusal why = ResolveWall(dressed, pavement, door, site.Kind != SiteKind.Scaffold);
+            return why == SiteRefusal.None && (site.Kind == SiteKind.Rebuild || site.Kind == SiteKind.Demolition) ? ResolveWrap(dressed) : why;
         }
 
         // From the pavement towards the nearest lane: the edge of the pedestrians' mesh, the kerb (where the ground drops within
@@ -110,47 +119,47 @@ namespace RealLifeOverhaul
             return why;
         }
 
-        // The wall the building's door is in, and the bays that fit along it.
+        // The wall the building's door is in, and the bays that fit along it. The wall is the building's own: the face of its
+        // street-level box nearest the door, read from its colliders (BuildingShell), never looked for along the line from
+        // the pavement to the door. A door marker can stand on the pedestrians' walkable mesh (36 5th Avenue's is 0.30 m in
+        // front of its wall; the mesh keeps 0.25 m off walls), which leaves that line no length, and a building faded for the
+        // camera has its colliders off the layers a ray looks at.
         private SiteRefusal ResolveWall(Dressed dressed, Vector3 pavement, Vector3 door, bool hoarding)
         {
-            Vector3 toDoor = door - pavement;
-            toDoor.y = 0f;
-            if (toDoor.sqrMagnitude < 0.04f)
+            SiteState site = dressed.Site;
+            CityBuildingController building = CivicCity.Find(site.Street, site.Number);
+            if (!BuildingShell.Read(building, _shell, out Vector3 origin, out Quaternion turn))
             {
                 return SiteRefusal.NoWall;
             }
-            toDoor.Normalize();
-            RaycastHit wall = default;
-            bool found = false;
-            Vector3 side = Vector3.Cross(Vector3.up, toDoor);
-            for (int attempt = 0; attempt < 5 && !found; attempt++)
-            {
-                float shift = attempt == 0 ? 0f : (attempt % 2 == 1 ? 1f : -1f) * 1.6f * ((attempt + 1) / 2);
-                found = CivicSpots.Wall(pavement + side * shift, toDoor, 1.3f, 10f, out wall) && Mathf.Abs(wall.normal.y) < 0.2f;
-            }
-            if (!found)
-            {
-                return SiteRefusal.NoWall;
-            }
-            Vector3 outward = wall.normal;
-            outward.y = 0f;
-            outward.Normalize();
-            Vector3 along = Vector3.Cross(Vector3.up, outward);
-            Vector3 foot = wall.point;
+            Vector3 local = BuildingShell.Local(origin, turn, door);
+            int side = WrapRules.SideOf(_shell, local.x, local.z);
+            ShellSide face = _shell.Sides[side];
+            WrapRules.Axes(side, out float outX, out float outZ, out float runX, out float runZ);
+            Vector3 outward = BuildingShell.Direction(turn, outX, outZ);
+            Vector3 along = BuildingShell.Direction(turn, runX, runZ);
+            float doorAlong = WrapRules.Along(side, local.x, local.z);
+            WrapRules.Point(side, face.Ground, doorAlong, out float footX, out float footZ);
+            Vector3 foot = BuildingShell.World(origin, turn, footX, 0f, footZ);
             foot.y = pavement.y;
+            float spanFrom = face.GroundMin - doorAlong, spanTo = face.GroundMax - doorAlong;   // the face's ends, from the foot
 
             // Bays either side of the first, kept in one run.
             float depth = hoarding ? 0.6f : BayDepth;
-            if (!Bay(foot, outward, along, 0, depth, hoarding))
+            if (!Bay(foot, outward, along, 0, depth, hoarding, spanFrom, spanTo))
             {
                 // The first bay is where the door is, as often as not: start one bay along.
-                if (Bay(foot + along * BayWidth, outward, along, 0, depth, hoarding))
+                if (Bay(foot + along * BayWidth, outward, along, 0, depth, hoarding, spanFrom - BayWidth, spanTo - BayWidth))
                 {
                     foot += along * BayWidth;
+                    spanFrom -= BayWidth;
+                    spanTo -= BayWidth;
                 }
-                else if (Bay(foot - along * BayWidth, outward, along, 0, depth, hoarding))
+                else if (Bay(foot - along * BayWidth, outward, along, 0, depth, hoarding, spanFrom + BayWidth, spanTo + BayWidth))
                 {
                     foot -= along * BayWidth;
+                    spanFrom += BayWidth;
+                    spanTo += BayWidth;
                 }
                 else
                 {
@@ -163,7 +172,7 @@ namespace RealLifeOverhaul
             {
                 if (growUp)
                 {
-                    growUp = Bay(foot, outward, along, max + 1, depth, hoarding);
+                    growUp = Bay(foot, outward, along, max + 1, depth, hoarding, spanFrom, spanTo);
                     if (growUp)
                     {
                         max++;
@@ -171,7 +180,7 @@ namespace RealLifeOverhaul
                 }
                 if (growDown && max - min + 1 < MaxBays)
                 {
-                    growDown = Bay(foot, outward, along, min - 1, depth, hoarding);
+                    growDown = Bay(foot, outward, along, min - 1, depth, hoarding, spanFrom, spanTo);
                     if (growDown)
                     {
                         min--;
@@ -185,13 +194,10 @@ namespace RealLifeOverhaul
             int lifts = 0;
             if (!hoarding)
             {
-                for (int k = 1; k <= MaxLifts; k++)
+                // A lift and its guard rail stay below the roof and below any floor that stands out over the street-level wall.
+                float ceiling = Mathf.Min(_shell.Top, face.ProudFrom);
+                for (int k = 1; k <= MaxLifts && DeckHeight + (k - 1) * LiftHeight + 1f <= ceiling; k++)
                 {
-                    float height = DeckHeight + (k - 1) * LiftHeight + 1f;
-                    if (!CivicSpots.Wall(foot + outward * 2.2f, -outward, height, 3f, out RaycastHit high) || high.distance < 1.7f || high.distance > 2.8f)
-                    {
-                        break;
-                    }
                     lifts = k;
                 }
                 if (lifts == 0)
@@ -237,18 +243,16 @@ namespace RealLifeOverhaul
             }
         }
 
-        // One bay of 2.4 m at an index along the wall: a flat wall behind it, pavement under it, no door where a post would stand, nothing in it.
-        private static bool Bay(Vector3 foot, Vector3 outward, Vector3 along, int index, float depth, bool hoarding)
+        // One bay of 2.4 m at an index along the wall: within the wall's own length, pavement under it, no door where a post
+        // would stand, nothing in it. The wall itself is the building's box (BuildingShell): flat by what it is.
+        private static bool Bay(Vector3 foot, Vector3 outward, Vector3 along, int index, float depth, bool hoarding, float spanFrom, float spanTo)
         {
-            Vector3 centre = foot + along * (index * BayWidth);
-            for (int ray = -1; ray <= 1; ray++)
+            float middle = index * BayWidth;
+            if (middle - BayWidth * 0.5f < spanFrom - 0.05f || middle + BayWidth * 0.5f > spanTo + 0.05f)
             {
-                if (!CivicSpots.Wall(centre + along * (ray * 1.0f) + outward * 1.2f, -outward, 1.3f, 1.7f, out RaycastHit hit)
-                    || hit.distance < 0.95f || hit.distance > 1.5f || Vector3.Dot(hit.normal, outward) < 0.85f)
-                {
-                    return false;
-                }
+                return false;   // past the end of the wall: the next house's front, or the corner
             }
+            Vector3 centre = foot + along * middle;
             if (!CitySpots.OnPavement(centre + outward * (depth * 0.5f), out _) || !CitySpots.OnPavement(centre + outward * depth, out _))
             {
                 return false;

@@ -28,7 +28,7 @@ namespace RealLifeOverhaul
             {
                 // From the city's list of buildings, as the game finds them for a tow: a scene search was over 100 ms.
                 CityManager city = InstanceBehavior<CityManager>.Instance;
-                CityBuildingController[] buildings = city != null ? city.cityBuildingControllers : null;
+                CityBuildingController[] buildings = GameDlc.Open(city);
                 _stationList.Clear();
                 for (int i = 0; buildings != null && i < buildings.Length; i++)
                 {

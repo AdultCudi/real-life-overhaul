@@ -96,7 +96,17 @@ ENGLISH_OK = {
     'reallife_flare_app', 'reallife_flare_hire_percent', 'reallife_changes_003_9_title', 'reallife_changes_004_0_title',
     'reallife_fame_talk_line', 'reallife_fame_percent', 'reallife_changes_004_1_title', 'reallife_changes_004_2_title',
     'reallife_changes_004_3_title', 'reallife_changes_004_4_title', 'reallife_changes_004_5_title', 'reallife_changes_004_6_title',
-    'reallife_changes_004_7_title', 'reallife_career_food_name', 'reallife_util_provider_power', 'reallife_campus_why_closed'
+    'reallife_changes_004_7_title', 'reallife_career_food_name', 'reallife_util_provider_power', 'reallife_campus_why_closed',
+    'reallife_newbuildings_street_provinglane', 'reallife_newbuildings_street_birchwoodgreen',
+    'reallife_career_builders_name', 'reallife_career_builders_boss', 'reallife_career_builders_mate_1', 'reallife_career_builders_mate_2', 'reallife_career_inspection_boss', 'reallife_career_inspection_mate_1', 'reallife_career_inspection_mate_2', 'reallife_career_architects_name', 'reallife_career_architects_boss', 'reallife_career_architects_mate_1', 'reallife_career_architects_mate_2', 'reallife_trades_tender_rate',   # the building trades' names: proper names, never translated
+    'reallife_newbuildings_street_uptown_willow', 'reallife_newbuildings_street_uptown_birch', 'reallife_newbuildings_street_uptown_elm',
+    'reallife_newbuildings_street_uptown_maple', 'reallife_newbuildings_street_uptown_cedar', 'reallife_newbuildings_street_uptown_ninth',
+    'reallife_newbuildings_street_uptown_eighth', 'reallife_newbuildings_street_uptown_seventh', 'reallife_newbuildings_street_uptown_sixth',
+    'reallife_newbuildings_street_uptown_fifth', 'reallife_newbuildings_street_uptown_fourth', 'reallife_newbuildings_street_uptown_third',
+    'reallife_newbuildings_street_uptown_second', 'reallife_newbuildings_street_uptown_first', 'reallife_newbuildings_street_uptown_hill',
+    'reallife_newbuildings_street_uptown_ridge', 'reallife_newbuildings_street_uptown_grove', 'reallife_newbuildings_street_uptown_park',
+    'reallife_newbuildings_street_uptown_lake', 'reallife_newbuildings_street_uptown_uptownavenue',
+    'reallife_newbuildings_street_uptown_summitavenue', 'reallife_newbuildings_street_uptown_crestavenue'
 }
 
 TAG = re.compile(r'</?[a-zA-Z][^<>]*>')

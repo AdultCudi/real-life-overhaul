@@ -195,6 +195,44 @@ SWATCHES = {
     "paper": ((0.93, 0.92, 0.88), 0.0, 0.18, 0.1),
     "cardboard": ((0.62, 0.47, 0.30), 0.0, 0.12, 0.4),
 }
+
+def _srgb(linear):
+    return tuple(round(12.92 * c if c <= 0.0031308 else 1.055 * (c ** (1 / 2.4)) - 0.055, 3) for c in linear)
+
+
+# The plain finishes of the Birchwood School's models (models/birchwood_*), named swatch_<name> in them: only a later set that
+# a model names them in paints them, never the first (closed) set's atlas. Colours as the model has them (linear in Blender,
+# sRGB here); brick, roof and glass are the game's own materials (models.py, "game"), not painted.
+MODEL_SWATCHES = {
+    "stone": (_srgb((0.80, 0.76, 0.66)), 0.0, 0.2, 0.7),        # the limestone trim, bands and plinth
+    "frame": (_srgb((0.93, 0.92, 0.88)), 0.0, 0.2, 0.3),        # window frames and mullions
+    "door": (_srgb((0.20, 0.30, 0.22)), 0.0, 0.2, 0.3),
+    "copper": (_srgb((0.30, 0.55, 0.45)), 0.0, 0.2, 0.2),       # the cupola's patina
+    "letters": (_srgb((0.08, 0.10, 0.12)), 0.0, 0.5, 0.0),
+    "flag_red": (_srgb((0.55, 0.05, 0.06)), 0.0, 0.5, 0.0),
+    "flag_blue": (_srgb((0.05, 0.08, 0.25)), 0.0, 0.5, 0.0),
+    "accent": (_srgb((0.05, 0.45, 0.50)), 0.0, 0.5, 0.3),        # the junior block's teal canopy
+    "ground": (_srgb((0.35, 0.35, 0.34)), 0.0, 0.2, 0.5),        # the forecourt's slab
+    "metal": (_srgb((0.12, 0.12, 0.13)), 0.0, 0.5, 0.2),         # rails, the fire escape, the tank's legs
+    "wood": (_srgb((0.32, 0.20, 0.12)), 0.0, 0.5, 0.4),
+    "lamp": (_srgb((0.95, 0.85, 0.55)), 0.0, 0.5, 0.0),
+    "leaf": (_srgb((0.14, 0.32, 0.12)), 0.0, 0.5, 0.0),
+    "accent2": (_srgb((0.85, 0.62, 0.12)), 0.0, 0.5, 0.2),       # the junior block's yellow window panels
+    "sash": (_srgb((0.025, 0.04, 0.032)), 0.0, 0.35, 0.3),       # the window frames and sashes: the dark green black of the city's old windows
+    # The corner buildings of build mode (models/corner_*): their own finishes; brick and glass are the game's materials.
+    "brick2": (_srgb((0.55, 0.36, 0.26)), 0.0, 0.15, 0.6),      # the art deco tower's tan brick
+    "lime": (_srgb((0.86, 0.83, 0.75)), 0.0, 0.2, 0.6),         # the bank's pale limestone
+    "awning": (_srgb((0.08, 0.32, 0.18)), 0.0, 0.25, 0.4),      # canvas awnings and the bodega's fascia board
+    "sign": (_srgb((0.10, 0.10, 0.10)), 0.0, 0.4, 0.2),         # sign boards the live signs are drawn on
+    "roof": (_srgb((0.22, 0.22, 0.23)), 0.0, 0.15, 0.5),        # flat roofs and parapet caps
+    "neon": (_srgb((1.0, 0.25, 0.35)), 0.0, 0.7, 0.0),          # the diner's neon tubes
+    "red": (_srgb((0.62, 0.08, 0.08)), 0.0, 0.55, 0.2),         # the diner's enamel panels
+    "cream": (_srgb((0.90, 0.86, 0.74)), 0.0, 0.3, 0.5),        # cream brick, render and panels
+    "iron": (_srgb((0.30, 0.32, 0.30)), 0.5, 0.35, 0.4),        # the loft's cast iron
+    "steel": (_srgb((0.45, 0.48, 0.52)), 0.7, 0.55, 0.2),       # mullions, masts and the glass tower's frame
+    "teal": (_srgb((0.10, 0.45, 0.45)), 0.0, 0.4, 0.3),
+    "terra": (_srgb((0.70, 0.45, 0.30)), 0.0, 0.25, 0.5),       # the pre-war block's terracotta
+}
 SWATCH_SIZE = (40, 80)     # a swatch is one finish and its grime, read 7 px in from its edges: smaller swatches leave the atlas room for more modules
 
 
@@ -1068,10 +1106,11 @@ def gather():
     # The swatches its procedural modules may name (all of them), or only those its models name.
     wanted = set(SWATCHES) if modules else set()
     for model in models:
-        unknown = [s for s in model["swatches"] if s not in SWATCHES]
+        unknown = [s for s in model["swatches"] if s not in SWATCHES and s not in MODEL_SWATCHES]
         if unknown:
             raise SystemExit("model %s names swatches the atlas does not have: %s (README, 'Adding a prop from Blender')" % (model["id"], ", ".join(unknown)))
         wanted.update(model["swatches"])
+    SWATCHES.update({name: MODEL_SWATCHES[name] for name in sorted(wanted) if name in MODEL_SWATCHES and name not in SWATCHES})
     layers = {name: paint_swatch(name) for name in SWATCHES if name in wanted}
     for module in modules:
         add_module(layers, module)

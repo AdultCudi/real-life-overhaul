@@ -106,6 +106,17 @@ namespace RealLifeOverhaul.Family
         bool InCustody { get; }
     }
 
+    /// <summary>What the schools implement (Scripts/Schools): a child at Birchwood School, its fee, its reports and its gate.</summary>
+    public interface ISchoolBridge
+    {
+        /// <summary>A child's day of fees at the campus, today's money (none at the player's own school); -1 when the child is not there.</summary>
+        int FeeFor(string child);
+        /// <summary>A child's reports at the campus: points over a public school's, from its results; NaN when the child is not there.</summary>
+        float StandingOf(string child);
+        /// <summary>The campus's address for a child there, for their school run and parents' evenings; false when not there.</summary>
+        bool AddressFor(string child, out string street, out int number);
+    }
+
     /// <summary>The doors to the features family life leans on: each is null until its owner sets it, and Family uses its own default.</summary>
     public static class FamilyBridges
     {
@@ -114,6 +125,7 @@ namespace RealLifeOverhaul.Family
         public static ITravelBridge Travel;
         public static ILeisureBridge Leisure;
         public static ILawBridge Law;
+        public static ISchoolBridge School;
 
         public static void Reset()
         {
@@ -122,6 +134,7 @@ namespace RealLifeOverhaul.Family
             Travel = null;
             Leisure = null;
             Law = null;
+            School = null;
         }
     }
 
@@ -158,6 +171,51 @@ namespace RealLifeOverhaul.Family
             {
                 FamilyDirector.Instance.Guarded(Partner.Resync);
             }
+        }
+
+        /// <summary>The player's children into the lists (cleared): name, age, schooling (0 not yet, 1 public, 2 private) and whether grown; how many.</summary>
+        public static int ChildrenOf(List<string> names, List<float> ages, List<int> schools, List<bool> grown)
+        {
+            names.Clear();
+            ages.Clear();
+            schools.Clear();
+            grown.Clear();
+            if (!Active)
+            {
+                return 0;
+            }
+            List<ChildRecord> kids = FamilyState.S.Children;
+            for (int i = 0; i < kids.Count; i++)
+            {
+                names.Add(kids[i].Name);
+                ages.Add(kids[i].Age);
+                schools.Add(kids[i].School);
+                grown.Add(kids[i].Grown);
+            }
+            return names.Count;
+        }
+
+        /// <summary>
+        /// A child of school age moved to a private school (the schools' campus) or back to the public one: their fee, reports and
+        /// school run follow from it. False when there is no such child, or they are not of school age.
+        /// </summary>
+        public static bool SetSchool(string name, bool privateSchool)
+        {
+            if (!Active || string.IsNullOrEmpty(name))
+            {
+                return false;
+            }
+            List<ChildRecord> kids = FamilyState.S.Children;
+            for (int i = 0; i < kids.Count; i++)
+            {
+                ChildRecord c = kids[i];
+                if (c.Name == name && !c.Grown && c.Age >= FamilyBalance.SchoolFrom)
+                {
+                    c.School = privateSchool ? 2 : 1;
+                    return true;
+                }
+            }
+            return false;
         }
 
         /// <summary>Social or Leisure: time well spent with the partner that Family did not start itself.</summary>

@@ -146,7 +146,13 @@ namespace RealLifeOverhaul.Markets
         /// <summary>Whether a new contract can be bought now as quoted; None when it can.</summary>
         public DerivWhy CanOpen(ContractKind kind, string material, int stockId, int settleDay, long qty, in DerivQuote q, bool open)
         {
-            DerivWhy why = TradeWhy(open);
+            return CanOpen(kind, material, stockId, settleDay, qty, q, open, false);
+        }
+
+        // The test tools buy past the hold after a load (their contracts are put back by UndoTests); nothing else does.
+        private DerivWhy CanOpen(ContractKind kind, string material, int stockId, int settleDay, long qty, in DerivQuote q, bool open, bool pastHold)
+        {
+            DerivWhy why = pastHold ? (open ? DerivWhy.None : DerivWhy.Closed) : TradeWhy(open);
             if (why != DerivWhy.None)
             {
                 return why;
@@ -160,9 +166,9 @@ namespace RealLifeOverhaul.Markets
                 return q.Why;
             }
             bool future = kind == ContractKind.Long || kind == ContractKind.Short;
-            if (stockId <= 0 && !MaterialsLive)
+            if (stockId <= 0 && !MaterialsLive && !DerivCatalogue.IsBuilding(material))
             {
-                return DerivWhy.NoCity;
+                return DerivWhy.NoCity;   // the exchange's own building materials are priced for the builders, not the importers
             }
             if ((future && stockId > 0) || qty <= 0 || !DerivRules.Offered(State.Day, State.Phase, settleDay))
             {
@@ -194,7 +200,7 @@ namespace RealLifeOverhaul.Markets
         /// warehouse (the game's address and its name) to deliver to, or none for cash.
         /// </summary>
         public DerivContract OpenContract(ContractKind kind, string material, int stockId, int settleDay, int strikeStepBp, long qty, string warehouse, string place, bool open, bool test,
-            out DerivWhy why)
+            out DerivWhy why, bool pastHold = false)
         {
             Finish();
             bool future = kind == ContractKind.Long || kind == ContractKind.Short;
@@ -204,7 +210,7 @@ namespace RealLifeOverhaul.Markets
             }
             DerivQuote q = future ? QuoteFuture(material, settleDay, kind == ContractKind.Long, qty)
                 : QuoteOption(kind == ContractKind.Call, stockId > 0 ? null : material, stockId, settleDay, strikeStepBp, qty);
-            why = CanOpen(kind, material, stockId, settleDay, qty, q, open);
+            why = CanOpen(kind, material, stockId, settleDay, qty, q, open, pastHold && test);
             if (why != DerivWhy.None)
             {
                 return null;
@@ -219,7 +225,7 @@ namespace RealLifeOverhaul.Markets
             {
                 c.Price = c.Mark = kind == ContractKind.Long ? q.Ask : q.Bid;
                 c.Margin = q.Margin * 100L;
-                if (kind == ContractKind.Long && !string.IsNullOrEmpty(warehouse))
+                if (kind == ContractKind.Long && !string.IsNullOrEmpty(warehouse) && !DerivCatalogue.IsBuilding(material))
                 {
                     c.Warehouse = warehouse;
                     c.PlaceName = place ?? string.Empty;

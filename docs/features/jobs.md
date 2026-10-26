@@ -32,7 +32,7 @@ Gigs the player takes from the **Gig Line** contact or a help-wanted board (flye
 | `JobProps` | the jobs' props, pooled (modelled, or the prop that stands in, or a plain shape); HeldProp: one in a hand at its clip's grip |
 | `JobCarry` | a box in the player's arms with the game's own carry |
 | `JobRental` | a van hired for the day: the game's own job van, made and removed the game's own way |
-| `Kinds/` | the jobs: FlyerJob, CourierJob, TaxiJob, CleanerJob, StockerJob, VendorJob, BuskerJob; and the two an employer's rank gives: DispatchJob (the planning desk), LeadJob (a shift in charge) |
+| `Kinds/` | the jobs: FlyerJob, CourierJob, TaxiJob, CleanerJob, StockerJob, VendorJob, BuskerJob; the two an employer's rank gives: DispatchJob (the planning desk), LeadJob (a shift in charge); and the building trades' (TradeJob at a works site, DesignJob and TenderJob at the architects' practice: [Building trades](trades.md)) |
 | `CareerCatalogue` | employers, ranks, rotas and every figure of the career ladder (game-free) |
 | `CareerState` | per-save employer, rank, rota, marks, review figures, employment history: one line in modData (game-free) |
 | `CareerDirector` | where each employer is (a help-wanted board), its boss by the board, the rota, clocking on, payslip, reviews, booked sets |
@@ -40,6 +40,10 @@ Gigs the player takes from the **Gig Line** contact or a help-wanted board (flye
 | `CareerDialog` | the Work contact's conversation, by phone or face to face with a boss: sign on, rota, clock on, sick, notice, CV |
 | `CareerLinks` | the optional doors to other features: acquaintances (offered), law record and sick notes (asked for) |
 | `DispatchList` | the dispatcher's planning board: the game's list window, written only when a parcel is placed or taken back |
+
+## The building trades
+
+Fifteen more jobs are the building trades (`JobCatalogue.Trades`, [Building trades](trades.md)): taken at a works site's notice (Work here) or at the architects' practice's desk, never on the Gig Line, so the day's busy and shut gigs stay the seven above; each keeps its level, strikes and day's amount in `JobState` with the gigs (`JobCatalogue.Recorded`, saved by id). An office trade (`JobNeed.Office`) is the one job taken indoors: `Free` lets it start while `JobDirector.AtOffice` says the player is on the practice's floor, and its job works inside that building only. A trade's shift is varied by its site and its own game, so it is drawn at the table's figures (`GigOffer.Table`), not by `GigOffers.Draw`. `Job.Frame` is called every frame after the tick for the one thing that must follow the frame, a trade's marker on the game's bar; every other job leaves it empty. The shift card stays up beside a job's own list window (`TravelList.AnyOpen`), the dispatcher's board as well as a design's plans.
 
 ## How it talks to other features
 

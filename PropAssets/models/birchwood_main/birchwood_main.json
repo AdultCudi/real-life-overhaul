@@ -1,0 +1,20 @@
+{
+ "budget": 20000,
+ "material": "lit",
+ "pivot": "the middle of the front wall's foot at ground level; front towards -Z",
+ "note": "Birchwood School's main school: three storeys of red brick and limestone round a U, portico, clock cupola; origin the middle of the front wall's foot at ground level, the front towards -Z (the plot's front), the forecourt slab and steps in front of it, the door 1.55 m in front of the front wall. The look only: the copy engine's building keeps the door, floors and walls (Schools/CampusLook).",
+ "game": {
+  "swatch_brick": {
+   "kind": "brick",
+   "tile": 1.65
+  },
+  "swatch_roof": {
+   "kind": "roof",
+   "tile": 4.0
+  },
+  "swatch_glass": {
+   "kind": "glass",
+   "tile": 2.0
+  }
+ }
+}

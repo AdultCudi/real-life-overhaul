@@ -17,7 +17,7 @@ namespace RealLifeOverhaul
             internal static void Connect()
             {
                 // City Utilities' building, held for it from the start while it is on.
-                SpecialBuildings.Reserve(CityReserves.UtilitiesId, CityReserves.UtilitiesStreet, CityReserves.UtilitiesNumber, () => Settings.Utilities);
+                SpecialBuildings.Reserve(CityReserves.UtilitiesId, CityReserves.UtilitiesStreet, CityReserves.UtilitiesNumber, () => Settings.Utilities, SpecialKind.Civic);
                 TravelBridges.UtilitiesPicked = () => !Settings.Utilities || UtilitiesDirector.Failed
                     || (UtilitiesDirector.Instance != null && UtilitiesDirector.Instance.Office != null && UtilitiesDirector.Instance.Office.Searched);
                 UtilitiesBridges.Grade = () => (int)Economy.CreditLedger.Grade;

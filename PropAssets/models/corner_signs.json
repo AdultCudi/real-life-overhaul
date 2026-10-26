@@ -1,0 +1,168 @@
+{
+ "corner_bodega": [
+  {
+   "kind": "fascia",
+   "centre": [
+    5.7,
+    -0.19,
+    3.675
+   ],
+   "facing": [
+    0.0,
+    -1.0
+   ],
+   "width": 6.5,
+   "height": 0.65
+  },
+  {
+   "kind": "fascia",
+   "centre": [
+    -0.19,
+    5.1,
+    3.675
+   ],
+   "facing": [
+    -1.0,
+    0.0
+   ],
+   "width": 5.3,
+   "height": 0.65
+  },
+  {
+   "kind": "fascia",
+   "centre": [
+    1.066,
+    1.066,
+    3.675
+   ],
+   "facing": [
+    -0.7071,
+    -0.7071
+   ],
+   "width": 2.89,
+   "height": 0.65
+  },
+  {
+   "kind": "address",
+   "centre": [
+    10.6,
+    -0.17,
+    3.1
+   ],
+   "facing": [
+    0.0,
+    -1.0
+   ],
+   "width": 0.8,
+   "height": 0.3
+  }
+ ],
+ "corner_bank": [
+  {
+   "kind": "frieze",
+   "centre": [
+    11.25,
+    -0.11,
+    11.7
+   ],
+   "facing": [
+    0.0,
+    -1.0
+   ],
+   "width": 13.34,
+   "height": 0.6
+  }
+ ],
+ "corner_deco": [
+  {
+   "kind": "address",
+   "centre": [
+    1.196,
+    1.196,
+    5.4
+   ],
+   "facing": [
+    -0.7071,
+    -0.7071
+   ],
+   "width": 0.8,
+   "height": 0.3
+  }
+ ],
+ "corner_loft": [
+  {
+   "kind": "fascia",
+   "centre": [
+    8.0,
+    -0.31,
+    4.325
+   ],
+   "facing": [
+    0.0,
+    -1.0
+   ],
+   "width": 15.9,
+   "height": 0.45
+  }
+ ],
+ "corner_prewar": [
+  {
+   "kind": "address",
+   "centre": [
+    13.425,
+    -0.31,
+    4.1
+   ],
+   "facing": [
+    0.0,
+    -1.0
+   ],
+   "width": 0.8,
+   "height": 0.3
+  }
+ ],
+ "corner_diner": [
+  {
+   "kind": "neon",
+   "centre": [
+    1.923,
+    1.923,
+    9.55
+   ],
+   "facing": [
+    -0.7071,
+    -0.7071
+   ],
+   "width": 5.8,
+   "height": 1.9
+  },
+  {
+   "kind": "blade",
+   "centre": [
+    4.83,
+    -0.75,
+    5.8
+   ],
+   "facing": [
+    1.0,
+    0.0
+   ],
+   "width": 1.0,
+   "height": 1.6
+  },
+  {
+   "kind": "blade",
+   "centre": [
+    4.69,
+    -0.75,
+    5.8
+   ],
+   "facing": [
+    -1.0,
+    0.0
+   ],
+   "width": 1.0,
+   "height": 1.6
+  }
+ ]
+}

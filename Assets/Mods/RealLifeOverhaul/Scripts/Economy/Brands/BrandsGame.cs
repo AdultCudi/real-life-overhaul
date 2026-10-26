@@ -168,7 +168,7 @@ namespace RealLifeOverhaul.Economy.Brands
             {
                 foreach (KeyValuePair<string, List<Building>> pair in BuildingHelper.AllNeighbourhoodBuildings)
                 {
-                    if (!string.IsNullOrEmpty(pair.Key) && pair.Key != GlobalDistrict && pair.Value != null && pair.Value.Count > 0)
+                    if (!string.IsNullOrEmpty(pair.Key) && pair.Key != GlobalDistrict && pair.Value != null && pair.Value.Count > 0 && CityCheck.Here(pair.Key))
                     {
                         into.Add(pair.Key);
                     }
@@ -197,7 +197,7 @@ namespace RealLifeOverhaul.Economy.Brands
                 for (int i = 0; i < all.Count; i++)
                 {
                     Building building = all[i];
-                    if (building == null || building.BuildingType != kind || building.SpecialService != null || RivalsHelper.IgnoredAddresses.Contains(building.Address)
+                    if (building == null || building.BuildingType != kind || building.SpecialService != null || GameDlc.Gated(building) || RivalsHelper.IgnoredAddresses.Contains(building.Address)
                         || SpecialBuildings.Holds(building.StreetName, building.StreetNumber))   // one of the mod's buildings, or the university's: off the market
                     {
                         continue;

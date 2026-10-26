@@ -30,11 +30,24 @@
    "source": "models/<id>/: a Blender export each (README, 'Adding a prop from Blender')",
    "models": "models",
    "modules": [],
-   "triangles": 60000,
+   "triangles": 100000,
    "atlas": {"width": 2048, "height": 2048, "grows": true},
    "mask_divisor": 2,
    "decals": false,
    "disk_kb": 8192
+  },
+  {
+   "name": "site",
+   "bundle": "reallife_props_site",
+   "build": "build_second",
+   "open": false,
+   "source": "the procedural modules build and landmarks (the building sites' props and Uptown's stadium)",
+   "modules": ["build", "landmarks"],
+   "triangles": 12000,
+   "atlas": {"width": 1024, "height": 512, "grows": false},
+   "mask_divisor": 2,
+   "decals": false,
+   "disk_kb": 1024
   }
  ]
 }

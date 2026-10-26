@@ -44,7 +44,7 @@ The score: a sign band of its own over the shopfront 25; flat wall either side o
 The result is written into the save by address (`reallife:law_precincts`) and stays, with two exceptions that are both said to the player:
 
 - a save from before stations could be entered is looked over once (`reallife:law_station`, first field): a precinct in a unit that cannot be walked into moves to one that can, and one whose frontage scores 30 less than the best gives way to it;
-- a precinct whose unit has since been let (to the player or to a rival) moves to another empty one in its district (`Precincts.Keep`, every five seconds; never while the player is inside it or being held).
+- a precinct whose unit has since been let (to the player or to a rival) moves to another empty one in its district (`Precincts.Keep`, every five seconds; never while the player is inside it or being held). The game's own night of letting no longer takes a precinct's empty unit (it is held: [the game's own letting](../reference/map-places.md#the-games-own-letting-leaves-them-alone)), so this is now a special rival's defence or a change of the game's own.
 
 A district with no empty unit keeps a precinct that cannot be walked into: its front desk answers at the door (the same panel, with the front office drawn behind it).
 The log names all six once per load, with each one's score and whether it is walk-in.

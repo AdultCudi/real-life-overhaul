@@ -147,7 +147,7 @@ namespace RealLifeOverhaul.Economy
             for (int i = 0; i < all.Count; i++)
             {
                 Building b = all[i];
-                if (b == null || string.IsNullOrEmpty(b.StreetName))
+                if (b == null || string.IsNullOrEmpty(b.StreetName) || GameDlc.Gated(b))
                 {
                     continue;
                 }

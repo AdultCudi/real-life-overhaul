@@ -159,7 +159,7 @@ namespace RealLifeOverhaul
                 if (_sites.DressNow(site, day))
                 {
                     _worldOut = true;
-                    CivicText.Toast(NotificationType.Success, "reallife_civic_test_site", "project", CivicWorks.ProjectName(site), "address", CivicCity.AddressText(site.Street, site.Number), 9f);
+                    CivicText.Toast(NotificationType.Success, "reallife_civic_test_site", "project", CivicWorks.ProjectName(site), "address", CivicWorks.PlaceText(site), 9f);
                     return;
                 }
                 if (started)

@@ -81,3 +81,35 @@ Options > Tests > Diagnostics shows the guard's five faults, the notice an older
    Run the check again until only the build line fails, then set `GameBuild.MadeFor` to the new build.
 
 The game's layers the mod names (`GameContract.Layers`) are the game's project settings, not in its assemblies: the running mod checks them as it starts and names any that is gone.
+
+## New content and DLCs
+
+A game update can bring content as well as code: districts and areas (the Hamptons in 1.0; the roadmap's Liberty Island, Midtown Mall and JFK Airport area), streets, buildings the game takes for itself, and DLCs, the first of them a second city, Shanghai. The rules are in [dlc-and-updates.md](../standards/dlc-and-updates.md). What the running mod does with them:
+
+- **The city check** (`Core/CityCheck`, its decision table in `Core/CityRules`) runs at every city load: in the mod's city start, from the scenes loaded; again in the game's late "game loaded" call, from the districts of the buildings CityManager has just listed, which decide; and once more if a scene loads or unloads under the running city part.
+  - One of New York's seven districts or more among the buildings is New York. Any other district is a free update's: still New York, the new district gets the mod's defaults.
+  - Buildings and none of the seven is another city. Before the buildings are listed, one of New York's scenes (LowerManhattan, IndustryCity, TheHamptons) is New York, and none of them with a scene no city of the mod's has is another city. Nothing read is not known, and the mod runs as it always has.
+  - In another city, every feature `Meta/FeatureCities` calls New York's stands down: its components are not started (`Guard.Add`), its guards are away (`FeatureGuard.Away`), so its entry points, handlers, routines and save lines do nothing; its clean-up runs if it had started. Back in New York it runs again.
+  - Player.log has one line each time the verdict changes: `City check: New York (7 of 7 districts of New York among 885 buildings; New York's scenes: ...): New York features on.`, with a new district named in it, or `City check: another city (...): New York features off in this city.`
+- **The DLC rule** (`Core/GameDlc`): no pick of the mod's takes a building or boat type the game keeps behind a DLC, and none reads ownership. CityManager's list is read through `GameDlc.Open`; while no building is gated it is the game's own array.
+- **Tables by district** give a district they do not know a default or leave it out: precincts and civic wards keep New York's seven first (so a new district takes no precinct and moves no saved ward), the wireless and copper providers reach a new district, hotels and the player's broadband have no place there, and lists of the game's districts keep to those of the loaded city (`CityCheck.Here`).
+- **Places are picked again at every load** from the game's data, leaving out the game's own services, private fences and DLC content, so a building the game takes for itself is simply not picked again; a saved place that no longer fits moves with its log line.
+
+### The steps after an update
+
+1. **The census** of the new build's content: `python -I RealLifeOverhaul.Build/Census/game_census.py` (needs UnityPy; read only). It reads every Building, NeighborhoodData and StreetData definition from the game's Addressables bundles and compares them with the newest `census-NNNN.json` beside it (`census-3682.json` today): buildings gated behind a DLC, districts, streets and buildings new or gone, and new Addressables groups (where a DLC's content would come). `--all` reads every bundle. Its last line is `CENSUS: as the mod knows it.` or what changed.
+2. **ContractCheck** against the new DLLs (the gate runs it). Besides the contract, its section "the game's districts, DLCs and scenes" fails on:
+   - a district in the game's en.json the mod does not know, or one of New York's seven gone;
+   - a value of `SteamAPI.DLC` other than None, Silver and Gold (a new DLC);
+   - a value of `Scenes.GameScenes` the city check's scene table does not have, or one of New York's scenes gone;
+   - `Building.requiredDLC` or `BoatType.requiredDLC` gone or of another type.
+
+   Its section "the save's fields that can name a place of the mod's" fails on a field of the save the district save does not know (a new list of businesses, a second city's records, a new field that holds an address, a district or an id of someone), and on one the game no longer has: handle it and list it ([district-save.md](../features/district-save.md#after-a-game-update)).
+
+   Its section "DLC and update readiness" fails when a source reads a DLC other than through `Core/GameDlc`, reads CityManager's list other than through `GameDlc.Open`, walks the game's building lists without the helper, or registers a feature with no line in the city table.
+3. **For each new district**: if it is New York's (a free update's), decide whether it joins `CityDistricts.NewYork` (then every table by district names it: precinct names in `Law/Precincts`, hotel slots in `Travel/TravelCatalogue`, broadband and internet in `Utilities`), or stays a district the mod gives its defaults. If it is another city's, leave it out.
+4. **For each new scene**: read what loads it (`UI.Load.LoadScene`, `Scenes.GameScenesHelper`) and add it to `CityRules.NewYorkScenes` or `CityRules.SharedScenes`. A new city's own scene goes in neither: the city check takes it for another city's.
+5. **For each new DLC and each gated building**: nothing to change while the picks go through `Core/GameDlc`; read how the game loads the DLC's content (a new Addressables group, `ToggleObjectDLC`, a new `LoadScene` call) and check the city check's lines in the in-game test below.
+6. **The city table**: a feature added since the last update has its line (`Meta/FeatureCities`); read whether the update makes any `AnyCity` feature stand on New York's data.
+7. Write the new baseline when `GameBuild.MadeFor` is raised: `python -I game_census.py --write census-NNNN.json` beside the script, NNNN the new build; the script compares with the newest one it finds.
+8. **In the game**, with Developer diagnostics on: load a save in New York and read `City check: New York` in Player.log; in a new district, read that it is named in that line and that nothing of the mod's throws there; in another city, read `City check: another city (...): New York features off in this city.`, then fly back and read `New York features on`.

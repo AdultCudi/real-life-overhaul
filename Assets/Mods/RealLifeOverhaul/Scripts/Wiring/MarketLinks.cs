@@ -39,6 +39,7 @@ namespace RealLifeOverhaul
                 MarketBridges.OwnWholesale = CityGame.OwnPrice;
                 MarketBridges.CityPrices = CityPrices;
                 MarketBridges.MaterialsFixed = MaterialsFixed;
+                MarketBridges.BuilderBooks = MarketsBuildLinks.BuilderTakings;
                 News.Reported += Reported;
                 FireLosses.Billed += Fire;
                 PlannerDirector.Instance?.AddSource(Source);

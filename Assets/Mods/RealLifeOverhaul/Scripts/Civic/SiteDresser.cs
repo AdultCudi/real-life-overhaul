@@ -13,7 +13,9 @@ namespace RealLifeOverhaul
     /// <summary>
     /// Puts the construction sites near the player in the street as props and takes them away. Every place is found, never
     /// assumed: works in the road by the kerb, with the lane closed or not set out at all; scaffold and hoarding in bays along
-    /// the wall. A new phase is drawn only out of view. Cost: nothing per frame; at most one site set out a tick.
+    /// the wall; a rebuild wrapped in the game's own scaffolding to its roof; a new plot's fence, frame and crane on the ground
+    /// given. A new phase is drawn only out of view. Cost: nothing per frame while no wrap is changing and no plot is out (one
+    /// comparison); at most one site set out a tick; a wrap's pieces a few a frame, out of view.
     /// </summary>
     public sealed partial class SiteDresser
     {
@@ -31,6 +33,8 @@ namespace RealLifeOverhaul
         private const int MaxBays = 5;
         private const int MaxLifts = 3;
         private const float NoticeReach = 1.7f;   // metres
+        private const float FarPlane = 300f;      // metres: the game's cameras draw nothing beyond, so a big site there is out of view
+        private const float GroundMargin = 3f;    // metres round a building's ground that a plot's middle may lie in, to be taken away with it
 
         private sealed class CrewSpot
         {
@@ -67,6 +71,20 @@ namespace RealLifeOverhaul
 
             public readonly CrewSpot[] Crew = { new CrewSpot(), new CrewSpot(), new CrewSpot() };
             public int CrewCount;
+
+            // The big kinds: whether they are in view is asked of the whole box they fill, not of their middle.
+            public bool Big;
+            public Bounds Area;
+            public SiteWrap Wrap;              // a rebuild's or a plot's game scaffolding; made once and kept with this
+            public int Step = -1;              // a plot: PlotRules.Step when last drawn (a storey more is a change)
+
+            // A plot's ground, from the site's record.
+            public Vector3 PlotAt;
+            public Quaternion PlotTurn;
+            public int PlotWidth, PlotDepth, PlotYaw, PlotStoreys;
+            public readonly List<GameObject> Made = new List<GameObject>(4);   // the plot's meshes in the game's materials
+            public readonly List<Renderer> Hides = new List<Renderer>(8);      // what the plot hides when it stands between camera and player
+            public bool Hidden;
         }
 
         private readonly CivicProps _props;
@@ -79,11 +97,17 @@ namespace RealLifeOverhaul
         private readonly RoadClosure _probe = new RoadClosure();   // only ever asked where a lane is; closes nothing
         private Dressed _crewed;
         private NavMeshQueryFilter _pavement;
+        private readonly WrapShell _shell = new WrapShell();
+        private readonly Transform _root;
+        private readonly Plane[] _planes = new Plane[6];
+        private int _planesFrame = -1;
 
         public SiteRefusal LastRefusal { get; private set; }
 
-        public SiteDresser(CivicProps props, CivicWorks works, CivicCast cast)
+        public SiteDresser(CivicProps props, CivicWorks works, CivicCast cast, Transform parent)
         {
+            _root = new GameObject("RealLifeOverhaul Civic Sites").transform;
+            _root.SetParent(parent, false);
             _props = props;
             _works = works;
             _cast = cast;
@@ -149,7 +173,7 @@ namespace RealLifeOverhaul
             {
                 Dressed dressed = _dressed[i];
                 float sqr = CivicCity.Flat(dressed.Origin - player);
-                if (!dressed.Gone && !sites.Contains(dressed.Site))
+                if (!dressed.Gone && (!sites.Contains(dressed.Site) || !SiteBuilders.IsShown(dressed.Site)))   // a builder's site put away goes as one finished
                 {
                     dressed.Gone = true;
                     dressed.Road.Open();   // the road first, whoever is looking
@@ -159,17 +183,19 @@ namespace RealLifeOverhaul
                         _crew.Dismiss();
                     }
                 }
-                bool seen = CitySpots.InView(dressed.Origin);
-                if (sqr > UndressFar * UndressFar || (dressed.Gone && (!seen || dressed.Now)))
+                bool seen = Seen(dressed);
+                // A big site far off waits for nobody to be looking, as a wrapped building can be seen from further than this.
+                bool far = sqr > UndressFar * UndressFar && (!dressed.Big || !seen || sqr > FarPlane * FarPlane);
+                if (far || (dressed.Gone && (!seen || dressed.Now)))
                 {
-                    Undress(i);
+                    Undress(i, false);
                     continue;
                 }
                 if (dressed.Gone)
                 {
                     continue;
                 }
-                if ((dressed.Phase != dressed.Site.Phase || dressed.Unsafe != dressed.Site.Unsafe || dressed.Halted != dressed.Site.HaltUntil > day) && (!seen || dressed.Now))
+                if (Changed(dressed, day) && (!seen || dressed.Now))
                 {
                     Rebuild(dressed, day);
                 }
@@ -185,9 +211,10 @@ namespace RealLifeOverhaul
             {
                 SiteState site = sites[i];
                 var at = new Vector3(site.X, site.Y, site.Z);
-                if (CivicCity.Flat(at - player) > DressNear * DressNear || Find(site) != null || CitySpots.InView(at))
+                if (CivicCity.Flat(at - player) > DressNear * DressNear || Find(site) != null || !SiteBuilders.IsShown(site) || CitySpots.InView(at)
+                    || (site.Kind == SiteKind.Plot && PlotInView(site)))
                 {
-                    continue;
+                    continue;   // a plot's fence and slab stand at once: never while any of its ground is in the picture
                 }
                 if (_retry.TryGetValue(site.Id, out float again) && now < again)
                 {
@@ -200,7 +227,31 @@ namespace RealLifeOverhaul
                 break;   // one a tick, and never in view
             }
 
+            LooseTick(player);
             Crew(now, player, day, hour, crewAllowed);
+        }
+
+        /// <summary>
+        /// The props of every site set out on a ground (x and z from, to) taken away now, in whatever view: a finished building has
+        /// stood there in play (DistrictBuildings.GroundGiven), so the scaffolding and the fence come down in the same moment.
+        /// Called once a building stood, from its handover or a black screen; at most the few sites set out.
+        /// </summary>
+        public int ReleaseOn(float x1, float z1, float x2, float z2)
+        {
+            int released = 0;
+            List<SiteState> sites = _works.State.Sites;
+            for (int i = _dressed.Count - 1; i >= 0; i--)
+            {
+                Vector3 at = _dressed[i].Origin;
+                bool inside = at.x >= x1 - GroundMargin && at.x <= x2 + GroundMargin && at.z >= z1 - GroundMargin && at.z <= z2 + GroundMargin;
+                bool finished = _dressed[i].Gone || _dressed[i].Site == null || _dressed[i].Site.Finished || !sites.Contains(_dressed[i].Site);
+                if (inside && finished && _dressed[i].Site != null && _dressed[i].Site.Kind == SiteKind.Plot)
+                {
+                    Undress(i, true);
+                    released++;
+                }
+            }
+            return released;
         }
 
         /// <summary>Sets a site out now, in view or not: for the test buttons. False with <see cref="LastRefusal"/> if it has no room here.</summary>
@@ -214,7 +265,7 @@ namespace RealLifeOverhaul
             }
             if (_dressed.Count >= MaxDressed)
             {
-                Undress(0);   // one of the others makes way
+                Undress(0, false);   // one of the others makes way
             }
             return Dress(site, true, day);
         }
@@ -231,16 +282,17 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Everything away at once: props, the crew; every closed lane opened. Safe at any time, any number of times.</summary>
+        /// <summary>Everything away at once: props, the crew, the wraps; every closed lane opened. Safe at any time, any number of times.</summary>
         public void Clear()
         {
             for (int i = _dressed.Count - 1; i >= 0; i--)
             {
-                Undress(i);
+                Undress(i, true);
             }
             _crew.Release();
             _crewed = null;
             _retry.Clear();
+            ClearLoose();
         }
 
         private bool Dress(SiteState site, bool now, int day)
@@ -253,6 +305,9 @@ namespace RealLifeOverhaul
             dressed.HasNotice = false;
             dressed.HasSkip = false;
             dressed.LaneShut = false;
+            dressed.Big = BigKind(site.Kind);
+            dressed.Step = -1;
+            dressed.Hidden = false;
             SiteRefusal why;
             try
             {
@@ -285,13 +340,17 @@ namespace RealLifeOverhaul
             {
                 dressed.Site = null;
                 _spare.Push(dressed);
-                CivicDirector.Logger?.Info("Civic: site " + site.Id + " (" + site.Kind + ") could not be set out at " + CivicCity.AddressText(site.Street, site.Number) + ": " + why + ".");
+                CivicDirector.Logger?.Info("Civic: site " + site.Id + " (" + site.Kind + ") could not be set out at " + CivicWorks.PlaceText(site) + ": " + why + ".");
                 return false;
             }
-            CivicDirector.Logger?.Info("Civic: site " + site.Id + " (" + site.Kind + ") set out at " + CivicCity.AddressText(site.Street, site.Number) + ", stage " + (site.Phase + 1) + ": "
+            CivicDirector.Logger?.Info("Civic: site " + site.Id + " (" + site.Kind + ") set out at " + CivicWorks.PlaceText(site) + ", stage " + (site.Phase + 1) + ": "
                                        + dressed.Props.Count + " prop(s)" + (dressed.LaneShut ? ", one lane closed" : string.Empty)
                                        + (InRoad(site.Kind) ? ", lane " + dressed.LaneFromKerb.ToString("F1", CultureInfo.InvariantCulture) + " m from the kerb"
-                                           : ", " + (dressed.BayMax - dressed.BayMin + 1) + " bay(s), " + dressed.Lifts + " lift(s)") + ".");
+                                           : dressed.Wrap != null && dressed.Wrap.Plan.Pieces.Count > 0
+                                               ? ", the game's scaffold planned: " + dressed.Wrap.Plan.Modules + " module(s) a lift, " + dressed.Wrap.Plan.Lifts + " lift(s), "
+                                                 + dressed.Wrap.Plan.Runs + " run(s)" + (dressed.Wrap.Plan.Why != null ? " (" + dressed.Wrap.Plan.Why + ")" : string.Empty)
+                                               : site.Kind == SiteKind.Plot ? ", " + dressed.PlotWidth + " by " + dressed.PlotDepth + " m of ground, " + dressed.PlotStoreys + " storey(s)"
+                                               : ", " + (dressed.BayMax - dressed.BayMin + 1) + " bay(s), " + dressed.Lifts + " lift(s)") + ".");
             return true;
         }
 
@@ -300,7 +359,9 @@ namespace RealLifeOverhaul
             return kind == SiteKind.Roadworks || kind == SiteKind.Utility;
         }
 
-        private void Undress(int index)
+        // At once (<paramref name="now"/>: indoors, behind the black screen, the feature off) or, for a wrap, handed to be
+        // taken down a few pieces a frame while nobody is looking.
+        private void Undress(int index, bool now)
         {
             Dressed dressed = _dressed[index];
             _dressed.RemoveAt(index);
@@ -310,6 +371,18 @@ namespace RealLifeOverhaul
                 _crewed = null;
             }
             Strip(dressed);
+            if (dressed.Wrap != null && dressed.Wrap.Placed > 0)
+            {
+                if (now || SceneFinds.Black)
+                {
+                    dressed.Wrap.Strip();
+                }
+                else
+                {
+                    Leave(dressed.Wrap);
+                    dressed.Wrap = null;   // a new one is made the next time this is used
+                }
+            }
             dressed.Site = null;
             _spare.Push(dressed);
         }
@@ -319,6 +392,7 @@ namespace RealLifeOverhaul
             dressed.Road.Open();
             dressed.LaneShut = false;
             _props.ReturnAll(dressed.Props);
+            DropMade(dressed);
         }
 
         private void Rebuild(Dressed dressed, int day)
@@ -331,6 +405,7 @@ namespace RealLifeOverhaul
                     _crewed = null;
                 }
                 _props.ReturnAll(dressed.Props);
+                DropMade(dressed);
                 dressed.Phase = dressed.Site.Phase;
                 dressed.Unsafe = dressed.Site.Unsafe;
                 dressed.Halted = dressed.Site.HaltUntil > day;
@@ -340,6 +415,9 @@ namespace RealLifeOverhaul
                     case SiteKind.Roadworks: BuildRoad(dressed); break;
                     case SiteKind.Scaffold: BuildScaffold(dressed); break;
                     case SiteKind.Refit: BuildRefit(dressed); break;
+                    case SiteKind.Rebuild: BuildRebuild(dressed); break;
+                    case SiteKind.Plot: BuildPlot(dressed); break;
+                    case SiteKind.Demolition: BuildDemolition(dressed); break;
                     default: BuildUtility(dressed); break;
                 }
                 if (dressed.HasNotice)
@@ -351,6 +429,7 @@ namespace RealLifeOverhaul
             {
                 CivicDirector.Logger?.Error(e);
                 Strip(dressed);
+                dressed.Wrap?.Strip();
                 dressed.Gone = true;   // the site goes on as data; tried again in ten minutes
                 _retry[dressed.Site.Id] = Time.time + 600f;
             }

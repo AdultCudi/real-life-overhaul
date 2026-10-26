@@ -514,11 +514,17 @@ namespace RealLifeOverhaul
             return ayes > noes;
         }
 
-        /// <summary>True if a lever touches what the player earns from their own businesses or buildings: a vote on it is a conflict of interest.</summary>
-        public static bool Conflicted(Lever lever, int businesses, bool landlord)
+        /// <summary>
+        /// True if a lever touches what the player earns from their own businesses or buildings: a vote on it is a conflict of
+        /// interest. The permits policy is the building code: it touches a builder (a construction company, or land in the new
+        /// district) as it touches nobody else.
+        /// </summary>
+        public static bool Conflicted(Lever lever, int businesses, bool landlord, bool builder = false)
         {
             switch (lever)
             {
+                case Lever.Permits:
+                    return builder;
                 case Lever.BusinessTax:
                 case Lever.TradeLevy:
                 case Lever.Grants:

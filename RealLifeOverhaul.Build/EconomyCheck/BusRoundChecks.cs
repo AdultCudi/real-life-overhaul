@@ -159,7 +159,7 @@ internal static partial class Program
         Check(bus.Contains("RideRules.LightHolds(WaitingFor, CitySpots.InView(point.position))") && gates.Contains("RideRules.LightHolds(waitedFor, CitySpots.InView(point.position))")
               && !bus.Contains("|| CitySpots.InView(point.position))") && !gates.Contains("|| CitySpots.InView(point.position))"),
             "bus round source: the bus and the taxi wait at a light by the one rule, never for ever while it is in view");
-        Check(held.Contains("if (!_hold.Rounded && Round(now, still, by))") && round.Contains("RideRules.GoRound(closed, still, holderStill, yields, _hold.Rounded)")
+        Check(held.Contains("if (!_hold.Rounded && Round(now, still, by))") && round.Contains("RideRules.GoRound(closed, still, holderStill, yields, _hold.Rounded, unitBehind)")
               && round.Contains("BusDetour.Find(Lanes, _routePoints, next, blockFrom, blockTo,") && round.Contains("_driver.Pass(by,") && round.Contains("Begin();"),
             "bus round source: a hold looks for a way round by the rules, once, and drives it past what held it");
         Check(driver.Contains("hit == _passing") && driver.Contains("_passing = null;"), "bus round source: what it goes round is passed over only on that drive");

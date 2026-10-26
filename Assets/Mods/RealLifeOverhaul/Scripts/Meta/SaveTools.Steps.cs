@@ -194,6 +194,7 @@ namespace RealLifeOverhaul.Meta
             public int TechTypes;         // businesses of the tech sector's types made web development agencies again
             public int Academies;         // academies made recruitment agencies again
             public int Branches;          // bank branches made gift shops again
+            public int Builders;          // construction companies made design studios again
             public int ShopKinds;         // ice cream parlours, tea bars and tobacconists made fast food restaurants, coffee shops and liquor stores
 
             public int Total => Modifiers.Count + Contacts.Count + DataKeys.Count + Notifications;
@@ -230,7 +231,7 @@ namespace RealLifeOverhaul.Meta
             var keys = new List<string>();
             foreach (string key in save.modData.Keys)
             {
-                if (Features.OwnsData(key))
+                if (Features.OwnsData(key) && !DistrictSave.DistrictSaveDirector.Keeps(key))   // the district's records: the player's own, back with the mod
                 {
                     keys.Add(key);
                 }
@@ -255,6 +256,7 @@ namespace RealLifeOverhaul.Meta
             removed.TechTypes += Tech.TechTypes.Strip(save);   // the tech sector's business types, made the game's own web development agency again
             removed.Academies += Careers.AcademyType.Strip(save);   // the player's academies, made the game's own recruitment agency again
             removed.Branches += Economy.BranchType.Strip(save);   // the player's bank branches, made the game's own gift shops again
+            removed.Builders += Construction.ConstructionType.Strip(save);   // the player's construction companies, made the game's own design studios again
             removed.ShopKinds += Shops.ShopsGame.Strip(save);   // ice cream parlours, tea bars and tobacconists, made the game's fast food restaurants, coffee shops and liquor stores
 
             if (save.Contacts != null)

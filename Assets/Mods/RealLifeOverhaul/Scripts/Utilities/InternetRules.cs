@@ -47,7 +47,7 @@ namespace RealLifeOverhaul.Utilities
                     return true;
                 }
             }
-            return false;
+            return !CityDistricts.Known(district) && InternetCatalogue.ReachesNewDistricts(p);   // a district a free update adds
         }
 
         /// <summary>A plan's price a month now, cents: home or business, contract or not, at the provider's month and today's prices.</summary>

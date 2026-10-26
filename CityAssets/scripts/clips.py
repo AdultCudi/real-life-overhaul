@@ -609,7 +609,7 @@ BASE_CLIPS = [
 CLIPS = list(BASE_CLIPS)
 # The later rounds are clips_<name>.py, each with its own list CLIPS. CLIPS_DEV=name[,name] loads only those of them
 # (working on one module without the others having to be whole).
-EXTRA = ["events", "duty", "everyday", "garage", "family", "site"]
+EXTRA = ["events", "duty", "everyday", "garage", "family", "site", "build"]
 _only = os.environ.get("CLIPS_DEV")
 _extra = [n.strip() for n in _only.split(",") if n.strip()] if _only else EXTRA
 for _module in ("clips_scenes", "clips_jobs", "clips_life") + tuple("clips_" + n for n in _extra):

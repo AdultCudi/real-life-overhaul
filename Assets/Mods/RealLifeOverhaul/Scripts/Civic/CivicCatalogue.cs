@@ -164,6 +164,31 @@ namespace RealLifeOverhaul
 
         public static int SiteShuts(int permits) => permits > 0 ? 19 : permits < 0 ? 16 : 17;
 
+        // The building code the permits policy sets with the sites' hours: the construction game's height limits, parking,
+        // planning fee and the surcharge on land kept empty (Construction's PlansRules and LandRules read these). Fast-track
+        // permits speak to growth, strict ones to the neighbours' living; the locales quote these numbers.
+
+        /// <summary>A district's height limit against its own, in thousandths: a third more or a third less.</summary>
+        public static int HeightPermille(int permits) => permits > 0 ? 1334 : permits < 0 ? 667 : 1000;
+
+        /// <summary>The new district's storeys: the most its buildings take (DistrictBuildings.Finish, 12) unless permits are strict.</summary>
+        public static int UptownStoreys(int permits) => permits < 0 ? UptownStrictStoreys : UptownMostStoreys;
+
+        public const int UptownMostStoreys = 12;    // storeys a building of the new district can have at all
+        public const int UptownStrictStoreys = 8;   // under strict permits
+
+        /// <summary>Parking spaces asked of a building against the usual, in thousandths.</summary>
+        public static int ParkingPermille(int permits) => permits > 0 ? 667 : permits < 0 ? 1500 : 1000;
+
+        /// <summary>The planning fee against the usual, in thousandths.</summary>
+        public static int PlanningFeePermille(int permits) => permits > 0 ? 600 : permits < 0 ? 1500 : 1000;
+
+        /// <summary>The land tax's surcharge on land kept empty against the usual, in thousandths: build on it or pay.</summary>
+        public static int VacantPermille(int permits) => permits > 0 ? 2000 : permits < 0 ? 500 : 1000;
+
+        /// <summary>A share in thousandths as the per cent it moves a figure by, for the texts: 1334 is 33, 600 is 40.</summary>
+        public static int PercentOff(int permille) => Math.Abs(permille - 1000) / 10;
+
         public static float EventScale(int events) => Pick(events, 1.5f, 0.5f);
 
         /// <summary>The hourly wage floor; 0 for none.</summary>
@@ -270,7 +295,10 @@ namespace RealLifeOverhaul
             "reallife_civic_project_road_1", "reallife_civic_project_road_2", "reallife_civic_project_road_3",
             "reallife_civic_project_scaffold_1", "reallife_civic_project_scaffold_2", "reallife_civic_project_scaffold_3",
             "reallife_civic_project_refit_1", "reallife_civic_project_refit_2", "reallife_civic_project_refit_3",
-            "reallife_civic_project_utility_1", "reallife_civic_project_utility_2", "reallife_civic_project_utility_3"
+            "reallife_civic_project_utility_1", "reallife_civic_project_utility_2", "reallife_civic_project_utility_3",
+            "reallife_construction_project_rebuild_1", "reallife_construction_project_rebuild_2", "reallife_construction_project_rebuild_3",
+            "reallife_construction_project_plot_1", "reallife_construction_project_plot_2", "reallife_construction_project_plot_3",
+            "reallife_construction_project_demolition_1", "reallife_construction_project_demolition_2", "reallife_construction_project_demolition_3"
         };
 
         /// <summary>The phases of each kind of site, five each (in the order of <see cref="SiteKind"/>).</summary>
@@ -279,23 +307,37 @@ namespace RealLifeOverhaul
             "reallife_civic_phase_road_1", "reallife_civic_phase_road_2", "reallife_civic_phase_road_3", "reallife_civic_phase_road_4", "reallife_civic_phase_road_5",
             "reallife_civic_phase_scaffold_1", "reallife_civic_phase_scaffold_2", "reallife_civic_phase_scaffold_3", "reallife_civic_phase_scaffold_4", "reallife_civic_phase_scaffold_5",
             "reallife_civic_phase_refit_1", "reallife_civic_phase_refit_2", "reallife_civic_phase_refit_3", "reallife_civic_phase_refit_4", "reallife_civic_phase_refit_5",
-            "reallife_civic_phase_utility_1", "reallife_civic_phase_utility_2", "reallife_civic_phase_utility_3", "reallife_civic_phase_utility_4", "reallife_civic_phase_utility_5"
+            "reallife_civic_phase_utility_1", "reallife_civic_phase_utility_2", "reallife_civic_phase_utility_3", "reallife_civic_phase_utility_4", "reallife_civic_phase_utility_5",
+            "reallife_construction_phase_rebuild_1", "reallife_construction_phase_rebuild_2", "reallife_construction_phase_rebuild_3",
+            "reallife_construction_phase_rebuild_4", "reallife_construction_phase_rebuild_5",
+            "reallife_construction_phase_plot_1", "reallife_construction_phase_plot_2", "reallife_construction_phase_plot_3",
+            "reallife_construction_phase_plot_4", "reallife_construction_phase_plot_5",
+            "reallife_construction_phase_demolition_1", "reallife_construction_phase_demolition_2", "reallife_construction_phase_demolition_3",
+            "reallife_construction_phase_demolition_4", "reallife_construction_phase_demolition_5"
         };
 
         public const int PhasesPerKind = 5;
         public const int ActiveSites = 6;           // in the programme at once, city-wide
         public const int LocalSites = 2;            // of those, started within a walk of where the player was that day
+        public const int SitesMost = 16;            // every site at once, builders' too: what the save's line and a Going Public host's line hold
 
         /// <summary>Working hours a site of each kind needs (ten a weekday as the city came: 40 is four working days).</summary>
-        public static readonly int[] SiteHours = { 50, 120, 90, 30 };
+        public static readonly int[] SiteHours = { 50, 120, 90, 30, 160, 320, 120 };
+
+        /// <summary>Rebuild sites in the programme at once, at most: a whole building wrapped is a sight, not the street's every day.</summary>
+        public const int MostRebuilds = 1;
 
         /// <summary>The three bids for refitting the player's own shopfront: price and working hours.</summary>
         public static readonly int[] RefitPrice = { 1800, 2600, 3600 };
         public static readonly int[] RefitHours = { 80, 50, 30 };
     }
 
-    /// <summary>The kinds of building site. Saved as a number.</summary>
-    public enum SiteKind { Roadworks, Scaffold, Refit, Utility }
+    /// <summary>
+    /// The kinds of building site. Saved as a number: an older version reads a number it does not know as the last it has
+    /// (a utility site, or a plot), so a save with a rebuild, a plot or a demolition still loads there. A demolition is only
+    /// ever a builder's, in Uptown, where every machine of a Going Public session runs this same mod.
+    /// </summary>
+    public enum SiteKind { Roadworks, Scaffold, Refit, Utility, Rebuild, Plot, Demolition }
 
     /// <summary>A small repeatable random source (xorshift): what is drawn from a save's seed is the same every time it is asked for.</summary>
     public struct CivicRandom

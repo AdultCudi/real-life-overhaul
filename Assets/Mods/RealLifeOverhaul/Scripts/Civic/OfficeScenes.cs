@@ -560,13 +560,22 @@ namespace RealLifeOverhaul
             }
             OfficeMotion m = S.Agenda[_motion];
             bool mayor = S.Holds == OfficeRace.Mayor;
-            bool conflicted = m.Kind == OfficeMotion.KindPolicy && _office.Conflicted(m.Policy);
+            bool conflicted = _office.Conflicted(m);
             _text.Length = 0;
             if (_last != null)
             {
                 _text.Append(_last).Append('\n');
             }
-            if (m.Kind == OfficeMotion.KindBudget)
+            if (m.Zoning)
+            {
+                _text.Append(Fill("reallife_civic_office_meeting_zoning", "matter", CivicOffice.MotionWords(m), "by", T(m.By == OfficeMotion.ByPlayer ? "reallife_civic_office_by_you"
+                    : m.By == OfficeMotion.ByApplicant ? "reallife_civic_office_by_applicant" : "reallife_civic_office_by_council")));
+                if (conflicted && !mayor)
+                {
+                    _text.Append('\n').Append(T("reallife_civic_office_meeting_conflict"));
+                }
+            }
+            else if (m.Kind == OfficeMotion.KindBudget)
             {
                 BudgetWeek week = OfficeRules.Week(_gov.Electorate(), _gov.State.Levers, m.Budget);
                 _text.Append(Fill("reallife_civic_office_meeting_budget", "levels", CivicOffice.Levels(m.Budget), "revenue", CivicText.Money(Prices.At(week.Revenue)),
@@ -575,7 +584,7 @@ namespace RealLifeOverhaul
             else
             {
                 PolicyDef p = CivicCatalogue.At(m.Policy);
-                _text.Append(Fill("reallife_civic_office_meeting_motion", "policy", p != null ? T(p.Name) : string.Empty, "effect", CivicText.Effect(p),
+                _text.Append(Fill("reallife_civic_office_meeting_motion", "policy", p != null ? T(p.Name) : string.Empty, "effect", CivicText.Full(p),
                     "by", T(m.By == OfficeMotion.ByPlayer ? "reallife_civic_office_by_you" : m.By == OfficeMotion.ByMayor ? "reallife_civic_office_by_mayor"
                         : m.By == OfficeMotion.ByPetition ? "reallife_civic_office_by_petition" : "reallife_civic_office_by_council")));
                 if (conflicted && !mayor)
@@ -611,7 +620,7 @@ namespace RealLifeOverhaul
             }
             OfficeMotion m = S.Agenda[_motion];
             bool mayor = S.Holds == OfficeRace.Mayor;
-            bool conflicted = m.Kind == OfficeMotion.KindPolicy && _office.Conflicted(m.Policy);
+            bool conflicted = _office.Conflicted(m);
             MotionVote result;
             if (mayor)
             {

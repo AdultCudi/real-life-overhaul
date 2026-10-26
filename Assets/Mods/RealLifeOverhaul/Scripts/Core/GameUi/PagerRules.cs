@@ -78,6 +78,7 @@ namespace RealLifeOverhaul.GameUi
             "RealLifeCareer", "RealLifeCampus", "RealLifeOpenRoles", "RealLifeMarketplace",
             "RealLifeFinance", "RealLifeBanks", "RealLifeOwnBank", "RealLifeStocks",
             "RealLifeCompany", "RealLifeBrands", "RealLifeServices", "RealLifeVentures", "RealLifeOnline", "RealLifeEstate", "RealLifeDealer",
+            "RealLifeBuilders",
             "RealLifeTechSector", "RealLifeOverhaulUtilities",
             "RealLifeGuide", "RealLifeSettings"
         };

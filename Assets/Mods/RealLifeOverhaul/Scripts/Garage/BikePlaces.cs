@@ -125,7 +125,7 @@ namespace RealLifeOverhaul
                     }
                 }
 
-                var buildings = new List<CityBuildingController>(city.cityBuildingControllers);
+                var buildings = new List<CityBuildingController>(GameDlc.Open(city));
                 buildings.RemoveAll(b => b == null || b.buildingRegistration == null);
                 buildings.Sort((a, b) => ByPlace(a.transform, b.transform));
                 int shops = 0, motor = 0;
@@ -416,7 +416,7 @@ namespace RealLifeOverhaul
             try
             {
                 CityManager city = InstanceBehavior<CityManager>.Instance;
-                CityBuildingController[] buildings = city != null ? city.cityBuildingControllers : null;
+                CityBuildingController[] buildings = GameDlc.Open(city);
                 CityBuildingController best = null;
                 float bestSqr = float.MaxValue;
                 for (int i = 0; buildings != null && i < buildings.Length; i++)

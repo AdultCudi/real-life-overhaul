@@ -24,6 +24,12 @@ namespace RealLifeOverhaul.FitOut
             return building != null && !string.IsNullOrEmpty(building.BuildingSize) ? new BuildingSizeInfo(building).ToString() : null;
         }
 
+        /// <summary>The same for a structure by its size and version (a floor on another structure than its building's own).</summary>
+        public static string SizeOf(string size, int version)
+        {
+            return !string.IsNullOrEmpty(size) ? new BuildingSizeInfo(size, version).ToString() : null;
+        }
+
         /// <summary>The design files of one kind of business for a size, from both places the game keeps them, in a fixed order.</summary>
         public static List<string> FilesFor(string kind, string size)
         {
@@ -121,6 +127,12 @@ namespace RealLifeOverhaul.FitOut
         public static bool Fits(BusinessLayoutSet set, Buildings.Building building)
         {
             return set != null && building != null && set.Items != null && set.BuildingSize == building.BuildingSize && set.BuildingVersion == building.BuildingVersion;
+        }
+
+        /// <summary>The same for the room's structure by its size and version.</summary>
+        public static bool Fits(BusinessLayoutSet set, string size, int version)
+        {
+            return set != null && set.Items != null && size != null && set.BuildingSize == size && set.BuildingVersion == version;
         }
     }
 }

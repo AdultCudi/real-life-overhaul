@@ -274,11 +274,15 @@ namespace RealLifeOverhaul.Meta
 
             Features.Add("phone", "reallife_meta_title_phone")
                 .About("reallife_guide_phone_about").Help("reallife_guide_phone")
-                .Owns(Settings.PhoneContactsId, Settings.PhoneSkinId, Settings.NoticeLookId)
+                .Owns(Settings.PhoneContactsId, Settings.PhoneContactGroupsId, Settings.PhoneSkinId, Settings.NoticeLookId)
                 .NeedsReload(Settings.PhoneContactsId)
                 .Contact("reallife-911", "reallife-doctor", "reallife-friend", "reallife-mom")
-                .Test("reallife_contacts_test_pictures", "reallife_contacts_test_redraw", "reallife_test_notice_look")
-                .Repair(PhoneContacts.Setup);
+                .Test("reallife_contacts_test_pictures", "reallife_contacts_test_redraw", "reallife_contacts_test_groups", "reallife_test_notice_look")
+                .Repair(() =>
+                {
+                    PhoneContacts.Setup();
+                    ContactGroupsGame.Install();   // after the contacts are put back, each in its group
+                });
 
             Features.Add("phonefolders", "reallife_meta_title_phonefolders")
                 .About("reallife_guide_phonefolders_about").Help("reallife_guide_phonefolders")
@@ -412,6 +416,8 @@ namespace RealLifeOverhaul.Meta
                 .Row(new ButtonOption("reallife_meta_resetdata_button", SaveTools.AskReset))
                 .Row(new ButtonOption("reallife_meta_repair_button", SaveTools.Repair))
                 .Data(SaveTools.VersionKey, SaveTools.DevelopmentVersionKey, CompanionSnapshot.Key)
+                .Data(DistrictSave.DistrictSaveStore.Key, DistrictSave.DistrictSaveStore.UnreadKey)   // the records of the mod's places (Scripts/DistrictSave)
+                .Test("reallife_test_district_save", DistrictSave.DistrictSaveDirector.Test)
                 .Contact(GuideContact.ContactId)
                 .Repair(() => GuideContact.Setup());
 
@@ -433,6 +439,7 @@ namespace RealLifeOverhaul.Meta
                 .Test("reallife_test_guard_fault", Guard.TestFault)
                 .Test("reallife_test_build_notice", GameBuild.TestNotice)
                 .Test("reallife_test_build_box", GameConfirm.TestOwnBox)
+                .Test("reallife_floors_test_place", Floors.FloorsDirector.TestPlace)
                 .Diagnostic(KeyAction.PerfProbe, KeyAction.PerfBench, KeyAction.CharacterReport);
 
             Features.Add("multiplayer", "reallife_meta_title_multiplayer")

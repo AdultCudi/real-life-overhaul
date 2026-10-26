@@ -280,6 +280,7 @@ namespace RealLifeOverhaul.Meta
             Markets.ListingGuide.Register();
             Markets.TradingGuide.Register();
             Markets.DerivGuide.Register();
+            Markets.BuildersGuide.Register();
 
             Features.Add("economy_banks", "reallife_meta_title_economy_banks")
                 .About("reallife_guide_economy_banks_about").Help("reallife_guide_economy_banks")
@@ -416,7 +417,7 @@ namespace RealLifeOverhaul.Meta
                 .Fact("offices_kept_2", () => Offices.ConversionGame.PlayerOffice(1))
                 .Fact("util_address", Offices.ConversionGame.UtilitiesAddress)
                 .Owns(Settings.OfficeConversionId)
-                .Test("reallife_offices_test_list")
+                .Test("reallife_offices_test_list", "reallife_held_test")
                 .Data(Offices.ConversionStore.Key)
                 .Cleanup(() => Offices.Conversions.Instance?.StopAll(), -1)
                 .ResetData(() => Offices.Conversions.Instance?.Forget());

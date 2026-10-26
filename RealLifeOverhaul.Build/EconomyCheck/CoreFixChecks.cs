@@ -35,6 +35,54 @@ internal static partial class Program
             Check(clean, "core fix (" + code + "): no text of the phone dump's key, and no page names it");
         }
 
+        // Unity takes these names on a MonoBehaviour for its own messages, which take no parameters: one declared with
+        // parameters logs a script error at every load (new ground's grow test was named Start until 23 Oct).
+        var message = new Regex(@"^\s*(?:(?:public|private|protected|internal|static|override|virtual|sealed|async)\s+)*(?!return\b|await\b|yield\b|else\b|throw\b|new\b|case\b)"
+                                + @"[A-Za-z_][\w<>\[\],.?]*\s+(Awake|Start|Update|LateUpdate|FixedUpdate|OnEnable|OnDisable|OnDestroy)\s*\(\s*[^)\s]", RegexOptions.Multiline);
+        var texts = new Dictionary<string, string>(StringComparer.Ordinal);
+        var bases = new List<KeyValuePair<string, string>>();
+        foreach (string file in Directory.GetFiles(scripts, "*.cs", SearchOption.AllDirectories))
+        {
+            string text = File.ReadAllText(file);
+            texts[file] = text;
+            foreach (Match m in Regex.Matches(text, @"\bclass\s+(\w+)(?:<[^>]*>)?\s*:\s*([\w.]+)"))
+            {
+                bases.Add(new KeyValuePair<string, string>(m.Groups[1].Value, m.Groups[2].Value.Substring(m.Groups[2].Value.LastIndexOf('.') + 1)));
+            }
+        }
+        var behaviours = new HashSet<string>(StringComparer.Ordinal) { "MonoBehaviour", "InstanceBehavior" };   // a class of the mod's whose base is one, at any depth
+        for (bool grew = true; grew;)
+        {
+            grew = false;
+            foreach (KeyValuePair<string, string> pair in bases)
+            {
+                grew |= behaviours.Contains(pair.Value) && behaviours.Add(pair.Key);
+            }
+        }
+        var misnamed = new List<string>();
+        foreach (KeyValuePair<string, string> file in texts)
+        {
+            MatchCollection classes = Regex.Matches(file.Value, @"\bclass\s+(\w+)");
+            foreach (Match m in message.Matches(file.Value))
+            {
+                string owner = null;   // the class declared last before the method: a file's classes stand one after another
+                foreach (Match c in classes)
+                {
+                    if (c.Index > m.Index)
+                    {
+                        break;
+                    }
+                    owner = c.Groups[1].Value;
+                }
+                if (owner != null && owner != "MonoBehaviour" && behaviours.Contains(owner))   // a partial file of one counts too
+                {
+                    misnamed.Add(System.IO.Path.GetFileName(file.Key) + " " + owner + "." + m.Groups[1].Value);
+                }
+            }
+        }
+        Check(misnamed.Count == 0, "core fix: no method takes parameters under the name of a Unity message that has none ("
+                                   + (misnamed.Count == 0 ? "none" : string.Join(", ", misnamed)) + ")");
+
         SpecialShownChecks();
 
         string shell = Block(ModSource(@"Core\GameUi\AppShell.cs"), "public bool SetTabCount(int count)");
@@ -98,6 +146,16 @@ internal static partial class Program
               && Block(font, "public static bool Refind()").Contains("_none = false;")
               && Block(ModSource(@"Core\RealLifeOverhaulMod.cs"), "private static bool FindFont()").Contains("return GameUi.GameFont.Refind();"),
             "game UI fix: a look for the game's font that found no text is not made again until a load, which looks again");
+
+        // A save loaded and left paused looks unready (the mod's features start on game time): a test refused as not loaded then
+        // says the game is paused, through both ways a refusal is told (the owner pressed a test on a paused save, 23 Oct 2026).
+        string tests = ModSource(@"Core\TestRefusal.cs");
+        Check(Block(tests, "public static void Tell(").Contains("Notifications.Show(NotificationType.Warning, Sentence(why), data, 8f);")
+              && Block(tests, "private static string Sentence(TestRefusal why)").Contains("why == TestRefusal.NotLoaded && Paused ? PausedKey : Key(why)")
+              && Block(tests, "public static void TellKey(").Contains("key == NotLoadedKey && Paused ? PausedKey : key")
+              && tests.Contains("private static bool Paused => UnityEngine.Time.timeScale < PausedBelow;")
+              && tests.Contains("private const string PausedKey = \"reallife_test_refused_paused\";"),
+            "test refusals: a test refused as not loaded while the game is paused says the game is paused, both from Tell and from TellKey");
 
         // The shared city's ask for a part again is the market's: a guest whose prices are not the host's asks for them whole.
         Check(ModSource(@"Markets\MarketDirector.GoingPublic.cs").Contains("SharedCity.AskAgain('M');") && ModSource(@"Core\SharedCity.cs").Contains("public static void AskAgain(char id)"),

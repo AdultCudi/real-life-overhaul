@@ -74,7 +74,7 @@ internal static partial class Program
                 }
             }
         }
-        Check(callers == 5, "designs: the business types are registered in five files (Tech/Firms/TechTypes, Careers/AcademyType, Economy/Dealer/DealerType, Economy/OwnBank/Branch/BranchType, Shops/ShopsGame), found " + callers);
+        Check(callers == 6, "designs: the business types are registered in six files (Tech/Firms/TechTypes, Careers/AcademyType, Economy/Dealer/DealerType, Economy/OwnBank/Branch/BranchType, Construction/ConstructionType, Shops/ShopsGame), found " + callers);
         var kinds = new HashSet<string>(StringComparer.Ordinal);
         var folders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (DesignKind kind in DesignCatalogue.Kinds)
@@ -88,7 +88,7 @@ internal static partial class Program
         {
             Check(kinds.Contains(type), "designs: the business type " + type + " the mod registers has no ready-made designs");
         }
-        Check(kinds.Count == registered.Count && kinds.Count == 11, "designs: the catalogue holds the mod's eleven business types (" + kinds.Count + " in it, " + registered.Count + " registered)");
+        Check(kinds.Count == registered.Count && kinds.Count == 12, "designs: the catalogue holds the mod's twelve business types (" + kinds.Count + " in it, " + registered.Count + " registered)");
         foreach (ShopKind shop in ShopsCatalogue.Kinds)
         {
             int at = Array.FindIndex(DesignCatalogue.Kinds, k => k.Type == shop.Type);
@@ -720,7 +720,7 @@ internal static partial class Program
 
             DesignsReport first = DesignFiles.Put(root, SandboxRead, SandboxCut);
             DesignManifest list = DesignFiles.List(root);
-            Check(!first.Failed && first.Written > 0 && first.Written == list.Files.Count && first.Designs == list.Files.Count && first.Types == 11,
+            Check(!first.Failed && first.Written > 0 && first.Written == list.Files.Count && first.Designs == list.Files.Count && first.Types == 12,
                 "designs job: the first start writes every design and lists each (" + first.Written + " written, " + list.Files.Count + " listed, " + first.Types + " types"
                 + (first.Why != null ? ", " + first.Why : string.Empty) + ")");
             Check(File.ReadAllText(foreign) == "somebody else's" && !list.Holds("Office/C1/ailab/Modern.json") && first.Skipped == 1,
@@ -778,9 +778,13 @@ internal static partial class Program
 
             Directory.Delete(System.IO.Path.Combine(root, "InteriorDesigns", "Office", "C1", "GraphicDesigner"), true);
             DesignsReport fewer = DesignFiles.Put(root, SandboxRead, SandboxCut);
-            Check(fewer.Removed == 1 && !File.Exists(System.IO.Path.Combine(installer, "Office", "C1", "gamestudio", "Rustic.json"))
-                  && File.Exists(System.IO.Path.Combine(installer, "Office", "C1", "gamestudio", "Modern.json")),
-                "designs job: a design the game no longer has is taken away (" + fewer.Removed + ")");
+            // A construction company's Modern and Rustic were the graphic designer's alone; its Competitive is the law firm's then.
+            string builders = System.IO.Path.Combine(installer, "Office", "C1", "construction");
+            Check(fewer.Removed == 3 && !File.Exists(System.IO.Path.Combine(installer, "Office", "C1", "gamestudio", "Rustic.json"))
+                  && File.Exists(System.IO.Path.Combine(installer, "Office", "C1", "gamestudio", "Modern.json"))
+                  && !File.Exists(System.IO.Path.Combine(builders, "Modern.json")) && !File.Exists(System.IO.Path.Combine(builders, "Rustic.json"))
+                  && File.Exists(System.IO.Path.Combine(builders, "Competitive.json")),
+                "designs job: a design the game no longer has is taken away, a game studio's one and a construction company's two (" + fewer.Removed + ")");
 
             DesignsReport off = DesignFiles.Take(root);
             Check(off.Removed == fewer.Designs && off.Skipped == 0 && !File.Exists(System.IO.Path.Combine(installer, DesignCatalogue.Manifest)),

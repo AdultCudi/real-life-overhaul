@@ -251,13 +251,18 @@ namespace RealLifeOverhaul.Meta
                     .Opt("night_life", "city_life").Opts("photo_mode").Buttons("reallife_leisure_test_records").Also("fun hobby nightclub bar"),
                 S("lifeevents").For("life").Main("life_events").Opts("life_frequency").Also("random luck surprise"),
                 S("permadeath").For("permadeath").Opts("permadeath").Also("death die dead obituary ending hardcore funeral"),
-                S("phone").For("phone", "phonefolders").Opts("phone_contacts", "phone_skin", "phone_folders", "notice_look").Buttons("reallife_phone_layout_reset")
-                    .Also("call numbers wallpaper notifications toast icons folder folders dock home screen apps tidy arrange"),
+                S("phone").For("phone", "phonefolders").Opts("phone_contacts", "phone_contact_groups", "phone_skin", "phone_folders", "notice_look").Buttons("reallife_phone_layout_reset")
+                    .Also("call numbers wallpaper notifications toast icons folder folders dock home screen apps tidy arrange")
+                    .Also("group groups category categories tabs family friends people services money city sort"),
                 S("photos").For("photos").Main("phone_camera").Opts("phone_camera_grid").Also("camera gallery photo photos picture pictures selfie grid filter frame wallpaper")),
 
             G("city",
                 S("citylife").For("citylife").Main("city_life").Opts("city_density", "city_workers", "city_everyday", "city_interactions")
                     .Also("pedestrians passers-by pavement crowd"),
+                S("newbuildings").For("newbuildings").Main("new_buildings").Also("building buildings new construction copy design district ground plot land street address"),
+                S("uptown").For("uptown").Main("uptown").Also("uptown district north manhattan new streets block lots avenue map expansion"),
+                S("landmarks").For("landmarks").Main("uptown_landmarks").Also("landmark landmarks skyscraper tower mall galleria stadium football match megaproject uptown"),
+                S("schools").For("schools").Main("uptown_campus").Also("school schools campus birchwood education pupils teachers fees league table inspection results children uptown"),
                 S("events").For("events").Opts("city_fires").Opt("fire_frequency", "city_fires").Opts("weather_matters").Opt("weather_frequency", "weather_matters")
                     .Opts("street_events").Opt("street_event_frequency", "street_events").Opt("street_protest_notes", "street_events")
                     .Also("rain storm market parade protest").Also("street_protest_notes", "demonstration demonstrations notification notifications"),
@@ -312,6 +317,9 @@ namespace RealLifeOverhaul.Meta
             G("work",
                 S("jobs").For("jobs").Main("jobs").Opts("job_pay", "job_taxi_easy").Also("gig gigs shift wage employment ride hail taxi fare passenger passengers comfort easier"),
                 S("careers").For("careers").Opt("careers", "jobs").Also("employer promotion rank review"),
+                S("buildtrades").For("buildtrades").Opt("build_trades", "jobs").Opt("build_trades_office", "build_trades")
+                    .Also("construction building site mason labourer bricks architect architecture design inspector bribe surveyor crane")
+                    .Also("security electrician plumber roofer scaffold painter estimator tender apprentice practice"),
                 S("study").For("careers_study").Main("careers_study").Opts("careers_class_start")
                     .Also("school course courses class classes diploma education study learn skill skills homework exam timetable"),
                 S("degrees").For("careers_degrees").Opt("careers_degrees", "careers_study")
@@ -349,7 +357,10 @@ namespace RealLifeOverhaul.Meta
                 S("investor").Guide("markets").Need("ventures_market").Opts("markets_holding", "markets_large", "markets_reinvest")
                     .Also("markets_holding", "holding limit cap most stake tenth quarter half whole control majority percent shares company")
                     .Also("markets_large", "large big block limit volume worked order algorithm vwap slice wealth investor")
-                    .Also("markets_reinvest", "reinvest drip dividend reinvestment compound distribution trust")),
+                    .Also("markets_reinvest", "reinvest drip dividend reinvestment compound distribution trust")
+                    .Also("markets_derivatives", "futures future options option call put hedge hedging derivative derivatives strike premium raw materials commodity factory import"),
+                S("buildersmarket").For("markets_builders").Opt("markets_builders", "ventures_market")
+                    .Also("builder builders construction contractor tender shares stock cement steel bricks timber hedge hedging materials project exposure")),
 
             G("business",
                 S("company").For("economy_company").Need("economy").Main("economy_company").Opts("economy_company_staff", "economy_company_cover",
@@ -382,6 +393,18 @@ namespace RealLifeOverhaul.Meta
                     .Also("data centre data center server servers rack racks cooling headquarters hq lobby reception office cloud hyperscaler sign buildings"),
                 S("dealer").For("economy_dealer").Need("economy").Opts("economy_dealer", "economy_dealer_floor").Also("car dealership showroom auction wholesale used cars finance warranty")
                     .Also("economy_dealer_floor", "visitors customers floor salesperson bay bays camera photo"),
+                S("construction").For("construction").Opt("construction", "civic_construction").Opt("construction_developers", "construction")
+                    .Opt("construction_land_tax", "construction").Opt("construction_risks", "construction")
+                    .Opt("construction_show_flats", "construction").Opt("construction_renovations", "construction").Opt("construction_city", "construction")
+                    .Opt("construction_redevelop", "construction").Opt("construction_city_redevelop", "construction")
+                    .Also("demolish demolition knock down redevelop redevelopment join assemble split extension storeys convert conversion change of use cleared")
+                    .Opt("construction_track", "construction")
+                    .Also("objectives objective tasks task hud show on map destination where marker")
+                    .Also("show flat flats viewing viewings buyer buyers sales agent renovation renovate refit refurbish hoarding")
+                    .Also("builder builders building company land lot lots plot plots project plans architect planning permission appeal inspector inspection")
+                    .Also("crew crews foreman tender tenders developer developers rival rivals merchant materials crane yard flats loan investor ribbon"),
+                S("buildmode").Guide("construction").Need("construction").Opts("construction_buildmode")
+                    .Also("build mode zoning zone zones cells cell squares grid cities skylines demand bulldoze"),
                 S("offices").For("office_space").Opts("office_conversion").Also("office offices shop shops empty space building buildings convert vacant"),
                 S("estate").For("economy_estate").Need("economy").Opts("economy_estate", "economy_estate_hotel", "economy_estate_hire", "economy_estate_rent")
                     .Also("buildings landlord tenant letting rent rental income").Also("economy_estate", "rent tenant landlord letting"),
@@ -427,6 +450,7 @@ namespace RealLifeOverhaul.Meta
                 S("measure").Guide("performance").Opts("perf_step_timing").Buttons("reallife_perf_probe_button", "reallife_perf_bench_button4",
                     "reallife_keys_perf_probe", "reallife_keys_perf_bench", "reallife_keys_character_report")
                     .Also("benchmark fps developer keys"),
+                S("newground").For("newground").Opts("newground_test_road").Also("new ground walking mesh navmesh roads lanes traffic parking district developer"),
                 S("tuning").Guide("driving").Opts("car_handling_softness", "car_handling_bounce", "car_handling_roll", "car_handling_grip", "car_handling_steering",
                     "car_handling_brakes").Also("handling suspension springs dampers roll grip steering brakes developer sliders")),
         };

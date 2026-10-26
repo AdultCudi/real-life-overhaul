@@ -81,6 +81,12 @@ namespace RealLifeOverhaul
             Step("rival tycoons", RivalLinks.Connect);   // after the economy, the company, Flare and the interiors: what it wraps is theirs already
             Step("standing", StandingLinks.Connect);   // last: what it wraps of the others' is theirs already
             Step("companion reporting", CompanionLinks.Connect);   // wraps nothing: it only reads what the others own
+            Step("the mod's own buildings on the minimap", NewBuildingsLinks.Connect);   // wraps nothing
+            Step("the building trades", TradesLinks.Connect);   // wraps nothing
+            Step("the construction game", ConstructionLinks.Connect);   // after the paper's and the credit side's: its piece and its account go on top of theirs
+            Step("the landmarks", LandmarkLinks.Connect);   // after the construction game's: its piece of the paper goes on top of it
+            Step("the schools", SchoolLinks.Connect);   // after the landmarks': its piece of the paper goes on top of theirs
+            Step("Uptown's shops of the mod's own kinds", UptownShopsLinks.Connect);   // wraps nothing
             Logger?.Info("Wiring: the features are connected.");
         }
 
@@ -91,6 +97,12 @@ namespace RealLifeOverhaul
                 return;
             }
             Connected = false;
+            Step("Uptown's shops of the mod's own kinds", UptownShopsLinks.Disconnect);
+            Step("the schools", SchoolLinks.Disconnect);   // first: what it wrapped of the paper goes back before the landmarks'
+            Step("the landmarks", LandmarkLinks.Disconnect);   // first: what it wrapped of the paper goes back before the construction game's
+            Step("the construction game", ConstructionLinks.Disconnect);   // first: what it wrapped of the paper and the accounts goes back before the others take theirs off
+            Step("the building trades", TradesLinks.Disconnect);
+            Step("the mod's own buildings on the minimap", NewBuildingsLinks.Disconnect);
             Step("companion reporting", CompanionLinks.Disconnect);
             Step("standing", StandingLinks.Disconnect);   // first: what it wrapped goes back before the others take theirs off
             Step("the calendar", CalendarLinks.Disconnect);

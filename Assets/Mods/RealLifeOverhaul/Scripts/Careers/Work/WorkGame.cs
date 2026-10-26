@@ -40,13 +40,15 @@ namespace RealLifeOverhaul.Careers
             for (int i = 0; all != null && i < all.Count; i++)
             {
                 BuildingRegistration reg = all[i];
-                if (reg == null || !reg.HasValidAddress || reg.RentedByPlayer || !GameRegistrations.Found(reg))
+                if (reg == null || !reg.HasValidAddress || reg.RentedByPlayer || !GameRegistrations.Found(reg) || GameDlc.Gated(reg))
                 {
                     continue;   // (the player's own, and in a session another player's, which Going Public shows as rented by the player: never an employer)
                 }
                 string type = reg.businessTypeName ?? string.Empty;
+                // Every office of the city, in the save's order: a cap here once kept the first 64, Manhattan's alone, so no
+                // office further down the list (Uptown's, appended after the game's own) was ever a firm's.
                 bool office = SafeType(reg) == Office;
-                if (office && offices.Count < 64)
+                if (office)
                 {
                     offices.Add(Ref(reg, EmployerKind.TechFirm));
                 }
@@ -56,6 +58,36 @@ namespace RealLifeOverhaul.Careers
                 }
                 into.Add(Ref(reg, string.IsNullOrEmpty(reg.businessOwnerRivalId) ? EmployerKind.City : EmployerKind.Rival));
             }
+        }
+
+        /// <summary>
+        /// The employer at an address as <see cref="Employers"/> would list it (a new object, kept by the caller), or null where
+        /// no business that employs a profession stands, or the business is the player's (in a session, another player's).
+        /// One pass over the save's buildings: for a test, never a frame.
+        /// </summary>
+        public static EmployerRef EmployerAt(string street, int number)
+        {
+            List<BuildingRegistration> all = Save != null ? Save.BuildingRegistrations : null;
+            for (int i = 0; all != null && !string.IsNullOrEmpty(street) && i < all.Count; i++)
+            {
+                BuildingRegistration reg = all[i];
+                if (reg == null || reg.StreetName != street || reg.StreetNumber != number)
+                {
+                    continue;
+                }
+                string type = reg.businessTypeName ?? string.Empty;
+                if (reg.RentedByPlayer || !reg.HasEstablishedBusiness || !ProCatalogue.AnyEmploys(type) || GameDlc.Gated(reg))
+                {
+                    return null;
+                }
+                bool rival = !string.IsNullOrEmpty(reg.businessOwnerRivalId);
+                return new EmployerRef
+                {
+                    Name = TalentGame.NameOf(reg), Street = street, Number = number, Type = type, Rival = rival ? reg.businessOwnerRivalId : string.Empty,
+                    Kind = rival ? EmployerKind.Rival : EmployerKind.City, Professions = ProCatalogue.EmployedBy(type)
+                };
+            }
+            return null;
         }
 
         private static string SafeType(BuildingRegistration reg)
@@ -101,7 +133,7 @@ namespace RealLifeOverhaul.Careers
             _publicOf = city;
             Public.Clear();
             Doors.Clear();
-            CityBuildingController[] all = city != null ? city.cityBuildingControllers : null;
+            CityBuildingController[] all = GameDlc.Open(city);
             for (int i = 0; all != null && i < all.Length && Public.Count < 8; i++)
             {
                 Building b = all[i] != null ? all[i].building : null;
@@ -176,10 +208,37 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        /// <summary>The address the game writes for a place.</summary>
+        /// <summary>
+        /// The address the game writes for a place; in a district of the mod's own (Uptown), its name after it, as the game
+        /// names its districts (by the district's id in the locales), since the mod's streets do not say which district they
+        /// are in. A dictionary look in the game's buildings.
+        /// </summary>
         public static string Address(string street, int number)
         {
-            return CivicCity.AddressText(street, number);
+            string at = CivicCity.AddressText(street, number);
+            string district = ModDistrict(street, number);
+            return district == null ? at : CareersText.T(DistrictKey, "address", at, "district", district);
+        }
+
+        private const string DistrictKey = "reallife_work_place_district";   // "{address}, {district}"
+
+        // The name of the mod's own district a place of the mod's streets stands in, or null (the game's own places read as before).
+        private static string ModDistrict(string street, int number)
+        {
+            if (!DistrictSave.DistrictSaveRules.IsModId(street))
+            {
+                return null;
+            }
+            try
+            {
+                Building b = BuildingHelper.GetBuilding(new Address(street, number));
+                string district = b != null ? b.Neighbourhood : null;
+                return DistrictSave.DistrictSaveRules.IsModId(district) ? CareersText.T(district) : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         /// <summary>

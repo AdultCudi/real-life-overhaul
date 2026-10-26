@@ -101,10 +101,13 @@ internal static partial class Program
             {
                 Hit("RLO-TXT-002", rel, 0, "new key " + key + " is not at the end: it stands before " + en[lastOld].Key);
             }
-            // A phone contact's name is its id, reallife-<name> (docs/standards/texts.md, RLO-TXT-002): the one other kind of key the mod adds.
-            if (!key.StartsWith("reallife_", StringComparison.Ordinal) && !ContactName.IsMatch(key))
+            // A phone contact's name is its id, reallife-<name> (docs/standards/texts.md, RLO-TXT-002), and a business type of the mod's
+            // is named reallife:businesstype_<name>, which the game reads by that name: the two other kinds of key the mod adds.
+            // and the Contacts app's seven groups are named by the game's own key for a category, contactcategoryname_101 to 107 (ContactGroups.NameKey).
+            if (!key.StartsWith("reallife_", StringComparison.Ordinal) && !key.StartsWith("reallife:businesstype_", StringComparison.Ordinal) && !ContactName.IsMatch(key)
+                && !System.Text.RegularExpressions.Regex.IsMatch(key, "^contactcategoryname_10[1-7]$"))
             {
-                Hit("RLO-TXT-002", rel, 0, "new key " + key + " does not begin reallife_");
+                Hit("RLO-TXT-002", rel, 0, "new key " + key + " does not begin reallife_ (nor names a business type of the mod's, which the game reads by its name)");
             }
         }
         int removed = was.Count - keptBefore.Count;

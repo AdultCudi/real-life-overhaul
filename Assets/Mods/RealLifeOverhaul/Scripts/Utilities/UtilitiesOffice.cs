@@ -88,7 +88,7 @@ namespace RealLifeOverhaul.Utilities
                 {
                     _look = 0;
                     CityManager now = InstanceBehavior<CityManager>.Instance;
-                    bool back = !CivicHost.IsFixed(Building) && now != null && CivicHost.FixedServes(now.cityBuildingControllers);
+                    bool back = !CivicHost.IsFixed(Building) && now != null && CivicHost.FixedServes(GameDlc.Open(now));
                     if (SpecialBuildings.Players(Building) || back)
                     {
                         _logger?.Info("Utilities: the office's building, " + Name
@@ -104,7 +104,7 @@ namespace RealLifeOverhaul.Utilities
             try
             {
                 CityManager city = InstanceBehavior<CityManager>.Instance;
-                CityBuildingController[] buildings = city != null ? city.cityBuildingControllers : null;
+                CityBuildingController[] buildings = GameDlc.Open(city);
                 if (buildings == null || buildings.Length == 0)
                 {
                     return;

@@ -9,7 +9,7 @@ namespace RealLifeOverhaul.Careers
     public sealed partial class CareersDirector
     {
         private readonly List<EmployerRef> _employers = new List<EmployerRef>(256);
-        private readonly List<EmployerRef> _offices = new List<EmployerRef>(64);
+        private readonly List<EmployerRef> _offices = new List<EmployerRef>(192);   // (the city has some 180 offices with Uptown's)
         private readonly List<EmployerRef> _fit = new List<EmployerRef>(32);
         private readonly List<int> _reach = new List<int>(ProCatalogue.Count);
         private readonly List<BoardAd> _ads = new List<BoardAd>(40);

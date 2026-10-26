@@ -125,7 +125,17 @@ namespace RealLifeOverhaul.Careers
         private const int Engineering = (int)Tech.Family.Engineering, Data = (int)Tech.Family.Data, Security = (int)Tech.Family.Security, Design = (int)Tech.Family.Design,
             Commercial = (int)Tech.Family.Commercial, Support = (int)Tech.Family.Support, Corporate = (int)Tech.Family.Corporate, Built = (int)Tech.Family.Built, Product = (int)Tech.Family.Product;
 
-        public const string TechTypes = "reallife:businesstype_";   // the tech sector's own types (Tech/Firms/TechTypes)
+        public const string TechTypes = "reallife:businesstype_";   // a profession's mark for the tech sector's own types (Tech/Firms/TechTypes)
+
+        /// <summary>
+        /// The tech sector's own business types, the same as Tech/Firms/TechTypes.All (EconomyCheck holds them alike): the
+        /// <see cref="TechTypes"/> mark matches these alone, as the mod's other types (the builders, the academy, a dealer's
+        /// showroom) share the prefix and employ no developers or data scientists.
+        /// </summary>
+        public static readonly string[] TechSector =
+        {
+            TechTypes + "softwarestudio", TechTypes + "gamestudio", TechTypes + "itconsultancy", TechTypes + "cybersecurity", TechTypes + "ailab"
+        };
 
         public const int Developer = 0, DataPro = 1, SecurityPro = 2, Designer = 3, Accountant = 4, Lawyer = 5, Architect = 6, CivilEngineer = 7, Nurse = 8, Teacher = 9,
             Marketer = 10, Banker = 11, Manager = 12, CouncilOfficer = 13, Electrician = 14, Plumber = 15, Carpenter = 16, Chef = 17, Stylist = 18, ItSupport = 19, Sales = 20,
@@ -186,10 +196,11 @@ namespace RealLifeOverhaul.Careers
             new Profession(Architect, "architecture", Built, TalentCatalogue.Structures, TalentCatalogue.Planning,
                 new[] { "interiorinstallation", "headquarters" }, Workplace.Office, false, Weekdays, 9, 8,
                 new ProRank(31, TalentCatalogue.Junior, 115, 20, 0, Q(StudyCatalogue.Architecture)),
-                new ProRank(31, TalentCatalogue.Mid, 200, 38, 60),
-                new ProRank(31, TalentCatalogue.Senior, 290, 55, 90, null, 7),
-                new ProRank(31, TalentCatalogue.Staff, 385, 68, 120, null, 7),
-                new ProRank(31, TalentCatalogue.Principal, 540, 80, 150, null, 7, true)),
+                // An architect signs plans off in their own name only with the licence (its exam after the degree).
+                new ProRank(31, TalentCatalogue.Mid, 200, 38, 60, Q(StudyCatalogue.ArchitectLicence)),
+                new ProRank(31, TalentCatalogue.Senior, 290, 55, 90, Q(StudyCatalogue.ArchitectLicence)),
+                new ProRank(31, TalentCatalogue.Staff, 385, 68, 120, Q(StudyCatalogue.ArchitectLicence)),
+                new ProRank(31, TalentCatalogue.Principal, 540, 80, 150, Q(StudyCatalogue.ArchitectLicence), -1, true)),
             new Profession(CivilEngineer, "civil", Built, TalentCatalogue.Structures, TalentCatalogue.Planning,
                 new[] { "interiorinstallation", "factory", "headquarters" }, Workplace.Office, false, Weekdays, 8, 8,
                 new ProRank(32, TalentCatalogue.Junior, 120, 20, 0, Q(StudyCatalogue.CivilEngineering)),
@@ -270,7 +281,7 @@ namespace RealLifeOverhaul.Careers
                 new ProRank(TalentCatalogue.ItSupport, TalentCatalogue.Mid, 130, 35, 60),
                 new ProRank(TalentCatalogue.NetworkEngineer, TalentCatalogue.Senior, 205, 52, 90)),
             new Profession(Sales, "sales", Commercial, TalentCatalogue.Selling, TalentCatalogue.Relationships,
-                new[] { "cardealership", "electronics", "furniture", "appliance", "wholesale", "headquarters", TechTypes }, Workplace.Business, false, Weekdays, 9, 8,
+                new[] { "cardealership", "electronics", "furniture", "appliance", "wholesale", "headquarters", "travelagency", TechTypes }, Workplace.Business, false, Weekdays, 9, 8,
                 new ProRank(TalentCatalogue.SalesExecutive, TalentCatalogue.Junior, 55, 10, 0),
                 new ProRank(TalentCatalogue.SalesExecutive, TalentCatalogue.Mid, 85, 32, 60),
                 new ProRank(TalentCatalogue.AccountManager, TalentCatalogue.Senior, 120, 48, 90),
@@ -374,7 +385,7 @@ namespace RealLifeOverhaul.Careers
             return set;
         }
 
-        /// <summary>True if a business type employs a profession (a part of the type's name, as the game writes it).</summary>
+        /// <summary>True if a business type employs a profession (a part of the type's name, as the game writes it; the tech mark, one of the sector's own types).</summary>
         public static bool Employs(Profession p, string type)
         {
             if (p == null || string.IsNullOrEmpty(type))
@@ -383,7 +394,7 @@ namespace RealLifeOverhaul.Careers
             }
             for (int i = 0; i < p.Types.Length; i++)
             {
-                if (type.IndexOf(p.Types[i], System.StringComparison.Ordinal) >= 0)
+                if (p.Types[i] == TechTypes ? System.Array.IndexOf(TechSector, type) >= 0 : type.IndexOf(p.Types[i], System.StringComparison.Ordinal) >= 0)
                 {
                     return true;
                 }

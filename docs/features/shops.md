@@ -43,6 +43,8 @@ ShopsText           the locale keys
 - **The option** (`new_shops`, on): off, the kinds are made again without the game's "the player may start it" tag, so BizMan does not offer them; shops already open keep trading.
 - **Removing the mod**: "Prepare this save for removing the mod" makes every such shop its template type.
 
+- **In Uptown, run by the city**: Uptown's mix pass ([Uptown](uptown.md#offices-to-work-at-and-a-district-lived-in-from-the-first-day)) opens ice cream parlours and tobacconists as businesses of the city's, with a layout of the game's shop each trades as that shows its primary goods. A tea bar cannot be run by the city: the game's coffee shop layouts pour coffee.
+
 ## Not made, and why
 
 The other kinds a player asked for need what the game has no model of; the mod adds no 3D models, so none of them could be made properly:

@@ -54,6 +54,7 @@ On the mod's options page, under **Troubleshooting**, **Diagnostics**, switch on
 "Show test tools" and "Developer diagnostics" are off as shipped.
 With diagnostics off the mod writes only warnings and errors to `Player.log` (every logger in the mod goes through the one switch, `Meta.Dev.Gated`), and the three diagnostic keys (F7, Shift+F7, F9) do nothing.
 To work on the mod, switch both on under Diagnostics on the options page.
+With both on, the first test there, **City expansion: run every check**, runs every automatic check of the city expansion by itself and sums it up ([The test run](test-run.md)).
 
 The switch drops the line, not the work of making it: the text handed to `Info` is put together before the logger sees it.
 That is fine for a line written when something happens (a scene starts, a bus is sent).

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Localizor;
+using UnityEngine;
 
 namespace RealLifeOverhaul.Nav
 {
@@ -15,6 +16,15 @@ namespace RealLifeOverhaul.Nav
 
         /// <summary>Adds places that move, such as a vehicle on its way, each time the marks are gathered. Default: none.</summary>
         public static Action<List<NavMark>> MoreMarks;
+
+        /// <summary>Adds the box (the game's own shadow and map look) of each building the mod stands in the city, drawn on the base beside the game's. Default: none.</summary>
+        public static Action<List<MeshRenderer>> MoreBuildings;
+
+        /// <summary>Changes whenever the buildings <see cref="MoreBuildings"/> gives do: the base is drawn again. Default: never.</summary>
+        public static Func<int> MoreBuildingsStamp;
+
+        /// <summary>True for a building of the game's list that the mod made: left out when the city is measured, so the kept file is the game's city alone. Default: none.</summary>
+        public static Func<CityBuildingController, bool> NotMeasured;
     }
 
     /// <summary>The feature's words with their {placeholders} filled in; called when a line changes, never per frame.</summary>

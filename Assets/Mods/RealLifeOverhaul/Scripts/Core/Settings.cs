@@ -37,6 +37,20 @@
         public const string MealsSeatedId = "meals_seated";
         public const string MealsCookedId = "meals_cooked";
         public const string MealsDanceId = "meals_dance";
+        public const string NewBuildingsId = "new_buildings";
+        public const string TradesId = "build_trades";              // the building trades (Scripts/BuildTrades)
+        public const string TradesOfficeId = "build_trades_office";   // ...and their architects' practice
+        public const string ConstructionId = "construction";                      // the construction game (Scripts/Construction)
+        public const string ConstructionDevelopersId = "construction_developers";  // ...the city's developers and the tenders
+        public const string ConstructionLandTaxId = "construction_land_tax";       // ...land tax on the lots owned
+        public const string ConstructionRisksId = "construction_risks";            // ...theft, storms and faults on the sites
+        public const string ConstructionShowFlatsId = "construction_show_flats";   // ...show flats for a block's off plan buyers
+        public const string ConstructionRenovationsId = "construction_renovations"; // ...refits of the player's own businesses, and businesses' refits to tender
+        public const string ConstructionCityId = "construction_city";              // ...the city around it: rigged tenders, unpaid bills, the building of the year
+        public const string ConstructionRedevelopId = "construction_redevelop";    // ...knocking down, joining, extending and converting Uptown's buildings
+        public const string ConstructionCityRedevelopId = "construction_city_redevelop";   // ...how often the city's developers do it to the city's own
+        public const string ConstructionBuildModeId = "construction_buildmode";    // ...build mode: the zoning cells over the map, land, zones and buildings placed
+        public const string ConstructionTrackId = "construction_track";            // ...its matters under way as lines in the game's objectives window
         public const string MealsTakeoutId = "meals_takeout";
         public const string HouseholdStaffId = "home_household";
         public const string CameraFovId = "camera_fov";
@@ -67,6 +81,7 @@
         public const string SolidStreetsId = "solid_streets";
         public const string CityDriversId = "city_drivers";
         public const string PhoneContactsId = "phone_contacts";
+        public const string PhoneContactGroupsId = "phone_contact_groups";
         public const string PhoneSkinId = "phone_skin";
         public const string PhoneFoldersId = "phone_folders";
         public const string NoticeLookId = "notice_look";
@@ -153,6 +168,7 @@
         public const string MarketsLargeId = "markets_large";
         public const string MarketsReinvestId = "markets_reinvest";
         public const string MarketsDerivativesId = "markets_derivatives";
+        public const string MarketsBuildersId = "markets_builders";              // the city's builders on the market, building materials and a project's hedge
         public const string MarketsHoldingId = "markets_holding";
         public const string VenturesLevelId = "ventures_level";
         public const string EconomyCompanyId = "economy_company";
@@ -347,6 +363,10 @@
         public const string DesignsId = "designs";
         public const string NewShopsId = "new_shops";
         public const string PermadeathId = "permadeath";
+        public const string NewGroundTestRoadId = "newground_test_road";   // NewGround: a developer's test road, read at each load
+        public const string UptownId = "uptown";   // Uptown, north of Manhattan: its ground laid at each load
+        public const string LandmarksId = "uptown_landmarks";   // Uptown's landmarks: the tower, the mall and the stadium (Scripts/Landmarks)
+        public const string SchoolsId = "uptown_campus";        // Birchwood School's campus on Uptown's west square and the city's schools (Scripts/Schools)
 
         public static bool CameraEnabled = true;
         public static bool CameraIndoors = false;
@@ -379,6 +399,19 @@
         public static bool MealsSeated = true;   // a meal is eaten at a free seat nearby, with the food in front
         public static bool MealsCooked = true;   // a meal cooked at home is carried to a seat and eaten there
         public static bool MealsDance = true;    // "Dance" in the radio panel over a loudspeaker playing music
+        public static bool NewBuildings = true;  // the mod's own buildings, made at each load from the city's own designs
+        public static bool Trades = true, TradesOffice = true;   // the building trades at the works sites, and the architects' practice on a floor
+        public static bool Construction = true;            // a construction company of the player's: land, projects, tenders and the rival builders
+        public static bool ConstructionDevelopers = true;  // the city's developers build on the district's lots, and works are put out to tender
+        public static bool ConstructionLandTax = true;     // the lots the player owns pay land tax, and more kept empty
+        public static bool ConstructionRisks = true;       // theft, storm damage and faults coming to light on the company's works
+        public static bool ConstructionShowFlats = true;   // a show flat dressed in one of the show flats' designs for a block sold off plan, with its viewings
+        public static bool ConstructionRenovations = true; // the player's businesses refitted by their company or a contractor, and businesses' refits out to tender
+        public static bool ConstructionCity = true;        // rigged tenders, unpaid bills taken to court, and the City Ledger's building of the year
+        public static bool ConstructionRedevelop = true;   // Uptown's buildings knocked down, their ground joined or split and built on again, storeys added, uses changed
+        public static int ConstructionCityRedevelop = 2;   // the city's developers redevelop Uptown's own buildings: 0 Off, 1 Slow, 2 Usual, 3 Lively
+        public static bool ConstructionBuildMode = true;   // build mode from the Construction app: the city map over Uptown with its zoning cells
+        public static bool ConstructionTrack = true;       // the construction matters under way shown in the game's objectives window
         public static bool MealsTakeout = true;  // food carried in a bag is eaten from a plate once seated; a home dish can be packed to take
         public static bool HouseholdStaff = true;   // a cleaner, a cook, a butler or a mechanic taken on for the home through the phone
         public static int CameraFov = 55;        // degrees, vertical
@@ -406,6 +439,7 @@
         public static bool SolidStreets = true;          // traffic brakes for people in the road, sounds its horn and waits
         public static bool CityDrivers = true;           // the city's cars slow in good time, leave room to park and let the player out
         public static bool PhoneContacts = true;
+        public static bool PhoneContactGroups = true;   // the Contacts app's category buttons hold the mod's contacts in groups; off, they stay in General as before
         public static bool CarTuning = true;         // each car gets the acceleration and top speed of its kind
         public static int CarTopSpeed = 100;         // percent of the car's own target top speed
         public static int CarAcceleration = 100;     // percent: at 150 a car reaches 100 km/h in two thirds of its own target time
@@ -494,6 +528,7 @@
         public static bool MarketsLarge = true;          // a large order is worked a slice a step, and a bond purchase may be a share of what the player is worth
         public static bool MarketsReinvest = true;       // the share of each dividend a holding is set to put back is bought into the same company at the next open
         public static bool MarketsDerivatives = true;    // the exchange prices raw materials; futures and options on the Futures tab
+        public static bool MarketsBuilders = true;       // the rival builders listed and moved by the construction game's news; a project's materials hedged
         public static int MarketsHolding = 0;            // the most of one company the player may hold: 0 a tenth (the old rule), 1 a quarter, 2 half, 3 all of it (MarketCatalogue.HoldingCapBp)
         public static int VenturesLevel = 1;             // how demanding investors are: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore
         public static bool EconomyCompany = true;        // running a business (off: none of it runs and nothing is charged)
@@ -699,6 +734,10 @@
         public static bool NewShops = true;                 // the ice cream parlour, tea bar and tobacconist are offered when a business is started
         public static bool InteriorsStaff = true;           // plants, good light and a rest corner lift staff; a good office helps hiring and a firm's bids
         public static bool Permadeath = false;           // what the options page shows; the switch itself is kept per save, off unless switched on
+        public static bool NewGroundTestRoad = false;    // a copy of a short stretch of road added to the traffic at each load, for the developer's test
+        public static bool Uptown = true;                // the district north of Manhattan laid at each load; read only then
+        public static bool Landmarks = true;             // Uptown's three landmarks: announced, tendered, built, opened, and what they do for the district
+        public static bool Schools = true;               // Birchwood School on Uptown's west square and the city's schools: its buildings at the next load, its market at once
 
         private static string _modId;
 
@@ -766,6 +805,20 @@
             MealsSeated = Bool(modId, MealsSeatedId, MealsSeated);
             MealsCooked = Bool(modId, MealsCookedId, MealsCooked);
             MealsDance = Bool(modId, MealsDanceId, MealsDance);
+            NewBuildings = Bool(modId, NewBuildingsId, NewBuildings);
+            Trades = Bool(modId, TradesId, Trades);
+            TradesOffice = Bool(modId, TradesOfficeId, TradesOffice);
+            Construction = Bool(modId, ConstructionId, Construction);
+            ConstructionDevelopers = Bool(modId, ConstructionDevelopersId, ConstructionDevelopers);
+            ConstructionLandTax = Bool(modId, ConstructionLandTaxId, ConstructionLandTax);
+            ConstructionRisks = Bool(modId, ConstructionRisksId, ConstructionRisks);
+            ConstructionShowFlats = Bool(modId, ConstructionShowFlatsId, ConstructionShowFlats);
+            ConstructionRenovations = Bool(modId, ConstructionRenovationsId, ConstructionRenovations);
+            ConstructionCity = Bool(modId, ConstructionCityId, ConstructionCity);
+            ConstructionRedevelop = Bool(modId, ConstructionRedevelopId, ConstructionRedevelop);
+            ConstructionCityRedevelop = System.Math.Max(0, System.Math.Min(3, Int(modId, ConstructionCityRedevelopId, ConstructionCityRedevelop)));
+            ConstructionTrack = Bool(modId, ConstructionTrackId, ConstructionTrack);
+            ConstructionBuildMode = Bool(modId, ConstructionBuildModeId, ConstructionBuildMode);
             MealsTakeout = Bool(modId, MealsTakeoutId, MealsTakeout);
             HouseholdStaff = Bool(modId, HouseholdStaffId, HouseholdStaff);
             CameraFov = Int(modId, CameraFovId, CameraFov);
@@ -796,6 +849,7 @@
             SolidStreets = Bool(modId, SolidStreetsId, SolidStreets);
             CityDrivers = Bool(modId, CityDriversId, CityDrivers);
             PhoneContacts = Bool(modId, PhoneContactsId, PhoneContacts);
+            PhoneContactGroups = Bool(modId, PhoneContactGroupsId, PhoneContactGroups);
             PhoneSkin = Bool(modId, PhoneSkinId, PhoneSkin);
             PhoneFolders = Bool(modId, PhoneFoldersId, PhoneFolders);
             NoticeLook = Bool(modId, NoticeLookId, NoticeLook);
@@ -888,6 +942,7 @@
             MarketsLarge = Bool(modId, MarketsLargeId, MarketsLarge);
             MarketsReinvest = Bool(modId, MarketsReinvestId, MarketsReinvest);
             MarketsDerivatives = Bool(modId, MarketsDerivativesId, MarketsDerivatives);
+            MarketsBuilders = Bool(modId, MarketsBuildersId, MarketsBuilders);
             MarketsHolding = Int(modId, MarketsHoldingId, MarketsHolding);
             VenturesLevel = Int(modId, VenturesLevelId, VenturesLevel);
             EconomyCompany = Bool(modId, EconomyCompanyId, EconomyCompany);
@@ -1075,6 +1130,10 @@
             InteriorsStanding = Bool(modId, InteriorsStandingId, InteriorsStanding);
             InteriorsStaff = Bool(modId, InteriorsStaffId, InteriorsStaff);
             Designs = Bool(modId, DesignsId, Designs);
+            NewGroundTestRoad = Bool(modId, NewGroundTestRoadId, NewGroundTestRoad);
+            Uptown = Bool(modId, UptownId, Uptown);
+            Landmarks = Bool(modId, LandmarksId, Landmarks);
+            Schools = Bool(modId, SchoolsId, Schools);
             NewShops = Bool(modId, NewShopsId, NewShops);
         }
 

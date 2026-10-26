@@ -42,6 +42,16 @@ namespace RealLifeOverhaul.Markets
                 case MarketNewsKind.Split:
                     Queue(NotificationType.Info, "reallife_mkt_note_split", "name", name, "ratio", news.A.ToString(), "day", news.B.ToString());
                     break;
+                case MarketNewsKind.Builder:
+                {
+                    // A builder the player holds or watches: the market's own sentence for it, as the paper prints it.
+                    string key = MarketText.NewsKey(news, s, out string[] data);
+                    if (key.Length > 0)
+                    {
+                        Queue(news.B >= 0 ? NotificationType.Info : NotificationType.Warning, key, data);
+                    }
+                    break;
+                }
             }
         }
 

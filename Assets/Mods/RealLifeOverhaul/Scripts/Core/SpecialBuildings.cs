@@ -32,8 +32,11 @@ namespace RealLifeOverhaul
         /// <summary>True while names are given at all: the option is on and some building is in the book.</summary>
         public static bool Active => Settings.SpecialNames && Book.Count > 0;
 
-        /// <summary>True while the mod makes the city map's search: names are given, or a kind is to be found by its word.</summary>
-        internal static bool Searching => Active || FindableTypes.Count > 0;
+        /// <summary>
+        /// True: the mod always makes the city map's search, so any building is found by its address, empty or not (the game lists only a
+        /// building with a business name), with the special names and kinds found by their word besides.
+        /// </summary>
+        internal static bool Searching => true;
 
         /// <summary>Puts a building in the book under the feature's id, in place of what it held; false if refused (logged).</summary>
         public static bool Set(string id, CityBuildingController building, SpecialKind kind, string nameKey, string typeKey = null, Func<bool> shown = null)
@@ -56,19 +59,19 @@ namespace RealLifeOverhaul
                              + (!SpecialNameBook.Accepts(kind) ? kind + " keeps its own name" : there != null ? "the building is already '" + there.Id + "'"
                                  : reserved != null ? "the building is reserved for '" + reserved + "'" : "nothing to name it by") + ").");
             }
-            SpecialNames.Changed();
+            Changed();
             return done;
         }
 
         /// <summary>Reserves a fixed address for a feature's id while <paramref name="on"/> holds (<see cref="SpecialNameBook.Reserve"/>).</summary>
-        public static bool Reserve(string id, string street, int number, Func<bool> on)
+        public static bool Reserve(string id, string street, int number, Func<bool> on, SpecialKind kind = SpecialKind.Other)
         {
-            bool done = Book.Reserve(id, street, number, on);
+            bool done = Book.Reserve(id, street, number, on, kind);
             if (!done)
             {
                 Logger?.Warn("Special buildings: '" + id + "' could not reserve " + street + " " + number + " (another feature reserves it).");
             }
-            SpecialNames.Changed();
+            Changed();
             return done;
         }
 
@@ -76,13 +79,77 @@ namespace RealLifeOverhaul
         {
             if (Book.Unreserve(id))
             {
-                SpecialNames.Changed();
+                Changed();
             }
         }
 
         public static string ReservedFor(string street, int number)
         {
             return Book.ReservedFor(street, number);
+        }
+
+        /// <summary>
+        /// Gives the building filed under the id a say on the game's card beyond its name and kind: open or closed by the feature's own hours and who runs
+        /// it (<see cref="SpecialFacts"/>, filled by <paramref name="facts"/> each time the card is written, once a second at most). False when the id
+        /// holds nothing. Only what the card shows changes, never the save.
+        /// </summary>
+        public static bool Facts(string id, Action<SpecialFacts> facts)
+        {
+            SpecialEntry entry = Book.Of(id);
+            if (entry == null)
+            {
+                return false;
+            }
+            entry.Facts = facts;
+            SpecialNames.Changed();
+            return true;
+        }
+
+        /// <summary>The book's entry for a building while its feature shows it, or null: what the game's card writes from.</summary>
+        internal static SpecialEntry EntryFor(CityBuildingController building)
+        {
+            Address address = Active && building != null && building.building != null ? building.building.Address : null;
+            return address == null || Players(building) ? null : Book.At(address.streetName, address.streetNumber);
+        }
+
+        private static readonly SpecialFacts PageFacts = new SpecialFacts();
+        private static bool _pageFactsFailed;
+
+        /// <summary>
+        /// What BizMan's page of a building the mod has taken (<see cref="TakenBy(BuildingRegistration)"/>) says beyond "Taken by": the feature's facts (who owns
+        /// it, its own line) and the words of what it is (the card's line under the name). Null when the building is not taken. Asked when the page is
+        /// written, never per frame; the feature's callback runs behind its own guard, so a fault there is one log line and the page keeps its "Taken by".
+        /// The returned object is the book's own, valid until the next call.
+        /// </summary>
+        internal static SpecialFacts PageOf(BuildingRegistration registration, out string typeWords)
+        {
+            typeWords = null;
+            if (TakenBy(registration) == null)
+            {
+                return null;
+            }
+            SpecialEntry entry = Book.At(registration.StreetName, registration.StreetNumber);
+            PageFacts.Clear();
+            if (entry == null)
+            {
+                return PageFacts;
+            }
+            typeWords = string.IsNullOrEmpty(entry.TypeKey) ? null : Localise(entry.TypeKey);
+            if (entry.Facts != null && !_pageFactsFailed)
+            {
+                try
+                {
+                    entry.Facts(PageFacts);
+                }
+                catch (Exception e)
+                {
+                    _pageFactsFailed = true;   // one line, then the page's own "Taken by" for every building
+                    PageFacts.Clear();
+                    Logger?.Error(e);
+                    Logger?.Warn("Special buildings: a feature's say on BizMan's page of its building failed (the error above); the page says 'Taken by' alone.");
+                }
+            }
+            return PageFacts;
         }
 
         /// <summary>The id of the feature put in the book at a building, leaving reservations aside; null for none.</summary>
@@ -102,7 +169,7 @@ namespace RealLifeOverhaul
                 Logger?.Info("Special buildings: '" + id + "' at " + street + " " + number + " keeps the game's name ("
                              + (there != null ? "the building is already '" + there.Id + "'" : "nothing to name it by") + ").");
             }
-            SpecialNames.Changed();
+            Changed();
             return done;
         }
 
@@ -150,7 +217,7 @@ namespace RealLifeOverhaul
         {
             if (Book.Count > 0 && Book.LookShown())
             {
-                SpecialNames.Changed();
+                Changed();
             }
         }
 
@@ -159,7 +226,7 @@ namespace RealLifeOverhaul
             bool done = Book.Remove(id);
             if (done)
             {
-                SpecialNames.Changed();
+                Changed();
             }
             return done;
         }
@@ -238,7 +305,7 @@ namespace RealLifeOverhaul
         {
             if (!string.IsNullOrEmpty(businessType) && FindableTypes.Add(businessType))
             {
-                SpecialNames.Changed();
+                Changed();
             }
         }
 
@@ -262,6 +329,20 @@ namespace RealLifeOverhaul
         {
             Book.Clear();
             FindableTypes.Clear();
+            HeldUnits.BookChanged();
+        }
+
+        // Every change of the book: what is shown is written again, and what the book holds is held from the game's letting at once.
+        private static void Changed()
+        {
+            SpecialNames.Changed();
+            HeldUnits.BookChanged();
+        }
+
+        /// <summary>What the book holds now, as claims (<see cref="SpecialNameBook.Holding"/>), into the caller's list.</summary>
+        internal static void Holding(List<HeldClaim> into)
+        {
+            Book.Holding(into);
         }
 
         /// <summary>True for a building the player rents or owns (in Going Public another player's too).</summary>

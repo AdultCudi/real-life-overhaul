@@ -46,6 +46,9 @@ namespace RealLifeOverhaul.FitOut
             public bool Look = true;                                          // the design's walls and floors on the room while the player is in it
             public bool Carve = true;                                         // what stands is cut out of the walkable floor
             public bool People = true;
+            public string Size;                                               // a floor on another of the game's structures (Floors): its size and version,
+                                                                              // for its designs; null for the building's own
+            public int Version;
             public readonly FitSite Site = new FitSite();                     // what is there already: the caller's Fixed, KeepFree and Keep
 
             public void Reset()
@@ -54,6 +57,8 @@ namespace RealLifeOverhaul.FitOut
                 Building = null;
                 Place = null;
                 Grid = null;
+                Size = null;
+                Version = 0;
                 DesignKinds.Clear();
                 LookKinds.Clear();
                 Look = Carve = People = true;
@@ -87,6 +92,8 @@ namespace RealLifeOverhaul.FitOut
         private string _setName;
         private InteriorElement[] _elements;
         private Buildings.Building _lookOn;
+        private string _lookSize;    // the look was put on a floor of another structure (Request.Size): that one's own look goes back
+        private int _lookVersion;
         private int _frames;
         private double _workMs;
         private bool _hidden;
@@ -148,10 +155,12 @@ namespace RealLifeOverhaul.FitOut
             FitSite site = r.Site;
             Buildings.Building building = r.Building.building;
 
-            // the game's design for this very unit, read on a worker thread
+            // the game's design for this very unit, read on a worker thread; on a floor of another structure, that one's
             _set = null;
             _setName = null;
-            string size = FitDesigns.SizeOf(building);
+            string unitSize = r.Size ?? building.BuildingSize;
+            int unitVersion = r.Size != null ? r.Version : building.BuildingVersion;
+            string size = r.Size != null ? FitDesigns.SizeOf(r.Size, r.Version) : FitDesigns.SizeOf(building);
             FitDesigns.Candidates(size, r.DesignKinds.Count > 0 ? r.DesignKinds : r.LookKinds, r.Seed, _candidates);
             float waited = 0f;
             for (int i = 0; i < _candidates.Count && _set == null; i++)
@@ -163,7 +172,7 @@ namespace RealLifeOverhaul.FitOut
                     yield return null;
                 }
                 BusinessLayoutSet set = read.IsCompleted && !read.IsFaulted ? read.Result : null;
-                if (FitDesigns.Fits(set, building) && (r.DesignKinds.Count == 0 || StandsHere(set, r)))
+                if (FitDesigns.Fits(set, unitSize, unitVersion) && (r.DesignKinds.Count == 0 || StandsHere(set, r)))
                 {
                     _set = set;
                     _setName = System.IO.Path.GetFileName(System.IO.Path.GetDirectoryName(_candidates[i])) + "/" + System.IO.Path.GetFileNameWithoutExtension(_candidates[i]) + " (" + size + ")";
@@ -540,6 +549,8 @@ namespace RealLifeOverhaul.FitOut
                 }
                 BuildingManager.ApplyInteriorDesign(_set.interiorDesigns, _elements);
                 _lookOn = r.Building.building;
+                _lookSize = r.Size;
+                _lookVersion = r.Version;
             }
             catch (Exception e)
             {
@@ -553,8 +564,10 @@ namespace RealLifeOverhaul.FitOut
         {
             Buildings.Building on = _lookOn;
             InteriorElement[] elements = _elements;
+            string borrowed = _lookSize;
             _lookOn = null;
             _elements = null;
+            _lookSize = null;
             if (on == null || elements == null)
             {
                 return;
@@ -564,7 +577,16 @@ namespace RealLifeOverhaul.FitOut
                 BuildingManager buildings = InstanceBehavior<BuildingManager>.Instance;
                 if (BuildingManager.IsInsideBuilding && buildings != null && buildings.building == on && !buildings.exitingBuilding)
                 {
-                    BuildingManager.ApplyInteriorDesign(on, elements);
+                    if (borrowed == null)
+                    {
+                        BuildingManager.ApplyInteriorDesign(on, elements);
+                    }
+                    else if (BuildingManager.DefaultInteriorDesigns.TryGetValue(new Blueprints.BuildingSizeInfo(borrowed, _lookVersion), out Dictionary<string, SerializedInteriorDesign> look))
+                    {
+                        // a floor of another structure: the game laid that structure's own look when it loaded it (the building's
+                        // designs are of its own structure), and keeps it under that structure's size, not the building's
+                        BuildingManager.ApplyInteriorDesign(new List<SerializedInteriorDesign>(look.Values), elements);
+                    }
                 }
             }
             catch (Exception e)

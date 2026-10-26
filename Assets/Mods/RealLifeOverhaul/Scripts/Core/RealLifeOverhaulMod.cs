@@ -58,11 +58,21 @@ namespace RealLifeOverhaul
             Guard.Step("the training academy's business type", () => Careers.AcademyType.Register());   // before any save that holds one is loaded
             Economy.BranchType.Logger = context.Logger;
             Guard.Step("the bank branch's business type", () => Economy.BranchType.Register());   // before any save that holds one is loaded
+            Construction.ConstructionType.Logger = context.Logger;
+            Guard.Step("the construction company's business type", () => Construction.ConstructionType.Register());   // before any save that holds one is loaded
             Shops.ShopsDirector.Logger = context.Logger;
             Guard.Step("the new kinds of shop", Shops.ShopsDirector.Start);   // before any save that holds one is loaded
             Designs.DesignsDirector.Logger = context.Logger;
             // The installation firms' designs for the mod's business types, put in place or taken away on a worker.
             Guard.Step("the ready-made designs", () => Designs.DesignsDirector.Ask(Settings.Designs));
+            Guard.Step("Uptown's places for the district save", () => Uptown.LifeDirector.Register(context.Logger));   // before any save is read: its early step runs then
+            // After Uptown's: the lift is asked as the district's buildings are declared.
+            Guard.Step("the landmarks' places and their lift of Uptown's traffic", () => Landmarks.LandmarksDirector.Register(context.Logger));
+            // After the landmarks': the campus's name lifts Uptown's traffic after theirs.
+            Guard.Step("the schools' street and their lift of Uptown's traffic", () => Schools.SchoolsDirector.Register(context.Logger));
+            // After Uptown's: its finished buildings that wear a corner building's model ask for it while the city loads.
+            Guard.Step("the corner buildings over Uptown's finished buildings", () => Corners.CornerLook.Register(context.Logger));
+            Guard.Step("the city expansion's test run, if one waits for its load", () => TestRun.RunDirector.Begin(context.Logger));   // before any save is read: it hears the load's own lines
 
             var options = new ModOptions()
                 .AddHeader("reallife_camera_header")
@@ -194,8 +204,15 @@ namespace RealLifeOverhaul
                     v => Settings.CityDrivers = v)
                 .AddToggle(Settings.PhoneContactsId, "reallife_phone_contacts", Settings.PhoneContacts,
                     v => Settings.PhoneContacts = v)
+                .AddToggle(Settings.PhoneContactGroupsId, "reallife_phone_contact_groups", Settings.PhoneContactGroups,
+                    v =>
+                    {
+                        Settings.PhoneContactGroups = v;
+                        ContactGroupsGame.Apply();   // the buttons and the list follow at once
+                    })
                 .AddButton("reallife_contacts_test_pictures", ContactPictures.TestReport)
                 .AddButton("reallife_contacts_test_redraw", ContactPictures.TestRedraw)
+                .AddButton("reallife_contacts_test_groups", ContactGroupsTest.Run)
                 .AddToggle(Settings.PhoneSkinId, "reallife_phone_skin", Settings.PhoneSkin,
                     v => Settings.PhoneSkin = v)
                 .AddToggle(Settings.PhoneFoldersId, "reallife_phone_folders", Settings.PhoneFolders,
@@ -546,6 +563,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_events_test_fire_car", () => Events.EventDirector.Instance?.TestFire(Events.FireKind.Car))
                 .AddButton("reallife_events_test_fire_bin", () => Events.EventDirector.Instance?.TestFire(Events.FireKind.Bin))
                 .AddButton("reallife_events_test_fire_building", () => Events.EventDirector.Instance?.TestFire(Events.FireKind.Building))
+                .AddButton("reallife_events_test_fire_blocked", () => Events.EventDirector.Instance?.TestFireBlocked())
                 .AddButton("reallife_events_test_weather_rain", () => Events.EventDirector.Instance?.TestWeather(Events.Sky.Rain, Events.Spell.None))
                 .AddButton("reallife_events_test_weather_mist", () => Events.EventDirector.Instance?.TestWeather(Events.Sky.Mist, Events.Spell.None))
                 .AddButton("reallife_events_test_weather_storm", () => Events.EventDirector.Instance?.TestWeather(Events.Sky.Storm, Events.Spell.None))
@@ -903,6 +921,8 @@ namespace RealLifeOverhaul
                     v => Settings.MarketsReinvest = v)
                 .AddToggle(Settings.MarketsDerivativesId, "reallife_mkt_drv_opt", Settings.MarketsDerivatives,
                     v => Settings.MarketsDerivatives = v)
+                .AddToggle(Settings.MarketsBuildersId, "reallife_mkt_builders_opt", Settings.MarketsBuilders,
+                    v => Settings.MarketsBuilders = v)
                 .AddDropdown(Settings.MarketsHoldingId, "reallife_mkt_opt_holding",
                     new[] { "reallife_mkt_opt_holding_tenth", "reallife_mkt_opt_holding_quarter", "reallife_mkt_opt_holding_half", "reallife_mkt_opt_holding_all" }, Settings.MarketsHolding,
                     v => Settings.MarketsHolding = v)
@@ -954,6 +974,7 @@ namespace RealLifeOverhaul
                 .AddToggle(Settings.OfficeConversionId, "reallife_offices_enabled", Settings.OfficeConversion,
                     v => Settings.OfficeConversion = v)
                 .AddButton("reallife_offices_test_list", () => Offices.Conversions.Instance?.TestList())
+                .AddButton("reallife_held_test", HeldUnits.Test)
                 .AddToggle(Settings.EconomyBankId, "reallife_ob_enabled", Settings.EconomyBank,
                     v => Settings.EconomyBank = v)
                 .AddToggle(Settings.EconomyBranchId, "reallife_branch_enabled", Settings.EconomyBranch,
@@ -1168,6 +1189,11 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_civic_test_office_seat", () => CivicDirector.Instance?.TestOffice(OfficeRace.Council))
                 .AddButton("reallife_civic_test_office_mayoralty", () => CivicDirector.Instance?.TestOffice(OfficeRace.Mayor))
                 .AddButton("reallife_civic_test_office_scene", () => CivicDirector.Instance?.TestScene())
+                .AddButton("reallife_construction_test_wrap", () => CivicDirector.Instance?.TestWrap())
+                .AddButton("reallife_construction_test_rebuild", () => CivicDirector.Instance?.TestRebuild())
+                .AddButton("reallife_construction_test_stage", () => CivicDirector.Instance?.TestStage())
+                .AddButton("reallife_construction_test_storey", () => CivicDirector.Instance?.TestStorey())
+                .AddButton("reallife_construction_test_crane", () => CivicDirector.Instance?.TestCrane())
                 .AddSplitter()
                 .AddHeader("reallife_util_header")
                 .AddToggle(Settings.UtilitiesId, "reallife_util_enabled", Settings.Utilities,
@@ -1228,6 +1254,9 @@ namespace RealLifeOverhaul
                 .Guarded(o => Household.HouseholdOptions.AddHousehold(o))
                 .Guarded(o => Walking.WalkOptions.AddWalking(o))
                 .Guarded(o => Meals.MealsOptions.AddMeals(o))
+                .Guarded(o => NewBuildings.NewBuildingsOptions.AddNewBuildings(o))   // the mod's own buildings (Scripts/NewBuildings)
+                .Guarded(o => BuildTrades.TradesOptions.AddTrades(o))   // the building trades (Scripts/BuildTrades)
+                .Guarded(o => Construction.ConstructionOptions.AddConstruction(o))   // the construction game (Scripts/Construction)
                 .Guarded(o => o.AddControls())
                 .Guarded(o => o.AddPerformance());
 
@@ -1293,6 +1322,7 @@ namespace RealLifeOverhaul
             Guard.Step("the tech sector's business types", () => Tech.TechTypes.Register());   // furnished as the game's web development agency once its type is known
             Guard.Step("the training academy's business type", () => Careers.AcademyType.Register());   // furnished as the game's recruitment office once its type is known
             Guard.Step("the bank branch's business type", () => Economy.BranchType.Register());   // dressed as the city's banks once their type is known
+            Guard.Step("the construction company's business type", () => Construction.ConstructionType.Register());   // furnished as the game's design studio once its type is known
             Guard.Step("the new kinds of shop", Shops.ShopsDirector.CityLoaded);   // trading as the game's shops they are made like once those are loaded
             Guard.Step("other authors' mods", () => OtherMods.Look(context.Logger));   // one walk over the loaded assemblies
             Guard.Step("GoingPublic", () => GoingPublic.Logger = context.Logger);
@@ -1323,6 +1353,7 @@ namespace RealLifeOverhaul
             Guard.Step("PropLibrary", () => PropLibrary.Logger = context.Logger);
             Guard.Step("MapPlaces", () => MapPlaces.Logger = context.Logger);
             Guard.Step("SpecialBuildings", () => SpecialBuildings.Logger = context.Logger);
+            Guard.Step("HeldUnits", () => HeldUnits.Logger = context.Logger);
             Guard.Step("MapLinks", () => MapLinks.Logger = context.Logger);
             Guard.Step("Districts.DistrictView", () => Districts.DistrictView.Logger = context.Logger);
             Guard.Step("Districts.DistrictPanel", () => Districts.DistrictPanel.Logger = context.Logger);
@@ -1349,6 +1380,7 @@ namespace RealLifeOverhaul
             Guard.Step("Jaywalker", () => Jaywalker.Logger = context.Logger);
             Guard.Step("PlayerKnockdown", () => PlayerKnockdown.Logger = context.Logger);
             Guard.Step("PhoneContacts", () => PhoneContacts.Logger = context.Logger);
+            Guard.Step("ContactGroups", () => ContactGroupsGame.Logger = context.Logger);
             Guard.Step("GameFurniture", () => GameFurniture.Logger = context.Logger);
             Guard.Step("GameRegistrations", () => GameRegistrations.Logger = context.Logger);
             Guard.Step("ContactPictures", () => ContactPictures.Logger = context.Logger);
@@ -1373,8 +1405,10 @@ namespace RealLifeOverhaul
             Guard.Step("Tech.HiringGame", () => Tech.HiringGame.Logger = context.Logger);
             Guard.Step("Tech.FirmsGame", () => Tech.FirmsGame.Logger = context.Logger);
             Guard.Step("Careers.CareersDirector", () => Careers.CareersDirector.Logger = context.Logger);
+            Guard.Step("Floors.FloorsDirector", () => Floors.FloorsDirector.Logger = context.Logger);
 
             _root = new GameObject(RootName);
+            Guard.Step("the city check", () => CityCheck.Begin(_root, context.Logger));   // before any feature: New York's features stand down in another city
             Guard.Step("the start line", () => StartLine.Logger = context.Logger);
             Guard.Step("the start line", () => StartLine.Begin());   // before any director's timer starts
             Guard.Step("the guard's notices", () => Guard.Add<GuardNotices>(_root));   // once the HUD is there
@@ -1385,6 +1419,8 @@ namespace RealLifeOverhaul
             Guard.Step("GoingPublicWatch", () => Guard.Add<GoingPublicWatch>(_root));   // once a second of real time
             Guard.Step("ScenePrewarm", () => Guard.Add<ScenePrewarm>(_root));   // disabled unless a piece is waiting
             Guard.Step("LoadHold", () => Guard.Add<LoadHold>(_root));   // disabled unless a piece is waiting
+            Guard.Step("NewGround.GroundDirector", () => NewGround.GroundDirector.Logger = context.Logger);
+            Guard.Step("NewGround.GroundDirector", () => Guard.Add<NewGround.GroundDirector>(_root));   // before the traffic starts: a test road is appended here; disabled while idle
             // Pieces run last added first: this one after the road data below.
             Guard.Step("the lane grid's prewarm", () => ScenePrewarm.Add("roads: the lane points put in a grid for the nearest lane point", TrafficTools.PrewarmLaneGrid));
             Guard.Step("the roads' prewarm", () => ScenePrewarm.Add("roads: the traffic system's road data being found for the city", RoadData.Prewarm));
@@ -1413,6 +1449,7 @@ namespace RealLifeOverhaul
             Guard.Step("RivalOfferGuard", () => Guard.Add<RivalOfferGuard>(_root));   // no Update
             Guard.Step("StaffLeave", () => StaffLeave.Logger = context.Logger);
             Guard.Step("SpecialNames", () => Guard.Add<SpecialNames>(_root));   // one reference comparison a frame while a building is named
+            Guard.Step("HeldUnits", () => Guard.Add<HeldUnits>(_root));   // no Update; a look once a second, two at the game's night
             Guard.Step("ClickWatch", () => Guard.Add<ClickWatch>(_root));   // one flag test a frame unless Developer diagnostics is on
             Guard.Step("ThirdPersonCamera", () => Guard.Add<ThirdPersonCamera>(_root));
             Guard.Step("VisualEnhancer", () => Guard.Add<VisualEnhancer>(_root));
@@ -1516,6 +1553,7 @@ namespace RealLifeOverhaul
             Guard.Step("Careers.CareersDirector", () => Guard.Add<Careers.CareersDirector>(_root));   // after the tech sector, whose roles it reads
             Guard.Step("FitOut.FitOutDirector", () => FitOut.FitOutDirector.Logger = context.Logger);
             Guard.Step("FitOut.FitOutDirector", () => Guard.Add<FitOut.FitOutDirector>(_root));   // before the features whose floors it builds
+            Guard.Step("Floors.FloorsDirector", () => Guard.Add<Floors.FloorsDirector>(_root));   // a look once a second: the places on floors of the mod's buildings
             Guard.Step("Tech.TechSites", () => Tech.TechSites.Logger = context.Logger);
             Guard.Step("Offices.Conversions", () => Offices.Conversions.Logger = context.Logger);
             Guard.Step("Offices.Conversions", () => Guard.Add<Offices.Conversions>(_root));   // a look once a second
@@ -1589,6 +1627,26 @@ namespace RealLifeOverhaul
             // With Developer diagnostics on, the installation firms' lists checked against the designs written.
             Guard.Step("Designs.DesignsDirector", () => Designs.DesignsDirector.CityLoaded());
             Guard.Step("Interiors.InteriorDirector", () => Guard.Add<Interiors.InteriorDirector>(_root));
+            Guard.Step("Uptown.GroundDirector", () => Uptown.GroundDirector.Logger = context.Logger);
+            // Uptown's ground is laid in its Awake, before the traffic starts and before the city's buildings are made on its lots.
+            Guard.Step("Uptown.GroundDirector", () => Guard.Add<Uptown.GroundDirector>(_root));
+            Guard.Step("Uptown.LifeDirector", () => Uptown.LifeDirector.Logger = context.Logger);
+            Guard.Step("Uptown.LifeDirector", () => Guard.Add<Uptown.LifeDirector>(_root));   // after Uptown's ground's director: its buildings declared for the made buildings below
+            Guard.Step("Schools.SchoolsDirector", () => Schools.SchoolsDirector.Logger = context.Logger);
+            // Birchwood School: its main school declared for the made buildings below, its other buildings asked of the copy engine.
+            Guard.Step("Schools.SchoolsDirector", () => Guard.Add<Schools.SchoolsDirector>(_root));
+            Guard.Step("NewBuildings.NewBuildingsDirector", () => NewBuildings.NewBuildingsDirector.Logger = context.Logger);
+            // Its buildings are made behind the loading screen, once every director has declared its own.
+            Guard.Step("NewBuildings.NewBuildingsDirector", () => Guard.Add<NewBuildings.NewBuildingsDirector>(_root));
+            Guard.Step("BuildTrades.TradesDirector", () => BuildTrades.TradesDirector.Logger = context.Logger);
+            Guard.Step("BuildTrades.TradesDirector", () => Guard.Add<BuildTrades.TradesDirector>(_root));   // the practice's floor, its panel, the trades' line; no Update
+            Guard.Step("Construction.ConstructionDirector", () => Construction.ConstructionDirector.Logger = context.Logger);
+            Guard.Step("Construction.ConstructionApp", () => Construction.ConstructionApp.Logger = context.Logger);
+            // The company, its projects and the city's builders: a time comparison a frame.
+            Guard.Step("Construction.ConstructionDirector", () => Guard.Add<Construction.ConstructionDirector>(_root));
+            Guard.Step("Landmarks.LandmarksDirector", () => Landmarks.LandmarksDirector.Logger = context.Logger);
+            // Uptown's landmarks: a time comparison a frame; their pieces stood in the game's late call.
+            Guard.Step("Landmarks.LandmarksDirector", () => Guard.Add<Landmarks.LandmarksDirector>(_root));
             Guard.Step("the wiring", () => Wiring.Connect(context.Logger, _root));   // every director is there: the bridges are filled in
             // Behind the loading screen: the two street pools' people made and dressed where the time is not seen; each
             // falls back to making them as needed.
@@ -1599,6 +1657,9 @@ namespace RealLifeOverhaul
             // Every whole-scene search a feature would otherwise make in play, at over 100 ms each.
             Guard.Step("the scene prewarm", () => ScenePrewarm.Begin());
             Guard.Step("the options page in the city", () => Meta.MetaCity.Begin(context, _root));   // the check for leftovers, the guide's contact, the welcome panel
+            Guard.Step("DistrictSave.DistrictSaveDirector", () => DistrictSave.DistrictSaveDirector.Logger = context.Logger);
+            Guard.Step("Uptown's buildings", () => Uptown.LifeDirector.Settle());   // the made buildings stand now: Uptown's into the game's lists, before the district save puts back theirs
+            Guard.Step("the district save", () => DistrictSave.DistrictSaveDirector.City(_root));   // after every step that makes places of the mod's
             context.Logger.Info("City features started.");
             // The loading screen stays up while pieces that need frames of their own are done, two seconds at most.
             return LoadHold.Wait();
@@ -1609,6 +1670,7 @@ namespace RealLifeOverhaul
         private static void WantPictures()
         {
             GameUi.GameSprites.Want("Circle-20", "circle", GameUi.PhoneGridPager.MoreGlyph, "Icon-SetDestination");
+            GameUi.GameSprites.Want(ContactGroups.Glyphs);   // the Contacts app's group buttons
             GameUi.NoticeLook.WantPictures();
             Meta.GuideApp.WantPictures();
             Meta.SettingsApp.WantPictures();
@@ -1643,6 +1705,7 @@ namespace RealLifeOverhaul
             }
             Guard.Step("the map places", () => MapPlaces.Shutdown());
             Guard.Step("the modelled props", () => PropLibrary.Dispose());
+            Guard.Step("the city check", CityCheck.End);   // every feature back for the menu and the next city
             return Task.CompletedTask;
         }
     }

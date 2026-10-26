@@ -24,6 +24,7 @@ ba:businesstype_factory
 ba:businesstype_fastfoodrestaurant
 ba:businesstype_fruitandvegetablestore
 ba:businesstype_furniturestore
+ba:businesstype_gasstation
 ba:businesstype_giftshop
 ba:businesstype_graphicdesigner
 ba:businesstype_gym
@@ -38,6 +39,7 @@ ba:businesstype_liquorstore
 ba:businesstype_marketingagency
 ba:businesstype_movingservice
 ba:businesstype_nightclub
+ba:businesstype_officesupplystore
 ba:businesstype_recruitmentagency
 ba:businesstype_school
 ba:businesstype_supermarket
@@ -73,6 +75,7 @@ ba:itemname_cheapjewelry
 ba:itemname_cheese
 ba:itemname_cheeseplatter
 ba:itemname_chickenbreast
+ba:itemname_cigar
 ba:itemname_cigarettepaper
 ba:itemname_cigarpaper
 ba:itemname_classiccheapfemaleclothing
@@ -133,6 +136,7 @@ ba:itemname_mop
 ba:itemname_novel
 ba:itemname_onion
 ba:itemname_paper
+ba:itemname_paperbag
 ba:itemname_pear
 ba:itemname_pearseeds
 ba:itemname_pepper
@@ -155,6 +159,7 @@ ba:itemname_smartwatch1
 ba:itemname_smartwatch2
 ba:itemname_sodacan
 ba:itemname_speaker
+ba:itemname_specialemployeedesk
 ba:itemname_sugar
 ba:itemname_tealeaves
 ba:itemname_tobacco
@@ -242,12 +247,18 @@ ba:vehicletype_umcdesertdeliveryjob
 bizman_menu_settings
 bizman_settings_notification_name_empty
 bizman_status
+building_rival_owner_description
 buildingmanager_notification_business_closed
 buildingmanager_notification_private_property
+buildingresume_closed_opening_in_hour
+buildingresume_closed_opening_in_hours
+buildingresume_open_closing_in_hour
+buildingresume_open_closing_in_hours
 businessschool_holding_item
 change_character_clothes_unsaved_changes_warning
 citymap_category_special_buildings
 click_to_learn
+click_to_talk
 click_to_work
 common_available_for_rent
 common_cancel
@@ -269,6 +280,7 @@ common_today
 common_tomorrow
 common_travel
 common_tuesday
+common_unknown
 common_wednesday
 dialog_recruitment_agency_npc_name
 educationdoorcontroller_closed

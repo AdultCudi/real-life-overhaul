@@ -26,7 +26,7 @@ namespace RealLifeOverhaul
             internal static void Connect()
             {
                 // The university's building is held for it from the start, before any feature chooses one, while its part is on.
-                SpecialBuildings.Reserve(CampusRules.BookId, CampusRules.HomeStreet, CampusRules.HomeNumber, () => CareersDirector.UniversityOpen);
+                SpecialBuildings.Reserve(CampusRules.BookId, CampusRules.HomeStreet, CampusRules.HomeNumber, () => CareersDirector.UniversityOpen, SpecialKind.Campus);
                 CareersBridges.HomeInternet = HomeInternet;
                 CareersBridges.OthersPicked = OfficeLinks.CityOfficesPicked;   // so the university chooses none of theirs, the same on every machine
                 CareersBridges.Headquarters = (string name, out string street, out int number) =>
@@ -58,6 +58,9 @@ namespace RealLifeOverhaul
                 Economy.CreditLedger.Register(Loan);
                 Economy.EconomyBridges.OtherAccounts = StudentCredit;   // again at each start of the credit side, whose ledger forgets every account
                 CareersBridges.TechFirm = TechFirm;
+                Uptown.DistrictWork.Employs = ProCatalogue.AnyEmploys;   // Uptown's offices' tests: where the working life employs, a job there, its posts there
+                Uptown.DistrictWork.HireAt = (street, number) => CareersDirector.Instance != null ? CareersDirector.Instance.TestJobAt(street, number) : "reallife_work_test_off";
+                Uptown.DistrictWork.Openings = UptownOpenings;
                 CareersBridges.JoinFirm = (place, role, level, count) => TechDirector.Instance != null && SaveGameManager.Current != null
                     ? TechDirector.Instance.JoinPayroll(place, role, level, count, SaveGameManager.Current.Day) : 0;
                 TechBridges.Founder = () => CareersDirector.Instance != null ? CareersDirector.Instance.FounderBonus() : 0;
@@ -75,6 +78,7 @@ namespace RealLifeOverhaul
             {
                 SpecialBuildings.Unreserve(CampusRules.BookId);
                 CareersBridges.Reset();
+                Uptown.DistrictWork.Reset();
                 FitOut.FitDesks.Wanted = null;
                 FitOut.FitDesks.Made = null;
                 FitOut.FitDesks.Gone = null;
@@ -381,6 +385,21 @@ namespace RealLifeOverhaul
                 {
                     Fault("CareersLinks.Shortage", e);
                     return 1000;
+                }
+            }
+
+            // The city's open posts at places of Uptown's, and in all, for its offices' census; none while the working life is away.
+            private static int UptownOpenings(Func<string, int, bool> at, out int all)
+            {
+                all = 0;
+                try
+                {
+                    return CareersDirector.Instance != null ? CareersDirector.Instance.OpeningsAt(at, out all) : 0;
+                }
+                catch (Exception e)
+                {
+                    Fault("CareersLinks.UptownOpenings", e);
+                    return 0;
                 }
             }
 

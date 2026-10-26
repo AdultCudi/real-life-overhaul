@@ -125,6 +125,13 @@ Nominal values, for a first offence convicted after a trial.
 | `Resisting` | Resisting arrest | misdemeanour | 1 200 | 6 h | 12 h | | 4 d | | |
 | `NoShow` | Failure to appear | misdemeanour | 1 000 | 4 h | 12 h | | 3 d | | |
 | `Violation` | Breach of probation | misdemeanour | 1 500 | | 24 h | | 5 d | | |
+| `BidRigging` | Bid rigging (a cover bid for a ring of builders that came out: `TaxCases.FileBidRigging`) | misdemeanour | 7 000 | 12 h | | | 7 d | | |
+
+**Claims the player brings** (`OwnClaims`, `JusticeState.Claims`, the save's section "O:"): the construction company sues a client or flat buyers who will not pay.
+The court's fee (3 % of the claim, 150 at least, at today's prices) is paid at filing; the claim is heard 6 to 9 days on, decided by its own seed at its strength on the company's books (780 in 1000, 60 more a letter sent, 900 for the city's debt) and counsel's quality a little (`JusticeLaw.ClaimChance`); a win pays the claim and the fee back ("Court award").
+The Legal file lists those waiting; the brief says one is.
+A claim **against** the player for wages or materials the company left unpaid (`BuildClaims.FileUnpaid`) is an ordinary civil suit.
+For the tests, `TaxCases.Withdraw`, `BuildClaims.Withdraw` and `OwnClaims.Withdraw` take back a case or claim not yet heard (the construction game's put back).
 
 How a sentence is put together (`JusticeLaw.Sentence`):
 

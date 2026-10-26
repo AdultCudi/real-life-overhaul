@@ -18,9 +18,83 @@ namespace RealLifeOverhaul
         RivalBusiness   // a rival's business: it keeps the rival's name
     }
 
+    /// <summary>Whether a special place is open, for the line the game's card gives it.</summary>
+    public enum CardState
+    {
+        None = 0,     // the game's own line stands
+        Open = 1,
+        Closed = 2
+    }
+
+    /// <summary>
+    /// What a feature says on the game's card of its building beyond the name and the kind: whether it is open by its own hours (and the hours to the
+    /// next change and the hour of it, as the game's own card gives them), who runs it, and whether the card may say "click to enter". Filled by the
+    /// feature's callback (<see cref="SpecialEntry.Facts"/>) each time the card is written: once a second at most.
+    /// </summary>
+    public sealed class SpecialFacts
+    {
+        public CardState State;
+        public int Hours;          // to the next change of the state
+        public int AtHour;         // the hour of the day it changes
+        public string RunLine;     // "Run by the council": the card's owner line; null for none
+        public bool CanEnter;      // the card's "click to enter" is shown (a door that is open and can be walked in at)
+        public string OwnerName;   // who owns the building, for BizMan's "Building owned by" line (the game's own words with this name); null for the game's own
+        public bool OwnerYou;      // the player owns it through the feature, not in the game's registration: BizMan's line names the player (the game's own form)
+        public string PageLine;    // BizMan's line in place of "Taken by {name}" (who runs it, or where the player runs it); null for that line
+
+        /// <summary>The game's own key for the card's state line (BuildingResume.UpdateOpenStateLabel): open and closing in hours, or closed and opening in hours; null for none.</summary>
+        public static string StateKey(CardState state, int hours)
+        {
+            return state == CardState.Open ? (hours == 1 ? "buildingresume_open_closing_in_hour" : "buildingresume_open_closing_in_hours")
+                : state == CardState.Closed ? (hours == 1 ? "buildingresume_closed_opening_in_hour" : "buildingresume_closed_opening_in_hours") : null;
+        }
+
+        public void Clear()
+        {
+            State = CardState.None;
+            Hours = AtHour = 0;
+            RunLine = null;
+            CanEnter = false;
+            OwnerName = null;
+            OwnerYou = false;
+            PageLine = null;
+        }
+    }
+
+    /// <summary>
+    /// What BizMan's page of a building a feature holds says, the one rule of it (game-free, so it is checked offline): the form to start a business is
+    /// never offered there, the owner line names the feature's owner in the game's own words when the feature says one and the game's own when it does not,
+    /// and the line that stands in the place of "Taken by" is the feature's own when it gives one.
+    /// </summary>
+    public static class TakenPageRules
+    {
+        /// <summary>True when the page may offer the form to start a business: only for a building no feature holds.</summary>
+        public static bool OffersStart(string takenBy) => takenBy == null;
+
+        /// <summary>The line under "This building is not for sale": the feature's own line, else the game's "Taken by" words.</summary>
+        public static string Line(SpecialFacts facts, string takenWords)
+        {
+            return facts != null && !string.IsNullOrEmpty(facts.PageLine) ? facts.PageLine : takenWords;
+        }
+
+        /// <summary>
+        /// The name the owner line carries ("Building owned by {name}"): the player's name when the feature says the player owns it, the feature's own name
+        /// for its owner, else null for the game's own owner (and its "Undefined" for a building nobody owns).
+        /// </summary>
+        public static string Owner(SpecialFacts facts, string playersName)
+        {
+            if (facts == null)
+            {
+                return null;
+            }
+            return facts.OwnerYou && !string.IsNullOrEmpty(playersName) ? playersName : !string.IsNullOrEmpty(facts.OwnerName) ? facts.OwnerName : null;
+        }
+    }
+
     /// <summary>One special building as the book holds it.</summary>
     public sealed class SpecialEntry
     {
+        public Action<SpecialFacts> Facts;   // the feature's say on the card's open state and owner line; null for the game's own
         public string Id;          // the feature's own name for it ("utilities", "police_2"); one building per id
         public string Street;
         public int Number;
@@ -54,6 +128,7 @@ namespace RealLifeOverhaul
             public string Street;
             public int Number;
             public Func<bool> On;   // the feature's own option; null for always
+            public SpecialKind Kind;   // what the feature holds it as, for the held addresses' count
         }
 
         public int Count => _byId.Count;
@@ -150,7 +225,7 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>Reserves an address for an id while <paramref name="on"/> holds (null: always); false if another id has it.</summary>
-        public bool Reserve(string id, string street, int number, Func<bool> on = null)
+        public bool Reserve(string id, string street, int number, Func<bool> on = null, SpecialKind kind = SpecialKind.Other)
         {
             if (string.IsNullOrEmpty(id))
             {
@@ -162,7 +237,7 @@ namespace RealLifeOverhaul
             {
                 return false;
             }
-            _reserved[key] = new Reservation { Id = id, Street = street, Number = number, On = on };
+            _reserved[key] = new Reservation { Id = id, Street = street, Number = number, On = on, Kind = kind };
             Stamp++;
             return true;
         }
@@ -315,6 +390,30 @@ namespace RealLifeOverhaul
             foreach (SpecialEntry entry in _byId.Values)
             {
                 into.Add(entry);
+            }
+        }
+
+        /// <summary>
+        /// What the book holds now, as claims on addresses (cleared first): every entry whose feature shows it (its option on)
+        /// and every reservation that is on. This is what keeps the game's own letting off the mod's buildings
+        /// (<see cref="HeldLedger"/>); an entry whose option is off holds nothing, as it refuses nothing.
+        /// </summary>
+        public void Holding(List<HeldClaim> into)
+        {
+            into.Clear();
+            foreach (SpecialEntry entry in _byId.Values)
+            {
+                if (IsShown(entry))
+                {
+                    into.Add(new HeldClaim { Holder = HeldUnitsRules.BookPrefix + entry.Id, Street = entry.Street, Number = entry.Number, Kind = HeldUnitsRules.KindOf(entry.Kind) });
+                }
+            }
+            foreach (Reservation r in _reserved.Values)
+            {
+                if (r.On == null || r.On())
+                {
+                    into.Add(new HeldClaim { Holder = HeldUnitsRules.ReservePrefix + r.Id, Street = r.Street, Number = r.Number, Kind = HeldUnitsRules.ReservedKind(r.Id, r.Kind) });
+                }
             }
         }
 

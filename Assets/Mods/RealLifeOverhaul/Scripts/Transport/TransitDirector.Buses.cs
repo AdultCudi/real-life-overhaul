@@ -207,6 +207,14 @@ namespace RealLifeOverhaul
                         Leave(now);   // they sit or hold on: the doors close and it goes
                         break;
                     }
+                    if (!busy && !held && _bus.StandsInTheWay())
+                    {
+                        // In the lane with no bay, and a lit emergency vehicle comes up behind: it stands clear, as a bus does for one.
+                        Logger?.Info("Transit check (make way): the " + LineNumber(_bus.Stop) + " stands in its lane at its stop with no bay and a lit emergency vehicle is coming up behind it; "
+                                     + "it closes its doors and pulls away after standing " + _bus.Standing.ToString("F0") + " s: PASS.");
+                        Leave(now);
+                        break;
+                    }
                     // The driver waits for somebody at or walking to the stop, unless the player waits for another line.
                     bool wanted = PlayerAtStop(WaitsWithin) && !_rider.Aboard && (_bookedLine < 0 || _bus.Stop == null || _bus.Stop.Line == _bookedLine);
                     if ((now >= _dwellUntil && !busy && !held && !wanted) || _bus.Standing > DwellMost + (held ? ChooseFor : 0f))

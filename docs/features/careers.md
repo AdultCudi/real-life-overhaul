@@ -13,7 +13,7 @@ What `Scripts/Careers` holds: education and careers: the city's courses and the 
 
 | File | What it is |
 | --- | --- |
-| `Study/StudyCatalogue` | every course (short, diploma, degree, after a degree, certificate), the timetable, exams, grades, fees, grants, the student loan, learning and fading (game-free: EconomyCheck runs it) |
+| `Study/StudyCatalogue` | every course (short, diploma, degree, after a degree, certificate), the timetable, exams, grades, fees, grants, the student loan, learning and fading (game-free: EconomyCheck runs it); the building trades' four are the last: the bricklaying diploma, the crane operator's ticket, construction management and the architect's licence (a certificate of the player's alone, no profession's staff sit it), and the skill masonry |
 | `Study/StudyRules` (and .Learning, .Fees) | the rules of studying: classes joined and missed, homework, the exam's mark, retakes, fees, the loan, skills, a child's degree, tutoring, an academy's students (game-free) |
 | `Work/ProCatalogue` | twenty-five professions, each a ladder of ranks on the professions' roles and the player's skills (game-free) |
 | `Work/ProRules` | what a rank asks, an employer's score, the interview, the offer and haggling, the working day, notice, references, the city's vacancies (game-free) |
@@ -23,7 +23,8 @@ What `Scripts/Careers` holds: education and careers: the city's courses and the 
 | `CareersDirector` | the one component (no Update): a one-second timer, the game's hour and day, the parts in partial files (.Study and .Coursework; .Work, .Vacancies and .Applying; .Desk and .DeskDay; .ClassPlay, .Prompt and .Floors; .Life, .Own, .Degrees, .Family, .Tests) |
 | `Sitting`, `Study/SittingRules` | a class, homework, an exam, a working day, a contract, tutoring or a ceremony left to the game's own activity panel and clock (Jobs/ShiftSkip), with its own record settled once and the book of the open ones (game-free) |
 | `CampusApp, CareerApp` | the Campus and Career apps in the game's own frame (GameUi.AppShell) |
-| `CampusBuilding` | Hudson City University: the largest office building of the city, with its sign |
+| `CampusBuilding` | Hudson City University: the largest office building of the city, with its sign; it and its reserved building are held from the game's own letting ([the game's own letting](../reference/map-places.md#the-games-own-letting-leaves-them-alone)) |
+| `CampusInterior` (.Entering, .Floor, .Panels) | the university's classrooms on the floors of its building, held by the floors core ([Floors](floors.md)): its own refusals at the door, its hours, its building card, its rooms found, named, signed and marked |
 | `AcademyType` | the player's own training academy, a business type of the game's (registered at the start, stripped for removal) |
 | `CareersBridges` | what it asks of the others (Wiring/CareersLinks fills them in) |
 | `Ladder/LadderRanks` | the management ladder's rungs (frontline employee to executive, the owner apart), what each asks and pays, the powers it brings (game-free) |
@@ -65,9 +66,11 @@ At an office board the game's panel over a place offers "Speak to the office" on
 
 The game has no taxi business type (taxis are transport the player buys), so the cab ladder ends at owner-operator and has no hook into a business.
 
+Three more employers are the building trades' ([Building trades](trades.md#courses-and-careers)): Hudson Brick and Build (labourer, mason, foreman, site manager), City Building Control (building inspector, senior, chief) and Vale and Hudson Architects (draughtsperson, junior architect, architect, partner). They have no help-wanted board (`Premises` empty): they are reached by the Work contact, at a works site's notice (a rota shift due is clocked on there) and at the practice's desk, and their shifts are worked at the nearest works site or the practice (`CareerLinks.Workplace`, `ICareerWorkplace.Depot`). A rank may name its own trade (`CareerRank.JobId`: the builder's mason) and what it asks (`CareerRank.Needs`, a role of the trades'): it is refused at signing on and a review that would promote to it holds the promotion back and says what is missing (`reallife_career_review_held`; a raise is still given). The labourer's shifts teach masonry, so the mason's rank comes with the work: an apprenticeship.
+
 The game's one employer job (the cashier) is left exactly as it is: an hour worked at it is counted, read-only, once an hour (`JobHelper.IsPlayerWorking` outside the player's own shops), shown on the CV, and every eight such hours count as one shift of experience when signing on with the retail chain.
 
-- **Signing on** is face to face at the office or by phone (Work contact, "Apply for a job": the six employers in turn, the same page as the boss at the office, so the same checks and sign-on).
+- **Signing on** is face to face at the office or by phone (Work contact, "Apply for a job": the nine employers in turn, the building trades' three among them, the same page as the boss at the office, so the same checks and sign-on).
   The boss says what the work is in their own manner, then offers the three rotas in turn (Mon/Wed/Fri 08:00, Tue/Thu/Sat 13:00, Sat/Sun 10:00).
 
   References are counted as: +1 for the Gig Line's reference letter, +1 for each employer left on good terms, -1 for each left with a marked-down reference.
@@ -146,7 +149,7 @@ Calls made well are the units paid and counted.
 State: one line, `reallife:career`, in modData (`CareerState`).
 A shift in progress is carried by the jobs' own line (`reallife:job_live`, see [A shift across a save](jobs.md#a-shift-across-a-save-jobsave-payslip)): a load pays the basic wage for the hours clocked and counts the shift.
 
-Test buttons (options, Jobs): sign on with the next employer (cycles all six, on a rota that works tomorrow); work a shift at my current rank now; my review is due now (opens the review face to face); promote me one rank; start a dispatcher shift; start a shift in charge; book a set near here.
+Test buttons (options, Jobs): sign on with the next employer (cycles all nine, on a rota that works tomorrow); work a shift at my current rank now; my review is due now (opens the review face to face); promote me one rank; start a dispatcher shift; start a shift in charge; book a set near here.
 Test shifts go on no record.
 
 Wish-list for the asset pipelines.
@@ -159,6 +162,10 @@ The clips are already asked for by id, before today's stand-in, so they drop in 
 | clip `staff_struggle` | hands on hips, a shake of the head, looking down at something, 6 s loop | `LeadJob`'s "stuck" (today `arms_crossed`) |
 | prop `dispatch_desk` | a lectern-height desk with a wall map, 1.2 x 1.4 x 0.5 m, read from +Z | taken out of the props bundle on 26 Oct 2026 as nothing placed it; a feature that wants it models it anew in the second bundle (PropAssets/README.md, "Adding a prop from Blender") |
 | prop `employer_sign` | a small wall plaque (0.6 x 0.3 m), six variants, one per employer name | taken out of the props bundle on 26 Oct 2026 as nothing placed it; a feature that wants it models it anew in the second bundle (PropAssets/README.md, "Adding a prop from Blender") |
+
+## Where the professions work
+
+The city's vacancies (`CareersDirector.Vacancies`) are drawn each game day from every business of the save's list that employs a profession (`WorkGame.Employers`, `ProCatalogue.EmployedBy`, its type matched against each profession's types: a part of the type's name, and for the tech professions the tech sector's own five types alone, `ProCatalogue.TechSector`, as the mod's other types share their prefix and the builders' offices once hired developers), not the player's own, and the public sector's buildings. A company of the jobs board with no office business of its own and no headquarters works at one of the city's office buildings by its name's hash; that list once kept the first 64 of the save's list, all Manhattan's, so Uptown's offices, whose registrations come after the game's own, were never one; it holds every office now. The office types the game opens businesses of in its offices are law firms (lawyers, accountants, IT support), web agencies (developers, designers, IT support), design studios (designers), event planners (marketing) and travel agencies, which now take on sales staff. "Uptown: a job at an Uptown office" ([Uptown](uptown.md#offices-to-work-at-and-a-district-lived-in-from-the-first-day)) hires the player at one through `CareersDirector.TestJobAt`, wired by `Wiring/CareersLinks` through `Uptown/DistrictWork`. A workplace in a district of the mod's own names it after its address wherever the working life writes one (`WorkGame.Address`, "{address}, {district}", the district's name its id's text as the game names its districts), since the mod's streets do not say which district they are in.
 
 ## The professions: pay and pace
 
@@ -196,6 +203,20 @@ Reviews and the time at a rank are written for a year of 365 days and kept to th
 - **Trying it.** Options > Tests has **Start a working day at my computer at home** (`TestComputerWork`): the rest of a working day begun at the home computer at once, whatever the hour and the job's days from home, with a job given if there is none, as **Start an online class at my computer at home now** does for a class.
 - **The home's internet down.** Every activity at the home computer gives its refusal through `StudyRules.NoNetWhy`, from `CareersBridges.HomeInternet` (Utilities: up, or why it was down over a span of minutes). Only a provider's outage excuses (`StudyRules.Excuses`), decided once, when the activity's window has shut: an online class gone by with the outage over its join window is excused (`StudyRules.Excuse`: held, but left out of `Counted`, so out of the attendance share, the bar and the mark; `Enrolment.Excused` and `ExcusedDay`, saved at the end of the course's record, and said in the Campus app); a working day from home not worked with the outage over its start window is excused like a sick day (`ProRules.DayExcused`: no pay, no missed day, no warning, and the boss's text says why); a video interview with the outage over its window moves to the next weekday at the same hour (`ProRules.Reschedule`). No plan, one being put in and one cut for an unpaid bill excuse nothing. Homework and tutoring have no hour, so nothing is lost. The home's power is not part of its internet in the mod, and a storm's power cut is only news. Options > Tests: **Online class and day from home: go by in an outage now**, after Utilities' **Internet: an outage now**; Developer diagnostics write one "Careers check (online class gone by)", "(working day from home gone by)" or "(video interview gone by)" line each.
 - **After a game update:** the part `computer_class` (`CustomizableButtonsOverlay.buttonTemplate`) carries the computer's buttons. If it fails, or the buttons stand down after a fault, the home computer loses the mod's buttons: online classes and homework can still be started at home from the Campus app, and a day from home from the Career app.
+
+## The university's floors
+
+Hudson City University's building is held by the floors core (`Scripts/Floors`, [Floors](floors.md)), with the university's classrooms on its floors 1 to 4 (`CampusInterior`: a `FloorHost` and a `FloorPlace`). Its courses taught in person stand five to a floor in the catalogue's order (`CampusRules.FloorOf`, `RoomOf`, `CourseAt`).
+
+- **The interior** is the game's own school: structure D1 with its layout GarmentDistrictSchool. The building reads as D1 while the game loads it and is its own size again the moment the game has (the core borrows it, `FloorLoan`); on a floor the manager's registration is the university's own (the school's business type, its hours, its layout), kept in no list of the save. The core lays the school's layout in over the four dark frames, the classroom doors last; the university then finds its five rooms by their doors' custom values, names each door after its course, hangs a sign over it and puts the game's own mark over it (`CampusMarks`), and says the floor's courses in a notification.
+- **At the door** the game's own panel (`Careers check (university door)`) has the university's name, its hours and a button a floor, the floor of a class on now marked in blue with its course; while closed the floors are offered greyed. The game's own click on the building goes in too: to the floor of the class on now, else of the first course the player is on, else floor 1.
+- **The lift** by the entrance (`Careers check (university lift)`) offers the other floors; it is the core's quarter-second fade, the same five rooms given that floor's courses, the player where they came in. It is not offered while a class, homework or exam is being sat.
+- **The Campus app's Attend, Sit and Homework** go in to the course's floor (or take the lift there) and on to its classroom (`GoToRoom`), begun at its desk.
+- **Its own refusals** come before the core's: the university closed (with its hours), the player in a vehicle, away from its door, or the game already going in.
+- **Found inside on no floor** (a save made inside, which the game loads on the building's own interior): taken to floor 1 through the game's door again, or out to the street while it is closed.
+- **Switched off while inside** (its part or study): the building's registration is put back and the player is taken out to the street, as the building's own interior is not the school's.
+- **In another city** (or under the Diagnostics test as in one), and while studying is switched off after its faults: the floors core puts the university's building away with `careers_study` (the same way out as above) and holds it again once the feature is back.
+- **Going Public:** every floor of the building gives the same indoor tag, so two players on different floors see each other (see [Floors](floors.md#going-public)); a classroom door's click and the desk's panel follow `ClassPlayRules.TakesRoomClick` and `WayToDesk` as before.
 
 ## Setting off
 

@@ -1,15 +1,273 @@
 {
  "bundle": "reallife_props_2",
  "set": "second",
- "sha256": "45998a768beb6ae62beb551e79cf365a0904fef2c644ea437957c48fee186a1b",
- "bytes": 1298,
- "triangles": 0,
- "triangle_limit": 60000,
+ "sha256": "acc705cebd099b1cdba44c30b937a5ddf616e01e975f9cabba2926c792d08b8d",
+ "bytes": 1956592,
+ "triangles": 83786,
+ "triangle_limit": 100000,
  "atlas": {
-  "width": 0,
-  "height": 0,
-  "used": 0
+  "width": 512,
+  "height": 512,
+  "used": 55
  },
- "textures": [],
- "props": []
+ "textures": [
+  "props_base",
+  "props_mask"
+ ],
+ "props": [
+  {
+   "id": "birchwood_hall",
+   "mesh": "birchwood_hall",
+   "triangles": 2756,
+   "material": "lit",
+   "size": [
+    30.8,
+    11.925,
+    26.0
+   ],
+   "parts": [
+    {
+     "game": null,
+     "triangles": 2360
+    },
+    {
+     "game": "brick",
+     "triangles": 72
+    },
+    {
+     "game": "roof",
+     "triangles": 60
+    },
+    {
+     "game": "glass",
+     "triangles": 264
+    }
+   ]
+  },
+  {
+   "id": "birchwood_junior",
+   "mesh": "birchwood_junior",
+   "triangles": 3684,
+   "material": "lit",
+   "size": [
+    30.8,
+    10.85,
+    27.6
+   ],
+   "parts": [
+    {
+     "game": null,
+     "triangles": 3036
+    },
+    {
+     "game": "brick",
+     "triangles": 72
+    },
+    {
+     "game": "roof",
+     "triangles": 12
+    },
+    {
+     "game": "glass",
+     "triangles": 492
+    },
+    {
+     "game": "fence",
+     "triangles": 72
+    }
+   ]
+  },
+  {
+   "id": "birchwood_main",
+   "mesh": "birchwood_main",
+   "triangles": 14806,
+   "material": "lit",
+   "size": [
+    40.8,
+    19.805,
+    34.5
+   ],
+   "parts": [
+    {
+     "game": null,
+     "triangles": 13038
+    },
+    {
+     "game": "brick",
+     "triangles": 232
+    },
+    {
+     "game": "roof",
+     "triangles": 84
+    },
+    {
+     "game": "glass",
+     "triangles": 1452
+    }
+   ]
+  },
+  {
+   "id": "corner_bank",
+   "mesh": "corner_bank",
+   "triangles": 9488,
+   "material": "lit",
+   "size": [
+    19.78,
+    20.24,
+    17.78
+   ],
+   "parts": [
+    {
+     "game": null,
+     "triangles": 9096
+    },
+    {
+     "game": "glass",
+     "triangles": 392
+    }
+   ]
+  },
+  {
+   "id": "corner_bodega",
+   "mesh": "corner_bodega",
+   "triangles": 6425,
+   "material": "lit",
+   "size": [
+    15.57,
+    24.5,
+    13.57
+   ],
+   "parts": [
+    {
+     "game": null,
+     "triangles": 5716
+    },
+    {
+     "game": "brick",
+     "triangles": 109
+    },
+    {
+     "game": "glass",
+     "triangles": 600
+    }
+   ]
+  },
+  {
+   "id": "corner_deco",
+   "mesh": "corner_deco",
+   "triangles": 14396,
+   "material": "lit",
+   "size": [
+    20.8007,
+    61.2,
+    18.8007
+   ],
+   "parts": [
+    {
+     "game": null,
+     "triangles": 13628
+    },
+    {
+     "game": "glass",
+     "triangles": 768
+    }
+   ]
+  },
+  {
+   "id": "corner_diner",
+   "mesh": "corner_diner",
+   "triangles": 2730,
+   "material": "lit",
+   "size": [
+    16.0501,
+    10.6,
+    14.43
+   ],
+   "parts": [
+    {
+     "game": null,
+     "triangles": 2324
+    },
+    {
+     "game": "brick",
+     "triangles": 82
+    },
+    {
+     "game": "glass",
+     "triangles": 324
+    }
+   ]
+  },
+  {
+   "id": "corner_glass",
+   "mesh": "corner_glass",
+   "triangles": 5168,
+   "material": "lit",
+   "size": [
+    23.2878,
+    70.65,
+    21.2878
+   ],
+   "parts": [
+    {
+     "game": null,
+     "triangles": 4876
+    },
+    {
+     "game": "glass",
+     "triangles": 292
+    }
+   ]
+  },
+  {
+   "id": "corner_loft",
+   "mesh": "corner_loft",
+   "triangles": 10297,
+   "material": "lit",
+   "size": [
+    17.55,
+    31.8,
+    15.4
+   ],
+   "parts": [
+    {
+     "game": null,
+     "triangles": 9325
+    },
+    {
+     "game": "glass",
+     "triangles": 948
+    },
+    {
+     "game": "brick",
+     "triangles": 24
+    }
+   ]
+  },
+  {
+   "id": "corner_prewar",
+   "mesh": "corner_prewar",
+   "triangles": 14036,
+   "material": "lit",
+   "size": [
+    21.5625,
+    33.7,
+    21.98
+   ],
+   "parts": [
+    {
+     "game": null,
+     "triangles": 12052
+    },
+    {
+     "game": "brick",
+     "triangles": 148
+    },
+    {
+     "game": "glass",
+     "triangles": 1836
+    }
+   ]
+  }
+ ]
 }

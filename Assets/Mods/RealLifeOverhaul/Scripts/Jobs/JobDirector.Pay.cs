@@ -187,7 +187,7 @@ namespace RealLifeOverhaul
                 {
                     _career.SettleSaved(def, saved, sum);   // the basic wage for the hours clocked, and the shift on the rota's count
                 }
-                else if (sum.Worked && JobCatalogue.IndexOf(def.Id) >= 0)
+                else if (sum.Worked && JobCatalogue.RecordOf(def.Id) >= 0)
                 {
                     JobState.ShiftCut(def);   // a shift worked; the strikes stay as they were
                 }

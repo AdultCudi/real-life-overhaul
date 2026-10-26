@@ -1269,3 +1269,63 @@ menu, every app a button. A folder of the mod's is made of the game's own parts 
   which opens the subway's list window (`DeskList`, section 10) with the places to go.
 
 See [the phone](../../docs/features/phone.md) for what the player sees and what is checked.
+
+## 38. Lines of the mod's in the game's objectives window (`GameUi.TaskGroup`; the construction objectives)
+
+`UIs.Instance.tasksUI` (`UI.Tasks.TasksUI`, `Canvases/Tasks`, the panel of section 10) holds groups under its
+`groupTemplate`'s parent: the business alerts (`bizman_alerts`, made in its `Start`), a job's mission group
+(`MissionTasksUI.CreateTasksGroup`, first in order), the workout plan (`WorkoutPlanUI`) and each side quest
+(`SideQuestUI`). Every one is made by the public `SetUpTasksGroup(headerKey)`, a copy of the template with
+`Headline/Label`'s key set, and filled with copies of the public `taskEntryTemplate`: a `Button` on the entry, `Label`
+(TMP 30 with its `TextLocalizationComponent`), `Checkmark` (a `Toggle`), `DestinationButton` (a `Button`) and
+`CloseButton`. The game's own entries set the label's colour to `GlobalReferences.colors.yellow` or `.red` for its
+medium and high priorities, hide the destination button when there is no address and wire it to the Set destination
+sequence of section 5. After a change the owner calls `ScheduleUpdateObjectivesHeight()`: the game sizes the window,
+folds it away while no group has a shown entry (`HasVisibleObjectiveEntries`, which skips entries named as its
+templates and `Headline`) and opens it again when one has. The whole window's alpha follows the full menu
+(`GlobalEvents.onFullMenuToggle` -> `ChangeVisibility`, also off in a mini game), and it goes with the HUD in the time
+machine and with "hide the interface".
+
+`TaskGroup` makes one group by that call, its entries by instancing the template (named `reallife_task_N`, never a
+template's name), hides `Checkmark` and `CloseButton` (as the game's own time entry does), rewires the entry's button
+and its destination button to the owner's presses (`UiClone.Rewire`), and folds on a press of its headline (a `Button`
+added to `Headline` if it has none, its label the raycast target). Words go through `UiClone.Words`; a line whose words
+did not change is not written again. No line hides the group; the feature off destroys it. A load destroys the window
+with the scene: the next write makes the group again. Nothing runs a frame.
+
+Proven: every member named here (decompiled `TasksUI.cs`, `MissionTasksUI.cs`, `SideQuestUI.cs`, `WorkoutPlanUI.cs`).
+Inferred: how a long line wraps in the entry and how the added headline button takes a press.
+
+## 39. A toolbar over the map, the game's tooltips, and a tour (`Construction/BuildModeKit`, `BuildModeBar`, `BuildModeTip`, `BuildModeTour`)
+
+Build mode's interface over the city map is made of the interior designer's own parts (`UIs.interiorDesignerUI`,
+`Canvases/InteriorDesignerUI`, a canvas of order 3 scaled to 3840 by 2160): its toolbar's `Topbar/Section` (the box, sprite
+`Box-Darker-Small-125` at 0.949, a horizontal layout and a content size fitter), one of its tool buttons (a `Button` with the
+game's `ButtonEffects`, its child `SelectedBackground` in `Button-Blue` and its `Icon` of 64), a `Divider`
+(`Square-With-Padding-8`) and a label of its panels (`ActionPanels/QueuePanel/NoPointOfSaleItemsLabel`, TextMeshPro 32 in
+the game's font). `BuildModeKit` copies them asleep and takes every script of the game's off them but `ButtonEffects` and
+the text component (the designer's `ToolButton`, `ActionKeyTooltip` and `ConfigurableControlsHintsToggler` are in
+`BigAmbitions.InteriorDesigner.dll` and other assemblies, so `UiClone.StripGameScripts`, which takes the main assembly's,
+would leave them). The icons are the designer's toolbar's (read from it: `Icon-Palette`, `Icon-Coin`,
+`Icon-CopyOutline-64`, `Icon-Close`, `Icon-Walls`...) or others by name through `GameSprites`. A coloured box is the game's
+`white-rounded-box` (else `round-corner-no-drop`) tinted, never the colour picker's `white-round`: that sprite is packed
+tight, 50 of its 232 pixels each side cut away as see-through, so a box of it draws smaller than its rectangle (a row
+116 high drew as a thin line, a 60 square as a dot; `UnityEngine.Sprites.DataUtility.GetPadding` says it, and the interface
+test fails on any sliced picture with such a margin). A plain fill is `1pixelwhite`. Buttons that must read as buttons on
+the dark box get a face inside a thin edge (`BuildModeKit.Frame`). The hint bar stands under the game's top bar and
+everything hung under it, measured at each writing (`BuildModeGame.Hud`), clear of the objectives panel; the game's FPS,
+address and neighbourhood labels at the foot (PlayerHUD's) are switched off while build mode is open and given back. The parts stand on the help's canvas (order 20, over the HUD and under
+the question box and the tooltips, both 21).
+
+The game's tooltip (`Tooltip.TooltipSystem`, its own canvas of order 21, following the pointer) shows for any
+`TooltipTarget` a tenth of a second after the pointer rests on it, and a disabled button still gets the pointer, so a
+greyed tool's tooltip can say why. `BuildModeTip` is a `TooltipTarget` whose `ShowTooltip` writes a header (a text that is
+not a key is written as it is, `TooltipSystem.SetHeader`) and a line in final words. The same system can be driven
+without a target (`TooltipSystem.Show`, `AddHeader`, `AddSplitter`, `AddLabel`, `Hide`): build mode says the square under
+the pointer that way, written only when the square changes, taken away as the pointer goes onto the interface.
+
+Proven: every object, size, sprite and member named here (the scene data, `uitree.py name:InteriorDesignerUI 5`; decompiled
+`TooltipSystem.cs`, `TooltipTarget.cs`, `BasicTooltip.cs`; `ilspycmd -t BigAmbitions.InteriorDesigner.ToolButton`). Inferred:
+how the copies look at the foot of the map, the tooltip beside the pointer over the map, and the layout's sizes in a
+language with longer words.
+

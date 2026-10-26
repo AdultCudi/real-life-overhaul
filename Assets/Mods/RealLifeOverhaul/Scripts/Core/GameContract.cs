@@ -17,6 +17,7 @@ namespace RealLifeOverhaul
         private const string Sky = "DayNightCycle";
         private const string UnityUi = "UnityEngine.UI";
         private const string Steam = "Facepunch.Steamworks.Win64";
+        private const string Navigation = "Unity.AI.Navigation";
         private const string Hg = "HGPlugins";
 
         static GameContract()
@@ -41,6 +42,7 @@ namespace RealLifeOverhaul
         public static readonly GamePart AppButtons = ContractBook.Part("app_buttons", "phone", "the buttons of the mod's phone apps");
         public static readonly GamePart ContactPictures = ContractBook.Part("contact_pictures", "phone", "the pictures of the mod's contacts");
         public static readonly GamePart ContactSearch = ContractBook.Part("contact_search", "phone", "the search box of the Contacts app");
+        public static readonly GamePart ContactGroupsPart = ContractBook.Part("contact_groups", "phone", "the mod's groups among the Contacts app's category buttons");
         public static readonly GamePart PhoneSkin = ContractBook.Part("phone_skin", "phone", "the phone's skin");
         public static readonly GamePart MapPicker = ContractBook.Part("map_picker", "navigation", "clicking the markers when choosing a place on the city map");
         public static readonly GamePart MapPlaces = ContractBook.Part("map_places", "navigation", "the mod's places in the city map's filters");
@@ -55,6 +57,7 @@ namespace RealLifeOverhaul
         public static readonly GamePart ClickLedger = ContractBook.Part("click_ledger", "ledger", "clicking the City Ledger at home");
         public static readonly GamePart ClickBusStop = ContractBook.Part("click_bus_stop", "transport", "clicking a bus stop");
         public static readonly GamePart ClickDesk = ContractBook.Part("click_desk", "careers_study", "clicking your desk at work");
+        public static readonly GamePart ClickBuilderDesk = ContractBook.Part("click_builder_desk", "construction", "talking to the person at a builder's front desk");
         public static readonly GamePart Mop = ContractBook.Part("mop", "jobs", "the cleaner's mop");
         public static readonly GamePart SchoolCar = ContractBook.Part("school_car", "licences", "the driving school's car");
         public static readonly GamePart SaveCheck = ContractBook.Part("save_check", "savetools", "the save tools' test of whether the game may save here");
@@ -89,6 +92,7 @@ namespace RealLifeOverhaul
         public static readonly GamePart PersonaCourses = ContractBook.Part("persona_courses", "careers_study", "the mod's courses in the Persona app's education box");
         public static readonly GamePart FrontSignsPart = ContractBook.Part("front_signs", null, "the signs on the mod's buildings");
         public static readonly GamePart ClaimedRows = ContractBook.Part("claimed_rows", null, "the mod's buildings left out of the city map's rows of units to let");
+        public static readonly GamePart HeldPass = ContractBook.Part("held_pass", null, "the test of the mod's buildings against the game's own choice of empty units to let");
         public static readonly GamePart StartCompetitors = ContractBook.Part("start_competitors", "tech_sector", "the competitors in the city on BizMan's start screen, for the mod's own kinds of business");
         public static readonly GamePart ChatFilter = ContractBook.Part("chat_filter", "flare", "Steam's own filter of what other players of a Going Public session type on Flare (the mod's own word list without it)");
         public static readonly GamePart PhotoHolds = ContractBook.Part("photo_holds", "photos", "the Camera telling its own hold on the player from the game's, and putting the world's clicks back as they were (the mop's floor)");
@@ -102,6 +106,15 @@ namespace RealLifeOverhaul
         public static readonly GamePart CarWash = ContractBook.Part("car_wash", "garage",
             "stand-ins for the spray and the sound of a car that has none, so the game's car wash in a repair bay ends on it");
         public static readonly GamePart TrafficMend = ContractBook.Part("traffic_mend", "traffic", "putting the city's traffic right when it stops adding cars for good");
+        public static readonly GamePart SiteWrapFade = ContractBook.Part("site_wrap_fade", "civic",
+            "the game's scaffolding round a building fading with it for the camera, and leaving the city map with it");
+        public static readonly GamePart NewGroundWalk = ContractBook.Part("new_ground_walk", "newground", "the city's two walking meshes read for new ground and the walking tests");
+        public static readonly GamePart OwnBuildings = ContractBook.Part("own_buildings", "newbuildings", "the mod's own buildings, made at each load from the game's designs");
+        public static readonly GamePart UptownLabels = ContractBook.Part("uptown_labels", "uptown", "the names over Uptown's streets, on road modules copied from the game's own");
+        public static readonly GamePart UptownDistrict = ContractBook.Part("uptown_district", "uptown",
+            "Uptown as a district of the game: in its lists of districts, its people's tables and its city map");
+        public static readonly GamePart UptownBigTests = ContractBook.Part("uptown_big_tests", "uptown",
+            "the tests of Uptown's wholesale store and filling station: a delivery and a fill-up the game's own way");
         public static readonly GamePart ShopHelp = ContractBook.Part("shop_help", "newshops", "the new kinds of shop's pages in the game's help");
         public static readonly GamePart PickedRaises = ContractBook.Part("picked_raises", "economy_company", "a raise for several employees picked in the game's My Employees app");
 
@@ -197,8 +210,8 @@ namespace RealLifeOverhaul
         public static readonly GameMember RainEnd = StaticField(SeasonRain, Sky, "BigAmbitions.DayNightCycle.RainHelper", "NextRainEndTime", "Timestamp");
         public static readonly GameMember RainFade = StaticField(SeasonRain, Sky, "BigAmbitions.DayNightCycle.RainHelper", "NextRainPostRainPeriodStartTime", "Timestamp");
 
-        // Home/HomeOffers, Ledger/LedgerPointer, Transport/TransitPointer: the game's list of what a click does
-        public static readonly GameMember CtaBehaviours = StaticField(On(ClickHome, ClickLedger, ClickBusStop, ClickDesk), Game, "Player.HUD.ItemInfoOverlays.CtaManager", "CtaBehaviors", "List<ICtaBehavior>");
+        // Home/HomeOffers, Ledger/LedgerPointer, Transport/TransitPointer, Careers/DeskGame, Construction/BuilderDeskGame: the game's list of what a click does
+        public static readonly GameMember CtaBehaviours = StaticField(On(ClickHome, ClickLedger, ClickBusStop, ClickDesk, ClickBuilderDesk), Game, "Player.HUD.ItemInfoOverlays.CtaManager", "CtaBehaviors", "List<ICtaBehavior>");
 
         // Jobs/JobMop
         public static readonly GameMember MopClick = Optional(Method(Mop, Game, "MopController", "OnFloorCellClick", "Void", "DirtSpotObject"));   // else the cell under the player
@@ -242,6 +255,9 @@ namespace RealLifeOverhaul
 
         // Phone/Contacts
         public static readonly GameMember ContactIcons = Optional(StaticField(ContactPictures, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "PredefinedContactIconSprites", "Dictionary<String,Sprite>"));   // else from the next load
+        public static readonly GameMember ContactCategories = Field(ContactGroupsPart, Game, "UI.Smartphone.Apps.Contacts.ContactCategorySelection", "categories", "List<ContactCategory>");
+        // Optional: else the mod's buttons keep the colour of their pictures
+        public static readonly GameMember ContactButtonIcon = Optional(Field(ContactGroupsPart, Game, "UI.Smartphone.Apps.Contacts.ContactCategoryButton", "iconImage", "Image"));
         public static readonly GameMember ContactsMarkAll = Field(ContactSearch, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "markAllAsReadButton", "Button");
         public static readonly GameMember TextInputField = Field(On(ContactSearch, KeyHidden), Game, "TextInputUI", "inputField", "TMP_InputField");   // also Texts/TextsGame.AskSecret
 
@@ -379,6 +395,8 @@ namespace RealLifeOverhaul
 
         // Core/ClaimedMap: the step of the city map's look at its buildings, as the game declares it (read on the closed type)
         public static readonly GameMember MapLookStep = Field(ClaimedRows, Game, "Helpers.DistributedWork`1", "_updateAction", "Action<T>");
+        public static readonly GameMember EmptyUnits = Optional(StaticMethod(HeldPass, Game, "Helpers.CompetitionHelper", "GetEmptyBuildings",
+            "List<Building>", "List<Building>"));   // else the test says it cannot run
 
         // Character/HairTests: a lit street lamp's brightness (else the test lamp keeps its own)
         public static readonly GameMember LampMaxValue = Optional(Field(HairLampTest, Game, "StreetLamp", "maxValue", "Single"));
@@ -417,6 +435,60 @@ namespace RealLifeOverhaul
         public static readonly GameMember WashSpray = Optional(Field(CarWash, Game, "CarController", "washVfx", "GameObject"));
         public static readonly GameMember WashSound = Optional(Field(CarWash, Game, "CarController", "washAudioSource", "AudioSource"));
 
+        // Civic/SiteWrap: the building a wrap's pieces fade with when the camera's ray meets them, and the renderers the city map swaps for the building's box
+        public static readonly GameMember WrapFadeOwner = Optional(Field(SiteWrapFade, Game, "ViewBlockingEntityExtension", "viewBlockingEntity", "ViewBlockingEntity"));
+        public static readonly GameMember WrapMapRenderers = Optional(Field(SiteWrapFade, Game, "CityBuildingController", "_lodRenderers", "HashSet<Renderer>"));
+        // NewGround/WalkGame: the game's walking meshes (NavMeshSurface, which the mod is not built against) found and read at every load
+        public static readonly GameMember SurfacesActive = Prop(NewGroundWalk, Navigation, "Unity.AI.Navigation.NavMeshSurface", "activeSurfaces", "List<NavMeshSurface>", true);
+        public static readonly GameMember SurfaceData = Prop(NewGroundWalk, Navigation, "Unity.AI.Navigation.NavMeshSurface", "navMeshData", "NavMeshData", false);
+        public static readonly GameMember SurfaceAgent = Prop(NewGroundWalk, Navigation, "Unity.AI.Navigation.NavMeshSurface", "agentTypeID", "Int32", false);
+        public static readonly GameMember SurfaceLayers = Prop(NewGroundWalk, Navigation, "Unity.AI.Navigation.NavMeshSurface", "layerMask", "LayerMask", false);
+        public static readonly GameMember SurfaceArea = Prop(NewGroundWalk, Navigation, "Unity.AI.Navigation.NavMeshSurface", "defaultArea", "Int32", false);
+        public static readonly GameMember SurfaceSettings = Method(NewGroundWalk, Navigation, "Unity.AI.Navigation.NavMeshSurface", "GetBuildSettings", "NavMeshBuildSettings");
+        // NewBuildings/MadeGame: the game's private lookups of a building and of its registration by address (BuildingHelper.cs 50, 52;
+        // GetBuilding and GetBuildingRegistration read them first) and of its streets (AddressHelper.cs 13): a made building and its
+        // street go in at every load. Optional: the closest-building job's length (a self-check), and the food deliveries' addresses left
+        // out (without it no made home is made).
+        public static readonly GameMember BuildingLookup = StaticField(OwnBuildings, Game, "Helpers.BuildingHelper", "AllBuildingDictionary", "Dictionary<Address,Building>");
+        public static readonly GameMember RegistrationLookup = StaticField(OwnBuildings, Game, "Helpers.BuildingHelper", "AllBuildingRegistrationDictionary",
+            "Dictionary<Address,BuildingRegistration>");
+        public static readonly GameMember StreetLookup = StaticField(OwnBuildings, Game, "Streets.AddressHelper", "StreetDataDictionary", "Dictionary<String,StreetData>");
+        public static readonly GameMember ClosestJob = Optional(StaticField(OwnBuildings, Game, "Buildings.ClosestBuildingFromPlayer", "ClosestCbcPositionJob", "ClosestPositionJob"));
+        public static readonly GameMember DeliveryLeftOut = Optional(Field(OwnBuildings, Game, "Player.FoodDeliveryJob.FoodDeliveryJobConfig", "excludedDeliveryAddresses", "Address[]"));
+        // NewBuildings/MadeGame.City: a building made in play joins the city's list as the game's start of the city joins one: the private lookup of
+        // the controllers by address (CityManager.cs 38, which FindCityBuildingController reads) and the closest-building job's OnDestroy (it gives its
+        // arrays back and the next ask makes them from the longer list, ClosestBuildingFromPlayer.cs 130). Optional: without them a building made
+        // in play is not put in the city's list, and waits for the next load to be in it (the building stands all the same).
+        public static readonly GameMember CityLookup = Optional(Field(OwnBuildings, Game, "CityManager", "_cityBuildingControllersDictionary", "Dictionary<Address,CityBuildingController>"));
+        public static readonly GameMember ClosestReset = Optional(StaticMethod(OwnBuildings, Game, "Buildings.ClosestBuildingFromPlayer", "OnDestroy", "Void"));
+        // NewBuildings/MadeGame.Map: a building knocked down in play leaves the city map's filters. Its marker is taken out of the map's list of markers and
+        // destroyed, and out of the filters' own list of permanent markers they hid (CityMapFilters.cs 63, which a shut map shows again: a destroyed marker
+        // in it would throw there). Optional: without it the marker is only put out and left where it is.
+        public static readonly GameMember MapHidden = Optional(Field(OwnBuildings, Game, "CityMapFilters", "_permanentPoisHidden", "List<PointOfInterest>"));
+        // Core/MapPlaces.Owned: the rows the game's filters have switched on, read after its look at the buildings so a building the player owns or rents is lit under
+        // its own type row too: the building types of the ticked rows (CityMapFilters.cs 85) and "Hide closed". Optional: without them the owner's buildings are lit
+        // by the game's rules alone.
+        public static readonly GameMember VisibleTypes = Optional(Field(MapPlaces, Game, "CityMapFilters", "_visibleBuildingTypes", "HashSet<String>"));
+        public static readonly GameMember HideClosedRow = Optional(Field(MapPlaces, Game, "CityMapFilters", "_hideClosed", "Boolean"));
+        // Uptown/GroundGame: the street a road module's name label shows (Road.cs 13; its Start writes the label from it). Optional:
+        // without it the copied modules' labels are hidden.
+        public static readonly GameMember RoadStreetName = Optional(Field(UptownLabels, Game, "Road", "streetName", "String"));
+        // Uptown/LifeGame: the game's private lookup of its districts and its array of them (NeighborhoodHelper.cs 12, 18: GetData and the city map's rows read them),
+        // the people's class table and the wholesalers' table it makes once a run (CitizenHelper.cs 22, ProductMarketHelper.cs 44), the city map's district zones
+        // (CityMapNeighborhoodZones.cs 30). Optional: the game's start of a business in a district, for the test that runs it for Uptown alone.
+        public static readonly GameMember DistrictLookup = StaticField(UptownDistrict, Game, "NeighborhoodHelper", "NeighborhoodsDictionary", "Dictionary<String,NeighborhoodData>");
+        public static readonly GameMember DistrictArray = NeedsSetter(Prop(UptownDistrict, Game, "NeighborhoodHelper", "NeighborhoodsData", "NeighborhoodData[]", true));
+        public static readonly GameMember ClassShares = StaticField(UptownDistrict, Game, "AI.Citizens.CitizenHelper", "SocialClassesShares",
+            "Dictionary<String,List<ValueTuple<SocialClass,Single>>>");
+        public static readonly GameMember WholesalersByDistrict = StaticField(UptownDistrict, Game, "Helpers.ProductMarketHelper", "ItemsInWholesalersPerNeighbourhood",
+            "Dictionary<String,HashSet<String>>");
+        public static readonly GameMember DistrictZones = Field(UptownDistrict, Game, "CityMapNeighborhoodZones", "zones", "CityMapNeighborhoodZones.CityMapNeighborhoodZone[]");
+        public static readonly GameMember StartBusiness = Optional(StaticMethod(UptownDistrict, Game, "Helpers.CompetitionHelper", "StartNewBusiness", "Int32", "List<Building>", "String"));
+        // Uptown/LifeGame.BigPlaces, for two tests alone: the game's own delivery of one wholesale contract (BusinessHelper.cs 324, which its 8 o'clock pass
+        // calls), and the filling station overlay's station and its fill-up (GasStationOverlay.cs 27, 202). Optional: without them the tests say so.
+        public static readonly GameMember WholesaleDeliver = Optional(StaticMethod(UptownBigTests, Game, "Helpers.BusinessHelper", "DeliverWholesaleContract", "Boolean", "DeliveryContract"));
+        public static readonly GameMember StationTrigger = Optional(Field(UptownBigTests, Game, "UI.Overlays.GasStationOverlay", "_currentStationTrigger", "GasStationTrigger"));
+        public static readonly GameMember StationRefuel = Optional(Method(UptownBigTests, Game, "UI.Overlays.GasStationOverlay", "Refuel", "Void"));
         // Shops/ShopsGame: the language tables the game's texts are read from, given each new kind of shop's help page
         // under the keys the game's help reads (else BizMan's requirement link opens a page of bare keys)
         public static readonly GameMember LocaleTables = Optional(StaticField(ShopHelp, Hg, "Localizor.LocalizorManager", "LocalizationDictionary", "Dictionary<String,Dictionary<String,String>>"));

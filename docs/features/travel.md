@@ -102,6 +102,8 @@ A city hotel is the residential building of its district, of the sizes its slot 
 With the game's data as shipped: the Bobbin Hostel at Fourth Avenue 1 (Garment District), Dockside Bunks at Twenty-first Street 23 (Industry City), Hudson Court Hotel at Second Avenue 8 (Hell's Kitchen), the Battery Row at Fourth Avenue 45 (Lower Manhattan), Murray Hill Arms at Sixth Avenue 18, the Broadway Grand at Broadway 13 (Midtown), the Meridian Tower at Second Avenue 14 (Hell's Kitchen).
 
 Seabreeze Cottages is a board by the Hamptons theater (Ocean Crest Road 1; failing that the cinema, then Seventh Avenue 5).
+
+Every hotel's building is held from the game's own letting while it stands empty ([the game's own letting](../reference/map-places.md#the-games-own-letting-leaves-them-alone)): the residential swaps leave it as it is.
 The log line "Travel: hotels:" lists what was picked.
 
 At a hotel's door the game's own panel over a place (`GameUi.WorldPanel`, through `GameUi.DoorPanel`) names the hotel and says what is on offer: "Reception" on the interact key (off while a room is held), and "Go up to your room" on the secondary key when the room is booked there.

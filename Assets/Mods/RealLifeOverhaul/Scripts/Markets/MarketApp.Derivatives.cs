@@ -248,7 +248,7 @@ namespace RealLifeOverhaul.Markets
             }
             QtySelector(box, DerivCatalogue.MaterialQuantities, "reallife_mkt_drv_qty");
             string placeKey = null, placeName = null;
-            if (kind == ContractKind.Long)
+            if (kind == ContractKind.Long && !DerivCatalogue.IsBuilding(m.Name))
             {
                 _director.Places(_placeKeys, _placeNames);
                 _drvPlace = Mathf.Clamp(_drvPlace, 0, _placeKeys.Count);

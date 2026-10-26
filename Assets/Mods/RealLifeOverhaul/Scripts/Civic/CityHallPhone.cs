@@ -103,7 +103,7 @@ namespace RealLifeOverhaul
 
         internal static string PolicyLine(PolicyDef policy)
         {
-            return "- " + CivicText.T(policy.Name) + ": " + CivicText.Effect(policy);
+            return "- " + CivicText.T(policy.Name) + ": " + CivicText.Full(policy);
         }
 
         internal static string Platform(Candidate candidate)
@@ -177,8 +177,16 @@ namespace RealLifeOverhaul
                 return;
             }
             int id = site.Id;
+            DialogEntry own = SiteBuilders.NoticeOf(id);   // a builder's site: its own board, the player's company's works
+            if (own != null)
+            {
+                DialogController.current.ShowEntry(Guard.Entry(own));
+                return;
+            }
+            Func<int, DialogEntry> work = CivicBridges.SiteWork;   // the building trades' work at the site, when they are there
             DialogController.current.ShowEntry(Guard.Entry(CityHallPhone.Page(CityHallDialog.SiteText(director.Works, site, false),
-                "reallife_civic_button_site_actions", () => CityHallDialog.SiteAction(id, 0, -1))));
+                "reallife_civic_button_site_actions", () => CityHallDialog.SiteAction(id, 0, -1), work != null ? "reallife_trades_site_button" : null,
+                work != null ? () => work(id) : (Func<DialogEntry>)null)));
         }
     }
 

@@ -67,7 +67,7 @@ namespace RealLifeOverhaul
                 || Justice.TakesInteractKey || LicenceDirector.TakesInteractKey || CivicDirector.TakesInteractKey || Family.FamilyDirector.TakesInteractKey
                 || Law.LawDirector.TakesInteractKey || Roommates.RoommateDirector.TakesInteractKey || Ledger.LedgerDirector.TakesInteractKey
                 || Careers.CareersDirector.TakesInteractKey || Tech.TechSites.TakesInteractKey || Street.StreetDirector.TakesInteractKey
-                || Hustles.HustleDirector.TakesInteractKey || Economy.EstateDirector.TakesInteractKey)
+                || Construction.ConstructionDirector.TakesInteractKey || Hustles.HustleDirector.TakesInteractKey || Economy.EstateDirector.TakesInteractKey)
             {
                 return;
             }

@@ -16,7 +16,7 @@ A city government with a mayor, a council, elections and policies, the player st
 
 `Scripts/Civic/`: a city government with elections, and a construction programme.
 Everything is data that moves once per in-game hour; the street only shows what is near the player.
-Options group "Civic life": a master switch, "Elections and the mayor", "Standing for office" (needs the elections) and "Construction sites", and sixteen test buttons.
+Options group "Civic life": a master switch, "Elections and the mayor", "Standing for office" (needs the elections) and "Construction sites", and twenty-one test buttons (five of them construction's: [Construction](construction.md)).
 
 ```
 CivicDirector     the clock, the save (two lines in modData), the toggles, faults, key prompts, the test buttons
@@ -27,7 +27,11 @@ CivicEffects      what policies do: multipliers the mod owns, labelled transacti
 CivicBridges      CivicPolicy (what other features read) and CivicBridges (what civic life asks of features outside this folder)
 CivicCity         districts (the game's neighbourhoods), electorates, polling places, the player's buildings
 CivicWorks        the construction programme as data: six sites, working hours, rain, complaints, inspections, handover
-SiteDresser       the three sites nearest the player as props, a closed lane, one crew
+SiteDresser       the three sites nearest the player as props, a closed lane, one crew; a rebuild's wrap, a plot's stages (.Rebuild, .Plot, .Wraps)
+SiteWrap          a building wrapped in the game's own scaffolding, a few pieces a frame out of view, linked to its fade (WrapRules: the layout, game-free)
+BuildingShell     a building's solid boxes read from its colliders, in its own axes: the walls scaffold, hoarding and wrap stand against
+SiteKit           the game's scaffold pieces, concrete, metal and fence wire, found once a city behind the loading screen
+PlotRules         a new building on given ground, game-free: its record, its stages, its frame; PlotMeshes, CraneSlew
 RoadClosure       one lane closed for roadworks through the traffic system's switch (a small copy of SceneCordon's part)
 CampaignWorld     posters, boards, the canvasser, rallies, the polling place's sign; VolunteerShift (the player canvassing)
 CivicCast         civic life's own five people (a second instance of CityPeople), CivicCrew (walk in, work, walk off); CivicScreen: the game's panel and job panel for its prompts and shift figures
@@ -84,7 +88,7 @@ Nothing the game saves is written by a policy.
 | Transit | subway +1 a ride; buses x1.3 as often (bus fares do not change) | subway -1; buses x0.75 as often |
 | Cleaning | sweepers x2.5, mood +3, levy +30 | sweepers x0.3, mood -3, 25 returned |
 | Night life | licensed until 04:00 (bridge), crime x1.1 | until midnight (bridge), crime x0.92 |
-| Permits | sites x1.35 and until 19:00; complaints only noted | sites x0.75, 08:00 to 16:00; one complaint brings quiet hours |
+| Permits | sites x1.35 and until 19:00; complaints only noted; the building code: the new district's 12 storeys and a third more elsewhere, a third fewer parking spaces, the planning fee 40 % lower, the surcharge on land kept empty doubled | sites x0.75, 08:00 to 16:00; one complaint brings quiet hours; the building code: 8 storeys in the new district and a third fewer elsewhere, half as many parking spaces again, the planning fee half as much again, the surcharge halved |
 | Events | street events x1.5 (bridge), mood +2, levy +40 | x0.5, 30 returned |
 | Wages | floor of 16 an hour, against the wage at today's prices with any raise, billed as a top-up | the city pays 5 % of the wage bill |
 
@@ -157,6 +161,7 @@ Police and streets take 8 % a step off the crime and accidents the city counts, 
 A deficit runs the reserve down and costs up to ten points (with the option off the budget is kept as data and does nothing).
 
 A vote on a lever that touches the player's businesses or property is a conflict of interest: declared, the player stands aside.
+The permits policy is the building code, and touches a builder: a vote on it, or on zoning, is a conflict for a player with a construction company or land in the new district (`ZoningBridges.Interest`), declared or not as any other.
 
 Not declared, it can come out within 21 days (4 % a day, 7 % if the vote decided it, more for somebody well known, twice as likely while no register of interests is filed; the register is due in the first 7 days): a scandal, and a summons for misconduct in public office if it decided the motion (`TaxCases.FileMisconduct`).
 
@@ -171,17 +176,28 @@ The Planner has the last day to file, the debate, result night, an attack to ans
 
 While the option is off nothing new begins and nothing is offered; papers already filed stay on the ballot and are counted, and an office held lasts to the next count with the council voting by itself.
 
+## The building rules and the one council (`CouncilZoning`, `CivicGovernment.Planning`, `CivicOffice.Planning`)
+
+- **The building code is the permits lever's.** The construction game's height limits, parking asked, planning fee and surcharge on land kept empty move with it (`CivicCatalogue.HeightPermille`, `UptownStoreys`, `ParkingPermille`, `PlanningFeePermille`, `VacantPermille`, read by Construction's `PlansRules` and `LandRules`): fast-track permits speak to growth, strict ones to living, as candidates promise, the winner phases them in and the council votes. `CivicText.Full` shows a policy with the code it carries wherever it is read at leisure (City Hall's policy and pending pages, the platform, the agenda, the meetings); a toast keeps to `Effect`.
+- **Voters react.** The new district's voters lean to growth at least 1.25 and to living at most 0.85 (`CouncilZoning.BuildingLean`, in `DistrictLean`, so in every count and every vote's record), where the city's wards know it (Uptown is the eighth).
+- **One council hears zoning.** The construction game's zoning applications (`ConstructionBridges.CouncilDay`, `Council`) are heard by the city's five: on a Thursday's planning sitting while the player is not on the council, each member for it by the planners' view of the land, the permits policy, the city's wish for growth against living, the mayor's line for their party and the applicant's standing (`CouncilZoning.MemberOdds`); with the player sitting, the application is on the agenda of their next meeting (`OfficeMotion.KindZoning`, `ToPlanning`), voted there with the player's vote and decided without them if they miss it; the result goes back to the builders (`ZoningBridges.Decided`).
+- **Running for office to change them.** A councillor or mayor tables the permits motion as any policy, and from City Hall's agenda pages (after the policies) a change of the new district's zoning: to allow a use on every lot of a class, or to stop allowing one the council allowed before (`TableZoning`, `ZoningBridges.Rezoned`). The office's line keeps zoning matters after everything an older version reads.
+- Going Public: the votes draw from the government's seed (the same on every machine); running for office is not offered in a session, so zoning there is always the council's own sitting; nothing is sent.
+- Tests (Options > Tests, in the construction section): "the building code under each permits policy" (`Wiring.CityTests.Code`, the policy put back as it stood) and "on the council, table the building code and zoning, and vote" (`Wiring.CityTests.Office`, the government and the office put back); their lines are `Civic check (building code)` and `Civic check (council motions)`.
+
 ## Construction sites
 
 Six sites in progress at once, two started within 60 to 320 m of wherever the player was that day.
-Working hours needed: roadworks 50, scaffolding 120, refit 90, utility 30 (x0.8 to 1.3); ten a weekday, 07:00 to 17:00, as the city came.
+Working hours needed: roadworks 50, scaffolding 120, refit 90, utility 30, rebuild 160, a new plot 320 (x0.8 to 1.3); ten a weekday, 07:00 to 17:00, as the city came.
+A rebuild wraps a whole building in the game's own scaffolding to its roof (one at a time in the city); a plot is a new building on ground given to it, started only by whoever has the ground (`CivicWorks.StartPlot`). Both are described in [Construction](construction.md).
 Five stages each.
 Rain stops outdoor work for the hour.
 
 Thirty in a hundred are left unsafe for a stretch (missing cones or netting, a barrier flat in the road): reported, they stop for a day.
-The game's city has no empty lots and nothing is ever built or demolished, so there is no new building: the refit of an empty retail unit (hoarding, "opening soon", hoarding down) takes its place.
+The game's city has no empty lots: a new building's stages stand on ground given to them (the mod's own district, once the owner has chosen where it is), and the test button "raise a frame storey here" gives the ground in front of the player.
 
 Placement and budgets are at the top of `SiteDresser`.
+A scaffold's or hoarding's wall is the building's own box nearest its door (`BuildingShell`), never looked for between the pavement and the door: a door marker can stand on the walkable mesh (36 5th Avenue's is 0.30 m out), which left that line no length.
 Nothing is cut out of the navigation mesh.
 A lane is closed only by `RoadClosure`, only for a stretch with no junction, and only if every way into it can be shut where traffic has another way to go; it is opened on every path out.
 
@@ -235,7 +251,7 @@ A model added to the prop bundle under the same id is used with no code change.
 | clips | `speech_gesture` (a speaker to a crowd, standing), `hammer_nail` and `carry_plank_hold` (scaffolders), `rake_asphalt` | `speech_gesture` is **delivered and played** by the rally's speaker once somebody is listening (`CampaignWorld.SpeechClip`; `talk_a` without it), on `soapbox`: the stage is the one the clip is made for (feet within 0.36 x 0.26 m on a box 0.30 m high, listeners 2.3 m ahead and 1.15 m apart). The others today: `kneel_work`, `shovel_dig`. `podium_speak` (delivered) is not wired: it rests its hands on a lectern 1.10 m high that nobody has made |
 | vehicle | a works van or flatbed that can be parked at the kerb | none is placed: nothing in the traffic or vehicle code is touched |
 
-`tower_crane`, `structure_floor` and `structure_cladding` are not wanted: the city has no empty lot to build on.
+`tower_crane` is in the second props bundle split at its slewing ring (`tower_crane_mast`, `tower_crane_jib`). The frame storeys and cladding are boxes in the game's own concrete and metal (`PlotRules`, `PlotMeshes`), not props. The building sites' props are listed in [Construction](construction.md).
 
 ## Civic life in the street
 

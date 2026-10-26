@@ -313,7 +313,7 @@ namespace RealLifeOverhaul
             {
                 reasonKey = "reallife_job_no_busy";
             }
-            else if (!Free(out reasonKey))
+            else if (!Free(out reasonKey, def))
             {
             }
             else if (JobState.Sacked(def, TimeHelper.CurrentDay))
@@ -355,8 +355,32 @@ namespace RealLifeOverhaul
             return reasonKey == null;
         }
 
-        // What must hold for any job, test buttons included: the player is on the street and nothing else has them.
-        private static bool Free(out string reasonKey)
+        /// <summary>
+        /// True while the player stands where an office trade (<see cref="JobNeed.Office"/>) is worked: the architects' floor
+        /// (Scripts/BuildTrades, set by Wiring). Null: no office, so no office trade is taken.
+        /// </summary>
+        public static Func<bool> AtOffice;
+
+        // An office trade is taken inside, on its floor; every other job on the street.
+        private static bool InsideAllowed(JobDef def)
+        {
+            if (def == null || (def.Needs & JobNeed.Office) == 0 || AtOffice == null)
+            {
+                return false;
+            }
+            try
+            {
+                return AtOffice();
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+                return false;
+            }
+        }
+
+        // What must hold for any job, test buttons included: the player is on the street (an office trade: on its floor) and nothing else has them.
+        private static bool Free(out string reasonKey, JobDef def = null)
         {
             reasonKey = null;
             var uis = InstanceBehavior<UIs>.Instance;
@@ -372,7 +396,14 @@ namespace RealLifeOverhaul
             }
             else if (BuildingManager.IsInsideBuilding)
             {
-                reasonKey = "reallife_job_no_indoors";
+                if (!InsideAllowed(def))
+                {
+                    reasonKey = "reallife_job_no_indoors";
+                }
+            }
+            else if ((def != null && (def.Needs & JobNeed.Office) != 0))
+            {
+                reasonKey = "reallife_trades_no_office";   // the architects' floor is where an office trade is taken
             }
             else if (!TrafficTools.Street)
             {
@@ -402,6 +433,15 @@ namespace RealLifeOverhaul
             }
         }
 
+        /// <summary>A building trade's shift ends now (its option switched off, or its feature cleaned up): paid on its own terms.</summary>
+        public void QuitTrade()
+        {
+            if (_job != null && JobCatalogue.IsTrade(_job.Def))
+            {
+                EndJob(JobEnd.Interrupted, "reallife_trades_end_off");
+            }
+        }
+
         public bool HasJob => _job != null;
         public JobDef Current => _job != null ? _job.Def : null;
         public int ShiftTotal => _job != null ? _job.Shift.Total : 0;
@@ -420,7 +460,11 @@ namespace RealLifeOverhaul
                 case JobCatalogue.Busker: return new BuskerJob();
                 case JobCatalogue.Dispatch: return new DispatchJob();
                 case JobCatalogue.Lead: return new LeadJob();
-                default: return null;
+                case JobCatalogue.Architect: return new DesignJob(DesignWork.Architect);
+                case JobCatalogue.Draughting: return new DesignJob(DesignWork.Draughting);
+                case JobCatalogue.Engineer: return new DesignJob(DesignWork.Engineer);
+                case JobCatalogue.Estimator: return new TenderJob();
+                default: return JobCatalogue.IsTrade(JobCatalogue.Find(id)) ? new TradeJob(id) : null;   // the building trades at a works site (Scripts/BuildTrades)
             }
         }
 
@@ -440,7 +484,7 @@ namespace RealLifeOverhaul
             float scale = PayScale();
             _context.Level = JobState.Level(def);
             // A freelance gig is worked as the Gig Line quoted it; the rest at the table's figures.
-            bool freelance = shift == null && gig == null && !test;
+            bool freelance = shift == null && gig == null && !test && !JobCatalogue.IsTrade(def);   // a trade's shifts are varied by its site and its own game
             _context.Offer = freelance ? GigOffers.Draw(def, TimeHelper.CurrentDay, TimeHelper.CurrentHour, GigWords.Sky()) : GigOffer.Table(def);
             _context.Rate = JobCatalogue.PayFactor(_context.Level) * scale * (shift != null ? shift.Piece : 1f) * _context.Offer.Fee;
             if (shift != null)
@@ -555,11 +599,13 @@ namespace RealLifeOverhaul
 
         private void Draw()
         {
-            // The one per-frame task: the card hides under a game menu, but stays up behind the activity panel.
+            // The one per-frame task: the card hides under a game menu, but stays up behind the activity panel and beside a job's
+            // own list window (the dispatcher's board, a design's plan), whose figures and bar it carries.
             if (_card != null)
             {
-                _card.Show(!ThirdPersonCamera.IsUiOpen() || PlayerActivityUI.IsPanelOpen);
+                _card.Show(!ThirdPersonCamera.IsUiOpen() || PlayerActivityUI.IsPanelOpen || GameUi.TravelList.AnyOpen);
             }
+            _job.Frame(Time.time);   // a building trade's marker on the bar; nothing for the rest
         }
 
         public CareerDirector Career => _career;
@@ -586,7 +632,7 @@ namespace RealLifeOverhaul
                 }
                 EndJob(JobEnd.Interrupted, null);
             }
-            if (!Free(out reasonKey))
+            if (!Free(out reasonKey, def))
             {
                 return false;
             }

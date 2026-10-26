@@ -26,6 +26,7 @@
     <Reference Include="$(GameManaged)\DayNightCycle.dll" Private="false" />
     <Reference Include="$(GameManaged)\HGExtensions.dll" Private="false" />
     <Reference Include="$(GameManaged)\Newtonsoft.Json.dll" Private="false" />
+    <Reference Include="$(GameManaged)\OdinSerializer.dll" Private="false" />
     <Reference Include="$(GameManaged)\HGPlugins.dll" Private="false" />
     <Reference Include="$(GameManaged)\ExternalPlugins.dll" Private="false" />
     <Reference Include="$(GameManaged)\Cinemachine.dll" Private="false" />

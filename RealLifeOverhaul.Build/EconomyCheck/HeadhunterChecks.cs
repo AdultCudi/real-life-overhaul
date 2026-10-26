@@ -354,10 +354,12 @@ internal static partial class Program
             string nameLine = mark + NameFixStarts[codes[l]], productLine = mark + ProductFixStarts[codes[l]];
             both = WhatsNewHas(words[l], nameLine) && WhatsNewHas(words[l], productLine) && HunterCount(row, nameLine) == 1 && HunterCount(row, productLine) == 1;
             int nameAt = row.IndexOf(nameLine, StringComparison.Ordinal), productAt = row.IndexOf(productLine, StringComparison.Ordinal);
-            // each line once, the names line then the products line (later fixes may follow them), no double space (any row of What's new has them, as a release numbers the row)
+            // each line once, the names line then the products line, no double space (any row of What's new has them, as a release numbers the row);
+            // later fixes may follow them in the row, so the products line is read up to the next fix mark
             Check(both && nameAt >= 0 && productAt > nameAt && !row.Contains("  ") && firstFix >= 0 && count >= 2,
-                "names and products texts: What's new's next row ends with the two fixes, once each, the names first, no double spaces, in " + codes[l]);
-            string productFix = productAt >= 0 ? row.Substring(productAt) : string.Empty;
+                "names and products texts: What's new's next row has the two fixes, once each, the names first, no double spaces, in " + codes[l]);
+            int productEnd = productAt >= 0 ? row.IndexOf(mark, productAt + mark.Length, StringComparison.Ordinal) : -1;
+            string productFix = productAt >= 0 ? (productEnd > productAt ? row.Substring(productAt, productEnd - productAt) : row.Substring(productAt)) : string.Empty;
             Check(productFix.Contains("16") && productFix.Contains("12") && productFix.Contains("36") && productFix.Contains("24"),
                 "names and products texts: the product fix states 16, 12, 36 and 24 in " + codes[l]);
         }

@@ -76,6 +76,7 @@ internal static partial class Program
         PagerChecks(scripts, Path.Combine(root, @"Assets\Mods\RealLifeOverhaul\Locales"));
         PhoneLayoutChecks(scripts, Path.Combine(root, @"Assets\Mods\RealLifeOverhaul\Locales"));   // the phone's folders, dock and moves (PhoneLayoutChecks.cs)
         BoxClockChecks(scripts);   // the box's self-check times its own work, not the app's between its calls (BoxClockChecks.cs)
+        CityReadyRules(scripts);   // a feature away in another city, the city table, the DLC rule in the sources (CityChecks.cs)
 
         if (!Directory.Exists(managed))
         {
@@ -92,6 +93,8 @@ internal static partial class Program
             Keys(locale, scripts);
             KeyClashes(files, mod);   // the walk key against every key of the game's, the mod's and the system's (KeyClashChecks.cs)
             Languages(managed, root);
+            CityGame(files, locale);   // the game's districts, DLCs and scenes against what the mod knows (CityChecks.cs)
+            SavePlaces(files, scripts);   // every field of the save that can name a place, against what the district save handles (SavePlaceChecks.cs)
         }
         Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
         return _failed == 0 ? 0 : 1;
@@ -313,9 +316,9 @@ internal static partial class Program
         ContractBook.Mark(m => m == GameContract.Switchers[5] ? "the type BillboardAd is not in BigAmbitions" : null);
         Check(GameContract.FarDistricts.Off && ContractBook.OffParts().Count == 1, "one type of a list missing switches off the part that needs the whole list");
         ContractBook.Mark(m => m == GameContract.CtaBehaviours || m == GameContract.LampIsOn ? "the field is missing" : null);
-        Check(GameContract.ClickHome.Off && GameContract.ClickLedger.Off && GameContract.ClickBusStop.Off && GameContract.ClickDesk.Off && GameContract.StreetLamps.Off
-              && ContractBook.OffParts().Count == 5, "two missing pieces switch off what stands on either");
-        Check(ContractBook.FeaturesHit().SetEquals(new[] { "home", "ledger", "transport", "careers_study", "performance" }), "...and hit those features only");
+        Check(GameContract.ClickHome.Off && GameContract.ClickLedger.Off && GameContract.ClickBusStop.Off && GameContract.ClickDesk.Off && GameContract.ClickBuilderDesk.Off
+              && GameContract.StreetLamps.Off && ContractBook.OffParts().Count == 6, "two missing pieces switch off what stands on either");
+        Check(ContractBook.FeaturesHit().SetEquals(new[] { "home", "ledger", "transport", "careers_study", "construction", "performance" }), "...and hit those features only");
         ContractBook.Mark(m => null);
         Check(ContractBook.OffParts().Count == 0 && ContractBook.FeaturesHit().Count == 0, "with every piece there, every part is on");
     }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection;
 using BAModAPI;
+using Entities;
 using Localizor;
 using RealLifeOverhaul.GameUi;
 using TMPro;
@@ -15,8 +16,9 @@ namespace RealLifeOverhaul
 {
     /// <summary>
     /// A search box in the game's Contacts app, copied from the game's own text field: the list keeps the contacts whose
-    /// name or description holds every typed word. The game makes its list as usual and the rows that miss are taken out;
-    /// when the game makes it again, the box narrows it again. Cost: only while the app shows, a focus check a frame and,
+    /// name or description holds every typed word, in every group (while words are typed the list is the whole list, and the
+    /// category shown comes back when the box is emptied). The game makes its list as usual and the rows that miss are taken
+    /// out; when the game makes it again, the box narrows it again. Cost: only while the app shows, a focus check a frame and,
     /// with a query, one count and one reference comparison.
     /// </summary>
     public sealed class ContactSearch : MonoBehaviour
@@ -35,6 +37,7 @@ namespace RealLifeOverhaul
         private ContactsApp _app;
         private TMP_InputField _input;
         private string _query = string.Empty;
+        private ContactCategoryName? _resume;           // the category shown when the typing began: it comes back when the box is emptied
         private int _count = -1;
         private ContactModel _first;
         private bool _typing;
@@ -177,9 +180,45 @@ namespace RealLifeOverhaul
 
         private void Changed(string text)
         {
+            bool typed = _query.Length > 0;
             _query = (text ?? string.Empty).Trim();
-            _app.LoadContactsList(ContactCategorySelection.SelectedCategory, false);   // the game's own list for the category, then narrowed
+            if (_query.Length > 0)
+            {
+                if (!typed)
+                {
+                    _resume = ContactCategorySelection.SelectedCategory;
+                }
+                _app.LoadContactsList(null, false);   // every contact, whatever its group, then narrowed
+            }
+            else
+            {
+                ContactCategoryName? shown = ContactCategorySelection.SelectedCategory ?? (typed ? _resume : null);   // a group chosen meanwhile stays
+                _resume = null;
+                _app.LoadContactsList(shown, false);
+            }
             Narrow();
+        }
+
+        /// <summary>
+        /// For the contacts test: the contacts the list holds for these words, as the box would show them; the box is emptied after.
+        /// Null when the box is not in the app.
+        /// </summary>
+        internal static List<Contact> Probe(string words)
+        {
+            ContactSearch search = _installed;
+            if (search == null || search._app == null || search._app.contactScrollerController == null)
+            {
+                return null;
+            }
+            var found = new List<Contact>();
+            search.Changed(words);
+            List<ContactModel> data = search._app.contactScrollerController.data;
+            for (int i = 0; i < data.Count; i++)
+            {
+                found.Add(data[i].contact);
+            }
+            search.Changed(string.Empty);
+            return found;
         }
 
         private bool Misses(ContactModel model)
@@ -261,6 +300,7 @@ namespace RealLifeOverhaul
                 Keys.Suspended = false;
             }
             _query = string.Empty;
+            _resume = null;
             _count = -1;
             _first = null;
             if (_input != null)

@@ -195,6 +195,106 @@ namespace RealLifeOverhaul.Careers
             return j;
         }
 
+        /// <summary>
+        /// A job now at the business at an address, for another feature's test (Uptown's offices, through the wiring): the
+        /// first rung of the first profession of the catalogue its type employs that the player could hold now, else of the
+        /// first it employs at all, worked on site, as if the interview had gone well. A job held elsewhere ends first as a
+        /// resignation (on the CV, said in Player.log). Null when hired, else the locale key of the notice saying why not.
+        /// </summary>
+        public string TestJobAt(string street, int number)
+        {
+            if (_broken || !_studyOn || Save == null)
+            {
+                return "reallife_study_test_off";
+            }
+            if (!_workOn)
+            {
+                return "reallife_work_test_off";
+            }
+            try
+            {
+                WorkFile w = _study.Work;
+                if (w.Job != null && w.Job.Post.Street == street && w.Job.Post.Number == number)
+                {
+                    Logger?.Info("Careers test: the player works at " + w.Job.Post.Employer + " already, as " + w.Job.Def.Key + " rank " + w.Job.Post.Rank + ".");
+                    return null;
+                }
+                EmployerRef at = WorkGame.EmployerAt(street, number);
+                Profession pick = null, first = null;
+                for (int i = 0; at != null && i < ProCatalogue.All.Length && pick == null; i++)
+                {
+                    Profession p = ProCatalogue.All[i];
+                    if (p.Public || !ProCatalogue.Holds(at.Professions, p, at.Type))
+                    {
+                        continue;
+                    }
+                    first = first ?? p;
+                    pick = ProRules.Qualified(_study, p, 0) ? p : null;
+                }
+                pick = pick ?? first;
+                if (pick == null)
+                {
+                    Logger?.Info("Careers test: no job at " + street + " " + number + ": "
+                                 + (at == null ? "no business there that employs a profession" : "its type " + at.Type + " employs none of the catalogue's") + ".");
+                    return "reallife_work_test_none";
+                }
+                if (w.Job != null)
+                {
+                    Logger?.Info("Careers test: the job at " + w.Job.Post.Employer + " ends as a resignation for the job at " + at.Name + ".");
+                    EndJob(LeaveReason.Resigned, Save.Day, false);
+                }
+                var a = new Application { Day = Save.Day, Score = 70 };
+                Opening o = a.Post;
+                o.Id = w.Next();
+                o.Prof = pick.Id;
+                o.Rank = 0;
+                o.Kind = (int)at.Kind;
+                o.Employer = at.Name;
+                o.Street = at.Street;
+                o.Number = at.Number;
+                o.Rival = at.Rival;
+                o.Pay = ProRules.PostPay(pick, 0, at.Kind, CareersBridges.ShortageOf(pick.Family));
+                o.Work = (int)WorkMode.OnSite;   // the test is of the day at a desk in the office, never from home
+                o.From = o.To = Save.Day;
+                o.Via = (int)Via.Board;
+                a.Offer = o.Pay;
+                Begin(a, Save.Day);
+                Logger?.Info("Careers test: a job as " + pick.Key + " at " + at.Name + " (" + at.Type + ") at " + street + " " + number + ", worked on site.");
+                Changed();
+                return null;
+            }
+            catch (Exception e)
+            {
+                Fault("a test", e);
+                return "reallife_work_test_none";
+            }
+        }
+
+        /// <summary>
+        /// How many of the city's open posts today (made now if the day has not made them, the same by the seed) are at a
+        /// place <paramref name="at"/> picks, and how many are open in all: what Uptown's offices' census counts. One pass.
+        /// </summary>
+        public int OpeningsAt(Func<string, int, bool> at, out int all)
+        {
+            all = 0;
+            if (!_workOn || _study == null || Save == null || at == null)
+            {
+                return 0;
+            }
+            VacanciesNow();
+            int found = 0, day = Save.Day;
+            System.Collections.Generic.List<Opening> open = _study.Work.Openings;
+            for (int i = 0; i < open.Count; i++)
+            {
+                if (open[i].Open(day))
+                {
+                    all++;
+                    found += at(open[i].Street, open[i].Number) ? 1 : 0;
+                }
+            }
+            return found;
+        }
+
         /// <summary>The rest of a working day now, here, whatever the hour and the place (a job is given for it if there is none).</summary>
         public void TestWorkDay()
         {

@@ -66,6 +66,7 @@ namespace RealLifeOverhaul
         public const string DataProtection = "data_protection";    // a breach at a firm off the register, or breached before
         public const string CampaignFinance = "campaign_finance";  // campaign money taken against the law came out
         public const string Misconduct = "misconduct";             // an undeclared interest in a vote that it decided
+        public const string BidRigging = "bid_rigging";            // a ring of builders on a tender the player covered for came out
 
         // Caps and bounds: nothing a court does goes past these, whatever is added up.
         public const int CustodyCapHours = 48;         // never held longer without a prison sentence
@@ -148,8 +149,30 @@ namespace RealLifeOverhaul
             new ChargeDef { Id = Misconduct, NameKey = "reallife_justice_charge_misconduct", Class = ChargeClass.Misdemeanour,
                 Fine = 6000, CommunityHours = 16, ProbationDays = 10, JailHours = 0 },
             new ChargeDef { Id = DataProtection, NameKey = "reallife_justice_charge_data_protection", Class = ChargeClass.Misdemeanour,
-                Fine = 6000, CommunityHours = 8, ProbationDays = 0, JailHours = 0 }
+                Fine = 6000, CommunityHours = 8, ProbationDays = 0, JailHours = 0 },
+            new ChargeDef { Id = BidRigging, NameKey = "reallife_justice_charge_bid_rigging", Class = ChargeClass.Misdemeanour,
+                Fine = 7000, CommunityHours = 12, ProbationDays = 7, JailHours = 0 }
         };
+
+        // A claim the player brings (OwnClaims): the court's fee, refunded with what is won, and the days to the hearing.
+        public const int ClaimFeePermille = 30;       // of the amount claimed
+        public static int ClaimFeeLeast => Prices.At(150);
+        public const int ClaimHearLeast = 6, ClaimHearMost = 9;   // days from filing to the hearing
+        public const int ClaimsKept = 8;              // claims decided, kept so the claimant can read the result
+
+        /// <summary>The court's fee for a claim of an amount.</summary>
+        public static int ClaimFee(long amount)
+        {
+            long fee = Math.Max(0L, amount) * ClaimFeePermille / 1000L;
+            return (int)Math.Min(int.MaxValue / 2, Math.Max(ClaimFeeLeast, fee));
+        }
+
+        /// <summary>The chance, in thousandths, of winning a claim: its strength on the claimant's books, and counsel's quality (0 to 1) a little.</summary>
+        public static int ClaimChance(int strengthPermille, float counsel)
+        {
+            int chance = strengthPermille + (int)Math.Round((Clamp(counsel, 0f, 1f) - 0.5f) * 200f);
+            return chance < 50 ? 50 : chance > 950 ? 950 : chance;
+        }
 
         public static ChargeDef Find(string id)
         {

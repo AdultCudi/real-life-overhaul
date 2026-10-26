@@ -192,6 +192,7 @@ namespace RealLifeOverhaul
                         }
                         b.Days += counted ? 1 : 0;
                     }
+                    MarketsBuildLinks.ConstructionBooks(Businesses, from, to, ref revenue, ref profit);   // a construction company's works are not in its office's statement
                     b.Revenue = (long)Math.Round(revenue);
                     b.Profit = (long)Math.Round(profit);
                 }
