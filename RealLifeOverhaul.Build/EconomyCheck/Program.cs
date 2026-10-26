@@ -267,6 +267,7 @@ internal static partial class Program
         Managers();   // the managers of the player's places: their decisions inside the limits, mistakes, undo and the save (ManagerChecks.cs)
         Hierarchy();  // the company's policy over the managers, its scopes, the escalations, who holds them and the save (HierarchyChecks.cs)
         StaffCentres();   // a raise for several picked in MyEmployees, a warehouse taken as a data centre, a data centre's crew by a search firm (PickedRaiseChecks.cs, CentreCrewChecks.cs)
+        FontFix();   // What's new tells of the font stutter fix in all nine languages (FontFixChecks.cs)
         Estate();
         Online();
         Services();

@@ -1456,6 +1456,7 @@ namespace RealLifeOverhaul
             Guard.Step("LicenceDirector", () => Guard.Add<LicenceDirector>(_root));
             Guard.Step("GameUi.UiClone", () => GameUi.UiClone.Logger = context.Logger);
             Guard.Step("GameUi.GameSprites", () => GameUi.GameSprites.Logger = context.Logger);
+            Guard.Step("GameUi.GameFont", () => GameUi.GameFont.Logger = context.Logger);
             Guard.Step("GameUi.AppIconPainter", () => GameUi.AppIconPainter.Logger = context.Logger);
             Guard.Step("GameUi.PhoneApp", () => GameUi.PhoneApp.Logger = context.Logger);
             Guard.Step("GameUi.PhoneGridPager", () => GameUi.PhoneGridPager.Logger = context.Logger);

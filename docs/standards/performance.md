@@ -185,3 +185,11 @@ Checked by: StandardCheck (each listed method's body).
 Why: one bundle filled its atlas and its triangle budget, and two prop branches merging once overflowed it ("the atlas is full: no room for plastic_grey"). A second bundle with its own limits lets new props in without changing any old one, and the lists keep a reader of the repository able to see what each shipped bundle holds without Unity.
 
 Checked by: StandardCheck (each bundle's SHA-256 against its list, the limits, ids across the bundles, `PropLibrary.BundlePaths` against sets.json, the package, installer and zip taking the whole folder, INSTALL.md, UPLOAD.md, the Workshop credits and the folder map naming every bundle, the names asked of `PropLibrary`, `Shapes.Prop` and a clip's `tool=`, and the removed ids); the build itself (`sets.py`: a new id in the closed set, or one another bundle holds, stops it).
+
+### RLO-PERF-017: The game's font is never found by a scene search in play
+
+**MUST NOT** search the scene for the game's font (or for a text to take it from) while the game is played. `Core/GameUi/GameFont` finds it once by a scene search behind a black screen (`FromScene`, reached from `Refind` or from the getter only when `SceneFinds.Black`), keeps its name, and finds it again by that name among the assets in memory (`SceneFinds.InMemory`, under a millisecond) if the font held has gone. No other file of `Core/GameUi` searches the scene for a text or a font.
+
+Why: a player's session record (26 Oct 2026) showed a 97 ms search for "a text of the game's interface (its font)" in a 139 ms frame in play, when a computer panel's buttons were first copied.
+
+Checked by: StandardCheck (GameFont.cs: scene searches only inside `FromScene`, and the getter's `SceneFinds.Black` guard before it); EconomyCheck (the What's new line in all nine languages).
