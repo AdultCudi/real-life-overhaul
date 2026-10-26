@@ -205,6 +205,7 @@ namespace RealLifeOverhaul.Uptown
                     MadeGame.Light(made.Controller);   // a unit the city put up for rent shows its sign
                 }
             }
+            bool mapped = listed && Mapped(made, "stood");   // its type, its deed or its letting registered with the city map's filters, as the load registers them
             WriteState();
             _stamp++;
             DistrictPlaces.Changed();
@@ -213,13 +214,33 @@ namespace RealLifeOverhaul.Uptown
             string owner = f.Owner == FinishOwner.Player ? "the player's, deed " + (setUp == null ? "written" : "not yet: " + setUp) : "the city's";
             Logger?.Info("Uptown: the building finished on lot " + lot + " stands now at " + made.Address + " (" + made.Design + ", " + owner + "), "
                          + (cut ? "cut into the walking meshes" : "not cut into the walking meshes") + ", " + fillers + " filler(s), "
-                         + (listed ? "in the city's list" : "not in the city's list yet (" + joinWhy + ")") + ", in " + ms.ToString("F1", Plain)
+                         + (listed ? "in the city's list" : "not in the city's list yet (" + joinWhy + ")") + (mapped ? ", on the city map's filters" : string.Empty)
+                         + ", in " + ms.ToString("F1", Plain)
                          + " ms; the next load stands the same building from the same record.");
             if (Meta.Dev.Verbose)
             {
                 StandCheck(made, f, listed, ms);
             }
             return true;
+        }
+
+        // A building registered with the city map's filters (MadeGame.Register: its marker, the game's event for a registration that changed,
+        // the filters applied again while the map is open); a fault or a missing piece of the game is one log line, and the next load does it.
+        private static bool Mapped(MadeBuilding made, string what)
+        {
+            try
+            {
+                if (MadeGame.Register(made, out string why))
+                {
+                    return true;
+                }
+                Logger?.Info("Uptown: the building " + what + " at " + made.Address + " is not registered with the city map's filters now (" + why + "); the next load lists it.");
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
+            return false;
         }
 
         // The site's props and the look over its ground come down in the same moment: whoever keeps the ground is told (Civic, by Wiring).
