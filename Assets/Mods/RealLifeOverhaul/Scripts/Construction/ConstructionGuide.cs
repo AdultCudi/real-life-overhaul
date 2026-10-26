@@ -121,7 +121,7 @@ namespace RealLifeOverhaul.Construction
                 .Test("reallife_bld_test_city_redevelop", () => ConstructionDirector.TestCityRedevelopNow())
                 .Test("reallife_bld_test_lot", "reallife_bld_test_company", "reallife_bld_test_licence", "reallife_bld_test_plans", "reallife_bld_test_planning",
                     "reallife_bld_test_council", "reallife_bld_test_stage", "reallife_bld_test_inspection", "reallife_bld_test_deliveries", "reallife_bld_test_handover",
-                    "reallife_bld_test_opening", "reallife_bld_test_tender", "reallife_bld_test_award", "reallife_bld_test_developers", "reallife_bld_test_poach",
+                    "reallife_bld_test_opening", "reallife_bld_test_opening_missed", "reallife_bld_test_tender", "reallife_bld_test_award", "reallife_bld_test_developers", "reallife_bld_test_poach",
                     "reallife_bld_test_strike", "reallife_bld_test_fault", "reallife_bld_test_bribe", "reallife_bld_test_buyer", "reallife_bld_test_back")
                 .Check("reallife_bld_test_city_code", Wiring.CityTests.Code, "Civic check (building code)", RunPlace.Here)
                 .Check("reallife_bld_test_city_zoning", Wiring.CityTests.Zoning, "Construction check (council zoning)", RunPlace.Here)
@@ -167,6 +167,7 @@ namespace RealLifeOverhaul.Construction
                 .AddButton("reallife_bld_test_deliveries", () => ConstructionDirector.Instance?.TestDeliveries())
                 .AddButton("reallife_bld_test_handover", () => ConstructionDirector.Instance?.TestHandover())
                 .AddButton("reallife_bld_test_opening", () => ConstructionDirector.Instance?.TestOpening())
+                .AddButton("reallife_bld_test_opening_missed", () => ConstructionDirector.Instance?.TestOpeningMissed())
                 .AddButton("reallife_bld_test_tender", () => ConstructionDirector.Instance?.TestTender())
                 .AddButton("reallife_bld_test_award", () => ConstructionDirector.Instance?.TestAward())
                 .AddButton("reallife_bld_test_developers", () => ConstructionDirector.Instance?.TestDevelopers())

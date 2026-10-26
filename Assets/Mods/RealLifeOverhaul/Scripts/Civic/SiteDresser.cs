@@ -34,6 +34,7 @@ namespace RealLifeOverhaul
         private const int MaxLifts = 3;
         private const float NoticeReach = 1.7f;   // metres
         private const float FarPlane = 300f;      // metres: the game's cameras draw nothing beyond, so a big site there is out of view
+        private const float GroundMargin = 3f;    // metres round a building's ground that a plot's middle may lie in, to be taken away with it
 
         private sealed class CrewSpot
         {
@@ -228,6 +229,29 @@ namespace RealLifeOverhaul
 
             LooseTick(player);
             Crew(now, player, day, hour, crewAllowed);
+        }
+
+        /// <summary>
+        /// The props of every site set out on a ground (x and z from, to) taken away now, in whatever view: a finished building has
+        /// stood there in play (DistrictBuildings.GroundGiven), so the scaffolding and the fence come down in the same moment.
+        /// Called once a building stood, from its handover or a black screen; at most the few sites set out.
+        /// </summary>
+        public int ReleaseOn(float x1, float z1, float x2, float z2)
+        {
+            int released = 0;
+            List<SiteState> sites = _works.State.Sites;
+            for (int i = _dressed.Count - 1; i >= 0; i--)
+            {
+                Vector3 at = _dressed[i].Origin;
+                bool inside = at.x >= x1 - GroundMargin && at.x <= x2 + GroundMargin && at.z >= z1 - GroundMargin && at.z <= z2 + GroundMargin;
+                bool finished = _dressed[i].Gone || _dressed[i].Site == null || _dressed[i].Site.Finished || !sites.Contains(_dressed[i].Site);
+                if (inside && finished && _dressed[i].Site != null && _dressed[i].Site.Kind == SiteKind.Plot)
+                {
+                    Undress(i, true);
+                    released++;
+                }
+            }
+            return released;
         }
 
         /// <summary>Sets a site out now, in view or not: for the test buttons. False with <see cref="LastRefusal"/> if it has no room here.</summary>

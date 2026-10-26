@@ -92,6 +92,7 @@ namespace RealLifeOverhaul.TestRun
                 case "reallife_bld_test_deliveries": c.Run = Builder(c, d => d.TestDeliveries()); break;
                 case "reallife_bld_test_handover": c.Run = Builder(c, d => d.TestHandover()); break;
                 case "reallife_bld_test_opening": c.Run = Builder(c, d => d.TestOpening()); break;
+                case "reallife_bld_test_opening_missed": c.Run = Builder(c, d => d.TestOpeningMissed()); break;
                 case "reallife_bld_test_tender": c.Run = Builder(c, d => d.TestTender()); break;
                 case "reallife_bld_test_award": c.Run = Builder(c, d => d.TestAward()); break;
                 case "reallife_bld_test_developers": c.Run = Builder(c, d => d.TestDevelopers()); break;

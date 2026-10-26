@@ -573,7 +573,11 @@ namespace RealLifeOverhaul.Construction
             p.Opened = true;
             p.Ribbon = ribbon;
             _testOpening = false;
-            Standing(ribbon ? 3 : 1, false);
+            Standing(OpeningRules.Standing(ribbon), false);
+            if (!ribbon)
+            {
+                OpeningMissed(p);
+            }
             if (ribbon)
             {
                 if (!p.Hired)
@@ -587,6 +591,21 @@ namespace RealLifeOverhaul.Construction
             Logger?.Info("Construction: project " + p.Id + " opened" + (ribbon ? ", the player cutting the ribbon." : " without the player."));
             HidePanels();
             Changed();
+        }
+
+        // The opening went by without the player, once: said with what it cost against the ribbon's (the opening's own gifts, the moment
+        // on Flare, the story in the paper and the company's reputation, come only with the ribbon and are as they were).
+        private void OpeningMissed(ProjectFile p)
+        {
+            var data = new Dictionary<string, string>(4)
+            {
+                { "name", ProjectName(p) },
+                { "got", OpeningRules.Standing(false).ToString(CultureInfo.InvariantCulture) },
+                { "full", OpeningRules.Standing(true).ToString(CultureInfo.InvariantCulture) }
+            };
+            ConstructionGame.Tell(NotificationType.Warning, "reallife_bld_notice_opening_missed", data, () => Open(TabProjects, p.Id));
+            Logger?.Info("Construction: project " + p.Id + "'s opening went by without the player; told what it cost (standing "
+                         + OpeningRules.Standing(false) + " instead of " + OpeningRules.Standing(true) + ").");
         }
 
         /// <summary>The ribbon cut at the opening, at the place. Returns a text key.</summary>

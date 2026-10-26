@@ -85,7 +85,7 @@ namespace RealLifeOverhaul.Construction
             made = plot != null;
             if (made)
             {
-                plot.After = AfterUse.Keep;   // the player's own from the next load, as a company's build is
+                plot.After = AfterUse.Keep;   // the player's own once it stands, as a company's build is
                 Logger?.Info("Construction: project " + plot.Id + " made for the hired builder's test on lot " + plot.Lot + ", estimated at " + plot.Estimate + ".");
             }
             return plot;
@@ -142,7 +142,8 @@ namespace RealLifeOverhaul.Construction
                          + paid[0].ToString(CultureInfo.InvariantCulture) + ", " + paid[1].ToString(CultureInfo.InvariantCulture) + " and " + paid[2].ToString(CultureInfo.InvariantCulture)
                          + ", the retention " + CommissionRules.Retention(price) + (late > 0 ? ", " + late + " day(s) late" : ", on time")
                          + "; handed over on day " + p.Handed + ", its opening on day "
-                         + p.Opening + ", " + (p.InDistrict ? "the player's from the next load" : IsTestLot(p.Lot) ? "on a test's lot" : "not the district's yet") + (pass ? ": PASS." : ": FAIL."));
+                         + p.Opening + ", " + (p.InDistrict ? "the player's, handed to the district" : IsTestLot(p.Lot) ? "on a test's lot" : "not the district's yet")
+                         + (pass ? ": PASS." : ": FAIL."));
             TestDone(late > 0 ? "a late builder paid its penalty" : "a building of yours put up by a builder of the city's", TabProjects, p.Id);
             return pass;
         }

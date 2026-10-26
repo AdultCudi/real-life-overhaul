@@ -100,6 +100,7 @@ namespace RealLifeOverhaul.TestRun
             Add(all, "reallife_bld_test_deliveries", "construction", "Construction check (deliveries)", RunPlace.Here, RunPhase.BeforeLoad);
             Add(all, "reallife_bld_test_handover", "construction", "Construction check (handover test)", RunPlace.Here, RunPhase.BeforeLoad);
             Add(all, "reallife_bld_test_opening", "construction", "Construction check (opening test)", RunPlace.Here, RunPhase.BeforeLoad);
+            Add(all, "reallife_bld_test_opening_missed", "construction", "Construction check (missed opening test)", RunPlace.Here, RunPhase.BeforeLoad);
             Add(all, "reallife_bld_test_tender", "construction", "Construction check (tender test)", RunPlace.Here, RunPhase.BeforeLoad);
             Add(all, "reallife_bld_test_award", "construction", "Construction check (award test)", RunPlace.Here, RunPhase.BeforeLoad);
             Add(all, "reallife_bld_test_developers", "construction", "Construction check (developers test)", RunPlace.Here, RunPhase.BeforeLoad);

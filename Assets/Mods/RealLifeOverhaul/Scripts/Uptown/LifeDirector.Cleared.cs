@@ -189,6 +189,9 @@ namespace RealLifeOverhaul.Uptown
             made.Shown = false;
             MadeBuildings.Changed();
             Standing.Remove(made);
+            Declared.Remove(made.Spec);
+            MadeBuildings.Withdraw(made.Spec.Id);   // not declared again in this city: a building finished on its lot is made in play (LifeDirector.Stand.cs)
+            NewBuildingsDirector.Instance?.Retire(made);
             if (f != null)
             {
                 _state.Finished.Remove(f);

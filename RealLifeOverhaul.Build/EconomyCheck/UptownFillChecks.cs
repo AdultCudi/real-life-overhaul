@@ -809,13 +809,13 @@ internal static partial class Program
         Check(ground.Contains("Lanes.Inside(cx, cz, facing, hw, hd, NewBuildingsRules.RoadClear)") && ground.Contains("Lanes.Nearest(cx, cz, reach, out _)")
               && ground.Contains("ReferenceEquals(points, _lanesOf)"),
             "uptown fill: the made buildings' ground check reads the lanes' squares, made again when the lanes change");
-        string groundWhy = MemberText(ground, "public static string GroundWhy(DesignEntry d, MadeLot lot, out Vector3 root, out float yaw, out Vector3 door)");
+        string groundWhy = MemberText(ground, "public static string GroundWhy(DesignEntry d, MadeLot lot, out Vector3 root, out float yaw, out Vector3 door, bool inPlay = false)");
         Check(groundWhy.Contains("NewBuildingsRules.Reach(facing, hw, hd, NewBuildingsRules.Gap, out float reachX, out float reachZ);")
               && Regex.Matches(groundWhy, @"!NewBuildingsRules\.Apart\(x0, z0, x1, z1, cx, cz, reachX, reachZ\) && NewBuildingsRules\.Overlaps\(x0, z0, x1, z1,").Count == 2,
             "uptown fill: the ground check tries the game's buildings and obstacles by the rectangle's reach before the turned test");
         Check(newDirector.Contains("Made buildings check (load time): ") && newDirector.Contains("NewBuildingsRules.MostMakeMs") && newDirector.Contains("if (!spec.Life || Meta.Dev.Verbose)"),
             "uptown fill: the load's line says what measuring and making cost, a district's buildings are one line, each with Developer diagnostics");
-        string make = MemberText(newDirector, "private bool Make(MadeSpec spec)");
+        string make = MemberText(newDirector, "private bool Make(MadeSpec spec, bool inPlay = false)");
         int tries = make.IndexOf("for (int s = -1; lot < 0 && noDesign && s < (spec.Others != null ? spec.Others.Length : 0); s++)", StringComparison.Ordinal);
         int takes = make.IndexOf("spec.Size = other.Size;", StringComparison.Ordinal), record = make.IndexOf("MadeGame.MakeRecord(spec", StringComparison.Ordinal);
         Check(tries > 0 && make.Contains("noDesign &= pick < 0;") && make.Contains("NewBuildingsRules.OtherTakes(spec, spec.Others[s], MadeGame.StructureTakes, MadeGame.HomesLeftOut())")
@@ -826,10 +826,12 @@ internal static partial class Program
               && MemberText(lots, "public static bool Taken(string lotId)").Contains("!BuildingsRules.Clear(lotId) ||")
               && MemberText(Read("Uptown/LifeDirector.Tests.cs"), "private static bool Census(string when, bool asked = false)").Contains("BuildingsRules.Clear(Plan[i].Id)"),
             "uptown fill: a lot not clear is declared nothing at a load, taken for the construction game and the landmarks, and never counted open");
-        Check(declare.Contains("BuildingsRules.Others(Options, pick, lease, Others);") && declare.Contains("LifeGame.Spec(GroundOf(lot, f), structure, Others,")
-              && declare.IndexOf("Others.Clear();", StringComparison.Ordinal) >= 0
-              && declare.IndexOf("Others.Clear();", StringComparison.Ordinal) < declare.IndexOf("if (f != null)", StringComparison.Ordinal)
-              && MemberText(gameBuildings, "public static MadeSpec Spec(BuildingsLot lot, BuildingsStructure structure, IList<BuildingsStructure> others,").Contains("Others = instead"),
+        Check(declare.Contains("BuildingsRules.Others(Options, pick, lease, Others);") && declare.Contains("LifeGame.Spec(lot, structure, Others,")
+              && declare.IndexOf("MadeSpec kept = FinishedSpec(lot, f);", StringComparison.Ordinal) > 0
+              && declare.IndexOf("MadeSpec kept = FinishedSpec(lot, f);", StringComparison.Ordinal) < declare.IndexOf("Others.Clear();", StringComparison.Ordinal)
+              && ModSource(@"Uptown\StandRules.cs").Contains("public static MadeSpec Spec(BuildingsLot ground, FinishedBuilding f, int traffic, Func<bool> wanted)")
+              && ModSource(@"Uptown\StandRules.cs").Contains("return Spec(ground, structure, null, f.Design, f.Storeys, traffic, wanted);")
+              && ModSource(@"Uptown\StandRules.cs").Contains("Others = instead"),
             "uptown fill: each day-one building is declared with its other structures (offices alone for a leased office), a finished one with none");
     }
 

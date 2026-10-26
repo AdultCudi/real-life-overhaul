@@ -533,6 +533,33 @@ namespace RealLifeOverhaul.Construction
             });
         }
 
+        /// <summary>Test: the latest building finished has its opening go by without the player: the evening before's notice, then the opening held quietly and what it cost.</summary>
+        public void TestOpeningMissed()
+        {
+            const string test = "Construction missed opening";
+            if (!TestReady(test, false))
+            {
+                return;
+            }
+            TestGuard(test, () =>
+            {
+                ProjectFile p = Latest(ProjectStage.Finished);
+                if (p == null)
+                {
+                    Nothing(test);
+                    return;
+                }
+                BeforeTest();
+                p.Opened = false;
+                p.Ribbon = false;
+                Tell(NotificationType.Info, "reallife_bld_notice_opening_eve", ProjectName(p), null, TabProjects, p.Id);
+                Open(p, false);
+                Logger?.Info("Construction check (missed opening test): project " + p.Id + " opened without the player and they were told once what it cost: "
+                             + (p.Opened && !p.Ribbon ? "PASS" : "FAIL") + ".");
+                TestDone("project " + p.Id + "'s opening went by without you", TabProjects, p.Id);
+            });
+        }
+
         private ProjectFile Latest(ProjectStage stage)
         {
             for (int i = _state.Projects.Count - 1; i >= 0; i--)

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Buildings;
 using Entities;
@@ -91,6 +92,34 @@ namespace RealLifeOverhaul
                 _open = Without(all);
             }
             return _open;
+        }
+
+        /// <summary>
+        /// A building made in play put in the city's list, at its end, in place of any building listed at the same address (one
+        /// knocked down there, hidden); everything the game keeps behind a DLC stays in the list, which <see cref="Open"/> then
+        /// leaves out of the mod's picks as before. A new array, so the game's own readers (the map, the closest building) see it
+        /// whole. False when the city has no list. The caller makes the game's closest-building job again from it.
+        /// </summary>
+        public static bool Join(CityManager city, CityBuildingController made, Address address)
+        {
+            CityBuildingController[] was = city != null ? city.cityBuildingControllers : null;
+            if (was == null || made == null)
+            {
+                return false;
+            }
+            var now = new List<CityBuildingController>(was.Length + 1);
+            for (int i = 0; i < was.Length; i++)
+            {
+                CityBuildingController each = was[i];
+                if (each == made || (each != null && each.building != null && each.building.Address == address))
+                {
+                    continue;
+                }
+                now.Add(each);
+            }
+            now.Add(made);
+            city.cityBuildingControllers = now.ToArray();
+            return true;
         }
 
         // One walk over a list the game has just made; a copy only if a DLC keeps any of it.

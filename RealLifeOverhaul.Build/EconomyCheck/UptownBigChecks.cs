@@ -299,7 +299,7 @@ internal static partial class Program
               && making.IndexOf("Rebind(copy, source.building, building);", StringComparison.Ordinal) > 0
               && making.IndexOf("Rebind(copy, source.building, building);", StringComparison.Ordinal) < making.IndexOf("copy.gameObject.SetActive(true);", StringComparison.Ordinal),
             "uptown big: a whole copy keeps its garage doors, pumps and triggers, loses only what the game holds once in the city, and its parking lanes name its own record before it wakes");
-        Check(MemberText(newDirector, "private bool Make(MadeSpec spec)").Contains("each.Width, each.Depth, spec.Id, spec.Whole)")
+        Check(MemberText(newDirector, "private bool Make(MadeSpec spec, bool inPlay = false)").Contains("each.Width, each.Depth, spec.Id, spec.Whole)")
               && newDirector.Contains("DoorFacing = NewBuildingsRules.Turn(yaw + chosen.DoorFacing)"),
             "uptown big: the made buildings' engine names a whole design as one, and keeps the way its door truly faces");
         string cut = MemberText(buildings, "public static bool Cut(MadeBuilding made)"), walls = MemberText(buildings, "private static bool CutWalls(Transform root)");

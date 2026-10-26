@@ -49,23 +49,31 @@ namespace RealLifeOverhaul.Construction
             ShowHour(day, hour);
         }
 
-        // An opening day: the morning's reminder, and the opening held without the player once its hours are over.
+        // An opening: the evening before's reminder and the morning's, and the opening held without the player once its hours are
+        // over (who is told what it cost, in Open). OpeningRules says which notice an hour owes.
         private void OpeningHour(int day, int hour)
         {
             for (int i = 0; i < _state.Projects.Count; i++)
             {
                 ProjectFile p = _state.Projects[i];
-                if (p.Stage != ProjectStage.Finished || p.Opened || p.Opening != day)
+                if (p.Stage != ProjectStage.Finished || p.Opened || (p.Opening != day && p.Opening != day + 1))
                 {
                     continue;
                 }
-                if (hour == OpeningFrom - 2)
+                switch (OpeningRules.Notice(p.Opening, day, hour))
                 {
-                    Tell(NotificationType.Info, "reallife_bld_notice_opening", ProjectName(p), null, TabProjects, p.Id);
-                }
-                else if (hour >= OpeningTo && !_testOpening)
-                {
-                    Open(p, false);
+                    case OpeningNotice.Eve:
+                        Tell(NotificationType.Info, "reallife_bld_notice_opening_eve", ProjectName(p), null, TabProjects, p.Id);
+                        break;
+                    case OpeningNotice.Morning:
+                        Tell(NotificationType.Info, "reallife_bld_notice_opening", ProjectName(p), null, TabProjects, p.Id);
+                        break;
+                    default:
+                        if (p.Opening == day && OpeningRules.Over(p.Opening, day, hour) && !_testOpening)
+                        {
+                            Open(p, false);
+                        }
+                        break;
                 }
             }
         }

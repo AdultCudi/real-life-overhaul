@@ -59,6 +59,9 @@ namespace RealLifeOverhaul
         /// <summary>A copy taken away out of view, a look it hid shown again. Default: nothing.</summary>
         public static Action<object> CopyRemove;
 
+        /// <summary>A copy taken away at once, in whatever view (a building has stood where it stood in its look's stead). Default: nothing.</summary>
+        public static Action<object> CopyDrop;
+
         /// <summary>True for a copy that is gone or was never made. Default: gone.</summary>
         public static Func<object, bool> CopyGone;
 
@@ -83,6 +86,7 @@ namespace RealLifeOverhaul
             CopyOver = null;
             CopyOnPlot = null;
             CopyRemove = null;
+            CopyDrop = null;
             CopyGone = null;
             PlanningTopic = null;
             Notice = null;

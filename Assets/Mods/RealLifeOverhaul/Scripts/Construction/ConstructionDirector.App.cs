@@ -18,7 +18,7 @@ namespace RealLifeOverhaul.Construction
 
         private static readonly string[] AppGlyphs = { "Icon-Building", "Icon-Edit", "Icon-Info" };
         private const float RibbonReach = 4f;   // m from the opening's place: the panel offers the ribbon
-        private const int OpeningFrom = 10, OpeningTo = 18;   // the hours an opening is held
+        private const int OpeningFrom = OpeningRules.From, OpeningTo = OpeningRules.To;   // the hours an opening is held
 
         private ConstructionApp _view;
         private PhoneApp _app;

@@ -99,7 +99,7 @@ namespace RealLifeOverhaul.Construction
                 else if (p.Stage == ProjectStage.Finished && !p.Opened && p.Opening >= day)
                 {
                     TrackLine line = About(p, f);
-                    line.Need = p.Opening == day ? TrackNeed.Urgent : TrackNeed.Waiting;
+                    line.Need = TrackNeed.Urgent;   // from the handover: the opening is the day after, and nobody else will cut the ribbon
                     line.Key = p.Opening == day ? "reallife_bld_track_opening_today" : "reallife_bld_track_opening";
                     line.Day = p.Opening;
                     line.When = Hour(p.Opening, MorningHour);

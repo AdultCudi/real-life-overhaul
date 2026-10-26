@@ -141,22 +141,7 @@ namespace RealLifeOverhaul.Uptown
         /// </summary>
         public static MadeSpec Spec(BuildingsLot lot, BuildingsStructure structure, IList<BuildingsStructure> others, string design, int storeys, int traffic, Func<bool> wanted)
         {
-            MadeStructure[] instead = null;
-            if (others != null && others.Count > 0)
-            {
-                instead = new MadeStructure[others.Count];
-                for (int i = 0; i < others.Count; i++)
-                {
-                    instead[i] = new MadeStructure { Size = others[i].Size, Version = others[i].Version, Type = others[i].Type };
-                }
-            }
-            return new MadeSpec
-            {
-                Id = lot.Id, Street = lot.Street, Number = lot.Number, Size = structure.Size, Version = structure.Version, Type = structure.Type,
-                District = DistrictValues.Id, Design = string.IsNullOrEmpty(design) ? null : design,
-                Lots = new[] { new MadeLot(lot.X, lot.Z, lot.Facing, lot.Width, lot.Depth) }, Preferred = 0,
-                Traffic = traffic, Floors = Math.Max(1, storeys), DesignArea = storeys <= 0, Life = true, Wanted = wanted, Others = instead
-            };
+            return StandRules.Spec(lot, structure, others, design, storeys, traffic, wanted);   // game-free, so a building stood in play is held to the same declaration as a load's
         }
 
         /// <summary>
