@@ -1567,10 +1567,25 @@ internal static partial class Program
         foreach (var language in piece)
         {
             using JsonDocument doc = JsonDocument.Parse(File.ReadAllText(Path.Combine(locales, language.Key + ".json")));
-            string next = doc.RootElement.TryGetProperty("reallife_changes_next", out JsonElement row) ? row.GetString() : string.Empty;
+            string next = WhatsNewRow(doc.RootElement, language.Value[0]);
             int at = next.IndexOf(language.Value[0], StringComparison.Ordinal), band = next.IndexOf(language.Value[1], StringComparison.Ordinal);
             int fix = next.IndexOf(fixMark[language.Key], StringComparison.Ordinal);
-            Check(at >= 0 && band > at && (fix < 0 || band < fix), "uptown texts: What's new's next row tells of Uptown's whole band in " + language.Key + ", before its fixes");
+            Check(at >= 0 && band > at && (fix < 0 || band < fix), "uptown texts: What's new tells of Uptown's whole band in " + language.Key + ", before its fixes");
         }
+    }
+
+    /// <summary>The row of What's new that holds a line: the next row before a release, the version's own row after it (the
+    /// version script moves the lines); the next row when none does. Run once per language by the text checks, never in play.</summary>
+    private static string WhatsNewRow(JsonElement root, string line)
+    {
+        foreach (JsonProperty row in root.EnumerateObject())
+        {
+            if (row.Name.StartsWith("reallife_changes_", StringComparison.Ordinal) && !row.Name.EndsWith("_title", StringComparison.Ordinal)
+                && row.Value.ValueKind == JsonValueKind.String && row.Value.GetString().Contains(line, StringComparison.Ordinal))
+            {
+                return row.Value.GetString();
+            }
+        }
+        return root.TryGetProperty("reallife_changes_next", out JsonElement next) ? next.GetString() : string.Empty;
     }
 }
