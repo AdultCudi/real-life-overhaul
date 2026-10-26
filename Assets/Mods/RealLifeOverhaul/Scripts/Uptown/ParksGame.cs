@@ -42,7 +42,7 @@ namespace RealLifeOverhaul.Uptown
             new PieceTemplate
             {
                 Root = GamePieces.BenchRoot, Name = GamePieces.BenchName, X = GamePieces.BenchX, Z = GamePieces.BenchZ, Y = 0.03f, Within = Reach,
-                AltRoot = GamePieces.BenchAltRoot, AltX = GamePieces.BenchAltX, AltZ = GamePieces.BenchAltZ
+                AltRoot = GamePieces.BenchAltRoot, AltX = GamePieces.BenchAltX, AltZ = GamePieces.BenchAltZ, Sittable = true
             },
             new PieceTemplate { Root = "Vegetation", Name = "Tree Broadleaf L1", X = -327.16f, Z = 313.58f, Y = 0f, Within = Reach },
             new PieceTemplate { Root = "Vegetation", Name = "Tree Birch", X = 4.05f, Z = -129.34f, Y = 0f, Within = Reach },

@@ -461,6 +461,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\CareersStore.cs" Link="Mod\CareersStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\ProCatalogue.cs" Link="Mod\ProCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\ProRules.cs" Link="Mod\ProRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\AgencyRules.cs" Link="Mod\AgencyRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\DeskRules.cs" Link="Mod\DeskRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\InterviewRules.cs" Link="Mod\InterviewRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\Kinds\CartQueueRules.cs" Link="Mod\CartQueueRules.cs" />
@@ -595,6 +596,8 @@
     <!-- A building handed over stands at once, and the opening day is not missed (StandChecks.cs). -->
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\OpeningRules.cs" Link="Mod\Construction\OpeningRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\StandRules.cs" Link="Mod\StandRules.cs" />
+    <!-- A building the construction game finishes registers with the city map's filters when it stands and leaves them when it goes (MapChecks.cs). -->
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\NewBuildings\MapRules.cs" Link="Mod\MapRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Designs\ShowFlatDesigns.cs" Link="Mod\ShowFlatDesigns.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Civic\WrapRules.cs" Link="Mod\WrapRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Civic\PlotRules.cs" Link="Mod\PlotRules.cs" />

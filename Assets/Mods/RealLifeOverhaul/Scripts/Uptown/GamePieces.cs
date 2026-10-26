@@ -21,6 +21,7 @@ namespace RealLifeOverhaul.Uptown
         public float Within;   // m from its fixed place a piece may be: farther, and the game's scene has moved (0: GamePieces.DefaultWithin)
         public string AltRoot; // a second scene root the same piece (the same name) is looked for under when the first has none: the first's group may not be there at a load
         public float AltX, AltZ;   // the place of the one taken there
+        public bool Sittable;      // asked for by what it is, the game's OutsideBenchController, and not by its name: the game renames each bench when it wakes (GamePieces.BenchRoot)
     }
 
     /// <summary>
@@ -40,6 +41,9 @@ namespace RealLifeOverhaul.Uptown
         // The game's pavement bench (OutsideBenchController), as the street furniture, the parks and the campus all take it: kept under a scene root of its
         // own, "SleepingBench", whose copy "SleepingBench (11)" stands at this place (props_scan, 25 Oct 2026, Build 3682). The whole group is
         // switched on or off with the far districts, so the reach is wide.
+        // The scene's name for a bench is gone once the game has woken it: OutsideBenchController.Start sets name = "Bench" + a random number, so a bench of a
+        // woken scene is "Bench4821" and never "SleepingBench (11)" (the scans of 25 Oct 2026 were of scenes asleep, and Player.log's "not found: SleepingBench" of
+        // the same day came from a scene awake). A bench is therefore taken by its controller (PieceTemplate.Sittable); the name below is only the word the log uses.
         public const string BenchRoot = "SleepingBench";
         public const string BenchName = "SleepingBench";
         public const float BenchX = 214.40f;   // m: where the one taken stands
@@ -125,6 +129,11 @@ namespace RealLifeOverhaul.Uptown
             PieceTemplate want = templates[t];
             float within = want.Within > 0f ? want.Within : DefaultWithin;
             float best = found[t] != null ? PieceRules.Flat(found[t].transform.position.x, found[t].transform.position.z, wantX, wantZ) : PieceRules.Start(within);
+            if (want.Sittable)
+            {
+                TakeBench(root, found, t, wantX, wantZ, within, best);
+                return;
+            }
             Transform[] parts = root.GetComponentsInChildren<Transform>(true);
             for (int i = 0; i < parts.Length; i++)
             {
@@ -140,6 +149,30 @@ namespace RealLifeOverhaul.Uptown
                     best = d;
                     found[t] = part.gameObject;
                 }
+            }
+        }
+
+        // The nearest of the game's benches (an OutsideBenchController, whatever the game has since named it) under a root, within its reach, whose mesh is its
+        // own: a bench in a static batch would copy the batch's whole mesh (PieceRules.OwnMesh).
+        private static void TakeBench(Transform root, GameObject[] found, int t, float wantX, float wantZ, float within, float best)
+        {
+            OutsideBenchController[] benches = root.GetComponentsInChildren<OutsideBenchController>(true);
+            for (int i = 0; i < benches.Length; i++)
+            {
+                Transform part = benches[i].transform;
+                Vector3 at = part.position;
+                float d = PieceRules.Flat(at.x, at.z, wantX, wantZ);
+                if (!PieceRules.Takes(d, best, within))
+                {
+                    continue;
+                }
+                MeshFilter mesh = part.GetComponent<MeshFilter>();
+                if (mesh == null || mesh.sharedMesh == null || !PieceRules.OwnMesh(mesh.sharedMesh.name))
+                {
+                    continue;
+                }
+                best = d;
+                found[t] = part.gameObject;
             }
         }
 

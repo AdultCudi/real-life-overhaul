@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Buildings;
 using Entities;
+using RealLifeOverhaul.NewBuildings;
 
 namespace RealLifeOverhaul
 {
@@ -107,19 +108,28 @@ namespace RealLifeOverhaul
             {
                 return false;
             }
-            var now = new List<CityBuildingController>(was.Length + 1);
-            for (int i = 0; i < was.Length; i++)
-            {
-                CityBuildingController each = was[i];
-                if (each == made || (each != null && each.building != null && each.building.Address == address))
-                {
-                    continue;
-                }
-                now.Add(each);
-            }
-            now.Add(made);
-            city.cityBuildingControllers = now.ToArray();
+            city.cityBuildingControllers = CityList.With(was, made, each => each.building != null && each.building.Address == address);
             return true;
+        }
+
+        /// <summary>
+        /// A building knocked down in play taken out of the city's list: the map's filters walk that list, so a controller left in it is lit
+        /// again at every opening of the map, a marker on ground with no building. A new array, so the game's own readers see it whole;
+        /// the caller makes the game's closest-building job again from it. True when it was in the list; false when it was not (nothing changed).
+        /// </summary>
+        public static bool Leave(CityManager city, CityBuildingController gone)
+        {
+            CityBuildingController[] was = city != null ? city.cityBuildingControllers : null;
+            if (was == null || gone == null)
+            {
+                return false;
+            }
+            CityBuildingController[] now = CityList.Without(was, gone, out bool removed);
+            if (removed)
+            {
+                city.cityBuildingControllers = now;
+            }
+            return removed;
         }
 
         // One walk over a list the game has just made; a copy only if a DLC keeps any of it.

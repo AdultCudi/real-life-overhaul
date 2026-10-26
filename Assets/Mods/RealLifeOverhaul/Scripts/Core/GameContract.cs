@@ -452,6 +452,10 @@ namespace RealLifeOverhaul
         // in play is not put in the city's list, and waits for the next load to be in it (the building stands all the same).
         public static readonly GameMember CityLookup = Optional(Field(OwnBuildings, Game, "CityManager", "_cityBuildingControllersDictionary", "Dictionary<Address,CityBuildingController>"));
         public static readonly GameMember ClosestReset = Optional(StaticMethod(OwnBuildings, Game, "Buildings.ClosestBuildingFromPlayer", "OnDestroy", "Void"));
+        // NewBuildings/MadeGame.Map: a building knocked down in play leaves the city map's filters. Its marker is taken out of the map's list of markers and
+        // destroyed, and out of the filters' own list of permanent markers they hid (CityMapFilters.cs 63, which a shut map shows again: a destroyed marker
+        // in it would throw there). Optional: without it the marker is only put out and left where it is.
+        public static readonly GameMember MapHidden = Optional(Field(OwnBuildings, Game, "CityMapFilters", "_permanentPoisHidden", "List<PointOfInterest>"));
         // Uptown/GroundGame: the street a road module's name label shows (Road.cs 13; its Start writes the label from it). Optional:
         // without it the copied modules' labels are hidden.
         public static readonly GameMember RoadStreetName = Optional(Field(UptownLabels, Game, "Road", "streetName", "String"));

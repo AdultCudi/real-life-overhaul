@@ -109,6 +109,46 @@ namespace RealLifeOverhaul
             return address == null || Players(building) ? null : Book.At(address.streetName, address.streetNumber);
         }
 
+        private static readonly SpecialFacts PageFacts = new SpecialFacts();
+        private static bool _pageFactsFailed;
+
+        /// <summary>
+        /// What BizMan's page of a building the mod has taken (<see cref="TakenBy(BuildingRegistration)"/>) says beyond "Taken by": the feature's facts (who owns
+        /// it, its own line) and the words of what it is (the card's line under the name). Null when the building is not taken. Asked when the page is
+        /// written, never per frame; the feature's callback runs behind its own guard, so a fault there is one log line and the page keeps its "Taken by".
+        /// The returned object is the book's own, valid until the next call.
+        /// </summary>
+        internal static SpecialFacts PageOf(BuildingRegistration registration, out string typeWords)
+        {
+            typeWords = null;
+            if (TakenBy(registration) == null)
+            {
+                return null;
+            }
+            SpecialEntry entry = Book.At(registration.StreetName, registration.StreetNumber);
+            PageFacts.Clear();
+            if (entry == null)
+            {
+                return PageFacts;
+            }
+            typeWords = string.IsNullOrEmpty(entry.TypeKey) ? null : Localise(entry.TypeKey);
+            if (entry.Facts != null && !_pageFactsFailed)
+            {
+                try
+                {
+                    entry.Facts(PageFacts);
+                }
+                catch (Exception e)
+                {
+                    _pageFactsFailed = true;   // one line, then the page's own "Taken by" for every building
+                    PageFacts.Clear();
+                    Logger?.Error(e);
+                    Logger?.Warn("Special buildings: a feature's say on BizMan's page of its building failed (the error above); the page says 'Taken by' alone.");
+                }
+            }
+            return PageFacts;
+        }
+
         /// <summary>The id of the feature put in the book at a building, leaving reservations aside; null for none.</summary>
         public static string FiledAt(CityBuildingController building)
         {

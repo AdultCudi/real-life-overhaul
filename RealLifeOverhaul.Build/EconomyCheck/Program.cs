@@ -168,6 +168,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--map")
+        {
+            MapFilterChecks();   // (the city map's filters and a building that stands or goes, while working on them: MapChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--stand")
         {
             StandNowChecks();   // (a building handed over stands at once, and the opening day alone, while working on them: StandChecks.cs)
@@ -519,6 +525,7 @@ internal static partial class Program
         HiddenPanels(); // in a Going Public session, which hides the game's activity panel and presses Start for the player, a desk's class or exam begins (HiddenPanelChecks.cs)
         ShiftOpen();    // every job's week inside its workplace's opening hours, a save's put right at load, a day shut at its start excused, the rota's shut clients (ShiftOpenChecks.cs)
         Ladder();       // the management ladder at a city company: the ranks' powers, the company seeded, every task decided by the rank that may, promotion with its tools, the save (LadderChecks.cs)
+        AgencyDesk();   // a seat at a recruitment office's desk always offers the jobs board (never the Basic HR course) or recruitment (the course first), the game's dialogue taken while the working life is on (AgencyDeskChecks.cs)
         OptionKeysFix(); // the options kept under the mod's own id for every copy: the older copies' values brought over once, the running copy's first, the sources, the texts (OptionKeysChecks.cs)
         HomeFixes();    // home life: the roommate's talk test with no character, the door to social life nobody read, rain and sleep in a hotel room (HomeFixChecks.cs)
         LifeFixes();    // life events: news of the player's home, building, neighbours and landlord only to a player with a home (LifeFixChecks.cs)
@@ -555,6 +562,7 @@ internal static partial class Program
         BuilderDesk();  // the front desks: what the desk talks about first, the front desk picked, the office's visitors, the one quote and hire, the click, the tests, the texts (BuilderDeskChecks.cs)
         BuildModeChecks();   // build mode: the zoning cells on the real plan, sites, prices, rows, the state machine, colours, warnings, demand and the market, whole buildings, the store, the sources, the texts (BuildModeChecks.cs)
         Track();        // Show on map and the construction objectives: what is under way, each line's words, the order, the cap, the claim kept, the one way to the destination, the game's objectives window, the texts (TrackChecks.cs)
+        MapFilterChecks();   // a building the construction game finishes registers with the city map's filters when it stands and leaves them when it goes: the rows, the steps, the list, the sources, the text (MapChecks.cs)
         StandNowChecks();   // a building handed over stands at once, and the opening day is not missed: when it stands, the one declaration, the record set up once, the sources, the texts (StandChecks.cs)
         ShowFlats();    // show flats and renovations: viewings, buyers and prices, a refit's hours, grade and quote, the fittings' decor, the lines, the game's residential designs, the sources, the texts (ShowFlatsChecks.cs)
         Redevelop();    // redevelopment: refurnishing with the game's designs and its price, an AI business's new layout, the lines, the sources, the texts (RedevelopChecks.cs)

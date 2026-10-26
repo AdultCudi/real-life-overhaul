@@ -29,6 +29,9 @@ namespace RealLifeOverhaul.Schools
         public const string CardRunPlayer = "reallife_schools_card_run_player";   // ... and who runs it
         public const string CardRunCouncil = "reallife_schools_card_run_council";
         public const string CardRunTrust = "reallife_schools_card_run_trust";
+        public const string OwnerNameCouncil = "reallife_schools_owner_name_council";   // BizMan's "Building owned by ...": the council as a name
+        public const string PagePlayer = "reallife_schools_page_player";                 // BizMan's line when the player owns the school: where to run it
+        public const string CampusApp = "reallife_campus_app";
 
         public const string Tab = "reallife_schools_tab";                         // the Campus app's Schools tab
         public const string ColSchool = "reallife_schools_col_school";
@@ -165,6 +168,12 @@ namespace RealLifeOverhaul.Schools
 
         /// <summary>The card's line for who runs the main school: "Run by you", "Run by the council", "Run by Meridian Schools".</summary>
         public static string CardRun(int owner) => owner == SchoolOwner.Player ? T(CardRunPlayer) : owner == SchoolOwner.Council ? T(CardRunCouncil) : Fill(CardRunTrust, "who", Trust(owner));
+
+        /// <summary>The name of who owns the main school for BizMan's owner line: the council or a trust by name; null for the player (the page names the player itself).</summary>
+        public static string PageOwner(int owner) => owner == SchoolOwner.Player ? null : owner == SchoolOwner.Council ? T(OwnerNameCouncil) : Trust(owner);
+
+        /// <summary>BizMan's line in the place of "Taken by": who runs the main school, and for the player where they run it (the Campus app's Schools tab).</summary>
+        public static string PageLine(int owner) => owner == SchoolOwner.Player ? Fill(PagePlayer, "app", T(CampusApp), "tab", T(Tab)) : CardRun(owner);
 
         /// <summary>A rank as words for the league table: "3 of 12".</summary>
         public static string Rank(int rank, int count) => Fill("reallife_schools_rank", "rank", rank.ToString(Plain), "count", count.ToString(Plain));

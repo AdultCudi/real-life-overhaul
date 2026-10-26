@@ -232,6 +232,11 @@ namespace RealLifeOverhaul.Schools
             facts.AtHour = at;
             facts.CanEnter = open;
             facts.RunLine = SchoolsText.CardRun(_state.Campus.Owner);
+            // BizMan's page of the building (ClaimedPresentation): who owns it, by the school's file, never the game's "Undefined"; the line in the place of
+            // "Taken by", and for the player's own school where to run it.
+            facts.OwnerName = SchoolsText.PageOwner(_state.Campus.Owner);
+            facts.OwnerYou = _state.Campus.Owner == SchoolOwner.Player;
+            facts.PageLine = SchoolsText.PageLine(_state.Campus.Owner);
         }
 
         /// <summary>The card as words for the log: the name, the kind, the state by the hours and who runs it.</summary>
@@ -268,9 +273,17 @@ namespace RealLifeOverhaul.Schools
                              + (!a && !b ? ", " : string.Empty) + (!b ? "the player: " + whyPlayer : string.Empty) + ")";
                 }
             }
-            Logger?.Info("Schools check (campus reach): people can walk " + people + " of " + _routes.Count
-                         + " routes from the gates to the main door, the yards, the court, the plaza, the hall's and the junior block's ends and the field, the player "
-                         + player + (failed == null ? ": PASS." : "; not: " + failed + "."));
+            string reach = "Schools check (campus reach): people can walk " + people + " of " + _routes.Count
+                           + " routes from the gates to the main door, the yards, the court, the plaza, the hall's and the junior block's ends and the field, the player " + player;
+            if (failed == null)
+            {
+                Logger?.Info(reach + ": PASS.");
+            }
+            else
+            {
+                Logger?.Warn(reach + ": FAIL; not: " + failed + ". Fewer than all " + _routes.Count
+                             + " for people or the player: the campus stays empty or shut, so the walking mesh, not the zones, is to be looked at.");
+            }
         }
 
         // The main school's classrooms handed to the floors core: the game's school on its three floors.

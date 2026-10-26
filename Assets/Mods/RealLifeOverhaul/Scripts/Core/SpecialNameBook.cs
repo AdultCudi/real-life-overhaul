@@ -38,6 +38,9 @@ namespace RealLifeOverhaul
         public int AtHour;         // the hour of the day it changes
         public string RunLine;     // "Run by the council": the card's owner line; null for none
         public bool CanEnter;      // the card's "click to enter" is shown (a door that is open and can be walked in at)
+        public string OwnerName;   // who owns the building, for BizMan's "Building owned by" line (the game's own words with this name); null for the game's own
+        public bool OwnerYou;      // the player owns it through the feature, not in the game's registration: BizMan's line names the player (the game's own form)
+        public string PageLine;    // BizMan's line in place of "Taken by {name}" (who runs it, or where the player runs it); null for that line
 
         /// <summary>The game's own key for the card's state line (BuildingResume.UpdateOpenStateLabel): open and closing in hours, or closed and opening in hours; null for none.</summary>
         public static string StateKey(CardState state, int hours)
@@ -52,6 +55,39 @@ namespace RealLifeOverhaul
             Hours = AtHour = 0;
             RunLine = null;
             CanEnter = false;
+            OwnerName = null;
+            OwnerYou = false;
+            PageLine = null;
+        }
+    }
+
+    /// <summary>
+    /// What BizMan's page of a building a feature holds says, the one rule of it (game-free, so it is checked offline): the form to start a business is
+    /// never offered there, the owner line names the feature's owner in the game's own words when the feature says one and the game's own when it does not,
+    /// and the line that stands in the place of "Taken by" is the feature's own when it gives one.
+    /// </summary>
+    public static class TakenPageRules
+    {
+        /// <summary>True when the page may offer the form to start a business: only for a building no feature holds.</summary>
+        public static bool OffersStart(string takenBy) => takenBy == null;
+
+        /// <summary>The line under "This building is not for sale": the feature's own line, else the game's "Taken by" words.</summary>
+        public static string Line(SpecialFacts facts, string takenWords)
+        {
+            return facts != null && !string.IsNullOrEmpty(facts.PageLine) ? facts.PageLine : takenWords;
+        }
+
+        /// <summary>
+        /// The name the owner line carries ("Building owned by {name}"): the player's name when the feature says the player owns it, the feature's own name
+        /// for its owner, else null for the game's own owner (and its "Undefined" for a building nobody owns).
+        /// </summary>
+        public static string Owner(SpecialFacts facts, string playersName)
+        {
+            if (facts == null)
+            {
+                return null;
+            }
+            return facts.OwnerYou && !string.IsNullOrEmpty(playersName) ? playersName : !string.IsNullOrEmpty(facts.OwnerName) ? facts.OwnerName : null;
         }
     }
 

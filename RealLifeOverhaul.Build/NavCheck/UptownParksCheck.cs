@@ -339,12 +339,20 @@ internal static partial class Program
         Check(Regex.IsMatch(pieces, @"Object\.Instantiate\(template, parent\);[\s\S]*copy\.SetActive\(true\);[\s\S]*forceRenderingOff = false"), "uptown pieces sources: a copy is made switched on and its renderers drawn");
         Check(streets.Contains("GamePieces.Stand(template, holder.transform,") && campus.Contains("GamePieces.Stand(template, parent,") && parks.Contains("GamePieces.Stand(Found[t], parent,"),
             "uptown pieces sources: every piece is laid through GamePieces.Stand");
-        foreach (string template in new[] { "SleepingBench", "SM_Trash Can", "SM_PavementHoleforTrees_Broadleaf M1", "SM_PavementHoleforTrees_02 Birch", "SM_PavementHoleforTrees_02 Broadleaf L1", "Prefab_BikeRentalStand" })
+        foreach (string template in new[] { "SleepingBench", "SM_Trash Can", "SM_PavementHoleforTrees_Broadleaf M1", "SM_PavementHoleforTrees_02 Birch", "SM_PavementHoleforTrees_02 Broadleaf L1" })
         {
             // The bench is asked for through the shared constants (GamePieces.BenchName), the same for the streets, the parks and the campus.
             string asked = template == "SleepingBench" ? "Name = GamePieces.BenchName" : "Name = \"" + template + "\"";
             Check(Regex.Matches(streets, Regex.Escape(asked)).Count == 1, "uptown pieces sources: the street furniture asks for " + template + " once");
         }
+        // The bench is taken by its controller (the game renames a woken bench "Bench" + a number), never by its name; its mesh must be its own.
+        Check(Regex.IsMatch(pieces, @"GetComponentsInChildren<OutsideBenchController>\(true\)") && Regex.IsMatch(pieces, @"PieceRules\.OwnMesh\(") && Regex.IsMatch(pieces, @"public bool Sittable;")
+              && Regex.Matches(streets, @"Sittable = true").Count == 1 && Regex.Matches(parks, @"Sittable = true").Count == 1 && Regex.Matches(campus, @"Sittable = true").Count == 1,
+            "uptown pieces sources: the street furniture, the parks and the campus take the bench by its OutsideBenchController, whatever the game has renamed it, never in a static batch");
+        Check(!streets.Contains("BikeRentalStand") && !campus.Contains("BikeRentalStand") && !parks.Contains("BikeRentalStand"),
+            "uptown pieces sources: no bike-share dock is copied (the game's own draws as a bare black slab)");
+        Check(PieceRules.OwnMesh("SleepingBench") && PieceRules.OwnMesh("Bench") && !PieceRules.OwnMesh("Combined Mesh (root: scene)") && !PieceRules.OwnMesh(null) && !PieceRules.OwnMesh(string.Empty),
+            "uptown pieces: a mesh of a static batch (Combined Mesh) is not a piece's own");
         Check(streets.Contains("FoundWords = GamePieces.Words(Templates, Found)") && director.Contains("StreetsGame.FoundWords") && director.Contains("ParksGame.FoundWords"),
             "uptown pieces sources: what the street furniture and the parks found and missed is said once a load");
         // The parks: the scene touched in ParksGame alone, laid with the street furniture before the ground grows, asleep and woken together.
