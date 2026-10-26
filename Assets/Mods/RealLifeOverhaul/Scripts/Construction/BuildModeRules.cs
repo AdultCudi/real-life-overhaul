@@ -524,6 +524,25 @@ namespace RealLifeOverhaul.Construction
         }
 
         public const int LegendMost = 12;   // entries a view's legend has at most
+        public const int LegendShort = 6;   // entries the legend beside the views shows (the owner, 26 Oct 2026: the legend "dominates" the tool panel); the rest in its tooltip
+
+        /// <summary>The entries of a view's legend shown beside the views: its first <see cref="LegendShort"/> (the fills come first); the rest go in its tooltip.</summary>
+        public static int LegendShown(int entries) => Math.Max(0, Math.Min(entries, LegendShort));
+
+        /// <summary>
+        /// Whether a drag with a tool may take a column (CellRules.RunOk): Buy land the land for sale and the player's own (to buy it
+        /// deeper); Zone, Place and Join the player's own land; Bulldoze and Refurbish the player's buildings.
+        /// </summary>
+        public static bool Takes(BuildTool tool, ColumnFacts f)
+        {
+            switch (tool)
+            {
+                case BuildTool.Land: return f.Free || f.Mine;
+                case BuildTool.Bulldoze:
+                case BuildTool.Refurbish: return f.MyBuilding;
+                default: return f.Mine;
+            }
+        }
 
         private static int Key(int[] fills, int[] lines, string[] keys, int n, int fill, int line, string key)
         {

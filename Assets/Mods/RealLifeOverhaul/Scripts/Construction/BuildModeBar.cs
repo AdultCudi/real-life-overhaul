@@ -24,7 +24,8 @@ namespace RealLifeOverhaul.Construction
     {
         public static IModLogger Logger;
 
-        private const float Top = 196f;          // from the top of the canvas (3840 by 2160) to the hint bar and the leave button: under the game's top bar
+        private const float Top = 300f;          // from the top of the canvas (3840 by 2160) to the hint bar when the game's HUD cannot be measured: under its top bar and the needs (271)
+        private const float LeaveTop = 196f;     // ... to the leave button, under the top bar's buttons at the right (183)
         private const float Foot = 40f;          // from the foot of the canvas to the toolbar
         private const float Edge = 48f;          // from the right edge to the leave button
         private const float ToolWide = 208f;     // a tool's button
@@ -40,8 +41,10 @@ namespace RealLifeOverhaul.Construction
         private const float HintMore = 34f;
         private const float StepSize = 68f;
         private const float PanelGap = 32f;      // between the toolbar's top and the tool panel's foot
-        private const float HintMost = 1400f;    // the hint's line at its widest before it wraps: the bar stays clear of the leave button
-        private const float MoreMost = 700f;     // ... and its quieter line
+        private const float HintMost = 2600f;    // the hint bar at its widest, however wide the screen
+        private const float HintPadSide = 44f;   // the hint bar's padding at each side
+        private const float HintSpacing = 32f;   // ... and between its parts
+        private const float Gap = 28f;           // between the game's HUD and build mode's parts
 
         public static readonly Color Text = DarkLook.Text;
         public static readonly Color Soft = DarkLook.Soft;
@@ -76,9 +79,13 @@ namespace RealLifeOverhaul.Construction
         private readonly BuildModeTip[] _barTips = new BuildModeTip[4];
         private Action<int> _onTool, _onView;
         private Action _onLeave;
+        private HudFrame _frame = new HudFrame { TopFoot = float.MaxValue, RightFoot = float.MaxValue, TasksRight = float.MinValue, TasksFoot = float.MaxValue };
 
         /// <summary>The tool panel over the toolbar.</summary>
         public BuildModeSheet Sheet { get; private set; }
+
+        /// <summary>The view's legend over the views.</summary>
+        public BuildModeLegend Legend { get; private set; }
 
         public bool Alive => _root != null;
 
@@ -98,6 +105,30 @@ namespace RealLifeOverhaul.Construction
 
         /// <summary>The whole interface's own rectangle: the canvas's size.</summary>
         public RectTransform Root => _root;
+
+        /// <summary>
+        /// What a tour's card must leave in view besides the part it points at (the owner, 26 Oct 2026: the card hid the tool panel),
+        /// in the interface's units: every part of build mode's shown (the hint bar, the leave button, the foot, the tool panel, the
+        /// legend) but the one pointed at and the box holding it, and the game's HUD parts. Returns how many.
+        /// </summary>
+        public int TourAvoid(TourStep step, UiBox[] into, List<RectTransform> hud)
+        {
+            RectTransform target = TourTarget(step);
+            int n = 0;
+            foreach (RectTransform r in new[] { _hint, _leave, _tools, _views, _demand, Sheet != null ? Sheet.Rect : null, Legend != null ? Legend.Rect : null })
+            {
+                if (r != null && r != target && r.gameObject.activeInHierarchy && n < into.Length)
+                {
+                    into[n++] = BuildModeGame.Local(_root, r);
+                }
+            }
+            BuildModeGame.HudParts(hud);
+            for (int i = 0; i < hud.Count && n < into.Length; i++)
+            {
+                into[n++] = BuildModeGame.Local(_root, hud[i]);
+            }
+            return n;
+        }
 
         /// <summary>The interface, hidden, on the canvas given; null, with one line in Player.log, if the game's designer is not built as expected.</summary>
         public static BuildModeBar Make(Transform canvas, BuildModeKit kit, Action<int> onTool, Action<int> onView, Action<int> onRow, Action onLeave)
@@ -133,7 +164,7 @@ namespace RealLifeOverhaul.Construction
             _root.offsetMin = _root.offsetMax = Vector2.zero;
 
             // The hint bar: the step's circle, what to do next, and in a quieter line a tip and what Esc does.
-            _hint = _kit.Panel(_root, "Hint bar", true, new RectOffset(44, 44, 28, 28), 32f);
+            _hint = _kit.Panel(_root, "Hint bar", true, new RectOffset((int)HintPadSide, (int)HintPadSide, 28, 28), HintSpacing);
             Pin(_hint, new Vector2(0.5f, 1f), new Vector2(0f, -Top));
             _step = BuildModeKit.Picture(_hint, "Step", _kit.Icon("circle", null) ?? _kit.White, StepBlue, StepSize, StepSize);
             _stepNumber = _kit.Text(_step.transform, "Number", 36f, Color.white, true, false);
@@ -166,10 +197,11 @@ namespace RealLifeOverhaul.Construction
             }
             leave.Label = _kit.Text(leave.Root, "Words", 36f, new Color(1f, 0.85f, 0.85f, 1f), true, false);
             UiClone.Key(leave.Label, "reallife_bld_bar_leave");
-            Paint(leave, _kit.White ?? _kit.Line, new Color(0.227f, 0.133f, 0.141f, 1f));
+            _kit.Frame(leave, new Color(0.227f, 0.133f, 0.141f, 1f), false);
+            leave.Back.color = new Color(0.353f, 0.227f, 0.227f, 1f);   // the mockup's #5a3a3a edge: leaving reads apart from the tools
             leave.Tip = leave.Root.gameObject.AddComponent<BuildModeTip>();
             _leave = leave.Root;
-            Pin(_leave, new Vector2(1f, 1f), new Vector2(-Edge, -Top));
+            Pin(_leave, new Vector2(1f, 1f), new Vector2(-Edge, -LeaveTop));
 
             // The foot: the tools, the views, the demand, side by side.
             _bottom = BuildModeKit.Strip(_root, "Foot", true, new RectOffset(), 28f, TextAnchor.LowerCenter);
@@ -203,7 +235,7 @@ namespace RealLifeOverhaul.Construction
                 b.Label.fontSizeMin = 20f;
                 b.Label.fontSizeMax = ToolWords;
                 UiClone.Key(b.Label, ToolLabels[t]);   // the toolbar's short name; the tooltip gives the whole
-                Paint(b, _kit.White ?? _kit.Line, ButtonGrey);
+                _kit.Frame(b, ButtonGrey, true);
                 Brighten(b);
                 b.Tip = b.Root.gameObject.AddComponent<BuildModeTip>();
                 _toolButtons[t] = b;
@@ -225,7 +257,7 @@ namespace RealLifeOverhaul.Construction
                     b.Icon.sprite = _kit.Icon(ViewIcons[v], ViewIconsElse[v]) ?? b.Icon.sprite;
                     ((RectTransform)b.Icon.transform).sizeDelta = new Vector2(ViewIcon, ViewIcon);
                 }
-                Paint(b, _kit.White ?? _kit.Line, ButtonGrey);
+                _kit.Frame(b, ButtonGrey, true);
                 Brighten(b);
                 b.Tip = b.Root.gameObject.AddComponent<BuildModeTip>();
                 _viewButtons[v] = b;
@@ -261,6 +293,7 @@ namespace RealLifeOverhaul.Construction
             }
 
             Sheet = new BuildModeSheet(_kit, _root, onRow);
+            Legend = new BuildModeLegend(_kit, _root);
             _root.gameObject.SetActive(false);
         }
 
@@ -335,21 +368,48 @@ namespace RealLifeOverhaul.Construction
                 _hintDivider.gameObject.SetActive(hasMore);
             }
             UiClone.Words(_hintMore, more ?? string.Empty);
-            Cap(_hintMore, MoreMost);
+            FitHint();
+        }
+
+        // The hint bar's two lines on one row where the room allows (the owner, 26 Oct 2026: a long hint wrapped to two lines):
+        // the room is the screen's between the objectives panel and the right edge, the bar kept in the middle; the quieter line
+        // wraps first (BuildModeHintRules.HintFit).
+        private void FitHint()
+        {
+            Rect screen = _root.rect;
+            float left = _frame.TasksRight > float.MinValue ? Math.Max(screen.xMin + Edge, _frame.TasksRight + Gap) : screen.xMin + Edge;
+            float half = Math.Max(0f, Math.Min(-left, screen.xMax - Edge));
+            bool circle = _step.gameObject.activeSelf, more = _hintMore.gameObject.activeSelf;
+            float fixedParts = HintPadSide * 2f + (circle ? StepSize + HintSpacing : 0f) + (more ? HintSpacing * 2f + 4f : 0f);
+            float room = Math.Min(half * 2f, HintMost) - fixedParts;
+            float mainWide = _hintMain.GetPreferredValues(_hintMain.text, float.PositiveInfinity, float.PositiveInfinity).x;
+            float moreWide = more ? _hintMore.GetPreferredValues(_hintMore.text, float.PositiveInfinity, float.PositiveInfinity).x : 0f;
+            BuildModeHintRules.HintFit(mainWide, moreWide, room, out float mainCap, out float moreCap);
+            Cap(_hintMain, mainCap);
+            Cap(_hintMore, moreCap);
             LayoutRebuilder.ForceRebuildLayoutImmediate(_hint);
         }
 
-        // A line as wide as its words up to a width, wrapping past it.
+        // A line as wide as its words, or wrapping at a width (below zero: no wrap).
         private static void Cap(TMP_Text t, float most)
         {
-            float wide = t.GetPreferredValues(t.text, float.PositiveInfinity, float.PositiveInfinity).x;
-            bool wrap = wide > most;
+            bool wrap = most > 0f;
             t.textWrappingMode = wrap ? TextWrappingModes.Normal : TextWrappingModes.NoWrap;
             BuildModeKit.Size(t.gameObject, wrap ? most : -1f, -1f);
             LayoutElement e = t.GetComponent<LayoutElement>();
             if (!wrap)
             {
                 e.minWidth = e.preferredWidth = -1f;
+            }
+        }
+
+        /// <summary>True when the hint bar's main line is on one line now, for the tests.</summary>
+        public bool HintOneLine
+        {
+            get
+            {
+                _hintMain.ForceMeshUpdate();
+                return _hintMain.textInfo == null || _hintMain.textInfo.lineCount <= 1;
             }
         }
 
@@ -390,14 +450,36 @@ namespace RealLifeOverhaul.Construction
             _barTips[use].Set(title, line, false);
         }
 
-        /// <summary>Lays everything out now and stands the tool panel over the toolbar's left end.</summary>
+        /// <summary>
+        /// Where the game's HUD stands now (BuildModeGame.Hud): the hint bar goes under the top bar and everything hung under it
+        /// (it covered the needs bars, the owner's test of 26 Oct 2026), clear of the objectives panel; the leave button under the
+        /// top bar's buttons at the right. Unmeasured: the fixed places, under the game's own top bar at 3840 by 2160.
+        /// </summary>
+        public void Hud(HudFrame frame)
+        {
+            _frame = frame;
+            Rect screen = _root.rect;
+            float hintTop = frame.Measured && frame.TopFoot < float.MaxValue ? Math.Min(-Top + 120f, frame.TopFoot - screen.yMax - Gap) : -Top;
+            float leaveTop = frame.Measured && frame.RightFoot < float.MaxValue ? Math.Min(-LeaveTop + 60f, frame.RightFoot - screen.yMax - Gap) : -LeaveTop;
+            _hint.anchoredPosition = new Vector2(0f, hintTop);
+            _leave.anchoredPosition = new Vector2(-Edge, leaveTop);
+            FitHint();
+        }
+
+        /// <summary>Lays everything out now and stands the tool panel over the toolbar's left end, the legend over the views.</summary>
         public void Place()
         {
             LayoutRebuilder.ForceRebuildLayoutImmediate(_bottom);
             LayoutRebuilder.ForceRebuildLayoutImmediate(_hint);
             LayoutRebuilder.ForceRebuildLayoutImmediate(_leave);
             float left = -_bottom.rect.width * 0.5f;
-            Sheet.Stand(new Vector2(left, Foot + _bottom.rect.height + PanelGap));
+            float over = Foot + _bottom.rect.height + PanelGap;
+            Sheet.Stand(new Vector2(left, over));
+            if (Legend != null)
+            {
+                UiBox views = BuildModeGame.Local(_root, _views);
+                Legend.Stand(new Vector2(views.X0, over));
+            }
         }
 
         public void Destroy()
@@ -415,7 +497,7 @@ namespace RealLifeOverhaul.Construction
         private void Parts(List<RectTransform> into)
         {
             into.Clear();
-            foreach (RectTransform r in new[] { _hint, _leave, _bottom, Sheet != null ? Sheet.Rect : null })
+            foreach (RectTransform r in new[] { _hint, _leave, _bottom, Sheet != null ? Sheet.Rect : null, Legend != null ? Legend.Rect : null })
             {
                 if (r != null && r.gameObject.activeInHierarchy)
                 {
@@ -454,6 +536,28 @@ namespace RealLifeOverhaul.Construction
                     }
                 }
             }
+            // The game's HUD: the top bar and what hangs under it, its buttons, the objectives, and the labels at the foot while drawn.
+            var hud = new List<RectTransform>(24);
+            BuildModeGame.HudParts(hud);
+            for (int i = 0; i < parts.Count; i++)
+            {
+                Rect a = World(parts[i]);
+                for (int k = 0; k < hud.Count; k++)
+                {
+                    if (hud[k] != null && a.Overlaps(World(hud[k])))
+                    {
+                        return "'" + parts[i].name + "' meets the game's '" + hud[k].name + "'";
+                    }
+                }
+            }
+            // Every box drawn whole: a picture packed with a see-through margin draws smaller than its box (the zone rows' thin lines).
+            foreach (Image image in _root.GetComponentsInChildren<Image>(false))
+            {
+                if (image.enabled && image.type == Image.Type.Sliced && BuildModeKit.Padded(image.sprite))
+                {
+                    return "'" + image.name + "' under '" + image.transform.parent.name + "' is drawn from '" + image.sprite.name + "', which has a see-through margin";
+                }
+            }
             foreach (TMP_Text t in _root.GetComponentsInChildren<TMP_Text>(false))
             {
                 if (string.IsNullOrEmpty(t.text))
@@ -468,8 +572,32 @@ namespace RealLifeOverhaul.Construction
                            + " in " + r.rect.width.ToString("0") + " by " + r.rect.height.ToString("0") + ")";
                 }
             }
-            return Sheet != null ? Sheet.Stacked() : null;
+            string sheet = Sheet != null ? Sheet.Stacked() ?? Sheet.Swatches() ?? Sheet.ButtonsDrawn() : null;
+            if (sheet != null)
+            {
+                return sheet;
+            }
+            if (Sheet != null && Sheet.HasLegend)
+            {
+                return "the tool panel holds a legend";
+            }
+            string legend = Legend != null && Legend.Rect.gameObject.activeInHierarchy ? Legend.Check() : null;
+            if (legend != null)
+            {
+                return legend;
+            }
+            if (Legend != null && Legend.Rect.gameObject.activeInHierarchy && World(Legend.Rect).height > World(_root).height * 0.2f)
+            {
+                return "the legend is taller than a fifth of the screen";
+            }
+            if (_hint.gameObject.activeInHierarchy && !HintOneLine && _hintMain.text.Length <= HintShortest)
+            {
+                return "the hint '" + _hintMain.text + "' wraps though it is short";
+            }
+            return null;
         }
+
+        private const int HintShortest = 48;   // characters: a hint this short always fits one line on a screen of 16 by 10 or wider
 
         /// <summary>True when a part shown covers the middle of the screen, the map's centre, with which part.</summary>
         public bool CoversCentre(out string what)

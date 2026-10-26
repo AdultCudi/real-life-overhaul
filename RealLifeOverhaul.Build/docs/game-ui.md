@@ -1307,8 +1307,14 @@ the game's font). `BuildModeKit` copies them asleep and takes every script of th
 the text component (the designer's `ToolButton`, `ActionKeyTooltip` and `ConfigurableControlsHintsToggler` are in
 `BigAmbitions.InteriorDesigner.dll` and other assemblies, so `UiClone.StripGameScripts`, which takes the main assembly's,
 would leave them). The icons are the designer's toolbar's (read from it: `Icon-Palette`, `Icon-Coin`,
-`Icon-CopyOutline-64`, `Icon-Close`, `Icon-Walls`...) or others by name through `GameSprites`. A coloured fill is the
-designer's colour picker's `white-round` tinted. The parts stand on the help's canvas (order 20, over the HUD and under
+`Icon-CopyOutline-64`, `Icon-Close`, `Icon-Walls`...) or others by name through `GameSprites`. A coloured box is the game's
+`white-rounded-box` (else `round-corner-no-drop`) tinted, never the colour picker's `white-round`: that sprite is packed
+tight, 50 of its 232 pixels each side cut away as see-through, so a box of it draws smaller than its rectangle (a row
+116 high drew as a thin line, a 60 square as a dot; `UnityEngine.Sprites.DataUtility.GetPadding` says it, and the interface
+test fails on any sliced picture with such a margin). A plain fill is `1pixelwhite`. Buttons that must read as buttons on
+the dark box get a face inside a thin edge (`BuildModeKit.Frame`). The hint bar stands under the game's top bar and
+everything hung under it, measured at each writing (`BuildModeGame.Hud`), clear of the objectives panel; the game's FPS,
+address and neighbourhood labels at the foot (PlayerHUD's) are switched off while build mode is open and given back. The parts stand on the help's canvas (order 20, over the HUD and under
 the question box and the tooltips, both 21).
 
 The game's tooltip (`Tooltip.TooltipSystem`, its own canvas of order 21, following the pointer) shows for any

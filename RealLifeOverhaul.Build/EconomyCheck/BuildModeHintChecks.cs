@@ -16,6 +16,8 @@ internal static partial class Program
         BuildModeCatalogueChecks();
         BuildModeBarSourceChecks();
         BuildModeHintTextChecks();
+        BuildModePolishChecks();
+        BuildModePolishTextChecks();
     }
 
     private static void BuildModeCatalogueChecks()
@@ -147,13 +149,14 @@ internal static partial class Program
               && HintOf(BuildTool.Zone, BuildStep.Picked, f => { f.Picked = true; return f; }) == "reallife_bld_hint_zone_not_yours"
               && HintOf(BuildTool.Zone, BuildStep.Picked, f => { f.Picked = f.PickedMine = true; return f; }) == "reallife_bld_hint_zone_pick_for",
             "build mode hints: Zone: pick a zone, then click your land; land not the player's said");
-        Check(HintOf(BuildTool.Place, BuildStep.Idle) == "reallife_bld_hint_place_idle" && HintOf(BuildTool.Place, BuildStep.Picked, f => { f.Picked = true; return f; }) == "reallife_bld_hint_place_bad"
+        Check(HintOf(BuildTool.Place, BuildStep.Idle) == "reallife_bld_hint_place_idle" && HintOf(BuildTool.Place, BuildStep.Picked, f => { f.Picked = true; return f; }) == "reallife_bld_hint_place_not_yours"
+              && HintOf(BuildTool.Place, BuildStep.Picked, f => { f.Picked = f.PickedMine = true; return f; }) == "reallife_bld_hint_place_bad"
               && HintOf(BuildTool.Place, BuildStep.Picked, f => { f.Picked = f.SiteOk = true; return f; }) == "reallife_bld_hint_place_not_yours"
               && HintOf(BuildTool.Place, BuildStep.Picked, f => { f.Picked = f.SiteOk = f.PickedMine = true; return f; }) == "reallife_bld_hint_place_none"
               && HintOf(BuildTool.Place, BuildStep.Picked, f => { f.Picked = f.SiteOk = f.PickedMine = true; f.Designs = 3; return f; }) == "reallife_bld_hint_place_pick"
               && HintOf(BuildTool.Place, BuildStep.Ghost, f => { f.Picked = f.SiteOk = f.PickedMine = f.MayBuild = true; f.Designs = 3; return f; }) == "reallife_bld_hint_place_build"
               && HintOf(BuildTool.Place, BuildStep.Ghost, f => { f.Picked = f.SiteOk = f.PickedMine = true; f.Designs = 3; return f; }) == "reallife_bld_hint_place_fix",
-            "build mode hints: Place: drag over your land, pick a design, then Build here, or what is in red first");
+            "build mode hints: Place: drag over your land (whose land said before the site rule), pick a design, then Build here, or what is in red first");
         Check(HintOf(BuildTool.Bulldoze, BuildStep.Idle) == "reallife_bld_hint_bulldoze_idle" && HintOf(BuildTool.Bulldoze, BuildStep.Picked, f => { f.Picked = true; return f; }) == "reallife_bld_hint_building_not_yours"
               && HintOf(BuildTool.Bulldoze, BuildStep.Picked, f => { f.Picked = f.PickedBuilding = true; return f; }) == "reallife_bld_hint_bulldoze_go"
               && HintOf(BuildTool.Refurbish, BuildStep.Idle) == "reallife_bld_hint_refurbish_idle" && HintOf(BuildTool.Refurbish, BuildStep.Picked, f => { f.Picked = f.PickedBuilding = true; return f; }) == "reallife_bld_hint_refurbish_go"
@@ -255,7 +258,7 @@ internal static partial class Program
         foreach (string file in new[] { @"Construction\BuildModeHintRules.cs", @"Construction\BuildModeBar.cs", @"Construction\BuildModeTour.cs", @"Construction\BuildModePanel.cs",
                      @"Construction\BuildMode.Window.cs", @"Construction\BuildModeCatalogue.cs", @"Construction\ConstructionDirector.BuildMode.cs" })
         {
-            foreach (Match m in Regex.Matches(ModSource(file), "\"(reallife_bld_(?:hint|tip|tour|bar|sheet|cat|hover|zone)_[a-z0-9_]+[a-z0-9])\""))
+            foreach (Match m in Regex.Matches(ModSource(file), "\"(reallife_bld_(?:hint|tip|tour|bar|sheet|cat|hover|zone|took|fix)_[a-z0-9_]+[a-z0-9])\""))
             {
                 keys.Add(m.Groups[1].Value);
             }

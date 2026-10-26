@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Globalization;
+using System.Text;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Construction
@@ -150,6 +151,13 @@ namespace RealLifeOverhaul.Construction
                 wrong = Measured(ConstructionText.T(BuildModeRules.ViewKeys[v]));
                 looked++;
             }
+            var owner = new StringBuilder(512);
+            if (wrong == null)
+            {
+                yield return OwnerLooks(owner);   // the owner's test of 26 Oct 2026: the HUD, the labels at the foot, the forgiving drag, buy first
+                wrong = _uiWrong;
+                looked++;
+            }
             int free = FreeColumn(2);
             bool picked = false;
             if (wrong == null && free >= 0)
@@ -182,8 +190,10 @@ namespace RealLifeOverhaul.Construction
             }
             _mode.ClearForTest();
             _mode.UseTool(BuildTool.Land);
-            ModeLine(test, looked + " look(s), each open tool, each view" + (picked ? " and with squares picked" : string.Empty) + " (" + greyed + " tool(s) greyed); " + window + ": "
-                           + (wrong ?? "nothing meets, runs off or is cut short, the map's centre clear"), wrong == null, "reallife_bld_mode_test_fail");
+            ModeLine(test, looked + " look(s), each open tool, each view" + (picked ? " and with squares picked" : string.Empty) + " (" + greyed + " tool(s) greyed)" + owner + "; " + window + ": "
+                           + (wrong ?? "nothing meets the game's HUD or another part, runs off or is cut short, every box drawn whole, the zone rows with their squares, "
+                                       + "the legend short, the map's centre clear"),
+                wrong == null, "reallife_bld_mode_test_fail");
         }
 
         // The interface measured now: null when well, else what is wrong under its name.

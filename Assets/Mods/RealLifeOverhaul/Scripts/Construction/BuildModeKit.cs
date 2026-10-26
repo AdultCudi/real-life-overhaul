@@ -37,8 +37,23 @@ namespace RealLifeOverhaul.Construction
         /// <summary>The thin rounded bar of the toolbar's dividers: a line, a track, a filled bar.</summary>
         public Sprite Line { get; private set; }
 
-        /// <summary>The white rounded box of the designer's colour picker: a light card.</summary>
+        /// <summary>A white rounded box of the game's with nothing see-through round it (white-rounded-box, else round-corner-no-drop): a card, a button, a swatch, tinted.</summary>
         public Sprite White { get; private set; }
+
+        /// <summary>The game's one white pixel: a plain fill (the tour's dimming, its outline), tinted; null without it.</summary>
+        public Sprite Fill { get; private set; }
+
+        private static readonly string[] BoxSprites = { "white-rounded-box", "round-corner-no-drop" };   // 192 square borders 25, 74 by 58 borders 10; 56 and 60 of the UI scene's Images use them
+        private const string FillSprite = "1pixelwhite";
+
+        /// <summary>
+        /// True when a sprite is packed with a see-through margin cut away (Unity's tight packing): drawn as a box it fills less than
+        /// its rectangle, by its margin scaled to the box (UnityEngine.Sprites.DataUtility.GetPadding).
+        /// </summary>
+        public static bool Padded(Sprite sprite)
+        {
+            return sprite != null && UnityEngine.Sprites.DataUtility.GetPadding(sprite) != Vector4.zero;
+        }
 
         /// <summary>The parts copied asleep under <paramref name="dormant"/>; null, with one line in Player.log, if the game's designer is not built as expected.</summary>
         public static BuildModeKit Take(Transform dormant)
@@ -61,7 +76,13 @@ namespace RealLifeOverhaul.Construction
                 var kit = new BuildModeKit();
                 kit.ReadIcons(designer.Find("Topbar"));
                 Image whiteImage = white != null ? white.GetComponent<Image>() : null;
-                kit.White = whiteImage != null ? whiteImage.sprite : null;
+                // A box's picture must fill its rectangle. The colour picker's white-round (232 square, borders 64) is packed tight:
+                // 50 of its pixels each side are cut away as see-through, so a row 116 high drew as a thin line through the row and
+                // a swatch of 60 as a dot (the owner's test, 26 Oct 2026). The game's rounded white boxes with nothing see-through
+                // come first; the picker's only if it has no such margin.
+                Sprite picker = whiteImage != null ? whiteImage.sprite : null;
+                kit.White = Find(BoxSprites[0]) ?? Find(BoxSprites[1]) ?? (picker != null && !Padded(picker) ? picker : null);
+                kit.Fill = Find(FillSprite);
                 if (!kit.Copy(section.gameObject, label.gameObject, dormant))
                 {
                     return null;
@@ -177,7 +198,8 @@ namespace RealLifeOverhaul.Construction
         public static readonly string[] Names =
         {
             "Icon-BuildingForSale", "Icon-Palette", "Icon-Building", "Icon-Delete", "Icon-CopyOutline-64", "Icon-Edit", "Icon-RealEstate", "Icon-Map", "Icon-MarketValue", "Icon-People",
-            "Icon-Construction", "Icon-Coin", "Icon-Floors", "Icon-Walls", "Icon-Hand", "Icon-Close", "circle", "Icon-Residential", "Icon-Retail", "Icon-Office", "Icon-Cargo"
+            "Icon-Construction", "Icon-Coin", "Icon-Floors", "Icon-Walls", "Icon-Hand", "Icon-Close", "circle", "Icon-Residential", "Icon-Retail", "Icon-Office", "Icon-Cargo",
+            "white-rounded-box", "round-corner-no-drop", "1pixelwhite"
         };
 
         // A picture among the sprites in memory by one of the names wanted; null for a name not among them.
@@ -328,6 +350,50 @@ namespace RealLifeOverhaul.Construction
             return b;
         }
 
+        public const float EdgeWide = 3f;   // a framed button's edge, in the canvas's units (a pixel and a half at 1080 lines)
+
+        public static readonly Color EdgeColour = new Color(0.227f, 0.251f, 0.282f, 1f);       // the mockup's #3a4048: a button's edge on the dark box
+        public static readonly Color EdgeChosen = new Color(0.416f, 0.655f, 1f, 1f);           // #6aa7ff: the one picked
+        public static readonly Color FaceChosen = new Color(0.137f, 0.251f, 0.431f, 1f);       // #23406e
+
+        /// <summary>
+        /// A button that reads as one on the dark box (the owner, 26 Oct 2026: the zone rows did not): a rounded face in its colour
+        /// inside a thin lighter edge, as the approved mockup draws them; picked, a blue edge round a dark blue face. The face sits
+        /// under the button's own parts; the designer's blue under a chosen tool is left to the toolbar's buttons.
+        /// </summary>
+        public void Frame(KitButton b, Color face, bool useChosen)
+        {
+            if (b == null || b.Back == null)
+            {
+                return;
+            }
+            Sprite box = White ?? Line;
+            b.Back.sprite = box;
+            b.Back.type = box != null && box.border != Vector4.zero ? Image.Type.Sliced : Image.Type.Simple;
+            b.Back.color = EdgeColour;
+            if (b.Face == null)
+            {
+                Image f = Picture(b.Root, "Face", box, face, 0f, 0f);
+                f.type = b.Back.type;
+                f.GetComponent<LayoutElement>().ignoreLayout = true;
+                var r = (RectTransform)f.transform;
+                r.anchorMin = Vector2.zero;
+                r.anchorMax = Vector2.one;
+                r.offsetMin = new Vector2(EdgeWide, EdgeWide);
+                r.offsetMax = new Vector2(-EdgeWide, -EdgeWide);
+                r.SetAsFirstSibling();   // under the designer's blue, the icon and the words
+                b.Face = f;
+            }
+            b.FaceOff = face;
+            b.Face.color = face;
+            b.Framed = true;
+            b.ChosenBlue = useChosen;
+            if (!useChosen && b.Chosen != null)
+            {
+                b.Chosen.SetActive(false);
+            }
+        }
+
         public void Destroy()
         {
             foreach (GameObject go in new[] { _section, _button, _divider, _label })
@@ -351,16 +417,34 @@ namespace RealLifeOverhaul.Construction
         public TMP_Text Label;
         public CanvasGroup Group;
         public BuildModeTip Tip;
+        public Image Face;          // a framed button's face inside its edge (BuildModeKit.Frame), else none
+        public Color FaceOff;
+        public bool Framed;
+        public bool ChosenBlue = true;   // the designer's blue shows under it while chosen (a framed row shows its blue edge instead)
         private bool _usable = true;
+        private bool _chosen;
 
         public bool Usable => _usable;
 
-        /// <summary>The game's blue under it while it is the one chosen.</summary>
+        /// <summary>True while it is the one chosen.</summary>
+        public bool IsChosen => _chosen;
+
+        /// <summary>The game's blue under it while it is the one chosen; a framed button's edge and face turn blue.</summary>
         public void SetChosen(bool chosen)
         {
-            if (Chosen != null && Chosen.activeSelf != chosen)
+            _chosen = chosen;
+            bool blue = chosen && ChosenBlue;
+            if (Chosen != null && Chosen.activeSelf != blue)
             {
-                Chosen.SetActive(chosen);
+                Chosen.SetActive(blue);
+            }
+            if (Framed && Back != null)
+            {
+                Back.color = chosen ? BuildModeKit.EdgeChosen : BuildModeKit.EdgeColour;
+                if (Face != null)
+                {
+                    Face.color = chosen && !ChosenBlue ? BuildModeKit.FaceChosen : FaceOff;
+                }
             }
         }
 

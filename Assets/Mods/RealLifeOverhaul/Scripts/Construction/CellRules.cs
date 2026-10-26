@@ -183,6 +183,53 @@ namespace RealLifeOverhaul.Construction
             CellColumn c = Columns[column];
             return ColumnOf(c.Strip, c.Space + 1);
         }
+
+        /// <summary>The column of the space before along the same strip, or -1.</summary>
+        public int Prev(int column)
+        {
+            CellColumn c = Columns[column];
+            return ColumnOf(c.Strip, c.Space - 1);
+        }
+
+        /// <summary>
+        /// The cell of <paramref name="column"/>'s strip nearest a point on the ground (x, z), as Cities Skylines reads a drag: the
+        /// pointer's place along the street held to the strip's spaces (walked from the column to the first gap either way), its
+        /// depth from the street held to the strip's rows. A pointer gone over the block's corner into the next street's strip, or
+        /// out onto the road, still picks along the street the drag began on. COST: a walk over the strip's spaces, no allocation.
+        /// </summary>
+        public CellAt Project(int column, float x, float z)
+        {
+            if (column < 0 || column >= Columns.Count)
+            {
+                return new CellAt(-1, 0);
+            }
+            CellColumn c = Columns[column];
+            bool alongX = c.Facing == 0 || c.Facing == 180;
+            float along = alongX ? x : z, across = alongX ? z : x;
+            int at = column;
+            while (along < Columns[at].A)
+            {
+                int prev = Prev(at);
+                if (prev < 0)
+                {
+                    break;
+                }
+                at = prev;
+            }
+            while (along >= Columns[at].B)
+            {
+                int next = Next(at);
+                if (next < 0)
+                {
+                    break;
+                }
+                at = next;
+            }
+            CellColumn hit = Columns[at];
+            float back = (across - hit.Front) * hit.Inward;
+            int row = back <= 0f ? 0 : Math.Min(hit.Rows - 1, (int)(back / (hit.Depth / hit.Rows)));
+            return new CellAt(at, Math.Max(0, row));
+        }
     }
 
     /// <summary>The rules of the cells: rows, the site from the cells picked, the price by cells, the rows bought, a design's footprint, the ghost's lot.</summary>
@@ -279,6 +326,199 @@ namespace RealLifeOverhaul.Construction
             }
             site = new CellSite { Strip = strip, FirstColumn = grid.ColumnOf(strip, low), Count = count, Cells = cells, MinRows = minRows, Rows = rows };
             return null;
+        }
+
+        // ------------------------------------------------------------------ a forgiving drag (the owner, 26 Oct 2026: "selecting must be forgiving, like Cities Skylines")
+
+        // What a space along a drag is to the tool in use (RunOk the tool may take it).
+        public const int RunOk = 0;      // it may be part of the site
+        public const int RunGap = 1;     // the strip has no such space (a landmark's ground, the strip's end)
+        public const int RunTaken = 2;   // the tool cannot take it (another owner's, another site of the player's, not theirs)
+
+        // What a drag left out, said under the panel's heading (BuildModeHintRules.TookKey gives its words).
+        public const int TookAll = 0;      // every square dragged over was taken
+        public const int TookWide = 1;     // the run was cut at a site's widest
+        public const int TookGap = 2;      // ... at a gap in the street's spaces
+        public const int TookTaken = 3;    // squares the tool cannot take were left out
+        public const int TookStreet = 4;   // the pointer went onto another street's squares: only those along the first street were taken
+        public const int TookDeeper = 5;   // one square alone makes no site: the square behind it was added
+
+        /// <summary>
+        /// The spaces a drag takes along its strip, as Cities Skylines takes a drag: <paramref name="spaces"/> holds what each space
+        /// is to the tool (RunOk, RunGap, RunTaken), from the pressed space (0) toward the pointer's (wanted - 1). The run starts at
+        /// the first space the tool may take and goes on while the tool may take each, at most <paramref name="most"/> spaces;
+        /// nothing the tool may take: the pressed space alone, so the panel can say why. Returns the run's first index and its
+        /// length (at least one), and what was left out (TookAll when nothing). Game-free; no allocation.
+        /// </summary>
+        public static int Reach(int[] spaces, int wanted, int most, out int start, out int took)
+        {
+            start = 0;
+            took = TookAll;
+            wanted = Math.Max(1, Math.Min(wanted, spaces != null ? spaces.Length : 0));
+            if (spaces == null || spaces.Length == 0)
+            {
+                return 1;
+            }
+            int first = -1;
+            for (int i = 0; i < wanted; i++)
+            {
+                if (spaces[i] == RunOk)
+                {
+                    first = i;
+                    break;
+                }
+            }
+            if (first < 0)
+            {
+                took = wanted > 1 ? (spaces[1] == RunGap ? TookGap : TookTaken) : TookAll;
+                return 1;   // nothing to take: the pressed space alone, its reason in the panel
+            }
+            if (first > 0)
+            {
+                took = spaces[first - 1] == RunGap ? TookGap : TookTaken;
+            }
+            start = first;
+            int count = 0;
+            for (int i = first; i < wanted; i++)
+            {
+                if (spaces[i] != RunOk)
+                {
+                    took = spaces[i] == RunGap ? TookGap : TookTaken;
+                    break;
+                }
+                if (count >= Math.Max(1, most))
+                {
+                    took = TookWide;
+                    break;
+                }
+                count++;
+            }
+            return count;
+        }
+
+        /// <summary>
+        /// How deep a drag's run is picked: the deeper of the pressed square's row and the pointer's, held to the strip's rows; a
+        /// run of one space one square deep (no site, SiteCellsLeast) is taken a square deeper where the strip has one, with
+        /// <paramref name="deeper"/> set. Rows count from 0 at the street.
+        /// </summary>
+        public static int RunRow(int fromRow, int toRow, int count, int stripRows, out bool deeper)
+        {
+            deeper = false;
+            int row = Math.Max(0, Math.Min(Math.Max(fromRow, toRow), stripRows - 1));
+            if (count == 1 && row == 0 && stripRows > 1)
+            {
+                deeper = true;
+                row = 1;
+            }
+            return row;
+        }
+
+        /// <summary>What each column is to the tool in use, asked in order along a drag from its pressed space (CellRules.Run*).</summary>
+        public interface IRunKind
+        {
+            int Kind(int column);
+        }
+
+        /// <summary>
+        /// A drag's pick added to <paramref name="depth"/> (each column's deepest row picked, -1 none), as Cities Skylines takes a
+        /// drag: along the pressed column's strip from it to <paramref name="to"/> (the pointer read onto that strip, CellGrid.Project),
+        /// the run the tool may take (<see cref="Reach"/>, the kinds asked of <paramref name="kinds"/> in order), from the street back
+        /// to the deeper of the two rows; with <paramref name="deepen"/> a run of one street square is taken a square deeper. The
+        /// buffers hold the run (their length the farthest read). Returns what was left out (Took*). Game-free; no allocation.
+        /// </summary>
+        public static int DragPick(CellGrid grid, CellAt from, CellAt to, IRunKind kinds, int most, bool deepen, int[] depth, int[] run, int[] runColumn, out int firstColumn)
+        {
+            firstColumn = from.Column;
+            CellColumn a = grid.Columns[from.Column], b = grid.Columns[to.Column];
+            int step = Math.Sign(b.Space - a.Space);
+            int wanted = Math.Min(Math.Min(run.Length, runColumn.Length), Math.Abs(b.Space - a.Space) + 1);
+            int at = from.Column;
+            for (int i = 0; i < wanted; i++)
+            {
+                runColumn[i] = at;
+                run[i] = at < 0 ? RunGap : kinds.Kind(at);
+                at = at < 0 || step == 0 ? -1 : step > 0 ? grid.Next(at) : grid.Prev(at);
+            }
+            int count = Reach(run, wanted, most, out int start, out int took);
+            bool deeper = false;
+            int row = Math.Max(from.Row, to.Row);
+            if (deepen && run[start] == RunOk)
+            {
+                row = RunRow(from.Row, to.Row, count, a.Rows, out deeper);
+            }
+            firstColumn = runColumn[start];
+            for (int i = start; i < start + count; i++)
+            {
+                int column = runColumn[i];
+                if (column >= 0 && column < depth.Length)
+                {
+                    BuildModeRules.Toggle(depth, column, Math.Min(row, grid.Columns[column].Rows - 1), false);
+                }
+            }
+            return took == TookAll && deeper ? TookDeeper : took;
+        }
+
+        /// <summary>
+        /// Picks added to those already there wider than a site may be: the columns farthest from <paramref name="keep"/> (the drag's
+        /// start) let go until the picks are <paramref name="most"/> spaces at most. True when any were. Game-free; a pass over the columns.
+        /// </summary>
+        public static bool TrimWide(CellGrid grid, int[] depth, int keep, int most)
+        {
+            if (keep < 0 || keep >= grid.Columns.Count)
+            {
+                return false;
+            }
+            int strip = grid.Columns[keep].Strip, near = grid.Columns[keep].Space;
+            bool cut = false;
+            while (true)
+            {
+                int lo = -1, hi = -1, n = 0;
+                for (int c = 0; c < depth.Length && c < grid.Columns.Count; c++)
+                {
+                    if (depth[c] < 0 || grid.Columns[c].Strip != strip)
+                    {
+                        continue;
+                    }
+                    n++;
+                    lo = lo < 0 || grid.Columns[c].Space < grid.Columns[lo].Space ? c : lo;
+                    hi = hi < 0 || grid.Columns[c].Space > grid.Columns[hi].Space ? c : hi;
+                }
+                if (n == 0 || grid.Columns[hi].Space - grid.Columns[lo].Space + 1 <= most)
+                {
+                    return cut;
+                }
+                depth[near - grid.Columns[lo].Space >= grid.Columns[hi].Space - near ? lo : hi] = -1;
+                cut = true;
+            }
+        }
+
+        /// <summary>
+        /// True when a press on <paramref name="cell"/> joins what is picked (<paramref name="depth"/>): on the same strip, at or beside a
+        /// picked column; nothing picked: true. A press anywhere else starts a new pick (the owner's test, 26 Oct 2026: a drag on
+        /// another street after a pick mixed both streets' squares and was refused). Game-free; a pass over the columns.
+        /// </summary>
+        public static bool Touches(CellGrid grid, int[] depth, CellAt cell)
+        {
+            if (cell.None || cell.Column >= grid.Columns.Count)
+            {
+                return true;
+            }
+            CellColumn at = grid.Columns[cell.Column];
+            bool any = false;
+            for (int c = 0; c < depth.Length && c < grid.Columns.Count; c++)
+            {
+                if (depth[c] < 0)
+                {
+                    continue;
+                }
+                any = true;
+                CellColumn p = grid.Columns[c];
+                if (p.Strip == at.Strip && Math.Abs(p.Space - at.Space) <= 1)
+                {
+                    return true;
+                }
+            }
+            return !any;
         }
 
         /// <summary>A column's price for so many of its rows: its space's price times the rows over the strip's rows; every row is the space's price.</summary>

@@ -4,6 +4,7 @@ using BAModAPI;
 using BigAmbitions.InputSystem;
 using Buildings;
 using Helpers;
+using TMPro;
 using UI;
 using UI.Smartphone;
 using UnityEngine;
@@ -160,6 +161,185 @@ namespace RealLifeOverhaul.Construction
             UIs uis = InstanceBehavior<UIs>.Instance;
             return uis != null && uis.interiorDesignerUI != null ? uis.interiorDesignerUI.transform : null;
         }
+
+        // ------------------------------------------------------------------ the game's HUD round build mode's interface (the owner's test, 26 Oct 2026)
+
+        /// <summary>
+        /// The game's own parts build mode's interface stays clear of, measured where they are drawn now in <paramref name="root"/>'s
+        /// units (from its middle, y up): the top bar's left part and every part hung under it (the needs, the accessories, the
+        /// mod's own tabs), the buttons at its right, and the objectives panel. Read at each writing of the interface (a handful of
+        /// rectangles, no search); Measured false when the game's top bar is not there to read.
+        /// </summary>
+        public static HudFrame Hud(RectTransform root)
+        {
+            var f = new HudFrame { TopFoot = float.MaxValue, RightFoot = float.MaxValue, TasksRight = float.MinValue, TasksFoot = float.MaxValue };
+            UIs uis = InstanceBehavior<UIs>.Instance;
+            Transform container = uis != null && uis.topBar != null && uis.topBar.container != null ? uis.topBar.container.transform : null;
+            if (root == null || container == null)
+            {
+                return f;
+            }
+            Transform left = container.Find("Left Bar"), buttons = container.Find("Buttons");
+            if (left is RectTransform l && l.gameObject.activeInHierarchy)
+            {
+                f.Measured = true;
+                Lowest(root, l, ref f.TopFoot);
+                for (int i = 0; i < l.childCount; i++)
+                {
+                    if (l.GetChild(i) is RectTransform part && part.gameObject.activeInHierarchy && part.gameObject.name != "MoneyTransaction")
+                    {
+                        Lowest(root, part, ref f.TopFoot);   // the money's passing figure only flies by; every other part stands
+                    }
+                }
+            }
+            if (buttons is RectTransform b && b.gameObject.activeInHierarchy)
+            {
+                Lowest(root, b, ref f.RightFoot);
+            }
+            RectTransform tasks = TasksPanel(uis);
+            if (tasks != null)
+            {
+                UiBox t = Local(root, tasks);
+                f.TasksRight = t.X1;
+                f.TasksFoot = t.Y0;
+            }
+            return f;
+        }
+
+        // The objectives panel as drawn now, or null while it is hidden or folded away.
+        private static RectTransform TasksPanel(UIs uis)
+        {
+            if (uis == null || uis.tasksUI == null || !uis.tasksUI.gameObject.activeInHierarchy)
+            {
+                return null;
+            }
+            CanvasGroup group = uis.tasksUI.GetComponent<CanvasGroup>();
+            if (group != null && group.alpha <= 0.01f)
+            {
+                return null;
+            }
+            var panel = uis.tasksUI.transform.Find("Container/Panel") as RectTransform;
+            return panel != null && panel.gameObject.activeInHierarchy && panel.rect.height > 1f ? panel : null;
+        }
+
+        private static void Lowest(RectTransform root, RectTransform part, ref float foot)
+        {
+            if (part.rect.width < 1f || part.rect.height < 1f)
+            {
+                return;
+            }
+            foot = Math.Min(foot, Local(root, part).Y0);
+        }
+
+        /// <summary>A part's rectangle in <paramref name="root"/>'s units (from its middle, y up), wherever it is drawn: every canvas here is drawn over the screen.</summary>
+        public static UiBox Local(RectTransform root, RectTransform part)
+        {
+            part.GetWorldCorners(Corners4);
+            Vector3 a = root.InverseTransformPoint(Corners4[0]);
+            Vector3 c = root.InverseTransformPoint(Corners4[2]);
+            return new UiBox(Math.Min(a.x, c.x), Math.Min(a.y, c.y), Math.Max(a.x, c.x), Math.Max(a.y, c.y));
+        }
+
+        private static readonly Vector3[] Corners4 = new Vector3[4];
+
+        /// <summary>The game's parts build mode's interface must not meet, as drawn now, with their names (the tests): the top bar's, its buttons, the objectives, the labels at the foot.</summary>
+        public static void HudParts(System.Collections.Generic.List<RectTransform> into)
+        {
+            into.Clear();
+            UIs uis = InstanceBehavior<UIs>.Instance;
+            Transform container = uis != null && uis.topBar != null && uis.topBar.container != null ? uis.topBar.container.transform : null;
+            Transform left = container != null ? container.Find("Left Bar") : null;
+            for (int i = 0; left != null && i < left.childCount; i++)
+            {
+                if (left.GetChild(i) is RectTransform part && part.gameObject.activeInHierarchy && part.gameObject.name != "MoneyTransaction" && part.rect.width >= 1f)
+                {
+                    into.Add(part);
+                }
+            }
+            if (left is RectTransform l && l.gameObject.activeInHierarchy)
+            {
+                into.Add(l);
+            }
+            if (container != null && container.Find("Buttons") is RectTransform b && b.gameObject.activeInHierarchy)
+            {
+                into.Add(b);
+            }
+            RectTransform tasks = TasksPanel(uis);
+            if (tasks != null)
+            {
+                into.Add(tasks);
+            }
+            for (int i = 0; i < FootLabels.Length; i++)
+            {
+                TMP_Text t = FootLabel(uis, i);
+                if (t != null && t.enabled && t.gameObject.activeInHierarchy && !string.IsNullOrEmpty(t.text))
+                {
+                    into.Add(t.rectTransform);   // drawn: it must not meet the toolbar (hidden while build mode is open)
+                }
+            }
+        }
+
+        // ------------------------------------------------------------------ the game's labels at the foot of the screen
+
+        private static readonly string[] FootLabels = { "FPS", "CurrentAddressLabel", "CurrentNeighborhoodLabel" };   // PlayerHUD's, at the foot in the middle (Build 3682)
+        private static readonly bool[] FootWas = new bool[3];
+        private static readonly TMP_Text[] FootHeld = new TMP_Text[3];
+
+        // One of the game's labels at the foot: the frames-a-second line (FpsMeter's), the street address and the neighbourhood (PlayerHUD's).
+        private static TMP_Text FootLabel(UIs uis, int i)
+        {
+            if (uis == null || uis.playerHUD == null)
+            {
+                return null;
+            }
+            switch (i)
+            {
+                case 1:
+                    return uis.playerHUD.nearestBuildingText != null ? uis.playerHUD.nearestBuildingText.GetComponent<TMP_Text>() : null;
+                case 2:
+                    return uis.playerHUD.currentNeighborhoodText;
+                default:
+                    Transform fps = uis.playerHUD.transform.Find(FootLabels[0]);
+                    return fps != null ? fps.GetComponent<TMP_Text>() : null;
+            }
+        }
+
+        /// <summary>
+        /// The game's frames-a-second, address and neighbourhood lines at the foot in the middle hidden while build mode is open
+        /// (they drew over its toolbar: "204 FPS, 105 Uptown Avenue", the owner's test), and given back as they were when it
+        /// leaves. Only their text components are switched off: the game's own switches (the FPS option sets the label's object
+        /// active) are left alone, so what it sets meanwhile holds.
+        /// </summary>
+        public static void HideFootLabels(bool hide)
+        {
+            UIs uis = InstanceBehavior<UIs>.Instance;
+            for (int i = 0; i < FootLabels.Length; i++)
+            {
+                if (hide)
+                {
+                    TMP_Text t = FootLabel(uis, i);
+                    if (FootHeld[i] != null || t == null)
+                    {
+                        continue;   // held already, or not there
+                    }
+                    FootHeld[i] = t;
+                    FootWas[i] = t.enabled;
+                    t.enabled = false;
+                }
+                else if (FootHeld[i] != null)
+                {
+                    FootHeld[i].enabled = FootWas[i];
+                    FootHeld[i] = null;
+                }
+                else
+                {
+                    FootHeld[i] = null;
+                }
+            }
+        }
+
+        /// <summary>True while the game's labels at the foot are held hidden by build mode, for the tests.</summary>
+        public static bool FootLabelsHeld => FootHeld[0] != null || FootHeld[1] != null || FootHeld[2] != null;
 
         private static bool _hoverShown;
 
@@ -579,5 +759,15 @@ namespace RealLifeOverhaul.Construction
                 colliders[i].enabled = false;   // nothing of the ghost is solid or clicked
             }
         }
+    }
+
+    /// <summary>Where the game's HUD stands round build mode's interface (BuildModeGame.Hud), in the interface's units from its middle, y up.</summary>
+    internal struct HudFrame
+    {
+        public bool Measured;      // the game's top bar was there to read
+        public float TopFoot;      // the lowest edge of the top bar's left part and what hangs under it
+        public float RightFoot;    // the lowest edge of the top bar's buttons at the right
+        public float TasksRight;   // the objectives panel's right edge (float.MinValue while it is not drawn)
+        public float TasksFoot;    // ... and its foot
     }
 }

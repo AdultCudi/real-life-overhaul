@@ -11,8 +11,9 @@ namespace RealLifeOverhaul.Construction
     /// Build mode's tool panel (BuildModeBar): a small box of the game's designer over the toolbar's left end for the tool in use
     /// alone, as tall as what it says (a vertical layout group and a content size fitter; never a scroll). Written from parts the
     /// way a page of the game's is: a heading with a count at its right, lines of words (red for what stops an action), facts as
-    /// a name and a figure, big zone rows with their colour, the main button in the game's blue beside a plain one, and the view's
-    /// legend. Parts are kept and reused; a part not written is hidden. Written only when the state changes; nothing a frame.
+    /// a name and a figure, big zone rows as buttons with their colour's square, and the main button in the game's blue beside a
+    /// plain one. The view's legend is not here (BuildModeLegend, over the views). Parts are kept and reused; a part not written is
+    /// hidden. Written only when the state changes; nothing a frame.
     /// </summary>
     internal sealed class BuildModeSheet
     {
@@ -23,7 +24,7 @@ namespace RealLifeOverhaul.Construction
         private const float RowHigh = 116f;         // a zone row
         private const float ButtonHigh = 108f;      // the panel's buttons
         private const float SideButton = 280f;      // the plain button beside the main one
-        private const float KeySize = 30f;          // a legend's square
+        private const float SwatchSize = 60f;       // a zone row's colour square
 
         private sealed class FactPart
         {
@@ -37,6 +38,7 @@ namespace RealLifeOverhaul.Construction
             public Image Square;
             public TMP_Text Name, Status;
             public int Id;
+            public bool HasColour;
         }
 
         private sealed class Actions
@@ -44,13 +46,6 @@ namespace RealLifeOverhaul.Construction
             public RectTransform Root;
             public KitButton Main, Side;
             public int MainId, SideId;
-        }
-
-        private sealed class Key
-        {
-            public RectTransform Root;
-            public Image Edge, Inside;
-            public TMP_Text Name;
         }
 
         private readonly BuildModeKit _kit;
@@ -61,10 +56,7 @@ namespace RealLifeOverhaul.Construction
         private readonly List<FactPart> _facts = new List<FactPart>(8);
         private readonly List<SwatchPart> _swatches = new List<SwatchPart>(6);
         private readonly List<Actions> _actions = new List<Actions>(3);
-        private readonly List<Key> _keys = new List<Key>(BuildModeRules.LegendMost);
-        private int _linesUsed, _factsUsed, _swatchesUsed, _actionsUsed, _keysUsed;
-        private RectTransform _keyRow;   // the legend's entries flow two to a row
-        private readonly List<RectTransform> _keyRows = new List<RectTransform>(6);
+        private int _linesUsed, _factsUsed, _swatchesUsed, _actionsUsed;
 
         public RectTransform Rect => _rect;
 
@@ -106,8 +98,7 @@ namespace RealLifeOverhaul.Construction
         {
             UiClone.Words(_title, title);
             UiClone.Words(_count, count ?? string.Empty);
-            _linesUsed = _factsUsed = _swatchesUsed = _actionsUsed = _keysUsed = 0;
-            _keyRow = null;
+            _linesUsed = _factsUsed = _swatchesUsed = _actionsUsed = 0;
         }
 
         /// <summary>A line of words, wrapping.</summary>
@@ -154,7 +145,10 @@ namespace RealLifeOverhaul.Construction
             Last(f.Root);
         }
 
-        /// <summary>A big zone row: its colour's square, its name, and under it whether it is allowed (green) or needs City Hall (amber); the one chosen in the game's blue.</summary>
+        /// <summary>
+        /// A big zone row as the approved mockup draws it: a button with a thin edge, its zone's game colour as a square, its name,
+        /// and under it whether it is allowed (green) or needs City Hall (amber); the one picked with a blue edge round a dark blue face.
+        /// </summary>
         public void Swatch(int id, Color colour, string name, string status, Color statusColour, bool chosen, bool usable)
         {
             SwatchPart s;
@@ -176,25 +170,25 @@ namespace RealLifeOverhaul.Construction
                 if (s.Button.Chosen != null)
                 {
                     BuildModeKit.Size(s.Button.Chosen, 0f, 0f).ignoreLayout = true;
-                    s.Button.Chosen.GetComponent<Image>().color = new Color(1f, 1f, 1f, 0.6f);
-                    ((RectTransform)s.Button.Chosen.transform).sizeDelta = Vector2.zero;
                 }
                 if (s.Button.Icon != null)
                 {
                     s.Button.Icon.gameObject.SetActive(false);
                     BuildModeKit.Size(s.Button.Icon.gameObject, 0f, 0f).ignoreLayout = true;
                 }
-                s.Square = BuildModeKit.Picture(s.Button.Root, "Colour", _kit.White ?? _kit.Line, Color.white, 60f, 60f);
+                _kit.Frame(s.Button, BuildModeBar.ButtonGrey, false);
+                s.Square = BuildModeKit.Picture(s.Button.Root, "Colour", _kit.White ?? _kit.Line, Color.white, SwatchSize, SwatchSize);
+                s.Square.pixelsPerUnitMultiplier = 2f;   // the box's rounding halved on a small square, as the mockup's
                 RectTransform words = BuildModeKit.Strip(s.Button.Root, "Words", false, new RectOffset(), 2f, TextAnchor.MiddleLeft);
                 words.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1f;
                 s.Name = _kit.Text(words, "Name", 38f, BuildModeBar.Text, true, true);
                 s.Status = _kit.Text(words, "Status", 30f, BuildModeBar.Good, false, true);
-                BuildModeBar.Paint(s.Button, _kit.White ?? _kit.Line, BuildModeBar.ButtonGrey);
                 _swatches.Add(s);
             }
             _swatchesUsed++;
             s.Id = id;
-            s.Square.gameObject.SetActive(colour.a > 0f);
+            s.HasColour = colour.a > 0f;
+            s.Square.gameObject.SetActive(s.HasColour);
             s.Square.color = new Color(colour.r, colour.g, colour.b, 1f);
             UiClone.Words(s.Name, name);
             s.Status.gameObject.SetActive(!string.IsNullOrEmpty(status));
@@ -222,7 +216,7 @@ namespace RealLifeOverhaul.Construction
                 BuildModeBar.Paint(a.Main, _kit.Blue, Color.white);
                 a.Side = Wide(a.Root, () => _onRow?.Invoke(wired.SideId));
                 BuildModeKit.Size(a.Side.Root.gameObject, SideButton, ButtonHigh);
-                BuildModeBar.Paint(a.Side, _kit.White ?? _kit.Line, BuildModeBar.ButtonGrey);
+                _kit.Frame(a.Side, BuildModeBar.ButtonGrey, false);   // a real button beside the blue one (Clear read as plain words)
                 _actions.Add(a);
             }
             _actionsUsed++;
@@ -264,49 +258,6 @@ namespace RealLifeOverhaul.Construction
             return b;
         }
 
-        /// <summary>A legend entry: a square of the fill inside its edge's colour (an edge alone: the panel's own dark inside), and its words; two to a row.</summary>
-        public void Legend(Color fill, Color edge, bool edgeOnly, string text)
-        {
-            Key k;
-            if (_keysUsed < _keys.Count)
-            {
-                k = _keys[_keysUsed];
-            }
-            else
-            {
-                k = new Key { Root = BuildModeKit.Strip(_rect, "Key", true, new RectOffset(), 14f, TextAnchor.MiddleLeft) };
-                k.Root.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1f;
-                k.Edge = BuildModeKit.Picture(k.Root, "Edge", _kit.Line, Color.white, KeySize, KeySize);
-                k.Inside = BuildModeKit.Picture(k.Edge.transform, "Inside", _kit.Line, Color.white, KeySize - 10f, KeySize - 10f);
-                var inside = (RectTransform)k.Inside.transform;
-                inside.anchorMin = inside.anchorMax = inside.pivot = new Vector2(0.5f, 0.5f);
-                inside.anchoredPosition = Vector2.zero;
-                k.Inside.GetComponent<LayoutElement>().ignoreLayout = true;
-                k.Name = _kit.Text(k.Root, "Name", 28f, BuildModeBar.Soft, false, true);
-                k.Name.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1f;
-                _keys.Add(k);
-            }
-            if (_keysUsed % 2 == 0)
-            {
-                int row = _keysUsed / 2;
-                if (row >= _keyRows.Count)
-                {
-                    RectTransform r = BuildModeKit.Strip(_rect, "Legend row", true, new RectOffset(), 20f, TextAnchor.MiddleLeft);
-                    ((HorizontalLayoutGroup)r.GetComponent<HorizontalLayoutGroup>()).childForceExpandWidth = true;
-                    _keyRows.Add(r);
-                }
-                _keyRow = _keyRows[row];
-                Last(_keyRow);
-            }
-            _keysUsed++;
-            k.Root.SetParent(_keyRow, false);
-            k.Root.SetAsLastSibling();
-            k.Root.gameObject.SetActive(true);
-            k.Edge.color = new Color(edge.r, edge.g, edge.b, 1f);
-            k.Inside.color = edgeOnly ? new Color(0.12f, 0.13f, 0.15f, 1f) : new Color(fill.r, fill.g, fill.b, 1f);
-            UiClone.Words(k.Name, text);
-        }
-
         /// <summary>Ends the panel: the parts not written hidden, laid out at once.</summary>
         public void End()
         {
@@ -322,14 +273,6 @@ namespace RealLifeOverhaul.Construction
             for (int i = _actionsUsed; i < _actions.Count; i++)
             {
                 Off(_actions[i].Root.gameObject);
-            }
-            for (int i = _keysUsed; i < _keys.Count; i++)
-            {
-                Off(_keys[i].Root.gameObject);
-            }
-            for (int i = (_keysUsed + 1) / 2; i < _keyRows.Count; i++)
-            {
-                Off(_keyRows[i].gameObject);
             }
             LayoutRebuilder.ForceRebuildLayoutImmediate(_rect);
         }
@@ -359,6 +302,57 @@ namespace RealLifeOverhaul.Construction
                 t.gameObject.SetActive(true);
             }
         }
+
+        /// <summary>True when the panel holds a legend's entry (it must not: the legend stands over the views), for the tests.</summary>
+        public bool HasLegend => _rect.Find("Key") != null || _rect.Find("Legend row") != null;
+
+        /// <summary>
+        /// The zone rows as drawn (the owner's test, 26 Oct 2026: no colour square, thin lines through the rows): each row's edge
+        /// and face, and its zone's square, of a picture with nothing see-through round it, the square seen at its size in its
+        /// colour; null when so, for the tests.
+        /// </summary>
+        public string Swatches()
+        {
+            if (!_rect.gameObject.activeInHierarchy)
+            {
+                return null;
+            }
+            for (int i = 0; i < _swatchesUsed; i++)
+            {
+                SwatchPart s = _swatches[i];
+                string name = s.Name.text;
+                if (s.Button.Face == null || s.Button.Back.sprite == null || BuildModeKit.Padded(s.Button.Back.sprite) || BuildModeKit.Padded(s.Button.Face.sprite))
+                {
+                    return "the zone row '" + name + "' is not drawn as a button";
+                }
+                if (!s.HasColour)
+                {
+                    continue;   // Remove zone: no colour
+                }
+                if (!s.Square.gameObject.activeInHierarchy || s.Square.color.a < 0.5f || BuildModeKit.Padded(s.Square.sprite) || s.Square.rectTransform.rect.width < SwatchSize - 1f)
+                {
+                    return "the zone row '" + name + "' has no colour square";
+                }
+            }
+            return null;
+        }
+
+        /// <summary>Every button row's plain button (Clear and the like) drawn as a button with a face inside an edge, not as words alone; null when so (the tests).</summary>
+        public string ButtonsDrawn()
+        {
+            for (int i = 0; i < _actionsUsed; i++)
+            {
+                KitButton side = _actions[i].Side;
+                if (side.Root.gameObject.activeInHierarchy && (!side.Framed || side.Face == null || side.Back.sprite == null || BuildModeKit.Padded(side.Back.sprite)))
+                {
+                    return "'" + side.Label.text + "' is not drawn as a button";
+                }
+            }
+            return null;
+        }
+
+        /// <summary>Zone rows shown now, for the tests.</summary>
+        public int SwatchCount => _swatchesUsed;
 
         /// <summary>The panel's parts each below the one before it, none over another; null when so.</summary>
         public string Stacked()
