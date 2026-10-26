@@ -245,6 +245,7 @@ internal static partial class Program
         var blockFirst = new Dictionary<int, int>();
         var blockLast = new Dictionary<int, int>();
         var siteDays = new List<int>();
+        int lastDay = 0;
         for (int day = 1; day <= 720; day++)
         {
             for (int i = under.Count - 1; i >= 0; i--)
@@ -256,6 +257,7 @@ internal static partial class Program
                         cols[at].Growing = false;   // stands: no longer free, no longer under way
                     }
                     blockLast[under[i][3]] = day;
+                    lastDay = day;
                     under.RemoveAt(i);
                     ended++;
                 }
@@ -304,7 +306,7 @@ internal static partial class Program
         int inMonths = fills.Count(d => d <= 60);
         siteDays.Sort();
         int siteMedian = siteDays.Count > 0 ? siteDays[siteDays.Count / 2] : -1;
-        Console.WriteLine("  growth pace on the real plan (demand 60 for every use, seed " + seed + "): " + started + " site(s) begun, " + ended + " standing in 720 days; at most " + mostAtOnce
+        Console.WriteLine("  growth pace on the real plan (demand 60 for every use, seed " + seed + "): " + started + " site(s) begun, " + ended + " standing, the last on day " + lastDay + "; at most " + mostAtOnce
                           + " under way at once, " + mostOnBlock + " on one block; a site takes " + (siteDays.Count > 0 ? siteDays[0] : 0) + " to " + (siteDays.Count > 0 ? siteDays[siteDays.Count - 1] : 0)
                           + " days (median " + siteMedian + "); " + fills.Count + " block(s) grown, each from its first start to its last building in " + (fills.Count > 0 ? fills[0] : 0) + " to "
                           + (fills.Count > 0 ? fills[fills.Count - 1] : 0) + " days (median " + median + "), " + inMonths + " within 60.");
