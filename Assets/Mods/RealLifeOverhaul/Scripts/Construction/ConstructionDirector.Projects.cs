@@ -566,7 +566,7 @@ namespace RealLifeOverhaul.Construction
             {
                 p.PlansDay = ConstructionGame.Day + Math.Max(1, days);
             }
-            p.Quality = quote.Quality;
+            p.Quality = p.Grow > 0 ? GrowRules.TierQuality[BuildCatalogue.Clamp(p.Grow - 1, 0, (int)GrowTier.Count - 1)] : quote.Quality;   // Let it grow: the tier's
             Logger?.Info("Construction: project " + p.Id + "'s plans asked of " + p.Architect + (p.Architect == ArchitectKind.Firm ? " " + p.Firm : string.Empty) + " for " + fee + ", ready on day "
                          + (p.PlansDay == int.MaxValue ? "the player designs" : p.PlansDay.ToString()) + ".");
             Changed();
@@ -1167,6 +1167,10 @@ namespace RealLifeOverhaul.Construction
             if (handed)
             {
                 p.InDistrict = true;
+                if (player)
+                {
+                    GrowHandedToPlayer(p, ConstructionGame.Day);   // Let it grow: one of the city's grown buildings from now, the player's
+                }
                 if (!player && lot != null)
                 {
                     _state.Lots.Remove(lot);   // the residents' now: no more land tax of the player's

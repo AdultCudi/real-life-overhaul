@@ -108,6 +108,10 @@ namespace RealLifeOverhaul.Construction
         {
             get
             {
+                if (_state.Tool == BuildTool.Zone && _zoneMarked > 0)
+                {
+                    return _zoneMarked;   // the Zone tool's squares, wherever they lie
+                }
                 int n = 0;
                 for (int i = 0; i < _picked.Count; i++)
                 {
@@ -429,6 +433,10 @@ namespace RealLifeOverhaul.Construction
                 {
                     BuildModeGame.HoldCamera(true);   // the map's left drag would pan it
                     BuildModeGame.HideHover();
+                    if (_state.Tool == BuildTool.Zone)
+                    {
+                        ZonePressed(cell);   // on the player's own land the Zone tool's shapes pick (BuildMode.Zone); elsewhere as below
+                    }
                     _down = true;
                     _downAt = BuildModeGame.Mouse;
                     _removing = BuildModeGame.Shift;
@@ -460,8 +468,8 @@ namespace RealLifeOverhaul.Construction
                 {
                     // The pointer read along the street the drag began on (CellGrid.Project): over the block's corner, onto the
                     // next street's squares or the road, the drag still picks along its own street (the owner, 26 Oct 2026).
-                    CellAt cell = _d.Cells.Project(_from.Column, at.x, at.z);
                     CellAt under = _d.Cells.At(at.x, at.z);
+                    CellAt cell = _state.Tool == BuildTool.Zone && _shape == ZoneShape.Brush && _zoneDragging && !under.None ? under : _d.Cells.Project(_from.Column, at.x, at.z);
                     bool off = under.None || _d.Cells.Columns[under.Column].Strip != _d.Cells.Columns[_from.Column].Strip;
                     if (!cell.None && (cell.Column != _to.Column || cell.Row != _to.Row || off != _offStreet))
                     {
@@ -501,6 +509,10 @@ namespace RealLifeOverhaul.Construction
         // refused ("These squares make no site", the owner's test). COST: a walk over the run's spaces, no allocation.
         private void Drag()
         {
+            if (_state.Tool == BuildTool.Zone && ZoneDrag())
+            {
+                return;   // the Zone tool's shapes on the player's own land (BuildMode.Zone)
+            }
             Array.Copy(_before, _depth, _depth.Length);
             CellGrid grid = _d.Cells;
             CellColumn a = grid.Columns[_from.Column], b = grid.Columns[_to.Column];
@@ -738,6 +750,8 @@ namespace RealLifeOverhaul.Construction
             {
                 _depth[c] = -1;
             }
+            ZoneClear();
+            _growPanel = false;
             _siteWhy = CellRules.NoCells;
             _site = default(CellSite);
             _took = CellRules.TookAll;
@@ -820,6 +834,12 @@ namespace RealLifeOverhaul.Construction
             }
             bool bad = _siteWhy != null && _state.Tool == BuildTool.Land;
             byte mark = (byte)(_state.Step == BuildStep.Ghost ? BuildModeRules.Footprint : bad ? BuildModeRules.PickedBad : BuildModeRules.Picked);
+            if (_state.Tool == BuildTool.Zone && _zoneMarked > 0)
+            {
+                ZoneColour();   // the squares marked, each on its own
+                BuildModeGame.Colour(_layer, _fills, _lines);
+                return;
+            }
             for (int i = 0; i < _picked.Count; i++)
             {
                 int c = _picked[i].Column;

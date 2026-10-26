@@ -106,7 +106,7 @@ namespace RealLifeOverhaul.Construction
         /// <summary>What a column is, for its cells' colours: who holds it, its zoning, a building's use, occupancy and fall, a site's share built.</summary>
         public BuildModeRules.ColumnFacts FactsOf(int column)
         {
-            var f = new BuildModeRules.ColumnFacts { Use = -1, MainUse = -1 };
+            var f = new BuildModeRules.ColumnFacts { Use = -1, MainUse = -1, CouncilUse = -1 };
             if (!LotOfColumn(column, out LotView lot))
             {
                 return f;
@@ -118,11 +118,18 @@ namespace RealLifeOverhaul.Construction
             f.Mine = site != null;
             f.Developer = DeveloperOn(lot.Id);
             f.Demolishing = Demolishing(lot);
+            CellColumn col = Cells.Columns[column];
+            f.Council = _state.CouncilCells.TryGetValue(CellRules.Key(col.Strip, col.Space), out string council) ? council : null;   // the council's zoning of the square
+            f.CouncilUse = ZoneRules.CouncilUse(lot.Id, lot.Class);
+            GrowFile grown = GrowOf(lot.Id);
+            f.RunDown = grown != null && grown.Standing && grown.RunDown;
             if (f.Mine)
             {
                 f.Zones = ZonesNow(site);
                 f.Paint = site.Paint;
                 f.PaintWaits = site.Paint > 0 && !LandRules.Zoned(f.Zones, (BuildUse)(site.Paint - 1));
+                int at = SiteColumn(column, site);
+                f.Squares = at >= 0 ? ZoneRules.Column(site.Cells, at) : null;   // each square's own zone (none of its own: the site's paint)
                 f.Cleared = ClearedGround(site.Id);
                 ProjectFile p = _state.OnLot(site.Id);
                 f.HasProject = p != null;
@@ -139,6 +146,13 @@ namespace RealLifeOverhaul.Construction
             }
             f.Free = FreeSpace(lot);
             f.Building = !f.Free && LotTaken(lot.Id);
+            if (grown != null && grown.UnderWay && grown.Owner != GrowOwner.Player)
+            {
+                // A grown site: the developers' while it is planned, under construction by its share built once it goes up.
+                f.UnderWay = grown.Stage == GrowStage.Building;
+                SiteFacts works = grown.SiteId > 0 ? SiteOf(grown.SiteId) : default(SiteFacts);
+                f.Progress = works.Known && works.Hours > 0f ? (int)Math.Max(0f, Math.Min(100f, works.Done * 100f / works.Hours)) : 0;
+            }
             if (f.Building)
             {
                 f.MyBuilding = ConstructionGame.Owns(lot.Street, lot.Number);
@@ -224,7 +238,7 @@ namespace RealLifeOverhaul.Construction
             }
             long price = LotPrice(lot);
             string cell = price > 0L ? ConstructionText.Money(CellRules.ColumnPrice(price, 1, grid.Columns[column].Rows)) : "-";
-            int zones = f.Paint > 0 && !f.PaintWaits ? BuildCatalogue.Zone((BuildUse)(f.Paint - 1)) : f.Zones;
+            int zones = BuildModeRules.ZonesAt(f, row);
             return ConstructionText.Fill("reallife_bld_mode_cell", "address", LotWords(lot.Id), "row", ConstructionText.N(row + 1), "holder", holder, "uses", UsesWords(zones),
                 "storeys", ConstructionText.N(UptownStoreys()), "price", cell);
         }
@@ -261,12 +275,14 @@ namespace RealLifeOverhaul.Construction
                 holder = ConstructionText.T("reallife_bld_mode_cell_kept");
             }
             head = ConstructionText.Fill("reallife_bld_hover_head", "holder", holder, "address", LotWords(lot.Id));
-            int council = f.Zones;
+            int council = BuildModeRules.ZonesAt(f, row);   // the square's own: a paint in force, the council's use of free land, else the site's
             zoning = ConstructionText.Fill("reallife_bld_hover_zoning", "uses", UsesWords(council), "storeys", ConstructionText.N(UptownStoreys()));
-            if (f.Mine && f.Paint > 0)
+            int squarePaint = f.Mine && row < f.MineRows ? BuildModeRules.PaintAt(f, row) : 0;
+            if (squarePaint > 0)
             {
-                string use = ConstructionText.T(BuildCatalogue.UseKeys[Math.Min((int)BuildUse.Count - 1, f.Paint - 1)]);
-                more = ConstructionText.Fill(f.PaintWaits ? "reallife_bld_hover_painted_waits" : "reallife_bld_hover_painted", "use", use);
+                string use = ConstructionText.T(BuildCatalogue.UseKeys[Math.Min((int)BuildUse.Count - 1, squarePaint - 1)]);
+                bool waits = !LandRules.Zoned(f.Zones, (BuildUse)(squarePaint - 1));
+                more = ConstructionText.Fill(waits ? "reallife_bld_hover_painted_waits" : "reallife_bld_hover_painted", "use", use);
             }
             else if (f.Free || (f.Mine && row >= f.MineRows))
             {
@@ -276,6 +292,10 @@ namespace RealLifeOverhaul.Construction
             if (f.Developer)
             {
                 more = (more != null ? more + ". " : string.Empty) + ConstructionText.T("reallife_bld_mode_mark_developer");
+            }
+            if (f.RunDown)
+            {
+                more = (more != null ? more + ". " : string.Empty) + ConstructionText.T("reallife_grow_hover_rundown");
             }
             return true;
         }
@@ -461,11 +481,13 @@ namespace RealLifeOverhaul.Construction
             {
                 SiteSpaces(newId, freeCount, _strip);
                 LotView joined = Joined(_strip);
-                _state.Lots.Add(new LotFile
+                var bought = new LotFile
                 {
                     Id = newId, Bought = day, Paid = freePaid, Zones = LandRules.ZonesOf(joined.Class), TaxedTo = day, EmptySince = day, Spaces = freeCount,
                     Rows = CellRules.RowsText(rows, freeCount, grid.Columns[site.FirstColumn].Rows)
-                });
+                };
+                _state.Lots.Add(bought);
+                TakeCouncilZoning(bought);   // the council's zoning of the squares comes with them
                 Logger?.Info("Construction: build mode bought " + site.Cells + " cell(s) in " + site.Count + " space(s) from " + newId + " for " + price + ".");
             }
             if (mine != null && newId != null)
@@ -518,12 +540,14 @@ namespace RealLifeOverhaul.Construction
             if (use < 0 || use >= (int)BuildUse.Count)
             {
                 own.Paint = 0;
+                own.Cells = string.Empty;   // every square takes the site's paint again
                 Changed();
                 return "reallife_bld_mode_painted_none";
             }
             if (LandRules.Zoned(ZonesNow(own), (BuildUse)use))
             {
                 own.Paint = BuildModeRules.PaintOf(use);
+                own.Cells = string.Empty;   // the whole site painted: every square takes it
                 ProjectFile p = _state.OnLot(siteId);
                 if (p != null && p.Stage == ProjectStage.Design && p.Kind == ProjectKind.Plot && p.Use != (BuildUse)use)
                 {
@@ -536,6 +560,7 @@ namespace RealLifeOverhaul.Construction
             if (asked == "reallife_bld_answer_zone_asked")
             {
                 own.Paint = BuildModeRules.PaintOf(use);   // shown as waiting until the council decides
+                own.Cells = string.Empty;
                 Changed();
                 return "reallife_bld_mode_paint_asked";
             }
@@ -775,6 +800,15 @@ namespace RealLifeOverhaul.Construction
                 {
                     UnityEngine.Vector3 at = Where(place);
                     into.Add(new BuildMark { Name = ConstructionGame.AddressText(r.Street, r.Number), Detail = ConstructionText.T("reallife_bld_mode_mark_redevelop"), X = at.x, Z = at.z });
+                }
+            }
+            for (int i = 0; i < _state.Grows.Count; i++)
+            {
+                GrowFile g = _state.Grows[i];
+                if (g.UnderWay && g.Owner != GrowOwner.Player && PlaceOfLot(g.Lot, out MapPlace place))
+                {
+                    UnityEngine.Vector3 at = Where(place);
+                    into.Add(new BuildMark { Name = GrowName(g), Detail = GrowStageWords(g), X = at.x, Z = at.z });   // the city's growth, its stage
                 }
             }
         }

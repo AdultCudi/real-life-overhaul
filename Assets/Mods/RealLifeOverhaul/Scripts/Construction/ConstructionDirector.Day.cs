@@ -108,6 +108,8 @@ namespace RealLifeOverhaul.Construction
             HiresDay(day, before);   // a hired builder gone past its due day (ConstructionDirector.Hire.cs)
             SitesLost();   // a building whose site the programme lost, set out again (ConstructionDirector.Sites.cs)
             RedevelopDay(day);   // notices run out, buildings kept empty, handovers the district could not take yet (ConstructionDirector.Demolish.cs)
+            GrowProjectsDay(day);   // the player's Let it grow projects carried to City Hall by their builder (ConstructionDirector.LetItGrow)
+            GrowDeedsDay();         // ... and their deeds asking their tier's rent once written
             if (Verbose)
             {
                 double ms = (System.Diagnostics.Stopwatch.GetTimestamp() - began) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;

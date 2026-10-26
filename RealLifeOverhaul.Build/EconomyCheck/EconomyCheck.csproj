@@ -600,6 +600,10 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\FrontDeskRules.cs" Link="Mod\Construction\FrontDeskRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\TrackRules.cs" Link="Mod\Construction\TrackRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\CellRules.cs" Link="Mod\Construction\CellRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\ZoneRules.cs" Link="Mod\Construction\ZoneRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\GrowRules.cs" Link="Mod\Construction\GrowRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildState.Grow.cs" Link="Mod\Construction\BuildState.Grow.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildStore.Grow.cs" Link="Mod\Construction\BuildStore.Grow.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildModeRules.cs" Link="Mod\Construction\BuildModeRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildModeHintRules.cs" Link="Mod\Construction\BuildModeHintRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildModeCityRules.cs" Link="Mod\Construction\BuildModeCityRules.cs" />

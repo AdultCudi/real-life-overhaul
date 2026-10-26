@@ -98,6 +98,8 @@ namespace RealLifeOverhaul
                 ConstructionBridges.HideLook = HideLook;
                 ConstructionBridges.Extend = Extend;
                 ConstructionBridges.Convert = Convert;
+                ConstructionBridges.LetUnit = LetUnit;
+                ConstructionBridges.Retraffic = Retraffic;
                 ConstructionBridges.StandingAll = StandingAll;
                 ConstructionBridges.Holdings = Holdings;
                 DistrictBuildings.Lessee = RivalLease;   // whatever the options say: every machine leases the same offices
@@ -219,6 +221,8 @@ namespace RealLifeOverhaul
                 ConstructionBridges.HideLook = null;
                 ConstructionBridges.Extend = null;
                 ConstructionBridges.Convert = null;
+                ConstructionBridges.LetUnit = null;
+                ConstructionBridges.Retraffic = null;
                 ConstructionBridges.StandingAll = null;
                 ConstructionBridges.Holdings = null;
                 ConstructionBridges.Designs = null;
@@ -761,6 +765,32 @@ namespace RealLifeOverhaul
                 {
                     Fault("ConstructionLinks.Extend", e);
                     return "a fault";
+                }
+            }
+
+            private static string LetUnit(string lot)
+            {
+                try
+                {
+                    return DistrictBuildings.LetUnit(lot);
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.LetUnit", e);
+                    return "a fault";
+                }
+            }
+
+            private static bool Retraffic(string lot, int drop)
+            {
+                try
+                {
+                    return DistrictBuildings.Retraffic(lot, drop);
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.Retraffic", e);
+                    return false;
                 }
             }
 

@@ -333,6 +333,25 @@ namespace RealLifeOverhaul.Uptown
         }
 
         /// <summary>
+        /// The unit of the city's building standing on a lot let to its tenant now, as the district's mix lets one (a shop or office
+        /// given a business of the kind its street holds fewest of, a home let to residents): a grown building's tenant (Scripts/
+        /// Construction, the city's growth). Null when it was, else why not. Never the player's, never in a Going Public session.
+        /// </summary>
+        public static string LetUnit(string lotId)
+        {
+            return LifeDirector.LetUnit(lotId);
+        }
+
+        /// <summary>
+        /// A building's traffic lowered by so many points for its poor condition (0: its own again), its rent and value following it
+        /// by the game's own arithmetic; asked again after each load. False when no building stands on the lot.
+        /// </summary>
+        public static bool Retraffic(string lotId, int drop)
+        {
+            return LifeDirector.Retraffic(lotId, drop);
+        }
+
+        /// <summary>
         /// The traffic index a building on the lot gets (Building.trafficIndex, 10 to 60, lifted by <see cref="TrafficLift"/>
         /// to 80 at most), as the rules give it; -1 for a lot not in the plan.
         /// </summary>

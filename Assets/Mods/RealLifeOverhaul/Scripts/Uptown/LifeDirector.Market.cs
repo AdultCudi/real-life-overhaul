@@ -17,6 +17,7 @@ namespace RealLifeOverhaul.Uptown
         private static readonly int[] DemandNow = { -1, -1, -1, -1 };
         private static readonly Dictionary<int, int> OpenOnBlock = new Dictionary<int, int>(32);
         private static readonly Dictionary<int, int> BuiltOnBlock = new Dictionary<int, int>(32);
+        private static readonly Dictionary<int, int> PeopleOnBlock = new Dictionary<int, int>(32);   // homes and offices finished on a block
         private static int _marketDay = int.MinValue;
         private static int _level = 1000;
         private static int _densityStamp = -1;
@@ -85,6 +86,7 @@ namespace RealLifeOverhaul.Uptown
         // A new load: the market is counted afresh.
         private static void MarketForget()
         {
+            Drops.Clear();   // a new load makes every record at its own traffic: the construction game's day asks each drop again
             _marketDay = int.MinValue;
             _marketSet = false;
             _level = 1000;
@@ -95,7 +97,8 @@ namespace RealLifeOverhaul.Uptown
             }
         }
 
-        // The traffic points a lot gets as the free land of its block is built: none on a block that had none.
+        // The traffic points a lot gets as the free land of its block is built (none on a block that had none), and from the homes and
+        // offices finished on it (DemandRules.PeopleLift): the game's own count of passers-by at every door of the block rises with them.
         private static int Density(BuildingsLot lot)
         {
             if (_densityStamp != _stamp)
@@ -103,6 +106,7 @@ namespace RealLifeOverhaul.Uptown
                 _densityStamp = _stamp;
                 OpenOnBlock.Clear();
                 BuiltOnBlock.Clear();
+                PeopleOnBlock.Clear();
                 for (int i = 0; i < Plan.Count; i++)
                 {
                     BuildingsLot l = Plan[i];
@@ -111,13 +115,19 @@ namespace RealLifeOverhaul.Uptown
                         continue;
                     }
                     OpenOnBlock[l.Block] = (OpenOnBlock.TryGetValue(l.Block, out int open) ? open : 0) + 1;
-                    if (_state != null && _state.On(l.Id) != null)
+                    FinishedBuilding f = _state != null ? _state.On(l.Id) : null;
+                    if (f != null)
                     {
                         BuiltOnBlock[l.Block] = (BuiltOnBlock.TryGetValue(l.Block, out int built) ? built : 0) + 1;
+                        if (f.Type == MixRules.HomeType || f.Type == BuildingsRules.OfficeType)
+                        {
+                            PeopleOnBlock[l.Block] = (PeopleOnBlock.TryGetValue(l.Block, out int people) ? people : 0) + 1;   // new homes and offices bring their people past every door
+                        }
                     }
                 }
             }
-            return DemandRules.DensityLift(BuiltOnBlock.TryGetValue(lot.Block, out int b) ? b : 0, OpenOnBlock.TryGetValue(lot.Block, out int o) ? o : 0);
+            return DemandRules.DensityLift(BuiltOnBlock.TryGetValue(lot.Block, out int b) ? b : 0, OpenOnBlock.TryGetValue(lot.Block, out int o) ? o : 0)
+                   + DemandRules.PeopleLift(PeopleOnBlock.TryGetValue(lot.Block, out int p) ? p : 0);
         }
     }
 }

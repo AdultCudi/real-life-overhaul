@@ -183,6 +183,12 @@ namespace RealLifeOverhaul.Construction
         /// <summary>A district building on a lot made another use, a game building type its structure takes: null when done, else why not. Default: none.</summary>
         public static Func<string, string, string> Convert;
 
+        /// <summary>The unit of the city's building on a lot let to its tenant now (a grown building's, plans/growables.md): null when done, else why not. Default: refused.</summary>
+        public static Func<string, string> LetUnit;
+
+        /// <summary>A district building's traffic lowered by so many points for its poor condition (0: its own again); false when none stands. Default: nothing.</summary>
+        public static Func<string, int, bool> Retraffic;
+
         /// <summary>A rival builder's office (its index among the city's contractors) as the game writes its address, or null when it has none standing at this load. Default: none.</summary>
         public static Func<int, string> RivalOffice;
 
@@ -466,6 +472,8 @@ namespace RealLifeOverhaul.Construction
             Cleared = null;
             HideLook = null;
             Extend = null;
+            LetUnit = null;
+            Retraffic = null;
             Convert = null;
             StandingAll = null;
             Holdings = null;

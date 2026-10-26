@@ -49,6 +49,10 @@ namespace RealLifeOverhaul.Construction
                 Join(t, l.Bought, l.Zones, l.ZoneAsk, l.ZoneDay, l.TaxedTo, l.EmptySince);
                 t.Append('|').Append(l.Paid.ToString(Inv)).Append('|').Append(l.Spaces.ToString(Inv));
                 t.Append('|').Append(Esc(l.Rows)).Append('|').Append(l.Paint.ToString(Inv));   // build mode's cells and paint, after the spaces
+                if (l.Cells.Length > 0)
+                {
+                    t.Append('|').Append(Esc(l.Cells));   // each square's zone (ZoneRules), after the paint: an older reader stops before it
+                }
             }
             t.Append("^c:");
             for (int i = 0; i < s.Crews.Count && i < BuildCatalogue.CrewsMost; i++)
@@ -117,6 +121,7 @@ namespace RealLifeOverhaul.Construction
                 }
             }
             WriteCity(t, s);
+            WriteGrow(t, s);
             return t.ToString();
         }
 
@@ -163,17 +168,22 @@ namespace RealLifeOverhaul.Construction
             Join(t, p.HireDays, p.HirePace, p.HireStages, p.HireFree ? 1 : 0);   // a hired builder's contract, after every field an older reader knows
             t.Append('|').Append(p.HirePaid.ToString(Inv)).Append('|').Append(p.HirePenalty.ToString(Inv));
             t.Append('|').Append(p.ClaimCase.ToString(Inv));   // a claim over faults, after every field an older reader knows
-            if (p.FitDesign.Length > 0 || p.NoticeUntil > 0 || p.BuyOut != 0L || p.Added > 0 || p.Look.Length > 0)
+            bool grow = p.Grow > 0 && p.Kind == ProjectKind.Plot;
+            if (p.FitDesign.Length > 0 || p.NoticeUntil > 0 || p.BuyOut != 0L || p.Added > 0 || p.Look.Length > 0 || grow)
             {
                 // Redevelopment's fields, after every field an older reader knows, and only when one is set: a record without them is as before.
                 t.Append('|').Append(Esc(p.FitDesign)).Append('|').Append(Esc(p.FitType)).Append('|').Append(p.NoticeUntil.ToString(Inv)).Append('|').Append(p.BuyOut.ToString(Inv));
-                if (p.Added > 0 || p.Look.Length > 0)
+                if (p.Added > 0 || p.Look.Length > 0 || grow)
                 {
                     t.Append('|').Append(p.Added.ToString(Inv));
                 }
-                if (p.Look.Length > 0)
+                if (p.Look.Length > 0 || grow)
                 {
                     t.Append('|').Append(Esc(p.Look));   // a corner building's model, after the extension's storeys: an older reader stops before it
+                }
+                if (grow)
+                {
+                    t.Append('|').Append(p.Grow.ToString(Inv));   // Let it grow's tier, after the model: an older reader stops before it
                 }
             }
         }
@@ -241,6 +251,7 @@ namespace RealLifeOverhaul.Construction
                                 l.Spaces = BuildCatalogue.Clamp(r.I(1), 1, BuildCatalogue.SiteSpacesMost);   // a line from before the spaces: one
                                 l.Rows = CellRules.CleanRows(r.S(), l.Spaces);   // a line from before build mode: every row
                                 l.Paint = BuildCatalogue.Clamp(r.I(0), 0, (int)BuildUse.Count);
+                                l.Cells = ZoneRules.Clean(r.S(), l.Spaces);   // a line from before single squares: each square takes the site's paint
                                 if (l.Id.Length > 0)
                                 {
                                     s.Lots.Add(l);
@@ -407,7 +418,10 @@ namespace RealLifeOverhaul.Construction
                             break;
                         }
                         default:
-                            ReadCity(part[0], body, s);   // the city around the company (BuildStore.City), or a part of a newer version's: passed over
+                            if (!ReadGrow(part[0], body, s))
+                            {
+                                ReadCity(part[0], body, s);   // the city around the company (BuildStore.City), or a part of a newer version's: passed over
+                            }
                             break;
                     }
                 }
@@ -549,6 +563,7 @@ namespace RealLifeOverhaul.Construction
             int added = r.I(0);
             p.Added = p.Kind == ProjectKind.Extension ? BuildCatalogue.Clamp(added, 0, RedevelopRules.StoreysMost) : 0;
             p.Look = p.Kind == ProjectKind.Plot ? r.S() : string.Empty;   // a corner building's model; a line without it has none
+            p.Grow = p.Kind == ProjectKind.Plot ? BuildCatalogue.Clamp(r.I(0), 0, (int)GrowTier.Count) : 0;   // Let it grow's tier and one; none before it
             if (p.FitDesign.Length == 0)
             {
                 p.FitType = string.Empty;   // no design, nothing to install

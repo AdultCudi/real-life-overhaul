@@ -29,6 +29,7 @@ namespace RealLifeOverhaul.Construction
             {
                 PublicTenders(day);
                 CityRedevelopDay(day);   // the city's developers redevelop Uptown on a machine of its own alone (ConstructionDirector.CityRedevelop)
+                GrowDay(day);            // ... and grow it on the council's zoned land by demand (ConstructionDirector.Grow)
             }
             RivalsDay(day);
         }
@@ -67,6 +68,10 @@ namespace RealLifeOverhaul.Construction
                 }
                 if (dev == null)
                 {
+                    if (GrowthOn)
+                    {
+                        continue;   // the city grows by demand now (ConstructionDirector.Grow): the old lot-by-lot turns start nothing more
+                    }
                     if (_state.Lot(lot.Id) != null || _state.OnLot(lot.Id) != null || LotTaken(lot.Id) || _state.CityRedevOn(lot.Id) != null)
                     {
                         continue;   // the player's land, a building of the district's own, or ground the city redevelops: passed over

@@ -119,7 +119,8 @@ namespace RealLifeOverhaul.Construction
         public const int LineWaits = 30;     // a use asked of the council
         public const int LinePicked = 31;
         public const int Rival = 32;         // a rival's building in the city's own districts (build mode's plots, BuildModeCityRules): a fill after the lines
-        public const int PaletteSize = 33;
+        public const int RunDownFill = 33;   // occupancy: a building run down after standing mostly empty (GrowRules)
+        public const int PaletteSize = 34;
 
         /// <summary>
         /// The palette (red, green, blue, alpha, 0 to 255). The four uses, for sale and the player's colour are the game's own
@@ -160,7 +161,8 @@ namespace RealLifeOverhaul.Construction
             new byte[] { 178, 128, 255, 255 },  // yours
             new byte[] { 240, 190, 90, 255 },   // waits on the council
             new byte[] { 255, 255, 255, 255 },  // picked
-            new byte[] { 225, 75, 95, 170 }     // a rival's building
+            new byte[] { 225, 75, 95, 170 },    // a rival's building
+            new byte[] { 150, 95, 60, 190 }     // run down
         };
 
         /// <summary>Colours the mixed zoning may take: the first far from every colour the game gives its types and the player.</summary>
@@ -360,6 +362,58 @@ namespace RealLifeOverhaul.Construction
             public int MainUse;      // the plan's main use there (BuildCatalogue.ClassUse), -1 for none
             public int ValueStep;    // its land's price among the district's, 0 (lowest) to ValueSteps - 1
             public bool HasProject;  // a project of the player's on their land there (any stage): no second building placed on it
+            public string Squares;   // the player's: this column's own digit a row (ZoneRules), null when every square takes Paint
+            public string Council;   // free land: the council's digit a row for this column (ZoneRules), null for the plan's use on every row
+            public int CouncilUse;   // ... the plan's use for it (BuildUse), -1 for none
+            public bool RunDown;     // a building in poor condition after standing mostly empty (GrowRules.RunDown)
+        }
+
+        /// <summary>The paint a square of the player's land carries (0 none, else BuildUse + 1): its own digit, else its site's.</summary>
+        public static int PaintAt(ColumnFacts c, int row)
+        {
+            if (string.IsNullOrEmpty(c.Squares) || row < 0 || row >= c.Squares.Length)
+            {
+                return c.Paint;
+            }
+            int d = c.Squares[row] - '0';
+            return d >= 0 && d <= 4 ? d : c.Paint;
+        }
+
+        /// <summary>Whether a square's paint waits on the council: the site's own paint as its facts say; a square's own use when its site's zones lack it.</summary>
+        public static bool WaitsAt(ColumnFacts c, int paint)
+        {
+            if (paint <= 0)
+            {
+                return false;
+            }
+            return paint == c.Paint ? c.PaintWaits : (c.Zones & (1 << (paint - 1))) == 0;
+        }
+
+        /// <summary>The council's paint of a free square (0 unzoned, else BuildUse + 1): the column's record, else the plan's use.</summary>
+        public static int CouncilAt(ColumnFacts c, int row)
+        {
+            if (!string.IsNullOrEmpty(c.Council) && row >= 0 && row < c.Council.Length)
+            {
+                int d = c.Council[row] - '0';
+                return d >= 0 && d <= 4 ? d : 0;
+            }
+            return c.CouncilUse >= 0 && c.CouncilUse < 4 ? c.CouncilUse + 1 : 0;
+        }
+
+        /// <summary>The zones a square is in force for, as the tooltip says them: a paint in force its use; free land the council's use; else the column's.</summary>
+        public static int ZonesAt(ColumnFacts c, int row)
+        {
+            if (c.Mine && row < c.MineRows)
+            {
+                int paint = PaintAt(c, row);
+                return paint > 0 && (c.Zones & (1 << (paint - 1))) != 0 ? 1 << (paint - 1) : c.Zones;
+            }
+            if (!c.Building)
+            {
+                int council = CouncilAt(c, row);
+                return council > 0 ? 1 << (council - 1) : 0;
+            }
+            return c.Zones;
         }
 
         /// <summary>
@@ -376,8 +430,10 @@ namespace RealLifeOverhaul.Construction
                 case BuildView.Zoning:
                     if (c.Mine && !behind)
                     {
-                        fill = ZoneFill(c.Zones, c.PaintWaits ? 0 : c.Paint, c.MainUse);
-                        line = c.Cleared ? LineDemolished : c.Paint > 0 ? (c.PaintWaits ? LineWaits : LineZoned) : LineYours;
+                        int paint = PaintAt(c, row);
+                        bool waits = WaitsAt(c, paint);
+                        fill = ZoneFill(c.Zones, waits ? 0 : paint, c.MainUse);
+                        line = c.Cleared ? LineDemolished : paint > 0 ? (waits ? LineWaits : LineZoned) : LineYours;
                         return;
                     }
                     if (c.Building)
@@ -386,7 +442,8 @@ namespace RealLifeOverhaul.Construction
                         line = c.Demolishing ? LineDemolished : c.MyBuilding ? LineYours : LinePlain;
                         return;
                     }
-                    fill = ZoneFill(c.Zones, 0, c.MainUse);
+                    int council = CouncilAt(c, row);
+                    fill = council > 0 ? Homes + Math.Min(3, council - 1) : NoZone;   // the council's zoning of the square, as Cities Skylines shows free land
                     line = c.Free || behind ? LineForSale : LinePlain;
                     return;
                 case BuildView.Value:
@@ -396,7 +453,7 @@ namespace RealLifeOverhaul.Construction
                 case BuildView.Occupancy:
                     if (c.Building)
                     {
-                        fill = c.Vacant ? Vacant : Let;
+                        fill = c.RunDown ? RunDownFill : c.Vacant ? Vacant : Let;
                         line = c.MyBuilding ? LineYours : LinePlain;
                         return;
                     }
@@ -439,10 +496,12 @@ namespace RealLifeOverhaul.Construction
                     line = LineDemolished;
                     return;
                 }
-                if (c.Paint > 0)
+                int own = PaintAt(c, row);
+                if (own > 0)
                 {
-                    fill = c.PaintWaits ? YourLand : Homes + Math.Min(3, c.Paint - 1);
-                    line = c.PaintWaits ? LineWaits : LineZoned;
+                    bool waits = WaitsAt(c, own);
+                    fill = waits ? YourLand : Homes + Math.Min(3, own - 1);
+                    line = waits ? LineWaits : LineZoned;
                     return;
                 }
                 fill = YourLand;
@@ -503,6 +562,7 @@ namespace RealLifeOverhaul.Construction
                 case BuildView.Occupancy:
                     n = Key(fills, lines, keys, n, Let, LinePlain, "reallife_bld_mode_key_let");
                     n = Key(fills, lines, keys, n, Vacant, LinePlain, "reallife_bld_mode_key_vacant");
+                    n = Key(fills, lines, keys, n, RunDownFill, LinePlain, "reallife_bld_mode_key_rundown");
                     n = Key(fills, lines, keys, n, -1, LineYours, "reallife_bld_mode_key_yours_edge");
                     break;
                 case BuildView.UnderWay:

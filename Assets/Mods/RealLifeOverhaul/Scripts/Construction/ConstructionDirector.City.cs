@@ -99,9 +99,11 @@ namespace RealLifeOverhaul.Construction
             {
                 l.Zones |= l.ZoneAsk;
             }
-            else if (l.Paint == use + 1)
+            else
             {
-                l.Paint = 0;   // build mode's paint of the use refused falls back to none
+                l.Cells = ZoneRules.Cleared(l.Cells, use + 1);   // each square painted the use refused falls back to none
+                l.Paint = l.Paint == use + 1 ? 0 : l.Paint;     // ... and the site's own paint with them
+                l.Paint = l.Cells.Length > 0 ? ZoneRules.Main(l.Cells, l.Paint) : l.Paint;
             }
             l.ZoneAsk = 0;
             NoteVote(ayes, noes, carried);

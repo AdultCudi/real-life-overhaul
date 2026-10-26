@@ -172,7 +172,8 @@ namespace RealLifeOverhaul.Construction
                         continue;
                     }
                 }
-                long rank = RedevelopRules.Rank(ConstructionGame.ForSale(b.Street, b.Number, out _), trading, _state.Seed, b.Lot);
+                bool first = ConstructionGame.ForSale(b.Street, b.Number, out _) || RunDownOn(b.Lot);   // a run down grown building first, with those for sale
+                long rank = RedevelopRules.Rank(first, trading, _state.Seed, b.Lot);
                 _ranked.Add((rank << 16) | (long)i);   // the place rides under its rank, so one sort of plain numbers orders them
             }
             _ranked.Sort();
@@ -453,6 +454,7 @@ namespace RealLifeOverhaul.Construction
                 Logger?.Info("Construction: the city's " + r.Move + " at " + r.Street + " " + r.Number + " is done, now and from every load.");
                 return;
             }
+            GrowGone(r.Lot);   // a grown building knocked down: its record let go
             Paper("reallife_bld_paper_city_demolished", CityName(r), 0);
             r.Stage = CityStage.Building;
             r.Until = day + RedevelopRules.NewBuildDays(r.Area);

@@ -118,6 +118,7 @@ namespace RealLifeOverhaul.Construction
                 case TrackOpens.Tender: Open(TabTenders, line.Pick); break;
                 case TrackOpens.Company: Open(TabCompany, 0); break;
                 case TrackOpens.Crews: Open(TabCrews, 0); break;
+                case TrackOpens.Land: Open(TabLand, 0); break;
                 default: Open(TabProjects, line.Pick); break;
             }
         }
@@ -181,6 +182,10 @@ namespace RealLifeOverhaul.Construction
             public bool CanHire(ProjectFile p) => _d.HireBlock(p) == null;
 
             public int ClaimDue(int claim) => ConstructionDirector.ClaimDue(claim);
+
+            public bool NearMine(GrowFile g) => _d.GrowNearMine(g);
+
+            public string GrowOf(GrowFile g) => _d.GrowName(g);
         }
     }
 }
