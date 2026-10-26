@@ -117,15 +117,11 @@ namespace RealLifeOverhaul.Tech
         internal Product NewProduct(string place, ProductKind kind, Segment segment, int scope)
         {
             FirmPlace firm = FirmOf(place);
-            int live = 0;
-            for (int i = 0; i < _firmsFile.Products.Count; i++)
+            if (firm == null || !FirmsRules.Makes(firm.File.K, kind) || FirmsRules.Room(_firmsFile, place) != FirmsRules.RoomYes || Save == null)
             {
-                live += _firmsFile.Products[i].Stage < 2 ? 1 : 0;
+                return null;   // the page does not offer the button then, and says which limit it is
             }
-            if (firm == null || !FirmsRules.Makes(firm.File.K, kind) || live >= FirmsCatalogue.ProductsMost || Save == null)
-            {
-                return null;
-            }
+            FirmsRules.TrimWithdrawn(_firmsFile);
             Product p = FirmsRules.NewProduct(_firmsFile, place, kind, segment, scope, null);
             p.Launched = Save.Day;
             _firmsFile.Products.Add(p);
@@ -177,6 +173,7 @@ namespace RealLifeOverhaul.Tech
             if (p != null && p.Stage < 2)
             {
                 p.Stage = 2;
+                FirmsRules.TrimWithdrawn(_firmsFile, p);
                 ChangedTech();
             }
         }

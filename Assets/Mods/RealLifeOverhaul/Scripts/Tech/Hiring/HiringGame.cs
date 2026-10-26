@@ -139,14 +139,17 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        /// <summary>A name and a sex for a new seeker, the game's own way (one no employee of the player's has).</summary>
-        public static void Name(Seeker s)
+        /// <summary>
+        /// A name and a sex for a new seeker, the game's own way, and one nobody in <paramref name="taken"/> has: the game's own check
+        /// knows only the staff hired when it was first asked, so a seeker kept in the save, the mod's payroll or a candidate
+        /// waiting could be given a name over again (the director's NameSet lists all of them). The name goes into the set.
+        /// </summary>
+        public static void Name(Seeker s, HashSet<string> taken)
         {
             try
             {
-                (Gender gender, string name) = RecruitmentHelper.GetRandomGenderAndName();
-                s.P.Name = name;
-                s.P.Female = gender == Gender.Female;
+                s.P.Name = StaffNamesGame.Fresh(taken, out bool female);
+                s.P.Female = female;
             }
             catch (Exception)
             {
@@ -201,6 +204,48 @@ namespace RealLifeOverhaul.Tech
             catch (Exception e)
             {
                 Logger?.Error(e);
+                return false;
+            }
+        }
+
+        /// <summary>A candidate the hire failed for is taken out of the staff app and the game's index, as the game's own discard does. Nothing if they were hired after all.</summary>
+        public static void Discard(EmployeeInstance candidate)
+        {
+            try
+            {
+                if (candidate != null && candidate.IsCandidate)
+                {
+                    EmployeeHelper.DiscardCandidate(candidate);
+                }
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
+        }
+
+        /// <summary>
+        /// After a hire: the new employee is on the save's list and assigned to the business, the two things the game's own
+        /// staff app and shifts need to find them. An assignment the game left empty is put right. One line in the log.
+        /// </summary>
+        public static bool Arrived(EmployeeInstance e, BuildingRegistration business, string name, int day)
+        {
+            try
+            {
+                bool listed = Save != null && Save.EmployeeInstances != null && Save.EmployeeInstances.Contains(e);
+                bool assigned = e.assignedAddress != null && business != null && e.assignedAddress.Equals(business.Address);
+                if (listed && !assigned && business != null)
+                {
+                    e.assignedAddress = business.Address;
+                    assigned = true;
+                }
+                Logger?.Info("Tech check (start, " + name + ", day " + day + "): " + (listed ? "on the staff list" : "NOT on the staff list") + ", "
+                             + (assigned ? "assigned to the business" : "not assigned") + ": " + (listed && assigned ? "PASS" : "FAIL"));
+                return listed && assigned;
+            }
+            catch (Exception ex)
+            {
+                Logger?.Error(ex);
                 return false;
             }
         }

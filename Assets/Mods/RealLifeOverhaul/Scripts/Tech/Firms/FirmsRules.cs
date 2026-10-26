@@ -472,6 +472,57 @@ namespace RealLifeOverhaul.Tech
                    + FirmsCatalogue.NameSecond[TechRandom.Range(seed, n, 62, 0, 0, FirmsCatalogue.NameSecond.Length - 1)];
         }
 
+        /// <summary>Products being built or on sale: at one firm, or across all of them with no place.</summary>
+        public static int LiveCount(FirmsFile f, string place)
+        {
+            int n = 0;
+            for (int i = 0; f != null && i < f.Products.Count; i++)
+            {
+                n += f.Products[i].Stage < 2 && (place == null || f.Products[i].Place == place) ? 1 : 0;
+            }
+            return n;
+        }
+
+        public const int RoomYes = 0, RoomFirmFull = 1, RoomAllFull = 2;
+
+        /// <summary>Whether a firm can start another product: RoomYes, or which limit stops it (the firm's own first).</summary>
+        public static int Room(FirmsFile f, string place)
+        {
+            if (LiveCount(f, place) >= FirmsCatalogue.ProductsPerFirm)
+            {
+                return RoomFirmFull;
+            }
+            return LiveCount(f, null) >= FirmsCatalogue.ProductsMost ? RoomAllFull : RoomYes;
+        }
+
+        /// <summary>
+        /// Drops the oldest withdrawn products (first in the list) beyond <see cref="FirmsCatalogue.WithdrawnKept"/>, never <paramref name="keep"/>,
+        /// the one just withdrawn. Returns how many went.
+        /// </summary>
+        public static int TrimWithdrawn(FirmsFile f, Product keep = null)
+        {
+            int withdrawn = 0;
+            for (int i = 0; i < f.Products.Count; i++)
+            {
+                withdrawn += f.Products[i].Stage >= 2 ? 1 : 0;
+            }
+            int gone = 0;
+            for (int i = 0; i < f.Products.Count && withdrawn > FirmsCatalogue.WithdrawnKept; )
+            {
+                if (f.Products[i].Stage >= 2 && !ReferenceEquals(f.Products[i], keep))
+                {
+                    f.Products.RemoveAt(i);
+                    withdrawn--;
+                    gone++;
+                }
+                else
+                {
+                    i++;
+                }
+            }
+            return gone;
+        }
+
         /// <summary>A new product, being built; its rival is the market's for its kind and segment as it stands.</summary>
         public static Product NewProduct(FirmsFile f, string place, ProductKind kind, Segment segment, int scope, string name)
         {
