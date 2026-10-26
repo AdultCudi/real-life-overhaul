@@ -624,6 +624,28 @@ namespace RealLifeOverhaul
             return null;
         }
 
+        /// <summary>
+        /// Whether the player's top is a warm one: the mod's look when it is drawn (the bomber), else the game's own piece by its
+        /// name (<see cref="Seasons.WarmthRules"/>). Read by the cold's energy cost once an hour; nothing is allocated.
+        /// </summary>
+        public static bool WearingWarmTop()
+        {
+            PlayerController player = PlayerHelper.PlayerController;
+            AppearanceSetter look = player != null && player.Character != null ? player.Character.appearanceSetter : null;
+            if (look == null || look.data == null)
+            {
+                return false;
+            }
+            string picked = Selected(LookKind.Top, look.data.gender);
+            if (picked != null && Shows(LookKind.Top, look.data))
+            {
+                return Seasons.WarmthRules.IsWarmTop(picked);
+            }
+            Read(look.data, AppearanceElementType.Torso, out string variant, out string _);
+            AppearanceElementVariant piece = Find(look, AppearanceElementType.Torso, variant);
+            return piece != null && Seasons.WarmthRules.IsWarmTop(piece.gameObject.name);
+        }
+
         /// <summary>What a new character may start in: the everyday tier. Everything else is bought (Leisure's rack).</summary>
         public static bool Starter(Slot slot, int index)
         {

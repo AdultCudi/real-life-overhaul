@@ -19,20 +19,43 @@ namespace RealLifeOverhaul.Household
         public int OnDay = -1;     // the day of the visit under way, paid for; -1 between visits
         public int Dish = -1;      // that visit's dish (an index into HouseholdRules.CookDishes); -1 for none
         public int Charged;        // whole money that visit cost, wages and shopping, for the day's note
+        public string HomeStreet;  // the home of the player's they work at (its street id); a member always has one
+        public int HomeNumber;
 
-        public static StaffMember From(in StaffCandidate c, int hourly, int day)
+        public bool WorksAt(string street, int number) => !string.IsNullOrEmpty(street) && HomeNumber == number && HomeStreet == street;
+
+        public static StaffMember From(in StaffCandidate c, int hourly, int day, string street, int number)
         {
-            return new StaffMember { Kind = c.Kind, Name = c.Name, Female = c.Female, Age = c.Age, Seed = c.Seed, Skill = c.Skill, Hourly = hourly, HiredDay = day };
+            return new StaffMember
+            {
+                Kind = c.Kind, Name = c.Name, Female = c.Female, Age = c.Age, Seed = c.Seed, Skill = c.Skill, Hourly = hourly, HiredDay = day, HomeStreet = street,
+                HomeNumber = number
+            };
         }
     }
 
-    /// <summary>The household staff of one save: the home they work at, the people, and the day's note so far. Game-free.</summary>
+    /// <summary>A home of the player's by its address, game-free: the street's id and the number.</summary>
+    public readonly struct HomeKey
+    {
+        public readonly string Street;
+        public readonly int Number;
+
+        public HomeKey(string street, int number)
+        {
+            Street = street;
+            Number = number;
+        }
+
+        public bool Valid => !string.IsNullOrEmpty(Street);
+
+        public bool Is(string street, int number) => Valid && Number == number && Street == street;
+    }
+
+    /// <summary>The household staff of one save: the people, each with the home they work at, and the day's note so far. Game-free.</summary>
     public sealed class HouseholdState
     {
         public int Seed;                  // the save's own: every candidate comes from it
         public int LastStamp;             // day * 24 + hour of the last hour gone through
-        public string HomeStreet;         // the home they work at; null with nobody on the staff
-        public int HomeNumber;
         public readonly List<StaffMember> Staff = new List<StaffMember>(HouseholdRules.Most);
         public readonly int[] Rolls = new int[HouseholdRules.Roles.Length + 1];   // by kind: candidates put forward so far
         public int NoteDay;               // the day the note below belongs to
@@ -40,7 +63,11 @@ namespace RealLifeOverhaul.Household
 
         public bool Any => Staff.Count > 0;
 
-        public bool Has(StaffKind kind) => HouseholdRules.Find(Staff, kind) != null;
+        /// <summary>True if somebody of the kind works at that home.</summary>
+        public bool Has(StaffKind kind, string street, int number) => HouseholdRules.FindAt(Staff, kind, street, number) != null;
+
+        /// <summary>True if somebody of the kind works at any home of the player's.</summary>
+        public bool HasAnywhere(StaffKind kind) => HouseholdRules.Find(Staff, kind) != null;
 
         public int RollsOf(StaffKind kind)
         {
@@ -83,11 +110,6 @@ namespace RealLifeOverhaul.Household
         public void Remove(StaffMember m)
         {
             Staff.Remove(m);
-            if (Staff.Count == 0)
-            {
-                HomeStreet = null;
-                HomeNumber = 0;
-            }
         }
     }
 }

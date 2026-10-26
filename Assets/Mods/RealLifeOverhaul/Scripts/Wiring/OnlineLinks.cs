@@ -63,6 +63,7 @@ namespace RealLifeOverhaul
                 OnlineBridges.Season = Season;
                 OnlineBridges.Road = Road;
                 OnlineBridges.Cost = Cost;
+                OnlineBridges.Mbps = (reg, hour) => UtilityLinks.Speed(reg, hour, true);
                 PlannerDirector.Instance?.AddSource(Source);
                 _made = _search = null;
                 _begun = false;

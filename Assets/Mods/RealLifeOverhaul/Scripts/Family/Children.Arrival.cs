@@ -168,7 +168,7 @@ namespace RealLifeOverhaul.Family
             FamilyModifiers.Add(FamilyModifiers.NewParent);
             FamilyState.Harmony(present ? 10f : -6f);
             Partner.Tell(FamilyEvent.ChildArrived, present ? 8f : -2f, present ? 6f : -4f);
-            Relatives.MomGift(250, adopted ? "reallife_family_mom_adopted" : "reallife_family_mom_born", fill);
+            Relatives.MomGift(Prices.At(250), adopted ? "reallife_family_mom_adopted" : "reallife_family_mom_born", fill);
             Relatives.InLawsSay("reallife_family_inlaws_grandchild");
             FamilyDirector.Logger?.Info($"Family: a child arrived ({(adopted ? "adopted" : "born")}, present {present}); {s.Children.Count} in all.");
             if (!present)

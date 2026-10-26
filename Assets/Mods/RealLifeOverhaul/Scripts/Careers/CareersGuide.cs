@@ -33,6 +33,11 @@ namespace RealLifeOverhaul.Careers
                 .Fact("study_at_once", () => Whole(StudyRules.LiveMost))
                 .Fact("study_tired", () => Whole(StudyCatalogue.TiredEnergy))
                 .Fact("study_skills", () => Whole(Skills.Count))
+                .Fact("study_homework_share", () => Mille(StudyCatalogue.HomeworkShare))
+                .Fact("study_gain_top", () => Mille(StudyCatalogue.GainAtTop))
+                .Fact("study_learn_none", () => Mille(1000 - TalentCatalogue.SchoolLearning[TalentCatalogue.SelfTaught]))
+                .Fact("study_learn_degree", () => Mille(TalentCatalogue.SchoolLearning[TalentCatalogue.Bachelor] - 1000))
+                .Fact("study_learn_master", () => Mille(TalentCatalogue.SchoolLearning[TalentCatalogue.Master] - 1000))
                 .Fact("study_exam_open", () => CareersText.Hour(StudyCatalogue.ExamOpens))
                 .Fact("study_exam_close", () => CareersText.Hour(StudyCatalogue.ExamCloses));
         }
@@ -107,7 +112,88 @@ namespace RealLifeOverhaul.Careers
                 .Fact("work_rival_pay", () => Mille(ProRules.KindFactor(EmployerKind.Rival) - 1000))
                 .Fact("work_public_pay", () => Mille(1000 - ProRules.KindFactor(EmployerKind.Public)))
                 .Fact("work_loan_share", () => Bp(StudyCatalogue.LoanShareBp))
-                .Fact("work_loan_threshold", () => Guide.Money(Prices.At(StudyCatalogue.LoanThreshold) / 100f));
+                .Fact("work_loan_threshold", () => Guide.Money(Prices.At(StudyCatalogue.LoanThreshold) / 100f))
+                .Fact("work_degree_weeks", DegreeWeeks)
+                .Fact("work_screen_luck", () => Whole(ProRules.ScreenLuck))
+                .Fact("work_interview_luck", () => Whole(ProRules.InterviewLuck))
+                .Fact("work_reapply_days", () => Whole(ProRules.ReapplyDays))
+                .Fact("work_interview_from", () => CareersText.Hour(ProRules.InterviewHourLeast))
+                .Fact("work_interview_to", () => CareersText.Hour(ProRules.InterviewHourMost))
+                .Fact("work_interview_early", () => Whole(ProRules.InterviewEarlyMinutes))
+                .Fact("work_interview_late", () => Whole(ProRules.InterviewLateMinutes))
+                .Fact("work_interview_minutes", () => Whole(ProRules.InterviewMinutes))
+                .Fact("work_openings", () => Whole(ProRules.OpeningsWanted(1, false)))
+                .Fact("work_opening_least", () => Whole(ProRules.OpeningDaysLeast))
+                .Fact("work_opening_most", () => Whole(ProRules.OpeningDaysMost))
+                .Fact("work_referral_share", () => Mille(ProRules.ReferralShare))
+                .Fact("work_offer_pay_least", () => Mille(ProRules.OfferPay(1000, 0)))
+                .Fact("work_offer_pay_most", () => Mille(ProRules.OfferPay(1000, 100)))
+                .Fact("work_shortage_least", () => Mille(HiringCatalogue.ShortageLeast))
+                .Fact("work_shortage_most", () => Mille(HiringCatalogue.ShortageMost));
+            AddScoreFacts(f);
+        }
+
+        // The parts of an employer's score (ProRules.HireScore), each read from the rule itself as the change it makes to a
+        // candidate who holds what the post needs and has just the points it asks, so the page cannot say other than the rule.
+        // Worked out only as the Guide opens: nothing here runs in play.
+        private static void AddScoreFacts(Feature f)
+        {
+            f.Fact("work_score_base", () => Whole(ProRules.HireScore(ScoreBase())))
+                .Fact("work_score_fit_most", () => Whole(Gain(c => { c.Points += 100; return c; })))
+                .Fact("work_score_short", () => Whole(-Gain(c => { c.Points -= 1; return c; })))
+                .Fact("work_score_exp_days", ExperienceDays)
+                .Fact("work_score_exp_most", () => Whole(Gain(c => { c.Experience = 100000; return c; })))
+                .Fact("work_score_good", () => Whole(Gain(c => { c.Good = 1; return c; })))
+                .Fact("work_score_good_most", () => Whole(Gain(c => { c.Good = 100; return c; })))
+                .Fact("work_score_poor", () => Whole(-Gain(c => { c.Poor = 1; return c; })))
+                .Fact("work_score_name", () => Whole(Gain(c => { c.Reputation = 100; return c; })))
+                .Fact("work_score_referral", () => Whole(Gain(c => { c.Referral = true; return c; })))
+                .Fact("work_score_agency", () => Whole(Gain(c => { c.Agency = true; return c; })))
+                .Fact("work_score_honours", () => Whole(Gain(c => { c.Honours = true; return c; })))
+                .Fact("work_score_master", () => Whole(Gain(c => { c.Master = true; return c; })))
+                .Fact("work_score_record", () => Whole(-Gain(c => { c.Record = true; return c; })))
+                .Fact("work_score_boom", () => Whole(Gain(c => { c.Cycle = 0; return c; })))
+                .Fact("work_score_slowdown", () => Whole(-Gain(c => { c.Cycle = 2; return c; })))
+                .Fact("work_score_recession", () => Whole(-Gain(c => { c.Cycle = 3; return c; })))
+                .Fact("work_score_summer", () => Whole(-Gain(c => { c.Summer = true; return c; })));
+        }
+
+        /// <summary>A candidate for a first rung who holds what it needs and has just the points it asks, in an ordinary economy.</summary>
+        private static Candidate ScoreBase() => new Candidate { Qualified = true, Points = 50, Need = 50, Cycle = 1, Rank = 0 };
+
+        /// <summary>What one change to the base candidate does to an employer's score.</summary>
+        private static int Gain(System.Func<Candidate, Candidate> change) => ProRules.HireScore(change(ScoreBase())) - ProRules.HireScore(ScoreBase());
+
+        /// <summary>The game days in the profession that add a point to the score: the least the rule takes, at the careers' pace.</summary>
+        private static string ExperienceDays()
+        {
+            for (int days = 1; days <= 3650; days++)
+            {
+                int d = days;
+                if (Gain(c => { c.Experience = d; return c; }) >= 1)
+                {
+                    return Whole(LifeRules.Paced(days, GameCalendar.DaysPerYear));
+                }
+            }
+            return "0";
+        }
+
+        /// <summary>How many weeks a degree's classes take full time, the shortest to the longest: "3 to 4".</summary>
+        private static string DegreeWeeks()
+        {
+            int least = int.MaxValue, most = 0;
+            for (int i = 0; i < StudyCatalogue.All.Length; i++)
+            {
+                CourseDef c = StudyCatalogue.All[i];
+                if (c.Kind != CourseKind.Degree)
+                {
+                    continue;
+                }
+                int weeks = StudyRules.Length(c, StudyMode.FullTime) / 7;
+                least = System.Math.Min(least, weeks);
+                most = System.Math.Max(most, weeks);
+            }
+            return most == 0 ? "0" : least == most ? Whole(least) : Whole(least) + " " + CareersText.T("reallife_guide_work_to") + " " + Whole(most);
         }
 
         public static void AddLifeFacts(Feature f)

@@ -211,8 +211,8 @@ namespace RealLifeOverhaul.Meta
                     .Also("health sick sleep stress hygiene tired").Also("home_morning_news", "notification notifications summary news weather wake"),
                 S("routines").Guide("home").Need("home_life").Opts("home_routines", "home_fitness", "home_body", "home_jog")
                     .Also("cooking cook food kitchen exercise gym run diet"),
-                S("meals").For("meals").Opts("meals_seated").Opt("meals_cooked", "home_life", "home_routines").Opts("meals_dance")
-                    .Also("eat eating meal table seat chair sit plate tray dinner cook dance dancing music radio speaker loudspeaker mood"),
+                S("meals").For("meals").Opts("meals_seated").Opt("meals_cooked", "home_life", "home_routines").Opts("meals_dance", "meals_takeout")
+                    .Also("eat eating meal table seat chair sit plate tray dinner cook dance dancing music radio speaker loudspeaker mood takeout takeaway bag pack leftovers bench"),
                 S("looks").For("character").Opts("character_new_looks", "character_high_detail", "character_hair", "character_skin", "character_lighting")
                     .Also("appearance beard face"),
                 S("outfit_m").Guide("character").Opts("look2_top_m", "look2_top_m_colour", "look2_legs_m", "look2_legs_m_colour", "look_feet_m")
@@ -222,8 +222,8 @@ namespace RealLifeOverhaul.Meta
                 S("shops").Guide("leisure").Need("leisure").Opts("clothes_shops", "clothes_must_be_bought").Also("wardrobe buy outfit"),
                 S("roommates").For("home_roommates").Opts("home_roommates").Also("flatmate lodger share"),
                 S("household").For("home_household").Opts("home_household").Also("staff cleaner cook butler maid housekeeper mechanic servant chores car wash"),
-                S("utilities").For("utilities").Main("utilities")
-                    .Also("power water electricity bills utility office deposit"),
+                S("utilities").For("utilities").Main("utilities").Opt("utilities_net_speed", "utilities")
+                    .Also("power water electricity bills utility office deposit").Also("utilities_net_speed", "internet speed mbps broadband fibre tech online shop orders"),
                 S("family").For("family").Main("family").Opts("family_at_home", "family_wedding", "family_children", "family_relatives", "family_friction",
                     "family_interest", "family_year_weeks").Buttons("reallife_family_test_page").Also("partner spouse wife husband marriage kids baby"),
                 S("partner").Guide("family").Need("family").Opts("family_work", "family_wealth_mood", "family_expect").Also("partner money rich wealth job work half days part time"),
@@ -348,12 +348,14 @@ namespace RealLifeOverhaul.Meta
                 S("cityeco").For("economy_city").Need("economy").Main("economy_city").Opts("economy_city_level", "economy_rate_ahead").Also("prices rates boom recession inflation"),
                 S("ventures").For("ventures").Opts("ventures_investors", "ventures_level").Also("invest investor pitch deal"),
                 S("markets").For("markets", "markets_listing", "markets_bots", "markets_derivatives").Main("ventures_market")
-                    .Opts("markets_margin", "markets_listing", "markets_bots", "markets_dividend_notes", "markets_bonds", "markets_bond_so_far", "markets_large", "markets_reinvest",
-                        "markets_derivatives")
+                    .Opts("markets_margin", "markets_listing", "markets_bots", "markets_dividend_notes", "markets_bonds", "markets_bond_so_far", "markets_derivatives")
                     .Also("shares stocks invest dividend broker trading candles chart margin short property trust reit")
                     .Also("markets_listing", "listing flotation offer prospectus shareholders takeover")
                     .Also("markets_bots", "bot bots robot automated algorithm strategy stop loss take profit limit order trend momentum")
                     .Also("markets_bonds", "bond bonds treasury gilt deposit certificate fixed income interest coupon reinvest savings rollover ladder")
+                    .Also("markets_derivatives", "futures future options option call put hedge hedging derivative derivatives strike premium raw materials commodity factory import"),
+                S("investor").Guide("markets").Need("ventures_market").Opts("markets_holding", "markets_large", "markets_reinvest")
+                    .Also("markets_holding", "holding limit cap most stake tenth quarter half whole control majority percent shares company")
                     .Also("markets_large", "large big block limit volume worked order algorithm vwap slice wealth investor")
                     .Also("markets_reinvest", "reinvest drip dividend reinvestment compound distribution trust")
                     .Also("markets_derivatives", "futures future options option call put hedge hedging derivative derivatives strike premium raw materials commodity factory import"),
@@ -383,7 +385,7 @@ namespace RealLifeOverhaul.Meta
                 S("people").For("tech_people").Opts("tech_people").Also("professionals staff employees skills skill percent role promotion review course certificate notice severance lay off poach"),
                 S("jobsboard").For("tech_jobs").Opt("tech_jobs", "tech_people")
                     .Also("jobs board hire hiring recruit recruitment applicants interview offer headhunter search labour market candidates"),
-                S("techsector").For("tech_sector").Opt("tech_sector", "tech_people").Opt("tech_offer_notes", "tech_sector")
+                S("techsector").For("tech_sector").Opt("tech_sector", "tech_people").Opt("tech_offer_notes", "tech_sector").Opt("tech_infra_offer", "tech_sector")
                     .Also("tech software saas app game studio consultancy cybersecurity security breach outage product subscription contract tender developer"),
                 S("startups").For("tech_startups").Opt("tech_startups", "tech_sector")
                     .Also("startup startups venture capital vc angel fund pitch term sheet valuation equity round board shares options dilution"),

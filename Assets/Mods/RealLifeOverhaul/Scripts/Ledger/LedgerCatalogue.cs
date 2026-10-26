@@ -13,6 +13,14 @@ namespace RealLifeOverhaul.Ledger
         public const int KioskOpenHour = 6, KioskCloseHour = 20;   // hours of the day
 
         public const int KiosksWanted = 2;
+
+        /// <summary>
+        /// The desk's and the front page's words for the kiosks: the sentence about them only while the option has them, so
+        /// the paper never advertises a kiosk that is not there.
+        /// </summary>
+        public static string OfferKey(bool kiosks) => kiosks ? P + "_ledger_desk_offer" : P + "_ledger_desk_offer_plain";
+        public static string NoHomeKey(bool kiosks) => kiosks ? P + "_ledger_desk_no_home" : P + "_ledger_desk_no_home_plain";
+        public static string AdBodyKey(bool kiosks) => kiosks ? P + "_ledger_ad_body" : P + "_ledger_ad_body_plain";
         public const float KioskNearest = 30f;      // metres from the home's door: not on its doorstep
         public const float KioskFurthest = 320f;    // metres: within a few minutes' walk
         public const float KioskApart = 90f;        // metres between two kiosks

@@ -74,6 +74,7 @@ namespace RealLifeOverhaul.Economy
                 for (int i = 0; i < _places.Count; i++)
                 {
                     WebPlace place = _places[i];
+                    NetHour(place, hour);
                     place.Pickers = OnlineGame.Pickers(place, _state, hour);
                     _stockAt = place;
                     int idle = place.Shop.Idle;
@@ -256,6 +257,7 @@ namespace RealLifeOverhaul.Economy
         {
             OnlineGame.ReadSite(place, _state);
             OnlineGame.GuessRoads(place, _centres, _hasCentre);
+            place.Site.Mbps = Speed(place.Reg, -1);
             int campaign = OnlineBridges.Campaign != null && place.Reg != null ? OnlineBridges.Campaign(place.Reg) : 0;
             OnlineRules.Plan(place.Shop, place.Site, day, campaign, cycle, season, _state.Shops.Count);
             if (Verbose && say)
@@ -265,7 +267,8 @@ namespace RealLifeOverhaul.Economy
                              + OnlineCatalogue.OrdersMost[OnlineCatalogue.Quality(place.Shop.Quality)] + ": quality " + place.Shop.Quality + (place.Shop.InHouse ? " built in-house" : string.Empty)
                              + ", " + s.Lines + " product(s), the game's demand " + s.Need + " of 100, prices " + s.Price + ", promise " + place.Shop.Promise + ", stars " + s.Stars
                              + ", advertising " + s.Ads + "%, a campaign at the business " + s.Campaign + "%, the economy " + s.Cycle + ", season " + s.Season + ", " + s.Crowd
-                             + " site(s) sharing the city (factors in thousandths)" + (place.Shop.Offline ? "; offline, hosting unpaid" : string.Empty) + ": PASS");
+                             + " site(s) sharing the city (factors in thousandths); the connection " + s.Mbps + " Mbps, a bound of " + OnlineRules.Most(place.Shop.Quality, s.Mbps)
+                             + " a day" + (place.Shop.Offline ? "; offline, hosting unpaid" : string.Empty) + ": PASS");
             }
         }
 

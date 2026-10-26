@@ -36,6 +36,7 @@ namespace RealLifeOverhaul
                 NetworkBridges.Freelance = Freelance;
                 NetworkBridges.Investor = Investor;
                 SocialLinks.Met = Met;
+                SocialLinks.NetworkForget = NetworkDirector.Forget;
                 SocialLinks.DayDone = DayDone;
                 SocialLinks.Position = Position;
                 SocialPhone.NetworkLabel = Label;
@@ -48,6 +49,7 @@ namespace RealLifeOverhaul
             internal static void Disconnect()
             {
                 SocialLinks.Met = null;
+                SocialLinks.NetworkForget = null;
                 SocialLinks.DayDone = null;
                 SocialLinks.Position = null;
                 SocialPhone.NetworkLabel = null;
@@ -61,7 +63,7 @@ namespace RealLifeOverhaul
 
             private static NetPerson Info(SocialPerson p)
             {
-                return new NetPerson { Index = p.Index, Name = p.Name, Origin = (int)p.Origin, Stage = (int)p.Stage, MetDay = p.MetDay, Met = p.Met };
+                return new NetPerson { Index = p.Index, Seed = p.Seed, Name = p.Name, Origin = (int)p.Origin, Stage = (int)p.Stage, MetDay = p.MetDay, Met = p.Met };
             }
 
             private static NetVia ViaOf(SocialPerson by)

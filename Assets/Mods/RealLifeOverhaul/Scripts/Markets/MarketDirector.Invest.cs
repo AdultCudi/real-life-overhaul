@@ -27,6 +27,7 @@ namespace RealLifeOverhaul.Markets
             _engine.LargeOn = Settings.MarketsLarge;
             _engine.ReinvestOn = Settings.MarketsReinvest;
             _engine.BondsOn = Settings.MarketsBonds;
+            MarketTrading.HoldTo(Settings.MarketsHolding);   // a holding already past a lower choice is kept: only new buying is refused
         }
 
         // Once a second: the options; one switched off, what is open of it is cancelled once the market is caught up.
@@ -143,7 +144,7 @@ namespace RealLifeOverhaul.Markets
                         "price", MarketText.Price(Average(n.Filled, n.Done)));
                     break;
                 default:
-                    Queue(NotificationType.Warning, "reallife_mkt_inv_note_stopped", "name", name, "done", Count(n.Done), "total", Count(n.Total), "why", MarketText.Why(n.Why));
+                    Queue(NotificationType.Warning, "reallife_mkt_inv_note_stopped", "name", name, "done", Count(n.Done), "total", Count(n.Total), "why", MarketText.Why(n.Why, k));
                     break;
             }
         }
@@ -202,6 +203,67 @@ namespace RealLifeOverhaul.Markets
             Logger?.Info(Test + " test: the dividend owed on " + (k != null ? k.Name : stock.ToString()) + " paid now; " + (p != null ? p.Reinvest : 0) + "% of it put back "
                          + (Trading ? "at once" : "at the next open") + ".");
             Moved();
+        }
+
+        /// <summary>
+        /// Test button: the holding option as the order checks read it. On the largest city company the player neither holds
+        /// nor has orders in, a holding is put in for a moment marked as a test: one short of the most a purchase of one share
+        /// passes, of two is refused, and one over the most can still be sold. Taken out before anything else runs; nothing is
+        /// filled or saved. PASS or FAIL in Player.log and a notification.
+        /// </summary>
+        public void TestHolding()
+        {
+            FinishMoment();
+            const string Test = "The most of a company you may hold";
+            if (!TestReady(Test, true))
+            {
+                return;
+            }
+            FollowOptions();
+            MarketState s = State;
+            Stock k = null;
+            for (int i = 0; i < s.Stocks.Count; i++)
+            {
+                Stock c = s.Stocks[i];
+                if (c.Listed && c.Own == null && c.Def != null && !c.Def.Holding && c.BidCents == 0 && s.Position(c.Id) == null
+                    && MarketTrading.Reserved(s, c.Id, OrderSide.Buy) == 0 && MarketTrading.Reserved(s, c.Id, OrderSide.Sell) == 0 && MarketTrading.MostPerOrder(c) > 2
+                    && (k == null || c.MarketValue > k.MarketValue))
+                {
+                    k = c;
+                }
+            }
+            if (k == null || MarketTrading.OpenOrders(s) >= MarketCatalogue.OrdersMost)
+            {
+                TestRefusals.TellKey(Logger, Test, "reallife_mkt_test_no_company");
+                return;
+            }
+            int choice = Math.Max(0, Math.Min(MarketCatalogue.HoldingCapBp.Length - 1, Settings.MarketsHolding));
+            int bp = MarketCatalogue.HoldingCapBp[choice];
+            long want = Math.Max(1L, k.Shares * bp / 10000L), most = MarketTrading.MostHeld(k);
+            var p = new Position { StockId = k.Id, Shares = most - 1, Cost = 1, Test = true, OpenedDay = s.Day };
+            OrderWhy one, two, sell;
+            s.Positions.Add(p);
+            try
+            {
+                one = HoldingWhy(s, k, OrderSide.Buy, 1);
+                two = HoldingWhy(s, k, OrderSide.Buy, 2);
+                p.Shares = most + 1;   // as after the option is lowered: kept, and can be sold
+                sell = HoldingWhy(s, k, OrderSide.Sell, 1);
+            }
+            finally
+            {
+                s.Positions.Remove(p);
+            }
+            bool pass = most == want && MarketTrading.HoldingBp == bp && one != OrderWhy.HoldingLimit && two == OrderWhy.HoldingLimit && sell != OrderWhy.HoldingLimit;
+            Logger?.Info(Test + " test: option " + choice + " (" + bp + " bp), " + k.Name + " has " + k.Shares + " shares; the most read " + most + ", wanted " + want
+                         + "; one under the most then 1 share: " + one + ", then 2: " + two + "; one over the most, selling 1: " + sell + ": " + (pass ? "PASS" : "FAIL"));
+            Tell(pass ? NotificationType.Success : NotificationType.Error, pass ? "reallife_mkt_test_holding_pass" : "reallife_mkt_test_holding_fail",
+                new[] { "name", k.Name, "pct", MarketText.Share(bp), "count", Count(most) });
+        }
+
+        private OrderWhy HoldingWhy(MarketState s, Stock k, OrderSide side, long qty)
+        {
+            return MarketTrading.Check(s, k, side, OrderType.Market, qty, 0, 0, long.MaxValue / 4, CommissionLeast, true, false, MarketCatalogue.PhaseOpen).Why;
         }
     }
 }

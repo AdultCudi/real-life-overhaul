@@ -30,8 +30,8 @@ The upload is done from inside the game. Everything else is prepared here. What 
    | `Locales\en.json` | about 0.7 MB |
    | `Bundles\reallife_anim` | 6,294,571 bytes |
    | `Bundles\reallife_character` | 44,520,019 bytes |
-   | `Bundles\reallife_props` | 12,023,742 bytes |
-   | `Bundles\reallife_props_2` | 533,720 bytes (the second props bundle: Birchwood School's three buildings and their small atlas) |
+   | `Bundles\reallife_props` | 10,650,842 bytes |
+   | `Bundles\reallife_props_2` | 1,956,592 bytes (the second props bundle: Birchwood School's three buildings, the seven corner buildings and their atlas) |
    | `Bundles\reallife_props_site` | 535,280 bytes (the building sites' props and Uptown's stadium) |
 
    The whole folder is uploaded as it stands (about 66 MB), so delete anything else you find in it. There must be exactly one `.dll` in the folder's root, and `thumbnail.jpg` must be the only picture there: the game takes the first `.jpg`, `.jpg` or `.jpeg` in the root that is within its size limit (1 MB) as the thumbnail, whatever it is called.
@@ -52,7 +52,7 @@ If it fails, the game shows which of these it was: not connected to Steam, the f
 
 ## Straight afterwards: remove the local copy
 
-The game loads every folder in `ModsLocal` as well as every Workshop item that is switched on. After the upload you have both. They are the same DLL, so the game loads the assembly once, but it registers each folder as a mod of its own and starts the mod's classes twice (it only looks for two mods with one assembly name among the Workshop items and among the `ModsLocal` folders separately). Up to 0.1.0 that meant two copies of every feature running at once. From 0.1.1 the second copy to start writes one warning to `Player.log` ("switched on twice", "already running in this city") and does nothing; which copy is the one running, and so whose options and key choices are in use, is then whichever the game started first. Keep one:
+The game loads every folder in `ModsLocal` as well as every Workshop item that is switched on. After the upload you have both. They share the assembly name RealLifeOverhaul, and the game checks that across every mod it finds, Workshop items and `ModsLocal` folders together (`ModDiscoveryRegistry`, "Duplicate mod assembly name detected"): it loads neither and lists both as failed in the Mods menu. Keep one:
 
 - Quit the game and move `ModsLocal\RealLifeOverhaul` somewhere outside `ModsLocal` (or delete it: the build puts it back).
 - While you work on the mod again, do the opposite: keep the `ModsLocal` copy and untick the Workshop item under **Mods** in the main menu.

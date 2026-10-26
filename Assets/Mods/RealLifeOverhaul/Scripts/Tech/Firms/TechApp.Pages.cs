@@ -100,6 +100,32 @@ namespace RealLifeOverhaul.Tech
             _director.PathMore(box);
         }
 
+        // The office's connection and what it does to the firm's work, as the morning's work read it (or as it reads now,
+        // before the first morning since loading), and the plan that would lift it; nothing with speed not counted.
+        private static void NetLine(InfoBox box, FirmPlace firm)
+        {
+            int mbps = firm.Mbps != NetSpeedRules.Unknown ? firm.Mbps : TechBridges.PlanMbpsAt(firm.Reg), kind = firm.File.Kind;
+            if (mbps == NetSpeedRules.Unknown)
+            {
+                return;
+            }
+            if (mbps == NetSpeedRules.Grace)
+            {
+                box.Line(TechText.T("reallife_tech_firm_net_grace"));
+                return;
+            }
+            int next = NetSpeedRules.NextFloor(mbps);
+            if (mbps == 0)
+            {
+                box.Line(TechText.T("reallife_tech_firm_net_none", "mbps", next.ToString(), "work", TechText.Mille(FirmsRules.Connection(kind, next))), CellTone.Yellow);
+                return;
+            }
+            int work = FirmsRules.Connection(kind, mbps);
+            string lift = next > 0 ? TechText.T("reallife_tech_firm_net_lift", "mbps", next.ToString(), "work", TechText.Mille(FirmsRules.Connection(kind, next)))
+                : TechText.T("reallife_tech_firm_net_top");
+            box.Line(TechText.Fill("reallife_tech_firm_net", "mbps", mbps.ToString(), "work", TechText.Mille(work), "lift", lift), work < 1000 ? CellTone.Yellow : CellTone.Plain);
+        }
+
         internal static void Step(InfoBox box, bool done, string key, string needs)
         {
             box.Line(TechText.T(key) + " " + (done ? TechText.T("reallife_tech_path_done") : needs ?? TechText.T("reallife_tech_path_not_yet")));
@@ -124,6 +150,7 @@ namespace RealLifeOverhaul.Tech
             box.Line(TechText.Fill("reallife_tech_firm_crew", "people", firm.People.ToString(), "engineering", c.Engineering.ToString(), "testing", c.Testing.ToString(), "design", c.Design.ToString(),
                 "product", c.Product.ToString(), "selling", c.Selling.ToString(), "support", c.Support.ToString(),
                 "spare", firm.Spare < 1000 ? TechText.T("reallife_tech_firm_spare", "share", TechText.Mille(firm.Spare)) : string.Empty));
+            NetLine(box, firm);
             if (FirmsCatalogue.MakesProducts[m.Kind] != 0)
             {
                 box.Line(RoomLine(f, place));

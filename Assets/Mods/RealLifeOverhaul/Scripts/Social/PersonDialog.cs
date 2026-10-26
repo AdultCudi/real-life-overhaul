@@ -613,7 +613,7 @@ namespace RealLifeOverhaul
             {
                 amount *= 0.5f;
             }
-            return Mathf.RoundToInt(amount / 25f) * 25;
+            return Mathf.RoundToInt(Prices.At(amount) / 25f) * 25;
         }
 
         private DialogEntry Borrow()
@@ -679,8 +679,21 @@ namespace RealLifeOverhaul
             {
                 return Close("reallife_social_movein_no");
             }
-            _p.MovedIn = true;
-            SocialLife.Remember(_p, MemoryCode.MovedIn);
+            if (SocialPhone.FamilyKeepsMoveIn != null && SocialPhone.FamilyMoveIn != null && SocialPhone.FamilyKeepsMoveIn(_p))
+            {
+                // Family life keeps where its partner lives (room, the home, the bed, the rent share): it moves them in, and tells
+                // Social through FamilyEvent.MovedIn, which marks them and writes the memory.
+                string why = SocialPhone.FamilyMoveIn();
+                if (why != null)
+                {
+                    return Close(why);
+                }
+            }
+            else
+            {
+                _p.MovedIn = true;
+                SocialLife.Remember(_p, MemoryCode.MovedIn);
+            }
             ModState.AddModifier(ModState.MoodUpBig);
             return Close("reallife_social_movein_yes");
         }

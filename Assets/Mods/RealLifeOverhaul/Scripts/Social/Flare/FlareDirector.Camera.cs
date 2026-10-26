@@ -26,7 +26,7 @@ namespace RealLifeOverhaul.Flare
             }
             if (GameConfirm.IsOpen)
             {
-                Tell(NotificationType.Warning, "reallife_flare_note_shot_busy", null);
+                Notice(NotificationType.Warning, "reallife_flare_note_shot_busy", null);
                 return;
             }
             _shooting = true;
@@ -54,7 +54,7 @@ namespace RealLifeOverhaul.Flare
                 }
                 if (shot == null)
                 {
-                    Tell(NotificationType.Warning, "reallife_flare_note_shot_failed", null);
+                    Notice(NotificationType.Warning, "reallife_flare_note_shot_failed", null);
                     yield break;
                 }
                 string path = Path.Combine(FlarePictures.Folder, "RealLifeOverhaul_Flare_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".png");
@@ -77,7 +77,7 @@ namespace RealLifeOverhaul.Flare
                 bool made = work.Status == TaskStatus.RanToCompletion && work.Result;
                 if (!made || !Running)
                 {
-                    Tell(NotificationType.Warning, "reallife_flare_note_shot_failed", null);
+                    Notice(NotificationType.Warning, "reallife_flare_note_shot_failed", null);
                     yield break;
                 }
                 Logger?.Info("Flare: a shot of the screen for a post (" + Path.GetFileName(path) + ", its small copy only).");
@@ -168,7 +168,7 @@ namespace RealLifeOverhaul.Flare
             {
                 _view.WantCompose(d.Id);
             }
-            Tell(NotificationType.Info, "reallife_flare_note_selfie_ready", _openCompose);
+            Notice(NotificationType.Info, "reallife_flare_note_selfie_ready", _openCompose);
         }
     }
 }

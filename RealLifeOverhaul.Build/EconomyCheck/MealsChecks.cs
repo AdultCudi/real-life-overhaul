@@ -19,6 +19,7 @@ internal static partial class Program
         DanceRuleChecks();
         MealSourceChecks();
         MealTextChecks();
+        Takeout();   // takeout and plates: TakeoutChecks.cs
     }
 
     private static SeatOption MealSeatAt(float flat, float path, bool table, bool free = true, float up = 0f)
@@ -260,7 +261,8 @@ internal static partial class Program
 
     private static void MealSourceChecks()
     {
-        string[] names = { "MealsDirector.cs", "MealsDirector.Dance.cs", "MealsDirector.Tests.cs", "MealsGame.cs", "MealBody.cs", "DanceButton.cs", "MealsGuide.cs", "MealsRules.cs", "MealsText.cs" };
+        string[] names = { "MealsDirector.cs", "MealsDirector.Dance.cs", "MealsDirector.Tests.cs", "MealsDirector.Takeout.cs", "MealsGame.cs", "MealBody.cs", "DanceButton.cs", "TakeoutButton.cs",
+                           "MealsBridges.cs", "MealsGuide.cs", "MealsRules.cs", "MealsText.cs" };   // TakeoutGame.cs, the one file that eats from the bag, is checked in TakeoutChecks.cs
         var code = new Dictionary<string, string>();
         foreach (string name in names)
         {
@@ -273,7 +275,7 @@ internal static partial class Program
         Check(!Regex.IsMatch(all, @"ChangeHunger|SetCurrentHunger|ChangeMoney|GenerateEnergy|EnergyGeneratedFromConsumables|ReduceFromCargo|GameEvent\.Invoke|TryToConsume"),
             "meals sources: nothing of the food's effect is done here: it happened once, in the game or home cooking, before any of this");
         // Only the Game, Body and Button files touch the game; nothing is saved, sent or done to the clock.
-        foreach (string name in new[] { "MealsDirector.cs", "MealsDirector.Dance.cs", "MealsDirector.Tests.cs", "MealsRules.cs", "MealsText.cs", "MealsGuide.cs" })
+        foreach (string name in new[] { "MealsDirector.cs", "MealsDirector.Dance.cs", "MealsDirector.Tests.cs", "MealsDirector.Takeout.cs", "MealsBridges.cs", "MealsRules.cs", "MealsText.cs", "MealsGuide.cs" })
         {
             Check(!Regex.IsMatch(MealCode(code[name]), @"\bInstanceBehavior\b|\bPlayerDances\b|\bSitOnChair\b|\bSetGoal\b|\bNotifications\.|\bLoudSpeakersManager\b|\bPhysics\.|\bNavMesh\.|\ballItemControllers\b"),
                 "meals sources: only MealsGame, MealBody and DanceButton touch the game (" + name + ")");
@@ -345,7 +347,7 @@ internal static partial class Program
         // The options, the page and the feature list.
         string settings = ModSource(@"Core\Settings.cs");
         string tree = ModSource(@"Meta\OptionsTree.cs");
-        foreach (string id in new[] { "Seated", "Cooked", "Dance" })
+        foreach (string id in new[] { "Seated", "Cooked", "Dance", "Takeout" })
         {
             Check(settings.Contains("Meals" + id + "Id = \"meals_" + id.ToLowerInvariant() + "\"") && settings.Contains("Meals" + id + " = Bool(modId, Meals" + id + "Id, Meals" + id + ")")
                   && settings.Contains("public static bool Meals" + id + " = true;") && tree.Contains("\"meals_" + id.ToLowerInvariant() + "\""),
@@ -363,10 +365,10 @@ internal static partial class Program
         {
             keys.Add(m.Groups[1].Value);
         }
-        keys.AddRange(new[] { "reallife_opt_sec_meals", "reallife_opt_tip_meals_seated", "reallife_opt_tip_meals_cooked", "reallife_opt_tip_meals_dance" });
+        keys.AddRange(new[] { "reallife_opt_sec_meals", "reallife_opt_tip_meals_seated", "reallife_opt_tip_meals_cooked", "reallife_opt_tip_meals_dance", "reallife_opt_tip_meals_takeout" });
         Check(keys.Count >= 20, "meals texts: its keys are found: " + keys.Count);
         string[] notices = { MealsText.CannotDance, MealsText.Lifted, MealsText.NoSeat, MealsText.NoMusic };
-        string[] facts = { "{meals_reach}", "{meals_least}", "{meals_most}", "{meals_dance_minutes}", "{meals_dance_hours}" };
+        string[] facts = { "{meals_reach}", "{meals_least}", "{meals_most}", "{meals_dance_minutes}", "{meals_dance_hours}", "{meals_takeout_most}" };
         string guide = MealsSource("MealsGuide.cs");
         foreach (string fact in facts)
         {

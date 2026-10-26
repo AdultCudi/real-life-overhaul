@@ -276,6 +276,7 @@ namespace RealLifeOverhaul.Utilities
                 BeginGrace(today);
                 OnSaveGame();   // kept in the save at once: switched off and on before a save, it is read back, not begun again
             }
+            MeetSpeed(today);
             BroadbandRules.Apply(_state.Network, today);   // the company as a provider, as this save has it
             Logger?.Info("Utilities: " + (fresh ? "started in this save" : "read from the save (line v" + version + ")") + ": " + _state.Accounts.Count + " account(s) for "
                          + _places.Count + " place(s); the month began on day " + _state.MonthStart
@@ -505,10 +506,15 @@ namespace RealLifeOverhaul.Utilities
             Turns(today);
             Dues(today);
             Outages(today);
+            int shopsGraced = _state.GraceUntil > 0 && today >= _state.GraceUntil ? ShopsGraced(_state.GraceUntil - 1) : 0;   // as on the grace's last day, before it ends
             if (InternetRules.EndGrace(_state, today))
             {
                 UtilitiesText.Toast(NotificationType.Warning, UtilitiesText.T("reallife_net_toast_grace_over"), 14f);
                 UtilitiesBridges.Record?.Invoke("reallife_net_toast_grace_over", new Dictionary<string, string>(0));
+                if (shopsGraced > 0)
+                {
+                    UtilitiesText.Toast(NotificationType.Warning, UtilitiesText.T("reallife_net_toast_shop_grace_over", "count", shopsGraced.ToString()), 14f);
+                }
                 Logger?.Info("Utilities: the internet's grace period ended on day " + today + ".");
             }
             Unconnected();
@@ -540,6 +546,7 @@ namespace RealLifeOverhaul.Utilities
             }
             Refresh();   // a place given up since the morning closes now, never closed or billed again
             Effects();
+            MeetSpeed(UtilitiesGame.Today);
             if (_heldUntil >= 0 && UtilitiesGame.Today * 24 + SaveGameManager.Current.Hour >= _heldUntil)
             {
                 _heldUntil = -1;

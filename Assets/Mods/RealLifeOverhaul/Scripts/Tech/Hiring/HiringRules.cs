@@ -571,7 +571,7 @@ namespace RealLifeOverhaul.Tech
         {
             int made = 0;
             RoleDef r = TalentCatalogue.Role(search.Role);
-            int most = HiringCatalogue.SeekersMost + HiringCatalogue.SearchCandidates * HiringCatalogue.SearchesMost;
+            int most = HiringCatalogue.SeekersMost + HiringCatalogue.SearchSeekersMost;
             for (int k = 0; k < HiringCatalogue.SearchCandidates && f.Seekers.Count < most; k++)
             {
                 int id = f.Next();
@@ -584,6 +584,75 @@ namespace RealLifeOverhaul.Tech
                 s.Passive = true;
                 s.Claim = 0;
                 s.Notice = 7 + level * 5;
+                s.Until = day + HiringCatalogue.ApplicantDays;
+                s.Ask = AskOf(f.Seed, s, rate, shortage);
+                f.Seekers.Add(s);
+                f.Applicants.Add(new Applicant { Id = f.Next(), Seeker = s.Id, Ad = search.Id, Day = day, Stage = (int)ApplyStage.Shortlisted, Interest = 600, Refs = true });
+                search.Came++;
+                made++;
+            }
+            return made;
+        }
+
+        /// <summary>Whether a role looks after a data centre's racks on site, as a crew search finds them.</summary>
+        public static bool CrewRole(int role) => Array.IndexOf(HiringCatalogue.CrewRoles, role) >= 0;
+
+        /// <summary>The level a crew search finds for a role: junior to staff, inside the role's own range.</summary>
+        public static int CrewLevel(int role, int level)
+        {
+            RoleDef r = TalentCatalogue.Role(role);
+            int least = Math.Max(r.LeastLevel, HiringCatalogue.CrewLeastLevel), most = Math.Min(r.MostLevel, HiringCatalogue.CrewMostLevel);
+            return TalentCatalogue.Clamp(level, least, Math.Max(least, most));
+        }
+
+        /// <summary>A crew search's fee for one hire, cents: a share of a year's pay at the going rate, larger the more senior.</summary>
+        public static int CrewFeeEach(int goingCents, int level)
+        {
+            int bp = HiringCatalogue.CrewFeeBp[TalentCatalogue.Clamp(level, 0, HiringCatalogue.CrewFeeBp.Length - 1)];
+            return (int)Math.Min(int.MaxValue, (long)Math.Max(0, goingCents) * TalentCatalogue.YearHours * bp / 10000);
+        }
+
+        /// <summary>What a crew search takes when it is briefed: a third of the fee, rounded up, so it covers a third of the hires' shares to the cent.</summary>
+        public static int CrewRetainer(int fee) => (int)(((long)Math.Max(0, fee) + 2) / 3);
+
+        /// <summary>The candidates a crew search brings for so many technicians: half as many again, one more at the least, within its cap.</summary>
+        public static int CrewCandidates(int crew)
+        {
+            int c = TalentCatalogue.Clamp(crew, 1, HiringCatalogue.CrewMost);
+            return Math.Min(HiringCatalogue.CrewCandidatesMost, c + Math.Max(1, c / 2));
+        }
+
+        /// <summary>
+        /// What a crew search is owed now, cents: its fee a hire for each started, less what is paid (the retainer counts towards
+        /// the first). Each hire past the brief pays its share too; nothing more while nobody has started.
+        /// </summary>
+        public static int CrewDue(JobAd search)
+        {
+            if (search == null || search.Crew <= 0)
+            {
+                return 0;
+            }
+            long earned = (long)search.Fee * Math.Max(0, search.Hired) / search.Crew;
+            return (int)Math.Max(0, Math.Min(int.MaxValue, earned - search.FeePaid));
+        }
+
+        /// <summary>
+        /// A crew search delivers: candidates for the role at its level, vetted (no claim past the truth, references taken), each
+        /// shortlisted for the brief. Seeded by the save's seed and the ids, so the same on every machine.
+        /// </summary>
+        public static int DeliverCrew(HiringFile f, JobAd search, int day, RateOf rate, int shortage, IList<string> districts)
+        {
+            int made = 0, want = CrewCandidates(search.Crew);
+            int most = HiringCatalogue.SeekersMost + HiringCatalogue.SearchSeekersMost;
+            for (int k = 0; k < want && f.Seekers.Count < most; k++)
+            {
+                int id = f.Next();
+                string district = districts != null && districts.Count > 0 ? districts[TechRandom.Range(f.Seed, id, 44, 0, 0, districts.Count - 1)] : string.Empty;
+                Seeker s = NewSeeker(f.Seed, id, day, false, search.Role, CrewLevel(search.Role, search.Level), rate, shortage, district);
+                int bandMiddle = (TalentCatalogue.LevelSkillLeast[s.P.Level] + TalentCatalogue.LevelSkillMost[s.P.Level]) / 2;
+                s.P.Main = Math.Max(s.P.Main, bandMiddle * 1000);
+                s.Passive = true;
+                s.Claim = 0;
                 s.Until = day + HiringCatalogue.ApplicantDays;
                 s.Ask = AskOf(f.Seed, s, rate, shortage);
                 f.Seekers.Add(s);

@@ -98,7 +98,7 @@ namespace RealLifeOverhaul
 
         public override bool OwnsInteractKey => _panel.Up;
 
-        public override bool QuitIsFailure => _step == Step.Round && _delivered * 2 < _count;
+        public override bool QuitIsFailure => _delivered * 2 < Mathf.Max(1, _count);
 
         protected override bool OnBegin(float now)
         {

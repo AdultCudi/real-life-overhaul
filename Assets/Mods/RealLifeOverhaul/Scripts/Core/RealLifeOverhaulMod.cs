@@ -923,6 +923,9 @@ namespace RealLifeOverhaul
                     v => Settings.MarketsDerivatives = v)
                 .AddToggle(Settings.MarketsBuildersId, "reallife_mkt_builders_opt", Settings.MarketsBuilders,
                     v => Settings.MarketsBuilders = v)
+                .AddDropdown(Settings.MarketsHoldingId, "reallife_mkt_opt_holding",
+                    new[] { "reallife_mkt_opt_holding_tenth", "reallife_mkt_opt_holding_quarter", "reallife_mkt_opt_holding_half", "reallife_mkt_opt_holding_all" }, Settings.MarketsHolding,
+                    v => Settings.MarketsHolding = v)
                 .AddButton("reallife_mkt_test_open", () => Markets.MarketDirector.Instance?.TestOpen())
                 .AddButton("reallife_mkt_test_crisis", () => Markets.MarketDirector.Instance?.TestNews(true))
                 .AddButton("reallife_mkt_test_windfall", () => Markets.MarketDirector.Instance?.TestNews(false))
@@ -935,6 +938,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_mkt_drv_test_call", () => Markets.MarketDirector.Instance?.TestCall())
                 .AddButton("reallife_mkt_inv_test_work", () => Markets.MarketDirector.Instance?.TestWorkedDay())
                 .AddButton("reallife_mkt_inv_test_back", () => Markets.MarketDirector.Instance?.TestPutBack())
+                .AddButton("reallife_mkt_test_holding", () => Markets.MarketDirector.Instance?.TestHolding())
                 .AddButton("reallife_mkt_inv_test_roll", () => Markets.MarketDirector.Instance?.TestRollover())
                 .AddButton("reallife_lst_test_list", () => Markets.MarketDirector.Instance?.TestListing())
                 .AddButton("reallife_lst_test_results", () => Markets.MarketDirector.Instance?.TestOwnResults())
@@ -983,6 +987,7 @@ namespace RealLifeOverhaul
                     new[] { "reallife_meta_preset_relaxed", "reallife_meta_preset_standard", "reallife_meta_preset_realistic", "reallife_meta_preset_hardcore" }, Settings.EconomyCompanyLevel,
                     v => Settings.EconomyCompanyLevel = v)
                 .AddButton("reallife_co_test_raise", () => Economy.CompanyDirector.Instance?.TestRaise())
+                .AddButton("reallife_co_test_picked_raise", () => Economy.CompanyDirector.Instance?.TestPickedRaise())
                 .AddButton("reallife_co_test_offer", () => Economy.CompanyDirector.Instance?.TestOffer())
                 .AddButton("reallife_co_test_strike", () => Economy.CompanyDirector.Instance?.TestStrike())
                 .AddButton("reallife_co_test_claim", () => Economy.CompanyDirector.Instance?.TestFireClaim())
@@ -1056,11 +1061,14 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_hire_test_applicants", () => Tech.TechDirector.Instance?.TestApplicants())
                 .AddButton("reallife_hire_test_market", () => Tech.TechDirector.Instance?.TestMarketDay())
                 .AddButton("reallife_hire_test_search", () => Tech.TechDirector.Instance?.TestSearch())
+                .AddButton("reallife_crew_test", () => Tech.TechDirector.Instance?.TestCrewSearch())
                 .AddButton("reallife_hire_test_orphan", () => Tech.TechDirector.Instance?.TestOrphanRegistration())
                 .AddToggle(Settings.TechSectorId, "reallife_tech_enabled", Settings.TechSector,
                     v => Settings.TechSector = v)
                 .AddToggle(Settings.TechOfferNotesId, "reallife_tech_opt_offer_notes", Settings.TechOfferNotes,
                     v => Settings.TechOfferNotes = v)
+                .AddToggle(Settings.TechInfraOfferId, "reallife_infra_opt_offer", Settings.TechInfraOffer,
+                    v => Settings.TechInfraOffer = v)
                 .AddButton("reallife_tech_test_offer", () => Tech.TechDirector.Instance?.TestContractOffer())
                 .AddButton("reallife_tech_test_tender", () => Tech.TechDirector.Instance?.TestTender())
                 .AddButton("reallife_tech_test_move", () => Tech.TechDirector.Instance?.TestMove())
@@ -1068,6 +1076,8 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_tech_test_breach", () => Tech.TechDirector.Instance?.TestBreach())
                 .AddButton("reallife_infra_test_down", () => Tech.TechDirector.Instance?.TestCentreDown())
                 .AddButton("reallife_infra_test_price_war", () => Tech.TechDirector.Instance?.TestPriceWar())
+                .AddButton("reallife_infra_test_offer", () => Tech.TechDirector.Instance?.TestCentreOffer())
+                .AddButton("reallife_tech_test_net", () => Tech.TechDirector.Instance?.TestNet())
                 .AddToggle(Settings.TechStartupsId, "reallife_vc_enabled", Settings.TechStartups,
                     v => Settings.TechStartups = v)
                 .AddButton("reallife_vc_test_pitch", () => Tech.TechDirector.Instance?.TestPitch())
@@ -1095,6 +1105,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_online_test_return", () => Economy.OnlineDirector.Instance?.TestReturn())
                 .AddButton("reallife_online_test_day", () => Economy.OnlineDirector.Instance?.TestDay())
                 .AddButton("reallife_online_test_back", () => Economy.OnlineDirector.Instance?.TestBack())
+                .AddButton("reallife_online_test_net", () => Economy.OnlineDirector.Instance?.TestNet())
                 .AddToggle(Settings.EconomyDealerId, "reallife_dealer_enabled", Settings.EconomyDealer,
                     v => Settings.EconomyDealer = v)
                 .AddToggle(Settings.EconomyDealerFloorId, "reallife_showroom_floor_enabled", Settings.EconomyDealerFloor,
@@ -1187,6 +1198,8 @@ namespace RealLifeOverhaul
                 .AddHeader("reallife_util_header")
                 .AddToggle(Settings.UtilitiesId, "reallife_util_enabled", Settings.Utilities,
                     v => Settings.Utilities = v)
+                .AddToggle(Settings.UtilitiesNetSpeedId, "reallife_util_net_speed", Settings.UtilitiesNetSpeed,
+                    v => Settings.UtilitiesNetSpeed = v)
                 .AddButton("reallife_util_test_bill", () => Utilities.UtilitiesDirector.Instance?.TestBill())
                 .AddButton("reallife_util_test_due", () => Utilities.UtilitiesDirector.Instance?.TestDue())
                 .AddButton("reallife_util_test_cut", () => Utilities.UtilitiesDirector.Instance?.TestCutHome())
@@ -1401,6 +1414,8 @@ namespace RealLifeOverhaul
             Guard.Step("the guard's notices", () => Guard.Add<GuardNotices>(_root));   // once the HUD is there
             Guard.Step("SessionWatch", () => SessionWatch.Logger = context.Logger);
             Guard.Step("SessionWatch", () => Guard.Add<SessionWatch>(_root));   // disabled unless Developer diagnostics is on
+            Guard.Step("DayWarm", () => DayWarm.Logger = context.Logger);
+            Guard.Step("DayWarm", () => Guard.Add<DayWarm>(_root));   // a slice a frame for some seconds after a load, then disabled
             Guard.Step("GoingPublicWatch", () => Guard.Add<GoingPublicWatch>(_root));   // once a second of real time
             Guard.Step("ScenePrewarm", () => Guard.Add<ScenePrewarm>(_root));   // disabled unless a piece is waiting
             Guard.Step("LoadHold", () => Guard.Add<LoadHold>(_root));   // disabled unless a piece is waiting
@@ -1481,6 +1496,7 @@ namespace RealLifeOverhaul
             Guard.Step("LicenceDirector", () => Guard.Add<LicenceDirector>(_root));
             Guard.Step("GameUi.UiClone", () => GameUi.UiClone.Logger = context.Logger);
             Guard.Step("GameUi.GameSprites", () => GameUi.GameSprites.Logger = context.Logger);
+            Guard.Step("GameUi.GameFont", () => GameUi.GameFont.Logger = context.Logger);
             Guard.Step("GameUi.AppIconPainter", () => GameUi.AppIconPainter.Logger = context.Logger);
             Guard.Step("GameUi.PhoneApp", () => GameUi.PhoneApp.Logger = context.Logger);
             Guard.Step("GameUi.PhoneGridPager", () => GameUi.PhoneGridPager.Logger = context.Logger);

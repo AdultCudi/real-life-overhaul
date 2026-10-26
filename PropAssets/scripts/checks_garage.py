@@ -152,11 +152,6 @@ def run(c):
     c.extent("helmet", "width", np.ptp(v[:, 0]), 0.27, 0.02)
     c.extent("helmet", "length", np.ptp(v[:, 1]), 0.31, 0.02)
     c.report(v[:, 1].max() > -v[:, 1].min(), "%-19s the visor is towards +Y, Unity +Z (it reaches y %+.3f, the back %+.3f)" % ("helmet", v[:, 1].max(), v[:, 1].min()))
-    v = c.kit("bicycle_helmet")
-    low = v[v[:, 2] < HEAD_BONE + 0.021]
-    reach = (low[:, 0] / (HEAD[0] + 0.008)) ** 2 + (low[:, 1] / (HEAD[1] + 0.008)) ** 2
-    c.report(reach.min() ** 0.5 > 0.92, "%-19s its rim clears the head by 0.008 m (the straps and buckles lie 0.005 m off it: nearest at %.3f of the rim)" % ("bicycle_helmet", reach.min() ** 0.5))
-    c.extent("bicycle_helmet", "crown, above the Head bone", v[:, 2].max(), HEAD_BONE + 0.118, 0.004)
     # Whole wheels: GarageCar.WheelPropRadius 0.34, WheelPropWidth 0.22, the axle along X, the outer face at -X.
     for name in ("wheel_5spoke", "wheel_mesh", "wheel_steel"):
         v = c.kit(name)
@@ -195,9 +190,4 @@ def run(c):
     mounts = v[v[:, 1] < -0.05]
     c.extent("car_bull_bar", "mounts either side of the middle", np.abs(mounts[:, 0]).mean(), 0.275, 0.004)
     c.extent("car_bull_bar", "mounts: height", middle(mounts[:, 2]), 0.14, 0.004)
-    for name, size in (("car_spoiler_lip", (1.40, 0.18, 0.06)), ("bike_dock_kiosk", (0.50, 0.30, 1.70))):
-        v = c.kit(name)
-        for axis, want in enumerate(size):
-            c.extent(name, "xyz"[axis], np.ptp(v[:, axis]), want, 0.008)
-        c.extent(name, "underside at the pivot", v[:, 2].min(), 0.0, 0.001)
     dock(c)

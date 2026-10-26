@@ -19,5 +19,21 @@ namespace RealLifeOverhaul.Meals
         public const string TestDance = "reallife_meals_test_dance";
         public const string NoSeat = "reallife_meals_test_no_seat";              // a test's refusal: no free seat in reach
         public const string NoMusic = "reallife_meals_test_no_music";            // a test's refusal: no music playing here
+        public const string Takeout = "reallife_meals_takeout";                  // the option: takeout and plates
+        public const string TakeoutTip = "reallife_opt_tip_meals_takeout";       // its line on the options page
+        public const string ButtonEat = "reallife_meals_button_eat";             // the rest panel's button: "Eat {food}"
+        public const string TestTakeout = "reallife_meals_test_takeout";         // the test button
+        public const string TestArmed = "reallife_meals_test_takeout_armed";     // a notice: the test waits for the player to sit
+        public const string TestPass = "reallife_meals_test_takeout_pass";       // notices: the test's verdict
+        public const string TestFail = "reallife_meals_test_takeout_fail";
+        public const string TestLapsed = "reallife_meals_test_takeout_lapsed";   // a notice: nobody sat down in time
+        public const string ServeNow = "reallife_takeout_serve_now";             // the cooking list's serve row
+        public const string ServePack = "reallife_takeout_serve_pack";
+        public const string ServeDetail = "reallife_takeout_serve_detail";
+        public const string ServeCarried = "reallife_takeout_serve_carried";     // ...with how many are carried
+        public const string Packed = "reallife_takeout_packed";                  // notices of home cooking: packed, burnt and packed,
+        public const string PackedBurnt = "reallife_takeout_packed_burnt";       // no room to carry it, burnt with no room
+        public const string CarryFull = "reallife_takeout_carry_full";
+        public const string BurntLost = "reallife_takeout_burnt_lost";
     }
 }

@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
+using Localizor;
 using RealLifeOverhaul.GameUi;
+using Streets;
+using UI.Load;
 using UI.Notification;
 
 namespace RealLifeOverhaul.Tech
@@ -18,6 +21,10 @@ namespace RealLifeOverhaul.Tech
         private long _ownHosting;      // what the player's own firms paid their own cloud today, cents
         private readonly long[] _due = new long[InfraCatalogue.CentresMost * 3];   // each centre's cooling, upkeep and crews at scale today, cents
         private long _opsDue;          // the cloud's operations people's wages at scale today, cents
+        // Warehouses taken while playing, each asked about once: known this session, the ones waiting for the question box.
+        private readonly HashSet<string> _knownWarehouses = new HashSet<string>(StringComparer.Ordinal);
+        private readonly List<string> _warehousePlaces = new List<string>(8), _takenNow = new List<string>(2), _offers = new List<string>(2);
+        private bool _warehousesFirst = true, _warehousesDirty;
 
         /// <summary>The infrastructure part's file; null while the tech sector is off.</summary>
         public InfraFile Infra => _firmsOn ? _infra : null;
@@ -28,6 +35,9 @@ namespace RealLifeOverhaul.Tech
         {
             InfraFile file = InfraStore.Load(Save.modData, out _);
             _infra = file ?? new InfraFile { Seed = new System.Random().Next(1, int.MaxValue), FirstDay = Save.Day };
+            _knownWarehouses.Clear();
+            _offers.Clear();
+            _warehousesFirst = true;   // what the save already holds is learnt, not asked about
             ReadInfra();
         }
 
@@ -43,6 +53,7 @@ namespace RealLifeOverhaul.Tech
         private void ReadInfra()
         {
             InfraGame.Warehouses(_warehouses);
+            NoteTaken();
             for (int i = _infra.Centres.Count - 1; i >= 0; i--)
             {
                 DataCentre d = _infra.Centres[i];
@@ -65,6 +76,145 @@ namespace RealLifeOverhaul.Tech
         }
 
         internal DataCentre CentreOf(string place) => _infra != null ? _infra.CentreAt(place) : null;
+
+        // A warehouse that became the player's since the last look, however (rented or bought in BizMan, or any other way), is
+        // put in line for the question once; the first look of a session only learns what the save holds.
+        private void NoteTaken()
+        {
+            _warehousePlaces.Clear();
+            for (int i = 0; i < _warehouses.Count; i++)
+            {
+                _warehousePlaces.Add(TalentGame.Place(_warehouses[i]));
+            }
+            bool first = _warehousesFirst;
+            _warehousesFirst = false;
+            if (InfraRules.Taken(_knownWarehouses, _warehousePlaces, first, _takenNow) == 0 || !Settings.TechInfraOffer)
+            {
+                return;
+            }
+            for (int i = 0; i < _takenNow.Count; i++)
+            {
+                if (_infra.CentreAt(_takenNow[i]) == null && !_offers.Contains(_takenNow[i]))
+                {
+                    _offers.Add(_takenNow[i]);
+                }
+            }
+        }
+
+        // The game's event for any change to a building's record (BuildingHelper.RentBuilding raises it for a rent and a purchase).
+        private void OnRegistrationChange(Address address)
+        {
+            _warehousesDirty = true;   // read on the next second, once however many came
+        }
+
+        /// <summary>
+        /// Each second while the sector runs: the warehouses read again after a change to a building's record, and one waiting
+        /// question asked when the game's box is free. Otherwise a flag and a count.
+        /// </summary>
+        private void KeepWarehouses()
+        {
+            EventHold.Keep(ref GlobalEvents.onBuildingRegistrationChange, _onRegChange, ref _regChangeSeen);
+            if (_warehousesDirty && _infra != null)
+            {
+                _warehousesDirty = false;
+                ReadInfra();
+                ChangedTech();
+            }
+            if (_offers.Count > 0 && _techApp != null && !GameConfirm.IsOpen && !LoadScene.isLoading)
+            {
+                string place = _offers[0];
+                _offers.RemoveAt(0);
+                AskCentre(place);
+            }
+        }
+
+        /// <summary>
+        /// The question when a warehouse is taken: set it up as a data centre? Yes opens the Infra tab's fit-out of that warehouse
+        /// (the tier, the racks it has room for, the cost and the Fit out button), the same page and the same <see cref="FitOut"/>
+        /// as from the warehouse's row. Not asked when it could not be fitted out. False when no question was put.
+        /// </summary>
+        private bool AskCentre(string place)
+        {
+            BuildingRegistration reg = TalentGame.Find(place);
+            if (reg == null || _infra == null || InfraRules.FitBlock(_infra.Centres.Count, _infra.CentreAt(place) != null) != InfraRules.FitFree)
+            {
+                Logger?.Info("Tech: the warehouse at " + place + " is not asked about as a data centre: "
+                             + (reg == null ? "no longer the player's" : "it cannot be fitted out now") + ".");
+                return false;
+            }
+            int sqm = InfraGame.Sqm(reg);
+            string name = TalentGame.NameOf(reg);
+            bool asked = GameConfirm.TryShow("reallife_infra_offer_title".Localize(new { name }), "reallife_infra_offer_body".Localize(new
+            {
+                name, sqm = sqm.ToString(), racks = (sqm / InfraCatalogue.SqmPerRack).ToString(), tier = TechText.InfraTier(OfferTier),
+                cost = TechText.Cents(Level(InfraRules.FitCost(sqm, OfferTier, BuyScale))), supply = SupplyWords(reg)
+            }), () => OpenTech(TabInfra, TechApp.FitRow + place), null, "reallife_infra_offer_yes", "reallife_infra_offer_no", false, false);
+            Logger?.Info("Tech: the warehouse " + name + " (" + sqm + " square metres) was taken; asked whether to set it up as a data centre: "
+                         + (asked ? "shown" : "the game has no question box") + ".");
+            return asked;
+        }
+
+        private const int OfferTier = 1;   // the question quotes tier II, the Infra tab's own first choice
+
+        /// <summary>What the city does not give a warehouse yet, in words, or empty: the same three the Infra tab names.</summary>
+        internal static string SupplyWords(BuildingRegistration reg)
+        {
+            int missing = InfraRules.SupplyMissing(TechBridges.SuppliedAt(reg, 0), TechBridges.SuppliedAt(reg, 1), TechBridges.FastEnough(reg, InfraCatalogue.NetNeeded));
+            if (missing == 0)
+            {
+                return string.Empty;
+            }
+            var words = new System.Text.StringBuilder(64);
+            for (int i = 0; i < SupplyKeys.Length; i++)
+            {
+                if ((missing & (1 << i)) != 0)
+                {
+                    words.Append(words.Length > 0 ? ", " : string.Empty).Append(TechText.Fill(SupplyKeys[i], "mbps", InfraCatalogue.NetNeeded.ToString()));
+                }
+            }
+            return " " + TechText.Fill("reallife_infra_supply_missing", "what", words.ToString());
+        }
+
+        private static readonly string[] SupplyKeys = { "reallife_infra_supply_power", "reallife_infra_supply_water", "reallife_infra_supply_net" };
+
+        /// <summary>
+        /// Test: the first warehouse of the player's that is no data centre is taken again, as if just rented: the same look puts it
+        /// in line and the same question is put. PASS when it is asked about.
+        /// </summary>
+        public void TestCentreOffer()
+        {
+            if (_broken || !_firmsOn || _infra == null || Save == null)
+            {
+                Notifications.ShowError("reallife_infra_test_offer_off");
+                return;
+            }
+            if (!Settings.TechInfraOffer)
+            {
+                Notifications.ShowError("reallife_infra_test_offer_option");
+                return;
+            }
+            ReadInfra();
+            string place = null;
+            for (int i = 0; i < _warehousePlaces.Count && place == null; i++)
+            {
+                place = _infra.CentreAt(_warehousePlaces[i]) == null ? _warehousePlaces[i] : null;
+            }
+            if (place == null)
+            {
+                Notifications.ShowError("reallife_infra_test_offer_none");
+                return;
+            }
+            _knownWarehouses.Remove(place);   // as before it was the player's
+            _offers.Clear();
+            NoteTaken();
+            bool queued = _offers.Count == 1 && _offers[0] == place;
+            _offers.Clear();
+            bool asked = queued && AskCentre(place);
+            bool ok = queued && asked && _knownWarehouses.Contains(place);
+            Logger?.Info("Tech check (a warehouse taken, at " + place + "): put in line " + queued + ", the question shown " + asked + ", known afterwards so asked once: "
+                         + (ok ? "PASS" : "FAIL"));
+            Notifications.Show(ok ? NotificationType.Success : NotificationType.Error, ok ? "reallife_infra_test_offer_pass" : "reallife_infra_test_offer_fail", null, 10f);
+        }
 
         /// <summary>The end game's share today, 0 with its option off; an older save comes to it over <see cref="EndScaleRules.PhaseDays"/>.</summary>
         internal int ScaleNow()
@@ -376,8 +526,14 @@ namespace RealLifeOverhaul.Tech
         internal bool FitOut(string place, int tier)
         {
             BuildingRegistration reg = TalentGame.Find(place);
-            if (reg == null || _infra == null || _infra.CentreAt(place) != null || _infra.Centres.Count >= InfraCatalogue.CentresMost || Save == null)
+            if (reg == null || _infra == null || Save == null)
             {
+                return false;
+            }
+            int block = InfraRules.FitBlock(_infra.Centres.Count, _infra.CentreAt(place) != null);
+            if (block != InfraRules.FitFree)
+            {
+                Notifications.ShowError(block == InfraRules.FitAlready ? "reallife_infra_fit_already" : "reallife_infra_fit_most");
                 return false;
             }
             int sqm = InfraGame.Sqm(reg);

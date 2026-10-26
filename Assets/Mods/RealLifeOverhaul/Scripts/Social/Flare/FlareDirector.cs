@@ -598,6 +598,15 @@ namespace RealLifeOverhaul.Flare
             Notifications.Show(type, key, pairs != null && pairs.Length > 1 ? FlareText.Data(pairs) : null, 10f, null, Guard.Wrap(click), true, false);
         }
 
+        /// <summary>A notification of Flare's own doing, left out when the Flare notifications option is off; the test entries use <see cref="Tell"/>, which always shows.</summary>
+        internal void Notice(NotificationType type, string key, Action click, params string[] pairs)
+        {
+            if (Settings.SocialMediaNotices)
+            {
+                Tell(type, key, click, pairs);
+            }
+        }
+
         private void Changed()
         {
             Badge();

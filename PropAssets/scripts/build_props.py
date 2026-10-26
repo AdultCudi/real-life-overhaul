@@ -67,7 +67,7 @@ def cordon(made):
     """An accident scene as the mod lays one out: posts and tape round it, barriers across the lane, the crew's kit inside."""
     by_name = {prop.name: prop for prop, _ in made}
     wanted = ("tape_post", "tape_4m_sag", "barrier", "cone", "stretcher", "stretcher_sheet", "medic_bag", "debris_glass", "debris_plastic",
-              "flare", "evidence_marker_1", "evidence_marker_2", "first_aid_box")
+              "flare", "evidence_marker_1", "evidence_marker_2")
     if any(name not in by_name for name in wanted):
         return
     scene, camera = kit.new_scene()
@@ -83,7 +83,6 @@ def cordon(made):
     kit.place(by_name["stretcher"], (0.6, 0.6, 0), turn=-70)
     kit.place(by_name["stretcher_sheet"], (0.6, 0.6, 0), turn=-70)
     kit.place(by_name["medic_bag"], (-0.9, 0.9, 0), turn=25)
-    kit.place(by_name["first_aid_box"], (-1.4, 0.4, 0), turn=-30)
     kit.place(by_name["debris_glass"], (1.6, 2.4, 0))
     kit.place(by_name["debris_plastic"], (1.9, 2.2, 0), turn=40)
     kit.place(by_name["flare"], (-3.2, 3.9, 0), turn=60)

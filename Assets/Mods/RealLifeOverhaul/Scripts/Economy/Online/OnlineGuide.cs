@@ -52,7 +52,17 @@ namespace RealLifeOverhaul.Economy
                 .Fact("online_ad_cost", () => Guide.Money(CompanyCatalogue.AtPrices(OnlineCatalogue.AdCost, Prices.Level)))
                 .Fact("online_ad_days", () => Whole(OnlineCatalogue.AdDays))
                 .Fact("online_ad_percent", () => Whole(OnlineCatalogue.AdPercent))
-                .Fact("online_idle", () => Whole(OnlineCatalogue.IdleAlert));
+                .Fact("online_idle", () => Whole(OnlineCatalogue.IdleAlert))
+                .Fact("online_price_floor", () => Tenths(1000 - OnlineCatalogue.PriceFloor))
+                .Fact("online_same_latest", () => Hour(OnlineCatalogue.SameDayLatest))
+                .Fact("online_open_most", () => Whole(OnlineCatalogue.OpenMost))
+                .Fact("online_stars_start", () => (OnlineCatalogue.StarsStart / 1000f).ToString("0.#", Inv))
+                .Fact("online_crowd_two", () => Tenths(OnlineRules.Crowd(2)))
+                .Fact("online_breadth_lines", () => Whole(OnlineCatalogue.BreadthLines))
+                .Fact("online_breadth_least", () => Tenths(OnlineRules.Breadth(1)))
+                .Fact("online_ad_most", () => Whole(OnlineCatalogue.AdMost))
+                .Fact("online_falling", () => (OnlineCatalogue.FallingBy / 1000f).ToString("0.#", Inv))
+                .Fact("online_poor", () => (OnlineCatalogue.PoorStars / 1000f).ToString("0.#", Inv));
         }
 
         // A line for each quality of site: set-up, hosting, the orders of an ordinary day and the most in one day.

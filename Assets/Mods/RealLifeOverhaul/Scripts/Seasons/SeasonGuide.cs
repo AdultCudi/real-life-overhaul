@@ -28,6 +28,30 @@ namespace RealLifeOverhaul.Seasons
                 .Fact("season_icecream_winter", () => Figure("ba:itemname_icecream", CalendarRules.Winter))
                 .Fact("season_beer_summer", () => Figure("ba:itemname_beer", CalendarRules.Summer))
                 .Fact("season_umbrella_autumn", () => Figure("ba:itemname_umbrella", CalendarRules.Autumn))
+                .Fact("season_slushie_winter", () => Figure("ba:itemname_slushi", CalendarRules.Winter))
+                .Fact("season_salad_winter", () => Figure("ba:itemname_salad", CalendarRules.Winter))
+                .Fact("season_clothes_winter", () => Figure("ba:itemname_classiccheapmaleclothing", CalendarRules.Winter))
+                .Fact("season_flowers_spring", () => Figure("ba:itemname_cheapflower", CalendarRules.Spring))
+                .Fact("season_umbrella_spring", () => Figure("ba:itemname_umbrella", CalendarRules.Spring))
+                .Fact("season_salad_summer", () => Figure("ba:itemname_salad", CalendarRules.Summer))
+                .Fact("season_kebab_summer", () => Figure("ba:itemname_kabob", CalendarRules.Summer))
+                .Fact("season_umbrella_summer", () => Figure("ba:itemname_umbrella", CalendarRules.Summer))
+                .Fact("season_clothes_summer", () => Figure("ba:itemname_classiccheapmaleclothing", CalendarRules.Summer))
+                .Fact("season_whisky_summer", () => Figure("ba:itemname_whisky", CalendarRules.Summer))
+                .Fact("season_apple_autumn", () => Figure("ba:itemname_apple", CalendarRules.Autumn))
+                .Fact("season_flowers_autumn", () => Figure("ba:itemname_expensiveflower", CalendarRules.Autumn))
+                .Fact("season_heavy_chance", () => Share(SeasonRules.HeavyChance))
+                .Fact("season_snow_least", () => Whole(SeasonRules.LeastHours))
+                .Fact("season_snow_most", () => Whole(SeasonRules.MostHours))
+                .Fact("season_snow_latest", () => Hour(SeasonRules.LatestStart))
+                .Fact("season_shower_chance", () => Share(SeasonLookRules.ShowerChance))
+                .Fact("season_shower_hours", () => Whole(SeasonLookRules.ShowerHours))
+                .Fact("season_autumn_rain_chance", () => Share(SeasonLookRules.AutumnRainChance))
+                .Fact("season_autumn_rain_hours", () => Whole(SeasonLookRules.AutumnRainHours))
+                .Fact("season_storm_chance", () => Share(SeasonLookRules.StormChance))
+                .Fact("season_storm_hours", () => Whole(SeasonLookRules.StormHours))
+                .Fact("season_rain_from", () => Hour(SeasonLookRules.RainFirstHour))
+                .Fact("season_rain_to", () => Hour(SeasonLookRules.RainLastHour))
                 .Cleanup(() => SeasonDirector.Instance?.StopAll());   // on again at the next second, as the option says
         }
 
@@ -35,6 +59,12 @@ namespace RealLifeOverhaul.Seasons
         {
             return SeasonRules.Change(SeasonRules.DemandOf(SeasonRules.IndexOf(item), season));
         }
+
+        private static string Share(int thousandths) => (thousandths / 10f).ToString("0.#", CultureInfo.InvariantCulture) + "%";
+
+        private static string Whole(int n) => n.ToString(CultureInfo.InvariantCulture);
+
+        private static string Hour(int hour) => hour.ToString("00", CultureInfo.InvariantCulture) + ":00";
     }
 
     /// <summary>The seasons' place on the options page.</summary>

@@ -253,5 +253,14 @@ namespace RealLifeOverhaul
         {
             return 1f + LevelBonus * (level - 1);
         }
+
+        /// <summary>
+        /// Whether officers are about to move a street worker on: the police on and their presence above nothing. The busker's
+        /// move-on and the cart's warning for calling out both ask this, so the Guide says one thing of them.
+        /// </summary>
+        public static bool OfficersAbout(bool police, int presence)
+        {
+            return police && presence > 0;
+        }
     }
 }

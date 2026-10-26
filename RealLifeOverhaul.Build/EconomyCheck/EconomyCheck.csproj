@@ -97,6 +97,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Hustles\HustleState.cs" Link="Mod\HustleState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Hustles\HustleStore.cs" Link="Mod\HustleStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Hustles\HustleRules.cs" Link="Mod\HustleRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\CityLife\StreetLifeRules.cs" Link="Mod\StreetLifeRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Hustles\PickupRules.cs" Link="Mod\PickupRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Calendar\MonthViewRules.cs" Link="Mod\MonthViewRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Seasons\SeasonRules.cs" Link="Mod\SeasonRules.cs" />
@@ -134,6 +135,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Utilities\UtilitiesStore.cs" Link="Mod\UtilitiesStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Utilities\InternetCatalogue.cs" Link="Mod\InternetCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Utilities\InternetRules.cs" Link="Mod\InternetRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\NetSpeedRules.cs" Link="Mod\NetSpeedRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Utilities\BroadbandCatalogue.cs" Link="Mod\BroadbandCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Utilities\BroadbandRules.cs" Link="Mod\BroadbandRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Ventures\VenturesCatalogue.cs" Link="Mod\VenturesCatalogue.cs" />
@@ -469,6 +471,9 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\DeskRules.cs" Link="Mod\DeskRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\InterviewRules.cs" Link="Mod\InterviewRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\Kinds\CartQueueRules.cs" Link="Mod\CartQueueRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\ReportedRepair.cs" Link="Mod\ReportedRepair.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Seasons\WarmthRules.cs" Link="Mod\WarmthRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meta\OptionValueRules.cs" Link="Mod\OptionValueRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\Kinds\TaxiComfortRules.cs" Link="Mod\TaxiComfortRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\ClockRules.cs" Link="Mod\ClockRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\ProPath.cs" Link="Mod\ProPath.cs" />

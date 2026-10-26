@@ -388,9 +388,9 @@ Props (`PropAssets`, metres, standing on their origin):
 | `bus_shelter` | 1.70 x 2.50 x 3.76 | ground centre of the floor (1.4 deep, 3.6 long); length along Z, open to -X, back at +X | bench seat 0.46 up along the back from z -1.3 to +0.6, end panel (route map, advert) at +Z; glass may be opaque |
 | `city_bus` and its parts | 2.40 x 3.05 x 10.90 | ground centre under the middle of the bus, nose to +Z | **delivered**: the mod's own bus (`Transport/BusVehicle`), its body with the wheels, the door leaves and the lit lamps as props of their own that the code puts together ([`PropAssets/README.md`](../../PropAssets/README.md), "Service vehicles"); the shuttle body `minibus` it replaced is gone |
 | `turnstile` | 0.30 x 1.00 x 1.20 | ground centre, reader on top at 0.975 | for a subway entrance, if entrances are ever dressed |
-| `fuel_pump`, `jerry_can` | 0.5 x 1.6 x 0.4; 0.35 x 0.45 x 0.18 | ground centre; can: handle on top | the mechanic's can for fuel brought to the roadside |
-| `warning_triangle` | 0.45 x 0.42 x 0.05 | ground centre, faces +Z, glow | stood behind a broken-down car |
-| `car_wash_arch` | 3.6 x 3.2 x 1.0 | ground centre, drive through along Z | the game already washes cars in its repair bays |
+| `jerry_can` | 0.35 x 0.45 x 0.18 | ground centre; handle on top | the mechanic's can for fuel brought to the roadside (`fuel_pump` was taken out of the props bundle on 26 Oct 2026 as nothing placed it; a feature that wants it models it anew in the second bundle (PropAssets/README.md, "Adding a prop from Blender")) |
+| `warning_triangle` | 0.45 x 0.42 x 0.05 | ground centre, faces +Z, glow | taken out of the props bundle on 26 Oct 2026 as nothing placed it; a feature that wants it models it anew in the second bundle (PropAssets/README.md, "Adding a prop from Blender") |
+| `car_wash_arch` | 3.6 x 3.2 x 1.0 | ground centre, drive through along Z | taken out of the props bundle on 26 Oct 2026 as nothing placed it; a feature that wants it models it anew in the second bundle (PropAssets/README.md, "Adding a prop from Blender") |
 
 Clips (`CityAssets`, Humanoid, in place, starting and ending in the standing idle):
 

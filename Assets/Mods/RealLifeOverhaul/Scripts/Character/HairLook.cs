@@ -212,8 +212,8 @@ namespace RealLifeOverhaul
 
         /// <summary>
         /// Whether this character shows strand hair (the game's hair shader) on a renderer that is drawn, not only cast
-        /// as a shadow: the characters other than the ones on show that the finish is for too (CharacterQuality, every
-        /// few seconds in the city). Reads materials only.
+        /// as a shadow: the characters other than the ones on show that the finish is for too (CharacterQuality, behind
+        /// the black screen, and every few seconds for Going Public's other players). Reads materials only.
         /// </summary>
         public static bool WearsStrandHair(AppearanceSetter character)
         {
@@ -225,21 +225,54 @@ namespace RealLifeOverhaul
             bool any = false;
             for (int i = 0; i < renderers.Count && !any; i++)
             {
-                SkinnedMeshRenderer renderer = renderers[i];
-                if (renderer == null || !renderer.enabled || renderer.forceRenderingOff || !renderer.gameObject.activeInHierarchy
-                    || renderer.shadowCastingMode == UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly)
-                {
-                    continue;
-                }
-                renderer.GetSharedMaterials(Scratch);
-                for (int k = 0; k < Scratch.Count && !any; k++)
-                {
-                    any = HairFinish.IsHair(Scratch[k]);
-                }
-                Scratch.Clear();
+                any = DrawsStrandHair(renderers[i]);
             }
             Worn.Clear();
             return any;
+        }
+
+        /// <summary>
+        /// Whether this renderer is drawn, not only cast as a shadow, with strand hair (the game's hair shader): the test
+        /// <see cref="WearsStrandHair"/> makes of each renderer a character wears, and the search behind the black screen
+        /// makes of each skinned mesh in the scene, so that both find the same characters. Reads materials only.
+        /// </summary>
+        public static bool DrawsStrandHair(SkinnedMeshRenderer renderer)
+        {
+            if (renderer == null || !renderer.enabled || renderer.forceRenderingOff || !renderer.gameObject.activeInHierarchy
+                || renderer.shadowCastingMode == UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly)
+            {
+                return false;
+            }
+            bool any = false;
+            renderer.GetSharedMaterials(Scratch);
+            for (int k = 0; k < Scratch.Count && !any; k++)
+            {
+                any = HairFinish.IsHair(Scratch[k]);
+            }
+            Scratch.Clear();
+            return any;
+        }
+
+        /// <summary>
+        /// Whether the renderer of this id is one this character's hair can be on (<see cref="WornBy"/>): how the search
+        /// behind the black screen tells a drawn renderer's wearer. False once the character is gone.
+        /// </summary>
+        public static bool Wears(AppearanceSetter character, int renderer)
+        {
+            if (character == null)
+            {
+                return false;
+            }
+            IReadOnlyList<SkinnedMeshRenderer> pieces = character.GetSelectedMeshRenderers();
+            for (int i = 0; i < pieces.Count; i++)
+            {
+                if (pieces[i] != null && pieces[i].GetInstanceID() == renderer)
+                {
+                    return true;
+                }
+            }
+            SkinnedMeshRenderer merged = character.skipMeshMerging ? null : character.lastMergedMeshRenderer;
+            return merged != null && merged.GetInstanceID() == renderer;
         }
 
         private static Finished Find(SkinnedMeshRenderer renderer)

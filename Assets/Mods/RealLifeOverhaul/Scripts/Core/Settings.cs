@@ -51,6 +51,7 @@
         public const string ConstructionCityRedevelopId = "construction_city_redevelop";   // ...how often the city's developers do it to the city's own
         public const string ConstructionBuildModeId = "construction_buildmode";    // ...build mode: the zoning cells over the map, land, zones and buildings placed
         public const string ConstructionTrackId = "construction_track";            // ...its matters under way as lines in the game's objectives window
+        public const string MealsTakeoutId = "meals_takeout";
         public const string HouseholdStaffId = "home_household";
         public const string CameraFovId = "camera_fov";
         public const string CameraHeightId = "camera_height";
@@ -123,6 +124,7 @@
         public const string JobTaxiEasyId = "job_taxi_easy";
         public const string FamilyId = "family";
         public const string UtilitiesId = "utilities";
+        public const string UtilitiesNetSpeedId = "utilities_net_speed";
         public const string FamilyAtHomeId = "family_at_home";
         public const string FamilyWeddingId = "family_wedding";
         public const string FamilyChildrenId = "family_children";
@@ -167,6 +169,7 @@
         public const string MarketsReinvestId = "markets_reinvest";
         public const string MarketsDerivativesId = "markets_derivatives";
         public const string MarketsBuildersId = "markets_builders";              // the city's builders on the market, building materials and a project's hedge
+        public const string MarketsHoldingId = "markets_holding";
         public const string VenturesLevelId = "ventures_level";
         public const string EconomyCompanyId = "economy_company";
         public const string EconomyCompanyLevelId = "economy_company_level";
@@ -190,6 +193,7 @@
         public const string TechJobsId = "tech_jobs";
         public const string TechSectorId = "tech_sector";
         public const string TechOfferNotesId = "tech_offer_notes";
+        public const string TechInfraOfferId = "tech_infra_offer";
         public const string TechStartupsId = "tech_startups";
         public const string TechSiteRoomsId = "tech_site_rooms";
         public const string TechSiteHqId = "tech_site_hq";
@@ -408,6 +412,7 @@
         public static int ConstructionCityRedevelop = 2;   // the city's developers redevelop Uptown's own buildings: 0 Off, 1 Slow, 2 Usual, 3 Lively
         public static bool ConstructionBuildMode = true;   // build mode from the Construction app: the city map over Uptown with its zoning cells
         public static bool ConstructionTrack = true;       // the construction matters under way shown in the game's objectives window
+        public static bool MealsTakeout = true;  // food carried in a bag is eaten from a plate once seated; a home dish can be packed to take
         public static bool HouseholdStaff = true;   // a cleaner, a cook, a butler or a mechanic taken on for the home through the phone
         public static int CameraFov = 55;        // degrees, vertical
         public static bool LifeEvents = true;
@@ -478,7 +483,8 @@
         public static int JobPay = 100;                  // percent of what the job catalogue pays
         public static bool JobTaxiEasy = false;          // ride-hail passengers who mind braking, bumps and speeding less (TaxiComfortRules.Easier); off, the ride is judged as it always was
         public static bool Family = true;                // a partner who moves in, engagement and wedding, children, relatives
-        public static bool Utilities = true;             // power and water bills, the utilities office and the Utilities app
+        public static bool Utilities = true;             // power, water and internet bills and plans, the utilities office and the Utilities app
+        public static bool UtilitiesNetSpeed = true;     // ...a connection's speed sets how fast tech firms work and how many orders a shop takes; off, only having one counts
         public static bool FamilyAtHome = true;          // the partner is shown as a character in the home
         public static bool FamilyWedding = true;         // rings, the proposal, planning and holding a wedding
         public static bool FamilyChildren = true;        // deciding to have children, pregnancy and adoption, growing up
@@ -523,6 +529,7 @@
         public static bool MarketsReinvest = true;       // the share of each dividend a holding is set to put back is bought into the same company at the next open
         public static bool MarketsDerivatives = true;    // the exchange prices raw materials; futures and options on the Futures tab
         public static bool MarketsBuilders = true;       // the rival builders listed and moved by the construction game's news; a project's materials hedged
+        public static int MarketsHolding = 0;            // the most of one company the player may hold: 0 a tenth (the old rule), 1 a quarter, 2 half, 3 all of it (MarketCatalogue.HoldingCapBp)
         public static int VenturesLevel = 1;             // how demanding investors are: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore
         public static bool EconomyCompany = true;        // running a business (off: none of it runs and nothing is charged)
         public static int EconomyCompanyLevel = 1;       // how strict it is: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore
@@ -544,6 +551,7 @@
         public static bool TechJobs = true;              // the jobs board and the labour market (off: the game's own hiring alone)
         public static bool TechSector = true;            // the tech sector (off: those businesses earn nothing of their own; their files are kept)
         public static bool TechOfferNotes = true;        // ...a notification for each client's contract offer and each council tender
+        public static bool TechInfraOffer = true;        // ...asked whether a warehouse just taken is to be a data centre
         public static bool TechSiteRooms = true;         // a data centre's server room furnished while the player is inside
         public static bool TechSiteHq = true;            // the city's tech companies each given an empty office building as their headquarters
         public static bool TechSiteCloud = true;         // the player's data centres signed with the cloud's name, a booth and a barrier, "Your cloud" on the map
@@ -811,6 +819,7 @@
             ConstructionCityRedevelop = System.Math.Max(0, System.Math.Min(3, Int(modId, ConstructionCityRedevelopId, ConstructionCityRedevelop)));
             ConstructionTrack = Bool(modId, ConstructionTrackId, ConstructionTrack);
             ConstructionBuildMode = Bool(modId, ConstructionBuildModeId, ConstructionBuildMode);
+            MealsTakeout = Bool(modId, MealsTakeoutId, MealsTakeout);
             HouseholdStaff = Bool(modId, HouseholdStaffId, HouseholdStaff);
             CameraFov = Int(modId, CameraFovId, CameraFov);
             CameraHeight = Int(modId, CameraHeightId, CameraHeight);
@@ -889,6 +898,7 @@
             JobTaxiEasy = Bool(modId, JobTaxiEasyId, JobTaxiEasy);
             Family = Bool(modId, FamilyId, Family);
             Utilities = Bool(modId, UtilitiesId, Utilities);
+            UtilitiesNetSpeed = Bool(modId, UtilitiesNetSpeedId, UtilitiesNetSpeed);
             FamilyAtHome = Bool(modId, FamilyAtHomeId, FamilyAtHome);
             FamilyWedding = Bool(modId, FamilyWeddingId, FamilyWedding);
             FamilyChildren = Bool(modId, FamilyChildrenId, FamilyChildren);
@@ -933,6 +943,7 @@
             MarketsReinvest = Bool(modId, MarketsReinvestId, MarketsReinvest);
             MarketsDerivatives = Bool(modId, MarketsDerivativesId, MarketsDerivatives);
             MarketsBuilders = Bool(modId, MarketsBuildersId, MarketsBuilders);
+            MarketsHolding = Int(modId, MarketsHoldingId, MarketsHolding);
             VenturesLevel = Int(modId, VenturesLevelId, VenturesLevel);
             EconomyCompany = Bool(modId, EconomyCompanyId, EconomyCompany);
             EconomyCompanyLevel = Int(modId, EconomyCompanyLevelId, EconomyCompanyLevel);
@@ -956,6 +967,7 @@
             TechJobs = Bool(modId, TechJobsId, TechJobs);
             TechSector = Bool(modId, TechSectorId, TechSector);
             TechOfferNotes = Bool(modId, TechOfferNotesId, TechOfferNotes);
+            TechInfraOffer = Bool(modId, TechInfraOfferId, TechInfraOffer);
             TechStartups = Bool(modId, TechStartupsId, TechStartups);
             TechSiteRooms = Bool(modId, TechSiteRoomsId, TechSiteRooms);
             TechSiteHq = Bool(modId, TechSiteHqId, TechSiteHq);

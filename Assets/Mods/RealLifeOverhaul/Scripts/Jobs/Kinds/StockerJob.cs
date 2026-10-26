@@ -96,7 +96,7 @@ namespace RealLifeOverhaul
 
         float IClockedShift.ClockPay => UnitPay();
 
-        public override bool QuitIsFailure => _stocked > 0 && _stocked * 2 < _boxes;
+        public override bool QuitIsFailure => _stocked * 2 < _boxes;
 
         public override bool WorksInside(Buildings.Building building)
         {

@@ -364,6 +364,26 @@ namespace RealLifeOverhaul.Texts
             return true;
         }
 
+        public const int HoursInDay = 24, HoursMost = 24;   // a pass is made for each game hour that went by between two looks, a day's worth at most
+
+        /// <summary>
+        /// How many game hours the city's pass is owed from one look to the next: one for the hour just begun, and one for each it skipped
+        /// when time ran fast; a day's worth at most, and one when the clock stands still or runs back (a load).
+        /// </summary>
+        public static int HourSteps(int lastDay, int lastHour, int day, int hour)
+        {
+            long gone = ((long)day * HoursInDay + hour) - ((long)lastDay * HoursInDay + lastHour);
+            return gone < 1 ? 1 : gone > HoursMost ? HoursMost : (int)gone;
+        }
+
+        /// <summary>The day and hour that were <paramref name="back"/> hours before a day and hour.</summary>
+        public static void HourBack(int day, int hour, int back, out int dayThen, out int hourThen)
+        {
+            long at = (long)day * HoursInDay + hour - back;
+            dayThen = (int)Math.Floor(at / (double)HoursInDay);
+            hourThen = (int)(at - (long)dayThen * HoursInDay);
+        }
+
         /// <summary>The game hour an event's gossip may come at, by the hash of its day and kind.</summary>
         public static int GossipHour(TextLifeEvent e) => GossipHourFrom + (int)(Hash(e.Day, e.Kind, 0) % GossipHours);
 

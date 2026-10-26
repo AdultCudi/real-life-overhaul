@@ -113,6 +113,7 @@ namespace RealLifeOverhaul.Economy
             {
                 box.Line(OnlineText.T("reallife_online_fig_offline"), CellTone.Red);
             }
+            NetLine(box, place);
             box.Section("reallife_ibox_sec_today_week");
             box.Row("reallife_online_fig_orders", Both(today.Orders.ToString(), week.Orders.ToString()));
             box.Row("reallife_online_fig_takings", Both(OnlineText.Money(today.Takings), OnlineText.Money(week.Takings)));
@@ -132,6 +133,38 @@ namespace RealLifeOverhaul.Economy
             InfoBox.Button(more, InfoBox.Positive, "reallife_online_button_days", () => Page(PageDays));
             InfoBox.Button(more, InfoBox.Additional, "common_close", ClosePick);
             Meta.Guide.Point(box, GuideTitle);
+        }
+
+        // The building's connection and the orders a day it allows, as the day's orders were worked out from it, and the
+        // plan that would allow more; nothing while speed does not count.
+        private static void NetLine(InfoBox box, WebPlace place)
+        {
+            Site site = place.Site;
+            int mbps = site.Mbps, quality = place.Shop.Quality;
+            if (mbps == NetSpeedRules.Unknown)
+            {
+                return;
+            }
+            if (mbps == NetSpeedRules.Grace)
+            {
+                box.Line(OnlineText.T("reallife_online_fig_net_grace", "business", place.Business));
+                return;
+            }
+            int next = NetSpeedRules.NextFloor(mbps);
+            if (mbps == 0)
+            {
+                box.Line(OnlineText.Fill("reallife_online_fig_net_none", "business", place.Business, "mbps", next.ToString(), "most", OnlineRules.Most(quality, next).ToString()),
+                    CellTone.Red);
+                return;
+            }
+            if (site.Down)
+            {
+                box.Line(OnlineText.T("reallife_online_fig_net_down"), CellTone.Red);
+            }
+            int most = OnlineRules.Most(quality, mbps), full = OnlineCatalogue.OrdersMost[OnlineCatalogue.Quality(quality)];
+            string lift = next > 0 ? OnlineText.T("reallife_online_fig_net_lift", "mbps", next.ToString(), "most", OnlineRules.Most(quality, next).ToString()) : string.Empty;
+            box.Line(OnlineText.Fill("reallife_online_fig_net", "mbps", mbps.ToString(), "most", most.ToString(), "share", OnlineText.Share(NetSpeedRules.Factor(mbps, OnlineCatalogue.NetLean)),
+                "full", full.ToString(), "lift", lift), most < full ? CellTone.Yellow : CellTone.Plain);
         }
 
         // The table lists the site's week, today and the six days before it, newest first; the box says what it came to.
@@ -322,6 +355,15 @@ namespace RealLifeOverhaul.Economy
             box.Row("reallife_online_open_hosting", OnlineText.T("reallife_online_open_hosting_value", "amount", OnlineText.Money(hosting * 100), "days", _director.MonthDays.ToString()));
             box.Row("reallife_online_open_orders", OnlineText.T("reallife_online_open_orders_value", "orders", OnlineCatalogue.OrdersADay[quality].ToString(),
                 "most", OnlineCatalogue.OrdersMost[quality].ToString()));
+            int mbps = OnlineDirector.PlanMbps(reg);
+            if (mbps == 0)
+            {
+                box.Line(OnlineText.T("reallife_online_open_net_none", "business", name), CellTone.Yellow);
+            }
+            else if (mbps > 0)
+            {
+                box.Line(OnlineText.T("reallife_online_open_net", "mbps", mbps.ToString(), "most", OnlineRules.Most(quality, mbps).ToString()));
+            }
             box.Section("reallife_ibox_sec_delivery");
             if (!box.HasSelector || !box.Selector(OnlineCatalogue.Ways, _way, OnlineText.Way, i => _way = i))
             {

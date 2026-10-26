@@ -8,12 +8,13 @@ using UnityEngine;
 namespace RealLifeOverhaul.Household
 {
     /// <summary>
-    /// Household staff: the state and the timing. Every game hour the staff's visits are gone through (<see cref="Hour"/>):
-    /// a visit is paid for through the game's money call when it begins and its work is done when it ends (the home cleaned,
-    /// portions put by in the fridge, the cars at home washed), the mechanic's round at once; the day's note comes at nine
-    /// in the evening. The rules are <see cref="HouseholdRules"/>, the game <see cref="HouseholdGame"/>, the character
+    /// Household staff: the state and the timing. Each member works at a home of the player's they were taken on for (or
+    /// moved to). Every game hour the staff's visits are gone through (<see cref="Hour"/>): a visit is paid for through the
+    /// game's money call when it begins and its work is done at that member's home when it ends (the home cleaned, portions
+    /// put by in the fridge, the cars at that home washed), the mechanic's round at once; the day's note comes at nine in
+    /// the evening. The rules are <see cref="HouseholdRules"/>, the game <see cref="HouseholdGame"/>, the character
     /// <see cref="HouseholdAtHome"/>. Cost: each frame one flag test and one clock compare; a look every five seconds, once
-    /// a second in the staff's home. A late look makes up the hours missed, three days at most.
+    /// a second in a staffed home. A late look makes up the hours missed, three days at most.
     /// </summary>
     public sealed partial class HouseholdDirector : MonoBehaviour
     {
@@ -30,6 +31,8 @@ namespace RealLifeOverhaul.Household
 
         private readonly List<HomeCar> _cars = new List<HomeCar>(8);
         private readonly List<StaffMember> _round = new List<StaffMember>(HouseholdRules.Most);
+        private readonly List<BuildingRegistration> _homes = new List<BuildingRegistration>(4);   // the player's homes, filled for a move and emptied after
+        private readonly List<HomeKey> _homeKeys = new List<HomeKey>(4);
         private HouseholdState _state = new HouseholdState();
         private HouseholdAtHome _atHome;
         private string _beforeTests;   // the state's line as it was before the first test tool changed it; null with no test change in place
@@ -168,10 +171,10 @@ namespace RealLifeOverhaul.Household
             {
                 Rounds(stamp);
             }
-            if (_state.Any && HouseholdGame.Inside(_state.HomeStreet, _state.HomeNumber))
+            if (_state.Any && HouseholdGame.InsideHome(out string street, out int number) && HouseholdRules.Staffed(_state.Staff, street, number))
             {
                 _next = now + HomeEvery;
-                _atHome.Tick(now, AtWorkNow(now));
+                _atHome.Tick(now, AtWorkNow(now, street, number));
             }
             else
             {
@@ -188,18 +191,25 @@ namespace RealLifeOverhaul.Household
             ShowCheck(now);
         }
 
-        private StaffMember AtWorkNow(float now)
+        // Who is at work at the home the player is in: only that home's own staff.
+        private StaffMember AtWorkNow(float now, string street, int number)
         {
             if (_forced != null)
             {
                 if (now < _forcedUntil && _state.Staff.Contains(_forced))
                 {
-                    return _forced;
+                    if (_forced.WorksAt(street, number))
+                    {
+                        return _forced;
+                    }
                 }
-                _forced = null;
+                else
+                {
+                    _forced = null;
+                }
             }
             int day = HouseholdGame.Day;
-            return HouseholdRules.OnShow(_state.Staff, day, HouseholdGame.Weekday(day), HouseholdGame.Hour);
+            return HouseholdRules.OnShow(_state.Staff, day, HouseholdGame.Weekday(day), HouseholdGame.Hour, street, number);
         }
 
         private void Load()
@@ -219,8 +229,8 @@ namespace RealLifeOverhaul.Household
             _beforeTests = save.modData.TryGetValue(TestKey, out string before) && !string.IsNullOrEmpty(before) ? before : null;
             _loaded = true;
             HouseholdPhone.Setup();
-            Logger?.Info("Household staff: " + (_state.Any ? _state.Staff.Count + " at " + _state.HomeNumber + " " + _state.HomeStreet + " (" + Names() + ")" : "nobody on the staff")
-                         + " (save version " + version + ").");
+            Logger?.Info("Household staff: " + (_state.Any ? _state.Staff.Count + " at " + HouseholdRules.HomesStaffed(_state.Staff) + " home(s) (" + Names() + ")" : "nobody on the staff")
+                         + " (save version " + version + (version > 0 && version < HouseholdStore.Version ? ": the one home of before is now each member's own" : string.Empty) + ").");
         }
 
         private string Names()
@@ -229,7 +239,7 @@ namespace RealLifeOverhaul.Household
             for (int i = 0; i < _state.Staff.Count; i++)
             {
                 StaffMember m = _state.Staff[i];
-                names = (names == null ? string.Empty : names + ", ") + m.Name + " the " + m.Kind;
+                names = (names == null ? string.Empty : names + ", ") + m.Name + " the " + m.Kind + " at " + m.HomeNumber + " " + m.HomeStreet;
             }
             return names ?? string.Empty;
         }
@@ -328,17 +338,21 @@ namespace RealLifeOverhaul.Household
             {
                 return;
             }
-            BuildingRegistration home = WorkPlace(day);
-            if (home == null)
-            {
-                return;
-            }
             int weekday = HouseholdGame.Weekday(day);
             _round.Clear();
             _round.AddRange(_state.Staff);   // a person who leaves in the round is not met again in it
             for (int i = 0; i < _round.Count; i++)
             {
                 StaffMember m = _round[i];
+                if (!_state.Staff.Contains(m))
+                {
+                    continue;
+                }
+                BuildingRegistration home = WorkPlace(m, day);   // every hour, so a member of a home given up moves or leaves at once
+                if (home == null)
+                {
+                    continue;
+                }
                 StaffRole role = HouseholdRules.Role(m.Kind);
                 if (HouseholdRules.Ends(role, weekday, hour))
                 {
@@ -356,29 +370,53 @@ namespace RealLifeOverhaul.Household
             }
         }
 
-        // The home they work at; if the player has given it up they follow to another of theirs, and with none they leave.
-        private BuildingRegistration WorkPlace(int day)
+        /// <summary>
+        /// The home a member works at. If the player has given it up they move to another home of the player's that has
+        /// nobody of their kind (the first in the save's order, <see cref="HouseholdRules.Rehome"/>); with none they leave.
+        /// </summary>
+        private BuildingRegistration WorkPlace(StaffMember m, int day)
         {
-            BuildingRegistration home = HouseholdGame.HomeAt(_state.HomeStreet, _state.HomeNumber);
+            BuildingRegistration home = HouseholdGame.HomeAt(m.HomeStreet, m.HomeNumber);
             if (home != null)
             {
                 return home;
             }
-            home = HouseholdGame.AnyHome();
+            HouseholdGame.Homes(_homes);
+            _homeKeys.Clear();
+            for (int i = 0; i < _homes.Count; i++)
+            {
+                _homeKeys.Add(new HomeKey(_homes[i].StreetName, _homes[i].StreetNumber));
+            }
+            int at = HouseholdRules.Rehome(_state.Staff, m, _homeKeys);
+            home = at >= 0 ? _homes[at] : null;
+            bool anyHome = _homes.Count > 0;
+            _homes.Clear();
+            _homeKeys.Clear();
+            string from = m.HomeNumber + " " + m.HomeStreet;
             if (home != null)
             {
-                _state.HomeStreet = home.StreetName;
-                _state.HomeNumber = home.StreetNumber;
-                Note(day, HouseholdText.T(HouseholdText.Moved, new StaffFill().With(home.StreetNumber + " " + home.StreetName)));
-                Logger?.Info("Household staff: the home they worked at is no longer the player's; they work at " + home.StreetNumber + " " + home.StreetName + " now.");
+                if (ReferenceEquals(_atHome.Shown, m))
+                {
+                    _atHome.Leave();
+                }
+                m.HomeStreet = home.StreetName;
+                m.HomeNumber = home.StreetNumber;
+                Note(day, HouseholdText.T(HouseholdText.MovedOne, StaffFill.For(m.Name).With(HouseholdText.KindWord(m.Kind)).At(HouseholdGame.Where(home))));
+                Logger?.Info("Household staff: " + from + " is no longer the player's home; " + m.Name + " the " + m.Kind + " works at " + home.StreetNumber + " " + home.StreetName + " now.");
                 return home;
             }
-            Logger?.Info("Household staff: the player has no home any more; " + _state.Staff.Count + " member(s) of the staff have left.");
-            _state.Staff.Clear();
-            _state.HomeStreet = null;
-            _state.HomeNumber = 0;
-            _atHome.Leave();
-            HouseholdText.Toast(NotificationType.Warning, HouseholdText.NoHome, default, 10f);
+            Logger?.Info("Household staff: " + from + " is no longer the player's home and "
+                         + (anyHome ? "every other home of theirs has a " + m.Kind + " or the most homes have staff" : "they have no home any more")
+                         + "; " + m.Name + " the " + m.Kind + " has left.");
+            Dismiss(m);
+            if (anyHome)
+            {
+                HouseholdText.Toast(NotificationType.Warning, HouseholdText.LeftNoRoom, StaffFill.For(m.Name).With(HouseholdText.KindWord(m.Kind)), 10f);
+            }
+            else if (!_state.Any)
+            {
+                HouseholdText.Toast(NotificationType.Warning, HouseholdText.NoHome, default, 10f);
+            }
             return null;
         }
 
@@ -435,11 +473,12 @@ namespace RealLifeOverhaul.Household
             }
             HouseholdRules.Paid(m, day, total);
             m.Dish = dish;
-            if (HouseholdGame.Inside(_state.HomeStreet, _state.HomeNumber) && HouseholdGame.Quiet)
+            if (HouseholdGame.Inside(m.HomeStreet, m.HomeNumber) && HouseholdGame.Quiet)
             {
                 HouseholdText.Toast(NotificationType.Info, HouseholdText.Arrived, StaffFill.For(m.Name).With(HouseholdText.KindWord(m.Kind)).Hours(role), 7f);
             }
-            Logger?.Info("Household staff: " + m.Name + " the " + m.Kind + " began a visit, paid " + total + (dish >= 0 ? " with the shopping for " + portions + " portion(s)" : string.Empty) + ".");
+            Logger?.Info("Household staff: " + m.Name + " the " + m.Kind + " began a visit at " + m.HomeNumber + " " + m.HomeStreet + ", paid " + total
+                         + (dish >= 0 ? " with the shopping for " + portions + " portion(s)" : string.Empty) + ".");
         }
 
         // A visit ends: the work is done.
@@ -491,7 +530,8 @@ namespace RealLifeOverhaul.Household
             }
             m.OnDay = -1;
             m.Dish = -1;
-            Logger?.Info("Household staff: " + m.Name + " the " + m.Kind + " finished a visit" + (tidy >= 0f ? ", the home " + Mathf.RoundToInt(tidy) + "% tidy" : string.Empty)
+            Logger?.Info("Household staff: " + m.Name + " the " + m.Kind + " finished a visit at " + m.HomeNumber + " " + m.HomeStreet
+                         + (tidy >= 0f ? ", the home " + Mathf.RoundToInt(tidy) + "% tidy (" + HouseholdGame.FloorCells(home) + " floor cells)" : string.Empty)
                          + (role.Cooks ? ", " + put + " portion(s) put by (" + HouseholdGame.Leftovers + " in the fridge)" : string.Empty)
                          + (role.Washes ? ", " + washed + " car(s) washed" : string.Empty) + ".");
         }
@@ -551,8 +591,8 @@ namespace RealLifeOverhaul.Household
             {
                 Note(day, HouseholdText.T("reallife_household_note_mechanic", f.With(WorkWords(washes, repairs, services))));
             }
-            Logger?.Info("Household staff: " + m.Name + " the mechanic saw to " + cars + " car(s) at home: " + washes + " washed, " + repairs + " repaired, " + services
-                         + " serviced, " + total + " charged with the call-out.");
+            Logger?.Info("Household staff: " + m.Name + " the mechanic saw to " + cars + " car(s) at " + m.HomeNumber + " " + m.HomeStreet + ": " + washes + " washed, " + repairs
+                         + " repaired, " + services + " serviced, " + total + " charged with the call-out.");
         }
 
         private static string WorkWords(int washes, int repairs, int services)
@@ -632,8 +672,14 @@ namespace RealLifeOverhaul.Household
             }
         }
 
-        /// <summary>The home the staff work at, or would: theirs while anybody is on the staff, else the player's.</summary>
-        public BuildingRegistration Home => _state.Any ? HouseholdGame.HomeAt(_state.HomeStreet, _state.HomeNumber) ?? HouseholdGame.AnyHome() : HouseholdGame.AnyHome();
+        /// <summary>A home of the player's: the one they stand in, else the first they have. Null with none.</summary>
+        public BuildingRegistration Home => HouseholdGame.AnyHome();
+
+        /// <summary>The home a member works at, while it is still the player's; null otherwise.</summary>
+        public BuildingRegistration HomeOf(StaffMember m) => m != null ? HouseholdGame.HomeAt(m.HomeStreet, m.HomeNumber) : null;
+
+        /// <summary>Fills the list with the player's homes, in the save's order.</summary>
+        public void Homes(List<BuildingRegistration> into) => HouseholdGame.Homes(into);
 
         /// <summary>The person the agency puts forward now for a kind, and what they ask an hour (cents; 0 for the mechanic).</summary>
         public StaffCandidate Candidate(StaffKind kind, out int hourly)
@@ -650,35 +696,63 @@ namespace RealLifeOverhaul.Household
             _state.NextRoll(kind);
         }
 
-        /// <summary>Takes on the person the agency puts forward for a kind. Null if they are on the staff now; otherwise why not (a locale key).</summary>
-        public string Hire(StaffKind kind)
+        /// <summary>
+        /// Takes on the person the agency puts forward for a kind, to work at a home of the player's. Null if they are on the
+        /// staff now; otherwise why not (a locale key, filled with the most homes as {n}).
+        /// </summary>
+        public string Hire(StaffKind kind, BuildingRegistration home)
         {
             StaffRole role = HouseholdRules.Role(kind);
-            if (role == null || _state.Has(kind) || _state.Staff.Count >= HouseholdRules.Most)
-            {
-                return "reallife_household_no_already";
-            }
-            BuildingRegistration home = Home;
-            if (home == null)
+            if (home == null || !GoingPublic.Mine(home))
             {
                 return "reallife_household_page_no_home";
+            }
+            switch (HouseholdRules.CanHire(_state.Staff, kind, home.StreetName, home.StreetNumber))
+            {
+                case HireRefusal.NoHome:
+                    return "reallife_household_page_no_home";
+                case HireRefusal.HomesFull:
+                    return "reallife_household_no_homes_most";
+                case HireRefusal.Taken:
+                case HireRefusal.Full:
+                    return "reallife_household_no_already";
             }
             if (kind == StaffKind.Cook && !HouseholdGame.CanStore)
             {
                 return "reallife_household_no_cooking";
             }
             StaffCandidate c = Candidate(kind, out int hourly);
-            StaffMember m = StaffMember.From(c, hourly, HouseholdGame.Day);
-            if (!_state.Any)
-            {
-                _state.HomeStreet = home.StreetName;
-                _state.HomeNumber = home.StreetNumber;
-            }
+            StaffMember m = StaffMember.From(c, hourly, HouseholdGame.Day, home.StreetName, home.StreetNumber);
             _state.Staff.Add(m);
             _state.NextRoll(kind);
-            Logger?.Info("Household staff: " + m.Name + " was taken on as the " + kind + " at " + _state.HomeNumber + " " + _state.HomeStreet + " (skill " + m.Skill + ", "
+            Logger?.Info("Household staff: " + m.Name + " was taken on as the " + kind + " at " + m.HomeNumber + " " + m.HomeStreet + " (skill " + m.Skill + ", "
                          + (hourly > 0 ? (hourly / 100f).ToString("F2", System.Globalization.CultureInfo.InvariantCulture) + " an hour, "
                              + HouseholdRules.VisitWage(hourly, role) + " a visit" : "the call-out and the work at a garage's prices") + ").");
+            return null;
+        }
+
+        /// <summary>
+        /// Moves a member to another home of the player's. They work there from now on: a visit under way finishes there, and
+        /// the next is paid as any. Null when done; otherwise why not (a locale key).
+        /// </summary>
+        public string Move(StaffMember m, BuildingRegistration home)
+        {
+            if (m == null || !_state.Staff.Contains(m) || home == null || !GoingPublic.Mine(home))
+            {
+                return "reallife_household_page_no_home";
+            }
+            if (!HouseholdRules.CanMove(_state.Staff, m, home.StreetName, home.StreetNumber))
+            {
+                return HouseholdRules.FindAt(_state.Staff, m.Kind, home.StreetName, home.StreetNumber) != null ? "reallife_household_no_already" : "reallife_household_no_homes_most";
+            }
+            if (ReferenceEquals(_atHome.Shown, m))
+            {
+                _atHome.Leave();   // they go now; the look puts whoever is due at either home
+            }
+            string from = m.HomeNumber + " " + m.HomeStreet;
+            m.HomeStreet = home.StreetName;
+            m.HomeNumber = home.StreetNumber;
+            Logger?.Info("Household staff: " + m.Name + " the " + m.Kind + " moved from " + from + " to " + m.HomeNumber + " " + m.HomeStreet + ".");
             return null;
         }
 

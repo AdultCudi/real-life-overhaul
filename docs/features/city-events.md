@@ -93,12 +93,14 @@ The game has rain and nothing else: no snow, fog, wind, temperature or forecast.
 | ice | one cold-snap day in three | x1.4 | | | x0.7 | x0.75 | x0.9 |
 | snow in patches, covered | the snow on the roads, from [Seasons](seasons.md) (`Weather.SnowNow`), on top of the rest | x1.2, x1.45 | | covered x0.9 | x0.9, x0.8 | x0.88, x0.72 | x0.93, x0.85 |
 
+The street life factor thins the city life's sites (`StreetLifeRules.Sites`, asked in `CityLifeDirector.Wanted`): at least one site while it is above 0, none in a storm.
+
 Seasons are quarters of the game's year (`gameVariables.daysPerYear`, 60 by default), starting in midwinter.
 
 `WeatherEffects` applies grip to the driven car's `LateralFrictionGrip` and `LongitudinalFrictionGrip` (the values `Driving/CarTuning` reads; recorded per wheel and written back exactly).
 It narrows each pooled traffic vehicle's `minPossibleSpeed`/`maxPossibleSpeed` (the traffic system has no speed factor; it takes effect as cars are put on the road; originals written back). The pool is made once, when the traffic system starts (GleyTrafficSystem's TrafficVehicles.Initialize), and never grows: an idle car is in it too, so a car that sets off later already has the weather's range. On a Going Public guest the traffic is the host's cars, so nothing is narrowed there, and what was is put back the moment the machine becomes a guest.
 
-It spends 1 to 2 energy an hour out of doors in heat (11 to 19 h) and cold (never below 15; `Weather.Wardrobe`, if anybody sets it, says whether a coat is worn).
+It spends 1 to 2 energy an hour out of doors in heat (11 to 19 h) and cold (never below 15; `Weather.Wardrobe`, set by `Wiring.LifeLinks` to `CharacterCatalogue.WearingWarmTop`, says whether a warm top is worn: none is spent in it in the cold).
 It gives the morning forecast (toast and City Bulletin) and a warning when the weather turns.
 While the player sleeps its toasts are held for the morning summary (`Core/MorningNews`): the director runs on game time, which the game's sleep pauses, so they would all come in the minute the player wakes.
 
@@ -132,7 +134,7 @@ Footfall for nearby businesses is not changed: the game rebuilds a business's pr
 - `Traffic/TrafficAccidents.Tick` (read-only to this work, so not made): the roll becomes `Random.value < Settings.AccidentFrequency * 0.02f * Events.Weather.AccidentFactor`, and its start condition gains `&& !Events.EventDirector.IsActive`.
 - `Traffic/TrafficAccidents`, where a severe crash is staged: `Events.EventDirector.CrashFire(wreck)` sets that wreck alight for 50 s (flames, smoke, firelight; no engine).
 - `Traffic/PursuitSight` and `Crime/PoliceAttention`: multiply their sight distances by `Events.Weather.SightFactor`.
-- A wardrobe feature: `Events.Weather.Wardrobe = <IWardrobe>`.
+- Made already: `Wiring.LifeLinks` sets `Events.Weather.Wardrobe` (a warm top of the game's own or the mod's bomber, `Seasons/WarmthRules`).
 - Made already: `Crime/CrimeDirector` (`* Events.Weather.CrimeFactor`, `&& !Events.EventDirector.IsActive`), `CityLife/CityLifeDirector` (`&& !Events.Weather.TakeCover`), `Phone/PhoneContacts` (the 911 dialog offers "Report a fire" and calls `Events.EventDirector.Report911()`).
 
 ## Asset wish-list

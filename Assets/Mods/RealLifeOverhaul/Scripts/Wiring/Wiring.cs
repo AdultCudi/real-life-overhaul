@@ -34,6 +34,7 @@ namespace RealLifeOverhaul
             Reported.Clear();
             Step("law and justice", Arrests.Connect);
             Step("licences", LicenceLinks.Connect);
+            Step("police reports for the insurers", ReportLinks.Connect);
             Step("the recorded car sounds", CarSoundLinks.Connect);
             Step("civic life", CivicLinks.Connect);
             Step("everyday life", LifeLinks.Connect);
@@ -147,6 +148,7 @@ namespace RealLifeOverhaul
             Step("the driven car's handling and the custom shop's parts", DrivingLinks.Disconnect);
             Step("everyday life", LifeLinks.Disconnect);
             Step("civic life", CivicLinks.Disconnect);
+            Step("police reports for the insurers", ReportLinks.Disconnect);
             Step("licences", LicenceLinks.Disconnect);
             Step("the recorded car sounds", CarSoundLinks.Disconnect);
             Step("law and justice", Arrests.Disconnect);

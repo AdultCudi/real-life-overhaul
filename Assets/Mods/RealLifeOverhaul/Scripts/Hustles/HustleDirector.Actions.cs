@@ -237,9 +237,20 @@ namespace RealLifeOverhaul.Hustles
             {
                 return;
             }
-            HustleRules.Book(g);
+            if (!HustleRules.Book(g, HustleGame.Stamp))
+            {
+                Passed(g);
+                return;
+            }
             Route(g.Street, g.Number);
             HustleText.Note(NotificationType.Success, "reallife_hustle_note_booked", "who", g.Client, "time", HustleText.Clock(g.From), "place", HustleText.Place(g.Street, g.Number), 10f);
+            Changed();
+        }
+
+        // The hours the client waited have gone: neither a yes nor a helper takes it now (the visit is missed at the next hour).
+        private void Passed(Gig g)
+        {
+            HustleText.Note(NotificationType.Warning, "reallife_hustle_note_passed", "who", g.Client, "time", HustleText.Clock(g.Until), 10f);
             Changed();
         }
 
@@ -263,7 +274,11 @@ namespace RealLifeOverhaul.Hustles
             {
                 return;
             }
-            HustleRules.SendHelper(_state, g, HustleGame.Stamp);
+            if (!HustleRules.SendHelper(_state, g, HustleGame.Stamp))
+            {
+                Passed(g);
+                return;
+            }
             HustleText.Note(NotificationType.Info, "reallife_hustle_note_helper_sent", "who", g.Client, "fee", HustleText.Money(g.HelperFee), "time", HustleText.Clock(g.HelperDone), 10f);
             Logger?.Info("Hustles: a helper was sent to " + g.Client + " for " + g.HelperFee + " of " + g.Pay + "; done at hour stamp " + g.HelperDone + ".");
             Changed();

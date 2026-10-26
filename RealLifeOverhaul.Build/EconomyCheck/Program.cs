@@ -235,6 +235,12 @@ internal static partial class Program
             return _failed == 0 ? 0 : 1;
         }
 
+        if (args.Length == 1 && args[0] == "--staff-centres")
+        {
+            StaffCentres();   // (a raise for several picked, a warehouse taken as a data centre, a data centre's crew by a search firm, alone)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--hierarchy")
         {
             Hierarchy();   // (the company's hierarchy alone, while working on it: HierarchyChecks.cs)
@@ -379,6 +385,8 @@ internal static partial class Program
         Rota();
         Managers();   // the managers of the player's places: their decisions inside the limits, mistakes, undo and the save (ManagerChecks.cs)
         Hierarchy();  // the company's policy over the managers, its scopes, the escalations, who holds them and the save (HierarchyChecks.cs)
+        StaffCentres();   // a raise for several picked in MyEmployees, a warehouse taken as a data centre, a data centre's crew by a search firm (PickedRaiseChecks.cs, CentreCrewChecks.cs)
+        FontFix();   // What's new tells of the font stutter fix in all nine languages (FontFixChecks.cs)
         Estate();
         Online();
         Services();
@@ -401,6 +409,7 @@ internal static partial class Program
         CityReserveChecks();   // the two largest offices kept for the player, the courthouse at the moving company, the moves told once (CityReserveChecks.cs)   // the university's permanent building, its reservation, the older game's rule and the fallback (CampusHomeChecks.cs)
         Internet();
         Broadband();
+        NetSpeed();     // internet speed: the one curve, a tech firm's work and an online shop's orders a day by the line (NetSpeedChecks.cs)
         Empire();
         Dealer();
         ShowroomFloor();
@@ -463,6 +472,7 @@ internal static partial class Program
         JusticeSaveRoundTrip();   // Justice's save line: names with %XXXX escapes come back as written, one at the very end too (JusticeSaveChecks.cs)
         CameraBills();   // a getaway's camera bill taken by its court case: nothing beside a summons, nothing after a dismissal, damages with a conviction (CameraBillChecks.cs)
         TravelPrices();   // travel's extras, dinners, splurges, events and loyalty night at today's prices, and what the room shows is what it charges (TravelPriceChecks.cs)
+        MoneyBugs();   // finance minimums at today's prices, the taxi and franchise refusals, kiosk words by the option, one licence charge, a catch at today's prices (MoneyBugChecks.cs)
         Leftovers();   // every object a feature lists for clean-up is made, every text of leisure and photo mode is read (LeftoverChecks.cs)
         Endings();
         Infra2();
@@ -478,6 +488,7 @@ internal static partial class Program
         LifePace();     // utility accounts and Flare's shops seen from their indexes, as the passes found them (LifePaceChecks.cs)
         Apps();         // the apps' clicks: a table written as it scrolls, the Ledger's pages kept, a photo's small copy made a row at a time (AppsChecks.cs)
         CartQueue();
+        BugsMisc();     // the Guide audit's smaller bugs: the police report, the coat, a preset's value, the save report, a hand-over in a session, the school's hours, the cart (BugsMiscChecks.cs)
         VendorCartFixes();   // the drinks cart off crossings, its pitch checked after the cut, a customer who cannot reach it replaced (VendorCartFixChecks.cs)
         StockerFixes();      // the shelf to stock shown as soon as a box is carried in, its marker cleared on the way out (StockerFixChecks.cs)
         Work();

@@ -268,6 +268,7 @@ common_confirm
 common_friday
 common_monday
 common_neighborhoods
+common_no_option_selected
 common_notification_invalid_amount
 common_open
 common_real_estate
@@ -286,8 +287,10 @@ educationdoorcontroller_closed
 ferris_wheel
 filebrowser_delete
 government
+itemhelper_notification_you_are_to_stuffed_to_eat_this
 job_board
 menu_save
+myemployees_mass_action_no_employees_selected
 notification_destination_set
 notification_need_empty_hands_to_interact
 persona_education_not_started

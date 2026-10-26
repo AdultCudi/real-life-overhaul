@@ -539,17 +539,22 @@ namespace RealLifeOverhaul
         private void Repaired(float bill)
         {
             bool insured = _record.InsuredUntil >= TimeHelper.CurrentDay;
-            float payout = insured ? CarRules.Payout(bill) : 0f;
+            bool reported = insured && CarGarage.Waives(TimeHelper.CurrentDay);   // a police report on the break-in or the accident: no excess
+            float payout = insured ? CarRules.Payout(bill, reported) : 0f;
             Logger?.Info("Car ownership: a repair of about " + bill.ToString("F0") + " noticed; " + (insured ? "the insurer pays " + payout.ToString("F0") : "the car is not insured") + ".");
             if (payout < 1f)
             {
                 return;
             }
             GameManager.ChangeMoneySafe(payout, new TransactionInfo("reallife_transaction_insurance_payout"), null, null, force: true);
+            if (reported)
+            {
+                CarGarage.Spend();
+            }
             _record.Claims++;
             _record.LastClaimDay = TimeHelper.CurrentDay;
             Notifications.Show(NotificationType.Success, "reallife_car_insurance_paid",
-                new Dictionary<string, string>(2) { { "amount", TransitText.Money(payout) }, { "excess", TransitText.Money(CarRules.Excess) } }, 10f);
+                new Dictionary<string, string>(2) { { "amount", TransitText.Money(payout) }, { "excess", TransitText.Money(reported ? 0f : CarRules.Excess) } }, 10f);
         }
 
         private string Note(bool easy)

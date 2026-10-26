@@ -39,6 +39,14 @@ namespace RealLifeOverhaul.Texts
         Local        // a program on this PC, on 127.0.0.1: nothing to type
     }
 
+    /// <summary>What forgetting lets go of for a service.</summary>
+    public enum TextForget
+    {
+        Nothing,     // Off, or a program on this PC: no key, no sign-in
+        Key,         // the key the player typed for that service
+        SignOut      // the ChatGPT sign-in
+    }
+
     /// <summary>One service: where it is, how it is spoken to, its model when the player names none, and its quirks.</summary>
     public sealed class TextProviderInfo
     {
@@ -111,6 +119,16 @@ namespace RealLifeOverhaul.Texts
             new TextProviderInfo { Id = TextProvider.Ollama, Name = "Ollama", Api = TextApi.Chat, Access = TextAccess.Local, Base = "http://127.0.0.1:11434/v1", Model = null },
             new TextProviderInfo { Id = TextProvider.LmStudio, Name = "LM Studio", Api = TextApi.Chat, Access = TextAccess.Local, Base = "http://127.0.0.1:1234/v1", Model = null }
         };
+
+        /// <summary>What "Forget the key or sign out" lets go of for the chosen service: its key, the ChatGPT sign-in, or nothing (Off and the programs on this PC keep neither).</summary>
+        public static TextForget Forgets(TextProviderInfo p)
+        {
+            if (p == null || p.Id == TextProvider.Off)
+            {
+                return TextForget.Nothing;
+            }
+            return p.Access == TextAccess.Key ? TextForget.Key : p.Access == TextAccess.SignIn ? TextForget.SignOut : TextForget.Nothing;
+        }
 
         /// <summary>How many entries the options page's list has, Off first.</summary>
         public static int Count => All.Length;
