@@ -346,6 +346,14 @@ Its label is `reallife_social_test_mom`, and its row is in the chain in `Core/Re
 
 "Lose touch with the newest acquaintance and check the place is free" (`reallife_social_test_lose`, `SocialDirector.TestLoseTouch`) lets go of the newest acquaintance nothing holds (`SocialRules.NewestLoseable`), without the question, and checks that their slot holds somebody new and not met, that their contact is gone and that somebody is left to meet: the notice and the log line `Social check (lose touch)` say PASS or FAIL. It says why when nobody can go.
 
+## One face for one person
+
+Mom and Alex are two fixed characters, like Uncle Fred: one table, `FixedPeople` (Phone/Contacts/FixedPeople.cs), gives each a gender, an age and a look seed, the same for every player in a new game, an old game and an old save. Nothing about them is rolled or seeded by the save. The social life's record (`SocialCatalogue.FixLook`), every scene that stands them in the world (`SocialCast`, `RoommateCast`, `FamilyCast`'s Mother), the phone and Flare pictures and the contact catalogue read that table alone. Alex is a woman, as the player met her at the start. To give one of them another face by hand, change the table and nothing else.
+
+Everyone else the mod keeps has one stored look per save: the record's `Seed` (and `Look`, if met in the street). A roommate who is one of the social life's people keeps a copy of that record; `RoommateRules.Mend` makes the copy follow the record (the one the player met first), when the save is read, before they are shown at home and before their picture is drawn (`RoommateDirector.Mend`). The partner is drawn at the age of the social life's record at home, on the phone and out (`Partner.LookAge`). A save with two looks for one person is put right on load (`SocialState.Read`, `RoommateDirector.Load`): one log line a person (`People: Alex's look put right in ...`) and one notice (`reallife_social_looks_again`); once saved, nothing is repaired or said again.
+
+"Alex and Mom look the same everywhere" (`reallife_social_test_looks`, `SocialDirector.TestOneLook`) compares each in the social record a gathering dresses from, a roommate's copy made wrong on purpose and mended as a load mends it, and the phone picture, against the table: the log line `Social check (one look per person)` and the notice say PASS or FAIL. The characters themselves are not stood in a scene by this test.
+
 ## On screen: the game's own interface (Social)
 
 The mod draws nothing of its own for the social life (`SocialHud` is gone).

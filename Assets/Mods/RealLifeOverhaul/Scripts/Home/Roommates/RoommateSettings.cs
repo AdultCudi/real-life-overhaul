@@ -34,6 +34,8 @@ namespace RealLifeOverhaul.Roommates
         /// <summary>They introduce somebody the player has not met; returns that person's name, or null if nobody could be.</summary>
         public static Func<int, string> Introduce;
         public static Func<int, bool> IsPartner;
+        /// <summary>The social life's person in a place of its cast, or null if there is none (yet): the record a roommate who is one of them is a copy of.</summary>
+        public static Func<int, SocialPerson> Record;
 
         /// <summary>The partner's body while they are shown in the home, or null: the roommate keeps off where they are.</summary>
         public static Func<UnityEngine.Transform> PartnerBody;
@@ -48,6 +50,7 @@ namespace RealLifeOverhaul.Roommates
             MakeFriend = null;
             Introduce = null;
             IsPartner = null;
+            Record = null;
         }
     }
 

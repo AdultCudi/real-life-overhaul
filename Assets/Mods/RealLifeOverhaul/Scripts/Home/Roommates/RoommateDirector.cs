@@ -217,6 +217,27 @@ namespace RealLifeOverhaul.Roommates
             }
         }
 
+        /// <summary>
+        /// One identity for the roommate: if they are one of the social life's people, their copy takes that person's look (Alex
+        /// and Mom the fixed look of FixedPeople), so they are the same at home, at a gathering and on the phone. Called when the
+        /// save is read, before they are shown at home and before their picture is drawn; a repair is noted for the log and the
+        /// one notice (FixedPeople). True if anything was put right. Cheap: a few comparisons, no allocation unless it repaired.
+        /// </summary>
+        public bool Mend()
+        {
+            Flatmate mate = _state?.Mate;
+            if (mate == null)
+            {
+                return false;
+            }
+            bool changed = RoommateRules.Mend(mate, mate.Friend >= 0 ? RoommateBridges.Record?.Invoke(mate.Friend) : null);
+            if (changed)
+            {
+                FixedPeople.Mended(mate.Person.Name, "the roommate's record", mate.Person.Female, mate.Person.Age, mate.Person.Seed);
+            }
+            return changed;
+        }
+
         private void Load()
         {
             GameInstance save = SaveGameManager.Current;
@@ -242,6 +263,7 @@ namespace RealLifeOverhaul.Roommates
             string before;
             _beforeTests = save.modData.TryGetValue(TestKey, out before) && !string.IsNullOrEmpty(before) ? before : null;
             _loaded = true;
+            Mend();
             RoommatePhone.Setup();
             BuildAlerts();
             Logger?.Info("Roommates: " + (_state.Living ? _state.Mate.Person.Name + " lives in (level " + Level + ", next rent day " + _state.RentDay + ")"

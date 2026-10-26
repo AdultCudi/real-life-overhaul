@@ -69,6 +69,7 @@ namespace RealLifeOverhaul.Roommates
                 }
                 person.Character.gameObject.SetActive(true);
                 person.Reset(Props);
+                SocialCatalogue.FixedFor(who, "the roommate's home");   // Alex is the fixed character of Phone/Contacts/FixedPeople wherever they are shown
                 long wanted = ((long)who.Seed << 1) | (who.Female ? 1L : 0L);
                 if (_worn != wanted)
                 {
@@ -241,7 +242,7 @@ namespace RealLifeOverhaul.Roommates
             Random.InitState(seed);
             try
             {
-                appearance.data.ageInDays = Mathf.Clamp(who.Age, 18, 80) * year;
+                appearance.data.ageInDays = Mathf.Clamp(who.Age, 18, 85) * year;   // (as the social life and the portraits clamp: one person, one age)
                 if (!PersonLookGame.Dress(appearance, seed))   // (somebody met in the street: the look they had there, People/PersonLook)
                 {
                     appearance.RandomizeElements(who.Female ? Gender.Female : Gender.Male, SkinColorHelper.GetRandom(seed), Casual, seed);

@@ -27,6 +27,7 @@ namespace RealLifeOverhaul.Roommates
         public static void Picture()
         {
             RoommateDirector d = RoommateDirector.Instance;
+            d?.Mend();   // their picture is the one look they have everywhere
             Flatmate mate = d != null ? d.State.Mate : null;
             if (mate != null && mate.Person != null)
             {
