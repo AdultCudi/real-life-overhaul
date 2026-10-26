@@ -22429,7 +22429,7 @@
   "reallife_hire_test_orphan_fail": "Teste falhou: uma leitura dos negócios da cidade tropeçou num registro sem prédio. O log diz qual.",
   "reallife_hire_test_orphan_off": "Carregue um save primeiro. Este teste não roda numa sessão do Going Public.",
   "reallife_changes_next_title": "Próxima versão",
-  "reallife_changes_next": "Modo de construção na cidade toda: fora do Uptown cada prédio do jogo é um lote no mapa, colorido por quem é o dono e pelo tipo em cada visão, com endereço, dono, preço e situação sob o ponteiro. Clique em um para comprar ou alugar no BizMan, ou para reformar ou reconstruir um dos seus; quadrados, zoneamento e prédios novos ficam no Uptown. O ponteiro vira uma cruz sobre o mapa, como em Cities Skylines.",
+  "reallife_changes_next": "Nada ainda.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Corrigido: quando todos os prédios que poderiam abrigar o escritório de serviços públicos são seus, as contas de luz e água são pedidas e religadas no app Contas, por telefone, pelos mesmos preços, e os avisos dizem isso; quando um prédio fica livre o escritório volta a abrir e o app diz onde. Corrigido: depois de retirar uma candidatura e se candidatar de novo à mesma vaga, o app Carreira abria a retirada e não dava para chegar à entrevista. Cada candidatura agora tem sua própria linha, e a entrevista, a oferta e a retirada vão para a ativa. Corrigido: um save com um registro de negócio cujo prédio a cidade não tem (outro mod pode deixar um para trás) não desliga mais o setor de tecnologia a cada carregamento. O mod agora deixa esse registro de fora sempre que lê os negócios da cidade, cita o endereço dele uma vez no log e não muda nada nele.",
   "reallife_co_mass_raise": "Dar aumento",
@@ -25357,5 +25357,7 @@
   "reallife_bld_plot_idle": "Clique em um prédio para comprar ou alugar, ou para reformar ou reconstruir um dos seus.",
   "reallife_bld_mode_test_city": "Modo de construção: os prédios da cidade como lotes",
   "reallife_bld_mode_test_cursor": "Modo de construção: o ponteiro sobre o mapa",
-  "reallife_bld_mode_test_plot": "Modo de construção: o cartão e as ferramentas de um prédio"
+  "reallife_bld_mode_test_plot": "Modo de construção: o cartão e as ferramentas de um prédio",
+  "reallife_changes_057_1_title": "0.57.1",
+  "reallife_changes_057_1": "Modo de construção na cidade toda: fora do Uptown cada prédio do jogo é um lote no mapa, colorido por quem é o dono e pelo tipo em cada visão, com endereço, dono, preço e situação sob o ponteiro. Clique em um para comprar ou alugar no BizMan, ou para reformar ou reconstruir um dos seus; quadrados, zoneamento e prédios novos ficam no Uptown. O ponteiro vira uma cruz sobre o mapa, como em Cities Skylines."
 }

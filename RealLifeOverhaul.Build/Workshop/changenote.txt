@@ -1,40 +1,4 @@
-0.57.0
+0.57.1
 
 New
-- Uptown: Manhattan carries on north past 1st Avenue into a new district of three rows of blocks from Willow to Lake Street, with pavements, lamps, traffic lights, parking, people and traffic. It can be switched off under Uptown in the options.
-- Uptown is built up from the first day, with businesses, homes and offices to rent or buy in BizMan, and a third of its units free to rent.
-- Build mode from the Construction app: buy land square by square, zone it and place one of the city's designs, with demand bars for each use and the city's developers building where a use is wanted.
-- Corner buildings in build mode, seven of them, with live shop signs: the business's name, For lease, and the address number.
-- Your own construction company in the Construction app, or one of the city's eight builders hired to build for you: plans, planning permission, three inspections and the handover.
-- Construction sites that rebuild whole buildings, wrapped to the roof in the game's own scaffolding.
-- The building trades at a works site, from labourer to the city's building inspector, an architects' practice, new courses and three new employers.
-- The city around construction: the building code set by the elected government, rigged tenders, unpaid bills in court and the City Ledger's building of the year.
-- Show flats for blocks sold off plan, and refits of any unit you rent or own.
-- Redevelopment in Uptown: knock down, build anew, join, split, extend and convert, by you and by the city's developers.
-- Uptown's landmarks: Summit Tower, Uptown Galleria and Crest Field, put out to tender, with Uptown FC at home every Saturday.
-- Five of the rival builders on the stock market, building materials on the raw materials exchange and a project's hedge.
-- Uptown's own special places: a Vantander Bank branch, agencies, stores, a supermarket, a clinic, a car dealership, an importer, a wholesale store and a petrol station.
-- Uptown's offices are employers in the Career app, and its builders have someone at the front desk to quote and be hired.
-- Two new bus lines from the subway at 9th and 2nd Street, and benches, bins and trees on Uptown's pavements.
-- Two parks in Uptown with lawns, paths, a fountain, a statue and benches.
-- Birchwood School on Uptown's west square, with its own hand-made buildings: buy it and run it, and enrol your children from the Campus app's Schools tab.
-- Show on map in the Construction app, and the construction game's next steps in the game's objectives.
-- Contact groups in the Contacts app, with search across every group.
-
-Fixed
-- The mod's police stations, hotels, tech towers and other places no longer lose their buildings.
-- Scaffolding goes up at buildings whose door stands out on the pavement.
-- Building sites no longer stand still at the end of a stage.
-- Birchwood School's hall and junior block stand every time the city loads.
-- A finished building stands the moment it is handed over.
-- Birchwood School's building card says it is a school, who runs it and its hours.
-- Birchwood School's page in BizMan names its owner and reads School.
-- Pupils and families now walk Birchwood School's campus.
-- No black slab on the campus lawn.
-- A building the construction game finishes shows on the city map's filters at once.
-- Benches on Uptown's pavements, in its parks and on the campus can be sat on.
-- A building you own also shows under its own type on the city map, and the search finds any building by address.
-- Build mode's squares show on empty land too, and Uptown's demand no longer sits at 0.
-- Build mode is easier to find your way in, with a hint bar, a toolbar in order and a short tour.
-- Fire engines, ambulances, patrol cars and tow trucks on a call no longer wait behind a stopped bus.
-- Build mode's hint bar, tour, zone buttons, legend and drag tidied after the first test.
+- Build mode over the whole city: outside Uptown each of the game's buildings is a plot on the map, coloured by who holds it and by its type in every view, with its address, owner, price and state under the pointer. Click one to buy or rent it in BizMan, or to refurbish or rebuild one of yours; squares, zoning and new buildings stay in Uptown. The pointer is a cross over the map, as in Cities Skylines.
