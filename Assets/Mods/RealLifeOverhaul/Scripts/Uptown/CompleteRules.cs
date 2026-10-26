@@ -30,7 +30,7 @@ namespace RealLifeOverhaul.Uptown
         public int ScheduleDays;     // a business's opening days (the card's open or closed)
         public bool InRegistrations; // among the save's registrations
         public bool InLookup;        // in the city's lookup by address (BizMan, the doors)
-        public bool InCityList;      // among CityManager.cityBuildingControllers (the map's filters and search read it)
+        public bool InCityList;      // among the city's list of building controllers (the map's filters and search read it)
         public bool DoorOnMesh;      // its entrance within reach of the walking mesh
         public int Occupancy;        // the player's deed's tenants, per cent; 0 for none
     }
@@ -149,7 +149,8 @@ namespace RealLifeOverhaul.Uptown
             {
                 b.Append(i > 0 ? ", " : string.Empty).Append(Names[i]).Append(' ').Append((passed & (1 << i)) != 0 ? "PASS" : "FAIL");
             }
-            b.Append(" (owner ").Append(Owner(f) ?? "Undefined").Append(", type ").Append(f.Type ?? "none").Append(", number ").Append(f.Number).Append(" of the plan's ").Append(f.PlanNumber).Append(')');
+            b.Append(" (owner ").Append(Owner(f) ?? "Undefined").Append(", type ").Append(f.Type ?? "none");
+            b.Append(", number ").Append(f.Number).Append(" of the plan's ").Append(f.PlanNumber).Append(')');
             b.Append(All(passed) ? ": PASS" : ": FAIL");
             return b.ToString();
         }

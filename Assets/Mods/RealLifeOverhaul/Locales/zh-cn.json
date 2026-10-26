@@ -24832,7 +24832,7 @@
   "reallife_agency_desk_done": "您已在招聘信息板上登记，有效期至{day}。它会多带来{more}个职位空缺，并在每次申请时为您美言一句。",
   "reallife_bld_button_build_mode": "建造模式",
   "reallife_bld_mode_option": "建造模式：地图上的分区格子",
-  "reallife_opt_tip_construction_buildmode": "建筑公司应用里的建造模式按钮会打开上城上空的城市地图，时间暂停。每个街区被切成小的分区方格：买下它们，在自己的方格上涂上用途，再在上面放置建筑。",
+  "reallife_opt_tip_construction_buildmode": "从建筑公司应用打开上城上空的城市地图，时间暂停。街区被切成小的分区方格，可以购买、分区和建造。",
   "reallife_bld_mode_title": "建造模式",
   "reallife_bld_mode_tool_land": "买地",
   "reallife_bld_mode_tool_zone": "分区",
@@ -24928,5 +24928,6 @@
   "reallife_bld_mode_test_fail": "测试失败。Player.log 里写了原因。",
   "reallife_bld_mode_test_incomplete": "有完工建筑还不是游戏里完整的建筑。Player.log 列出了每一项。",
   "reallife_bld_mode_test_no_building": "现在没有你在上城可拆的建筑。请先在 BizMan 买一栋并清空。",
-  "reallife_uptown_incomplete": "上城有 {count} 栋新建筑还不是游戏里完整的建筑。Player.log 写明缺了什么。"
+  "reallife_uptown_incomplete": "上城有 {count} 栋新建筑还不是游戏里完整的建筑。Player.log 写明缺了什么。",
+  "reallife_opt_sec_buildmode": "建造模式"
 }

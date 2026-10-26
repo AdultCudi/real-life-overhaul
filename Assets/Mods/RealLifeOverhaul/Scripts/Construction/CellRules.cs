@@ -212,7 +212,7 @@ namespace RealLifeOverhaul.Construction
             {
                 return NoCells;
             }
-            int strip = -1, low = int.MaxValue, high = int.MinValue;
+            int strip = -1, low = int.MaxValue, high = -1;   // spaces count from 0
             for (int i = 0; i < picked.Count; i++)
             {
                 if (picked[i].None || picked[i].Column >= grid.Columns.Count)

@@ -466,7 +466,7 @@ internal static partial class Program
         string settings = ModSource(@"Core\Settings.cs");
         string guide = ModSource(@"Construction\ConstructionGuide.cs");
         Check(settings.Contains("public static bool ConstructionBuildMode = true;") && settings.Contains("ConstructionBuildMode = Bool(modId, ConstructionBuildModeId, ConstructionBuildMode);")
-              && ModSource(@"Meta\OptionsTree.cs").Contains(".Opt(\"construction_buildmode\", \"construction\")") && guide.Contains(".Owns(Settings.ConstructionBuildModeId)")
+              && ModSource(@"Meta\OptionsTree.cs").Contains("S(\"buildmode\").Guide(\"construction\").Need(\"construction\").Opts(\"construction_buildmode\")") && guide.Contains(".Owns(Settings.ConstructionBuildModeId)")
               && guide.Contains("AddToggle(Settings.ConstructionBuildModeId, \"reallife_bld_mode_option\"") && director.Contains("if (!Settings.ConstructionBuildMode)")
               && ModSource(@"Construction\ConstructionApp.Overview.cs").Contains("if (!Settings.ConstructionBuildMode)"), "build mode sources: its option on by default, read, in the options' section; off, no button and no opening");
         foreach (string t in new[] { "TestBuildModeOpenNow", "TestBuildModePriceNow", "TestBuildModeBuyNow", "TestBuildModeZoneNow", "TestBuildModePlaceNow", "TestBuildModeBulldozeNow", "TestBuildModeCompleteNow", "TestBuildModeStandNow" })

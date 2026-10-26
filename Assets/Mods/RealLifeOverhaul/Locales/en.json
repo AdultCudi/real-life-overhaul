@@ -24832,7 +24832,7 @@
   "reallife_agency_desk_done": "You are registered with the jobs board until {day}. It brings {more} more vacancies and a word for you with each application.",
   "reallife_bld_button_build_mode": "Build mode",
   "reallife_bld_mode_option": "Build mode: zoning cells over the map",
-  "reallife_opt_tip_construction_buildmode": "A Build mode button in the Construction app opens the city map over Uptown with time paused. Each block is cut into small zoning squares: buy them, paint a use on your own and place a building on them.",
+  "reallife_opt_tip_construction_buildmode": "Opens the city map over Uptown from the Construction app, time paused. Blocks are cut into small zoning squares to buy, zone and build on.",
   "reallife_bld_mode_title": "Build mode",
   "reallife_bld_mode_tool_land": "Buy land",
   "reallife_bld_mode_tool_zone": "Zone",
@@ -24928,5 +24928,6 @@
   "reallife_bld_mode_test_fail": "The test failed. Player.log says why.",
   "reallife_bld_mode_test_incomplete": "A finished building is not yet a whole building of the game. Player.log names each item.",
   "reallife_bld_mode_test_no_building": "No Uptown building of yours can be knocked down now. Buy one in BizMan and empty it first.",
-  "reallife_uptown_incomplete": "{count} new building(s) in Uptown are not yet whole buildings of the game. Player.log names what is missing."
+  "reallife_uptown_incomplete": "{count} new building(s) in Uptown are not yet whole buildings of the game. Player.log names what is missing.",
+  "reallife_opt_sec_buildmode": "Build mode"
 }

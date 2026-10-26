@@ -120,7 +120,8 @@ namespace RealLifeOverhaul.Construction
             bool time = BuildModeGame.Paused == pausedBefore;
             bool pass = open && paused && layer && shut && time && moved < 0.05f;
             ModeLine(test, "open over Uptown " + Yes(open) + ", the time paused " + Yes(paused) + ", the cells drawn " + Yes(layer) + "; left: the map shut and its camera free " + Yes(shut)
-                           + ", the time as before " + Yes(time) + ", the player " + moved.ToString("0.00", CultureInfo.InvariantCulture) + " m from where they were", pass, "reallife_bld_mode_test_fail");
+                           + ", the time as before " + Yes(time) + ", the player " + moved.ToString("0.00", CultureInfo.InvariantCulture) + " m from where they were",
+                               pass, "reallife_bld_mode_test_fail");
         }
 
         private static string Yes(bool b) => b ? "YES" : "NO";
@@ -152,7 +153,8 @@ namespace RealLifeOverhaul.Construction
             CellsBlock(shortSite, out long shortPrice, out _, out _, out _);
             long wanted = CellRules.ColumnPrice(LotPrice(lot), 2, Cells.Columns[first].Rows);
             bool pass = block == null && price == tab && price > 0 && shortPrice == wanted && shortPrice < LotPrice(lot);
-            return ModeLine(test, whole.Cells + " cells of 2 spaces from " + lot.Id + " at " + price + " against the Land tab's " + tab + "; 2 rows of one space at " + shortPrice + " (wanted " + wanted + ")",
+            return ModeLine(test, whole.Cells + " cells of 2 spaces from " + lot.Id + " at " + price + " against the Land tab's " + tab + "; 2 rows of one space at "
+                + shortPrice + " (wanted " + wanted + ")",
                 pass, "reallife_bld_mode_test_fail");
         }
 
@@ -180,7 +182,8 @@ namespace RealLifeOverhaul.Construction
             bool rows = own != null && own.Rows == "3" && RowsHeld(first, out _) == 3;
             bool pass = answer == "reallife_bld_mode_bought" && rows && cut;
             TestDone("three rows of a free space the player's, for nothing", TabLand, 0);
-            return ModeLine(test, "3 rows of " + plan.Id + ": " + answer + ", its rows " + (own != null ? "'" + own.Rows + "'" : "none") + ", its ground cut " + Yes(cut), pass, "reallife_bld_mode_test_fail");
+            return ModeLine(test, "3 rows of " + plan.Id + ": " + answer + ", its rows " + (own != null ? "'" + own.Rows + "'" : "none") + ", its ground cut " + Yes(cut),
+                pass, "reallife_bld_mode_test_fail");
         }
 
         /// <summary>Test: a use painted on a site of the player's: one its zones allow applies; one they do not is asked of the council (its fee paid).</summary>
@@ -233,7 +236,8 @@ namespace RealLifeOverhaul.Construction
             bool asked = refused < 0 || (b == "reallife_bld_mode_paint_asked" && site.ZoneAsk == BuildCatalogue.Zone((BuildUse)refused) && site.Paint == refused + 1)
                          || b == "reallife_bld_answer_no_money";
             TestDone("a use painted on a site of the player's, and one asked of the council", TabLand, 0);
-            return ModeLine(test, "site " + site.Id + ": an allowed use " + (a ?? "none to paint") + ", a use the council must allow " + (b ?? "none to ask"), applied && asked, "reallife_bld_mode_test_fail");
+            return ModeLine(test, "site " + site.Id + ": an allowed use " + (a ?? "none to paint") + ", a use the council must allow " + (b ?? "none to ask"), applied
+                && asked, "reallife_bld_mode_test_fail");
         }
 
         /// <summary>Test: a design placed in build mode makes the very project the app's own calls make on the same site (its use, design, size, floor area, ground).</summary>
@@ -265,7 +269,8 @@ namespace RealLifeOverhaul.Construction
             bool ready = FootprintDesigns(site.FirstColumn, site.Count, site.MinRows, BuildUse.Offices, designs);
             if (!ready || designs.Count == 0)
             {
-                return ModeLine(test, ready ? "no design of the city's fills two spaces of offices" : "the city's designs are still being looked through: press again in a moment", false, "reallife_bld_mode_test_fail");
+                return ModeLine(test, ready ? "no design of the city's fills two spaces of offices"
+                    : "the city's designs are still being looked through: press again in a moment", false, "reallife_bld_mode_test_fail");
             }
             DesignChoice design = designs[0];
             // The app's own path first: the project, its use, the design among its choices.
@@ -338,7 +343,8 @@ namespace RealLifeOverhaul.Construction
             {
                 Abandon(p);   // the test asks; it never knocks anything down
             }
-            return ModeLine(test, "the demolition permit's project for " + ConstructionGame.AddressText(best.Street, best.Number) + ": " + (p != null ? "project " + id + ", given up again" : "none (" + why + ")"),
+            return ModeLine(test, "the demolition permit's project for " + ConstructionGame.AddressText(best.Street, best.Number) + ": " + (p != null ? "project " + id
+                + ", given up again" : "none (" + why + ")"),
                 pass, "reallife_bld_mode_test_fail");
         }
 
@@ -352,7 +358,8 @@ namespace RealLifeOverhaul.Construction
             }
             Func<int> all = BuildModeBridges.CompleteAll;
             int failed = all != null ? all() : -1;
-            return ModeLine("whole buildings", failed < 0 ? "the district cannot be asked at this load" : failed + " finished building(s) with an item failed (each named in its own line)", failed == 0,
+            return ModeLine("whole buildings", failed < 0 ? "the district cannot be asked at this load" : failed
+                + " finished building(s) with an item failed (each named in its own line)", failed == 0,
                 "reallife_bld_mode_test_incomplete");
         }
 
@@ -413,7 +420,8 @@ namespace RealLifeOverhaul.Construction
             bool handed = p.Stage == ProjectStage.Finished && p.InDistrict;
             bool whole = handed && check != null && check(p.Lot);
             TestDone("a building stood through build mode and handed over", TabProjects, p.Id);
-            return ModeLine(test, "project " + p.Id + " on " + p.Lot + " handed over " + Yes(handed) + "; the whole-building check " + (whole ? "passed now" : "follows when it stands (its line in Player.log)"),
+            return ModeLine(test, "project " + p.Id + " on " + p.Lot + " handed over " + Yes(handed) + "; the whole-building check " + (whole ? "passed now"
+                : "follows when it stands (its line in Player.log)"),
                 handed, "reallife_bld_mode_test_fail");
         }
     }

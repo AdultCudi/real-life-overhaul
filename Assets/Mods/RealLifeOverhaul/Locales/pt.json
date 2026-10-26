@@ -24832,7 +24832,7 @@
   "reallife_agency_desk_done": "Você está cadastrado no quadro de empregos até {day}. Ele traz {more} vagas a mais e uma palavra a seu favor em cada candidatura.",
   "reallife_bld_button_build_mode": "Modo de construção",
   "reallife_bld_mode_option": "Modo de construção: células de zoneamento no mapa",
-  "reallife_opt_tip_construction_buildmode": "Um botão Modo de construção no app Construção abre o mapa da cidade sobre o Uptown com o tempo pausado. Cada quarteirão é dividido em pequenos quadrados de zoneamento: compre, pinte um uso nos seus e coloque um prédio neles.",
+  "reallife_opt_tip_construction_buildmode": "Abre o mapa da cidade sobre o Uptown pelo app Construção, com o tempo pausado. Os quarteirões viram pequenos quadrados de zoneamento para comprar, zonear e construir.",
   "reallife_bld_mode_title": "Modo de construção",
   "reallife_bld_mode_tool_land": "Comprar terreno",
   "reallife_bld_mode_tool_zone": "Zonear",
@@ -24928,5 +24928,6 @@
   "reallife_bld_mode_test_fail": "O teste falhou. O Player.log diz o motivo.",
   "reallife_bld_mode_test_incomplete": "Um prédio terminado ainda não é um prédio completo do jogo. O Player.log nomeia cada item.",
   "reallife_bld_mode_test_no_building": "Nenhum prédio seu no Uptown pode ser demolido agora. Compre um no BizMan e esvazie-o primeiro.",
-  "reallife_uptown_incomplete": "{count} prédio(s) novo(s) no Uptown ainda não são prédios completos do jogo. O Player.log diz o que falta."
+  "reallife_uptown_incomplete": "{count} prédio(s) novo(s) no Uptown ainda não são prédios completos do jogo. O Player.log diz o que falta.",
+  "reallife_opt_sec_buildmode": "Modo de construção"
 }

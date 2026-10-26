@@ -26,12 +26,14 @@ namespace RealLifeOverhaul.Construction
 
         private static readonly string[] ToolKeys =
         {
-            "reallife_bld_mode_tool_land", "reallife_bld_mode_tool_zone", "reallife_bld_mode_tool_place", "reallife_bld_mode_tool_bulldoze", "reallife_bld_mode_tool_join", "reallife_bld_mode_tool_refurbish"
+            "reallife_bld_mode_tool_land", "reallife_bld_mode_tool_zone", "reallife_bld_mode_tool_place", "reallife_bld_mode_tool_bulldoze", "reallife_bld_mode_tool_join",
+                "reallife_bld_mode_tool_refurbish"
         };
 
         private static readonly string[] ToolHints =
         {
-            "reallife_bld_mode_hint_land", "reallife_bld_mode_hint_zone", "reallife_bld_mode_hint_place", "reallife_bld_mode_hint_bulldoze", "reallife_bld_mode_hint_join", "reallife_bld_mode_hint_refurbish"
+            "reallife_bld_mode_hint_land", "reallife_bld_mode_hint_zone", "reallife_bld_mode_hint_place", "reallife_bld_mode_hint_bulldoze", "reallife_bld_mode_hint_join",
+                "reallife_bld_mode_hint_refurbish"
         };
 
         private static string T(string key) => ConstructionText.T(key);
@@ -44,7 +46,7 @@ namespace RealLifeOverhaul.Construction
             {
                 return;
             }
-            Sprite icon = GameSprites.Get("Icon-Building");
+            Sprite icon = ConstructionDirector.BuildingGlyph;
             _window.Begin(T("reallife_bld_mode_title") + ": " + T(ToolKeys[(int)_state.Tool]), icon, new Color(1f, 0.6f, 0.15f));
             _window.Note(_state.ViewOnly ? T("reallife_bld_mode_view_only") : T(ToolHints[(int)_state.Tool]));
             WriteDemand();
@@ -71,7 +73,7 @@ namespace RealLifeOverhaul.Construction
                 BuildMark m = _marks[i];
                 _window.Add(RowMark + i, m.Name, m.Detail, "reallife_bld_mode_button_look", true, true, new Vector3(m.X, 0f, m.Z));
             }
-            if (_state.Open)
+            if (_state.Open && _window.IsOpen)
             {
                 _window.Open(Vector3.zero, Picked, Closed);   // open already: the rows written again
             }
@@ -128,7 +130,8 @@ namespace RealLifeOverhaul.Construction
             {
                 _window.Note(Red + T(block) + Shut);
             }
-            _window.Add(RowBuy, T("reallife_bld_mode_row_buy"), price > 0L ? ConstructionText.Money(price) : null, "reallife_bld_mode_button_buy", block == null && !_state.ViewOnly, false, Vector3.zero);
+            _window.Add(RowBuy, T("reallife_bld_mode_row_buy"), price > 0L ? ConstructionText.Money(price) : null, "reallife_bld_mode_button_buy", block == null
+                && !_state.ViewOnly, false, Vector3.zero);
         }
 
         private static string ZonesWords(int zones)
@@ -178,7 +181,8 @@ namespace RealLifeOverhaul.Construction
                 _window.Note(Red + T(_siteWhy) + Shut);
                 return;
             }
-            _window.Note(ConstructionText.T("reallife_bld_mode_place_footprint", "wide", ConstructionText.N(_site.Count), "deep", ConstructionText.N(_site.MinRows), "use", T(BuildCatalogue.UseKeys[(int)_use])));
+            _window.Note(ConstructionText.T("reallife_bld_mode_place_footprint", "wide", ConstructionText.N(_site.Count), "deep", ConstructionText.N(_site.MinRows), "use",
+                T(BuildCatalogue.UseKeys[(int)_use])));
             if (_designs.Count == 0)
             {
                 _window.Note(Red + T("reallife_bld_mode_place_none") + Shut);
@@ -201,7 +205,8 @@ namespace RealLifeOverhaul.Construction
                     _window.Note(Red + T(BuildModeRules.WarnKeys[b]) + Shut);
                 }
             }
-            _window.Add(RowParking, T("reallife_bld_mode_row_parking"), T(_parking ? "reallife_bld_mode_yes" : "reallife_bld_mode_no"), "reallife_bld_mode_button_change", !_state.ViewOnly, false, Vector3.zero);
+            _window.Add(RowParking, T("reallife_bld_mode_row_parking"), T(_parking ? "reallife_bld_mode_yes" : "reallife_bld_mode_no"), "reallife_bld_mode_button_change",
+                !_state.ViewOnly, false, Vector3.zero);
             _window.Add(RowBuild, T("reallife_bld_mode_row_build"), null, "reallife_bld_mode_button_build", BuildModeRules.MayBuild(_warnings) && !_state.ViewOnly, false, Vector3.zero);
         }
 

@@ -102,11 +102,10 @@ namespace RealLifeOverhaul.Uptown
             return false;
         }
 
-        // Among CityManager.cityBuildingControllers: the array the map's filters and its search read (CityMapFilters).
+        // Among the city's list of buildings: the array the map's filters and its search read (CityMapFilters).
         private static bool InCityList(CityBuildingController controller)
         {
-            CityManager city = InstanceBehavior<CityManager>.Instance;
-            CityBuildingController[] all = city != null ? city.cityBuildingControllers : null;
+            CityBuildingController[] all = GameDlc.Open(InstanceBehavior<CityManager>.Instance);   // a district building is never a DLC's
             for (int i = 0; controller != null && all != null && i < all.Length; i++)
             {
                 if (ReferenceEquals(all[i], controller))
@@ -136,7 +135,8 @@ namespace RealLifeOverhaul.Uptown
             if (pick != null)
             {
                 reg.buildingOwnerRivalId = pick;
-                LifeDirector.Logger?.Info("Uptown: the city's building at " + made.Address + " had no owner the game could name; its owner is now rival " + pick + ", as the game's generator gives its buildings.");
+                LifeDirector.Logger?.Info("Uptown: the city's building at " + made.Address + " had no owner the game could name; its owner is now rival " + pick
+                    + ", as the game's generator gives its buildings.");
             }
         }
 

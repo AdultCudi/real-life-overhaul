@@ -165,7 +165,8 @@ namespace RealLifeOverhaul.Construction
             ReadFacts();
             Colour();
             enabled = true;
-            Logger?.Info("Construction: build mode opened over Uptown (" + grid.Columns.Count + " spaces, " + grid.CellCount + " cells)" + (_state.ViewOnly ? ", view only in this session" : string.Empty)
+            Logger?.Info("Construction: build mode opened over Uptown (" + grid.Columns.Count + " spaces, " + grid.CellCount + " cells)" + (_state.ViewOnly
+                ? ", view only in this session" : string.Empty)
                          + "; the time paused " + (BuildModeGame.Paused ? "YES" : "not yet") + ".");
             return true;
         }
@@ -201,7 +202,8 @@ namespace RealLifeOverhaul.Construction
             enabled = false;
             Vector3 now = ConstructionGame.Player;
             float moved = Vector3.Distance(now, _playerAt);
-            Logger?.Info("Construction: build mode left (" + why + "); the map's camera free " + (BuildModeGame.CameraFree ? "YES" : "NO") + ", the player " + moved.ToString("0.00", CultureInfo.InvariantCulture)
+            Logger?.Info("Construction: build mode left (" + why + "); the map's camera free " + (BuildModeGame.CameraFree ? "YES" : "NO") + ", the player "
+                + moved.ToString("0.00", CultureInfo.InvariantCulture)
                          + " m from where they were.");
         }
 

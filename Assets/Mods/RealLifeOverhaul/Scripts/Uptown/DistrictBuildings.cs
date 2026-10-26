@@ -297,7 +297,10 @@ namespace RealLifeOverhaul.Uptown
         /// <summary>The price of a square metre of Uptown's land, as the game prices a building there before its type and traffic (base price times the district's multiplier).</summary>
         public static float LandPricePerSqm => DistrictValues.LandPerSqm(LifeGame.Figures) * LifeDirector.MarketLevel / 1000f;   // the district's market level (LifeDirector.Market)
 
-        /// <summary>A use's demand in the district now, 0 to 100 (homes, shops, offices, warehouses: Construction's BuildUse order), or -1 while not known (a Going Public session, not counted yet).</summary>
+        /// <summary>
+        /// A use's demand in the district now, 0 to 100 (homes, shops, offices, warehouses: Construction's BuildUse order), or -1
+        /// while not known (a Going Public session, not counted yet).
+        /// </summary>
         public static int Demand(int use) => LifeDirector.DemandOf(use);
 
         /// <summary>The district's market level, thousandths of its rents and values.</summary>

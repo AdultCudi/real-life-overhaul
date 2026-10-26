@@ -47,7 +47,8 @@ namespace RealLifeOverhaul.Construction
         {
             BuildUse use = AskedUse(l.ZoneAsk);
             Lot(l.Id, out LotView lot);
-            int suit = BuildCatalogue.Clamp(BuildCatalogue.ZoneOdds[(int)use][BuildCatalogue.Clamp(lot.Class, 0, BuildCatalogue.ClassCount - 1)] + DemandLift(use), 0, 1000);   // the council weighs the district's demand for the use
+            // the council weighs the district's demand for the use
+            int suit = BuildCatalogue.Clamp(BuildCatalogue.ZoneOdds[(int)use][BuildCatalogue.Clamp(lot.Class, 0, BuildCatalogue.ClassCount - 1)] + DemandLift(use), 0, 1000);
             int vote = CouncilVote(l.Id, lot.Class, use, suit, _state.Firm.Reputation, now, out int ayes, out int noes);
             if (vote == -1)
             {
