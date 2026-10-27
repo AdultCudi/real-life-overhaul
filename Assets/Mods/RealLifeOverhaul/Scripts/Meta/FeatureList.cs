@@ -39,6 +39,7 @@ namespace RealLifeOverhaul.Meta
             Meals.MealsGuide.Register();
             Networking.NetworkGuide.Register();
             Shops.ShopsGuide.Register();
+            Outlook.OutlookGuide.Register();
         }
 
         private static void RegisterGameplay()

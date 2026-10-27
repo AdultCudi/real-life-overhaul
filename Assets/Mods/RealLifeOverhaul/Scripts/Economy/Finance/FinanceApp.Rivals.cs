@@ -29,7 +29,6 @@ namespace RealLifeOverhaul.Economy
             if (_rivals)
             {
                 _standing = false;
-                _city = false;
                 _rivalsPick = null;
             }
         }
@@ -38,7 +37,6 @@ namespace RealLifeOverhaul.Economy
         {
             _rivals = true;
             _standing = false;
-            _city = false;
             _rivalsPick = null;
             Refresh();
         }

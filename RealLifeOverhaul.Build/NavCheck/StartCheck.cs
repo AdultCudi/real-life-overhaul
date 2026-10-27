@@ -292,6 +292,7 @@ internal static partial class Program
             ("Flare", @"Social\Flare\FlareDirector.cs", true, "Guard.Add<Flare.FlareDirector>(_root)"),
             ("Fame", @"Fame\FameDirector.cs", true, "Guard.Add<Fame.FameDirector>(_root)"),
             ("Permadeath", @"Permadeath\PermadeathDirector.cs", true, "Guard.Add<PermadeathDirector>(_root)"),
+            ("Outlook", @"Outlook\OutlookDirector.cs", true, "Guard.Add<Outlook.OutlookDirector>(_root)"),
         };
         // seat field, file, what the wiring adds: directors whose first load is in an Update of their own, on a timer
         var frames = new (string Seat, string File, string Add)[]
