@@ -316,12 +316,18 @@ namespace RealLifeOverhaul.Fame
             {
                 return;
             }
-            if (!Free())
+            FameJoinBlock block = FameGame.JoinBlock();
+            if (block != FameJoinBlock.None)
             {
-                Tell(NotificationType.Warning, "reallife_fame_join_busy", null);
+                Logger?.Info("Standing: the player cannot join the " + invite.Kind + " call now: " + block + ".");
+                Tell(NotificationType.Warning, FameJoin.Key(block), null);
                 return;
             }
             StartScene(invite);
+            if (_scene != null)
+            {
+                FameGame.Unpause();
+            }
         }
 
         // Nothing of the game's or the mod's holds the player, and they are not at the wheel.
