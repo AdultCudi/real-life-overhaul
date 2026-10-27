@@ -42,6 +42,7 @@ namespace RealLifeOverhaul.Construction
                 {
                     _cellsStamp = _lotsStamp;
                     _cells = CellGrid.Of(lots);
+                    ReadHeld(_cells);
                     _lotAt.Clear();
                     for (int i = 0; i < lots.Count; i++)
                     {
@@ -49,6 +50,24 @@ namespace RealLifeOverhaul.Construction
                     }
                 }
                 return _cells;
+            }
+        }
+
+        // The ground the plan keeps out of the squares, into the grid: read with the lots, so build mode draws and names it.
+        private static void ReadHeld(CellGrid grid)
+        {
+            try
+            {
+                Action<List<HeldView>> held = BuildModeBridges.Held;
+                if (held != null)
+                {
+                    held(grid.Held);
+                }
+            }
+            catch (Exception e)
+            {
+                grid.Held.Clear();
+                Faulty("Held", e);
             }
         }
 
@@ -153,11 +172,22 @@ namespace RealLifeOverhaul.Construction
             }
             f.Free = FreeSpace(lot);
             f.Building = !f.Free && LotTaken(lot.Id);
+            bool landmark = LandmarkHeld(lot.Id);
+            if (landmark || lot.Kept)
+            {
+                // A landmark's lot (its site, whatever its works) or ground kept clear: held, whoever asks. The player's Land tab, the developers
+                // and the car-park builders all ask LotTaken, which says so for both, so none of them can take it.
+                f.Held = true;
+                f.Kept = !landmark;
+                f.Building = f.Free = false;
+                return f;
+            }
             CarParkFile builders = ParkOf(lot.Id);
             if (builders != null)
             {
                 // A car park of the city's builders: planned, going up by its share built, or open.
                 f.Building = true;
+                f.Stands = true;
                 f.MyBuilding = false;
                 f.Use = f.MainUse;
                 f.UnderWay = builders.Stage == CarParkStage.Building;
@@ -174,6 +204,7 @@ namespace RealLifeOverhaul.Construction
             }
             if (f.Building)
             {
+                f.Stands = LotBuilt(lot.Id) || (grown != null && grown.Standing) || f.UnderWay;   // a building of the district stands there at this load, or is going up
                 f.MyBuilding = ConstructionGame.Owns(lot.Street, lot.Number);
                 f.Use = f.MainUse;
                 DevFile dev = _state.Development(lot.Id);
@@ -233,6 +264,11 @@ namespace RealLifeOverhaul.Construction
                 return null;
             }
             BuildModeRules.ColumnFacts f = FactsOf(column);
+            if (f.Held)
+            {
+                HeldColumnCard(lot, f, out string heldHead, out string heldWhy, out _);
+                return heldHead + ". " + heldWhy;
+            }
             string holder;
             if (f.Mine && row < f.MineRows)
             {
@@ -275,6 +311,11 @@ namespace RealLifeOverhaul.Construction
                 return false;
             }
             BuildModeRules.ColumnFacts f = FactsOf(column);
+            if (f.Held)
+            {
+                HeldColumnCard(lot, f, out head, out zoning, out more);
+                return true;
+            }
             string holder;
             if (f.Mine && row < f.MineRows)
             {
@@ -323,6 +364,59 @@ namespace RealLifeOverhaul.Construction
             }
             return true;
         }
+
+        // The card of a square held for a landmark or kept clear: whose it is and what stands (the landmark's own words, "Planned: its lots are held
+        // for it"), and that it is not for sale.
+        private void HeldColumnCard(LotView lot, BuildModeRules.ColumnFacts f, out string head, out string zoning, out string more)
+        {
+            string site = f.Kept ? null : LandmarkSiteOf(lot.Id);
+            string name = site != null ? LandmarkName(site) : null;
+            string holder = !string.IsNullOrEmpty(name) ? name : ConstructionText.T(f.Kept ? "reallife_bld_held_kept_name" : "reallife_bld_held_landmark_name");
+            head = ConstructionText.Fill("reallife_bld_hover_head", "holder", holder, "address", LotWords(lot.Id), "district", ConstructionText.T(DistrictKeyOf(lot.District)));
+            string words = site != null ? LandmarkWords(site) : null;
+            zoning = f.Kept ? ConstructionText.T("reallife_bld_held_kept") : !string.IsNullOrEmpty(words) ? words : ConstructionText.T("reallife_bld_held_landmark");
+            more = ConstructionText.T("reallife_bld_mode_cell_kept");   // "Not for sale"
+        }
+
+        internal static string LandmarkSiteOf(string lot)
+        {
+            try
+            {
+                Func<string, string> of = BuildModeBridges.LandmarkOf;
+                return of != null && lot != null ? of(lot) : null;
+            }
+            catch (Exception e)
+            {
+                Faulty("LandmarkOf", e);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// The card of a held ground no square covers (a special place's, a park's, the campus's, the district's edge): what holds it and
+        /// that it is not for sale. False for an index out of the grid's held grounds.
+        /// </summary>
+        public bool HeldCard(int index, out string head, out string zoning, out string more)
+        {
+            head = zoning = more = null;
+            CellGrid grid = Cells;
+            if (index < 0 || index >= grid.Held.Count)
+            {
+                return false;
+            }
+            HeldView h = grid.Held[index];
+            string holder = !string.IsNullOrEmpty(h.Name) ? h.Name : ConstructionText.T(h.NameKey ?? "reallife_bld_held_place_name");
+            string district = ConstructionText.T(DistrictKeyOf(h.District));
+            head = h.Street != null
+                ? ConstructionText.Fill("reallife_bld_hover_head", "holder", holder, "address", ConstructionGame.AddressText(h.Street, h.Number), "district", district)
+                : ConstructionText.Fill("reallife_bld_hover_held_head", "holder", holder, "district", district);
+            zoning = ConstructionText.T(HeldKeys[(int)h.Kind] + (h.Kind == HeldWhat.Place && !h.Stands ? "_down" : string.Empty));
+            more = ConstructionText.T("reallife_bld_mode_cell_kept");
+            return true;
+        }
+
+        // What each held ground says it is: a place's ("a special place of the district", with "_down" when its building did not stand), a park's, the campus's, the edge's.
+        private static readonly string[] HeldKeys = { "reallife_bld_held_place", "reallife_bld_held_park", "reallife_bld_held_campus", "reallife_bld_held_edge" };
 
         /// <summary>The working days a design's building takes at the city's own pace under the code in force (what the builders bid around).</summary>
         public int PlaceDays(DesignChoice design, BuildUse use)

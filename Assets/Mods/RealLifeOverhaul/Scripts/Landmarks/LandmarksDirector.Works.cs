@@ -124,6 +124,27 @@ namespace RealLifeOverhaul.Landmarks
             return HeldLots.Contains(lot) || LandmarkRules.IsSite(lot);
         }
 
+        /// <summary>
+        /// The site id of the landmark whose site holds the lot ("landmark:tower"), or null for a lot no landmark holds: what build mode
+        /// names a held square by. COST: three sites' lots, asked once for each held square when build mode colours and on a hover.
+        /// </summary>
+        public static string SiteIdOfLot(string lot)
+        {
+            if (!_loaded || string.IsNullOrEmpty(lot))
+            {
+                return null;
+            }
+            SitesToday();
+            for (int k = 0; k < Sites.Length; k++)
+            {
+                if (SiteKnown[k] && HeldLots.Contains(lot) && Sites[k].Lots.Contains(lot))
+                {
+                    return LandmarkRules.SiteId((LandmarkKind)k);
+                }
+            }
+            return null;
+        }
+
         /// <summary>A landmark's site as it is now, and its file; false while it has none.</summary>
         public static bool SiteOf(LandmarkKind kind, out LandmarkSite site, out LandmarkFile file)
         {

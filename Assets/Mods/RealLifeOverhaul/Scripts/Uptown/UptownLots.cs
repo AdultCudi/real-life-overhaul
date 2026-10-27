@@ -166,6 +166,24 @@ namespace RealLifeOverhaul.Uptown
         /// <summary>The ground the plan keeps for the big special places (BigPlacesRules), with their ids and addresses: never among <see cref="All"/>.</summary>
         public static IReadOnlyList<Lot> Places => LayoutRules.Places;
 
+        /// <summary>
+        /// The ground the plan keeps for a big special place, by its id; null for any other id (a lot of <see cref="All"/> is <see cref="Get"/>'s, a
+        /// place never is: both lists never share an id). The one look-up a place's declaration reads its ground by; read by <see cref="Get"/>
+        /// it was null, and the wholesale store and the filling station never stood (0.57.0 to 0.60.1).
+        /// </summary>
+        public static Lot PlaceOf(string id)
+        {
+            IReadOnlyList<Lot> places = LayoutRules.Places;
+            for (int i = 0; id != null && i < places.Count; i++)
+            {
+                if (string.Equals(places[i].Id, id, StringComparison.Ordinal))
+                {
+                    return places[i];
+                }
+            }
+            return null;
+        }
+
         /// <summary>The first block's lots, between 1st Avenue's buildings and Uptown Avenue, where the band meets Manhattan.</summary>
         public static IReadOnlyList<Lot> FirstBlock => LayoutRules.FirstLots;
 

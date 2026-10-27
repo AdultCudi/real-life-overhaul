@@ -548,6 +548,7 @@ namespace RealLifeOverhaul.Uptown
             }
             Census("the load");
             SpecialsCensus("the load", false, out int _);
+            BigCensus("the load");   // the wholesale store and the filling station stand (LifeDirector.BigPlaces)
             DoorsCensus("the load");   // the warehouses' garage doors, whole as the game's own (LifeDirector.Doors)
             CompleteAll("the load");   // every finished building checked as a whole building of the game's, once a load (LifeDirector.Complete)
             return true;

@@ -18,7 +18,8 @@ namespace RealLifeOverhaul.Uptown
         Campus = 9,        // Birchwood School's campus, on the plan's west square
         ParkSquare = 10,   // a square the plan kept as a park, with no lots
         Between = 11,      // a block's ground between its lots: behind and between the buildings, the fillers' ground
-        Ring = 12          // the ring past the district's outer streets, behind its lots
+        Ring = 12,         // the ring past the district's outer streets, behind its lots
+        Margin = 13        // two metres of ground or less between lots: the remainder the spaces' whole metres leave at a strip's end, or what a place's streets' lots stop short by
     }
 
     /// <summary>
@@ -47,6 +48,9 @@ namespace RealLifeOverhaul.Uptown
     {
         public const string FirstAvenue = "ba:street_firstavenue";   // the game's own avenue the first block backs onto
         public const float PastWalls = 60f;                            // m past the district's outer edge that still counts as its scenery
+        // m: the most ground left bare between lots: a strip's end (SpacesRules.Cut shares out whole metres, so under 1 m) or the
+        // 1.5 m a place's streets' lots stop short of it (LayoutRules.PlaceClear).
+        public const float MarginMost = 2f;
 
         /// <summary>What the ground at (x, z) is, by the plan.</summary>
         public static GroundAnswer At(float x, float z)
@@ -99,7 +103,7 @@ namespace RealLifeOverhaul.Uptown
             a.Column = west + LayoutRules.FirstColumn;
             a.Block = a.Row * 100 + a.Column;
             a.First = LayoutRules.IsFirst(a.Row, a.Column);
-            Lot lot = LotAt(LayoutRules.Places, a.Block, x, z);
+            Lot lot = LotAt(LayoutRules.Places, a.Block, x, z) ?? YardAt(a.Block, x, z);
             if (lot != null)
             {
                 a.Kind = GroundKind.BigPlace;
@@ -131,9 +135,31 @@ namespace RealLifeOverhaul.Uptown
             }
             else
             {
-                a.Kind = GroundKind.Between;
+                a.Kind = Gap(LayoutRules.Lots, a.Block, x, z) <= MarginMost ? GroundKind.Margin : GroundKind.Between;
             }
             return a;
+        }
+
+        /// <summary>
+        /// How far a spot is from the nearest lot of its block, 0 inside one (the larger of the two ways it is outside the lot's rectangle):
+        /// what tells the plan's thin margin from ground it has not accounted for. float.MaxValue for a block with no lot.
+        /// </summary>
+        public static float Gap(IReadOnlyList<Lot> lots, int block, float x, float z)
+        {
+            float best = float.MaxValue;
+            for (int i = 0; i < lots.Count; i++)
+            {
+                Lot l = lots[i];
+                if (l.Block != block)
+                {
+                    continue;
+                }
+                bool avenue = l.Facing < 1f || l.Facing > 359f || Math.Abs(l.Facing - 180f) < 1f;
+                float halfX = (avenue ? l.Width : l.Depth) * 0.5f, halfZ = (avenue ? l.Depth : l.Width) * 0.5f;
+                float gap = Math.Max(Math.Max(Math.Abs(x - l.X) - halfX, Math.Abs(z - l.Z) - halfZ), 0f);
+                best = Math.Min(best, gap);
+            }
+            return best;
         }
 
         /// <summary>
@@ -247,6 +273,25 @@ namespace RealLifeOverhaul.Uptown
                 if (Math.Abs(x - l.X) <= halfX && Math.Abs(z - l.Z) <= halfZ)
                 {
                     return l;
+                }
+            }
+            return null;
+        }
+
+        // The place whose yard (the strip's depth behind its building) holds the spot.
+        private static Lot YardAt(int block, float x, float z)
+        {
+            IReadOnlyList<Lot> places = LayoutRules.Places;
+            for (int i = 0; i < places.Count; i++)
+            {
+                if (places[i].Block != block)
+                {
+                    continue;
+                }
+                LayoutRules.PlaceYard(places[i], out float x1, out float z1, out float x2, out float z2);
+                if (x >= x1 && x <= x2 && z >= z1 && z <= z2)
+                {
+                    return places[i];
                 }
             }
             return null;

@@ -67,8 +67,11 @@ namespace RealLifeOverhaul.Uptown
                 case GroundKind.ParkSquare:
                     state = ParksGame.Stands(a.Block) ? "the park stands" : "the park does not stand at this load";
                     return Fill(GroundText.WhatPark, "block", block);
+                case GroundKind.Margin:
                 case GroundKind.Between: return Fill(GroundText.WhatBetween, "block", block);
-                case GroundKind.BigPlace: return Fill(GroundText.WhatBigPlace, "block", block, "address", Address(a));
+                case GroundKind.BigPlace:
+                    state = DistrictBuildings.Finished(a.Lot) ? "the place stands" : "the place does not stand at this load";
+                    return Fill(GroundText.WhatBigPlace, "block", block, "address", Address(a));
                 case GroundKind.LandmarkSite:
                     state = a.Lot != null && DistrictBuildings.Occupied(a.Lot) ? "built" : "held";
                     return Fill(GroundText.WhatLandmark, "block", block);

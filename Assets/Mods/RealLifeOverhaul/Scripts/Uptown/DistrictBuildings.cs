@@ -369,7 +369,7 @@ namespace RealLifeOverhaul.Uptown
         /// <summary>The index of the band's district a lot is in (<see cref="DistrictSplit.Uptown"/> or <see cref="DistrictSplit.CedarHeights"/>); Uptown for a lot not in the plan.</summary>
         public static int DistrictOf(string lotId)
         {
-            Lot lot = UptownLots.Get(lotId);
+            Lot lot = UptownLots.Get(lotId) ?? UptownLots.PlaceOf(lotId);   // a big place's ground is in its block's district as a lot's is
             return lot != null ? lot.District : DistrictSplit.Uptown;
         }
 

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Construction
@@ -36,6 +37,15 @@ namespace RealLifeOverhaul.Construction
         /// <summary>Test: every corner building standing checked now; how many failed, -1 for none standing. Default: -2, not asked.</summary>
         public static Func<int> CornerCheck;
 
+        /// <summary>The band's ground that no lot covers (the special places', the parks', the campus's, the district's edge), into the caller's list (cleared). Default: none.</summary>
+        public static Action<List<HeldView>> Held;
+
+        /// <summary>The band's blocks as rectangles, the ring's among them, into the caller's list (cleared): what the bare ground check walks. Default: none.</summary>
+        public static Action<List<BlockView>> Blocks;
+
+        /// <summary>The site id of the landmark whose site holds a lot ("landmark:tower"), or null for a lot no landmark holds. Default: none.</summary>
+        public static Func<string, string> LandmarkOf;
+
         /// <summary>Test: the building finished on a lot checked now as a whole building of the game's. Default: not checked (false).</summary>
         public static Func<string, bool> CompleteNow;
 
@@ -47,6 +57,9 @@ namespace RealLifeOverhaul.Construction
             Demand = null;
             MarketLevel = null;
             DistrictAt = null;
+            Held = null;
+            Blocks = null;
+            LandmarkOf = null;
             GhostStand = null;
             GhostGone = null;
             CornerGhost = null;
