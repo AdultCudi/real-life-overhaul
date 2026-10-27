@@ -28,6 +28,14 @@ namespace RealLifeOverhaul
         private static string _started;
         private bool _second;
 
+        /// <summary>
+        /// True once a second copy was told to stand down, in the game's start or in a city. The copy that runs is the first one the game
+        /// discovered: the Workshop items come before ModsLocal, so a beta from the Workshop runs over a public copy in ModsLocal.
+        /// (Two Workshop items with this assembly's name never get this far: the game refuses both, "Duplicate mod assembly name".)
+        /// The beta's welcome notice tells the player to switch the public copy off (Meta/Welcome).
+        /// </summary>
+        public static bool TwoCopies;
+
         public string[] RelativeAssetBundlePaths => Array.Empty<string>();
 
         public Task OnLoadAsync(ModContext context)
@@ -35,6 +43,7 @@ namespace RealLifeOverhaul
             if (_started != null && _started != context.ModId)
             {
                 _second = true;
+                TwoCopies = true;
                 context.Logger.Warn("Real Life Overhaul is switched on twice (the Workshop item and a copy in the ModsLocal folder?). This copy does nothing; "
                                     + "switch one of them off under Mods in the main menu.");
                 return Task.CompletedTask;
@@ -1275,7 +1284,7 @@ namespace RealLifeOverhaul
             // Meta puts the finished page in order (sections, presets, guide, test tools). Under the mod's own id, so the game's own
             // controls save where the mod reads, whatever the game calls this copy.
             OptionsService.Register(OptionKeysRules.FixedId, Guard.Rows(Guard.Organised(context, options)));   // the page as added, if putting it in order fails
-            log.Info("Real Life Overhaul " + Meta.Changelog.Version + " initialised.");
+            log.Info("Real Life Overhaul " + Meta.Changelog.Shown + " initialised.");
             return Task.CompletedTask;
         }
 
@@ -1321,6 +1330,7 @@ namespace RealLifeOverhaul
             if (_running != context.ModId && GameObject.Find(RootName) != null)
             {
                 _second = true;
+                RealLifeOverhaulInit.TwoCopies = true;
                 context.Logger.Warn("Real Life Overhaul is already running in this city (two copies of the mod are switched on). This copy does nothing; "
                                     + "switch one of them off under Mods in the main menu.");
                 return Task.CompletedTask;

@@ -25904,5 +25904,8 @@
   "reallife_maptrees_test_fail": "Teste da árvore no mapa falhou: o mapa não abriu direito com uma árvore destruída. O Player.log diz o motivo.",
   "reallife_maptrees_test_none": "O teste da árvore no mapa não pôde rodar. Carregue um jogo salvo, feche qualquer menu e tente de novo.",
   "reallife_changes_060_1_title": "0.60.1",
-  "reallife_changes_060_1": "Corrigido: o mapa da cidade não abria (o M só escurecia a tela) depois que o mod removeu uma árvore."
+  "reallife_changes_060_1": "Corrigido: o mapa da cidade não abria (o M só escurecia a tela) depois que o mod removeu uma árvore.",
+  "reallife_beta_note": "O Real Life Overhaul {version} é a versão beta para testadores. Desligue a cópia pública em Mods e jogue em um save separado. Clique para ver o que mudou.",
+  "reallife_beta_note_twice": "Duas cópias do Real Life Overhaul estão ligadas. Esta cópia beta é a que roda. Desligue a pública em Mods, no menu principal, e inicie o jogo de novo.",
+  "reallife_beta_guide_note": "Esta é a cópia beta do mod, para testadores. Jogue em um save separado e informe esta versão ao relatar um problema."
 }

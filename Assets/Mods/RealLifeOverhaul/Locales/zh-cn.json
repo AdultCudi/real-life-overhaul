@@ -25904,5 +25904,8 @@
   "reallife_maptrees_test_fail": "地图树木测试失败：游戏列表中有被毁掉的树时，地图未能正常打开。Player.log 中有原因。",
   "reallife_maptrees_test_none": "无法运行地图树木测试。请读取存档，关闭所有菜单后再试。",
   "reallife_changes_060_1_title": "0.60.1",
-  "reallife_changes_060_1": "已修复：模组移除一棵树后，城市地图无法打开（按 M 只会让屏幕变暗）。"
+  "reallife_changes_060_1": "已修复：模组移除一棵树后，城市地图无法打开（按 M 只会让屏幕变暗）。",
+  "reallife_beta_note": "Real Life Overhaul {version} 是测试版，供测试者使用。请在“模组”中关闭公开版，并使用单独的存档。点击查看有哪些变化。",
+  "reallife_beta_note_twice": "同时开启了两个 Real Life Overhaul。正在运行的是这个测试版。请在主菜单的“模组”中关闭公开版，然后重新启动游戏。",
+  "reallife_beta_guide_note": "这是模组的测试版，供测试者使用。请使用单独的存档，并在报告问题时写明这个版本。"
 }

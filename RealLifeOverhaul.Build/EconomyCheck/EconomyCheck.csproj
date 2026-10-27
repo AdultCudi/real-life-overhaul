@@ -570,6 +570,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Photos\CameraHold.cs" Link="Mod\CameraHold.cs" />
     <Compile Include="..\Shared\ModLanguages.cs" Link="Shared\ModLanguages.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meta\BugReportRules.cs" Link="Mod\BugReportRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meta\BetaRules.cs" Link="Mod\BetaRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Family\HardTimesRules.cs" Link="Mod\HardTimesRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Family\TalkRules.cs" Link="Mod\TalkRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\CityDistricts.cs" Link="Mod\CityDistricts.cs" />

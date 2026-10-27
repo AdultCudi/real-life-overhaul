@@ -25904,5 +25904,8 @@
   "reallife_maptrees_test_fail": "Map tree test failed: the map did not open cleanly with a destroyed tree. Player.log says why.",
   "reallife_maptrees_test_none": "The map tree test could not run. Load a save, close any menu and try again.",
   "reallife_changes_060_1_title": "0.60.1",
-  "reallife_changes_060_1": "Fixed: the city map would not open (M only darkened the screen) after the mod had taken away a tree."
+  "reallife_changes_060_1": "Fixed: the city map would not open (M only darkened the screen) after the mod had taken away a tree.",
+  "reallife_beta_note": "Real Life Overhaul {version} is the beta for testers. Switch the public copy off under Mods and play on a separate save. Click to see what changed.",
+  "reallife_beta_note_twice": "Two copies of Real Life Overhaul are switched on. This beta copy runs. Switch the public one off under Mods in the main menu, then start the game again.",
+  "reallife_beta_guide_note": "This is the beta copy of the mod, for testers. Play it on a separate save, and name this version when you report a problem."
 }
