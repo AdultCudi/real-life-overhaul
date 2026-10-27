@@ -23,6 +23,14 @@ namespace RealLifeOverhaul.Careers
         public readonly int Length;      // game minutes asked for
         public readonly SittingRecord Record;
 
+        /// <summary>Homework only: the minutes of the piece already sat in earlier sittings, carried on the enrolment when this one was made (it asks only for the rest).</summary>
+        public int Carried;
+
+        /// <summary>Who or what ended it, as the activity that ran it knew (for the log line of an early end); null when it did not say.</summary>
+        public string Why;
+
+        private int _banked = -1;   // homework: the minutes last written to the enrolment while it ran
+
         public Sitting(CareersDirector director, SittingKind kind, int of, int minutes, string title, bool tiring, params string[] lines)
         {
             _director = director;
@@ -80,6 +88,11 @@ namespace RealLifeOverhaul.Careers
 
         public void SkipWorked(int minutes)
         {
+            if (Kind == SittingKind.Homework && minutes != _banked && Record.Begun && !Record.Settled)
+            {
+                _banked = minutes;
+                _director.HomeworkWorked(this, minutes);   // once a game minute at most: a save in the middle keeps the minutes sat so far
+            }
         }
 
         public void SkipEnded(int minutes, bool whole)

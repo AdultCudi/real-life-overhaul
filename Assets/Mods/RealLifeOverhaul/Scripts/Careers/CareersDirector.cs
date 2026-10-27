@@ -153,6 +153,7 @@ namespace RealLifeOverhaul.Careers
                 return;
             }
             ClassPrompt();
+            HomeworkHint();
             if (!ComputerButtons.Installed)
             {
                 ComputerButtons.Install();   // once a city; a flag test after

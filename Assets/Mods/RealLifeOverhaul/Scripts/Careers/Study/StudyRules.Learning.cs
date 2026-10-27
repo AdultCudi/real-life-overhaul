@@ -55,6 +55,40 @@ namespace RealLifeOverhaul.Careers
             return counted <= 0 ? c.Homework : Math.Min(c.Homework, e.Done * c.Homework / counted);
         }
 
+        /// <summary>Game minutes in a piece of homework (or of revision): <see cref="StudyCatalogue.HomeworkHours"/> hours.</summary>
+        public const int HomeworkFull = StudyCatalogue.HomeworkHours * 60;
+
+        /// <summary>Game minutes a sitting on the current piece still has to sit: the piece less the minutes already carried on the enrolment.</summary>
+        public static int HomeworkLeft(Enrolment e)
+        {
+            int carried = e == null ? 0 : Math.Max(0, Math.Min(HomeworkFull - 1, e.HomeworkMinutes));
+            return HomeworkFull - carried;
+        }
+
+        /// <summary>
+        /// A homework sitting ends having sat <paramref name="minutes"/> on top of the <paramref name="carried"/> already: true if the piece
+        /// is finished (the whole sitting was sat, or the minutes add up to the piece); otherwise <paramref name="kept"/> is what stays on
+        /// the enrolment for the next sitting. Counted across sittings, so two hours in two sittings make one piece.
+        /// </summary>
+        public static bool HomeworkSat(int carried, int minutes, bool whole, out int kept)
+        {
+            long total = (long)Math.Max(0, carried) + Math.Max(0, minutes);
+            if (whole || total >= HomeworkFull)
+            {
+                kept = 0;
+                return true;
+            }
+            kept = (int)total;
+            return false;
+        }
+
+        /// <summary>The minutes carried on the piece while a sitting runs: what it began with and what it has sat so far, never a whole piece.</summary>
+        public static int HomeworkRunning(int carried, int sat)
+        {
+            long total = (long)Math.Max(0, carried) + Math.Max(0, sat);
+            return (int)Math.Min(HomeworkFull - 1, total);
+        }
+
         /// <summary>True if a piece of homework can be done now: one is set and not done, or the classes are over and revision is still worth something.</summary>
         public static bool HomeworkOpen(Enrolment e)
         {
