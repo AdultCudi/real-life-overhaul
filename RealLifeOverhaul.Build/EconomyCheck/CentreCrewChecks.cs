@@ -184,7 +184,7 @@ internal static partial class Program
         string guide = ModSource(@"Tech\TechGuide.cs");
         Check(hiring.Contains("HiringGame.Headquarters()") && hiring.Contains("HiringGame.Pay(retainer, HiringGame.SearchKey, hq, TalentGame.NameOf(hq))"),
             "crew search sources: headquarters briefs the firm and pays the retainer");
-        Check(hiring.Contains("|| ad.CrewSearch;") && hiring.Contains("ad.Hired++;") && hiring.Contains("PayCrewFee(ad, at);"),
+        Check(hiring.Contains("HiringRules.OnPayroll(s.P.Def, ad.Work, ad.CrewSearch, shifts)") && hiring.Contains("ad.Hired++;") && hiring.Contains("PayCrewFee(ad, at);"),
             "crew search sources: a crew hire starts on the payroll at the centre and pays its share of the fee");
         Check(hiring.Contains("open += ad.Search && !ad.CrewSearch && (ad.Came == 0 || AnyLive(ad.Id))"), "crew search sources: the senior searches keep their own room");
         Check(hiring.IndexOf("HiringRules.DeliverCrew(", StringComparison.Ordinal) > 0 && hiring.IndexOf("ad.CrewSearch && ad.Came == 0 && day >= ad.Due", StringComparison.Ordinal)

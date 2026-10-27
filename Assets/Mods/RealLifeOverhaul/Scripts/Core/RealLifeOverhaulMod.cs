@@ -1065,6 +1065,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_hire_test_market", () => Tech.TechDirector.Instance?.TestMarketDay())
                 .AddButton("reallife_hire_test_search", () => Tech.TechDirector.Instance?.TestSearch())
                 .AddButton("reallife_crew_test", () => Tech.TechDirector.Instance?.TestCrewSearch())
+                .AddButton("reallife_dataeng_test", () => Tech.TechDirector.Instance?.TestDataEngineers())
                 .AddButton("reallife_hire_test_orphan", () => Tech.TechDirector.Instance?.TestOrphanRegistration())
                 .AddToggle(Settings.TechSectorId, "reallife_tech_enabled", Settings.TechSector,
                     v => Settings.TechSector = v)

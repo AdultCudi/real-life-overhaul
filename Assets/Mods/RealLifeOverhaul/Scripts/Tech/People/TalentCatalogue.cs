@@ -142,7 +142,7 @@ namespace RealLifeOverhaul.Tech
         };
 
         public const int RoleCount = 37;
-        public const int SoftwareEngineer = 0, DevOps = 4, Sre = 5, DataScientist = 7, MlEngineer = 8, SecurityAnalyst = 9, QaTester = 10, ItSupport = 11,
+        public const int SoftwareEngineer = 0, DevOps = 4, Sre = 5, DataEngineer = 6, DataScientist = 7, MlEngineer = 8, SecurityAnalyst = 9, QaTester = 10, ItSupport = 11,
             NetworkEngineer = 12, EngineeringManager = 13, Cto = 14, ProductManager = 17, UxDesigner = 18, GraphicDesignerRole = 19, WebDesigner = 20,
             AccountManager = 21, CustomerSuccess = 22, SalesExecutive = 23, Accountant = 28, FinancialAnalyst = 29, DataProtection = 33, ResearchScientist = 34, Technician = 35,
             ChiefExecutive = 36;
