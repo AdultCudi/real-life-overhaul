@@ -11,7 +11,7 @@ namespace RealLifeOverhaul.Leisure
     /// </summary>
     public sealed class ChessCorner
     {
-        private const int FromHour = 9, ToHour = 20;
+        internal const int FromHour = 9, ToHour = 20;
 
         private const string WatchClip = "watch_nod";
         private const string CheerClip = "cheer_once";
@@ -251,8 +251,9 @@ namespace RealLifeOverhaul.Leisure
     public sealed class ChessGame : LeisureActivity
     {
         public static int Stake => Prices.At(10);
-        private const int Moves = 5;
-        private const float ThinkSeconds = 22f;
+        internal const int Moves = 5;
+        internal const float ThinkSeconds = 22f;
+        internal const int WinPoints = 7, StakeBackPoints = 5;   // of Moves x 2: double the stake back, the stake back
         private const float ReplySeconds = 3.6f;
 
         private sealed class Position
@@ -515,14 +516,14 @@ namespace RealLifeOverhaul.Leisure
             Ctx.Body.Rest(0.5f);   // up off the stool before the hold is let go
             Score = _points;
             string outcome;
-            if (_points >= 7)
+            if (_points >= WinPoints)
             {
                 LeisureMoney.Give(Stake * 2, "reallife_transaction_chess_win");
                 outcome = T("reallife_leisure_chess_won", "amount", JobText.Money(Stake));
                 Mood = ModState.MoodUp;
                 _corner.Cheer();
             }
-            else if (_points >= 5)
+            else if (_points >= StakeBackPoints)
             {
                 LeisureMoney.Give(Stake, "reallife_transaction_chess_win");
                 outcome = T("reallife_leisure_chess_drawn");

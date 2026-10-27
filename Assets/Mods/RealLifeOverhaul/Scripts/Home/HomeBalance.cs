@@ -105,6 +105,11 @@ namespace RealLifeOverhaul
         public const float DebtMost = 24f;              // hours
         public const int LateFrom = 1;                  // going to bed between these hours is "too late"
         public const int LateTo = 6;
+        public const int DayNoiseFrom = 8;              // a sleep begun from this hour to DayNoiseTo is broken by the day's noise
+        public const int DayNoiseTo = 18;
+        public const int SleepGood = 7;                 // hours: a night this long helps
+        public const int SleepFair = 6;                 // under this a night costs, and from this an illness is shortened
+        public const int SleepPoor = 5;                 // under this a night costs a lot
 
         // Fitness, 0..100.
         public const float FitWorkout = 9f;             // per hour on a machine, before the day's diminishing returns

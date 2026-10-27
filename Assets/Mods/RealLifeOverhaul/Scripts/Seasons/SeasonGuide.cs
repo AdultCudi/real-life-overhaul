@@ -19,6 +19,7 @@ namespace RealLifeOverhaul.Seasons
                 .Fact("season_snow_chance", () => (SeasonRules.SnowChance / 10).ToString(CultureInfo.InvariantCulture) + "%")
                 .Fact("season_forecast_days", () => SeasonRules.ForecastDays.ToString(CultureInfo.InvariantCulture))
                 .Fact("season_melt_hours", () => ((int)SeasonRules.MeltHours).ToString(CultureInfo.InvariantCulture))
+                .Fact("season_forecast_hour", () => Hour(SeasonDirector.EveningAt))
                 .Fact("season_coffee_winter", () => Figure("ba:itemname_cupofcoffee", CalendarRules.Winter))
                 .Fact("season_tea_winter", () => Figure("ba:itemname_cupoftea", CalendarRules.Winter))
                 .Fact("season_gifts_winter", () => Figure("ba:itemname_expensivegift", CalendarRules.Winter))

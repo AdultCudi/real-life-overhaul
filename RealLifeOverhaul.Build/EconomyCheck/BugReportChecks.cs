@@ -365,7 +365,7 @@ internal static partial class Program
         }
         Check(new[] { "reallife_bug_waits", "reallife_bug_busy", "reallife_bug_done", "reallife_bug_done_folder" }.All(k => en[k].Length <= 240) && en["reallife_bug_failed"].Length + 120 <= 240,
             "bug report words: each notification fits the game's toast, the failure with its error filled (240 characters)");
-        Check(en["reallife_bug_failed"].Contains("{error}") && BugKeys.Where(k => k != "reallife_bug_failed").All(k => !en[k].Contains("{")),
+        Check(en["reallife_bug_failed"].Contains("{error}") && BugKeys.Where(k => k != "reallife_bug_failed" && k != "reallife_guide_trouble_report").All(k => !en[k].Contains("{")),
             "bug report words: only the failure has a name to fill, its error");
         foreach (Dictionary<string, string> words in new[] { en, pt, zh })
         {

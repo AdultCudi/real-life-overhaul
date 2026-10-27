@@ -1528,7 +1528,7 @@ internal static partial class Program
         string folder = Path.Combine(scripts, "Uptown");
         string locales = Path.GetFullPath(Path.Combine(scripts, @"..\Locales"));
         var named = Directory.GetFiles(folder, "Ground*.cs").SelectMany(f => Regex.Matches(File.ReadAllText(f), "\"(reallife_[a-z_]+)\"").Select(m => m.Groups[1].Value))
-                             .Concat(new[] { "reallife_opt_sec_uptown", "reallife_opt_tip_uptown" }).Concat(LayoutStreets.All.Select(s => s.NameKey)).Distinct().ToList();
+                             .Where(k => !k.StartsWith("reallife_guide_", StringComparison.Ordinal)).Concat(new[] { "reallife_opt_sec_uptown", "reallife_opt_tip_uptown" }).Concat(LayoutStreets.All.Select(s => s.NameKey)).Distinct().ToList();
         Check(named.Count >= 35, "uptown texts: its texts are found: " + named.Count);
         foreach (string language in new[] { "en", "pt", "zh-cn" })
         {

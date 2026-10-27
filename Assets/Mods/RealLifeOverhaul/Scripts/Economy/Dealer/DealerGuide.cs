@@ -30,6 +30,8 @@ namespace RealLifeOverhaul.Economy.Dealership
                 .Fact("dealer_no_pay", () => Whole(DealerCatalogue.NoPayDays))
                 .Fact("dealer_visitors", () => Share(DealerCatalogue.VisitorShare))
                 .Fact("dealer_serve", () => Whole(DealerCatalogue.ServePerStaff))
+                .Fact("dealer_skill_least", () => Share(DealerCatalogue.SkillLeast))
+                .Fact("dealer_skill_most", () => Share(DealerCatalogue.SkillMost))
                 .Fact("dealer_floor", () => Share(DealerCatalogue.StaffFloor))
                 .Fact("dealer_deal_hours", () => Whole(DealerCatalogue.DealHours))
                 .Fact("dealer_counters", () => Whole(DealerCatalogue.CountersMost))

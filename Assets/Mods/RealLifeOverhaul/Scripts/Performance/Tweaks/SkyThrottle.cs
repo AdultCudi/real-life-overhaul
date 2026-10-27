@@ -13,7 +13,7 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed class SkyThrottle : PerfTweak
     {
-        private const float Seconds = 2f;   // seconds between sky updates
+        internal const float Seconds = 2f;   // seconds between sky updates
 
         private struct Saved
         {

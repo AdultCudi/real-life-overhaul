@@ -19,6 +19,7 @@ namespace RealLifeOverhaul.Meta
         public readonly string TitleKey;
         public readonly Func<string> Body;      // the text as written: "# " a heading, "- " a bullet, {name} a fact
         public string Title;
+        public string Group;                    // the key of the options group the page stands in (reallife_opt_group_*), or null for a page of the Guide's own
 
         public GuideTopic(string id, string titleKey, Func<string> body)
         {
@@ -67,6 +68,7 @@ namespace RealLifeOverhaul.Meta
                 new GuideTopic("start", "reallife_guide_start_title", () => "reallife_guide_start".GetLocalization()),
                 new GuideTopic("presets", "reallife_guide_presets_title", () => "reallife_guide_presets".GetLocalization() + "\n" + Presets.Table())
             };
+            var pages = new List<GuideTopic>(128);
             foreach (Feature feature in OptionsLayout.Ordered())
             {
                 if (feature.HelpKey == null && feature.AboutKey == null)
@@ -74,8 +76,10 @@ namespace RealLifeOverhaul.Meta
                     continue;
                 }
                 Feature captured = feature;
-                topics.Add(new GuideTopic("feature_" + feature.Id, feature.TitleKey, () => FeaturePage(captured)));
+                pages.Add(new GuideTopic("feature_" + feature.Id, feature.TitleKey, () => FeaturePage(captured)) { Group = GroupOf(feature.Id) });
             }
+            Arrange(pages);
+            topics.AddRange(pages);
             topics.Add(new GuideTopic("trouble", "reallife_guide_trouble_title", () => "reallife_guide_trouble".GetLocalization() + "\n\n" + "reallife_guide_trouble_report".GetLocalization()
                                                                                        + "\n\n" + "reallife_guide_trouble_update".GetLocalization()
                                                                                        + "\n\n" + "reallife_guide_trouble_stutter".GetLocalization()
@@ -88,6 +92,57 @@ namespace RealLifeOverhaul.Meta
                 topic.Title = topic.TitleKey.GetLocalization();
             }
             return topics;
+        }
+
+        /// <summary>The title key of the options group whose sections name this feature, or null if none does.</summary>
+        private static string GroupOf(string featureId)
+        {
+            foreach (TreeGroup group in OptionsTree.Groups)
+            {
+                foreach (TreeSection section in group.Sections)
+                {
+                    if (Array.IndexOf(section.Features, featureId) >= 0)
+                    {
+                        return group.TitleKey;
+                    }
+                }
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Puts the feature pages in the order of the list: the options page's groups as they stand (that grouping is deliberate), and inside each group
+        /// alphabetically by the title the player reads. Pages in no group come last. The order of equal titles is kept.
+        /// </summary>
+        private static void Arrange(List<GuideTopic> pages)
+        {
+            var groups = new List<string>(12);
+            foreach (TreeGroup group in OptionsTree.Groups)
+            {
+                groups.Add(group.TitleKey);
+            }
+            var rank = new Dictionary<GuideTopic, int>(pages.Count);
+            for (int i = 0; i < pages.Count; i++)
+            {
+                pages[i].Title = pages[i].TitleKey.GetLocalization();
+                rank[pages[i]] = i;
+            }
+            pages.Sort((a, b) =>
+            {
+                int byGroup = GroupRank(groups, a.Group).CompareTo(GroupRank(groups, b.Group));
+                if (byGroup != 0)
+                {
+                    return byGroup;
+                }
+                int byTitle = string.Compare(a.Title, b.Title, StringComparison.InvariantCultureIgnoreCase);
+                return byTitle != 0 ? byTitle : rank[a].CompareTo(rank[b]);
+            });
+        }
+
+        private static int GroupRank(List<string> groups, string group)
+        {
+            int at = group == null ? -1 : groups.IndexOf(group);
+            return at < 0 ? groups.Count : at;
         }
 
         private static string FeaturePage(Feature feature)

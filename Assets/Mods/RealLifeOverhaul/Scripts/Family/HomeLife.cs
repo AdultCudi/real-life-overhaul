@@ -398,7 +398,7 @@ namespace RealLifeOverhaul.Family
         public static void Contribution(int day, int hour)
         {
             FamilySave s = FamilyState.S;
-            if (!s.LivesIn || !FamilyState.Together || hour < 18 || s.LastContributionDay == day)
+            if (!s.LivesIn || !FamilyState.Together || hour < FamilyBalance.ContributionHour || s.LastContributionDay == day)
             {
                 return;
             }

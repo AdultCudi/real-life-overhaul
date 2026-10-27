@@ -21,12 +21,14 @@ namespace RealLifeOverhaul
         private static readonly FeatureGuard FrameGuard = Guard.For("citylife", "CityLifeDirector", typeof(CityLifeDirector));
 
         public const int MaxSites = 3;
+        internal const int DeadFrom = 2, DeadTo = 5;   // the dead of night: nothing new comes out between these hours
+        internal const int QuietUntil = 7, QuietFrom = 22;   // before and from these hours only one activity is out at a time
 
         private const float TickInterval = 1f;       // seconds
         private const float SpawnInterval = 6f;      // seconds between tries for a new site
         private const float WarmInterval = 2.5f;     // seconds between making two of the pool's characters, after the city loads
-        private const float NearRing = 45f;          // metres from the player that a site is set up within
-        private const float FarRing = 95f;
+        internal const float NearRing = 45f;          // metres from the player that a site is set up within
+        internal const float FarRing = 95f;
         private const float TooFar = 150f;           // a site this far from the player is taken away whether or not it is in view
         private const float SiteGap = 28f;           // two sites are never closer together than this
         private const int RecentMemory = 2;        // an activity is not dealt again until this many others have been
@@ -381,12 +383,12 @@ namespace RealLifeOverhaul
         // How many sites the hour and the density setting call for.
         private static int Wanted(int hour)
         {
-            if (hour >= 2 && hour < 5)
+            if (hour >= DeadFrom && hour < DeadTo)
             {
                 return 0;   // the dead of night
             }
             int byDensity = Settings.CityDensity <= 3 ? 1 : Settings.CityDensity <= 7 ? 2 : MaxSites;
-            bool quiet = hour < 7 || hour >= 22;
+            bool quiet = hour < QuietUntil || hour >= QuietFrom;
             return StreetLifeRules.Sites(quiet ? Mathf.Min(1, byDensity) : byDensity, Events.Weather.StreetLifeFactor);   // fewer out in rain, ice, snow and heat
         }
 

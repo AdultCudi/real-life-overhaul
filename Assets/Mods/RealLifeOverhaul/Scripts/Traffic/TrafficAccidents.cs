@@ -27,7 +27,7 @@ namespace RealLifeOverhaul
         private const float MinDistance = 45f;       // metres from the player a car to start one is looked for...
         private const float MaxDistance = 140f;      // ...and up to this
         private const float MovingSpeed = 10f;      // km/h: slower than this a car is not "on the move"
-        private const float HelpDistance = 9f;       // metres from the scene at which the player has helped
+        internal const float HelpDistance = 9f;       // metres from the scene at which the player has helped
         private const float MaxSceneTime = 175f;     // seconds: every scene is planned to clear inside three minutes
         private const float HardSceneTime = 300f;    // ...and runs on to this only while a crew still sees to someone in the road
 

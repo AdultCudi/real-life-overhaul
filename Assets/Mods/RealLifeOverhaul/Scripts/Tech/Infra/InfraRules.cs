@@ -197,7 +197,7 @@ namespace RealLifeOverhaul.Tech
             long chance = InfraCatalogue.OutageChance[TalentCatalogue.Clamp(d.Tier, 0, InfraCatalogue.Tiers - 1)] * 1000L;
             if (d.Technicians < need)
             {
-                chance = chance * (1000 + (need - d.Technicians) * 3000L / need) / 1000;
+                chance = chance * (1000 + (need - d.Technicians) * (long)InfraCatalogue.OutageShortMost / need) / 1000;
             }
             chance = chance * EndScaleRules.Outages(cover) / 1000;
             return TechRandom.Hash(seed, TechRandom.Of(d.Place), day, 5) % 1000000u < chance;
