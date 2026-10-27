@@ -63,7 +63,10 @@ namespace RealLifeOverhaul.Uptown
             return d != null && Table().TryGetValue(KeyOf(d), out Sides s) ? (right ? s.Right : s.Left) : SideKind.Bare;
         }
 
-        /// <summary>True for a plain side of flat colour (no texture of its own, a grey or plain-coloured wall): windows can be laid on it, but a street should not be shown it where another design will do.</summary>
+        /// <summary>
+        /// True for a plain side of flat colour (no texture of its own, a grey or plain-coloured wall): windows can be laid on it, but a
+        /// street should not be shown it where another design will do.
+        /// </summary>
         public static bool Flat(DesignEntry d, bool right)
         {
             return d != null && Table().TryGetValue(KeyOf(d), out Sides s) && (right ? s.RightFlat : s.LeftFlat);
