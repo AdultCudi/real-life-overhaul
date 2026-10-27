@@ -127,7 +127,7 @@ namespace RealLifeOverhaul
             {
                 if (pair.Value != null)
                 {
-                    UnityEngine.Object.Destroy(pair.Value.gameObject);
+                    SceneryTrees.Destroy(pair.Value.gameObject);
                 }
             }
             Templates.Clear();
@@ -209,7 +209,7 @@ namespace RealLifeOverhaul
                 Transform t = Children[i];
                 if (t != null && t != root && IsHelper(t.name))
                 {
-                    UnityEngine.Object.DestroyImmediate(t.gameObject);
+                    SceneryTrees.DestroyNow(t.gameObject);
                 }
             }
             // In passes: a component may be required by another until that one is gone.

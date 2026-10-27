@@ -250,7 +250,7 @@ namespace RealLifeOverhaul
                 {
                     PlotMeshes.Drop(filter.sharedMesh);
                 }
-                Object.Destroy(made);
+                SceneryTrees.Destroy(made);
             }
             dressed.Made.Clear();
             dressed.Hides.Clear();

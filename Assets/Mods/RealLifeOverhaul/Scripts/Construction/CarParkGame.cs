@@ -192,7 +192,7 @@ namespace RealLifeOverhaul.Construction
                 int layer = Children[i].gameObject.layer;
                 if (layer == LayerHelper.ParkedVehiclesLayerIndex || layer == LayerHelper.AutoParkSpotsLayerIndex || Children[i].name == ReservedName)
                 {
-                    UnityEngine.Object.DestroyImmediate(Children[i].gameObject);
+                    SceneryTrees.DestroyNow(Children[i].gameObject);
                 }
             }
             Children.Clear();
@@ -242,7 +242,7 @@ namespace RealLifeOverhaul.Construction
         {
             if (_holder != null)
             {
-                UnityEngine.Object.Destroy(_holder);
+                SceneryTrees.Destroy(_holder);
             }
             _holder = null;
             _template = null;
@@ -854,7 +854,7 @@ namespace RealLifeOverhaul.Construction
             world.Pointer = null;
             if (world.Root != null)
             {
-                UnityEngine.Object.Destroy(world.Root);
+                SceneryTrees.Destroy(world.Root);
             }
             for (int i = 0; i < world.Meshes.Count; i++)
             {

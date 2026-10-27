@@ -405,7 +405,7 @@ namespace RealLifeOverhaul.Uptown
             UncutFog();
             if (_ground != null)
             {
-                Object.Destroy(_ground);
+                SceneryTrees.Destroy(_ground);
             }
             _ground = null;
             NewBuildings.CopyGame.OwnEdge = null;

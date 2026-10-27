@@ -418,7 +418,7 @@ namespace RealLifeOverhaul.Uptown
             ParkingLaneGenerator[] lanes = copy.GetComponentsInChildren<ParkingLaneGenerator>(true);
             for (int i = 0; i < lanes.Length; i++)
             {
-                Object.DestroyImmediate(lanes[i].gameObject);
+                SceneryTrees.DestroyNow(lanes[i].gameObject);
             }
         }
 
@@ -520,7 +520,7 @@ namespace RealLifeOverhaul.Uptown
                 GameObject red = way >= 0 ? RoadsGame.RedLamp(junction, way) : null;
                 if (red == null)
                 {
-                    Object.DestroyImmediate(links[i].gameObject);
+                    SceneryTrees.DestroyNow(links[i].gameObject);
                     continue;
                 }
                 links[i].redTrafficLight = red;
@@ -534,7 +534,7 @@ namespace RealLifeOverhaul.Uptown
             CrosswalkToTrafficLightLink[] links = copy.GetComponentsInChildren<CrosswalkToTrafficLightLink>(true);
             for (int i = 0; i < links.Length; i++)
             {
-                Object.DestroyImmediate(links[i].gameObject);
+                SceneryTrees.DestroyNow(links[i].gameObject);
             }
         }
 
@@ -696,7 +696,7 @@ namespace RealLifeOverhaul.Uptown
             Repaved();
             if (_art != null)
             {
-                Object.Destroy(_art);
+                SceneryTrees.Destroy(_art);
             }
             _art = null;
             Copies.Clear();

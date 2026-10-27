@@ -167,7 +167,7 @@ namespace RealLifeOverhaul
                 }
                 if (site.Dressing != null)
                 {
-                    UnityEngine.Object.Destroy(site.Dressing.gameObject);
+                    SceneryTrees.Destroy(site.Dressing.gameObject);
                     site.Dressing = null;
                 }
                 _taken.Remove(site.Building.building);
@@ -226,7 +226,7 @@ namespace RealLifeOverhaul
                 HotelSite site = _sites[i];
                 if (site.Dressing != null)
                 {
-                    UnityEngine.Object.Destroy(site.Dressing.gameObject);
+                    SceneryTrees.Destroy(site.Dressing.gameObject);
                 }
             }
             _sites.Clear();

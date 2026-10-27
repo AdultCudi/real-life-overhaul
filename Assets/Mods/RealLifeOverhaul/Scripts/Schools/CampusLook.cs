@@ -410,7 +410,7 @@ namespace RealLifeOverhaul.Schools
             }
             if (h.Root != null)
             {
-                UnityEngine.Object.Destroy(h.Root);
+                SceneryTrees.Destroy(h.Root);
             }
             h = null;
         }

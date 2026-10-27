@@ -31,6 +31,36 @@ namespace RealLifeOverhaul
             seen = field;
         }
 
+        /// <summary>
+        /// As <see cref="Keep"/>, with the handler FIRST in the event's list: it runs before every other handler, the game's
+        /// own among them (the map's tree guard must run before the game's TreeController.ToggleMapLod). Like Keep it looks only
+        /// when the field changed since this holder last saw it; a handler added after it (they are all added at the end)
+        /// leaves it first, so a change costs one array copy and mostly no more.
+        /// </summary>
+        public static void First<T>(ref T field, T handler, ref T seen) where T : Delegate
+        {
+            if (handler == null || (seen != null && ReferenceEquals(field, seen)))
+            {
+                return;
+            }
+            Looked++;
+            if (field == null)
+            {
+                field = handler;
+                PutBack++;
+            }
+            else if (!ReferenceEquals(field, handler))
+            {
+                Delegate[] list = field.GetInvocationList();
+                if (list.Length == 0 || !list[0].Equals(handler))
+                {
+                    field = (T)Delegate.Combine(handler, Delegate.Remove(field, handler));
+                    PutBack++;
+                }
+            }
+            seen = field;
+        }
+
         /// <summary>True if a handler is in an event's list. COST: one array copy of a list of several handlers.</summary>
         public static bool Holds(Delegate field, Delegate handler)
         {

@@ -136,7 +136,7 @@ namespace RealLifeOverhaul.Uptown
                 if (piece.gameObject.activeSelf && MouthRules.Holds(mouths, piece.position.x, piece.position.z, PieceReach))
                 {
                     piece.gameObject.SetActive(false);
-                    Object.Destroy(piece.gameObject);
+                    SceneryTrees.Destroy(piece.gameObject);
                     away++;
                 }
             }
