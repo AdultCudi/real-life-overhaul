@@ -81,6 +81,7 @@ internal static partial class Program
     private static readonly Dictionary<string, string> HandedByHand = new Dictionary<string, string>(StringComparer.Ordinal)
     {
         { "RealLifeOverhaul.FrameSteps.Install", "the frame's timestamps in the engine's own loop: a clock read and an addition, only while diagnostics are on" },
+        { "RealLifeOverhaul.MapParts.Add", "the map check's looks, kept in the mod's own list and asked only by MapParts.Lingering, each in a try of its own whose catch names it in the check's line and asks it no more (Core/MapParts)" },
         { "RealLifeOverhaul.PerfLoop.Marker", "the benchmark's timestamps in the engine's own loop: a clock read and an addition, only while a benchmark runs" },
         { "RealLifeOverhaul.GameUi.WorldPanel.Watch", "the panel's step aside, once a frame while it is shown: one try round all of it (Core/GameUi/WorldPanel.Beside)" },
         { "RealLifeOverhaul.GameConfirm.Direct", "the question box's answers: its callers hand it answers made by Guard.Wrap (Core/GameConfirm)" },

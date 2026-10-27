@@ -68,6 +68,15 @@ namespace RealLifeOverhaul.Districts
             _onDay = Guard.Wrap(OnDay);
             _onSave = OnSave;
             enabled = false;   // (LateUpdate only while a layer shows)
+            MapParts.Add("district view", MapLook);   // asked after the map shut, with Developer diagnostics on (Diagnostics/SessionWatch.Map)
+        }
+
+        // The map check after the map shut (Diagnostics/SessionWatch.Map): no layer shown or tinted, its frame work off.
+        private int MapLook(System.Text.StringBuilder line)
+        {
+            bool holding = _mapOpen || enabled || _showing || _tinted;
+            line?.Append("district view: ").Append(holding ? "still as for the open map" : "off with the map");
+            return holding ? 1 : 0;
         }
 
         private void Start()

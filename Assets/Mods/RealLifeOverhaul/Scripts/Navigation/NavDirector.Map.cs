@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 using Streets;
 using UI;
 using UI.Guiders;
@@ -63,6 +64,14 @@ namespace RealLifeOverhaul.Nav
                 _map.Clicks = true;
                 _map.Open(open);
             }
+        }
+
+        // The map check after the map shut (Diagnostics/SessionWatch.Map): the route's object off with the map.
+        private int MapLook(StringBuilder line)
+        {
+            bool shown = _map != null && _map.gameObject.activeSelf;
+            line?.Append("route on the map: ").Append(_mapOpen ? "still as for the open map" : shown ? "its object still shown" : "off with the map");
+            return _mapOpen || shown ? 1 : 0;
         }
 
         // Two clicks on one spot of the open map: that spot is the destination.

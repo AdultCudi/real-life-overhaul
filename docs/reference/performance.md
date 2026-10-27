@@ -91,7 +91,7 @@ All of the mod's are `carveOnlyStationary`, placed while switched off and then s
 The game measures its own street things (lamps, trees, benches, signs, stands) against two bands from the player, 60 m and 200 m (`Culling.CullingManager`, `Culling.CullingGroupController`, `ICullable`), and puts out their lights, particles and people beyond the first.
 The mod's own things are measured the same way, in a culling group of its own with the same bands (`ModCulling`; the rules in `CullRules`, the slots in `CullBook`): a thing registered there has its renderers held back from drawing (`Renderer.forceRenderingOff`, only on renderers that were drawn, given back exactly) beyond 200 m, and drawn again inside it.
 Nothing else of it changes: its colliders, navigation boxes, place and state stay as they are, so the culling is visual and this machine's alone, and nothing about it goes over a Going Public session.
-While the city map is open everything is drawn.
+While the city map is open everything is drawn; as it opens and as it shuts every thing is looked at again, 64 a frame until none waits.
 It is a performance option, "The mod's bus stops, signs and boards drawn within 200 m" (`perf_mod_cull`), on by default: the camera's far plane is 300 m, so what goes is small and far.
 
 A group of its own rather than the game's: the game's list re-reads every sphere of its whole list in the frame after any one leaves it (`UnregisterCullable` sets `_recreateCullingGroup`), and bus stops and station fronts come and go.
@@ -292,6 +292,20 @@ A new queue carries what may move (`Core/DaySpread`, played by `Core/DayPump`, g
 What the three first days have in common is a state that is filled once after a load (the board of vacancies, the labour market's 142 seekers named, the first standing): the numbers on the days after are a tenth to a twentieth. Where the fill is the mod's alone and nothing reads it, it is the part now spread (the board); the labour market's names and the first standing feed the same frame's decisions and stay. **The expected frame**, by the log's own figures and with the diagnostics' lines held: the third log's 92.8 ms was Flare 32.9 (spread already), the weekly look 21.9 (spread now), the economy 25.2 with the company's 14.5 inside it, the tech sector 5.0 and the rest about 8; what is left in the frame is the economy's 25.2, the tech sector's 5 and about 8 more, **some 38 ms with the diagnostics' lines in it and fewer without**, of which the company's and the economy's scopes (money, with the game's own money path in every transaction) are the larger part. This is an estimate from a log, not a measurement of the build: the next log's midnight line says it (it now counts the steps and lines left for later), and names the parts of the company, the economy, the tech sector and careers in their own scopes.
 
 **Not moved, and why it is not a miss.** The company's, the economy's and the tech sector's day cannot move without a different result: each money line moved after the tax run or the daily summary is booked into a day whose books were closed (the mod's `GameBooks.Refresh` can only put it into the statement afterwards, and the game's tax has already read the old one), and the sick days and moods set after `EmployeeHelper.RunDaily` are the next day's. A handler that does not need the game's day (the weekly look, the board of vacancies, Flare's round) moves. The list of handlers allowed in the frame is [RLO-PERF-021](../standards/performance.md); a new one fails the check until it is listed, with its reason, or queued.
+
+## The city map, opened and shut (RLO-PERF-022)
+
+The map draws the whole city from above and pauses the game. What the mod changes for it, and how it is put back:
+
+| Part | For the map | After it |
+|---|---|---|
+| `FarDistricts` (the squares beyond 1.3 km) | Was: every renderer the map draws given back in the frame it opened (some 250,000, 5 to 15 ms). Now: a square is lent in the frame its bounds (150 m wider, 300 m taller) enter the camera's view, before the camera culls: the map's first frame gives back what it sees, and zooming out gives back a square or two a frame | Was: held again 5 s after the map shut, a millisecond every 50 ms, so the street drew the whole city for 7 to 9 s. Now: the very renderers lent are taken out again from the frame the game says its camera is back down (`onCityMapClosed`), 2 ms a frame, every frame (some 15 frames for 250,000); a square the camera is near by then stays given back |
+| `ModCulling` (the mod's far things) | everything drawn, every thing looked at again | every thing looked at again, 64 a frame until none waits (8 otherwise) |
+| `PerfCullDistances` (draw distances) | the camera's own | the options' again as it shuts |
+| `CopyLook`, `SideWalls` | the box drawn, the detail and the windows not | drawn again as it shuts |
+| `MapPlaces`, `NavDirector`, `DistrictView` | the mod's markers, lit buildings, route and district layer | as in the street; a building of the mod's the game left outlined (not active as the map shut) is put out |
+
+The session record writes a line for each opening of the map and the map check after it ([Logs and debugging](logs-and-debugging.md)). Nothing of the mod's stays behind the map: on 27 Oct 2026 the street's minutes were 10.9 ms before the map and 10.0 after it, 10.7 and 11.4 in another session. The stutters of that evening were long frames of "coroutines and timers" with thousands of page faults, before any map and after it, with 0.2 ms of the mod's at most: they came with some sixteen vehicle mods added that evening (one of them writes "lighting setup is incomplete" as it spawns, and the longest frames, 543 to 592 ms, follow those lines).
 
 ## What the merged whole costs per frame
 

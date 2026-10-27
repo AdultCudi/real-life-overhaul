@@ -194,6 +194,7 @@ namespace RealLifeOverhaul
         {
             _since = Time.unscaledTime;
             _resumed = true;
+            _map = MapStage.Shut;   // the city map's part starts again with the record (SessionWatch.Map)
             if (_started <= 0f)
             {
                 _started = Time.unscaledTime;
@@ -370,7 +371,19 @@ namespace RealLifeOverhaul
             _coveredLastFrame = covered;
             _loadingLastFrame = loading;
             _savingLastFrame = saving;
-            if (UI.Load.LoadScene.isLoading || Time.timeScale <= 0f || !Application.isFocused)
+            bool running = !UI.Load.LoadScene.isLoading && Time.timeScale > 0f && Application.isFocused;
+            if (MapFrame(took, running))
+            {
+                try
+                {
+                    Long(took, collectionsBefore, collections, heapBefore, heap, collectorNanos, screen, saved);   // a long frame of the city map (paused: none of the minute's)
+                }
+                catch (Exception e)
+                {
+                    MapFault(e);
+                }
+            }
+            if (!running)
             {
                 _since += took;   // the minute is a minute of play
                 _resumed = true;
@@ -614,6 +627,11 @@ namespace RealLifeOverhaul
         {
             float seconds = Time.unscaledTime - _since;
             _since = Time.unscaledTime;
+            if (_frames > 0)
+            {
+                _minuteFrameMs = seconds * 1000.0 / _frames;   // what a city map opened early in the next minute is set against (SessionWatch.Map)
+                _minuteOwnMs = HotSpots.Frames > 0 ? HotSpots.TotalMs / HotSpots.Frames : 0.0;
+            }
             int minute = Mathf.RoundToInt((Time.unscaledTime - _started) / 60f);
             int objects = 0, shown = 0, roots = 0;
             CountObjects(ref objects, ref shown, ref roots, minute);

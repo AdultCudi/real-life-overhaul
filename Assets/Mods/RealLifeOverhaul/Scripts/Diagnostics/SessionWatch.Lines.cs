@@ -233,7 +233,8 @@ namespace RealLifeOverhaul
         {
             try
             {
-                return (BuildingManager.IsInsideBuilding ? "inside a building" : PerfGame.InVehicle() ? "in a vehicle" : "on foot in the street")
+                return (CityMap.IsOpen ? "on the city map, " : string.Empty)
+                       + (BuildingManager.IsInsideBuilding ? "inside a building" : PerfGame.InVehicle() ? "in a vehicle" : "on foot in the street")
                        + ", game hour " + TimeHelper.CurrentHour;
             }
             catch (Exception)

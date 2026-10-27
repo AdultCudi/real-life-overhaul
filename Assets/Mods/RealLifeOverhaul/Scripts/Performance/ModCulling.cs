@@ -9,11 +9,14 @@ namespace RealLifeOverhaul
     /// <summary>
     /// Hides the mod's things in the street beyond the game's far band, in a culling group of its own (the game's rebuilds
     /// every sphere when one leaves) measured from the player; only forceRenderingOff changes, and the city map draws all.
-    /// Cost a frame: one comparison while nothing changed band, then at most <see cref="PerFrame"/> things a frame.
+    /// Cost a frame: one comparison while nothing changed band, then at most <see cref="PerFrame"/> things a frame; after the
+    /// city map opened or shut, when every thing is looked at again, <see cref="CatchUpPerFrame"/> (docs/standards/performance.md,
+    /// RLO-PERF-022).
     /// </summary>
     public static class ModCulling
     {
         private const int PerFrame = 8;   // things looked at in one frame, at most
+        private const int CatchUpPerFrame = 64;   // the same after the map opened or shut, until every thing was looked at again
         private const int StartSize = 64;           // slots before the book grows
 
         private static readonly FeatureGuard EventGuard = Guard.For("performance", "ModCulling", typeof(ModCulling));   // the engine's callback
@@ -29,6 +32,8 @@ namespace RealLifeOverhaul
         private static Camera _camera;
         private static Transform _player;
         private static bool _on, _mapOpen, _hooked;
+        private static bool _catchUp;   // the map opened or shut: every thing queued, looked at faster until none waits
+        private static readonly MapParts.Look MapLookCall = MapLook;   // made once
         private static int _hiddenThings, _hiddenRenderers;
 
         /// <summary>True while the culling is switched on and its group is measuring.</summary>
@@ -99,6 +104,7 @@ namespace RealLifeOverhaul
             _on = on;
             if (on)
             {
+                MapParts.Add("the mod's far things", MapLookCall);   // asked after the map shut, with Developer diagnostics on (Diagnostics/SessionWatch.Map)
                 Keep();
                 return;
             }
@@ -154,7 +160,8 @@ namespace RealLifeOverhaul
             }
             int frame = Time.frameCount;
             int done = 0;
-            while (done < PerFrame && Book.Next(frame, out int id))
+            int most = _catchUp ? CatchUpPerFrame : PerFrame;
+            while (done < most && Book.Next(frame, out int id))
             {
                 done++;
                 CullEntry entry = _byId[id];
@@ -177,6 +184,10 @@ namespace RealLifeOverhaul
                     Hide(entry);
                 }
             }
+            if (Book.Waiting == 0)
+            {
+                _catchUp = false;   // every thing looked at again after the map
+            }
         }
 
         /// <summary>The city is going: every thing forgotten (their owners go with it), the group let go.</summary>
@@ -193,6 +204,7 @@ namespace RealLifeOverhaul
             }
             Book.Clear();
             _hiddenThings = _hiddenRenderers = 0;
+            _catchUp = false;   // nothing waits any more
         }
 
         /// <summary>One line for the reports: what is held back now.</summary>
@@ -295,10 +307,39 @@ namespace RealLifeOverhaul
             {
                 _mapOpen = open;
                 Book.QueueAll(Time.frameCount);
+                _catchUp = Book.Waiting > 0;
             }
         }
 
         private static void MapClosed() => MapToggled(false);
+
+        // The map check after the map shut (Diagnostics/SessionWatch.Map): every thing looked at again for the street, none
+        // waiting. A comparison; words only with a line.
+        private static int MapLook(StringBuilder line)
+        {
+            bool holding = _on && (_mapOpen || (_catchUp && Book.Waiting > 0));
+            if (line != null)
+            {
+                line.Append("the mod's far things: ");
+                if (!_on)
+                {
+                    line.Append("the option is off");
+                }
+                else if (_mapOpen)
+                {
+                    line.Append("all drawn as for the map");
+                }
+                else if (_catchUp && Book.Waiting > 0)
+                {
+                    line.Append(Book.Waiting).Append(" still to be looked at again");
+                }
+                else
+                {
+                    line.Append("as in the street, ").Append(_hiddenThings).Append(" of ").Append(Book.Count).Append(" beyond ").Append(CullRules.FarBand).Append(" m not drawn");
+                }
+            }
+            return holding ? 1 : 0;
+        }
 
         private static void Hook(bool on)
         {

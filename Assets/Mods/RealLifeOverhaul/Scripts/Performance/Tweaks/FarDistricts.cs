@@ -11,16 +11,19 @@ namespace RealLifeOverhaul
     /// frame to draw 4,000), and gives a square back whole before any camera within 1100 m draws. The option uses
     /// forceRenderingOff, which the game never writes; the trial, enabled, minus GameContract.Switchers. Nothing of a moving
     /// layer is sorted (pooled parked cars move to near kerbs). Work on the director's timer, a millisecond a tick; scenes
-    /// gathered only behind a screen. Cost a frame: one comparison a camera, one more while the map is open.
+    /// gathered only behind a screen. The city map: a square comes back, lent, in the frame the map's camera first sees it
+    /// (not the whole city as it opens), and the very same renderers are taken out again as soon as its camera is back down,
+    /// 2 ms a frame, not seconds later (docs/standards/performance.md, RLO-PERF-022). Cost a frame: one comparison a camera;
+    /// while the map is open, or its camera on its way back, a test of each square still out against its view.
     /// </summary>
-    public sealed class FarDistricts : PerfTweak
+    public sealed partial class FarDistricts : PerfTweak
     {
         private const float CellSize = 400f;   // metres
         private const float Margin = 60f;   // metres a renderer reaches beyond the point it stands on, at most
         private const float HoldBeyond = 1300f;   // metres from the camera to the nearest point of a square
         private const float ReleaseWithin = 1100f;   // metres
         private const float Alarm = 500f;   // metres: a held square this near means the camera jumped, worth a log line
-        private const float Cooldown = 5f;   // seconds after squares were given back for the map or a picture
+        private const float Cooldown = 5f;   // seconds after squares were given back for a picture (another camera)
 
         // layers of things the game moves about, pooled or driven: never scenery, whatever scene they stand in
         private static readonly string[] MovingLayers = { "ParkedVehicles", "AiVehicles", "PlayerVehicles", "Vehicles", "Human" };
@@ -35,8 +38,15 @@ namespace RealLifeOverhaul
             public int Cursor;   // how far through Scenery the holding has got
             public readonly List<MeshRenderer> Scenery = new List<MeshRenderer>(256);
             public readonly List<bool> OnMap = new List<bool>(256);   // for each of those: its layer is one the city map draws
-            public readonly List<MeshRenderer> Taken = new List<MeshRenderer>(256);   // taken out, drawn by the city map
-            public readonly List<MeshRenderer> TakenOff = new List<MeshRenderer>(64);   // taken out, not drawn by the map: kept out while it is open
+            public List<MeshRenderer> Taken = new List<MeshRenderer>(256);   // taken out, drawn by the city map
+            public List<MeshRenderer> TakenOff = new List<MeshRenderer>(64);   // taken out, not drawn by the map: kept out while it is open
+            // Given back while the map is open, or its camera on its way back, to be taken out again after it: these swap with
+            // Taken and TakenOff (nothing is copied), and swap back once taken out again.
+            public List<MeshRenderer> Lent = new List<MeshRenderer>(16);
+            public List<MeshRenderer> LentOff = new List<MeshRenderer>(16);
+            public int LentCursor;   // how far through Lent, then LentOff, taking out again has got
+            public int LentHeld, LentHeldOff;   // of those, how many are out again so far, and how many of them from LentOff
+            public bool HeldBeforeMap;   // held, or being held, as the map opened
         }
 
         private const double SliceMs = 1.0;   // milliseconds of a tick the sorting or holding may take
@@ -158,14 +168,18 @@ namespace RealLifeOverhaul
         {
             _byEnabled = byEnabled;
             _id = byEnabled ? "trial_far_by_enabled" : "far_districts";
+            if (!byEnabled)
+            {
+                MapParts.Add("far squares", MapLook);   // asked after the map shut, with Developer diagnostics on (Diagnostics/SessionWatch.Map)
+            }
         }
 
         public override string Id => _id;
         public override string LabelKey => _byEnabled ? null : "reallife_perf_far_districts2";
         public override bool DefaultOn => false;   // not measured yet
         public override bool Trial => _byEnabled;
-        public override float Interval => _waitHidden && _surveyCursor >= _survey.Count && _working == null ? HiddenEvery : Busy ? 0.05f : 0.5f;
-        public override bool Busy => _stale || _surveyCursor < _survey.Count || _working != null || !_settled;
+        public override float Interval => _again ? AgainEvery : _waitHidden && _surveyCursor >= _survey.Count && _working == null ? HiddenEvery : Busy ? 0.05f : 0.5f;
+        public override bool Busy => _stale || _surveyCursor < _survey.Count || _working != null || !_settled || _lending || _again;
 
         protected override void Apply()
         {
@@ -181,7 +195,9 @@ namespace RealLifeOverhaul
             // in front of the game's own map handlers: when they run, every renderer is as the game left it
             _onMap = _onMap ?? Guard.Wrap<bool>(OnMapToggled);   // through the guard: a fault never reaches the game or the pipeline
             _onCamera = _onCamera ?? Guard.Wrap<ScriptableRenderContext, Camera>(OnCameraRendering);
+            _onMapClosed = _onMapClosed ?? Guard.Wrap(OnMapClosed);
             GlobalEvents.onCityMapToggle = (Action<bool>)Delegate.Combine(_onMap, GlobalEvents.onCityMapToggle);
+            GlobalEvents.onCityMapClosed += _onMapClosed;   // the map's camera is back down: what was lent to it is taken out again
             RenderPipelineManager.beginCameraRendering += _onCamera;
             _hooked = true;
             _settled = false;
@@ -267,12 +283,25 @@ namespace RealLifeOverhaul
             }
             Vector3 eye = _main.transform.position;
             GiveBackNear(eye, ReleaseWithin, true);   // the safety net: OnCameraRendering has normally done this already
-            if (CityMap.IsOpen || now < _quietUntil)
+            if (_lending && !CityMap.IsOpen && now >= _quietUntil)
+            {
+                Back();   // the game's word that the map's camera is back never came (its coroutine was stopped)
+            }
+            if (CityMap.IsOpen || _lending || (now < _quietUntil && !_again))
             {
                 _settled = _working == null;
                 return;
             }
-            WorkSlice slice = WorkSlice.Of(SliceMs, LookEvery);
+            WorkSlice slice = WorkSlice.Of(_again ? AgainSliceMs : SliceMs, LookEvery);
+            if (_again)
+            {
+                HoldAgain(eye, ref slice);
+                if (_again)
+                {
+                    _settled = false;
+                    return;   // the slice is over: on from there next frame
+                }
+            }
             if (_working != null)
             {
                 Hold(_working, ref slice);
@@ -505,7 +534,8 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        // whole and at once: a square is never half back, but for the map
+        // Whole and at once: a square is never half back, but for the map. While the map is open, or its camera on its way
+        // back, what comes back is lent, to be taken out again after it; otherwise anything of the square's lent is let go.
         private void GiveBack(Cell cell)
         {
             if (_working == cell)
@@ -516,8 +546,21 @@ namespace RealLifeOverhaul
             Show(cell.TakenOff);
             _heldRenderers -= cell.Taken.Count + cell.TakenOff.Count;
             _offMapHeld -= cell.TakenOff.Count;
-            cell.Taken.Clear();
-            cell.TakenOff.Clear();
+            if (cell.LentHeld > 0)
+            {
+                GiveBackLent(cell);
+            }
+            if (_lending)
+            {
+                Lend(ref cell.Taken, ref cell.Lent);
+                Lend(ref cell.TakenOff, ref cell.LentOff);
+            }
+            else
+            {
+                cell.Taken.Clear();
+                cell.TakenOff.Clear();
+                DropLent(cell);
+            }
             if (cell.Held)
             {
                 cell.Held = false;
@@ -525,10 +568,13 @@ namespace RealLifeOverhaul
             }
         }
 
-        private void Show(List<MeshRenderer> taken)
+        private void Show(List<MeshRenderer> taken) => ShowFirst(taken, taken.Count);
+
+        private void ShowFirst(List<MeshRenderer> taken, int count)
         {
-            foreach (MeshRenderer renderer in taken)
+            for (int i = 0; i < count; i++)
             {
+                MeshRenderer renderer = taken[i];
                 if (renderer == null || Kept(renderer))
                 {
                     continue;
@@ -547,27 +593,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The map opens: what it draws comes back; the rest stays out, the square counts as given back, and the timer takes
-        // it out again after the map.
-        private void GiveBackForMap()
-        {
-            foreach (Cell cell in _cells)
-            {
-                if (_working == cell)
-                {
-                    _working = null;
-                }
-                Show(cell.Taken);
-                _heldRenderers -= cell.Taken.Count;
-                cell.Taken.Clear();
-                if (cell.Held)
-                {
-                    cell.Held = false;
-                    _heldCells--;
-                }
-            }
-        }
-
         private void GiveBackNear(Vector3 eye, float reach, bool playersCamera)
         {
             if (_heldRenderers == 0 && _heldCells == 0)
@@ -577,7 +602,7 @@ namespace RealLifeOverhaul
             for (int i = 0; i < _cells.Count; i++)
             {
                 Cell cell = _cells[i];
-                if (!cell.Held && cell.TakenOff.Count == 0)
+                if (!cell.Held && cell.TakenOff.Count == 0 && cell.LentHeld == 0)
                 {
                     continue;
                 }
@@ -601,7 +626,7 @@ namespace RealLifeOverhaul
         {
             foreach (Cell cell in _cells)
             {
-                if (cell.Held || cell.Taken.Count > 0 || cell.TakenOff.Count > 0)
+                if (cell.Held || cell.Taken.Count > 0 || cell.TakenOff.Count > 0 || cell.Lent.Count > 0 || cell.LentOff.Count > 0)
                 {
                     GiveBack(cell);
                 }
@@ -611,6 +636,8 @@ namespace RealLifeOverhaul
 
         private void Forget()
         {
+            _lending = _again = false;   // the city is going: nothing is taken out again
+            _workingBeforeMap = null;
             GiveBackAll();
             for (int i = 0; i < _cells.Count; i++)
             {
@@ -621,6 +648,8 @@ namespace RealLifeOverhaul
                 gone.OnMap.Clear();
                 gone.Taken.Clear();
                 gone.TakenOff.Clear();
+                DropLent(gone);
+                gone.HeldBeforeMap = false;
                 _spareCells.Add(gone);
             }
             _cells.Clear();
@@ -635,18 +664,8 @@ namespace RealLifeOverhaul
         }
 
         private Action<bool> _onMap;
+        private Action _onMapClosed;
         private Action<ScriptableRenderContext, Camera> _onCamera;
-
-        // before the game's own handlers (see Apply): the map shows the whole city, of its own layers
-        private void OnMapToggled(bool open)
-        {
-            if (open && _heldRenderers > 0)
-            {
-                GiveBackForMap();
-            }
-            _quietUntil = Time.unscaledTime + Cooldown;
-            _settled = false;
-        }
 
         // Once a camera a frame, just before the pipeline culls for it, so what comes back is in this frame. The player's
         // camera looks again after moving 5 m (on the frame of a jump).
@@ -665,6 +684,10 @@ namespace RealLifeOverhaul
                     {
                         GiveBackAll();   // the map's camera draws more than its layers: everything back before it draws
                         return;
+                    }
+                    if (_lending)
+                    {
+                        LendInView(camera);   // the map, or its camera on its way back: what it sees, before it culls
                     }
                     if ((eye - _lastChecked).sqrMagnitude < 25f)
                     {
@@ -696,8 +719,11 @@ namespace RealLifeOverhaul
             {
                 _hooked = false;
                 GlobalEvents.onCityMapToggle = (Action<bool>)Delegate.Remove(GlobalEvents.onCityMapToggle, _onMap);
+                GlobalEvents.onCityMapClosed -= _onMapClosed;
                 RenderPipelineManager.beginCameraRendering -= _onCamera;
             }
+            _lending = _again = false;   // everything back for good: nothing is taken out again
+            _workingBeforeMap = null;
             GiveBackAll();
             foreach (Scene known in _sceneryScenes)
             {

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text;
 using UnityEngine;
 
 namespace RealLifeOverhaul
@@ -22,6 +23,7 @@ namespace RealLifeOverhaul
             {
                 Users.Add(user);
             }
+            MapParts.Add("draw distances", MapLookCall);   // asked after the map shut, with Developer diagnostics on (Diagnostics/SessionWatch.Map)
             Hook(true);
             Reconcile();
         }
@@ -60,6 +62,39 @@ namespace RealLifeOverhaul
         // through the guard: a fault never reaches the game's own map handlers
         private static readonly System.Action<bool> MapToggled = Guard.Wrap<bool>(OnMapToggled);
         private static readonly System.Action MapClosed = Guard.Wrap(Reconcile);
+        private static readonly MapParts.Look MapLookCall = MapLook;   // made once
+
+        // The map check after the map shut (Diagnostics/SessionWatch.Map): the options' draw distances on the player's camera
+        // again (the map draws with the camera's own). Asked with no line: references only; with a line its 32 values are
+        // compared too (the engine hands out a copy: once a map).
+        private static int MapLook(StringBuilder line)
+        {
+            if (Users.Count == 0)
+            {
+                line?.Append("draw distances: no option asks for any");
+                return 0;
+            }
+            Camera camera = GameManager.GetMainCamera();
+            bool applied = _camera != null && camera == _camera && camera.layerCullSpherical;
+            if (line == null)
+            {
+                return applied ? 0 : 1;
+            }
+            line.Append("draw distances: ");
+            if (!applied)
+            {
+                line.Append("not the options' again (").Append(_camera == null ? "none applied" : camera != _camera ? "another camera" : "flat").Append(')');
+                return 1;
+            }
+            float[] now = camera.layerCullDistances;
+            int differ = 0;
+            for (int layer = 0; layer < now.Length && layer < Mine.Length; layer++)
+            {
+                differ += Mathf.Approximately(now[layer], Mine[layer]) ? 0 : 1;
+            }
+            line.Append(differ == 0 ? "the options' again on the player's camera" : "the options' only in part, layers that differ: ").Append(differ == 0 ? string.Empty : differ.ToString());
+            return differ == 0 ? 0 : 1;
+        }
 
         /// <summary>Brings the camera in line: also follows the game to a new main camera and a changed far plane.</summary>
         public static void Reconcile()

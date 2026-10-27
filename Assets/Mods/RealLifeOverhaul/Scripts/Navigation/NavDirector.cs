@@ -65,6 +65,7 @@ namespace RealLifeOverhaul.Nav
             Instance = this;
             NavMarks.Reset();
             _onMap = Guard.Wrap<bool>(OnMap);
+            MapParts.Add("route on the map", MapLook);   // asked after the map shut, with Developer diagnostics on (Diagnostics/SessionWatch.Map)
             OtherMods.Look(Logger);   // done once for the city already; a loop over the table
             _voogle = OtherMods.VoogleRoute.Loaded;
             ScenePrewarm.AddLate("navigation: the road graph, the walking graph and the minimap's two pictures being made", PrewarmRoads);

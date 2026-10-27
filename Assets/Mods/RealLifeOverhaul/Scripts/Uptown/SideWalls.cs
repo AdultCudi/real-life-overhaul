@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Text;
 using Helpers;
 using UnityEngine;
 
@@ -68,6 +69,7 @@ namespace RealLifeOverhaul.Uptown
             {
                 _onMap = Guard.Wrap<bool>(OnMap);
                 GlobalEvents.onCityMapToggle = (Action<bool>)Delegate.Combine(GlobalEvents.onCityMapToggle, _onMap);
+                MapParts.Add("side walls", MapLookCall);   // asked after the map shut, with Developer diagnostics on (Diagnostics/SessionWatch.Map)
                 if (CityMap.IsOpen)
                 {
                     OnMap(true);
@@ -147,6 +149,21 @@ namespace RealLifeOverhaul.Uptown
                     Drawn[i].enabled = !open;
                 }
             }
+        }
+
+        private static readonly MapParts.Look MapLookCall = MapLook;   // made once
+
+        // The map check after the map shut (Diagnostics/SessionWatch.Map): every window drawn again. With no line it stops at
+        // the first one that is not.
+        private static int MapLook(StringBuilder line)
+        {
+            int off = 0;
+            for (int i = 0; i < Drawn.Count && (off == 0 || line != null); i++)
+            {
+                off += Drawn[i] != null && !Drawn[i].enabled ? 1 : 0;
+            }
+            line?.Append("side walls: ").Append(off).Append(" of ").Append(Drawn.Count).Append(" not drawn again");
+            return off > 0 ? 1 : 0;
         }
 
         /// <summary>Every panel taken away (a new load, the city going, the feature closing).</summary>

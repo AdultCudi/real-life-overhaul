@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 using Helpers;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -25,6 +26,9 @@ namespace RealLifeOverhaul.NewBuildings
 
         private int _layer;
         private Action<bool> _onMap;
+        private bool _mapLook;   // drawn as for the city map now
+        private static int _inMapLook;   // copies drawn as for the map now (the map check, RLO-PERF-022)
+        private static readonly MapParts.Look MapLookCall = MapLook;   // made once
         private ViewBlockingEntity _lentTo;   // the building whose look it wears, which takes its hovers and clicks; null for none
 
         protected override int DefaultLayer => _layer;
@@ -89,6 +93,7 @@ namespace RealLifeOverhaul.NewBuildings
         public override void Start()
         {
             base.Start();
+            MapParts.Add("copied buildings", MapLookCall);   // asked after the map shut, with Developer diagnostics on (Diagnostics/SessionWatch.Map)
             _onMap = Guard.Wrap<bool>(OnMap);
             GlobalEvents.onCityMapToggle = (Action<bool>)Delegate.Combine(GlobalEvents.onCityMapToggle, _onMap);
             if (CityMap.IsOpen)
@@ -102,6 +107,11 @@ namespace RealLifeOverhaul.NewBuildings
             if (_onMap != null)
             {
                 GlobalEvents.onCityMapToggle = (Action<bool>)Delegate.Remove(GlobalEvents.onCityMapToggle, _onMap);
+            }
+            if (_mapLook)
+            {
+                _mapLook = false;
+                _inMapLook--;
             }
             base.OnDestroy();
         }
@@ -121,6 +131,18 @@ namespace RealLifeOverhaul.NewBuildings
                     _detail[i].enabled = !open;
                 }
             }
+            if (_mapLook != open)
+            {
+                _mapLook = open;
+                _inMapLook += open ? 1 : -1;
+            }
+        }
+
+        // The map check after the map shut (Diagnostics/SessionWatch.Map): no copy drawn as for the map. A count.
+        private static int MapLook(StringBuilder line)
+        {
+            line?.Append("copied buildings: ").Append(_inMapLook).Append(" still drawn as for the map");
+            return _inMapLook > 0 ? 1 : 0;
         }
 
         /// <summary>

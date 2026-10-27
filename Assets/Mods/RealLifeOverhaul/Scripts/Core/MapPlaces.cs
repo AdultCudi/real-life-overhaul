@@ -612,6 +612,10 @@ namespace RealLifeOverhaul
                     }
                     Offer(Choices[i]);
                 }
+                if (!open)
+                {
+                    Shut();   // a building of the mod's the game left lit
+                }
                 if (open && _driver != null)
                 {
                     _driver.LabelSoon();

@@ -26,6 +26,7 @@ namespace RealLifeOverhaul
 
             private void Start()
             {
+                MapParts.Add("map places", MapLookCall);   // asked after the map shut, with Developer diagnostics on (Diagnostics/SessionWatch.Map)
                 StartCoroutine(Guard.Routine(Look()));
             }
 

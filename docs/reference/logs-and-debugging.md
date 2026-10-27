@@ -226,6 +226,30 @@ frame 13.1 ms (wanted: a slice of 1 ms, a long method alone in its frame): PASS.
 
 Options > Tests, Performance, "Prepare the code for the game's midnight now" does the rest at once and writes the same line. A frame of several hundred milliseconds of "loading" right after midnight, with tens of thousands of page faults and a few milliseconds of the mod's, is the game's own `Resources.UnloadUnusedAssets()` at the end of `GameManager.NewDay`: Player.log has the engine's line for it just before ("Unloading N unused Assets ... Total: 934.9 ms (FindLiveObjects ... MarkObjects ...)"). Its time grows with the number of loaded objects and the managed heap; the mod does not start it.
 
+### The city map
+
+The city map pauses the game, so the minute's line leaves its frames out. With the record on, the map's frames are counted on their own, a frame of the map over 80 ms has a line of its own ("on the city map" in its place words), and once the map's camera is back down one line says what the map cost:
+
+```
+Session: the city map was open 12.4 s: 731 frames, average 16.9 ms, worst 41 ms, over 33 ms: 2, over 50 ms: 0; the mod's
+own scripts 0.21 ms a frame on average and 1.9 ms at most (mostly Core: Driver.LateUpdate 1.2 ms); the frame it opened
+in took 96 ms, the mod's own scripts 7.4 ms of it (Core: MapPlaces.OnMap 3.1 ms, ...); the frame it shut in took 58 ms,
+...; its camera's way back down 61 frames, the longest 22 ms; frames of the map over 80 ms: 1 (a line each, up to 12).
+```
+
+Then the map check (RLO-PERF-022): every part of the mod's that changed something for the map is asked once a frame until none holds anything, which must be within 2 s of play coming back. Its line follows some 120 frames of play later:
+
+```
+Map check (after closing): the map was open 12.4 s; far squares: 36 of 58 out (231804 renderers, 231804 as the map
+opened), 36 of the 36 out before it out again, in 14 frame(s) after its camera was back; the mod's far things: as in the
+street, ...; draw distances: the options' again on the player's camera; ...; the player's camera as before the map (its
+layers, far plane and draw distances); every part back 0.21 s (14 frames) after play came back; frames of play 10.4 ms on
+average in the 120 after it, 10.6 ms in the minute before; the mod's own scripts 0.32 ms a frame after it, 0.30 before
+(wanted: every part back within 2 s, nothing left): restored, 0 lingering: PASS
+```
+
+A FAIL names the part still holding something and what it holds. The parts and their looks are listed in StandardCheck/MapChecks.cs; the looks are in `Core/MapParts`.
+
 What the lines cannot say: which of the game's scripts, or another mod's, a long frame was spent in; how long the mod's own coroutines took (they run under "coroutines and timers" and are not timed one by one); what the graphics card spent its time on (which pass, which shader); and anything about the card at all on a build without the engine's frame timing.
 
 ## Clicks and moving furniture
