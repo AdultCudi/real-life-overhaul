@@ -14,6 +14,7 @@ namespace RealLifeOverhaul.Tech
         public const int RackKw = 8, GpuRackKw = 32;  // kW drawn
         public const int WaterPerMwh = 1800;          // thousandths of a cubic metre of cooling water for each megawatt hour
         public const int RacksPerTechnician = 20;     // racks one technician keeps running
+        public const int OutageShortMost = 3000;      // thousandths more outage chance with no technician at all (in step with how many are short)
         public const int CentresMost = 12;            // data centres
         public const int NetNeeded = 1000;            // Mbps of a business connection a data centre needs
 

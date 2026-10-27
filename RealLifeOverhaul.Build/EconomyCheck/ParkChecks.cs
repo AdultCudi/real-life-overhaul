@@ -861,8 +861,10 @@ internal static partial class Program
         for (int l = 0; l < pageParts.Length; l++)
         {
             string page = words[l].TryGetValue("reallife_guide_construction", out string g) ? g : string.Empty;
-            int at = page.LastIndexOf("\n# ", StringComparison.Ordinal);
-            string section = at >= 0 ? page.Substring(at) : string.Empty;
+            int fact = page.IndexOf("{park_plans_days}", StringComparison.Ordinal);   // the car parks' section: from its heading to the next (a Staff part may follow it)
+            int at = fact >= 0 ? page.LastIndexOf("\n# ", fact, StringComparison.Ordinal) : -1;
+            int end = fact >= 0 ? page.IndexOf("\n# ", fact, StringComparison.Ordinal) : -1;
+            string section = at >= 0 ? (end > at ? page.Substring(at, end - at) : page.Substring(at)) : string.Empty;
             pageParts[l] = section.Split('\n');
             bool named = facts.All(f => section.Contains("{" + f + "}"));
             Check(section.Length > 400 && named && (l != 0 || section.StartsWith("\n# Car parks\n", StringComparison.Ordinal)),

@@ -32,6 +32,8 @@ namespace RealLifeOverhaul.Landmarks
                 .Fact("lmk_match_jobs", () => LandmarkRules.MatchJobs.ToString(Inv))
                 .Fact("lmk_capacity", () => LandmarkRules.Capacity.ToString(Inv))
                 .Fact("lmk_kick_off", () => LandmarkRules.KickOff.ToString("00", Inv) + ":00")
+                .Fact("lmk_open_from", () => LandmarkRules.OpeningFrom.ToString("00", Inv) + ":00")
+                .Fact("lmk_open_to", () => LandmarkRules.OpeningTo.ToString("00", Inv) + ":00")
                 .Fact("lmk_lift_cap", () => LandmarkRules.LiftCap.ToString(Inv))
                 .Fact("lmk_match_lift", () => LandmarkRules.MatchLift.ToString(Inv))
                 .Fact("lmk_tender_days", () => (Construction.BuildCatalogue.LandmarkTenderHours / 24).ToString(Inv))

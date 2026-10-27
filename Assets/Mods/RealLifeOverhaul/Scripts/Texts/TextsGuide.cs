@@ -42,6 +42,8 @@ namespace RealLifeOverhaul.Texts
                 .Fact("texts_gossip_to", () => TextsCityRules.GossipTo.ToString(Inv))
                 .Fact("texts_staff_from", () => TextsCityRules.StaffFrom.ToString("00", Inv) + ":00")
                 .Fact("texts_staff_to", () => TextsCityRules.StaffTo.ToString("00", Inv) + ":00")
+                .Fact("texts_sick_from", () => TextsCityRules.SickFrom.ToString("00", Inv) + ":00")
+                .Fact("texts_sick_to", () => TextsCityRules.SickTo.ToString("00", Inv) + ":00")
                 .Cleanup(() => TextsDirector.Words.Clear())
                 .ResetData(() =>
                 {

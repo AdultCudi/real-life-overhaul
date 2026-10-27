@@ -21,7 +21,7 @@ namespace RealLifeOverhaul
         private const float LookupInterval = 0.5f;     // seconds
         private const float OffenceCooldown = 25f;     // seconds before another offence can start a new stop
         private const float FootCooldown = 120f;       // seconds
-        private const float OfficerSight = 60f;        // metres within which an officer on foot can notice the player's driving
+        internal const float OfficerSight = 60f;        // metres within which an officer on foot can notice the player's driving
         private const float OfficerOnWatch = 0.55f;    // the chance one on patrol does, close and with a clear view
         private const float OfficerAtWork = 0.30f;     // and one busy at a scene
 

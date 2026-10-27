@@ -94,6 +94,12 @@ namespace RealLifeOverhaul.Meta
                 .Fact("city_coffee_to", () => CityHour(CityActivity("coffee_cart").To))
                 .Fact("city_hotdog_from", () => CityHour(CityActivity("hot_dog_cart").From))
                 .Fact("city_hotdog_to", () => CityHour(CityActivity("hot_dog_cart").To))
+                .Fact("city_near", () => Guide.Number(CityLifeDirector.NearRing))
+                .Fact("city_far", () => Guide.Number(CityLifeDirector.FarRing))
+                .Fact("city_dead_from", () => CityHour(CityLifeDirector.DeadFrom))
+                .Fact("city_dead_to", () => CityHour(CityLifeDirector.DeadTo))
+                .Fact("city_quiet_until", () => CityHour(CityLifeDirector.QuietUntil))
+                .Fact("city_quiet_from", () => CityHour(CityLifeDirector.QuietFrom))
                 .Cleanup(() => CityLifeDirector.Instance?.EndAll());
 
             Features.Add("crime", "reallife_meta_title_crime")
@@ -204,6 +210,7 @@ namespace RealLifeOverhaul.Meta
                 .Fact("job_sacked_days", () => JobCatalogue.SackedDays.ToString(CultureInfo.InvariantCulture))
                 .Fact("job_clean_days", () => JobCatalogue.CleanDays.ToString(CultureInfo.InvariantCulture))
                 .Fact("job_min_energy", () => Guide.Number(JobCatalogue.MinEnergy))
+                .Fact("job_energy_floor", () => Guide.Number(JobDirector.EnergyFloor))
                 .Fact("job_stop_cut", () => Guide.Percent(JobCatalogue.PoliceStopCut))
                 .Fact("job_crash_cut", () => Guide.Percent(JobCatalogue.CrashCut))
                 .Fact("gig_client_low", () => Guide.Percent(GigOffers.ClientLow))
@@ -266,6 +273,9 @@ namespace RealLifeOverhaul.Meta
                 .Preset(Settings.PatrolFrequencyId, 2, 4, 6)
                 .Fact("pool_people", () => ActorPool.MaxActors.ToString(CultureInfo.InvariantCulture))
                 .Fact("pool_presence", () => ActorPool.MaxPresence.ToString(CultureInfo.InvariantCulture))
+                .Fact("people_sight_foot", () => Guide.Number(PlayerOffences.OfficerSight))
+                .Fact("people_sight_wheel", () => Guide.Number(PoliceAttention.OfficerSight))
+                .Fact("people_help_m", () => Guide.Number(TrafficAccidents.HelpDistance))
                 .Cleanup(() =>
                 {
                     // Last: by now every scene has given its people back, and whoever is still out is sent in.
@@ -289,6 +299,8 @@ namespace RealLifeOverhaul.Meta
                 .About("reallife_guide_phonefolders_about").Help("reallife_guide_phonefolders")
                 .Owns(Settings.PhoneFoldersId)
                 .Fact("phone_dock", () => Whole(GameUi.PhoneLayoutRules.DockMost))
+                .Fact("phone_folder_count", () => Whole(GameUi.PhoneLayoutRules.FolderCount))
+                .Fact("phone_banks_most", () => Whole(RealLifeOverhaul.Economy.BankRules.AppsMost))
                 .Rows("reallife_phone_layout_reset")   // every app back in its folder: the player's, not a test
                 .Test("reallife_phone_test_check", "reallife_phone_test_folder", "reallife_leftpane_test");
 
@@ -402,7 +414,13 @@ namespace RealLifeOverhaul.Meta
                 .Test("reallife_perf_test_bizman", BizPace.BizPaceTest.Run)
                 .Fact("perf_warm_after", () => Guide.Number(DayWarm.StartAfter))
                 .Fact("session_long_ms", () => Guide.Number(SessionWatch.LongFrame * 1000f))
-                .Fact("session_long_most", () => Whole(SessionWatch.LongFramesPerMinute));
+                .Fact("session_long_most", () => Whole(SessionWatch.LongFramesPerMinute))
+                .Fact("perf_sky_seconds", () => Guide.Number(SkyThrottle.Seconds))
+                .Fact("perf_far_km", () => Guide.Number(FarDistricts.HoldBeyond / 1000f))
+                .Fact("perf_cull_m", () => Guide.Number(CullRules.FarBand))
+                .Fact("perf_textures_share", () => Guide.Percent(TexturesWhole.Share))
+                .Fact("perf_arm_seconds", () => Guide.Number(PerfDirector.ArmAfter))
+                .Fact("render_least", () => Guide.Number(RenderLevelRules.Least) + "%");
             foreach (PerfTweak tweak in PerfTweaks.All)
             {
                 if (!tweak.Trial && !tweak.BySetting)
@@ -437,6 +455,8 @@ namespace RealLifeOverhaul.Meta
                 }))
                 .Row(new ButtonOption("reallife_meta_check_button", OptionsLayout.CheckSetup))
                 .Fact("game_build", () => Whole(GameBuild.MadeFor))
+                .Fact("options_groups", () => Whole(OptionsTree.Groups.Length))
+                .Fact("bug_reports_kept", () => Whole(BugReportRules.KeepReports))
                 .Test("reallife_test_block_say", BlockTests.Say)
                 .Test("reallife_test_guard_fault", Guard.TestFault)
                 .Test("reallife_maptrees_test")

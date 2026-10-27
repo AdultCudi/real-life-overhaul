@@ -25,7 +25,7 @@ namespace RealLifeOverhaul.Hustles
         private const string ItemSold = "ba:transaction_itemsold";
         private const string VehicleBought = "ba:transaction_vehiclebought";
         private const string SalaryCategory = "ba:transactioncategory_salaryincome";
-        private const float EnergyFloor = 12f;              // work never takes the player below this (the game faints them at zero)
+        internal const float EnergyFloor = 12f;              // work never takes the player below this (the game faints them at zero)
         private const float WorstEnergyMultiplier = 1.9f;   // the most the game multiplies energy spent by (low mood, hunger)
 
         private static GameInstance Save => SaveGameManager.Current;

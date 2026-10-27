@@ -14,6 +14,7 @@ namespace RealLifeOverhaul
         private static readonly FeatureGuard FrameGuard = Guard.For("performance", "PerfDirector", typeof(PerfDirector));
 
         private const float SettleSeconds = 3f;   // after the city loads, before the first tweak looks at the scene
+        internal const float ArmAfter = 2f;       // seconds a measurement asked for waits after the menus are closed
 
         public static IModLogger Logger;
         public static PerfDirector Instance { get; private set; }
@@ -90,7 +91,7 @@ namespace RealLifeOverhaul
             {
                 _pendingSince = now;
             }
-            else if (now - _pendingSince >= 2f)
+            else if (now - _pendingSince >= ArmAfter)
             {
                 Begin(_pending);
             }

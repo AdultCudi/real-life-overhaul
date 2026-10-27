@@ -94,7 +94,14 @@ namespace RealLifeOverhaul.Economy
                 .Fact("co_ot_standing", () => Whole(CompanyCatalogue.OvertimeStanding))
                 .Fact("co_ot_rest", () => Whole(CompanyCatalogue.OvertimeRestDays))
                 .Fact("co_term_least", () => Whole(CompanyCatalogue.TermDaysLeast))
-                .Fact("co_lic_check", () => Tenths(CompanyCatalogue.LicenceCheckChance));
+                .Fact("co_lic_check", () => Tenths(CompanyCatalogue.LicenceCheckChance))
+                .Fact("co_mgr_allow", () => CompanyText.Money(ManagerCatalogue.AllowanceBase[ManagerCatalogue.RolePlace]))
+                .Fact("co_mgr_allow_skill", () => CompanyText.Money(ManagerCatalogue.AllowancePerSkill[ManagerCatalogue.RolePlace]))
+                .Fact("co_mgr_most", () => Whole(ManagerCatalogue.ManagersMost))
+                .Fact("co_mgr_mistake", () => CompanyText.Share(ManagerCatalogue.MistakeMost))
+                .Fact("co_exec_premium", () => CompanyText.Share(HierarchyRules.ExecutivePremium))
+                .Fact("co_acct_fee_least", () => Guide.Money(CompanyCatalogue.AccountantFee[0]))
+                .Fact("co_acct_fee_most", () => Guide.Money(CompanyCatalogue.AccountantFee[CompanyCatalogue.Accountants - 1]));
         }
 
         private static string Whole(int value)

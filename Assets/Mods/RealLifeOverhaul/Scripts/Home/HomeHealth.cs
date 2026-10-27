@@ -385,7 +385,7 @@ namespace RealLifeOverhaul
             {
                 score -= 15f;
             }
-            else if (bedHour >= 8 && bedHour < 18)   // the day's noise
+            else if (bedHour >= HomeBalance.DayNoiseFrom && bedHour < HomeBalance.DayNoiseTo)   // the day's noise
             {
                 score -= 10f;
             }
@@ -405,7 +405,7 @@ namespace RealLifeOverhaul
             {
                 score -= 10f;
             }
-            score += hours >= 7f ? 10f : hours >= 6f ? 0f : hours >= 5f ? -8f : -20f;
+            score += hours >= HomeBalance.SleepGood ? 10f : hours >= HomeBalance.SleepFair ? 0f : hours >= HomeBalance.SleepPoor ? -8f : -20f;
             score = Mathf.Clamp(score, 0f, 100f);
 
             HomeState.SleepDebt = HomeState.Clamp(HomeState.SleepDebt - hours * (0.7f + 0.6f * score / 100f), 0f, HomeBalance.DebtMost);
@@ -426,7 +426,7 @@ namespace RealLifeOverhaul
             {
                 ModState.AddModifier(ModState.Groggy);
             }
-            if (Ill && hours >= 6f)
+            if (Ill && hours >= HomeBalance.SleepFair)
             {
                 Shorten(HomeBalance.RestCure * 60f);
             }

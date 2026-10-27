@@ -112,6 +112,10 @@ namespace RealLifeOverhaul.Tech
         public const int FeaturesMost = 24;                    // features a product can have
         public const int LaunchFeatures = 3;                   // a product can launch with this many
         public const int PointsPerDay = 8;                     // a mid-level's points in a working day in good heart
+        public const int ProductBoostMost = 400;               // thousandths more points to a feature that product people add at the most
+        public const int DesignBoostMost = 200;                // thousandths more appeal that design work adds at the most (reached with design points a fifth of the engineering)
+        public const int SellingBoostMost = 2000;              // thousandths more customers won that sales points add at the most (business and company customers)
+        public const int SellingPerPoint = 50;                 // thousandths more customers won for each point of selling
         public const int BugsPerFeature = 6;                   // the bugs a feature can hold before its quality falls far (Quality)
         public const int PointsPerFix = 2;                     // points of fixing a bug takes (a tester's point fixes one)
         public const int DebtPerFeature = 35;                  // thousandths of debt a feature adds when juniors build it alone

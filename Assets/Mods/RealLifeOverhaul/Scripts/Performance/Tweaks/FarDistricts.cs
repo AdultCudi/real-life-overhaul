@@ -20,7 +20,7 @@ namespace RealLifeOverhaul
     {
         private const float CellSize = 400f;   // metres
         private const float Margin = 60f;   // metres a renderer reaches beyond the point it stands on, at most
-        private const float HoldBeyond = 1300f;   // metres from the camera to the nearest point of a square
+        internal const float HoldBeyond = 1300f;   // metres from the camera to the nearest point of a square
         private const float ReleaseWithin = 1100f;   // metres
         private const float Alarm = 500f;   // metres: a held square this near means the camera jumped, worth a log line
         private const float Cooldown = 5f;   // seconds after squares were given back for a picture (another camera)

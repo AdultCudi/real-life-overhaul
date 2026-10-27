@@ -48,6 +48,8 @@ namespace RealLifeOverhaul.Interiors
                 .Fact("in_dirt_from", () => N(InteriorRules.DirtFrom))
                 .Fact("in_dirt_penalty", () => Share(InteriorRules.DirtPenaltyMost))
                 .Fact("in_redecorate", () => N(InteriorRules.RedecorateRise))
+                .Fact("in_refit_least", () => N(InteriorRules.RefitGrades[0]))
+                .Fact("in_refit_most", () => N(InteriorRules.RefitMost))
                 .Fact("in_refresh_sqm", () => Economy.FinanceText.Money(Prices.At((float)InteriorRules.RefreshPerSqm)))
                 .Fact("in_refresh_least", () => Economy.FinanceText.Money(Prices.At(InteriorRules.RefreshLeast)))
                 .Fact("in_refresh_most", () => Economy.FinanceText.Money(Prices.At(InteriorRules.RefreshMost)))

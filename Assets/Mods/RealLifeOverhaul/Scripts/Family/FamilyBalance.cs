@@ -34,6 +34,7 @@ namespace RealLifeOverhaul.Family
         public const float HarmonyReconcile = 55f;
         public const float RentShare = 0.5f;            // of the day's rent, at most
         public const float IncomeShare = 0.35f;         // of their day's pay, at most
+        public const int ContributionHour = 18;         // from this hour each day they pay their share
         public static int BillsCap => Prices.At(60);                 // a day, in a home that is owned (no rent)
         public static int ContributionCap => Prices.At(600);         // a day, whatever the rent
 

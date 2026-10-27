@@ -20,7 +20,8 @@ namespace RealLifeOverhaul.Seasons
 
         private const float WalkPatchy = 0.93f;   // of the game's paces, on snow in patches
         private const float WalkCovered = 0.85f;  // on covered streets
-        private const int MorningFrom = 7, MorningTo = 10, EveningAt = 18;   // hours the season's and the snow's news is given
+        internal const int EveningAt = 18;
+        private const int MorningFrom = 7, MorningTo = 10;   // hours the season's and the snow's news is given
         private const float SlowEvery = 1f;       // seconds between looks at the snow and the news
         private const float FollowEvery = 0.25f;  // seconds between moves of the flakes after the camera, while they fall
         private const float LookEvery = 3f;       // seconds between looks at the trees, sky, rain, leaves, coats and the line under the date

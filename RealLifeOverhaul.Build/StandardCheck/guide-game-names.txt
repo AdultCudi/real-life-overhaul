@@ -1,0 +1,55 @@
+# Names the game owns that the Guide may print in bold (RLO-TXT-013). Every other bold name in a Guide page must be a text of the mod itself.
+# One name a line, any case: a button, a tab, a thing or an app of the game's own.
+staff and roles
+# The step titles of the tech sector page's list of steps (they head steps, they are not buttons).
+A contract
+A product
+An office
+Internet and utilities
+Opening hours and shifts
+The money
+Workstations
+# A label of the mod that carries an amount in the game ("Pay back the $500"): the page names its first words.
+Pay back
+# Pages of the Staff and roles section (the staffing branch writes them; the Guide's staff parts point to them by these names).
+Broadband company
+# The game's own names: its graphics settings, furniture, manager kinds, apps and buttons.
+Basic HR
+Bloom
+Cash Register
+Checkout Counter
+Colour saturation
+Contrast
+Delivery Contract
+Detail distance
+Headhunter
+Headquarters
+Ice Cream Counter
+Industrial Coffee Machine
+L1
+L2
+L3
+L4
+Logistics Manager
+Market Demands
+MyEmployees
+Pricing Manager
+Set destination
+Slushie Machine
+Stack Of Shopping Baskets
+Start working
+Storage Shelves
+Tobacco Shelf
+Urgent Order
+V
+Computer Workstation
+Deliveries
+Delivery Driver
+Factory
+Global Harvest Traders
+Guide
+Pallet Shelves
+Product Manufacturing
+Purchasing Agent
+United Ocean Import
+Wholesale / Import

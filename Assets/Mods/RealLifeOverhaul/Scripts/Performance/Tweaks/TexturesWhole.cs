@@ -8,7 +8,7 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed class TexturesWhole : PerfTweak
     {
-        private const float Share = 0.5f;   // of the card's memory that all textures, whole, may take
+        internal const float Share = 0.5f;   // of the card's memory that all textures, whole, may take
 
         private bool _was;
         private bool _held;

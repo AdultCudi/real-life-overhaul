@@ -70,6 +70,9 @@ namespace RealLifeOverhaul.Economy
                 .Fact("ob_staff", () => Money(OwnBankRules.At(OwnBankCatalogue.StaffDayCents, Prices.Level)))
                 .Fact("ob_hall_community", () => Money(OwnBankRules.At(BankTiers.HallDayCents[BankTiers.Community], Prices.Level)))
                 .Fact("ob_hall_regional", () => Money(OwnBankRules.At(BankTiers.HallDayCents[BankTiers.Regional], Prices.Level)))
+                .Fact("ob_compliance_community", () => Whole(BankTiers.ComplianceLeast[BankTiers.Community]))
+                .Fact("ob_compliance_regional", () => Whole(BankTiers.ComplianceLeast[BankTiers.Regional]))
+                .Fact("ob_crew_pace", () => (OwnBankCatalogue.CrewPace / 10.0).ToString("0.##", Inv) + "%")
                 .Cleanup(() => OwnBankDirector.Instance?.StopAll(), -3)
                 .ResetData(() => OwnBankDirector.Instance?.Forget());   // the director reads the now empty save afresh on its next second
         }

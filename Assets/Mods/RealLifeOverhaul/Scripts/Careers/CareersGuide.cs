@@ -215,6 +215,8 @@ namespace RealLifeOverhaul.Careers
                 .Fact("life_poach_premium", () => Bp(LifeRules.PoachPremiumBp))
                 .Fact("life_severance", () => Whole(LifeRules.SeveranceWeeksPerYear))
                 .Fact("life_severance_least", () => Whole(LifeRules.SeveranceLeastWeeks))
+                .Fact("life_layoff_least", () => Whole(ClosureRules.PayLeastDays))
+                .Fact("life_layoff_priority", () => Whole(ClosureRules.PriorityDays))
                 .Fact("life_benefit_weeks", () => Whole(LifeRules.BenefitWeeks))
                 .Fact("life_benefit_share", () => Mille(LifeRules.BenefitShare))
                 .Fact("life_benefit_most", () => Guide.Money(Prices.At(LifeRules.BenefitMost)))
