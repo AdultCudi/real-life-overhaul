@@ -22429,7 +22429,7 @@
   "reallife_hire_test_orphan_fail": "Test niezaliczony: obchód firm miasta potknął się o rekord bez budynku. Dziennik mówi, który.",
   "reallife_hire_test_orphan_off": "Najpierw wczytaj zapis. Ten test nie działa w sesji Going Public.",
   "reallife_changes_next_title": "Następna wersja",
-  "reallife_changes_next": "Jeszcze nic.",
+  "reallife_changes_next": "Naprawiono: przy włączonej opcji Diagnostyka dla programistów wzięcie mebla do rąk nie jest już zapisywane jako zgubiony element, a przystanek jednej z własnych linii autobusowych Uptown dzieli pobliski przystanek innej linii, gdy nie może postawić własnego, dzięki czemu żadna linia nie traci już przystanku.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Naprawiono: gdy każdy budynek, który mógłby pomieścić biuro usług komunalnych, jest twój, wnioski o konta prądu i wody składa się i ponownie podłącza w aplikacji Media, przez telefon, po tych samych cenach, a powiadomienia to mówią. Gdy budynek jest wolny, biuro znów się otwiera, a aplikacja mówi, gdzie. Naprawiono: po wycofaniu wniosku i złożeniu ponownie na to samo stanowisko aplikacja Kariera otwierała wycofany wniosek i do rozmowy nie dało się dotrzeć. Każdy wniosek ma teraz swój wiersz, a rozmowa, oferta i wycofanie idą do aktywnego. Naprawiono: zapis zawierający rekord firmy, której budynku miasto nie ma (inny mod może zostawić taki), nie wyłącza już sektora tech przy każdym wczytaniu. Mod pomija taki rekord wszędzie, gdzie czyta firmy miasta, zapisuje jego adres raz w dzienniku i nic w nim nie zmienia.",
   "reallife_co_mass_raise": "Daj podwyżkę",
