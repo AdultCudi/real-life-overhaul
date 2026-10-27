@@ -881,7 +881,7 @@ internal static partial class Program
         }
         Check(sameLines, "car park texts: the Guide section has the same lines, bullets and figures in en, pt and zh-cn");
 
-        // What's new: the feature line once in the next row of every language, among the feature lines, before any fix.
+        // What's new: the feature line once in the row that holds it (the next row or the version's), among the feature lines, before any fix.
         var starts = new Dictionary<string, string>(StringComparer.Ordinal)
         {
             { "en", "Car parks:" }, { "pt", ParkStart("pt") }, { "zh-cn", ParkStart("zh-cn") }, { "de", "Parkplätze:" }, { "fr", "Parkings :" }, { "es", "Aparcamientos:" }, { "ru", "Парковки:" },
@@ -891,7 +891,8 @@ internal static partial class Program
         for (int l = 0; l < words.Length; l++)
         {
             string start = starts.TryGetValue(codes[l], out string s) ? s : "?";
-            bool has = words[l].TryGetValue("reallife_changes_next", out string next) && start.Length > 3 && next.Contains(start);
+            string next = FixRow(words[l], start);
+            bool has = start.Length > 3 && next.Contains(start);
             Check(has, "car park texts: the next row of What's new has the car parks' line in " + codes[l]);
             if (has)
             {
