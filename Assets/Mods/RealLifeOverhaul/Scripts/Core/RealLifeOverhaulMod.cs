@@ -229,6 +229,7 @@ namespace RealLifeOverhaul
                     v => Settings.NoticeLook = v)
                 .AddButton("reallife_test_notice_look", GameUi.NoticeLook.Test)
                 .AddButton("reallife_test_event", () => LifeEvents.Instance?.TriggerEventNow())
+                .AddButton("reallife_moods_test", MoodsTest.Run)
                 .AddButton("reallife_test_accident", () => TrafficAccidents.Instance?.StageAccidentNow())
                 .AddButton("reallife_test_accident_minor", () => TrafficAccidents.Instance?.StageAccidentNow(TrafficAccidents.Severity.Minor))
                 .AddButton("reallife_test_accident_moderate", () => TrafficAccidents.Instance?.StageAccidentNow(TrafficAccidents.Severity.Moderate))
