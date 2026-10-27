@@ -91,6 +91,15 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\City\CityModel.cs" Link="Mod\CityModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\City\CityStore.cs" Link="Mod\CityStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\City\CityEconomy.cs" Link="Mod\CityEconomy.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Outlook\OutlookCatalogue.cs" Link="Mod\Outlook\OutlookCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Outlook\OutlookBook.cs" Link="Mod\Outlook\OutlookBook.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Outlook\OutlookStore.cs" Link="Mod\Outlook\OutlookStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Outlook\OutlookReadings.cs" Link="Mod\Outlook\OutlookReadings.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Outlook\OutlookRules.cs" Link="Mod\Outlook\OutlookRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Outlook\OutlookInsights.cs" Link="Mod\Outlook\OutlookInsights.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Outlook\OutlookScale.cs" Link="Mod\Outlook\OutlookScale.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Outlook\OutlookTheme.cs" Link="Mod\Outlook\OutlookTheme.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Outlook\OutlookWords.cs" Link="Mod\Outlook\OutlookWords.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\CalendarRules.cs" Link="Mod\CalendarRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Calendar\CalendarList.cs" Link="Mod\CalendarList.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Hustles\HustleCatalogue.cs" Link="Mod\HustleCatalogue.cs" />
@@ -110,6 +119,9 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Networking\NetworkCatalogue.cs" Link="Mod\NetworkCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Diagnostics\FurnitureRules.cs" Link="Mod\FurnitureRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\Prices.cs" Link="Mod\Prices.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\WholeMoney.cs" Link="Mod\WholeMoney.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Life\LifeMoneyRules.cs" Link="Mod\LifeMoneyRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\VehicleCostRules.cs" Link="Mod\VehicleCostRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\WageRules.cs" Link="Mod\WageRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\DayRollRules.cs" Link="Mod\DayRollRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\MoodRules.cs" Link="Mod\MoodRules.cs" />
@@ -573,6 +585,11 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\SplitRules.cs" Link="Mod\SplitRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\BuildingsRules.cs" Link="Mod\BuildingsRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\FrontageRules.cs" Link="Mod\FrontageRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\LookRules.cs" Link="Mod\LookRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\SouthRules.cs" Link="Mod\SouthRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\SideRules.cs" Link="Mod\SideRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\LookSides.cs" Link="Mod\LookSides.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\LookCensus.cs" Link="Mod\LookCensus.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\SpecialsRules.cs" Link="Mod\SpecialsRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\BigPlacesRules.cs" Link="Mod\BigPlacesRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\OfficesRules.cs" Link="Mod\OfficesRules.cs" />

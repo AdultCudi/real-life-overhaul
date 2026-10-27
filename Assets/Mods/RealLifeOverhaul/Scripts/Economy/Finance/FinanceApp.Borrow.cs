@@ -47,7 +47,7 @@ namespace RealLifeOverhaul.Economy
                 if (lends)
                 {
                     // Borrowing the most on offer: what it takes each day, its fee and its term, one figure to compare banks by.
-                    LoanQuote quote = PhoneLending.Quote(lender, Mathf.FloorToInt(most), score.Value);
+                    LoanQuote quote = PhoneLending.Quote(lender, WholeMoney.Floor(most), score.Value);
                     row.Set(4, FinanceText.Money(quote.DailyPayment + quote.DailyInterest), quote.DailyPayment + quote.DailyInterest);
                     row.Set(5, FinanceText.Money(quote.Fee), quote.Fee);
                     row.Set(6, FinanceText.T("reallife_econ_row_days", "days", quote.Days.ToString()), quote.Days);

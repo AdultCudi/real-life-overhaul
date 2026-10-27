@@ -18,7 +18,7 @@ namespace RealLifeOverhaul.Economy.Ventures
         /// <summary>The day transactions are dated on (the day that ended, during the day's run, as the game dates its own); null for now.</summary>
         public int? BookDay;
 
-        public int Cash => SaveGameManager.Current != null ? Mathf.FloorToInt(Mathf.Max(0f, SaveGameManager.Current.Money)) : 0;
+        public int Cash => SaveGameManager.Current != null ? WholeMoney.Floor(SaveGameManager.Current.Money) : 0;
 
         public bool Take(int amount, string why, string name)
         {
@@ -155,7 +155,7 @@ namespace RealLifeOverhaul.Economy.Ventures
                 f.AgeDays = b.AgeDays;
                 f.Staff = StaffAt(r);
             }
-            f.Cash = Mathf.FloorToInt(Mathf.Max(0f, save.Money));
+            f.Cash = WholeMoney.Floor(save.Money);
             CreditFile credit = CreditLedger.Ready ? CreditLedger.File : null;
             float owed = 0f;
             for (int i = 0; save.Loans != null && i < save.Loans.Count; i++)
@@ -172,9 +172,9 @@ namespace RealLifeOverhaul.Economy.Ventures
             {
                 owed += Debts[i].Owed;
             }
-            f.Owed = Mathf.RoundToInt(owed);
+            f.Owed = WholeMoney.Round(owed);
             Obligations due = Books.Tomorrow(credit);
-            f.Payments = Mathf.RoundToInt(due.Loans + due.Accounts);
+            f.Payments = WholeMoney.Round(due.Loans + due.Accounts);
             if (credit != null)
             {
                 CreditLedger.Touch();

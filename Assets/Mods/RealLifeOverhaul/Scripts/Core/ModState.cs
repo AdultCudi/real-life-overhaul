@@ -10,8 +10,10 @@ namespace RealLifeOverhaul
 {
     /// <summary>
     /// Per-save state in the save's modData, and the mod's own moods (happiness modifiers). The game crashes on loading
-    /// a mood type it does not know, so the mod's are taken out of the save while it is written and kept in modData: a
-    /// save made with the mod still loads without it.
+    /// a mood type it does not know, so the mod's are taken out of the save while it is written (whether or not the mod's
+    /// state is read) and kept in modData: a save made with the mod still loads without it. The game also drops the mod's
+    /// definitions each time it reads a save, so they go back at the main menu's unload (<see cref="BeforeCity"/>), before the
+    /// city is built, and a mood it cannot read is taken out of the list there.
     /// </summary>
     public static class ModState
     {
@@ -132,7 +134,13 @@ namespace RealLifeOverhaul
             LastMomCallDay = (int)ReadFloat(data, KeyMomDay);
             LastMomGiftDay = (int)ReadFloat(data, KeyMomGiftDay);
             // Absent from older saves: nothing is owed.
-            PendingFine = Mathf.Max(0, (int)ReadFloat(data, KeyPendingFine));
+            float pending = ReadFloat(data, KeyPendingFine);
+            PendingFine = (int)Mathf.Clamp(float.IsNaN(pending) ? 0f : pending, 0f, PendingFineMost);
+            if (!float.IsNaN(pending) && pending > PendingFineMost)
+            {
+                Logger?.Warn("State loaded: the hit-and-run bill in the save, " + pending.ToString("F0", CultureInfo.InvariantCulture)
+                             + ", was past any bill the mod writes; it is held to " + PendingFineMost + ".");
+            }
             PendingFineDue = ReadFloat(data, KeyPendingFineDue);
 
             Leisure.LeisureState.ReadSave(data);   // records, landmarks, the clothes bought, outfits
@@ -161,7 +169,7 @@ namespace RealLifeOverhaul
         {
             var removed = new List<HappinessModifierData>();
             var save = SaveGameManager.Current;
-            if (!Loaded || save == null)
+            if (save == null || save.happinessModifiers == null)
             {
                 return removed;
             }
@@ -170,11 +178,17 @@ namespace RealLifeOverhaul
                 save.modData = new Dictionary<string, string>();
             }
 
+            // Whether or not the mod's state is read: a mood of the mod left in the game's list is a save the game cannot load
+            // (PlayerController.Awake throws on a type it has no definition for), so they leave the list at every save.
             var parts = new List<string>();
             for (int i = save.happinessModifiers.Count - 1; i >= 0; i--)
             {
                 HappinessModifierData modifier = save.happinessModifiers[i];
-                if (modifier.type != null && modifier.type.StartsWith(ModifierPrefix, StringComparison.Ordinal))
+                if (modifier == null)
+                {
+                    save.happinessModifiers.RemoveAt(i);   // an empty entry: the game's own loops fault on it
+                }
+                else if (modifier.type != null && modifier.type.StartsWith(ModifierPrefix, StringComparison.Ordinal))
                 {
                     parts.Add(modifier.type + "=" + modifier.hoursLeft);
                     removed.Add(modifier);
@@ -183,6 +197,16 @@ namespace RealLifeOverhaul
             }
 
             Dictionary<string, string> data = save.modData;
+            if (!Loaded)
+            {
+                // The mod's state is not read yet, or its load failed: none of it is written, and the moods taken out wait beside those already waiting.
+                if (parts.Count > 0)
+                {
+                    data.TryGetValue(KeyModifiers, out string held);
+                    data[KeyModifiers] = MoodRules.MergeStash(parts, held);
+                }
+                return removed;
+            }
             data[KeySickUntil] = SickUntil.ToString(CultureInfo.InvariantCulture);
             data[KeyFriendDay] = LastFriendCallDay.ToString(CultureInfo.InvariantCulture);
             data[KeyMomDay] = LastMomCallDay.ToString(CultureInfo.InvariantCulture);
@@ -194,22 +218,7 @@ namespace RealLifeOverhaul
             {
                 // The game's register of mood types could not be reached this session, so the moods waiting were not put
                 // back: they keep waiting, each type once so the line does not grow.
-                var types = new HashSet<string>(StringComparer.Ordinal);
-                var kept = new List<string>();
-                foreach (string entry in parts)
-                {
-                    types.Add(entry.Substring(0, Math.Max(0, entry.IndexOf('='))));
-                    kept.Add(entry);
-                }
-                foreach (string entry in waiting.Split(';'))
-                {
-                    int eq = entry.IndexOf('=');
-                    if (eq > 0 && types.Add(entry.Substring(0, eq)))
-                    {
-                        kept.Add(entry);
-                    }
-                }
-                stash = string.Join(";", kept);
+                stash = MoodRules.MergeStash(parts, waiting);
             }
             data[KeyModifiers] = stash;
             data[KeySeenEvents] = string.Join(",", SeenEvents);
@@ -226,7 +235,14 @@ namespace RealLifeOverhaul
                 return;
             }
             save.happinessModifiers.AddRange(removed);
-            HappinessHelper.UpdateHappiness();
+            try
+            {
+                HappinessHelper.UpdateHappiness();
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
         }
 
         /// <summary>Adds to what the player owes; if something is already owed, the earlier date stands.</summary>
@@ -237,8 +253,14 @@ namespace RealLifeOverhaul
                 return;
             }
             PendingFineDue = PendingFine > 0 ? Mathf.Min(PendingFineDue, dueMinutes) : dueMinutes;
-            PendingFine += amount;
+            PendingFine = WholeMoney.Add(PendingFine, amount, PendingFineMost);
         }
+
+        /// <summary>
+        /// The most a hit-and-run bill can come to, at today's prices: a pursuit's damages and the fines for the people hurt,
+        /// several times over. A sum kept in a save is held to it.
+        /// </summary>
+        public static int PendingFineMost => Prices.At(1000000);
 
         public static void ClearPendingFine()
         {
@@ -458,6 +480,106 @@ namespace RealLifeOverhaul
         {
             RegisterModifiers();
             return ModifiersReady;
+        }
+
+        /// <summary>
+        /// Called at the main menu's unload (<see cref="ModStateEntry"/>): the game has read a save and rebuilt its register of
+        /// mood types from its own assets, which drops the mod's, and builds the city next. PlayerController.Awake looks up the
+        /// definition of every entry in the save's mood list then (HappinessHelper.ConvertTemporalBoostsToRegularBoosts) and
+        /// throws on one it cannot find, which left showering, sleeping and cooking unable to finish. So the mod's definitions go
+        /// back into the register now, before the city, and an entry that still has none (a type no version of the mod has, or an
+        /// empty entry) is taken out of the list, with one line in Player.log. COST: once a load, a few operations an entry.
+        /// </summary>
+        public static void BeforeCity()
+        {
+            RegisterModifiers();
+            GameInstance save = SaveGameManager.Current;
+            if (save == null || save.happinessModifiers == null)
+            {
+                return;
+            }
+            Dictionary<string, HappinessModifier> registry = Registry();
+            Func<string, bool> defined = registry != null ? (Func<string, bool>)registry.ContainsKey : NoneDefined;
+            List<HappinessModifierData> list = save.happinessModifiers;
+            int taken = 0, empty = 0;
+            string names = null;
+            for (int i = list.Count - 1; i >= 0; i--)
+            {
+                HappinessModifierData held = list[i];
+                if (!MoodRules.Unreadable(held != null ? held.type : null, defined))
+                {
+                    continue;
+                }
+                list.RemoveAt(i);
+                if (held == null || string.IsNullOrEmpty(held.type))
+                {
+                    empty++;
+                }
+                else if (taken++ < 3)
+                {
+                    names = names == null ? held.type : names + ", " + held.type;
+                }
+            }
+            if (taken + empty > 0)
+            {
+                string which = names != null ? " (" + names + (taken > 3 ? ", ..." : string.Empty) + ")" : string.Empty;
+                Meta.Dev.Always(Logger, "Moods check (load): " + taken + " mood(s) in the save's list had no definition" + which + " and " + empty
+                                        + " entr" + (empty == 1 ? "y" : "ies") + " had no type, taken out before the city was built so the game can read the list: put right once");
+            }
+        }
+
+        private static bool NoneDefined(string type)
+        {
+            return false;
+        }
+
+        /// <summary>
+        /// The mod's mood types, over all three tables (its own, family's and travel's), that the game's register does not hold
+        /// now, by name; -1 when the register cannot be reached. <paramref name="total"/> is how many types the mod has.
+        /// </summary>
+        public static int MissingFromRegister(List<string> names, out int total)
+        {
+            total = 0;
+            Dictionary<string, HappinessModifier> registry = Registry();
+            var tables = new[] { ModifierDefs, RealLifeOverhaul.Family.FamilyModifiers.Defs, TravelEffects.Modifiers };
+            int missing = 0;
+            for (int t = 0; t < tables.Length; t++)
+            {
+                foreach ((string type, int _, int _) in tables[t])
+                {
+                    total++;
+                    if (registry == null || !registry.ContainsKey(type))
+                    {
+                        missing++;
+                        names?.Add(type);
+                    }
+                }
+            }
+            return registry == null ? -1 : missing;
+        }
+
+        /// <summary>
+        /// The entries of the save's mood list that the game cannot read now (no type, or no definition); -1 with no save or
+        /// register. <paramref name="entries"/> is how many the list holds.
+        /// </summary>
+        public static int UnreadableInList(out int entries)
+        {
+            entries = 0;
+            GameInstance save = SaveGameManager.Current;
+            Dictionary<string, HappinessModifier> registry = Registry();
+            if (save == null || save.happinessModifiers == null || registry == null)
+            {
+                return -1;
+            }
+            Func<string, bool> defined = registry.ContainsKey;
+            int bad = 0;
+            entries = save.happinessModifiers.Count;
+            for (int i = 0; i < entries; i++)
+            {
+                HappinessModifierData held = save.happinessModifiers[i];
+                bad += MoodRules.Unreadable(held != null ? held.type : null, defined) ? 1 : 0;
+            }
+            return bad;
         }
 
         private static float ReadFloat(Dictionary<string, string> data, string key)

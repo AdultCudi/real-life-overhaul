@@ -53,6 +53,8 @@ internal static partial class Program
         ("Law/Precincts.cs", "sprite", "private static Sprite _icon", "the precinct badge, drawn once a session"),
         ("Navigation/NavBase.cs", "picture", "UnityEngine.Object.Destroy(_kept)", "the minimap's picture of the city, destroyed when another takes its place"),
         ("Navigation/NavGraph.cs", "picture", "UnityEngine.Object.Destroy(_keptPicture)", "the minimap's picture of the roads, destroyed when another takes its place"),
+        ("Outlook/OutlookIcon.cs", "_glyph", "private static Sprite _glyph", "the Economy app's glyph, drawn once a session"),
+        ("Outlook/OutlookKit.cs", "sprite", "private static Sprite _round, _circle, _soft", "the Economy app's rounded box, circle and shadow, drawn once a session and kept in static fields"),
         ("People/ServiceKit.Measure.cs", "_bake", "private static Mesh _bake", "one mesh the uniforms are measured with, made once a session"),
         ("Phone/Contacts/ContactGroupsGame.cs", "made", "_made[i] = made", "a Contacts group's category, made once a session and kept in the app's row list: the game's buttons read it"),
         ("Phone/Contacts/ContactPictures.cs", "Sprite", "Pictures.Add(id, p)", "a contact's picture, kept by its id for the run: the game's contact list holds the sprite"),

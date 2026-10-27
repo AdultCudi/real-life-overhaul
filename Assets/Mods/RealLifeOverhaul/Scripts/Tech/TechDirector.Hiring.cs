@@ -254,8 +254,20 @@ namespace RealLifeOverhaul.Tech
                                  + (at == null ? "the business is no longer the player's" : "the ad is gone") + ".");
                     continue;
                 }
-                // A data centre's crew is on the payroll: the game has no shifts at a warehouse to give its own employee.
-                bool payroll = !s.P.Def.InGame || ad.Work == (int)Arrangement.Remote || ad.CrewSearch;
+                // Where the game has no shifts (a warehouse: a data centre) it has no desk to seat its own employee at: only the crew who look
+                // after racks start there, on the payroll. Anyone else accepted for it (an offer made before this rule) is not hired to a door
+                // they could never work at: the applicant withdraws and the player is told to post the job at a firm's office.
+                bool shifts = TalentGame.Shifts(at);
+                if (!HiringRules.Seats(shifts, s.P.Def))
+                {
+                    a.Stage = (int)ApplyStage.Withdrawn;
+                    Tell(NotificationType.Warning, "reallife_hire_note_start_nowhere", Data("name", s.P.Name, "business", TalentGame.NameOf(at), "role", TechText.Role(s.P.Role)),
+                        TabApplicants, RolesApp.ApplicantRow + a.Id);
+                    Logger?.Warn("Tech: " + s.P.Name + " (" + s.P.Def.Key + ") was to start at " + TalentGame.NameOf(at)
+                                 + ", which has no desks or shifts for the game's employee; the applicant has withdrawn.");
+                    continue;
+                }
+                bool payroll = HiringRules.OnPayroll(s.P.Def, ad.Work, ad.CrewSearch, shifts);
                 bool ok;
                 if (payroll)
                 {
@@ -487,6 +499,12 @@ namespace RealLifeOverhaul.Tech
             return TalentRules.Going(TalentGame.GameRate(r.GameSkill, mid), r, shortage, 0);
         }
 
+        /// <summary>The text told when a job is posted or a search briefed for a role the place cannot seat (a data engineer at a data centre).</summary>
+        internal const string SeatRefusal = "reallife_hire_no_seat";
+
+        /// <summary>True if the business at a place key can seat the role: a data centre has no desks, so only its rack crew; any other business any role.</summary>
+        internal bool CanSeat(string place, int role) => HiringRules.Seats(TalentGame.Shifts(TalentGame.Find(place)), TalentCatalogue.Role(role));
+
         /// <summary>An ad posted on the jobs board, paid now by the business. False if there is no room or the cash does not cover it.</summary>
         internal bool PostAd(string place, int role, int level, int payLeast, int payMost, int minSkill, int work, int days, bool boost)
         {
@@ -503,6 +521,11 @@ namespace RealLifeOverhaul.Tech
             RoleDef r = TalentCatalogue.Role(role);
             if (open >= HiringCatalogue.AdsMost || at == null)
             {
+                return false;
+            }
+            if (!HiringRules.Seats(TalentGame.Shifts(at), r))
+            {
+                Notifications.ShowError(SeatRefusal);
                 return false;
             }
             if (work == (int)Arrangement.Remote && !r.Remote)
@@ -641,6 +664,11 @@ namespace RealLifeOverhaul.Tech
             level = TalentCatalogue.Clamp(Math.Max(level, HiringCatalogue.SearchLeastLevel), r.LeastLevel, r.MostLevel);
             if (open >= HiringCatalogue.SearchesMost || at == null || level < HiringCatalogue.SearchLeastLevel)
             {
+                return false;
+            }
+            if (!HiringRules.Seats(TalentGame.Shifts(at), r))
+            {
+                Notifications.ShowError(SeatRefusal);   // a search firm's data engineer would reach a data centre with no desk to sit at
                 return false;
             }
             SearchQuote(role, level, out int fee, out int retainer);

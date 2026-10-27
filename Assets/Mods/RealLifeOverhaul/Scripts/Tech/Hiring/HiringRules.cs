@@ -597,6 +597,27 @@ namespace RealLifeOverhaul.Tech
         /// <summary>Whether a role looks after a data centre's racks on site, as a crew search finds them.</summary>
         public static bool CrewRole(int role) => Array.IndexOf(HiringCatalogue.CrewRoles, role) >= 0;
 
+        /// <summary>True for a business type the game gives no desks and no shifts: a warehouse, which a data centre is. Nobody of the game's can be seated there.</summary>
+        public static bool NoShifts(string businessType) => businessType == HiringCatalogue.NoShifts;
+
+        /// <summary>
+        /// Whether a business seats a role. A business with shifts seats every role; one with none (a data centre) seats only the family that
+        /// looks after racks, who are on the payroll there. A data engineer, a designer or a software engineer belong at a firm's desks.
+        /// </summary>
+        public static bool Seats(bool shifts, RoleDef role) => shifts || (role != null && role.Family == Family.Infrastructure);
+
+        /// <summary>
+        /// Whether a hire is on the mod's own payroll rather than the game's employee: a role the game has no job for, a job from home, a data
+        /// centre's crew by a search, or anyone hired where the game has no shifts to give them (who would never be given work).
+        /// </summary>
+        public static bool OnPayroll(RoleDef role, int work, bool crewSearch, bool shifts) => !role.InGame || work == (int)Arrangement.Remote || crewSearch || !shifts;
+
+        /// <summary>
+        /// True for a professional who is the game's own employee at a business with no shifts: on its staff list, but never given a desk,
+        /// a shift or a walk to work. The game's own unassigning ends it and leaves them waiting in its staff list for a place.
+        /// </summary>
+        public static bool Stranded(bool shifts, bool gameEmployee) => !shifts && gameEmployee;
+
         /// <summary>The level a crew search finds for a role: junior to staff, inside the role's own range.</summary>
         public static int CrewLevel(int role, int level)
         {

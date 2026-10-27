@@ -39,6 +39,7 @@ namespace RealLifeOverhaul.Meta
             Meals.MealsGuide.Register();
             Networking.NetworkGuide.Register();
             Shops.ShopsGuide.Register();
+            Outlook.OutlookGuide.Register();
         }
 
         private static void RegisterGameplay()
@@ -238,7 +239,7 @@ namespace RealLifeOverhaul.Meta
                 .About("reallife_guide_life_about").Help("reallife_guide_life")
                 .Owns(Settings.LifeEventsId)
                 .Preset(Settings.EventFrequencyId, 4, 6, 8)
-                .Test("reallife_test_event")
+                .Test("reallife_test_event", "reallife_moods_test")
                 .Data("reallife:sick_until", "reallife:friend_day", "reallife:mom_day", "reallife:mom_gift_day", "reallife:modifiers",
                     "reallife:seen_events", "reallife:pending_fine", "reallife:pending_fine_due")
                 .Objects("RealLifeOverhaul Crosshair")

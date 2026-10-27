@@ -298,13 +298,14 @@ namespace RealLifeOverhaul.Household
         public static int DirtPercent(HomeCar c) => Mathf.RoundToInt(c.Car.dirtiness * 100f);
 
         /// <summary>What the game's own repair of the car comes to (its repair bay's price); 0 for none.</summary>
-        public static int RepairCost(HomeCar c) => Mathf.RoundToInt(Mathf.Max(0f, c.Car.CalculateRepairCost()));
+        // The game's own sum, held to damage 0 to 1 of the price (VehicleCostRules.Repair).
+        public static int RepairCost(HomeCar c) => WholeMoney.Round(VehicleCostRules.Repair(c.Car.damage, c.Car.VehicleType != null ? c.Car.VehicleType.price : 0f));
 
         /// <summary>Car ownership's service due on the car, at the bay's prices; 0 for none or without car ownership.</summary>
         public static int ServiceCost(HomeCar c)
         {
             Func<VehicleInstance, bool, float> service = HouseholdBridges.Service;
-            return service != null ? Mathf.RoundToInt(Mathf.Max(0f, service(c.Car, false))) : 0;
+            return service != null ? WholeMoney.Round(VehicleCostRules.Finite(Mathf.Max(0f, service(c.Car, false)), 0f)) : 0;
         }
 
         /// <summary>Washed clean, as the game's wash leaves a car.</summary>

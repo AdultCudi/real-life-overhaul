@@ -56,6 +56,7 @@ Every feature runs in the New York the mod knows, a New York with districts a fr
 - [Credit products, missed payments, the private lender and the ways out](economy-credit-products.md).
 - [The Banks app and your own bank](economy-banks.md).
 - [The city's economy](economy-city.md), with the game's daily statement.
+- [The Economy app](economy-app.md): the city's economy as dashboards, with a daily history, a verdict and advice.
 - [Investors](economy-investors.md): investors, pitches and the lettings page.
 - [The stock market, your listed company and trading bots](economy-markets.md).
 - [Running a business](economy-company.md).

@@ -29,7 +29,7 @@ namespace RealLifeOverhaul.Economy.Dealership
 
         private static GameInstance Save => SaveGameManager.Current;
 
-        public static int Cash => Save != null ? Mathf.FloorToInt(Mathf.Max(0f, Save.Money)) : 0;
+        public static int Cash => Save != null ? WholeMoney.Floor(Save.Money) : 0;
 
         public static int DaysPerYear
         {

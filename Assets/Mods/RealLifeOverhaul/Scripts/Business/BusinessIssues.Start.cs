@@ -102,7 +102,7 @@ namespace RealLifeOverhaul
                     float fee = late
                         ? Mathf.Clamp(price * BusinessCatalogue.ExpressShare, Prices.At(20f), Prices.At(400f))
                         : Mathf.Clamp(price * BusinessCatalogue.SurchargeShare, Prices.At(15f), Prices.At(500f));
-                    issue.A = Mathf.RoundToInt(Mathf.Min(fee, Mathf.Max(1f, BusinessGame.Cash * BusinessCatalogue.CashShare)));
+                    issue.A = WholeMoney.Round(Mathf.Min(fee, Mathf.Max(1f, BusinessGame.Cash * BusinessCatalogue.CashShare)));
                     if (late)
                     {
                         issue.DueDay = day;

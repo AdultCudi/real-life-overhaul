@@ -76,7 +76,7 @@ namespace RealLifeOverhaul.GameUi
         {
             "RealLifePlanner", "RealLifeFlare", "RealLifeCalendar", "RealLifeCamera", "RealLifeGallery", "RealLifeNewsstand", "RealLifeLedger",
             "RealLifeCareer", "RealLifeCampus", "RealLifeOpenRoles", "RealLifeMarketplace",
-            "RealLifeFinance", "RealLifeBanks", "RealLifeOwnBank", "RealLifeStocks",
+            "RealLifeFinance", "RealLifeBanks", "RealLifeOwnBank", "RealLifeStocks", "RealLifeEconomy",
             "RealLifeCompany", "RealLifeBrands", "RealLifeServices", "RealLifeVentures", "RealLifeOnline", "RealLifeEstate", "RealLifeDealer",
             "RealLifeBuilders",
             "RealLifeTechSector", "RealLifeOverhaulUtilities",

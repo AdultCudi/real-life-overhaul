@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using BAModAPI;
+using BigAmbitions.Items;
 using Entities;
 using Helpers;
 using Localizor;
@@ -183,6 +184,54 @@ namespace RealLifeOverhaul.Tech
         }
 
         public static string TypeOf(BuildingRegistration reg) => reg != null ? reg.businessTypeName ?? string.Empty : string.Empty;
+
+        /// <summary>False for a business the game gives no desks and no shifts (a warehouse, so a data centre): nobody of the game's is ever seated there.</summary>
+        public static bool Shifts(BuildingRegistration reg) => !HiringRules.NoShifts(TypeOf(reg));
+
+        /// <summary>True if the employee has a shift at a placed station (not cleaning) in the business's schedule: the game's own desk and shift that work needs.</summary>
+        public static bool StationShift(EmployeeInstance e, BuildingRegistration reg)
+        {
+            try
+            {
+                List<ScheduleDay> days = e != null && reg != null ? reg.scheduleDays : null;
+                Dictionary<string, ItemInstance> placed = reg != null ? reg.itemInstances : null;
+                for (int d = 0; days != null && placed != null && d < days.Count; d++)
+                {
+                    List<WorkShift> shifts = days[d] != null ? days[d].workShifts : null;
+                    for (int s = 0; shifts != null && s < shifts.Count; s++)
+                    {
+                        WorkShift w = shifts[s];
+                        if (w != null && w.employeeId == e.id && w.type != WorkShiftType.Cleaning && !string.IsNullOrEmpty(w.itemInstanceId) && placed.ContainsKey(w.itemInstanceId))
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+            catch (Exception)
+            {
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// A professional the game's own hiring left at a business with no shifts is taken off it the game's own way (its unassigning: off
+        /// every shift, the address cleared, the game's idle task for the player to place them), so they wait in its staff list for a
+        /// desk instead of standing at a door they can never work at. False, with nothing changed, if the game refused.
+        /// </summary>
+        public static bool Unseat(EmployeeInstance e)
+        {
+            try
+            {
+                EmployeeHelper.UnassignEmployeeFromAllWorkshifts(e);
+                return e.assignedAddress == null;
+            }
+            catch (Exception ex)
+            {
+                Logger?.Error(ex);
+                return false;
+            }
+        }
 
         /// <summary>The player's businesses that can employ professionals: every named business but an empty one. One pass over the buildings.</summary>
         public static void Businesses(List<BuildingRegistration> into)

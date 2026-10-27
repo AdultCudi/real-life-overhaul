@@ -78,10 +78,7 @@ The adjustments carry no category of the game's, so its daily statements, its ta
 
 ## What the player sees
 
-- **Finance, Overview**: "Bank rate: banks' own +1.25", "Prices: 104.2, up 0.8% this month", "The economy: slowdown, month 2", and a button "The city".
-- **Finance, The city** (a page of the Overview, not a sixth tab): in the box the rate, the next decision (or what was announced for tomorrow), prices, inflation, the economy, what rents, wages and takings come to against the game's figures, what is carried.
-
-  In the table the districts (income, the month's change), the six kinds of goods (today's price against the usual, what runs or starts tomorrow, "you stock it"), each business (district, customers, prices over or suiting the district) and each building owned (the game's value and today's).
+- **Finance, Overview**: "Bank rate: banks' own +1.25", "Prices: 104.2, up 0.8% this month", "The economy: Slowing (slowdown, month 2)", and a button "Open the Economy app". The page "The city" the Finance app used to have (the rate, the next decision, prices, inflation, the economy, rents, wages and takings against the game's figures, the districts, the kinds of goods, each business and each building) moved into the [Economy app](economy-app.md) on 27 Oct 2026, with charts and a history, and the city's notices open it on its Prices and rates tab.
 
 - **The paper** (`News.Extra`): two pieces a day at most, in this order: a shortage or a glut from tomorrow, a rival, the rate decision (the day before it takes effect, with its reason), a change of state, the month's prices, a district that moved 2 points or more.
 - **The Planner** (rows of the Finance source): the rate decision on the day it takes effect, once announced; a shortage or a glut from tomorrow in goods the player's businesses stock.

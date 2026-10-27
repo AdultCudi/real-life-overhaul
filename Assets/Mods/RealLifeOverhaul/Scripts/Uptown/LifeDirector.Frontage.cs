@@ -32,13 +32,15 @@ namespace RealLifeOverhaul.Uptown
                 SpecById[Declared[i].Id] = Declared[i];
             }
             int placed = FrontageRules.Plan(Plan, id => SpecById.TryGetValue(id, out MadeSpec spec) ? spec : null, designs, Fills);
+            int south = SouthRules.Plan(designs, Fills);   // the row of buildings along 1st Avenue's continuations' south pavements, where the backdrop's boxes stood
             int back = 0;
             for (int i = 0; i < Fills.Count; i++)
             {
                 back += Fills[i].Back ? 1 : 0;
             }
             SpecById.Clear();
-            Logger?.Info("Uptown: " + placed + " of its " + Declared.Count + " building(s) stand side by side along its streets, with " + (Fills.Count - back) + " filler(s) between them and "
+            Logger?.Info("Uptown: " + placed + " of its " + Declared.Count + " building(s) stand side by side along its streets, with " + (Fills.Count - back - south) + " filler(s) between them, "
+                         + south + " along the avenue's south pavement and "
                          + back + " behind them, laid out in " + ((Stopwatch.GetTimestamp() - began) * 1000.0 / Stopwatch.Frequency).ToString("F1", CultureInfo.InvariantCulture) + " ms.");
         }
     }
