@@ -168,7 +168,7 @@ namespace RealLifeOverhaul
             }
             if (_holder != null)
             {
-                UnityEngine.Object.Destroy(_holder.gameObject);
+                SceneryTrees.Destroy(_holder.gameObject);
                 _holder = null;
             }
             _placedCount = 0;
@@ -363,7 +363,7 @@ namespace RealLifeOverhaul
                 }
                 Buffer.Clear();
             }
-            UnityEngine.Object.Destroy(made);
+            SceneryTrees.Destroy(made);
         }
 
         // The holder of the pieces: its game extension names the building, set before the holder wakes, so that the camera's

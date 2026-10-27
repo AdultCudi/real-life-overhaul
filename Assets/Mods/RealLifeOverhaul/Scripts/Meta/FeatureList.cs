@@ -438,6 +438,7 @@ namespace RealLifeOverhaul.Meta
                 .Fact("game_build", () => Whole(GameBuild.MadeFor))
                 .Test("reallife_test_block_say", BlockTests.Say)
                 .Test("reallife_test_guard_fault", Guard.TestFault)
+                .Test("reallife_maptrees_test")
                 .Test("reallife_test_build_notice", GameBuild.TestNotice)
                 .Test("reallife_test_build_box", GameConfirm.TestOwnBox)
                 .Test("reallife_floors_test_place", Floors.FloorsDirector.TestPlace)

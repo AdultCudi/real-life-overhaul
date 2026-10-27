@@ -160,7 +160,7 @@ namespace RealLifeOverhaul.Floors
             {
                 if (laid[i] != null)
                 {
-                    UnityEngine.Object.Destroy(laid[i].gameObject);
+                    SceneryTrees.Destroy(laid[i].gameObject);
                 }
             }
             laid?.Clear();

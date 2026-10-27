@@ -378,7 +378,7 @@ namespace RealLifeOverhaul.Uptown
             {
                 if (Zones[d] != null)
                 {
-                    UnityEngine.Object.Destroy(Zones[d]);
+                    SceneryTrees.Destroy(Zones[d]);
                 }
                 Zones[d] = null;
                 RowsMade[d] = null;

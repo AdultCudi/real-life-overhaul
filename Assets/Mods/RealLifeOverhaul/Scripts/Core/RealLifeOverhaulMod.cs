@@ -230,6 +230,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_test_notice_look", GameUi.NoticeLook.Test)
                 .AddButton("reallife_test_event", () => LifeEvents.Instance?.TriggerEventNow())
                 .AddButton("reallife_moods_test", MoodsTest.Run)
+                .AddButton("reallife_maptrees_test", MapTreeGuard.RunTest)
                 .AddButton("reallife_test_accident", () => TrafficAccidents.Instance?.StageAccidentNow())
                 .AddButton("reallife_test_accident_minor", () => TrafficAccidents.Instance?.StageAccidentNow(TrafficAccidents.Severity.Minor))
                 .AddButton("reallife_test_accident_moderate", () => TrafficAccidents.Instance?.StageAccidentNow(TrafficAccidents.Severity.Moderate))
@@ -1444,6 +1445,8 @@ namespace RealLifeOverhaul
             Guard.Step("ClickWatch", () => ClickWatch.Logger = context.Logger);
             Guard.Step("OverlayGuard", () => OverlayGuard.Logger = context.Logger);
             Guard.Step("OverlayGuard", () => Guard.Add<OverlayGuard>(_root));   // two null tests a frame
+            Guard.Step("MapTreeGuard", () => MapTreeGuard.Logger = context.Logger);
+            Guard.Step("MapTreeGuard", () => Guard.Add<MapTreeGuard>(_root));   // a reference comparison a frame; the tree list pruned when the map opens
             Guard.Step("GameUi.TextBox", () => GameUi.TextBox.Logger = context.Logger);
             // A conversation ended another way: the text box closed and the dialogue panel's handle given back; one time
             // comparison a frame.

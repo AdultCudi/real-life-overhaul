@@ -82,7 +82,7 @@ namespace RealLifeOverhaul.NewGround
             StationaryAiSpawner.AllPedestrianSpawners.Remove(zone);
             CullingManager culling = InstanceBehavior<CullingManager>.IsInitialized ? InstanceBehavior<CullingManager>.Instance : null;
             culling?.generalCullingGroupController?.UnregisterCullable(zone);
-            Object.Destroy(zone.gameObject);
+            SceneryTrees.Destroy(zone.gameObject);
             zone = null;
         }
 

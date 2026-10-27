@@ -161,7 +161,7 @@ namespace RealLifeOverhaul.Uptown
             {
                 if (Laid[i] != null)
                 {
-                    UnityEngine.Object.Destroy(Laid[i]);
+                    SceneryTrees.Destroy(Laid[i]);
                 }
             }
             foreach (Mesh mesh in Meshes)

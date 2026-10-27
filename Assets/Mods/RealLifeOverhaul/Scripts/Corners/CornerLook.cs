@@ -643,7 +643,7 @@ namespace RealLifeOverhaul.Corners
             CornerSigns.Drop(h);
             if (h.Root != null)
             {
-                UnityEngine.Object.Destroy(h.Root);
+                SceneryTrees.Destroy(h.Root);
             }
             h.Root = null;
         }
@@ -737,7 +737,7 @@ namespace RealLifeOverhaul.Corners
         {
             if (root != null && root.name.StartsWith(GhostName, StringComparison.Ordinal))
             {
-                UnityEngine.Object.Destroy(root.gameObject);
+                SceneryTrees.Destroy(root.gameObject);
             }
         }
     }

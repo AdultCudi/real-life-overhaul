@@ -644,7 +644,7 @@ namespace RealLifeOverhaul.NewGround
                 Transform lamp = _lamps.transform.GetChild(i);
                 if (lamp.name.StartsWith(prefix, StringComparison.Ordinal))
                 {
-                    UnityEngine.Object.Destroy(lamp.gameObject);
+                    SceneryTrees.Destroy(lamp.gameObject);
                 }
             }
         }
@@ -654,7 +654,7 @@ namespace RealLifeOverhaul.NewGround
         {
             if (_lamps != null)
             {
-                UnityEngine.Object.Destroy(_lamps);
+                SceneryTrees.Destroy(_lamps);
             }
             _lamps = null;
             Appends.Clear();

@@ -193,3 +193,11 @@ Checked by: StandardCheck (each bundle's SHA-256 against its list, the limits, i
 Why: a player's session record (26 Oct 2026) showed a 97 ms search for "a text of the game's interface (its font)" in a 139 ms frame in play, when a computer panel's buttons were first copied.
 
 Checked by: StandardCheck (GameFont.cs: scene searches only inside `FromScene`, and the getter's `SceneFinds.Black` guard before it); EconomyCheck (the What's new line in all nine languages).
+
+### RLO-PERF-018: The game's list of trees only holds trees that exist
+
+**MUST** take the trees of a game object out of `TreeController.AllTrees` before the mod destroys the object, in every file that copies the game's scenery into the city (Uptown, new ground, copied buildings, car parks, building sites, landmarks, corners, schools, precinct frontage, hotels, floors): `SceneryTrees.Destroy` or `SceneryTrees.DestroyNow` in place of `Object.Destroy` and `DestroyImmediate`, or `SceneryTrees.Forget` on the line before. A line that holds no tree by construction says so with "RLO-PERF-018 no trees" in its comment. **MUST** keep `MapTreeGuard` started: its handler is first in the map's event (`EventHold.First`) and prunes the list (`SceneryTrees.Prune`) before the game's own map handler walks it.
+
+Why: the game adds a tree to the list when it wakes and never takes it out, and its city map asks every tree in the list for its game object. One destroyed tree made `TreeController.ToggleMapLod` throw inside the map's open coroutine, so M only tinted the screen and the map stayed shut for the rest of the session (0.60.0: the garage doors' mouths on Uptown's pavements destroyed the trees standing in them). The game never destroys a tree in a session; the mod does.
+
+Checked by: StandardCheck (no raw Destroy of a game object in those files; the guard's `EventHold.First`, its `SceneryTrees.Prune()` and the mod starting it); the Developer diagnostics line "Map check (trees)" and the test "Check the city map with a destroyed tree" in Options > Tests.

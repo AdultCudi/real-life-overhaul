@@ -323,7 +323,7 @@ namespace RealLifeOverhaul.Schools
             paved = Pave(paths, root.transform);
             if (stood == 0 && paved == 0)
             {
-                UnityEngine.Object.Destroy(root);
+                SceneryTrees.Destroy(root);
                 return null;
             }
             root.SetActive(true);
@@ -514,7 +514,7 @@ namespace RealLifeOverhaul.Schools
         {
             if (root != null)
             {
-                UnityEngine.Object.Destroy(root);
+                SceneryTrees.Destroy(root);
             }
             root = null;
             for (int i = 0; i < Made.Count; i++)

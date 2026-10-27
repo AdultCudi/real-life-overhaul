@@ -566,7 +566,7 @@ namespace RealLifeOverhaul.NewBuildings
                     GameObject child = lanes[i].transform.GetChild(k).gameObject;
                     if (child.layer == LayerHelper.ParkedVehiclesLayerIndex || child.layer == LayerHelper.AutoParkSpotsLayerIndex)
                     {
-                        UnityEngine.Object.DestroyImmediate(child);
+                        UnityEngine.Object.DestroyImmediate(child);   // RLO-PERF-018 no trees: a parked car or an auto-park spot
                     }
                 }
             }
@@ -773,7 +773,7 @@ namespace RealLifeOverhaul.NewBuildings
         {
             if (look != null)
             {
-                UnityEngine.Object.Destroy(look.gameObject);
+                SceneryTrees.Destroy(look.gameObject);
             }
         }
 
@@ -1158,7 +1158,7 @@ namespace RealLifeOverhaul.NewBuildings
         {
             if (template != null)
             {
-                UnityEngine.Object.Destroy(template.gameObject);
+                SceneryTrees.Destroy(template.gameObject);
             }
         }
 
