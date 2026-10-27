@@ -112,6 +112,45 @@ namespace RealLifeOverhaul.Construction
             }
         }
 
+        // ------------------------------------------------------------------ the window's size and the cards' grid
+
+        public const float CardGap = 36f;       // between two cards, in the window's units (the help screen's 2400 by 1600)
+        public const float CardMin = 420f;      // the narrowest a card is drawn: its name, kind, figures and price each on a line of its own
+        public const int ColumnsMost = 3;       // cards side by side at most
+        public const float WideShare = 0.9f;    // of the canvas's width the window may take
+        public const float HighShare = 0.745f;  // of the canvas's height, where the toolbar is not measured: room for the game's top bar and the toolbar
+        public const float ScaleLeast = 0.4f;   // the smallest the window is drawn at
+
+        /// <summary>How many cards stand side by side on a page of this width: three where each is at least <see cref="CardMin"/> wide, else fewer, one at least.</summary>
+        public static int Columns(float pageWide)
+        {
+            int n = (int)Math.Floor((pageWide - 8f + CardGap) / (CardMin + CardGap));   // the 8 is the slack CardWide leaves
+            return Math.Max(1, Math.Min(ColumnsMost, n));
+        }
+
+        /// <summary>A card's width on a page of this width with so many to a row (a little under the page's, so the scrollbar never touches one): the same for every card.</summary>
+        public static float CardWide(float pageWide, int columns)
+        {
+            int n = Math.Max(1, columns);
+            return (float)Math.Floor((pageWide - CardGap * (n - 1) - 8f) / n);
+        }
+
+        /// <summary>
+        /// What the window is scaled by so it fits the screen (the owner, 27 Oct 2026: it ran over the footer and the toolbar). The canvas
+        /// is 2160 units high at every resolution and shrinks to 2160 divided by the game's UI scale, so at a larger UI scale the window,
+        /// 2400 by 1600 units, no longer fits: it is drawn smaller, by the canvas's width and by the height free between the game's top
+        /// bar and the toolbar (<paramref name="freeHigh"/>), never above 1 and never below <see cref="ScaleLeast"/>.
+        /// </summary>
+        public static float Scale(float canvasWide, float freeHigh, float wide, float high)
+        {
+            if (wide <= 0f || high <= 0f || canvasWide <= 0f || freeHigh <= 0f)
+            {
+                return 1f;
+            }
+            float s = Math.Min(1f, Math.Min(canvasWide * WideShare / wide, freeHigh / high));
+            return Math.Max(ScaleLeast, s);
+        }
+
         /// <summary>The number of designs a list holds at most (the city's asked for and the corner buildings).</summary>
         public const int Most = 40;
 

@@ -255,7 +255,8 @@ namespace RealLifeOverhaul.Construction
                     done++;
                     if (street == null && LotOfColumn(at, out LotView lot))
                     {
-                        street = lot.Street;
+                        string words = ConstructionGame.StreetWords(lot.Street);   // the street in words, as the Ledger paper prints it (never its id)
+                        street = words.Length > 0 ? words : null;
                     }
                 }
             }

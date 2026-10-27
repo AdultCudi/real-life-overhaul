@@ -206,6 +206,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\SpecialNameBook.cs" Link="Mod\SpecialNameBook.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\HeldUnitsRules.cs" Link="Mod\HeldUnitsRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\NewBuildings\NewBuildingsRules.cs" Link="Mod\NewBuildingsRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\NewBuildings\GateRules.cs" Link="Mod\GateRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\NewBuildings\ServiceDeskRules.cs" Link="Mod\ServiceDeskRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\NewBuildings\NewBuildingsText.cs" Link="Mod\NewBuildingsText.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\NewBuildings\NewBuildingsTestPlot.cs" Link="Mod\NewBuildingsTestPlot.cs" />
@@ -594,6 +595,9 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\LookCensus.cs" Link="Mod\LookCensus.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\SpecialsRules.cs" Link="Mod\SpecialsRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\BigPlacesRules.cs" Link="Mod\BigPlacesRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\MouthRules.cs" Link="Mod\MouthRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\StreetsRules.cs" Link="Mod\StreetsRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\TransitPlan.Routes.cs" Link="Mod\TransitPlan.Routes.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\OfficesRules.cs" Link="Mod\OfficesRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\MixRules.cs" Link="Mod\MixRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\LifeStore.cs" Link="Mod\LifeStore.cs" />
@@ -628,10 +632,15 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\GrowRules.cs" Link="Mod\Construction\GrowRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildState.Grow.cs" Link="Mod\Construction\BuildState.Grow.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildStore.Grow.cs" Link="Mod\Construction\BuildStore.Grow.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\CarParkRules.cs" Link="Mod\Construction\CarParkRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\CarParkLayout.cs" Link="Mod\Construction\CarParkLayout.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildState.Park.cs" Link="Mod\Construction\BuildState.Park.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildStore.Park.cs" Link="Mod\Construction\BuildStore.Park.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildModeRules.cs" Link="Mod\Construction\BuildModeRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildModeHintRules.cs" Link="Mod\Construction\BuildModeHintRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildModeCityRules.cs" Link="Mod\Construction\BuildModeCityRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildModeCatalogue.cs" Link="Mod\Construction\BuildModeCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\StreetNameRules.cs" Link="Mod\Construction\StreetNameRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\CompleteRules.cs" Link="Mod\CompleteRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\DemandRules.cs" Link="Mod\DemandRules.cs" />
     <!-- A building handed over stands at once, and the opening day is not missed (StandChecks.cs). -->
@@ -642,6 +651,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Designs\ShowFlatDesigns.cs" Link="Mod\ShowFlatDesigns.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Civic\WrapRules.cs" Link="Mod\WrapRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Civic\PlotRules.cs" Link="Mod\PlotRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Civic\ParkSiteRules.cs" Link="Mod\ParkSiteRules.cs" />
     <!-- Uptown's landmarks (LandmarksChecks.cs): their rules and their line, on the plan of Uptown's lots. -->
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\LayoutRules.cs" Link="Mod\LayoutRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\SpacesRules.cs" Link="Mod\SpacesRules.cs" />

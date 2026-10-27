@@ -110,6 +110,8 @@ namespace RealLifeOverhaul
                 ConstructionBridges.Designs = Designs;
                 ConstructionBridges.Footprint = Footprint;
                 ConstructionBridges.StartPlot = StartPlot;
+                ConstructionBridges.StartLot = StartLot;
+                ConstructionBridges.GroundGiven = ParkGroundGiven;
                 ConstructionBridges.StartWorks = StartWorks;
                 ConstructionBridges.Site = Site;
                 ConstructionBridges.AllSites = AllSites;
@@ -228,6 +230,8 @@ namespace RealLifeOverhaul
                 ConstructionBridges.Designs = null;
                 ConstructionBridges.Footprint = null;
                 ConstructionBridges.StartPlot = null;
+                ConstructionBridges.StartLot = null;
+                ConstructionBridges.GroundGiven = null;
                 ConstructionBridges.StartWorks = null;
                 ConstructionBridges.Site = null;
                 ConstructionBridges.AllSites = null;
@@ -394,6 +398,46 @@ namespace RealLifeOverhaul
                     Fault("ConstructionLinks.StartPlot", e);
                     why = "a fault";
                     return 0;
+                }
+            }
+
+            private static int StartLot(Vector3 middle, int yaw, int width, int depth, int storeys, int contractor, int hours, out string why)
+            {
+                why = null;
+                try
+                {
+                    CivicWorks works = Works();
+                    if (works == null || !Settings.CivicConstruction)
+                    {
+                        why = "the city's construction sites are off";
+                        return 0;
+                    }
+                    SiteState site = works.StartLot(middle, yaw, width, depth, TimeHelper.CurrentDay, out why, hours);   // a car park's works, set out with their builder's hours
+                    if (site == null)
+                    {
+                        return 0;
+                    }
+                    site.Contractor = Mathf.Clamp(contractor, 0, CivicCatalogue.Contractors.Length - 1);
+                    return site.Id;
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.StartLot", e);
+                    why = "a fault";
+                    return 0;
+                }
+            }
+
+            // A car park has stood in play: the works' props on its ground come down in the same moment.
+            private static void ParkGroundGiven(float x1, float z1, float x2, float z2)
+            {
+                try
+                {
+                    CivicDirector.Instance?.GroundGiven(x1, z1, x2, z2);
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.ParkGroundGiven", e);
                 }
             }
 

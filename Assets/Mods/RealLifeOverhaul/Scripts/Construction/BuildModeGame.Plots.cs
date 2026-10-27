@@ -476,7 +476,15 @@ namespace RealLifeOverhaul.Construction
         }
 
         /// <summary>The game's words for a building type, a size and an owner.</summary>
-        public static string TypeWords(string type) => string.IsNullOrEmpty(type) ? "-" : type.GetLocalization();
+        public static string TypeWords(string type)
+        {
+            if (string.IsNullOrEmpty(type))
+            {
+                return "-";
+            }
+            string words = type.GetLocalization();
+            return StreetNameRules.HasId(words) ? "-" : words;   // a type the game has no words for is left blank, never printed as its id
+        }
 
         public static string RivalName(string street, int number, Plots p, int plot)
         {

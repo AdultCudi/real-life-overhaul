@@ -34,9 +34,9 @@ namespace RealLifeOverhaul.Construction
             {
                 return "reallife_bld_answer_no_lot";
             }
-            if (_state.OnLot(firstId) != null)
+            if (_state.OnLot(firstId) != null || ParkOf(firstId) != null)
             {
-                return "reallife_bld_answer_lot_busy";
+                return ParkOf(firstId) != null ? "reallife_park_answer_stands" : "reallife_bld_answer_lot_busy";
             }
             if (!After(_strip[_strip.Count - 1], out LotView next))
             {
@@ -48,9 +48,9 @@ namespace RealLifeOverhaul.Construction
             {
                 return FreeSpace(next) ? "reallife_bld_answer_join_buy_first" : "reallife_bld_answer_join_nothing";
             }
-            if (_state.OnLot(next.Id) != null)
+            if (_state.OnLot(next.Id) != null || ParkOf(next.Id) != null)
             {
-                return "reallife_bld_answer_lot_busy";
+                return ParkOf(next.Id) != null ? "reallife_park_answer_stands" : "reallife_bld_answer_lot_busy";
             }
             if (!SiteSpaces(next.Id, b.Spaces, _joinNext))
             {
@@ -135,9 +135,9 @@ namespace RealLifeOverhaul.Construction
             {
                 return "reallife_bld_answer_split_one";
             }
-            if (_state.OnLot(firstId) != null)
+            if (_state.OnLot(firstId) != null || ParkOf(firstId) != null)
             {
-                return "reallife_bld_answer_lot_busy";
+                return ParkOf(firstId) != null ? "reallife_park_answer_stands" : "reallife_bld_answer_lot_busy";
             }
             if (_state.Lots.Count + a.Spaces - 1 > BuildCatalogue.LotsMost)
             {

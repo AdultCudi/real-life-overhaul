@@ -440,7 +440,7 @@ namespace RealLifeOverhaul.NewBuildings
                 return false;
             }
             DesignEntry chosen = designs[design];
-            CityBuildingController copy = CopyGame.MakeWorking(design, root, yaw, record, registration, "RealLife Made " + spec.Id);
+            CityBuildingController copy = CopyGame.MakeWorking(design, root, yaw, record, registration, "RealLife Made " + spec.Id, spec.Id);
             if (copy == null)
             {
                 _standWhy = "the game's building of the design " + chosen.Name + " is gone";

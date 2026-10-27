@@ -220,6 +220,12 @@ namespace RealLifeOverhaul.Construction
 
         public delegate int PlotStart(Vector3 middle, int yaw, int width, int depth, int storeys, int contractor, int hours, out string why);
 
+        /// <summary>A car park's works on a lot's ground: its middle, yaw, width and depth (whole metres), contractor and hours (the storeys are not used). The site's id, or 0 with why.</summary>
+        public static PlotStart StartLot;
+
+        /// <summary>A car park has stood in play on a ground (x and z from, to): the works' props on it come down in the same moment, so the works and the car park are never seen together.</summary>
+        public static Action<float, float, float, float> GroundGiven;
+
         /// <summary>A site of a kind at one of the city's buildings (a rebuild, a scaffold), the player's own or a contractor's. The site's id, or 0 with why.</summary>
         public static WorksStart StartWorks;
 
@@ -485,6 +491,8 @@ namespace RealLifeOverhaul.Construction
             Designs = null;
             Footprint = null;
             StartPlot = null;
+            StartLot = null;
+            GroundGiven = null;
             StartWorks = null;
             Site = null;
             AllSites = null;

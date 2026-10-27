@@ -21,10 +21,10 @@ namespace RealLifeOverhaul.Construction
         private readonly TenderBid[] _quotes = new TenderBid[BuildCatalogue.RivalCount];
         private readonly int[] _busy = new int[BuildCatalogue.RivalCount];
 
-        /// <summary>True for a project a builder of the city's can be hired for: a plot, a rebuild or an extension of the player's, not yet started.</summary>
+        /// <summary>True for a project a builder of the city's can be hired for: a plot, a rebuild, an extension or a car park of the player's, not yet started.</summary>
         public static bool HireKind(ProjectFile p)
         {
-            return p != null && (p.Kind == ProjectKind.Plot || p.Kind == ProjectKind.Rebuild || p.Kind == ProjectKind.Extension) && p.Contractor < 0;
+            return p != null && (p.Kind == ProjectKind.Plot || p.Kind == ProjectKind.Rebuild || p.Kind == ProjectKind.Extension || p.Kind == ProjectKind.Parking) && p.Contractor < 0;
         }
 
         /// <summary>What stands in the way of hiring a builder for a project now, as a text key; null when one can be hired.</summary>
@@ -46,7 +46,7 @@ namespace RealLifeOverhaul.Construction
             {
                 return "reallife_bld_answer_city_full";
             }
-            if (p.Model == ProjectKind.Plot && !Lot(p.Lot, out _))
+            if ((p.Model == ProjectKind.Plot || p.Kind == ProjectKind.Parking) && !Lot(p.Lot, out _))
             {
                 return "reallife_bld_answer_no_lot";
             }

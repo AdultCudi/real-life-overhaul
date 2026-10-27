@@ -108,6 +108,7 @@ internal static partial class Program
             }
         }
         list.Sort((a, b) => NewBuildingsRules.CompareDesigns(a.Now, b.Now));
+        GateFixture(list);   // the game's garage doors and car parks on the designs that have them (Census/design-gates-3682.json)
         return list;
     }
 
