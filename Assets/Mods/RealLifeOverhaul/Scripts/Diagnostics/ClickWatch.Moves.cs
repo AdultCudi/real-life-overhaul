@@ -39,6 +39,7 @@ namespace RealLifeOverhaul
         private ItemController _moving;
         private string _movingName;
         private Vector3 _movingFrom;        // where it stood as its move began
+        private int _endedFrame = -1;       // the frame the move was seen to end in, while its line waits a frame (FurnitureRules.Settled); -1 when none waits
 
         // The walls, furniture, people, vehicles and unplaceable ground a piece on the floor may not overlap (PlacementSystem.CollisionCheckMask).
         private static int FloorMask => LayerHelper.wallsLayerMask | LayerHelper.interactiveItemsAndOutlinedLayerMask | LayerHelper.humanLayerMask
@@ -47,9 +48,13 @@ namespace RealLifeOverhaul
         // What a piece on a wall may not overlap (PlacementSystem.UpdateWallItemPosition).
         private static int WallMask => LayerHelper.groundLayerMask | LayerHelper.interactiveItemsAndOutlinedLayerMask | LayerHelper.humanLayerMask | LayerHelper.wallsLayerMask;
 
-        // A move of the game's begun or ended since the last frame: the piece noted as it starts, its line written as it ends.
+        // A move of the game's begun or ended since the last frame: the piece noted as it starts, its line written a frame after it ends.
         private void WatchMove()
         {
+            if (_endedFrame >= 0 && FurnitureRules.Settled(Time.frameCount, _endedFrame))
+            {
+                WriteEnd();   // a piece the game took into the hands is destroyed at the end of the frame it was grabbed in: gone by now, its record taken with it
+            }
             if (PlacementSystem.IsInPlacementMode)
             {
                 if (_movingId == null)
@@ -62,9 +67,9 @@ namespace RealLifeOverhaul
                 }
                 return;
             }
-            if (_movingId != null)
+            if (_movingId != null && _endedFrame < 0)
             {
-                WriteEnd();
+                _endedFrame = Time.frameCount;
             }
         }
 
@@ -75,6 +80,7 @@ namespace RealLifeOverhaul
             ItemController piece = _moving;
             _movingId = null;
             _moving = null;
+            _endedFrame = -1;
             BuildingManager manager = InstanceBehavior<BuildingManager>.Instance;
             BuildingRegistration reg = manager != null && BuildingManager.IsInsideBuilding ? manager.buildingRegistration : null;
             if (reg == null || reg.itemInstances == null || id.Length == 0)
@@ -84,39 +90,48 @@ namespace RealLifeOverhaul
             _text.Length = 0;
             _text.Append("Move check (ended): '").Append(_movingName).Append("' ");
             bool kept = reg.itemInstances.TryGetValue(id, out ItemInstance record);
-            if (piece == null)
+            bool gone = piece == null;
+            Vector3 at = gone ? Vector3.zero : piece.transform.position;
+            var signals = new MoveEndSignals
             {
-                _text.Append("is gone from the room (into the hands or a box); the building ").Append(kept ? "still lists it: FAIL." : "lists it no more: PASS.");
+                PieceGone = gone,
+                Listed = kept,
+                SameRecord = kept && !gone && ReferenceEquals(record, piece.ItemInstance),
+                SamePlace = kept && !gone && ((Vector3)record.position - at).sqrMagnitude <= 0.0001f,
+            };
+            MoveEnd end = FurnitureRules.Ending(signals);
+            if (gone)
+            {
+                _text.Append("is gone from the room (").Append(WentTo(id, _movingName)).Append("); the building ").Append(FurnitureRules.Words(end, null));
                 Logger?.Info(_text.ToString());
                 return;
             }
-            Vector3 at = piece.transform.position;
-            if ((at - _movingFrom).sqrMagnitude > 0.0001f)
-            {
-                _text.Append("was put down at ").Append(Where(at));
-            }
-            else
-            {
-                _text.Append("is back where it was, ").Append(Where(at));
-            }
-            _text.Append("; the building's own record of it, which the save keeps: ");
-            if (!kept)
-            {
-                _text.Append("none (it would be gone after a load): FAIL.");
-            }
-            else if (!ReferenceEquals(record, piece.ItemInstance))
-            {
-                _text.Append("another record than the piece's own (where it is would not be saved): FAIL.");
-            }
-            else if (((Vector3)record.position - at).sqrMagnitude > 0.0001f)
-            {
-                _text.Append("at ").Append(Where(record.position)).Append(", not where it stands: FAIL.");
-            }
-            else
-            {
-                _text.Append("at the same place: PASS.");
-            }
+            _text.Append((at - _movingFrom).sqrMagnitude > 0.0001f ? "was put down at " : "is back where it was, ").Append(Where(at))
+                 .Append("; the building's own record of it, which the save keeps: ").Append(FurnitureRules.Words(end, kept ? Where(record.position) : null));
             Logger?.Info(_text.ToString());
+        }
+
+        // Where a piece the game took out of the room is: the player's hands hold it as the item itself (a box) or as cargo of its name.
+        private static string WentTo(string id, string name)
+        {
+            ItemInstance hands = PlayerHelper.ItemInstanceInHands;
+            if (hands == null)
+            {
+                return "not in the player's hands: a box, a vehicle or a sale";
+            }
+            if (hands.id == id)
+            {
+                return "now in the player's hands";
+            }
+            var cargo = hands.cargoInstances;
+            for (int i = 0; cargo != null && i < cargo.Count; i++)
+            {
+                if (cargo[i] != null && cargo[i].itemName == name)
+                {
+                    return "now in the player's hands, among the cargo of '" + hands.itemName + "'";
+                }
+            }
+            return "not in the player's hands: a box, a vehicle or a sale";
         }
 
         // A right click: would the game lift the piece the pointer is on, and if not, why.
@@ -317,7 +332,8 @@ namespace RealLifeOverhaul
         {
             List<ItemController> listed = manager.allItemControllers;
             _text.Append('\'').Append(item.name).Append("' (").Append(item.itemName).Append(") at ").Append(Where(item.transform.position)).Append(", ")
-                 .Append(listed != null && listed.Contains(item) ? "in the building's list of its furniture" : "NOT in the building's list of its furniture")
+                 .Append(listed != null && listed.Contains(item) ? "in the building's list of its furniture"
+                     : "NOT in the building's list of its furniture (the game adds a piece put down from the hands to that list only when it next loads the building; its record is kept at once)")
                  .Append(item.loadedInHamptonsHouse ? ", loaded with the house" : string.Empty).Append(", ").Append(Record(item, manager.buildingRegistration));
         }
 

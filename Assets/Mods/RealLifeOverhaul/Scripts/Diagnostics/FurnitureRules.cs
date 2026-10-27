@@ -53,6 +53,26 @@ namespace RealLifeOverhaul
         public bool InputSelected, OverInterface, Floor, InsidePlot, Blocked, Fits, Moved;
     }
 
+    /// <summary>
+    /// How a move ended against the building's own record of the piece, which the save keeps; judged a frame after the move
+    /// ended (<see cref="FurnitureRules.Settled"/>), when the game has finished with a piece it took into the hands.
+    /// </summary>
+    public enum MoveEnd
+    {
+        Kept = 0,           // the piece stands and the building's record of it is its own, at the place it stands: PASS
+        Taken = 1,          // gone from the room and no longer listed: the game's grab took it into the hands, a box or a vehicle (it removes the record and destroys the piece): PASS
+        StillListed = 2,    // the piece is gone but the building still lists it: a record with no piece, FAIL
+        Lost = 3,           // the piece stands but the building has no record of it: it would be gone after a load, FAIL
+        OtherRecord = 4,    // the building keeps another record than the piece's own: where the piece is would not be saved, FAIL
+        WrongPlace = 5,     // the record is the piece's own but says another place, FAIL
+    }
+
+    /// <summary>What the building's record says of a piece when a move has ended, read once, a frame after.</summary>
+    public struct MoveEndSignals
+    {
+        public bool PieceGone, Listed, SameRecord, SamePlace;
+    }
+
     /// <summary>Whose a thing in the way is, by the script on it or above it.</summary>
     public enum MoveOwner
     {
@@ -200,6 +220,61 @@ namespace RealLifeOverhaul
             }
             string path = (location ?? string.Empty).Replace('\\', '/');
             return path.IndexOf("_Data/Managed/", System.StringComparison.OrdinalIgnoreCase) >= 0 ? MoveOwner.Game : MoveOwner.OtherMod;
+        }
+
+        /// <summary>
+        /// Frames after a move ends that its record is judged: the game destroys a piece it took into the hands at the end of the frame
+        /// it grabbed it in, so in that frame the record is gone and the piece is not yet.
+        /// </summary>
+        public const int SettleFrames = 1;
+
+        /// <summary>True once the frame is far enough past the frame a move ended in for the game to have finished with the piece.</summary>
+        public static bool Settled(int frame, int endedFrame)
+        {
+            return frame - endedFrame >= SettleFrames;
+        }
+
+        /// <summary>
+        /// How a move ended. A piece gone from the room and from the building's list is taken, not lost: the game's grab
+        /// (ItemController.TryToGrabItem, ClickGrab) removes the record and destroys the piece, and the item is in the
+        /// player's hands. A piece that stands with no record, or with another one, is the failure the check is for.
+        /// </summary>
+        public static MoveEnd Ending(in MoveEndSignals s)
+        {
+            if (s.PieceGone)
+            {
+                return s.Listed ? MoveEnd.StillListed : MoveEnd.Taken;
+            }
+            if (!s.Listed)
+            {
+                return MoveEnd.Lost;
+            }
+            if (!s.SameRecord)
+            {
+                return MoveEnd.OtherRecord;
+            }
+            return s.SamePlace ? MoveEnd.Kept : MoveEnd.WrongPlace;
+        }
+
+        /// <summary>True when the move ended well: the piece is kept with its own record, or taken out of the room with none left.</summary>
+        public static bool Passes(MoveEnd end)
+        {
+            return end == MoveEnd.Kept || end == MoveEnd.Taken;
+        }
+
+        /// <summary>The words for how a move ended, for the log; <paramref name="recordAt"/> is where the record says the piece is, for a wrong place.</summary>
+        public static string Words(MoveEnd end, string recordAt)
+        {
+            switch (end)
+            {
+                case MoveEnd.Kept: return "at the same place: PASS.";
+                case MoveEnd.Taken: return "lists it no more: PASS.";
+                case MoveEnd.StillListed: return "still lists it: FAIL.";
+                case MoveEnd.Lost: return "none (it would be gone after a load): FAIL.";
+                case MoveEnd.OtherRecord: return "another record than the piece's own (where it is would not be saved): FAIL.";
+                case MoveEnd.WrongPlace: return "at " + recordAt + ", not where it stands: FAIL.";
+                default: return "not known to this check: FAIL.";
+            }
         }
 
         /// <summary>The words for whose a thing is, for the log.</summary>

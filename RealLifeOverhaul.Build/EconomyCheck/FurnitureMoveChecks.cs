@@ -13,6 +13,28 @@ internal static partial class Program
     {
         FurnitureMoveRuleChecks();
         FurnitureMoveSourceChecks();
+        FurnitureMoveTextChecks();
+    }
+
+    // What's new has the fix, looked for in every row so that it is found before a release and after it numbers the row.
+    private static void FurnitureMoveTextChecks()
+    {
+        Dictionary<string, string>[] words = LanguageWords(out string[] codes);
+        if (!LanguagesRead("furniture move texts", words, codes))
+        {
+            return;
+        }
+        var starts = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            { "en", "Fixed: with Developer diagnostics on, taking a piece of furniture into your hands" }, { "pt", "Corrigido: com Diagnóstico de desenvolvedor ativado" },
+            { "zh-cn", "已修复：开启开发者诊断后，把家具拿在手上" }, { "de", "Behoben: Bei aktivierter Entwicklerdiagnose" }, { "fr", "Corrigé : avec Diagnostics de développement activés" },
+            { "es", "Corregido: con Diagnóstico para desarrolladores activado" }, { "ru", "Исправлено: при включённой опции Диагностика для разработчиков" },
+            { "nl", "Opgelost: met Ontwikkelaarsdiagnose aan" }, { "tr", "Düzeltildi: Geliştirici Tanılama açıkken" }
+        };
+        for (int l = 0; l < words.Length; l++)
+        {
+            Check(starts.TryGetValue(codes[l], out string start) && WhatsNewHas(words[l], start), "furniture move texts: What's new has the fix for a piece taken into the hands and the shared bus stop in some row in " + codes[l]);
+        }
     }
 
     private static MoveSignals FurnitureLifted()
@@ -126,6 +148,52 @@ internal static partial class Program
             plain &= w.Length > 10 && said.Add(w) && !w.Contains('!') && !w.Contains((char)0x2014) && !w.Contains((char)0x2013) && !w.Contains(" - ") && !w.Contains("does not know");
         }
         Check(plain, "furniture moves: each reason has words of its own for the log, plain and without a dash");
+
+        FurnitureEndChecks();
+    }
+
+    // How a move ends (a player's log, 27 Oct 2026: a chair, a laptop and a desk lifted and taken into the hands were each logged "none (it would be
+    // gone after a load): FAIL"). The game's grab removes the piece's record from the building and destroys the piece at the end of that frame, so the
+    // frame the move ended in shows a piece still standing with no record; a frame later it is gone, with its record, and that is taken, not lost.
+    private static void FurnitureEndChecks()
+    {
+        MoveEndSignals Ends(bool gone, bool listed, bool same, bool place) => new MoveEndSignals { PieceGone = gone, Listed = listed, SameRecord = same, SamePlace = place };
+
+        Check(FurnitureRules.Ending(Ends(false, true, true, true)) == MoveEnd.Kept, "furniture move ends: a piece that stands with its own record at the place it stands is kept");
+        Check(FurnitureRules.Ending(Ends(true, false, false, false)) == MoveEnd.Taken, "furniture move ends: a piece gone from the room whose record went with it was taken into the hands, not lost");
+        Check(FurnitureRules.Ending(Ends(true, true, false, false)) == MoveEnd.StillListed, "furniture move ends: a piece gone from the room that the building still lists is a record with no piece");
+        Check(FurnitureRules.Ending(Ends(false, false, false, false)) == MoveEnd.Lost, "furniture move ends: a piece that stands with no record is lost to a load");
+        Check(FurnitureRules.Ending(Ends(false, true, false, false)) == MoveEnd.OtherRecord, "furniture move ends: another record than the piece's own is caught");
+        Check(FurnitureRules.Ending(Ends(false, true, true, false)) == MoveEnd.WrongPlace, "furniture move ends: a record at another place than the piece stands is caught");
+        Check(FurnitureRules.Ending(Ends(true, false, true, true)) == MoveEnd.Taken && FurnitureRules.Ending(Ends(true, true, true, true)) == MoveEnd.StillListed,
+            "furniture move ends: a piece that is gone is judged by the list alone, whatever else is said of it");
+        var seen = new HashSet<MoveEnd>();
+        for (int bits = 0; bits < 16; bits++)
+        {
+            seen.Add(FurnitureRules.Ending(Ends((bits & 1) != 0, (bits & 2) != 0, (bits & 4) != 0, (bits & 8) != 0)));
+        }
+        Check(seen.Count == Enum.GetValues(typeof(MoveEnd)).Length && Enum.GetValues(typeof(MoveEnd)).Length == 6, "furniture move ends: every state of the record comes to one of the six endings, and each ending is checked");
+        Check(FurnitureRules.Passes(MoveEnd.Kept) && FurnitureRules.Passes(MoveEnd.Taken) && !FurnitureRules.Passes(MoveEnd.StillListed) && !FurnitureRules.Passes(MoveEnd.Lost)
+              && !FurnitureRules.Passes(MoveEnd.OtherRecord) && !FurnitureRules.Passes(MoveEnd.WrongPlace),
+            "furniture move ends: a kept piece and a taken one pass, the other four fail");
+
+        // The frame it ended in, the grabbed piece still stands and its record is gone: only the frame after tells it from a loss.
+        Check(!FurnitureRules.Settled(500, 500) && FurnitureRules.Settled(501, 500) && FurnitureRules.Settled(900, 500) && FurnitureRules.SettleFrames >= 1,
+            "furniture move ends: a move is judged a frame after it ended, not in the frame (the game destroys a grabbed piece at the end of its frame)");
+        MoveEndSignals sameFrame = Ends(false, false, false, false), nextFrame = Ends(true, false, false, false);
+        Check(FurnitureRules.Ending(sameFrame) == MoveEnd.Lost && FurnitureRules.Ending(nextFrame) == MoveEnd.Taken,
+            "furniture move ends: a grabbed piece reads as lost in the frame it was grabbed in and as taken in the next, which is why the line waits");
+
+        // The words: a pass says PASS and a failure FAIL, each its own, plain.
+        var words = new HashSet<string>();
+        bool right = true;
+        foreach (MoveEnd e in Enum.GetValues(typeof(MoveEnd)))
+        {
+            string w = FurnitureRules.Words(e, "(1.0, 0.0, 2.0)");
+            right &= words.Add(w) && w.EndsWith(FurnitureRules.Passes(e) ? "PASS." : "FAIL.") && !w.Contains('!') && !w.Contains((char)0x2014) && !w.Contains((char)0x2013) && !w.Contains(" - ")
+                     && !w.Contains("not known");
+        }
+        Check(right && FurnitureRules.Words(MoveEnd.WrongPlace, "(1.0, 0.0, 2.0)").Contains("(1.0, 0.0, 2.0)"), "furniture move ends: each ending has words of its own that end in PASS or FAIL, and the wrong place names where the record says");
     }
 
     private static void FurnitureMoveSourceChecks()
@@ -149,5 +217,12 @@ internal static partial class Program
         Check(!Regex.IsMatch(Regex.Replace(rules, @"//[^\n]*", string.Empty), @"\bUnityEngine\b|\bRandom\b|DateTime"), "furniture moves sources: FurnitureRules is game-free");
         Check(Regex.IsMatch(code, @"\.Info\(") && !Regex.IsMatch(code, @"Notifications\.|\.Warn\(") && !Regex.IsMatch(code, @"\bmodData\b|PlayerPrefs|Send\("),
             "furniture moves sources: the lines go to the log alone: no notice, nothing saved or sent");
+        string watchMove = MemberText(moves, "private void WatchMove()"), writeEnd = MemberText(moves, "private void WriteEnd()");
+        int stamped = watchMove.IndexOf("_endedFrame = Time.frameCount;", StringComparison.Ordinal);
+        Check(InOrder(watchMove, "FurnitureRules.Settled(Time.frameCount, _endedFrame)", "WriteEnd();", "if (PlacementSystem.IsInPlacementMode)", "_endedFrame = Time.frameCount;")
+              && stamped > 0 && !watchMove.Substring(stamped).Contains("WriteEnd();"),
+            "furniture moves sources: a move's line is written a frame after it ended and never in the frame itself, as the game destroys a grabbed piece at the end of that frame");
+        Check(writeEnd.Contains("_endedFrame = -1;") && writeEnd.Contains("FurnitureRules.Ending(signals)") && writeEnd.Contains("FurnitureRules.Words(end,") && !Regex.IsMatch(writeEnd, "\"[^\"]*(?:PASS|FAIL)"),
+            "furniture moves sources: how a move ended and its words come from FurnitureRules, and the line is written once per move");
     }
 }
