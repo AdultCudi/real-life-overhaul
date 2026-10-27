@@ -22429,7 +22429,7 @@
   "reallife_hire_test_orphan_fail": "Test failed: a walk of the city's businesses tripped on a record with no building. The log says which.",
   "reallife_hire_test_orphan_off": "Load a save first. This test does not run in a Going Public session.",
   "reallife_changes_next_title": "Next version",
-  "reallife_changes_next": "Nothing yet.",
+  "reallife_changes_next": "Fixed: the late night show and the other video calls could not be joined from the Standing page, because having the phone open counted as busy. They can be joined now, and when something does stop you, the message says what.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Fixed: when every building that could hold the utilities office is yours, power and water accounts are applied for and reconnected in the Utilities app, by phone, at the same prices, and the notices say so; once a building is free the office opens again and the app says where. Fixed: after withdrawing an application and applying to the same post again, the Career app opened the withdrawn one and the interview could not be reached. Each application now has its own row, and the interview, offer and withdrawal go to the live one. Fixed: a save holding a business record whose building the city does not have (another mod can leave one behind) no longer switches the tech sector off at every load. The mod now leaves such a record out wherever it reads the city's businesses, names its address once in the log and changes nothing of it.",
   "reallife_co_mass_raise": "Give a raise",
@@ -25904,5 +25904,12 @@
   "reallife_maptrees_test_fail": "Map tree test failed: the map did not open cleanly with a destroyed tree. Player.log says why.",
   "reallife_maptrees_test_none": "The map tree test could not run. Load a save, close any menu and try again.",
   "reallife_changes_060_1_title": "0.60.1",
-  "reallife_changes_060_1": "Fixed: the city map would not open (M only darkened the screen) after the mod had taken away a tree."
+  "reallife_changes_060_1": "Fixed: the city map would not open (M only darkened the screen) after the mod had taken away a tree.",
+  "reallife_fame_join_driving": "You cannot join while driving. Park first.",
+  "reallife_fame_join_talking": "You cannot join in the middle of a conversation or a question. Finish it first.",
+  "reallife_fame_join_activity": "You cannot join while you are working or studying. Finish or leave it first.",
+  "reallife_fame_join_scene": "You cannot join while another scene or panel has you. Finish it first.",
+  "reallife_fame_join_window": "You cannot join while a trip window or list is open. Close it first.",
+  "reallife_fame_join_subway": "You cannot join while you are on the subway.",
+  "reallife_fame_join_boat": "You cannot join while you are on the casino boat."
 }

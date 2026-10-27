@@ -48,9 +48,14 @@ namespace RealLifeOverhaul
             /// True while a panel, test paper or driven test of the mod's has the player's attention; a new panel waits for
             /// false, so panels queue and never stack. The game's own dialogs are LifeEvents.IsSafeForEvent.
             /// </summary>
-            public static bool PlayerHeld =>
-                Law.Custody.Active || JusticePanel.IsOpen || LicenceDirector.IsActive
-                || Meta.MetaUi.AnyOpen || ThirdPersonCamera.IsUiOpen();
+            public static bool PlayerHeld => PlayerInScene || ThirdPersonCamera.IsUiOpen();
+
+            /// <summary>
+            /// PlayerHeld without the game's own screens that need the pointer (the phone, the map): only the mod's scenes and panels.
+            /// A thing started from the phone asks this one, since the phone is up when it is pressed.
+            /// </summary>
+            public static bool PlayerInScene =>
+                Law.Custody.Active || JusticePanel.IsOpen || LicenceDirector.IsActive || Meta.MetaUi.AnyOpen;
         }
     }
 }
