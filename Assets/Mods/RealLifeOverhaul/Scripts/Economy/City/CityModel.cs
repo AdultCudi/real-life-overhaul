@@ -497,12 +497,26 @@ namespace RealLifeOverhaul.Economy
         /// <summary>What a property is worth against the game's own figure, in thousandths: the cycle, the district against its start, and the price index.</summary>
         public static int Property(CityState state, CityDistrict district, int level)
         {
-            long value = 1000 + Swung(MacroCatalogue.StateProperty[(int)state.Cycle] - 1000, level);
-            if (district != null)
+            return district != null ? Property(state.Cycle, state.Index, district.Income, district.Start, level) : Property(state.Cycle, state.Index, 0, 0, level, false);
+        }
+
+        /// <summary>
+        /// The same for a state of the economy given as numbers (the Economy app asks it of days gone by): the cycle, the price index,
+        /// a district's income and where it started, at a strength.
+        /// </summary>
+        public static int Property(CycleState cycle, int index, int income, int start, int level)
+        {
+            return Property(cycle, index, income, start, level, true);
+        }
+
+        private static int Property(CycleState cycle, int index, int income, int start, int level, bool inDistrict)
+        {
+            long value = 1000 + Swung(MacroCatalogue.StateProperty[(int)cycle] - 1000, level);
+            if (inDistrict)
             {
-                value = value * (1000 + (district.Income - district.Start) * MacroCatalogue.PropertyPerPoint / 10) / 1000;
+                value = value * (1000 + (income - start) * MacroCatalogue.PropertyPerPoint / 10) / 1000;
             }
-            return (int)(value * state.Index / MacroCatalogue.IndexStart);
+            return (int)(value * index / MacroCatalogue.IndexStart);
         }
 
         /// <summary>What a district bears against the game's own price for it, in thousandths: its income against its start, and what customers spend.</summary>

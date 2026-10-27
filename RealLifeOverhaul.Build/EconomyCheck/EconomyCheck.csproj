@@ -91,6 +91,15 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\City\CityModel.cs" Link="Mod\CityModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\City\CityStore.cs" Link="Mod\CityStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\City\CityEconomy.cs" Link="Mod\CityEconomy.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Outlook\OutlookCatalogue.cs" Link="Mod\Outlook\OutlookCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Outlook\OutlookBook.cs" Link="Mod\Outlook\OutlookBook.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Outlook\OutlookStore.cs" Link="Mod\Outlook\OutlookStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Outlook\OutlookReadings.cs" Link="Mod\Outlook\OutlookReadings.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Outlook\OutlookRules.cs" Link="Mod\Outlook\OutlookRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Outlook\OutlookInsights.cs" Link="Mod\Outlook\OutlookInsights.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Outlook\OutlookScale.cs" Link="Mod\Outlook\OutlookScale.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Outlook\OutlookTheme.cs" Link="Mod\Outlook\OutlookTheme.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Outlook\OutlookWords.cs" Link="Mod\Outlook\OutlookWords.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\CalendarRules.cs" Link="Mod\CalendarRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Calendar\CalendarList.cs" Link="Mod\CalendarList.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Hustles\HustleCatalogue.cs" Link="Mod\HustleCatalogue.cs" />

@@ -891,6 +891,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_macro_test_district_up", () => Economy.CityEconomyDirector.Instance?.TestDistrict(100))
                 .AddButton("reallife_macro_test_district_down", () => Economy.CityEconomyDirector.Instance?.TestDistrict(-100))
                 .AddButton("reallife_macro_test_back", () => Economy.CityEconomyDirector.Instance?.TestBack())
+                .Guarded(o => Outlook.OutlookOptions.AddOutlook(o))   // the Economy app (Scripts/Outlook)
                 .AddToggle(Settings.VenturesInvestorsId, "reallife_ven_investors", Settings.VenturesInvestors,
                     v => Settings.VenturesInvestors = v)
                 .AddDropdown(Settings.VenturesLevelId, "reallife_ven_level",
@@ -1638,6 +1639,10 @@ namespace RealLifeOverhaul
             Guard.Step("Schools.SchoolsDirector", () => Schools.SchoolsDirector.Logger = context.Logger);
             // Birchwood School: its main school declared for the made buildings below, its other buildings asked of the copy engine.
             Guard.Step("Schools.SchoolsDirector", () => Guard.Add<Schools.SchoolsDirector>(_root));
+            Guard.Step("Outlook.OutlookDirector", () => Outlook.OutlookDirector.Logger = context.Logger);
+            Guard.Step("Outlook.OutlookApp", () => Outlook.OutlookApp.Logger = context.Logger);
+            // The Economy app: after the city's economy, the market and the council, whose figures it reads; its day follows the city's. No Update.
+            Guard.Step("Outlook.OutlookDirector", () => Guard.Add<Outlook.OutlookDirector>(_root));
             Guard.Step("NewBuildings.NewBuildingsDirector", () => NewBuildings.NewBuildingsDirector.Logger = context.Logger);
             // Its buildings are made behind the loading screen, once every director has declared its own.
             Guard.Step("NewBuildings.NewBuildingsDirector", () => Guard.Add<NewBuildings.NewBuildingsDirector>(_root));

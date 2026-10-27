@@ -59,6 +59,15 @@ namespace RealLifeOverhaul.Economy
         /// <summary>A free stretch of kerb near a point, for the test tools' car. Default: none.</summary>
         public static SpotFinder KerbSpot;
 
+        /// <summary>Opens the Economy app on a tab (0 the Overview, 1 Prices and rates); false while the app is not on the phone. Default: no app.</summary>
+        public static Func<int, bool> OpenEconomyApp;
+
+        /// <summary>True while the Economy app is on the phone, so the Finance app's button to it shows. Default: no.</summary>
+        public static Func<bool> EconomyAppOn;
+
+        /// <summary>The Economy app's one-word verdict on the economy, in the game's language; null while it has none. Default: none.</summary>
+        public static Func<string> EconomyVerdict;
+
         /// <summary>Makes the picture of a phone contact with this id, in this colour. Default: the game's blank picture.</summary>
         public static Action<string, Color> ContactIcon;
 
@@ -88,6 +97,9 @@ namespace RealLifeOverhaul.Economy
             Assault = null;
             InView = null;
             KerbSpot = null;
+            OpenEconomyApp = null;
+            EconomyAppOn = null;
+            EconomyVerdict = null;
             ContactIcon = null;
         }
     }
@@ -137,9 +149,14 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>Opens the Finance app on the city's page (the Overview's own page while the city's economy is off).</summary>
+        /// <summary>Opens the Economy app on its Prices and rates tab, where the city's notices lead; the Finance app's Overview while the Economy app is not on the phone.</summary>
         public static void OpenCity()
         {
+            Func<int, bool> app = EconomyBridges.OpenEconomyApp;
+            if (app != null && app(1))
+            {
+                return;
+            }
             EconomyDirector director = EconomyDirector.Instance;
             if (director != null)
             {

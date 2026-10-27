@@ -30,7 +30,6 @@ namespace RealLifeOverhaul.Economy
         private void ShowStanding()
         {
             _standing = true;
-            _city = false;
             _rivals = false;
             _standingPick = null;
             Refresh();

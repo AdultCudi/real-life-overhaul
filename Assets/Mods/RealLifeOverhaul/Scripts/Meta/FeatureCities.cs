@@ -60,6 +60,7 @@ namespace RealLifeOverhaul.Meta
             new Line("tests", CityScope.AnyCity, "the test buttons"),
             new Line("economy", CityScope.AnyCity, "credit, loans and the Finance app"),
             new Line("economy_city", CityScope.NewYork, "the city economy's districts are New York's"),
+            new Line("economy_app", CityScope.NewYork, "the Economy app draws the city economy's districts and the stock market, which are New York's"),
             new Line("ventures", CityScope.AnyCity, "investors in the player's businesses"),
             new Line("markets", CityScope.AnyCity, "the mod's own stock market"),
             new Line("economy_banks", CityScope.AnyCity, "the Banks app"),
