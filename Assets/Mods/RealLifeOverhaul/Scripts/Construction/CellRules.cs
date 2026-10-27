@@ -75,6 +75,42 @@ namespace RealLifeOverhaul.Construction
         public readonly List<CellColumn> Columns = new List<CellColumn>(2048);
         private readonly Dictionary<long, int> _byKey = new Dictionary<long, int>(2048);
 
+        /// <summary>
+        /// The ground the plan keeps out of the squares (a big special place's, a park's, the campus's, the district's edge), each a
+        /// rectangle of its own that build mode draws as one held square and names under the pointer. Not columns: never picked, bought,
+        /// zoned or built on. Filled by the director from the plan's list when the grid is made.
+        /// </summary>
+        public readonly List<HeldView> Held = new List<HeldView>(48);
+
+        /// <summary>Squares drawn in the layer: the grid's cells, then one for each held ground.</summary>
+        public int LayerCells => CellCount + Held.Count;
+
+        /// <summary>The held ground under a point on the ground (x, z), or -1.</summary>
+        public int HeldAt(float x, float z)
+        {
+            for (int i = 0; i < Held.Count; i++)
+            {
+                if (Held[i].Holds(x, z))
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        /// <summary>True when a point on the ground (x, z) is over one of the column's squares.</summary>
+        public static bool InColumn(CellColumn c, float x, float z)
+        {
+            bool alongX = c.Facing == 0 || c.Facing == 180;
+            float along = alongX ? x : z, across = alongX ? z : x;
+            if (along < c.A || along >= c.B)
+            {
+                return false;
+            }
+            float back = (across - c.Front) * c.Inward;
+            return back >= 0f && back < c.Depth;
+        }
+
         /// <summary>Cells in all.</summary>
         public int CellCount { get; private set; }
 
@@ -136,17 +172,12 @@ namespace RealLifeOverhaul.Construction
             for (int i = 0; i < Columns.Count; i++)
             {
                 CellColumn c = Columns[i];
+                if (!InColumn(c, x, z))
+                {
+                    continue;
+                }
                 bool alongX = c.Facing == 0 || c.Facing == 180;
-                float along = alongX ? x : z, across = alongX ? z : x;
-                if (along < c.A || along >= c.B)
-                {
-                    continue;
-                }
-                float back = (across - c.Front) * c.Inward;
-                if (back < 0f || back >= c.Depth)
-                {
-                    continue;
-                }
+                float back = ((alongX ? z : x) - c.Front) * c.Inward;
                 int row = Math.Min(c.Rows - 1, (int)(back / (c.Depth / c.Rows)));
                 return new CellAt(i, row);
             }

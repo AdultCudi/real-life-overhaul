@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 using RealLifeOverhaul.NewBuildings;
 
 namespace RealLifeOverhaul.Uptown
@@ -88,6 +89,42 @@ namespace RealLifeOverhaul.Uptown
             }
         }
 
+        /// <summary>
+        /// "Uptown check (big places)", once a load (a FAIL always written, a PASS with Developer diagnostics): each place that may stand
+        /// (not stood down for someone's unit) has its building up as one of the game's own, whole. A place's ground is never among the
+        /// plan's lots, so build mode draws no squares there: the building is all that is on it, and one that never stood left a bare
+        /// patch with no squares (the owner, 27 Oct 2026: "empty spots in the block with no grids").
+        /// </summary>
+        private static void BigCensus(string when)
+        {
+            var line = new StringBuilder(256);
+            int wanted = 0, whole = 0;
+            for (int p = 0; p < BigPlacesRules.All.Length; p++)
+            {
+                BigPlace place = BigPlacesRules.All[p];
+                if (BigDown.Contains(place.Lot))
+                {
+                    continue;   // stood down for a unit somebody holds: its lots are the plan's ordinary ones, said at the load
+                }
+                wanted++;
+                MadeBuilding made = Big(place.Kind);
+                string why = made == null ? "no building stands on its lot " + place.Lot : LifeGame.BigWhy(made, place);
+                whole += why == null ? 1 : 0;
+                line.Append(line.Length > 0 ? "; " : string.Empty).Append(place.Name).Append(made != null ? " at " + made.Address : string.Empty)
+                    .Append(why == null ? ": standing whole" : ": " + why);
+            }
+            bool pass = whole == wanted;
+            string text = "Uptown check (big places): at " + when + ", " + whole + " of " + wanted + " stand" + (wanted > 0 ? ": " + line : string.Empty) + ": " + (pass ? "PASS" : "FAIL");
+            if (!pass)
+            {
+                Logger?.Warn(text);
+            }
+            else if (Meta.Dev.Verbose)
+            {
+                Logger?.Info(text);
+            }
+        }
+
         // Every place that may stand declared on its ground; how many.
         private static int DeclareBig()
         {
@@ -104,7 +141,7 @@ namespace RealLifeOverhaul.Uptown
                     Logger?.Warn("Uptown: " + place.Name + " (" + place.Kind + ") does not stand: a lot of it is not in the district's plan.");
                     continue;
                 }
-                Lot plain = UptownLots.Get(place.Lot);
+                Lot plain = UptownLots.PlaceOf(place.Lot);   // a place is never among the plan's lots: Get(place.Lot) is null, and a null here kept both places from ever standing
                 MadeSpec spec = LifeGame.BigSpec(place, ground, TrafficOf(place.Lot), () => _known && !_down && UptownLots.Ready && plain != null && UptownLots.Open(plain));
                 MadeBuildings.Declare(spec);
                 Declared.Add(spec);

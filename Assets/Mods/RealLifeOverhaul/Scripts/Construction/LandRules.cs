@@ -26,6 +26,7 @@ namespace RealLifeOverhaul.Construction
         public bool StreetHigh;    // ... past its high end (east or north)
         public float EdgeLow;      // m on its strip's axis: the block's edge at the low end, the cross street's building line
         public float EdgeHigh;     // ... at the high end
+        public bool Kept;          // kept clear: something of the game's own stands into it, so no building is ever put there and it is not for sale
     }
 
     /// <summary>

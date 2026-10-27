@@ -225,6 +225,45 @@ namespace RealLifeOverhaul.Uptown
             return row == 1 ? column % 2 == 1 : (column * 2 + row) % 3 == 0;
         }
 
+        /// <summary>
+        /// How deep a block's avenue strip is on the side its lots face (180: the strip along the avenue to the south, 0: along the avenue
+        /// to the north), in m: the ground a big place stands on is the strip's to its back, whatever its own building takes.
+        /// </summary>
+        public static float AvenueStripDepth(int row, int column, int facing)
+        {
+            if (facing == 180 || !IsFirst(row, column))
+            {
+                return AvenueDepth;
+            }
+            return Array.IndexOf(DeepFirst, column) >= 0 ? DeepNorthDepth : FirstNorthDepth;
+        }
+
+        /// <summary>
+        /// A big place's whole ground on the world's axes: its own lot, and for one on an avenue strip the rest of the strip's depth behind it
+        /// (the filling station's building takes 32 m of the strip's 39, and its yard behind it is no lot's). x1 &lt; x2, z1 &lt; z2.
+        /// </summary>
+        public static void PlaceYard(Lot place, out float x1, out float z1, out float x2, out float z2)
+        {
+            bool avenue = place.Facing < 1f || place.Facing > 359f || Math.Abs(place.Facing - 180f) < 1f;
+            float halfX = (avenue ? place.Width : place.Depth) * 0.5f, halfZ = (avenue ? place.Depth : place.Width) * 0.5f;
+            x1 = place.X - halfX;
+            x2 = place.X + halfX;
+            z1 = place.Z - halfZ;
+            z2 = place.Z + halfZ;
+            if (avenue)
+            {
+                float deep = Math.Max(place.Depth, AvenueStripDepth(place.Row, place.Column, (int)Math.Round(place.Facing)));
+                if (place.Facing > 90f)
+                {
+                    z2 = z1 + deep;   // facing south: its front on the avenue's north pavement, the strip goes north
+                }
+                else
+                {
+                    z1 = z2 - deep;
+                }
+            }
+        }
+
         /// <summary>A block's ground between its streets and avenues: west, south, east, north (m).</summary>
         public static void Block(int row, int column, out float x0, out float z0, out float x1, out float z1)
         {

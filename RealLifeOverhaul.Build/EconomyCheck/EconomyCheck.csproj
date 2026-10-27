@@ -665,6 +665,9 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Schools\CampusLookRules.cs" Link="Mod\Schools\CampusLookRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Corners\CornerRules.cs" Link="Mod\Corners\CornerRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\GroundSurvey.cs" Link="Mod\GroundSurvey.cs" />
+    <!-- No ground of a block left unexplained (BuildGroundChecks.cs): what holds the ground no square covers, and the check over every block, game-free. -->
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\HeldGroundRules.cs" Link="Mod\HeldGroundRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildGroundRules.cs" Link="Mod\Construction\BuildGroundRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Civic\CouncilZoning.cs" Link="Mod\CouncilZoning.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\RingRules.cs" Link="Mod\Construction\RingRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BillRules.cs" Link="Mod\Construction\BillRules.cs" />

@@ -412,16 +412,30 @@ namespace RealLifeOverhaul.Construction
                 why = "the city map's neighbourhood zones are not there to copy";
                 return null;
             }
-            int cells = grid.CellCount;
+            int cells = grid.LayerCells;   // the grid's squares, then one for each held ground
             var vertices = new Vector3[cells * CellVertices];
             var uvs = new Vector2[cells * CellVertices];
             var triangles = new int[cells * CellIndices];
             int v = 0, t = 0;
-            for (int c = 0; c < grid.Columns.Count; c++)
+            for (int c = 0; c < grid.Columns.Count + grid.Held.Count; c++)
             {
-                for (int r = 0; r < grid.Columns[c].Rows; r++)
+                bool held = c >= grid.Columns.Count;
+                int rows = held ? 1 : grid.Columns[c].Rows;
+                for (int r = 0; r < rows; r++)
                 {
-                    grid.Rect(c, r, 0f, out float x1, out float z1, out float x2, out float z2);
+                    float x1, z1, x2, z2;
+                    if (held)
+                    {
+                        HeldView h = grid.Held[c - grid.Columns.Count];
+                        x1 = h.X1;
+                        z1 = h.Z1;
+                        x2 = h.X2;
+                        z2 = h.Z2;
+                    }
+                    else
+                    {
+                        grid.Rect(c, r, 0f, out x1, out z1, out x2, out z2);
+                    }
                     float w = Math.Min(LineWidth, Math.Min(x2 - x1, z2 - z1) * 0.25f);
                     // The inside, then the edge's outer and inner corners, each clockwise seen from above.
                     Corners(vertices, v, x1 + w, z1 + w, x2 - w, z2 - w);

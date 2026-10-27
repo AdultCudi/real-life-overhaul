@@ -144,6 +144,7 @@ namespace RealLifeOverhaul.Construction
             DeskSecond();
             TrackSecond();
             ParkWorldSecond();   // the car parks stood or taken away out of view (ConstructionDirector.ParkWorld.cs)
+            BareGroundSecond();  // the load's check that no ground of the band is left unexplained (ConstructionDirector.BareGround.cs)
         }
 
         // ------------------------------------------------------------------ the state
@@ -183,6 +184,7 @@ namespace RealLifeOverhaul.Construction
             _loaded = true;
             _lastHour = -1;
             _lotsStamp = int.MinValue;
+            _bareChecked = false;   // a new load: its bare ground check
             _trackDirty = true;
             Logger?.Info("Construction: " + (version > 0 ? "read (line version " + version + ")" : "a new save for the construction game") + ": " + state.Projects.Count + " project(s), "
                          + state.Crews.Count + " crew(s), " + state.Lots.Count + " lot(s) owned, " + state.Developments.Count + " development(s) known; the company "
