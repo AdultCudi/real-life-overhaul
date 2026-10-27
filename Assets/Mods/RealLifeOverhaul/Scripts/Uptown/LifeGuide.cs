@@ -36,6 +36,7 @@ namespace RealLifeOverhaul.Uptown
                 .Test("reallife_uptown_test_office_job", LifeDirector.TestOfficeJob)
                 .Check("reallife_uptown_test_mix", LifeDirector.TestMixCensus, "Uptown check (mix)")
                 .Check("reallife_uptown_test_split", LifeDirector.TestSplit, "Uptown check (districts' census)")
+                .Check("reallife_uptown_test_look", LifeDirector.TestLook, "Uptown check (look census)")
                 .Check("reallife_uptown_test_store", LifeDirector.TestStore, "Uptown check (wholesale store)", RunPlace.Outdoors)
                 .Test("reallife_uptown_test_store_order", LifeDirector.TestOrder)
                 .Check("reallife_uptown_test_station", LifeDirector.TestStation, "Uptown check (gas station)", RunPlace.Outdoors)

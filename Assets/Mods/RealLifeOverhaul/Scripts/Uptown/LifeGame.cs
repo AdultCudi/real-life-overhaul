@@ -293,6 +293,7 @@ namespace RealLifeOverhaul.Uptown
         /// </summary>
         public static void Unload()
         {
+            SideWalls.Clear();
             DropFillers();
             foreach (KeyValuePair<BuildingTypeData, IdealAvailableBuildingsInNeighborhood[]> was in TargetsWas)
             {

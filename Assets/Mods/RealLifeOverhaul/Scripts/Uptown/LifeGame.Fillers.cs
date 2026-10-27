@@ -17,6 +17,7 @@ namespace RealLifeOverhaul.Uptown
         private const string FillerName = "RealLife Uptown filler";
 
         private static readonly List<CopyLook> Fillers = new List<CopyLook>(256);
+        private static readonly List<LookPiece> FillerPieces = new List<LookPiece>(256);   // each filler as the census sees it, in step with Fillers
 
         /// <summary>The fillers standing at this load.</summary>
         public static int FillerCount => Fillers.Count;
@@ -42,6 +43,7 @@ namespace RealLifeOverhaul.Uptown
                 }
                 CutFiller(root, d);
                 Fillers.Add(look);
+                FillerPieces.Add(new LookPiece { Id = "filler " + FillerPieces.Count.ToString(System.Globalization.CultureInfo.InvariantCulture), Design = d, Ground = f.Lot, Filler = true, Back = f.Back });
             }
             return Fillers.Count;
         }
@@ -58,6 +60,20 @@ namespace RealLifeOverhaul.Uptown
             cut.size = new Vector3(width / sx, height / sy, depth / sz);
             cut.carveOnlyStationary = true;
             cut.carving = true;
+        }
+
+        /// <summary>The fillers standing, as the census sees them, with the root each stands on, into the caller's lists (not cleared).</summary>
+        public static void FillersInto(List<LookPiece> pieces, List<Transform> roots)
+        {
+            for (int i = 0; i < Fillers.Count; i++)
+            {
+                Transform root = BuildingCopies.RootOf(Fillers[i]);
+                if (root != null && i < FillerPieces.Count)
+                {
+                    pieces.Add(FillerPieces[i]);
+                    roots.Add(root);
+                }
+            }
         }
 
         /// <summary>The fillers shown or hidden with the district's buildings.</summary>
@@ -115,6 +131,7 @@ namespace RealLifeOverhaul.Uptown
                 BuildingCopies.RemoveLook(Fillers[i]);
             }
             Fillers.Clear();
+            FillerPieces.Clear();
         }
     }
 }

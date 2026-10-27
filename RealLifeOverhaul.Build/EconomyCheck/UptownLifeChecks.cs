@@ -42,6 +42,7 @@ internal static partial class Program
         UptownWorkChecks();
         UptownMixChecks();
         UptownSplitChecks();
+        UptownLookChecks();
     }
 
     // ---------------------------------------------------------------- its values

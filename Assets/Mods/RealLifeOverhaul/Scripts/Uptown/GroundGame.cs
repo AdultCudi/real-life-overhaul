@@ -208,6 +208,40 @@ namespace RealLifeOverhaul.Uptown
             return false;
         }
 
+        /// <summary>
+        /// How many pieces of the backdrop whose middle lies in the rectangles are still standing (not put away): for the look census, which
+        /// wants none along the avenue's south pavement. One walk of the backdrop's pieces, never a frame.
+        /// </summary>
+        public static int StillShown(List<GroundRect> rects)
+        {
+            int shown = 0;
+            for (int i = 0; _backdrop != null && i < _backdrop.childCount; i++)
+            {
+                Transform group = _backdrop.GetChild(i);
+                if (group.name != KeptName && group.name != WallsName)
+                {
+                    shown += ShownUnder(group, rects);
+                }
+            }
+            return shown;
+        }
+
+        private static int ShownUnder(Transform node, List<GroundRect> rects)
+        {
+            int shown = 0;
+            for (int i = 0; i < node.childCount; i++)
+            {
+                Transform child = node.GetChild(i);
+                if (!child.gameObject.activeSelf)
+                {
+                    continue;
+                }
+                Vector3 at = child.position;
+                shown += Shows(child) && On(rects, at.x, at.z) ? 1 : ShownUnder(child, rects);
+            }
+            return shown;
+        }
+
         /// <summary>Every piece of the backdrop put away at this load shown again.</summary>
         public static void ShowBackdrop()
         {
@@ -285,6 +319,7 @@ namespace RealLifeOverhaul.Uptown
                 return;
             }
             _ground = new GameObject(GroundName);
+            NewBuildings.CopyGame.OwnEdge = _ground.transform;   // the lots' ground check never counts these as something solid on a lot
             if (_backdrop != null)
             {
                 SceneManager.MoveGameObjectToScene(_ground, _backdrop.gameObject.scene);
@@ -373,6 +408,7 @@ namespace RealLifeOverhaul.Uptown
                 Object.Destroy(_ground);
             }
             _ground = null;
+            NewBuildings.CopyGame.OwnEdge = null;
             if (_mapWidened && _map != null)
             {
                 _map.bounds = _mapWas;
