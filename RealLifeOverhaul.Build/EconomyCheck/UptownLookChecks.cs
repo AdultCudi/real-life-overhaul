@@ -143,7 +143,7 @@ internal static partial class Program
         }
         Check(rows >= 500 && missing == 0 && wrong == 0 && LookRules.Known == rows,
             "uptown look: the mod's table of the designs' sides (LookSides) is the census's: " + rows + " designs, " + missing + " missing, " + wrong + " differing" + (first != null ? " (" + first + ")" : string.Empty));
-        int windowed = 0, dressable = 0, bare = 0;
+        int windowed = 0, dressable = 0, bare = 0, flatColour = 0;
         foreach (DesignEntry d in designs)
         {
             foreach (bool right in new[] { false, true })
@@ -152,25 +152,34 @@ internal static partial class Program
                 windowed += k == SideKind.Windowed ? 1 : 0;
                 dressable += k == SideKind.Dressable ? 1 : 0;
                 bare += k == SideKind.Bare ? 1 : 0;
+                flatColour += LookRules.Flat(d, right) ? 1 : 0;
             }
         }
-        Check(dressable > 2 * windowed && dressable > 5 * bare && bare > 0 && LookRules.Kind(new DesignEntry { Name = "A design a later build adds", Size = "ba:buildingsize_a" }, true) == SideKind.Bare,
-            "uptown look: of the " + designs.Count + " designs' " + 2 * designs.Count + " sides " + dressable + " are plain walls that can be given windows, " + windowed + " have windows, " + bare
-            + " cannot be dressed; a design the table does not know is one that cannot");
+        Check(dressable > 2 * windowed && dressable > 5 * bare && flatColour > 50 && flatColour < dressable / 3 && bare > 0
+              && LookRules.Kind(new DesignEntry { Name = "A design a later build adds", Size = "ba:buildingsize_a" }, true) == SideKind.Bare,
+            "uptown look: of the " + designs.Count + " designs' " + 2 * designs.Count + " sides " + dressable + " are plain walls that can be given windows (" + flatColour + " of them of flat colour), "
+            + windowed + " have windows, " + bare + " cannot be dressed; a design the table does not know is one that cannot");
     }
 
     private static bool SideIs(DesignEntry d, bool right, string state)
     {
+        // a plain wall of flat colour is a number and an f: dressable like the rest, and marked
+        bool flat = state.EndsWith("f", StringComparison.Ordinal);
+        string core = flat ? state.Substring(0, state.Length - 1) : state;
         SideKind kind = LookRules.Kind(d, right);
-        if (state == "w")
+        if (LookRules.Flat(d, right) != flat)
+        {
+            return false;
+        }
+        if (core == "w")
         {
             return kind == SideKind.Windowed;
         }
-        if (state == "-")
+        if (core == "-")
         {
             return kind == SideKind.Bare;
         }
-        return kind == SideKind.Dressable && Math.Abs(LookRules.Top(d, right) - float.Parse(state, CultureInfo.InvariantCulture)) < 0.01f;
+        return kind == SideKind.Dressable && Math.Abs(LookRules.Top(d, right) - float.Parse(core, CultureInfo.InvariantCulture)) < 0.01f;
     }
 
     // ---------------------------------------------------------------- the census, before and after
@@ -179,8 +188,8 @@ internal static partial class Program
     private static string LookVerdict(LookReport r, bool windowsLaid)
     {
         int blankRoad = windowsLaid ? r.LeftBlankRoad : r.BlankRoadEnds;
-        return blankRoad > 0 ? blankRoad + " open ends on a road still show a wall with no window" : r.Facing > 0 ? r.Facing + " doors face off their street"
-            : r.WidestGap >= SpacesRules.SpaceWidth ? "a gap a whole space wide" : null;
+        return blankRoad > 0 ? blankRoad + " open ends on a road still show a wall with no window" : windowsLaid && r.FlatRoadEnds > 0 ? r.FlatRoadEnds + " open ends on a road show a wall of flat colour"
+            : r.Facing > 0 ? r.Facing + " doors face off their street" : r.WidestGap >= SpacesRules.SpaceWidth ? "a gap a whole space wide" : null;
     }
 
     private static void UptownLookCensus(LookWorld was, LookWorld now)
@@ -193,6 +202,9 @@ internal static partial class Program
             "uptown look: as 0.58.0 stood, " + before.BlankEnds + " of its " + before.OpenEnds + " open ends showed a wall with no window of its own (" + before.BlankRoadEnds + " on a road) and nothing dressed them");
         Check(after.LeftBlankRoad == 0 && after.LeftBlank <= 110 && after.BareRoadEnds == 0 && after.Dressed >= 400,
             "uptown look: now " + after.Dressed + " of those ends are given windows (" + after.DressedRoad + " on a road), " + after.LeftBlank + " are left blank (" + after.LeftBlankRoad + " on a road), none a wall nothing can be done with on a road");
+        Check(before.FlatRoadEnds >= 15 && after.FlatRoadEnds == 0 && after.FlatEnds * 3 <= before.FlatEnds,
+            "uptown look: walls of flat colour (a grey or plain wall with no texture of its own, windows or not) shown to a street: " + before.FlatRoadEnds + " as 0.58.0 stood, " + after.FlatRoadEnds
+            + " now; " + before.FlatEnds + " flat walls dressed with windows then, " + after.FlatEnds + " now (the pick takes a textured wall toward a street where any design will do)");
         Check(before.Facing == 0 && after.Facing == 0 && LotsOnRoads(now.Plan),
             "uptown look: every door faces the street its lot is on, as the plan and the engine place it (" + before.Facing + " before, " + after.Facing + " now), and every lot's front line is on the pavement of the road it faces");
         Check(after.WidestGap < SpacesRules.SpaceWidth && after.Gaps <= before.Gaps && after.Yards < before.Yards && after.YardsShown < before.YardsShown,
@@ -480,6 +492,14 @@ internal static partial class Program
             bare = bare ?? (LookRules.Kind(d, false) == SideKind.Bare && LookRules.Kind(d, true) == SideKind.Bare ? d : null);
             good = good ?? (LookRules.Kind(d, false) != SideKind.Bare && LookRules.Kind(d, true) != SideKind.Bare ? d : null);
         }
+        DesignEntry flat = null;
+        foreach (DesignEntry d in now.Designs)
+        {
+            flat = flat ?? (LookRules.Flat(d, false) && LookRules.Flat(d, true) && LookRules.Kind(d, false) == SideKind.Dressable && LookRules.Kind(d, true) == SideKind.Dressable ? d : null);
+        }
+        var toRoad = new LotEnds { Low = true, High = true, LowRoad = true, HighRoad = true };
+        Check(flat != null && !LookRules.Finished(flat, toRoad, 180f) && LookRules.Finished(flat, new LotEnds { Low = true, High = true }, 180f) && LookRules.Finished(flat, default, 180f),
+            "uptown look: a design with a plain wall of flat colour on both sides is no finish for a lot whose ends are open to a road, and does for one open to a yard or an open lot, or shut");
         var openBoth = new LotEnds { Low = true, High = true };
         Check(bare != null && good != null && !LookRules.Finished(bare, openBoth, 180f) && LookRules.Finished(good, openBoth, 180f) && LookRules.Finished(bare, default, 180f),
             "uptown look: a design with a wall nothing can be done with is no finish for a lot with open ends, and does for one with none");

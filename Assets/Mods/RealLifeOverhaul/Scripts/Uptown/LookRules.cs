@@ -46,6 +46,7 @@ namespace RealLifeOverhaul.Uptown
         {
             public SideKind Left, Right;
             public float LeftTop, RightTop;   // m: how high a plain wall can be dressed
+            public bool LeftFlat, RightFlat;  // a plain wall of flat colour, no texture of its own: dressed, but not the wall to show a street
         }
 
         private static Dictionary<string, Sides> _sides;   // "name|size's letter" to its sides
@@ -62,6 +63,12 @@ namespace RealLifeOverhaul.Uptown
             return d != null && Table().TryGetValue(KeyOf(d), out Sides s) ? (right ? s.Right : s.Left) : SideKind.Bare;
         }
 
+        /// <summary>True for a plain side of flat colour (no texture of its own, a grey or plain-coloured wall): windows can be laid on it, but a street should not be shown it where another design will do.</summary>
+        public static bool Flat(DesignEntry d, bool right)
+        {
+            return d != null && Table().TryGetValue(KeyOf(d), out Sides s) && (right ? s.RightFlat : s.LeftFlat);
+        }
+
         /// <summary>m: how high a plain side can be dressed with windows, 0 for a side that cannot (or has windows already).</summary>
         public static float Top(DesignEntry d, bool right)
         {
@@ -69,14 +76,20 @@ namespace RealLifeOverhaul.Uptown
         }
 
         /// <summary>
-        /// True when no open end of the lot would show a side that cannot be dressed: <paramref name="ends"/> against the side each
-        /// end is (<see cref="RightIsHigh"/>), so a building stands with a side that has windows or can be given them toward the
-        /// street, an open lot or the corner.
+        /// True when no open end of the lot would show a side that cannot be dressed, nor a wall of flat colour to a road:
+        /// <paramref name="ends"/> against the side each end is (<see cref="RightIsHigh"/>), so a building stands with a side that has
+        /// windows or can be given them toward the street, an open lot or the corner, and a textured one toward a street.
         /// </summary>
         public static bool Finished(DesignEntry d, LotEnds ends, float facing)
         {
             bool rightHigh = RightIsHigh(facing);
-            return !(ends.Low && Kind(d, !rightHigh) == SideKind.Bare) && !(ends.High && Kind(d, rightHigh) == SideKind.Bare);
+            return Shows(d, !rightHigh, ends.Low, ends.LowRoad) && Shows(d, rightHigh, ends.High, ends.HighRoad);
+        }
+
+        // An end that is shut, or whose side can be dressed and, toward a road, is not flat colour.
+        private static bool Shows(DesignEntry d, bool right, bool open, bool road)
+        {
+            return !open || (Kind(d, right) != SideKind.Bare && !(road && Flat(d, right)));
         }
 
         /// <summary>
@@ -108,17 +121,22 @@ namespace RealLifeOverhaul.Uptown
             {
                 int right = rows[i].LastIndexOf('|'), left = rows[i].LastIndexOf('|', right - 1);
                 var s = new Sides();
-                Read(rows[i].Substring(left + 1, right - left - 1), out s.Left, out s.LeftTop);
-                Read(rows[i].Substring(right + 1), out s.Right, out s.RightTop);
+                Read(rows[i].Substring(left + 1, right - left - 1), out s.Left, out s.LeftTop, out s.LeftFlat);
+                Read(rows[i].Substring(right + 1), out s.Right, out s.RightTop, out s.RightFlat);
                 made[rows[i].Substring(0, left)] = s;
             }
             _sides = made;
             return made;
         }
 
-        private static void Read(string text, out SideKind kind, out float top)
+        private static void Read(string text, out SideKind kind, out float top, out bool flat)
         {
             top = 0f;
+            flat = text.EndsWith("f", StringComparison.Ordinal);
+            if (flat)
+            {
+                text = text.Substring(0, text.Length - 1);
+            }
             if (text == "w")
             {
                 kind = SideKind.Windowed;

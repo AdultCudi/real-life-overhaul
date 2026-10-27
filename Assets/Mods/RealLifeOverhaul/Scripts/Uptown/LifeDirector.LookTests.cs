@@ -67,7 +67,7 @@ namespace RealLifeOverhaul.Uptown
             }
         }
 
-        // Why the census fails, or null: a blank wall to a road, a door off its street, a gap as wide as a space, a yard a road looks into, a bad
+        // Why the census fails, or null: a blank wall or one of flat colour to a road, a door off its street, a gap as wide as a space, a yard a road looks into, a bad
         // renderer, windows wanted and not laid, a backdrop's box left along the avenue.
         internal static string LookWhy(LookReport r, string faults, int boxes)
         {
@@ -78,6 +78,10 @@ namespace RealLifeOverhaul.Uptown
             if (r.LeftBlankRoad > 0)
             {
                 return r.LeftBlankRoad + " open ends on a road still show a wall with no window";
+            }
+            if (r.FlatRoadEnds > 0)
+            {
+                return r.FlatRoadEnds + " open ends on a road show a wall of flat colour";
             }
             if (r.Facing > 0)
             {

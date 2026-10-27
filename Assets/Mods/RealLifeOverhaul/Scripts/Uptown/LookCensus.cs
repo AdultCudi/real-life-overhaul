@@ -50,6 +50,8 @@ namespace RealLifeOverhaul.Uptown
         public int BareRoadEnds;     // of those, the ones on a road
         public int Dressed;          // of the blank ends, those given a window overlay (SideRules)
         public int DressedRoad;      // of those, the ones on a road
+        public int FlatEnds;         // of the dressed ends, those on a wall of flat colour: windows on it, but no texture of its own
+        public int FlatRoadEnds;     // of those, the ones on a road
         public int Yards;            // buildings that leave a yard of BackLeast or more behind them where no second row stands
         public float YardArea;       // m2 of those yards
         public int YardsShown;       // of those, the yards a street or an open lot looks into: the building has an open end
@@ -71,7 +73,8 @@ namespace RealLifeOverhaul.Uptown
             var c = CultureInfo.InvariantCulture;
             return Buildings + " buildings and " + Fillers + " fillers on the front (" + Behind + " behind), " + Land + " of " + Lots + " lots with no building; "
                    + OpenEnds + " open ends (" + RoadEnds + " on a road), " + BlankEnds + " with no window of their own (" + BlankRoadEnds + " on a road), "
-                   + Dressed + " given windows (" + DressedRoad + " on a road), " + LeftBlank + " left blank (" + LeftBlankRoad + " on a road), " + BareEnds + " that cannot be dressed; "
+                   + Dressed + " given windows (" + DressedRoad + " on a road), " + FlatEnds + " of them on a wall of flat colour (" + FlatRoadEnds + " on a road), "
+                   + LeftBlank + " left blank (" + LeftBlankRoad + " on a road), " + BareEnds + " that cannot be dressed; "
                    + Gaps + " gaps wider than " + FrontageRules.SliverMost.ToString("0", c) + " m inside built lots (the widest " + WidestGap.ToString("0.0", c) + " m), "
                    + Yards + " yards behind buildings (" + YardArea.ToString("0", c) + " m2, " + YardsShown + " seen from a street or an open lot); "
                    + Facing + " turned off their street";
@@ -182,6 +185,9 @@ namespace RealLifeOverhaul.Uptown
                     {
                         r.Dressed++;
                         r.DressedRoad += e.Road ? 1 : 0;
+                        bool flat = LookRules.Flat(pieces[e.Piece].Design, e.Right);
+                        r.FlatEnds += flat ? 1 : 0;
+                        r.FlatRoadEnds += flat && e.Road ? 1 : 0;
                     }
                 }
                 if (e.Kind == SideKind.Bare)
