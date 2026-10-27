@@ -133,6 +133,7 @@ namespace RealLifeOverhaul.Uptown
             // The backdrop and the walls across the old street ends go first: the ground's check counts every collider of
             // the game's left on the district's ground as something a free update built there.
             LayoutPlans.Hides(_rects);
+            SouthRules.Hides(_rects);   // and the backdrop's boxes along the avenues' south pavements, which a row of the game's buildings replaces
             _hidden = GroundGame.HideBackdrop(_rects);
             _strays = GroundGame.HideStrays(_rects);
             LayoutPlans.OldWalls(_wallX, _wallZ);

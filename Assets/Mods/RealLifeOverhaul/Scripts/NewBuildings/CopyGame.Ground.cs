@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using GleyTrafficSystem;
@@ -253,6 +254,7 @@ namespace RealLifeOverhaul.NewBuildings
         /// </summary>
         public static string GroundWhy(DesignEntry d, MadeLot lot, out Vector3 root, out float yaw, out Vector3 door, bool inPlay = false)
         {
+            Litter.Clear();
             NewBuildingsRules.Place(d, lot, out float x, out float z, out yaw);
             NewBuildingsRules.Footprint(d, lot, out float cx, out float cz, out float hw, out float hd);
             NewBuildingsRules.DoorAt(d, x, z, yaw, out float doorX, out float doorZ);
@@ -330,9 +332,15 @@ namespace RealLifeOverhaul.NewBuildings
             for (int i = 0; i < found; i++)
             {
                 Collider hit = Hits[i];
-                if (hit != null && !(hit is TerrainCollider) && !OfMade(hit) && !(inPlay && OfLook(hit)))
+                if (hit != null && OfLitter(hit))
+                {
+                    Litter.Add(hit.gameObject);   // a bag the game left on the ground: put away once the building stands (PutAwayLitter), no reason to refuse the lot
+                    Hits[i] = null;
+                }
+                else if (hit != null && !(hit is TerrainCollider) && !OfMade(hit) && !OfEdge(hit) && !(inPlay && OfLook(hit)))
                 {
                     Hits[i] = null;
+                    Litter.Clear();
                     return "something solid stands there (" + hit.name + ")";
                 }
             }
@@ -471,6 +479,47 @@ namespace RealLifeOverhaul.NewBuildings
 
         // A collider of one of the mod's own buildings: the made buildings keep apart by their footprints (RectsMeet), so a
         // district's side by side never stand each other down by a wall shared to the centimetre.
+        /// <summary>
+        /// The object a district keeps its own edge under (its walls and ground colliders): a collider under it is never something solid
+        /// standing on a lot, so the district's own boundary never stops its own ring (27 Oct 2026: the east ring's first lot stood down for
+        /// the corner wall 0.4 m from it). Null for none.
+        /// </summary>
+        public static Transform OwnEdge;
+
+        private static readonly List<GameObject> Litter = new List<GameObject>(4);   // the game's litter the last lot checked stands over
+
+        // The game's bags of litter and boxes lying about (SM_Trash Bag (414) stood on uptown_1_05_0008's ground and kept its building off):
+        // small things nobody stands behind, put away when a building stands where they lie.
+        private static bool OfLitter(Collider hit)
+        {
+            string name = hit.name;
+            return name.StartsWith("SM_Trash Bag", StringComparison.Ordinal) || name.StartsWith("SM_Cardboard", StringComparison.Ordinal);
+        }
+
+        /// <summary>
+        /// Puts away the game's litter the last ground check found under the building about to stand (its bags and boxes are no reason to
+        /// refuse a lot): they are switched off, not destroyed, and go with the city. Returns how many.
+        /// </summary>
+        public static int PutAwayLitter()
+        {
+            int away = 0;
+            for (int i = 0; i < Litter.Count; i++)
+            {
+                if (Litter[i] != null && Litter[i].activeSelf)
+                {
+                    Litter[i].SetActive(false);
+                    away++;
+                }
+            }
+            Litter.Clear();
+            return away;
+        }
+
+        private static bool OfEdge(Collider hit)
+        {
+            return OwnEdge != null && hit.transform.IsChildOf(OwnEdge);
+        }
+
         private static bool OfMade(Collider hit)
         {
             CityBuildingController c = hit.GetComponentInParent<CityBuildingController>();

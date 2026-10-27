@@ -369,6 +369,7 @@ namespace RealLifeOverhaul.Uptown
             Fills.Clear();
             _lives = Standing.Count > 0;
             MarkStanding();
+            int dressed = _lives ? Dress() : 0;
             _stamp++;
             ListBig(true);
             if (!_lives)
@@ -392,7 +393,7 @@ namespace RealLifeOverhaul.Uptown
                 Logger?.Warn("Uptown check (district colours): " + colours + "; " + colourWhy + ": FAIL");
             }
             Logger?.Info("Uptown: " + Standing.Count + " of " + Declared.Count + " building(s) standing as the game's own, " + cut + " cut into the walking meshes, "
-                         + fillers + " filler(s) standing beside and behind them, in "
+                         + fillers + " filler(s) standing beside and behind them, " + dressed + " side walls with windows, in "
                          + ((System.Diagnostics.Stopwatch.GetTimestamp() - began) * 1000.0 / System.Diagnostics.Stopwatch.Frequency).ToString("F0", Plain) + " ms.");
         }
 
