@@ -118,7 +118,7 @@ S("roommates").For("home_roommates").Opts("home_roommates").Also("flatmate lodge
 
 A section's words are only those that mean the whole of it: each one shows every row of it.
 
-The game's own help (F1) draws any page whose text is the locale key `help_<slug>_content` (`HelpPageRenderer.RenderPage(slug)`), but lists only the pages of its `helpstructure.json`, and that key cannot carry the mod's prefix; the guide is therefore a panel of the mod's own.
+The game's own help (F1) draws any page whose text is the locale key `help_<slug>_content` (`HelpPageRenderer.RenderPage(slug)`), but lists only the pages of its `helpstructure.json`, and that key cannot carry the mod's prefix; the guide is therefore a panel of the mod's own. The mod writes pages under those keys into the game's language table itself (the new shops' pages, and the Staff and roles entries, `Meta/StaffHelpGame`), and the Staff and roles entries are also added to the help's private list of categories, so F1 lists and searches them; see [Staff and roles](staffing.md).
 
 ## Presets
 

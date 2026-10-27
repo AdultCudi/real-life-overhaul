@@ -119,6 +119,7 @@ namespace RealLifeOverhaul
         public static readonly GamePart UptownBigTests = ContractBook.Part("uptown_big_tests", "uptown",
             "the tests of Uptown's wholesale store and filling station: a delivery and a fill-up the game's own way");
         public static readonly GamePart ShopHelp = ContractBook.Part("shop_help", "newshops", "the new kinds of shop's pages in the game's help");
+        public static readonly GamePart StaffHelp = ContractBook.Part("staff_help", null, "the Staff and roles entries in the game's help: its list of categories, built again with them in");
         public static readonly GamePart PickedRaises = ContractBook.Part("picked_raises", "economy_company", "a raise for several employees picked in the game's My Employees app");
 
         // The pieces, each group under the code that reads it.
@@ -504,6 +505,10 @@ namespace RealLifeOverhaul
         // Shops/ShopsGame: the language tables the game's texts are read from, given each new kind of shop's help page
         // under the keys the game's help reads (else BizMan's requirement link opens a page of bare keys)
         public static readonly GameMember LocaleTables = Optional(StaticField(ShopHelp, Hg, "Localizor.LocalizorManager", "LocalizationDictionary", "Dictionary<String,Dictionary<String,String>>"));
+
+        // Meta/StaffHelpGame: the help's private list of categories (read from a file in the game's folder) and the method that builds its list from it
+        public static readonly GameMember HelpCategories = Optional(Field(StaffHelp, Game, "HelpSystem", "_categories", "List<HelpStructureGroupEntry>"));
+        public static readonly GameMember HelpLoad = Optional(Method(StaffHelp, Game, "HelpSystem", "LoadCategories", "Void"));
 
         // Economy/Company/PickedRaiseGame: the game's list of the actions for several picked employees, and which its tabs offer,
         // so a raise for them stands in My Employees' own drop-down beside paying bonuses

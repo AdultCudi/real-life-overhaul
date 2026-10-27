@@ -515,9 +515,9 @@ namespace RealLifeOverhaul.Tech
             {
                 Profile p = _people[i].File;
                 cto |= p.Role == TalentCatalogue.Cto;
-                staff += p.Def.Family == Family.Infrastructure && p.Level >= TalentCatalogue.Staff ? 1 : 0;
+                staff += p.Def.Family == Family.Infrastructure && p.Level >= InfraCatalogue.HyperStaffLevel ? 1 : 0;
             }
-            return cto && staff >= 2;
+            return InfraRules.HasChiefs(cto, staff);
         }
 
         internal int CloudNeeds() => InfraRules.CloudNeeds(_infra.Centres, Engineers(), VentureGame.Cash * 1000 / Math.Max(1, Prices.Level), NetAll(), BuyScale);

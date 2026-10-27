@@ -471,6 +471,10 @@ namespace RealLifeOverhaul.Meta
                 box.Note("reallife_guide_reading_hint".GetLocalization());
                 Transform row = box.ButtonRow();
                 InfoBox.Button(row, InfoBox.Positive, "reallife_guide_back", () => ShowTab(0));
+                if (_topic.Id == "staff")
+                {
+                    InfoBox.Button(row, InfoBox.Additional, "reallife_staff_open_button", () => StaffApp.Open(null));
+                }
             }
             else
             {

@@ -196,7 +196,7 @@ namespace RealLifeOverhaul.GameUi
             "RealLifeFinance", "RealLifeEstate", "RealLifeOnline", "RealLifeOwnBank", "RealLifeServices", "RealLifeVentures",
             "RealLifeNewsstand", "RealLifeLedger", "RealLifeStocks", "RealLifeGuide", "RealLifeSettings", "RealLifePlanner",
             "RealLifeFlare", "RealLifeTechSector", "RealLifeOpenRoles", "RealLifeOverhaulUtilities", "Interior",
-            "RealLifeBuilders", "RealLifeEconomy"
+            "RealLifeBuilders", "RealLifeEconomy", "RealLifeStaff"
         };
 
         public static readonly int[] AccentColours =
@@ -205,7 +205,7 @@ namespace RealLifeOverhaul.GameUi
             0x18946E, 0x227860, 0xC05430, 0x805C1E, 0x227A80, 0x3E4EB0,
             0x2C3A60, 0x2C3A60, 0x20784E, 0xE0680A, 0x3A465C, 0xE23D6C,
             0xD63E62, 0x3C32A0, 0x287078, 0x287896, 0x596975,
-            0xC4701C, 0x0E8F82
+            0xC4701C, 0x0E8F82, 0x1E7850
         };
 
         /// <summary>The game's slate, its headlines' colour in the box, for an app with no colour of its own.</summary>

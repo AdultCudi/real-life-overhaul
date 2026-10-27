@@ -51,7 +51,7 @@ namespace RealLifeOverhaul.Tech
         public static void AddSectorFacts(Feature f)
         {
             f.Fact("tech_segments", Segments)
-                .Fact("tech_design_boost", () => Mille(FirmsCatalogue.DesignBoostMost))
+                .Fact("tech_design_boost", () => Mille(FirmsCatalogue.DesignAppealMost))
                 .Fact("tech_product_boost", () => Mille(FirmsCatalogue.ProductBoostMost))
                 .Fact("tech_selling_boost", () => Mille(FirmsCatalogue.SellingBoostMost))
                 .Fact("tech_support_consumer", () => SupportFor(Segment.Consumer))
@@ -63,7 +63,7 @@ namespace RealLifeOverhaul.Tech
                 .Fact("tech_game_small", () => Whole(FirmsCatalogue.GameScope[0]))
                 .Fact("infra_outage_low", () => Mille(InfraCatalogue.OutageChance[0]))
                 .Fact("infra_outage_high", () => Mille(InfraCatalogue.OutageChance[InfraCatalogue.Tiers - 1]))
-                .Fact("infra_short_most", () => Whole((1000 + InfraCatalogue.OutageShortMost) / 1000))
+                .Fact("infra_short_most", () => Whole((1000 + InfraCatalogue.OutageShortExtra) / 1000))
                 .Fact("tech_paying", () => Mille(FirmsCatalogue.ConsumerPaying))
                 .Fact("tech_feature_base", () => Whole(FirmsCatalogue.FeatureBase))
                 .Fact("tech_feature_step", () => Whole(FirmsCatalogue.FeatureStep))

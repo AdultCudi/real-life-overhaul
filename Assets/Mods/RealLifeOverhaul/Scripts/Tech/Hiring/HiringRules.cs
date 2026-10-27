@@ -184,7 +184,7 @@ namespace RealLifeOverhaul.Tech
                 f.RivalAds.Add(new RivalAd
                 {
                     Rival = rivals != null && rivals.Count > 0 ? rivals[TechRandom.Range(f.Seed, n, 21, 0, 0, rivals.Count - 1)] : HiringCatalogue.RivalFirms[0],
-                    Family = Pick(HiringCatalogue.FamilyShare, TechRandom.Mille(f.Seed, n, 22)),
+                    Family = Pick(Staffing.StaffIndex.RivalFamilyShares, TechRandom.Mille(f.Seed, n, 22)),
                     Level = Pick(HiringCatalogue.LevelShare, TechRandom.Mille(f.Seed, n, 23)),
                     To = day + HiringCatalogue.RivalAdDays,
                     PayBp = TechRandom.Range(f.Seed, n, 24, 0, 0, 1500)

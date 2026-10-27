@@ -1701,6 +1701,7 @@ namespace RealLifeOverhaul
             GameUi.NoticeLook.WantPictures();
             Meta.GuideApp.WantPictures();
             Meta.SettingsApp.WantPictures();
+            Meta.StaffApp.WantPictures();
             Ledger.NewsstandApp.WantPictures();
             SpeedReading.WantPictures();
             CarDash.WantPictures();

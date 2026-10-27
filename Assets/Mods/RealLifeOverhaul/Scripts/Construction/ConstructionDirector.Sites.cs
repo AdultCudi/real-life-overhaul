@@ -473,7 +473,7 @@ namespace RealLifeOverhaul.Construction
             int managerSkill = hired ? builder : ManagerSkill(p, out manager);
             int quality = SiteRules.WorkQuality(crewSkill, managerSkill, p.Quality);
             bool rushed = !hired && p.PaceDays > 0 && SiteRules.Rushed(p.PaceSum / p.PaceDays);
-            int odds = SiteRules.PassOdds(quality, rushed, p.Visited, manager && managerSkill >= 60);
+            int odds = SiteRules.PassOdds(quality, rushed, p.Visited, manager && managerSkill >= BuildCatalogue.PassManagerSkill);
             bool passed = SiteRules.Passes(_state.Seed, p.Id, inspection, tries, odds);
             if (Verbose)
             {
@@ -645,7 +645,7 @@ namespace RealLifeOverhaul.Construction
         {
             StaffFile s = ManagerOf(p);
             manager = s != null;
-            return s != null && ConstructionGame.Employee(s.Employee, out StaffView v) ? v.Value : 50;
+            return s != null && ConstructionGame.Employee(s.Employee, out StaffView v) ? v.Value : BuildCatalogue.ManagerSkillDefault;
         }
 
         private int CrewSkill(ProjectFile p)

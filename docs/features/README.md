@@ -20,6 +20,7 @@ Every feature runs in the New York the mod knows, a New York with districts a fr
 - [Uptown](uptown.md): a district of the mod's own north of Manhattan, three rows of eighteen blocks, its streets, ground and lots laid at every load.
 - [Uptown's landmarks](landmarks.md): Summit Tower, Uptown Galleria and Crest Field, the city's megaprojects in the new district: tendered, built, opened, and what they do for the lots round them.
 - [Birchwood School](schools.md): a school campus on Uptown's west square, and the city's schools as one market the player may buy into, run by the same rules for the trusts and the council.
+- [Staff and roles](staffing.md): an exact, searchable reference of the staff of every business of the mod and of every role, generated from the code's own tables, in the Guide, the game's help and the Discord guide.
 
 ## The player's life
 

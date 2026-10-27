@@ -188,7 +188,7 @@ namespace RealLifeOverhaul.Tech
         }
 
         /// <summary>What product people add to a feature's points, thousandths: up to 400 with one for every few engineers.</summary>
-        public static int ProductBoost(in Crew c) => Math.Min(FirmsCatalogue.ProductBoostMost, c.Product * 3000 / Math.Max(1, c.Engineering + c.Product));
+        public static int ProductBoost(in Crew c) => Math.Min(FirmsCatalogue.ProductBoostMost, c.Product * FirmsCatalogue.ProductBoostGain / Math.Max(1, c.Engineering + c.Product));
 
         /// <summary>A day of building: the points, split by the firm's focus, go to features, bug fixes and debt. Returns the features finished.</summary>
         public static int Build(Firm firm, Product p, in Crew c, int points, int testing)
@@ -238,7 +238,7 @@ namespace RealLifeOverhaul.Tech
             a = a * Quality(p) / 1000;
             a = a * FirmsCatalogue.PriceAppeal[TalentCatalogue.Clamp(p.Tier, 0, 2)] / FirmsCatalogue.PriceAppeal[TalentCatalogue.Clamp(p.RivalTier, 0, 2)];
             a = a * (500 + firm.Reputation) / 1000;
-            a = a * (1000 + Math.Min(FirmsCatalogue.DesignBoostMost, c.Design * 1000 / Math.Max(1, c.Engineering + 1))) / 1000;
+            a = a * (1000 + Math.Min(FirmsCatalogue.DesignAppealMost, c.Design * 1000 / Math.Max(1, c.Engineering + 1))) / 1000;
             return (int)Math.Max(50, Math.Min(3000, a));
         }
 
@@ -298,7 +298,7 @@ namespace RealLifeOverhaul.Tech
                 return r;
             }
             long open = Math.Max(0, FirmsCatalogue.Market[seg] - p.Users - p.Free);
-            int selling = seg == (int)Segment.Consumer ? 1000 : 1000 + Math.Min(FirmsCatalogue.SellingBoostMost, c.Selling * FirmsCatalogue.SellingPerPoint);
+            int selling = seg == (int)Segment.Consumer ? 1000 : 1000 + Math.Min(FirmsCatalogue.SellingBoostMost, c.Selling * FirmsCatalogue.SellingBoostPerPoint);
             if (p.K == ProductKind.Licence)
             {
                 // The deals the day has earned, carried in millionths (Carry) until a whole one closes: a launched licence sells on
@@ -343,7 +343,7 @@ namespace RealLifeOverhaul.Tech
             int needed = SupportNeeded(p);
             if (needed > support)
             {
-                churn = churn * (1000 + Math.Min(1000, (needed - support) * 1000 / Math.Max(1, needed))) / 1000;
+                churn = churn * (1000 + Math.Min(FirmsCatalogue.SupportChurnMost, (needed - support) * 1000 / Math.Max(1, needed))) / 1000;
             }
             churn = churn * (p.Tier == 0 ? 900 : p.Tier == 2 ? 1150 : 1000) / 1000;
             if (p.RivalFeatures > p.Features)

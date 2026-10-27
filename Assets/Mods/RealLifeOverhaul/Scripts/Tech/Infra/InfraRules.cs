@@ -175,11 +175,13 @@ namespace RealLifeOverhaul.Tech
         /// <summary>The cooling water it uses in a day, thousandths of a cubic metre.</summary>
         public static long Water(DataCentre d) => Power(d) / 1000 * InfraCatalogue.WaterPerMwh / 1000;
 
+        /// <summary>The count the Guide's Staff and roles reference states: one technician for so many racks, one at the least once there are any.</summary>
+        public static readonly Staffing.StaffRate TechnicianRate = new Staffing.StaffRate(InfraCatalogue.RacksPerTechnician, 1);
+
         /// <summary>The technicians it needs: one for so many racks, one at the least once it has any.</summary>
         public static int TechniciansNeeded(DataCentre d)
         {
-            int racks = d.Racks + d.GpuRacks;
-            return racks <= 0 ? 0 : Math.Max(1, (racks + InfraCatalogue.RacksPerTechnician - 1) / InfraCatalogue.RacksPerTechnician);
+            return TechnicianRate.Need(d.Racks + d.GpuRacks);
         }
 
         /// <summary>Whether a data centre goes down today, by its tier and how short of technicians and crews it is; always with power or connection cut.</summary>
@@ -197,7 +199,7 @@ namespace RealLifeOverhaul.Tech
             long chance = InfraCatalogue.OutageChance[TalentCatalogue.Clamp(d.Tier, 0, InfraCatalogue.Tiers - 1)] * 1000L;
             if (d.Technicians < need)
             {
-                chance = chance * (1000 + (need - d.Technicians) * (long)InfraCatalogue.OutageShortMost / need) / 1000;
+                chance = chance * (1000 + (need - d.Technicians) * (long)InfraCatalogue.OutageShortExtra / need) / 1000;
             }
             chance = chance * EndScaleRules.Outages(cover) / 1000;
             return TechRandom.Hash(seed, TechRandom.Of(d.Place), day, 5) % 1000000u < chance;
@@ -336,6 +338,9 @@ namespace RealLifeOverhaul.Tech
             return (districts.Count >= InfraCatalogue.HyperRegions ? 0 : 1) | (racks >= HyperRacks(share) ? 0 : 2) | (chief ? 0 : 4)
                    | (cash >= HyperCash(share) ? 0 : 8);
         }
+
+        /// <summary>Whether a hyperscaler's people are there: a chief technology officer and so many infrastructure people of staff level or above.</summary>
+        public static bool HasChiefs(bool cto, int staffInfra) => cto && staffInfra >= InfraCatalogue.HyperStaffInfra;
 
         /// <summary>The cloud's regions: the districts its data centres stand in.</summary>
         public static int Regions(IList<DataCentre> centres)

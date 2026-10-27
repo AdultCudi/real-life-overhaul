@@ -426,6 +426,12 @@ namespace RealLifeOverhaul.Construction
         public const int PassRushPermille = 100;                // less when rushed
         public const int PassVisitPermille = 50;                // more when the player walked the site with the foreman in the stage
         public const int PassManagerPermille = 50;              // more with a site manager of skill 60 or more
+        public const int PassManagerSkill = 60;                 // the skill a site manager needs for that
+        public const int ManagerSkillDefault = 50;              // the skill a site with no manager of its own is taken to have
+        public const int WorkCrewShare = 55, WorkManagerShare = 25, WorkPlansShare = 20;   // per cent of the work's quality that the crews' skill, the manager's and the plans' make
+        public const int TradeCapTenths = 18;                   // a trade's people count up to this many tenths of what the stage needs of it: more help nothing
+        public const int SkillPacePerPoint = 5;                 // thousandths of pace a point of the crews' skill adds to SkillPacePermille
+        public const int MoralePacePerPoint = 4;                // ...and a point of morale to MoralePacePermille
         public const int PassMostPermille = 970;
         public const int ReworkPermille = 60;                   // of the stage's hours: put right after a failed inspection
         public const int BribePermille = 40;                    // of the stage's materials: what the inspector is offered

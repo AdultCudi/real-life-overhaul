@@ -438,6 +438,7 @@ namespace RealLifeOverhaul.Meta
                 .Data(SaveTools.VersionKey, SaveTools.DevelopmentVersionKey, CompanionSnapshot.Key)
                 .Data(DistrictSave.DistrictSaveStore.Key, DistrictSave.DistrictSaveStore.UnreadKey)   // the records of the mod's places (Scripts/DistrictSave)
                 .Test("reallife_test_district_save", DistrictSave.DistrictSaveDirector.Test)
+                .Test("reallife_staff_test", StaffGuide.Test)
                 .Contact(GuideContact.ContactId)
                 .Repair(() => GuideContact.Setup());
 

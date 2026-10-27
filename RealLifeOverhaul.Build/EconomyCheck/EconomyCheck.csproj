@@ -471,6 +471,14 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Infra\InfraCatalogue.cs" Link="Mod\InfraCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Infra\InfraModel.cs" Link="Mod\InfraModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Infra\InfraRules.cs" Link="Mod\InfraRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Staffing\StaffPlace.cs" Link="Mod\Staffing\StaffPlace.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Staffing\StaffEffects.cs" Link="Mod\Staffing\StaffEffects.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Staffing\StaffTable.cs" Link="Mod\Staffing\StaffTable.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Staffing\StaffTable.Tech.cs" Link="Mod\Staffing\StaffTable.Tech.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Staffing\StaffTable.Work.cs" Link="Mod\Staffing\StaffTable.Work.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Staffing\StaffTable.Roles.cs" Link="Mod\Staffing\StaffTable.Roles.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Staffing\StaffIndex.cs" Link="Mod\Staffing\StaffIndex.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Staffing\StaffPages.cs" Link="Mod\Staffing\StaffPages.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Infra\InfraStore.cs" Link="Mod\InfraStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Study\StudyCatalogue.cs" Link="Mod\StudyCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Study\StudyRules.cs" Link="Mod\StudyRules.cs" />
