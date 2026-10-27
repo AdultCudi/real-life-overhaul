@@ -79,6 +79,7 @@ namespace RealLifeOverhaul
         public static readonly GamePart CustomersKept = ContractBook.Part("customers_kept", null, "the customers of the hour under way kept when the mod draws a day's customers again");
         public static readonly GamePart InteriorCustomers = ContractBook.Part("interior_customers", "interiors", "the basket and the day's customers on the Interior tab");
         public static readonly GamePart InteriorTabPart = ContractBook.Part("interior_tab", "interiors", "the Interior tab in BizMan");
+        public static readonly GamePart BizPacePart = ContractBook.Part("bizman_pace", "performance", "the timing of what the mod adds to BizMan's open, switch and tab change");
         public static readonly GamePart BusYield = ContractBook.Part("bus_yield", "transport", "a bus held behind a traffic car that waits for it");
         public static readonly GamePart HairLampTest = ContractBook.Part("hair_lamp_test", "character", "the hair test's street lamp as bright as the game's");
         public static readonly GamePart PlayerDeath = ContractBook.Part("player_death", null, "waiting while the player is dead or at a funeral");
@@ -354,6 +355,10 @@ namespace RealLifeOverhaul
         public static readonly GameMember BizManTabs = Field(InteriorTabPart, Game, "BizManBusiness", "_tabs", "List<String>");
         public static readonly GameMember BizManSetTab = Method(InteriorTabPart, Game, "BizManBusiness", "SetTab", "Void", "String");
         public static readonly GameMember BizManDetails = Optional(Field(InteriorTabPart, Game, "BizManBusiness", "businessInfo", "Transform"));
+
+        // BizPace/BizPaceGame: the same page's tabs and their pages, for the marks that begin a step and for the test that clicks each tab
+        public static readonly GameMember BizPaceMenu = Field(BizPacePart, Game, "BizManBusiness", "menu", "Transform");
+        public static readonly GameMember BizPaceContainers = Field(BizPacePart, Game, "BizManBusiness", "containers", "Transform");
 
         // Transport/TransitBus: what a traffic car of the game's stands for (its sensor's list)
         public static readonly GameMember CarObstacles = Field(BusYield, Plugins, "GleyTrafficSystem.VehicleComponent", "obstacleList", "List<Collider>");

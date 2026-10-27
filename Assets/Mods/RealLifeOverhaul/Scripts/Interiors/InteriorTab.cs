@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using RealLifeOverhaul.BizPace;
 using RealLifeOverhaul.GameUi;
 using TMPro;
 using UI;
@@ -37,10 +38,16 @@ namespace RealLifeOverhaul.Interiors
         private static MethodInfo _setTab;
         private static bool _failed, _fitLogged;
         internal static bool Dirty;
+        internal static int Session;                 // the times BizMan's business view was switched on: a page written in one showing stays while its menu holds the game paused
+        private static BuildingRegistration _wroteReg;
+        private static InteriorShop _wroteShop;      // the business the boxes hold the page of; null for none
+        private static string _wroteLocale;
+        private static int _wroteSession = -1, _wrotePage = -1;
 
         /// <summary>A new session (a city loaded): the tab may be put in again, and its fit is logged again.</summary>
         public static void Begin()
         {
+            _wroteShop = null;
             _failed = false;
             _fitLogged = false;
             Dirty = false;
@@ -121,6 +128,7 @@ namespace RealLifeOverhaul.Interiors
             }
             _page.AddComponent<InteriorPageWatch>();
             business.gameObject.AddComponent<InteriorTabKeeper>();
+            _wroteShop = null;
             Dirty = true;
             InteriorDirector.Logger?.Info("Interiors: the Interior tab is in BizMan.");
         }
@@ -228,6 +236,7 @@ namespace RealLifeOverhaul.Interiors
             _left = _right = null;
             _rightScroll = null;
             _business = null;
+            _wroteShop = null;
         }
 
         private static List<string> Tabs()
@@ -243,9 +252,12 @@ namespace RealLifeOverhaul.Interiors
             }
         }
 
+        private static readonly int BizFix = HotSpots.Slot("Interiors: InteriorTab.Fix");
+
         /// <summary>After the game made its list of tabs again: the tab added at its end and its button placed, or taken out.</summary>
         internal static void Fix()
         {
+            using var timed = BizPaceWatch.Time(BizFix);   // a step of BizMan's open or switch (BizPace)
             Dirty = false;
             if (_business == null || _button == null)
             {
@@ -315,6 +327,7 @@ namespace RealLifeOverhaul.Interiors
         private void OnEnable()
         {
             InteriorTab.Dirty = true;
+            InteriorTab.Session++;   // a new showing of the business view: nothing written in the last is taken for this one's
         }
 
         private static readonly int HotLateUpdate = HotSpots.Slot("Interiors: InteriorTabKeeper.LateUpdate");

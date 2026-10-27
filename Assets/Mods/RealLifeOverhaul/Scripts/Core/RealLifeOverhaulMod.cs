@@ -1631,6 +1631,7 @@ namespace RealLifeOverhaul
             Guard.Step("Districts.DistrictView", () => Guard.Add<Districts.DistrictView>(_root));
             Guard.Step("Interiors.InteriorDirector", () => Interiors.InteriorDirector.Logger = context.Logger);
             Guard.Step("CustomerDraw", () => CustomerDraw.Logger = context.Logger);
+            Guard.Step("BizPace", () => BizPace.BizPaceWatch.Logger = context.Logger);   // what the mod adds to BizMan's open, switch and tab change, timed with Developer diagnostics on
             // With Developer diagnostics on, the installation firms' lists checked against the designs written.
             Guard.Step("Designs.DesignsDirector", () => Designs.DesignsDirector.CityLoaded());
             Guard.Step("Interiors.InteriorDirector", () => Guard.Add<Interiors.InteriorDirector>(_root));

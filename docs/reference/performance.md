@@ -225,6 +225,28 @@ A session of 0.52.1 with the city expansion (the owner's Player.log, 25 Oct; 61 
 - **Then the hair finish's search at doors:** it now goes from the drawn hair to its wearer (`CharacterQuality.FindOthers`, `Character/HairWearers`). Skinned meshes are a kind of the engine's own, listed by the engine (a few hundred drawn in the city, a fraction of a millisecond), where the game's characters are a kind of its scripts, found only by going through every object in memory. A drawn renderer of strand hair is its nearest character's if that one wears it, else the wearer a search of every character found; a renderer neither can place sends that search once, and its answer (a wearer or nobody) is kept for the scene. Options > Tests, "Compare the hair search with the old one", makes both searches and says PASS or FAIL in Player.log.
 - **The mod's save, seen:** 262, 126 and 98 ms when the game saves (50 features). Left for a round of its own.
 
+## BizMan's open, switch and tab change (`BizPace`)
+
+A player's report (27 Oct 2026, on a modest PC: an i5 of the Comet Lake family, 16 GB, an SSD) was that opening a business in BizMan and switching business or tab got slower with each release. The owner's budgets: the mod adds under 2 ms to an open and under 1 ms to a switch or a tab change, on a large save, and allocates next to nothing doing it ([RLO-PERF-018](../standards/performance.md)).
+
+The mod's part in a step is a few handlers. On BizMan's pages: the Interior tab and its page (`Interiors/InteriorTab`), the presentation's refusal of the mod's buildings (`Core/ClaimedOffers`), the start screen's cards (`Tech/Firms/StartCards`). On the game's registration change event, which BizMan raises each time a business view or the Schedule tab is left: the special names (`Core/SpecialNames`), the corner buildings' live signs (`Corners/CornerSigns`), the offices made of empty shops (`Offices/Conversions`) and the data centres' warehouses (`Tech/TechDirector.Infra`). Releases added those listeners one by one (the conversions in 0.11.2, the data centres in 0.54.0, the corner signs and the special names' map search in 0.57.0), and each did its work for every building the event named.
+
+What was found and changed (figures measured offline on the owner's PC, the game-free parts only; EconomyCheck `BizPaceChecks.cs`, run with `RLO_BIZPACE_REPORT=1 ... --bizpace`):
+
+| handler | before | after |
+|---|---|---|
+| data centres (`TechDirector.OnRegistrationChange`) | every event asked for the warehouses to be read again on the next second (a walk over every registration, the data centres' records, the Tech app marked changed) | only a warehouse's event does; the others are counted and nothing more |
+| offices (`Conversions.OnChange`) | every event of a shop or an office asked for the whole choice again on the next second (the choice alone, game-free: 39 to 44 microseconds and 14.7 KB a time, and a vacancy test per building on top) | the first event for a building, and a change in its facts (`BizPaceRules.Signature`), ask; a read is 0.016 microseconds, the same on a save of 100 businesses, 2,000 employees and 50,000 transactions as on a small one |
+| corner signs (`CornerSigns.OnChange`) | a key string made for every event | nothing looked up while no corner building stands |
+| start screen (`TechDirector.InCity`) | the player's businesses walked among the city's registrations at every opening (5 to 8 microseconds and 13.7 KB, and the cards 21 to 24 microseconds) | the walk is made when a registration changed, the day turned or the academy moved; the check that replaces it is 0.002 microseconds |
+| Interior tab, first opening of a session | two layouts worked out at once for a log line that is dropped with diagnostics off | only when the line is read |
+| Interior tab, flipping back | the page written again (some 45 parts, 0.17 ms a part in the box's own timer on the owner's PC) | kept while the same business, page and language are shown in the same showing of the view |
+| first use of each handler | Mono compiled it when first called | compiled ahead with the day's code, a slice a frame (`Core/DayWarm`, `BizPaceGame.Warm`) |
+
+What is left is the Interior tab's first writing of a page for a business: UI work in the box (`Core/GameUi/InfoBox`), which cannot be timed outside the game. Options > Tests > Check BizMan's speed times it and names it.
+
+How to see it: with Developer diagnostics on, `BizPaceWatch` puts a mark on BizMan's business view and on each tab's page (taken off when diagnostics go off), every handler above opens `BizPaceWatch.Time(slot)` on its work, and each step becomes one episode: the handlers' time in the frame of the game's move and the three after it, with the handler that took most. Each episode is a line, `BizMan check (open at 3 Third Street): the mod's handlers took 0.42 ms (...), wanted under 2.00 ms: PASS.`, and the minute's session line ends with `; BizMan: 3 opens (the mod added 0.40 ms at most, wanted under 2.00), ..., the slowest handler ...`. The work a step leaves for the next ticks (the consequences of a close, a second later) is counted apart.
+
 ## What the merged whole costs per frame
 
 Read through after the merge: 67 `Update` / `LateUpdate` / `FixedUpdate` methods, no `OnGUI`, no `InvokeRepeating`, and no `Find*` or allocation on any idle per-frame path.

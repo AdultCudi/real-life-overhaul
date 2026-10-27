@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
+using RealLifeOverhaul.BizPace;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -163,6 +164,7 @@ namespace RealLifeOverhaul
                     _line.Append(k == 0 ? ", the most under " : ", ").Append(HotSpots.Name(slot)).Append(" (").Append((bytes * scale).ToString("F0")).Append(" KB a second)");
                 }
             }
+            BizPaceWatch.MinuteLine(_line);   // BizMan's opens, switches and tab changes of the minute: what the mod added, the slowest handler named
             HotSpots.ClearStretch();
         }
         // Every object under a root of the mod's ("RealLifeOverhaul ...") in every loaded scene, by holder and by kind; the

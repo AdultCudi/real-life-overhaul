@@ -72,6 +72,20 @@ namespace RealLifeOverhaul.Offices
             return reg != null && (GoingPublic.Mine(reg) || reg.BuildingOwnedByPlayer || (forSale != null && reg.Address != null && forSale.Contains(reg.Address)));
         }
 
+        /// <summary>True if the building is listed for sale now (the game's list, GameInstance.buildingsForSale): one pass, no closure made.</summary>
+        public static bool OnSale(GameInstance save, Address address)
+        {
+            List<BuildingForSale> all = save != null ? save.buildingsForSale : null;
+            for (int i = 0; address != null && all != null && i < all.Count; i++)
+            {
+                if (all[i] != null && all[i].address == address)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         /// <summary>The buildings listed for sale now (the game's list, GameInstance.buildingsForSale), into a set.</summary>
         public static void ForSale(GameInstance save, HashSet<Address> into)
         {

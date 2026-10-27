@@ -161,6 +161,7 @@ namespace RealLifeOverhaul.Tech
             {
                 InstallTech();
             }
+            KeepRegistrationHandler();   // counted whatever the sector does (InCity), a warehouse's flagged
             if (_firmsOn)
             {
                 KeepWarehouses();

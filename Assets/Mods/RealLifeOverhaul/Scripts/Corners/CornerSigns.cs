@@ -1,4 +1,5 @@
 using System;
+using RealLifeOverhaul.BizPace;
 using RealLifeOverhaul.GameUi;
 using TMPro;
 using UnityEngine;
@@ -174,13 +175,17 @@ namespace RealLifeOverhaul.Corners
             EventHold.Keep(ref GlobalEvents.onBuildingRegistrationChange, _onChange, ref _changeSeen);
         }
 
-        // A registration changed: a corner building's at that address writes its signs again.
+        private static readonly int BizChange = HotSpots.Slot("Corners: CornerSigns.OnChange");
+
+        // A registration changed: a corner building's at that address writes its signs again. The game raises it for any building (BizMan
+        // raises it each time a business view or the Schedule tab is left), so with no corner building standing nothing is looked up.
         private static void OnChange(Address address)
         {
-            if (address == null)
+            if (address == null || !CornerLook.Any)
             {
                 return;
             }
+            using var timed = BizPaceWatch.Time(BizChange);   // a step of BizMan closing a business or leaving a tab (BizPace)
             CornerHandle h = CornerLook.AtAddress(address.streetName, address.streetNumber);
             if (h != null && h.Root != null)
             {
