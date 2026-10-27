@@ -418,6 +418,7 @@ internal static partial class Program
         Hierarchy();  // the company's policy over the managers, its scopes, the escalations, who holds them and the save (HierarchyChecks.cs)
         StaffCentres();   // a raise for several picked in MyEmployees, a warehouse taken as a data centre, a data centre's crew by a search firm (PickedRaiseChecks.cs, CentreCrewChecks.cs)
         DataEngineers();   // data engineers hired for a data centre: who a place with no desks seats, the starts, the day's repair, the test and the texts (DataEngineerChecks.cs)
+        StaffReference();   // the Staff and roles reference: generated from the code's tables, its figures held to the code, its texts and its search (StaffChecks.cs)
         FontFix();   // What's new tells of the font stutter fix in all nine languages (FontFixChecks.cs)
         MapTreesFix();   // What's new tells of the city map fix in all eleven languages; the guard and its test are wired (MapTreeChecks.cs)
         Estate();

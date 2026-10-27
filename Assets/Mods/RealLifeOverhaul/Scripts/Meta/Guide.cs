@@ -76,6 +76,7 @@ namespace RealLifeOverhaul.Meta
                 Feature captured = feature;
                 topics.Add(new GuideTopic("feature_" + feature.Id, feature.TitleKey, () => FeaturePage(captured)));
             }
+            topics.Add(new GuideTopic("staff", "reallife_staff_guide_title", StaffGuide.Page));
             topics.Add(new GuideTopic("trouble", "reallife_guide_trouble_title", () => "reallife_guide_trouble".GetLocalization() + "\n\n" + "reallife_guide_trouble_report".GetLocalization()
                                                                                        + "\n\n" + "reallife_guide_trouble_update".GetLocalization()
                                                                                        + "\n\n" + "reallife_guide_trouble_stutter".GetLocalization()
@@ -100,6 +101,10 @@ namespace RealLifeOverhaul.Meta
             if (feature.HelpKey != null)
             {
                 text.Append(feature.HelpKey.GetLocalization()).Append("\n\n");
+            }
+            if (StaffGuide.Points(feature.Id))
+            {
+                text.Append(StaffGuide.Pointer()).Append("\n\n");
             }
 
             bool any = false;

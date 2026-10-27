@@ -202,7 +202,7 @@ namespace RealLifeOverhaul.Construction
                     continue;
                 }
                 needed += n;
-                have += Math.Min(p * 10, n * 18);   // in tenths of a person: a trade counts up to 1.8 times its need
+                have += Math.Min(p * 10, n * BuildCatalogue.TradeCapTenths);   // in tenths of a person: a trade counts up to 1.8 times its need
                 missing |= p == 0;
             }
             if (anyone == 0)
@@ -215,8 +215,8 @@ namespace RealLifeOverhaul.Construction
             {
                 pace = pace * BuildCatalogue.TradeMissingPermille / 1000L;
             }
-            pace = pace * (BuildCatalogue.SkillPacePermille + BuildCatalogue.Clamp(skill, 0, 100) * 5L) / 1000L;
-            pace = pace * (BuildCatalogue.MoralePacePermille + BuildCatalogue.Clamp(morale, 0, 100) * 4L) / 1000L;
+            pace = pace * (BuildCatalogue.SkillPacePermille + BuildCatalogue.Clamp(skill, 0, 100) * (long)BuildCatalogue.SkillPacePerPoint) / 1000L;
+            pace = pace * (BuildCatalogue.MoralePacePermille + BuildCatalogue.Clamp(morale, 0, 100) * (long)BuildCatalogue.MoralePacePerPoint) / 1000L;
             for (int i = 0; i < plantMissing; i++)
             {
                 pace = pace * BuildCatalogue.PlantMissingPermille / 1000L;
@@ -255,7 +255,8 @@ namespace RealLifeOverhaul.Construction
         /// <summary>The work's quality the inspector sees: the crews' skill most, the site manager's (50 without one) and the plans'.</summary>
         public static int WorkQuality(int crewSkill, int managerSkill, int plansQuality)
         {
-            int q = (BuildCatalogue.Clamp(crewSkill, 0, 100) * 55 + BuildCatalogue.Clamp(managerSkill, 0, 100) * 25 + BuildCatalogue.Clamp(plansQuality, 0, 100) * 20) / 100;
+            int q = (BuildCatalogue.Clamp(crewSkill, 0, 100) * BuildCatalogue.WorkCrewShare + BuildCatalogue.Clamp(managerSkill, 0, 100) * BuildCatalogue.WorkManagerShare
+                     + BuildCatalogue.Clamp(plansQuality, 0, 100) * BuildCatalogue.WorkPlansShare) / 100;
             return BuildCatalogue.Clamp(q, 0, 100);
         }
 
