@@ -43,8 +43,9 @@ namespace RealLifeOverhaul.Uptown
                     near += Mathf.Abs(r.Faults[i].X - at.x) <= NearMetres && Mathf.Abs(r.Faults[i].Z - at.z) <= NearMetres ? 1 : 0;
                 }
                 string line = "Uptown check (look census): " + r.Describe() + "; " + renderers + " drawn parts looked at, " + SideWalls.Count + " window overlays laid (" + SideWalls.Describe() + "), "
-                              + boxes + " of the backdrop's boxes still standing along the avenue's south pavement; " + near + " of the first " + r.Faults.Count + " faults within " + NearMetres.ToString("0", c)
-                              + " m of the player at (" + at.x.ToString("F0", c) + ", " + at.z.ToString("F0", c) + ")" + (r.Faults.Count > 0 ? ": " + LookCensus.List(r) : string.Empty)
+                              + boxes + " of the backdrop's boxes still standing along the avenue's south pavement; " + near + " of the first " + r.Faults.Count
+                              + " faults within " + NearMetres.ToString("0", c) + " m of the player at (" + at.x.ToString("F0", c) + ", " + at.z.ToString("F0", c) + ")"
+                              + (r.Faults.Count > 0 ? ": " + LookCensus.List(r) : string.Empty)
                               + (faults != null ? "; " + faults : string.Empty) + ": " + (pass ? "PASS" : "FAIL (" + why + ")");
                 if (pass)
                 {
@@ -56,7 +57,8 @@ namespace RealLifeOverhaul.Uptown
                 }
                 Notifications.Show(pass ? NotificationType.Info : NotificationType.Warning, LifeText.LookDone, new Dictionary<string, string>
                 {
-                    { "buildings", (r.Buildings + r.Fillers + r.Behind).ToString(c) }, { "blank", r.LeftBlank.ToString(c) }, { "gaps", r.Gaps.ToString(c) }, { "faults", (r.FaultCount + (faults != null ? 1 : 0) + boxes).ToString(c) }
+                    { "buildings", (r.Buildings + r.Fillers + r.Behind).ToString(c) }, { "blank", r.LeftBlank.ToString(c) }, { "gaps", r.Gaps.ToString(c) },
+                    { "faults", (r.FaultCount + (faults != null ? 1 : 0) + boxes).ToString(c) }
                 }, 16f);
             }
             catch (Exception e)

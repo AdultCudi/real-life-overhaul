@@ -130,7 +130,8 @@ namespace RealLifeOverhaul.Uptown
                 {
                     break;
                 }
-                int wanted = (int)(NewBuildingsRules.Hash("south|" + column.ToString(System.Globalization.CultureInfo.InvariantCulture) + "|" + piece.ToString(System.Globalization.CultureInfo.InvariantCulture)) % (uint)count);
+                string key = "south|" + column.ToString(System.Globalization.CultureInfo.InvariantCulture) + "|" + piece.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                int wanted = (int)(NewBuildingsRules.Hash(key) % (uint)count);
                 for (int s = 0; s < slots.Count; s++)
                 {
                     if (slots[s] <= left && fillable[left - slots[s]] && wanted-- == 0)

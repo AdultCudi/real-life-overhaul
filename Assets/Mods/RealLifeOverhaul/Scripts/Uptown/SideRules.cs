@@ -33,7 +33,10 @@ namespace RealLifeOverhaul.Uptown
         public const float EndInset = 0.6f;      // m kept clear at each end of the wall: a corner's trim stands there
         public const float Least = 6f;           // m of wall across the least panel is laid on
 
-        /// <summary>The names of the game's window materials the panels wear, in the order <see cref="SidePanel.Style"/> counts them: casement, sash, stone-framed and a dark twelve-pane sash.</summary>
+        /// <summary>
+        /// The names of the game's window materials the panels wear, in the order <see cref="SidePanel.Style"/> counts them: casement,
+        /// sash, stone-framed and a dark twelve-pane sash.
+        /// </summary>
         public static readonly string[] Styles = { "M_BuildBack_V1", "M_BuildBack_V2", "M_BuildBack_V4", "M_BuildBack_V5" };
 
         /// <summary>
@@ -109,7 +112,10 @@ namespace RealLifeOverhaul.Uptown
             triangles[3] = 0; triangles[4] = 2; triangles[5] = 1;
         }
 
-        /// <summary>True when a triangle (three corners as x, y, z from <paramref name="at"/>) faces the way <paramref name="nx"/>, <paramref name="nz"/>: Unity's front face is Cross(b - a, c - a).</summary>
+        /// <summary>
+        /// True when a triangle (three corners as x, y, z from <paramref name="at"/>) faces the way <paramref name="nx"/>, <paramref name="nz"/>:
+        /// Unity's front face is Cross(b - a, c - a).
+        /// </summary>
         public static bool Faces(float[] positions, int[] triangles, int at, float nx, float nz)
         {
             int a = triangles[at] * 3, b = triangles[at + 1] * 3, c = triangles[at + 2] * 3;

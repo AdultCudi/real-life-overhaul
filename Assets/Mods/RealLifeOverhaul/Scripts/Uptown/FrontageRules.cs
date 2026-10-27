@@ -437,39 +437,52 @@ namespace RealLifeOverhaul.Uptown
             spec.Others = null;   // its structure is settled: the made buildings' engine takes this design by name
         }
 
-        // A second row behind a building that leaves BackLeast or more of its lot: a building facing the same street, or where none is narrow
-        // enough, one turned to face the yard's open end (a street at a corner, an open lot), so the yard is no hole in the street.
+        // A second row behind a building that leaves BackLeast or more of its lot: a building facing the same street if one with a finished side at
+        // every open end fits, else one turned to face the open end (a street at a corner, an open lot), so the yard is no hole in the street and
+        // no blank wall of a second row stands against it; where neither is to be had, the building facing the street as it is.
         private static void Behind(BuildingsLot lot, IList<DesignEntry> designs, DesignEntry d, float along, float width, List<FrontFill> fills, Want want)
         {
             float behind = lot.Depth - Deep(d);
             int back = behind >= BackLeast ? Filler(designs, width, behind, lot.Id + "|back", want) : -1;
-            if (back >= 0)
+            bool open = want.Sides && want.Ends.Any;
+            if (back >= 0 && (!open || LookRules.Finished(designs[back], want.Ends, want.Facing)))
             {
                 fills.Add(new FrontFill { Design = back, Lot = Ground(lot, along, width, behind, lot.Depth - behind), Back = true });
                 return;
             }
-            if (behind < BackLeast || !want.Sides || !want.Ends.Any)
+            if (behind >= BackLeast && open && TurnedYard(lot, designs, along, width, behind, want, fills))
             {
                 return;
             }
+            if (back >= 0)
+            {
+                fills.Add(new FrontFill { Design = back, Lot = Ground(lot, along, width, behind, lot.Depth - behind), Back = true });
+            }
+        }
+
+        // The yard behind a building given a building turned a quarter to face its open end: its width along the strip becomes the building's
+        // depth, its depth the building's frontage. False when no design fits or the yard has no open end.
+        private static bool TurnedYard(BuildingsLot lot, IList<DesignEntry> designs, float along, float width, float behind, Want want, List<FrontFill> fills)
+        {
             // The yard's ends along the strip: the building's slot begins at the lot's lower end, and reaches its higher end where nothing stands beside it.
             float lotStart = Middle(lot) - lot.Width * 0.5f, slotStart = along - width * 0.5f, slotEnd = along + width * 0.5f, lotEnd = lotStart + lot.Width;
             bool low = want.Ends.Low && slotStart - lotStart < 0.5f, high = want.Ends.High && lotEnd - slotEnd < 0.5f;
             if (!low && !high)
             {
-                return;
+                return false;
             }
             bool alongX = Math.Abs(Math.Cos(lot.Facing * Math.PI / 180.0)) > 0.5;
             bool toHigh = high && (!low || (NewBuildingsRules.Hash(lot.Id + "|yard") & 1u) == 0u || want.Ends.HighRoad && !want.Ends.LowRoad);
             float turned = toHigh ? (alongX ? 90f : 0f) : (alongX ? 270f : 180f);
-            // The yard turned a quarter: its width along the strip becomes the building's depth, its depth the building's frontage.
             var asked = new Want { Ends = default, Facing = turned, Sides = false, Depth = width };
             int pick = Filler(designs, behind, width, lot.Id + "|yard", asked);
-            if (pick >= 0)
+            if (pick < 0)
             {
-                MadeLot yard = Ground(lot, along, width, behind, lot.Depth - behind);
-                fills.Add(new FrontFill { Design = pick, Lot = new MadeLot(yard.X, yard.Z, turned, behind, width), Back = true });
+                return false;
             }
+            MadeLot yard = Ground(lot, along, width, behind, lot.Depth - behind);
+            fills.Add(new FrontFill { Design = pick, Lot = new MadeLot(yard.X, yard.Z, turned, behind, width), Back = true });
+            return true;
         }
 
         // A declaration this may place: its own lot alone as it is planned (never a landmark's or a finished building's span

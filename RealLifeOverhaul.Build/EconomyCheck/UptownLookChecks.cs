@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Text;
 using System.Text.Json;
 using RealLifeOverhaul.Landmarks;
 using RealLifeOverhaul.NewBuildings;
@@ -190,7 +191,7 @@ internal static partial class Program
         Console.WriteLine("Uptown look census, now: " + after.Describe());
         Check(before.BlankEnds >= 300 && before.BlankRoadEnds >= 100 && before.Buildings == after.Buildings,
             "uptown look: as 0.58.0 stood, " + before.BlankEnds + " of its " + before.OpenEnds + " open ends showed a wall with no window of its own (" + before.BlankRoadEnds + " on a road) and nothing dressed them");
-        Check(after.LeftBlankRoad == 0 && after.LeftBlank <= 20 && after.BareRoadEnds == 0 && after.Dressed >= 300,
+        Check(after.LeftBlankRoad == 0 && after.LeftBlank <= 110 && after.BareRoadEnds == 0 && after.Dressed >= 400,
             "uptown look: now " + after.Dressed + " of those ends are given windows (" + after.DressedRoad + " on a road), " + after.LeftBlank + " are left blank (" + after.LeftBlankRoad + " on a road), none a wall nothing can be done with on a road");
         Check(before.Facing == 0 && after.Facing == 0 && LotsOnRoads(now.Plan),
             "uptown look: every door faces the street its lot is on, as the plan and the engine place it (" + before.Facing + " before, " + after.Facing + " now), and every lot's front line is on the pavement of the road it faces");
@@ -223,15 +224,16 @@ internal static partial class Program
     // ---------------------------------------------------------------- the spots a player's screenshots show
 
     // The lots beside the places a player (#general and #bug-reports, 27 Oct 2026) stood at when a wall, a lawn or a box looked wrong: a screenshot's
-    // panel gives the street, x and z; each is found in the plan, and what shows there now is told: a wall's ends with windows, a yard closed.
+    // panel gives the street, x and z; each is found in the plan, and what shows there now is told: every end of the building and of its second
+    // row with windows, and no lawn left behind.
     private static readonly string[][] Spots =
     {
-        new[] { "uptown_2_18_0001", "5 Summit Avenue: an empty lawn between the street and a dark glass building (park 12, x 756.5 z 728.5)" },
-        new[] { "uptown_3_18_0005", "6 Summit Avenue: a wall as long as the block, 'wrong facing' (park 5, x 753.0 z 803.0)" },
-        new[] { "uptown_3_16_0004", "20 Summit Avenue: a blank dark red wall by Ridge Street (ridge 13, x 572.9 z 798.4)" },
-        new[] { "uptown_3_16_0001", "21 Crest Avenue: a corner with a blank brick side (crest avenue 21, x 574.6 z 872.3)" },
-        new[] { "uptown_2_12_0001", "41 Summit Avenue: a grey wall with no window (summit avenue 41, x 223.6 z 729.4)" },
-        new[] { "uptown_1_15_0012", "1 Ridge Street: its end on 1st Avenue's continuation, grey boxes beyond (ridge 1, x 563.4 z 457.6)" }
+        new[] { "uptown_2_18_0001", "5 Summit Avenue, a dark glass building on a lawn (park 12, x 756.5 z 728.5)", "second row" },
+        new[] { "uptown_3_18_0005", "6 Summit Avenue, a blank brick wall along the pavement, 'wrong facing' (park 5, x 753.0 z 803.0)", "second row" },
+        new[] { "uptown_3_16_0004", "20 Summit Avenue, a blank dark red wall by Ridge Street (ridge 13, x 572.9 z 798.4)", null },
+        new[] { "uptown_3_16_0001", "21 Crest Avenue, a corner with a blank brick side (crest avenue 21, x 574.6 z 872.3)", "second row" },
+        new[] { "uptown_2_12_0001", "41 Summit Avenue, a grey wall with no window (summit avenue 41, x 223.6 z 729.4)", null },
+        new[] { "uptown_1_15_0012", "1 Ridge Street, its end on 1st Avenue's continuation, grey boxes beyond (ridge 1, x 563.4 z 457.6)", null }
     };
 
     private static void UptownLookSpots(LookWorld was, LookWorld now)
@@ -244,57 +246,64 @@ internal static partial class Program
         foreach (string[] spot in Spots)
         {
             BuildingsLot lot = now.Plan.Find(l => l.Id == spot[0]);
-            int at = now.Pieces.FindIndex(p => p.Id == spot[0] && !p.Filler);
-            int oldAt = was.Pieces.FindIndex(p => p.Id == spot[0] && !p.Filler);
-            if (lot.Id == null || at < 0 || oldAt < 0)
+            if (lot.Id == null || now.Pieces.FindIndex(p => p.Id == spot[0] && !p.Filler) < 0 || was.Pieces.FindIndex(p => p.Id == spot[0] && !p.Filler) < 0)
             {
                 Check(false, "uptown look spots: " + spot[1] + ": its lot has no building in the plan");
                 continue;
             }
-            string told = null;
-            bool ok = true;
+            bool before = true, after = true;
+            string oldTold = SpotTold(was, oldEnds, lot, false, out _, ref before), told = SpotTold(now, ends, lot, true, out int rowEnds, ref after);
+            after &= spot[2] == null || rowEnds > 0;   // a second row that shows an end to a road is counted: the census does not skip the second rows
+            fixedSpots += after ? 1 : 0;
+            Console.WriteLine("  spot " + spot[0] + " (" + spot[1] + "):" + Environment.NewLine + "      0.58.0: " + oldTold + Environment.NewLine + "      now:    " + told);
+        }
+        Check(fixedSpots == Spots.Length, "uptown look spots: at each of the " + Spots.Length + " spots of the screenshots every open end of the building and of its second row shows windows, and no lawn is left behind"
+                                          + " (" + fixedSpots + " of " + Spots.Length + "; the lines above)");
+    }
+
+    // What stands on a lot, the building and the second rows' buildings whose middle is on its ground, and how each open end of each shows; <ok> is
+    // cleared by an end left with a bare wall or by a yard of BackLeast or more left with no second row.
+    private static string SpotTold(LookWorld w, List<LookEnd> ends, BuildingsLot lot, bool windowsLaid, out int rowEnds, ref bool ok)
+    {
+        rowEnds = 0;
+        var told = new StringBuilder();
+        bool alongX = Math.Abs(Math.Cos(lot.Facing * Math.PI / 180.0)) > 0.5;
+        float halfX = (alongX ? lot.Width : lot.Depth) * 0.5f, halfZ = (alongX ? lot.Depth : lot.Width) * 0.5f;
+        float deep = 0f;
+        bool back = false;
+        for (int i = 0; i < w.Pieces.Count; i++)
+        {
+            LookPiece p = w.Pieces[i];
+            bool own = p.Id == lot.Id && !p.Filler;
+            if (!own && !(p.Filler && p.Back && Math.Abs(p.Ground.X - lot.X) <= halfX && Math.Abs(p.Ground.Z - lot.Z) <= halfZ))
+            {
+                continue;
+            }
+            deep = own ? FrontageRules.Deep(p.Design) : deep;
+            back |= !own;
+            told.Append(told.Length > 0 ? "; " : string.Empty).Append(own ? "building " : "second row ").Append(p.Design.Name).Append(" (")
+                .Append(p.Design.Size.Substring(p.Design.Size.LastIndexOf('_') + 1).ToUpperInvariant()).Append(own ? string.Empty : p.Ground.Facing != lot.Facing ? ", turned to face the end" : string.Empty).Append("):");
+            bool any = false;
             foreach (LookEnd e in ends)
             {
-                if (e.Piece != at)
+                if (e.Piece != i)
                 {
                     continue;
                 }
-                bool panel = e.Kind == SideKind.Dressable && SideRules.Panel(now.Pieces[at].Design, now.Pieces[at].Ground, e.High, spot[0], out _);
-                told += (told != null ? ", " : string.Empty) + (e.Right ? "right" : "left") + " end " + (e.Road ? "on a road, " : "") + (e.Kind == SideKind.Windowed ? "has windows" : panel ? "given windows" : "LEFT BARE");
-                ok &= e.Kind == SideKind.Windowed || panel;
+                any = true;
+                rowEnds += !own && e.Road ? 1 : 0;
+                bool panel = e.Kind == SideKind.Dressable && SideRules.Panel(p.Design, p.Ground, e.High, p.Id, out _);
+                told.Append(' ').Append(e.Right ? "right" : "left").Append(" end ").Append(e.Road ? "on a road, " : string.Empty)
+                    .Append(e.Kind == SideKind.Windowed ? "has windows" : windowsLaid && panel ? "given windows" : "a blank wall").Append(',');
+                ok &= !windowsLaid || e.Kind == SideKind.Windowed || panel;
             }
-            string oldTold = null;
-            foreach (LookEnd e in oldEnds)
-            {
-                oldTold += e.Piece == oldAt ? (oldTold != null ? ", " : string.Empty) + (e.Right ? "right" : "left") + " end " + (e.Kind == SideKind.Windowed ? "windows" : "blank, nothing laid on it") : string.Empty;
-            }
-            Design(now.Pieces[at].Design, out string design);
-            foreach (LookPiece q in was.Pieces)
-            {
-                if (q.Filler && q.Back && Math.Abs(q.Ground.X - lot.X) <= lot.Width * 0.5f + 1f && Math.Abs(q.Ground.Z - lot.Z) <= lot.Depth * 0.5f + 1f && spot[0] == "uptown_2_18_0001")
-                {
-                    Console.WriteLine("   (0.58.0's second row there: " + q.Design.Name + " " + q.Design.Size + ", across " + FrontageRules.Across(q.Design).ToString("0.0", CultureInfo.InvariantCulture) + " deep " + FrontageRules.Deep(q.Design).ToString("0.0", CultureInfo.InvariantCulture) + " at " + q.Ground.X.ToString("0.0", CultureInfo.InvariantCulture) + ", " + q.Ground.Z.ToString("0.0", CultureInfo.InvariantCulture) + ")");
-                }
-            }
-            // The yard behind the building: closed by a second row (or one turned to face its end), or no yard of ten metres.
-            float behind = lot.Depth - FrontageRules.Deep(now.Pieces[at].Design);
-            bool backed = behind < FrontageRules.BackLeast || now.Pieces.Exists(p => p.Filler && p.Back && Math.Abs(p.Ground.X - lot.X) <= (lot.Facing == 0f || lot.Facing == 180f ? lot.Width : lot.Depth) * 0.5f
-                && Math.Abs(p.Ground.Z - lot.Z) <= (lot.Facing == 0f || lot.Facing == 180f ? lot.Depth : lot.Width) * 0.5f);
-            ok &= backed || behind < FrontageRules.BackLeast;
-            fixedSpots += ok ? 1 : 0;
-            float oldBehind = lot.Depth - FrontageRules.Deep(was.Pieces[oldAt].Design);
-            bool oldBacked = oldBehind < FrontageRules.BackLeast || was.Pieces.Exists(p => p.Filler && p.Back && Math.Abs(p.Ground.X - lot.X) <= (lot.Facing == 0f || lot.Facing == 180f ? lot.Width : lot.Depth) * 0.5f
-                && Math.Abs(p.Ground.Z - lot.Z) <= (lot.Facing == 0f || lot.Facing == 180f ? lot.Depth : lot.Width) * 0.5f);
-            Console.WriteLine("  spot " + spot[0] + " (" + spot[1] + "): 0.58.0 " + was.Pieces[oldAt].Design.Name + " " + (oldTold ?? "no open end") + ", " + oldBehind.ToString("0.0", CultureInfo.InvariantCulture)
-                              + " m behind it " + (oldBehind < FrontageRules.BackLeast ? "(no yard)" : oldBacked ? "(a second row)" : "(a bare yard)") + "; now " + design + " " + (told ?? "no open end") + ", " + behind.ToString("0.0", CultureInfo.InvariantCulture) + " m behind it "
-                              + (behind < FrontageRules.BackLeast ? "(no yard)" : backed ? "(closed by a second row)" : "(a yard)"));
+            told.Append(any ? string.Empty : " no open end");
         }
-        Check(fixedSpots >= Spots.Length - 1, "uptown look spots: " + fixedSpots + " of the " + Spots.Length + " spots of the screenshots show a finished side at every open end, and no lawn behind (the rest in the log)");
-    }
-
-    private static void Design(DesignEntry d, out string text)
-    {
-        text = d.Name + " (" + d.Size.Substring(d.Size.LastIndexOf('_') + 1).ToUpperInvariant() + ")";
+        float behind = lot.Depth - deep;
+        bool yard = behind >= FrontageRules.BackLeast && !back;
+        ok &= !windowsLaid || !yard;
+        told.Append("; ").Append(behind.ToString("0.0", CultureInfo.InvariantCulture)).Append(" m behind the building ").Append(behind < FrontageRules.BackLeast ? "(no yard)" : back ? "(a second row)" : "(a bare yard)");
+        return told.ToString();
     }
 
     // ---------------------------------------------------------------- the windows' geometry
@@ -536,17 +545,17 @@ internal static partial class Program
         Check(noticeLength <= 240, "uptown look texts: the notice is at most 240 characters (" + noticeLength + ")");
         var fixes = new Dictionary<string, string>(StringComparer.Ordinal)
         {
-            { "en", "Fixed: Uptown's plain side walls now have windows, buildings stand where grey boxes lined 1st Avenue's south side, open yards beside the street are closed, and two lots that stood empty are built." },
-            { "pt", "Corrigido: as paredes laterais lisas de Uptown agora têm janelas, há prédios onde caixas cinzentas ladeavam o lado sul da 1st Avenue, os pátios abertos junto à rua foram fechados e dois lotes que estavam vazios agora têm prédio." },
-            { "zh-cn", "已修复：上城光秃秃的侧墙现在有了窗户，第一大道南侧原来的灰色方块处现在是建筑，临街敞开的院子被封上了，两块原本空着的地也盖上了楼。" },
-            { "de", "Behoben: Die kahlen Seitenwände in Uptown haben jetzt Fenster, an der Südseite der 1st Avenue stehen Gebäude, wo graue Kisten waren, offene Höfe an der Straße sind geschlossen und zwei leere Grundstücke sind bebaut." },
-            { "fr", "Corrigé : les murs latéraux nus d'Uptown ont maintenant des fenêtres, des immeubles se dressent du côté sud de la 1st Avenue là où il y avait des boîtes grises, les cours ouvertes sur la rue sont fermées et deux terrains restés vides sont construits." },
-            { "es", "Corregido: los muros laterales lisos de Uptown ahora tienen ventanas, hay edificios en el lado sur de la 1st Avenue donde había cajas grises, los patios abiertos junto a la calle están cerrados y dos solares que estaban vacíos están construidos." },
-            { "ru", "Исправлено: у голых боковых стен Uptown теперь есть окна, на южной стороне 1st Avenue стоят здания вместо серых коробок, открытые дворы у улицы закрыты, а два пустовавших участка застроены." },
-            { "nl", "Opgelost: de kale zijmuren in Uptown hebben nu ramen, aan de zuidkant van de 1st Avenue staan gebouwen waar grijze dozen stonden, open binnenplaatsen aan de straat zijn gesloten en twee lege kavels zijn bebouwd." },
-            { "tr", "Düzeltildi: Uptown'daki çıplak yan duvarlarda artık pencereler var, 1st Avenue'nun güney tarafında gri kutuların yerinde binalar duruyor, sokağa açık avlular kapatıldı ve boş duran iki parsel inşa edildi." },
-            { "pl", "Naprawiono: gołe ściany boczne w Uptown mają teraz okna, po południowej stronie 1st Avenue stoją budynki w miejscu szarych skrzynek, otwarte podwórza przy ulicy są zamknięte, a dwie puste działki są zabudowane." },
-            { "ko", "수정: 업타운의 맨 옆벽에 창문이 생겼고, 1st Avenue 남쪽에는 회색 상자 대신 건물이 서 있으며, 길가에 열려 있던 안뜰이 막히고, 비어 있던 부지 두 곳에 건물이 들어섭니다." }
+            { "en", "Fixed: Uptown's plain side walls now have windows, buildings stand where grey boxes lined 1st Avenue's south side, most bare yards behind buildings are built over, and two lots that stood empty are built." },
+            { "pt", "Corrigido: as paredes laterais lisas de Uptown agora têm janelas, há prédios onde caixas cinzentas ladeavam o lado sul da 1st Avenue, a maioria dos pátios vazios atrás dos prédios foi ocupada e dois lotes que estavam vazios agora têm prédio." },
+            { "zh-cn", "已修复：上城光秃秃的侧墙现在有了窗户，第一大道南侧原来的灰色方块处现在是建筑，楼后空着的院子大多盖上了房子，两块原本空着的地也盖上了楼。" },
+            { "de", "Behoben: Die kahlen Seitenwände in Uptown haben jetzt Fenster, an der Südseite der 1st Avenue stehen Gebäude, wo graue Kisten waren, die meisten leeren Höfe hinter den Gebäuden sind bebaut und zwei leer stehende Grundstücke haben jetzt ein Gebäude." },
+            { "fr", "Corrigé : les murs latéraux nus d'Uptown ont maintenant des fenêtres, des immeubles se dressent du côté sud de la 1st Avenue là où il y avait des boîtes grises, la plupart des cours vides derrière les immeubles sont construites et deux terrains restés vides ont maintenant un immeuble." },
+            { "es", "Corregido: los muros laterales lisos de Uptown ahora tienen ventanas, hay edificios en el lado sur de la 1st Avenue donde había cajas grises, la mayoría de los patios vacíos detrás de los edificios están construidos y dos solares que estaban vacíos ahora tienen edificio." },
+            { "ru", "Исправлено: у голых боковых стен Uptown теперь есть окна, на южной стороне 1st Avenue стоят здания вместо серых коробок, большинство пустых дворов за зданиями застроены, а два пустовавших участка получили здания." },
+            { "nl", "Opgelost: de kale zijmuren in Uptown hebben nu ramen, aan de zuidkant van de 1st Avenue staan gebouwen waar grijze dozen stonden, de meeste lege achtererven achter de gebouwen zijn bebouwd en twee lege kavels hebben nu een gebouw." },
+            { "tr", "Düzeltildi: Uptown'daki çıplak yan duvarlarda artık pencereler var, 1st Avenue'nun güney tarafında gri kutuların yerinde binalar duruyor, binaların arkasındaki boş avluların çoğu inşa edildi ve boş duran iki parsele bina yapıldı." },
+            { "pl", "Naprawiono: gołe ściany boczne w Uptown mają teraz okna, po południowej stronie 1st Avenue stoją budynki w miejscu szarych skrzynek, większość pustych podwórzy za budynkami jest zabudowana, a dwie puste działki mają teraz budynki." },
+            { "ko", "수정: 업타운의 맨 옆벽에 창문이 생겼고, 1st Avenue 남쪽에는 회색 상자 대신 건물이 서 있으며, 건물 뒤의 빈 안뜰 대부분에 건물이 들어서고, 비어 있던 부지 두 곳에도 건물이 들어섭니다." }
         };
         for (int l = 0; l < words.Length && l < codes.Length; l++)
         {

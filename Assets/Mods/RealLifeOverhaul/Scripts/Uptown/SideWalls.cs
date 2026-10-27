@@ -164,11 +164,11 @@ namespace RealLifeOverhaul.Uptown
                     UnityEngine.Object.Destroy(Laid[i]);
                 }
             }
-            for (int i = 0; i < Meshes.Count; i++)
+            foreach (Mesh mesh in Meshes)
             {
-                if (Meshes[i] != null)
+                if (mesh != null)
                 {
-                    UnityEngine.Object.Destroy(Meshes[i]);
+                    UnityEngine.Object.Destroy(mesh);
                 }
             }
             Laid.Clear();

@@ -89,7 +89,8 @@ namespace RealLifeOverhaul.Uptown
                 for (int r = 0; r < renderers.Count; r++)
                 {
                     Renderer renderer = renderers[r];
-                    if (renderer == null || !renderer.enabled || renderer.shadowCastingMode == UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly || renderer is TrailRenderer || renderer is ParticleSystemRenderer)
+                    if (renderer == null || !renderer.enabled || renderer.shadowCastingMode == UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly
+                        || renderer is TrailRenderer || renderer is ParticleSystemRenderer)
                     {
                         continue;
                     }
@@ -98,7 +99,8 @@ namespace RealLifeOverhaul.Uptown
                     Material[] materials = renderer.sharedMaterials;
                     for (int m = 0; materials != null && m < materials.Length; m++)
                     {
-                        string why = materials[m] == null ? "no material" : materials[m].shader == null ? "no shader" : materials[m].shader.name.IndexOf("InternalError", StringComparison.Ordinal) >= 0 || !materials[m].shader.isSupported
+                        string why = materials[m] == null ? "no material" : materials[m].shader == null ? "no shader"
+                            : materials[m].shader.name.IndexOf("InternalError", StringComparison.Ordinal) >= 0 || !materials[m].shader.isSupported
                             ? "a shader that does not draw (" + materials[m].shader.name + ")" : null;
                         if (why == null)
                         {

@@ -43,7 +43,8 @@ namespace RealLifeOverhaul.Uptown
                 }
                 CutFiller(root, d);
                 Fillers.Add(look);
-                FillerPieces.Add(new LookPiece { Id = "filler " + FillerPieces.Count.ToString(System.Globalization.CultureInfo.InvariantCulture), Design = d, Ground = f.Lot, Filler = true, Back = f.Back });
+                string name = "filler " + FillerPieces.Count.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                FillerPieces.Add(new LookPiece { Id = name, Design = d, Ground = f.Lot, Filler = true, Back = f.Back });
             }
             return Fillers.Count;
         }

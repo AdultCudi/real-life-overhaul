@@ -158,7 +158,8 @@ namespace RealLifeOverhaul.Uptown
             if (away > TurnLeast)
             {
                 r.Facing++;
-                Note(r, p.Id, p.Ground.X, p.Ground.Z, "its door faces " + NewBuildingsRules.Turn(yaw + NewBuildingsRules.FrontOf(p.Design)).ToString("0", CultureInfo.InvariantCulture) + ", its street lies "
+                float doorFaces = NewBuildingsRules.Turn(yaw + NewBuildingsRules.FrontOf(p.Design));
+                Note(r, p.Id, p.Ground.X, p.Ground.Z, "its door faces " + doorFaces.ToString("0", CultureInfo.InvariantCulture) + ", its street lies "
                         + p.Ground.Facing.ToString("0", CultureInfo.InvariantCulture) + " (" + p.Design.Name + ")");
             }
         }
@@ -188,14 +189,15 @@ namespace RealLifeOverhaul.Uptown
                     LookPiece p = pieces[e.Piece];
                     r.BareEnds++;
                     r.BareRoadEnds += e.Road ? 1 : 0;
-                    Note(r, p.Id, p.Ground.X, p.Ground.Z, "its " + (e.Right ? "right" : "left") + " side is a wall nothing can be done with and open" + (e.Road ? " to a road" : "") + " (" + p.Design.Name + ")");
+                    Note(r, p.Id, p.Ground.X, p.Ground.Z, "its " + (e.Right ? "right" : "left") + " side is a wall nothing can be done with and open"
+                                                          + (e.Road ? " to a road" : "") + " (" + p.Design.Name + ")");
                 }
             }
         }
 
         /// <summary>
         /// The ends of the pieces on the street's front that nothing stands against, into the caller's list (cleared): a piece's end is open
-        /// when the pieces against it cover less of its face than <see cref="Closed"/>. Second rows are left out.
+        /// when the pieces against it cover less of its face than <see cref="Closed"/>. Second rows count too: a street shows the side of the one at a strip's end.
         /// </summary>
         public static void OpenEnds(IList<LookPiece> pieces, List<LookEnd> into)
         {
@@ -219,10 +221,6 @@ namespace RealLifeOverhaul.Uptown
             for (int i = 0; i < boxes.Count; i++)
             {
                 LookPiece p = pieces[boxes[i].At];
-                if (p.Back)
-                {
-                    continue;
-                }
                 for (int end = 0; end < 2; end++)
                 {
                     bool high = end == 1;
