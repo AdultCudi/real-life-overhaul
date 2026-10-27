@@ -134,6 +134,12 @@ namespace RealLifeOverhaul.Careers
             box.Meter("reallife_ibox_done", LookRules.Fill(e.Homework, c.Homework),
                 CareersText.Fill("reallife_ibox_homework", "done", e.Homework.ToString(), "set", set.ToString(), "of", c.Homework.ToString()),
                 e.Homework < set ? CellTone.Yellow : CellTone.Green);
+            if (e.HomeworkMinutes > 0 && StudyRules.HomeworkOpen(e))
+            {
+                bool revision = e.Homework >= set || e.Homework >= c.Homework;   // the piece sat on: homework still set, or revision once it is all done
+                box.Note(CareersText.Fill(revision ? "reallife_ibox_revision_piece" : "reallife_ibox_homework_piece", "number", (e.Homework + 1).ToString(), "of", c.Homework.ToString(),
+                    "done", e.HomeworkMinutes.ToString(), "total", StudyRules.HomeworkFull.ToString()));
+            }
             box.Section("reallife_ibox_sec_money");
             box.RowPair("reallife_campus_col_paid", CareersText.Money(e.Fee), "reallife_ibox_student_loan", CareersText.Money(e.Loan));
             box.Row("reallife_ibox_instalments", CareersText.T("reallife_ibox_of", "value", e.Instalments.ToString(), "most", StudyRules.Instalments(c).ToString()));

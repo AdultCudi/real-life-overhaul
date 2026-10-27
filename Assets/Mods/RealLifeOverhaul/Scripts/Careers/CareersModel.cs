@@ -39,6 +39,7 @@ namespace RealLifeOverhaul.Careers
         public int StartTold;       // the class whose start was last told ("your class starts now"), day * 1440 + its minute; 0 none (StudyRules.StartsNow)
         public int Excused;         // classes of Seen excused for an internet outage: neither attended nor missed (StudyRules.Excuse)
         public int ExcusedDay = -1; // the day of the last of them; -1 none
+        public int HomeworkMinutes; // game minutes sat on the piece of homework (or revision) being done, under StudyRules.HomeworkFull; 0 none (StudyRules.HomeworkSat)
 
         public EnrolStage At => (EnrolStage)Stage;
 

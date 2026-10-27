@@ -43,6 +43,7 @@ namespace RealLifeOverhaul.Careers
         private PlayerActivityState _before = PlayerActivityState.NotStarted;
         private float _nextType;
         private ButtonInfo[] _stop;
+        private string _why;            // who or what ended it, said by the way out taken (Sitting.Why, for the log line of an early end)
         private int _orderFrame = -1;   // the frame the walk order to the desk was given in (DeskGame.SetOffSeen)
 
         /// <summary>What the desk offers: a course's class or exam, whether it can be begun now, its button's words, and why not.</summary>
@@ -313,6 +314,7 @@ namespace RealLifeOverhaul.Careers
                 {
                     if (state == PlayerActivityState.Finished)
                     {
+                        _why = _why ?? "the game's panel (energy ran out, the night, an event, or a save or load)";
                         Finish();   // however the panel ends it: the minutes counted once, and the player stood up
                         return;
                     }
@@ -359,6 +361,7 @@ namespace RealLifeOverhaul.Careers
                 _sitting?.SkipWorked(_tally.Done);
                 if (over)
                 {
+                    _why = "the time being done";
                     Finish();
                 }
                 else if (Time.time >= _nextType)
@@ -371,6 +374,13 @@ namespace RealLifeOverhaul.Careers
             {
                 Guard.Fail(FrameGuard, fault);
             }
+        }
+
+        // The player pressed Stop on the game's panel.
+        private void Stopped()
+        {
+            _why = _why ?? "the player pressing Stop";
+            Finish();
         }
 
         public void Finish()
@@ -411,6 +421,10 @@ namespace RealLifeOverhaul.Careers
                 _sitting = null;
                 if (_tally.Settle(CareersGame.Clock, out int minutes, out bool whole) == TallyEnd.Counted)
                 {
+                    if (sitting != null)
+                    {
+                        sitting.Why = _why;
+                    }
                     sitting?.SkipEnded(minutes, whole);   // once: a second end finds the tally settled
                 }
             }
@@ -556,7 +570,7 @@ namespace RealLifeOverhaul.Careers
                 if (_mine)
                 {
                     return _state == PlayerActivityState.Running
-                        ? _stop ?? (_stop = new[] { new ButtonInfo(ClassPlayRules.DeskStopName, "reallife_job_skip_stop", "gray", Guard.Way(Finish), PlayerAction.Cancel) })
+                        ? _stop ?? (_stop = new[] { new ButtonInfo(ClassPlayRules.DeskStopName, "reallife_job_skip_stop", "gray", Guard.Way(Stopped), PlayerAction.Cancel) })
                         : null;
                 }
                 if (_offer.Only)
