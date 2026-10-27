@@ -283,7 +283,7 @@ internal static partial class Program
         Check(floors.Contains("CampusRules.TellAway(") && list.Contains("CareersStore.CampusToldKey"), "university home: told once through the save's mark, and the mark is listed among the feature's save keys");
         Check(building.Contains("filed != null && filed != CampusRules.BookId)") && !building.Contains("&& (filed == null || filed == CampusRules.BookId)"),
             "university home: another feature filed in the building is a reason of its own, not a building missing from the city");
-        Check(precincts.Contains("SpecialNameBook.GivesWay(SpecialBuildings.Players(found), SpecialBuildings.HolderOf(found), \"police_\")") && precincts.Contains("|| (!had && gaveWay.Contains(district.Key))"),
+        Check(precincts.Contains("SpecialNameBook.GivesWay(SpecialBuildings.Players(found), SpecialBuildings.HolderOf(found), \"police_\")") && precincts.Contains("|| (!had && pass.GaveWay.Contains(district.Key))"),
             "university home: a district whose saved station gave way (to the university or a player) has its new station named in the precincts-moved notice");
         string desks = Read(@"Licences\Driving\DrivingSchool.cs");
         float aside = CampusConst(desks, "Aside"), deskReach = CampusConst(desks, "Reach");

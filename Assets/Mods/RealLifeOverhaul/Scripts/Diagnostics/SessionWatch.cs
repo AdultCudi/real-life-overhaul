@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using BAModAPI;
+using RealLifeOverhaul.BizPace;
 using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.Profiling;
@@ -99,7 +100,7 @@ namespace RealLifeOverhaul
         private double _threadSum, _threadSpan, _othersSum, _othersWorst;
         private long _faultsSum, _faultsWorst;
         private int _faultFrames;
-        private readonly int[] _causes = new int[6];   // the frames over 33 ms, by FrameCause
+        private readonly int[] _causes = new int[7];   // the frames over 33 ms, by FrameCause
         private bool _timing;                  // the engine offers its own frame timing (FrameTimingManager)
         private readonly FrameTiming[] _timings = new FrameTiming[4];
         private double _gpuWorst;
@@ -203,6 +204,7 @@ namespace RealLifeOverhaul
             HotSpots.SampleEvery = _exact ? 1 : HotSpots.AllocEvery;
             HotSpots.Reset();
             HotSpots.On = true;   // the mod's own scripts are timed from now on (Core/HotSpots)
+            BizPaceWatch.Arm(true);   // and what they add to BizMan's open, switch and tab change, step by step (BizPace)
             _collections = GC.CollectionCount(0);
             _collectionsLastFrame = _collections;
             _heapLastFrame = GC.GetTotalMemory(false);
@@ -253,6 +255,7 @@ namespace RealLifeOverhaul
         {
             LetGoOfDay();
             HotSpots.On = false;
+            BizPaceWatch.Arm(false);
             FrameSteps.Want(false);
             if (_collector.Valid)
             {
@@ -331,6 +334,7 @@ namespace RealLifeOverhaul
         private void OnUpdate()
         {
             HotSpots.Settle(Time.frameCount);   // the mod's own scripts' figures for the frame before this one are complete
+            BizPaceWatch.Frame(Time.frameCount);   // a BizMan step whose window is over is closed (BizPace)
             // The time the frame before this one took, loading screens and pauses left out: they are not stutter.
             float took = Time.unscaledDeltaTime;
             Midnight(took);

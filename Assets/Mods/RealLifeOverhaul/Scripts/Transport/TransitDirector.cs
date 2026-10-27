@@ -543,11 +543,21 @@ namespace RealLifeOverhaul
                     built++;
                 }
             }
+            // The buses' bodies: the three the director keeps, and one spare for a bus driving off, so that no bus is built in play until a fifth is wanted.
+            _bus.Prepare();
+            _next.Prepare();
+            _seenOff.Prepare();
+            if (_spare.Count == 0 && _made == 0)
+            {
+                var spare = new TransitBus(_root.gameObject);
+                spare.Prepare();
+                _spare.Add(spare);
+            }
             if (Meta.Dev.Verbose)
             {
                 double ms = (System.Diagnostics.Stopwatch.GetTimestamp() - began) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
                 Logger?.Info("Transit check (dressings): " + built + " built behind the loading screen for about " + want + " places of " + TransitMap.Lines.Count
-                             + " lines, in " + ms.ToString("F1", CultureInfo.InvariantCulture) + " ms (wanted: none built in play): PASS.");
+                             + " lines, and the buses' bodies, in " + ms.ToString("F1", CultureInfo.InvariantCulture) + " ms (wanted: none built in play): PASS.");
             }
             return true;
         }

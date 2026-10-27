@@ -1,5 +1,6 @@
 using System;
 using UI.Notification;
+using UnityEngine;
 
 namespace RealLifeOverhaul.Economy.Ventures
 {
@@ -11,7 +12,12 @@ namespace RealLifeOverhaul.Economy.Ventures
         private void OnHour()
         {
             using var hotSpot = HotSpots.Time(HotOnHour);
-            if (!_running || _broken || Save == null || _file.Pledges.Count == 0)
+            if (!_running || _broken || Save == null)
+            {
+                return;
+            }
+            FinishDay();   // the hour reads what the day made: the weekly look is finished first
+            if (_file.Pledges.Count == 0)
             {
                 return;
             }
@@ -36,6 +42,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
             try
             {
+                FinishDay();   // a look still owed to the day before is made first
                 int day = Save.Day;
                 if (day == _file.SettledDay)
                 {
@@ -93,7 +100,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             if (Settings.VenturesInvestors && day - _file.OfferDay >= VenturesCatalogue.OfferEveryDays)
             {
                 _file.OfferDay = day;
-                Look(day, level);
+                LookBegin(day, level);
             }
         }
 
@@ -164,58 +171,74 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
         }
 
-        // The weekly look: a second round where a target was met, else perhaps a tycoon for a business that does well.
-        private void Look(int day, int level)
+        private static readonly int HotLook = HotSpots.Slot("Economy: VenturesDirector.LookStep");
+        private const double LookSliceMs = 1.5;   // milliseconds of businesses looked at in a frame
+
+        // The weekly look: a second round where a target was met, else perhaps a tycoon for a business that does well. It is
+        // nothing the game reads (the file's offers, told on the phone), so the day only begins it: the businesses are taken
+        // now and looked at one after the other in the frames after (Core/DaySpread; LookRound is the same look made in
+        // one go). It took 22 ms of the frame the game turned the day in, on a save of 14 businesses (a player's log, 27 Oct 2026).
+        private void LookBegin(int day, int level)
         {
-            Books.Businesses(_businesses);
-            int phase = VenturesBridges.Climate.Phase;
-            for (int i = 0; i < _businesses.Count; i++)
+            FinishDay();   // (a look still owed is made before this one is begun)
+            _lookList.Clear();
+            Books.Businesses(_lookList);
+            _lookDay = day;
+            _lookLevel = level;
+            _lookPhase = VenturesBridges.Climate.Phase;
+            _lookAt = 0;
+            DaySpread.Shared.Add(this, "Ventures: the weekly look", _lookStep, Time.frameCount, HotLook);
+        }
+
+        // A slice of the look: the businesses that fit, from where the last slice stopped; true when every one has been looked at.
+        private bool LookSteps()
+        {
+            if (!_running || _broken || _file == null || Save == null)
             {
-                BuildingRegistration r = _businesses[i];
-                string place = Books.Key(r.Address);
-                BusinessFigures b = VenturesGame.Figures(r);
-                Deal due = null;
-                for (int d = 0; d < _file.Deals.Count; d++)
-                {
-                    due = _file.Deals[d].Place == place && _file.Deals[d].FollowOn ? _file.Deals[d] : due;
-                }
-                if (due != null)
-                {
-                    due.FollowOn = false;
-                    Investor again = _file.Investor(due.InvestorId);
-                    Offer second = again != null && day >= again.ClosedUntil ? OfferRules.Make(_file, again, place, VenturesGame.Name(r), b, day, level, OfferSource.FollowOn) : null;
-                    OfferMade(second, again, b, 100, 0, day);
-                    continue;
-                }
-                if (!OfferRules.Qualifies(b) || _file.HasOffer(place))
-                {
+                _lookList.Clear();
+                return true;
+            }
+            WorkSlice slice = WorkSlice.Of(LookSliceMs, 1);
+            while (_lookAt < _lookList.Count && slice.More())
+            {
+                LookOne(_lookList[_lookAt++], _lookDay, _lookLevel, _lookPhase);
+            }
+            if (_lookAt < _lookList.Count)
+            {
+                return false;
+            }
+            _lookList.Clear();
+            return true;
+        }
+
+        // What is left of the day's steps, played now: the hour, the next day, the save and standing down need the day whole.
+        private void FinishDay()
+        {
+            DaySpread.Shared.Flush(this);
+        }
+
+        private void LookOne(BuildingRegistration r, int day, int level, int phase)
+        {
+            string place = Books.Key(r.Address);
+            BusinessFigures b = VenturesGame.Figures(r);
+            string name = VenturesGame.Name(r);
+            LookResult result = LookRound.One(_file, day, level, phase, place, name, b);
+            switch (result.Kind)
+            {
+                case LookKind.FollowOn:
+                    OfferMade(result.Offer, result.Investor, b, result.Chance, 0, day);
+                    break;
+                case LookKind.NotAsked:
                     if (Verbose)
                     {
-                        Logger?.Info("Ventures check (the weekly look, day " + day + "): " + VenturesGame.Name(r) + " made a profit on " + b.ProfitableDays + " of its last 14 days and "
+                        Logger?.Info("Ventures check (the weekly look, day " + day + "): " + name + " made a profit on " + b.ProfitableDays + " of its last 14 days and "
                                      + b.AvgProfit7.ToString("0") + " a day lately (needs " + VenturesCatalogue.ProfitDaysNeeded + " and " + VenturesCatalogue.OfferProfitFloor + "): no offer.");
                     }
-                    continue;
-                }
-                // A tycoon who sees people, has no offer out and no deal here; one who likes the sector first.
-                Investor who = null;
-                for (int v = 0; v < _file.Investors.Count; v++)
-                {
-                    Investor investor = _file.Investors[v];
-                    if (investor.Kind == InvestorKind.Tycoon && day >= investor.ClosedUntil && !_file.HasOfferFrom(investor.Id) && !_file.HasDeal(place, investor.Id)
-                        && (who == null || (investor.LikesSector(b.Sector) && !who.LikesSector(b.Sector))))
-                    {
-                        who = investor;
-                    }
-                }
-                if (who == null)
-                {
-                    continue;
-                }
-                int chance = OfferRules.Chance(who.LikesSector(b.Sector), phase);
-                int roll = VenturesRandom.Percent(_file.Seed, day, VenturesRandom.Of(place));
-                OfferMade(roll < chance ? OfferRules.Make(_file, who, place, VenturesGame.Name(r), b, day, level, OfferSource.Inbound) : null, who, b, chance, roll, day);
+                    break;
+                case LookKind.Rolled:
+                    OfferMade(result.Offer, result.Investor, b, result.Chance, result.Roll, day);
+                    break;
             }
-            _businesses.Clear();
         }
 
         private void OfferMade(Offer offer, Investor investor, in BusinessFigures b, int chance, int roll, int day)

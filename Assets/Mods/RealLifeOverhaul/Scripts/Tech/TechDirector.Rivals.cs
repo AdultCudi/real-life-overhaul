@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Tech
@@ -6,6 +7,8 @@ namespace RealLifeOverhaul.Tech
     public sealed partial class TechDirector
     {
         private readonly List<FirmSeen> _seen = new List<FirmSeen>(8);
+        private int _seenStamp = -1, _seenDay = -1;   // what InCity's last read of the businesses was made on
+        private string _seenAcademy;
         private readonly List<string> _schools = new List<string>(2);
         private readonly List<Competitor> _competitors = new List<Competitor>(32), _competitorPool = new List<Competitor>(32);
 
@@ -50,8 +53,18 @@ namespace RealLifeOverhaul.Tech
         {
             if (read)
             {
-                FirmsGame.Seen(_seen, TechBridges.AcademyNow());
-                TechBridges.SchoolsNow(_schools);
+                // The player's businesses are walked again only when a registration changed (the game says so), the day turned or the academy's
+                // type moved: opening the start screen again and again reads nothing of the city.
+                string academy = TechBridges.AcademyNow();
+                int day = Save != null ? Save.Day : -1;
+                if (_seenStamp != _registrationStamp || _seenDay != day || !string.Equals(_seenAcademy, academy, StringComparison.Ordinal))
+                {
+                    FirmsGame.Seen(_seen, academy);
+                    TechBridges.SchoolsNow(_schools);
+                    _seenStamp = _registrationStamp;
+                    _seenDay = day;
+                    _seenAcademy = academy;
+                }
             }
             VentureFile v = Ventures;
             return CompetitorRules.Gather(kind, v != null ? v.Startups : null, _schools, _seen, null, null, null);

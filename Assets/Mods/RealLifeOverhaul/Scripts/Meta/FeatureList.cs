@@ -399,6 +399,7 @@ namespace RealLifeOverhaul.Meta
                 .Owns(Settings.ShadowReachId, Settings.ShadowCascadesId, Settings.LodReachId)
                 .Test("reallife_perf_test_session", SessionWatch.TestSay)
                 .Test("reallife_perf_test_daywarm", DayWarm.TestNow)
+                .Test("reallife_perf_test_bizman", BizPace.BizPaceTest.Run)
                 .Fact("perf_warm_after", () => Guide.Number(DayWarm.StartAfter))
                 .Fact("session_long_ms", () => Guide.Number(SessionWatch.LongFrame * 1000f))
                 .Fact("session_long_most", () => Whole(SessionWatch.LongFramesPerMinute));

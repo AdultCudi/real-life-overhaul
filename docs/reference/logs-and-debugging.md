@@ -120,6 +120,7 @@ all, the most under Transport: TransitDirector.Update (6 KB a second), ...; on f
 | handlers put back on the game's events | `Core/EventHold`: times a handler had to be put on one of the game's event fields, and times a changed field was looked into | a few after a load, then 0. Sixty a minute is a holder putting itself back every second |
 | searches of the whole scene (while playing) | `Core/SceneFinds`: every `FindObjectsByType` and `Resources.FindObjectsOfTypeAll` the mod makes | each is a frame of about 110 ms in this game. "While playing" must be 0: what a search finds is found behind the loading screen (`ScenePrewarm`) |
 | the mod's own scripts | `Core/HotSpots`: every Update, LateUpdate and FixedUpdate of the mod's and its handlers of the game's events (a new hour or day, a door, the city map, a character's change of look), each named "Feature: Class.Method"; their time a frame on average and in the worst frame, and the three that took the most | well under a millisecond a frame on average. A name whose worst is tens of milliseconds is a stutter of the mod's, and the name says where |
+| BizMan: opens, switches and tab changes | `BizPace/BizPaceWatch`: BizMan's business view switched on (an open), another business picked in it (a switch) or another tab (a tab change), each counted with what the mod's handlers added, the worst, the owner's budget (2 ms to an open, 1 ms to the others) and the slowest handler; absent when BizMan was not used in the minute. Each episode is a line of its own, "BizMan check (open at ...)" | the worst under its budget. A name here is the handler to look at; Options > Tests > Check BizMan's speed walks every business and tab and says PASS or FAIL |
 | the heap grew under them | what the mod's own scripts allocated: counted exactly in every frame where the runtime counts each thread's allocations (`GC.GetAllocatedBytesForCurrentThread`, found out when the record starts), else read from the heap's size one frame in eight; beside it what the heap grew by in all | the mod's share of "grown by". The three names under which it grew the most are where to look first |
 
 A second line a minute says what grew since the first minute of the record, so that a leak names itself (`Diagnostics/ObjectKinds`):
@@ -209,8 +210,11 @@ The game runs every feature's day in the one frame it turns the day in (`GameMan
 ```
 Session check (the game's midnight, day 10): the mod's scripts took 4.2 ms of the frame the game turned the day in (61 ms
 in all); by part (a part inside another counts under both): Event: EconomyDirector.OnDay 2.1 ms, ...; the day's code
-compiled ahead: yes (wanted: under 10 ms once it is): PASS
+left for the frames after: 2 step(s) (Core/DaySpread), 96 log line(s) (Core/DayLines); the day's code
+compiled ahead: yes (wanted: under 20 ms once it is): PASS
 ```
+
+The steps are the work of the midnight that the game does not read in that frame, played in the frames after it (`Core/DaySpread`, `Core/DayPump`); the log lines are the Info lines the day's handlers wrote, held and written a few a frame (`Core/DayLines`), in order. The list of what stays in the frame, and why, is [RLO-PERF-021](../standards/performance.md).
 
 The day's code is compiled ahead a slice a frame, some twenty seconds after each load (`Core/DayWarm`, `Core/CodeWarm`): Mono compiles a method the first time it is called, and before this the first midnight of a session compiled every feature's day in that one frame (148.7 ms of the mod's at the first midnight of a session on 25 Oct 2026, ten to twenty times less at every midnight after). Its line, once it is done:
 

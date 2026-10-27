@@ -5,6 +5,7 @@ using System.Text;
 using BAModAPI;
 using Blueprints;
 using Buildings;
+using RealLifeOverhaul.BizPace;
 using Streets;
 using UI.Load;
 using UI.Notification;
@@ -44,6 +45,10 @@ namespace RealLifeOverhaul.Offices
         private readonly List<CityBuildingController> _shops = new List<CityBuildingController>(128);
         private readonly List<CityBuildingController> _offices = new List<CityBuildingController>(96);
         private readonly HashSet<Address> _watched = new HashSet<Address>();
+        // Each watched building's controller, to read its record when the game says it changed; and the facts the choice keys on as the last event for
+        // the building left them (BizPaceRules.Signature).
+        private readonly Dictionary<Address, CityBuildingController> _at = new Dictionary<Address, CityBuildingController>(256);
+        private readonly Dictionary<Address, int> _looked = new Dictionary<Address, int>(256);
         private readonly HashSet<Address> _forSale = new HashSet<Address>();
         private readonly HashSet<string> _kept = new HashSet<string>(StringComparer.Ordinal);
         private readonly List<ConversionRow> _rows = new List<ConversionRow>(224);
@@ -109,14 +114,24 @@ namespace RealLifeOverhaul.Offices
             }
         }
 
-        // The game's own event, for any building: only one of the watched buildings asks for a new look.
+        private static readonly int BizChange = HotSpots.Slot("Offices: Conversions.OnChange");
+
+        // The game's own event, for any building (BizMan raises it each time a business view or the Schedule tab is left): only a change
+        // in the facts the choice keys on, at one of the watched buildings, asks for a new look. The first event for a building has
+        // nothing to be compared with and asks; once asked, the flag stays until the look is made, so no change is missed.
         private void OnChange(Address address)
         {
+            using var timed = BizPaceWatch.Time(BizChange);   // a step of BizMan closing a business or leaving a tab (BizPace)
             try
             {
-                if (address != null && _watched.Contains(address))
+                if (address != null && _at.TryGetValue(address, out CityBuildingController c) && c != null)
                 {
-                    _dirty = true;
+                    int now = Facts(c);
+                    if (!_looked.TryGetValue(address, out int was) || BizPaceRules.Moved(was, now))
+                    {
+                        _looked[address] = now;
+                        _dirty = true;
+                    }
                 }
             }
             catch (Exception e)
@@ -189,6 +204,15 @@ namespace RealLifeOverhaul.Offices
             }
         }
 
+        // The facts of one watched building that the choice keys on (see Choose): to let and empty, an office business, rented, owned, another
+        // player's, held by a feature of the mod's, listed for sale.
+        private static int Facts(CityBuildingController c)
+        {
+            BuildingRegistration reg = c.buildingRegistration;
+            return BizPaceRules.Signature(ConversionGame.Vacant(reg), ConversionGame.OfficeBusiness(reg), reg != null && reg.RentedByPlayer, reg != null && reg.BuildingOwnedByPlayer,
+                GoingPublic.Foreign(reg), SpecialBuildings.Holds(c), ConversionGame.OnSale(SaveGameManager.Current, c.building.Address));
+        }
+
         // The city's shops and offices that may take part, once a city load, by the types as the game made them.
         private bool Index()
         {
@@ -202,6 +226,8 @@ namespace RealLifeOverhaul.Offices
             _shops.Clear();
             _offices.Clear();
             _watched.Clear();
+            _at.Clear();
+            _looked.Clear();
             for (int i = 0; i < buildings.Length; i++)
             {
                 CityBuildingController c = buildings[i];
@@ -222,15 +248,19 @@ namespace RealLifeOverhaul.Offices
                     continue;
                 }
                 _watched.Add(c.building.Address);
+                _at[c.building.Address] = c;
             }
             _indexed = true;
             Logger?.Info("Offices: " + _offices.Count + " office buildings and " + _shops.Count + " shops that may be offices (the game's shared shop and office structures).");
             return true;
         }
 
+        private static readonly int BizChoose = HotSpots.Slot("Offices: Conversions.Choose");
+
         // The choice made again from the city as it is now; only what changed is changed. picks false: only the held offices.
         private void Choose(bool picks)
         {
+            using var timed = BizPaceWatch.Time(BizChoose);   // what a BizMan step leaves for the next tick (BizPace)
             ConversionGame.ForSale(_save, _forSale);
             _rows.Clear();
             _rowOf.Clear();

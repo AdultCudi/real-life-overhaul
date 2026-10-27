@@ -120,6 +120,7 @@ namespace RealLifeOverhaul
                 Logger?.Error(e);
             }
             _warm.Root(shared);
+            BizPace.BizPaceGame.Warm(_warm);   // and the handlers of BizMan's open, switch and tab change: the first of a session finds them compiled
         }
 
         private void Report(string how)

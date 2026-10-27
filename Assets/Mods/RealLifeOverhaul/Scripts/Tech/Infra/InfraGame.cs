@@ -46,6 +46,13 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
+        /// <summary>True if the building at the address is a warehouse: the only kind a change of record can make a data centre's, or take one from.</summary>
+        public static bool IsWarehouse(Address address)
+        {
+            Building b = address != null ? BuildingHelper.GetBuilding(address) : null;
+            return b != null && BizPace.BizPaceRules.KeepsFor(b.BuildingType, WarehouseBuilding);
+        }
+
         public static int Sqm(BuildingRegistration reg)
         {
             Building b = reg != null ? BuildingHelper.GetBuilding(reg.Address) : null;

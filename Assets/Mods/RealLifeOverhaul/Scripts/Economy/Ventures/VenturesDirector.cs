@@ -39,6 +39,9 @@ namespace RealLifeOverhaul.Economy.Ventures
         private bool _offLooked;       // with the option off, the save has been looked at once for anything that carries on
         private Action _onSave, _onHour, _onDay, _hourSeen, _daySeen, _openInvestors;
         private Func<int, int> _fileClaim;
+        private Func<bool> _lookStep;                // the weekly look's step for Core/DaySpread
+        private readonly List<BuildingRegistration> _lookList = new List<BuildingRegistration>(16);   // the businesses the look in hand is about
+        private int _lookDay, _lookLevel, _lookPhase, _lookAt;
 
         public bool Running => _running && !_broken;
 
@@ -63,6 +66,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             _onDay = Guard.Wrap(OnDay);
             _openInvestors = () => Open(VenturesPhone.Investors);
             _fileClaim = amount => EconomyBridges.FileClaim != null ? EconomyBridges.FileClaim(amount) : 0;
+            _lookStep = LookSteps;
             StartCoroutine(Guard.Routine(Tick()));
         }
 
@@ -71,6 +75,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             SaveHook.Drop(_onSave);
             GlobalEvents.onNewHour -= _onHour;
             GlobalEvents.onNewDay -= _onDay;
+            DaySpread.Shared.Drop(this);   // the look in hand is left: the game's current save may be another one by now
             // Nothing is saved here: the game's current save may be another one by now.
             try
             {
@@ -251,8 +256,10 @@ namespace RealLifeOverhaul.Economy.Ventures
         {
             if (keep && _running && Save != null && _file != null)
             {
+                FinishDay();   // the day's look is made before the file is kept
                 VenturesStore.Save(Save.modData, _file);
             }
+            DaySpread.Shared.Drop(this);
             _running = false;
             _file = null;
             if (_meeting != null)
@@ -275,6 +282,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             _broken = true;
             Logger?.Error(e);
             _wallet.BookDay = null;
+            DaySpread.Shared.Drop(this);
             try
             {
                 StandDown(false);
@@ -374,6 +382,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             {
                 if (_running && Save != null && _file != null)
                 {
+                    FinishDay();
                     VenturesStore.Save(Save.modData, _file);
                 }
             }
