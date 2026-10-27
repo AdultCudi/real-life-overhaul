@@ -51,6 +51,7 @@ schools	reallife_guide_schools	Birchwood School
 seasons	reallife_guide_seasons	seasons
 shops	reallife_guide_shops	new kinds of shop
 social	reallife_guide_social	social life
+staffing	reallife_staff_guide	Staff and roles
 street-scenes	reallife_guide_traffic	traffic accidents
 taxi	reallife_guide_taxi	taxis
 trades	reallife_guide_trades	building trades
