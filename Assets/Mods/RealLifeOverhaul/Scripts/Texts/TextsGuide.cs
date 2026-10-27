@@ -53,6 +53,7 @@ namespace RealLifeOverhaul.Texts
                 .About("reallife_guide_textsai_about").Help("reallife_guide_textsai")
                 .Owns(Settings.TextsServiceId)
                 .Rows(TextsOptions.OwnAiButtons)
+                .Test("reallife_textsai_p2_test", TextsDirector.TestPlayer2)
                 .Fact("textsai_timeout", () => TextServiceRules.TimeOut.ToString("0", Inv))
                 .Fact("textsai_in_flight", () => TextService.Workers.ToString(Inv))
                 .Fact("textsai_per_minute", () => TextService.PerMinute.ToString(Inv))

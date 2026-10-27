@@ -241,7 +241,7 @@ namespace RealLifeOverhaul.Meta
                 S("textsai").For("textsai").Need("texts").Opts("texts_service")
                     .Buttons("reallife_textsai_key", "reallife_textsai_chatgpt", "reallife_textsai_model", "reallife_textsai_address", "reallife_textsai_forget",
                         "reallife_textsai_test", "reallife_textsai_status", "reallife_textsai_usage")
-                    .Also("ai service chatgpt openai anthropic gemini google openrouter groq mistral cerebras opencode zen ollama lm studio key api sign model"),
+                    .Also("ai service chatgpt openai anthropic gemini google openrouter groq mistral cerebras opencode zen ollama lm studio player2 player 2 free key api sign model"),
                 S("standing").For("standing").Main("standing").Opts("standing_street", "standing_press", "standing_corruption", "standing_request_notes")
                     .Also("fame reputation recognition wealth famous reporter interview press bribe lobby charity")
                     .Also("standing_request_notes", "fundraiser fundraising donation sponsor request requests"),
