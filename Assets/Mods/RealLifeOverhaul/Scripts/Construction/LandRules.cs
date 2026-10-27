@@ -83,6 +83,51 @@ namespace RealLifeOverhaul.Construction
             frameDepth = Math.Max(0f, narrow ? depth - BuildCatalogue.FrameMargin - BuildCatalogue.NarrowYard : depth - 2f * BuildCatalogue.FrameMargin);
         }
 
+        /// <summary>
+        /// Whether land of a size can take a plot's frame at all, as the city's construction programme lays it out (Civic's
+        /// PlotRules.Fit, the one answer): the way it falls short and the width or depth it needs. The player's plans and every pick
+        /// of the city's own ask it before anything is drawn, paid or started.
+        /// </summary>
+        public static PlotFit SiteFit(int width, int depth, out int need) => PlotRules.Fit(width, depth, out need);
+
+        /// <summary>The text of a short fall, by <see cref="PlotFit"/> (nothing for a fit): the land's address, size and the size it needs fill it.</summary>
+        public static readonly string[] FitKeys =
+        {
+            null, "reallife_bld_answer_land_narrow", "reallife_bld_answer_land_shallow", "reallife_bld_answer_land_big", "reallife_bld_answer_land_big"
+        };
+
+        /// <summary>The same short falls as a builder's refusal: the builder, the address and the size fill it.</summary>
+        public static readonly string[] FitBuilderKeys =
+        {
+            null, "reallife_bld_answer_unfit_narrow", "reallife_bld_answer_unfit_shallow", "reallife_bld_answer_unfit_big", "reallife_bld_answer_unfit_big"
+        };
+
+        /// <summary>True for a text of a short fall (either list).</summary>
+        public static bool IsFitKey(string key)
+        {
+            for (int i = 1; key != null && i < FitKeys.Length; i++)
+            {
+                if (string.Equals(FitKeys[i], key, StringComparison.Ordinal) || string.Equals(FitBuilderKeys[i], key, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// True when a project can be cancelled with every fee given back: it is live, before the works (no site, not building), and
+        /// nothing has come in under it that would have to be given back too (an investor's money, a flat sold off plan, a loan drawn).
+        /// Whether its land can take its site is asked apart (ConstructionDirector.CanCancel).
+        /// </summary>
+        public static bool Cancellable(ProjectFile p)
+        {
+            return p != null && p.Live && p.SiteId <= 0 && p.Stage != ProjectStage.Building && p.Investor < 0 && p.FlatsSold == 0 && p.LoanDrawn == 0;
+        }
+
+        /// <summary>What a cancelled project gives back: every fee paid for it so far (the plans' practice, the engineer's, City Hall's, an appeal's).</summary>
+        public static long Refund(ProjectFile p) => p == null ? 0L : Math.Max(0L, p.Spent);
+
         /// <summary>The storeys a plot's frame shows of a building's: a narrow plot's at most six, a wider one's at most ten.</summary>
         public static int FrameStoreys(int width, int storeys)
         {

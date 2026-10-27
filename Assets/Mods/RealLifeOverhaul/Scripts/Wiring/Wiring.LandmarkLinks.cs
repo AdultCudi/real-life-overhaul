@@ -143,7 +143,7 @@ namespace RealLifeOverhaul
                     CivicWorks works = Works();
                     if (works == null || !Settings.Civic || !Settings.CivicConstruction)
                     {
-                        why = "the city's construction sites are off";
+                        why = SiteRefusals.Off;
                         return 0;
                     }
                     SiteState site = works.StartPlot(middle, yaw, width, depth, storeys, TimeHelper.CurrentDay, out why, hours);   // set out with the landmark's hours, as its line says

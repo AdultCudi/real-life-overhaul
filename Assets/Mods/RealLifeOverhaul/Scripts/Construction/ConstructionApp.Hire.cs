@@ -57,7 +57,7 @@ namespace RealLifeOverhaul.Construction
             string block = _director.HireBlock(p);
             if (block != null)
             {
-                box.Line(ConstructionText.T(block), CellTone.Yellow);
+                box.Line(_director.BlockWords(p, block), CellTone.Yellow);
             }
             if (block == null)
             {

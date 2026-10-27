@@ -976,7 +976,7 @@ namespace RealLifeOverhaul.Construction
         {
             if (!string.IsNullOrEmpty(key))
             {
-                Notifications.Show(NotificationType.Info, key, null, 5f, null, null, true, false);
+                Notifications.Show(NotificationType.Info, key, _d.AnswerData(key), 5f, null, null, true, false);   // a text with the land's size in it carries it
             }
             if (!_state.Open)
             {

@@ -121,7 +121,7 @@ namespace RealLifeOverhaul.Construction
             string block = d.HireBlock(p);
             if (block != null)
             {
-                return Page(PlanningCall.Join(text, ConstructionText.T(block)), null, null, "reallife_bld_desk_open_app", () => Quotes(project));
+                return Page(PlanningCall.Join(text, d.BlockWords(p, block)), null, null, "reallife_bld_desk_open_app", () => Quotes(project));
             }
             return Page(text, "reallife_bld_desk_ask_hire", () => Sign(project, r), "reallife_bld_desk_open_app", () => Quotes(project));
         }
