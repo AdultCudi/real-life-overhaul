@@ -418,8 +418,10 @@ namespace RealLifeOverhaul.Construction
                 }
                 t.ForceMeshUpdate();
                 RectTransform r = t.rectTransform;
-                if (t.isTextTruncated || (t.enableAutoSizing ? t.renderedHeight : t.preferredHeight) > r.rect.height + 2f || (t.textWrappingMode == TextWrappingModes.NoWrap && !t.enableAutoSizing && t.preferredWidth > r.rect.width + 2f)
-                    || (t.textWrappingMode == TextWrappingModes.NoWrap && t.enableAutoSizing && t.renderedWidth > r.rect.width + 2f))   // a row shrunk to its least still too wide
+                bool noWrap = t.textWrappingMode == TextWrappingModes.NoWrap;
+                float high = t.enableAutoSizing ? t.renderedHeight : t.preferredHeight;
+                float wide = t.enableAutoSizing ? t.renderedWidth : t.preferredWidth;   // a row shrunk to its least can still be too wide
+                if (t.isTextTruncated || high > r.rect.height + 2f || (noWrap && wide > r.rect.width + 2f))
                 {
                     return "'" + (t.text.Length > 40 ? t.text.Substring(0, 40) : t.text) + "' is cut short";
                 }
