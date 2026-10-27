@@ -49,6 +49,10 @@ namespace RealLifeOverhaul.Construction
                 Join(t, l.Bought, l.Zones, l.ZoneAsk, l.ZoneDay, l.TaxedTo, l.EmptySince);
                 t.Append('|').Append(l.Paid.ToString(Inv)).Append('|').Append(l.Spaces.ToString(Inv));
                 t.Append('|').Append(Esc(l.Rows)).Append('|').Append(l.Paint.ToString(Inv));   // build mode's cells and paint, after the spaces
+                if (l.Cells.Length > 0)
+                {
+                    t.Append('|').Append(Esc(l.Cells));   // each square's zone (ZoneRules), after the paint: an older reader stops before it
+                }
             }
             t.Append("^c:");
             for (int i = 0; i < s.Crews.Count && i < BuildCatalogue.CrewsMost; i++)
@@ -117,6 +121,8 @@ namespace RealLifeOverhaul.Construction
                 }
             }
             WriteCity(t, s);
+            WriteGrow(t, s);
+            WritePark(t, s);
             return t.ToString();
         }
 
@@ -163,17 +169,26 @@ namespace RealLifeOverhaul.Construction
             Join(t, p.HireDays, p.HirePace, p.HireStages, p.HireFree ? 1 : 0);   // a hired builder's contract, after every field an older reader knows
             t.Append('|').Append(p.HirePaid.ToString(Inv)).Append('|').Append(p.HirePenalty.ToString(Inv));
             t.Append('|').Append(p.ClaimCase.ToString(Inv));   // a claim over faults, after every field an older reader knows
-            if (p.FitDesign.Length > 0 || p.NoticeUntil > 0 || p.BuyOut != 0L || p.Added > 0 || p.Look.Length > 0)
+            bool grow = p.Grow > 0 && p.Kind == ProjectKind.Plot, park = p.Park > 0 && p.Kind == ProjectKind.Parking;
+            if (p.FitDesign.Length > 0 || p.NoticeUntil > 0 || p.BuyOut != 0L || p.Added > 0 || p.Look.Length > 0 || grow || park)
             {
                 // Redevelopment's fields, after every field an older reader knows, and only when one is set: a record without them is as before.
                 t.Append('|').Append(Esc(p.FitDesign)).Append('|').Append(Esc(p.FitType)).Append('|').Append(p.NoticeUntil.ToString(Inv)).Append('|').Append(p.BuyOut.ToString(Inv));
-                if (p.Added > 0 || p.Look.Length > 0)
+                if (p.Added > 0 || p.Look.Length > 0 || grow || park)
                 {
                     t.Append('|').Append(p.Added.ToString(Inv));
                 }
-                if (p.Look.Length > 0)
+                if (p.Look.Length > 0 || grow || park)
                 {
                     t.Append('|').Append(Esc(p.Look));   // a corner building's model, after the extension's storeys: an older reader stops before it
+                }
+                if (grow || park)
+                {
+                    t.Append('|').Append(p.Grow.ToString(Inv));   // Let it grow's tier, after the model: an older reader stops before it
+                }
+                if (park)
+                {
+                    t.Append('|').Append(p.Park.ToString(Inv));   // a car park's mouth, after the tier: an older reader stops before it
                 }
             }
         }
@@ -241,6 +256,7 @@ namespace RealLifeOverhaul.Construction
                                 l.Spaces = BuildCatalogue.Clamp(r.I(1), 1, BuildCatalogue.SiteSpacesMost);   // a line from before the spaces: one
                                 l.Rows = CellRules.CleanRows(r.S(), l.Spaces);   // a line from before build mode: every row
                                 l.Paint = BuildCatalogue.Clamp(r.I(0), 0, (int)BuildUse.Count);
+                                l.Cells = ZoneRules.Clean(r.S(), l.Spaces);   // a line from before single squares: each square takes the site's paint
                                 if (l.Id.Length > 0)
                                 {
                                     s.Lots.Add(l);
@@ -407,7 +423,10 @@ namespace RealLifeOverhaul.Construction
                             break;
                         }
                         default:
-                            ReadCity(part[0], body, s);   // the city around the company (BuildStore.City), or a part of a newer version's: passed over
+                            if (!ReadGrow(part[0], body, s) && !ReadPark(part[0], body, s))
+                            {
+                                ReadCity(part[0], body, s);   // the city around the company (BuildStore.City), or a part of a newer version's: passed over
+                            }
                             break;
                     }
                 }
@@ -446,7 +465,7 @@ namespace RealLifeOverhaul.Construction
         {
             var p = new ProjectFile
             {
-                Id = r.I(0), Kind = (ProjectKind)BuildCatalogue.Clamp(r.I(0), 0, (int)ProjectKind.Conversion), Stage = (ProjectStage)BuildCatalogue.Clamp(r.I(0), 0, 5),
+                Id = r.I(0), Kind = (ProjectKind)BuildCatalogue.Clamp(r.I(0), 0, (int)ProjectKind.Parking), Stage = (ProjectStage)BuildCatalogue.Clamp(r.I(0), 0, 5),
                 Created = r.I(0), Number = r.I(0),
                 Use = (BuildUse)BuildCatalogue.Clamp(r.I(0), 0, (int)BuildUse.Count - 1), Version = r.I(1), Area = Math.Max(0, r.I(0)), Storeys = BuildCatalogue.Clamp(r.I(1), 1, 60),
                 Width = Math.Max(0, r.I(0)), Depth = Math.Max(0, r.I(0)), Height = Math.Max(0, r.I(0)), Architect = (ArchitectKind)BuildCatalogue.Clamp(r.I(0), 0, 2),
@@ -462,7 +481,7 @@ namespace RealLifeOverhaul.Construction
                 Investor = BuildCatalogue.Clamp(r.I(-1), -1, BuildCatalogue.InvestorCount - 1), InvestorDue = r.I(0), Flats = Math.Max(0, r.I(0)), FlatsSold = Math.Max(0, r.I(0)),
                 FlatsOffPlan = Math.Max(0, r.I(0)), Handed = r.I(0), Opening = r.I(0), Ribbon = r.I(0) == 1, Opened = r.I(0) == 1,
                 After = (AfterUse)BuildCatalogue.Clamp(r.I(0), 0, 1), Ask = BuildCatalogue.Clamp(r.I(1), 0, BuildCatalogue.AskPermille.Length - 1), DefectDay = r.I(0),
-                Source = (TenderSource)BuildCatalogue.Clamp(r.I(0), 0, (int)TenderSource.Landmark), CivicKind = BuildCatalogue.Clamp(r.I(-1), -1, RedevelopRules.DemolitionWorks),
+                Source = (TenderSource)BuildCatalogue.Clamp(r.I(0), 0, (int)TenderSource.Landmark), CivicKind = BuildCatalogue.Clamp(r.I(-1), -1, CarParkRules.WorksKind),
                 Client = Math.Max(0, r.I(0)),
                 RainHours = Math.Max(0, r.I(0)), WaitHours = Math.Max(0, r.I(0)), StrikeDays = Math.Max(0, r.I(0)), Fails = Math.Max(0, r.I(0)), InDistrict = r.I(0) == 1,
                 Tender = Math.Max(0, r.I(0))
@@ -548,7 +567,11 @@ namespace RealLifeOverhaul.Construction
             p.BuyOut = Math.Max(-1L, r.L(0L));
             int added = r.I(0);
             p.Added = p.Kind == ProjectKind.Extension ? BuildCatalogue.Clamp(added, 0, RedevelopRules.StoreysMost) : 0;
-            p.Look = p.Kind == ProjectKind.Plot ? r.S() : string.Empty;   // a corner building's model; a line without it has none
+            string look = r.S();
+            int tier = r.I(0), mouth = r.I(0);   // each field is read whatever the kind, so a car park's, which comes after them, is found
+            p.Look = p.Kind == ProjectKind.Plot ? look : string.Empty;   // a corner building's model; a line without it has none
+            p.Grow = p.Kind == ProjectKind.Plot ? BuildCatalogue.Clamp(tier, 0, (int)GrowTier.Count) : 0;   // Let it grow's tier and one; none before it
+            p.Park = p.Kind == ProjectKind.Parking ? BuildCatalogue.Clamp(mouth, 0, 4) : 0;   // a car park's mouth; none before it
             if (p.FitDesign.Length == 0)
             {
                 p.FitType = string.Empty;   // no design, nothing to install

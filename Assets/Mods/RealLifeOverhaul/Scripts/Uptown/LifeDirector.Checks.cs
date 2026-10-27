@@ -121,10 +121,21 @@ namespace RealLifeOverhaul.Uptown
                 {
                     return;
                 }
-                bool row = LifeGame.Rowed(), placed = LifeGame.RowPlaced(out string why), zone = LifeGame.ZoneListed(), data = LifeGame.RowNamesDistrict();
+                bool row = true, placed = true, zone = true, data = true;
+                string why = null, names = string.Empty;
+                for (int d = 0; d < DistrictSplit.Count; d++)
+                {
+                    bool rowOf = LifeGame.Rowed(d);
+                    row &= rowOf;
+                    placed &= LifeGame.RowPlaced(d, out string whyOf);
+                    why = why ?? whyOf;
+                    zone &= LifeGame.ZoneListed(d);
+                    data &= LifeGame.RowNamesDistrict(d);
+                    names += (d > 0 ? " and " : string.Empty) + LifeGame.RowName(d);
+                }
                 bool pass = row && placed && zone && data;
-                string line = "Uptown check (map row): its row in the map's filters " + Yes(row) + ", among the game's district rows " + Yes(placed)
-                              + (why != null ? " (" + why + ")" : string.Empty) + ", named " + LifeGame.RowName() + ", its zone among the game's zones " + Yes(zone)
+                string line = "Uptown check (map row): the two districts' rows in the map's filters " + Yes(row) + ", among the game's district rows " + Yes(placed)
+                              + (why != null ? " (" + why + ")" : string.Empty) + ", named " + names + ", its zones among the game's zones " + Yes(zone)
                               + ", the row's data naming the district " + Yes(data) + ": " + (pass ? "PASS" : "FAIL");
                 if (pass)
                 {

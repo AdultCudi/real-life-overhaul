@@ -60,11 +60,21 @@ namespace RealLifeOverhaul
                 return;
             }
 
+            // The game clears its event hub on every load. Kept whatever is off: the mod's moods must leave the save. Joined before
+            // the load below, so that a load that fails halfway (and stops this component) still has the moods it put into the
+            // game's list taken out at every save: a save that holds one cannot be loaded again.
+            if (Time.unscaledTime >= _nextHookCheck)
+            {
+                _nextHookCheck = Time.unscaledTime + 2f;
+                SaveHook.KeepEssential(_onSave ?? (_onSave = OnSaveGame));
+            }
+
             if (!ModState.Loaded)
             {
                 try
                 {
                     ModState.Load();
+                    LifeMoneyRepair.OnLoad();   // a charge a purse past an int once made is paid back, once (LifeMoneyRules)
                     PhoneContacts.Setup();
                     ContactGroupsGame.Install();   // after every contact the mod adds at a load is made: the groups of the Contacts app
                 }
@@ -75,13 +85,6 @@ namespace RealLifeOverhaul
                     return;
                 }
                 _lastHour = TimeHelper.CurrentHour;
-            }
-
-            // The game clears its event hub on every load. Kept whatever is off: the mod's moods must leave the save.
-            if (Time.unscaledTime >= _nextHookCheck)
-            {
-                _nextHookCheck = Time.unscaledTime + 2f;
-                SaveHook.KeepEssential(_onSave ?? (_onSave = OnSaveGame));
             }
 
             if (TimeHelper.CurrentHour != _lastHour)

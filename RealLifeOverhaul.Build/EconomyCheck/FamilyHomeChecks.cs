@@ -142,7 +142,7 @@ internal static partial class Program
               && MemberText(at, "private static bool LieDown(FamilyDirector director, float now)").Contains("_bedTry = now + BedRetry;"),
             "family home: a bed they could not lie in is tried again after a while, not a partner put there and let go each second");
         Dictionary<string, string>[] words = LanguageWords(out string[] codes);
-        bool guide = codes.Length == ModLanguages.All.Length;
+        bool guide = codes.Length == ModLanguages.PerFeature.Length;
         int english = System.Array.IndexOf(codes, "en");
         int lines = english >= 0 && words[english].TryGetValue("reallife_guide_family", out string en) ? en.Split('\n').Length : -1;
         for (int l = 0; guide && l < codes.Length; l++)

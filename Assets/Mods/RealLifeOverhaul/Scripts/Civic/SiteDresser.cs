@@ -212,7 +212,7 @@ namespace RealLifeOverhaul
                 SiteState site = sites[i];
                 var at = new Vector3(site.X, site.Y, site.Z);
                 if (CivicCity.Flat(at - player) > DressNear * DressNear || Find(site) != null || !SiteBuilders.IsShown(site) || CitySpots.InView(at)
-                    || (site.Kind == SiteKind.Plot && PlotInView(site)))
+                    || (site.Kind == SiteKind.Plot && PlotInView(site)) || (site.Kind == SiteKind.Parking && ParkInView(site)))
                 {
                     continue;   // a plot's fence and slab stand at once: never while any of its ground is in the picture
                 }
@@ -245,7 +245,7 @@ namespace RealLifeOverhaul
                 Vector3 at = _dressed[i].Origin;
                 bool inside = at.x >= x1 - GroundMargin && at.x <= x2 + GroundMargin && at.z >= z1 - GroundMargin && at.z <= z2 + GroundMargin;
                 bool finished = _dressed[i].Gone || _dressed[i].Site == null || _dressed[i].Site.Finished || !sites.Contains(_dressed[i].Site);
-                if (inside && finished && _dressed[i].Site != null && _dressed[i].Site.Kind == SiteKind.Plot)
+                if (inside && finished && _dressed[i].Site != null && (_dressed[i].Site.Kind == SiteKind.Plot || _dressed[i].Site.Kind == SiteKind.Parking))
                 {
                     Undress(i, true);
                     released++;
@@ -418,6 +418,7 @@ namespace RealLifeOverhaul
                     case SiteKind.Rebuild: BuildRebuild(dressed); break;
                     case SiteKind.Plot: BuildPlot(dressed); break;
                     case SiteKind.Demolition: BuildDemolition(dressed); break;
+                    case SiteKind.Parking: BuildPark(dressed); break;
                     default: BuildUtility(dressed); break;
                 }
                 if (dressed.HasNotice)

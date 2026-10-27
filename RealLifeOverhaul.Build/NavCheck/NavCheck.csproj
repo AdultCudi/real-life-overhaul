@@ -33,6 +33,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\BusPath.cs" Link="Mod\BusPath.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\Taxi\TaxiRules.cs" Link="Mod\TaxiRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\Prices.cs" Link="Mod\Prices.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\WholeMoney.cs" Link="Mod\WholeMoney.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Traffic\Reckless\StreetRules.cs" Link="Mod\StreetRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\PanelPlacement.cs" Link="Mod\PanelPlacement.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\NoticeRoomRules.cs" Link="Mod\NoticeRoomRules.cs" />
@@ -127,6 +128,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\GroundText.cs" Link="Mod\Uptown\GroundText.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\UptownLots.cs" Link="Mod\Uptown\UptownLots.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\LayoutRules.cs" Link="Mod\Uptown\LayoutRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\DistrictSplit.cs" Link="Mod\Uptown\DistrictSplit.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\DistrictValues.cs" Link="Mod\Uptown\DistrictValues.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\SpacesRules.cs" Link="Mod\Uptown\SpacesRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\LayoutPlans.cs" Link="Mod\Uptown\LayoutPlans.cs" />
     <!-- The road and ground surfaces at one height over one place (UptownSurfaceCheck.cs), game-free. -->

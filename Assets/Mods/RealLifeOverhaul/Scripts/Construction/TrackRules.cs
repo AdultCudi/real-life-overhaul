@@ -18,7 +18,8 @@ namespace RealLifeOverhaul.Construction
         Project = 0,
         Tender = 1,
         Company = 2,
-        Crews = 3
+        Crews = 3,
+        Land = 4      // the Land tab: the city's growth near the player's land
     }
 
     /// <summary>One line of the construction objectives: what it is about, how much it waits on the player, and its words' parts.</summary>
@@ -53,6 +54,8 @@ namespace RealLifeOverhaul.Construction
         bool CanStart(ProjectFile p);     // the company's crews may start it now
         bool CanHire(ProjectFile p);      // a builder of the city's may be hired for it now
         int ClaimDue(int claim);          // the day a claim must be answered by while it is before the court; -1 once it is not
+        bool NearMine(GrowFile g);        // a grown site on a block where the player holds land or a building
+        string GrowOf(GrowFile g);        // a grown site in words: its use, where, its developer
     }
 
     /// <summary>
@@ -118,6 +121,20 @@ namespace RealLifeOverhaul.Construction
                         into.Add(line);
                     }
                 }
+            }
+            for (int i = 0; i < s.Grows.Count; i++)
+            {
+                GrowFile g = s.Grows[i];
+                if (g == null || !g.UnderWay || g.Owner == GrowOwner.Player || !f.NearMine(g))
+                {
+                    continue;
+                }
+                // The city's growth beside the player's land: what goes up next door, and when its stage ends (plans/growables.md).
+                into.Add(new TrackLine
+                {
+                    Need = TrackNeed.Waiting, Opens = TrackOpens.Land, When = Hour(g.Until, 0), Newest = g.Id, Name = f.GrowOf(g),
+                    Key = g.Stage == GrowStage.Building ? "reallife_grow_track_building" : "reallife_grow_track_planned", Day = g.Until
+                });
             }
             LicenceLine(s.Firm, day, into);
             for (int i = 0; i < s.Tenders.Count; i++)
@@ -271,10 +288,10 @@ namespace RealLifeOverhaul.Construction
             return line;
         }
 
-        // A plot, a rebuild or an extension of the player's with no contractor yet: a builder of the city's may be hired for it (the director's HireKind).
+        // A plot, a rebuild, an extension or a car park of the player's with no contractor yet: a builder of the city's may be hired for it (the director's HireKind).
         private static bool ConstructionHire(ProjectFile p)
         {
-            return (p.Kind == ProjectKind.Plot || p.Kind == ProjectKind.Rebuild || p.Kind == ProjectKind.Extension) && p.Contractor < 0;
+            return (p.Kind == ProjectKind.Plot || p.Kind == ProjectKind.Rebuild || p.Kind == ProjectKind.Extension || p.Kind == ProjectKind.Parking) && p.Contractor < 0;
         }
 
         private static void Step(ref TrackLine line, string key, TrackNeed need, int onDay)

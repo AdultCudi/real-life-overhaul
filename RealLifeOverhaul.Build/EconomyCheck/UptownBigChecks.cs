@@ -316,7 +316,7 @@ internal static partial class Program
         Check(copyArt.IndexOf("FindMouths();", StringComparison.Ordinal) > 0 && copyArt.IndexOf("FindMouths();", StringComparison.Ordinal) < copyArt.IndexOf("LayoutPlans.Modules(Places);", StringComparison.Ordinal)
               && copyArt.IndexOf("ClearMouths(copy);", StringComparison.Ordinal) > copyArt.IndexOf("Strip(copy);", StringComparison.Ordinal)
               && populate.IndexOf("if (InMouth(lanes[l], at, turn))", StringComparison.Ordinal) > 0
-              && populate.IndexOf("if (InMouth(lanes[l], at, turn))", StringComparison.Ordinal) < populate.IndexOf("ParkingGame.Room(", StringComparison.Ordinal),
+              && populate.IndexOf("if (InMouth(lanes[l], at, turn))", StringComparison.Ordinal) < populate.IndexOf("LayLane(slot, ref why, out int failed);", StringComparison.Ordinal),
             "uptown big: the street art keeps the mouths clear, the litter put away before a copy wakes and no parking lane laid there");
         Check(guide.Contains(".Check(\"reallife_uptown_test_store\", LifeDirector.TestStore, \"Uptown check (wholesale store)\", RunPlace.Outdoors)")
               && guide.Contains(".Test(\"reallife_uptown_test_store_order\", LifeDirector.TestOrder)")
@@ -355,9 +355,9 @@ internal static partial class Program
         Check(all, "uptown big: What's new names the wholesale store and the petrol station in all nine languages" + (missing != null ? " (not in " + missing + ")" : string.Empty));
         Dictionary<string, string> en = LoadWords(System.IO.Path.Combine(folder, "en.json"));
         bool labels = en != null && en.TryGetValue(LifeText.TestStore, out string s) && s == "Uptown: take me to the wholesale store"
-                      && en.TryGetValue(LifeText.TestOrder, out string o) && o == "Uptown: an order from the Uptown wholesale store delivered now"
+                      && en.TryGetValue(LifeText.TestOrder, out string o) && o == "Uptown: an order from the wholesale store delivered now"
                       && en.TryGetValue(LifeText.TestStation, out string t) && t == "Uptown: take me to the petrol station"
-                      && en.TryGetValue(LifeText.TestFill, out string f) && f == "Uptown: fill up at the Uptown petrol station now";
-        Check(labels, "uptown big: the four test buttons say what they do, as the owner named them (in British English, a petrol station)");
+                      && en.TryGetValue(LifeText.TestFill, out string f) && f == "Uptown: fill up at the petrol station now";
+        Check(labels, "uptown big: the four test buttons say what they do, as the owner named them (in British English, a petrol station), the store and the station no longer called Uptown's since they stand in Cedar Heights");
     }
 }

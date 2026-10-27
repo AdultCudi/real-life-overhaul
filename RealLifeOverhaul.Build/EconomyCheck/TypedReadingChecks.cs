@@ -324,7 +324,7 @@ internal static partial class Program
                 }
             }
         }
-        Check(faults.Count == 0 && codes.Length == ModLanguages.All.Length,
+        Check(faults.Count == 0 && codes.Length == ModLanguages.PerFeature.Length,
             "typed reading: the glad, sorry and neutral lines are in every language, each its own, short, with no dash, exclamation mark or name in curly brackets ("
             + (faults.Count > 0 ? string.Join(", ", faults) : keys.Count + " keys in " + codes.Length + " languages") + ")");
         Check(FixLineEverywhere("an answer you type on a call is read the right way round", "uma resposta que você digita numa ligação agora é entendida",

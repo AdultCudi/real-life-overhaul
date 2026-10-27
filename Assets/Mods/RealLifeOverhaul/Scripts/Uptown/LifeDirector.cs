@@ -100,6 +100,7 @@ namespace RealLifeOverhaul.Uptown
         {
             Begin();
             RetireEarlierPlan(SaveGameManager.Current);
+            DecidePlan(SaveGameManager.Current);   // the rebalance of the large stores, before anything reads the plan
             _earlyFor = SaveGameManager.Current;
             Know("before the city's scenes are built");
         }
@@ -109,7 +110,7 @@ namespace RealLifeOverhaul.Uptown
         // types' targets, which the game keeps for the whole run: given back first, as the director gives them back when its city goes.
         private static void Begin()
         {
-            if (LifeGame.Record != null)
+            if (LifeGame.AnyRecord)
             {
                 LifeGame.Unload();
             }
@@ -130,6 +131,7 @@ namespace RealLifeOverhaul.Uptown
             _armed = false;
             ForgetLeases();
             ForgetSpecials();
+            LifeGame.WatchReset();
             _stamp++;
         }
 
@@ -164,6 +166,7 @@ namespace RealLifeOverhaul.Uptown
             {
                 Begin();   // a load that did not pass the main menu (a funeral's backup) had no early step
                 RetireEarlierPlan(SaveGameManager.Current);   // before the district save's city step reads what it keeps
+                DecidePlan(SaveGameManager.Current);
             }
             Know("at the city load");
             _cityWasNew = SaveGameManager.Current != null && !SaveGameManager.Current.CityInitialized;
@@ -197,6 +200,7 @@ namespace RealLifeOverhaul.Uptown
                              + " finished building(s) and its opening pass are retired with the district's records, and the district is set up afresh.");
                 _state = new LifeState();
             }
+            ApplyDecision();   // the rebalance's pins and the split's mark, from this load on
             WriteState();   // the line says the plan's generation from this load on, whatever else happens
         }
 
@@ -365,6 +369,7 @@ namespace RealLifeOverhaul.Uptown
             Fills.Clear();
             _lives = Standing.Count > 0;
             MarkStanding();
+            int dressed = _lives ? Dress() : 0;
             _stamp++;
             ListBig(true);
             if (!_lives)
@@ -374,40 +379,38 @@ namespace RealLifeOverhaul.Uptown
                 Close("no building of it stands at this load: " + _notWhy, false);
                 return;
             }
-            Bounds(out float x1, out float z1, out float x2, out float z2);
-            if (!LifeGame.Map(x1, z1, x2, z2, out string why))
+            if (!LifeGame.Map(GroundOf(), out string why))
             {
-                Logger?.Warn("Uptown: its zone on the city map could not be made (" + why + "); the district has no row in the map's filters at this load.");
+                Logger?.Warn("Uptown: a zone on the city map could not be made (" + why + "); the district has no row in the map's filters at this load.");
+            }
+            string colourWhy = LifeGame.ColourWhy(out string colours);
+            if (colourWhy == null)
+            {
+                Logger?.Info("Uptown check (district colours): " + colours + ": PASS");
+            }
+            else
+            {
+                Logger?.Warn("Uptown check (district colours): " + colours + "; " + colourWhy + ": FAIL");
             }
             Logger?.Info("Uptown: " + Standing.Count + " of " + Declared.Count + " building(s) standing as the game's own, " + cut + " cut into the walking meshes, "
-                         + fillers + " filler(s) standing beside and behind them, in "
+                         + fillers + " filler(s) standing beside and behind them, " + dressed + " side walls with windows, in "
                          + ((System.Diagnostics.Stopwatch.GetTimestamp() - began) * 1000.0 / System.Diagnostics.Stopwatch.Frequency).ToString("F0", Plain) + " ms.");
         }
 
-        // The district's ground's bounds, for its zone on the city map; its lots' if the ground names none.
-        private static void Bounds(out float x1, out float z1, out float x2, out float z2)
+        // The band's ground, for the zones on the city map; the plan's lots' footprints if the ground names none.
+        private static IReadOnlyList<GroundRect> GroundOf()
         {
-            x1 = z1 = float.MaxValue;
-            x2 = z2 = float.MinValue;
             IReadOnlyList<GroundRect> ground = UptownLots.Ground;
-            for (int i = 0; ground != null && i < ground.Count; i++)
+            if (ground != null && ground.Count > 0)
             {
-                x1 = Mathf.Min(x1, Mathf.Min(ground[i].X1, ground[i].X2));
-                x2 = Mathf.Max(x2, Mathf.Max(ground[i].X1, ground[i].X2));
-                z1 = Mathf.Min(z1, Mathf.Min(ground[i].Z1, ground[i].Z2));
-                z2 = Mathf.Max(z2, Mathf.Max(ground[i].Z1, ground[i].Z2));
+                return ground;
             }
-            if (x1 != float.MaxValue)
-            {
-                return;
-            }
+            var rects = new List<GroundRect>(Plan.Count);
             for (int i = 0; i < Plan.Count; i++)
             {
-                x1 = Mathf.Min(x1, Plan[i].X - Plan[i].Width * 0.5f);
-                x2 = Mathf.Max(x2, Plan[i].X + Plan[i].Width * 0.5f);
-                z1 = Mathf.Min(z1, Plan[i].Z - Plan[i].Depth * 0.5f);
-                z2 = Mathf.Max(z2, Plan[i].Z + Plan[i].Depth * 0.5f);
+                rects.Add(new GroundRect(Plan[i].X - Plan[i].Width * 0.5f, Plan[i].Z - Plan[i].Depth * 0.5f, Plan[i].X + Plan[i].Width * 0.5f, Plan[i].Z + Plan[i].Depth * 0.5f));
             }
+            return rects;
         }
 
         // ---------------------------------------------------------------- the district save's view of it
@@ -420,7 +423,10 @@ namespace RealLifeOverhaul.Uptown
             {
                 return;
             }
-            set.District(DistrictValues.Id);
+            for (int d = 0; d < DistrictSplit.Count; d++)
+            {
+                set.District(DistrictSplit.Ids[d]);   // both of the band's districts, from the moment they are among the game's
+            }
             if (!_lives)
             {
                 return;
@@ -442,6 +448,10 @@ namespace RealLifeOverhaul.Uptown
                 float turn = made.DoorFacing * Mathf.Deg2Rad;   // the door's outward way, as Quaternion.Euler(0, facing, 0) turns forward
                 set.Door(made.Spec.Street, made.Spec.Number, made.DoorX + Mathf.Sin(turn) * OutsideDoor, made.DoorY, made.DoorZ + Mathf.Cos(turn) * OutsideDoor,
                     made.DoorFacing, exit.District);   // a car inside one is parked in the way out's district of the game's
+                if (MadeGame.ParkOf(made, out string parkStreet, out int park, out Vector3 spot, out float heading))
+                {
+                    set.Door(parkStreet, park, spot.x, spot.y, spot.z, heading, exit.District);   // and a car left in its car park, the same
+                }
             }
         }
 
@@ -462,6 +472,7 @@ namespace RealLifeOverhaul.Uptown
                 return true;
             }
             bool fresh = !LifeGame.HasStats(save);
+            string moved = fresh ? null : MoveBand(save);   // a save made when the band was one district: the second one's own of what it holds, before its stats are made
             if (fresh && !_cityWasNew)
             {
                 LifeGame.Populate(save);   // as the game sets up a district it adds to an older save
@@ -482,7 +493,7 @@ namespace RealLifeOverhaul.Uptown
                 LaterOnes.AddRange(NewOnes);
                 NewOnes.Clear();
             }
-            bool stats = LifeGame.Stats(save);
+            int statsMade = LifeGame.Stats(save);
             int settled = 0, failed = 0;
             for (int i = 0; i < Standing.Count; i++)
             {
@@ -525,13 +536,19 @@ namespace RealLifeOverhaul.Uptown
             LaterOnes.Clear();
             Logger?.Info("Uptown: " + (fresh ? (_cityWasNew ? "set up with the rest of a new city by the game's own generator" : "set up for the first time in this save by the game's own generator")
                                              : "lives on in this save" + (populated > 0 ? ", the game's own generator for its " + populated + " building(s) new to it" : string.Empty))
-                         + (stats ? ", its stats made" : string.Empty)
+                         + (statsMade > 0 ? ", " + statsMade + " row(s) of stats made" : string.Empty)
                          + (settled + failed > 0 ? "; " + settled + " finished building(s) at their first load" + (failed > 0 ? ", " + failed + " not yet" : string.Empty) : string.Empty)
                          + "; " + leased + " of " + BuildingsRules.LeasedOffices + " leased offices with their businesses"
                          + (renamed > 0 ? ", " + renamed + " of them given their lessees' names again" : string.Empty)
                          + "; " + specials + " of " + SpecialsRules.All.Length + " special places with the game's services.");
+            if (moved != null)
+            {
+                Logger?.Info(moved);
+                WriteState();
+            }
             Census("the load");
             SpecialsCensus("the load", false, out int _);
+            DoorsCensus("the load");   // the warehouses' garage doors, whole as the game's own (LifeDirector.Doors)
             CompleteAll("the load");   // every finished building checked as a whole building of the game's, once a load (LifeDirector.Complete)
             return true;
         }
@@ -618,6 +635,7 @@ namespace RealLifeOverhaul.Uptown
             {
                 return;
             }
+            WatchDesk(now);   // a desk's dialog gone wrong closed, a player left seated stood up (LifeDirector.Dealer)
             if (Waiting.Count > 0)
             {
                 StandPending(false);   // a finished building waiting for a moment nobody sees its ground

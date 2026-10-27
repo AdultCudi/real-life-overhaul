@@ -74,11 +74,21 @@ namespace RealLifeOverhaul.NewGround
         /// </summary>
         public static bool Room(ParkingLaneGenerator lane, Vector3 at, Quaternion turn, out string why)
         {
+            return Room(lane, at, turn, float.NaN, float.NaN, out why);
+        }
+
+        /// <summary>
+        /// As above for the piece of the lane from <paramref name="from"/> to <paramref name="to"/> metres along its length,
+        /// counted from the middle of its box (NaN for the whole lane): what is left of a lane that a garage door's mouth was cut out of.
+        /// </summary>
+        public static bool Room(ParkingLaneGenerator lane, Vector3 at, Quaternion turn, float from, float to, out string why)
+        {
             why = null;
             var box = lane.GetComponent<BoxCollider>();
             Vector3 scale = lane.transform.lossyScale;
-            Vector3 centre = at + turn * Vector3.Scale(box.center, scale);
-            var half = new Vector3(box.size.x * Mathf.Abs(scale.x) * 0.5f, 1f, box.size.z * Mathf.Abs(scale.z) * 0.5f);
+            Span(box, scale, from, to, out Vector3 middle, out float length);
+            Vector3 centre = at + turn * Vector3.Scale(middle, scale);
+            var half = new Vector3(box.size.x * Mathf.Abs(scale.x) * 0.5f, 1f, length * 0.5f);
             if (_solidMask == 0)
             {
                 _solidMask = LayerMask.GetMask("Buildings", "BuildingsOutlined", "BuildingWalls", "StreetProps", "InteractiveItems", "Vehicles", "AiVehicles",
@@ -116,6 +126,16 @@ namespace RealLifeOverhaul.NewGround
         /// </summary>
         public static ParkingLaneGenerator Copy(ParkingLaneGenerator template, Vector3 at, Quaternion turn, out string why)
         {
+            return Copy(template, at, turn, float.NaN, float.NaN, out why);
+        }
+
+        /// <summary>
+        /// As above, only the piece of the lane from <paramref name="from"/> to <paramref name="to"/> metres along its length, counted
+        /// from the middle of the template's box (NaN for the whole lane): its box cut to the piece before it wakes, so it parks cars
+        /// along that stretch alone (a straight lane of the game's with no spot count of its own parks along its box).
+        /// </summary>
+        public static ParkingLaneGenerator Copy(ParkingLaneGenerator template, Vector3 at, Quaternion turn, float from, float to, out string why)
+        {
             why = null;
             if (template == null)
             {
@@ -145,16 +165,37 @@ namespace RealLifeOverhaul.NewGround
                 int layer = Children[i].gameObject.layer;
                 if (layer == LayerHelper.ParkedVehiclesLayerIndex || layer == LayerHelper.AutoParkSpotsLayerIndex || Children[i].name == ReservedName)
                 {
-                    Object.DestroyImmediate(Children[i].gameObject);
+                    SceneryTrees.DestroyNow(Children[i].gameObject);
                 }
             }
             Children.Clear();
+            if (!float.IsNaN(from) && !float.IsNaN(to))
+            {
+                var box = copy.GetComponent<BoxCollider>();
+                Span(box, template.transform.lossyScale, from, to, out Vector3 middle, out float length);
+                box.center = middle;
+                box.size = new Vector3(box.size.x, box.size.y, length / Mathf.Max(0.0001f, Mathf.Abs(template.transform.lossyScale.z)));
+            }
             // Placed and sized while asleep (the holder stands at the origin unturned), so it first looks at the street
             // from where it stands, as large as the lane Room measured.
             copy.transform.SetPositionAndRotation(at, turn);
             copy.transform.localScale = template.transform.lossyScale;
             copy.transform.SetParent(null, true);
             return lane;
+        }
+
+        // A lane's box whole (NaN), or the piece of it from..to metres along its length from the middle of the box: the piece's
+        // middle in the box's own frame and its length in metres.
+        private static void Span(BoxCollider box, Vector3 scale, float from, float to, out Vector3 middle, out float length)
+        {
+            float along = Mathf.Max(0.0001f, Mathf.Abs(scale.z));
+            middle = box.center;
+            length = box.size.z * along;
+            if (!float.IsNaN(from) && !float.IsNaN(to))
+            {
+                middle.z += (from + to) * 0.5f / along;
+                length = to - from;
+            }
         }
 
         /// <summary>The game's cars parked on a lane now.</summary>
@@ -186,7 +227,12 @@ namespace RealLifeOverhaul.NewGround
                 return;
             }
             lane.CleanupParkedVehicles(force: true);
-            Object.Destroy(lane.gameObject);
+            var box = lane.GetComponent<BoxCollider>();
+            if (box != null)
+            {
+                box.enabled = false;   // the engine destroys it at the frame's end: a lane laid in its place now must not find it there
+            }
+            SceneryTrees.Destroy(lane.gameObject);
             lane = null;
         }
 
@@ -195,7 +241,7 @@ namespace RealLifeOverhaul.NewGround
         {
             if (_holder != null)
             {
-                Object.Destroy(_holder);
+                SceneryTrees.Destroy(_holder);
             }
             _holder = null;
             _solidMask = 0;

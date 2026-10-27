@@ -123,7 +123,7 @@ namespace RealLifeOverhaul
             }
             if (_state != State.Idle)
             {
-                _owed += liability;
+                _owed = WholeMoney.Add(_owed, liability, CrashConsequences.PursuitOwedMost);   // one pursuit's damages are held to a sane sum, never wrapped round
                 return true;
             }
 

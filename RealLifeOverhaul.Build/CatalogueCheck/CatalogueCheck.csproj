@@ -17,6 +17,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Crime\CrimeDeck.cs" Link="Mod\CrimeDeck.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Crime\CrimeCatalogue.cs" Link="Mod\CrimeCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\Prices.cs" Link="Mod\Prices.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\WholeMoney.cs" Link="Mod\WholeMoney.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\JobCatalogue.cs" Link="Mod\JobCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\CareerCatalogue.cs" Link="Mod\CareerCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\CareerOfficeRules.cs" Link="Mod\CareerOfficeRules.cs" />

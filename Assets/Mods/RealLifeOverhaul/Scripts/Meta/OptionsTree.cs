@@ -346,6 +346,8 @@ namespace RealLifeOverhaul.Meta
                     .Also("borrow overdraft card collections repossession").Also("economy_products", "mortgage rent overdraft card finance"),
                 S("banks").For("economy_banks").Need("economy").Opts("economy_banks").Also("bank app current account statement card loan apply"),
                 S("cityeco").For("economy_city").Need("economy").Main("economy_city").Opts("economy_city_level", "economy_rate_ahead").Also("prices rates boom recession inflation"),
+                S("econapp").For("economy_app").Need("economy").Main("economy_app").Opts("economy_app_look")
+                    .Also("economy app dashboard dashboards chart charts trend trends insight insights advice verdict jobs districts markets finances dark light theme look"),
                 S("ventures").For("ventures").Opts("ventures_investors", "ventures_level").Also("invest investor pitch deal"),
                 S("markets").For("markets", "markets_listing", "markets_bots", "markets_derivatives").Main("ventures_market")
                     .Opts("markets_margin", "markets_listing", "markets_bots", "markets_dividend_notes", "markets_bonds", "markets_bond_so_far", "markets_derivatives")
@@ -403,8 +405,11 @@ namespace RealLifeOverhaul.Meta
                     .Also("show flat flats viewing viewings buyer buyers sales agent renovation renovate refit refurbish hoarding")
                     .Also("builder builders building company land lot lots plot plots project plans architect planning permission appeal inspector inspection")
                     .Also("crew crews foreman tender tenders developer developers rival rivals merchant materials crane yard flats loan investor ribbon"),
-                S("buildmode").Guide("construction").Need("construction").Opts("construction_buildmode")
-                    .Also("build mode zoning zone zones cells cell squares grid cities skylines demand bulldoze"),
+                S("buildmode").Guide("construction").Need("construction").Opts("construction_buildmode").Opt("construction_growth", "construction_buildmode")
+                    .Opt("construction_parking", "construction_buildmode")
+                    .Also("parking lot lots car park carpark bays pay machine lease leases garage")
+                    .Also("build mode zoning zone zones cells cell squares grid cities skylines demand bulldoze")
+                    .Also("grow growth growables let it grow tier basic standard premium tenants condition run down brush rectangle fill unzone"),
                 S("offices").For("office_space").Opts("office_conversion").Also("office offices shop shops empty space building buildings convert vacant"),
                 S("estate").For("economy_estate").Need("economy").Opts("economy_estate", "economy_estate_hotel", "economy_estate_hire", "economy_estate_rent")
                     .Also("buildings landlord tenant letting rent rental income").Also("economy_estate", "rent tenant landlord letting"),

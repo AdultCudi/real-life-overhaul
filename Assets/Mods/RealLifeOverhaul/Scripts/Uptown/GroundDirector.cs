@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using BAModAPI;
+using RealLifeOverhaul.NewBuildings;
 using RealLifeOverhaul.NewGround;
 using UI.Notification;
 using UnityEngine;
@@ -133,6 +134,7 @@ namespace RealLifeOverhaul.Uptown
             // The backdrop and the walls across the old street ends go first: the ground's check counts every collider of
             // the game's left on the district's ground as something a free update built there.
             LayoutPlans.Hides(_rects);
+            SouthRules.Hides(_rects);   // and the backdrop's boxes along the avenues' south pavements, which a row of the game's buildings replaces
             _hidden = GroundGame.HideBackdrop(_rects);
             _strays = GroundGame.HideStrays(_rects);
             LayoutPlans.OldWalls(_wallX, _wallZ);
@@ -242,24 +244,30 @@ namespace RealLifeOverhaul.Uptown
             Logger?.Info("Uptown: not laid at this load: " + why + ".");
         }
 
-        // The game's late call after its own start of the city, the loading screen still up: the parking along the
-        // district's kerbs and, with the pedestrians' ground, their zones; and with Developer diagnostics on, whether the
-        // traffic took the district's streets as its own.
+        // The game's late call after its own start of the city, the loading screen still up: the mouths of the district's garage doors
+        // made clear (the buildings stand by now), then the parking along the district's kerbs, cut short where a mouth crosses
+        // them, and, with the pedestrians' ground, their zones; and with Developer diagnostics on, whether the traffic took the
+        // district's streets as its own.
         private bool Late()
         {
             if (_build == null)
             {
                 return true;
             }
+            var standing = new List<MadeBuilding>(MadeBuildings.Count);
+            MadeBuildings.All(standing);
+            int mouths = GroundGame.OpenMouths(standing);
             int refused = GroundGame.Populate(_people, out string why);
             if (Meta.Dev.Verbose && RoadData.Scene != null)
             {
                 RoadsGame.Taken(_build, RoadData.Scene, out string line);
                 Logger?.Info("Uptown check (streets): " + line);
             }
-            Logger?.Info("Uptown: once the game was loaded, " + GroundGame.ParkingLanes + " parking lanes along its kerbs" + (refused > 0 ? " (" + refused + " not laid: " + why + ")" : string.Empty)
+            Logger?.Info("Uptown: once the game was loaded, " + GroundGame.LanesLaid + " parking lanes along its kerbs" + (refused > 0 ? " (" + refused + " not laid: " + why + ")" : string.Empty)
                          + (GroundGame.LanesKeptOff > 0 ? " (" + GroundGame.LanesKeptOff + " kept off the big special places' mouths)" : string.Empty)
-                         + " and " + GroundGame.PeopleZones + " pedestrians' zones" + (_people ? string.Empty : " (no pedestrians' ground)") + ".");
+                         + " and " + GroundGame.PeopleZones + " pedestrians' zones" + (_people ? string.Empty : " (no pedestrians' ground)") + "; " + mouths
+                         + " garage door mouth(s) kept clear (" + GroundGame.LanesTrimmed + " parking lane(s) cut short for " + GroundGame.ParkingMetresAway + " m of kerb, " + GroundGame.LampsAway
+                         + " lamp post(s), " + GroundGame.GateLitterAway + " bag(s) of litter and " + StreetsGame.GateAway + " piece(s) of street furniture put away).");
             return true;
         }
 

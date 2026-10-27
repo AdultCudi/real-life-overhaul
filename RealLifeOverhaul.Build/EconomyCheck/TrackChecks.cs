@@ -38,6 +38,9 @@ internal static partial class Program
         public bool CanStart(ProjectFile p) => Start;
         public bool CanHire(ProjectFile p) => HireOk;
         public int ClaimDue(int claim) => Claims.TryGetValue(claim, out int day) ? day : -1;
+        public bool Near = true;
+        public bool NearMine(GrowFile g) => Near;
+        public string GrowOf(GrowFile g) => "Homes at " + g.Lot;
     }
 
     private static Dictionary<string, string> _trackEn;

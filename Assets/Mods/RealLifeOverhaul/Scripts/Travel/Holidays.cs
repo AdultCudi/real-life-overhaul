@@ -299,7 +299,7 @@ namespace RealLifeOverhaul
             TravelState.Away = true;
             TravelState.AwayStep = 0;
             TravelState.AwayStartDay = TimeHelper.CurrentDay;
-            TravelState.AwayMoneyAtStart = Mathf.RoundToInt(SaveGameManager.Current.Money);
+            TravelState.AwayMoneyAtStart = WholeMoney.Round(SaveGameManager.Current.Money);   // saturating: a purse past an int is not a cast (Core/WholeMoney)
             TravelState.AwaySpent = TravelState.AwayRelaxed = TravelState.AwaySouvenirs = 0;
             _director.Seclude(true);
             _director.Log("Travel: set off on " + trip.Id + " (" + trip.Days + " days).");

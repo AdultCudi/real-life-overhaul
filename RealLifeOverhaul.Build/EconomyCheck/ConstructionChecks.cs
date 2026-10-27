@@ -21,8 +21,8 @@ internal static partial class Program
     private static void ConstructionCatalogue()
     {
         int kinds = Enum.GetValues(typeof(SiteKind)).Length;
-        Check(kinds == 7 && (int)SiteKind.Rebuild == 4 && (int)SiteKind.Plot == 5 && (int)SiteKind.Demolition == 6,
-            "construction: the rebuild, the plot and the demolition are kinds 4, 5 and 6, after the four the saves already hold");
+        Check(kinds == 8 && (int)SiteKind.Rebuild == 4 && (int)SiteKind.Plot == 5 && (int)SiteKind.Demolition == 6 && (int)SiteKind.Parking == 7,
+            "construction: the rebuild, the plot, the demolition and the car park are kinds 4, 5, 6 and 7, after the four the saves already hold");
         Check(CivicCatalogue.Projects.Length == kinds * 3 && CivicCatalogue.Phases.Length == kinds * CivicCatalogue.PhasesPerKind && CivicCatalogue.SiteHours.Length == kinds,
             "construction: three project names, five stage names and the working hours for every kind of site");
         Check(CivicCatalogue.SiteHours[(int)SiteKind.Rebuild] > CivicCatalogue.SiteHours[(int)SiteKind.Scaffold] && CivicCatalogue.SiteHours[(int)SiteKind.Plot] > CivicCatalogue.SiteHours[(int)SiteKind.Rebuild],
@@ -53,7 +53,7 @@ internal static partial class Program
         // A kind of a later version reads as the last this one knows; a negative one as roadworks: the save always loads.
         string later = line.Replace("|8|5|plot:", "|8|9|plot:");
         var older = new WorksState();
-        Check(older.Read(later) && older.Sites[1].Kind == SiteKind.Demolition, "construction: a site of a kind this version does not know is read as its last kind");
+        Check(older.Read(later) && older.Sites[1].Kind == SiteKind.Parking, "construction: a site of a kind this version does not know is read as its last kind");
         Check(Fields(new SiteState { Kind = SiteKind.Plot, Street = "plot:24x20:090:5", UnsafeFrom = -1f }) == Fields(new SiteState { Kind = SiteKind.Scaffold, Street = "ba:street_x", UnsafeFrom = -1f }),
             "construction: a plot's record has the same fields as any site's (nothing added to the save's line)");
     }

@@ -129,6 +129,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--outlook")
+        {
+            OutlookApp();   // (the Economy app's checks alone, while working on them: OutlookChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--landmarks")
         {
             LandmarksChecks();   // (Uptown's landmarks alone, while working on them: LandmarksChecks.cs)
@@ -146,7 +152,20 @@ internal static partial class Program
             UptownLifeChecks();   // (Uptown's life and its filled band alone, while working on them: UptownLifeChecks.cs, UptownFillChecks.cs, UptownPlaceChecks.cs, UptownBigChecks.cs)
             UptownSpecialsChecks();
             UptownBigChecks();
+            GateChecks();
             LandmarksChecks();
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--gates")
+        {
+            GateChecks();   // (the vehicle entrances of the copied buildings alone, while working on them: GateChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--uptown-look")
+        {
+            UptownLookChecks();   // (the looks of Uptown's buildings alone, while working on them: UptownLookChecks.cs)
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
@@ -183,6 +202,18 @@ internal static partial class Program
         if (args.Length == 1 && args[0] == "--corners")
         {
             CornerChecks();   // (the corner buildings alone, while working on them: CornerChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--growth")
+        {
+            GrowChecks();   // (buildings that grow alone, while working on them: GrowChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--parking")
+        {
+            ParkChecks();   // (car parks alone, while working on them: ParkChecks.cs)
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
@@ -386,7 +417,9 @@ internal static partial class Program
         Managers();   // the managers of the player's places: their decisions inside the limits, mistakes, undo and the save (ManagerChecks.cs)
         Hierarchy();  // the company's policy over the managers, its scopes, the escalations, who holds them and the save (HierarchyChecks.cs)
         StaffCentres();   // a raise for several picked in MyEmployees, a warehouse taken as a data centre, a data centre's crew by a search firm (PickedRaiseChecks.cs, CentreCrewChecks.cs)
+        DataEngineers();   // data engineers hired for a data centre: who a place with no desks seats, the starts, the day's repair, the test and the texts (DataEngineerChecks.cs)
         FontFix();   // What's new tells of the font stutter fix in all nine languages (FontFixChecks.cs)
+        MapTreesFix();   // What's new tells of the city map fix in all eleven languages; the guard and its test are wired (MapTreeChecks.cs)
         Estate();
         Online();
         Services();
@@ -555,6 +588,7 @@ internal static partial class Program
         OptionKeysFix(); // the options kept under the mod's own id for every copy: the older copies' values brought over once, the running copy's first, the sources, the texts (OptionKeysChecks.cs)
         HomeFixes();    // home life: the roommate's talk test with no character, the door to social life nobody read, rain and sleep in a hotel room (HomeFixChecks.cs)
         LifeFixes();    // life events: news of the player's home, building, neighbours and landlord only to a player with a home (LifeFixChecks.cs)
+        VehicleCosts(); // vehicle costs: a purse past an int took 2.1 billion as a life event's loss; money into an int, a car's costs on their worst input, the wrong charge paid back (VehicleCostChecks.cs)
         TravelFixes();  // travel: the hotel room refused while the game was paused (TravelFixChecks.cs)
         ChessFixes();   // street chess: the whole setup clear of crossings in both placement paths (ChessFixChecks.cs)
         LedgerFixes();  // the City Ledger: a kiosk copy never charged when the page cannot open, the subscription's lines (LedgerFixChecks.cs)
@@ -588,7 +622,10 @@ internal static partial class Program
         Hire();         // a builder of the city's hired by the player: the quotes, the contract's money, the penalty, the pace, the line, the sources, the texts (HireChecks.cs)
         BuilderDesk();  // the front desks: what the desk talks about first, the front desk picked, the office's visitors, the one quote and hire, the click, the tests, the texts (BuilderDeskChecks.cs)
         BuildModeChecks();   // build mode: the zoning cells on the real plan, sites, prices, rows, the state machine, colours, warnings, demand and the market, whole buildings, the store, the sources, the texts (BuildModeChecks.cs)
+        GrowChecks();   // buildings that grow: zoning per square and its tools, the council's zoning, the developer's pick, the steady pace on the real plan, the tiers, tenants, condition, the store, the sources, the texts (GrowChecks.cs)
         CornerChecks();   // the corner buildings: the corner site rule on the real plan, the four turns, the fit and the ground beneath, the signs, the bundle, the records, the sources, the texts (CornerChecks.cs)
+        ParkChecks();   // car parks: the layout of bays on every size of site, the works and their cost, where one may stand, the price band, how full by the hour, leases, the city's builders, the store, the sources, the texts (ParkChecks.cs)
+        OutlookApp();   // the Economy app: its history and the line in the save, a change and its tone, the verdict, the districts' ranking, each piece of advice and its sentence, the charts' scaling and smoothing, the colours' contrast, the texts (OutlookChecks.cs)
         Track();        // Show on map and the construction objectives: what is under way, each line's words, the order, the cap, the claim kept, the one way to the destination, the game's objectives window, the texts (TrackChecks.cs)
         MapFilterChecks();   // a building the construction game finishes registers with the city map's filters when it stands and leaves them when it goes: the rows, the steps, the list, the sources, the text (MapChecks.cs)
         StandNowChecks();   // a building handed over stands at once, and the opening day is not missed: when it stands, the one declaration, the record set up once, the sources, the texts (StandChecks.cs)
@@ -599,6 +636,7 @@ internal static partial class Program
         UptownLifeChecks();   // Uptown as a district of the game: its values, its map quad, its lots, its line, the district save, every table by district (UptownLifeChecks.cs)
         UptownSpecialsChecks();   // Uptown's special places: the table on the plan, its refusals, the importer's goods, the save's records, the sources, the texts (UptownSpecialsChecks.cs)
         UptownBigChecks();    // Uptown's wholesale store and gas station: their lots, their ground and where each stands, the whole designs, the mouths, the sources, the texts (UptownBigChecks.cs)
+        GateChecks();         // the vehicle entrances of the copied buildings: the game's garage doors and car parks, which a copy keeps, where each looks out, the mouths kept clear, the sources, the texts (GateChecks.cs)
         MarketsBuild();   // the city's builders on the market and a project's hedge: who is listed, the news and its moves, two machines alike, the building materials, the hedge's rules and money, a project's exposure, the books, the sources, the texts (MarketsBuildChecks.cs)
         LandmarksChecks();    // Uptown's landmarks: their sites, a span of lots, the timetable, the lift, the season, the stadium, the line, the sources, the texts (LandmarksChecks.cs)
         SchoolChecks();       // Birchwood School and the city's schools: the campus on its block, the market, the owner's rule for NPCs, the days, the lift, the line, the sources, the texts (SchoolChecks.cs)

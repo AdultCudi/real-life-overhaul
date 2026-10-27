@@ -116,7 +116,7 @@ internal static partial class Program
         Check(MethodText(game, "internal static void Hold(").Contains("GoingPublic.InSession") && MethodText(game, "internal static void Release(").Contains("if (_paused)"),
             "front desk sources: the game is paused as its desk staff pause it, never in a Going Public session, and runs again only if the talk paused it");
         Check(game.Contains("public const string Talk = \"click_to_talk\";") && MethodText(game, "internal static bool Install(").Contains("_list.Insert(0, _behaviour);")
-              && game.Contains("return entityController is BuilderDeskPointer;") && contract.Contains("ClickDesk, ClickBuilderDesk)"),
+              && game.Contains("return entityController is BuilderDeskPointer;") && contract.Contains("ClickDesk, ClickBuilderDesk, ClickCarPark)"),
             "front desk sources: the game's own call to talk, first in its list and answering only for the desk's pointer, a part of the game contract");
         Check(MethodText(game, "internal static EmployeeStationController Front(").Contains("FrontDeskRules.Front(Xs, Zs, Stations.Count, door.x, door.z)") && MethodText(game, "internal static ThirdPersonCharacter Seated(").Contains("!e.isPlayer && !e.IsAway"),
             "front desk sources: the front desk is the game's own staff nearest the door, never a desk the player works at or its person away");
@@ -200,8 +200,8 @@ internal static partial class Program
         Check(ModSource(@"Core\GameContract.cs").Contains("\"click_builder_desk\", \"construction\", \"" + part + "\""), "front desk texts: the contract part's words are its English in the game contract");
         var guideLines = new Dictionary<string, string>(StringComparer.Ordinal)
         {
-            { "en", "- Or go to a builder's office in Uptown and click the person at the front desk:" }, { "pt", "- Ou vá ao escritório de uma construtora em Uptown" },
-            { "zh-cn", "- 也可以去上城一家建筑商的办公室" }
+            { "en", "- Or go to a builder's office in Uptown or Cedar Heights and click the person at the front desk:" }, { "pt", "- Ou vá ao escritório de uma construtora em Uptown" },
+            { "zh-cn", "- 也可以去上城或雪松高地的一家建筑商的办公室" }
         };
         for (int l = 0; l < words.Length && l < 3; l++)
         {

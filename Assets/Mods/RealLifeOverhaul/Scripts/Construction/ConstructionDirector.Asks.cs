@@ -109,11 +109,11 @@ namespace RealLifeOverhaul.Construction
             }
         }
 
-        internal static double LandPrice()
+        internal static double LandPrice(string lot)
         {
             try
             {
-                return !Down("LandPrice") && ConstructionBridges.LandPrice != null ? ConstructionBridges.LandPrice() : double.NaN;
+                return !Down("LandPrice") && ConstructionBridges.LandPrice != null ? ConstructionBridges.LandPrice(lot) : double.NaN;
             }
             catch (Exception e)
             {
@@ -194,6 +194,20 @@ namespace RealLifeOverhaul.Construction
             catch (Exception e)
             {
                 Faulty("StartPlot", e);
+                return 0;
+            }
+        }
+
+        internal static int StartLotSite(Vector3 middle, int yaw, int width, int depth, int contractor, int hours, out string why)
+        {
+            why = "the city's construction programme is not running";
+            try
+            {
+                return !Down("StartLot") && ConstructionBridges.StartLot != null ? ConstructionBridges.StartLot(middle, yaw, width, depth, 0, contractor, hours, out why) : 0;
+            }
+            catch (Exception e)
+            {
+                Faulty("StartLot", e);
                 return 0;
             }
         }

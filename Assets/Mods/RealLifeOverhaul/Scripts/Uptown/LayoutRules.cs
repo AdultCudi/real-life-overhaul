@@ -125,6 +125,9 @@ namespace RealLifeOverhaul.Uptown
         private static Dictionary<string, Lot> _byId;
         private static List<GroundRect> _firstGround;
         private static List<GroundRect> _bandGround;
+        private static HashSet<string> _pinned;     // lots a save keeps as the first plan had them (LayoutRules.Pin): set before the plan is read
+        private static List<string> _swaps;         // the lots the rebalance builds as J1 offices in place of M1 stores, before any pin
+        private static HashSet<string> _swapped;    // of those, the ones built as J1 offices now (the pinned stay stores)
 
         // ---- the grid
 
@@ -344,6 +347,125 @@ namespace RealLifeOverhaul.Uptown
         /// <summary>The landmarks' own blocks the open runs keep off (for the checks, against LandmarkRules).</summary>
         public static IReadOnlyList<int> KeptForLandmarks => LandmarkBlocks;
 
+        // ---- the rebalance (the owner, 27 Oct 2026, after a player's "the amount of 75 capacity stores"): the game's largest store, M1 with
+        // room for 75 customers, was 28 of the band's 566 buildings against 12 in Midtown, the game's most; the plan keeps only as many as
+        // each district's quota (DistrictSplit.LargeStoresOf) and builds the rest as J1 offices on the same five spaces, so no lot's id,
+        // address or neighbour moves. Which stay is fixed data: the special places' lots first, then the avenues' (a big store belongs on a
+        // main road), then by the hash of the lot's id.
+
+        public const string LargeSize = "ba:buildingsize_m";   // M1: the game's largest store, 75 customers
+        public const string SwapSize = "ba:buildingsize_j";    // J1: an office of 285 m2 on the same five spaces (29.9 m frontage against M1's 32.4 m)
+        public const int RebalanceGeneration = 1;               // the rebalance's generation, kept in a save's line (LifeStore ^r): 0 before it was decided there
+
+        // M1 lots a special place stands on (SpecialsRules: the furniture store and the car dealership): never swapped.
+        private static readonly string[] LargeKept = { "uptown_2_09_0001", "uptown_2_13_0005" };
+
+        /// <summary>The lots the rebalance builds as J1 offices in place of M1 stores, in id order, whatever any save pins.</summary>
+        public static IReadOnlyList<string> Swaps
+        {
+            get
+            {
+                Make();
+                return _swaps;
+            }
+        }
+
+        /// <summary>True when the lot is built as a J1 office now, in place of an M1 store.</summary>
+        public static bool IsSwapped(string lotId)
+        {
+            Make();
+            return lotId != null && _swapped.Contains(lotId);
+        }
+
+        /// <summary>
+        /// Lots a save keeps as the first plan had them, M1 stores someone holds (the player or another player, a building the
+        /// construction game made): set before the plan is read for a load, and the plan is made again from them. Null or none for a
+        /// save with nothing held, which has them all rebalanced.
+        /// </summary>
+        public static void Pin(ICollection<string> lotIds)
+        {
+            HashSet<string> next = lotIds != null && lotIds.Count > 0 ? new HashSet<string>(lotIds, StringComparer.Ordinal) : null;
+            bool same = (next == null && _pinned == null) || (next != null && _pinned != null && next.SetEquals(_pinned));
+            if (same)
+            {
+                return;
+            }
+            _pinned = next;
+            _lots = null;
+            _places = null;
+            _first = null;
+            _byId = null;
+            _swaps = null;
+            _swapped = null;
+        }
+
+        // The rebalance over the laid lots, in id order after Number: each district's M1 lots in the order they are kept in, the quota
+        // kept and the rest built as J1 (their size and version; their class stays Big, so no lease or class count moves).
+        private static void Rebalance(List<Laid> laid)
+        {
+            var swaps = new List<string>(24);
+            var swapped = new HashSet<string>(StringComparer.Ordinal);
+            for (int d = 0; d < DistrictSplit.Count; d++)
+            {
+                var large = new List<Laid>(24);
+                for (int i = 0; i < laid.Count; i++)
+                {
+                    Laid l = laid[i];
+                    if (l.Place == null && !l.Open && l.Size == LargeSize && DistrictSplit.OfColumn(l.Column) == d)
+                    {
+                        large.Add(l);
+                    }
+                }
+                large.Sort((a, b) =>
+                {
+                    int byRank = KeepRank(a).CompareTo(KeepRank(b));
+                    if (byRank != 0)
+                    {
+                        return byRank;
+                    }
+                    int byHash = Fnv(IdOf(a) + "|large").CompareTo(Fnv(IdOf(b) + "|large"));
+                    return byHash != 0 ? byHash : string.CompareOrdinal(IdOf(a), IdOf(b));
+                });
+                for (int i = DistrictSplit.LargeStoresOf(d); i < large.Count; i++)
+                {
+                    string id = IdOf(large[i]);
+                    swaps.Add(id);
+                    if (_pinned != null && _pinned.Contains(id))
+                    {
+                        continue;
+                    }
+                    large[i].Size = SwapSize;
+                    large[i].Version = 1;
+                    swapped.Add(id);
+                }
+            }
+            swaps.Sort(StringComparer.Ordinal);
+            _swaps = swaps;
+            _swapped = swapped;
+        }
+
+        private static string IdOf(Laid l)
+        {
+            return "uptown_" + l.Row.ToString(Inv) + "_" + l.Column.ToString("00", Inv) + "_" + l.InBlock.ToString("0000", Inv);
+        }
+
+        // 0 a special place's lot, 1 a lot on an avenue, 2 any other.
+        private static int KeepRank(Laid l)
+        {
+            return Array.IndexOf(LargeKept, IdOf(l)) >= 0 ? 0 : l.Yaw == 0 || l.Yaw == 180 ? 1 : 2;
+        }
+
+        private static uint Fnv(string text)
+        {
+            uint hash = 2166136261u;
+            for (int i = 0; i < text.Length; i++)
+            {
+                hash ^= text[i];
+                hash = unchecked(hash * 16777619u);
+            }
+            return hash;
+        }
+
         // One lot as laid, before its street and number are known.
         private sealed class Laid
         {
@@ -400,6 +522,7 @@ namespace RealLifeOverhaul.Uptown
             }
             laid.Sort((a, b) => a.Row != b.Row ? a.Row.CompareTo(b.Row) : a.Column != b.Column ? a.Column.CompareTo(b.Column) : order[a].CompareTo(order[b]));
             Number(laid);
+            Rebalance(laid);
             var lots = new List<Lot>(laid.Count);
             var places = new List<Lot>(PlaceTable.Length);
             var first = new List<Lot>(128);
@@ -417,6 +540,7 @@ namespace RealLifeOverhaul.Uptown
                     places.Add(lot);
                     continue;
                 }
+                lot.Rebalanced = _swapped.Contains(id);
                 lots.Add(lot);
                 byId[id] = lot;
                 if (isFirst)

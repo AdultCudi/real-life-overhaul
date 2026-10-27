@@ -2,7 +2,7 @@
 [b]Real Life Overhaul is free and always will be. You never have to pay. If you want to say thanks, a dollar is plenty.[/b]
 
 [b]Discord for help, bug reports and ideas: [url=https://discord.gg/tzCh2VXs9E]discord.gg/tzCh2VXs9E[/url][/b]
-[b]Languages: English, Brazilian Portuguese, Simplified Chinese, German, French, Spanish, Russian, Dutch and Turkish[/b]
+[b]Languages: English, Brazilian Portuguese, Simplified Chinese, German, French, Spanish, Russian, Dutch, Turkish, Polish and Korean[/b]
 [b]Optional: [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3820711613]RLO Texts[/url], [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3824106911]Large[/url], [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3820776564]Medium[/url] or [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3820712020]Lite[/url]: a small model on your PC writes what people say, offline.[/b]
 
 [h1]Real Life Overhaul[/h1]
@@ -10,11 +10,11 @@ Real Life Overhaul adds everyday life to the city of Big Ambitions: things happe
 
 [h1]What it adds[/h1]
 [list]
-[*][b]A living street.[/b] People chat, eat, queue and busk. Accidents with ambulances and police, fires, crimes, street events and weather. Police stations with officers at work.
+[*][b]A living street.[/b] People chat, eat, queue and busk. Accidents with ambulances and police, fires, crimes, street events and weather. Police stations with officers.
 [*][b]Getting around.[/b] City buses on many lines: walk on by either door, ride in real time or skip, and change between lines. The subway, taxis, bicycles, scooters, and a minimap with a GPS route.
 [*][b]Driving.[/b] Cars that handle by their kind, chase and third person cameras, a garage for paint, parts and tuning, running costs and a driving school.
 [*][b]Police, courts and the council.[/b] Fines, arrests, bail, hearings and prison. A council and a mayor you vote for, or stand yourself: a campaign, a debate, the count by district and the city's policies if you win.
-[*][b]Street talk.[/b] Talk to anybody on the pavement: ask the way, swap numbers, invite them out or type your own words.
+[*][b]Street talk.[/b] Talk to anybody on the pavement: ask the way, swap numbers, invite them out or type your words.
 [*][b]Home and family.[/b] Cooking, chores, a partner, a wedding, children, friends, outings, leisure, a roommate and selfies.
 [*][b]Education and careers.[/b] Courses at the school, and degrees and certificates at the university, with fees, loans and exams. 25 professions at the city's businesses and your rivals' companies, with ranks up to the top seat, freelance work and a firm of your own. Street jobs and gigs too.
 [*][b]Standing.[/b] The city knows how rich, how known and how well thought of you are: reporters, a night show, promises remembered, invitations, lobbying, and bribes that can come out.
@@ -58,7 +58,7 @@ In each save you want to keep, press "Prepare this save for removing the mod" un
 Some journeys, hotels, indoor outings, court and prison pass under a fade or as text, and children are never seen. The Guide's "Known limits" page has the full list.
 
 [h1]Reporting a problem[/h1]
-Switch on "Developer diagnostics" under Troubleshooting, make the problem happen again, and send Player.log from %USERPROFILE%\AppData\LocalLow\Hovgaard Games\Big Ambitions with a screenshot, the mod version (0.57.2) and your other mods.
+Switch on "Developer diagnostics" under Troubleshooting, make the problem happen again, and send Player.log from %USERPROFILE%\AppData\LocalLow\Hovgaard Games\Big Ambitions with a screenshot, the mod version (0.60.1) and your other mods.
 
 [h1]Source and contributions[/h1]
 The mod is open source under the MIT licence. Report problems and send changes here: https://github.com/AdultCudi/real-life-overhaul

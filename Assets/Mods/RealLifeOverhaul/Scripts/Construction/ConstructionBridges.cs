@@ -119,8 +119,8 @@ namespace RealLifeOverhaul.Construction
         /// <summary>True when a lot of the district takes a building of one of the game's sizes (its class's sizes). Default: any size.</summary>
         public static Func<string, string, bool> SizeTaken;
 
-        /// <summary>The district's price a square metre (its base price times its real estate multiplier). Default: not known.</summary>
-        public static Func<double> LandPrice;
+        /// <summary>The price a square metre of the land of the district a lot is in (its base price times its real estate multiplier, at its market level). Default: not known.</summary>
+        public static Func<string, double> LandPrice;
 
         /// <summary>
         /// A finished building handed to the district, the player's or the city's: it stands at once when nobody sees its ground,
@@ -183,6 +183,12 @@ namespace RealLifeOverhaul.Construction
         /// <summary>A district building on a lot made another use, a game building type its structure takes: null when done, else why not. Default: none.</summary>
         public static Func<string, string, string> Convert;
 
+        /// <summary>The unit of the city's building on a lot let to its tenant now (a grown building's, plans/growables.md): null when done, else why not. Default: refused.</summary>
+        public static Func<string, string> LetUnit;
+
+        /// <summary>A district building's traffic lowered by so many points for its poor condition (0: its own again); false when none stands. Default: nothing.</summary>
+        public static Func<string, int, bool> Retraffic;
+
         /// <summary>A rival builder's office (its index among the city's contractors) as the game writes its address, or null when it has none standing at this load. Default: none.</summary>
         public static Func<int, string> RivalOffice;
 
@@ -213,6 +219,12 @@ namespace RealLifeOverhaul.Construction
         public static PlotStart StartPlot;
 
         public delegate int PlotStart(Vector3 middle, int yaw, int width, int depth, int storeys, int contractor, int hours, out string why);
+
+        /// <summary>A car park's works on a lot's ground: its middle, yaw, width and depth (whole metres), contractor and hours (the storeys are not used). The site's id, or 0 with why.</summary>
+        public static PlotStart StartLot;
+
+        /// <summary>A car park has stood in play on a ground (x and z from, to): the works' props on it come down in the same moment, so the works and the car park are never seen together.</summary>
+        public static Action<float, float, float, float> GroundGiven;
 
         /// <summary>A site of a kind at one of the city's buildings (a rebuild, a scaffold), the player's own or a contractor's. The site's id, or 0 with why.</summary>
         public static WorksStart StartWorks;
@@ -466,6 +478,8 @@ namespace RealLifeOverhaul.Construction
             Cleared = null;
             HideLook = null;
             Extend = null;
+            LetUnit = null;
+            Retraffic = null;
             Convert = null;
             StandingAll = null;
             Holdings = null;
@@ -477,6 +491,8 @@ namespace RealLifeOverhaul.Construction
             Designs = null;
             Footprint = null;
             StartPlot = null;
+            StartLot = null;
+            GroundGiven = null;
             StartWorks = null;
             Site = null;
             AllSites = null;

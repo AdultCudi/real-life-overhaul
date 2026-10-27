@@ -740,7 +740,7 @@ internal static partial class Program
                 all &= text.Length > 10 && (l == 0 || text != langs[0][key]) && !text.Contains("!") && !text.Contains("—") && !text.Contains("–")
                        && !text.Contains(" - ");
             }
-            Check(all && codes.Length == ModLanguages.All.Length,
+            Check(all && codes.Length == ModLanguages.PerFeature.Length,
                 "staff leaving: " + key + " is in every language, each its own, with the English names in curly brackets, no dash and no exclamation mark");
         }
         string gaveWay = langs[0]["reallife_staff_offer_gave_way"];

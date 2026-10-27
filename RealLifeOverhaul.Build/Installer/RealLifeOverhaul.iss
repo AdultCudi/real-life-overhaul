@@ -2,7 +2,7 @@
 ; It puts the mod in the game's ModsLocal folder, where the game loads it exactly as it loads a Workshop item.
 ;
 ; Build (see build-installer.ps1, which also stages the files):
-;   ISCC.exe /DAppVersion=0.57.2 /DSourceDir=<folder holding the RealLifeOverhaul folder> /DOutputDir=<folder> RealLifeOverhaul.iss
+;   ISCC.exe /DAppVersion=0.60.1 /DSourceDir=<folder holding the RealLifeOverhaul folder> /DOutputDir=<folder> RealLifeOverhaul.iss
 
 #ifndef AppVersion
   #error Pass /DAppVersion=<version>
@@ -54,6 +54,8 @@ Name: "es"; MessagesFile: "compiler:Languages\Spanish.isl"
 Name: "ru"; MessagesFile: "compiler:Languages\Russian.isl"
 Name: "nl"; MessagesFile: "compiler:Languages\Dutch.isl"
 Name: "tr"; MessagesFile: "compiler:Languages\Turkish.isl"
+Name: "pl"; MessagesFile: "compiler:Languages\Polish.isl"
+Name: "ko"; MessagesFile: "compiler:Languages\Korean.isl"
 
 [CustomMessages]
 en.GameRunning=Big Ambitions is running. Close the game, then press Retry.
@@ -64,6 +66,8 @@ es.GameRunning=Big Ambitions está abierto. Cierra el juego y pulsa Reintentar.
 ru.GameRunning=Big Ambitions запущена. Закройте игру и нажмите «Повторить».
 nl.GameRunning=Big Ambitions draait. Sluit het spel en druk dan op Opnieuw proberen.
 tr.GameRunning=Big Ambitions çalışıyor. Oyunu kapatın, ardından Yeniden Dene düğmesine basın.
+pl.GameRunning=Big Ambitions jest uruchomione. Zamknij grę, a potem naciśnij Ponów.
+ko.GameRunning=Big Ambitions이(가) 실행 중입니다. 게임을 닫은 다음 다시 시도를 누르세요.
 en.WorkshopToo=You are also subscribed to Real Life Overhaul on the Steam Workshop. With both, the game loads neither copy.%n%nAfter installing, unsubscribe from the Workshop item or untick it under Mods in the game's main menu. Press No to stop here.%n%nInstall anyway?
 pt.WorkshopToo=Você também está inscrito no Real Life Overhaul na Oficina Steam. Com os dois, o jogo não carrega nenhuma das cópias.%n%nDepois de instalar, cancele a inscrição no item da Oficina ou desmarque-o em Mods no menu principal do jogo. Pressione Não para parar aqui.%n%nInstalar mesmo assim?
 de.WorkshopToo=Du hast Real Life Overhaul auch im Steam Workshop abonniert. Mit beiden lädt das Spiel keine der beiden Kopien.%n%nKündige nach der Installation das Abo des Workshop-Objekts oder entferne den Haken unter Mods im Hauptmenü des Spiels. Klicke auf Nein, um hier aufzuhören.%n%nTrotzdem installieren?
@@ -72,6 +76,8 @@ es.WorkshopToo=También estás suscrito a Real Life Overhaul en el Workshop de S
 ru.WorkshopToo=Вы также подписаны на Real Life Overhaul в Мастерской Steam. С обеими копиями игра не загрузит ни одну из них.%n%nПосле установки отпишитесь от предмета в Мастерской или снимите с него отметку в разделе «Моды» главного меню игры. Нажмите «Нет», чтобы остановиться.%n%nВсё равно установить?
 nl.WorkshopToo=Je bent ook geabonneerd op Real Life Overhaul in de Steam Workshop. Met beide versies laadt het spel geen van beide kopieën.%n%nSchrijf je na de installatie uit voor het Workshop-item of vink het uit onder "Mods" in het hoofdmenu van het spel. Druk op Nee om hier te stoppen.%n%nToch installeren?
 tr.WorkshopToo=Steam Workshop üzerinden de Real Life Overhaul aboneliğiniz var. Her ikisi de yüklü olduğunda oyun iki kopyayı da yüklemez.%n%nKurulumdan sonra Workshop öğesinin aboneliğinden çıkın veya oyunun ana menüsündeki "Modlar" kısmından işaretini kaldırın. Burada durmak için Hayır düğmesine basın.%n%nYine de kurulsun mu?
+pl.WorkshopToo=Subskrybujesz też Real Life Overhaul w Warsztacie Steam. Gdy są oba, gra nie wczyta żadnej z kopii.%n%nPo instalacji anuluj subskrypcję elementu z Warsztatu albo odznacz go w Modach w menu głównym gry. Naciśnij Nie, aby tu przerwać.%n%nZainstalować mimo to?
+ko.WorkshopToo=Steam 워크숍에서 Real Life Overhaul도 구독 중입니다. 둘 다 있으면 게임은 어느 쪽 사본도 불러오지 않습니다.%n%n설치한 뒤에는 워크숍 항목의 구독을 취소하거나 게임 메인 메뉴의 모드에서 체크를 해제하세요. 여기서 멈추려면 아니요를 누르세요.%n%n그래도 설치할까요?
 en.ReadyText=Real Life Overhaul {#AppVersion} will be put in the game's mod folder:%n%n{#ModFolder}%n%nAn older copy there is replaced. Your saves and the mod's options are kept.
 pt.ReadyText=O Real Life Overhaul {#AppVersion} será colocado na pasta de mods do jogo:%n%n{#ModFolder}%n%nUma cópia mais antiga ali é substituída. Seus saves e as opções do mod são mantidos.
 de.ReadyText=Real Life Overhaul {#AppVersion} wird in den Mod-Ordner des Spiels gelegt:%n%n{#ModFolder}%n%nEine ältere Kopie dort wird ersetzt. Deine Spielstände und die Optionen der Mod bleiben erhalten.
@@ -80,6 +86,8 @@ es.ReadyText=Real Life Overhaul {#AppVersion} se pondrá en la carpeta de mods d
 ru.ReadyText=Real Life Overhaul {#AppVersion} будет помещён в папку модов игры:%n%n{#ModFolder}%n%nСтарая копия в ней заменяется. Ваши сохранения и настройки мода остаются.
 nl.ReadyText=Real Life Overhaul {#AppVersion} wordt in de modmap van het spel geplaatst:%n%n{#ModFolder}%n%nEen oudere kopie daar wordt vervangen. Je savegames en de opties van de mod blijven bewaard.
 tr.ReadyText=Real Life Overhaul {#AppVersion} oyunun mod klasörüne yerleştirilecek:%n%n{#ModFolder}%n%nOradaki eski bir kopya değiştirilecek. Kayıtlarınız ve mod seçenekleri korunacak.
+pl.ReadyText=Real Life Overhaul {#AppVersion} zostanie umieszczony w folderze modów gry:%n%n{#ModFolder}%n%nStarsza kopia w tym miejscu zostanie zastąpiona. Twoje zapisy i opcje moda zostaną zachowane.
+ko.ReadyText=Real Life Overhaul {#AppVersion}을(를) 게임의 모드 폴더에 설치합니다:%n%n{#ModFolder}%n%n그곳에 있는 이전 사본은 교체됩니다. 저장 파일과 모드 옵션은 그대로 유지됩니다.
 en.DoneText=Real Life Overhaul {#AppVersion} is installed.%n%nStart Big Ambitions: the mod's page is on the Mods tab of Options, and a notice opens its Guide. The first time you load a save that has never had mods, the game offers to keep a backup.
 pt.DoneText=O Real Life Overhaul {#AppVersion} está instalado.%n%nInicie o Big Ambitions: a página do mod fica na aba Mods das Opções, e um aviso abre o Guia. Na primeira vez que você carregar um save que nunca teve mods, o jogo oferece guardar uma cópia de segurança.
 de.DoneText=Real Life Overhaul {#AppVersion} ist installiert.%n%nStarte Big Ambitions: Die Seite der Mod ist im Reiter Mods der Optionen, und eine Mitteilung öffnet ihren Leitfaden. Wenn du zum ersten Mal einen Spielstand lädst, der nie Mods hatte, bietet das Spiel an, eine Sicherung anzulegen.
@@ -88,6 +96,8 @@ es.DoneText=Real Life Overhaul {#AppVersion} está instalado.%n%nInicia Big Ambi
 ru.DoneText=Real Life Overhaul {#AppVersion} установлен.%n%nЗапустите Big Ambitions: страница мода находится на вкладке «Моды» в настройках, а уведомление открывает его руководство. Когда вы впервые загрузите сохранение, в котором никогда не было модов, игра предложит сделать резервную копию.
 nl.DoneText=Real Life Overhaul {#AppVersion} is geïnstalleerd.%n%nStart Big Ambitions: de pagina van de mod staat op het tabblad "Mods" van "Opties", en een melding opent de "Gids". De eerste keer dat je een savegame laadt die nog nooit mods had, biedt het spel aan om een reservekopie te maken.
 tr.DoneText=Real Life Overhaul {#AppVersion} kuruldu.%n%nBig Ambitions'ı başlatın: modun sayfası "Ayarlar" içindeki "Modlar" sekmesindedir ve bir bildirim "Kılavuz"u açar. Daha önce hiç mod kullanılmamış bir kaydı ilk kez yüklediğinizde, oyun bir yedek tutmayı teklif eder.
+pl.DoneText=Real Life Overhaul {#AppVersion} został zainstalowany.%n%nUruchom Big Ambitions: strona moda jest na karcie Mody w Opcjach, a powiadomienie otwiera jego Przewodnik. Gdy po raz pierwszy wczytasz zapis, w którym nigdy nie było modów, gra zaproponuje zachowanie kopii zapasowej.
+ko.DoneText=Real Life Overhaul {#AppVersion} 설치가 끝났습니다.%n%nBig Ambitions를 실행하세요. 모드 페이지는 옵션의 모드 탭에 있고, 알림을 누르면 가이드가 열립니다. 모드를 쓴 적이 없는 저장 파일을 처음 불러오면 게임이 백업을 남길지 물어봅니다.
 
 [Messages]
 en.ConfirmUninstall=Before you remove the mod, load each save you played with it and press "Prepare this save for removing the mod" under Troubleshooting, Save tools, then save.%n%nRemove Real Life Overhaul now?
@@ -98,6 +108,8 @@ es.ConfirmUninstall=Antes de quitar el mod, carga cada partida en la que hayas j
 ru.ConfirmUninstall=Перед удалением мода загрузите каждое сохранение, в котором вы играли с ним, нажмите «Подготовить это сохранение к удалению мода» в разделе «Устранение неполадок», «Инструменты сохранений» и сохраните игру.%n%nУдалить Real Life Overhaul сейчас?
 nl.ConfirmUninstall=Voordat je de mod verwijdert, laad je elke savegame waarmee je de mod hebt gespeeld en druk je onder "Problemen oplossen", "Savegame-tools" op "Deze savegame voorbereiden op het verwijderen van de mod" en sla je op.%n%nReal Life Overhaul nu verwijderen?
 tr.ConfirmUninstall=Modu kaldırmadan önce, modla oynadığınız her kaydı yükleyin, "Sorun Giderme" altındaki "Kayıt Araçları"ndan "Bu kaydı modu kaldırmaya hazırla" seçeneğine basın ve kaydedin.%n%nReal Life Overhaul şimdi kaldırılsın mı?
+pl.ConfirmUninstall=Zanim usuniesz moda, wczytaj każdy zapis, w który z nim grałeś, naciśnij „Przygotuj ten zapis do usunięcia moda” w sekcji Rozwiązywanie problemów, Narzędzia zapisu, a potem zapisz grę.%n%nUsunąć teraz Real Life Overhaul?
+ko.ConfirmUninstall=모드를 제거하기 전에, 모드와 함께 플레이한 저장 파일을 각각 불러와서 문제 해결, 저장 도구의 "모드 제거를 위해 이 저장 파일 준비"를 누른 다음 저장하세요.%n%n지금 Real Life Overhaul을 제거할까요?
 
 [InstallDelete]
 ; whatever an older version left, so that no stale file is loaded with the new one

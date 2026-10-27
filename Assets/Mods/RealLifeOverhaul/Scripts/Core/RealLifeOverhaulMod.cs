@@ -229,6 +229,8 @@ namespace RealLifeOverhaul
                     v => Settings.NoticeLook = v)
                 .AddButton("reallife_test_notice_look", GameUi.NoticeLook.Test)
                 .AddButton("reallife_test_event", () => LifeEvents.Instance?.TriggerEventNow())
+                .AddButton("reallife_moods_test", MoodsTest.Run)
+                .AddButton("reallife_maptrees_test", MapTreeGuard.RunTest)
                 .AddButton("reallife_test_accident", () => TrafficAccidents.Instance?.StageAccidentNow())
                 .AddButton("reallife_test_accident_minor", () => TrafficAccidents.Instance?.StageAccidentNow(TrafficAccidents.Severity.Minor))
                 .AddButton("reallife_test_accident_moderate", () => TrafficAccidents.Instance?.StageAccidentNow(TrafficAccidents.Severity.Moderate))
@@ -499,6 +501,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_test_car_fuel", () => CarOwnership.Instance?.TestFuel())
                 .AddButton("reallife_test_car_breakdown", () => CarOwnership.Instance?.TestBreakdown())
                 .AddButton("reallife_test_car_garage", () => CarOwnership.Instance?.TestGarage())
+                .AddButton("reallife_test_vehicle_costs", () => CarOwnership.Instance?.TestCosts())
                 .AddSplitter()
                 .AddHeader("reallife_leisure_header")
                 .AddToggle(Settings.LeisureId, "reallife_leisure_enabled", Settings.Leisure,
@@ -891,6 +894,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_macro_test_district_up", () => Economy.CityEconomyDirector.Instance?.TestDistrict(100))
                 .AddButton("reallife_macro_test_district_down", () => Economy.CityEconomyDirector.Instance?.TestDistrict(-100))
                 .AddButton("reallife_macro_test_back", () => Economy.CityEconomyDirector.Instance?.TestBack())
+                .Guarded(o => Outlook.OutlookOptions.AddOutlook(o))   // the Economy app (Scripts/Outlook)
                 .AddToggle(Settings.VenturesInvestorsId, "reallife_ven_investors", Settings.VenturesInvestors,
                     v => Settings.VenturesInvestors = v)
                 .AddDropdown(Settings.VenturesLevelId, "reallife_ven_level",
@@ -1065,6 +1069,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_hire_test_market", () => Tech.TechDirector.Instance?.TestMarketDay())
                 .AddButton("reallife_hire_test_search", () => Tech.TechDirector.Instance?.TestSearch())
                 .AddButton("reallife_crew_test", () => Tech.TechDirector.Instance?.TestCrewSearch())
+                .AddButton("reallife_dataeng_test", () => Tech.TechDirector.Instance?.TestDataEngineers())
                 .AddButton("reallife_hire_test_orphan", () => Tech.TechDirector.Instance?.TestOrphanRegistration())
                 .AddToggle(Settings.TechSectorId, "reallife_tech_enabled", Settings.TechSector,
                     v => Settings.TechSector = v)
@@ -1395,7 +1400,7 @@ namespace RealLifeOverhaul
             Guard.Step("Law.LawDirector", () => Law.LawDirector.Logger = context.Logger);
             Guard.Step("TransitDirector", () => TransitDirector.Logger = context.Logger);
             Guard.Step("TaxiDirector", () => TaxiDirector.Logger = context.Logger);
-            Guard.Step("CarOwnership", () => CarOwnership.Logger = context.Logger);
+            Guard.Step("CarOwnership", () => { CarOwnership.Logger = context.Logger; CarGarage.Logger = context.Logger; });
             Guard.Step("Events.EventDirector", () => Events.EventDirector.Logger = context.Logger);
             Guard.Step("SocialDirector", () => SocialDirector.Logger = context.Logger);
             Guard.Step("BusinessDirector", () => BusinessDirector.Logger = context.Logger);
@@ -1440,6 +1445,8 @@ namespace RealLifeOverhaul
             Guard.Step("ClickWatch", () => ClickWatch.Logger = context.Logger);
             Guard.Step("OverlayGuard", () => OverlayGuard.Logger = context.Logger);
             Guard.Step("OverlayGuard", () => Guard.Add<OverlayGuard>(_root));   // two null tests a frame
+            Guard.Step("MapTreeGuard", () => MapTreeGuard.Logger = context.Logger);
+            Guard.Step("MapTreeGuard", () => Guard.Add<MapTreeGuard>(_root));   // a reference comparison a frame; the tree list pruned when the map opens
             Guard.Step("GameUi.TextBox", () => GameUi.TextBox.Logger = context.Logger);
             // A conversation ended another way: the text box closed and the dialogue panel's handle given back; one time
             // comparison a frame.
@@ -1638,6 +1645,10 @@ namespace RealLifeOverhaul
             Guard.Step("Schools.SchoolsDirector", () => Schools.SchoolsDirector.Logger = context.Logger);
             // Birchwood School: its main school declared for the made buildings below, its other buildings asked of the copy engine.
             Guard.Step("Schools.SchoolsDirector", () => Guard.Add<Schools.SchoolsDirector>(_root));
+            Guard.Step("Outlook.OutlookDirector", () => Outlook.OutlookDirector.Logger = context.Logger);
+            Guard.Step("Outlook.OutlookApp", () => Outlook.OutlookApp.Logger = context.Logger);
+            // The Economy app: after the city's economy, the market and the council, whose figures it reads; its day follows the city's. No Update.
+            Guard.Step("Outlook.OutlookDirector", () => Guard.Add<Outlook.OutlookDirector>(_root));
             Guard.Step("NewBuildings.NewBuildingsDirector", () => NewBuildings.NewBuildingsDirector.Logger = context.Logger);
             // Its buildings are made behind the loading screen, once every director has declared its own.
             Guard.Step("NewBuildings.NewBuildingsDirector", () => Guard.Add<NewBuildings.NewBuildingsDirector>(_root));

@@ -84,7 +84,7 @@ namespace RealLifeOverhaul
                 ConstructionBridges.LotBuilt = LotBuilt;
                 ConstructionBridges.LotRetired = UptownLots.OfEarlierPlan;
                 ConstructionBridges.SizeTaken = SizeTaken;
-                ConstructionBridges.LandPrice = () => DistrictBuildings.LandPricePerSqm;
+                ConstructionBridges.LandPrice = lot => DistrictBuildings.LandPricePerSqm(lot);
                 ConstructionBridges.Finish = Finish;
                 ConstructionBridges.FinishOver = FinishOver;
                 ConstructionBridges.SpacesOf = SpacesRules.SpacesOf;
@@ -98,6 +98,8 @@ namespace RealLifeOverhaul
                 ConstructionBridges.HideLook = HideLook;
                 ConstructionBridges.Extend = Extend;
                 ConstructionBridges.Convert = Convert;
+                ConstructionBridges.LetUnit = LetUnit;
+                ConstructionBridges.Retraffic = Retraffic;
                 ConstructionBridges.StandingAll = StandingAll;
                 ConstructionBridges.Holdings = Holdings;
                 DistrictBuildings.Lessee = RivalLease;   // whatever the options say: every machine leases the same offices
@@ -108,6 +110,8 @@ namespace RealLifeOverhaul
                 ConstructionBridges.Designs = Designs;
                 ConstructionBridges.Footprint = Footprint;
                 ConstructionBridges.StartPlot = StartPlot;
+                ConstructionBridges.StartLot = StartLot;
+                ConstructionBridges.GroundGiven = ParkGroundGiven;
                 ConstructionBridges.StartWorks = StartWorks;
                 ConstructionBridges.Site = Site;
                 ConstructionBridges.AllSites = AllSites;
@@ -219,11 +223,15 @@ namespace RealLifeOverhaul
                 ConstructionBridges.HideLook = null;
                 ConstructionBridges.Extend = null;
                 ConstructionBridges.Convert = null;
+                ConstructionBridges.LetUnit = null;
+                ConstructionBridges.Retraffic = null;
                 ConstructionBridges.StandingAll = null;
                 ConstructionBridges.Holdings = null;
                 ConstructionBridges.Designs = null;
                 ConstructionBridges.Footprint = null;
                 ConstructionBridges.StartPlot = null;
+                ConstructionBridges.StartLot = null;
+                ConstructionBridges.GroundGiven = null;
                 ConstructionBridges.StartWorks = null;
                 ConstructionBridges.Site = null;
                 ConstructionBridges.AllSites = null;
@@ -393,6 +401,46 @@ namespace RealLifeOverhaul
                 }
             }
 
+            private static int StartLot(Vector3 middle, int yaw, int width, int depth, int storeys, int contractor, int hours, out string why)
+            {
+                why = null;
+                try
+                {
+                    CivicWorks works = Works();
+                    if (works == null || !Settings.CivicConstruction)
+                    {
+                        why = "the city's construction sites are off";
+                        return 0;
+                    }
+                    SiteState site = works.StartLot(middle, yaw, width, depth, TimeHelper.CurrentDay, out why, hours);   // a car park's works, set out with their builder's hours
+                    if (site == null)
+                    {
+                        return 0;
+                    }
+                    site.Contractor = Mathf.Clamp(contractor, 0, CivicCatalogue.Contractors.Length - 1);
+                    return site.Id;
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.StartLot", e);
+                    why = "a fault";
+                    return 0;
+                }
+            }
+
+            // A car park has stood in play: the works' props on its ground come down in the same moment.
+            private static void ParkGroundGiven(float x1, float z1, float x2, float z2)
+            {
+                try
+                {
+                    CivicDirector.Instance?.GroundGiven(x1, z1, x2, z2);
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.ParkGroundGiven", e);
+                }
+            }
+
             private static int StartWorks(string street, int number, int kind, bool mine, int contractor, int hours, out string why)
             {
                 why = null;
@@ -501,6 +549,7 @@ namespace RealLifeOverhaul
                         {
                             Id = l.Id, Street = l.Street, Number = l.Number, X = l.X, Y = UptownLots.GroundY, Z = l.Z, Yaw = l.Yaw, Width = l.Width, Depth = l.Depth,
                             Class = (int)l.Class, First = l.First, Open = UptownLots.Open(l), Traffic = Math.Max(0, DistrictBuildings.TrafficOf(l.Id)), Block = l.Block,
+                            District = l.District, DistrictKey = DistrictSplit.IdOf(l.District),
                             Strip = l.Strip, Index = l.Index, Spaces = l.Spaces, Size = l.Size, StreetLow = corners, StreetHigh = corners, EdgeLow = low, EdgeHigh = high
                         });
                     }
@@ -761,6 +810,32 @@ namespace RealLifeOverhaul
                 {
                     Fault("ConstructionLinks.Extend", e);
                     return "a fault";
+                }
+            }
+
+            private static string LetUnit(string lot)
+            {
+                try
+                {
+                    return DistrictBuildings.LetUnit(lot);
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.LetUnit", e);
+                    return "a fault";
+                }
+            }
+
+            private static bool Retraffic(string lot, int drop)
+            {
+                try
+                {
+                    return DistrictBuildings.Retraffic(lot, drop);
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.Retraffic", e);
+                    return false;
                 }
             }
 

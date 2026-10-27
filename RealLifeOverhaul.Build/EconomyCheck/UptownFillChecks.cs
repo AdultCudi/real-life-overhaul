@@ -773,7 +773,7 @@ internal static partial class Program
             "uptown fill: buildings new to a save the district lived in are set up by the game's own generator, not left empty to let, and the leases move in after");
         string only = MemberText(gameBuildings, "public static int PopulateOnly(GameInstance save, List<MadeBuilding> fresh, List<MadeBuilding> standing)");
         Check(only.Contains("all.Remove(record)") && only.Contains("finally") && only.Contains("all.AddRange(AllWas)") && only.Contains("UnityEngine.Random.state = was")
-              && only.Contains("CityGenerator.InitializeCity(DistrictValues.Id)") && only.Contains("CityGenerator.DistributeBuildingsToRivals(DistrictValues.Id)"),
+              && only.Contains("CityGenerator.InitializeCity(DistrictSplit.Ids[d])") && only.Contains("CityGenerator.DistributeBuildingsToRivals(DistrictSplit.Ids[d])"),
             "uptown fill: the generator sees the new buildings alone, and the game's list of all buildings and its chance are put back as they were, after a fault too");
         string lease = MemberText(gameLeases, "public static string Lease(MadeBuilding made, DistrictLease lease, int index, GameInstance save, out bool movedIn, out bool renamed)");
         string moveIn = MemberText(gameLeases, "private static void MoveIn(BuildingRegistration reg, DistrictLease lease, int index, AiBusinessDefault from, GameInstance save)");
@@ -787,7 +787,7 @@ internal static partial class Program
             "uptown fill: the studio's layouts are filed under the builders' type in the game's own cache, and taken out again if the game does not find them there");
         Check(Regex.Matches(gameLeases + gameBuildings, @"\bUpdate\(\)|LateUpdate\(|FixedUpdate\(").Count == 0 && Regex.Matches(leases + checks, @"void (Late|Fixed)?Update\(").Count == 0,
             "uptown fill: nothing of the fill, the leases or the checks runs a frame");
-        Check(MemberText(map, "private static bool Row(float x1, float z1, float x2, float z2, out string why)").Contains("Place(_row, under);")
+        Check(MemberText(map, "private static bool Row(int district, float x1, float z1, float x2, float z2, out string why)").Contains("Place(row, under);")
               && MemberText(map, "private static void Place(CityMapFilter row, CityMapFilterCategory under)").Contains("SetSiblingIndex("),
             "uptown fill: Uptown's row is stood among the game's district rows, where the game stands its own, not at the end of the list where its CreateFilter puts a late one");
         Check(landmarks.Contains("DistrictBuildings.KeptOpen = LandmarkRules.OwnBlock;") && MemberText(landmarks, "public static void Register(IModLogger logger)").Contains("KeptOpen"),

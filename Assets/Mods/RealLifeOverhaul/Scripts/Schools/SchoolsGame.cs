@@ -158,7 +158,7 @@ namespace RealLifeOverhaul.Schools
 
         /// <summary>
         /// The main school declared to the copy engine for this load: a K1 office's look at 1 Birchwood Green, three storeys, on
-        /// its lot on Uptown Avenue, filed under Uptown; the engine makes it behind the loading screen or says why not.
+        /// its lot on Uptown Avenue, filed under Cedar Heights; the engine makes it behind the loading screen or says why not.
         /// </summary>
         internal static void Declare(Func<bool> wanted)
         {
@@ -167,7 +167,8 @@ namespace RealLifeOverhaul.Schools
             MadeBuildings.Declare(new MadeSpec
             {
                 Id = MainId, Street = SchoolGrounds.Street, Number = SchoolGrounds.MainNumber, Size = SchoolGrounds.MainSize, Version = SchoolGrounds.MainVersion,
-                Type = SchoolGrounds.MainType, District = DistrictValues.Id, Lots = new[] { lot }, Preferred = 0, Traffic = 30, Floors = SchoolGrounds.MainStoreys,
+                Type = SchoolGrounds.MainType, District = DistrictSplit.IdOfColumn(LayoutRules.CampusBlock % 100), Lots = new[] { lot }, Preferred = 0, Traffic = 30,
+                Floors = SchoolGrounds.MainStoreys,
                 Wanted = wanted
             });
         }
@@ -322,7 +323,7 @@ namespace RealLifeOverhaul.Schools
             paved = Pave(paths, root.transform);
             if (stood == 0 && paved == 0)
             {
-                UnityEngine.Object.Destroy(root);
+                SceneryTrees.Destroy(root);
                 return null;
             }
             root.SetActive(true);
@@ -513,7 +514,7 @@ namespace RealLifeOverhaul.Schools
         {
             if (root != null)
             {
-                UnityEngine.Object.Destroy(root);
+                SceneryTrees.Destroy(root);
             }
             root = null;
             for (int i = 0; i < Made.Count; i++)

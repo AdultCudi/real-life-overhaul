@@ -18,6 +18,8 @@ namespace RealLifeOverhaul
         private static readonly FeatureGuard FrameGuard = Guard.For("traffic", "CrashConsequences", typeof(CrashConsequences));
 
         internal const float LiabilityLeast = 150f, LiabilityMost = 3000f;   // damages to another car, at the start's prices
+        /// <summary>The most one pursuit's damages can come to, at today's prices: forty of the largest crashes. A bound on the sum the pursuit keeps, never reached in play.</summary>
+        internal static int PursuitOwedMost => Prices.At(120000);
         // Impact speeds in m/s along the contact's normal (CarContacts: only the car hitting something, never the road or a kerb).
         internal const float LiabilitySpeed = 7f;    // ~25 km/h
         private const float InjurySpeed = 10f;      // ~36 km/h
@@ -120,7 +122,8 @@ namespace RealLifeOverhaul
             }
             else if (hitTraffic)
             {
-                int liability = Mathf.RoundToInt(Prices.At(Mathf.Clamp(speed * speed * 2.5f, LiabilityLeast, LiabilityMost)) / 10f) * 10;   // (at today's prices)
+                // At today's prices; a speed that is no number is the least.
+                int liability = WholeMoney.Round(VehicleCostRules.Liability(speed, 2.5f, LiabilityLeast, LiabilityMost, Prices.Level) / 10f) * 10;
 
                 // With police on, the player first gets the chance to stop: the bill comes then, or the police do.
                 PolicePursuit pursuit = PolicePursuit.Instance;

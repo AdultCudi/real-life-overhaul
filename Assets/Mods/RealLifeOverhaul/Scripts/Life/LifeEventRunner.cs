@@ -243,8 +243,9 @@ namespace RealLifeOverhaul
             {
                 amount = Prices.At(Mathf.RoundToInt(Random.Range(outcome.MoneyMin, outcome.MoneyMax + 1) / 5f) * 5);
             }
-            // Never into debt, whatever happened to the money since the event was picked.
-            return amount < 0 ? -Mathf.Min(-amount, Mathf.FloorToInt(Mathf.Max(money, 0f))) : amount;
+            // Never into debt, whatever happened to the money since the event was picked, and never past what the event is
+            // written with (LifeMoneyRules): a purse past an int once read as int.MinValue here and took 2.1 billion.
+            return LifeMoneyRules.Settle(amount, money, outcome.Worst, Prices.Level);
         }
 
         private static float SafeEnergyLoss(float wanted)

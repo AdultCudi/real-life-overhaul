@@ -265,7 +265,7 @@ namespace RealLifeOverhaul.Law
             {
                 if (_cars[i] != null)
                 {
-                    UnityEngine.Object.Destroy(_cars[i]);
+                    SceneryTrees.Destroy(_cars[i]);
                     _cars[i] = null;
                 }
             }
@@ -287,7 +287,7 @@ namespace RealLifeOverhaul.Law
             }
             if (_doorText != null)
             {
-                UnityEngine.Object.Destroy(_doorText.gameObject);
+                SceneryTrees.Destroy(_doorText.gameObject);
                 _doorText = null;
             }
             _signName = null;
@@ -315,7 +315,7 @@ namespace RealLifeOverhaul.Law
         {
             if (piece != null)
             {
-                UnityEngine.Object.Destroy(piece.gameObject);
+                SceneryTrees.Destroy(piece.gameObject);
                 piece = null;
             }
         }

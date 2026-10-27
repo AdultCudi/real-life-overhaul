@@ -29,6 +29,7 @@ namespace RealLifeOverhaul.Construction
             {
                 PublicTenders(day);
                 CityRedevelopDay(day);   // the city's developers redevelop Uptown on a machine of its own alone (ConstructionDirector.CityRedevelop)
+                GrowDay(day);            // ... and grow it on the council's zoned land by demand (ConstructionDirector.Grow)
             }
             RivalsDay(day);
         }
@@ -67,9 +68,13 @@ namespace RealLifeOverhaul.Construction
                 }
                 if (dev == null)
                 {
-                    if (_state.Lot(lot.Id) != null || _state.OnLot(lot.Id) != null || LotTaken(lot.Id) || _state.CityRedevOn(lot.Id) != null)
+                    if (GrowthOn)
                     {
-                        continue;   // the player's land, a building of the district's own, or ground the city redevelops: passed over
+                        continue;   // the city grows by demand now (ConstructionDirector.Grow): the old lot-by-lot turns start nothing more
+                    }
+                    if (_state.Lot(lot.Id) != null || _state.OnLot(lot.Id) != null || LotTaken(lot.Id) || _state.CityRedevOn(lot.Id) != null || ParkUnderWayOn(lot.Id))
+                    {
+                        continue;   // the player's land, a building of the district's own, or ground the city redevelops or parks cars on: passed over
                     }
                     dev = new DevFile { Lot = lot.Id };
                     _state.Developments.Add(dev);
@@ -84,7 +89,7 @@ namespace RealLifeOverhaul.Construction
                 {
                     continue;   // nothing of the city's fits this lot
                 }
-                if (state == 1 && host && dev.SiteId == 0 && shown < BuildCatalogue.DevSitesMost && SiteCount() < BuildCatalogue.SitesMost && DemandWants(use))
+                if (state == 1 && host && dev.SiteId == 0 && shown < BuildCatalogue.DevSitesMost && SiteCount() < BuildCatalogue.SitesMost && DemandWants(use, lot.District))
                 {
                     StartDevelopment(dev, lot, use, k, day);
                     shown += dev.SiteId > 0 ? 1 : 0;
@@ -258,7 +263,7 @@ namespace RealLifeOverhaul.Construction
             {
                 LotView lot = lots[(start + k) % lots.Count];
                 if (!lot.Open || lot.Class != 1 || DevelopmentRules.Theirs(lot.Id) || _state.Lot(lot.Id) != null || _state.OnLot(lot.Id) != null || _state.Development(lot.Id) != null
-                    || LotTaken(lot.Id) || TenderOn(lot.Id))
+                    || LotTaken(lot.Id) || TenderOn(lot.Id) || ParkUnderWayOn(lot.Id))
                 {
                     continue;   // an office lot no one else has: the city builds its offices there
                 }

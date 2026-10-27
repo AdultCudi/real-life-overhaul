@@ -83,9 +83,10 @@ internal static partial class Program
         }
         string game = Read("Uptown/LifeGame.cs"), mix = Read("Uptown/LifeGame.Mix.cs"), director = Read("Uptown/LifeDirector.cs"), guide = Read("Uptown/LifeGuide.cs");
         string wiring = Read("Wiring/Wiring.UptownShopsLinks.cs"), wire = Read("Wiring/Wiring.cs");
-        string targets = MemberText(game, "private static void Targets(DistrictFigures f)");
-        Check(targets.Contains("Target(DistrictValues.OfficeType, f.EmptyOffices)") && targets.Contains("Target(DistrictValues.RetailType, f.EmptyShops)")
-              && targets.Contains("Target(MixRules.HomeType, MixRules.ToLetShare)") && game.Contains("f.EmptyOffices = f.EmptyShops = MixRules.ToLetShare"),
+        string targets = MemberText(game, "private static void Targets(int district, DistrictFigures f)");
+        Check(targets.Contains("Target(district, DistrictValues.OfficeType, f.EmptyOffices)") && targets.Contains("Target(district, DistrictValues.RetailType, f.EmptyShops)")
+              && targets.Contains("Target(district, MixRules.HomeType, MixRules.ToLetShare)") && DistrictSplit.Figures(0).EmptyOffices == MixRules.ToLetShare && DistrictSplit.Figures(0).EmptyShops == MixRules.ToLetShare
+              && DistrictSplit.Figures(1).EmptyOffices == MixRules.ToLetShare && DistrictSplit.Figures(1).EmptyShops == MixRules.ToLetShare,
             "uptown mix: the district's own targets keep a third of its offices, shops and homes to let, for the generator and the game's daily swaps");
         Check(MemberText(game, "public static void Unload()").Contains("was.Key.idealAvailableBuildingsInNeighborhood = was.Value"),
             "uptown mix: every type's targets are given back as the game had them when the city goes");

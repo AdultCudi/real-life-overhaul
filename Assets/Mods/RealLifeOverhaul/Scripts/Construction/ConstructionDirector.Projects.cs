@@ -107,6 +107,8 @@ namespace RealLifeOverhaul.Construction
                     return ConstructionText.T("reallife_bld_name_extension", "address", where);
                 case ProjectKind.Conversion:
                     return ConstructionText.T("reallife_bld_name_conversion", "use", ConstructionText.T(BuildCatalogue.UseKeys[(int)p.Use]), "address", where);
+                case ProjectKind.Parking:
+                    return ConstructionText.T("reallife_park_name", "address", where);
                 default:
                     return ConstructionText.T("reallife_bld_name_plot", "use", ConstructionText.T(BuildCatalogue.UseKeys[(int)p.Use]), "address", where);
             }
@@ -168,7 +170,7 @@ namespace RealLifeOverhaul.Construction
         }
 
         // The district's price a square metre for a lot: a test lot's is the price where it was made.
-        private double PriceOf(LotView lot) => IsTestLot(lot.Id) ? _testPrice : LandPrice();
+        private double PriceOf(LotView lot) => IsTestLot(lot.Id) ? _testPrice : LandPrice(lot.Id);
 
         // ------------------------------------------------------------------ a project made
 
@@ -182,9 +184,9 @@ namespace RealLifeOverhaul.Construction
                 why = "reallife_bld_answer_no_lot";
                 return 0;
             }
-            if (_state.OnLot(lotId) != null)
+            if (_state.OnLot(lotId) != null || ParkOf(lotId) != null)
             {
-                why = "reallife_bld_answer_lot_busy";
+                why = ParkOf(lotId) != null ? "reallife_park_answer_stands" : "reallife_bld_answer_lot_busy";
                 return 0;
             }
             if (!Room(out why))
@@ -195,7 +197,7 @@ namespace RealLifeOverhaul.Construction
             var p = new ProjectFile
             {
                 Id = _state.NewId(), Kind = ProjectKind.Plot, Stage = ProjectStage.Design, Created = ConstructionGame.Day, Lot = lotId, Use = use, Width = lot.Width, Depth = lot.Depth,
-                District = string.Empty, Architect = ArchitectKind.Firm, Firm = 1
+                District = lot.DistrictKey ?? string.Empty, Architect = ArchitectKind.Firm, Firm = 1
             };
             DefaultDesign(p);
             _state.Projects.Add(p);
@@ -504,6 +506,12 @@ namespace RealLifeOverhaul.Construction
         /// <summary>What a project's plans come to: the estimate as the plans would show it, the requirements and the limit.</summary>
         public CostSheet Preview(ProjectFile p, out int exitsNeeded, out int parkingNeeded, out int limit, out bool engineer)
         {
+            if (p.Kind == ProjectKind.Parking)
+            {
+                exitsNeeded = parkingNeeded = 0;   // a car park has no exits to cut or parking to provide
+                engineer = false;
+                return ParkPreview(p, out limit);
+            }
             int code = Permits();   // the building code the elected government has in force
             exitsNeeded = PlansRules.ExitsNeeded(p.Storeys, p.Area);
             parkingNeeded = PlansRules.ParkingNeeded(p.Use, p.Area, code);
@@ -517,6 +525,10 @@ namespace RealLifeOverhaul.Construction
         public PlansQuote QuoteOf(ProjectFile p)
         {
             CostSheet sheet = Preview(p, out _, out _, out _, out _);
+            if (p.Kind == ProjectKind.Parking)
+            {
+                return CarParkRules.Quote(p.Firm, sheet.Total);   // any practice, a day: a lot's plans are a layout and a drawing of its kerb
+            }
             int skill = 0;
             if (p.Architect == ArchitectKind.Staff && ConstructionGame.Employee(p.ArchitectId, out StaffView v))
             {
@@ -566,7 +578,7 @@ namespace RealLifeOverhaul.Construction
             {
                 p.PlansDay = ConstructionGame.Day + Math.Max(1, days);
             }
-            p.Quality = quote.Quality;
+            p.Quality = p.Grow > 0 ? GrowRules.TierQuality[BuildCatalogue.Clamp(p.Grow - 1, 0, (int)GrowTier.Count - 1)] : quote.Quality;   // Let it grow: the tier's
             Logger?.Info("Construction: project " + p.Id + "'s plans asked of " + p.Architect + (p.Architect == ArchitectKind.Firm ? " " + p.Firm : string.Empty) + " for " + fee + ", ready on day "
                          + (p.PlansDay == int.MaxValue ? "the player designs" : p.PlansDay.ToString()) + ".");
             Changed();
@@ -707,7 +719,8 @@ namespace RealLifeOverhaul.Construction
             p.Planning = PlanningState.Submitted;
             p.Applications++;
             p.PlanningDay = day;
-            p.DecideDay = PlanningRules.AfterWorkingDays(day, p.Kind == ProjectKind.Demolition ? RedevelopRules.PermitDays(p.Area) : PlanningRules.WorkingDays(p.Area));
+            p.DecideDay = PlanningRules.AfterWorkingDays(day, p.Kind == ProjectKind.Demolition ? RedevelopRules.PermitDays(p.Area) : p.Kind == ProjectKind.Parking ? CarParkRules.PermitDays
+                : PlanningRules.WorkingDays(p.Area));
             p.Consulted = false;
             if (NeedsNotice(p))
             {
@@ -727,7 +740,7 @@ namespace RealLifeOverhaul.Construction
             // The neighbours weigh the height against what stands: a rebuild's own, the storeys an extension puts on, else the usual four.
             int norm = Mathf.Max(2, p.Kind == ProjectKind.Rebuild ? p.Storeys : p.Kind == ProjectKind.Extension ? p.Storeys - p.Added : 4);
             bool zoned = Zoned(p);
-            int parkingShort = p.ParkingUnder ? 0 : p.ParkingNeeded;
+            int parkingShort = p.ParkingUnder || ParkCovers(p) ? 0 : p.ParkingNeeded;   // a car park of the player's near it counts as the parking the plans ask for
             p.Objections = PlanningRules.Objections(_state.Seed, p.Id * 13 + p.Applications, p.Storeys, norm, zoned, parkingShort, _state.Firm.Reputation, p.Quality);
             if (p.Objections > 0)
             {
@@ -751,6 +764,11 @@ namespace RealLifeOverhaul.Construction
         // City Hall's decision on its day.
         private void Decide(ProjectFile p)
         {
+            if (p.Kind == ProjectKind.Parking)
+            {
+                DecidePark(p);   // a car park is granted wherever it is zoned: no neighbours' objections, no odds
+                return;
+            }
             if (!p.Consulted)
             {
                 Consult(p);
@@ -763,7 +781,8 @@ namespace RealLifeOverhaul.Construction
             int reasons = 0;
             if (p.Kind != ProjectKind.Demolition && p.Kind != ProjectKind.Conversion)
             {
-                PlansRules.Unmet(p.Exits, p.ExitsNeeded, p.ParkingUnder, p.ParkingNeeded, p.Storeys, limit, engineerNeeded, p.Engineered, out reasons);   // a demolition builds nothing to meet them
+                // a demolition builds nothing to meet them; a car park of the player's near the building counts as the parking asked
+                PlansRules.Unmet(p.Exits, p.ExitsNeeded, p.ParkingUnder || ParkCovers(p), p.ParkingNeeded, p.Storeys, limit, engineerNeeded, p.Engineered, out reasons);
             }
             bool granted = PlanningRules.Decide(_state.Seed, p.Id, p.Applications, zoned, reasons, p.Quality, _state.Firm.Reputation, p.Objections, Permits(), out Refusal why);
             if (Verbose)
@@ -882,7 +901,7 @@ namespace RealLifeOverhaul.Construction
             {
                 return "reallife_bld_answer_city_full";
             }
-            if (p.Model == ProjectKind.Plot && !Lot(p.Lot, out _))
+            if ((p.Model == ProjectKind.Plot || p.Kind == ProjectKind.Parking) && !Lot(p.Lot, out _))
             {
                 return "reallife_bld_answer_no_lot";
             }
@@ -939,6 +958,10 @@ namespace RealLifeOverhaul.Construction
         private int StartSite(ProjectFile p, int contractor, out string why)
         {
             p.Hours = SiteHours(p);
+            if (p.Kind == ProjectKind.Parking)
+            {
+                return StartParkSite(p, contractor, out why);
+            }
             if (p.Model == ProjectKind.Plot)
             {
                 Lot(p.Lot, out LotView lot);
@@ -1064,7 +1087,7 @@ namespace RealLifeOverhaul.Construction
                     AiRefurnish(p.Street, p.Number, p.Tender);   // the client's business wears its new interior, as after a rival's refit
                 }
             }
-            if (!hired)
+            if (!hired && p.Kind != ProjectKind.Parking)
             {
                 DefectAhead(p, quality, day);   // a hired builder's faults are its own to put right, never a claim on the company
             }
@@ -1072,6 +1095,11 @@ namespace RealLifeOverhaul.Construction
             {
                 p.Opened = true;   // no ribbon for ground cleared
                 Demolished(p);     // its ground the player's land; asked again each day while the district cannot take it
+            }
+            if (p.Kind == ProjectKind.Parking)
+            {
+                p.Opened = true;      // a car park has no ribbon: it is open the day it is handed over, on its own page of the game's books
+                ParkOpened(p, day);   // its ground is the player's car park, stood out of view (ConstructionDirector.Park.cs)
             }
             if (p.Kind == ProjectKind.Extension || p.Kind == ProjectKind.Conversion)
             {
@@ -1107,9 +1135,9 @@ namespace RealLifeOverhaul.Construction
                 }
                 HandToDistrict(p);
             }
-            if (p.Kind != ProjectKind.Demolition)
+            if (p.Kind != ProjectKind.Demolition && p.Kind != ProjectKind.Parking)
             {
-                Paper("reallife_bld_paper_finished", ProjectName(p), 0);   // a demolition has its own story as its building comes down
+                Paper("reallife_bld_paper_finished", ProjectName(p), 0);   // a demolition has its own story as its building comes down; a car park its own (ParkOpened)
             }
             Logger?.Info("Construction: project " + p.Id + " handed over on day " + day + " (due " + p.DueDay + "), quality " + quality + ", reputation " + (points >= 0 ? "+" : string.Empty) + points
                          + "; spent " + p.Spent + ".");
@@ -1119,7 +1147,7 @@ namespace RealLifeOverhaul.Construction
                 TellHire(NotificationType.Success, p.HirePenalty > 0 ? "reallife_bld_notice_hire_late" : "reallife_bld_notice_hire_handed", p, p.HirePenalty);
                 return;
             }
-            if (p.Kind != ProjectKind.Demolition)
+            if (p.Kind != ProjectKind.Demolition && p.Kind != ProjectKind.Parking)
             {
                 Tell(NotificationType.Success, p.Kind == ProjectKind.Plot ? "reallife_bld_notice_handed_plot" : "reallife_bld_notice_handed", ProjectName(p), null, TabProjects, p.Id);
             }
@@ -1167,6 +1195,10 @@ namespace RealLifeOverhaul.Construction
             if (handed)
             {
                 p.InDistrict = true;
+                if (player)
+                {
+                    GrowHandedToPlayer(p, ConstructionGame.Day);   // Let it grow: one of the city's grown buildings from now, the player's
+                }
                 if (!player && lot != null)
                 {
                     _state.Lots.Remove(lot);   // the residents' now: no more land tax of the player's

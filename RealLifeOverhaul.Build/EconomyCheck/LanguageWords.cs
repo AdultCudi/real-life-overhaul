@@ -3,25 +3,29 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using RealLifeOverhaul;
 
-// The texts of every language the mod has, for the checks that hold a feature's keys to each language: en first, then pt
-// and zh-cn, then German, French, Spanish, Russian, Dutch and Turkish when their file is there (ModLanguages). A language the
-// checks read is held to the same keys and the same names in curly brackets as the English; a key a later language lacks is
-// read as the English, as the game reads it.
+// The texts of the languages the per-feature checks write lines for, for the checks that hold a feature's keys to each
+// language: en first, then pt and zh-cn, then German, French, Spanish, Russian, Dutch and Turkish when their file is there
+// (ModLanguages.PerFeature; Polish and Korean are held by LaterLanguageChecks's whole-file rules, which need no line written
+// for them). A language the checks read is held to the same keys and the same names in curly brackets as the English; a key a
+// later language lacks is read as the English, as the game reads it.
 internal static partial class Program
 {
     private static readonly Regex Names = new Regex(@"\{[a-z_]+\}");
 
     // What's new in each of ModLanguages.All: the mark each fix begins with and the empty next row, as Workshop/locales.py's
-    // FIXED and NOTHING have them (LaterLanguageChecks holds the two to each other).
+    // FIXED and NOTHING have them (LaterLanguageChecks holds the two to each other). Polish and Korean: the game's own words for
+    // a fix (its Polish "naprawić", its Korean 수정, as in "호환성 수정", Compatibility Fix).
     private static readonly Dictionary<string, string> FixMarks = new Dictionary<string, string>(StringComparer.Ordinal)
     {
         { "en", "Fixed: " }, { "pt", "Corrigido: " }, { "zh-cn", "已修复：" }, { "de", "Behoben: " }, { "fr", "Corrigé : " },
-        { "es", "Corregido: " }, { "ru", "Исправлено: " }, { "nl", "Opgelost: " }, { "tr", "Düzeltildi: " }
+        { "es", "Corregido: " }, { "ru", "Исправлено: " }, { "nl", "Opgelost: " }, { "tr", "Düzeltildi: " },
+        { "pl", "Naprawiono: " }, { "ko", "수정: " }
     };
     private static readonly Dictionary<string, string> NothingYet = new Dictionary<string, string>(StringComparer.Ordinal)
     {
         { "en", "Nothing yet." }, { "pt", "Nada ainda." }, { "zh-cn", "还没有。" }, { "de", "Noch nichts." }, { "fr", "Rien pour l'instant." },
-        { "es", "Nada todavía." }, { "ru", "Пока ничего." }, { "nl", "Nog niets." }, { "tr", "Henüz yok." }
+        { "es", "Nada todavía." }, { "ru", "Пока ничего." }, { "nl", "Nog niets." }, { "tr", "Henüz yok." },
+        { "pl", "Jeszcze nic." }, { "ko", "아직 없음." }
     };
 
     private static string LocalesFolder()

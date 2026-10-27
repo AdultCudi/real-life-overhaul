@@ -209,6 +209,78 @@ namespace RealLifeOverhaul.Tech
         }
 
         /// <summary>
+        /// Test: the player's data engineers, read now. PASS when the rule holds (a place with no desks seats only the rack crew) and
+        /// every data engineer is where work is done: on the payroll at a business of the game's with shifts, or the game's employee
+        /// at one with a shift at a placed desk. Any the game's hiring left at a data centre are taken off it first, the way the day does.
+        /// The log line says how many, how many have a desk shift, how many worked yesterday and who is short.
+        /// </summary>
+        public void TestDataEngineers()
+        {
+            if (!_peopleOn || Save == null)
+            {
+                Notifications.ShowError("reallife_talent_test_off");
+                return;
+            }
+            ReadPeople(Save.Day);
+            int moved = Unseat(Save.Day, false);
+            int total = 0, payroll = 0, desked = 0, worked = 0;
+            string short1 = null, why = null;
+            int lacking = 0;
+            for (int i = 0; i < _people.Count; i++)
+            {
+                Person p = _people[i];
+                if (p.File.Role != TalentCatalogue.DataEngineer)
+                {
+                    continue;
+                }
+                total++;
+                worked += p.HoursYesterday > 0 ? 1 : 0;
+                bool placed = p.At != null && TalentGame.Shifts(p.At);
+                bool fit;
+                if (p.Game == null)
+                {
+                    fit = placed;
+                    payroll += fit ? 1 : 0;
+                }
+                else
+                {
+                    fit = placed && TalentGame.StationShift(p.Game, p.At);
+                    desked += fit ? 1 : 0;
+                }
+                lacking += fit ? 0 : 1;
+                if (!fit && short1 == null)
+                {
+                    short1 = p.Name;
+                    why = p.At == null ? "at no business" : !placed ? "at " + TalentGame.NameOf(p.At) + ", which has no desks" : "with no shift at a desk at " + TalentGame.NameOf(p.At);
+                }
+            }
+            if (total == 0)
+            {
+                Notifications.ShowError("reallife_dataeng_test_none");
+                return;
+            }
+            RoleDef engineer = TalentCatalogue.Role(TalentCatalogue.DataEngineer);
+            bool rule = HiringRules.Seats(true, engineer) && !HiringRules.Seats(false, engineer) && HiringRules.Seats(false, TalentCatalogue.Role(TalentCatalogue.Technician))
+                        && HiringRules.OnPayroll(TalentCatalogue.Role(TalentCatalogue.Technician), (int)Arrangement.OnSite, false, false)
+                        && !HiringRules.OnPayroll(engineer, (int)Arrangement.OnSite, false, true);
+            bool ok = rule && short1 == null;
+            string line = "Tech check (data engineers): " + total + " of the player's, " + payroll + " on the payroll at a business with shifts, " + desked + " the game's own with a shift at a desk, "
+                          + worked + " worked yesterday, " + moved + " taken off a data centre; the rule (no desks, only the rack crew) " + (rule ? "holds" : "BROKEN")
+                          + (short1 != null ? "; " + short1 + " is " + why : string.Empty) + ": " + (ok ? "PASS" : "FAIL");
+            if (ok)
+            {
+                Logger?.Info(line);
+            }
+            else
+            {
+                Logger?.Warn(line);
+            }
+            Notifications.Show(ok ? NotificationType.Success : NotificationType.Error, ok ? "reallife_dataeng_test_pass" : "reallife_dataeng_test_fail",
+                Data("count", total.ToString(), "short", lacking.ToString()), 10f);
+            Changed();
+        }
+
+        /// <summary>
         /// "Tech firms: connection speed and work": the curve through the firms' rules for every kind of firm (a slower line
         /// never works more, the usual plan works at the usual pace, a day's points scale by exactly the share and selling is
         /// left alone), and the player's first firm worked out now as its morning is, against its office's plan read afresh.

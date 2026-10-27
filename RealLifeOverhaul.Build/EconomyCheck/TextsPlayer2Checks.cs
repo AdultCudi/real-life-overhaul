@@ -82,8 +82,9 @@ internal static partial class Program
               && TextProviders.Forgets(p) == TextForget.Nothing && TextProviders.Base(p, "http://127.0.0.1:1/v1") == p.Base && TextProviders.ChoiceKeys()[12] == "reallife_textsai_provider_12",
             "player2, the table: the thirteenth entry, the chat API at api.player2.game/v1 with no model named, signed in through the App, a health call kept up, nothing to forget, and no address of the player's replaces it");
         Check(TextPlayer2.AppBase == "http://localhost:4315/v1" && TextPlayer2.BeatSeconds == 60.0,
-            "player2, the App: on this PC's port 4315, the health call about once a minute as the reference asks (the game client id is "
-            + (TextPlayer2.ClientId.Length == 0 ? "NOT SET YET: the owner registers the mod at player2.game/profile/developer and puts it in TextPlayer2.ClientId" : "set") + ")");
+            "player2, the App: on this PC's port 4315, the health call about once a minute as the reference asks");
+        Check(Regex.IsMatch(TextPlayer2.ClientId, "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"),
+            "player2, the game client id is built in and has the shape of a UUID");
     }
 
     // ---------------------------------------------------------------- the requests
@@ -270,6 +271,29 @@ internal static partial class Program
 
     private static void P2Secrets()
     {
+        string real = TextPlayer2.ClientId;
+        var realLogs = new List<string>();
+        var realWeb = new PretendPlayer2 { ChatStatus = 400, ChatBody = "{\"message\":\"bad request for " + real + "\"}" };
+        var realQ = new TextQueue();
+        TextService realRun = P2Service(realWeb, realQ, realLogs, real);
+        realRun.Start();
+        TextJob realJob = ServiceJob(realQ, "s0", 20);
+        realRun.Nudge();
+        Until(() => realJob.State == TextJobState.Missed, 3000);
+        Thread.Sleep(50);
+        var realSpoken = new List<string>(realLogs) { realJob.Why ?? string.Empty, realRun.Why ?? string.Empty };
+        realRun.Dispose();
+        TextPlayer2Report realReport = TextPlayer2.Run(new PretendWeb { Answer = new PretendPlayer2 { ChatBody = "{\"choices\":[{\"message\":{\"content\":\"hello " + real + "\"}}]}" }.Answer }, real);
+        realSpoken.Add(realReport.Line);
+        realSpoken.Add(realReport.Why ?? string.Empty);
+        bool realLeaked = false;
+        foreach (string line in realSpoken)
+        {
+            realLeaked |= line.Contains(real);
+        }
+        string kept = new TextsStore().Write() ?? string.Empty;
+        Check(!realLeaked && !kept.Contains(real) && TextServiceRules.Clean("id " + real, real) == "id [hidden]",
+            "player2, the built-in game client id never appears in a log line, a reason, the Test's lines or the kept words, even when the service or the reply repeats it");
         var logs = new List<string>();
         var web = new PretendPlayer2 { ChatStatus = 400, ChatBody = "{\"message\":\"bad request for " + P2Key + " by " + P2Id + "\"}" };
         var q = new TextQueue();

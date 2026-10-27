@@ -126,6 +126,9 @@ namespace RealLifeOverhaul.Construction
             }
             switch (p.Stage)
             {
+                case ProjectStage.Design when p.Kind == ProjectKind.Parking:
+                    WriteParkPlans(box, state, p);   // ConstructionApp.Park.cs: no designs to choose
+                    break;
                 case ProjectStage.Design:
                     WritePlans(box, state, p);
                     break;
@@ -226,8 +229,9 @@ namespace RealLifeOverhaul.Construction
             CostSheet sheet = _director.Preview(p, out int exits, out int parking, out int limit, out bool engineer);
             box.Section("reallife_bld_sec_requirements");
             box.Check(ConstructionText.T("reallife_bld_req_exits", "count", exits.ToString()), true);
-            box.Check(ConstructionText.T(p.ParkingUnder || parking == 0 ? "reallife_bld_req_parking_met" : "reallife_bld_req_parking_short", "count",
-                parking.ToString()), p.ParkingUnder || parking == 0);
+            bool parked = p.ParkingUnder || parking == 0 || _director.ParkSpare(p) >= parking;   // or a car park of the player's near it
+            box.Check(ConstructionText.T(parked ? "reallife_bld_req_parking_met" : "reallife_bld_req_parking_short", "count",
+                parking.ToString()), parked);
             box.Check(ConstructionText.T("reallife_bld_req_height", "storeys", p.Storeys.ToString(), "limit", limit.ToString()), p.Storeys <= limit);
             if (engineer)
             {
@@ -674,6 +678,18 @@ namespace RealLifeOverhaul.Construction
                 {
                     box.Note(ConstructionText.T(!p.InDistrict ? "reallife_bld_district_waits" : ConstructionDirector.LotBuilt(p.Lot) ? "reallife_bld_yours_now" : "reallife_bld_yours_next_load"));
                 }
+                GrowFile grown = p.Grow > 0 ? _director.GrowOfProject(p) : null;
+                if (p.Grow > 0)
+                {
+                    // Let it grow: its tier, its condition, and a unit kept for a business of the player's own (the game's BizMan).
+                    box.Row("reallife_grow_row_tier", ConstructionText.T(GrowRules.TierKeys[Mathf.Clamp(p.Grow - 1, 0, (int)GrowTier.Count - 1)]));
+                    if (grown != null)
+                    {
+                        box.Row("reallife_grow_row_condition", ConstructionText.T(grown.RunDown ? "reallife_grow_condition_rundown" : "reallife_grow_condition_value", "value",
+                            ConstructionText.N(grown.Condition / 10)));
+                        InfoBox.Button(box.ButtonRow(), InfoBox.Positive, "reallife_grow_button_keep", () => Answer(_director.KeepUnit(p)));
+                    }
+                }
             }
             else if (p.Kind == ProjectKind.Rebuild)
             {
@@ -688,6 +704,10 @@ namespace RealLifeOverhaul.Construction
             else if (p.Kind == ProjectKind.Refit)
             {
                 box.Row("reallife_bld_row_refit_grade", ConstructionText.T(RefitGradeKey(p.Grade)));
+            }
+            else if (p.Kind == ProjectKind.Parking)
+            {
+                WriteParkFinished(box, p);   // ConstructionApp.Park.cs
             }
             else
             {

@@ -85,6 +85,9 @@ namespace RealLifeOverhaul
         /// <summary>The most this outcome can cost the player, 0 if it never costs anything.</summary>
         public int MaxLoss => MoneyPct < 0f ? MoneyMin : (MoneyPct == 0f && MoneyMin < 0 ? -MoneyMin : 0);
 
+        /// <summary>The largest figure this outcome is written with, at the start's prices, in either direction: the bound one roll of it may never pass (LifeMoneyRules).</summary>
+        public int Worst => Math.Max(Math.Abs(MoneyMin), Math.Abs(MoneyMax));
+
         /// <summary>A random amount between min and max, both gains or both losses (negative).</summary>
         public Outcome Money(int min, int max, string txn)
         {

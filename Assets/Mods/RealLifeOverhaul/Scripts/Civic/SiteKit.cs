@@ -118,7 +118,7 @@ namespace RealLifeOverhaul
             }
             if (_asleep != null)
             {
-                UnityEngine.Object.Destroy(_asleep.gameObject);
+                SceneryTrees.Destroy(_asleep.gameObject);
             }
             _asleep = null;
             Concrete = null;

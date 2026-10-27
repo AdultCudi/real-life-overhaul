@@ -10,7 +10,7 @@ using RealLifeOverhaul;
 // Guide names People as a contact.
 internal static partial class Program
 {
-    // The page's first line in each language of ModLanguages.All: the name, the age as each language says a person's, the stage.
+    // The page's first line in each language of ModLanguages.PerFeature: the name, the age as each language says a person's, the stage.
     private static readonly string[] PeopleAgeLines =
     {
         "{name}, {age}: {stage}", "{name}, {age} anos: {stage}", "{name}，{age}岁：{stage}", "{name}, {age} Jahre: {stage}", "{name}, {age} ans : {stage}",
@@ -166,7 +166,7 @@ internal static partial class Program
     private static void PeopleAgeShown()
     {
         string folder = LocalesFolder();
-        string[] codes = ModLanguages.All;
+        string[] codes = ModLanguages.PerFeature;
         var wrong = new List<string>();
         var guide = new List<string>();
         for (int l = 0; l < codes.Length; l++)

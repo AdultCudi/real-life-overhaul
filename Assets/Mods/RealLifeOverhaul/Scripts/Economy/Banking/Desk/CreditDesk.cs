@@ -389,7 +389,7 @@ namespace RealLifeOverhaul.Economy
             }
             Obligations due = Books.Tomorrow(_file, day - 1);   // the game has moved its day on already: tonight's run is yesterday's "tomorrow"
             int cash = _wallet.Cash;
-            int shortfall = Mathf.CeilToInt(due.Total) - cash;
+            int shortfall = WholeMoney.Round(Math.Ceiling((double)due.Total) - cash);
             int paid = AccountRules.Cover(overdraft, shortfall);
             if (paid <= 0)
             {

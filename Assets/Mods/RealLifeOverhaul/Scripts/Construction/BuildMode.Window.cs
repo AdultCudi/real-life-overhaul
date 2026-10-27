@@ -20,7 +20,9 @@ namespace RealLifeOverhaul.Construction
     {
         // The panel's buttons.
         private const int RowBuy = 1, RowClear = 2, RowChoose = 3, RowGoBuy = 4, RowPaint = 10, RowPaintNone = 14, RowParking = 20, RowBuild = 21, RowOther = 22, RowDemolish = 30,
-            RowJoin = 40, RowSplit = 41, RowRefit = 50;
+            RowJoin = 40, RowSplit = 41, RowRefit = 50, RowShape = 60, RowGrow = 70, RowTier = 80, RowGrowBack = 90;
+        private readonly string[] _shapeNames = new string[BuildModeSheet.ChoicesMost];
+        private static readonly string[] ShapeKeys = { "reallife_grow_shape_fill", "reallife_grow_shape_rect", "reallife_grow_shape_brush", "reallife_grow_shape_unzone" };
         private const int RowMark = 300;
         private const int BrushNone = (int)BuildUse.Count;   // the zone brush that takes a zone away
 
@@ -116,7 +118,7 @@ namespace RealLifeOverhaul.Construction
         {
             for (int u = 0; u < (int)BuildUse.Count; u++)
             {
-                int demand = _d.DemandFor((BuildUse)u);
+                int demand = _d.DemandFor((BuildUse)u, BarDistrict());
                 string name = T(BuildCatalogue.UseKeys[u]);
                 string title = demand < 0 ? name : ConstructionText.Fill("reallife_bld_tip_demand_title", "use", name, "value", ConstructionText.N(demand));
                 _bar.Demand(u, demand, Colour(BuildModeRules.Homes + u), title, T(BuildModeHintRules.DemandWords(demand)));
@@ -304,8 +306,14 @@ namespace RealLifeOverhaul.Construction
         // Where the squares picked are: their street, and whether they hold its corner.
         private string Where(LotView first, bool corner)
         {
-            string street = string.IsNullOrEmpty(first.Street) ? _d.LotWords(first.Id) : first.Street;
-            return ConstructionText.Fill(corner ? "reallife_bld_sheet_where_corner" : "reallife_bld_sheet_where", "street", street);
+            return ConstructionText.Fill(corner ? "reallife_bld_sheet_where_corner" : "reallife_bld_sheet_where", "street", StreetOf(first));
+        }
+
+        // A lot's street in words, as the map and the addresses name it ("2nd Street", never the street's id); the lot's address where it has no street.
+        private string StreetOf(LotView lot)
+        {
+            string words = ConstructionGame.StreetWords(lot.Street);
+            return words.Length > 0 ? words : _d.LotWords(lot.Id);
         }
 
         // A zoning's figure in its use's colour when it is one use; the panel's words otherwise.
@@ -327,6 +335,19 @@ namespace RealLifeOverhaul.Construction
             s.Begin(T("reallife_bld_mode_tool_zone"), ConstructionText.Fill("reallife_bld_sheet_zone_count", "cells", ConstructionText.N(_landCells)));
             LotFile site = _targetSite != null ? _d.State.Lot(_targetSite) : null;
             bool notMine = _picked.Count > 0 && site == null;   // only the player's own land is zoned (the owner's test, 26 Oct 2026)
+            for (int i = 0; i < ShapeKeys.Length; i++)
+            {
+                _shapeNames[i] = T(ShapeKeys[i]);
+            }
+            s.Choices(RowShape, _shapeNames, (int)_shape, !_state.ViewOnly);   // fill a block side, a rectangle, the brush, unzone (as Cities Skylines' zoning tools)
+            if (_zoneMarked > 0)
+            {
+                s.Line(ConstructionText.Fill("reallife_grow_zone_marked", "cells", ConstructionText.N(_zoneMarked)), BuildModeBar.Text);
+            }
+            else if (!notMine)
+            {
+                s.Line(T(ShapeTips[(int)_shape]), BuildModeBar.Soft);
+            }
             TookLine(s);
             if (notMine)
             {
@@ -395,12 +416,23 @@ namespace RealLifeOverhaul.Construction
                 return;
             }
             s.Begin(T("reallife_bld_mode_tool_place"), Count());
+            bool parks = Settings.ConstructionParking && !_state.ViewOnly;
             if (_picked.Count == 0)
             {
-                s.Line(T("reallife_bld_sheet_place_none"), BuildModeBar.Soft);
+                s.Line(T(_parkMode ? "reallife_park_sheet_pick" : "reallife_bld_sheet_place_none"), BuildModeBar.Soft);
+                if (parks)
+                {
+                    s.Buttons(_parkMode ? 0 : RowCarPark, _parkMode ? null : T("reallife_park_button"), !_parkMode, _parkMode ? RowCarParkBack : 0,
+                        _parkMode ? T("reallife_park_sheet_back") : null, _parkMode);
+                }
                 return;
             }
             TookLine(s);
+            if (_parkPicked != null)
+            {
+                WriteParkManage(s);   // a car park stands on the squares (BuildMode.Park)
+                return;
+            }
             if (!_pickMine || _siteWhy != null)
             {
                 bool forSale = !_pickMine && PickedForSale;
@@ -413,15 +445,27 @@ namespace RealLifeOverhaul.Construction
                 s.Buttons(forSale ? RowGoBuy : 0, forSale ? T("reallife_bld_sheet_go_buy") : null, forSale && !_state.ViewOnly, RowClear, T("reallife_bld_sheet_clear"), true);
                 return;
             }
+            if (_parkMode && parks)
+            {
+                WritePark(s);   // the squares as a car park (BuildMode.Park)
+                return;
+            }
             if (_designs.Count == 0)
             {
                 s.Line(T("reallife_bld_mode_place_none"), BuildModeBar.Red);
-                s.Buttons(0, null, false, RowClear, T("reallife_bld_sheet_clear"), true);
+                s.Buttons(parks ? RowCarPark : 0, parks ? T("reallife_park_button") : null, parks, RowClear, T("reallife_bld_sheet_clear"), true);
                 return;
             }
             s.Line(ConstructionText.Fill("reallife_bld_sheet_place_fit", "count", ConstructionText.N(_designs.Count), "cells", ConstructionText.N(PickedCells), "use",
                 T(BuildCatalogue.UseKeys[(int)_use])), BuildModeBar.Soft);
-            s.Buttons(RowChoose, T("reallife_bld_cat_title"), !_state.ViewOnly, RowClear, T("reallife_bld_sheet_clear"), true);
+            if (_growPanel)
+            {
+                WriteGrow(s);   // Let it grow's tiers (BuildMode.Grow)
+                return;
+            }
+            bool grows = Settings.ConstructionGrowth && !_state.ViewOnly;
+            s.Buttons(RowChoose, T("reallife_bld_cat_title"), !_state.ViewOnly, grows ? RowGrow : 0, grows ? T("reallife_grow_button") : null, grows);   // Let it grow beside Choose a building
+            s.Buttons(parks ? RowCarPark : 0, parks ? T("reallife_park_button") : null, parks, RowClear, T("reallife_bld_sheet_clear"), true);   // a Parking lot beside Clear
         }
 
         private void WriteGhost(BuildModeSheet s)
@@ -475,6 +519,12 @@ namespace RealLifeOverhaul.Construction
                     s.Line(T("reallife_bld_hint_building_not_yours"), BuildModeBar.Red);
                     s.Buttons(0, null, false, RowClear, T("reallife_bld_sheet_clear"), true);
                 }
+                return;
+            }
+            CarParkFile park = _d.ParkOf(_target.Id);
+            if (park != null && park.Owner == CarParkOwner.Player)
+            {
+                WriteParkClose(s, park, demolish);   // a car park of the player's: closed, not demolished (BuildMode.Park)
                 return;
             }
             string block = demolish ? _d.DemolishBlock(_target.Street, _target.Number) : _d.RefitBlock(_target.Street, _target.Number);
@@ -562,7 +612,7 @@ namespace RealLifeOverhaul.Construction
             _filter = BuildModeCatalogue.First(_dCorner, _dFits, n);
             _card = _design >= 0 && _design < n ? _design : -1;
             BuildModeGame.HideHover();
-            _catalogue.Show(true);
+            _catalogue.Show(true, _bar != null ? _bar.ToolbarTop() : float.NaN);   // drawn to fit the screen and the game's UI scale, clear of the toolbar
             WriteCatalogue(true);
         }
 
@@ -579,7 +629,7 @@ namespace RealLifeOverhaul.Construction
             }
             _d.LotOfColumn(_site.FirstColumn, out LotView first);
             bool corner = CellRules.Corner(_d.Cells, _site.FirstColumn, _site.Count, out _, out _);
-            string street = string.IsNullOrEmpty(first.Street) ? _d.LotWords(first.Id) : first.Street;
+            string street = StreetOf(first);
             _catalogue.Begin(ConstructionText.Fill(corner ? "reallife_bld_cat_context_corner" : "reallife_bld_cat_context", "cells", ConstructionText.N(PickedCells), "street", street, "use",
                 T(BuildCatalogue.UseKeys[(int)_use]), "storeys", ConstructionText.N(_d.UptownStoreys())), _filterNames, _filter);
             string use = T(BuildCatalogue.UseKeys[(int)_use]);
@@ -724,11 +774,15 @@ namespace RealLifeOverhaul.Construction
             {
                 return;
             }
-            if (_state.Tool == BuildTool.Zone && _zoneBrush >= 0 && _targetSite != null)
+            if (_state.Tool == BuildTool.Zone && _zoneMarked > 0 && (_zoneBrush >= 0 || _shape == ZoneShape.Unzone))
+            {
+                PaintMarked(_zoneBrush);   // the squares marked painted on the release, as Cities Skylines zones
+            }
+            else if (_state.Tool == BuildTool.Zone && _zoneBrush >= 0 && _targetSite != null && _zoneMarked == 0)
             {
                 Zone(_targetSite, _zoneBrush);
             }
-            else if (_state.Tool == BuildTool.Place && _siteWhy == null && _pickMine && _designs.Count > 0)
+            else if (_state.Tool == BuildTool.Place && _siteWhy == null && _pickMine && _designs.Count > 0 && !_parkMode && _parkPicked == null)
             {
                 OpenCatalogue();
             }
@@ -822,6 +876,16 @@ namespace RealLifeOverhaul.Construction
                     });
                     return;
                 case RowDemolish:
+                    if (_hasTarget && _d.ParkOf(_target.Id) is CarParkFile standing && standing.Owner == CarParkOwner.Player)
+                    {
+                        Ask("reallife_park_close_confirm", "reallife_park_close_confirm_body", 0L, () =>
+                        {
+                            string answer = _d.ParkClose(standing);
+                            ClearPick();
+                            Refresh(answer ?? "reallife_park_closed");
+                        });
+                        return;
+                    }
                     if (_hasTarget)
                     {
                         LotView b = _target;
@@ -850,10 +914,23 @@ namespace RealLifeOverhaul.Construction
                     Refresh(_targetSite != null ? _d.Split(_targetSite) : null);
                     return;
                 default:
+                    if (id >= RowShape && id < RowShape + (int)ZoneShape.Count)
+                    {
+                        ShapePicked(id - RowShape);
+                        return;
+                    }
+                    if (ActGrow(id) || ActPark(id))
+                    {
+                        return;   // Let it grow's rows (BuildMode.Grow), a car park's (BuildMode.Park)
+                    }
                     if (id >= RowPaint && id <= RowPaintNone)
                     {
                         _zoneBrush = id - RowPaint;   // a use, or BrushNone
-                        if (_targetSite != null)
+                        if (_zoneMarked > 0)
+                        {
+                            PaintMarked(_zoneBrush);   // squares marked first: zoned at once
+                        }
+                        else if (_targetSite != null)
                         {
                             Zone(_targetSite, _zoneBrush);   // land picked first: zoned at once
                         }

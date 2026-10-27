@@ -34,9 +34,9 @@ namespace RealLifeOverhaul.Construction
             {
                 return "reallife_bld_answer_no_lot";
             }
-            if (_state.OnLot(firstId) != null)
+            if (_state.OnLot(firstId) != null || ParkOf(firstId) != null)
             {
-                return "reallife_bld_answer_lot_busy";
+                return ParkOf(firstId) != null ? "reallife_park_answer_stands" : "reallife_bld_answer_lot_busy";
             }
             if (!After(_strip[_strip.Count - 1], out LotView next))
             {
@@ -48,9 +48,9 @@ namespace RealLifeOverhaul.Construction
             {
                 return FreeSpace(next) ? "reallife_bld_answer_join_buy_first" : "reallife_bld_answer_join_nothing";
             }
-            if (_state.OnLot(next.Id) != null)
+            if (_state.OnLot(next.Id) != null || ParkOf(next.Id) != null)
             {
-                return "reallife_bld_answer_lot_busy";
+                return ParkOf(next.Id) != null ? "reallife_park_answer_stands" : "reallife_bld_answer_lot_busy";
             }
             if (!SiteSpaces(next.Id, b.Spaces, _joinNext))
             {
@@ -73,8 +73,10 @@ namespace RealLifeOverhaul.Construction
             _strip.AddRange(_joinNext);
             LotView joined = Joined(_strip);
             int stripRows = CellRules.RowsFor(_strip[0].Depth);
+            int[] aRows = (int[])SiteRows(a).Clone(), bRows = (int[])SiteRows(b).Clone();
+            a.Cells = ZoneRules.Join(a.Cells, a.Spaces, aRows, a.Paint, b.Cells, b.Spaces, bRows, b.Paint);   // each square's zone kept, each site's paint on its own squares
             a.Rows = CellRules.JoinRows(a.Rows, a.Spaces, b.Rows, b.Spaces, stripRows);   // build mode's cells: each lot's rows kept
-            a.Paint = a.Paint != 0 ? a.Paint : b.Paint;
+            a.Paint = a.Cells.Length > 0 ? ZoneRules.Main(a.Cells, a.Paint) : a.Paint != 0 ? a.Paint : b.Paint;
             a.Spaces += b.Spaces;
             a.Paid += b.Paid;
             a.Zones |= b.Zones | LandRules.ZonesOf(joined.Class);   // what each was zoned for, and what a site of the joined spaces is
@@ -133,9 +135,9 @@ namespace RealLifeOverhaul.Construction
             {
                 return "reallife_bld_answer_split_one";
             }
-            if (_state.OnLot(firstId) != null)
+            if (_state.OnLot(firstId) != null || ParkOf(firstId) != null)
             {
-                return "reallife_bld_answer_lot_busy";
+                return ParkOf(firstId) != null ? "reallife_park_answer_stands" : "reallife_bld_answer_lot_busy";
             }
             if (_state.Lots.Count + a.Spaces - 1 > BuildCatalogue.LotsMost)
             {
@@ -165,10 +167,12 @@ namespace RealLifeOverhaul.Construction
                 _state.Lots.Add(new LotFile
                 {
                     Id = _strip[i].Id, Bought = a.Bought, Paid = _shares[i], Zones = a.Zones | LandRules.ZonesOf(_strip[i].Class), TaxedTo = a.TaxedTo, EmptySince = a.EmptySince, Spaces = 1,
-                    Rows = CellRules.SplitRows(a.Rows, i, stripRows), Paint = a.Paint
+                    Rows = CellRules.SplitRows(a.Rows, i, stripRows), Paint = ZoneRules.Main(ZoneRules.SplitOne(a.Cells, i), a.Paint), Cells = ZoneRules.SplitOne(a.Cells, i)
                 });
             }
             a.Rows = CellRules.SplitRows(a.Rows, 0, stripRows);
+            a.Cells = ZoneRules.SplitOne(a.Cells, 0);   // each lot keeps its own squares' zones
+            a.Paint = ZoneRules.Main(a.Cells, a.Paint);
             a.Paid = _shares[0];
             a.Spaces = 1;
             a.Zones |= LandRules.ZonesOf(_strip[0].Class);

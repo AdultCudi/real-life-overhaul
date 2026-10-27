@@ -43,6 +43,12 @@ namespace RealLifeOverhaul.Uptown
         public readonly int Version;        // and its version
         public readonly bool Open;          // a space of an open run: the construction game's land, never built from the first day
 
+        /// <summary>True for a lot the rebalance builds as a J1 office in place of the first plan's M1 store (LayoutRules.Swaps): its size is J's.</summary>
+        public bool Rebalanced { get; internal set; }
+
+        /// <summary>The band's district this lot is in (DistrictSplit): 0 Uptown, 1 Cedar Heights.</summary>
+        public int District => DistrictSplit.OfColumn(Column);
+
         public Lot(string id, int row, int column, string street, int number, int order, float x, float z, int yaw, int width, int depth, LotClass kind, bool first)
             : this(id, row, column, street, number, order, x, z, yaw, width, depth, kind, first, 0, 0, 1, null, 0, false)
         {

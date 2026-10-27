@@ -162,6 +162,18 @@ namespace RealLifeOverhaul.Uptown
             return Math.Max(LevelLeast, Math.Min(LevelMost, moved));
         }
 
+        public const int PeopleLiftMost = 3;           // traffic points a lot gets from new homes and offices on its block: the people living and working there (plans/growables.md)
+        public const int PeoplePerPoint = 2;           // new homes and offices on a block for each point
+
+        /// <summary>
+        /// Traffic points a lot gets from the homes and offices finished on its block since the district began (its people going to and
+        /// from them pass every door), a point for each two, up to the cap; added to the packed block's lift.
+        /// </summary>
+        public static int PeopleLift(int homesAndOffices)
+        {
+            return homesAndOffices <= 0 ? 0 : Math.Min(PeopleLiftMost, homesAndOffices / PeoplePerPoint);
+        }
+
         /// <summary>Traffic points a lot gets from its block's standing buildings: a packed block brings people past every door, up to the cap.</summary>
         public static int DensityLift(int built, int lots)
         {

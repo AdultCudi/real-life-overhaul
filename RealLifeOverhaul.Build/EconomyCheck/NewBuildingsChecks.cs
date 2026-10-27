@@ -663,8 +663,8 @@ internal static partial class Program
         {
             destroyed.Add(m.Groups[1].Value.Trim());
         }
-        Check(string.Join(" ", destroyed) == "Served[i] b copy data look.gameObject own template.gameObject" && MemberText(copy, "public static void Remove(CopyLook look)").Contains("UnityEngine.Object.Destroy(look.gameObject)")
-              && MemberText(copy, "public static void Drop(Transform template)").Contains("UnityEngine.Object.Destroy(template.gameObject)"),
+        Check(string.Join(" ", destroyed) == "Served[i] b copy data look.gameObject own template.gameObject" && MemberText(copy, "public static void Remove(CopyLook look)").Contains("SceneryTrees.Destroy(look.gameObject)")
+              && MemberText(copy, "public static void Drop(Transform template)").Contains("SceneryTrees.Destroy(template.gameObject)"),
             "new buildings: the folder destroys only a decorative copy, a sleeping template, and its own records, streets and copied services (" + string.Join(", ", destroyed) + ")");
         string unload = MemberText(made, "public static void Unload(bool cityGoes)"), drop = MemberText(made, "private static void Drop()");
         int left = drop.IndexOf("Leave(b);", StringComparison.Ordinal), gone = drop.IndexOf("UnityEngine.Object.Destroy(b);", StringComparison.Ordinal);
@@ -683,9 +683,11 @@ internal static partial class Program
             "new buildings: when the save tools stop the mod in a city that stays, the made buildings stay hidden, and the save in memory names none of their addresses for good "
             + "(the district save takes them out, which the tools ask before their save; this guard only where it is not present)");
         int immediate = Occurs(all, "DestroyImmediate(");
-        Check(immediate == 5 && Occurs(MemberText(copy, "private static void StripWorking("), "DestroyImmediate(") == 1 && Occurs(MemberText(copy, "private static void StripLook("), "DestroyImmediate(") == 2
-              && Occurs(MemberText(copy, "private static void StripWhole("), "DestroyImmediate(") == 2,
-            "new buildings: what is taken off at once is taken off a template asleep under a switched-off holder (its Awake never ran)");
+        Check(immediate == 8 && Occurs(MemberText(copy, "private static void Wire("), "DestroyImmediate(") == 4 && Occurs(MemberText(copy, "private static void StripLook("), "DestroyImmediate(") == 2
+              && Occurs(MemberText(copy, "private static void StripWhole("), "DestroyImmediate(") == 2
+              && MemberText(copy, "public static CityBuildingController MakeWorking(").IndexOf("Wire(c, Designs[design], building, madeId);", StringComparison.Ordinal) is int wired && wired > 0
+              && MemberText(copy, "public static CityBuildingController MakeWorking(").IndexOf("copy.gameObject.SetActive(true);", StringComparison.Ordinal) > wired,
+            "new buildings: what is taken off at once is taken off a template asleep under a switched-off holder, or off a copy before it wakes (its Awake never ran)");
         Check(MemberText(copy, "public static void Show(CityBuildingController c, bool shown)").Contains("c.gameObject.SetActive(shown)") && MemberText(director, "private void Apply(string why)").Contains("CopyGame.Show(made.Controller, want)")
               && MemberText(director, "public void StopAll(string why)").Contains("Apply(why)") && !MemberText(director, "private void OptionChanged(bool on)").Contains("Remove("),
             "new buildings: a made building switched off, refused by a session or cleaned up is hidden, never destroyed");

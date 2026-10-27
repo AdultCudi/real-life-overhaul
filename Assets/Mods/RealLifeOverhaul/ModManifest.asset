@@ -15,7 +15,7 @@ MonoBehaviour:
   ModId: RealLifeOverhaul
   DisplayName: Real Life Overhaul
   Author: Real Life Overhaul
-  Version: 0.57.2
+  Version: 0.60.1
   AssetBundleName: 
   ModAssembly: {fileID: 5897886265953266890, guid: cca4f99ff96f4d0ba6207fd18d05f2d6, type: 3}
   LocalesFolder: {fileID: 102900000, guid: ed5cc94d79bc4b25aea24d46169f19f8, type: 3}

@@ -19,6 +19,7 @@ internal static partial class Program
         BuildModePolishChecks();
         BuildModeCityChecks();   // build mode over the whole city: the plots, the tools by district, the pointer (BuildModeCityChecks.cs)
         BuildModePolishTextChecks();
+        BuildModePickerChecks();   // the design window: its street in words, its size on the screen, its clip and cards (BuildModePickerChecks.cs)
     }
 
     private static void BuildModeCatalogueChecks()

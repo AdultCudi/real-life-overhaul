@@ -68,6 +68,16 @@ namespace RealLifeOverhaul.Construction
                 row.Set(3, ConstructionText.Day(b.Due), b.Due);
                 picked = row.Id == selected ? row.Id : picked;
             }
+            if (state.Grows.Count > 0 || state.CityLand > 0L)
+            {
+                // The city's growth (plans/growables.md): what goes up and stands, and what the city had for its land.
+                TableRow row = Pick("grow", ref selected);
+                row.Kind = ConstructionTables.CityCouncil;
+                row.Set(0, ConstructionText.T("reallife_grow_city_title"));
+                row.Set(1, ConstructionText.T("reallife_grow_city_value", "going", ConstructionText.N(state.GrowingNow()), "standing", ConstructionText.N(GrownStanding(state))));
+                row.Set(2, ConstructionText.Money(state.CityLand + state.CityLandTax), state.CityLand + state.CityLandTax);
+                picked = row.Id == selected ? row.Id : picked;
+            }
             AwardFile a = state.Award;
             if (a.Year >= 0 || a.LastYear >= 0)
             {
@@ -110,6 +120,10 @@ namespace RealLifeOverhaul.Construction
             {
                 WriteBill(box, state.Bill(PickedNumber("bill:")));
             }
+            else if (picked == "grow")
+            {
+                WriteGrowth(box, state);
+            }
             else
             {
                 WriteAward(box, a);
@@ -150,6 +164,36 @@ namespace RealLifeOverhaul.Construction
             box.Row("reallife_bld_row_council_sits", ConstructionText.Day(ConstructionDirector.CouncilDay(ConstructionGame.Day)));
             box.Note(ConstructionText.T("reallife_bld_code_note"));
             BackButton(box);
+        }
+
+        // The city's growth: its sites going up and their stage, the buildings standing and run down, the money the city had for its land.
+        private void WriteGrowth(InfoBox box, BuildState state)
+        {
+            box.Title(ConstructionText.T("reallife_grow_city_title"));
+            box.RowPair("reallife_grow_row_land", ConstructionText.Money(state.CityLand), "reallife_grow_row_land_tax", ConstructionText.Money(state.CityLandTax));
+            int down = 0;
+            for (int i = 0; i < state.Grows.Count; i++)
+            {
+                GrowFile g = state.Grows[i];
+                down += g.Standing && g.RunDown ? 1 : 0;
+                if (g.UnderWay)
+                {
+                    box.Line(ConstructionText.T("reallife_grow_city_line", "name", _director.GrowName(g), "stage", ConstructionDirector.GrowStageWords(g)), CellTone.Plain);
+                }
+            }
+            box.Row("reallife_grow_row_rundown", ConstructionText.N(down));
+            box.Note(ConstructionText.T("reallife_grow_city_note"));
+            BackButton(box);
+        }
+
+        private static int GrownStanding(BuildState state)
+        {
+            int n = 0;
+            for (int i = 0; i < state.Grows.Count; i++)
+            {
+                n += state.Grows[i].Standing ? 1 : 0;
+            }
+            return n;
         }
 
         private void WriteZoning(InfoBox box, LotFile l)

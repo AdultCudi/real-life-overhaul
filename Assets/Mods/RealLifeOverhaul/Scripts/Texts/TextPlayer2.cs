@@ -43,11 +43,11 @@ namespace RealLifeOverhaul.Texts
         public const string SiteUrl = "https://player2.game";
 
         /// <summary>
-        /// The game client id Player2 gives a game that is registered in its Developer Dashboard (player2.game/profile/developer). EMPTY UNTIL THE
-        /// OWNER REGISTERS Real Life Overhaul THERE AND PUTS THE ID HERE: with none, Player2 starts nothing and says so. A player's service.txt may
-        /// hold a line "clientid.12=..." to try an id before it is built in. It is not secret by the reference, but it is kept out of every log line.
+        /// The game client id Player2 gave Real Life Overhaul in its Developer Dashboard (player2.game/profile/developer). It is public by
+        /// Player2's reference, not a secret, but it is kept out of every log line. A player's service.txt may hold a line "clientid.12=..." to
+        /// use another id instead.
         /// </summary>
-        public const string ClientId = "";
+        public const string ClientId = "01a17b7a-073e-771a-872e-6b2c3b6b20b6";
 
         public const int AppMs = 3000;           // milliseconds the App may take to answer a call on this PC
         public const int PingMs = 4000;          // ...the web health call

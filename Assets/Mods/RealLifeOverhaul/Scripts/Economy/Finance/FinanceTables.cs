@@ -35,9 +35,6 @@ namespace RealLifeOverhaul.Economy
         public const int Factor = 0, Event = 1;
         public static readonly string[] CreditKinds = { "reallife_tab_kind_factor", "reallife_tab_kind_event" };
 
-        public const int District = 0, Supply = 1, Shop = 2, Estate = 3;
-        public static readonly string[] CityKinds = { "reallife_tab_city_districts", "reallife_tab_city_supply", "reallife_tab_city_shops", "reallife_tab_city_property" };
-
         /// <summary>While the credit file is not open: one empty column.</summary>
         public static readonly TableSpec Off = new TableSpec("Finance", "Off").Column("reallife_econ_col_debt", 600f, TableSort.None, flexible: true);
 
@@ -99,16 +96,6 @@ namespace RealLifeOverhaul.Economy
             .Filter("reallife_tab_all_kinds", DebtKinds)
             .Order(5, true)
             .Empty("reallife_tab_empty_debts");
-
-        /// <summary>The city's page: 0 name, 1 kind, 2 now, 3 change, 4 note.</summary>
-        public static readonly TableSpec City = new TableSpec("Finance", "The city")
-            .Column("reallife_macro_col_name", 560f, TableSort.Text, flexible: true)
-            .Column("reallife_econ_col_kind", 380f, TableSort.Text)
-            .Column("reallife_macro_col_now", 300f, TableSort.Custom)
-            .Column("reallife_macro_col_change", 500f, TableSort.Custom)
-            .Column("reallife_macro_col_note", 400f, TableSort.Text, right: true)
-            .Filter("reallife_tab_all_kinds", CityKinds)
-            .Empty("reallife_tab_empty_city");
 
         private static readonly string[] StepKeys =
         {

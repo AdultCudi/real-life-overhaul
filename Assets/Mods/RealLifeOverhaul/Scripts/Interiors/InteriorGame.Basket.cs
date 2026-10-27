@@ -22,6 +22,10 @@ namespace RealLifeOverhaul.Interiors
             {
                 return 0;
             }
+            if (PlayerHelper.PlayerController == null || PlayerHelper.PlayerController.Character == null)
+            {
+                return 0;   // the game is being torn down (a redraw from a feature's own OnDestroy): its station look-up reads the player and throws with none
+            }
             BusinessType type = BusinessTypeHelper.GetData(reg);
             int next = TimeHelper.CurrentHour + 1;
             if (type == null || !(type.simulator is Buildings.Office.OfficeBusinessSimulator) || !type.HasTag(TagRef.Businesstag.generatesrevenue) || next > 23

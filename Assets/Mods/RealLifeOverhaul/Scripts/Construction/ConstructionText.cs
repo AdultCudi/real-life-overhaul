@@ -23,6 +23,9 @@ namespace RealLifeOverhaul.Construction
 
         public static string Money(long amount) => FinanceText.Money(amount);
 
+        /// <summary>Money in cents as the game writes a price: "$9.50".</summary>
+        public static string Cents(long cents) => FinanceText.Money(cents / 100f);
+
         public static string Day(int day) => FinanceText.Day(day);
 
         /// <summary>An hour of the game's clock (day x 24 + hour) as its day and time: "day 34, 14:00".</summary>

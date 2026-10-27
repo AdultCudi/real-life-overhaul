@@ -387,7 +387,7 @@ namespace RealLifeOverhaul
                         {
                             return Done(issue, "reallife_biz_supplierprice_haggled");
                         }
-                        BusinessGame.Charge(reg, Mathf.Min(issue.A, (int)BusinessGame.Cash), "reallife_transaction_biz_surcharge");
+                        BusinessGame.Charge(reg, Mathf.Min(issue.A, WholeMoney.Floor(BusinessGame.Cash)), "reallife_transaction_biz_surcharge");
                         return Done(issue, "reallife_biz_supplierprice_haggle_failed");
                     }
                     if (option == 2)
@@ -475,7 +475,7 @@ namespace RealLifeOverhaul
                 data["amount"] = Money(issue.C);
                 return "reallife_biz_audit_refund";
             }
-            int adjust = Mathf.Min(accountant ? issue.B / 3 : issue.B, (int)(BusinessGame.Cash * BusinessCatalogue.CashShare));
+            int adjust = Mathf.Min(accountant ? issue.B / 3 : issue.B, WholeMoney.Share(BusinessGame.Cash, BusinessCatalogue.CashShare));
             data["amount"] = Money(adjust);
             BusinessGame.Charge(reg, adjust, "reallife_transaction_biz_taxadjust");
             return "reallife_biz_audit_adjusted";

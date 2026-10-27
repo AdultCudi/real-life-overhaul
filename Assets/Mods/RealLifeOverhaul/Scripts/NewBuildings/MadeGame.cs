@@ -143,6 +143,13 @@ namespace RealLifeOverhaul.NewBuildings
             return string.IsNullOrEmpty(name) || name == street.NameKey ? street.Id : name;
         }
 
+        /// <summary>A street's name as the map and the addresses write it: a street of the mod's own by its own name, any other by the game's street text. An id where no text is there.</summary>
+        public static string StreetName(string street)
+        {
+            MadeStreet mine = MadeStreets.Find(street);
+            return mine != null ? Named(mine) : AddressHelper.GetStreetNameLocalized(street);
+        }
+
         /// <summary>An address as the game writes one ("1 Proving Lane"); a street of the mod's own by its own name, whether or not it is among the game's yet.</summary>
         public static string Written(string street, int number)
         {

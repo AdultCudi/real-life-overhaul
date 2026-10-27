@@ -440,7 +440,7 @@ namespace RealLifeOverhaul.NewBuildings
                 return false;
             }
             DesignEntry chosen = designs[design];
-            CityBuildingController copy = CopyGame.MakeWorking(design, root, yaw, record, registration, "RealLife Made " + spec.Id);
+            CityBuildingController copy = CopyGame.MakeWorking(design, root, yaw, record, registration, "RealLife Made " + spec.Id, spec.Id);
             if (copy == null)
             {
                 _standWhy = "the game's building of the design " + chosen.Name + " is gone";
@@ -451,6 +451,11 @@ namespace RealLifeOverhaul.NewBuildings
             }
             NewBuildingsRules.Footprint(chosen, spec.Lots[lot], out float cx, out float cz, out float hw, out float hd);
             CopyGame.KeepMade(cx, cz, spec.Lots[lot].Facing, hw, hd, spec.Id);
+            int litter = CopyGame.PutAwayLitter();
+            if (litter > 0)
+            {
+                Logger?.Info("Made buildings: " + litter + " bag(s) of the game's litter put away from the ground of '" + spec.Id + "'.");
+            }
             if (!spec.Life)
             {
                 MadeSpec claimed = spec;   // a district's building is the game's to let and its rivals' to run: never held in the book

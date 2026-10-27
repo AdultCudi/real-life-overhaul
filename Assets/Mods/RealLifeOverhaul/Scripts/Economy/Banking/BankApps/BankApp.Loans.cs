@@ -167,7 +167,7 @@ namespace RealLifeOverhaul.Economy
                 CallButtons(buttons, desk, debt);
                 return;
             }
-            int whole = Mathf.CeilToInt(loan.remainingAmount);
+            int whole = WholeMoney.Round(System.Math.Ceiling((double)loan.remainingAmount));
             AskAmount(buttons, "reallife_econ_account_pay", "reallife_econ_account_pay_how_much", frozen ? whole : Mathf.Min(whole, loan.dailyPayment), amount => PaidLoan(desk, m, amount));
             InfoBox.Button(buttons, InfoBox.Positive, "reallife_econ_account_pay_off", () =>
                 GameConfirm.Show("reallife_bank_confirm_payoff_title".Localize(new { bank = Bank.Name }),
