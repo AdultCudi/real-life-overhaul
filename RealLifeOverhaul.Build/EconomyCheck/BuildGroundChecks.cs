@@ -325,7 +325,7 @@ internal static partial class Program
         }
     }
 
-    // The next row carries a fix line with its language's mark (and is not the empty row).
+    // The next row carries a fix line with its language's mark somewhere in it (features may come first; not the empty row).
     private static bool WhatsNewFixed(string code, string next, string _)
     {
         var marks = new Dictionary<string, string>(StringComparer.Ordinal)
@@ -333,6 +333,6 @@ internal static partial class Program
             { "en", "Fixed: " }, { "pt", "Corrigido: " }, { "zh-cn", "已修复：" }, { "de", "Behoben: " }, { "fr", "Corrigé : " }, { "es", "Corregido: " }, { "ru", "Исправлено: " },
             { "nl", "Opgelost: " }, { "tr", "Düzeltildi: " }, { "pl", "Naprawiono: " }, { "ko", "수정: " }
         };
-        return marks.TryGetValue(code, out string mark) && next.StartsWith(mark, StringComparison.Ordinal) && next.Length > 40;
+        return marks.TryGetValue(code, out string mark) && next.Contains(mark, StringComparison.Ordinal) && next.Length > 40;
     }
 }
