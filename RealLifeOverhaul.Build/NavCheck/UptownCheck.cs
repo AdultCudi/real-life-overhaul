@@ -36,6 +36,7 @@ internal static partial class Program
         UptownGameSourceChecks(scripts);
         UptownTextChecks(scripts);
         UptownFogChecks(scripts);   // the city map's fog cut away over the band (UptownFogCheck.cs)
+        UptownEdgeChecks(scripts);   // the fog behind the districts' edges and the barricades across their street ends (UptownEdgeCheck.cs)
         UptownSurfaceChecks(scripts);   // no two road or ground surfaces at one height over one place (UptownSurfaceCheck.cs)
     }
 

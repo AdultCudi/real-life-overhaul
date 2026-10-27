@@ -22429,7 +22429,7 @@
   "reallife_hire_test_orphan_fail": "Test failed: a walk of the city's businesses tripped on a record with no building. The log says which.",
   "reallife_hire_test_orphan_off": "Load a save first. This test does not run in a Going Public session.",
   "reallife_changes_next_title": "Next version",
-  "reallife_changes_next": "Nothing yet.",
+  "reallife_changes_next": "Uptown and Cedar Heights now end in fog. Each street and avenue that runs into the edge of the districts is closed with construction fencing, roadworks signs and cones, and past the fencing a bank of fog hides the unfinished end, on the street, from above and on the city map.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Fixed: when every building that could hold the utilities office is yours, power and water accounts are applied for and reconnected in the Utilities app, by phone, at the same prices, and the notices say so; once a building is free the office opens again and the app says where. Fixed: after withdrawing an application and applying to the same post again, the Career app opened the withdrawn one and the interview could not be reached. Each application now has its own row, and the interview, offer and withdrawal go to the live one. Fixed: a save holding a business record whose building the city does not have (another mod can leave one behind) no longer switches the tech sector off at every load. The mod now leaves such a record out wherever it reads the city's businesses, names its address once in the log and changes nothing of it.",
   "reallife_co_mass_raise": "Give a raise",
@@ -25904,5 +25904,8 @@
   "reallife_maptrees_test_fail": "Map tree test failed: the map did not open cleanly with a destroyed tree. Player.log says why.",
   "reallife_maptrees_test_none": "The map tree test could not run. Load a save, close any menu and try again.",
   "reallife_changes_060_1_title": "0.60.1",
-  "reallife_changes_060_1": "Fixed: the city map would not open (M only darkened the screen) after the mod had taken away a tree."
+  "reallife_changes_060_1": "Fixed: the city map would not open (M only darkened the screen) after the mod had taken away a tree.",
+  "reallife_uptown_ground_test_edges": "Uptown: the districts' edges",
+  "reallife_uptown_ground_edges_whole": "Uptown: all {ends} street ends at the edges of the districts are closed with fencing, and all {segments} stretches of edge lie behind fog. Player.log has the check.",
+  "reallife_uptown_ground_edges_open": "Uptown: at this load some street ends or edges of the districts are not closed, or not behind fog. Player.log says which."
 }

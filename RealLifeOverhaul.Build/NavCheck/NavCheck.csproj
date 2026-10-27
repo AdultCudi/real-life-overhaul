@@ -142,6 +142,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\PieceRules.cs" Link="Mod\Uptown\PieceRules.cs" />
     <!-- Uptown's cut in the city map's fog (UptownFogCheck.cs, with the game's own fog in UptownFogGame.cs): its data, game-free. -->
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\LayoutFog.cs" Link="Mod\Uptown\LayoutFog.cs" />
+    <!-- The districts' edges (UptownEdgeCheck.cs): the fog behind them and the barricades across their street ends, game-free. -->
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\EdgeRules.cs" Link="Mod\Uptown\EdgeRules.cs" />
     <!-- Uptown's streets (UptownStreetsCheck.cs): its buses' routes to every block and their reach, its street furniture, game-free; the bus network's routes of a district's own. -->
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\StreetsRules.cs" Link="Mod\Uptown\StreetsRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\TransitPlan.cs" Link="Mod\TransitPlan.cs" />
