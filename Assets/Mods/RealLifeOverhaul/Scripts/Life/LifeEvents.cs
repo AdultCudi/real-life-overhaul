@@ -65,6 +65,7 @@ namespace RealLifeOverhaul
                 try
                 {
                     ModState.Load();
+                    LifeMoneyRepair.OnLoad();   // a charge a purse past an int once made is paid back, once (LifeMoneyRules)
                     PhoneContacts.Setup();
                     ContactGroupsGame.Install();   // after every contact the mod adds at a load is made: the groups of the Contacts app
                 }

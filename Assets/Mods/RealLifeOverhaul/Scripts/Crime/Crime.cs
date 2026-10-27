@@ -53,7 +53,7 @@ namespace RealLifeOverhaul
             }
             float cash = Cash;
             int amount = Mathf.RoundToInt(Mathf.Clamp(cash * share, Prices.At(atLeast), Prices.At(atMost)) / 5f) * 5;
-            amount = Mathf.Min(amount, Mathf.FloorToInt(cash));
+            amount = Mathf.Min(amount, WholeMoney.Floor(cash));
             if (amount <= 0)
             {
                 return 0;

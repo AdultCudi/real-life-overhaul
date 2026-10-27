@@ -271,7 +271,7 @@ namespace RealLifeOverhaul.Family
             {
                 return 0;
             }
-            return Mathf.Clamp(Mathf.RoundToInt(Mathf.Max(0f, SaveGameManager.Current.Money) * FamilyBalance.SettlementShare / 10f) * 10, 0, FamilyBalance.SettlementCap);
+            return Mathf.Clamp(WholeMoney.Round(System.Math.Max(0.0, SaveGameManager.Current.Money) * FamilyBalance.SettlementShare / 10.0), 0, FamilyBalance.SettlementCap / 10) * 10;
         }
 
         public static DialogEntry EndAsk()

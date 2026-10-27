@@ -150,7 +150,7 @@ namespace RealLifeOverhaul
             float every = CarRules.ServiceEvery(CarCatalogue.For(car.vehicleTypeName, traits).Kind);
             float untilService = every - (record.Km - record.ServicedKm);
             bool insured = record.InsuredUntil >= today;
-            float premium = Mathf.Round(CarRules.Premium(price, record.Claims) * (1f + GarageBridges.InsuranceOf(car.id)));   // as CarOwnership charges it
+            float premium = Mathf.Round(CarRules.PremiumOf(price, record.Claims, GarageBridges.InsuranceOf(car.id)));   // as CarOwnership charges it
             int registration = CarOwnership.RegistrationLeft(record);
             int count = CarPhone.OwnedCars(save);
             var entry = new DialogEntry

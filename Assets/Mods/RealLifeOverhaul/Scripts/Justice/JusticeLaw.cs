@@ -252,7 +252,7 @@ namespace RealLifeOverhaul
         /// <summary>An amount bounded to a share of cash, never below a floor and never above itself.</summary>
         public static int Bound(int nominal, float cash, float share, int floor)
         {
-            int most = Math.Max(floor, (int)(Math.Max(cash, 0f) * share));
+            int most = Math.Max(floor, WholeMoney.Share(cash, share));
             return Round10(Math.Min(nominal, most));
         }
 

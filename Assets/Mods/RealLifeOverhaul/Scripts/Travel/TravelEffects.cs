@@ -77,7 +77,7 @@ namespace RealLifeOverhaul
             float money = SaveGameManager.Current.Money;
             if (amount < 0)
             {
-                amount = -Mathf.Min(-amount, Mathf.FloorToInt(Mathf.Max(money, 0f)));
+                amount = -WholeMoney.Take(-(long)amount, money);   // not past the purse, which may be past an int (Core/WholeMoney)
             }
             Settle(amount, transaction);
         }

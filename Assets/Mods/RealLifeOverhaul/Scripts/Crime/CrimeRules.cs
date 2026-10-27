@@ -25,7 +25,7 @@ namespace RealLifeOverhaul
             float amount = Math.Max(0f, dayTakings) * HoldUpTillShare;
             amount = amount < least ? least : amount > most ? most : amount;
             int taken = (int)Math.Round(amount / 5f) * 5;
-            return Math.Max(0, Math.Min(taken, (int)Math.Floor(Math.Max(0f, cash))));
+            return Math.Max(0, Math.Min(taken, WholeMoney.Floor(cash)));
         }
 
         /// <summary>

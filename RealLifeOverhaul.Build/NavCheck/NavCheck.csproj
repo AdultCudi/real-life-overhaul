@@ -33,6 +33,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\BusPath.cs" Link="Mod\BusPath.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\Taxi\TaxiRules.cs" Link="Mod\TaxiRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\Prices.cs" Link="Mod\Prices.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\WholeMoney.cs" Link="Mod\WholeMoney.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Traffic\Reckless\StreetRules.cs" Link="Mod\StreetRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\PanelPlacement.cs" Link="Mod\PanelPlacement.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\NoticeRoomRules.cs" Link="Mod\NoticeRoomRules.cs" />

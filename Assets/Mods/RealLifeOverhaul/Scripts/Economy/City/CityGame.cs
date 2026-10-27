@@ -615,7 +615,7 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>Cash in hand, whole and never under nothing.</summary>
-        public static int Cash => SaveGameManager.Current != null ? Mathf.FloorToInt(Mathf.Max(0f, SaveGameManager.Current.Money)) : 0;
+        public static int Cash => SaveGameManager.Current != null ? WholeMoney.Floor(SaveGameManager.Current.Money) : 0;
 
         /// <summary>
         /// One adjustment, dated on the day it is for: positive is paid, negative taken. A charge is deducted as the charges
