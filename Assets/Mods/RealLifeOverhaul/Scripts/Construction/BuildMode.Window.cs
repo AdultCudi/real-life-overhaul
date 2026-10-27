@@ -306,8 +306,14 @@ namespace RealLifeOverhaul.Construction
         // Where the squares picked are: their street, and whether they hold its corner.
         private string Where(LotView first, bool corner)
         {
-            string street = string.IsNullOrEmpty(first.Street) ? _d.LotWords(first.Id) : first.Street;
-            return ConstructionText.Fill(corner ? "reallife_bld_sheet_where_corner" : "reallife_bld_sheet_where", "street", street);
+            return ConstructionText.Fill(corner ? "reallife_bld_sheet_where_corner" : "reallife_bld_sheet_where", "street", StreetOf(first));
+        }
+
+        // A lot's street in words, as the map and the addresses name it ("2nd Street", never the street's id); the lot's address where it has no street.
+        private string StreetOf(LotView lot)
+        {
+            string words = ConstructionGame.StreetWords(lot.Street);
+            return words.Length > 0 ? words : _d.LotWords(lot.Id);
         }
 
         // A zoning's figure in its use's colour when it is one use; the panel's words otherwise.
@@ -584,7 +590,7 @@ namespace RealLifeOverhaul.Construction
             _filter = BuildModeCatalogue.First(_dCorner, _dFits, n);
             _card = _design >= 0 && _design < n ? _design : -1;
             BuildModeGame.HideHover();
-            _catalogue.Show(true);
+            _catalogue.Show(true, _bar != null ? _bar.ToolbarTop() : float.NaN);   // drawn to fit the screen and the game's UI scale, clear of the toolbar
             WriteCatalogue(true);
         }
 
@@ -601,7 +607,7 @@ namespace RealLifeOverhaul.Construction
             }
             _d.LotOfColumn(_site.FirstColumn, out LotView first);
             bool corner = CellRules.Corner(_d.Cells, _site.FirstColumn, _site.Count, out _, out _);
-            string street = string.IsNullOrEmpty(first.Street) ? _d.LotWords(first.Id) : first.Street;
+            string street = StreetOf(first);
             _catalogue.Begin(ConstructionText.Fill(corner ? "reallife_bld_cat_context_corner" : "reallife_bld_cat_context", "cells", ConstructionText.N(PickedCells), "street", street, "use",
                 T(BuildCatalogue.UseKeys[(int)_use]), "storeys", ConstructionText.N(_d.UptownStoreys())), _filterNames, _filter);
             string use = T(BuildCatalogue.UseKeys[(int)_use]);

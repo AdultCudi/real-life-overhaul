@@ -424,7 +424,37 @@ namespace RealLifeOverhaul.Construction
 
         internal static string Place(string street, int number) => (street ?? string.Empty) + "#" + number.ToString(CultureInfo.InvariantCulture);
 
-        internal static string AddressText(string street, int number) => string.IsNullOrEmpty(street) ? ConstructionText.T("reallife_bld_place_test_lot") : CivicCity.AddressText(street, number);
+        /// <summary>
+        /// An address as the game writes it ("1010 2nd Street"); where the game's text for one of the mod's own streets is not there
+        /// yet (it is written at the load), the number and the street's words, never an id.
+        /// </summary>
+        internal static string AddressText(string street, int number)
+        {
+            if (string.IsNullOrEmpty(street))
+            {
+                return ConstructionText.T("reallife_bld_place_test_lot");
+            }
+            string written = CivicCity.AddressText(street, number);
+            return StreetNameRules.HasId(written) ? StreetNameRules.Address(street, number, written, NamedStreet(street)) : written;
+        }
+
+        /// <summary>
+        /// A street in words, as the map and the addresses name it (the mod's own streets by their texts, the game's by its street
+        /// text): "2nd Street" for "reallife:street_uptown_second". Never an id (StreetNameRules); empty for no street.
+        /// </summary>
+        internal static string StreetWords(string street) => StreetNameRules.Words(street, NamedStreet(street));
+
+        private static string NamedStreet(string street)
+        {
+            try
+            {
+                return string.IsNullOrEmpty(street) ? null : NewBuildings.MadeGame.StreetName(street);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
 
         /// <summary>A building's first door, for the ribbon on its opening day; false for none.</summary>
         internal static bool Door(string street, int number, out Vector3 door, out Vector3 outward)
@@ -494,7 +524,15 @@ namespace RealLifeOverhaul.Construction
 
 
         /// <summary>The words of a district's game id (also its text key).</summary>
-        internal static string DistrictWords(string district) => string.IsNullOrEmpty(district) ? string.Empty : district.GetLocalization();
+        internal static string DistrictWords(string district)
+        {
+            if (string.IsNullOrEmpty(district))
+            {
+                return string.Empty;
+            }
+            string words = district.GetLocalization();
+            return StreetNameRules.HasId(words) ? string.Empty : words;   // a district with no text of its own is left out, never printed as its id
+        }
 
         /// <summary>A skill of the game's in the player's language (its name is its text key).</summary>
         internal static string SkillWords(string skill) => string.IsNullOrEmpty(skill) ? string.Empty : skill.GetLocalization();

@@ -359,9 +359,10 @@ namespace RealLifeOverhaul.Construction
         /// <summary>
         /// A button that reads as one on the dark box (the owner, 26 Oct 2026: the zone rows did not): a rounded face in its colour
         /// inside a thin lighter edge, as the approved mockup draws them; picked, a blue edge round a dark blue face. The face sits
-        /// under the button's own parts; the designer's blue under a chosen tool is left to the toolbar's buttons.
+        /// under the button's own parts; the designer's blue under a chosen tool is left to the toolbar's buttons. A card's edge is
+        /// wider (<paramref name="edge"/>), so the one picked reads at a glance without its size ever changing.
         /// </summary>
-        public void Frame(KitButton b, Color face, bool useChosen)
+        public void Frame(KitButton b, Color face, bool useChosen, float edge = EdgeWide)
         {
             if (b == null || b.Back == null)
             {
@@ -379,8 +380,8 @@ namespace RealLifeOverhaul.Construction
                 var r = (RectTransform)f.transform;
                 r.anchorMin = Vector2.zero;
                 r.anchorMax = Vector2.one;
-                r.offsetMin = new Vector2(EdgeWide, EdgeWide);
-                r.offsetMax = new Vector2(-EdgeWide, -EdgeWide);
+                r.offsetMin = new Vector2(edge, edge);
+                r.offsetMax = new Vector2(-edge, -edge);
                 r.SetAsFirstSibling();   // under the designer's blue, the icon and the words
                 b.Face = f;
             }
@@ -392,6 +393,34 @@ namespace RealLifeOverhaul.Construction
             {
                 b.Chosen.SetActive(false);
             }
+        }
+
+        /// <summary>
+        /// A button of the designer's that keeps its hover sound but no longer grows under the pointer: the designer's tool buttons scale
+        /// to 1.1 on hover (ButtonEffects.scaleOnHover), which made the card under the pointer in build mode's design window bigger and
+        /// offset from the rest (the owner's screenshot, 27 Oct 2026). The field is written through the game's own serialisation, and the
+        /// effects switched off whole where it cannot be, so a card never changes size. Done once, when the card is made.
+        /// </summary>
+        public static void KeepSize(KitButton b)
+        {
+            ButtonEffects effects = b != null && b.Root != null ? b.Root.GetComponent<ButtonEffects>() : null;
+            if (effects == null)
+            {
+                return;
+            }
+            try
+            {
+                JsonUtility.FromJsonOverwrite("{\"scaleOnHover\":false}", effects);
+                if (JsonUtility.ToJson(effects).IndexOf("\"scaleOnHover\":true", StringComparison.Ordinal) >= 0)
+                {
+                    effects.enabled = false;
+                }
+            }
+            catch (Exception)
+            {
+                effects.enabled = false;
+            }
+            b.Root.localScale = Vector3.one;
         }
 
         public void Destroy()
