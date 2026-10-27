@@ -1,10 +1,14 @@
 using System;
 using System.Collections.Generic;
 using Controllers;
+using Extensions;
 using Helpers;
 using Localizor;
+using PlayerActivity;
 using RealLifeOverhaul.Economy;
 using Streets.Pedestrians;
+using UI;
+using UI.Load;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Fame
@@ -217,6 +221,36 @@ namespace RealLifeOverhaul.Fame
             }
             BuildingRegistration here = InstanceBehavior<BuildingManager>.Instance.buildingRegistration;
             return here != null && Books.IsBusiness(here) ? here : null;
+        }
+
+        /// <summary>
+        /// What stops the player joining a video call right now, read from the game. The phone being open and the game paused do not
+        /// count (the call is joined from the phone, which pauses the game); see FameJoin. Runs once per press of Join.
+        /// </summary>
+        public static FameJoinBlock JoinBlock()
+        {
+            var s = new FameJoinState();
+            var uis = InstanceBehavior<UIs>.Instance;
+            s.Driving = PlayerHelper.IsUsingVehicle;
+            s.Talking = DialogController.current != null || HudConfirm.isOpen;
+            s.Activity = PlayerActivityUI.IsPanelOpen;
+            s.Subway = SubwaySystem.IsRiding;
+            s.Boat = CasinoBoatManager.IsOnCasinoBoat;
+            s.Scene = Wiring.Scenes.PlayerInScene;
+            s.TripWindow = GameUi.TravelList.AnyOpen;
+            s.Other = uis == null || LoadScene.isLoading || GameMembers.PlayerDead || EnergyHelper.goingToHospital || uis.timeMachine.isRunning
+                      || Leisure.PhotoMode.Active || Photos.CameraMode.Active || ThirdPersonCamera.AnyWindow(false);
+            return FameJoin.Decide(s);
+        }
+
+        /// <summary>Takes the game off pause for a scene begun from the phone, which paused it; a call is not held at a standstill.</summary>
+        public static void Unpause()
+        {
+            var uis = InstanceBehavior<UIs>.Instance;
+            if (uis != null && uis.gameSpeed != null && uis.gameSpeed.Paused)
+            {
+                uis.gameSpeed.SetPause(false);
+            }
         }
 
         public static bool OnFootOutside()

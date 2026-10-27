@@ -26033,5 +26033,14 @@
   "reallife_bld_held_park": "本区的一处公园，保留为绿地",
   "reallife_bld_held_campus": "伯奇伍德学校校园",
   "reallife_bld_held_edge_name": "本区边缘",
-  "reallife_bld_held_edge": "本区外围建筑后面、围墙之外的土地"
+  "reallife_bld_held_edge": "本区外围建筑后面、围墙之外的土地",
+  "reallife_fame_join_driving": "驾驶时无法加入。请先停车。",
+  "reallife_fame_join_talking": "对话或提问进行到一半时无法加入。请先结束它。",
+  "reallife_fame_join_activity": "工作或学习时无法加入。请先结束或离开。",
+  "reallife_fame_join_scene": "有其他场景或面板占着你时无法加入。请先结束它。",
+  "reallife_fame_join_window": "出行窗口或列表打开时无法加入。请先关闭它。",
+  "reallife_fame_join_subway": "乘坐地铁时无法加入。",
+  "reallife_fame_join_boat": "在赌场船上时无法加入。",
+  "reallife_changes_060_2_title": "0.60.2",
+  "reallife_changes_060_2": "已修复：深夜节目和其他视频通话无法从声望页面加入，因为手机处于打开状态被当成了忙碌。现在可以加入了；如果确实有事阻止，提示会说明原因。"
 }

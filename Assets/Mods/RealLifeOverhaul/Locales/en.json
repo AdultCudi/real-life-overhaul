@@ -26033,5 +26033,14 @@
   "reallife_bld_held_park": "A park of the district, kept as green ground",
   "reallife_bld_held_campus": "The campus of Birchwood School",
   "reallife_bld_held_edge_name": "The district's edge",
-  "reallife_bld_held_edge": "Ground behind the district's outer buildings, past its walls"
+  "reallife_bld_held_edge": "Ground behind the district's outer buildings, past its walls",
+  "reallife_fame_join_driving": "You cannot join while driving. Park first.",
+  "reallife_fame_join_talking": "You cannot join in the middle of a conversation or a question. Finish it first.",
+  "reallife_fame_join_activity": "You cannot join while you are working or studying. Finish or leave it first.",
+  "reallife_fame_join_scene": "You cannot join while another scene or panel has you. Finish it first.",
+  "reallife_fame_join_window": "You cannot join while a trip window or list is open. Close it first.",
+  "reallife_fame_join_subway": "You cannot join while you are on the subway.",
+  "reallife_fame_join_boat": "You cannot join while you are on the casino boat.",
+  "reallife_changes_060_2_title": "0.60.2",
+  "reallife_changes_060_2": "Fixed: the late night show and the other video calls could not be joined from the Standing page, because having the phone open counted as busy. They can be joined now, and when something does stop you, the message says what."
 }

@@ -11,7 +11,8 @@ internal static partial class Program
     private static readonly string[] MeetingWords =
     {
         "reallife_fame_where_call", "reallife_fame_label_where", "reallife_fame_plan_call_what", "reallife_fame_invite_call", "reallife_fame_join",
-        "reallife_fame_join_busy", "reallife_fame_note_call_on", "reallife_fame_call_place_0", "reallife_fame_call_place_1", "reallife_fame_call_open_0",
+        "reallife_fame_join_busy", "reallife_fame_join_driving", "reallife_fame_join_talking", "reallife_fame_join_activity", "reallife_fame_join_scene", "reallife_fame_join_window",
+        "reallife_fame_join_subway", "reallife_fame_join_boat", "reallife_fame_note_call_on", "reallife_fame_call_place_0", "reallife_fame_call_place_1", "reallife_fame_call_open_0",
         "reallife_fame_call_open_1", "reallife_fame_test_meetings", "reallife_fame_test_meetings_ok", "reallife_fame_test_meetings_bad"
     };
 
@@ -44,6 +45,42 @@ internal static partial class Program
         string links = Read(@"Wiring\StandingLinks.cs"), press = Read(@"Fame\FameDirector.Press.cs");
         Check(links.Contains("e.Where = PlannerText.T(\"reallife_fame_where_call\")"), "Standing: an accepted invitation's Planner entry says where it is held");
         string hour = FlareMethod(press, "private void PressHour(int day, int hour)"), join = FlareMethod(press, "public void JoinInvite(int id)");
+        // ---- joining from the phone: the phone and the pause never block; each real blocker is named
+        var idle = new FameJoinState();   // standing or sitting idle, phone open, game paused: neither is a field of the state
+        Check(FameJoin.Decide(idle) == FameJoinBlock.None, "Standing: idle with the phone open and the game paused, a call can be joined");
+        var each = new (string Name, FameJoinState State, FameJoinBlock Want)[]
+        {
+            ("driving", new FameJoinState { Driving = true }, FameJoinBlock.Driving),
+            ("a conversation or question", new FameJoinState { Talking = true }, FameJoinBlock.Talking),
+            ("the work or study panel", new FameJoinState { Activity = true }, FameJoinBlock.Activity),
+            ("a scene of the mod's", new FameJoinState { Scene = true }, FameJoinBlock.Scene),
+            ("a trip window", new FameJoinState { TripWindow = true }, FameJoinBlock.TripWindow),
+            ("the subway", new FameJoinState { Subway = true }, FameJoinBlock.Subway),
+            ("the casino boat", new FameJoinState { Boat = true }, FameJoinBlock.Boat),
+            ("loading or another screen", new FameJoinState { Other = true }, FameJoinBlock.Other)
+        };
+        var wrong = new List<string>();
+        var keys = new HashSet<string>();
+        foreach (var e in each)
+        {
+            if (FameJoin.Decide(e.State) != e.Want)
+            {
+                wrong.Add(e.Name);
+            }
+            keys.Add(FameJoin.Key(e.Want));
+        }
+        Check(wrong.Count == 0, "Standing: each of driving, a conversation, work, a scene, a trip window, the subway, the boat and another screen blocks the join" + (wrong.Count > 0 ? "; not: " + string.Join(", ", wrong) : string.Empty));
+        Check(keys.Count == each.Length && FameJoin.Key(FameJoinBlock.Driving) == "reallife_fame_join_driving",
+            "Standing: every blocker has a refusal of its own, the generic one only for the rest");
+        Check(FameJoin.Decide(new FameJoinState { Driving = true, Scene = true, Other = true }) == FameJoinBlock.Driving,
+            "Standing: with several blockers the most specific is named, driving first");
+        string game = Read(@"Fame\FameGame.cs"), joinBlock = FlareMethod(game, "public static FameJoinBlock JoinBlock()");
+        Check(join.Contains("FameGame.JoinBlock()") && join.Contains("FameJoin.Key(") && join.Contains("Logger?.Info(") && !join.Contains("Free()") && join.Contains("FameGame.Unpause()"),
+            "Standing: joining asks the join decision, logs and names the blocker on a refusal, and takes the game off pause when the call begins");
+        Check(joinBlock.Length > 0 && !joinBlock.Contains("IsSafeForEvent") && !joinBlock.Contains(".Paused") && !joinBlock.Contains("FullMenu") && !joinBlock.Contains("Scenes.PlayerHeld")
+              && !joinBlock.Contains("AnyWindow(true)") && joinBlock.Contains("PlayerInScene"),
+            "Standing: the join decision does not read the pause or the phone's full menu, which are up whenever Join is pressed");
+
         Check(hour.Length > 0 && !hour.Contains("StartScene(") && join.Contains("FamePress.Joinable(") && join.Contains("StartScene(invite)"),
             "Standing: a call begins only when the player joins it from the Standing page, never by itself in the hour");
         Check(Read(@"Fame\FamePage.Press.cs").Contains("director.JoinInvite(") && Read(@"Fame\FamePage.Press.cs").Contains("FamePress.Joinable("),

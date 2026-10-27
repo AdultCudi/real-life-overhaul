@@ -26033,5 +26033,14 @@
   "reallife_bld_held_park": "Um parque do bairro, mantido como área verde",
   "reallife_bld_held_campus": "O campus da Escola Birchwood",
   "reallife_bld_held_edge_name": "A borda do bairro",
-  "reallife_bld_held_edge": "Terreno atrás dos prédios externos do bairro, além dos muros"
+  "reallife_bld_held_edge": "Terreno atrás dos prédios externos do bairro, além dos muros",
+  "reallife_fame_join_driving": "Você não pode entrar enquanto dirige. Estacione primeiro.",
+  "reallife_fame_join_talking": "Você não pode entrar no meio de uma conversa ou de uma pergunta. Termine-a primeiro.",
+  "reallife_fame_join_activity": "Você não pode entrar enquanto trabalha ou estuda. Termine ou saia primeiro.",
+  "reallife_fame_join_scene": "Você não pode entrar enquanto outra cena ou painel o prende. Termine-o primeiro.",
+  "reallife_fame_join_window": "Você não pode entrar com uma janela de viagem ou uma lista aberta. Feche-a primeiro.",
+  "reallife_fame_join_subway": "Você não pode entrar enquanto está no metrô.",
+  "reallife_fame_join_boat": "Você não pode entrar enquanto está no barco-cassino.",
+  "reallife_changes_060_2_title": "0.60.2",
+  "reallife_changes_060_2": "Corrigido: não era possível entrar no programa da madrugada e nas outras chamadas de vídeo pela página de Prestígio, porque o celular aberto contava como ocupado. Agora dá para entrar e, quando algo impede, a mensagem diz o quê."
 }
