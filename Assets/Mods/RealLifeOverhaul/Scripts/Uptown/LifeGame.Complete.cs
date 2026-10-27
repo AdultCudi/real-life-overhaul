@@ -74,7 +74,31 @@ namespace RealLifeOverhaul.Uptown
             f.OnSale = OnSale(save, record != null ? record.Address : null);
             f.InCityList = InCityList(made.Controller);
             f.DoorOnMesh = NavMesh.SamplePosition(new Vector3(made.DoorX, made.DoorY, made.DoorZ), out NavMeshHit _, DoorReach, NavMesh.AllAreas);
+            Entrances(made, ref f);
             return f;
+        }
+
+        // A warehouse's vehicle entrances: what its look has, what its copy keeps whole (CopyGame.Wire) and what its structure has a bay for.
+        private static void Entrances(MadeBuilding made, ref CompleteFacts f)
+        {
+            Building record = made.Building;
+            f.Warehouse = record != null && record.BuildingType == GateRules.WarehouseType;
+            if (!f.Warehouse)
+            {
+                return;
+            }
+            f.WarehouseRegistration = made.Registration is Warehouse;
+            BuildingSizeData size = BuildingSizeHelper.GetData(record);
+            DesignEntry look = made.DesignIndex >= 0 && made.DesignIndex < CopyGame.Catalogue.Count ? CopyGame.Catalogue[made.DesignIndex] : null;
+            int inLook = look != null && look.Gates != null ? look.Gates.Length : 0;
+            f.GatesWanted = Math.Min(inLook, size != null ? size.numberOfVehicleSlots : 0);
+            f.GatesServe = look != null && GateRules.Serves(look);
+            CityBuildingController c = made.Controller;
+            DriveInEntrance[] doors = c != null ? c.driveInEntrances : null;
+            for (int i = 0; doors != null && i < doors.Length; i++)
+            {
+                f.GatesWhole += doors[i] != null && doors[i].transform.IsChildOf(c.transform) && doors[i].GetComponentInChildren<DriveInEntranceEnterTrigger>(true) != null ? 1 : 0;
+            }
         }
 
         // The game's government business types (City Hall, the school's): BizMan writes the government as their owner.

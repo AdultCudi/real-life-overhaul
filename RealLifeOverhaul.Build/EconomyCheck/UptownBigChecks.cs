@@ -316,7 +316,7 @@ internal static partial class Program
         Check(copyArt.IndexOf("FindMouths();", StringComparison.Ordinal) > 0 && copyArt.IndexOf("FindMouths();", StringComparison.Ordinal) < copyArt.IndexOf("LayoutPlans.Modules(Places);", StringComparison.Ordinal)
               && copyArt.IndexOf("ClearMouths(copy);", StringComparison.Ordinal) > copyArt.IndexOf("Strip(copy);", StringComparison.Ordinal)
               && populate.IndexOf("if (InMouth(lanes[l], at, turn))", StringComparison.Ordinal) > 0
-              && populate.IndexOf("if (InMouth(lanes[l], at, turn))", StringComparison.Ordinal) < populate.IndexOf("ParkingGame.Room(", StringComparison.Ordinal),
+              && populate.IndexOf("if (InMouth(lanes[l], at, turn))", StringComparison.Ordinal) < populate.IndexOf("LayLane(slot, ref why, out int failed);", StringComparison.Ordinal),
             "uptown big: the street art keeps the mouths clear, the litter put away before a copy wakes and no parking lane laid there");
         Check(guide.Contains(".Check(\"reallife_uptown_test_store\", LifeDirector.TestStore, \"Uptown check (wholesale store)\", RunPlace.Outdoors)")
               && guide.Contains(".Test(\"reallife_uptown_test_store_order\", LifeDirector.TestOrder)")

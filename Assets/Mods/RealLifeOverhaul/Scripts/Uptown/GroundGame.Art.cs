@@ -624,6 +624,8 @@ namespace RealLifeOverhaul.Uptown
             why = null;
             int refused = 0;
             LanesKeptOff = 0;
+            LanesTrimmed = 0;
+            ParkingMetresAway = 0;
             for (int i = 0; i < Copies.Count; i++)
             {
                 ModulePlace place = Places[CopyPlace[i]];
@@ -637,20 +639,16 @@ namespace RealLifeOverhaul.Uptown
                 {
                     Vector3 at = Copies[i].transform.position + (lanes[l].transform.position - template.position);
                     Quaternion turn = lanes[l].transform.rotation;
+                    var slot = new LaneSlot { Template = lanes[l], At = at, Turn = turn };
+                    Slots.Add(slot);
                     if (InMouth(lanes[l], at, turn))
                     {
                         LanesKeptOff++;   // a car crosses that kerb into a big special place
+                        slot.Off = true;
                         continue;
                     }
-                    string refusal = null;
-                    ParkingLaneGenerator made = ParkingGame.Room(lanes[l], at, turn, out refusal) ? ParkingGame.Copy(lanes[l], at, turn, out refusal) : null;
-                    if (made != null)
-                    {
-                        Lanes.Add(made);
-                        continue;
-                    }
-                    refused++;
-                    why = why ?? Copies[i].name + ": " + refusal;
+                    LayLane(slot, ref why, out int failed);   // whole, or what a warehouse's garage door leaves of it
+                    refused += failed;
                 }
             }
             if (people)
@@ -681,6 +679,7 @@ namespace RealLifeOverhaul.Uptown
                 ParkingGame.Remove(ref lane);
             }
             Lanes.Clear();
+            Slots.Clear();
             for (int i = 0; i < Zones.Count; i++)
             {
                 StationaryAiSpawner zone = Zones[i];
@@ -717,6 +716,11 @@ namespace RealLifeOverhaul.Uptown
             GroundsLaid = 0;
             SceneryLaid = 0;
             GroundsHidden = 0;
+            GateMouths.Clear();
+            LampsAway = 0;
+            GateLitterAway = 0;
+            LanesTrimmed = 0;
+            ParkingMetresAway = 0;
         }
     }
 }

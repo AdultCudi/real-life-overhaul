@@ -52,6 +52,11 @@ namespace RealLifeOverhaul.Uptown
         public static int Mouths { get; private set; }
         public static int OffStops { get; private set; }
 
+        /// <summary>The pieces taken away since they were laid, from the mouths of garage doors found once the buildings stood.</summary>
+        public static int GateAway { get; private set; }
+
+        private const float PieceReach = 0.6f;   // m a piece of furniture reaches round its middle: a bench is 1.9 m long, a bin or a tree pit half a metre
+
         /// <summary>The kinds whose template was not found at this load, in a word each, or null.</summary>
         public static string Missing { get; private set; }
 
@@ -115,12 +120,38 @@ namespace RealLifeOverhaul.Uptown
             return Laid;
         }
 
+        /// <summary>
+        /// The pieces of furniture standing in the mouths of garage doors (MouthRules, found once the district's buildings stand) taken
+        /// away, so a car or a truck turns in from the road; how many. The furniture is laid before the buildings stand, so these were
+        /// laid where a door was yet to be.
+        /// </summary>
+        public static int Open(IList<GroundRect> mouths)
+        {
+            Transform art = GroundGame.ArtRoot;
+            Transform holder = art != null ? art.Find(HolderName) : null;
+            int away = 0;
+            for (int i = holder != null ? holder.childCount - 1 : -1; i >= 0; i--)
+            {
+                Transform piece = holder.GetChild(i);
+                if (piece.gameObject.activeSelf && MouthRules.Holds(mouths, piece.position.x, piece.position.z, PieceReach))
+                {
+                    piece.gameObject.SetActive(false);
+                    Object.Destroy(piece.gameObject);
+                    away++;
+                }
+            }
+            Laid -= away;
+            GateAway += away;
+            return away;
+        }
+
         /// <summary>What was laid is forgotten (its pieces go with the art's holder): a new load begins.</summary>
         public static void Forget()
         {
             Laid = 0;
             Occupied = 0;
             Mouths = 0;
+            GateAway = 0;
             OffStops = 0;
             Missing = null;
             FoundWords = null;

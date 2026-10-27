@@ -246,6 +246,20 @@ namespace RealLifeOverhaul.Uptown
             }
         }
 
+        /// <summary>
+        /// Where the poles of every stop the routes want stand, both kerbs of each (the routes laid out, their places, their poles): for the
+        /// garage doors' mouths to keep clear of (<see cref="MouthRules.TakesStop"/>).
+        /// </summary>
+        public static void StopPoles(List<float> x, List<float> z)
+        {
+            var routes = new List<TransitPlan.Route>(4);
+            Routes(routes);
+            var placeX = new List<float>(32);
+            var placeZ = new List<float>(32);
+            WantedPlaces(routes, placeX, placeZ);
+            Poles(placeX, placeZ, x, z);
+        }
+
         private static bool OnAnAvenue(float z)
         {
             for (int row = 0; row <= LayoutRules.Rows; row++)

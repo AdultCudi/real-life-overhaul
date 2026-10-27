@@ -33,6 +33,11 @@ namespace RealLifeOverhaul.Uptown
         public bool InCityList;      // among the city's list of building controllers (the map's filters and search read it)
         public bool DoorOnMesh;      // its entrance within reach of the walking mesh
         public int Occupancy;        // the player's deed's tenants, per cent; 0 for none
+        public bool Warehouse;       // its record's type is the game's warehouse: a vehicle drives in, and out
+        public bool WarehouseRegistration;   // its registration is the game's Warehouse (it has vehicle slots)
+        public int GatesWanted;      // the garage doors of its look a bay of its structure stands behind (the smaller of the look's doors and the structure's vehicle slots)
+        public int GatesWhole;       // of its copy's garage doors, those whole: a component, its trigger and the closed door
+        public bool GatesServe;      // every garage door of its look looks out on its street (GateRules.Serves)
     }
 
     /// <summary>The items of the check, in the line's order.</summary>
@@ -50,7 +55,8 @@ namespace RealLifeOverhaul.Uptown
         Listing = 9,
         Door = 10,
         Occupants = 11,
-        Count = 12
+        Entrances = 12,
+        Count = 13
     }
 
     /// <summary>
@@ -66,7 +72,7 @@ namespace RealLifeOverhaul.Uptown
     {
         public const string StreetPrefix = "reallife:street_uptown_";   // the district's own streets (LayoutStreets' ids)
 
-        private static readonly string[] Names = { "address", "name", "type", "owner", "market", "card", "BizMan", "filter", "search", "listing", "door", "occupants" };
+        private static readonly string[] Names = { "address", "name", "type", "owner", "market", "card", "BizMan", "filter", "search", "listing", "door", "occupants", "entrances" };
 
         /// <summary>Who BizMan says owns it: "government", "player", "rival", "city", or null where the game would write "Undefined".</summary>
         public static string Owner(CompleteFacts f)
@@ -101,6 +107,7 @@ namespace RealLifeOverhaul.Uptown
             bool search = !f.HasBusiness || (f.InCityList && !string.IsNullOrEmpty(f.BusinessName));
             bool listing = f.PlayerRecord || f.HasBusiness || f.RentedByPlayer || f.ForRent || f.OnSale;
             bool occupants = f.HasBusiness || f.RentedByPlayer || f.Occupancy > 0 || f.ForRent || (f.PlayerRecord && f.PlayerDeed);
+            bool entrances = Entrances(f);
             Set(ref pass, CompleteItem.Address, address);
             Set(ref pass, CompleteItem.Name, name);
             Set(ref pass, CompleteItem.Type, type);
@@ -113,7 +120,18 @@ namespace RealLifeOverhaul.Uptown
             Set(ref pass, CompleteItem.Listing, listing);
             Set(ref pass, CompleteItem.Door, f.DoorOnMesh);
             Set(ref pass, CompleteItem.Occupants, occupants);
+            Set(ref pass, CompleteItem.Entrances, entrances);
             return pass;
+        }
+
+        /// <summary>
+        /// A warehouse takes a vehicle in and out as the game's own does (the owner, 27 Oct 2026: "this breaks the immersion and the game"):
+        /// its registration has vehicle slots, it has garage doors, every one a bay stands behind is whole and every one looks out on its
+        /// street. Any other building is not asked.
+        /// </summary>
+        public static bool Entrances(CompleteFacts f)
+        {
+            return !f.Warehouse || (f.WarehouseRegistration && f.GatesWanted > 0 && f.GatesWhole == f.GatesWanted && f.GatesServe);
         }
 
         private static void Set(ref int bits, CompleteItem item, bool on)
