@@ -165,7 +165,7 @@ namespace RealLifeOverhaul.NewGround
                 int layer = Children[i].gameObject.layer;
                 if (layer == LayerHelper.ParkedVehiclesLayerIndex || layer == LayerHelper.AutoParkSpotsLayerIndex || Children[i].name == ReservedName)
                 {
-                    Object.DestroyImmediate(Children[i].gameObject);
+                    SceneryTrees.DestroyNow(Children[i].gameObject);
                 }
             }
             Children.Clear();
@@ -232,7 +232,7 @@ namespace RealLifeOverhaul.NewGround
             {
                 box.enabled = false;   // the engine destroys it at the frame's end: a lane laid in its place now must not find it there
             }
-            Object.Destroy(lane.gameObject);
+            SceneryTrees.Destroy(lane.gameObject);
             lane = null;
         }
 
@@ -241,7 +241,7 @@ namespace RealLifeOverhaul.NewGround
         {
             if (_holder != null)
             {
-                Object.Destroy(_holder);
+                SceneryTrees.Destroy(_holder);
             }
             _holder = null;
             _solidMask = 0;

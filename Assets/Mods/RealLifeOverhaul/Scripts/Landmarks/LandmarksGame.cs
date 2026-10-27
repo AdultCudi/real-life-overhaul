@@ -148,7 +148,7 @@ namespace RealLifeOverhaul.Landmarks
             }
             if (modelled + plain == 0)
             {
-                Object.Destroy(root);
+                SceneryTrees.Destroy(root);
                 return null;
             }
             return root;
@@ -159,7 +159,7 @@ namespace RealLifeOverhaul.Landmarks
         {
             if (root != null)
             {
-                Object.Destroy(root);
+                SceneryTrees.Destroy(root);
             }
             root = null;
         }

@@ -663,8 +663,8 @@ internal static partial class Program
         {
             destroyed.Add(m.Groups[1].Value.Trim());
         }
-        Check(string.Join(" ", destroyed) == "Served[i] b copy data look.gameObject own template.gameObject" && MemberText(copy, "public static void Remove(CopyLook look)").Contains("UnityEngine.Object.Destroy(look.gameObject)")
-              && MemberText(copy, "public static void Drop(Transform template)").Contains("UnityEngine.Object.Destroy(template.gameObject)"),
+        Check(string.Join(" ", destroyed) == "Served[i] b copy data look.gameObject own template.gameObject" && MemberText(copy, "public static void Remove(CopyLook look)").Contains("SceneryTrees.Destroy(look.gameObject)")
+              && MemberText(copy, "public static void Drop(Transform template)").Contains("SceneryTrees.Destroy(template.gameObject)"),
             "new buildings: the folder destroys only a decorative copy, a sleeping template, and its own records, streets and copied services (" + string.Join(", ", destroyed) + ")");
         string unload = MemberText(made, "public static void Unload(bool cityGoes)"), drop = MemberText(made, "private static void Drop()");
         int left = drop.IndexOf("Leave(b);", StringComparison.Ordinal), gone = drop.IndexOf("UnityEngine.Object.Destroy(b);", StringComparison.Ordinal);
