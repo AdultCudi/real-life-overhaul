@@ -22429,7 +22429,7 @@
   "reallife_hire_test_orphan_fail": "Test başarısız: şehrin işletmeleri turu, binası olmayan bir kayıtta takıldı. Günlük hangisi olduğunu söyler.",
   "reallife_hire_test_orphan_off": "Önce bir kayıt yükleyin. Bu test bir Going Public oturumunda çalışmaz.",
   "reallife_changes_next_title": "Sonraki sürüm",
-  "reallife_changes_next": "Henüz yok.",
+  "reallife_changes_next": "Düzeltildi: inşa modunda Bina seç penceresi artık son tasarımları alt bilginin ve araç çubuğunun üzerine çizmiyor. Liste pencerenin içinde kayıyor, tüm kartlar aynı boyutta ve seçtiğiniz kart büyümek yerine mavi bir kenarlık alıyor, pencere daha büyük bir arayüz ölçeğine sığmak için küçülüyor ve başlık sokağın kimliği yerine adını gösteriyor, örneğin 2nd Street. Yeni bir test pencereyi denetliyor.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Düzeltildi: kamu hizmetleri ofisini barındırabilecek tüm binalar sizinse, elektrik ve su hesapları Kamu Hizmetleri uygulamasından telefonla, aynı fiyatlarla açılır ve yeniden bağlanır, bildirimler de bunu söyler; bir bina boşaldığında ofis yeniden açılır ve uygulama yerini söyler. Düzeltildi: bir başvuruyu geri çekip aynı ilana yeniden başvurunca Kariyer uygulaması geri çekileni açıyor ve mülakata ulaşılamıyordu. Artık her başvurunun kendi satırı var; mülakat, teklif ve geri çekme etkin olana gidiyor. Düzeltildi: Binası şehirde olmayan bir işletme kaydı içeren bir kayıt dosyası (başka bir mod böyle bir kayıt bırakabilir) artık her yüklemede teknoloji sektörünü kapatmıyor. Mod artık şehrin işletmelerini okuduğu her yerde bu kaydı atlıyor, adresini günlükte bir kez belirtiyor ve kayıtta hiçbir şeyi değiştirmiyor.",
   "reallife_co_mass_raise": "Zam ver",

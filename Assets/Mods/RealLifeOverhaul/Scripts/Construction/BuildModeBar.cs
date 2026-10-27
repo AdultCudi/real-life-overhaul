@@ -645,6 +645,17 @@ namespace RealLifeOverhaul.Construction
             return b != null && !b.Usable;
         }
 
+        /// <summary>The top of the toolbar along the foot (its tools, views and demand), world y, where it is drawn now; NaN where it is not up. The design window stands clear of it.</summary>
+        public float ToolbarTop()
+        {
+            if (_bottom == null || !_bottom.gameObject.activeInHierarchy)
+            {
+                return float.NaN;
+            }
+            LayoutRebuilder.ForceRebuildLayoutImmediate(_bottom);
+            return World(_bottom).yMax;
+        }
+
         internal static Rect World(RectTransform r)
         {
             var corners = new Vector3[4];

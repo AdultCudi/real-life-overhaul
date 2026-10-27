@@ -120,6 +120,7 @@ namespace RealLifeOverhaul.Construction
                 .Test("reallife_bld_mode_test_layer", () => ConstructionDirector.TestBuildModeLayerNow())
                 .Test("reallife_bld_mode_test_zoning", () => ConstructionDirector.TestBuildModeZoningNow())
                 .Test("reallife_bld_mode_test_window", () => ConstructionDirector.TestBuildModeWindowNow())
+                .Test("reallife_bld_mode_test_picker", () => ConstructionDirector.TestBuildModePickerNow())
                 .Test("reallife_bld_mode_test_hints", () => ConstructionDirector.TestBuildModeHintsNow())
                 .Test("reallife_bld_mode_test_tools", () => ConstructionDirector.TestBuildModeToolsNow())
                 .Test("reallife_bld_mode_test_tour", () => ConstructionDirector.TestBuildModeTourNow())

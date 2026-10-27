@@ -67,6 +67,7 @@ namespace RealLifeOverhaul.TestRun
             { "reallife_bld_mode_test_layer", "it opens build mode over the city map and leaves it open for the player to look at, which would hold the run's own steps" },
             { "reallife_bld_mode_test_zoning", "it opens build mode over the city map and leaves it open for the player to look at, which would hold the run's own steps" },
             { "reallife_bld_mode_test_window", "it opens build mode over the city map and goes through every tool and view, which would hold the run's own steps" },
+            { "reallife_bld_mode_test_picker", "it opens build mode over the city map and its design window on the player's nearest zoned land, and leaves build mode open, which would hold the run's own steps" },
             { "reallife_bld_mode_test_hints", "it opens build mode over the city map and walks the hint bar through each tool, which would hold the run's own steps" },
             { "reallife_bld_mode_test_tools", "it opens build mode over the city map and leaves it open for the player to look at the toolbar, which would hold the run's own steps" },
             { "reallife_bld_mode_test_tour", "it opens build mode over the city map and walks the tour's tips, which would hold the run's own steps" },

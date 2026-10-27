@@ -872,7 +872,16 @@ namespace RealLifeOverhaul.Construction
         public string WindowOverlap() => _bar != null ? _bar.Overlap() : "no interface";
 
         /// <summary>The design window as laid out now, for the tests: null when nothing is cut short or meets.</summary>
-        public string CatalogueOverlap() => _catalogue != null ? _catalogue.Overlap() : "no design window";
+        public string CatalogueOverlap() => _catalogue != null ? _catalogue.Overlap(_bar != null ? _bar.ToolbarTop() : float.NaN) : "no design window";
+
+        /// <summary>The design window's heading and the scale it is drawn at, for the tests.</summary>
+        public string CatalogueHeading => _catalogue != null ? _catalogue.Heading : string.Empty;
+
+        /// <summary>How many cards the design window shows, for the tests.</summary>
+        public int CatalogueCards => _catalogue != null ? _catalogue.CardsShown : 0;
+
+        /// <summary>The scale the design window is drawn at, for the tests.</summary>
+        public float CatalogueScale => _catalogue != null ? _catalogue.Scale : 1f;
 
         /// <summary>True when a part of the interface covers the map's centre, with which, for the tests.</summary>
         public bool CoversCentre(out string what)

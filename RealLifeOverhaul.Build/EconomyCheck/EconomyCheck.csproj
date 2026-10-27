@@ -630,6 +630,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildModeHintRules.cs" Link="Mod\Construction\BuildModeHintRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildModeCityRules.cs" Link="Mod\Construction\BuildModeCityRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildModeCatalogue.cs" Link="Mod\Construction\BuildModeCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\StreetNameRules.cs" Link="Mod\Construction\StreetNameRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\CompleteRules.cs" Link="Mod\CompleteRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\DemandRules.cs" Link="Mod\DemandRules.cs" />
     <!-- A building handed over stands at once, and the opening day is not missed (StandChecks.cs). -->
