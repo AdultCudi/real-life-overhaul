@@ -50,6 +50,7 @@ namespace RealLifeOverhaul.Construction
             Instance = this;
             _onSave = OnSave;
             GameSprites.Want(AppGlyphs);   // asked for before the one look behind the loading screen (GameSprites.Prewarm)
+            ScenePrewarm.Add("construction: the game's parking lane being found to copy for the rows of a car park's bays", CarParkGame.Prewarm);
         }
 
         private void OnDestroy()
@@ -58,6 +59,7 @@ namespace RealLifeOverhaul.Construction
             try
             {
                 StandDown("the city is unloading");
+                CarParkGame.Forget();
             }
             catch (Exception e)
             {
@@ -141,6 +143,7 @@ namespace RealLifeOverhaul.Construction
             ShowSecond();
             DeskSecond();
             TrackSecond();
+            ParkWorldSecond();   // the car parks stood or taken away out of view (ConstructionDirector.ParkWorld.cs)
         }
 
         // ------------------------------------------------------------------ the state
@@ -172,6 +175,9 @@ namespace RealLifeOverhaul.Construction
             _downLooks.Clear();   // a new load makes every building with its look
             _growDropsDue = true;   // ... and every record at its own traffic: each grown building's drop asked again
             _growChanged++;
+            ParkWorldsDown();   // a new load: the old save's car parks come away, this save's are stood by the second's look
+            _parkChanged++;
+            _parkLotsStamp = int.MinValue;
             _state = state;
             _save = save;
             _loaded = true;
@@ -194,7 +200,7 @@ namespace RealLifeOverhaul.Construction
                 return;
             }
             long back = 0;
-            int lots = 0, developments = 0, tenders = 0;
+            int lots = 0, developments = 0, tenders = 0, carParks = 0;
             for (int i = state.Lots.Count - 1; i >= 0; i--)
             {
                 if (retired(state.Lots[i].Id))
@@ -220,13 +226,21 @@ namespace RealLifeOverhaul.Construction
                     tenders++;
                 }
             }
-            if (lots + developments + tenders == 0)
+            for (int i = state.CarParks.Count - 1; i >= 0; i--)
+            {
+                if (retired(state.CarParks[i].Lot))
+                {
+                    state.CarParks.RemoveAt(i);   // a car park on ground of an earlier plan: the ground is no more
+                    carParks++;
+                }
+            }
+            if (lots + developments + tenders + carParks == 0)
             {
                 return;
             }
             ConstructionGame.Give(back, "reallife_transaction_bld_land_back", ConstructionText.T("reallife_neighborhood_uptown"));
             Logger?.Info("Construction: Uptown's lots were planned again: " + lots + " lot(s) of an earlier plan given back for " + back + ", " + developments
-                         + " development(s) and " + tenders + " open tender(s) there let go.");
+                         + " development(s), " + tenders + " open tender(s) and " + carParks + " car park(s) there let go.");
         }
 
         // The state read now if the city's programme asks before the second's look has read it: a site's first hour after a
@@ -259,6 +273,7 @@ namespace RealLifeOverhaul.Construction
             HidePanels();
             DropShowPlace("the save's state is forgotten");
             TrackDown();
+            ParkWorldsDown();
         }
 
         private void OnSave()
@@ -317,6 +332,7 @@ namespace RealLifeOverhaul.Construction
             HidePanels();
             DesksDown();
             TrackDown();
+            ParkWorldsDown();
             DropShowPlace("the construction game stood down");
             if (was)
             {

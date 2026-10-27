@@ -39,6 +39,11 @@ namespace RealLifeOverhaul.NewBuildings
         private static readonly List<Collider> Solids = new List<Collider>(64);
         private static readonly List<Component> Parts = new List<Component>(256);
         private static readonly List<MeshFilter> Meshes = new List<MeshFilter>(64);
+        private static readonly List<Gate> GateList = new List<Gate>(4);   // a building's garage doors while it is measured
+        private static readonly List<BoxCollider> BoxList = new List<BoxCollider>(4);
+        private static readonly List<DriveInEntrance> Doors = new List<DriveInEntrance>(4);   // a copy's garage doors while its entrances are settled
+        private static readonly List<DriveInEntrance> Kept = new List<DriveInEntrance>(4);
+        private static readonly List<DriveInEntranceEnterTrigger> Triggers = new List<DriveInEntranceEnterTrigger>(4);
 
         private static Transform _asleep;      // switched off: what is under it never wakes
         private static Transform _standing;    // the copies stand under it
@@ -335,11 +340,72 @@ namespace RealLifeOverhaul.NewBuildings
             }
             float facing = NewBuildingsRules.Turn((outward.sqrMagnitude > 0.0001f ? Quaternion.LookRotation(outward).eulerAngles.y : yaw) - yaw);
             into.DoorFacing = NewBuildingsRules.SquareFacing(facing, at.x, at.z, minX, maxX, minZ, maxZ);
+            MeasureEntrances(c, unturn, origin, yaw, into);
             return true;
         }
 
+        // The building's vehicle entrances round its root as everything else is measured: where each garage door stands, the way
+        // it looks out and how wide its closed door is, and where the entrance of its underground car park is and a vehicle comes
+        // out of it. A door the building's hierarchy does not hold would not come with a copy, so it is left out. Once for each
+        // building measured, behind the loading screen.
+        private static void MeasureEntrances(CityBuildingController c, Quaternion unturn, Vector3 origin, float yaw, DesignEntry into)
+        {
+            into.Gates = null;
+            into.Parks = null;
+            DriveInEntrance[] doors = c.driveInEntrances;
+            GateList.Clear();
+            for (int i = 0; doors != null && i < doors.Length; i++)
+            {
+                DriveInEntrance door = doors[i];
+                if (door == null || !door.transform.IsChildOf(c.transform))
+                {
+                    continue;
+                }
+                Transform t = door.transform;
+                Vector3 at = unturn * (t.position - origin);
+                float width = 0f, depth = 0f;
+                BoxList.Clear();
+                door.GetComponents(BoxList);
+                for (int b = 0; b < BoxList.Count; b++)
+                {
+                    if (!BoxList[b].isTrigger)
+                    {
+                        width = BoxList[b].size.x * Mathf.Abs(t.lossyScale.x);   // the closed door's collider: the width of the door and the depth of the tunnel it plugs
+                        depth = BoxList[b].size.z * Mathf.Abs(t.lossyScale.z);
+                        break;
+                    }
+                }
+                BoxList.Clear();
+                GateList.Add(new Gate { Id = door.doorID, X = at.x, Z = at.z, Facing = FacingOf(t, yaw), Width = width, Depth = depth });
+            }
+            into.Gates = GateList.Count > 0 ? GateList.ToArray() : null;
+            GateList.Clear();
+            UndergroundParkingEntrance park = c.undergroundParkingEntrance;
+            if (park != null && park.vehicleExitPoint != null && park.playerExitPoint != null && park.transform.IsChildOf(c.transform))
+            {
+                Vector3 at = unturn * (park.transform.position - origin);
+                Vector3 exit = unturn * (park.vehicleExitPoint.position - origin);
+                Vector3 player = unturn * (park.playerExitPoint.position - origin);
+                into.Parks = new[]
+                {
+                    new Park
+                    {
+                        Number = park.parkingNumber, Version = park.parkingVersion, X = at.x, Z = at.z, Facing = FacingOf(park.transform, yaw),
+                        ExitX = exit.x, ExitZ = exit.z, ExitFacing = FacingOf(park.vehicleExitPoint, yaw), PlayerX = player.x, PlayerZ = player.z
+                    }
+                };
+            }
+        }
+
+        // The way a transform's forward points, degrees from the building's root forward.
+        private static float FacingOf(Transform t, float rootYaw)
+        {
+            Vector3 forward = Vector3.ProjectOnPlane(t.forward, Vector3.up);
+            return NewBuildingsRules.Turn((forward.sqrMagnitude > 0.0001f ? Quaternion.LookRotation(forward).eulerAngles.y : rootYaw) - rootYaw);
+        }
+
         // Every drawn part (a mesh switched on, not only a shadow, the box apart) and every solid one (a collider switched on,
-        // not a trigger) of a building, as the copy keeps them (StripWorking and StripLook keep meshes and solid colliders).
+        // not a trigger) of a building, as the copy keeps them (a working copy and a look both keep meshes and solid colliders).
         private static void MeasureParts(CityBuildingController c, MeshRenderer box, Quaternion unturn, Vector3 origin, DesignEntry into)
         {
             Drawn.Clear();
@@ -463,34 +529,14 @@ namespace RealLifeOverhaul.NewBuildings
             {
                 StripWhole(copy.GetComponent<CityBuildingController>());
             }
-            else if (working)
-            {
-                StripWorking(copy.GetComponent<CityBuildingController>());
-            }
-            else
+            else if (!working)
             {
                 StripLook(copy);
             }
+            // A working copy keeps all of the game's building: its controller, its garage doors with their triggers and the
+            // tunnels they plug, its car park's entrance. The doors a made building has no bay behind and the car park's
+            // number are settled for each copy as it is made (Wire), never in the template, which wakes nothing.
             return t;
-        }
-
-        // A working copy keeps the game's controller and all it needs; no car may drive in and no underground car park is
-        // a second one of the original's (the game finds a car park by its number), so those go.
-        private static void StripWorking(CityBuildingController c)
-        {
-            Parts.Clear();
-            c.GetComponentsInChildren(true, Parts);
-            for (int i = Parts.Count - 1; i >= 0; i--)
-            {
-                Component part = Parts[i];
-                if (part is DriveInEntrance || part is UndergroundParkingEntrance)
-                {
-                    UnityEngine.Object.DestroyImmediate(part);
-                }
-            }
-            Parts.Clear();
-            c.driveInEntrances = new DriveInEntrance[0];
-            c.undergroundParkingEntrance = null;
         }
 
         // A special building copied whole keeps its drive-ins, pumps and triggers, which are what it is copied for: they name
@@ -593,8 +639,10 @@ namespace RealLifeOverhaul.NewBuildings
         /// A working copy of a design for a made building, standing at (x, y, z) turned by <paramref name="yaw"/> degrees,
         /// with the game's record and registration set before it wakes (the city's list can reach it before its Start);
         /// null if the design's building is gone. It stands in the scene of the building it copies, which goes with the city.
+        /// Its vehicle entrances are settled before it wakes (<see cref="Wire"/>); <paramref name="madeId"/> is the made
+        /// building's id, which gives a car park of its own its number.
         /// </summary>
-        public static CityBuildingController MakeWorking(int design, Vector3 at, float yaw, Building building, BuildingRegistration registration, string name)
+        public static CityBuildingController MakeWorking(int design, Vector3 at, float yaw, Building building, BuildingRegistration registration, string name, string madeId)
         {
             Transform template = Template(design, true);
             CityBuildingController source = design >= 0 && design < Designs.Count ? Sources[Designs[design].Source] : null;
@@ -614,9 +662,80 @@ namespace RealLifeOverhaul.NewBuildings
             {
                 Rebind(copy, source.building, building);
             }
+            else
+            {
+                Wire(c, Designs[design], building, madeId);
+            }
             copy.gameObject.SetActive(true);
             FarDistricts.Include(copy);
             return c;
+        }
+
+        /// <summary>
+        /// A working copy's vehicle entrances, settled before it wakes, as the game's own building of its structure has them: a
+        /// garage door stays whole when the copy is a warehouse with a bay for the door's slot (<see cref="GateRules.Live"/>), any
+        /// other is shut for good; a car park's entrance is given a number of its own, or taken off where its ramp is not on the street.
+        /// </summary>
+        private static void Wire(CityBuildingController c, DesignEntry design, Building building, string madeId)
+        {
+            // A kept door is whole: its component, its triggers, its closed door and the tunnel it plugs. A shut one has its component and
+            // triggers taken off, so no car is taken into an interior with no place for it. The controller's list keeps the doors that
+            // stay: a car leaving by one finds it there (the game's exit reads the first).
+            int slots = SlotsOf(building);
+            Doors.Clear();
+            Kept.Clear();
+            c.GetComponentsInChildren(true, Doors);
+            for (int i = 0; i < Doors.Count; i++)
+            {
+                DriveInEntrance door = Doors[i];
+                if (GateRules.Live(false, building.BuildingType, slots, door.doorID))
+                {
+                    Kept.Add(door);
+                    continue;
+                }
+                Triggers.Clear();
+                door.GetComponentsInChildren(true, Triggers);
+                for (int t = 0; t < Triggers.Count; t++)
+                {
+                    UnityEngine.Object.DestroyImmediate(Triggers[t]);
+                }
+                UnityEngine.Object.DestroyImmediate(door);
+            }
+            Triggers.Clear();
+            c.GetComponentsInChildren(true, Triggers);
+            for (int t = 0; t < Triggers.Count; t++)
+            {
+                if (Triggers[t].GetComponentInParent<DriveInEntrance>(true) == null)
+                {
+                    UnityEngine.Object.DestroyImmediate(Triggers[t]);   // one no door is above (none in Build 3682: all 146 are children of their door's object) would call a door that is gone
+                }
+            }
+            c.driveInEntrances = Kept.ToArray();
+            Doors.Clear();
+            Kept.Clear();
+            Triggers.Clear();
+            // The game finds a car park by its number, and a second one of the original's would share its cars: a copy's has its own.
+            UndergroundParkingEntrance park = c.undergroundParkingEntrance;
+            if (park == null)
+            {
+                return;
+            }
+            if (GateRules.ParkServes(design) && park.transform.IsChildOf(c.transform))
+            {
+                park.parkingNumber = GateRules.ParkNumber(madeId);
+            }
+            else
+            {
+                UnityEngine.Object.DestroyImmediate(park);
+                c.undergroundParkingEntrance = null;
+            }
+        }
+
+        // The vehicle slots the game gives the structure of a building's record (BuildingSizeData.numberOfVehicleSlots): H one, I, P and Q two.
+        private static int SlotsOf(Building building)
+        {
+            BuildingSizeData data = BuildingSizeHelper.GetData(building);
+            return data != null ? data.numberOfVehicleSlots : 0;
         }
 
         // A whole copy's parking lanes name a building by its record, not by the controller (an asset, which Instantiate

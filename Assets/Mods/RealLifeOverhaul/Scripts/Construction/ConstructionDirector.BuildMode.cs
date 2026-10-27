@@ -135,6 +135,13 @@ namespace RealLifeOverhaul.Construction
                 f.HasProject = p != null;
                 f.UnderWay = p != null && p.Stage == ProjectStage.Building;
                 f.Progress = f.UnderWay ? Built(p) : 0;
+                if (!f.UnderWay && ParkOf(lot.Id) != null)
+                {
+                    f.Mine = false;   // a car park of the player's stands on their land: their building, run in build mode and at its pay machine
+                    f.Building = f.MyBuilding = true;
+                    f.Use = f.Paint > 0 ? f.Paint - 1 : f.MainUse;
+                    return f;
+                }
                 if (!f.UnderWay && !f.Cleared && LotTaken(lot.Id))
                 {
                     f.Mine = false;   // a building of the player's stands on their land: their building, not bare land
@@ -146,6 +153,18 @@ namespace RealLifeOverhaul.Construction
             }
             f.Free = FreeSpace(lot);
             f.Building = !f.Free && LotTaken(lot.Id);
+            CarParkFile builders = ParkOf(lot.Id);
+            if (builders != null)
+            {
+                // A car park of the city's builders: planned, going up by its share built, or open.
+                f.Building = true;
+                f.MyBuilding = false;
+                f.Use = f.MainUse;
+                f.UnderWay = builders.Stage == CarParkStage.Building;
+                SiteFacts yard = builders.SiteId > 0 ? SiteOf(builders.SiteId) : default(SiteFacts);
+                f.Progress = yard.Known && yard.Hours > 0f ? (int)Math.Max(0f, Math.Min(100f, yard.Done * 100f / yard.Hours)) : 0;
+                return f;
+            }
             if (grown != null && grown.UnderWay && grown.Owner != GrowOwner.Player)
             {
                 // A grown site: the developers' while it is planned, under construction by its share built once it goes up.
@@ -296,6 +315,11 @@ namespace RealLifeOverhaul.Construction
             if (f.RunDown)
             {
                 more = (more != null ? more + ". " : string.Empty) + ConstructionText.T("reallife_grow_hover_rundown");
+            }
+            string park = ParkHover(lot.Id);
+            if (park != null)
+            {
+                more = (more != null ? more + ". " : string.Empty) + park;
             }
             return true;
         }
@@ -683,6 +707,7 @@ namespace RealLifeOverhaul.Construction
                     District = site != null ? DistrictKeyOf(DistrictOfLot(site.Id)) : string.Empty, Lot = site != null ? site.Id : string.Empty
                 };
                 estimate = Preview(probe, out _, out _, out _, out _).Total;
+                ask.ParkingUnder |= ask.ParkingNeeded > 0 && ParkSpare(probe) >= ask.ParkingNeeded;   // a car park of the player's near it counts as the parking asked
             }
             return BuildModeRules.Warnings(ask);
         }

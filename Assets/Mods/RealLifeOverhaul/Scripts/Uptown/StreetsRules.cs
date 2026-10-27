@@ -90,10 +90,16 @@ namespace RealLifeOverhaul.Uptown
         /// 2nd Street, both at 1st Avenue: the round one up 9th Street, west along Uptown Avenue, up Willow Street, east the
         /// whole of Crest Avenue, down Lake Street and west along Uptown Avenue to 2nd Street; the middle one up 9th Street,
         /// east along Uptown Avenue and down 2nd Street. Their stops: beside each station, on 9th and 2nd Street midway along
-        /// the first block, on Willow and Lake Street midway along the second row, and on the avenues every three blocks
-        /// from the band's ends, each midway between two crossings. Into <paramref name="into"/>, each route there and back.
+        /// the first block, on Willow Street midway along the second row, on Lake Street <see cref="LakeStopAlong"/> m from its middle, and on the
+        /// avenues every three blocks from the band's ends, each midway between two crossings. Into <paramref name="into"/>, each route there and back.
         /// </summary>
         public static void Routes(List<TransitPlan.Route> into)
+        {
+            Routes(into, true);
+        }
+
+        /// <summary>As above; with <paramref name="moved"/> off, the stop on Lake Street is at the middle of its row too, as the plan had it (the checks hold the one against the other).</summary>
+        public static void Routes(List<TransitPlan.Route> into, bool moved)
         {
             into.Clear();
             var vx = new List<float>(16);
@@ -117,19 +123,19 @@ namespace RealLifeOverhaul.Uptown
             Street(vx, vz, 7, 1);
             End(vx, vz);
             StopOnStreet(sx, sz, 0, StationZ);
-            StopMidStreet(sx, sz, 0, 1);
+            StopMidStreet(sx, sz, 0, 1, moved);
             StopOnAvenue(sx, sz, 1, 4);
             StopOnAvenue(sx, sz, 1, 1);
-            StopMidStreet(sx, sz, LayoutStreets.WestMost, 2);
+            StopMidStreet(sx, sz, LayoutStreets.WestMost, 2, moved);
             for (int column = 1; column < LayoutRules.Columns; column += 3)
             {
                 StopOnAvenue(sx, sz, 3, column);
             }
             StopOnAvenue(sx, sz, 3, LayoutRules.Columns);
-            StopMidStreet(sx, sz, LayoutStreets.EastMost, 2);
+            StopMidStreet(sx, sz, LayoutStreets.EastMost, 2, moved);
             StopOnAvenue(sx, sz, 1, LayoutRules.Columns);
             StopOnAvenue(sx, sz, 1, LayoutRules.Columns - 3);
-            StopMidStreet(sx, sz, 7, 1);
+            StopMidStreet(sx, sz, 7, 1, moved);
             StopOnStreet(sx, sz, 7, StationZ);
             Add(into, "Uptown round", vx, vz, sx, sz);
 
@@ -142,10 +148,10 @@ namespace RealLifeOverhaul.Uptown
             Street(vx, vz, 7, 1);
             End(vx, vz);
             StopOnStreet(sx, sz, 0, StationZ);
-            StopMidStreet(sx, sz, 0, 1);
+            StopMidStreet(sx, sz, 0, 1, moved);
             StopOnAvenue(sx, sz, 1, 8);
             StopOnAvenue(sx, sz, 1, 11);
-            StopMidStreet(sx, sz, 7, 1);
+            StopMidStreet(sx, sz, 7, 1, moved);
             StopOnStreet(sx, sz, 7, StationZ);
             Add(into, "Uptown Avenue", vx, vz, sx, sz);
         }
@@ -182,11 +188,21 @@ namespace RealLifeOverhaul.Uptown
             sz.Add(z);
         }
 
-        private static void StopMidStreet(List<float> sx, List<float> sz, int street, int row)
+        // 16 Lake Street is a warehouse of two bays whose garage doors (the Murray Hill I look, 42 m across, filling its lot) stand 3.5 and
+        // 16.4 m north of the lot's middle, the first right at the middle of the row, where the stop was: its mouth, with the pole and the
+        // shelter of the stop, left the warehouse a door short or in a look that did not fill its lot. 12 m south of the middle the stop
+        // clears both mouths and the lot wears the look that fills it; the stop keeps its clear stretch of lane from the crossings (42 m
+        // past the lanes' ends where the buses need 26), its pole and shelter stand clear of 9 Lake Street's door, and every corner of
+        // the band is as near a stop as before (EconomyCheck's GateChecks, NavCheck's UptownStreetsCheck).
+        /// <summary>m along Lake Street from the middle of its second row (negative to the south) its stop is wanted: where it clears the garage doors of 16 Lake Street.</summary>
+        public const float LakeStopAlong = -12f;
+
+        // A stop midway along a row of a street, moved along it where the plan says so (LakeStopAlong).
+        private static void StopMidStreet(List<float> sx, List<float> sz, int street, int row, bool moved)
         {
             OnStreet(street, row, out float x, out float z);
             sx.Add(x);
-            sz.Add(z);
+            sz.Add(moved && street == LayoutStreets.EastMost && row == 2 ? z + LakeStopAlong : z);
         }
 
         private static void StopOnAvenue(List<float> sx, List<float> sz, int row, int column)
@@ -244,6 +260,26 @@ namespace RealLifeOverhaul.Uptown
                 x.Add(placeX[i] + (avenue ? 0f : aside));
                 z.Add(placeZ[i] + (avenue ? aside : 0f));
             }
+        }
+
+        /// <summary>
+        /// Where the poles of every stop the routes want stand, both kerbs of each (the routes laid out, their places, their poles): for the
+        /// garage doors' mouths to keep clear of (<see cref="MouthRules.TakesStop"/>).
+        /// </summary>
+        public static void StopPoles(List<float> x, List<float> z)
+        {
+            StopPoles(x, z, true);
+        }
+
+        /// <summary>As above; with <paramref name="moved"/> off, the poles of the plan before the Lake Street stop was moved (<see cref="LakeStopAlong"/>).</summary>
+        public static void StopPoles(List<float> x, List<float> z, bool moved)
+        {
+            var routes = new List<TransitPlan.Route>(4);
+            Routes(routes, moved);
+            var placeX = new List<float>(32);
+            var placeZ = new List<float>(32);
+            WantedPlaces(routes, placeX, placeZ);
+            Poles(placeX, placeZ, x, z);
         }
 
         private static bool OnAnAvenue(float z)

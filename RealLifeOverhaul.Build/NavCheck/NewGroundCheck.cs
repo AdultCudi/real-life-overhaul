@@ -697,7 +697,7 @@ internal static partial class Program
 
         // What a district stands along its new streets: parking that wakes where it is put, crossings tied to their road's red lamp.
         string parking = code["ParkingGame.cs"];
-        Match copyLane = Regex.Match(parking, @"public static ParkingLaneGenerator Copy\(ParkingLaneGenerator template, Vector3 at, Quaternion turn, out string why\)\s*\{(?<b>(?:[^{}]|\{(?<d>)|\}(?<-d>))*)\}");
+        Match copyLane = Regex.Match(parking, @"public static ParkingLaneGenerator Copy\(ParkingLaneGenerator template, Vector3 at, Quaternion turn, float from, float to, out string why\)\s*\{(?<b>(?:[^{}]|\{(?<d>)|\}(?<-d>))*)\}");
         Check(copyLane.Success && Regex.IsMatch(copyLane.Groups["b"].Value, @"SetPositionAndRotation\(at, turn\);[\s\S]*localScale = template\.transform\.lossyScale;[\s\S]*SetParent\(null, true\);"),
             "new ground sources: a parking copy is placed and sized while asleep, so it wakes and parks where a kerb wants it");
         Check(Regex.IsMatch(roads, @"public static GameObject RedLamp\(BuiltJunction junction, int way\)") && Regex.Matches(roads, @"LampName\(junction, way, ").Count == 2,

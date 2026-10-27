@@ -72,6 +72,12 @@ namespace RealLifeOverhaul.Uptown
         public const string FillDone = "reallife_uptown_test_fill_done";
         public const string FillCar = "reallife_uptown_test_fill_car";
         public const string FillFailed = "reallife_uptown_test_fill_failed";
+        public const string TestWarehouse = "reallife_uptown_test_warehouse";    // the warehouses' garage doors: the test button and its notices
+        public const string WarehouseDone = "reallife_uptown_test_warehouse_done";
+        public const string WarehouseFailed = "reallife_uptown_test_warehouse_failed";
+        public const string WarehouseCar = "reallife_uptown_test_warehouse_car";
+        public const string WarehouseNone = "reallife_uptown_test_warehouse_none";
+        public const string WarehouseRent = "reallife_uptown_test_warehouse_rent";
         public const string Incomplete = "reallife_uptown_incomplete";          // a building handed over that is not yet a whole building of the game's
     }
 }

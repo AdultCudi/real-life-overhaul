@@ -288,10 +288,10 @@ namespace RealLifeOverhaul.Construction
             return line;
         }
 
-        // A plot, a rebuild or an extension of the player's with no contractor yet: a builder of the city's may be hired for it (the director's HireKind).
+        // A plot, a rebuild, an extension or a car park of the player's with no contractor yet: a builder of the city's may be hired for it (the director's HireKind).
         private static bool ConstructionHire(ProjectFile p)
         {
-            return (p.Kind == ProjectKind.Plot || p.Kind == ProjectKind.Rebuild || p.Kind == ProjectKind.Extension) && p.Contractor < 0;
+            return (p.Kind == ProjectKind.Plot || p.Kind == ProjectKind.Rebuild || p.Kind == ProjectKind.Extension || p.Kind == ProjectKind.Parking) && p.Contractor < 0;
         }
 
         private static void Step(ref TrackLine line, string key, TrackNeed need, int onDay)

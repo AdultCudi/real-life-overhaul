@@ -684,6 +684,8 @@ namespace RealLifeOverhaul.Construction
             _targetSite = null;
             _hasTarget = false;
             _canBuy = _pickMine = false;
+            _parkFacts = default(ParkFacts);
+            _parkPicked = null;
             DropGhost();
             _design = -1;
             _designs.Clear();
@@ -713,7 +715,7 @@ namespace RealLifeOverhaul.Construction
                         _d.RowsHeld(_picked[i].Column, out LotFile other);
                         _pickMine = other == site;   // every square the player's, of one site
                     }
-                    if (_siteWhy == null && _pickMine)
+                    if (_siteWhy == null && _pickMine && _d.ParkOfColumn(column) == null)
                     {
                         _d.FootprintDesigns(_site.FirstColumn, _site.Count, _site.MinRows, _use, _designs);
                         if (_designs.Count > BuildModeCatalogue.Most)
@@ -721,6 +723,7 @@ namespace RealLifeOverhaul.Construction
                             _designs.RemoveRange(BuildModeCatalogue.Most, _designs.Count - BuildModeCatalogue.Most);
                         }
                     }
+                    ParkRead();   // BuildMode.Park: a car park on the squares, or what one would be
                     break;
             }
         }
@@ -752,6 +755,9 @@ namespace RealLifeOverhaul.Construction
             }
             ZoneClear();
             _growPanel = false;
+            _parkMode = false;
+            _parkPicked = null;
+            _parkFacts = default(ParkFacts);
             _siteWhy = CellRules.NoCells;
             _site = default(CellSite);
             _took = CellRules.TookAll;
@@ -872,7 +878,16 @@ namespace RealLifeOverhaul.Construction
         public string WindowOverlap() => _bar != null ? _bar.Overlap() : "no interface";
 
         /// <summary>The design window as laid out now, for the tests: null when nothing is cut short or meets.</summary>
-        public string CatalogueOverlap() => _catalogue != null ? _catalogue.Overlap() : "no design window";
+        public string CatalogueOverlap() => _catalogue != null ? _catalogue.Overlap(_bar != null ? _bar.ToolbarTop() : float.NaN) : "no design window";
+
+        /// <summary>The design window's heading and the scale it is drawn at, for the tests.</summary>
+        public string CatalogueHeading => _catalogue != null ? _catalogue.Heading : string.Empty;
+
+        /// <summary>How many cards the design window shows, for the tests.</summary>
+        public int CatalogueCards => _catalogue != null ? _catalogue.CardsShown : 0;
+
+        /// <summary>The scale the design window is drawn at, for the tests.</summary>
+        public float CatalogueScale => _catalogue != null ? _catalogue.Scale : 1f;
 
         /// <summary>True when a part of the interface covers the map's centre, with which, for the tests.</summary>
         public bool CoversCentre(out string what)

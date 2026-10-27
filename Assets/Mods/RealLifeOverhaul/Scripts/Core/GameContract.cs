@@ -58,6 +58,8 @@ namespace RealLifeOverhaul
         public static readonly GamePart ClickBusStop = ContractBook.Part("click_bus_stop", "transport", "clicking a bus stop");
         public static readonly GamePart ClickDesk = ContractBook.Part("click_desk", "careers_study", "clicking your desk at work");
         public static readonly GamePart ClickBuilderDesk = ContractBook.Part("click_builder_desk", "construction", "talking to the person at a builder's front desk");
+        public static readonly GamePart ClickCarPark = ContractBook.Part("click_car_park", "construction", "using a car park's pay machine");
+        public static readonly GamePart CarParks = ContractBook.Part("car_parks", "construction", "the game's parking lanes copied for a car park's bays");
         public static readonly GamePart Mop = ContractBook.Part("mop", "jobs", "the cleaner's mop");
         public static readonly GamePart SchoolCar = ContractBook.Part("school_car", "licences", "the driving school's car");
         public static readonly GamePart SaveCheck = ContractBook.Part("save_check", "savetools", "the save tools' test of whether the game may save here");
@@ -211,7 +213,7 @@ namespace RealLifeOverhaul
         public static readonly GameMember RainFade = StaticField(SeasonRain, Sky, "BigAmbitions.DayNightCycle.RainHelper", "NextRainPostRainPeriodStartTime", "Timestamp");
 
         // Home/HomeOffers, Ledger/LedgerPointer, Transport/TransitPointer, Careers/DeskGame, Construction/BuilderDeskGame: the game's list of what a click does
-        public static readonly GameMember CtaBehaviours = StaticField(On(ClickHome, ClickLedger, ClickBusStop, ClickDesk, ClickBuilderDesk), Game, "Player.HUD.ItemInfoOverlays.CtaManager", "CtaBehaviors", "List<ICtaBehavior>");
+        public static readonly GameMember CtaBehaviours = StaticField(On(ClickHome, ClickLedger, ClickBusStop, ClickDesk, ClickBuilderDesk, ClickCarPark), Game, "Player.HUD.ItemInfoOverlays.CtaManager", "CtaBehaviors", "List<ICtaBehavior>");
 
         // Jobs/JobMop
         public static readonly GameMember MopClick = Optional(Method(Mop, Game, "MopController", "OnFloorCellClick", "Void", "DirtSpotObject"));   // else the cell under the player
@@ -269,12 +271,17 @@ namespace RealLifeOverhaul
         // Ragdoll/Ragdoll
         public static readonly GameMember NearItemToHide = Method(BodyFade, Game, "HumanHider", "SetIsNearItemToHide", "Void", "Boolean");
 
-        // Transport/BusZones: a parking lane's private settings, and the scenery it may switch off with a bus stop's kerb
-        public static readonly GameMember LaneSpotCount = Field(BusStops, Game, "ParkingLaneGenerator", "spotCountOverride", "Int32");
-        public static readonly GameMember LaneSideBySide = Field(BusStops, Game, "ParkingLaneGenerator", "sideBySideParkingSpots", "Boolean");
-        public static readonly GameMember LaneCurved = Field(BusStops, Game, "ParkingLaneGenerator", "curvedLane", "Boolean");
-        public static readonly GameMember LaneVehicles = Field(BusStops, Game, "ParkingLaneGenerator", "specificVehicles", "String[]");
-        public static readonly GameMember LaneSpotDistance = Field(BusStops, Game, "ParkingLaneGenerator", "parkingSpotDistance", "Single");
+        // Transport/BusZones and Construction/CarParkGame: a parking lane's private settings (a car park's rows of bays are copies of a lane of
+        // the game's set to park its cars side by side), and the scenery it may switch off with a bus stop's kerb
+        public static readonly GameMember LaneSpotCount = Field(On(BusStops, CarParks), Game, "ParkingLaneGenerator", "spotCountOverride", "Int32");
+        public static readonly GameMember LaneSideBySide = Field(On(BusStops, CarParks), Game, "ParkingLaneGenerator", "sideBySideParkingSpots", "Boolean");
+        public static readonly GameMember LaneCurved = Field(On(BusStops, CarParks), Game, "ParkingLaneGenerator", "curvedLane", "Boolean");
+        public static readonly GameMember LaneVehicles = Field(On(BusStops, CarParks), Game, "ParkingLaneGenerator", "specificVehicles", "String[]");
+        public static readonly GameMember LaneSpotDistance = Field(On(BusStops, CarParks), Game, "ParkingLaneGenerator", "parkingSpotDistance", "Single");
+        public static readonly GameMember LaneSideAngle = Field(CarParks, Game, "ParkingLaneGenerator", "sideBySideAngle", "Single");
+        public static readonly GameMember LaneInverseChance = Field(CarParks, Game, "ParkingLaneGenerator", "inverseParkingChance", "Int32");
+        public static readonly GameMember LaneDepthOffset = Field(CarParks, Game, "ParkingLaneGenerator", "depthRandomOffset", "Single");
+        public static readonly GameMember LaneMinFree = Field(CarParks, Game, "ParkingLaneGenerator", "minFreeSpots", "Int32");
         // Found by name on the scenery: a renamed one is no longer switched off with its kerb.
         public static readonly GameMember SceneryTree = Optional(TypeOf(BusStops, Game, "TreeController"));
         public static readonly GameMember SceneryMapHider = Optional(TypeOf(BusStops, Game, "CityMapHider"));

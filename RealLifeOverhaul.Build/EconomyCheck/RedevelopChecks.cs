@@ -160,7 +160,7 @@ internal static partial class Program
               && a.Hours == RedevelopRules.DemolitionHours(2400), "demolition: the contractor's quote is the same for the same seed, day and building, one of the city's builders");
         // The works' tables have the demolition's row: no materials in, the digger and the scaffold, its speciality.
         int k = RedevelopRules.DemolitionWorks;
-        Check(BuildCatalogue.WorksRate.Length == k + 1 && BuildCatalogue.WorksLoads.Length == k + 1 && BuildCatalogue.WorksCrew.Length == k + 1 && BuildCatalogue.WorksPlant.Length == k + 1
+        Check(BuildCatalogue.WorksRate.Length == k + 2 && BuildCatalogue.WorksLoads.Length == k + 2 && BuildCatalogue.WorksCrew.Length == k + 2 && BuildCatalogue.WorksPlant.Length == k + 2   // the car park's row after it
               && BuildCatalogue.WorksPlant[k][(int)Plant.Digger] == 1 && BuildCatalogue.WorksPlant[k][(int)Plant.Scaffold] == 1 && Array.TrueForAll(BuildCatalogue.WorksLoads[k], x => x == 0),
             "demolition: the programme's works tables have its row: its rate, no materials in, its crew, the digger and the scaffold");
         Check(TenderRules.NeedOf(TenderSource.Client, k, BuildUse.Shops) == Speciality.Demolition && FirmRules.Special(Speciality.Demolition, ProjectKind.Contract, BuildUse.Shops, k)
@@ -193,7 +193,7 @@ internal static partial class Program
               && BuildStore.Write(back) == line, "demolition: a demolition, its works' kind, its notice and its buy-out come back from the save, the line as it was");
         string later = line.Replace("|4|2|0|12|", "|9|2|0|12|");
         BuildState clamped = BuildStore.Read(later, out int _);
-        Check(later != line && clamped != null && clamped.Project(31) != null && clamped.Project(31).Kind == ProjectKind.Conversion, "demolition: a project of a kind this version does not know reads as its last kind");
+        Check(later != line && clamped != null && clamped.Project(31) != null && clamped.Project(31).Kind == ProjectKind.Parking, "demolition: a project of a kind this version does not know reads as its last kind");
         // Uptown's line: the cleared lots come back; a line from before them has none; what is no lot id is left out.
         var life = new RealLifeOverhaul.Uptown.LifeState();
         life.MarkCleared("uptown_1_02_0003");
@@ -263,7 +263,7 @@ internal static partial class Program
         Check(MethodText(demolish, "private void RedevelopSecond(").Contains("RedevelopRules.LookDownShare") && MethodText(projects, "public string Abandon(").Contains("DemolitionGivenUp(p)"),
             "demolition sources: the building's look goes as it comes down behind the wrap, and comes back if the works are given up");
         // Civic: the site's kind after the six, read by an older version as its last, heard next door, set out at a building.
-        Check((int)SiteKind.Demolition == 6 && ModSource(@"Civic\CivicState.cs").Contains("Math.Min((int)SiteKind.Demolition, r.Int())") && new SiteState { Kind = SiteKind.Demolition, Needed = 10f, Done = 3f }.Noisy
+        Check((int)SiteKind.Demolition == 6 && (int)SiteKind.Parking == 7 && ModSource(@"Civic\CivicState.cs").Contains("Math.Min((int)SiteKind.Parking, r.Int())") && new SiteState { Kind = SiteKind.Demolition, Needed = 10f, Done = 3f }.Noisy
               && !new SiteState { Kind = SiteKind.Demolition, Needed = 10f, Done = 0f }.Noisy, "demolition sources: the site's kind is the seventh, saved as a number, its works heard next door after the hoarding");
         Check(ModSource(@"Wiring\Wiring.ConstructionLinks.cs").Contains("kind == (int)SiteKind.Demolition ? SiteKind.Demolition") && ModSource(@"Civic\SiteDresser.cs").Contains("case SiteKind.Demolition: BuildDemolition(dressed); break;")
               && ModSource(@"Civic\SiteDresser.Place.cs").Contains("site.Kind == SiteKind.Demolition) ? ResolveWrap(dressed)"), "demolition sources: its site is set out at the building, wrapped in the game's scaffolding and dressed as a demolition");
@@ -394,8 +394,8 @@ internal static partial class Program
         Check(MethodText(projects, "private bool Zoned(").Contains("ConversionZoned(p)") && MethodText(projects, "private void Decide(").Contains("p.Kind != ProjectKind.Conversion")
               && MethodText(projects, "private void Consult(").Contains("p.Kind == ProjectKind.Extension ? p.Storeys - p.Added") && MethodText(projects, "public string Apply(").Contains("NeedsNotice(p)"),
             "extension sources: the council weighs a change of use on its lot's zones and the height an extension adds, and a change of use gives notice with its application");
-        Check(ModSource(@"Construction\ConstructionDirector.Hire.cs").Contains("p.Kind == ProjectKind.Extension) && p.Contractor < 0")
-              && ModSource(@"Construction\TrackRules.cs").Contains("p.Kind == ProjectKind.Extension) && p.Contractor < 0")
+        Check(ModSource(@"Construction\ConstructionDirector.Hire.cs").Contains("p.Kind == ProjectKind.Extension || p.Kind == ProjectKind.Parking) && p.Contractor < 0")
+              && ModSource(@"Construction\TrackRules.cs").Contains("p.Kind == ProjectKind.Extension || p.Kind == ProjectKind.Parking) && p.Contractor < 0")
               && MethodText(projects, "public string DrawPlans(").Contains("(string.IsNullOrEmpty(p.Design) && p.Kind != ProjectKind.Extension) || p.Area <= 0")
               && MethodText(ModSource(@"Construction\ConstructionDirector.Sites.cs"), "private void SitesLost(").Contains("p.Kind != ProjectKind.Extension"),
             "extension sources: an extension may be built by a hired builder (the objectives say so too), its plans drawn with its building's own front, its lost site set out again");

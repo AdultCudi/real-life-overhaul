@@ -197,11 +197,12 @@ namespace RealLifeOverhaul.Construction
         public int Added;                            // an extension's storeys on top of those its building has
         public string Look = string.Empty;           // a corner building's model worn over its design (Scripts/Corners); empty for the design's own look
         public int Grow;                             // Let it grow's tier and one (GrowTier); 0 for a project the player planned themselves
+        public int Park;                             // a car park's way of being laid out, 1 to 4 (CarParkRules.Codes); 0 for any other project
 
         public bool Live => Stage != ProjectStage.Finished && Stage != ProjectStage.Abandoned;
 
         /// <summary>True for the player's own building put up by one of the city's builders under contract (a refit or a demolition paid at once by one is not).</summary>
-        public bool Hired => Contractor >= 0 && Kind != ProjectKind.Refit && Kind != ProjectKind.Demolition && Kind != ProjectKind.Conversion;
+        public bool Hired => Contractor >= 0 && Kind != ProjectKind.Refit && Kind != ProjectKind.Demolition && Kind != ProjectKind.Conversion;   // (a car park built by a hired builder is hired)
 
         /// <summary>True while its show flat is open.</summary>
         public bool ShowOpen => ShowSince > 0 && !string.IsNullOrEmpty(ShowDesign);
@@ -228,7 +229,7 @@ namespace RealLifeOverhaul.Construction
         {
             get
             {
-                if (Kind == ProjectKind.Refit || Kind == ProjectKind.Demolition || Kind == ProjectKind.Conversion)
+                if (Kind == ProjectKind.Refit || Kind == ProjectKind.Demolition || Kind == ProjectKind.Conversion || Kind == ProjectKind.Parking)
                 {
                     return ProjectKind.Contract;   // worked as the programme's works of its kind: their crews, plant, hours and one final inspection
                 }
