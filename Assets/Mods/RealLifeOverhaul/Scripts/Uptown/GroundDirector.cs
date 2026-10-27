@@ -17,7 +17,7 @@ namespace RealLifeOverhaul.Uptown
     /// block's ground to copy); then the backdrop is put away where the band stands, its streets go into the traffic through
     /// 1st Avenue's own junctions and its corner at 9th Street, its street art is copied, both walking meshes grow over its
     /// ground from Manhattan's carriageways and pavements (walking round whatever stands on it), the old walls open and new
-    /// ones close its edge, its ground and road colliders, the map's bounds, its fog cut away (GroundDirector.Fog) and its
+    /// ones close its edge, its ground and road colliders, the map's bounds, its fog cut away (GroundDirector.Fog), its edges fogged and its street ends closed (GroundDirector.Edges) and its
     /// bus termini are laid; once the game is loaded, its parking and its pedestrians' zones. Where the game has put
     /// something of its own there (a free update),
     /// the step that finds it stands down with one line and everything laid before it is given back the same load, so the
@@ -203,6 +203,7 @@ namespace RealLifeOverhaul.Uptown
                 Logger?.Warn("Uptown: the city map's camera was not found, so the map does not reach over the district at this load; the district stands all the same.");
             }
             LayFog();
+            LayEdges();   // the street ends closed and the fog behind the districts' edges (GroundDirector.Edges)
             LayoutPlans.Termini(_termini);
             for (int i = 0; i < _termini.Count; i++)
             {
