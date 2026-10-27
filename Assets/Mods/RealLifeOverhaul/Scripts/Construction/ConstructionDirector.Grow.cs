@@ -99,7 +99,7 @@ namespace RealLifeOverhaul.Construction
             for (int i = 0; i < _state.Grows.Count; i++)
             {
                 GrowFile g = _state.Grows[i];
-                if (g.UnderWay || g.Stage == GrowStage.Letting)
+                if ((g.UnderWay || g.Stage == GrowStage.Letting) && _state.WaitingOn(g.Lot) == null)   // plans wait on an offer for the land until it is answered
                 {
                     GrowStep(g, day, false);
                 }
@@ -503,6 +503,7 @@ namespace RealLifeOverhaul.Construction
             g.Until = day;
             GrowsChanged();
             Logger?.Info("Construction: the grown site at " + g.Lot + " (" + GrowDeveloper(g) + ") is given up: " + why + ".");
+            LandSoldBack(g);   // its land goes back to the city at the fair price (ConstructionDirector.LandMarketNpc)
         }
 
         // ------------------------------------------------------------------ the week: condition, tenants of the player's

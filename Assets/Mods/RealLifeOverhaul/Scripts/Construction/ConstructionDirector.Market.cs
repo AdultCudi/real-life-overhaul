@@ -28,6 +28,7 @@ namespace RealLifeOverhaul.Construction
             if (!GoingPublic.InSession)
             {
                 PublicTenders(day);
+                LandMarketDay(day);      // the land market: offers answered, the rivals' trading (ConstructionDirector.LandMarket)
                 CityRedevelopDay(day);   // the city's developers redevelop Uptown on a machine of its own alone (ConstructionDirector.CityRedevelop)
                 GrowDay(day);            // ... and grow it on the council's zoned land by demand (ConstructionDirector.Grow)
             }
