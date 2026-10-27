@@ -83,14 +83,6 @@ namespace RealLifeOverhaul.Uptown
             float cx = alongZ ? plane + sx * Lift : mid, cz = alongZ ? mid : plane + sz * Lift;
             panel.AX = cx - rx * half; panel.AZ = cz - rz * half;
             panel.BX = cx + rx * half; panel.BZ = cz + rz * half;
-            if (alongZ)
-            {
-                panel.AX = panel.BX = plane + sx * Lift;
-            }
-            else
-            {
-                panel.AZ = panel.BZ = plane + sz * Lift;
-            }
             panel.NX = sx; panel.NZ = sz;
             panel.Y0 = y0; panel.Y1 = y0 + rows * ((y1 - y0) / rows);
             panel.Columns = columns; panel.Rows = rows;

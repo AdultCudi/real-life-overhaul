@@ -104,6 +104,7 @@ internal static partial class Program
         }
         UptownLookTable(now.Designs);
         UptownLookCensus(was, now);
+        UptownLookSpots(was, now);
         UptownLookSides(now);
         UptownLookSouth(now);
         UptownLookPick(now);
@@ -216,6 +217,84 @@ internal static partial class Program
             }
         }
         return true;
+    }
+
+
+    // ---------------------------------------------------------------- the spots a player's screenshots show
+
+    // The lots beside the places a player (#general and #bug-reports, 27 Oct 2026) stood at when a wall, a lawn or a box looked wrong: a screenshot's
+    // panel gives the street, x and z; each is found in the plan, and what shows there now is told: a wall's ends with windows, a yard closed.
+    private static readonly string[][] Spots =
+    {
+        new[] { "uptown_2_18_0001", "5 Summit Avenue: an empty lawn between the street and a dark glass building (park 12, x 756.5 z 728.5)" },
+        new[] { "uptown_3_18_0005", "6 Summit Avenue: a wall as long as the block, 'wrong facing' (park 5, x 753.0 z 803.0)" },
+        new[] { "uptown_3_16_0004", "20 Summit Avenue: a blank dark red wall by Ridge Street (ridge 13, x 572.9 z 798.4)" },
+        new[] { "uptown_3_16_0001", "21 Crest Avenue: a corner with a blank brick side (crest avenue 21, x 574.6 z 872.3)" },
+        new[] { "uptown_2_12_0001", "41 Summit Avenue: a grey wall with no window (summit avenue 41, x 223.6 z 729.4)" },
+        new[] { "uptown_1_15_0012", "1 Ridge Street: its end on 1st Avenue's continuation, grey boxes beyond (ridge 1, x 563.4 z 457.6)" }
+    };
+
+    private static void UptownLookSpots(LookWorld was, LookWorld now)
+    {
+        var ends = new List<LookEnd>();
+        LookCensus.OpenEnds(now.Pieces, ends);
+        var oldEnds = new List<LookEnd>();
+        LookCensus.OpenEnds(was.Pieces, oldEnds);
+        int fixedSpots = 0;
+        foreach (string[] spot in Spots)
+        {
+            BuildingsLot lot = now.Plan.Find(l => l.Id == spot[0]);
+            int at = now.Pieces.FindIndex(p => p.Id == spot[0] && !p.Filler);
+            int oldAt = was.Pieces.FindIndex(p => p.Id == spot[0] && !p.Filler);
+            if (lot.Id == null || at < 0 || oldAt < 0)
+            {
+                Check(false, "uptown look spots: " + spot[1] + ": its lot has no building in the plan");
+                continue;
+            }
+            string told = null;
+            bool ok = true;
+            foreach (LookEnd e in ends)
+            {
+                if (e.Piece != at)
+                {
+                    continue;
+                }
+                bool panel = e.Kind == SideKind.Dressable && SideRules.Panel(now.Pieces[at].Design, now.Pieces[at].Ground, e.High, spot[0], out _);
+                told += (told != null ? ", " : string.Empty) + (e.Right ? "right" : "left") + " end " + (e.Road ? "on a road, " : "") + (e.Kind == SideKind.Windowed ? "has windows" : panel ? "given windows" : "LEFT BARE");
+                ok &= e.Kind == SideKind.Windowed || panel;
+            }
+            string oldTold = null;
+            foreach (LookEnd e in oldEnds)
+            {
+                oldTold += e.Piece == oldAt ? (oldTold != null ? ", " : string.Empty) + (e.Right ? "right" : "left") + " end " + (e.Kind == SideKind.Windowed ? "windows" : "blank, nothing laid on it") : string.Empty;
+            }
+            Design(now.Pieces[at].Design, out string design);
+            foreach (LookPiece q in was.Pieces)
+            {
+                if (q.Filler && q.Back && Math.Abs(q.Ground.X - lot.X) <= lot.Width * 0.5f + 1f && Math.Abs(q.Ground.Z - lot.Z) <= lot.Depth * 0.5f + 1f && spot[0] == "uptown_2_18_0001")
+                {
+                    Console.WriteLine("   (0.58.0's second row there: " + q.Design.Name + " " + q.Design.Size + ", across " + FrontageRules.Across(q.Design).ToString("0.0", CultureInfo.InvariantCulture) + " deep " + FrontageRules.Deep(q.Design).ToString("0.0", CultureInfo.InvariantCulture) + " at " + q.Ground.X.ToString("0.0", CultureInfo.InvariantCulture) + ", " + q.Ground.Z.ToString("0.0", CultureInfo.InvariantCulture) + ")");
+                }
+            }
+            // The yard behind the building: closed by a second row (or one turned to face its end), or no yard of ten metres.
+            float behind = lot.Depth - FrontageRules.Deep(now.Pieces[at].Design);
+            bool backed = behind < FrontageRules.BackLeast || now.Pieces.Exists(p => p.Filler && p.Back && Math.Abs(p.Ground.X - lot.X) <= (lot.Facing == 0f || lot.Facing == 180f ? lot.Width : lot.Depth) * 0.5f
+                && Math.Abs(p.Ground.Z - lot.Z) <= (lot.Facing == 0f || lot.Facing == 180f ? lot.Depth : lot.Width) * 0.5f);
+            ok &= backed || behind < FrontageRules.BackLeast;
+            fixedSpots += ok ? 1 : 0;
+            float oldBehind = lot.Depth - FrontageRules.Deep(was.Pieces[oldAt].Design);
+            bool oldBacked = oldBehind < FrontageRules.BackLeast || was.Pieces.Exists(p => p.Filler && p.Back && Math.Abs(p.Ground.X - lot.X) <= (lot.Facing == 0f || lot.Facing == 180f ? lot.Width : lot.Depth) * 0.5f
+                && Math.Abs(p.Ground.Z - lot.Z) <= (lot.Facing == 0f || lot.Facing == 180f ? lot.Depth : lot.Width) * 0.5f);
+            Console.WriteLine("  spot " + spot[0] + " (" + spot[1] + "): 0.58.0 " + was.Pieces[oldAt].Design.Name + " " + (oldTold ?? "no open end") + ", " + oldBehind.ToString("0.0", CultureInfo.InvariantCulture)
+                              + " m behind it " + (oldBehind < FrontageRules.BackLeast ? "(no yard)" : oldBacked ? "(a second row)" : "(a bare yard)") + "; now " + design + " " + (told ?? "no open end") + ", " + behind.ToString("0.0", CultureInfo.InvariantCulture) + " m behind it "
+                              + (behind < FrontageRules.BackLeast ? "(no yard)" : backed ? "(closed by a second row)" : "(a yard)"));
+        }
+        Check(fixedSpots >= Spots.Length - 1, "uptown look spots: " + fixedSpots + " of the " + Spots.Length + " spots of the screenshots show a finished side at every open end, and no lawn behind (the rest in the log)");
+    }
+
+    private static void Design(DesignEntry d, out string text)
+    {
+        text = d.Name + " (" + d.Size.Substring(d.Size.LastIndexOf('_') + 1).ToUpperInvariant() + ")";
     }
 
     // ---------------------------------------------------------------- the windows' geometry
@@ -415,7 +494,7 @@ internal static partial class Program
         string director = Source("Uptown", "LifeDirector.cs"), dress = Source("Uptown", "LifeDirector.Dress.cs"), walls = Source("Uptown", "SideWalls.cs"), guide = Source("Uptown", "LifeGuide.cs");
         string frontage = Source("Uptown", "LifeDirector.Frontage.cs"), groundDirector = Source("Uptown", "GroundDirector.cs"), test = Source("Uptown", "LifeDirector.LookTests.cs");
         Check(ground.Contains("!OfEdge(hit)") && ground.Contains("hit.transform.IsChildOf(OwnEdge)") && gameGround.Contains("CopyGame.OwnEdge = _ground.transform") && gameGround.Contains("CopyGame.OwnEdge = null"),
-            "uptown look: the district's own walls are never something solid on a lot (the east ring's first lot stood down for the corner wall 0.4 m from it), and the edge is let go with the city");
+            "uptown look: the district's own walls are never something solid on a lot (the east ring's first lot stood down for the corner wall), and the edge is let go with the city");
         Check(ground.Contains("OfLitter(hit)") && ground.Contains("\"SM_Trash Bag\"") && ground.Contains("Litter.Add(hit.gameObject)") && ground.Contains("public static int PutAwayLitter()") && made.Contains("CopyGame.PutAwayLitter()"),
             "uptown look: the game's bags of litter on a lot are put away once its building stands, no reason to refuse it (a bag kept the first lot of 1 Cedar Street's neighbour empty)");
         Check(director.Contains("int dressed = _lives ? Dress() : 0;") && director.IndexOf("LifeGame.StandFillers(Fills)", StringComparison.Ordinal) < director.IndexOf("Dress()", StringComparison.Ordinal)
