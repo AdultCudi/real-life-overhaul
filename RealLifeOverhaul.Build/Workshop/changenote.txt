@@ -1,4 +1,4 @@
-0.60.1
+0.60.2
 
 Fixed
-- The city map would not open (M only darkened the screen) after the mod had taken away a tree.
+- The late night show and the other video calls could not be joined from the Standing page, because having the phone open counted as busy. They can be joined now, and when something does stop you, the message says what.
