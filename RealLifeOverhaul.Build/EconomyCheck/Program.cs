@@ -73,6 +73,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--dayspread")
+        {
+            DaySpreadAll();   // the game's midnight spread over frames alone (DaySpreadChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--heavy-licence")
         {
             HeavyLicence();
@@ -579,6 +585,7 @@ internal static partial class Program
         TechFixes();    // the tech sector: a board that cannot hire, a pitch whose meeting never opened, the utilities asked safely, an interview cut short (TechFixChecks.cs)
         TechMoves();    // a tech firm moved by the moving company: its data follows whole, a save left behind is put back, nothing followed with a doubt (TechMoveChecks.cs)
         BizPaceAll();   // what the mod adds to BizMan's open, switch and tab change: the rules, the book, the registration filter and the start screen's walk timed on a large save, the sources, the texts (BizPaceChecks.cs)
+        DaySpreadAll(); // the game's midnight spread over frames: a step queued is played in a later frame, a slice a frame equals the job at once, the save and the next day finish it, the weekly look of the investors (DaySpreadChecks.cs)
         BizManLink();   // the Company app's Open in BizMan: on every business's page, the game's BizMan.Open for the player's own business, the notice, the texts (BizManLinkChecks.cs)
         MarketFixes();  // the stock market: a guest's trade lines culture-free, the index steady as companies join over the cap, the tape swapped safely, the chart's guard (MarketFixChecks.cs)
         CareersFixes(); // education and careers: stood down once the guard has switched it off, no sitting on a disabled host, a lost course never read back (CareersFixChecks.cs)

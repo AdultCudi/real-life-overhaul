@@ -79,12 +79,28 @@ namespace RealLifeOverhaul
             }
         }
 
+        // The steps of the game's midnight still waiting (DaySpread) and the lines the day held (DayLines), at once. A step that fails is
+        // logged by the queue and left out; it never stops the save.
+        private static void FinishDay()
+        {
+            try
+            {
+                DaySpread.Shared.Flush();
+                DayLines.Flush();
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
+        }
+
         private static void Run()
         {
             Saving = true;
             try
             {
                 using var piece = SessionWatch.Piece("the game is saving (the mod writes its state into the save first)");
+                FinishDay();   // what the game's midnight left for later is played first: the save holds the whole day
                 bool timed = Meta.Dev.Verbose;
                 float began = timed ? UnityEngine.Time.realtimeSinceStartup : 0f;
                 if (timed)

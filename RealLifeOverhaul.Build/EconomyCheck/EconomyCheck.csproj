@@ -456,6 +456,9 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Firms\FirmsStore.cs" Link="Mod\FirmsStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Firms\CompetitorRules.cs" Link="Mod\CompetitorRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\BizPace\BizPaceRules.cs" Link="Mod\BizPaceRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\WorkSlice.cs" Link="Mod\WorkSlice.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\DaySpread.cs" Link="Mod\DaySpread.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Ventures\LookRound.cs" Link="Mod\LookRound.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Offices\ConversionRules.cs" Link="Mod\ConversionRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Firms\MoveRules.cs" Link="Mod\MoveRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Venture\VentureCatalogue.cs" Link="Mod\VentureCatalogue.cs" />

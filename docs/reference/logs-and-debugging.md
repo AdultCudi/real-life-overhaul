@@ -210,8 +210,11 @@ The game runs every feature's day in the one frame it turns the day in (`GameMan
 ```
 Session check (the game's midnight, day 10): the mod's scripts took 4.2 ms of the frame the game turned the day in (61 ms
 in all); by part (a part inside another counts under both): Event: EconomyDirector.OnDay 2.1 ms, ...; the day's code
-compiled ahead: yes (wanted: under 10 ms once it is): PASS
+left for the frames after: 2 step(s) (Core/DaySpread), 96 log line(s) (Core/DayLines); the day's code
+compiled ahead: yes (wanted: under 20 ms once it is): PASS
 ```
+
+The steps are the work of the midnight that the game does not read in that frame, played in the frames after it (`Core/DaySpread`, `Core/DayPump`); the log lines are the Info lines the day's handlers wrote, held and written a few a frame (`Core/DayLines`), in order. The list of what stays in the frame, and why, is [RLO-PERF-020](../standards/performance.md).
 
 The day's code is compiled ahead a slice a frame, some twenty seconds after each load (`Core/DayWarm`, `Core/CodeWarm`): Mono compiles a method the first time it is called, and before this the first midnight of a session compiled every feature's day in that one frame (148.7 ms of the mod's at the first midnight of a session on 25 Oct 2026, ten to twenty times less at every midnight after). Its line, once it is done:
 

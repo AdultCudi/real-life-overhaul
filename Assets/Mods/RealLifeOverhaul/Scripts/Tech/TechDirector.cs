@@ -191,6 +191,13 @@ namespace RealLifeOverhaul.Tech
         }
 
         private static readonly int HotOnDay = HotSpots.Slot("Tech: TechDirector.OnDay");
+        // The day's stages each under a name of their own (the midnight line of the session record names every part over a tenth of a millisecond).
+        private static readonly int HotDayMoves = HotSpots.Slot("Tech: day, moves followed");
+        private static readonly int HotDayHiring = HotSpots.Slot("Tech: day, the labour market");
+        private static readonly int HotDayPeople = HotSpots.Slot("Tech: day, the professionals");
+        private static readonly int HotDayFirms = HotSpots.Slot("Tech: day, firms and data centres");
+        private static readonly int HotDayVenture = HotSpots.Slot("Tech: day, startups");
+        private static readonly int HotDayApps = HotSpots.Slot("Tech: day, apps redrawn");
         private void OnDay()
         {
             using var hotSpot = HotSpots.Time(HotOnDay);
@@ -203,26 +210,34 @@ namespace RealLifeOverhaul.Tech
                 float started = Time.realtimeSinceStartup;
                 if (_peopleOn)
                 {
+                    using var moves = HotSpots.Time(HotDayMoves);
                     FollowMoves();   // a move made since the last read is followed before the day is worked
                 }
                 if (_hiringOn)
                 {
+                    using var hiring = HotSpots.Time(HotDayHiring);   // before the professionals' day, which reads the market's shortages
                     HiringDay(Save.Day);
                 }
                 if (_peopleOn)
                 {
+                    using var people = HotSpots.Time(HotDayPeople);   // the game's employees' moods and absences, before its own daily run of them
                     PeopleDay(Save.Day);
                 }
                 if (_firmsOn)
                 {
+                    using var firms = HotSpots.Time(HotDayFirms);   // takings and costs booked into yesterday's statement, before the game's tax reads it
                     FirmsDay(Save.Day);
                     InfraDay(Save.Day);
                 }
                 if (_ventureOn)
                 {
+                    using var venture = HotSpots.Time(HotDayVenture);   // a sale's money is paid out to the player
                     VentureDay(Save.Day);
                 }
-                Changed();
+                using (HotSpots.Time(HotDayApps))
+                {
+                    Changed();
+                }
                 if (Verbose)
                 {
                     Logger?.Info("Tech check (day " + Save.Day + "): " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " ms: PASS");

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using RealLifeOverhaul.Tech;
 using UI.Notification;
+using UnityEngine;
 
 namespace RealLifeOverhaul.Careers
 {
@@ -89,13 +90,58 @@ namespace RealLifeOverhaul.Careers
             return false;
         }
 
-        /// <summary>Renews the vacancies: the lapsed go, the rivals' board ads come in, and the city's own fill up to their number.</summary>
+        private static readonly int HotVacancies = HotSpots.Slot("Careers: CareersDirector.VacanciesStep");
+
+        /// <summary>
+        /// Renews the vacancies: the lapsed go, the rivals' board ads come in, and the city's own fill up to their number.
+        /// The first day of a save fills the whole board (13 ms in a player's log; the next days 1 ms), and nothing in the game
+        /// reads it, so the day queues it in three steps, one a frame (Core/DaySpread): the employers read and the lapsed
+        /// taken off, the city's own drawn, the first posts within reach. The same three, one after the other, are Vacancies.
+        /// </summary>
+        private void VacanciesLater(int day)
+        {
+            DaySpread.Shared.Flush(this);   // (a renewal still owed to an earlier day is made before this day's is queued)
+            _vacanciesDay = day;
+            _vacanciesStage = 0;
+            DaySpread.Shared.Add(this, "Careers: the job board", _vacanciesStep, Time.frameCount, HotVacancies);
+        }
+
+        // A stage of the board's renewal; true when the last is done (or there is nothing to do).
+        private bool VacanciesStep()
+        {
+            if (_broken || !_workOn || _study == null || Save == null)
+            {
+                return true;
+            }
+            switch (_vacanciesStage++)
+            {
+                case 0:
+                    return !VacanciesRead(_vacanciesDay);   // (the board of this day made already, the app having been opened first: done)
+                case 1:
+                    VacanciesFill(_vacanciesDay);
+                    return false;
+                default:
+                    VacanciesReach(_vacanciesDay);
+                    return true;
+            }
+        }
+
         private void Vacancies(int day)
+        {
+            if (VacanciesRead(day))
+            {
+                VacanciesFill(day);
+                VacanciesReach(day);
+            }
+        }
+
+        // The first stage: the day's employers read, the lapsed posts off the board, the rivals' ads on. False if the day's board was made already.
+        private bool VacanciesRead(int day)
         {
             WorkFile w = _study.Work;
             if (w.OpeningsDay == day)
             {
-                return;
+                return false;
             }
             w.OpeningsDay = day;
             ReadEmployers(day);
@@ -107,6 +153,13 @@ namespace RealLifeOverhaul.Careers
                 }
             }
             BoardVacancies(w, day);
+            return true;
+        }
+
+        // The second stage: the city's own posts drawn up to their number.
+        private void VacanciesFill(int day)
+        {
+            WorkFile w = _study.Work;
             int cycle = CareersBridges.CycleNow();
             bool agency = w.AgencyUntil >= day;
             int wanted = ProRules.OpeningsWanted(cycle, agency);
@@ -116,6 +169,7 @@ namespace RealLifeOverhaul.Careers
                 own += w.Openings[i].Via != (int)Via.JobsBoard ? 1 : 0;
             }
             bool referrals = CareersBridges.FriendsNow() >= ProRules.FriendsForReferral;
+            _vacanciesReferrals = referrals;
             for (int n = 0; own < wanted && n < wanted * 3 && w.Openings.Count < WorkFile.OpeningsMost; n++)
             {
                 Opening o = NewVacancy(day, n, agency && own >= wanted - ProRules.OpeningsAgency, referrals);
@@ -125,7 +179,12 @@ namespace RealLifeOverhaul.Careers
                     own++;
                 }
             }
-            ReachVacancies(w, day, referrals);
+        }
+
+        // The third stage: the first posts within reach, with the referrals the second stage drew by.
+        private void VacanciesReach(int day)
+        {
+            ReachVacancies(_study.Work, day, _vacanciesReferrals);
         }
 
         /// <summary>With no job, keeps a few first posts open in the professions the player could be offered now; drawn blind, one would come about once a month.</summary>
@@ -335,6 +394,7 @@ namespace RealLifeOverhaul.Careers
                 return;
             }
             int day = Save.Day;
+            DaySpread.Shared.Flush(this);   // a renewal in hand is finished first: the board is the same however it was made
             if (_study.Work.OpeningsDay != day)
             {
                 Vacancies(day);
