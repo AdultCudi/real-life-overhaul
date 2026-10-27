@@ -21,8 +21,13 @@ namespace RealLifeOverhaul.Meta
             }
         }
 
-        /// <summary>True when this version's welcome has not been shown yet.</summary>
-        public static bool Due => Settings.ModId != null && SeenVersion != Changelog.Version;
+        private static bool _twiceShown;
+
+        /// <summary>The beta runs while a public copy of the mod is switched on too: its welcome says so, at every start until that copy is off.</summary>
+        private static bool Twice => Changelog.IsBeta && RealLifeOverhaulInit.TwoCopies && !_twiceShown;
+
+        /// <summary>True when this version's welcome has not been shown yet (a beta's own tag counts as a version), or a beta must say two copies are on.</summary>
+        public static bool Due => Settings.ModId != null && (SeenVersion != Changelog.Shown || Twice);
 
         /// <summary>Shows the welcome notice and notes the version as seen; <paramref name="asked"/> (from the options page) opens the Guide on "What changed" instead.</summary>
         public static void Open(bool asked)
@@ -34,7 +39,7 @@ namespace RealLifeOverhaul.Meta
                 if (key != null)
                 {
                     UnityEngine.PlayerPrefs.DeleteKey(Settings.PrefsKey(DevelopmentSeenId));
-                    UnityEngine.PlayerPrefs.SetString(key, Changelog.Version);
+                    UnityEngine.PlayerPrefs.SetString(key, Changelog.Shown);
                     UnityEngine.PlayerPrefs.Save();
                 }
                 if (asked)
@@ -43,8 +48,14 @@ namespace RealLifeOverhaul.Meta
                     return;
                 }
                 bool update = seen != null && Changelog.Compare(seen, Changelog.Version) < 0;
-                var data = new Dictionary<string, string>(1) { { "version", Changelog.Version } };
+                var data = new Dictionary<string, string>(1) { { "version", Changelog.Shown } };
                 string notice = update ? "reallife_meta_welcome_note_update" : "reallife_meta_welcome_note_first";
+                if (Changelog.IsBeta)
+                {
+                    bool twice = Twice;
+                    notice = twice ? "reallife_beta_note_twice" : "reallife_beta_note";
+                    _twiceShown = _twiceShown || twice;
+                }
                 Notifications.Show(NotificationType.Info, notice, data, 14f, notice, Guard.Wrap(GuideApp.OpenWhatChanged), true, false);
                 MetaLog.Info("welcome shown (" + (update ? "after " + seen : "first run") + ").");
                 if (Dev.Verbose)

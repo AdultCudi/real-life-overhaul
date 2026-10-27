@@ -468,7 +468,11 @@ namespace RealLifeOverhaul.Meta
             else
             {
                 box.Title("reallife_guide_app_title".GetLocalization());
-                box.Subtitle("reallife_guide_version".GetLocalization().Replace("{version}", Changelog.Version));
+                box.Subtitle("reallife_guide_version".GetLocalization().Replace("{version}", Changelog.Shown));
+                if (Changelog.IsBeta)
+                {
+                    box.Note("reallife_beta_guide_note".GetLocalization());
+                }
                 box.Note("reallife_guide_list_hint".GetLocalization());
                 Transform row = box.ButtonRow();
                 InfoBox.Button(row, InfoBox.Positive, "reallife_guide_whatsnew_title", () => Want("whatsnew"));

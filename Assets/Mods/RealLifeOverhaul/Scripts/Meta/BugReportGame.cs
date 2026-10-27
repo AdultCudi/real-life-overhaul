@@ -64,7 +64,7 @@ namespace RealLifeOverhaul.Meta
             {
                 Words = words,
                 Written = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
-                ModVersion = Changelog.Version,
+                ModVersion = Changelog.Shown,   // a beta names itself, so a report says which build it came from
                 GameBuild = GameBuild.Running,
                 MadeFor = GameBuild.MadeFor,
                 Profile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)

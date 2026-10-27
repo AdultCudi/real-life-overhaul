@@ -176,7 +176,7 @@ namespace RealLifeOverhaul.Meta
         {
             switch (name)
             {
-                case "version": return Changelog.Version;
+                case "version": return Changelog.Shown;
                 case "preset": return Presets.CurrentName();
                 case "folder": return Presets.Folder;
                 case "data": return Application.persistentDataPath;
