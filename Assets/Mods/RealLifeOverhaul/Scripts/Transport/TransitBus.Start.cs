@@ -265,6 +265,15 @@ namespace RealLifeOverhaul
             return unseen ? !seen : seen && !TransitSight.Near(point.position, 90f);
         }
 
+        /// <summary>
+        /// Makes the bus's body now, switched off: the loading screen pays for it (TransitDirector.PrewarmDressings), so that the first
+        /// <see cref="Send"/> in play builds nothing. A bus built in a tick took some 20 ms in a player's log (27 Oct 2026). False if the game has no shader to draw it with.
+        /// </summary>
+        public bool Prepare()
+        {
+            return Bus() != null;
+        }
+
         private BusVehicle Bus()
         {
             if (_made == null)

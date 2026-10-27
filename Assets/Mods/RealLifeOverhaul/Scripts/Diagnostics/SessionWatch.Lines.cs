@@ -146,6 +146,11 @@ namespace RealLifeOverhaul
             int frames = HotSpots.Frames;
             _line.Append("; the mod's own scripts: ").Append((frames > 0 ? HotSpots.TotalMs / frames : 0.0).ToString("F2", CultureInfo.InvariantCulture)).Append(" ms a frame on average and ")
                 .Append(HotSpots.WorstFrameMs.ToString("F1", CultureInfo.InvariantCulture)).Append(" ms at most in a frame");
+            if (HotSpots.WorstFrameSlot >= 0)
+            {
+                // Which scope made it: the minute's top three are by their total, so a scope that costs 13 ms once a minute is not among them.
+                _line.Append(" (mostly ").Append(HotSpots.Name(HotSpots.WorstFrameSlot)).Append(' ').Append(HotSpots.WorstFrameSlotMs.ToString("F1", CultureInfo.InvariantCulture)).Append(" ms)");
+            }
             for (int k = 0; k < 3 && HotSpots.StretchTop(k, false, out int slot, out double total, out double worst, out _); k++)
             {
                 _line.Append(k == 0 ? ", the most in the minute: " : ", ").Append(HotSpots.Name(slot)).Append(" (")

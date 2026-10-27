@@ -89,6 +89,7 @@ namespace RealLifeOverhaul.Law
         private bool _wallKnown;
         private float _wall;             // how far out from the door's plane the wall face is
         private bool _statics;           // the wall and kerb pieces are out
+        private int _step = -1;          // the next of the pieces being put out a frame at a time, or -1 (PlaceStatics)
         private bool _signOut;
         private Vector3 _signAt;
         private Vector3 _signAcross;
@@ -142,6 +143,7 @@ namespace RealLifeOverhaul.Law
             _frontFound = Precincts.Front(precinct, out _front, out _out);
             _measured = false;
             _statics = false;
+            _step = -1;
             _waits = 0;
             _nextOfficers = 0f;
             _nextCars = 0f;
@@ -189,9 +191,13 @@ namespace RealLifeOverhaul.Law
                 {
                     return;
                 }
-                if (force || !StreetSpots.IsInView(_doorGround))
+                if (_step >= 0 && !force)
                 {
-                    PlaceStatics();
+                    // Under way, a piece a frame (Frame).
+                }
+                else if (force || !StreetSpots.IsInView(_doorGround))
+                {
+                    PlaceStatics(force);
                 }
             }
             else
@@ -252,6 +258,7 @@ namespace RealLifeOverhaul.Law
             }
             _signOut = false;
             _statics = false;
+            _step = -1;
             _measured = false;
             _dressed = null;
             _frontFound = false;
@@ -301,6 +308,7 @@ namespace RealLifeOverhaul.Law
             _built = false;
             _builtModelled = false;
             _nightKnown = false;
+            _step = -1;
         }
 
         private static void Off(Transform piece)

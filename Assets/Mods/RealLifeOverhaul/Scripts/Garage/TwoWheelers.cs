@@ -110,6 +110,10 @@ namespace RealLifeOverhaul
             {
                 return;
             }
+            if (_places.Finding)
+            {
+                _places.Step();   // the places to hire and buy, a slice a frame after the city loads
+            }
             VehicleController selected = gm.selectedVehicle;
             if (selected != _selected)
             {

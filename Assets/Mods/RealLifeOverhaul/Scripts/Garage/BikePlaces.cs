@@ -54,6 +54,8 @@ namespace RealLifeOverhaul
         private readonly List<BikePlace> _places = new List<BikePlace>(18);
         private List<Transform> _stands;   // found behind the loading screen (PrewarmStands); null once Find has them
         private bool _found;
+        private Search _search;   // the places being found, a slice a frame
+        private const double SliceMs = 1.5;   // milliseconds of the search a frame: a stand's docks or a building's rack is one item
         private static int _refused;   // refused by BikeSpotRules this city load, for the log
 
         public BikePlaces(Transform owner)
@@ -96,11 +98,16 @@ namespace RealLifeOverhaul
             return stands;
         }
 
-        /// <summary>Finds the places, once a city load, from the stands found behind the loading screen.</summary>
+        /// <summary>
+        /// Begins finding the places, once a city load, from the stands found behind the loading screen. The search goes on a slice a
+        /// frame (<see cref="Step"/>, about 1.5 ms): all of it in one frame took 37 ms in a player's log (27 Oct 2026), the garage's
+        /// share of a 149 ms frame. The places appear as they are found.
+        /// </summary>
         public void Find()
         {
             _found = true;
             _refused = 0;
+            _search = null;
             var city = InstanceBehavior<CityManager>.Instance;
             if (city == null || city.cityBuildingControllers == null)
             {
@@ -111,68 +118,168 @@ namespace RealLifeOverhaul
                 List<Transform> stands = _stands ?? Stands();
                 _stands = null;
                 stands.RemoveAll(stand => stand == null);   // one taken away since it was found
-                stands.Sort(ByPlace);
-                int step = Mathf.Max(2, Mathf.CeilToInt(stands.Count / (float)MaxDocks));
-                int docks = 0;
-                for (int i = 0; i < stands.Count && docks < MaxDocks; i += step)
-                {
-                    Transform stand = stands[i];
-                    Quaternion facing = Quaternion.Euler(0f, stand.eulerAngles.y, 0f);
-                    if (Beside(stand.position, facing, out Vector3 spot))
-                    {
-                        Add(BikePlaceKind.Dock, spot, facing);
-                        docks++;
-                    }
-                }
-
+                var search = new Search();
+                search.Stands = Keyed(stands);
+                search.Stands.Sort(ByKey);
+                search.Step = Mathf.Max(2, Mathf.CeilToInt(search.Stands.Count / (float)MaxDocks));
                 var buildings = new List<CityBuildingController>(GameDlc.Open(city));
                 buildings.RemoveAll(b => b == null || b.buildingRegistration == null);
-                buildings.Sort((a, b) => ByPlace(a.transform, b.transform));
-                int shops = 0, motor = 0;
-                foreach (CityBuildingController building in buildings)
-                {
-                    string type = building.buildingRegistration.businessTypeName;
-                    if (type == "ba:businesstype_supermarket" && shops < MaxShops && building.buildingRegistration.HasEstablishedBusiness
-                        && Outside(building, RackHalf, out Vector3 spot, out Quaternion facing))
-                    {
-                        Add(BikePlaceKind.BicycleShop, spot, facing);
-                        shops++;
-                    }
-                    else if (type == "ba:businesstype_cardealership" && motor < MaxStands && Outside(building, StandHalf, out spot, out facing))
-                    {
-                        Add(BikePlaceKind.MotorbikeStand, spot, facing);
-                        motor++;
-                    }
-                }
-                if (motor == 0)
-                {
-                    // No dealership in this city yet: the stand goes to garages that repair.
-                    foreach (CityBuildingController building in buildings)
-                    {
-                        var station = building.GetComponent<GasStationController>();
-                        if (station != null && station.repairStationTriggers != null && station.repairStationTriggers.Length > 0 && motor < 3
-                            && Outside(building, StandHalf, out Vector3 spot, out Quaternion facing))
-                        {
-                            Add(BikePlaceKind.MotorbikeStand, spot, facing);
-                            motor++;
-                        }
-                    }
-                }
-                Logger?.Info("Two-wheelers: " + docks + " bike-share docks (of " + stands.Count + " scooter stands), " + shops + " bicycle racks outside supermarkets, "
-                             + motor + " motorbike stands; " + _refused + " place(s) tried were refused as not wholly on level pavement or on a crossing.");
+                search.Buildings = Keyed(buildings);
+                search.Buildings.Sort(ByKey);
+                _search = search;
             }
             catch (Exception e)
             {
+                _search = null;
                 Logger?.Warn("Two-wheelers: the places to hire and buy could not be worked out; the test buttons still make bicycles and motorbikes. " + e);
             }
         }
 
-        private static int ByPlace(Transform a, Transform b)
+        /// <summary>True while the places are being found a slice a frame.</summary>
+        public bool Finding => _search != null;
+
+        // What the search keeps between its slices: the stands and the buildings in the city's fixed order, and how far each pass has got.
+        private sealed class Search
         {
-            Vector3 p = a.position;
-            Vector3 q = b.position;
-            int byX = Mathf.RoundToInt(p.x).CompareTo(Mathf.RoundToInt(q.x));
-            return byX != 0 ? byX : Mathf.RoundToInt(p.z).CompareTo(Mathf.RoundToInt(q.z));
+            public List<AtPlace<Transform>> Stands;
+            public List<AtPlace<CityBuildingController>> Buildings;
+            public int Step;        // stands between two docks tried
+            public int Stage;       // 0 the docks, 1 the racks and the stands, 2 garages that repair (only if no dealership), 3 said
+            public int Next;        // the next stand or building of the stage
+            public int Docks, Shops, Motor;
+        }
+
+        // A thing and where it stands in whole metres, so that sorting them asks the engine for nothing (x first, then z).
+        private struct AtPlace<T>
+        {
+            public T Item;
+            public int X, Z;
+        }
+
+        private static List<AtPlace<Transform>> Keyed(List<Transform> items)
+        {
+            var keyed = new List<AtPlace<Transform>>(items.Count);
+            for (int i = 0; i < items.Count; i++)
+            {
+                Vector3 p = items[i].position;
+                keyed.Add(new AtPlace<Transform> { Item = items[i], X = Mathf.RoundToInt(p.x), Z = Mathf.RoundToInt(p.z) });
+            }
+            return keyed;
+        }
+
+        private static List<AtPlace<CityBuildingController>> Keyed(List<CityBuildingController> items)
+        {
+            var keyed = new List<AtPlace<CityBuildingController>>(items.Count);
+            for (int i = 0; i < items.Count; i++)
+            {
+                Vector3 p = items[i].transform.position;
+                keyed.Add(new AtPlace<CityBuildingController> { Item = items[i], X = Mathf.RoundToInt(p.x), Z = Mathf.RoundToInt(p.z) });
+            }
+            return keyed;
+        }
+
+        private static int ByKey<T>(AtPlace<T> a, AtPlace<T> b)
+        {
+            int byX = a.X.CompareTo(b.X);
+            return byX != 0 ? byX : a.Z.CompareTo(b.Z);
+        }
+
+        /// <summary>The next slice of the search, once a frame while <see cref="Finding"/>; nothing otherwise.</summary>
+        public void Step()
+        {
+            Search s = _search;
+            if (s == null)
+            {
+                return;
+            }
+            try
+            {
+                WorkSlice slice = WorkSlice.Of(SliceMs, 1);
+                while (s.Stage == 0)
+                {
+                    if (s.Next >= s.Stands.Count || s.Docks >= MaxDocks)
+                    {
+                        s.Stage = 1;
+                        s.Next = 0;
+                        break;
+                    }
+                    if (!slice.More())
+                    {
+                        return;
+                    }
+                    Transform stand = s.Stands[s.Next].Item;
+                    s.Next += s.Step;
+                    if (stand == null)
+                    {
+                        continue;
+                    }
+                    Quaternion facing = Quaternion.Euler(0f, stand.eulerAngles.y, 0f);
+                    if (Beside(stand.position, facing, out Vector3 spot))
+                    {
+                        Add(BikePlaceKind.Dock, spot, facing);
+                        s.Docks++;
+                    }
+                }
+                while (s.Stage == 1)
+                {
+                    if (s.Next >= s.Buildings.Count)
+                    {
+                        s.Stage = s.Motor == 0 ? 2 : 3;
+                        s.Next = 0;
+                        break;
+                    }
+                    if (!slice.More())
+                    {
+                        return;
+                    }
+                    CityBuildingController building = s.Buildings[s.Next++].Item;
+                    if (building == null || building.buildingRegistration == null)
+                    {
+                        continue;
+                    }
+                    string type = building.buildingRegistration.businessTypeName;
+                    if (type == "ba:businesstype_supermarket" && s.Shops < MaxShops && building.buildingRegistration.HasEstablishedBusiness
+                        && Outside(building, RackHalf, out Vector3 spot, out Quaternion facing))
+                    {
+                        Add(BikePlaceKind.BicycleShop, spot, facing);
+                        s.Shops++;
+                    }
+                    else if (type == "ba:businesstype_cardealership" && s.Motor < MaxStands && Outside(building, StandHalf, out spot, out facing))
+                    {
+                        Add(BikePlaceKind.MotorbikeStand, spot, facing);
+                        s.Motor++;
+                    }
+                }
+                // No dealership in this city yet: the stand goes to garages that repair.
+                while (s.Stage == 2)
+                {
+                    if (s.Next >= s.Buildings.Count)
+                    {
+                        s.Stage = 3;
+                        break;
+                    }
+                    if (!slice.More())
+                    {
+                        return;
+                    }
+                    CityBuildingController building = s.Buildings[s.Next++].Item;
+                    var station = building != null ? building.GetComponent<GasStationController>() : null;
+                    if (station != null && station.repairStationTriggers != null && station.repairStationTriggers.Length > 0 && s.Motor < 3
+                        && Outside(building, StandHalf, out Vector3 spot, out Quaternion facing))
+                    {
+                        Add(BikePlaceKind.MotorbikeStand, spot, facing);
+                        s.Motor++;
+                    }
+                }
+                _search = null;
+                Logger?.Info("Two-wheelers: " + s.Docks + " bike-share docks (of " + s.Stands.Count + " scooter stands), " + s.Shops + " bicycle racks outside supermarkets, "
+                             + s.Motor + " motorbike stands; " + _refused + " place(s) tried were refused as not wholly on level pavement or on a crossing.");
+            }
+            catch (Exception e)
+            {
+                _search = null;
+                Logger?.Warn("Two-wheelers: the places to hire and buy could not be worked out; the test buttons still make bicycles and motorbikes. " + e);
+            }
         }
 
         // The first of eight places round a scooter stand on pavement with room for the whole dock.
@@ -542,6 +649,7 @@ namespace RealLifeOverhaul
             }
             _places.Clear();
             _stands = null;
+            _search = null;
             _found = false;
         }
 

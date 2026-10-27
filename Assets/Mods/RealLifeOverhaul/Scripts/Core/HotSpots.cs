@@ -63,6 +63,8 @@ namespace RealLifeOverhaul
         private static readonly long[] Worst = new long[Most];
         private static readonly long[] Bytes = new long[Most];
         private static long _sumTotal, _worstTotal, _bytesTotal;
+        private static int _worstSlot = -1;     // the scope that took the most in the stretch's worst frame
+        private static long _worstSlotTicks;
         private static int _frames, _sampled;
 
         /// <summary>
@@ -265,6 +267,8 @@ namespace RealLifeOverhaul
             if (_lastTotal > _worstTotal)
             {
                 _worstTotal = _lastTotal;
+                _worstSlot = Rank(Last, LastTouched, _lastCount, 0);   // a new record only: rare, a walk over the few scopes of the frame
+                _worstSlotTicks = _worstSlot >= 0 ? Last[_worstSlot] : 0L;
             }
             if (_lastSampled)
             {
@@ -333,6 +337,10 @@ namespace RealLifeOverhaul
         public static double TotalMs => Ms(_sumTotal);
         public static double WorstFrameMs => Ms(_worstTotal);
 
+        /// <summary>The scope that took the most in the stretch's worst frame (its slot, or -1) and its milliseconds in that frame.</summary>
+        public static int WorstFrameSlot => _worstSlot;
+        public static double WorstFrameSlotMs => Ms(_worstSlotTicks);
+
         /// <summary>Bytes the heap grew by under the mod's scopes in the sampled frames of the stretch.</summary>
         public static long SampledBytes => _bytesTotal;
 
@@ -390,6 +398,8 @@ namespace RealLifeOverhaul
             Array.Clear(Worst, 0, Most);
             Array.Clear(Bytes, 0, Most);
             _sumTotal = _worstTotal = _bytesTotal = 0L;
+            _worstSlot = -1;
+            _worstSlotTicks = 0L;
             _frames = _sampled = 0;
         }
 

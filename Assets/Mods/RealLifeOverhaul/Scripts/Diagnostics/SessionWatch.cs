@@ -100,7 +100,7 @@ namespace RealLifeOverhaul
         private double _threadSum, _threadSpan, _othersSum, _othersWorst;
         private long _faultsSum, _faultsWorst;
         private int _faultFrames;
-        private readonly int[] _causes = new int[6];   // the frames over 33 ms, by FrameCause
+        private readonly int[] _causes = new int[7];   // the frames over 33 ms, by FrameCause
         private bool _timing;                  // the engine offers its own frame timing (FrameTimingManager)
         private readonly FrameTiming[] _timings = new FrameTiming[4];
         private double _gpuWorst;

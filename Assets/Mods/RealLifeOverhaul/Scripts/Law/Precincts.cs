@@ -43,6 +43,38 @@ namespace RealLifeOverhaul.Law
 
         private readonly List<Precinct> _all = new List<Precinct>(Most);
         private readonly List<Candidate> _candidates = new List<Candidate>(64);
+        private Pass _pass;   // the choosing under way, a slice at a time
+
+        private const double SliceMs = 2.0;   // milliseconds of choosing a frame: a building looked at and a candidate measured are the items
+
+        // What one choosing keeps between its slices.
+        private sealed class Pass
+        {
+            public CityBuildingController[] Buildings;
+            public SortedDictionary<string, Vector4> Sums;
+            public readonly List<KeyValuePair<string, Vector4>> Order = new List<KeyValuePair<string, Vector4>>(16);
+            public readonly Dictionary<string, CityBuildingController> Saved = new Dictionary<string, CityBuildingController>(Most, StringComparer.Ordinal);
+            public readonly HashSet<string> GaveWay = new HashSet<string>(StringComparer.Ordinal);   // districts whose saved station gave way: told as a move
+            public bool OldSave;
+            public string Moved;
+            public int WalkIn;
+            public int Stage;      // 0 the districts' middles, 1 the saved stations, 2 a station a district, 3 done
+            public int Scan;       // the next building of stage 0
+            public int District;   // the next district of stage 2
+            public Probe Probe;    // the district's search under way
+        }
+
+        // One district's search for a building, between slices.
+        private sealed class Probe
+        {
+            public string District;
+            public Vector3 Middle;
+            public CityBuildingController Not;
+            public int Scan;       // the next building to look at
+            public int Count;      // candidates to measure, once sorted; 0 before
+            public int Measured;   // the next candidate to measure
+            public int Pick;       // the best so far
+        }
         private readonly IModLogger _logger;
         private readonly PrecinctFrontage _frontage;
         private static Sprite _icon;   // drawn once a session: each load's director asks for the same badge
@@ -64,6 +96,15 @@ namespace RealLifeOverhaul.Law
         public Precinct At(int index) => index >= 0 && index < _all.Count ? _all[index] : null;
 
         public Precinct Dressed => _frontage.Dressed;
+
+        /// <summary>True while a precinct's front is being put out a piece a frame (<see cref="Frame"/>).</summary>
+        public bool Placing => _frontage.Placing;
+
+        /// <summary>Once a frame while <see cref="Placing"/>: the next piece of the front.</summary>
+        public void Frame()
+        {
+            _frontage.Frame();
+        }
 
         /// <summary>The badge on the destination marker that points the way to a precinct.</summary>
         public Sprite Icon => _icon != null ? _icon : _icon = MakeIcon();
@@ -120,79 +161,137 @@ namespace RealLifeOverhaul.Law
             return precinct != null && precinct.WalkIn && Settings.LawStation && Settings.LawPrecincts && precinct.Building != null && Vacant(precinct.Building);
         }
 
-        /// <summary>Once a city load: designates the precincts. False if the city's buildings are not there yet (asked again).</summary>
+        /// <summary>
+        /// Once a city load: designates the precincts, a slice (<see cref="SliceMs"/>) of the work at a time, so that the walk over
+        /// the city's buildings and the measuring of the likeliest few of each district never make one long frame (82 ms in a player's
+        /// log, 27 Oct 2026, with the frontage and the garage's places in the same frame). True once they are chosen; false while the
+        /// city's buildings are not there yet or the work is still under way (<see cref="Choosing"/>): asked again, every frame.
+        /// </summary>
         public bool Choose()
         {
             if (_chosen)
             {
                 return true;
             }
-            CityManager city = InstanceBehavior<CityManager>.Instance;
-            CityBuildingController[] buildings = GameDlc.Open(city);
-            if (buildings == null || buildings.Length == 0)
+            WorkSlice slice = WorkSlice.Of(SliceMs, 8);
+            try
             {
-                return false;
+                return Choose(ref slice);
             }
-            for (int i = 0; i < buildings.Length; i++)
+            catch (Exception)
             {
-                if (buildings[i] != null && buildings[i].building != null && buildings[i].buildingRegistration == null && _attempts < 12)
+                _chosen = true;   // as before: a fault leaves the precincts it had, and is not tried again every frame
+                _pass = null;
+                throw;
+            }
+        }
+
+        /// <summary>True while the choosing has begun and is not done: the director asks again each frame, out of doors.</summary>
+        public bool Choosing => _pass != null && !_chosen;
+
+        private bool Choose(ref WorkSlice slice)
+        {
+            if (_pass == null)
+            {
+                CityManager city = InstanceBehavior<CityManager>.Instance;
+                CityBuildingController[] all = GameDlc.Open(city);
+                if (all == null || all.Length == 0)
                 {
-                    _attempts++;
-                    return false;   // the buildings are not tied to their registrations yet (asked again, a dozen times at most)
+                    return false;
                 }
+                for (int i = 0; i < all.Length; i++)
+                {
+                    if (all[i] != null && all[i].building != null && all[i].buildingRegistration == null && _attempts < 12)
+                    {
+                        _attempts++;
+                        return false;   // the buildings are not tied to their registrations yet (asked again, a dozen times at most)
+                    }
+                }
+                _pass = new Pass { Buildings = all, Sums = new SortedDictionary<string, Vector4>(CityDistricts.KnownFirst) };   // a district a free update adds only takes a precinct left over
             }
-            _chosen = true;
+            Pass pass = _pass;
+            CityBuildingController[] buildings = pass.Buildings;
 
             // The middle of each district: the mean of its buildings' doors.
-            var districts = new SortedDictionary<string, Vector4>(CityDistricts.KnownFirst);   // a district a free update adds only takes a precinct left over
-            for (int i = 0; i < buildings.Length; i++)
+            while (pass.Stage == 0)
             {
-                if (!Usable(buildings[i], out Vector3 door))
+                if (pass.Scan >= buildings.Length)
+                {
+                    pass.Stage = 1;
+                    break;
+                }
+                if (!slice.More())
+                {
+                    return false;
+                }
+                CityBuildingController building = buildings[pass.Scan++];
+                if (!Usable(building, out Vector3 door))
                 {
                     continue;
                 }
-                string district = buildings[i].building.Neighbourhood;
-                districts.TryGetValue(district, out Vector4 sum);
-                districts[district] = sum + new Vector4(door.x, door.y, door.z, 1f);
+                string district = building.building.Neighbourhood;
+                pass.Sums.TryGetValue(district, out Vector4 sum);
+                pass.Sums[district] = sum + new Vector4(door.x, door.y, door.z, 1f);
             }
 
-            var saved = new Dictionary<string, CityBuildingController>(Most, StringComparer.Ordinal);
-            var gaveWay = new HashSet<string>(StringComparer.Ordinal);   // districts whose saved station gave way: told as a move
-            if (!string.IsNullOrEmpty(LawState.PrecinctAddresses))
+            if (pass.Stage == 1)
             {
-                foreach (string address in LawState.PrecinctAddresses.Split(';'))
+                if (!slice.More(true))
                 {
-                    CityBuildingController found = Find(buildings, address);
-                    if (found == null)
+                    return false;
+                }
+                if (!string.IsNullOrEmpty(LawState.PrecinctAddresses))
+                {
+                    foreach (string address in LawState.PrecinctAddresses.Split(';'))
                     {
-                        continue;
-                    }
-                    // One the player has since taken, or another feature holds, gives way, and the district's station has moved.
-                    if (SpecialNameBook.GivesWay(SpecialBuildings.Players(found), SpecialBuildings.HolderOf(found), "police_"))
-                    {
-                        gaveWay.Add(found.building.Neighbourhood);
-                        continue;
-                    }
-                    if (Usable(found, out _) && !saved.ContainsKey(found.building.Neighbourhood))
-                    {
-                        saved[found.building.Neighbourhood] = found;
+                        CityBuildingController found = Find(buildings, address);
+                        if (found == null)
+                        {
+                            continue;
+                        }
+                        // One the player has since taken, or another feature holds, gives way, and the district's station has moved.
+                        if (SpecialNameBook.GivesWay(SpecialBuildings.Players(found), SpecialBuildings.HolderOf(found), "police_"))
+                        {
+                            pass.GaveWay.Add(found.building.Neighbourhood);
+                            continue;
+                        }
+                        if (Usable(found, out _) && !pass.Saved.ContainsKey(found.building.Neighbourhood))
+                        {
+                            pass.Saved[found.building.Neighbourhood] = found;
+                        }
                     }
                 }
+                pass.OldSave = pass.Saved.Count > 0 && LawState.PrecinctRules < Rules;
+                pass.Order.AddRange(pass.Sums);
+                pass.Stage = 2;
             }
-            bool oldSave = saved.Count > 0 && LawState.PrecinctRules < Rules;
-            string moved = null;
-            int walkIn = 0;
 
-            foreach (KeyValuePair<string, Vector4> district in districts)
+            while (pass.Stage == 2)
             {
+                if (pass.District >= pass.Order.Count)
+                {
+                    pass.Stage = 3;
+                    break;
+                }
+                KeyValuePair<string, Vector4> district = pass.Order[pass.District];
                 if (_all.Count >= Most || district.Value.w < 8f)
                 {
-                    continue;   // a handful of buildings is not a district
+                    pass.District++;   // a handful of buildings is not a district
+                    continue;
                 }
-                Vector3 middle = new Vector3(district.Value.x, district.Value.y, district.Value.z) / district.Value.w;
-                bool found = Best(buildings, district.Key, middle, null, out Candidate best);
+                if (pass.Probe == null)
+                {
+                    Vector3 middle = new Vector3(district.Value.x, district.Value.y, district.Value.z) / district.Value.w;
+                    pass.Probe = new Probe { District = district.Key, Middle = middle };
+                }
+                if (!Search(buildings, pass.Probe, ref slice, out bool found, out Candidate best))
+                {
+                    return false;
+                }
+                pass.Probe = null;
+                pass.District++;
                 Candidate pick = best;
-                bool had = saved.TryGetValue(district.Key, out CityBuildingController kept);
+                bool had = pass.Saved.TryGetValue(district.Key, out CityBuildingController kept);
                 if (had)
                 {
                     Usable(kept, out Vector3 keptDoor);
@@ -203,7 +302,7 @@ namespace RealLifeOverhaul.Law
                     };
                     // The saved building stands unless another can be walked into and it cannot, or (an old save, once) is far better.
                     bool gives = found && !ReferenceEquals(best.Building, kept)
-                                 && ((best.WalkIn && !same.WalkIn) || (oldSave && best.WalkIn == same.WalkIn && best.Score >= same.Score + MuchBetter));
+                                 && ((best.WalkIn && !same.WalkIn) || (pass.OldSave && best.WalkIn == same.WalkIn && best.Score >= same.Score + MuchBetter));
                     if (!gives)
                     {
                         pick = same;
@@ -227,13 +326,17 @@ namespace RealLifeOverhaul.Law
                 };
                 precinct.Name = precinct.NameKey.GetLocalization();
                 _all.Add(precinct);
-                walkIn += precinct.WalkIn ? 1 : 0;
-                if ((had && !ReferenceEquals(pick.Building, kept)) || (!had && gaveWay.Contains(district.Key)))
+                pass.WalkIn += precinct.WalkIn ? 1 : 0;
+                if ((had && !ReferenceEquals(pick.Building, kept)) || (!had && pass.GaveWay.Contains(district.Key)))
                 {
-                    moved = (moved != null ? moved + ", " : string.Empty) + precinct.Name;
+                    pass.Moved = (pass.Moved != null ? pass.Moved + ", " : string.Empty) + precinct.Name;
                 }
             }
 
+            string moved = pass.Moved;
+            int walkIn = pass.WalkIn;
+            _chosen = true;
+            _pass = null;
             var names = new string[_all.Count];
             for (int i = 0; i < _all.Count; i++)
             {
@@ -338,15 +441,33 @@ namespace RealLifeOverhaul.Law
             return building.building.StreetName + "|" + building.building.StreetNumber;
         }
 
-        // The likeliest few (empty first, then by kind, then nearest the middle) are measured, and the best score wins.
+        // The likeliest few (empty first, then by kind, then nearest the middle) are measured, and the best score wins. All at once:
+        // only for a precinct that has to move (Keep), once in a long while; the first choosing goes a slice a frame through Search.
         private bool Best(CityBuildingController[] buildings, string district, Vector3 middle, CityBuildingController not, out Candidate best)
         {
+            var probe = new Probe { District = district, Middle = middle, Not = not };
+            WorkSlice whole = WorkSlice.Whole;
+            Search(buildings, probe, ref whole, out bool found, out best);
+            return found;
+        }
+
+        // One slice of a district's search. True once it is over (found says whether a building was picked); false when the slice ran out.
+        private bool Search(CityBuildingController[] buildings, Probe probe, ref WorkSlice slice, out bool found, out Candidate best)
+        {
+            found = false;
             best = default;
-            _candidates.Clear();
-            for (int i = 0; i < buildings.Length; i++)
+            if (probe.Scan == 0)
             {
-                CityBuildingController building = buildings[i];
-                if (ReferenceEquals(building, not) || !Usable(building, out Vector3 door) || building.building.Neighbourhood != district || Offices.Conversions.Holds(building.building))
+                _candidates.Clear();
+            }
+            while (probe.Scan < buildings.Length)
+            {
+                if (!slice.More())
+                {
+                    return false;
+                }
+                CityBuildingController building = buildings[probe.Scan++];
+                if (ReferenceEquals(building, probe.Not) || !Usable(building, out Vector3 door) || building.building.Neighbourhood != probe.District || Offices.Conversions.Holds(building.building))
                 {
                     continue;
                 }
@@ -361,7 +482,7 @@ namespace RealLifeOverhaul.Law
                 {
                     continue;
                 }
-                Vector3 offset = door - middle;
+                Vector3 offset = door - probe.Middle;
                 offset.y = 0f;
                 _candidates.Add(new Candidate
                 {
@@ -372,24 +493,32 @@ namespace RealLifeOverhaul.Law
             }
             if (_candidates.Count == 0)
             {
-                return false;
+                return true;
             }
-            _candidates.Sort(Likelier);
-            int measured = Mathf.Min(Measured, _candidates.Count);
-            int pick = 0;
-            for (int i = 0; i < measured; i++)
+            if (probe.Count == 0)
             {
+                _candidates.Sort(Likelier);
+                probe.Count = Mathf.Min(Measured, _candidates.Count);
+            }
+            while (probe.Measured < probe.Count)
+            {
+                if (!slice.More())
+                {
+                    return false;
+                }
+                int i = probe.Measured++;
                 Candidate candidate = _candidates[i];
                 candidate.Score = Measure(candidate.Building, candidate.Door);
                 _candidates[i] = candidate;
                 // An empty unit always before one that is not; then the score; then the listed order.
-                Candidate held = _candidates[pick];
+                Candidate held = _candidates[probe.Pick];
                 if (i > 0 && candidate.WalkIn == held.WalkIn && candidate.Score > held.Score)
                 {
-                    pick = i;
+                    probe.Pick = i;
                 }
             }
-            best = _candidates[pick];
+            best = _candidates[probe.Pick];
+            found = true;
             _candidates.Clear();
             return true;
         }

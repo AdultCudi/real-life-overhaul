@@ -171,6 +171,14 @@ namespace RealLifeOverhaul.Law
                     _nextLook = Time.unscaledTime + 0.25f;
                     Look();
                 }
+                if (_precincts.Choosing)
+                {
+                    ChooseOn();
+                }
+                if (_precincts.Placing)
+                {
+                    _precincts.Frame();
+                }
                 if (!LawState.Loaded && ModState.Loaded)
                 {
                     if (StartLine.Holds(StartSeats.Law))
@@ -307,6 +315,17 @@ namespace RealLifeOverhaul.Law
             {
                 Furnish(owed);
             }
+        }
+
+        // The precincts being chosen (Precincts.Choose, a slice of about 2 ms): the tick began it, and every frame out of doors carries it on,
+        // so that it is done in a second or so and never in one long frame. One compare a frame while nothing is being chosen.
+        private void ChooseOn()
+        {
+            if (BuildingManager.IsInsideBuilding || !_precincts.Choose())
+            {
+                return;
+            }
+            StationInterior.SearchDesigns(_precincts);   // as the tick does when it is the one that finishes
         }
 
         private void Look()

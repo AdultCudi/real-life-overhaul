@@ -704,7 +704,7 @@ internal static partial class Program
         }
 
         string hook = File.ReadAllText(Path.Combine(scripts, "Core", "SaveHook.cs"));
-        int companion = hook.IndexOf("CompanionGame.Save(SaveGameManager.Current);", StringComparison.Ordinal);
+        int companion = hook.IndexOf("CompanionGame.Begin(SaveGameManager.Current);", StringComparison.Ordinal);
         int district = hook.IndexOf("DistrictSave.DistrictSaveDirector.BeforeWrite();", StringComparison.Ordinal);
         Check(companion >= 0 && district > companion, "SaveHook.Run's last step is not the district save's (DistrictSaveDirector.BeforeWrite after every feature has written)");
         Check(hook.Contains("Handlers.Count == 0 && !DistrictSave.DistrictSaveDirector.Holds"), "SaveHook.Drop no longer keeps the save hook while the district save holds anything");

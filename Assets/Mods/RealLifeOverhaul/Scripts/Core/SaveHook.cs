@@ -139,7 +139,13 @@ namespace RealLifeOverhaul
                 {
                     Logger?.Error(e);
                 }
-                CompanionGame.Save(SaveGameManager.Current);
+                long companion = timed ? Stopwatch.GetTimestamp() : 0;
+                CompanionGame.Begin(SaveGameManager.Current);   // the readers now, while the mod's places are in the game's lists; the report's text on a worker
+                if (timed)
+                {
+                    Longest(Stopwatch.GetTimestamp() - companion, "the companion's readers", null);
+                }
+                long strip = timed ? Stopwatch.GetTimestamp() : 0;
                 try
                 {
                     DistrictSave.DistrictSaveDirector.BeforeWrite();   // last: every feature has written; the mod's places leave the game's lists
@@ -147,10 +153,15 @@ namespace RealLifeOverhaul
                 catch (Exception e)
                 {
                     Logger?.Error(e);
+                    CompanionGame.End(SaveGameManager.Current);   // the district save joins the report's text itself; if it fell short of that, here (nothing if it did)
                 }
                 if (timed)
                 {
-                    Longest(Stopwatch.GetTimestamp() - district, "the kept lines, the companion and the district save", null);
+                    Longest(Stopwatch.GetTimestamp() - strip, "the district save and the companion's text awaited", null);
+                }
+                if (timed)
+                {
+                    Longest(Stopwatch.GetTimestamp() - district, "the kept lines, the companion and the district save together", null);
                     Logger?.Info("Session: the mod wrote its state into the save in "
                                  + ((UnityEngine.Time.realtimeSinceStartup - began) * 1000f).ToString("F1", CultureInfo.InvariantCulture)
                                  + " ms (" + Handlers.Count + " features; the longest: " + LongestText() + "); the rest of the save is the game's.");
