@@ -151,6 +151,10 @@ namespace RealLifeOverhaul.Construction
             {
                 return ConstructionText.StageWords(p);
             }
+            if (_director.ParkOf(lot.Id) != null)
+            {
+                return ConstructionText.T("reallife_park_land_state");   // a car park stands there
+            }
             return ConstructionText.T(owned.ZoneAsk != 0 ? "reallife_bld_land_state_zoning" : _director.ClearedGround(lot.Id) ? "reallife_bld_land_state_cleared" : "reallife_bld_land_state_empty");
         }
 

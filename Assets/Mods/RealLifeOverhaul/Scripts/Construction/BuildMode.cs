@@ -684,6 +684,8 @@ namespace RealLifeOverhaul.Construction
             _targetSite = null;
             _hasTarget = false;
             _canBuy = _pickMine = false;
+            _parkFacts = default(ParkFacts);
+            _parkPicked = null;
             DropGhost();
             _design = -1;
             _designs.Clear();
@@ -713,7 +715,7 @@ namespace RealLifeOverhaul.Construction
                         _d.RowsHeld(_picked[i].Column, out LotFile other);
                         _pickMine = other == site;   // every square the player's, of one site
                     }
-                    if (_siteWhy == null && _pickMine)
+                    if (_siteWhy == null && _pickMine && _d.ParkOfColumn(column) == null)
                     {
                         _d.FootprintDesigns(_site.FirstColumn, _site.Count, _site.MinRows, _use, _designs);
                         if (_designs.Count > BuildModeCatalogue.Most)
@@ -721,6 +723,7 @@ namespace RealLifeOverhaul.Construction
                             _designs.RemoveRange(BuildModeCatalogue.Most, _designs.Count - BuildModeCatalogue.Most);
                         }
                     }
+                    ParkRead();   // BuildMode.Park: a car park on the squares, or what one would be
                     break;
             }
         }
@@ -752,6 +755,9 @@ namespace RealLifeOverhaul.Construction
             }
             ZoneClear();
             _growPanel = false;
+            _parkMode = false;
+            _parkPicked = null;
+            _parkFacts = default(ParkFacts);
             _siteWhy = CellRules.NoCells;
             _site = default(CellSite);
             _took = CellRules.TookAll;

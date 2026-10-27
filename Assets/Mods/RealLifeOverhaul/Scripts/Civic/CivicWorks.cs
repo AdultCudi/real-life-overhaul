@@ -582,10 +582,56 @@ namespace RealLifeOverhaul
             return site;
         }
 
-        /// <summary>Where a site is, as the player reads it: the building's address, or for a plot the words for new ground.</summary>
+        /// <summary>
+        /// A car park's works on ground given to it: whoever has the ground says where its middle is, which way its front looks and its
+        /// size in whole metres, and the working hours the works take. The ground is kept in the site's street field as text
+        /// (<see cref="ParkSiteRules"/>), as a plot's is. Null with nothing started if a site already stands within a few metres of
+        /// it; a Going Public guest starts none.
+        /// </summary>
+        public SiteState StartLot(Vector3 middle, int yaw, int width, int depth, int day, out string why, float hours = 0f)
+        {
+            why = ParkSiteRules.Unfit(width, depth);
+            if (why != null)
+            {
+                return null;
+            }
+            if (Shared)
+            {
+                why = "the host of the Going Public session runs the city's sites";
+                return null;
+            }
+            float clear = Mathf.Max(width, depth) * 0.5f + PlotClear;
+            if (Nearest(middle, clear) != null)
+            {
+                why = "another site is already within " + clear + " m";
+                return null;
+            }
+            var random = new CivicRandom(CivicRandom.Mix(SaveSeed(), State.NextId, day + 2087));
+            var site = new SiteState
+            {
+                Id = State.NextId++,
+                Kind = SiteKind.Parking,
+                Street = ParkSiteRules.Encode(width, depth, yaw),
+                Number = 0,
+                X = middle.x, Y = middle.y, Z = middle.z,
+                Project = random.Range(0, 3),
+                Contractor = random.Range(0, CivicCatalogue.Contractors.Length),
+                StartDay = day,
+                Needed = hours > 0f ? hours : CivicCatalogue.SiteHours[(int)SiteKind.Parking],
+                UnsafeFrom = -1f,
+                Local = true
+            };
+            State.Sites.Add(site);
+            CivicDirector.Logger?.Info("Civic: site " + site.Id + " started: a car park on " + width + " by " + depth + " m of ground, " + site.Needed + " working hours.");
+            Earshots();
+            SitesChanged?.Invoke();
+            return site;
+        }
+
+        /// <summary>Where a site is, as the player reads it: the building's address, or for a plot or a car park the words for new ground.</summary>
         public static string PlaceText(SiteState site)
         {
-            return PlotRules.IsPlot(site.Street) ? CivicText.T("reallife_construction_plot_place") : CivicCity.AddressText(site.Street, site.Number);
+            return PlotRules.IsPlot(site.Street) || ParkSiteRules.IsPark(site.Street) ? CivicText.T("reallife_construction_plot_place") : CivicCity.AddressText(site.Street, site.Number);
         }
 
         /// <summary>Test: a site moves on to its next stage now (a plot in its frame stage, a storey). False for a site already in its last.</summary>

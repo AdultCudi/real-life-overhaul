@@ -24,7 +24,7 @@ namespace RealLifeOverhaul
         /// <summary>True while a wrap is changing or coming down, or a plot is out: then <see cref="Frame"/> is wanted each frame.</summary>
         public bool Framed { get; private set; }
 
-        private static bool BigKind(SiteKind kind) => kind == SiteKind.Rebuild || kind == SiteKind.Plot || kind == SiteKind.Demolition;
+        private static bool BigKind(SiteKind kind) => kind == SiteKind.Rebuild || kind == SiteKind.Plot || kind == SiteKind.Demolition || kind == SiteKind.Parking;
 
         // In view: a big site by the whole box it fills, the others by their middle (CitySpots' cone).
         private bool Seen(Dressed dressed) => dressed.Big ? BoxInView(dressed.Area) : CitySpots.InView(dressed.Origin);

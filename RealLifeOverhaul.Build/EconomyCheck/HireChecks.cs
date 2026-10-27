@@ -188,7 +188,7 @@ internal static partial class Program
             "hire sources: the builder books the inspector, the verdict weighs its standing, and its stage is paid as each inspection passes");
         string handover = MethodText(projects, "private void Handover(");
         Check(handover.Contains("if (p.Contractor >= 0 && !p.Hired)") && handover.Contains("HireSettled(p, day);") && handover.Contains("hired ? p.Contractor : -1")
-              && handover.Contains("if (!hired)\r\n            {\r\n                DefectAhead(p, quality, day);") && handover.Contains("HandToDistrict(p);"),
+              && handover.Contains("if (!hired && p.Kind != ProjectKind.Parking)\r\n            {\r\n                DefectAhead(p, quality, day);") && handover.Contains("HandToDistrict(p);"),
             "hire sources: the handover is the company's own: the retention settled, the builder in the year's buildings, no fault claimed of the company, the building to the district");
         string start = MethodText(hire, "public string HireBuilder(");
         Check(start.Contains("StartSite(p, r, out string why)") && MethodText(projects, "public string StartBuilding(").Contains("StartSite(p, 0, out string why)")

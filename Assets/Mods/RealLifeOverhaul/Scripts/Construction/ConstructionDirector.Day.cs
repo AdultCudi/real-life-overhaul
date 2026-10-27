@@ -47,6 +47,7 @@ namespace RealLifeOverhaul.Construction
             OpeningHour(day, hour);
             RefitHour();
             ShowHour(day, hour);
+            ParkHour(day, hour);   // the car parks' hour: the cars in their bays, the takings (ConstructionDirector.ParkRun.cs)
         }
 
         // An opening: the evening before's reminder and the morning's, and the opening held without the player once its hours are
@@ -110,6 +111,7 @@ namespace RealLifeOverhaul.Construction
             RedevelopDay(day);   // notices run out, buildings kept empty, handovers the district could not take yet (ConstructionDirector.Demolish.cs)
             GrowProjectsDay(day);   // the player's Let it grow projects carried to City Hall by their builder (ConstructionDirector.LetItGrow)
             GrowDeedsDay();         // ... and their deeds asking their tier's rent once written
+            ParkDay(day);           // the car parks: the night's accounts, leases and offers, the programme's projects, the city's builders' lots (ConstructionDirector.ParkRun.cs)
             if (Verbose)
             {
                 double ms = (System.Diagnostics.Stopwatch.GetTimestamp() - began) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
@@ -296,7 +298,7 @@ namespace RealLifeOverhaul.Construction
                     {
                         continue;
                     }
-                    bool empty = _state.OnLot(l.Id) == null && LandRules.Empty(l.EmptySince, day);
+                    bool empty = _state.OnLot(l.Id) == null && ParkOf(l.Id) == null && LandRules.Empty(l.EmptySince, day);
                     int tax = LandRules.LandTax(l.Paid, day - l.TaxedTo, year, empty, Permits());
                     ConstructionGame.Force(tax, empty ? "reallife_transaction_bld_vacant_tax" : "reallife_transaction_bld_land_tax", LotWords(l.Id), true);
                     _state.PayOut(tax, day);

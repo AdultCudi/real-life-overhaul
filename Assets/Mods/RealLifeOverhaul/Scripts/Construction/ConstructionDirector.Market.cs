@@ -72,9 +72,9 @@ namespace RealLifeOverhaul.Construction
                     {
                         continue;   // the city grows by demand now (ConstructionDirector.Grow): the old lot-by-lot turns start nothing more
                     }
-                    if (_state.Lot(lot.Id) != null || _state.OnLot(lot.Id) != null || LotTaken(lot.Id) || _state.CityRedevOn(lot.Id) != null)
+                    if (_state.Lot(lot.Id) != null || _state.OnLot(lot.Id) != null || LotTaken(lot.Id) || _state.CityRedevOn(lot.Id) != null || ParkUnderWayOn(lot.Id))
                     {
-                        continue;   // the player's land, a building of the district's own, or ground the city redevelops: passed over
+                        continue;   // the player's land, a building of the district's own, or ground the city redevelops or parks cars on: passed over
                     }
                     dev = new DevFile { Lot = lot.Id };
                     _state.Developments.Add(dev);
@@ -263,7 +263,7 @@ namespace RealLifeOverhaul.Construction
             {
                 LotView lot = lots[(start + k) % lots.Count];
                 if (!lot.Open || lot.Class != 1 || DevelopmentRules.Theirs(lot.Id) || _state.Lot(lot.Id) != null || _state.OnLot(lot.Id) != null || _state.Development(lot.Id) != null
-                    || LotTaken(lot.Id) || TenderOn(lot.Id))
+                    || LotTaken(lot.Id) || TenderOn(lot.Id) || ParkUnderWayOn(lot.Id))
                 {
                     continue;   // an office lot no one else has: the city builds its offices there
                 }

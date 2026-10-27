@@ -116,7 +116,7 @@ internal static partial class Program
         Check(MethodText(game, "internal static void Hold(").Contains("GoingPublic.InSession") && MethodText(game, "internal static void Release(").Contains("if (_paused)"),
             "front desk sources: the game is paused as its desk staff pause it, never in a Going Public session, and runs again only if the talk paused it");
         Check(game.Contains("public const string Talk = \"click_to_talk\";") && MethodText(game, "internal static bool Install(").Contains("_list.Insert(0, _behaviour);")
-              && game.Contains("return entityController is BuilderDeskPointer;") && contract.Contains("ClickDesk, ClickBuilderDesk)"),
+              && game.Contains("return entityController is BuilderDeskPointer;") && contract.Contains("ClickDesk, ClickBuilderDesk, ClickCarPark)"),
             "front desk sources: the game's own call to talk, first in its list and answering only for the desk's pointer, a part of the game contract");
         Check(MethodText(game, "internal static EmployeeStationController Front(").Contains("FrontDeskRules.Front(Xs, Zs, Stations.Count, door.x, door.z)") && MethodText(game, "internal static ThirdPersonCharacter Seated(").Contains("!e.isPlayer && !e.IsAway"),
             "front desk sources: the front desk is the game's own staff nearest the door, never a desk the player works at or its person away");
