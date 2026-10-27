@@ -269,7 +269,7 @@ namespace RealLifeOverhaul.Construction
         {
             if (!string.IsNullOrEmpty(key))
             {
-                Notifications.Show(NotificationType.Info, key, null, 5f, null, null, true, false);
+                Notifications.Show(NotificationType.Info, key, _director.AnswerData(key), 5f, null, null, true, false);   // a text with the land's size or the money in it carries them
             }
             Refresh();
         }

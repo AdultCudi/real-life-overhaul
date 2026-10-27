@@ -272,10 +272,16 @@ namespace RealLifeOverhaul.Construction
         /// <summary>
         /// The designs a lot may wear, kept from <paramref name="into"/>: on the grid of spaces, of a size taking exactly the
         /// site's spaces, or fewer when its frontage alone fills the site (BuildCatalogue.Offered: a building is never left
-        /// with ground beside it inside its site); a lot off the grid keeps the sizes its class takes.
+        /// with ground beside it inside its site); a lot off the grid keeps the sizes its class takes. Land that no plot's site can be
+        /// set out on (LandRules.SiteFit) keeps none, for the player's choice and every pick of the city's own alike: nobody plans on it.
         /// </summary>
         private static void KeepFitting(LotView site, List<DesignChoice> into)
         {
+            if (LandRules.SiteFit(site.Width, site.Depth, out _) != PlotFit.Fits)
+            {
+                into.Clear();
+                return;
+            }
             if (!OnSpaces(site))
             {
                 KeepSizes(site.Id, into);

@@ -24,6 +24,7 @@ internal static partial class Program
         BuildTenderChecks();
         BuildDeveloperChecks();
         BuildFrameChecks();
+        SiteFitChecks();
         BuildStoreChecks();
         BuildSourceChecks();
         BuildTextChecks();

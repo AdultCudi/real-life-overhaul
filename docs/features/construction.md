@@ -47,7 +47,7 @@ At the handover the building wears a new look of the same size, a design of the 
 
 At the handover the frame comes down out of view and the finished building stands on the plot, a design of the city's own fitted to the frame's footprint (`BuildingCopies.PlaceOnPlot`), kept and stood again at every load as a rebuild's is, until the lot holds a building of the district's own. Whatever of a plot stands between the camera and the player is hidden the way the game hides its own buildings (their shadows kept).
 
-**A narrow plot** (10 to 20 m of land along the street, 20 m deep at least: a small shop's or home's lot) keeps a metre each side and its yard behind the frame, goes up to six storeys without a tower crane, and has its gate at the front's end. Plots on the lots of a district may stand side by side: a plot refuses only a site on its own ground and 2 m round it.
+**A narrow plot** (7 to 20 m of land along the street, 20 m deep at least: 7 m is one space of the district, the standard lowest lot) keeps a metre each side and its yard behind the frame, goes up to six storeys without a tower crane, and has its gate at the front's end. Plots on the lots of a district may stand side by side: a plot refuses only a site on its own ground and 2 m round it.
 
 ## The game's scaffolding
 
@@ -255,6 +255,16 @@ The owner's ask (24 Oct 2026): build anything without a company, and hire the ri
 6. **The app without a company:** the Overview says how to build without one and opens Land and Rivals; Land, Projects, the quotes and Rivals all work; Tenders and Crews say how to found the company. The Rivals tab counts what each builder has built for the player.
 
 Going Public: the quotes are drawn from the save, the project and the week alone; the site is the player's own (a rebuild only of a building they own, under the programme's own-id rule; a guest starts no plot, as before); nothing is sent; the builder's news reaches the stock market only outside a session. A save with a contract read by an older RLO passes its new fields over; without the mod the line is kept as it was.
+
+### Land too small for a site
+
+A player (27 Oct 2026) had a shops project on a single space of Uptown, 7 by 35 m, through its plans, its permit and eight builders' quotes, and the hire then said only "The site could not be set out there. Player.log says why." The plot's frame needed 10 m of land (`PlotRules.NarrowMin`), and one space of the district's grid is 7 m (`SpacesRules.SpaceWidth`, the owner's "1 space is the standard lowest one"): no site on a single space could ever be set out, by a builder or by the company's crews. The developers' sites on such lots were passed over quietly (their building was still finished on its day).
+
+- **The rule.** One answer, `PlotRules.Fit(width, depth, out need)` (`LandRules.SiteFit`): too narrow (under 7 m), too shallow (under 20 m deep for a narrow plot, 16 m for a wide one), too wide or too deep (over 60 m). The narrowest land is now one space, so every site the Land tab sells, one to seven spaces on a strip of 32, 35 or 39 m, takes a site (a metre kept each side, a 5 m frame on one space). What stays refused is land a site cannot stand on: a site bought short of its depth in build mode, or one over 60 m.
+- **Where it is asked** (`ConstructionDirector.Fit.cs`): at the first step, planning a building on land (`NewPlot`), and at every step after it that draws, pays or starts, each before its fee: the use and the design, the plans, the engineer, City Hall's application, the appeal, the quotes and the hire (`HireBlock`, `HireBuilder`), the start (`StartBlock`). A refusal says the land's size against what a site needs and what would work (join the next space, buy more of its rows, split it), through the notice's own data (`AnswerData`); a builder's refusal names the builder. Nothing is charged for a refused step.
+- **A project already stuck** (an older save, or land that changed): its page shows why in place of its plans, quotes and hire, with **Cancel and get the fees back** (`CancelUnfit`): the project is given up, the land stays the player's, and every fee paid for it (the practice's, the engineer's, City Hall's, an appeal's) comes back through the game's own money. A project something else has come in under (an investor, a flat sold off plan, a loan drawn) can only be given up as before. Only the player's own money moves, so it is the same in a Going Public session.
+- **The city's builders.** Every list of designs for a site, the player's, the developers', a redevelopment's, a growth's and build mode's, is emptied first for land no site can be set out on (`KeepFitting`, `CornerDesigns`), so a developer's pick is none and the lot is passed over: the city never plans on land its site cannot use.
+- **Texts.** Every reason a site was not set out is one of the programme's causes (`SiteRefusals`), each with plain words and "Nothing was charged"; none points at Player.log.
 
 ### The front desk
 

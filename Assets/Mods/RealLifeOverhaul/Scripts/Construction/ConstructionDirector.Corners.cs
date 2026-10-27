@@ -26,6 +26,10 @@ namespace RealLifeOverhaul.Construction
         public bool CornerDesigns(LotView site, bool low, float edge, BuildUse use, List<DesignChoice> into)
         {
             _cornerOffers.Clear();
+            if (LandRules.SiteFit(site.Width, site.Depth, out _) != PlotFit.Fits)
+            {
+                return true;   // known: none, on land no site can be set out on
+            }
             if (!AskCorners(CellRules.CornerGround(site, low, edge), _cornerOffers))
             {
                 return true;   // known: none

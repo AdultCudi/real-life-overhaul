@@ -193,6 +193,11 @@ namespace RealLifeOverhaul.Construction
             {
                 return 0;
             }
+            why = LandBlock(lot, ConstructionGame.AddressText(lot.Street, lot.Number));   // the first step: land no site can be set out on is planned on by no one
+            if (why != null)
+            {
+                return 0;
+            }
             BuildUse use = FirstZoned(_state.ZonesOf(owned, lot.Class), BuildCatalogue.ClassUse[BuildCatalogue.Clamp(lot.Class, 0, BuildCatalogue.ClassCount - 1)]);
             var p = new ProjectFile
             {
@@ -443,6 +448,11 @@ namespace RealLifeOverhaul.Construction
             {
                 return "reallife_bld_answer_not_design";
             }
+            string unfit = SiteBlock(p);
+            if (unfit != null)
+            {
+                return unfit;
+            }
             LotFile lot = _state.Lot(p.Lot);
             if (lot != null && !LandRules.Zoned(ZonesNow(lot), use))
             {
@@ -461,6 +471,11 @@ namespace RealLifeOverhaul.Construction
             if (p == null || p.Stage != ProjectStage.Design)
             {
                 return "reallife_bld_answer_not_design";
+            }
+            string unfit = SiteBlock(p);
+            if (unfit != null)
+            {
+                return unfit;
             }
             if (!DesignChoices(p, _choices))
             {
@@ -551,6 +566,11 @@ namespace RealLifeOverhaul.Construction
             if (p.PlansDay > 0)
             {
                 return "reallife_bld_answer_plans_coming";
+            }
+            string unfit = SiteBlock(p);
+            if (unfit != null)
+            {
+                return unfit;   // before a fee: land no site can be set out on is drawn for by no one
             }
             if (p.Architect == ArchitectKind.Staff && !ConstructionGame.Employee(p.ArchitectId, out _))
             {
@@ -650,6 +670,11 @@ namespace RealLifeOverhaul.Construction
             {
                 return "reallife_bld_answer_no_engineer_needed";
             }
+            string unfit = SiteBlock(p);
+            if (unfit != null)
+            {
+                return unfit;
+            }
             if (staff)
             {
                 if (!StaffInRole(StaffRole.Engineer) && !Qualified("engineer"))
@@ -707,6 +732,11 @@ namespace RealLifeOverhaul.Construction
             if (p.Planning == PlanningState.Submitted || p.Planning == PlanningState.Appealed)
             {
                 return "reallife_bld_answer_planning_waits";
+            }
+            string unfit = SiteBlock(p);
+            if (unfit != null)
+            {
+                return unfit;   // before the fee: City Hall hears no application for land no site can be set out on
             }
             long fee = PlanningFee(p);
             if (!ConstructionGame.Take(fee, "reallife_transaction_bld_fees", ProjectName(p), true))
@@ -817,6 +847,11 @@ namespace RealLifeOverhaul.Construction
             {
                 return "reallife_bld_answer_no_refusal";
             }
+            string unfit = SiteBlock(p);
+            if (unfit != null)
+            {
+                return unfit;
+            }
             long fee = (long)BuildCatalogue.AppealFee * ConstructionGame.Prices / 1000L;
             if (!ConstructionGame.Take(fee, "reallife_transaction_bld_fees", ProjectName(p), true))
             {
@@ -885,6 +920,11 @@ namespace RealLifeOverhaul.Construction
             {
                 return p != null && p.Stage == ProjectStage.Building ? "reallife_bld_answer_building" : "reallife_bld_answer_no_permission";
             }
+            string unfit = SiteBlock(p);
+            if (unfit != null)
+            {
+                return unfit;
+            }
             if (!Licensed)
             {
                 return "reallife_bld_answer_no_licence";
@@ -924,7 +964,7 @@ namespace RealLifeOverhaul.Construction
             if (site <= 0)
             {
                 Logger?.Info("Construction: project " + p.Id + "'s site could not be started: " + why + ".");
-                return "reallife_bld_answer_site_refused";
+                return SiteRefusals.Key(why);
             }
             int day = ConstructionGame.Day;
             p.SiteId = site;

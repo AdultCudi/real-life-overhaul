@@ -186,7 +186,7 @@ namespace RealLifeOverhaul.Construction
 
         internal static int StartPlotSite(Vector3 middle, int yaw, int width, int depth, int storeys, int contractor, int hours, out string why)
         {
-            why = "the city's construction programme is not running";
+            why = SiteRefusals.NotRunning;
             try
             {
                 return !Down("StartPlot") && ConstructionBridges.StartPlot != null ? ConstructionBridges.StartPlot(middle, yaw, width, depth, storeys, contractor, hours, out why) : 0;
@@ -200,7 +200,7 @@ namespace RealLifeOverhaul.Construction
 
         internal static int StartLotSite(Vector3 middle, int yaw, int width, int depth, int contractor, int hours, out string why)
         {
-            why = "the city's construction programme is not running";
+            why = SiteRefusals.NotRunning;
             try
             {
                 return !Down("StartLot") && ConstructionBridges.StartLot != null ? ConstructionBridges.StartLot(middle, yaw, width, depth, 0, contractor, hours, out why) : 0;
@@ -214,7 +214,7 @@ namespace RealLifeOverhaul.Construction
 
         internal static int StartWorksSite(string street, int number, int kind, bool mine, int contractor, int hours, out string why)
         {
-            why = "the city's construction programme is not running";
+            why = SiteRefusals.NotRunning;
             try
             {
                 return !Down("StartWorks") && ConstructionBridges.StartWorks != null ? ConstructionBridges.StartWorks(street, number, kind, mine, contractor, hours, out why) : 0;
