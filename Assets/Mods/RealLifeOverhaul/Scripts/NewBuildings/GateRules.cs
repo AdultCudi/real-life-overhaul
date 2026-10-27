@@ -53,6 +53,17 @@ namespace RealLifeOverhaul.NewBuildings
 
         private const float Deg = (float)(Math.PI / 180.0);
 
+        /// <summary>The vehicle slots the game gives a warehouse's structure (BuildingSizeData.numberOfVehicleSlots, Build 3682): H one; I, P and Q two; none for any other size.</summary>
+        public static int Bays(string size)
+        {
+            if (string.Equals(size, "ba:buildingsize_h", StringComparison.Ordinal))
+            {
+                return 1;
+            }
+            return string.Equals(size, "ba:buildingsize_i", StringComparison.Ordinal) || string.Equals(size, "ba:buildingsize_p", StringComparison.Ordinal)
+                   || string.Equals(size, "ba:buildingsize_q", StringComparison.Ordinal) ? 2 : 0;
+        }
+
         /// <summary>
         /// True when a copy of a design keeps the door as the game's own: a special building copied whole keeps all its doors;
         /// a warehouse (the only registration with vehicle slots) keeps the door whose slot (<see cref="Gate.Id"/> + 1) its

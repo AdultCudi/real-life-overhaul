@@ -90,8 +90,7 @@ namespace RealLifeOverhaul.Uptown
             f.WarehouseRegistration = made.Registration is Warehouse;
             BuildingSizeData size = BuildingSizeHelper.GetData(record);
             DesignEntry look = made.DesignIndex >= 0 && made.DesignIndex < CopyGame.Catalogue.Count ? CopyGame.Catalogue[made.DesignIndex] : null;
-            int inLook = look != null && look.Gates != null ? look.Gates.Length : 0;
-            f.GatesWanted = Math.Min(inLook, size != null ? size.numberOfVehicleSlots : 0);
+            f.GatesWanted = size != null ? size.numberOfVehicleSlots : 0;   // a door for each vehicle slot: a look with fewer leaves a slot no car can be driven into
             f.GatesServe = look != null && GateRules.Serves(look);
             CityBuildingController c = made.Controller;
             DriveInEntrance[] doors = c != null ? c.driveInEntrances : null;

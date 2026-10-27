@@ -35,7 +35,7 @@ namespace RealLifeOverhaul.Uptown
         public int Occupancy;        // the player's deed's tenants, per cent; 0 for none
         public bool Warehouse;       // its record's type is the game's warehouse: a vehicle drives in, and out
         public bool WarehouseRegistration;   // its registration is the game's Warehouse (it has vehicle slots)
-        public int GatesWanted;      // the garage doors of its look a bay of its structure stands behind (the smaller of the look's doors and the structure's vehicle slots)
+        public int GatesWanted;      // the vehicle slots of its structure: a garage door whole for each
         public int GatesWhole;       // of its copy's garage doors, those whole: a component, its trigger and the closed door
         public bool GatesServe;      // every garage door of its look looks out on its street (GateRules.Serves)
     }
@@ -126,8 +126,8 @@ namespace RealLifeOverhaul.Uptown
 
         /// <summary>
         /// A warehouse takes a vehicle in and out as the game's own does (the owner, 27 Oct 2026: "this breaks the immersion and the game"):
-        /// its registration has vehicle slots, it has garage doors, every one a bay stands behind is whole and every one looks out on its
-        /// street. Any other building is not asked.
+        /// its registration has vehicle slots, it has a garage door whole for each of them, and every door looks out on its street.
+        /// Any other building is not asked.
         /// </summary>
         public static bool Entrances(CompleteFacts f)
         {

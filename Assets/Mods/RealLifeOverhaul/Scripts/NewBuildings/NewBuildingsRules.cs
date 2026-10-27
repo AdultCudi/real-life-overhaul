@@ -512,7 +512,7 @@ namespace RealLifeOverhaul.NewBuildings
             }
             int typed = 0;
             float widest = 0f, widestTyped = 0f;
-            bool serving = string.Equals(type, GateRules.WarehouseType, StringComparison.Ordinal) && AnyServing(designs, size, width, depth);
+            int serving = string.Equals(type, GateRules.WarehouseType, StringComparison.Ordinal) ? Serving(designs, size, width, depth) : 0;
             for (int i = 0; i < designs.Count; i++)
             {
                 if (Candidate(designs[i], size, width, depth, serving))
@@ -548,25 +548,30 @@ namespace RealLifeOverhaul.NewBuildings
             return -1;
         }
 
-        private static bool Candidate(DesignEntry d, string size, float width, float depth, bool serving)
+        // serving 0: any design; 1: only one whose garage doors all look out on its street; 2: only such a design with a door for each
+        // vehicle slot of the structure.
+        private static bool Candidate(DesignEntry d, string size, float width, float depth, int serving)
         {
-            return string.Equals(d.Size, size, StringComparison.Ordinal) && !d.Whole && Copyable(d) && Fits(d, width, depth) && (!serving || GateRules.Serves(d));
+            return string.Equals(d.Size, size, StringComparison.Ordinal) && !d.Whole && Copyable(d) && Fits(d, width, depth)
+                   && (serving == 0 || (GateRules.Serves(d) && (serving == 1 || d.Gates.Length >= GateRules.Bays(size))));
         }
 
-        // True when a design of the size that fits has every garage door looking out on its street: a warehouse then takes only such a design.
-        private static bool AnyServing(IList<DesignEntry> designs, string size, float width, float depth)
+        // The strictest a warehouse can have where a design of the size fits: a design with every garage door looking out on its street and
+        // a door for each vehicle slot of the structure (2), else one whose doors look out on it (1), else any (0).
+        private static int Serving(IList<DesignEntry> designs, string size, float width, float depth)
         {
+            int level = 0;
             for (int i = 0; i < designs.Count; i++)
             {
-                if (Candidate(designs[i], size, width, depth, false) && GateRules.Serves(designs[i]))
+                if (Candidate(designs[i], size, width, depth, 0) && GateRules.Serves(designs[i]))
                 {
-                    return true;
+                    level = Math.Max(level, designs[i].Gates.Length >= GateRules.Bays(size) ? 2 : 1);
                 }
             }
-            return false;
+            return level;
         }
 
-        private static bool Pooled(DesignEntry d, string size, string type, bool byType, float least, float width, float depth, bool serving)
+        private static bool Pooled(DesignEntry d, string size, string type, bool byType, float least, float width, float depth, int serving)
         {
             return Candidate(d, size, width, depth, serving) && (!byType || string.Equals(d.Type, type, StringComparison.Ordinal)) && Across(d) >= least;
         }

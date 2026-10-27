@@ -92,29 +92,59 @@ namespace RealLifeOverhaul.Uptown
         }
 
         /// <summary>
-        /// True when a garage door of a design, stood on <paramref name="ground"/> as the engine stands it, would have its mouth over the
-        /// pole or the shelter of a bus stop (the poles' places in the world, <see cref="StreetsRules.StopPoles"/>): a stop is laid by the
-        /// bus network where the routes want it, so the warehouse takes a look whose doors are elsewhere.
+        /// True when a garage door of a design a warehouse of <paramref name="bays"/> vehicle slots keeps (a door whose id is below
+        /// them: CopyGame.Wire shuts the rest), stood on <paramref name="ground"/> as the engine stands it, would have its mouth over
+        /// the pole or the shelter of a bus stop (the poles' places in the world, <see cref="StreetsRules.StopPoles"/>): a stop is
+        /// laid by the bus network where the routes want it, so the warehouse takes a look whose doors are elsewhere.
         /// </summary>
-        public static bool TakesStop(DesignEntry d, MadeLot ground, IList<float> poleX, IList<float> poleZ)
+        public static bool TakesStop(DesignEntry d, MadeLot ground, int bays, IList<float> poleX, IList<float> poleZ)
         {
             if (d == null || d.Gates == null || poleX == null || poleZ == null)
             {
                 return false;
             }
             NewBuildingsRules.Place(d, ground, out float x, out float z, out float yaw);
-            var mouth = new List<GroundRect>(1);
             for (int i = 0; i < d.Gates.Length; i++)
             {
-                GateRules.World(x, z, yaw, d.Gates[i].X, d.Gates[i].Z, out float doorX, out float doorZ);
-                mouth.Clear();
-                Gate(doorX, doorZ, GateRules.Quarter(yaw, d.Gates[i].Facing), d.Gates[i].Width, mouth);
-                for (int k = 0; k < poleX.Count && k < poleZ.Count; k++)
+                if (d.Gates[i].Id < bays && MouthOnStop(d.Gates[i], x, z, yaw, poleX, poleZ))
                 {
-                    if (Holds(mouth, poleX[k], poleZ[k], StopReach))
-                    {
-                        return true;
-                    }
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// How many of the garage doors a warehouse of <paramref name="bays"/> vehicle slots keeps a car can use: the door looks out on
+        /// the street the design is stood to (GateRules.Serves) and its mouth is clear of every bus stop's pole and shelter. A
+        /// warehouse is whole when this is as many as its vehicle slots.
+        /// </summary>
+        public static int UsableDoors(DesignEntry d, MadeLot ground, int bays, IList<float> poleX, IList<float> poleZ)
+        {
+            if (d == null || d.Gates == null)
+            {
+                return 0;
+            }
+            NewBuildingsRules.Place(d, ground, out float x, out float z, out float yaw);
+            int usable = 0;
+            for (int i = 0; i < d.Gates.Length; i++)
+            {
+                usable += d.Gates[i].Id < bays && GateRules.Serves(d, d.Gates[i]) && !MouthOnStop(d.Gates[i], x, z, yaw, poleX, poleZ) ? 1 : 0;
+            }
+            return usable;
+        }
+
+        // True when the mouth of one door of a design stood at (x, z) turned by yaw has a pole of the list within a stop's reach of it.
+        private static bool MouthOnStop(NewBuildings.Gate g, float x, float z, float yaw, IList<float> poleX, IList<float> poleZ)
+        {
+            GateRules.World(x, z, yaw, g.X, g.Z, out float doorX, out float doorZ);
+            var mouth = new List<GroundRect>(1);
+            Gate(doorX, doorZ, GateRules.Quarter(yaw, g.Facing), g.Width, mouth);
+            for (int k = 0; poleX != null && poleZ != null && k < poleX.Count && k < poleZ.Count; k++)
+            {
+                if (Holds(mouth, poleX[k], poleZ[k], StopReach))
+                {
+                    return true;
                 }
             }
             return false;

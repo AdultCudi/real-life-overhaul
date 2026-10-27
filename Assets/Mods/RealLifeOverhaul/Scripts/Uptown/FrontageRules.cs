@@ -41,9 +41,9 @@ namespace RealLifeOverhaul.Uptown
             public bool Sides;      // the pick looks at its sides and its depth; off, the pick is the one made before 27 Oct 2026
             public float Depth;     // m: the lot's depth, a design leaves a yard when it is this much shallower than BackLeast
             public bool Gates;      // a warehouse's lot: only a look whose garage doors all look out on its street (GateRules.Serves), so a vehicle drives in from it
-            public ICollection<DesignEntry> Blocked;   // and not one of these, whose doors would have their mouth over the pole or shelter of a bus stop at this lot
+            public ICollection<DesignEntry> Blocked;   // and not one of these, which have fewer doors than its structure has vehicle slots or whose doors would have their mouth over a bus stop
 
-            /// <summary>True when the design may be this lot's look: any, but for a warehouse's, whose garage doors must be a way in from the street and clear of a bus stop.</summary>
+            /// <summary>True when the design may be this lot's look: any, but for a warehouse's, whose doors must lead in from the street, one for each slot, clear of a bus stop.</summary>
             public bool Takes(DesignEntry d)
             {
                 return !Gates || (GateRules.Serves(d) && (Blocked == null || !Blocked.Contains(d)));
@@ -359,7 +359,7 @@ namespace RealLifeOverhaul.Uptown
                 float along = Middle(lot);
                 if (want.Gates)
                 {
-                    want.Blocked = StopBlocked(designs, Ground(lot, along, lot.Width + 0.01f, lot.Depth, 0f), ref poleX, ref poleZ);
+                    want.Blocked = StopBlocked(designs, Ground(lot, along, lot.Width + 0.01f, lot.Depth, 0f), GateRules.Bays(spec.Size), ref poleX, ref poleZ);
                 }
                 int look = string.IsNullOrEmpty(spec.Design) ? Look(designs, spec.Size, spec.Version, spec.Type, lot.Width, lot.Depth, spec.Id, want) : -1;
                 if (look < 0 && !string.IsNullOrEmpty(spec.Design))
@@ -398,11 +398,13 @@ namespace RealLifeOverhaul.Uptown
             return placed;
         }
 
-        // The designs whose garage doors, stood in the middle of the ground, would have their mouth over the pole or the shelter of a bus
-        // stop the routes want there (MouthRules.TakesStop): a warehouse does not wear them, or a truck would find the stop in its way.
-        // Null when none does, and when every design that serves the street and fits the ground would (the stop is then the bus network's
-        // to move, as the stops it lays move to the pavement that is free).
-        private static HashSet<DesignEntry> StopBlocked(IList<DesignEntry> designs, MadeLot ground, ref List<float> poleX, ref List<float> poleZ)
+        // The designs a warehouse of the given vehicle slots does not wear, of those that serve the street and fit the ground: those with
+        // fewer garage doors than slots (a slot no car can be driven into) and those whose kept doors, stood in the middle of the
+        // ground, would have their mouth over the pole or the shelter of a bus stop the routes want there (MouthRules.TakesStop), or a
+        // truck would find the stop in its way. In that order of weight: where no look has the doors and keeps clear of the stops, the
+        // ones with the doors (the stop is then the bus network's to move, as the stops it lays move to the pavement that is free);
+        // where none has the doors, any that serves. Null when nothing is to be kept off.
+        private static HashSet<DesignEntry> StopBlocked(IList<DesignEntry> designs, MadeLot ground, int bays, ref List<float> poleX, ref List<float> poleZ)
         {
             if (poleX == null)
             {
@@ -410,8 +412,8 @@ namespace RealLifeOverhaul.Uptown
                 poleZ = new List<float>(64);
                 StreetsRules.StopPoles(poleX, poleZ);
             }
-            HashSet<DesignEntry> blocked = null;
-            int clear = 0;
+            HashSet<DesignEntry> fewDoors = null, fewOrStop = null;
+            int enough = 0, clear = 0;
             for (int i = 0; i < designs.Count; i++)
             {
                 DesignEntry d = designs[i];
@@ -419,17 +421,22 @@ namespace RealLifeOverhaul.Uptown
                 {
                     continue;
                 }
-                if (MouthRules.TakesStop(d, ground, poleX, poleZ))
+                bool few = d.Gates.Length < bays;
+                bool stop = !few && MouthRules.TakesStop(d, ground, bays, poleX, poleZ);
+                enough += few ? 0 : 1;
+                clear += few || stop ? 0 : 1;
+                if (few)
                 {
-                    blocked = blocked ?? new HashSet<DesignEntry>();
-                    blocked.Add(d);
+                    fewDoors = fewDoors ?? new HashSet<DesignEntry>();
+                    fewDoors.Add(d);
                 }
-                else
+                if (few || stop)
                 {
-                    clear++;
+                    fewOrStop = fewOrStop ?? new HashSet<DesignEntry>();
+                    fewOrStop.Add(d);
                 }
             }
-            return clear > 0 ? blocked : null;
+            return clear > 0 ? fewOrStop : enough > 0 ? fewDoors : null;
         }
 
         // Where no design of its own size fits its spaces: the widest of any size with as many ways in that does, one picked by

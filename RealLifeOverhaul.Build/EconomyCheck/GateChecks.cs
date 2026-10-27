@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using RealLifeOverhaul;
 using RealLifeOverhaul.Landmarks;
@@ -126,6 +127,7 @@ internal static partial class Program
         GateLive();
         GateServes();
         GatePlan(designs);
+        GateWeighing();
         GateLanes();
         GateParks(designs);
         GateWhole();
@@ -134,12 +136,6 @@ internal static partial class Program
     }
 
     // ---------------------------------------------------------------- the census
-
-    // The vehicle slots the game gives a warehouse structure (BuildingSizeData.numberOfVehicleSlots, Build 3682): H one, I, P and Q two.
-    private static int GateBays(string size)
-    {
-        return size == "ba:buildingsize_h" ? 1 : size == "ba:buildingsize_i" || size == "ba:buildingsize_p" || size == "ba:buildingsize_q" ? 2 : 0;
-    }
 
     private static void GateCensus(List<DesignEntry> designs)
     {
@@ -160,7 +156,7 @@ internal static partial class Program
                     servingH += can && d.Size == "ba:buildingsize_h" ? 1 : 0;
                     servingI += can && d.Size == "ba:buildingsize_i" ? 1 : 0;
                 }
-                bays &= d.Type != GateRules.WarehouseType || d.Gates.Length == GateBays(d.Size);
+                bays &= d.Type != GateRules.WarehouseType || d.Gates.Length == GateRules.Bays(d.Size);
                 var seen = new HashSet<int>();
                 foreach (Gate g in d.Gates)
                 {
@@ -282,8 +278,13 @@ internal static partial class Program
         var poleX = new List<float>(64);
         var poleZ = new List<float>(64);
         StreetsRules.StopPoles(poleX, poleZ);
+        var wasX = new List<float>(64);
+        var wasZ = new List<float>(64);
+        StreetsRules.StopPoles(wasX, wasZ, false);   // the stops as the plan had them, every one midway along its row
 
-        int warehouses = 0, named = 0, serving = 0, bayless = 0, was = 0, doorCount = 0, wrongWay = 0, offFrontage = 0, wrongReach = 0, meets = 0, onPoles = 0, onPolesWas = 0;
+        int warehouses = 0, named = 0, serving = 0, bayless = 0, was = 0, doorCount = 0, wrongWay = 0, offFrontage = 0, wrongReach = 0, meets = 0, onPoles = 0;
+        int slots = 0, usableDoors = 0, short1 = 0, shortWas = 0;
+        var shorts = new List<string>();
         var looks = new SortedDictionary<string, int>(StringComparer.Ordinal);
         var mouth = new List<GroundRect>(1);
         foreach (MadeSpec s in specs.Values)
@@ -298,10 +299,6 @@ internal static partial class Program
             var asked = new FrontageRules.Want { Ends = ends.TryGetValue(s.Id, out LotEnds open) ? open : default, Facing = lot.Facing, Sides = true, Depth = lot.Depth };
             int old = FrontageRules.Look(designs, s.Size, s.Version, s.Type, lot.Width, lot.Depth, s.Id, asked);
             was += old >= 0 && !GateRules.Serves(designs[old]) ? 1 : 0;
-            // And the look it would have had, serving its street but with no regard to the bus stops: how many of those would have a stop's pole in their mouth.
-            asked.Gates = true;
-            int plain = FrontageRules.Look(designs, s.Size, s.Version, s.Type, lot.Width, lot.Depth, s.Id, asked);
-            onPolesWas += plain >= 0 && MouthRules.TakesStop(designs[plain], new MadeLot(lot.X, lot.Z, lot.Facing, lot.Width + 0.01f, lot.Depth), poleX, poleZ) ? 1 : 0;
             MadeLot ground = s.Lots[0];
             int d = NewBuildingsRules.Pick(designs, s.Size, s.Type, s.Design, ground.Width, ground.Depth, s.Id);
             if (d < 0)
@@ -311,7 +308,18 @@ internal static partial class Program
             named++;
             DesignEntry design = designs[d];
             serving += GateRules.Serves(design) ? 1 : 0;
-            bayless += design.Gates == null || design.Gates.Length < GateBays(s.Size) ? 1 : 0;
+            int bays = GateRules.Bays(s.Size);
+            bayless += design.Gates == null || design.Gates.Length < bays ? 1 : 0;
+            // The doors a car can use: kept (a slot of the structure behind it), looking out on the street, its mouth clear of every stop's pole and shelter.
+            int usable = MouthRules.UsableDoors(design, ground, bays, poleX, poleZ);
+            slots += bays;
+            usableDoors += Math.Min(usable, bays);
+            if (usable < bays)
+            {
+                short1++;
+                shorts.Add(s.Street.Substring(s.Street.LastIndexOf('_') + 1) + " " + s.Number + " (" + usable + " of " + bays + ")");
+            }
+            shortWas += MouthRules.UsableDoors(design, ground, bays, wasX, wasZ) < bays ? 1 : 0;
             string look = design.Name + " (" + design.Size.Substring(design.Size.LastIndexOf('_') + 1).ToUpperInvariant() + ")";
             looks[look] = looks.TryGetValue(look, out int n) ? n + 1 : 1;
             NewBuildingsRules.Place(design, ground, out float x, out float z, out float yaw);
@@ -354,18 +362,24 @@ internal static partial class Program
         {
             words.Add(k.Value + " " + k.Key);
         }
-        Check(warehouses == 35 && named == warehouses && serving == warehouses && bayless <= 2,
+        Check(warehouses == 35 && named == warehouses && serving == warehouses && bayless == 0,
             "gates: on the real plan all " + warehouses + " warehouses wear a look the engine takes by name (" + named + ") whose garage doors all look out on their street (" + serving
-            + "), a door for each of their structure's bays but " + bayless + " (where the only look clear of a bus stop has fewer doors than bays): " + string.Join(", ", words));
+            + "), a door for each of their structure's bays (" + (warehouses - bayless) + "): " + string.Join(", ", words));
+        Check(slots >= 50 && short1 == 0 && usableDoors == slots,
+            "gates: every warehouse has as many street-facing, unblocked doors as its vehicle slots (" + usableDoors + " doors a car can use for " + slots + " slots in " + warehouses
+            + " warehouses; short: " + (short1 == 0 ? "none" : string.Join(", ", shorts)) + ")");
+        Check(shortWas >= 1,
+            "gates: with the bus stops where the plan had them, midway along their rows, the same looks would leave " + shortWas + " warehouse(s) a door short: the stop on Lake Street had to move");
+        GateEveryLot(designs, plan, poleX, poleZ);
+        GateStop(designs, specs, poleX, poleZ);
         Check(was >= 10,
             "gates: the pick that does not ask after the doors would leave " + was + " of the " + warehouses + " warehouses in a look with no door a car can use (an office's, a shop's, a home's, or a warehouse's door on a side wall)");
         Check(doorCount >= 40 && wrongWay == 0 && offFrontage == 0,
             "gates: each of the " + doorCount + " garage doors of the warehouses looks out on the street its lot fronts (" + wrongWay + " the other way) and stands on its lot's frontage (" + offFrontage + " off it)");
         Check(wrongReach == 0 && meets == 0,
             "gates: the mouth of each door runs from the door over the pavement to 3 m past the kerb (" + wrongReach + " that do not) and meets no other building or filler (" + meets + ")");
-        Check(onPoles == 0 && onPolesWas >= 1 && poleX.Count >= 20,
-            "gates: no door's mouth takes the pole or the shelter of a stop the routes want (" + onPoles + " of the " + poleX.Count + " poles within " + MouthRules.StopReach
-            + " m of a mouth); a look picked with no regard to the stops would have (" + onPolesWas + " of the warehouses)");
+        Check(onPoles == 0 && poleX.Count >= 20,
+            "gates: no door's mouth takes the pole or the shelter of a stop the routes want (" + onPoles + " of the " + poleX.Count + " poles within " + MouthRules.StopReach + " m of a mouth)");
 
         // The mouth reaches as far past the kerb as the wholesale store's: the same 3 m over the kerb's parking lane.
         BigPlace store = BigPlacesRules.Of(BigKind.Wholesale);
@@ -384,6 +398,196 @@ internal static partial class Program
             same |= mine.Count == 1 && (Near(b.Z2, mine[0].Z2, 0.02f) || Near(b.Z1, mine[0].Z1, 0.02f) || Near(b.X2, mine[0].X2, 0.02f) || Near(b.X1, mine[0].X1, 0.02f));
         }
         Check(found && big.Count > 0 && same, "gates: a garage door's mouth reaches as far past the kerb as the wholesale store's (" + BigPlacesRules.MouthIntoRoad + " m)");
+    }
+
+    // Every warehouse the plan can put on any lot of either district, not only the 35 of the first day: each lot is offered its class's
+    // warehouse structures, and the streets' own rules give the one looking at that lot alone, as a finished building stands in play
+    // (LifeDirector.StandOne). Its look has a street-facing door for each vehicle slot of the structure, clear of the bus stops.
+    private static void GateEveryLot(List<DesignEntry> designs, List<BuildingsLot> plan, List<float> poleX, List<float> poleZ)
+    {
+        int combos = 0, twoBay = 0, short2 = 0;
+        var shorts = new List<string>();
+        foreach (BuildingsLot lot in plan)
+        {
+            if (BigPlacesRules.Holds(lot.Id))
+            {
+                continue;   // the ground of a special place copied whole, its own doors and mouths
+            }
+            foreach (BuildingsStructure o in UptownOptions(lot))
+            {
+                if (o.Type != GateRules.WarehouseType)
+                {
+                    continue;
+                }
+                var spec = new MadeSpec
+                {
+                    Id = lot.Id, Street = lot.Street, Number = lot.Number, Size = o.Size, Version = o.Version, Type = o.Type, Life = true,
+                    Lots = new[] { new MadeLot(lot.X, lot.Z, lot.Facing, lot.Width, lot.Depth) }, Others = new MadeStructure[0], Design = BuildingsRules.LookOf(lot.Class)
+                };
+                FrontageRules.Plan(plan, id => string.Equals(id, lot.Id, StringComparison.Ordinal) ? spec : null, designs, new List<FrontFill>());
+                MadeLot ground = spec.Lots[0];
+                int d = NewBuildingsRules.Pick(designs, spec.Size, spec.Type, spec.Design, ground.Width, ground.Depth, spec.Id);
+                int bays = GateRules.Bays(o.Size);
+                int usable = d >= 0 ? MouthRules.UsableDoors(designs[d], ground, bays, poleX, poleZ) : 0;
+                combos++;
+                twoBay += bays == 2 ? 1 : 0;
+                if (usable < bays)
+                {
+                    short2++;
+                    shorts.Add(lot.Street.Substring(lot.Street.LastIndexOf('_') + 1) + " " + lot.Number + " " + NewBuildingsRules.StructureName(o.Size, o.Version) + " (" + usable + " of " + bays + ")");
+                }
+            }
+        }
+        Check(combos >= 30 && twoBay >= 15 && short2 == 0,
+            "gates: every warehouse has as many street-facing, unblocked doors as its vehicle slots on every lot of either district, whichever structure it is built with ("
+            + combos + " lots and warehouse structures, " + twoBay + " of two bays; short: " + (short2 == 0 ? "none" : string.Join(", ", shorts)) + ")");
+    }
+
+    // The bus stop on Lake Street's second row, wanted 12 m south of the middle of its row (StreetsRules.LakeStopAlong): the one stop the plan
+    // moved, still the buses' clear stretch of lane from the crossings (NavCheck's UptownStreetsCheck holds that for every stop and the reach of
+    // every corner), its poles and shelters clear of the entrance doors of the buildings beside it as the bus network wants them
+    // (TransitMap.Stops: the pole's 2.4 m round, the shelter's 3.2 m round it, 3.2 m ahead of the pole and 1.85 m further from the road).
+    private static void GateStop(List<DesignEntry> designs, Dictionary<string, MadeSpec> specs, List<float> poleX, List<float> poleZ)
+    {
+        const float poleClear = 2.4f + 0.3f, shelterClear = 3.2f + 0.5f, shelterAhead = 3.2f, shelterAside = 2.35f - 0.5f, junctionClear = 26f, streetStop = 19.6f;
+        var now = new List<TransitPlan.Route>(4);
+        var was = new List<TransitPlan.Route>(4);
+        StreetsRules.Routes(now);
+        StreetsRules.Routes(was, false);
+        var nowX = new List<float>();
+        var nowZ = new List<float>();
+        var wasX = new List<float>();
+        var wasZ = new List<float>();
+        StreetsRules.WantedPlaces(now, nowX, nowZ);
+        StreetsRules.WantedPlaces(was, wasX, wasZ);
+        float street = LayoutRules.StreetX(LayoutStreets.EastMost);
+        StreetsRules.OnStreet(LayoutStreets.EastMost, 2, out float midX, out float midZ);
+        int moved = 0;
+        bool lake = false;
+        float stopZ = float.NaN;
+        for (int i = 0; i < nowX.Count && i < wasX.Count; i++)
+        {
+            if (Math.Abs(nowX[i] - wasX[i]) > 0.001f || Math.Abs(nowZ[i] - wasZ[i]) > 0.001f)
+            {
+                moved++;
+                stopZ = nowZ[i];
+                lake = Math.Abs(nowX[i] - midX) < 0.001f && Math.Abs(wasZ[i] - midZ) < 0.001f && Math.Abs(nowZ[i] - (midZ - 12f)) < 0.001f;
+            }
+        }
+        Check(StreetsRules.LakeStopAlong == -12f && nowX.Count == wasX.Count && nowX.Count >= 15 && moved == 1 && lake && Math.Abs(midX - street) < 0.001f,
+            "gates: one stop of the plan is moved, the one on Lake Street's second row, 12 m south of the middle of its row, all the others where they were (" + moved + " moved, "
+            + nowX.Count + " places wanted)");
+        float toAvenue = Math.Min(stopZ - LayoutRules.AvenueZ(1), LayoutRules.AvenueZ(2) - stopZ);
+        Check(toAvenue - streetStop >= junctionClear && stopZ > LayoutRules.AvenueZ(1) && stopZ < LayoutRules.AvenueZ(2),
+            "gates: the moved stop keeps the buses' clear stretch of plain lane from the crossings either side (" + (toAvenue - streetStop).ToString("F1") + " m past the lanes' ends, " + junctionClear + " wanted)");
+        // The entrance doors of the buildings standing in the plan, and how near the two poles and the shelters come to them.
+        var doorX = new List<float>(600);
+        var doorZ = new List<float>(600);
+        foreach (MadeSpec s in specs.Values)
+        {
+            int d = NewBuildingsRules.Pick(designs, s.Size, s.Type, s.Design, s.Lots[0].Width, s.Lots[0].Depth, s.Id);
+            if (d >= 0)
+            {
+                NewBuildingsRules.Place(designs[d], s.Lots[0], out float x, out float z, out float yaw);
+                NewBuildingsRules.DoorAt(designs[d], x, z, yaw, out float dx, out float dz);
+                doorX.Add(dx);
+                doorZ.Add(dz);
+            }
+        }
+        float poleNear = float.MaxValue, shelterNear = float.MaxValue;
+        for (int side = -1; side <= 1; side += 2)
+        {
+            // east kerb (side +1): the buses going north, the shelter ahead of the pole to the north; west kerb: the other way
+            float px = street + side * StreetsRules.StopKerbStreet, sx = px + side * shelterAside, sz = stopZ + side * shelterAhead;
+            for (int k = 0; k < doorX.Count; k++)
+            {
+                poleNear = Math.Min(poleNear, (float)Math.Sqrt((doorX[k] - px) * (doorX[k] - px) + (doorZ[k] - stopZ) * (doorZ[k] - stopZ)));
+                shelterNear = Math.Min(shelterNear, (float)Math.Sqrt((doorX[k] - sx) * (doorX[k] - sx) + (doorZ[k] - sz) * (doorZ[k] - sz)));
+            }
+        }
+        Check(doorX.Count > 300 && poleNear >= poleClear && shelterNear >= shelterClear,
+            "gates: the moved stop's poles stand " + poleNear.ToString("F1") + " m and its shelters " + shelterNear.ToString("F1") + " m from the nearest entrance door of a building beside it ("
+            + poleClear.ToString("F1") + " and " + shelterClear.ToString("F1") + " wanted)");
+        bool onTheOldPlace = false;
+        for (int k = 0; k < poleX.Count; k++)
+        {
+            onTheOldPlace |= Math.Abs(poleX[k] - (street + StreetsRules.StopKerbStreet)) < 0.01f && Math.Abs(poleZ[k] - midZ) < 0.01f;
+        }
+        Check(!onTheOldPlace, "gates: no pole is left where the stop on Lake Street stood, at the middle of its row");
+    }
+
+    // A made-up warehouse design 20.5 m across and 30 deep, its front on +Z, whose doors look out on the street, 1.65 m before the front, at the given
+    // places across it (m from its middle): the first is door 0 (the vehicle slot 1), the second door 1.
+    private static DesignEntry GateMade(string name, string size, params float[] across)
+    {
+        var d = new DesignEntry { Name = name, Size = size, Version = 1, Type = GateRules.WarehouseType, DoorX = 0f, DoorZ = 15f, DoorFacing = 0f, Uses = 1 };
+        NewBuildingsRules.Begin(d, -10.25f, 10.25f, -15f, 15f, 9f);
+        d.Gates = new Gate[across.Length];
+        for (int i = 0; i < across.Length; i++)
+        {
+            d.Gates[i] = new Gate { Id = i, X = across[i], Z = 16.65f, Facing = 0f, Width = 3.25f, Depth = 3.25f };
+        }
+        return d;
+    }
+
+    // How a warehouse's look is weighed where a bus stop stands in front of its lot (FrontageRules.StopBlocked): a look with a door for each vehicle
+    // slot that keeps clear of the stop first; where none does, one with the doors (the stop is the bus network's to move); where none has the
+    // doors, any that serves the street. On a lot of 21 m by 35 m 12 m north of Lake Street's moved stop, a two-bay warehouse (structure I1) is given
+    // three designs of the made-up kind: A with two doors, one 4 m from the stop; B with one door and C with two doors, both clear of it.
+    private static void GateWeighing()
+    {
+        float street = LayoutRules.StreetX(LayoutStreets.EastMost);
+        StreetsRules.OnStreet(LayoutStreets.EastMost, 2, out _, out float midZ);
+        float stopZ = midZ + StreetsRules.LakeStopAlong;
+        string two = "ba:buildingsize_i", one = "ba:buildingsize_h";
+        DesignEntry byTheStop = GateMade("made-up A", two, -8f, 4f);       // its door 0 stands 4 m from the stop along the street
+        DesignEntry oneDoor = GateMade("made-up B", one, 8f);
+        DesignEntry clear = GateMade("made-up C", two, -2f, 8f);           // both doors 10 m and more from the stop
+        DesignEntry oneDoorTwoBays = GateMade("made-up D", two, 8f);       // a structure I1's look of its own size with a door short
+        var chosen = new Dictionary<string, string>(StringComparer.Ordinal);
+        string[][] cases =
+        {
+            new[] { "all", "A", "B", "C" }, new[] { "no clear two-door look", "A", "B" }, new[] { "no two-door look", "D" },
+            new[] { "a one-door look of its own size", "A", "D" }
+        };
+        foreach (string[] c in cases)
+        {
+            var designs = new List<DesignEntry>();
+            foreach (string which in c.Skip(1))
+            {
+                designs.Add(which == "A" ? byTheStop : which == "B" ? oneDoor : which == "C" ? clear : oneDoorTwoBays);
+            }
+            var names = new SortedSet<string>(StringComparer.Ordinal);
+            for (int k = 0; k < 24; k++)
+            {
+                var lot = new BuildingsLot
+                {
+                    Id = "weighing_" + k, Street = "reallife:street_uptown_lake", Number = 2 + k * 2, X = street + LayoutRules.StreetHalf + 17.5f, Z = stopZ + 12f, Facing = 270f, Width = 21, Depth = 35,
+                    Spaces = 3, Strip = 1, Index = 0
+                };
+                var spec = new MadeSpec
+                {
+                    Id = lot.Id, Street = lot.Street, Number = lot.Number, Size = two, Version = 1, Type = GateRules.WarehouseType, Life = true,
+                    Lots = new[] { new MadeLot(lot.X, lot.Z, lot.Facing, lot.Width, lot.Depth) }, Others = new MadeStructure[0], Design = string.Empty
+                };
+                FrontageRules.Plan(new List<BuildingsLot> { lot }, id => string.Equals(id, lot.Id, StringComparison.Ordinal) ? spec : null, designs, new List<FrontFill>());
+                names.Add(spec.Design);
+            }
+            chosen[c[0]] = string.Join("+", names);
+        }
+        Check(chosen["all"] == "made-up C" && chosen["no clear two-door look"] == "made-up A" && chosen["no two-door look"] == "made-up D" && chosen["a one-door look of its own size"] == "made-up A",
+            "gates: a warehouse of two bays is given a look with two doors that keeps clear of a bus stop; failing that one with the two doors (the stop is the bus network's to move); "
+            + "failing that one that serves (" + string.Join("; ", chosen.Select(k => k.Key + ": " + k.Value)) + ")");
+        // And the engine's own pick for a warehouse that names none: a look with a door for each vehicle slot of the structure before one with fewer.
+        var offered = new List<DesignEntry> { oneDoorTwoBays, byTheStop, clear };
+        offered.Sort(NewBuildingsRules.CompareDesigns);
+        bool each = true;
+        for (int k = 0; k < 24; k++)
+        {
+            int d = NewBuildingsRules.Pick(offered, two, GateRules.WarehouseType, null, 21f, 35f, "engine_" + k);
+            each &= d >= 0 && offered[d].Gates.Length == 2;
+        }
+        Check(each, "gates: the engine's own pick for a warehouse of two bays that names no look takes one with two doors where there is one");
     }
 
     // ---------------------------------------------------------------- the parking lanes round a mouth
@@ -551,10 +755,11 @@ internal static partial class Program
             "gates sources: every design is measured for its garage doors and its car park from the building itself, once, behind the loading screen");
         Check(frontage.Contains("Gates = spec.Type == GateRules.WarehouseType") && frontage.Contains("want.Takes(designs[i])") && frontage.Contains("return want.Takes(d) && ")
               && Occurs(frontage, "want.Alone()") >= 2 && frontage.Contains("return !Gates || (GateRules.Serves(d) && (Blocked == null || !Blocked.Contains(d)));")
-              && frontage.Contains("want.Blocked = StopBlocked(designs, ") && frontage.Contains("MouthRules.TakesStop(d, ground, poleX, poleZ)") && frontage.Contains("alone.Blocked = null;"),
+              && frontage.Contains("want.Blocked = StopBlocked(designs, ") && frontage.Contains("MouthRules.TakesStop(d, ground, bays, poleX, poleZ)") && frontage.Contains("alone.Blocked = null;")
+              && frontage.Contains("GateRules.Bays(spec.Size)") && frontage.Contains("bool few = d.Gates.Length < bays;"),
             "gates sources: a warehouse's lot asks for a look whose doors serve its street and keep clear of a bus stop in every pick (the look, the widest that fits), and a filler beside or behind it does not");
         string pick = MemberText(rules, "public static int Pick(IList<DesignEntry> designs, string size, string type, string named, float width, float depth, string id, bool whole)");
-        Check(pick.Contains("string.Equals(type, GateRules.WarehouseType, StringComparison.Ordinal) && AnyServing(designs, size, width, depth)") && rules.Contains("(!serving || GateRules.Serves(d))")
+        Check(pick.Contains("string.Equals(type, GateRules.WarehouseType, StringComparison.Ordinal) ? Serving(designs, size, width, depth) : 0") && rules.Contains("(serving == 1 || d.Gates.Length >= GateRules.Bays(size))")
               && MemberText(copies, "public static bool Fitting(").Contains("servingFits > 0 && servingFits < Fits.Count") && MemberText(copies, "public static bool Fitting(").Contains("!GateRules.Serves(designs[Fits[i]])"),
             "gates sources: the engine's own pick prefers such a look for a warehouse that names none, and the construction game is offered only such designs for a warehouse where one fits");
 

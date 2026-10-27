@@ -46,11 +46,11 @@ namespace RealLifeOverhaul.Uptown
             }
             if (f.GatesWanted == 0)
             {
-                return "its look has no garage door a vehicle slot of its structure stands behind";
+                return "its structure has no vehicle slot";
             }
             if (f.GatesWhole != f.GatesWanted)
             {
-                return f.GatesWhole + " of its " + f.GatesWanted + " garage door(s) are whole (a component, its trigger and the closed door)";
+                return "only " + f.GatesWhole + " of its structure's " + f.GatesWanted + " vehicle slots have a garage door whole (a component, its trigger and the closed door)";
             }
             if (!f.GatesServe)
             {
