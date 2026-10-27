@@ -22429,7 +22429,7 @@
   "reallife_hire_test_orphan_fail": "测试失败：读取城市商家时被一条没有建筑的记录绊住了。日志中写明了是哪一处。",
   "reallife_hire_test_orphan_off": "请先读取存档。此测试不能在 Going Public 联机中运行。",
   "reallife_changes_next_title": "下一版本",
-  "reallife_changes_next": "已修复：模组移除一棵树后，城市地图无法打开（按 M 只会让屏幕变暗）。",
+  "reallife_changes_next": "还没有。",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "已修复：当所有能容纳公用事业办公室的建筑都归你所有时，电力和供水账户改在公用事业应用中通过电话申请和恢复，价格不变，通知也会这样说明；一旦有建筑空出，办公室重新开放，应用会告诉你地点。 已修复：撤回申请后再次申请同一职位时，职业应用会打开已撤回的申请，无法参加面试。现在每份申请都有自己的一行，面试、录用和撤回都作用于有效的那份。 已修复：存档中若有一条营业记录对应的建筑在城市中不存在（可能是其他模组留下的），科技行业不再在每次读档时被关闭。模组现在在读取城市的商家时会跳过这类记录，在日志中只提一次它的地址，并且不改动它。",
   "reallife_co_mass_raise": "加薪",
@@ -25902,5 +25902,7 @@
   "reallife_maptrees_test_start": "地图树木测试：请关闭此菜单。测试会复制一棵树并将其毁掉，然后自动打开并关闭地图。",
   "reallife_maptrees_test_pass": "地图树木测试通过：游戏列表中有被毁掉的树时，地图仍能正常打开和关闭。Player.log 中有记录。",
   "reallife_maptrees_test_fail": "地图树木测试失败：游戏列表中有被毁掉的树时，地图未能正常打开。Player.log 中有原因。",
-  "reallife_maptrees_test_none": "无法运行地图树木测试。请读取存档，关闭所有菜单后再试。"
+  "reallife_maptrees_test_none": "无法运行地图树木测试。请读取存档，关闭所有菜单后再试。",
+  "reallife_changes_060_1_title": "0.60.1",
+  "reallife_changes_060_1": "已修复：模组移除一棵树后，城市地图无法打开（按 M 只会让屏幕变暗）。"
 }
