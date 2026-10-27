@@ -132,7 +132,13 @@ namespace RealLifeOverhaul
             LastMomCallDay = (int)ReadFloat(data, KeyMomDay);
             LastMomGiftDay = (int)ReadFloat(data, KeyMomGiftDay);
             // Absent from older saves: nothing is owed.
-            PendingFine = Mathf.Max(0, (int)ReadFloat(data, KeyPendingFine));
+            float pending = ReadFloat(data, KeyPendingFine);
+            PendingFine = (int)Mathf.Clamp(float.IsNaN(pending) ? 0f : pending, 0f, PendingFineMost);
+            if (!float.IsNaN(pending) && pending > PendingFineMost)
+            {
+                Logger?.Warn("State loaded: the hit-and-run bill in the save, " + pending.ToString("F0", CultureInfo.InvariantCulture)
+                             + ", was past any bill the mod writes; it is held to " + PendingFineMost + ".");
+            }
             PendingFineDue = ReadFloat(data, KeyPendingFineDue);
 
             Leisure.LeisureState.ReadSave(data);   // records, landmarks, the clothes bought, outfits
@@ -237,8 +243,14 @@ namespace RealLifeOverhaul
                 return;
             }
             PendingFineDue = PendingFine > 0 ? Mathf.Min(PendingFineDue, dueMinutes) : dueMinutes;
-            PendingFine += amount;
+            PendingFine = WholeMoney.Add(PendingFine, amount, PendingFineMost);
         }
+
+        /// <summary>
+        /// The most a hit-and-run bill can come to, at today's prices: a pursuit's damages and the fines for the people hurt,
+        /// several times over. A sum kept in a save is held to it.
+        /// </summary>
+        public static int PendingFineMost => Prices.At(1000000);
 
         public static void ClearPendingFine()
         {

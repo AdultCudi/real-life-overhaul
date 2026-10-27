@@ -22429,7 +22429,7 @@
   "reallife_hire_test_orphan_fail": "测试失败：读取城市商家时被一条没有建筑的记录绊住了。日志中写明了是哪一处。",
   "reallife_hire_test_orphan_off": "请先读取存档。此测试不能在 Going Public 联机中运行。",
   "reallife_changes_next_title": "下一版本",
-  "reallife_changes_next": "手机上的新经济应用以仪表盘形式展示城市经济，可选择自带的深色或浅色界面，内容包括经济研判、一周和一个月变化的主要指标卡片、物价、通胀和银行利率图表、就业情况、按客流吸引力排序的各个区域、股市指数及其板块，以及市政账目。存档中保留每日历史，并根据数据给出简明建议。财务应用中的城市页面也已移入其中。",
+  "reallife_changes_next": "手机上的新经济应用以仪表盘形式展示城市经济，可选择自带的深色或浅色界面，内容包括经济研判、一周和一个月变化的主要指标卡片、物价、通胀和银行利率图表、就业情况、按客流吸引力排序的各个区域、股市指数及其板块，以及市政账目。存档中保留每日历史，并根据数据给出简明建议。财务应用中的城市页面也已移入其中。已修复：现金超过 21 亿时，生活事件可能一次扣走 21 亿，在账目里显示为车辆开销，原因是现金大到模组读取金额用的数字装不下。现在模组的每笔扣款都不会超过该项目本身的花费和你的现金；账目中已有的这种扣款会退还一次；另有新测试会在你的车上检查车辆开销规则。",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "已修复：当所有能容纳公用事业办公室的建筑都归你所有时，电力和供水账户改在公用事业应用中通过电话申请和恢复，价格不变，通知也会这样说明；一旦有建筑空出，办公室重新开放，应用会告诉你地点。 已修复：撤回申请后再次申请同一职位时，职业应用会打开已撤回的申请，无法参加面试。现在每份申请都有自己的一行，面试、录用和撤回都作用于有效的那份。 已修复：存档中若有一条营业记录对应的建筑在城市中不存在（可能是其他模组留下的），科技行业不再在每次读档时被关闭。模组现在在读取城市的商家时会跳过这类记录，在日志中只提一次它的地址，并且不改动它。",
   "reallife_co_mass_raise": "加薪",
@@ -25713,5 +25713,11 @@
   "reallife_econapp_places_shops": "你的企业",
   "reallife_econapp_places_estates": "你的建筑",
   "reallife_econapp_places_game_value": "游戏中的价值 {amount}",
-  "reallife_econapp_places_more": "另有 {n} 项"
+  "reallife_econapp_places_more": "另有 {n} 项",
+  "reallife_test_vehicle_costs": "在我的车上检查车辆开销规则",
+  "reallife_test_vehicle_costs_pass": "车辆开销：已检查 {count} 辆车和所有最坏情况，全部通过（PASS）。没有扣任何钱。",
+  "reallife_test_vehicle_costs_fail": "车辆开销：有 {failed} 项检查未通过（FAIL）。详情在 Player.log 中的 Vehicle cost check 行。",
+  "reallife_wrapped_refunded": "模组的旧版本曾从富有玩家的现金中错扣 21 亿。你的记录中有 {count} 笔这样的扣款，共 {amount}，已退还。",
+  "reallife_transaction_wrapped_refund": "错误扣款已退还",
+  "reallife_transaction_wrapped_refund_label": "错误扣款已退还"
 }

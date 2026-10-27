@@ -22429,7 +22429,7 @@
   "reallife_hire_test_orphan_fail": "Teste falhou: uma leitura dos negócios da cidade tropeçou num registro sem prédio. O log diz qual.",
   "reallife_hire_test_orphan_off": "Carregue um save primeiro. Este teste não roda numa sessão do Going Public.",
   "reallife_changes_next_title": "Próxima versão",
-  "reallife_changes_next": "Um novo app Economia no celular mostra a economia da cidade em painéis, no seu visual escuro ou claro: um veredito sobre a economia, blocos de destaque com suas variações em uma semana e um mês, gráficos de preços, inflação e taxa do banco, empregos, todos os distritos ordenados pela atração sobre os clientes, o índice da bolsa e seus setores, e as contas da prefeitura, com um histórico diário no seu save e conselhos simples calculados a partir dos números. A página da cidade do app Finanças passou para ele.",
+  "reallife_changes_next": "Um novo app Economia no celular mostra a economia da cidade em painéis, no seu visual escuro ou claro: um veredito sobre a economia, blocos de destaque com suas variações em uma semana e um mês, gráficos de preços, inflação e taxa do banco, empregos, todos os distritos ordenados pela atração sobre os clientes, o índice da bolsa e seus setores, e as contas da prefeitura, com um histórico diário no seu save e conselhos simples calculados a partir dos números. A página da cidade do app Finanças passou para ele. Corrigido: com mais de 2,1 bilhões em dinheiro, um evento da vida podia levar 2,1 bilhões de uma vez, mostrado como custos de veículo, porque o dinheiro era grande demais para o número em que o mod o lê. Toda cobrança do mod agora fica dentro do que a coisa custa e dentro do seu dinheiro, uma cobrança dessas que já esteja nos seus registros é devolvida uma vez, e um novo teste confere os custos dos carros nos seus carros.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Corrigido: quando todos os prédios que poderiam abrigar o escritório de serviços públicos são seus, as contas de luz e água são pedidas e religadas no app Contas, por telefone, pelos mesmos preços, e os avisos dizem isso; quando um prédio fica livre o escritório volta a abrir e o app diz onde. Corrigido: depois de retirar uma candidatura e se candidatar de novo à mesma vaga, o app Carreira abria a retirada e não dava para chegar à entrevista. Cada candidatura agora tem sua própria linha, e a entrevista, a oferta e a retirada vão para a ativa. Corrigido: um save com um registro de negócio cujo prédio a cidade não tem (outro mod pode deixar um para trás) não desliga mais o setor de tecnologia a cada carregamento. O mod agora deixa esse registro de fora sempre que lê os negócios da cidade, cita o endereço dele uma vez no log e não muda nada nele.",
   "reallife_co_mass_raise": "Dar aumento",
@@ -25713,5 +25713,11 @@
   "reallife_econapp_places_shops": "Suas empresas",
   "reallife_econapp_places_estates": "Seus prédios",
   "reallife_econapp_places_game_value": "valor do jogo {amount}",
-  "reallife_econapp_places_more": "e mais {n}"
+  "reallife_econapp_places_more": "e mais {n}",
+  "reallife_test_vehicle_costs": "Conferir as regras de custo de veículo nos meus carros",
+  "reallife_test_vehicle_costs_pass": "Custos de veículo: {count} carro(s) e todos os piores casos conferidos. Tudo PASS. Nada foi cobrado.",
+  "reallife_test_vehicle_costs_fail": "Custos de veículo: {failed} conferência(s) FALHARAM. As linhas estão no Player.log, em Vehicle cost check.",
+  "reallife_wrapped_refunded": "Uma versão anterior do mod chegou a fazer uma cobrança errada de 2,1 bilhões do dinheiro de um jogador rico. {count} cobrança(s) dessas nos seus registros, {amount} no total, foram devolvidas.",
+  "reallife_transaction_wrapped_refund": "Cobrança errada devolvida",
+  "reallife_transaction_wrapped_refund_label": "Cobrança errada devolvida"
 }

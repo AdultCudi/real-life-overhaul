@@ -499,6 +499,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_test_car_fuel", () => CarOwnership.Instance?.TestFuel())
                 .AddButton("reallife_test_car_breakdown", () => CarOwnership.Instance?.TestBreakdown())
                 .AddButton("reallife_test_car_garage", () => CarOwnership.Instance?.TestGarage())
+                .AddButton("reallife_test_vehicle_costs", () => CarOwnership.Instance?.TestCosts())
                 .AddSplitter()
                 .AddHeader("reallife_leisure_header")
                 .AddToggle(Settings.LeisureId, "reallife_leisure_enabled", Settings.Leisure,
@@ -1396,7 +1397,7 @@ namespace RealLifeOverhaul
             Guard.Step("Law.LawDirector", () => Law.LawDirector.Logger = context.Logger);
             Guard.Step("TransitDirector", () => TransitDirector.Logger = context.Logger);
             Guard.Step("TaxiDirector", () => TaxiDirector.Logger = context.Logger);
-            Guard.Step("CarOwnership", () => CarOwnership.Logger = context.Logger);
+            Guard.Step("CarOwnership", () => { CarOwnership.Logger = context.Logger; CarGarage.Logger = context.Logger; });
             Guard.Step("Events.EventDirector", () => Events.EventDirector.Logger = context.Logger);
             Guard.Step("SocialDirector", () => SocialDirector.Logger = context.Logger);
             Guard.Step("BusinessDirector", () => BusinessDirector.Logger = context.Logger);

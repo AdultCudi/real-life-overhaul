@@ -123,7 +123,7 @@ namespace RealLifeOverhaul.Economy
             {
                 owed += save.Loans[i].remainingAmount;
             }
-            return Mathf.FloorToInt(Mathf.Max(0f, most - owed));
+            return WholeMoney.Floor(most - owed);   // a rich player's limit is past an int: saturated, never a cast (Core/WholeMoney)
         }
     }
 }

@@ -361,7 +361,7 @@ namespace RealLifeOverhaul
             bool easy = Settings.CarEasy;
             Vector3 velocity = _body != null ? _body.velocity : Vector3.zero;
             float speed = Mathf.Sqrt(velocity.x * velocity.x + velocity.z * velocity.z);
-            float km = speed * DriveTick / 1000f;
+            float km = VehicleCostRules.Km(speed, DriveTick);   // a speed from broken physics or a long hitch is not driving
             float damage = _car.vehicleInstance != null ? _car.vehicleInstance.damage : 0f;
             Pothole(speed, easy);
 
@@ -378,7 +378,7 @@ namespace RealLifeOverhaul
                 // The game's own repair shows as the damage figure dropping.
                 if (_record.LastDamage >= 0f && damage < _record.LastDamage - 0.03f)
                 {
-                    Repaired((_record.LastDamage - damage) * _price * 0.5f);
+                    Repaired(VehicleCostRules.Repair(_record.LastDamage - damage, _price));
                 }
                 _record.LastDamage = damage;
 
@@ -600,7 +600,8 @@ namespace RealLifeOverhaul
                 }
                 if (record.InsuredUntil > 0 && today > record.InsuredUntil && !first)
                 {
-                    float premium = Mathf.Round(CarRules.Premium(instance.VehicleType.price, record.Claims) * (1f + GarageBridges.InsuranceOf(instance.id)));   // a modified car costs more
+                    // One policy renews however many days have gone by (no back premiums).
+                    float premium = Mathf.Round(CarRules.PremiumOf(instance.VehicleType.price, record.Claims, GarageBridges.InsuranceOf(instance.id)));
                     var data = new Dictionary<string, string>(2) { { "car", name }, { "amount", TransitText.Money(premium) } };
                     if (GameManager.ChangeMoneySafe(-premium, new TransactionInfo("reallife_transaction_car_insurance"), null, null, force: false))
                     {

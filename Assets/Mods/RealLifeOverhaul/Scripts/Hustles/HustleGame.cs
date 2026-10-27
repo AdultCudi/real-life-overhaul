@@ -39,7 +39,7 @@ namespace RealLifeOverhaul.Hustles
         /// <summary>The hour as one number: day x 24 + hour.</summary>
         public static int Stamp => Day * 24 + Hour;
 
-        public static int Cash => Save != null ? Mathf.FloorToInt(Mathf.Max(0f, Save.Money)) : 0;
+        public static int Cash => Save != null ? WholeMoney.Floor(Save.Money) : 0;
 
         public static int Level => Prices.Level;
 

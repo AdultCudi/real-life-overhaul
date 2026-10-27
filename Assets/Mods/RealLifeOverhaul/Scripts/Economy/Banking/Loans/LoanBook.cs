@@ -46,7 +46,7 @@ namespace RealLifeOverhaul.Economy
                 }
                 if (!quiet && findings != null)
                 {
-                    findings.Add(new LoanFinding { Note = LoanNote.Gone, Mark = Copy(mark), Amount = (int)Math.Round(mark.Remaining) });
+                    findings.Add(new LoanFinding { Note = LoanNote.Gone, Mark = Copy(mark), Amount = WholeMoney.Round(mark.Remaining) });
                 }
                 marks.RemoveAt(m);
             }
@@ -61,7 +61,7 @@ namespace RealLifeOverhaul.Economy
                     marks.Add(mark);
                     if (!quiet && findings != null)
                     {
-                        findings.Add(new LoanFinding { Note = LoanNote.New, Mark = Copy(mark), Live = mark, Amount = (int)Math.Round(loan.Total) });
+                        findings.Add(new LoanFinding { Note = LoanNote.New, Mark = Copy(mark), Live = mark, Amount = WholeMoney.Round(loan.Total) });
                     }
                     continue;
                 }
@@ -69,7 +69,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     if (loan.Remaining < mark.Remaining - Cent)
                     {
-                        findings.Add(new LoanFinding { Note = LoanNote.ExtraPaid, Mark = Copy(mark), Amount = (int)Math.Round(mark.Remaining - loan.Remaining) });
+                        findings.Add(new LoanFinding { Note = LoanNote.ExtraPaid, Mark = Copy(mark), Amount = WholeMoney.Round(mark.Remaining - loan.Remaining) });
                     }
                     if (loan.Payment != mark.Payment && (mark.Held & LoanHold.Frozen) == 0)
                     {
@@ -87,7 +87,7 @@ namespace RealLifeOverhaul.Economy
             for (int m = marks.Count - 1; m >= 0; m--)
             {
                 LoanMark mark = marks[m];
-                int due = (int)Math.Round(Math.Min(mark.Payment, mark.Remaining));
+                int due = WholeMoney.Round(Math.Min(mark.Payment, mark.Remaining));
                 if (!mark.Matched)
                 {
                     findings.Add(new LoanFinding { Note = LoanNote.PaidOff, Mark = Copy(mark), Live = mark, Amount = due + mark.Interest });

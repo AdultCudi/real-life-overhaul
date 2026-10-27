@@ -135,7 +135,7 @@ namespace RealLifeOverhaul.Economy
                         int principal = Math.Min(a.Instalment, a.Owed);
                         int plan = Math.Min(Math.Min(a.Ladder.PlanPerDay, a.Ladder.PlanLeft), a.Owed - principal);
                         long carry = a.Carry;
-                        return principal + plan + Interest(a.Owed, a.RateNow, DaysPerYear, 1, ref carry);
+                        return WholeMoney.Add(principal + plan, Interest(a.Owed, a.RateNow, DaysPerYear, 1, ref carry));
                     }
                 case ProductKind.CreditCard:
                     return a.DueDay > 0 && a.DueDay <= today + 1 ? a.MinimumLeft : 0;
@@ -336,7 +336,7 @@ namespace RealLifeOverhaul.Economy
                     if (o.Step == LadderStep.LateFee)
                     {
                         o.Fee = LateFee(o.Missed, level);
-                        a.Owed += o.Fee;
+                        a.Owed = WholeMoney.Add(a.Owed, o.Fee);
                     }
                 }
             }
@@ -352,7 +352,7 @@ namespace RealLifeOverhaul.Economy
                 return;
             }
             o.Interest = Interest(a.Owed, a.RateNow, DaysPerYear, 1, ref a.Carry);
-            a.Owed += o.Interest;
+            a.Owed = WholeMoney.Add(a.Owed, o.Interest);   // saturating: an unpaid car loan or card grows by its interest every day, and an int must not wrap round to a credit
             int pay = Math.Min(a.Owed, Math.Max(0, wallet.Cash - ProductCatalogue.OverdraftFloat));
             if (pay > 0 && wallet.Take(pay, Money.Payment, name))
             {
@@ -385,15 +385,16 @@ namespace RealLifeOverhaul.Economy
             o.Interest = Interest(a.Owed, a.RateNow, DaysPerYear, 1, ref a.Carry);
             int principal = Math.Min(a.Instalment, a.Owed);
             int plan = Math.Min(Math.Min(a.Ladder.PlanPerDay, a.Ladder.PlanLeft), a.Owed - principal);
-            if (wallet.Take(principal + plan + o.Interest, Money.Payment, name))
+            int due = WholeMoney.Add(principal + plan, o.Interest);
+            if (wallet.Take(due, Money.Payment, name))
             {
-                o.Paid = principal + plan + o.Interest;
+                o.Paid = due;
                 a.Ladder.PlanLeft -= plan;
                 a.Ladder.Overdue = Math.Max(0, a.Ladder.Overdue - plan);
                 Reduce(a, principal + plan);
                 return;
             }
-            a.Owed += o.Interest;
+            a.Owed = WholeMoney.Add(a.Owed, o.Interest);
             o.Missed = principal + plan;
         }
 
@@ -424,7 +425,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     a.Charged = true;
                     o.Interest = Interest(Math.Min(a.StatementLeft, a.Owed), a.RateNow, DaysPerYear, ProductCatalogue.CardStatementDays, ref a.Carry);
-                    a.Owed += o.Interest;
+                    a.Owed = WholeMoney.Add(a.Owed, o.Interest);
                 }
                 if (a.MinimumLeft == 0)
                 {

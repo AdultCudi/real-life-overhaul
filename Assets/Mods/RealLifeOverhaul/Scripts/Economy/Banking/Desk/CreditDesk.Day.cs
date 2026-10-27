@@ -277,7 +277,7 @@ namespace RealLifeOverhaul.Economy
                 a.Number = m.Number;
                 Opened(a);
             }
-            a.Owed += fee;
+            a.Owed = WholeMoney.Add(a.Owed, fee);
             a.Agreed = Mathf.Max(a.Agreed, a.Owed);
         }
 

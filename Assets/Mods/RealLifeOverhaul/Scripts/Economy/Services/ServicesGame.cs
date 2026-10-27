@@ -82,7 +82,7 @@ namespace RealLifeOverhaul.Economy
 
         private static GameInstance Save => SaveGameManager.Current;
 
-        public static int Cash => Save != null ? Mathf.FloorToInt(Mathf.Max(0f, Save.Money)) : 0;
+        public static int Cash => Save != null ? WholeMoney.Floor(Save.Money) : 0;
 
         /// <summary>The minute of the day by the game's clock.</summary>
         public static int Now => Save != null ? Save.Hour * 60 + Mathf.Clamp(Mathf.FloorToInt(Save.Minute), 0, 59) : 0;
