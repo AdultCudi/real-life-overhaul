@@ -105,6 +105,11 @@ namespace RealLifeOverhaul.Construction
             }
             bool business = WriteUnitRows(ref selected, out UnitView pickedUnit);
             RedevFile pickedOffer = WriteOfferRows(ref selected);   // ConstructionApp.Redevelop.cs: the developers' offers for Uptown's buildings for sale
+            WriteMarketRows(box, ref selected, out bool marketPage);   // ConstructionApp.Market.cs: land the rivals hold, and their offers for the player's
+            if (marketPage)
+            {
+                return;
+            }
             if (pickedLot != null && _director.Lot(pickedLot, out LotView picked))
             {
                 WriteLot(box, state, picked);
@@ -137,6 +142,7 @@ namespace RealLifeOverhaul.Construction
             }
             box.Title(ConstructionText.T("reallife_bld_tab_land"));
             box.Note(ConstructionText.T(!ConstructionDirector.DistrictLives() ? "reallife_bld_land_no_district" : GoingPublic.InSession ? "reallife_bld_land_session" : "reallife_bld_land_pick"));
+            box.Note(ConstructionText.T("reallife_land_tip"));
             Guide(box);
         }
 
@@ -292,6 +298,7 @@ namespace RealLifeOverhaul.Construction
             if (p == null)
             {
                 JoinButtons(box, lot.Id);   // joined with the next site, or split back into its lots (ConstructionApp.Redevelop.cs)
+                MarketButtons(box, lot.Id);   // sold back to the city, and the neighbour a rival developer holds (ConstructionApp.Market.cs)
             }
             Guide(box);
         }

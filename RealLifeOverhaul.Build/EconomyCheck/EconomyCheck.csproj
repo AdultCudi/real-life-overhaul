@@ -629,6 +629,9 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\ZoneRules.cs" Link="Mod\Construction\ZoneRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\GrowRules.cs" Link="Mod\Construction\GrowRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildState.Grow.cs" Link="Mod\Construction\BuildState.Grow.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\LandMarketRules.cs" Link="Mod\Construction\LandMarketRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildState.Market.cs" Link="Mod\Construction\BuildState.Market.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildStore.Market.cs" Link="Mod\Construction\BuildStore.Market.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildStore.Grow.cs" Link="Mod\Construction\BuildStore.Grow.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\CarParkRules.cs" Link="Mod\Construction\CarParkRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\CarParkLayout.cs" Link="Mod\Construction\CarParkLayout.cs" />
