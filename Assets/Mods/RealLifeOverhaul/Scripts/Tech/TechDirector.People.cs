@@ -413,6 +413,44 @@ namespace RealLifeOverhaul.Tech
             return d == 6 || d == 0;
         }
 
+        /// <summary>
+        /// The professionals the game's own hiring left at a business with no desks or shifts (a data centre: a data engineer hired there by
+        /// a search firm before the rule that stops it) are taken off it the game's own way and wait in its staff list for a place; the
+        /// player is told once, with who. One pass over the people, on the day. Returns how many.
+        /// </summary>
+        internal int Unseat(int day, bool tell)
+        {
+            int n = 0;
+            string first = null, where = null;
+            for (int i = 0; i < _people.Count; i++)
+            {
+                Person person = _people[i];
+                if (person.Game == null || person.At == null || !HiringRules.Stranded(TalentGame.Shifts(person.At), true))
+                {
+                    continue;
+                }
+                string name = person.Name, at = TalentGame.NameOf(person.At);
+                if (TalentGame.Unseat(person.Game))
+                {
+                    Logger?.Warn("Tech: " + name + " (" + person.File.Def.Key + ") was the game's employee at " + at
+                                 + ", which has no desks or shifts, and never started work there; taken off it, waiting in the staff list for a place.");
+                    first = first ?? name;
+                    where = where ?? at;
+                    n++;
+                }
+            }
+            if (n > 0)
+            {
+                ReadPeople(day);   // their place is no longer the warehouse's
+                if (tell)
+                {
+                    Tell(NotificationType.Warning, "reallife_hire_note_unseated", Data("name", first, "business", where, "count", n.ToString()), TabTeam, null);
+                }
+                Changed();
+            }
+            return n;
+        }
+
         private void PeopleDay(int day)
         {
             if (_talent.LastDay >= day)
@@ -422,6 +460,7 @@ namespace RealLifeOverhaul.Tech
             float started = Time.realtimeSinceStartup;
             int renamed = MendNames(day, true);
             int made = ReadPeople(day);
+            Unseat(day, true);
             Mentors(day);
             int reviews = 0, sick = 0, left = 0, approached = 0, courses = 0, payroll = 0;
             int esteem = TechBridges.EsteemNow(), year = Year;

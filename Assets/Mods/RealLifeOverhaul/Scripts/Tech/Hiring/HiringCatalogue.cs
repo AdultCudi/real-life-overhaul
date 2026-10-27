@@ -79,6 +79,7 @@ namespace RealLifeOverhaul.Tech
 
         // A data centre's crew by a search firm, briefed from the player's headquarters: juniors to staff level, a fee a hire
         public const string Headquarters = "ba:businesstype_headquarters";      // the game's business type of a company's headquarters
+        public const string NoShifts = "ba:businesstype_warehouse";             // the game's business type with no desks and no shifts for an employee (a data centre is one)
         public static readonly int[] CrewRoles = { TalentCatalogue.Technician, TalentCatalogue.NetworkEngineer };   // who looks after racks on site
         public const int CrewLeastLevel = TalentCatalogue.Junior, CrewMostLevel = TalentCatalogue.Staff;
         public static readonly int[] CrewFeeBp = { 800, 1000, 1300, 1600 };      // a share of a year's pay at the going rate, a hire, junior to staff

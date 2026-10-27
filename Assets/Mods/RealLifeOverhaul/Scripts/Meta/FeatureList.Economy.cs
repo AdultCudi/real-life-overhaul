@@ -356,7 +356,7 @@ namespace RealLifeOverhaul.Meta
             Tech.TechGuide.AddHiringFacts(Features.Add("tech_jobs", "reallife_meta_title_tech_jobs")
                 .About("reallife_guide_tech_jobs_about").Help("reallife_guide_tech_jobs")
                 .Owns(Settings.TechJobsId)
-                .Test("reallife_hire_test_applicants", "reallife_hire_test_market", "reallife_hire_test_search", "reallife_hire_test_orphan", "reallife_crew_test")
+                .Test("reallife_hire_test_applicants", "reallife_hire_test_market", "reallife_hire_test_search", "reallife_hire_test_orphan", "reallife_crew_test", "reallife_dataeng_test")
                 .Data(Tech.HiringStore.Key)
                 .Cleanup(() => Tech.TechDirector.Instance?.StopAll(), -2)
                 .ResetData(() => Tech.TechDirector.Instance?.Forget()));

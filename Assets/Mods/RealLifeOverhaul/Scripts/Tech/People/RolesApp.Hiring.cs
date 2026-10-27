@@ -127,8 +127,13 @@ namespace RealLifeOverhaul.Tech
             int cost = Prices.At(HiringRules.AdCost(days, _adBoost));
             box.Line(TechText.Fill("reallife_hire_new_cost", "cost", TechText.Money(cost), "least", TechText.Rate(least), "most", TechText.Rate(most),
                 "skill", skill > 0 ? TechText.Percent(skill) : TechText.T("reallife_talent_none")));
+            bool seats = HiringRules.Seats(TalentGame.Shifts(_places[_adPlace]), r);
+            if (!seats)
+            {
+                box.Line(TechText.T(TechDirector.SeatRefusal));   // a data centre has no desks: the Post button is left off
+            }
             Transform buttons = box.ButtonRow();
-            if (open < HiringCatalogue.AdsMost)
+            if (open < HiringCatalogue.AdsMost && seats)
             {
                 string place = TalentGame.Place(_places[_adPlace]);
                 int role = r.Id, level = _adLevel, work = _adWork;
@@ -500,8 +505,13 @@ namespace RealLifeOverhaul.Tech
             int fee, retainer;
             _director.SearchQuote(r.Id, _searchLevel, out fee, out retainer);
             box.Line(TechText.Fill("reallife_hire_new_search_cost", "fee", TechText.Cents(fee), "retainer", TechText.Cents(retainer), "count", HiringCatalogue.SearchCandidates.ToString()));
+            bool seats = HiringRules.Seats(TalentGame.Shifts(_places[_adPlace]), r);
+            if (!seats)
+            {
+                box.Line(TechText.T(TechDirector.SeatRefusal));   // a data centre has no desks: the Brief button is left off
+            }
             Transform buttons = box.ButtonRow();
-            if (r.MostLevel >= HiringCatalogue.SearchLeastLevel)
+            if (r.MostLevel >= HiringCatalogue.SearchLeastLevel && seats)
             {
                 string place = TalentGame.Place(_places[_adPlace]);
                 int role = r.Id, level = _searchLevel;
