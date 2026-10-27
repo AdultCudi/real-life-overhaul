@@ -58,6 +58,7 @@ namespace RealLifeOverhaul.TestRun
             { "reallife_uptown_test_rent", "the player rents the unit in BizMan with the game's own button" },
             { "reallife_uptown_test_store_order", "it needs a business of the player's that takes wholesale deliveries" },
             { "reallife_uptown_test_station_fill", "it needs the player at the wheel of a car of their own" },
+            { "reallife_uptown_test_warehouse", "it needs the player at the wheel of a car of their own, and puts it through a warehouse's garage door and out again" },
             { "reallife_bld_test_demolish", "it knocks a building of the player's own down for good, so only the player presses it" },
             { "reallife_bld_mode_test_open", "it opens and shuts the city map over two seconds, which would hold the run's own steps, so only the player presses it" },
             { "reallife_bld_mode_test_bulldoze", "it needs an emptied Uptown building of the player's own, which the run never has" },

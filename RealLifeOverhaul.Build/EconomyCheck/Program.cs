@@ -152,7 +152,14 @@ internal static partial class Program
             UptownLifeChecks();   // (Uptown's life and its filled band alone, while working on them: UptownLifeChecks.cs, UptownFillChecks.cs, UptownPlaceChecks.cs, UptownBigChecks.cs)
             UptownSpecialsChecks();
             UptownBigChecks();
+            GateChecks();
             LandmarksChecks();
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--gates")
+        {
+            GateChecks();   // (the vehicle entrances of the copied buildings alone, while working on them: GateChecks.cs)
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
@@ -621,6 +628,7 @@ internal static partial class Program
         UptownLifeChecks();   // Uptown as a district of the game: its values, its map quad, its lots, its line, the district save, every table by district (UptownLifeChecks.cs)
         UptownSpecialsChecks();   // Uptown's special places: the table on the plan, its refusals, the importer's goods, the save's records, the sources, the texts (UptownSpecialsChecks.cs)
         UptownBigChecks();    // Uptown's wholesale store and gas station: their lots, their ground and where each stands, the whole designs, the mouths, the sources, the texts (UptownBigChecks.cs)
+        GateChecks();         // the vehicle entrances of the copied buildings: the game's garage doors and car parks, which a copy keeps, where each looks out, the mouths kept clear, the sources, the texts (GateChecks.cs)
         MarketsBuild();   // the city's builders on the market and a project's hedge: who is listed, the news and its moves, two machines alike, the building materials, the hedge's rules and money, a project's exposure, the books, the sources, the texts (MarketsBuildChecks.cs)
         LandmarksChecks();    // Uptown's landmarks: their sites, a span of lots, the timetable, the lift, the season, the stadium, the line, the sources, the texts (LandmarksChecks.cs)
         SchoolChecks();       // Birchwood School and the city's schools: the campus on its block, the market, the owner's rule for NPCs, the days, the lift, the line, the sources, the texts (SchoolChecks.cs)

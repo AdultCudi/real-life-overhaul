@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using Parking.UndergroundParking;
 using Player.FoodDeliveryJob;
 using Player.PlayerMissions;
 using UnityEngine;
@@ -90,7 +91,34 @@ namespace RealLifeOverhaul.NewBuildings
                 float turn = made.DoorFacing * Mathf.Deg2Rad;   // the door's outward way, as Quaternion.Euler(0, facing, 0) turns forward
                 set.Door(made.Spec.Street, made.Spec.Number, made.DoorX + Mathf.Sin(turn) * OutsideDoor, made.DoorY, made.DoorZ + Mathf.Cos(turn) * OutsideDoor,
                     made.DoorFacing, made.Spec.District);
+                if (ParkOf(made, out string park, out int number, out Vector3 exit, out float heading))
+                {
+                    set.Door(park, number, exit.x, exit.y, exit.z, heading, made.Spec.District);   // a car left in its car park is parked outside it
+                }
             }
+        }
+
+        /// <summary>
+        /// The car park a made building's copy keeps (CopyGame.Wire gave it a number of its own): its address as the game has it (the
+        /// game's street of its car parks, which its entrance names itself, and the number), the spot where a vehicle comes out of it
+        /// and the way it faces, for the district save, which writes a car left in it parked there. False for a building with none.
+        /// </summary>
+        public static bool ParkOf(MadeBuilding made, out string street, out int number, out Vector3 exit, out float heading)
+        {
+            street = null;
+            number = 0;
+            exit = default;
+            heading = 0f;
+            UndergroundParkingEntrance park = made != null && made.Controller != null ? made.Controller.undergroundParkingEntrance : null;
+            if (park == null || park.vehicleExitPoint == null || park.Address == null || string.IsNullOrEmpty(park.Address.streetName) || !GateRules.IsMadePark(park.parkingNumber))
+            {
+                return false;
+            }
+            street = park.Address.streetName;
+            number = park.parkingNumber;
+            exit = park.vehicleExitPoint.position;
+            heading = park.vehicleExitPoint.eulerAngles.y;
+            return true;
         }
 
         /// <summary>Takes out of the save about to be written whatever names an address of the mod's own; how many things.</summary>

@@ -112,8 +112,10 @@ namespace RealLifeOverhaul.NewBuildings
         /// <summary>
         /// The designs that fit ground of a width and depth (a frame's footprint) and were measured on buildings of a type of
         /// the game's (null for any), those covering most of it first, at most <paramref name="most"/>, into the caller's list
-        /// (cleared): never one drawn in a static batch, of a DLC or of a kind never copied. False while the city's designs are
-        /// not known yet: asking starts their measuring in play, so ask again in a moment. The same list on every machine.
+        /// (cleared): never one drawn in a static batch, of a DLC or of a kind never copied; for a warehouse, the designs whose
+        /// garage doors all look out on its street (<see cref="GateRules.Serves(DesignEntry)"/>) where one fits, so a vehicle drives in
+        /// from it. False while the city's designs are not known yet: asking starts their measuring in play, so ask again in a moment.
+        /// The same list on every machine.
         /// </summary>
         public static bool Fitting(float width, float depth, string type, int most, List<DesignFit> into)
         {
@@ -130,12 +132,24 @@ namespace RealLifeOverhaul.NewBuildings
             }
             IList<DesignEntry> designs = CopyGame.Catalogue;
             Fits.Clear();
+            int servingFits = 0;
             for (int i = 0; i < designs.Count; i++)
             {
                 DesignEntry d = designs[i];
                 if (NewBuildingsRules.Copyable(d) && (type == null || string.Equals(d.Type, type, System.StringComparison.Ordinal)) && NewBuildingsRules.Fits(d, width, depth))
                 {
                     Fits.Add(i);
+                    servingFits += GateRules.Serves(d) ? 1 : 0;
+                }
+            }
+            if (string.Equals(type, GateRules.WarehouseType, System.StringComparison.Ordinal) && servingFits > 0 && servingFits < Fits.Count)
+            {
+                for (int i = Fits.Count - 1; i >= 0; i--)
+                {
+                    if (!GateRules.Serves(designs[Fits[i]]))
+                    {
+                        Fits.RemoveAt(i);   // a warehouse's look has garage doors a vehicle drives in by from its street, where one fits
+                    }
                 }
             }
             // The best covering first, the catalogue's own order between equals: an insertion sort, a few dozen at most.

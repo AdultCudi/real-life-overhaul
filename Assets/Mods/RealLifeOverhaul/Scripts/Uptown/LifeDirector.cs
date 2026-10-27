@@ -448,6 +448,10 @@ namespace RealLifeOverhaul.Uptown
                 float turn = made.DoorFacing * Mathf.Deg2Rad;   // the door's outward way, as Quaternion.Euler(0, facing, 0) turns forward
                 set.Door(made.Spec.Street, made.Spec.Number, made.DoorX + Mathf.Sin(turn) * OutsideDoor, made.DoorY, made.DoorZ + Mathf.Cos(turn) * OutsideDoor,
                     made.DoorFacing, exit.District);   // a car inside one is parked in the way out's district of the game's
+                if (MadeGame.ParkOf(made, out string parkStreet, out int park, out Vector3 spot, out float heading))
+                {
+                    set.Door(parkStreet, park, spot.x, spot.y, spot.z, heading, exit.District);   // and a car left in its car park, the same
+                }
             }
         }
 
@@ -544,6 +548,7 @@ namespace RealLifeOverhaul.Uptown
             }
             Census("the load");
             SpecialsCensus("the load", false, out int _);
+            DoorsCensus("the load");   // the warehouses' garage doors, whole as the game's own (LifeDirector.Doors)
             CompleteAll("the load");   // every finished building checked as a whole building of the game's, once a load (LifeDirector.Complete)
             return true;
         }

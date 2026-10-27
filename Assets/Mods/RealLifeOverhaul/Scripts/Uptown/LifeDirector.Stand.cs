@@ -31,6 +31,7 @@ namespace RealLifeOverhaul.Uptown
 
         private static readonly List<StandWait> Waiting = new List<StandWait>(4);
         private static readonly List<FrontFill> StandFills = new List<FrontFill>(8);
+        private static readonly MadeBuilding[] StandMouth = new MadeBuilding[1];
         private static Func<bool> _atBlack;
         private static bool _armed;   // the black-screen piece is handed to ScenePrewarm
 
@@ -195,6 +196,9 @@ namespace RealLifeOverhaul.Uptown
             bool cut = LifeGame.Cut(made);
             Standing.Add(made);
             MarkStanding();
+            StandMouth[0] = made;
+            int mouths = GroundGame.OpenMouths(StandMouth);   // its garage doors' mouths made clear of the street's lamps, litter, furniture and parked cars, as a load's are
+            StandMouth[0] = null;
             int fillersBefore = LifeGame.FillerCount;
             LifeGame.StandFillers(StandFills);
             int fillers = LifeGame.FillerCount - fillersBefore;
@@ -217,7 +221,7 @@ namespace RealLifeOverhaul.Uptown
             double ms = (Stopwatch.GetTimestamp() - began) * 1000.0 / Stopwatch.Frequency;
             string owner = f.Owner == FinishOwner.Player ? "the player's, deed " + (setUp == null ? "written" : "not yet: " + setUp) : "the city's";
             Logger?.Info("Uptown: the building finished on lot " + lot + " stands now at " + made.Address + " (" + made.Design + ", " + owner + "), "
-                         + (cut ? "cut into the walking meshes" : "not cut into the walking meshes") + ", " + fillers + " filler(s), "
+                         + (cut ? "cut into the walking meshes" : "not cut into the walking meshes") + ", " + fillers + " filler(s), " + mouths + " garage door mouth(s) opened, "
                          + (listed ? "in the city's list" : "not in the city's list yet (" + joinWhy + ")") + (mapped ? ", on the city map's filters" : string.Empty)
                          + ", in " + ms.ToString("F1", Plain)
                          + " ms; the next load stands the same building from the same record.");
