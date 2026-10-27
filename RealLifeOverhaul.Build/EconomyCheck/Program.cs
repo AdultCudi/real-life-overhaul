@@ -211,6 +211,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--parking")
+        {
+            ParkChecks();   // (car parks alone, while working on them: ParkChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--build-mode")
         {
             BuildModeChecks();   // (build mode alone, while working on it: BuildModeChecks.cs)
@@ -617,6 +623,7 @@ internal static partial class Program
         BuildModeChecks();   // build mode: the zoning cells on the real plan, sites, prices, rows, the state machine, colours, warnings, demand and the market, whole buildings, the store, the sources, the texts (BuildModeChecks.cs)
         GrowChecks();   // buildings that grow: zoning per square and its tools, the council's zoning, the developer's pick, the steady pace on the real plan, the tiers, tenants, condition, the store, the sources, the texts (GrowChecks.cs)
         CornerChecks();   // the corner buildings: the corner site rule on the real plan, the four turns, the fit and the ground beneath, the signs, the bundle, the records, the sources, the texts (CornerChecks.cs)
+        ParkChecks();   // car parks: the layout of bays on every size of site, the works and their cost, where one may stand, the price band, how full by the hour, leases, the city's builders, the store, the sources, the texts (ParkChecks.cs)
         OutlookApp();   // the Economy app: its history and the line in the save, a change and its tone, the verdict, the districts' ranking, each piece of advice and its sentence, the charts' scaling and smoothing, the colours' contrast, the texts (OutlookChecks.cs)
         Track();        // Show on map and the construction objectives: what is under way, each line's words, the order, the cap, the claim kept, the one way to the destination, the game's objectives window, the texts (TrackChecks.cs)
         MapFilterChecks();   // a building the construction game finishes registers with the city map's filters when it stands and leaves them when it goes: the rows, the steps, the list, the sources, the text (MapChecks.cs)

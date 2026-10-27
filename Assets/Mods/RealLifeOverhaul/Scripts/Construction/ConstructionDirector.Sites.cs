@@ -49,6 +49,10 @@ namespace RealLifeOverhaul.Construction
             {
                 return pace;   // a grown site (ConstructionDirector.Grow): its schedule hands it over on its day
             }
+            if (ParkPace(siteId, done, needed, hours, out pace))
+            {
+                return pace;   // a car park of the city's builders (ConstructionDirector.ParkNpc): alike
+            }
             DevFile dev = DevOnSite(siteId);
             if (dev != null)
             {
@@ -82,7 +86,7 @@ namespace RealLifeOverhaul.Construction
             {
                 return p.Kind != ProjectKind.Contract || p.Source != TenderSource.CityWorks;
             }
-            return DevOnSite(siteId) != null || _state.CityRedevSite(siteId) != null || _state.GrowSite(siteId) != null;
+            return DevOnSite(siteId) != null || _state.CityRedevSite(siteId) != null || _state.GrowSite(siteId) != null || _state.CarParkSite(siteId) != null;
         }
 
         /// <summary>False for a builder's site while the construction game is off: it is put away with it.</summary>
@@ -97,7 +101,8 @@ namespace RealLifeOverhaul.Construction
             ProjectFile p = Ready() ? _state.OnSite(siteId) : null;
             if (p == null)
             {
-                return Ready() ? CityBoard(siteId) ?? GrowBoard(siteId) : null;   // the city's redevelopment or a grown site shows its developer; the city's own works none
+                // the city's redevelopment, a grown site or a car park shows its developer; the city's own works none
+                return Ready() ? CityBoard(siteId) ?? GrowBoard(siteId) ?? ParkBoard(siteId) : null;
             }
             if (p.Contractor >= 0)
             {
@@ -183,6 +188,7 @@ namespace RealLifeOverhaul.Construction
                 RivalHanded(siteId, day);   // a rival's works from a tender: the stock market hears whether on time
                 CityHanded(siteId);         // the city's redevelopment: its schedule ends the rest on its day
                 GrowSiteHanded(siteId);     // a grown site: alike
+                ParkSiteHanded(siteId);     // a car park of the city's builders: alike
                 DevFile dev = DevOnSite(siteId);
                 if (dev != null)
                 {
@@ -212,8 +218,8 @@ namespace RealLifeOverhaul.Construction
             for (int i = 0; i < _state.Projects.Count; i++)
             {
                 ProjectFile p = _state.Projects[i];
-                if (p.Stage != ProjectStage.Building || p.SiteId <= 0 || (p.Kind != ProjectKind.Plot && p.Kind != ProjectKind.Rebuild && p.Kind != ProjectKind.Extension)
-                    || SiteOf(p.SiteId).Known)
+                if (p.Stage != ProjectStage.Building || p.SiteId <= 0 || (p.Kind != ProjectKind.Plot && p.Kind != ProjectKind.Rebuild && p.Kind != ProjectKind.Extension
+                    && p.Kind != ProjectKind.Parking) || SiteOf(p.SiteId).Known)
                 {
                     continue;
                 }

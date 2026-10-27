@@ -198,6 +198,20 @@ namespace RealLifeOverhaul.Construction
             }
         }
 
+        internal static int StartLotSite(Vector3 middle, int yaw, int width, int depth, int contractor, int hours, out string why)
+        {
+            why = "the city's construction programme is not running";
+            try
+            {
+                return !Down("StartLot") && ConstructionBridges.StartLot != null ? ConstructionBridges.StartLot(middle, yaw, width, depth, 0, contractor, hours, out why) : 0;
+            }
+            catch (Exception e)
+            {
+                Faulty("StartLot", e);
+                return 0;
+            }
+        }
+
         internal static int StartWorksSite(string street, int number, int kind, bool mine, int contractor, int hours, out string why)
         {
             why = "the city's construction programme is not running";

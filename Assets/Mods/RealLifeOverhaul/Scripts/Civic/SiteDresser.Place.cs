@@ -14,6 +14,10 @@ namespace RealLifeOverhaul
             {
                 return ResolvePlot(dressed);   // ground given: no door, no pavement asked for
             }
+            if (site.Kind == SiteKind.Parking)
+            {
+                return ResolvePark(dressed);   // a car park's ground: the same
+            }
             if (!CitySpots.Pavement(door, 8f, out Vector3 pavement))
             {
                 return SiteRefusal.NoPavement;
