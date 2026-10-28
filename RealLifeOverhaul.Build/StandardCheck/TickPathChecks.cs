@@ -17,7 +17,9 @@ internal static partial class Program
     {
         ("Seasons/SeasonDirector.cs", new[] { "Update", "OnUpdate", "Slow", "Hush", "Demand", "FollowMarks", "News" }),
         ("Seasons/SeasonDirector.Look.cs", new[] { "Looks", "Bar" }),
-        ("Seasons/SnowLook.cs", new[] { "Show", "Hide", "Fall", "Follow", "Fit", "Lie", "Layered", "Uncover", "Pose" }),
+        ("Seasons/SnowLook.cs", new[] { "Show", "Hide", "Fall", "Follow", "Fit", "Lie", "Layered", "Uncover", "Pose", "Keep", "Reach", "Size", "Place" }),
+        ("Seasons/SnowCoverFollow.cs", new[] { "Hold", "LateUpdate", "OnLateUpdate" }),
+        ("Seasons/SnowCoverRules.cs", new[] { "Reach", "HalfFor", "Covered", "Moves", "Lay", "Step", "Ahead" }),
         ("Seasons/SeasonLook.cs", new[] { "Leaf", "StopLeaves" }),
         ("Seasons/SeasonBar.cs", new[] { "Show", "Hide" }),
         ("Seasons/SeasonGame.cs", new[] { "Loading", "Walkers" }),
@@ -41,7 +43,7 @@ internal static partial class Program
 
     // Beyond RLO-PERF-003's patterns: an object of a class made (the value types these methods use are let through).
     private static readonly Regex ObjectMade = new Regex(
-        @"\bnew\s+(?!(?:Vector2|Vector3|Vector4|Color|Color32|Quaternion|Keyframe|ParticleSystem\.MinMaxCurve|Worn|Tint|SnowDay|RainDay|SnowField|Scope|FrameFigures)\b)[A-Z][\w.]*\s*[({]",
+        @"\bnew\s+(?!(?:Vector2|Vector3|Vector4|Color|Color32|Quaternion|Keyframe|ParticleSystem\.MinMaxCurve|Worn|Tint|SnowDay|RainDay|SnowField|SnowCoverState|Scope|FrameFigures)\b)[A-Z][\w.]*\s*[({]",
         RegexOptions.Compiled);
 
     // A character's look built: the game's own calls that merge a person's meshes, and the mod's that make them.

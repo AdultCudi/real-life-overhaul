@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.Globalization;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.HighDefinition;
@@ -19,12 +21,16 @@ namespace RealLifeOverhaul.Seasons
     /// camera looks, closer together for a near camera and on a heavy day. The ground: one decal projector over the
     /// streets round the player, a copy of the game's road paint carrying a patchy white made once, drawn on the snow's
     /// own decal layer alone (<see cref="SnowGround"/>: the ground, roads, pavements and roofs), its angle fade keeping
-    /// walls clear. That needs HDRP's decal layers, which the game's asset supports but its camera leaves off, so they are
+    /// walls clear. Its square reaches as far as the camera shows the ground (<see cref="SnowCoverRules"/>), and it is kept
+    /// round the player in every frame by <see cref="SnowCoverFollow"/>, moved ahead of them the moment they could see past
+    /// its edge, without ever being switched off: HDRP reads a projector's place every frame, so a move is drawn at once.
+    /// The cover needs HDRP's decal layers, which the game's asset supports but its camera leaves off, so they are
     /// switched on for the player's camera only while snow lies outdoors. Where they cannot be had no snow lies at all: a
     /// decal without them whitens everything in its box, cars, people and faces. Asked once a second by the director, and
     /// the flakes' box moved after the camera four times a second while they fall (a few reads and one position, nothing
-    /// allocated); Unity draws the rest, so nothing of the mod's runs a frame. Made the first time snow is shown, gone with
-    /// the city; indoors nothing falls.
+    /// allocated); Unity draws the rest. While snow lies, a few float operations a frame keep the square round the player
+    /// (nothing allocated), and a move is two writes to the projector. Made the first time snow is shown, gone with the
+    /// city; indoors nothing falls.
     /// </summary>
     internal sealed class SnowLook
     {
@@ -32,12 +38,13 @@ namespace RealLifeOverhaul.Seasons
         private const float FlakeLargest = 1.4f;     //   and the largest
         private const float FlakeHeadroom = 1.25f;   // of the field's count the system may hold, as rates and lives vary
         private const float UnderGround = 2f;        // metres under the player the box reaches, for the ground's dips
-        private const float CoverSpan = 150f;        // metres: the square the snow lies on round the player
         private const float CoverTile = 12f;         // metres the white's pattern repeats over
         private const float RoofTop = 70f;           // metres over the player the cover reaches, for the roofs
         private const float RoofDepth = 76f;         //   and down to 6 m under the player's feet
         private const float ConfirmWait = 4f;        // seconds the pipeline may take to draw with the decal layers asked for
-        private const float Recentre = 25f;          // metres the player may go from the cover's middle before it follows
+        private const float ReportEvery = 60f;       // seconds between the cover's check lines, with Developer diagnostics on
+        private const double CheckBudget = 0.05;     // ms a frame's look at the cover may take
+        private const double MoveBudget = 0.2;       // ms a move of the cover may take
         private const int MapSize = 128;
 
         private static readonly int BaseColorMapId = Shader.PropertyToID("_BaseColorMap");
@@ -56,9 +63,18 @@ namespace RealLifeOverhaul.Seasons
         private Material _coverPaint;
         private Texture2D _coverMap;
         private bool _coverFailed, _layersAsked;
-        private Vector3 _centre;
         private float _fade = -1f;
         private float _askedAt;
+        private SnowCoverState _square;           // where the cover lies and how it moves (SnowCoverRules)
+        private float _reach = SnowCoverRules.ReachLeast;   // metres the camera last showed the ground to
+        private bool _lying;                      // the cover has been shown and snow still lies outdoors: kept in every frame
+        private readonly SnowCoverFollow _keeper;
+
+        // The cover's check, with Developer diagnostics on: what happened since the last line.
+        private int _moves, _offFrames, _keptFrames;
+        private float _worstCovered = float.MaxValue, _worstReach, _worstGap = float.MaxValue;
+        private long _slowestKeep, _slowestMove;
+        private float _reportAt;
 
         /// <summary>The ground's marks, made behind the loading screen; the snow lies only where they are.</summary>
         public readonly SnowGround Ground = new SnowGround();
@@ -88,6 +104,8 @@ namespace RealLifeOverhaul.Seasons
         public SnowLook(Transform root)
         {
             _root = root;
+            _keeper = root.gameObject.AddComponent<SnowCoverFollow>();
+            _keeper.Look = this;
         }
 
         /// <summary>
@@ -127,6 +145,10 @@ namespace RealLifeOverhaul.Seasons
         // The cover off and the camera's decal layers given back: nothing of the snow left on the picture.
         private void Uncover()
         {
+            if (_lying)
+            {
+                Lifted();
+            }
             if (_cover != null && _cover.gameObject.activeSelf)
             {
                 _cover.gameObject.SetActive(false);
@@ -290,11 +312,9 @@ namespace RealLifeOverhaul.Seasons
             {
                 return;
             }
-            bool on = _cover.gameObject.activeSelf;
-            Vector3 offset = player - _centre;
-            if (!on || offset.x * offset.x + offset.z * offset.z > Recentre * Recentre || Mathf.Abs(offset.y) > 4f)
+            if (!_cover.gameObject.activeSelf)
             {
-                Pose(player);
+                Pose(player);   // laid round the player and shown; from then on SnowCoverFollow keeps it round them every frame
             }
             float fade = Mathf.Round(Mathf.Clamp01(cover) * 50f) / 50f;
             if (fade != _fade)
@@ -345,13 +365,13 @@ namespace RealLifeOverhaul.Seasons
             _cover = piece.AddComponent<DecalProjector>();
             _cover.material = _coverPaint;
             _cover.decalLayerMask = Ground.Layer;   // the ground and roofs alone: never the default layer, which cars and people carry
-            _cover.drawDistance = CoverSpan + 50f;
             _cover.fadeScale = 0.95f;
             _cover.startAngleFade = 30f;   // walls and fronts stay as they are (HDRP fades by angle only with decal layers, as here)
             _cover.endAngleFade = 60f;
-            _cover.size = new Vector3(CoverSpan, CoverSpan, RoofDepth);
             _cover.pivot = new Vector3(0f, 0f, RoofDepth * 0.5f);
-            _cover.uvScale = new Vector2(CoverSpan / CoverTile, CoverSpan / CoverTile);
+            piece.transform.rotation = Quaternion.LookRotation(Vector3.down, Vector3.forward);   // square to the world; only its place moves
+            _square = default(SnowCoverState);
+            Size(SnowCoverRules.HalfFor(SnowCoverRules.ReachLeast, 0f));
             CoverMissing = null;
             SeasonDirector.Logger?.Info("Seasons: snow lies on the ground and the roofs alone (its own decal layer, on " + Ground.Marked + " piece(s)), a copy of the game's '"
                                         + template.name + "'.");
@@ -389,7 +409,7 @@ namespace RealLifeOverhaul.Seasons
             }
             if (_cover.gameObject.activeSelf)
             {
-                _cover.gameObject.SetActive(false);   // a camera that lost them: nothing drawn until they are back
+                _cover.gameObject.SetActive(false);   // a camera that lost them: nothing drawn until they are back (the cover's check counts it)
                 _fade = -1f;
             }
             if (Time.unscaledTime - _askedAt > ConfirmWait)
@@ -399,17 +419,139 @@ namespace RealLifeOverhaul.Seasons
             return false;
         }
 
-        // Laid with the projector off, as the decal system takes one as it is when it comes on; the pattern is pinned to
-        // the street, not to the projector, so it does not slide when the cover follows the player.
+        // Laid round the player and shown. HDRP reads a projector's place every frame (DecalSystem.StartDecalUpdateJobs, a
+        // job over the projectors' transforms at the start of the frame's drawing), so it is never switched off to move.
         private void Pose(Vector3 player)
         {
-            GameObject piece = _cover.gameObject;
-            piece.SetActive(false);
-            _centre = player;
-            piece.transform.SetPositionAndRotation(player + Vector3.up * RoofTop, Quaternion.LookRotation(Vector3.down, Vector3.forward));
-            float half = CoverSpan / CoverTile * 0.5f;
-            _cover.uvBias = new Vector2(Mathf.Repeat(player.x / CoverTile - half, 1f), Mathf.Repeat(player.z / CoverTile - half, 1f));
-            piece.SetActive(true);
+            _reach = Reach(player, _reach);
+            SnowCoverRules.Lay(ref _square, player.x, player.y, player.z, _reach);
+            Size(_square.Half);
+            Place();
+            if (!_cover.gameObject.activeSelf)
+            {
+                _cover.gameObject.SetActive(true);
+            }
+            if (!_lying)
+            {
+                _lying = true;
+                _reportAt = Time.unscaledTime + ReportEvery;
+            }
+            _keeper.Hold(true);
+        }
+
+        /// <summary>
+        /// Every frame while snow lies, before the frame is drawn: the camera's reach over the ground read, and the cover moved
+        /// ahead of the player the moment they could see past its edge. A few reads and float operations, nothing allocated.
+        /// </summary>
+        internal void Keep(float dt)
+        {
+            if (!_lying || _cover == null)
+            {
+                _keeper.Hold(false);
+                return;
+            }
+            long started = Stopwatch.GetTimestamp();
+            if (!_cover.gameObject.activeSelf)
+            {
+                _offFrames++;   // snow lies but none of it is drawn this frame
+                return;
+            }
+            Vector3 player = SeasonGame.Player;
+            _reach = Reach(player, _reach);
+            float half = _square.Half;
+            if (SnowCoverRules.Step(ref _square, player.x, player.y, player.z, dt, _reach))
+            {
+                long moving = Stopwatch.GetTimestamp();
+                if (_square.Half != half)
+                {
+                    Size(_square.Half);
+                }
+                Place();
+                _moves++;
+                long moved = Stopwatch.GetTimestamp() - moving;
+                _slowestMove = moved > _slowestMove ? moved : _slowestMove;
+            }
+            float covered = SnowCoverRules.Covered(_square, player.x, player.z);
+            if (covered - _reach < _worstGap)
+            {
+                _worstGap = covered - _reach;
+                _worstCovered = covered;
+                _worstReach = _reach;
+            }
+            _keptFrames++;
+            long took = Stopwatch.GetTimestamp() - started;
+            _slowestKeep = took > _slowestKeep ? took : _slowestKeep;
+            if (Meta.Dev.Verbose && Time.unscaledTime >= _reportAt)
+            {
+                Report();
+            }
+        }
+
+        // Metres from the player the camera shows the ground to; the last reach while the city map has the camera.
+        private static float Reach(Vector3 player, float last)
+        {
+            Camera camera = GameManager.GetMainCamera();
+            if (camera == null || CityMap.IsOpen)
+            {
+                return last;
+            }
+            Transform eye = camera.transform;
+            Vector3 at = eye.position, look = eye.forward;
+            float dx = at.x - player.x, dz = at.z - player.z;
+            float tanHigh = Mathf.Tan(camera.fieldOfView * 0.5f * Mathf.Deg2Rad);
+            return SnowCoverRules.Reach(at.y - player.y, Mathf.Sqrt(dx * dx + dz * dz), -look.y, Mathf.Sqrt(look.x * look.x + look.z * look.z), tanHigh, tanHigh * camera.aspect);
+        }
+
+        // The square's size: its side, how far it is drawn, and how often the white repeats over it (each a write HDRP takes as it is).
+        private void Size(float half)
+        {
+            float span = half * 2f;
+            _cover.size = new Vector3(span, span, RoofDepth);
+            _cover.uvScale = new Vector2(span / CoverTile, span / CoverTile);
+            _cover.drawDistance = span + 50f;
+        }
+
+        // Put where the square lies; the pattern is pinned to the street, not to the projector, so it does not slide.
+        private void Place()
+        {
+            _cover.transform.position = new Vector3(_square.Cx, _square.Cy + RoofTop, _square.Cz);
+            float tiles = _square.Half / CoverTile;
+            _cover.uvBias = new Vector2(Mathf.Repeat(_square.Cx / CoverTile - tiles, 1f), Mathf.Repeat(_square.Cz / CoverTile - tiles, 1f));
+        }
+
+        // Snow no longer lies here (indoors, melted, the look off): the cover's last check line, and the keeper off.
+        private void Lifted()
+        {
+            _lying = false;
+            _keeper.Hold(false);
+            if (Meta.Dev.Verbose && _keptFrames + _offFrames > 0)
+            {
+                Report();
+            }
+        }
+
+        /// <summary>The cover's check since the last line: its words, and whether it passed.</summary>
+        public string CoverWords(out bool ok)
+        {
+            double tick = 1000.0 / Stopwatch.Frequency;
+            double keep = _slowestKeep * tick, move = _slowestMove * tick;
+            ok = _offFrames == 0 && _keptFrames > 0 && _worstGap >= 0f && keep < CheckBudget && move < MoveBudget;
+            CultureInfo c = CultureInfo.InvariantCulture;
+            return _moves + " recentre(s), " + _offFrames + " frames with the cover off while snow lies, the cover reaching "
+                   + (_keptFrames > 0 ? _worstCovered.ToString("0", c) : "?") + " m against the camera's " + (_keptFrames > 0 ? _worstReach.ToString("0", c) : "?") + " m ("
+                   + _keptFrames + " frame(s) kept, the square " + (_square.Half * 2f).ToString("0", c) + " m across; a frame's look at most " + keep.ToString("0.000", c)
+                   + " ms of " + CheckBudget.ToString("0.00", c) + ", a recentre at most " + move.ToString("0.000", c) + " ms of " + MoveBudget.ToString("0.0", c) + ")";
+        }
+
+        private void Report()
+        {
+            string words = CoverWords(out bool ok);
+            SeasonDirector.Logger?.Info("Seasons check (snow cover): " + words + ": " + (ok ? "PASS" : "FAIL"));
+            _moves = _offFrames = _keptFrames = 0;
+            _worstCovered = _worstGap = float.MaxValue;
+            _worstReach = 0f;
+            _slowestKeep = _slowestMove = 0L;
+            _reportAt = Time.unscaledTime + ReportEvery;
         }
 
         // A white that repeats seamlessly: two layers of smoothed lattice noise, mostly opaque with thinner patches.
@@ -480,6 +622,9 @@ namespace RealLifeOverhaul.Seasons
             {
                 Object.Destroy(_cover.gameObject);
             }
+            _lying = false;
+            _keeper.Hold(false);
+            _square = default(SnowCoverState);
             if (_layersAsked)
             {
                 _layersAsked = false;
