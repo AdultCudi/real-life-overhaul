@@ -412,8 +412,8 @@ internal static partial class Program
         Check(finds.Contains("public static bool Black => UI.Load.LoadScene.isLoading || Covered;"), "door pace: black is the loading screen or the black screen at full strength");
         string prewarm = Body(finds, "private void OnUpdate()");
         int wait = prewarm.IndexOf("!SceneFinds.Black", StringComparison.Ordinal);
-        Check(wait >= 0 && wait < prewarm.IndexOf("Run();", StringComparison.Ordinal),
-            "door pace: the first minute's one-off work left for the street waits for the screen fully black, not its fade");
+        Check(wait >= 0 && wait < prewarm.IndexOf("RunOne()", StringComparison.Ordinal),
+            "door pace: the first minute's one-off work left for the street waits for the screen fully black, not its fade (a piece a frame, RLO-PERF-024)");
         string said = Body(finds, "private static void Said(");
         Check(said.Contains("Covered") && said.Contains("with the picture showing through: FAIL") && !said.Contains("bool hidden = Hidden;"),
             "door pace: a search during the game's fade says FAIL in the log, not PASS");

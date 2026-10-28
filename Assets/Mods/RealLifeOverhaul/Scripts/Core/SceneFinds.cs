@@ -141,11 +141,22 @@ namespace RealLifeOverhaul
 
         private static readonly List<Func<bool>> Work = new List<Func<bool>>(8);
         private static readonly List<string> Names = new List<string>(8);
+        private static readonly List<int> TriedIn = new List<int>(8);   // the black screen each piece was last tried behind
         private static readonly List<Func<bool>> Late = new List<Func<bool>>(4);
         private static readonly List<string> LateNames = new List<string>(4);
         private static Action _lateCall;   // made once: the game's late "game loaded" call, through the guard
         private static ScenePrewarm _instance;
         private bool _tried;
+
+        // Behind a black screen the pieces go one a frame, never all in one (RLO-PERF-024: beta 6 had a frame of 13 ms and
+        // beta 4 one of 45 ms from every waiting piece at once): a piece is tried once behind each black screen, and a piece
+        // of several steps (a dozen coats, each a mesh merge) does one step a frame. A frame is one piece's call at most.
+        private const int MostSteps = 64;            // steps of one piece behind the loading screen at most (a stuck piece is let go)
+        private static int _blacks;                  // black screens with pieces waiting, counted: a piece is tried once in each
+        private static bool _stepAgain;              // the piece just called did one step of several (NextFrame)
+        private static readonly SpreadWatch Spread = new SpreadWatch();
+        private static string _slowest;              // the piece of the slowest frame behind this black screen, for its line
+        private static bool _spreading;              // a black screen's pieces are being tried: its line is still to be written
 
         /// <summary>True while the late pieces run: the loading screen is up though the game's load is done.</summary>
         public static bool InLate { get; private set; }
@@ -157,7 +168,17 @@ namespace RealLifeOverhaul
             {
                 Work.Add(work);
                 Names.Add(what);
+                TriedIn.Add(0);
             }
+        }
+
+        /// <summary>
+        /// Said by a piece that did one step of work that has several (a look merged of a dozen), as it returns false: it is
+        /// called again in the next frame while the screen is black, and at once behind the loading screen.
+        /// </summary>
+        public static void NextFrame()
+        {
+            _stepAgain = true;
         }
 
         /// <summary>
@@ -217,21 +238,7 @@ namespace RealLifeOverhaul
             {
                 for (int i = 0; i < Late.Count; i++)
                 {
-                    bool finished = true;
-                    int mark = SessionWatch.Mark(LateNames[i]);
-                    try
-                    {
-                        finished = Late[i]();
-                    }
-                    catch (Exception e)
-                    {
-                        if (!Guard.DoesWithout(e, "the work behind the loading screen: " + LateNames[i], "the feature does it when it first needs it"))
-                        {
-                            SessionWatch.Logger?.Error(e);   // the feature does it on first need instead
-                        }
-                    }
-                    SessionWatch.Done(mark);
-                    if (finished)
+                    if (Steps(Late[i], LateNames[i]))
                     {
                         done++;
                     }
@@ -239,6 +246,7 @@ namespace RealLifeOverhaul
                     {
                         Work.Insert(0, Late[i]);   // with the others, last in their round (they run last first)
                         Names.Insert(0, LateNames[i]);
+                        TriedIn.Insert(0, 0);
                     }
                 }
             }
@@ -260,29 +268,100 @@ namespace RealLifeOverhaul
             }
         }
 
+        // Behind the loading screen: every piece whole, each of its steps at once.
         private static void Run()
         {
             for (int i = Work.Count - 1; i >= 0; i--)
             {
-                bool done = true;
-                int mark = SessionWatch.Mark(Names[i]);
-                try
+                if (Steps(Work[i], Names[i]) && i < Work.Count)
                 {
-                    done = Work[i]();
+                    Work.RemoveAt(i);
+                    Names.RemoveAt(i);
+                    TriedIn.RemoveAt(i);
                 }
-                catch (Exception e)
+            }
+        }
+
+        // A piece with all its steps, where a long frame is not seen.
+        private static bool Steps(Func<bool> work, string what)
+        {
+            bool done = Call(work, what);
+            for (int n = 1; !done && _stepAgain && n < MostSteps; n++)
+            {
+                done = Call(work, what);
+            }
+            return done;
+        }
+
+        // One call of a piece: true when it is done (or failed: the feature then does it on first need).
+        private static bool Call(Func<bool> work, string what)
+        {
+            _stepAgain = false;
+            bool done = true;
+            int mark = SessionWatch.Mark(what);
+            try
+            {
+                done = work();
+            }
+            catch (Exception e)
+            {
+                _stepAgain = false;
+                if (!Guard.DoesWithout(e, "the work behind the loading screen: " + what, "the feature does it when it first needs it"))
                 {
-                    if (!Guard.DoesWithout(e, "the work behind the loading screen: " + Names[i], "the feature does it when it first needs it"))
-                    {
-                        SessionWatch.Logger?.Error(e);   // the feature does it on first need instead
-                    }
+                    SessionWatch.Logger?.Error(e);   // the feature does it on first need instead
                 }
-                SessionWatch.Done(mark);
+            }
+            SessionWatch.Done(mark);
+            return done;
+        }
+
+        // Behind a black screen: the next piece not yet tried behind it, one a frame. False when every piece has been.
+        private static bool RunOne()
+        {
+            int i = Work.Count - 1;
+            while (i >= 0 && TriedIn[i] == _blacks)
+            {
+                i--;
+            }
+            if (i < 0)
+            {
+                return false;
+            }
+            string what = Names[i];
+            long began = Stopwatch.GetTimestamp();
+            bool done = Call(Work[i], what);
+            if (Spread.Item(0, began))
+            {
+                _slowest = what;
+            }
+            if (i < Work.Count && ReferenceEquals(Names[i], what))
+            {
                 if (done)
                 {
                     Work.RemoveAt(i);
                     Names.RemoveAt(i);
+                    TriedIn.RemoveAt(i);
                 }
+                else if (!_stepAgain)
+                {
+                    TriedIn[i] = _blacks;   // tried behind this black screen: the next one tries it again
+                }
+            }
+            return true;
+        }
+
+        // The self-check line of one black screen's pieces, with Developer diagnostics on: written once it is over.
+        private static void SayDoor()
+        {
+            if (!_spreading)
+            {
+                return;
+            }
+            _spreading = false;
+            if (Meta.Dev.Verbose && Spread.Items > 0)
+            {
+                SessionWatch.Logger?.Info("Prewarm check (behind a black screen, a piece a frame): " + Spread.Said(_slowest ?? "-") + "; " + Work.Count
+                                          + " piece(s) wait for the next: " + Spread.Verdict(true) + ".");
             }
         }
 
@@ -315,11 +394,13 @@ namespace RealLifeOverhaul
         {
             if (Work.Count == 0)
             {
+                SayDoor();
                 enabled = false;
                 return;
             }
             if (BuildingManager.IsInsideBuilding || !SceneFinds.Dark)
             {
+                SayDoor();
                 _tried = false;   // a plain pause is not the walk out of a door: its menu would show the hitch
                 return;
             }
@@ -329,8 +410,23 @@ namespace RealLifeOverhaul
             }
             if (!_tried)
             {
-                _tried = true;   // once each time the screen goes black, not once a frame while it is
-                Run();
+                _tried = true;   // a new black screen: every piece is tried once behind it, not once a frame while it is
+                _blacks++;
+                _slowest = null;
+                _spreading = true;
+                Spread.Begin();
+            }
+            if (_spreading)
+            {
+                long began = Stopwatch.GetTimestamp();
+                if (RunOne())
+                {
+                    Spread.Frame(began);
+                }
+                else
+                {
+                    SayDoor();   // every piece tried behind this black screen; the rest wait for the next
+                }
             }
         }
 
@@ -341,6 +437,8 @@ namespace RealLifeOverhaul
                 _instance = null;
                 Work.Clear();   // the pieces belonged to the city that is going
                 Names.Clear();
+                TriedIn.Clear();
+                _spreading = false;
                 Late.Clear();
                 LateNames.Clear();
             }

@@ -76,11 +76,17 @@ namespace RealLifeOverhaul.DistrictSave
             }
         }
 
+        // One policy for the session, as the game's own SaveGameSerializationHelper keeps one: Odin keys its formatter caches
+        // by the policy object, so a new one at every save built a formatter for every type of the records again (and kept the
+        // old ones): most of the 53 ms the section took in beta 6's save frame. The same bytes either way (RLO-PERF-024).
+        // Written on the main thread only.
+        private static readonly SaveGameSerializationPolicy Policy = new SaveGameSerializationPolicy();
+
         // As SaveGameSerializationHelper.SerializeBinaryData sets its context up.
         private static void Write(object[] records, Stream to)
         {
             var context = new SerializationContext();
-            context.Config.SerializationPolicy = new SaveGameSerializationPolicy();
+            context.Config.SerializationPolicy = Policy;
             context.Config.DebugContext.ErrorHandlingPolicy = ErrorHandlingPolicy.ThrowOnErrors;
             SerializationUtility.SerializeValue(records, to, DataFormat.Binary, context);
         }

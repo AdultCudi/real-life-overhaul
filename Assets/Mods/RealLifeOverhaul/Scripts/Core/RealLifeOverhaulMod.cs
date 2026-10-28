@@ -1441,8 +1441,9 @@ namespace RealLifeOverhaul
             Guard.Step("LoadHold", () => Guard.Add<LoadHold>(_root));   // disabled unless a piece is waiting
             Guard.Step("NewGround.GroundDirector", () => NewGround.GroundDirector.Logger = context.Logger);
             Guard.Step("NewGround.GroundDirector", () => Guard.Add<NewGround.GroundDirector>(_root));   // before the traffic starts: a test road is appended here; disabled while idle
-            // Pieces run last added first: this one after the road data below.
-            Guard.Step("the lane grid's prewarm", () => ScenePrewarm.Add("roads: the lane points put in a grid for the nearest lane point", TrafficTools.PrewarmLaneGrid));
+            // In the game's late call, after the road data below and once its traffic system is up (3.8 ms that waited for the
+            // first black screen; RLO-PERF-024).
+            Guard.Step("the lane grid's prewarm", () => ScenePrewarm.AddLate("roads: the lane points put in a grid for the nearest lane point", TrafficTools.PrewarmLaneGrid));
             Guard.Step("the roads' prewarm", () => ScenePrewarm.Add("roads: the traffic system's road data being found for the city", RoadData.Prewarm));
             Guard.Step("the smoke's prewarm", () => ScenePrewarm.Add("traffic: the game's smoke effect being found for accidents and fires", TrafficEffects.Prewarm));
             Guard.Step("the sirens' prewarm", () => ScenePrewarm.Add("traffic: the sirens' sounds being made", TrafficEffects.PrewarmSirens));

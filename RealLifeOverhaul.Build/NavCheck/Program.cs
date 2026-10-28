@@ -90,6 +90,7 @@ internal static partial class Program
         CarContactChecks(); // when a contact of the player's car is a hit: never the road under a braking van, a kerb or its load; every collision judged so (CarContactCheck.cs)
         Handling(Array.IndexOf(args, "--handling") >= 0);   // the driven car's handling on the game's own cars, with the Garage's builds, and its sources (HandlingCheck.cs)
         Tunings();        // car tuning: the gear change parts on the model, the build line, the figures page, the sale and its sources (TuningCheck.cs)
+        CarSpread();      // the driven car's sums a step at a time: the same as whole, each step short, the frames they are spread over (CarSpreadCheck.cs)
 
         Walks();          // walking on a key: the toggle, the walk over the game's own pace frame by frame, its cycle, and its sources (WalkCheck.cs)
         Washes();         // the game's car wash in a repair bay never holding a car for good, and every way out of the custom shop (WashCheck.cs)

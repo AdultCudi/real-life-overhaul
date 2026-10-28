@@ -832,10 +832,12 @@ internal static partial class Program
 
         // The Garage's parts always lie on top: taken off before the handling changes anything, put back after; what the
         // handling wrote is read back before they go back on top of it.
-        string on = Body(handling, "public bool Apply(");
+        string begin = Body(handling, "public bool Begin(");
+        string on = Body(handling, "public bool Finish(");
         string off = Body(handling, "public void Restore(");
-        Check(Before(on, "LiftParts", "PutOn(") && Before(on, "PutOn(", "LayParts") && Before(off, "LiftParts", "TakeOff(") && Before(off, "TakeOff(", "LayParts"),
-            "handling source: the Garage's parts are lifted before the handling goes on or comes off, and laid back on top after");
+        Check(Before(on, "LiftParts", "PutOn(") && Before(on, "PutOn(", "LayParts") && Before(off, "LiftParts", "TakeOff(") && Before(off, "TakeOff(", "LayParts")
+              && off.Contains("_design.Cancel()"),
+            "handling source: the Garage's parts are lifted before the handling goes on or comes off, and laid back on top after; coming off drops a design under way");
         Check(Before(on, "PutOn(", "_took = Took(") && Before(on, "_took = Took(", "LayParts") && Body(handling, "private string Line(").Contains("string why = _took;")
               && !Body(handling, "private string Line(").Contains("SpringMaxLength"),
             "handling source: what the handling wrote is read back before the Garage's parts go on top, and the getting-in line reports that, never the parts' own springs as a fault");
@@ -844,7 +846,8 @@ internal static partial class Program
         string shop = Source(scripts, @"Garage\GarageTuning.cs");
         Check(Body(shop, "public static GarageFigures Figures(").Contains("CarTuning.HandlingStop(") && Body(handling, "public float ShopStop(").Contains("HandlingModel.ShopStop("),
             "handling source: the custom shop's stopping figure comes from the handling's own model when the handling is on the car");
-        Check(Body(handling, "private string Read(").Contains("_chassis.TopKmh = topKmh") && on.Contains("Read(car, vehicle, body, type.maxSpeed)")
+        Check(Body(handling, "private string Read(").Contains("_chassis.TopKmh = topKmh") && Before(begin, "LiftParts", "Read(car, vehicle, body, type.maxSpeed)")
+              && Before(begin, "Read(car, vehicle, body, type.maxSpeed)", "LayParts") && !begin.Contains("PutOn(")
               && Body(handling, "private static string ReadAxle(").Contains("axle.SideStiffness = a.LateralFrictionStiffness"),
             "handling source: each car's own game values are read when the player gets in: its top speed, tyres, slip stiffness, springs, dampers and steering");
 
@@ -853,11 +856,14 @@ internal static partial class Program
         string update = Body(tuning, "private void OnUpdate(");
         Check(restore.Contains("_handling.Restore(") && Body(tuning, "private void OnDestroy(").Contains("Restore()") && update.Contains("Restore();")
               && Count(update, "Restore();") >= 2, "handling source: leaving the car, a change of car or option, a fault and the city going all take the handling off (CarTuning.Restore)");
-        Check(Before(restore, "PutBackTuning(", "_handling.Restore(") && Body(tuning, "private void PutBackTuning(").Contains("box.shiftDuration") && Before(update, "_handling.Apply(", "Apply(car, vehicle)"),
-            "handling source: the handling goes on before the car's power is worked out from its weight, and comes off after it");
+        string carry = Body(tuning, "private void Carry(");
+        Check(Before(restore, "PutBackTuning(", "_handling.Restore(") && Body(tuning, "private void PutBackTuning(").Contains("box.shiftDuration")
+              && Before(carry, "_handling.Finish()", "TuneBegin(") && Body(tuning, "private Sums AfterHandling(").Contains("Sums.TuningBegin")
+              && restore.Contains("_solve.Cancel()") && restore.Contains("_sums = Sums.None"),
+            "handling source: the handling goes on before the car's power is worked out from its weight, and comes off after it; coming off drops the sums under way");
 
         // Only the car the player drives: it comes from the game's selected vehicle alone, and no other part of the mod names the handling.
-        Check(update.Contains("gm.selectedVehicle as CarController") && on.Contains("GoingPublic.MineVehicle("), "handling source: the handling is only for the car the player drives, and their own (Going Public)");
+        Check(update.Contains("gm.selectedVehicle as CarController") && begin.Contains("GoingPublic.MineVehicle("), "handling source: the handling is only for the car the player drives, and their own (Going Public)");
         var others = new List<string>();
         foreach (string file in Directory.GetFiles(scripts, "*.cs", SearchOption.AllDirectories))
         {
