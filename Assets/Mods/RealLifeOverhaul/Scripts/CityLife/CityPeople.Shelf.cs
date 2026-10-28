@@ -93,23 +93,33 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Behind the black screen of a walk out (Core/ScenePrewarm): every worn look on the shelf changed, at most a few.
+        // Behind the black screen of a walk out (Core/ScenePrewarm): every worn look on the shelf changed, at most a few, one
+        // a frame (each is a mesh merge of 1.5 to 3.6 ms; RLO-PERF-024).
         private bool AtDoor()
         {
-            _doorAsked = false;
             if (this == null)
             {
+                _doorAsked = false;
                 return true;   // gone with its city
             }
             try
             {
-                for (int i = 0, made = 0; i < _people.Count && made < WornAtDoor; i++)
+                if (_doorLeft <= 0)
+                {
+                    _doorLeft = WornAtDoor;   // a new asking
+                }
+                for (int i = 0; i < _people.Count; i++)
                 {
                     CityPerson person = _people[i];
                     if (person.Stale && person.Valid && !person.InUse && !person.Actor.InUse)
                     {
                         Redress(person, CityLook.Civilian);
-                        made++;
+                        if (--_doorLeft > 0)
+                        {
+                            ScenePrewarm.NextFrame();   // the next in the next frame while the screen is black
+                            return false;
+                        }
+                        break;
                     }
                 }
             }
@@ -121,6 +131,8 @@ namespace RealLifeOverhaul
                     _people[i].Stale = false;   // not tried again: they keep the look they have
                 }
             }
+            _doorLeft = 0;
+            _doorAsked = false;
             return true;
         }
 

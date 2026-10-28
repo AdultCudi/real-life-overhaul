@@ -34,6 +34,7 @@ namespace RealLifeOverhaul
         private readonly List<CityLook> _wanted = new List<CityLook>(4);   // looks nobody on the shelf had, made ready one at a time
         private const int WornAtDoor = 4;   // worn looks changed behind one black screen at most: four merges where nothing shows
         private bool _doorAsked;            // the worn looks are with Core/ScenePrewarm for the next door
+        private int _doorLeft;              // worn looks still allowed to this asking: one a black frame (RLO-PERF-024)
         private Func<bool> _atDoor;         // made once
         private Coroutine _tending;
 

@@ -16,7 +16,11 @@ namespace RealLifeOverhaul
     /// cars share one gearbox and a limiter, so <see cref="CarModel"/> works out the power, gearing and drag that meet the
     /// target, and the throttle key eases the pedal. It carries the handling too (<see cref="CarHandling"/>). Everything is
     /// recorded first and put back exactly on every way out; anything unexpected restores the car and leaves cars alone
-    /// from then on. Per frame: one reference and two numbers compared.
+    /// from then on. The sums for a car (the handling's design, then the search for its power) are spread over the frames
+    /// after the player gets in or an option changes, a slice of <see cref="SliceMs"/> ms a frame and a step more at most,
+    /// the car driving as the game made it meanwhile (some 15 frames): done whole they were a frame of 15 ms (the owner's
+    /// log of 28 Oct 2026, beta 6). Per frame: one reference and two numbers compared; while a car's sums are under way,
+    /// that slice.
     /// </summary>
     public class CarTuning : MonoBehaviour
     {
@@ -24,6 +28,24 @@ namespace RealLifeOverhaul
 
         public const float BrakeOnset = 0.25f;    // seconds for the brakes to come on fully with the eased pedal
         private const float MaxTopKmh = 350f;     // whatever the slider says: beyond this a car covers two metres a physics step
+        public const double SliceMs = CarSolve.SliceMs;   // a car's sums a frame may take while they are under way, a step more at most
+
+        // Where a car's sums stand: each item one call of a slice (Carry). The handling's design comes first, so the power
+        // is found for the car's new weight; the eased pedals go on last.
+        private enum Sums
+        {
+            None,
+            HandlingBegin,   // the checks and the car read for the handling
+            Handling,        // a step of its design
+            HandlingOn,      // the design put on the car (a frame of its own)
+            HandlingSaid,    // its self-check line, with Developer diagnostics on (a frame of its own)
+            TuningBegin,     // the checks and the car read for its power
+            Tuning,          // a step of the search for its power
+            Shift,           // the custom shop's quicker gear change driven again
+            TuningOn,        // the power, gearing and drag put on the car, and its line (a frame of its own)
+            Ease,            // the eased pedals on
+            Said             // with Developer diagnostics on, the self-check line of the spread (a frame of its own)
+        }
 
         public static IModLogger Logger;
 
@@ -63,6 +85,24 @@ namespace RealLifeOverhaul
         private float _pedal;
         private float _brakePedal;
         private bool _failed;
+
+        // The car's sums under way (Carry), and what the search for its power was begun with.
+        private readonly CarSolve _solve = new CarSolve();
+        private Sums _sums;
+        private CarController _sumsCar;
+        private NwhVehicle _sumsVehicle;
+        private bool _tuneWanted;        // the power is worked out after the handling (the option is on)
+        private HandlingLevel _sumsLevel;
+        private HandlingTuning _sumsTuning;
+        private string _tuneType;
+        private CarKind _tuneKind;
+        private float _tuneSeconds, _tuneTopKmh;
+        private bool _tuneEased;
+        private GarageModifiers _tuneGarage;
+        private int _tuneForward;
+        private CarRun _tuneRun;
+        private int _designSteps, _solveSteps;   // the steps each took, for the line
+        private readonly SpreadWatch _spread = new SpreadWatch();   // the frames the sums took, for their self-check line
 
         /// <summary>The car being driven if it carries the mod's numbers, else null.</summary>
         public NwhVehicle Tuned => _tuned;
@@ -108,30 +148,29 @@ namespace RealLifeOverhaul
                 ? 0
                 : 1 | (Settings.SmoothThrottle ? 2 : 0) | (Mathf.Clamp(Settings.CarTopSpeed, 70, 150) << 2) | (Mathf.Clamp(Settings.CarAcceleration, 70, 150) << 10) | (GarageTuning.Stamp << 18);
             long handled = HandlingStamp();
-            if (vehicle == _seen && options == _options && handled == _handled)
+            bool same = vehicle == _seen && options == _options && handled == _handled;
+            if (same && _sums == Sums.None)
             {
-                return;   // same car or none, same options
+                return;   // same car or none, same options, no sums under way
             }
 
-            Restore();
-            _seen = vehicle;
-            _options = options;
-            _handled = handled;
-            if (vehicle == null || (options == 0 && handled == 0) || _failed)
-            {
-                return;
-            }
+            long began = System.Diagnostics.Stopwatch.GetTimestamp();
+            WorkSlice slice = WorkSlice.Of(SliceMs, 1);   // what puts the last car back counts in the first slice
             try
             {
-                if (handled != 0)
+                if (!same)
                 {
-                    _handling.Apply(car, vehicle, HandlingRules.Level(Settings.Handling), Tuning());   // first: the power below is found for the car's new weight
+                    Restore();
+                    _seen = vehicle;
+                    _options = options;
+                    _handled = handled;
+                    if (vehicle == null || (options == 0 && handled == 0) || _failed)
+                    {
+                        return;
+                    }
+                    Begin(car, vehicle, options, handled);
                 }
-                if (options != 0)
-                {
-                    Apply(car, vehicle);
-                }
-                Ease(vehicle);
+                Carry(ref slice, began);
             }
             catch (Exception e)
             {
@@ -140,6 +179,119 @@ namespace RealLifeOverhaul
                 Logger?.Warn("Car tuning: something about this car was not as expected; it is back as the game made it and cars are left alone from now on. " + e);
             }
         }
+
+        // A car's sums begun: nothing read yet, the first slice does that.
+        private void Begin(CarController car, NwhVehicle vehicle, int options, long handled)
+        {
+            _sumsCar = car;
+            _sumsVehicle = vehicle;
+            _tuneWanted = options != 0;
+            _sumsLevel = HandlingRules.Level(Settings.Handling);
+            _sumsTuning = Tuning();
+            _tuneType = null;
+            _designSteps = 0;
+            _solveSteps = 0;
+            _spread.Begin();
+            _sums = handled != 0 ? Sums.HandlingBegin : _tuneWanted ? Sums.TuningBegin : Sums.Ease;
+        }
+
+        // The car's sums carried on as far as the slice goes, an item a call: the handling first (the power is found for the
+        // car's new weight), then the power, then the eased pedals. An item that puts something on the car, or writes a
+        // line, is the first of its slice.
+        private void Carry(ref WorkSlice slice, long began)
+        {
+            if (_sumsCar == null || _sumsVehicle == null)
+            {
+                Restore();   // the car went while its sums were under way
+                return;
+            }
+            while (_sums != Sums.None && slice.More(Heavy(_sums)))
+            {
+                Sums item = _sums;
+                long itemBegan = System.Diagnostics.Stopwatch.GetTimestamp();
+                switch (item)
+                {
+                    case Sums.HandlingBegin:
+                        _sums = _handling.Begin(_sumsCar, _sumsVehicle, _sumsLevel, _sumsTuning) ? Sums.Handling : AfterHandling();
+                        break;
+                    case Sums.Handling:
+                        _sums = _handling.Step() ? Sums.Handling : Sums.HandlingOn;
+                        break;
+                    case Sums.HandlingOn:
+                        _designSteps = _handling.DesignSteps;
+                        _sums = _handling.Finish() && Meta.Dev.Verbose ? Sums.HandlingSaid : AfterHandling();
+                        break;
+                    case Sums.HandlingSaid:
+                        _handling.SayOn();
+                        _sums = AfterHandling();
+                        break;
+                    case Sums.TuningBegin:
+                        _sums = TuneBegin(_sumsCar, _sumsVehicle) ? Sums.Tuning : Sums.Ease;
+                        break;
+                    case Sums.Tuning:
+                        _sums = _solve.Step() ? Sums.Tuning : TuneSolved();
+                        _solveSteps = _solve.Steps;
+                        break;
+                    case Sums.Shift:
+                        // The power was found with the kind's own change time; the quicker gearbox's gain is on top, and the
+                        // expected figures are driven again with it so the log says what the car will do.
+                        _setup.ShiftSeconds = TuningRules.ShiftSeconds(_setup.ShiftSeconds, _tuneGarage.Shift);
+                        _tuneRun = CarModel.Run(_physics, _setup, _tuneEased);
+                        _sums = Sums.TuningOn;
+                        break;
+                    case Sums.TuningOn:
+                        TuneOn(_sumsCar, _sumsVehicle);
+                        _sums = Sums.Ease;
+                        break;
+                    case Sums.Ease:
+                        Ease(_sumsVehicle);
+                        _sums = Meta.Dev.Verbose ? Sums.Said : Sums.None;
+                        break;
+                    default:
+                        SaySpread();   // the figures of the frames before this one
+                        _sums = Sums.None;
+                        break;
+                }
+                _spread.Item((int)item, itemBegan);
+            }
+            _spread.Frame(began);   // the line's own frame is counted after it is written
+            if (_sums == Sums.None)
+            {
+                _sumsCar = null;
+                _sumsVehicle = null;
+            }
+        }
+
+        private Sums AfterHandling()
+        {
+            return _tuneWanted ? Sums.TuningBegin : Sums.Ease;
+        }
+
+        // An item that touches the car (reads it with the Garage's parts lifted, or puts something on it) or writes a line
+        // takes a slice of its own.
+        private static bool Heavy(Sums item)
+        {
+            return item == Sums.HandlingBegin || item == Sums.HandlingOn || item == Sums.HandlingSaid || item == Sums.TuningBegin || item == Sums.TuningOn || item == Sums.Said;
+        }
+
+        // With Developer diagnostics on, once a car's sums are done: their steps and frames, and the slowest frame against 2 ms.
+        private void SaySpread()
+        {
+            if (Meta.Dev.Verbose)
+            {
+                string type = _tuneType ?? (_sumsCar != null && _sumsCar.vehicleType != null ? _sumsCar.vehicleType.vehicleTypeName : "the car");
+                Logger?.Info("Car tuning check (spread over frames): " + type + ": the handling's design in " + _designSteps + " step(s) and the search for its power in "
+                             + _solveSteps + ", " + _spread.Said(ItemNames) + ": " + _spread.Verdict(false) + ".");
+            }
+        }
+
+        // What each item is, by its Sums, for the line.
+        private static readonly string[] ItemNames =
+        {
+            "nothing", "the car read for the handling", "a step of the handling's design", "the handling put on the car", "the handling's self-check line",
+            "the car read for its power", "a step of the search for its power", "the quicker gear change driven again", "the power, gearing and drag put on the car",
+            "the eased pedals put on", "the self-check line"
+        };
 
         private void OnDestroy()
         {
@@ -227,33 +379,35 @@ namespace RealLifeOverhaul
             vehicle.input.inputModifyCallback.AddListener(_easePedal);
         }
 
-        private void Apply(CarController car, NwhVehicle vehicle)
+        // The search for the car's power begun: the checks and the car read now (the handling, if any, is on it already),
+        // the search's steps in the frames after (CarSolve). False if the car keeps the game's own power (said once).
+        private bool TuneBegin(CarController car, NwhVehicle vehicle)
         {
             Vehicles.VehicleTypes.VehicleType type = car.vehicleType;
             Rigidbody body = vehicle.vehicleRigidbody;
             if (type == null || body == null || vehicle.powertrain == null)
             {
-                return;
+                return false;
             }
             string typeName = type.vehicleTypeName;
             if (!GoingPublic.MineVehicle(car))
             {
-                // The handling's rule (CarHandling.Apply): another Going Public player's car keeps the figures its owner's
+                // The handling's rule (CarHandling.Begin): another Going Public player's car keeps the figures its owner's
                 // machine gives it, whoever drives it here.
                 Note(typeName, "Car tuning: " + typeName + " is left as the game made it (it is another player's car, Going Public).");
-                return;
+                return false;
             }
             var traits = new CarTraits(type.IsMotorVehicle, type.spawnInPlayerObject, type.maxSpeed, type.maxCargoCapacity, type.isLuxuryCar, body.mass);
             CarSpec spec = CarCatalogue.For(typeName, traits);
             if (spec.Kind == CarKind.Untouched)
             {
-                return;
+                return false;
             }
             string refusal = Read(vehicle, body, out int firstForward);
             if (refusal != null)
             {
                 Note(typeName, "Car tuning: " + typeName + " is left as the game made it (" + refusal + ").");
-                return;
+                return false;
             }
 
             float seconds = spec.Seconds * 100f / Mathf.Clamp(Settings.CarAcceleration, 70, 150);
@@ -261,20 +415,40 @@ namespace RealLifeOverhaul
             GarageModifiers garage = GarageTuning.Claim(car.vehicleInstance);   // what the custom shop fitted
             seconds /= garage.Acceleration;
             topKmh = Mathf.Min(topKmh * garage.TopSpeed, MaxTopKmh);
-            bool eased = Settings.SmoothThrottle;
-            if (!CarModel.Solve(_physics, spec.Kind, seconds, topKmh, eased, _setup, out CarRun run))
-            {
-                Note(typeName, "Car tuning: " + typeName + " is left as the game made it (no engine power gets it to 100 km/h).");
-                return;
-            }
-            if (garage.Shift != 1f)
-            {
-                // The power was found with the kind's own change time; the quicker gearbox's gain is on top, and the
-                // expected figures are driven again with it so the log says what the car will do.
-                _setup.ShiftSeconds = TuningRules.ShiftSeconds(_setup.ShiftSeconds, garage.Shift);
-                run = CarModel.Run(_physics, _setup, eased);
-            }
+            _tuneType = typeName;
+            _tuneKind = spec.Kind;
+            _tuneSeconds = seconds;
+            _tuneTopKmh = topKmh;
+            _tuneEased = Settings.SmoothThrottle;
+            _tuneGarage = garage;
+            _tuneForward = firstForward;
+            _solve.Begin(_physics, spec.Kind, seconds, topKmh, _tuneEased, _setup);
+            return true;
+        }
 
+        // The search over: the custom shop's quicker gear change next if it has one, else the power put on; the game's own
+        // power kept (said once) if no power gets the car to 100 km/h.
+        private Sums TuneSolved()
+        {
+            if (!_solve.Solved)
+            {
+                Note(_tuneType, "Car tuning: " + _tuneType + " is left as the game made it (no engine power gets it to 100 km/h).");
+                return Sums.Ease;
+            }
+            _tuneRun = _solve.Result;
+            return _tuneGarage.Shift != 1f ? Sums.Shift : Sums.TuningOn;
+        }
+
+        // The power, gearing and drag found put on the car, recorded first to be put back, and its line written once.
+        private void TuneOn(CarController car, NwhVehicle vehicle)
+        {
+            Rigidbody body = vehicle.vehicleRigidbody;
+            string typeName = _tuneType;
+            int firstForward = _tuneForward;
+            float seconds = _tuneSeconds;
+            float topKmh = _tuneTopKmh;
+            bool eased = _tuneEased;
+            CarRun run = _tuneRun;
             EngineComponent engine = vehicle.powertrain.engine;
             TransmissionComponent box = vehicle.powertrain.transmission;
             float finalDrive = _setup.Ratios[_setup.Ratios.Length - 1] / box.gears[box.gears.Count - 1];   // top gear keeps its own ratio
@@ -330,7 +504,7 @@ namespace RealLifeOverhaul
             TargetTopKmh = topKmh;
 
             float firstGearKmh = CarModel.TopGearRevs * _physics.RevLimitRpm * 0.10471976f * _physics.WheelRadius / _setup.Ratios[0] * 3.6f;
-            Note(typeName, FormattableString.Invariant($"Car tuning: {typeName} ({spec.Kind}): target 0-100 {seconds:F1} s, top {topKmh:F0} km/h; ")
+            Note(typeName, FormattableString.Invariant($"Car tuning: {typeName} ({_tuneKind}): target 0-100 {seconds:F1} s, top {topKmh:F0} km/h; ")
                 + FormattableString.Invariant($"power {_stock.Power:F0} -> {_setup.PowerKw:F0} kW, final drive {_stock.FinalDrive:F2} -> {finalDrive:F2}, drag {_setup.Drag:F3}; ")
                 + FormattableString.Invariant(
                     $"first gear to {firstGearKmh:F0} km/h, shifts at {_setup.UpshiftRpm:F0} to {_setup.UpshiftRpm * (1f + _setup.ShiftIntensity):F0} rpm in {_setup.ShiftSeconds:F2} s, ")
@@ -524,6 +698,10 @@ namespace RealLifeOverhaul
 
         private void Restore()
         {
+            _sums = Sums.None;   // a car's sums under way dropped: the handling's design with the handling below
+            _solve.Cancel();
+            _sumsCar = null;
+            _sumsVehicle = null;
             NwhVehicle vehicle = _tuned;
             _tuned = null;
             if (_drag != null)

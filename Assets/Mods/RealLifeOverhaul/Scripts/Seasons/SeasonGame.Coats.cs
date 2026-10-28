@@ -42,6 +42,7 @@ namespace RealLifeOverhaul.Seasons
         private static bool _coatsFailed;
         private static bool _cold, _winter;     // as the last look found it, for the work at the door
         private static bool _asked;             // the work is with Core/ScenePrewarm for the next door
+        private static int _doorLeft;           // merges still allowed to this asking: one a black frame (RLO-PERF-024)
         private static Func<bool> _atDoor;      // made once
 
         // What a person wore before the cold; both null when they were warm already and nothing was changed.
@@ -93,25 +94,28 @@ namespace RealLifeOverhaul.Seasons
             return city != null && city.pedestrianSpawner != null ? city.pedestrianSpawner.activePedestrians : null;
         }
 
-        // Behind the black screen of a walk out (Core/ScenePrewarm): the merges no frame of play may pay for. Done for this
-        // door whatever is left; the next look asks again.
+        // Behind the black screen of a walk out (Core/ScenePrewarm): the merges no frame of play may pay for, one a frame
+        // (each is a mesh merge of 1 to 2 ms; a dozen in one frame were most of beta 6's 13 ms frame), at most DoorMost to
+        // an asking. Done for this door whatever is left; the next look asks again.
         private static bool AtDoor()
         {
-            _asked = false;
             if (_coatsFailed)
             {
+                _asked = false;
                 return true;
             }
             try
             {
-                Forget();
-                if (_cold)
+                if (_doorLeft <= 0)
                 {
-                    DressSome(DoorMost);
+                    _doorLeft = DoorMost;   // a new asking
+                    Forget();
                 }
-                else
+                int changed = _cold ? DressSome(1) : PutBack(1);
+                if (changed > 0 && --_doorLeft > 0)
                 {
-                    PutBack(DoorMost);
+                    ScenePrewarm.NextFrame();   // the next in the next frame while the screen is black
+                    return false;
                 }
             }
             catch (Exception e)
@@ -121,21 +125,26 @@ namespace RealLifeOverhaul.Seasons
                 SeasonDirector.Logger?.Warn("Seasons: people's clothes cannot be changed in this build; they keep the game's own this session.");
                 RestoreCoats();
             }
+            _doorLeft = 0;
+            _asked = false;
             return true;
         }
 
-        private static void DressSome(int most)
+        // Up to <paramref name="most"/> walkers dressed; how many were.
+        private static int DressSome(int most)
         {
+            int dressed = 0;
             List<Pedestrian> walking = Walking();
-            for (int i = 0; walking != null && i < walking.Count && most > 0; i++)
+            for (int i = 0; walking != null && i < walking.Count && dressed < most; i++)
             {
                 AppearanceSetter look = walking[i] != null && walking[i].tpc != null ? walking[i].tpc.appearanceSetter : null;
                 if (look != null && !Dressed.ContainsKey(look))
                 {
                     Dress(look, _winter);
-                    most--;
+                    dressed++;
                 }
             }
+            return dressed;
         }
 
         // A walker the pool destroyed (one released past its most) leaves its key: nothing of it is to be put back.
@@ -285,12 +294,12 @@ namespace RealLifeOverhaul.Seasons
             }
         }
 
-        // Up to <paramref name="most"/> outfits put back as they were.
-        private static void PutBack(int most)
+        // Up to <paramref name="most"/> outfits put back as they were; how many were.
+        private static int PutBack(int most)
         {
             if (Dressed.Count == 0)
             {
-                return;
+                return 0;
             }
             Undress.Clear();
             foreach (KeyValuePair<AppearanceSetter, Worn> one in Dressed)
@@ -323,12 +332,16 @@ namespace RealLifeOverhaul.Seasons
                 }
             }
             Change.Clear();
+            int back = Undress.Count;
+            Undress.Clear();
+            return back;
         }
 
         /// <summary>Every outfit changed put back at once. Safe at any time.</summary>
         public static void RestoreCoats()
         {
             _asked = false;   // the city's pieces go with it (Core/ScenePrewarm): asked again at the next look
+            _doorLeft = 0;
             try
             {
                 PutBack(int.MaxValue);

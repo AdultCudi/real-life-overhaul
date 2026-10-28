@@ -13,15 +13,19 @@ internal static partial class Program
     {
         string scripts = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts"));
         string tuning = Source(scripts, @"Driving\CarTuning.cs");
-        string apply = Body(tuning, "private void Apply(CarController car, NwhVehicle vehicle)");
-        int mine = apply.IndexOf("if (!GoingPublic.MineVehicle(car))", StringComparison.Ordinal);
-        int power = apply.IndexOf("engine.maxPower = ", StringComparison.Ordinal);
-        int claim = apply.IndexOf("GarageTuning.Claim(", StringComparison.Ordinal);
-        Check(mine > 0 && power > mine && claim > mine, "driving fix: the car tuning's engine figures go only on the player's own car, as the handling's (Going Public)");
+        // The tuning is spread over frames (RLO-PERF-024): its first step asks whose the car is and claims the Garage's
+        // build, and the figures go on only in a later step that only that first step leads to.
+        string begin = Body(tuning, "private bool TuneBegin(CarController car, NwhVehicle vehicle)");
+        string on = Body(tuning, "private void TuneOn(CarController car, NwhVehicle vehicle)");
+        int mine = begin.IndexOf("if (!GoingPublic.MineVehicle(car))", StringComparison.Ordinal);
+        int claim = begin.IndexOf("GarageTuning.Claim(", StringComparison.Ordinal);
+        Check(mine > 0 && claim > mine && on.Contains("engine.maxPower = ") && Regex.Matches(tuning, @"engine\.maxPower = _setup\.").Count == 1
+              && Body(tuning, "private void Carry(").Contains("_sums = TuneBegin(_sumsCar, _sumsVehicle) ? Sums.Tuning : Sums.Ease;"),
+            "driving fix: the car tuning's engine figures go only on the player's own car, as the handling's (Going Public)");
         // Every other place in Driving and Garage that writes a car's figures asks the same: the handling, the Garage's walk
         // over the player's cars, and the custom shop's refusal by the save's own list.
         string handling = Source(scripts, @"Driving\CarHandling.cs"), director = Source(scripts, @"Garage\GarageDirector.cs"), shop = Source(scripts, @"Garage\GarageShop.cs");
-        Check(Body(handling, "public bool Apply(").Contains("GoingPublic.MineVehicle(car)") && director.Contains("!GoingPublic.MineVehicle(vehicle)")
+        Check(Body(handling, "public bool Begin(").Contains("GoingPublic.MineVehicle(car)") && director.Contains("!GoingPublic.MineVehicle(vehicle)")
               && Body(shop, "public static string Refusal(VehicleController vehicle)").Contains("save.VehicleInstances.Contains(vehicle.vehicleInstance)"),
             "driving fix: the handling, the Garage's builds and the custom shop all leave another player's car alone");
 
