@@ -10,10 +10,11 @@ namespace RealLifeOverhaul
     /// back: how long it was open, its frames, the frame it opened in and the one it shut in, with the mod's share of each.
     /// Then the map check (docs/standards/performance.md, RLO-PERF-022): every part of the mod's that changed something for
     /// the map (<see cref="MapParts"/>) is asked once a frame until none holds anything, which must be within 2 s of play
-    /// after the map shut; the player's camera is set against the one before the map, and the frames of play and the mod's
-    /// own scripts after it against the minute before it. COST: with Developer diagnostics on, a static read a frame while
-    /// the map is shut; while it is open or its check runs, a few sums and the parts' looks (counts, no allocation) a frame;
-    /// two lines each time the map is opened.
+    /// after the map shut; the player's camera is set against the one before the map (a camera not as before fails the
+    /// check; an opening before the last one's camera was back keeps the camera of the first, <see cref="MapCheckRules"/>),
+    /// and the frames of play and the mod's own scripts after it against the minute before it. COST: with Developer
+    /// diagnostics on, a static read a frame while the map is shut; while it is open or its check runs, a few sums and the
+    /// parts' looks (counts, no allocation) a frame; two lines each time the map is opened.
     /// </summary>
     public sealed partial class SessionWatch
     {
@@ -54,7 +55,9 @@ namespace RealLifeOverhaul
         private double _minuteFrameMs = -1.0, _minuteOwnMs = -1.0;     // the last whole minute's, for a map opened early in a minute
 
         // The player's camera as the map opened: read in the mod's first handler on the map's event (Core/MapTreeGuard),
-        // before anything is changed for the map.
+        // before anything is changed for the map; kept from the first of the openings that came before the last one's
+        // camera was back down (_mapOpenings of them).
+        private int _mapOpenings;
         private Camera _mapCamera;
         private int _mapMask;
         private float _mapFar;
@@ -103,6 +106,9 @@ namespace RealLifeOverhaul
             {
                 return;
             }
+            // Opened again while the last opening was still shutting: the camera and the minute before are the first opening's
+            // (the game's shutting coroutine was stopped, so the draw distances are still the ones set for the way back down).
+            bool takes = MapCheckRules.TakesCamera(_map == MapStage.Closing);
             _map = MapStage.Open;
             float now = Time.unscaledTime;
             _mapOpenedFrame = atEvent ? Time.frameCount : -1;
@@ -116,6 +122,12 @@ namespace RealLifeOverhaul
             _mapOwnWorstSlotMs = 0.0;
             _mapOpenMs = _mapShutMs = -1f;
             _mapOpenOwn = _mapShutOwn = 0.0;
+            if (!takes)
+            {
+                _mapOpenings++;
+                return;
+            }
+            _mapOpenings = 1;
             // The frames of play before it: this minute's so far, or the last whole minute's if this one has hardly begun.
             if (_frames >= 60)
             {
@@ -339,7 +351,7 @@ namespace RealLifeOverhaul
             _line.Append("Map check (after closing): the map was open ").Append(Fixed(_mapShutAt - _mapOpenedAt, "F1")).Append(" s; ");
             int lingering = MapParts.Lingering(_line);
             _line.Append("; the player's camera ");
-            MapCameraWords();
+            MapCameraSeen camera = MapCameraWords();
             if (back)
             {
                 _line.Append("; every part back ").Append(Fixed(within, "F2")).Append(" s (").Append(_mapBackFrames).Append(" frames) after play came back");
@@ -355,41 +367,31 @@ namespace RealLifeOverhaul
                     .Append("; the mod's own scripts ").Append(Fixed(_mapAfterOwn / _mapAfter, "F2")).Append(" ms a frame after it, ")
                     .Append(_mapOwnBefore >= 0.0 ? Fixed(_mapOwnBefore, "F2") : "not known").Append(" before");
             }
-            _line.Append(" (wanted: every part back within ").Append(Fixed(MapRestoredWithin, "F0")).Append(" s, nothing left): ");
-            if (cut && !back)
-            {
-                _line.Append("not judged, the map was opened again first");
-            }
-            else if (back && lingering == 0 && within <= MapRestoredWithin)
-            {
-                _line.Append("restored, 0 lingering: PASS");
-            }
-            else if (back && lingering == 0)
-            {
-                _line.Append("FAIL, restored only after ").Append(Fixed(within, "F1")).Append(" s");
-            }
-            else
-            {
-                _line.Append("FAIL, ").Append(lingering).Append(" lingering");
-            }
+            _line.Append(" (wanted: every part back within ").Append(Fixed(MapRestoredWithin, "F0")).Append(" s, nothing left, the player's camera as before): ");
+            MapCheckRules.Verdict(_line, cut, back, lingering, within, MapRestoredWithin, camera);
             Logger?.Info(_line.ToString());
             _map = MapStage.Shut;
         }
 
-        // The player's camera against the one the map opened over: its layers and far plane are the game's own to set back,
-        // its draw distances by layer the mod's options' (the parts' look says whether those are the mod's again).
-        private void MapCameraWords()
+        // The player's camera against the one the map opened over (the first of openings made before the last one's camera
+        // was back): its layers and far plane are the game's own to set back, its draw distances by layer the mod's
+        // options' (the parts' look says whether those are the mod's again). Any of them not as before fails the check.
+        private MapCameraSeen MapCameraWords()
         {
             Camera camera = GameManager.GetMainCamera();
             if (_mapCamera == null || camera == null)
             {
                 _line.Append("not known as the map opened");
-                return;
+                return MapCameraSeen.NotKnown;
             }
             if (camera != _mapCamera)
             {
                 _line.Append("is another camera than the one the map opened over");
-                return;
+                return MapCameraSeen.NotKnown;
+            }
+            if (_mapOpenings > 1)
+            {
+                _line.Append("(set against the one before the first of ").Append(_mapOpenings).Append(" openings, each made before the last one's camera was back) ");
             }
             float[] distances = camera.layerCullDistances;   // a copy: once a map
             bool same = camera.layerCullSpherical == _mapSpherical;
@@ -402,7 +404,7 @@ namespace RealLifeOverhaul
             if (same && mask && far)
             {
                 _line.Append("as before the map (its layers, far plane and draw distances)");
-                return;
+                return MapCameraSeen.Same;
             }
             _line.Append("not as before the map:");
             if (!mask)
@@ -418,6 +420,7 @@ namespace RealLifeOverhaul
             {
                 _line.Append(" its draw distances by layer differ");
             }
+            return MapCameraSeen.Differs;
         }
 
         private void MapFault(Exception e)

@@ -94,6 +94,8 @@ internal static partial class Program
         Walks();          // walking on a key: the toggle, the walk over the game's own pace frame by frame, its cycle, and its sources (WalkCheck.cs)
         Washes();         // the game's car wash in a repair bay never holding a car for good, and every way out of the custom shop (WashCheck.cs)
         Culling();        // the mod's own things drawn by distance: the game's bands, what may and may not be culled, the group's slots (CullCheck.cs)
+        SceneryCulls();   // the game's culling lists kept free of what the mod destroys: one pass, the group's spheres in step, the unload line (SceneryCullCheck.cs)
+        MapChecksVerdict(); // the map check's verdict: a camera not as before the map fails it, an opening while the last one shut keeps the first's (MapCheckCheck.cs)
         Bounces();        // the bounce watch still catches a bounce while moving traffic is looked at a fifth as often (BounceCheck.cs)
         TrafficMends();   // the game's traffic that stopped adding cars for good told from its log and given a new density manager (TrafficMendCheck.cs)
         RenderLevels();   // the performance section's picture settings: the game's own until moved, their limits, the trials (RenderLevelCheck.cs)

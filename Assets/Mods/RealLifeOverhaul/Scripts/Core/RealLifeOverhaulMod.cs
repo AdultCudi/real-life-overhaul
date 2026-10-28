@@ -1459,6 +1459,7 @@ namespace RealLifeOverhaul
             Guard.Step("OverlayGuard", () => Guard.Add<OverlayGuard>(_root));   // two null tests a frame
             Guard.Step("MapTreeGuard", () => MapTreeGuard.Logger = context.Logger);
             Guard.Step("MapTreeGuard", () => Guard.Add<MapTreeGuard>(_root));   // a reference comparison a frame; the tree list pruned when the map opens
+            Guard.Step("SceneryCulling", () => SceneryCulling.Logger = context.Logger);   // the culling check's line as the city unloads
             Guard.Step("GameUi.TextBox", () => GameUi.TextBox.Logger = context.Logger);
             // A conversation ended another way: the text box closed and the dialogue panel's handle given back; one time
             // comparison a frame.
@@ -1725,6 +1726,7 @@ namespace RealLifeOverhaul
             Guard.Step("the options page in the city", () => Meta.MetaCity.End());
             Guard.Step("the wiring", () => Wiring.Disconnect());
             Guard.Step("the guide marks", () => GameUi.GuideMark.HideAll("the city is unloading"));   // while the game's destination guider is still there
+            Guard.Step("the culling check", SceneryCulling.WatchUnload);   // the game's culling lists counted once the menu's scene is in, the city's still there
             if (_root != null)
             {
                 _root.name = RootName + " (closing)";   // gone at the end of the frame: a city loaded before then must not take it for a second copy

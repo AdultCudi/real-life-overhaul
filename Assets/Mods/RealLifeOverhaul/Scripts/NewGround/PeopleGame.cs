@@ -1,4 +1,3 @@
-using Culling;
 using UnityEngine;
 
 namespace RealLifeOverhaul.NewGround
@@ -71,7 +70,11 @@ namespace RealLifeOverhaul.NewGround
             return made;
         }
 
-        /// <summary>Takes a zone of the mod's away: its people go back to the game's pools, the game's lists forget it. Safe on null.</summary>
+        /// <summary>
+        /// Takes a zone of the mod's away: its people go back to the game's pools, the game's lists forget it (its culling
+        /// list through SceneryTrees.Destroy, which asks for no rebuild of the culling group; the game's own unregistering
+        /// did, and while a city unloads that rebuild met the destroyed lamp posts of Uptown's art). Safe on null.
+        /// </summary>
         public static void Unzone(ref StationaryAiSpawner zone)
         {
             if (zone == null)
@@ -80,8 +83,6 @@ namespace RealLifeOverhaul.NewGround
             }
             zone.ClearPedestrians();
             StationaryAiSpawner.AllPedestrianSpawners.Remove(zone);
-            CullingManager culling = InstanceBehavior<CullingManager>.IsInitialized ? InstanceBehavior<CullingManager>.Instance : null;
-            culling?.generalCullingGroupController?.UnregisterCullable(zone);
             SceneryTrees.Destroy(zone.gameObject);
             zone = null;
         }

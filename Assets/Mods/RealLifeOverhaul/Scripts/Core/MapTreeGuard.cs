@@ -131,12 +131,14 @@ namespace RealLifeOverhaul
                     Say(NotificationType.Warning, "reallife_maptrees_test_none");
                     yield break;
                 }
-                // A copy of the tree, woken, so the game lists it; then destroyed the plain way, as a path that missed Forget would.
+                // A copy of the tree, woken, so the game lists it; then destroyed the plain way, as a path that missed Forget would
+                // (its tree left in the tree list on purpose; out of the culling lists first, as the test is about the tree list).
                 GameObject copy = UnityEngine.Object.Instantiate(template.gameObject, template.transform.parent);
                 copy.name = "RealLife map tree test";
                 yield return null;
                 yield return null;
                 bool listed = all.Contains(copy.GetComponent<TreeController>());
+                SceneryCulling.Forget(copy);
                 UnityEngine.Object.Destroy(copy);
                 yield return null;
                 yield return null;

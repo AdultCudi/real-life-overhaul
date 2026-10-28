@@ -12,9 +12,11 @@ namespace RealLifeOverhaul
     /// trees standing in them). The game never destroys a tree during a session; the mod does. Two layers:
     /// <see cref="Forget"/>, <see cref="Destroy"/> and <see cref="DestroyNow"/> take the trees of an object out of the list
     /// before the mod destroys it (every path of the mod that destroys a copy of the game's scenery goes through them,
-    /// held by StandardCheck RLO-CITY-001), and <see cref="Prune"/> takes out any dead entry, whoever destroyed it (the map's
-    /// guard, <see cref="MapTreeGuard"/>, runs it before the game's map handler). COST: nothing per frame. Forget looks for one
-    /// tree under the object and walks the list only if there is one; Prune is one backward walk of the list, no allocation.
+    /// held by StandardCheck RLO-PERF-018), and <see cref="Prune"/> takes out any dead entry, whoever destroyed it (the map's
+    /// guard, <see cref="MapTreeGuard"/>, runs it before the game's map handler). Forget also takes every cullable of the
+    /// object out of the game's culling lists (<see cref="SceneryCulling.Forget"/>, RLO-PERF-023). COST: nothing per frame.
+    /// Forget looks for one tree under the object and walks the list only if there is one (and the culling lists only if
+    /// a cullable is under it); Prune is one backward walk of the list, no allocation.
     /// </summary>
     public static class SceneryTrees
     {
@@ -27,13 +29,17 @@ namespace RealLifeOverhaul
         private static Transform _under;   // the root Forget is taking the trees of
         private static readonly Predicate<TreeController> Beneath = IsBeneath;
 
-        /// <summary>Takes the trees at or under <paramref name="root"/> out of the game's list. Call before destroying it; null is safe. Returns how many.</summary>
+        /// <summary>
+        /// Takes the trees at or under <paramref name="root"/> out of the game's list, and every cullable at or under it out
+        /// of the game's culling lists. Call before destroying it; null is safe. Returns how many trees.
+        /// </summary>
         public static int Forget(GameObject root)
         {
             if (ReferenceEquals(root, null) || root == null)
             {
                 return 0;
             }
+            SceneryCulling.Forget(root);   // lamps, trees, benches, signs, people's zones: none left listed for the game's culling group
             if (root.GetComponentInChildren<TreeController>(true) == null)
             {
                 return 0;   // the common case: none, and nothing is walked

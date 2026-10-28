@@ -172,6 +172,10 @@ internal static partial class Program
             Hit(MapRule, guard, 0, "the first handler on the map's event is gone: the map check needs the camera and the frame as the map opens");
         }
         Check(files.TryGetValue(watch, out SourceFile w) && w.CodeText.Contains("MapParts.Lingering("), MapRule + ": the map check asks the parts (Diagnostics/SessionWatch.Map)");
+        // The player's camera is part of the verdict (0.61.0 beta 6 wrote "its draw distances by layer differ", then PASS), through
+        // the game-free verdict NavCheck checks (MapCheckCheck.cs).
+        Check(w != null && w.CodeText.Contains("MapCheckRules.Verdict(") && Regex.IsMatch(w.CodeText, @"MapCameraSeen\s+camera\s*=\s*MapCameraWords\s*\(\s*\)"),
+            MapRule + ": the map check's verdict holds the player's camera (MapCheckRules.Verdict with what MapCameraWords saw, Diagnostics/SessionWatch.Map)");
     }
 
     // A method's body, by its name: a block, or an expression after "=>". Its first line (1-based) and its text.
