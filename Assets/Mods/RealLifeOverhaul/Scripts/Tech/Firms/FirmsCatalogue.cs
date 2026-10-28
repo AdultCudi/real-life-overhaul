@@ -155,7 +155,9 @@ namespace RealLifeOverhaul.Tech
         public static readonly int[] GamePrice = { 999, 2499, 5999 };        // cents
         public const int GamePlayers = 300000;                               // people who might buy a game
         public const int GameHalfLife = 25;                                  // days for a game's daily sales to halve
-        public const int GameLaunchShare = 2;                                // millionths of the players a day at launch per point of appeal (thousandths)
+        public const int GameLaunchShare = 600;                              // billionths of the players a day at launch per thousandth of appeal (it was 2000 while every game sat at the floor)
+        public static readonly int[] GameFeatures = { 4, 6, 8 };             // features a finished game counts for against its rival (RivalFeaturesAtStart), by size: a big one matches it
+        public const int GameBugRoom = 90;                                   // thousandths of a bug a game holds for each work point built into it (about a service's features)
         public const int HypePerMarketingDay = 2;                            // thousandths of hype a day of marketing before launch adds per reach step
 
         // Contracts

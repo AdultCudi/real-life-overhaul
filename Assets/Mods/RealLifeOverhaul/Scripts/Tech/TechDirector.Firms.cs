@@ -171,6 +171,10 @@ namespace RealLifeOverhaul.Tech
                         case Family.Data:
                         case Family.Security:
                         case Family.Infrastructure:
+                            if (r.Id == TalentCatalogue.Technician)
+                            {
+                                break;   // keeps racks running (InfraRules), builds no product: paid, but no points and no relief (FirmsRules.Builds)
+                            }
                             if (r.Id == TalentCatalogue.QaTester)
                             {
                                 c.Testing += points;
