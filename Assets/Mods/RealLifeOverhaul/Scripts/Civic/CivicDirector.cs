@@ -544,7 +544,7 @@ namespace RealLifeOverhaul
                 return "reallife_civic_refit_none";
             }
             int price = CivicCatalogue.RefitPriceNow(bid);
-            if (!GameManager.ChangeMoneySafe(-price, new TransactionInfo("reallife_transaction_civic_refit"), null, null, force: false, showNotification: true))
+            if (!RealLifeOverhaul.Economy.BizBooks.Book(-price, new TransactionInfo("reallife_transaction_civic_refit"), null, null, force: false, showNotification: true))
             {
                 return "reallife_civic_refit_broke";
             }

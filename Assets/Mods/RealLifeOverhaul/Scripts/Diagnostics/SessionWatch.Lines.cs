@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
+using RealLifeOverhaul.BizPace;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -10,6 +11,8 @@ namespace RealLifeOverhaul
     /// <summary>The session record, part: the heap-leap line, the minute's line pieces and the count of the mod's objects.</summary>
     public sealed partial class SessionWatch
     {
+        private bool _piecesSaid;   // the check of the work named for a long frame has said PASS once
+
         // A frame in which the heap grew by megabytes at once: how much, and how much under which of the mod's own scripts.
         private void Leapt(long grown, float took)
         {
@@ -35,19 +38,69 @@ namespace RealLifeOverhaul
                 }
                 _line.Append(own * 2 < grown ? "; the rest is the game's, or another mod's" : string.Empty);
             }
-            _line.Append("; the mod's last pieces of work: ");
-            float began = Time.unscaledTime - took;
-            for (int back = 0; back < Marks.Count; back++)
-            {
-                Marks.Get(back, out string text, out int textFrame, out float at, out _);
-                _line.Append(back > 0 ? ", \"" : "\"").Append(text).Append("\" ");
-                Ago(textFrame, at, frame, began);
-            }
-            if (Marks.Count == 0)
-            {
-                _line.Append("none yet");
-            }
+            LastPieces(frame, Time.unscaledTime - took, false);
             _line.Append("; ").Append(Where()).Append('.');
+            Logger?.Info(_line.ToString());
+        }
+
+        // The mod's last pieces of work, for the line of a long frame: the newest three begun by its end, each with when it
+        // was and, where timed is asked, how long it took. Pieces named after the frame, before this line (in the frame
+        // after a long one the bus stops' tick that fell due puts out up to six), never made it long: they are counted, not
+        // named. Returns how many there were.
+        private int LastPieces(int frame, float began, bool timed)
+        {
+            _line.Append("; the mod's last pieces of work: ");
+            int listed = 0;
+            while (listed < MarkRing.Listed && Marks.Get(Marks.NewestBy(frame, listed), out string text, out int textFrame, out float at, out long spent))
+            {
+                _line.Append(listed > 0 ? ", \"" : "\"").Append(text).Append('"');
+                if (timed && spent >= 0)
+                {
+                    _line.Append(" (").Append(Ms(spent).ToString("F1", CultureInfo.InvariantCulture)).Append(" ms)");
+                }
+                else if (timed)
+                {
+                    _line.Append(" (not timed)");
+                }
+                _line.Append(' ');
+                Ago(textFrame, at, frame, began);
+                listed++;
+            }
+            if (listed == 0)
+            {
+                _line.Append(Marks.Count == 0 ? "none yet" : "none by its end");
+            }
+            int after = Marks.After(frame);
+            if (after > 0)
+            {
+                _line.Append(" (").Append(after).Append(" begun after it left out)");
+            }
+            return after;
+        }
+
+        // The self-check of the pieces a long frame's line names: the first time pieces were named after a long frame before
+        // its line, whether the ring still held what the mod had named up to its end. FAIL every time they had been pushed
+        // out of it (a beta 6 log named only bus stops put out after a 534 ms frame: a ring of three had lost the rest).
+        private void PiecesCheck(int frame, float took, int after)
+        {
+            bool lost = Marks.LostBy(frame);
+            if (after == 0 || (_piecesSaid && !lost))
+            {
+                return;
+            }
+            _piecesSaid = true;
+            _line.Length = 0;
+            _line.Append("Session check (work named for a long frame): the line of the frame of ").Append((took * 1000f).ToString("F0", CultureInfo.InvariantCulture))
+                .Append(" ms leaves out ").Append(after).Append(" piece(s) of work begun after it, before the line was written");
+            if (lost)
+            {
+                _line.Append(", and they had pushed what the mod named up to its end out of the ring of ").Append(MarkRing.Kept).Append(": FAIL.");
+            }
+            else
+            {
+                _line.Append(Marks.NewestBy(frame, 0) >= 0 ? "; what the mod named up to its end is still named" : "; the mod had named nothing up to its end")
+                    .Append(" (a ring of ").Append(MarkRing.Kept).Append("): PASS.");
+            }
             Logger?.Info(_line.ToString());
         }
 
@@ -145,6 +198,11 @@ namespace RealLifeOverhaul
             int frames = HotSpots.Frames;
             _line.Append("; the mod's own scripts: ").Append((frames > 0 ? HotSpots.TotalMs / frames : 0.0).ToString("F2", CultureInfo.InvariantCulture)).Append(" ms a frame on average and ")
                 .Append(HotSpots.WorstFrameMs.ToString("F1", CultureInfo.InvariantCulture)).Append(" ms at most in a frame");
+            if (HotSpots.WorstFrameSlot >= 0)
+            {
+                // Which scope made it: the minute's top three are by their total, so a scope that costs 13 ms once a minute is not among them.
+                _line.Append(" (mostly ").Append(HotSpots.Name(HotSpots.WorstFrameSlot)).Append(' ').Append(HotSpots.WorstFrameSlotMs.ToString("F1", CultureInfo.InvariantCulture)).Append(" ms)");
+            }
             for (int k = 0; k < 3 && HotSpots.StretchTop(k, false, out int slot, out double total, out double worst, out _); k++)
             {
                 _line.Append(k == 0 ? ", the most in the minute: " : ", ").Append(HotSpots.Name(slot)).Append(" (")
@@ -163,6 +221,7 @@ namespace RealLifeOverhaul
                     _line.Append(k == 0 ? ", the most under " : ", ").Append(HotSpots.Name(slot)).Append(" (").Append((bytes * scale).ToString("F0")).Append(" KB a second)");
                 }
             }
+            BizPaceWatch.MinuteLine(_line);   // BizMan's opens, switches and tab changes of the minute: what the mod added, the slowest handler named
             HotSpots.ClearStretch();
         }
         // Every object under a root of the mod's ("RealLifeOverhaul ...") in every loaded scene, by holder and by kind; the
@@ -226,7 +285,8 @@ namespace RealLifeOverhaul
         {
             try
             {
-                return (BuildingManager.IsInsideBuilding ? "inside a building" : PerfGame.InVehicle() ? "in a vehicle" : "on foot in the street")
+                return (CityMap.IsOpen ? "on the city map, " : string.Empty)
+                       + (BuildingManager.IsInsideBuilding ? "inside a building" : PerfGame.InVehicle() ? "in a vehicle" : "on foot in the street")
                        + ", game hour " + TimeHelper.CurrentHour;
             }
             catch (Exception)

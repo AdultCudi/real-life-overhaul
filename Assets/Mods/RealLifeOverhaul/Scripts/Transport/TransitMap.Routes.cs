@@ -33,6 +33,8 @@ namespace RealLifeOverhaul
         private static readonly int[] TryOrder = new int[32];
         private static int _ownCursor;                  // the next direction of a district's route to lay (two a route)
         private static int _ownWanted, _ownLaid, _ownMissed, _ownRefused;
+        private static int _tried;                      // lane points tried round the wanted stop being laid
+        private static string _ownMisses;               // each stop not laid, named and said why (TransitPlan.MissWords)
         private static int _wantedAt;                   // the wanted stop of the line being laid out
         private static string _ownNotes;
 
@@ -83,6 +85,8 @@ namespace RealLifeOverhaul
             _ownRefused = 0;
             _wantedAt = 0;
             _ownNotes = null;
+            _ownMisses = null;
+            _tried = 0;
             for (int i = 0; i < OwnRoutes.Count; i++)
             {
                 OwnRoute own = OwnRoutes[i];
@@ -125,9 +129,17 @@ namespace RealLifeOverhaul
                 ZScratch.Add(at.z);
             }
             line.Wanted = new float[route.Stops];
-            int found = TransitPlan.WantedAlong(XScratch, ZScratch, line.Metres, line.Path.Length, route.StopX, route.StopZ, line.Wanted);
+            TransitPlan.WantedAlong(XScratch, ZScratch, line.Metres, line.Path.Length, route.StopX, route.StopZ, line.Wanted);
+            line.Route = route;
             _ownWanted += route.Stops;
-            _ownMissed += route.Stops - found;
+            for (int s = 0; s < line.Wanted.Length; s++)
+            {
+                if (line.Wanted[s] < 0f)
+                {
+                    float near = TransitPlan.Approach(XScratch, ZScratch, line.Path.Length, route.StopX[s], route.StopZ[s]);
+                    Missed(TransitPlan.MissWords(route.Name, s + 1, route.Stops, route.StopX[s], route.StopZ[s], TransitPlan.Miss.OffTheWay, near, 0, 0f));
+                }
+            }
             Lines.Add(line);
         }
 
@@ -226,10 +238,11 @@ namespace RealLifeOverhaul
                 _lineBegun = false;
                 return true;
             }
+            int stop = _wantedAt;
             float wanted = line.Wanted[_wantedAt++];
             if (wanted < 0f)
             {
-                return false;   // the way does not pass it: counted as missed when the way was laid
+                return false;   // the way does not pass it: counted as missed, and named, when the way was laid
             }
             int hostId = TransitPlan.HostAlong(line.Path, line.Metres, wanted - WantedNear, wanted + WantedNear, wanted, 3, _hostAt ?? (_hostAt = HostAt), out int hostIndex);
             if (hostId >= 0 && hostIndex > _stopFrom)
@@ -237,18 +250,25 @@ namespace RealLifeOverhaul
                 TransitStop shared = Share(line, hostIndex, Hosts[hostId], WantedClear);
                 if (shared != null)
                 {
-                    line.Stops.Add(shared);
-                    _shared++;
-                    _ownLaid++;
-                    CallsAt(Hosts[hostId]);
-                    _stopFrom = shared.PathIndex;
+                    AddShared(line, shared, hostId);
                     return false;
                 }
             }
+            _tried = 0;
             TransitStop placed = TryRound(line, wanted, WantedNear, JunctionClear) ?? TryRound(line, wanted, WantedFar, WantedClear);
             if (placed == null)
             {
-                _ownMissed++;
+                // A place another line laid a little further off (up to the far reach) is this line's too: the lane point it stands at
+                // is taken, so no stop of its own can be laid there, and a narrow kerb may have only that one place to give. Sharing it
+                // from the near reach alone left a line with no stop where the line laid first had one (a log's M12 back, the station by 2nd Street).
+                int farHost = TransitPlan.HostAlong(line.Path, line.Metres, wanted - WantedFar, wanted + WantedFar, wanted, 3, _hostAt ?? (_hostAt = HostAt), out int farIndex);
+                TransitStop far = farHost >= 0 && farIndex > _stopFrom ? Share(line, farIndex, Hosts[farHost], WantedClear) : null;
+                if (far != null)
+                {
+                    AddShared(line, far, farHost);
+                    return false;
+                }
+                Missed(TransitPlan.MissWords(line.Route.Name, stop + 1, line.Route.Stops, line.Route.StopX[stop], line.Route.StopZ[stop], TransitPlan.Miss.NoPlace, 0f, _tried, WantedFar));
                 return false;
             }
             placed.LanePoint = line.Path[placed.PathIndex];
@@ -264,9 +284,27 @@ namespace RealLifeOverhaul
             return false;
         }
 
+        // A stop of the line shared with a place another line laid: counted, and the line goes on from it.
+        private static void AddShared(TransitLine line, TransitStop shared, int hostId)
+        {
+            line.Stops.Add(shared);
+            _shared++;
+            _ownLaid++;
+            CallsAt(Hosts[hostId]);
+            _stopFrom = shared.PathIndex;
+        }
+
+        // A stop not laid: counted, and named in the check line.
+        private static void Missed(string words)
+        {
+            _ownMissed++;
+            _ownMisses = (_ownMisses == null ? string.Empty : _ownMisses + "; ") + words;
+        }
+
         private static TransitStop TryRound(TransitLine line, float wanted, float within, float clear)
         {
             int count = TransitPlan.Nearest(line.Metres, line.Path.Length, wanted, within, _stopFrom, TryOrder);
+            _tried += count;
             for (int k = 0; k < count; k++)
             {
                 TransitStop stop = Try(line, TryOrder[k], false, clear);
@@ -286,7 +324,8 @@ namespace RealLifeOverhaul
                 return null;
             }
             return "Transit check (district routes): " + OwnRoutes.Count + " route(s) of a district's own both ways, " + _ownWanted + " stops wanted, " + _ownLaid + " laid, "
-                   + _ownMissed + " missed" + (_ownRefused > 0 ? ", " + _ownRefused + " direction(s) not laid:" + _ownNotes : string.Empty) + ": "
+                   + _ownMissed + " missed" + (_ownMisses != null ? " (" + _ownMisses + ")" : string.Empty)
+                   + (_ownRefused > 0 ? ", " + _ownRefused + " direction(s) not laid:" + _ownNotes : string.Empty) + ": "
                    + (_ownMissed == 0 && _ownRefused == 0 ? "PASS" : "FAIL") + ".";
         }
     }

@@ -52,6 +52,8 @@ namespace RealLifeOverhaul.Construction
         private int[] _values = new int[0];      // each column's land value step, worked when the view asks
         private bool _valuesRead;
         private BuildModeRules.ColumnFacts[] _facts = new BuildModeRules.ColumnFacts[0];
+        private int _heldStart;      // the layer's first held ground's square: after every cell of the grid
+        private int _hoverHeld = -1; // the held ground under the pointer
         private BuildModeState _state;
         private BuildView _view = BuildView.Zoning;
         private readonly List<CellAt> _picked = new List<CellAt>(64);
@@ -203,7 +205,7 @@ namespace RealLifeOverhaul.Construction
                 _tour = new BuildModeTour(_kit, _bar);
                 _catalogue = null;   // made at its first opening, on the same parts
             }
-            if (_layer == null || _layer.Object == null || _layer.Cells != grid.CellCount)
+            if (_layer == null || _layer.Object == null || _layer.Cells != grid.LayerCells)
             {
                 BuildModeGame.Destroy(_layer);
                 _layer = BuildModeGame.MakeLayer(grid, out string why);
@@ -218,8 +220,15 @@ namespace RealLifeOverhaul.Construction
                     _cellStart[c] = at;
                     at += grid.Columns[c].Rows;
                 }
+                _heldStart = at;
+                at += grid.Held.Count;   // the held grounds' squares come after the grid's, drawn the one way in every view
                 _fills = new byte[at];
                 _lines = new byte[at];
+                for (int h = _heldStart; h < at; h++)
+                {
+                    _fills[h] = BuildModeRules.HeldFill;
+                    _lines[h] = BuildModeRules.LineHeld;
+                }
                 _facts = new BuildModeRules.ColumnFacts[grid.Columns.Count];
                 _depth = new int[grid.Columns.Count];
                 _before = new int[grid.Columns.Count];
@@ -295,6 +304,7 @@ namespace RealLifeOverhaul.Construction
             BuildModeGame.HideFootLabels(false);
             BuildModeGame.Show(_layer, false);
             BuildModeGame.HideHover();
+            _hoverHeld = -1;
             BuildModeGame.Pointer(BuildCursor.Normal);   // the game's own pointer back, on every way out
             _tour?.Hide();
             _catalogue?.Show(false);
@@ -376,7 +386,7 @@ namespace RealLifeOverhaul.Construction
             if (BuildModeGame.HoverShown && BuildModeGame.OverInterface)
             {
                 BuildModeGame.HideHover();   // the pointer went onto the interface: the parts' own tooltips are the game's there
-                _hoverColumn = _hoverRow = -1;
+                _hoverColumn = _hoverRow = _hoverHeld = -1;
                 _hoverPlot = -1;
             }
             bool tour = _tour != null && _tour.Running;
@@ -643,9 +653,10 @@ namespace RealLifeOverhaul.Construction
             Where();
             if (BuildModeGame.OverInterface || !BuildModeGame.Pointed(out Vector3 at))
             {
-                if (_hoverColumn >= 0 || _hoverPlot >= 0)
+                if (_hoverColumn >= 0 || _hoverPlot >= 0 || _hoverHeld >= 0)
                 {
                     _hoverColumn = _hoverRow = -1;
+                    _hoverHeld = -1;
                     _hoverPlot = -1;
                     _hoverWords = null;
                     BuildModeGame.HideHover();
@@ -657,16 +668,23 @@ namespace RealLifeOverhaul.Construction
                 return;   // a building of the city's: its card in the game's tooltip
             }
             CellAt cell = _d.Cells.At(at.x, at.z);
-            if (cell.Column == _hoverColumn && cell.Row == _hoverRow)
+            int held = cell.None ? _d.Cells.HeldAt(at.x, at.z) : -1;   // bare ground no square covers: a special place's, a park's, the campus's, the district's edge
+            if (cell.Column == _hoverColumn && cell.Row == _hoverRow && held == _hoverHeld)
             {
                 return;
             }
             _hoverColumn = cell.Column;
             _hoverRow = cell.Row;
+            _hoverHeld = held;
             _hoverWords = cell.None ? null : _d.CellWords(cell.Column, cell.Row);
             if (!cell.None && _d.HoverCard(cell.Column, cell.Row, out string head, out string zoning, out string more))
             {
                 BuildModeGame.ShowHover(head, zoning, more);
+            }
+            else if (held >= 0 && _d.HeldCard(held, out string heldHead, out string heldWhy, out string heldMore))
+            {
+                _hoverWords = heldHead + ". " + heldWhy;
+                BuildModeGame.ShowHover(heldHead, heldWhy, heldMore);
             }
             else
             {

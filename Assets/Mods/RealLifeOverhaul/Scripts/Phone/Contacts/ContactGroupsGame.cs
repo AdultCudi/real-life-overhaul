@@ -19,6 +19,10 @@ namespace RealLifeOverhaul
     /// list) and puts each of its contacts in one: so its buttons, badges, "mark all as read" and filter are the game's own. The
     /// game's own contacts stay in their categories. With the option off every contact of the mod has the category it had before
     /// groups. Cost: a pass over the phone's contacts when the option changes or a contact is added, nothing a frame.
+    /// The game makes the app's two events (ContactsApp.onContactAdded and onContactRemoved) in the app's Awake, and a static set to
+    /// null when the game starts is all that is left of them until then: at the first city of a session, however it is loaded
+    /// (Continue or Load make no difference to the game: both are LoadGame.Load), the app has not woken, so the events are not there.
+    /// <see cref="Install"/> makes them itself, as the game's Awake would, so the groups are put in at every load alike.
     /// </summary>
     public static class ContactGroupsGame
     {
@@ -32,6 +36,7 @@ namespace RealLifeOverhaul
         private static bool _busy;                  // the mod itself is raising the game's event
         private static bool _ready;                 // the app's row is as expected in this city
         private static ContactGroupsRow _row;
+        private static int _loads;                  // the cities this session has put the groups in (the log line says which one)
 
         /// <summary>Whether the contacts are grouped now: the option on and the row ready.</summary>
         public static bool On => _ready && Settings.PhoneContactGroups;
@@ -49,17 +54,20 @@ namespace RealLifeOverhaul
                     return;
                 }
                 _ready = false;
+                _loads++;
                 UIs uis = InstanceBehavior<UIs>.Instance;
                 ContactsApp app = uis != null && uis.fullMenu != null ? uis.fullMenu.contactsApp : null;
                 ContactCategorySelection selection = app != null ? app.GetComponentInChildren<ContactCategorySelection>(true) : null;
                 FieldInfo field = GameContract.ContactCategories.Field;
                 var list = selection != null && field != null ? field.GetValue(selection) as List<ContactCategory> : null;
-                if (list == null || list.Count == 0 || ContactsApp.onContactAdded == null || ContactsApp.onContactRemoved == null)
+                if (list == null || list.Count == 0)
                 {
-                    UiClone.Fallback("the Contacts app's row of category buttons is not built as expected, so the contacts have no groups");
+                    string why = app == null ? "no Contacts app" : selection == null ? "no row of category buttons in it" : "its list of categories cannot be read";
+                    UiClone.Fallback("the Contacts app's row of category buttons is not built as expected (" + why + "), so the contacts have no groups");
                     Sweep(false);   // none left in a group the row would not show
                     return;
                 }
+                int made = Events();
                 Categories(list);
                 _row = selection.GetComponent<ContactGroupsRow>();
                 if (_row == null)
@@ -74,12 +82,81 @@ namespace RealLifeOverhaul
                 ContactsApp.onContactRemoved.AddListener(_onRemoved);
                 _ready = true;
                 Apply();
+                Report(made, list, app);
             }
             catch (Exception e)
             {
                 Logger?.Error(e);
                 Fault.Count(Time.realtimeSinceStartup);
             }
+        }
+
+        /// <summary>
+        /// The app's two events, made here when the game has not made them yet (its Awake has not run: the app has not woken, as at the first
+        /// city of a session), the way its Awake makes them, and kept by it. How many were made.
+        /// </summary>
+        private static int Events()
+        {
+            int made = 0;
+            if (ContactsApp.onContactAdded == null)
+            {
+                ContactsApp.onContactAdded = new UnityEvent();
+                made++;
+            }
+            if (ContactsApp.onContactRemoved == null)
+            {
+                ContactsApp.onContactRemoved = new UnityEvent();
+                made++;
+            }
+            return made;
+        }
+
+        // One line a load, with Developer diagnostics on: what stands in the row and in the list now, and which load of the session this is.
+        private static void Report(int made, List<ContactCategory> list, ContactsApp app)
+        {
+            if (!Meta.Dev.Verbose)
+            {
+                return;
+            }
+            int ours = 0, grouped = 0, ofGroups = 0;
+            List<Contact> contacts = SaveGameManager.Current != null ? SaveGameManager.Current.Contacts : null;
+            var seen = new bool[ContactGroups.Count + 1];
+            for (int i = 0; contacts != null && i < contacts.Count; i++)
+            {
+                Contact contact = contacts[i];
+                if (contact == null || ContactGroups.GroupOf(contact.id, contact.description, out _) == ContactGroup.None)
+                {
+                    continue;
+                }
+                ours++;
+                ContactGroup group = ContactGroups.GroupOfCategory((int)contact.category);
+                if (group != ContactGroup.None)
+                {
+                    grouped++;
+                    if (!seen[(int)group])
+                    {
+                        seen[(int)group] = true;
+                        ofGroups++;
+                    }
+                }
+            }
+            int inRow = 0;
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (list[i] != null && ContactGroups.GroupOfCategory((int)list[i].categoryName) != ContactGroup.None)
+                {
+                    inRow++;
+                }
+            }
+            bool want = Settings.PhoneContactGroups;
+            bool pass = inRow == ContactGroups.Count && (!want || grouped == ours) && On == want;
+            string events = made == 0 ? "were there" : made + " made here (the app had not woken yet)";
+            string contactsLine = want ? grouped + " of the mod's " + ours + " contact(s) are in a group, " + ofGroups + " button(s) will show"
+                                       : "the option is off, " + ours + " contact(s) left in General";
+            Logger?.Info("Contacts check (groups, load " + _loads + " of the session): the app's events " + events
+                         + ", the app is " + (app.isActiveAndEnabled ? "open" : "asleep or closed") + "; the row's list holds the mod's " + inRow + " of " + ContactGroups.Count
+                         + " groups; " + contactsLine
+                         + (pass ? ": PASS" : ": FAIL"));
         }
 
         /// <summary>Puts every contact of the mod in its group, or back where it was with the option off; the game's list and row follow at once.</summary>

@@ -59,7 +59,7 @@ namespace RealLifeOverhaul
         /// <summary>Takes a price if the player has it; if not, false and the game's own "not enough money" notice.</summary>
         public static bool Pay(int amount, string transaction)
         {
-            return amount <= 0 || GameManager.ChangeMoneySafe(-amount, new TransactionInfo(transaction), null, null, force: false, showNotification: true);
+            return amount <= 0 || RealLifeOverhaul.Economy.BizBooks.Book(-amount, new TransactionInfo(transaction), null, null, force: false, showNotification: true);
         }
 
         /// <summary>A bill owed whatever the balance (a stay on deposit), or money coming back.</summary>
@@ -67,7 +67,7 @@ namespace RealLifeOverhaul
         {
             if (amount != 0)
             {
-                GameManager.ChangeMoneySafe(amount, new TransactionInfo(transaction), null, null, force: true);
+                RealLifeOverhaul.Economy.BizBooks.Book(amount, new TransactionInfo(transaction), null, null, force: true);
             }
         }
 

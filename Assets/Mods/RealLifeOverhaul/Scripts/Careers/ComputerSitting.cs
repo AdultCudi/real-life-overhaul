@@ -32,6 +32,7 @@ namespace RealLifeOverhaul.Careers
         private PlayerActivityState _state = PlayerActivityState.NotStarted;
         private PlayerActivityState _before = PlayerActivityState.NotStarted;
         private float _nextType;
+        private string _why;                     // who or what ended it, said by the way out taken (Sitting.Why, for the log line of an early end)
         private int _orderFrame = -1;             // the frame the walk order to the computer was given in (DeskGame.SetOffSeen)
 
         public ComputerSitting(CareersDirector director, ComputerController computer, Sitting sitting)
@@ -151,6 +152,7 @@ namespace RealLifeOverhaul.Careers
             {
                 CareersDirector.Logger?.Error(e);
             }
+            _why = "the mod stopping it (switched off, a load or a fault)";
             End(false, true);
         }
 
@@ -189,6 +191,7 @@ namespace RealLifeOverhaul.Careers
             }
             if (end == TallyEnd.Counted)
             {
+                sitting.Why = _why;
                 sitting.SkipEnded(minutes, whole);
             }
             else if (end == TallyEnd.CalledOff)
@@ -253,6 +256,7 @@ namespace RealLifeOverhaul.Careers
             {
                 if (state == PlayerActivityState.Finished)
                 {
+                    _why = _why ?? "the game's panel (energy ran out, the night, an event, or a save or load)";
                     Finish();   // however the panel ends it: the minutes counted once, and the player stood up
                     return;
                 }
@@ -289,6 +293,7 @@ namespace RealLifeOverhaul.Careers
                 _sitting?.SkipWorked(_tally.Done);
                 if (over)
                 {
+                    _why = "the time being done";
                     Finish();
                 }
                 else if (Time.time >= _nextType)
@@ -308,6 +313,13 @@ namespace RealLifeOverhaul.Careers
             {
                 Guard.Fail(FrameGuard, fault);
             }
+        }
+
+        // The player pressed Stop on the game's panel.
+        private void Stopped()
+        {
+            _why = _why ?? "the player pressing Stop";
+            Finish();
         }
 
         /// <summary>Over: by the end of the time, Stop, the game calling it off. The minutes sat are settled, once.</summary>
@@ -358,7 +370,7 @@ namespace RealLifeOverhaul.Careers
             try
             {
                 return _state == PlayerActivityState.Running
-                    ? _stop ?? (_stop = new[] { new ButtonInfo(ClassPlayRules.DeskStopName, "reallife_job_skip_stop", "gray", Guard.Way(Finish), PlayerAction.Cancel) })
+                    ? _stop ?? (_stop = new[] { new ButtonInfo(ClassPlayRules.DeskStopName, "reallife_job_skip_stop", "gray", Guard.Way(Stopped), PlayerAction.Cancel) })
                     : null;
             }
             catch (Exception fault)

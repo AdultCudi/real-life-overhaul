@@ -46,6 +46,13 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
+        /// <summary>True if the building at the address is a warehouse: the only kind a change of record can make a data centre's, or take one from.</summary>
+        public static bool IsWarehouse(Address address)
+        {
+            Building b = address != null ? BuildingHelper.GetBuilding(address) : null;
+            return b != null && BizPace.BizPaceRules.KeepsFor(b.BuildingType, WarehouseBuilding);
+        }
+
         public static int Sqm(BuildingRegistration reg)
         {
             Building b = reg != null ? BuildingHelper.GetBuilding(reg.Address) : null;
@@ -66,7 +73,7 @@ namespace RealLifeOverhaul.Tech
             {
                 info.SetTaxDeductibleName("reallife_tech_deduct".GetLocalization());
             }
-            return Save != null && GameManager.ChangeMoneySafe(-cents / 100f, info, null, at != null ? at.Address : null, false);
+            return Save != null && RealLifeOverhaul.Economy.BizBooks.Book(-cents / 100f, info, null, at != null ? at.Address : null, false);
         }
 
         /// <summary>The racks' writing down for the game's tax: a deductible expense with no money moving.</summary>

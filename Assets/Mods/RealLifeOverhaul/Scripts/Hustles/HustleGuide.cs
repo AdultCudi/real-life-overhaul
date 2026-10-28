@@ -46,6 +46,8 @@ namespace RealLifeOverhaul.Hustles
                 .Fact("hustle_clean_cost", () => Money(HustleCatalogue.CleanSupplies))
                 .Fact("hustle_clean_most", () => Guide.Number(HustleCatalogue.CleanMost))
                 .Fact("hustle_energy", () => Guide.Number(HustleCatalogue.EnergyAnHour))
+                .Fact("hustle_energy_floor", () => Guide.Number(HustleGame.EnergyFloor))
+                .Fact("hustle_hold_days", () => Guide.Number(PickupRules.HoldDays))
                 .Fact("hustle_ask_least", () => Share(HustleCatalogue.AskLeastShare))
                 .Fact("hustle_ask_most", () => Share(HustleCatalogue.AskMostShare))
                 .Fact("hustle_buyers_from", () => Hour(HustleCatalogue.BuyersFrom))

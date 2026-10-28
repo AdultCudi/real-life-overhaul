@@ -309,7 +309,7 @@ namespace RealLifeOverhaul
                 return true;
             }
             TransactionInfo info = category != null ? new TransactionInfo(transactionKey, category) : new TransactionInfo(transactionKey);
-            bool paid = GameManager.ChangeMoneySafe(-amount, info, null, reg != null ? reg.Address : null, force: false);
+            bool paid = RealLifeOverhaul.Economy.BizBooks.Book(-amount, info, null, reg != null ? reg.Address : null, force: false);
             Logger?.Info("Business: " + (paid ? "charged " : "could not charge ") + amount + " (" + transactionKey + ") at " + Name(reg) + ".");
             return paid;
         }
@@ -320,7 +320,7 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            GameManager.ChangeMoneySafe(amount, new TransactionInfo(transactionKey), null, reg != null ? reg.Address : null, force: true);
+            RealLifeOverhaul.Economy.BizBooks.Book(amount, new TransactionInfo(transactionKey), null, reg != null ? reg.Address : null, force: true);
             Logger?.Info("Business: paid " + amount + " (" + transactionKey + ") to " + Name(reg) + ".");
         }
 

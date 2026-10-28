@@ -6,8 +6,9 @@ namespace RealLifeOverhaul.Construction
     internal static class ConstructionTables
     {
         // What a row of the Land tab is: a lot for sale, a lot of the player's, a building of the player's, a landmark's site.
-        public const int LandForSale = 0, LandOwned = 1, LandBuilding = 2, LandLandmark = 3;
-        private static readonly string[] LandKinds = { "reallife_bld_kind_for_sale", "reallife_bld_kind_owned", "reallife_bld_kind_building", "reallife_lmk_kind_landmark" };
+        public const int LandForSale = 0, LandOwned = 1, LandBuilding = 2, LandLandmark = 3, LandRival = 4, LandOfferIn = 5;
+        private static readonly string[] LandKinds = { "reallife_bld_kind_for_sale", "reallife_bld_kind_owned", "reallife_bld_kind_building", "reallife_lmk_kind_landmark", "reallife_land_kind_rival",
+            "reallife_land_kind_offer" };
 
         // What a row of the Crews tab is: a crew, an offer, plant, the office's staff.
         public const int CrewsCrew = 0, CrewsOffer = 1, CrewsPlant = 2, CrewsStaff = 3;

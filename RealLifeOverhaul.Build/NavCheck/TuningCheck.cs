@@ -180,7 +180,7 @@ internal static partial class Program
               < Body(sale, "private static void Gone(").IndexOf("Crime.Give(", StringComparison.Ordinal), "tuning: the build is forgotten before the money is given");
         Check(tuning.Contains("shiftBox.shiftDuration == _shiftWritten") && tuning.Contains("shiftBox.shiftDuration = _shiftBefore"),
             "tuning: the gear change written by the Garage is put back only while it is still the Garage's");
-        Check(driving.Contains("TuningRules.ShiftSeconds(_setup.ShiftSeconds, garage.Shift)") && driving.Contains("box.shiftDuration = _setup.ShiftSeconds")
+        Check(driving.Contains("TuningRules.ShiftSeconds(_setup.ShiftSeconds, _tuneGarage.Shift)") && driving.Contains("box.shiftDuration = _setup.ShiftSeconds")
               && driving.Contains("box.shiftDuration = _stock.ShiftSeconds"), "tuning: car performance writes the build's change and puts the game's back");
         Check(tuning.Contains("_claimed && Settings.CarTuning"), "tuning: with car performance switched off later, the Garage applies the parts itself again");
         Check(tuning.Contains("private void LateUpdate()") && !tuning.Contains("private void Update()"),

@@ -130,6 +130,11 @@ namespace RealLifeOverhaul.NewBuildings
                 }
                 FillAsGame(registration, copy, spec);
             }
+            else if (!string.IsNullOrEmpty(copy.layout) && (string.Equals(registration.Layout, head.SpecialService.layout, StringComparison.OrdinalIgnoreCase)
+                     || string.Equals(registration.Layout, FloorName(spec), StringComparison.OrdinalIgnoreCase)))
+            {
+                registration.Layout = copy.layout;   // a registration the save kept names the layout it had: the game's, or the dealership's own of an earlier load, whichever this load stands in
+            }
             if (spec.ServiceName == null)
             {
                 Branches.Add(new Branch { Own = new Address(spec.Street, spec.Number), Head = head.Address, Name = copy.businessName, Type = copy.businessTypeName });
@@ -137,7 +142,7 @@ namespace RealLifeOverhaul.NewBuildings
             return copy;
         }
 
-        // The copy completed for its layout's desks and, for a vehicle store, its dialog and settings (MadeGame.Desks). A build without
+        // The copy completed for its layout's desks and, for a vehicle store, its dialog and settings (MadeGame.Desks) and its floor made walkable (MadeGame.Floor). A build without
         // one of the game members it reads leaves the copy as the game has it and says so; the place stands either way.
         private static void Complete(SpecialService copy, MadeSpec spec)
         {
@@ -152,6 +157,22 @@ namespace RealLifeOverhaul.NewBuildings
             catch (Exception e)
             {
                 Logger?.Warn("Made buildings: '" + spec.Id + "' copies " + spec.Service + " as the game has it: its desks and cars could not be completed (" + e.GetType().Name + ").");
+            }
+            if (!spec.ServiceStore)
+            {
+                return;
+            }
+            try
+            {
+                string floor = CompleteFloor(copy, spec);
+                if (floor != null)
+                {
+                    Logger?.Info("Made buildings: '" + spec.Id + "' copies " + spec.Service + " with its showroom floor measured: " + floor + ".");
+                }
+            }
+            catch (Exception e)
+            {
+                Logger?.Warn("Made buildings: '" + spec.Id + "' copies " + spec.Service + " with its floor as the game has it: its seats could not be measured (" + e.GetType().Name + ").");
             }
         }
 

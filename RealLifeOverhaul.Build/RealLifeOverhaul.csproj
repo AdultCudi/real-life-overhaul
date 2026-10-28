@@ -9,6 +9,8 @@
     <DebugType>none</DebugType>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <Version>0.60.2</Version>
+    <!-- A beta build (steam_beta.py passes -p:BetaTag=beta.1) reads "0.61.0-beta.1" in the DLL; Meta/Changelog.cs shows it. A public build has no BetaTag and is as before. -->
+    <InformationalVersion Condition="'$(BetaTag)' != ''">$(Version)-$(BetaTag)</InformationalVersion>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <!-- Single source of truth: the mod lives in the Unity SDK project; this project only compiles it from the command line. -->

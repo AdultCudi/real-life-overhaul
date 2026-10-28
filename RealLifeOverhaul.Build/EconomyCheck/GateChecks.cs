@@ -132,6 +132,7 @@ internal static partial class Program
         GateParks(designs);
         GateWhole();
         GateSources();
+        GateExitChecks();   // a car put out of a warehouse stays out (GateExitChecks.cs)
         GateTexts();
     }
 
@@ -746,7 +747,7 @@ internal static partial class Program
             "gates sources: a working copy's template keeps every garage door and car park entrance of the game's building: nothing takes them off there, and no controller is left with none");
         Check(working.IndexOf("Wire(c, Designs[design], building, madeId);", StringComparison.Ordinal) is int wired && wired > 0
               && working.IndexOf("copy.gameObject.SetActive(true);", StringComparison.Ordinal) > wired
-              && wire.Contains("GateRules.Live(false, building.BuildingType, slots, door.doorID)") && wire.Contains("Kept.Add(door);") && wire.Contains("c.driveInEntrances = Kept.ToArray();")
+              && wire.Contains("GateRules.Live(false, building.BuildingType, slots, door.doorID)") && wire.Contains("Kept.Add(door);") && wire.Contains("c.driveInEntrances = Ordered.ToArray();")
               && wire.Contains("int slots = SlotsOf(building);") && wire.Contains("GateRules.ParkServes(design)") && wire.Contains("park.parkingNumber = GateRules.ParkNumber(madeId);")
               && wire.Contains("c.undergroundParkingEntrance = null;"),
             "gates sources: a copy's doors are settled before it wakes: the doors of a warehouse's bays kept whole and in the controller's list, the others taken off, a car park given its number or taken off");

@@ -43,6 +43,8 @@ Each landmark takes one block of the first block: every lot of it not built from
 
 The stadium also needs 58 m of ground back from the avenue. A landmark still to be announced holds the block it would take today; announced, its block is settled for good. Its lots are **held**: `DistrictBuildings.Taken` says so (through `DistrictBuildings.HeldFor`), so the construction game's Land tab offers none of them, the developers pass them over, the public tenders never take one, and the test run never sends a test there; the Land tab shows each landmark as a row of its own (its state, its tender), and the city map has a **Landmarks** row with a marker at each front. Works going on or done stay held with the option off.
 
+In build mode a site's lots are held squares (the slate-blue held fill and edge in every view, `LandmarksDirector.SiteIdOfLot`): the pointer names the landmark and where it stands ("Planned: its lots are held for it"), so a planned landmark's ground is never a bare patch or a building that is not there; they are not for sale to the player, the developers or the car-park builders alike ([Construction](construction.md#build-mode)).
+
 The works stand on a plot of the city's programme on the site: as wide and deep as the site, 60 m each way at most, its front on Uptown Avenue.
 
 ## How they are built

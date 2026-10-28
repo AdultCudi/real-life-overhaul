@@ -395,7 +395,7 @@ internal static partial class Program
         }
         Check(lacking.Count == 0, "layoff: the notices, the texts and the tests' buttons are in en, pt and zh-cn with the same placeholders, no dash, no exclamation mark, no double space and each English notice 240 characters at most (lacking: "
                                   + string.Join(", ", lacking) + ")");
-        Check(en != null && en.TryGetValue("reallife_guide_careers_life", out string guide) && guide.Contains("If the business you work for closes or is bought, you are laid off that hour with redundancy pay"),
+        Check(en != null && en.TryGetValue("reallife_guide_careers_life", out string guide) && guide.Contains("you are laid off within the hour: redundancy pay"),
             "layoff: the Guide's careers page says what happens when the employer closes");
         var langs = LanguageWords(out string[] codes);
         if (!LanguagesRead("layoff", langs, codes))

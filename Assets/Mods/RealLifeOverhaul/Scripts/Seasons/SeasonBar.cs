@@ -11,6 +11,8 @@ namespace RealLifeOverhaul.Seasons
     /// The season and its day under the game's date on the top bar: a copy of the date's own label (its font, size and
     /// colour), smaller, with the season's picture before it, so it goes wherever the top bar goes. The director calls
     /// <see cref="Show"/> once a second; the words are written only when the day changes. A fault removes it for the session.
+    /// It is the calendar's season, so it does not stand down with the rest of the seasons for another mod's: it gives way only to
+    /// another mod's season that is really under the date (<see cref="SeasonRules.BarShows"/>), one child lookup each time.
     /// </summary>
     public static class SeasonBar
     {
@@ -19,6 +21,7 @@ namespace RealLifeOverhaul.Seasons
         private const float Width = 420f;
         private const float Picture = 28f;
         private const float Shrink = 0.8f;       // of the date's own size
+        private const string OtherPiece = "Alcware season indicator";   // what Alcware Seasons 0.4.1 puts under the date's label: its own season and day
 
         private static GameObject _piece;
         private static Component _words;
@@ -26,8 +29,12 @@ namespace RealLifeOverhaul.Seasons
         private static string _shown;
         private static int _season = -1;
         private static bool _failed;
+        private static int _taken = -1;          // 1 while another mod's season stands under the date, 0 while none does, -1 not looked yet (for the log line)
 
         public static bool Shown => _piece != null && _piece.activeSelf;
+
+        /// <summary>True while another mod's season is under the date, which this one gives its place to; false before the bar is built.</summary>
+        public static bool Taken => _taken == 1;
         public static string Line => _shown;
 
         /// <summary>Shows <paramref name="line"/> with <paramref name="season"/>'s picture; pass the same string object while nothing changes.</summary>
@@ -42,6 +49,11 @@ namespace RealLifeOverhaul.Seasons
                 if (_piece == null && !Build())
                 {
                     _failed = true;
+                    return;
+                }
+                if (!Wanted())
+                {
+                    Hide();
                     return;
                 }
                 if (!ReferenceEquals(line, _shown))
@@ -77,6 +89,26 @@ namespace RealLifeOverhaul.Seasons
             }
         }
 
+        // The rule's three answers, asked once a look: the seasons and the option as they are, and whether a season of another mod's stands
+        // under the date (a direct child of the date's label, found by name: nothing is searched). One log line when that answer changes.
+        private static bool Wanted()
+        {
+            Transform date = _piece.transform.parent;
+            Transform piece = date != null ? date.Find(OtherPiece) : null;
+            bool other = piece != null && piece.gameObject.activeInHierarchy;
+            int now = other ? 1 : 0;
+            if (now != _taken)
+            {
+                _taken = now;
+                if (Meta.Dev.Verbose)
+                {
+                    string says = other ? "yes, so this one gives way to it" : "none, so the season under the date is shown (with Alcware Seasons loaded or not)";
+                    SeasonDirector.Logger?.Info("Seasons check (top bar): another mod's season under the date: " + says + ": PASS");
+                }
+            }
+            return SeasonRules.BarShows(Settings.Seasons, Settings.SeasonBar, other);
+        }
+
         /// <summary>The city is unloading: the piece goes with the top bar's copy of it.</summary>
         public static void Remove()
         {
@@ -90,6 +122,7 @@ namespace RealLifeOverhaul.Seasons
             SeasonIcons.Drop();
             _shown = null;
             _season = -1;
+            _taken = -1;
             _failed = false;
         }
 

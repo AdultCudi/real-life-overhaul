@@ -168,7 +168,7 @@ namespace RealLifeOverhaul
             _panelState = int.MinValue;
             if (take)
             {
-                GameManager.ChangeMoneySafe(amount, new TransactionInfo("reallife_transaction_trades_bribe"), null, null, force: true);
+                RealLifeOverhaul.Economy.BizBooks.Book(amount, new TransactionInfo("reallife_transaction_trades_bribe"), null, null, force: true);
                 if (!Ctx.Test)
                 {
                     DesignBook.Bribed(TimeHelper.CurrentDay, _onSite ? _site.Id : 0, amount);   // it may come out (TradesDirector, at the day)

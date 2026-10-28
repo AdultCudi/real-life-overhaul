@@ -416,6 +416,15 @@ namespace RealLifeOverhaul.Construction
             }
         }
 
+        /// <summary>Money paid out for a work that came back (a cancelled project's fees): out of the company's total of costs, its day's book left as it was written.</summary>
+        public void PayBack(long amount)
+        {
+            if (amount > 0)
+            {
+                Firm.Spent = Math.Max(0L, Firm.Spent - amount);
+            }
+        }
+
         // A day's line, kept as long as a listed company's year of books reaches back (ExposureRules.BooksDays).
         private void Book(int day, long earned, long spent)
         {

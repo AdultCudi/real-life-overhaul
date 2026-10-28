@@ -5,6 +5,7 @@ using System.Reflection;
 using Helpers;
 using Localizor;
 using Localizor.LanguageChangeEvent;
+using RealLifeOverhaul.BizPace;
 using RealLifeOverhaul.GameUi;
 using RealLifeOverhaul.NewBuildings;
 using Streets;
@@ -58,6 +59,8 @@ namespace RealLifeOverhaul
         private Action<Address> _registrationSeen;
         private Action _onLanguage;
 
+        private static readonly int BizRegistration = HotSpots.Slot("Core: SpecialNames.OnRegistration");
+
         private static FieldInfo _headlineField, _searchListField, _searchDropField, _optionsField;
         private static MethodInfo _populate;
 
@@ -83,13 +86,7 @@ namespace RealLifeOverhaul
                     Search();
                 }
             });
-            _onRegistration = Guard.Wrap<Address>(_ =>
-            {
-                if (CityMap.IsOpen)
-                {
-                    StartCoroutine(Guard.Routine(SearchSoon()));   // the game made its own list anew: ours again, after its handler
-                }
-            });
+            _onRegistration = Guard.Wrap<Address>(OnRegistration);
             _onLanguage = Guard.Wrap(() =>
             {
                 SpecialBuildings.Forget();
@@ -116,6 +113,9 @@ namespace RealLifeOverhaul
             try
             {
                 LocalizorManager.OnLanguageChanged = (Action)Delegate.Remove(LocalizorManager.OnLanguageChanged, _onLanguage);
+                GlobalEvents.onEnterBuilding -= _onEnter;   // the wrapped handlers EventHold put on: not left on the game's events for a second copy to double
+                GlobalEvents.onCityMapToggle -= _onMap;
+                GlobalEvents.onBuildingRegistrationChange -= _onRegistration;
                 if (_destination != null)
                 {
                     _destination.onClick.RemoveListener(_guiders);
@@ -147,6 +147,17 @@ namespace RealLifeOverhaul
                     SpecialBuildings.Logger?.Error(e);
                 }
                 yield return _second;
+            }
+        }
+
+        // The game's registration change event, which BizMan raises each time a business view or the Schedule tab is left: only while the city map is
+        // open does it ask for anything.
+        private void OnRegistration(Address address)
+        {
+            using var timed = BizPaceWatch.Time(BizRegistration);   // a step of BizMan closing a business or leaving a tab (BizPace)
+            if (CityMap.IsOpen)
+            {
+                StartCoroutine(Guard.Routine(SearchSoon()));   // the game made its own list anew: ours again, after its handler
             }
         }
 

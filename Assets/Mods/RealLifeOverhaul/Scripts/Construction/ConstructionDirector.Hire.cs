@@ -38,6 +38,11 @@ namespace RealLifeOverhaul.Construction
             {
                 return p.Stage == ProjectStage.Building ? "reallife_bld_answer_building" : "reallife_bld_answer_no_permission";
             }
+            string unfit = SiteBlock(p);
+            if (unfit != null)
+            {
+                return unfit;   // the quotes and the hire wait on land a site can be set out on
+            }
             if (p.Estimate <= 0)
             {
                 return "reallife_bld_answer_hire_no_plans";
@@ -104,7 +109,7 @@ namespace RealLifeOverhaul.Construction
             string block = HireBlock(p);
             if (block != null)
             {
-                return block;
+                return BuilderRefused(p, block, rival);   // a short fall of the land is told in the builder's name; nothing has been charged
             }
             int count = Bids(p, _quotes);
             int r = BuildCatalogue.Clamp(rival, 0, count - 1);
@@ -125,7 +130,7 @@ namespace RealLifeOverhaul.Construction
                     ConstructionGame.Give(deposit, "reallife_transaction_bld_builder_back", name);   // nothing started: the deposit comes back
                 }
                 Logger?.Info("Construction: project " + p.Id + "'s builder could not set its site out: " + why + ".");
-                return "reallife_bld_answer_site_refused";
+                return SiteRefusals.Key(why);
             }
             int day = ConstructionGame.Day, permits = Permits();
             int usual = CommissionRules.UsualDays(p.Hours, permits), promised = CommissionRules.Promised(usual, bid.Days);

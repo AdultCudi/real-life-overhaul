@@ -95,7 +95,7 @@ namespace RealLifeOverhaul.Events
             }
             try
             {
-                GameManager.ChangeMoneySafe(-SnackPrice, new TransactionInfo("reallife_transaction_snack"), null, null, force: true);
+                RealLifeOverhaul.Economy.BizBooks.Book(-SnackPrice, new TransactionInfo("reallife_transaction_snack"), null, null, force: true);
                 EnergyHelper.GenerateEnergy(SnackEnergy);
             }
             catch (System.Exception e)

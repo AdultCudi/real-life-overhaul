@@ -382,7 +382,7 @@ namespace RealLifeOverhaul
                     CivicWorks works = Works();
                     if (works == null || !Settings.CivicConstruction)
                     {
-                        why = "the city's construction sites are off";
+                        why = SiteRefusals.Off;
                         return 0;
                     }
                     SiteState site = works.StartPlot(middle, yaw, width, depth, storeys, TimeHelper.CurrentDay, out why, hours);   // set out with its builder's hours, as its line says
@@ -409,7 +409,7 @@ namespace RealLifeOverhaul
                     CivicWorks works = Works();
                     if (works == null || !Settings.CivicConstruction)
                     {
-                        why = "the city's construction sites are off";
+                        why = SiteRefusals.Off;
                         return 0;
                     }
                     SiteState site = works.StartLot(middle, yaw, width, depth, TimeHelper.CurrentDay, out why, hours);   // a car park's works, set out with their builder's hours
@@ -449,7 +449,7 @@ namespace RealLifeOverhaul
                     CivicWorks works = Works();
                     if (works == null || !Settings.CivicConstruction)
                     {
-                        why = "the city's construction sites are off";
+                        why = SiteRefusals.Off;
                         return 0;
                     }
                     CityBuildingController place = CivicCity.Find(street, number);
@@ -463,7 +463,7 @@ namespace RealLifeOverhaul
                     SiteState site = works.StartAt(asked, place, TimeHelper.CurrentDay, mine, hours);
                     if (site == null)
                     {
-                        why = "a site is there already, or the building has no street door";
+                        why = SiteRefusals.Taken;
                         return 0;
                     }
                     site.Contractor = Mathf.Clamp(contractor, 0, CivicCatalogue.Contractors.Length - 1);
@@ -550,7 +550,8 @@ namespace RealLifeOverhaul
                             Id = l.Id, Street = l.Street, Number = l.Number, X = l.X, Y = UptownLots.GroundY, Z = l.Z, Yaw = l.Yaw, Width = l.Width, Depth = l.Depth,
                             Class = (int)l.Class, First = l.First, Open = UptownLots.Open(l), Traffic = Math.Max(0, DistrictBuildings.TrafficOf(l.Id)), Block = l.Block,
                             District = l.District, DistrictKey = DistrictSplit.IdOf(l.District),
-                            Strip = l.Strip, Index = l.Index, Spaces = l.Spaces, Size = l.Size, StreetLow = corners, StreetHigh = corners, EdgeLow = low, EdgeHigh = high
+                            Strip = l.Strip, Index = l.Index, Spaces = l.Spaces, Size = l.Size, StreetLow = corners, StreetHigh = corners, EdgeLow = low, EdgeHigh = high,
+                            Kept = !BuildingsRules.Clear(l.Id)
                         });
                     }
                 }

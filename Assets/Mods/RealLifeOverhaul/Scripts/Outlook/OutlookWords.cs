@@ -179,6 +179,15 @@ namespace RealLifeOverhaul.Outlook
             return T(key);
         }
 
+        /// <summary>
+        /// The label of an index row of the Markets tab: the sector's name as the market writes it (<paramref name="name"/>). Never a
+        /// bare number and never nothing: where the market gives no name, the row reads "Sector 7" in the language of the texts.
+        /// </summary>
+        public string SectorLabel(int id, string name)
+        {
+            return string.IsNullOrWhiteSpace(name) ? Fill("reallife_econapp_sector_n", "n", (id + 1).ToString(Inv)) : name;
+        }
+
         private string Name(string district)
         {
             return District != null ? District(district) : district;

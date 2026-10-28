@@ -286,7 +286,7 @@ namespace RealLifeOverhaul
                 storage = Mathf.Min(storage, 300);
                 if (storage > 0)
                 {
-                    GameManager.ChangeMoneySafe(-storage, new TransactionInfo("reallife_transaction_impound"), null, null, force: true);
+                    RealLifeOverhaul.Economy.BizBooks.Book(-storage, new TransactionInfo("reallife_transaction_impound"), null, null, force: true);
                     JusticeText.Toast(NotificationType.Info, "reallife_justice_release_impound", "amount", JusticeText.Money(storage), 10f);
                 }
                 VehicleTow.BringNear(car, near);

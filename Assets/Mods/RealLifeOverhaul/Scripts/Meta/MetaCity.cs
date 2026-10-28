@@ -27,6 +27,8 @@ namespace RealLifeOverhaul.Meta
                 _generation++;
                 GuideApp.Begin(_generation);
                 SettingsApp.Begin(_generation);
+                StaffApp.Begin(_generation);
+                StaffHelpGame.Begin();
                 MetaUi.Instance.Run(Watch(_generation));
                 if (GameBuild.CityDue)
                 {
@@ -45,6 +47,8 @@ namespace RealLifeOverhaul.Meta
             Root = null;
             GuideApp.End();
             SettingsApp.End();
+            StaffApp.End();
+            StaffHelpGame.End();
             try
             {
                 if (MetaUi.Exists)
@@ -170,25 +174,31 @@ namespace RealLifeOverhaul.Meta
                 if (_verbose)
                 {
                     Counted();
-                    _inner.Info(message);
+                    if (!DayLines.Hold(_inner, message))   // the lines of the frame the day turns in are written in the frames after it
+                    {
+                        _inner.Info(message);
+                    }
                 }
             }
 
             public void Warn(string message)
             {
                 Counted();
+                DayLines.Flush();   // what was held comes first: the log stays in order
                 _inner.Warn(message);
             }
 
             public void Error(string message)
             {
                 Counted();
+                DayLines.Flush();
                 _inner.Error(message);
             }
 
             public void Error(Exception exception)
             {
                 Counted();
+                DayLines.Flush();
                 _inner.Error(exception);
             }
         }
@@ -210,6 +220,7 @@ namespace RealLifeOverhaul.Meta
             if (logger is GatedLogger gated)
             {
                 Counted();
+                DayLines.Flush();
                 gated.Inner.Info(message);
             }
             else

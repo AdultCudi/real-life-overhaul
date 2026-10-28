@@ -53,6 +53,10 @@ namespace RealLifeOverhaul.Construction
         // What the player is to do next about a project, in a few words.
         private string NextStep(ProjectFile p)
         {
+            if (p.Kind == ProjectKind.Plot && p.Stage <= ProjectStage.Ready && _director.SiteBlock(p) != null)
+            {
+                return ConstructionText.T("reallife_bld_next_unfit");
+            }
             switch (p.Stage)
             {
                 case ProjectStage.Design when ConstructionDirector.NeedsNotice(p):
@@ -103,6 +107,10 @@ namespace RealLifeOverhaul.Construction
             {
                 WriteContracted(box, p);
                 return;
+            }
+            if (WriteUnfit(box, p))
+            {
+                return;   // land no site can be set out on: why, and the way out, in place of every step
             }
             if (ConstructionDirector.NeedsNotice(p) && (p.Stage == ProjectStage.Design || p.Stage == ProjectStage.Ready))
             {
@@ -398,7 +406,7 @@ namespace RealLifeOverhaul.Construction
                 ManagerRow(box, state, p);
                 if (block != null)
                 {
-                    box.Line(ConstructionText.T(block), CellTone.Yellow);
+                    box.Line(_director.BlockWords(p, block), CellTone.Yellow);
                 }
             }
             if (hire)
@@ -564,6 +572,35 @@ namespace RealLifeOverhaul.Construction
                     Refresh();
                 });
             }
+        }
+
+        // A plot project whose land cannot take its site, at a stage before the works: what the land lacks in plain words, and the way out,
+        // the project cancelled with every fee paid for it given back (or given up, when something else has come in under it).
+        private bool WriteUnfit(InfoBox box, ProjectFile p)
+        {
+            if (p.Kind != ProjectKind.Plot || p.Stage > ProjectStage.Ready)
+            {
+                return false;
+            }
+            string block = _director.SiteBlock(p);
+            if (block == null)
+            {
+                return false;
+            }
+            box.Line(_director.BlockWords(p, block), CellTone.Yellow);
+            if (_director.CanCancel(p))
+            {
+                box.Note(p.Spent > 0L ? ConstructionText.T("reallife_bld_unfit_note", "amount", ConstructionText.Money(p.Spent)) : ConstructionText.T("reallife_bld_unfit_free_note"));
+                InfoBox.Button(box.ButtonRow(), InfoBox.Negative, "reallife_bld_button_cancel_refund", () =>
+                    Confirm("reallife_bld_confirm_cancel_refund", "reallife_bld_confirm_cancel_refund_body", _director.ProjectName(p), p.Spent, () => _director.CancelUnfit(p), true));
+            }
+            else
+            {
+                AbandonRow(box, p);
+            }
+            InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_bld_back", Back);
+            Guide(box);
+            return true;
         }
 
         private void AbandonRow(InfoBox box, ProjectFile p)

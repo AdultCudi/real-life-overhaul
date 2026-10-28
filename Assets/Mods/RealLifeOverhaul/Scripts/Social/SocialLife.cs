@@ -397,14 +397,14 @@ namespace RealLifeOverhaul
             {
                 return false;
             }
-            return GameManager.ChangeMoneySafe(-amount, new TransactionInfo(transactionKey), null, null, force: false, showNotification: false);
+            return RealLifeOverhaul.Economy.BizBooks.Book(-amount, new TransactionInfo(transactionKey), null, null, force: false, showNotification: false);
         }
 
         public static void Give(int amount, string transactionKey)
         {
             if (amount > 0)
             {
-                GameManager.ChangeMoneySafe(amount, new TransactionInfo(transactionKey), null, null, force: true);
+                RealLifeOverhaul.Economy.BizBooks.Book(amount, new TransactionInfo(transactionKey), null, null, force: true);
             }
         }
 

@@ -27,7 +27,7 @@ namespace RealLifeOverhaul.Tech
             {
                 return true;
             }
-            return Save != null && GameManager.ChangeMoneySafe(-cents / 100f, Info(key, name), null, at != null ? at.Address : null, force);
+            return Save != null && RealLifeOverhaul.Economy.BizBooks.Book(-cents / 100f, Info(key, name), null, at != null ? at.Address : null, force);
         }
 
         /// <summary>Money into the player's cash, cents.</summary>
@@ -35,7 +35,7 @@ namespace RealLifeOverhaul.Tech
         {
             if (cents > 0 && Save != null)
             {
-                GameManager.ChangeMoneySafe(cents / 100f, Info(key, name), null, at != null ? at.Address : null, true);
+                RealLifeOverhaul.Economy.BizBooks.Book(cents / 100f, Info(key, name), null, at != null ? at.Address : null, true);
             }
         }
 

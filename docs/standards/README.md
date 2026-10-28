@@ -8,10 +8,10 @@ This standard is the set of numbered rules that every change to Real Life Overha
 | --- | --- | --- |
 | [code-style.md](code-style.md) | Names, files, namespaces, layout, language features | RLO-STY-001 to 021 |
 | [architecture.md](architecture.md) | Features, directors, bridges, rules classes, the guard, the save | RLO-ARC-001 to 015 |
-| [performance.md](performance.md) | What a frame may cost, searches, allocation, timers, assets made by code | RLO-PERF-001 to 013 |
+| [performance.md](performance.md) | What a frame may cost, searches, allocation, timers, assets made by code | RLO-PERF-001 to 018 |
 | [multiplayer.md](multiplayer.md) | Staying safe in a Going Public session | RLO-MP-001 to 008 |
 | [testing.md](testing.md) | Offline checks, self-check lines, in-game tests, the gate | RLO-TST-001 to 011 |
-| [texts.md](texts.md) | Locales, keys, British English, What's new, the Guide | RLO-TXT-001 to 012 |
+| [texts.md](texts.md) | Locales, keys, British English, What's new, the Guide | RLO-TXT-001 to 014 |
 | [comments.md](comments.md) | What a comment is for, summaries, lengths | RLO-DOC-001 to 011 |
 | [git-and-review.md](git-and-review.md) | Branches, commits, pull requests, review, done, versions | RLO-GIT-001 to 011 |
 | [dlc-and-updates.md](dlc-and-updates.md) | New districts, DLC content and another city: the city check, the DLC rule, tables by district | RLO-DLC-001 to 006 |

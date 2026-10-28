@@ -198,7 +198,7 @@ namespace RealLifeOverhaul.Construction
                     ConstructionGame.Give(q.Price, down ? "reallife_transaction_bld_demolition_back" : "reallife_transaction_bld_conversion_back", name);
                 }
                 Logger?.Info("Construction: the contractor's works on " + name + " could not start: " + refused + ".");
-                return "reallife_bld_answer_site_refused";
+                return SiteRefusals.Key(refused);
             }
             int day = ConstructionGame.Day;
             p.Contractor = q.Rival;

@@ -182,7 +182,7 @@ namespace RealLifeOverhaul.Construction
                     ConstructionGame.Give(q.Price, "reallife_transaction_bld_refit_back", u.Name);   // nothing started: the money comes back
                 }
                 Logger?.Info("Construction: the contractor's refit at " + u.Name + " could not start: " + refused + ".");
-                why = "reallife_bld_answer_site_refused";
+                why = SiteRefusals.Key(refused);
                 return 0;
             }
             int day = ConstructionGame.Day;

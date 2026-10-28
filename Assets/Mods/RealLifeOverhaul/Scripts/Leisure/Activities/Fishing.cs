@@ -10,7 +10,9 @@ namespace RealLifeOverhaul.Leisure
     public sealed class Fishing : LeisureActivity
     {
         public static int Bait => Prices.At(6);
-        private const int Casts = 5;
+        internal const int Casts = 5;
+        internal const int Pulls = 3;   // pulls kept in the green zone to land a fish
+        internal static int Kinds => Catch.Length;
 
         private sealed class Fish
         {
@@ -210,7 +212,7 @@ namespace RealLifeOverhaul.Leisure
                     {
                         _pulls++;
                         LeisureSound.Cue(LeisureCue.Tick);
-                        if (_pulls >= 3)
+                        if (_pulls >= Pulls)
                         {
                             Land(now);
                             return;

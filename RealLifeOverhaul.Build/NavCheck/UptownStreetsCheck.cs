@@ -318,6 +318,26 @@ internal static partial class Program
               && new TransitPlan.Route("x", new[] { 0f, 1f }, new[] { 0f, 1f }, new[] { 0f }, new[] { 0f }).Fault() != null
               && new TransitPlan.Route("x", new[] { 0f, 1f }, new[] { 0f }, new[] { 0f, 1f }, new[] { 0f, 1f }).Fault() != null,
             "uptown stops: a route of one point, of one stop or of unpaired figures is refused");
+
+        // A stop not laid is named (a player's log: "46 stops wanted, 45 laid, 1 missed" and no word of which), and the place another
+        // line laid a little further off is shared before the stop is given up.
+        float approach = TransitPlan.Approach(x, z, x.Count, 250f, 40f);
+        Check(Near(approach, 40f), "uptown stops: how near a way passes a point is the nearest of its points (" + approach + ")");
+        Check(TransitPlan.Approach(new List<float>(), new List<float>(), 0, 0f, 0f) == float.MaxValue, "uptown stops: a way of no points passes nowhere");
+        string off = TransitPlan.MissWords("Uptown Avenue back", 1, 6, 309.4f, 412f, TransitPlan.Miss.OffTheWay, 31.6f, 0, 0f);
+        string noPlace = TransitPlan.MissWords("Uptown Avenue back", 1, 6, 309.4f, 412f, TransitPlan.Miss.NoPlace, 0f, 17, 24f);
+        Check(off.Contains("Uptown Avenue back stop 1 of 6 at (309.4, 412.0)") && off.Contains("no nearer than 32 m") && off.Contains("within " + TransitPlan.WantedReach.ToString("F0")),
+            "uptown stops: a stop the way does not pass is named with its route, number and place, and how near the way came: " + off);
+        Check(noPlace.Contains("Uptown Avenue back stop 1 of 6 at (309.4, 412.0)") && noPlace.Contains("17 lane point(s) within 24 m") && noPlace.Contains("shared") && noPlace != off,
+            "uptown stops: a stop with no place to lay is named, with how many lane points were tried and how far round it: " + noPlace);
+        Check(!off.Contains('!') && !off.Contains((char)0x2014) && !noPlace.Contains((char)0x2014) && !off.Contains(" - ") && !noPlace.Contains(" - "), "uptown stops: the words are plain, with no dash");
+        // The network shares a place by the lane point it stands on, a window of metres round the stop wanted: 12 m for the first look, 24 m for the last.
+        var pathPoints = Enumerable.Range(0, 200).ToArray();
+        var pathMetres = Enumerable.Range(0, 200).Select(i => (float)i).ToArray();
+        var hosted = new Dictionary<int, int> { { 120, 7 } };   // another line's place, 20 m on from the stop wanted at 100
+        int nearHost = TransitPlan.HostAlong(pathPoints, pathMetres, 100f - 12f, 100f + 12f, 100f, 3, p => hosted.TryGetValue(p, out int h) ? h : -1, out _);
+        int farHost = TransitPlan.HostAlong(pathPoints, pathMetres, 100f - 24f, 100f + 24f, 100f, 3, p => hosted.TryGetValue(p, out int h) ? h : -1, out int farAt);
+        Check(nearHost < 0 && farHost == 7 && farAt == 120, "uptown stops: a place 20 m from the stop wanted is out of the near look and inside the far one");
     }
 
     // ---------------------------------------------------------------- the furniture
@@ -539,6 +559,13 @@ internal static partial class Program
         Check(own.Contains("\"M\" + (_routes + 1)") && own.Contains("Share(line, hostIndex, Hosts[hostId], WantedClear)") && own.Contains("TryRound(line, wanted, WantedNear, JunctionClear) ?? TryRound(line, wanted, WantedFar, WantedClear)"),
             "uptown streets transit: numbered on after the paired lines, a place shared where a line stops already, the paired lines' clear stretch first");
         Check(Regex.IsMatch(map, @"public static void ClearTermini\(\)\s*\{\s*Termini\.Clear\(\);\s*OwnRoutes\.Clear\(\);"), "uptown streets transit: the district's routes go with the city, as its termini do");
+        int ladder = own.IndexOf("TryRound(line, wanted, WantedNear, JunctionClear) ?? TryRound(line, wanted, WantedFar, WantedClear)", StringComparison.Ordinal),
+            farShare = own.IndexOf("wanted - WantedFar, wanted + WantedFar, wanted, 3,", StringComparison.Ordinal),
+            nameIt = own.IndexOf("Missed(TransitPlan.MissWords(line.Route.Name", StringComparison.Ordinal);
+        Check(ladder > 0 && farShare > ladder && nameIt > farShare && own.Contains("Share(line, farIndex, Hosts[farHost], WantedClear)") && own.Contains("AddShared(line, far, farHost);"),
+            "uptown streets transit: a stop no place of its own can be laid for shares a place another line laid within the far reach before it is given up");
+        Check(Regex.Matches(own, @"_ownMissed\+\+").Count == 1 && own.Contains("private static void Missed(string words)") && own.Contains("line.Route = route;") && own.Contains("_ownMisses != null ? \" (\" + _ownMisses + \")\""),
+            "uptown streets transit: every stop not laid is counted in one place, named, and the check line says which");
         Check(guide.Contains("\"reallife_uptown_streets_test_reach\"") && guide.Contains("\"reallife_uptown_streets_test_subway\"") && guide.Contains("\"reallife_uptown_streets_test_furniture\"")
               && streets.Contains("\"Uptown check (bus reach): \"") && streets.Contains("\"Uptown check (subway): ") && streets.Contains("\"Uptown check (street furniture): \"")
               && Regex.Matches(streets, @"TestRefusals\.(?:Tell|TellKey)\(").Count >= 5, "uptown streets tests: three tests, each says why it did not start and writes one check line");

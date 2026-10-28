@@ -81,6 +81,7 @@ namespace RealLifeOverhaul
         public static readonly GamePart CustomersKept = ContractBook.Part("customers_kept", null, "the customers of the hour under way kept when the mod draws a day's customers again");
         public static readonly GamePart InteriorCustomers = ContractBook.Part("interior_customers", "interiors", "the basket and the day's customers on the Interior tab");
         public static readonly GamePart InteriorTabPart = ContractBook.Part("interior_tab", "interiors", "the Interior tab in BizMan");
+        public static readonly GamePart BizPacePart = ContractBook.Part("bizman_pace", "performance", "the timing of what the mod adds to BizMan's open, switch and tab change");
         public static readonly GamePart BusYield = ContractBook.Part("bus_yield", "transport", "a bus held behind a traffic car that waits for it");
         public static readonly GamePart HairLampTest = ContractBook.Part("hair_lamp_test", "character", "the hair test's street lamp as bright as the game's");
         public static readonly GamePart PlayerDeath = ContractBook.Part("player_death", null, "waiting while the player is dead or at a funeral");
@@ -118,6 +119,7 @@ namespace RealLifeOverhaul
         public static readonly GamePart UptownBigTests = ContractBook.Part("uptown_big_tests", "uptown",
             "the tests of Uptown's wholesale store and filling station: a delivery and a fill-up the game's own way");
         public static readonly GamePart ShopHelp = ContractBook.Part("shop_help", "newshops", "the new kinds of shop's pages in the game's help");
+        public static readonly GamePart StaffHelp = ContractBook.Part("staff_help", null, "the Staff and roles entries in the game's help: its list of categories, built again with them in");
         public static readonly GamePart PickedRaises = ContractBook.Part("picked_raises", "economy_company", "a raise for several employees picked in the game's My Employees app");
 
         // The pieces, each group under the code that reads it.
@@ -242,6 +244,20 @@ namespace RealLifeOverhaul
         public static readonly GameMember LampIsOn = Field(StreetLamps, Game, "StreetLamp", "_isOn", "Boolean");
         public static readonly GameMember CullList = Field(StreetLamps, Game, "Culling.CullingGroupController", "_cullables", "List<ICullable>");   // the lamps, from the game's culling list
 
+        // Core/SceneryCulling (the culling list above too): what the mod destroys taken out of the game's culling lists at once, the
+        // culling group's spheres and count kept in step; optional: else the game's own UnregisterCullable, never while a city unloads
+        public static readonly GameMember CullSpheres = Optional(Field(StreetLamps, Game, "Culling.CullingGroupController", "_spheres", "BoundingSphere[]"));
+        public static readonly GameMember CullGroup = Optional(Field(StreetLamps, Game, "Culling.CullingGroupController", "_cullingGroup", "CullingGroup"));
+        public static readonly GameMember CullReady = Optional(Field(StreetLamps, Game, "Culling.CullingGroupController", "_isInitialized", "Boolean"));
+        public static readonly GameMember CullPending = Optional(Field(StreetLamps, Game, "Culling.CullingGroupController", "_pendingBands", "Dictionary<ICullable,Int32>"));
+        public static readonly GameMember CullRebuild = Optional(Field(StreetLamps, Game, "Culling.CullingGroupController", "_recreateCullingGroup", "Boolean"));
+        public static readonly GameMember BuildingMusic = Optional(Field(StreetLamps, Game, "CityBuildingController", "_buildingOutsideMusicController", "BuildingOutsideMusicController"));
+        public static readonly GameMember BuildingHangout = Optional(Field(StreetLamps, Game, "CityBuildingController", "_buildingOutsideHangoutZoneController",
+            "BuildingOutsideHangoutZoneController"));
+        public static readonly GameMember MusicOwner = Optional(Field(StreetLamps, Game, "Buildings.Outdoors.BuildingOutsideMusicController", "_cityBuildingController", "CityBuildingController"));
+        public static readonly GameMember HangoutOwner = Optional(Field(StreetLamps, Game, "Buildings.Outdoors.BuildingOutsideHangoutZoneController", "_cityBuildingController",
+            "CityBuildingController"));
+
         // Faults/FaultWorld: a lamp gone dark is given empty lists of lights to switch, and put back after
         public static readonly GameMember LampOutLights = Field(LampsOut, Game, "StreetLamp", "lights", "Light[]");
         public static readonly GameMember LampOutData = Field(LampsOut, Game, "StreetLamp", "additionalLightDatas", "HDAdditionalLightData[]");
@@ -361,6 +377,10 @@ namespace RealLifeOverhaul
         public static readonly GameMember BizManTabs = Field(InteriorTabPart, Game, "BizManBusiness", "_tabs", "List<String>");
         public static readonly GameMember BizManSetTab = Method(InteriorTabPart, Game, "BizManBusiness", "SetTab", "Void", "String");
         public static readonly GameMember BizManDetails = Optional(Field(InteriorTabPart, Game, "BizManBusiness", "businessInfo", "Transform"));
+
+        // BizPace/BizPaceGame: the same page's tabs and their pages, for the marks that begin a step and for the test that clicks each tab
+        public static readonly GameMember BizPaceMenu = Field(BizPacePart, Game, "BizManBusiness", "menu", "Transform");
+        public static readonly GameMember BizPaceContainers = Field(BizPacePart, Game, "BizManBusiness", "containers", "Transform");
 
         // Transport/TransitBus: what a traffic car of the game's stands for (its sensor's list)
         public static readonly GameMember CarObstacles = Field(BusYield, Plugins, "GleyTrafficSystem.VehicleComponent", "obstacleList", "List<Collider>");
@@ -499,6 +519,10 @@ namespace RealLifeOverhaul
         // Shops/ShopsGame: the language tables the game's texts are read from, given each new kind of shop's help page
         // under the keys the game's help reads (else BizMan's requirement link opens a page of bare keys)
         public static readonly GameMember LocaleTables = Optional(StaticField(ShopHelp, Hg, "Localizor.LocalizorManager", "LocalizationDictionary", "Dictionary<String,Dictionary<String,String>>"));
+
+        // Meta/StaffHelpGame: the help's private list of categories (read from a file in the game's folder) and the method that builds its list from it
+        public static readonly GameMember HelpCategories = Optional(Field(StaffHelp, Game, "HelpSystem", "_categories", "List<HelpStructureGroupEntry>"));
+        public static readonly GameMember HelpLoad = Optional(Method(StaffHelp, Game, "HelpSystem", "LoadCategories", "Void"));
 
         // Economy/Company/PickedRaiseGame: the game's list of the actions for several picked employees, and which its tabs offer,
         // so a raise for them stands in My Employees' own drop-down beside paying bonuses

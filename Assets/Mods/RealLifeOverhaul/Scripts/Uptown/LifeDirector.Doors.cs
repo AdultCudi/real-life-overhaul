@@ -24,6 +24,7 @@ namespace RealLifeOverhaul.Uptown
         private const float DriveSettle = 0.6f;     // s of real time a car put in front of a door is given to settle on its wheels
         private const float DriveWait = 12f;        // s the game's own fade, load and exit are given before the test calls them failed
         private const float DriveBack = 16f;        // m the car may stand from the door after it came out: it was put out in front of it, or inside it
+        private const float DriveRetake = 2.5f;     // s more a car put out is watched: the door's entrance trigger takes a car that touches it straight back in, and the first look would not see it
 
         // ---------------------------------------------------------------- at every load
 
@@ -164,6 +165,12 @@ namespace RealLifeOverhaul.Uptown
                         yield return null;
                     }
                     leftAgain = !BuildingManager.IsInsideBuilding && car != null && LifeGame.Away(car, gate) <= DriveBack;
+                    until = Time.unscaledTime + DriveRetake;
+                    while (leftAgain && Time.unscaledTime < until)
+                    {
+                        yield return null;
+                    }
+                    leftAgain = leftAgain && !BuildingManager.IsInsideBuilding && !manager.enteringBuilding;   // still out: the door did not take the car back in
                 }
                 bool pass = why == null && asked && inside && leftAgain && slots == structure;
                 Say(pass, "Uptown check (warehouse): the player's car put in front of the garage door of " + made.Address + " (" + made.Design

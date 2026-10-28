@@ -1,6 +1,7 @@
 using System;
 using Helpers;
 using Localizor;
+using RealLifeOverhaul.BizPace;
 using RealLifeOverhaul.GameUi;
 using UnityEngine;
 
@@ -9,8 +10,39 @@ namespace RealLifeOverhaul.Interiors
     /// <summary>The Interior tab's pages: the scores, what each figure does, the items, today's customers and the game's rules.</summary>
     public static partial class InteriorTab
     {
-        /// <summary>The page written for the business BizMan shows now.</summary>
+        private static readonly int BizWrite = HotSpots.Slot("Interiors: InteriorTab.Write");
+
+        /// <summary>
+        /// The page switched on: written for the business BizMan shows now, unless the boxes hold it already, written for this business and this page in this
+        /// showing of the business view and in this language (the game is paused with its menu open, so what the page says cannot have moved). Flipping back to
+        /// the tab then costs nothing; a click that changed what it says writes it afresh (<see cref="Rewrite"/>).
+        /// </summary>
         internal static void Write()
+        {
+            if (_business == null || _left == null || _right == null)
+            {
+                return;
+            }
+            using var timed = BizPaceWatch.Time(BizWrite);   // a step of BizMan's tab change (BizPace)
+            if (!Written())
+            {
+                Rewrite();
+            }
+        }
+
+        // True if the boxes hold the page of the business shown, as it was written in this showing of the view, this language and this page.
+        private static bool Written()
+        {
+            if (_wroteShop == null || _wroteSession != Session || _wrotePage != _shown || !string.Equals(_wroteLocale, LocalizorManager.LoadedLocale, StringComparison.Ordinal))
+            {
+                return false;
+            }
+            BuildingRegistration reg = _business.buildingRegistration;
+            return ReferenceEquals(reg, _wroteReg) && ReferenceEquals(InteriorDirector.At(reg), _wroteShop);
+        }
+
+        /// <summary>The page written afresh for the business BizMan shows now.</summary>
+        internal static void Rewrite()
         {
             if (_business == null || _left == null || _right == null)
             {
@@ -18,6 +50,7 @@ namespace RealLifeOverhaul.Interiors
             }
             BuildingRegistration reg = _business.buildingRegistration;
             InteriorShop s = InteriorDirector.At(reg);
+            _wroteShop = null;
             _left.Clear();
             _right.Clear();
             if (s == null)
@@ -32,11 +65,21 @@ namespace RealLifeOverhaul.Interiors
             WriteScores(s);
             _left.Done();
             WriteRight(s, reg);
-            if (!_fitLogged)
+            _wroteReg = reg;
+            _wroteShop = s;
+            _wroteSession = Session;
+            _wroteLocale = LocalizorManager.LoadedLocale;
+            if (!_fitLogged && Meta.Dev.Verbose)
             {
-                _fitLogged = true;   // once a session: how the columns fit (they scroll when they do not)
-                InteriorDirector.Logger?.Info("Interiors: the Interior tab's columns: " + _left.Fit() + "; " + _right.Fit() + ".");
+                _fitLogged = true;   // once a session, and only when the line is read
+                LogFit();
             }
+        }
+
+        // How the columns fit (they scroll when they do not). Fit works the layout out at once, twice: a step of BizMan never asks for it unless the line is read.
+        private static void LogFit()
+        {
+            InteriorDirector.Logger?.Info("Interiors: the Interior tab's columns: " + _left.Fit() + "; " + _right.Fit() + ".");
         }
 
         // The page selector, then the page chosen.
@@ -62,6 +105,7 @@ namespace RealLifeOverhaul.Interiors
             Meta.SettingsApp.Link(_right, "interiors");
             Meta.Guide.Point(_right, GuideTitle);
             _right.Done();
+            _wrotePage = _shown;
             if (_rightScroll != null)
             {
                 _rightScroll.verticalNormalizedPosition = 1f;   // a new page starts at its top
@@ -364,7 +408,7 @@ namespace RealLifeOverhaul.Interiors
                     InteriorDirector d = InteriorDirector.Instance;
                     if (d != null && d.Refresh(reg))
                     {
-                        UiClone.Safe(Write);
+                        UiClone.Safe(Rewrite);
                     }
                 });
                 b.Line(InteriorText.T("reallife_interior_refresh_cost", "amount", Economy.FinanceText.Money(InteriorGame.RefreshCost(s.Sqm))));

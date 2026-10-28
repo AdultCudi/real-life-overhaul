@@ -20,6 +20,7 @@ internal static partial class Program
         SeasonLookRest();
         SeasonLookCost();
         SeasonLookSources();
+        SeasonBarIndependence();   // the season under the date and Alcware Seasons (LoadPathChecks.cs)
     }
 
     private static void SeasonLookDays()
@@ -217,8 +218,9 @@ internal static partial class Program
             "season looks: the trees are the game's own list (no search), only its wind shader's leaf materials are tinted, and each is put back");
         Check(coats.Contains("UpdateElements(Change)") && coats.Contains("AppearanceElementType.Torso") && coats.Contains("AppearanceElementType.Legs")
               && !coats.Contains("AppearanceElementType.Head") && !coats.Contains("AppearanceElementType.Hair") && !coats.Contains("RandomizeClothes") && !coats.Contains("SetBody")
-              && coats.Contains("ScenePrewarm.Again(DoorWhat, _atDoor ??= AtDoor)") && coats.Contains("DressSome(DoorMost)") && coats.Contains("PutBack(DoorMost)"),
-            "season looks: dressing for the cold changes only tops and trousers, among the game's own, behind the black screen at a door, never a body, face or hair");
+              && coats.Contains("ScenePrewarm.Again(DoorWhat, _atDoor ??= AtDoor)") && coats.Contains("_doorLeft = DoorMost;") && coats.Contains("DressSome(1)") && coats.Contains("PutBack(1)")
+              && coats.Contains("ScenePrewarm.NextFrame()"),
+            "season looks: dressing for the cold changes only tops and trousers, among the game's own, behind the black screen at a door (one a frame, at most DoorMost an asking), never a body, face or hair");
         Check(bar.Contains("\"Date/Label\"") && bar.Contains("UiClone.StripGameScripts") && bar.Contains("ignoreLayout = true"),
             "season looks: the season under the date is a copy of the game's own date label, outside the date's layout");
         Check(guide.Contains("reallife_season_test_spring") && guide.Contains("reallife_season_test_winter") && guide.Contains("Settings.SeasonBesideAlcwareId"),

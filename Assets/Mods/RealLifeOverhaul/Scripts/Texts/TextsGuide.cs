@@ -42,6 +42,8 @@ namespace RealLifeOverhaul.Texts
                 .Fact("texts_gossip_to", () => TextsCityRules.GossipTo.ToString(Inv))
                 .Fact("texts_staff_from", () => TextsCityRules.StaffFrom.ToString("00", Inv) + ":00")
                 .Fact("texts_staff_to", () => TextsCityRules.StaffTo.ToString("00", Inv) + ":00")
+                .Fact("texts_sick_from", () => TextsCityRules.SickFrom.ToString("00", Inv) + ":00")
+                .Fact("texts_sick_to", () => TextsCityRules.SickTo.ToString("00", Inv) + ":00")
                 .Cleanup(() => TextsDirector.Words.Clear())
                 .ResetData(() =>
                 {
@@ -53,6 +55,7 @@ namespace RealLifeOverhaul.Texts
                 .About("reallife_guide_textsai_about").Help("reallife_guide_textsai")
                 .Owns(Settings.TextsServiceId)
                 .Rows(TextsOptions.OwnAiButtons)
+                .Test("reallife_textsai_p2_test", TextsDirector.TestPlayer2)
                 .Fact("textsai_timeout", () => TextServiceRules.TimeOut.ToString("0", Inv))
                 .Fact("textsai_in_flight", () => TextService.Workers.ToString(Inv))
                 .Fact("textsai_per_minute", () => TextService.PerMinute.ToString(Inv))

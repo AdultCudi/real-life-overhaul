@@ -14,9 +14,10 @@ namespace RealLifeOverhaul
     /// opened (0.60.0). This puts a handler of its own FIRST in the map's event (<see cref="EventHold.First"/>: the game's
     /// handlers are added at the end, and the game empties the event on every load, so it is looked at again whenever the field
     /// changed) that runs <see cref="SceneryTrees.Prune"/> before the game's handler does. That covers a tree destroyed by
-    /// the mod's paths that missed <see cref="SceneryTrees.Forget"/>, by another mod, or by the game. Also Options > Tests >
-    /// Check the city map with a destroyed tree. COST: a reference comparison a frame; on each opening or closing of the map one
-    /// backward walk of the tree list (about four thousand Unity null tests, no allocation).
+    /// the mod's paths that missed <see cref="SceneryTrees.Forget"/>, by another mod, or by the game. Being first, it also tells
+    /// the session record that the map opens or shuts before anything is changed for it (<see cref="SessionWatch.MapToggled"/>).
+    /// Also Options > Tests > Check the city map with a destroyed tree. COST: a reference comparison a frame; on each opening or
+    /// closing of the map one backward walk of the tree list (about four thousand Unity null tests, no allocation).
     /// </summary>
     public sealed class MapTreeGuard : MonoBehaviour
     {
@@ -72,6 +73,7 @@ namespace RealLifeOverhaul
         // Runs before the game's own handler on every opening and closing of the map.
         private static void OnMapToggled(bool open)
         {
+            SessionWatch.MapToggled(open);   // the player's camera as it was, and the frame (nothing while the record is off)
             int taken = SceneryTrees.Prune();
             if (open && Meta.Dev.Verbose)
             {
@@ -129,12 +131,14 @@ namespace RealLifeOverhaul
                     Say(NotificationType.Warning, "reallife_maptrees_test_none");
                     yield break;
                 }
-                // A copy of the tree, woken, so the game lists it; then destroyed the plain way, as a path that missed Forget would.
+                // A copy of the tree, woken, so the game lists it; then destroyed the plain way, as a path that missed Forget would
+                // (its tree left in the tree list on purpose; out of the culling lists first, as the test is about the tree list).
                 GameObject copy = UnityEngine.Object.Instantiate(template.gameObject, template.transform.parent);
                 copy.name = "RealLife map tree test";
                 yield return null;
                 yield return null;
                 bool listed = all.Contains(copy.GetComponent<TreeController>());
+                SceneryCulling.Forget(copy);
                 UnityEngine.Object.Destroy(copy);
                 yield return null;
                 yield return null;

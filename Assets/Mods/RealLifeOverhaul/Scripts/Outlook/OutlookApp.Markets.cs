@@ -68,13 +68,18 @@ namespace RealLifeOverhaul.Outlook
             return y;
         }
 
+        // The sector's name as the market writes it, or "Sector 7" where it gives none (OutlookWords.SectorLabel): never a bare number.
+        private static string SectorLabel(int id)
+        {
+            return OutlookText.Words.SectorLabel(id, OutlookBridges.SectorName != null ? OutlookBridges.SectorName(id) : null);
+        }
+
         private void SectorCard(float x, float y, float w, float h, OutlookSector sector)
         {
             OutlookPage page = _body;
             OutlookPalette p = page.Palette;
             page.Card(x, y, w, h, p.Card, Radius);
-            string name = OutlookBridges.SectorName != null ? OutlookBridges.SectorName(sector.Id) : sector.Id.ToString(Inv);
-            page.Text(name, x + Pad, y + Pad - 6f, w - Pad * 2f, 50f, SizeCard, p.Text, TextAlignmentOptions.TopLeft, true);
+            page.Text(SectorLabel(sector.Id), x + Pad, y + Pad - 6f, w - Pad * 2f, 50f, SizeCard, p.Text, TextAlignmentOptions.TopLeft, true);
             page.Text((sector.Last / 100.0).ToString("N2", CultureInfo.CurrentCulture), x + Pad, y + Pad + 48f, w * 0.5f, 56f, 44f, p.Text, TextAlignmentOptions.TopLeft, true);
             OutlookDelta move = OutlookDelta.Of(sector.DayBp);
             DeltaPill(page, x + w - Pad - DeltaWidth(page, move, 1, null, true, 1), y + Pad + 54f, move, 1, null, true, 1);

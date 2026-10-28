@@ -149,14 +149,14 @@ namespace RealLifeOverhaul.Roommates
         {
             if (amount > 0)
             {
-                GameManager.ChangeMoneySafe(amount, new TransactionInfo(transaction), null, null, true);
+                RealLifeOverhaul.Economy.BizBooks.Book(amount, new TransactionInfo(transaction), null, null, true);
             }
         }
 
         /// <summary>Money from the player. False, with the game's own notice, if they have not got it.</summary>
         public static bool Pay(int amount, string transaction)
         {
-            return amount <= 0 || GameManager.ChangeMoneySafe(-amount, new TransactionInfo(transaction), null, null, false, true);
+            return amount <= 0 || RealLifeOverhaul.Economy.BizBooks.Book(-amount, new TransactionInfo(transaction), null, null, false, true);
         }
 
         /// <summary>The home is so many points tidier or messier, on the game's own floor where the home has one. False with home life's needs off.</summary>

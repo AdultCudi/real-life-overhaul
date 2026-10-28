@@ -164,7 +164,7 @@ namespace RealLifeOverhaul.Utilities
             {
                 info.SetTaxDeductibleName(BillsDeductKey.GetLocalization());
             }
-            return GameManager.ChangeMoneySafe(-amount, info, null, reg != null ? reg.Address : null, force: force, showNotification: true);
+            return RealLifeOverhaul.Economy.BizBooks.Book(-amount, info, null, reg != null ? reg.Address : null, force: force, showNotification: true);
         }
 
         public static bool IsHome(BuildingRegistration reg)
@@ -204,7 +204,7 @@ namespace RealLifeOverhaul.Utilities
             {
                 info.SetTaxDeductibleName(CompanyDeductKey.GetLocalization());
             }
-            return GameManager.ChangeMoneySafe(amount, info, null, hq != null ? hq.Address : null, force: running && amount < 0, showNotification: false);
+            return RealLifeOverhaul.Economy.BizBooks.Book(amount, info, null, hq != null ? hq.Address : null, force: running && amount < 0, showNotification: false);
         }
 
         /// <summary>Money given back: a deposit, or the rest of one after a last bill.</summary>
@@ -215,7 +215,7 @@ namespace RealLifeOverhaul.Utilities
                 return;
             }
             var info = new TransactionInfo(key, new Dictionary<string, string>(1) { { "place", reg != null ? reg.Address.ToFormattedString() : string.Empty } });
-            GameManager.ChangeMoneySafe(amount, info, null, reg != null ? reg.Address : null, force: true, showNotification: true);
+            RealLifeOverhaul.Economy.BizBooks.Book(amount, info, null, reg != null ? reg.Address : null, force: true, showNotification: true);
         }
     }
 }

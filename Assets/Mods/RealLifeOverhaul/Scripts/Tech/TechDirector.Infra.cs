@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Localizor;
+using RealLifeOverhaul.BizPace;
 using RealLifeOverhaul.GameUi;
 using Streets;
 using UI.Load;
@@ -25,6 +26,7 @@ namespace RealLifeOverhaul.Tech
         private readonly HashSet<string> _knownWarehouses = new HashSet<string>(StringComparer.Ordinal);
         private readonly List<string> _warehousePlaces = new List<string>(8), _takenNow = new List<string>(2), _offers = new List<string>(2);
         private bool _warehousesFirst = true, _warehousesDirty;
+        private int _registrationStamp;   // the game's registration change events seen: what InCity read from the city's businesses is read again when it moves
 
         /// <summary>The infrastructure part's file; null while the tech sector is off.</summary>
         public InfraFile Infra => _firmsOn ? _infra : null;
@@ -101,10 +103,26 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        // The game's event for any change to a building's record (BuildingHelper.RentBuilding raises it for a rent and a purchase).
+        private static readonly int BizChange = HotSpots.Slot("Tech: TechDirector.OnRegistrationChange");
+        private static readonly int BizWarehouses = HotSpots.Slot("Tech: TechDirector.ReadWarehouses");
+
+        // The game's event for any change to a building's record (BuildingHelper.RentBuilding raises it for a rent and a purchase; BizMan
+        // raises it each time a business view or the Schedule tab is left). Counted for what is read from the city's businesses (InCity);
+        // and only a warehouse's asks for the warehouses to be read again, on the next second, once however many came.
         private void OnRegistrationChange(Address address)
         {
-            _warehousesDirty = true;   // read on the next second, once however many came
+            using var timed = BizPaceWatch.Time(BizChange);   // a step of BizMan closing a business or leaving a tab (BizPace)
+            _registrationStamp++;
+            if (InfraGame.IsWarehouse(address))
+            {
+                _warehousesDirty = true;
+            }
+        }
+
+        /// <summary>Each second, whatever the sector does: the handler of the game's registration change event is on it (the game empties the event at each load).</summary>
+        private void KeepRegistrationHandler()
+        {
+            EventHold.Keep(ref GlobalEvents.onBuildingRegistrationChange, _onRegChange, ref _regChangeSeen);
         }
 
         /// <summary>
@@ -113,10 +131,10 @@ namespace RealLifeOverhaul.Tech
         /// </summary>
         private void KeepWarehouses()
         {
-            EventHold.Keep(ref GlobalEvents.onBuildingRegistrationChange, _onRegChange, ref _regChangeSeen);
             if (_warehousesDirty && _infra != null)
             {
                 _warehousesDirty = false;
+                using var timed = BizPaceWatch.Time(BizWarehouses);   // what a warehouse's change leaves for the next tick (BizPace)
                 ReadInfra();
                 ChangedTech();
             }
@@ -497,9 +515,9 @@ namespace RealLifeOverhaul.Tech
             {
                 Profile p = _people[i].File;
                 cto |= p.Role == TalentCatalogue.Cto;
-                staff += p.Def.Family == Family.Infrastructure && p.Level >= TalentCatalogue.Staff ? 1 : 0;
+                staff += p.Def.Family == Family.Infrastructure && p.Level >= InfraCatalogue.HyperStaffLevel ? 1 : 0;
             }
-            return cto && staff >= 2;
+            return InfraRules.HasChiefs(cto, staff);
         }
 
         internal int CloudNeeds() => InfraRules.CloudNeeds(_infra.Centres, Engineers(), VentureGame.Cash * 1000 / Math.Max(1, Prices.Level), NetAll(), BuyScale);

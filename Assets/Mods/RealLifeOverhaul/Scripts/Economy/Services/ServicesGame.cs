@@ -551,14 +551,14 @@ namespace RealLifeOverhaul.Economy
             {
                 info.SetTaxDeductibleName(DeductKey.GetLocalization());
             }
-            return GameManager.ChangeMoneySafe(-amount, info, day, address, force);
+            return RealLifeOverhaul.Economy.BizBooks.Book(-amount, info, day, address, force);
         }
 
         public static void Give(int amount, string key, string name, Address address, int? day)
         {
             if (amount > 0 && Save != null)
             {
-                GameManager.ChangeMoneySafe(amount, Info(key, name), day, address, true);
+                RealLifeOverhaul.Economy.BizBooks.Book(amount, Info(key, name), day, address, true);
             }
         }
 

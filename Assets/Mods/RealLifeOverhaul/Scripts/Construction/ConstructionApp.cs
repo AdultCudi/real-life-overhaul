@@ -88,7 +88,8 @@ namespace RealLifeOverhaul.Construction
             {
                 _tab = _wanted;
                 _pick = _wantPick <= 0 ? null : _tab == ConstructionDirector.TabTenders ? "tnd:" + _wantPick : _tab == ConstructionDirector.TabProjects ? "prj:" + _wantPick
-                    : _tab == ConstructionDirector.TabCity ? "bill:" + _wantPick : _tab == ConstructionDirector.TabRivals ? "rival:" + (_wantPick - 1) : null;
+                    : _tab == ConstructionDirector.TabCity ? "bill:" + _wantPick : _tab == ConstructionDirector.TabRivals ? "rival:" + (_wantPick - 1)
+                    : _tab == ConstructionDirector.TabLand ? "ofr:" + _wantPick : null;
                 _page = _pick != null ? _wantPage : 0;
                 _wanted = -1;
                 _wantPage = 0;
@@ -269,7 +270,7 @@ namespace RealLifeOverhaul.Construction
         {
             if (!string.IsNullOrEmpty(key))
             {
-                Notifications.Show(NotificationType.Info, key, null, 5f, null, null, true, false);
+                Notifications.Show(NotificationType.Info, key, _director.AnswerData(key), 5f, null, null, true, false);   // a text with the land's size or the money in it carries them
             }
             Refresh();
         }

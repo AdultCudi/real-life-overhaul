@@ -110,9 +110,67 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
+    /// <see cref="HandlingModel.Design"/> cut into steps, for the frames the driven car's design is spread over
+    /// (Driving/CarTuning): <see cref="Begin"/>, then <see cref="Step"/> until it says no more. <see cref="Why"/> is then
+    /// what Design returns, and the setup the one Design writes, bit for bit (NavCheck runs both on every car). A step is
+    /// the springs, an axle's ride, the game's own car in a turn, one speed of the search for its hardest turn, the tyres'
+    /// knee, rolling over, or the pitch and the brakes: a tenth to half a millisecond each offline (NavCheck times every
+    /// one). The car, the target and the setup are the caller's and must not change while a design is under way. Nothing
+    /// allocated.
+    /// </summary>
+    public sealed class HandlingDesign
+    {
+        internal CarChassis Car;
+        internal HandlingSetup Setup;
+        internal HandlingTarget Target;
+        internal float A, B, Wheelbase, Ratio;   // the centre of mass to each axle, the wheelbase and the weight's ratio, from the first step
+        private int _next = HandlingModel.DesignDone;
+
+        /// <summary>Why the car cannot have the handling, once the design is over; null: it can (or none was made).</summary>
+        public string Why { get; internal set; }
+
+        /// <summary>True while steps are left.</summary>
+        public bool Busy => _next != HandlingModel.DesignDone;
+
+        /// <summary>Steps taken since <see cref="Begin"/>.</summary>
+        public int Steps { get; private set; }
+
+        /// <summary>A design of <paramref name="car"/> for <paramref name="t"/> into <paramref name="s"/>, its first step not yet taken.</summary>
+        public void Begin(CarChassis car, in HandlingTarget t, HandlingSetup s)
+        {
+            Car = car;
+            Target = t;
+            Setup = s;
+            Why = null;
+            Steps = 0;
+            _next = HandlingModel.DesignStart;
+        }
+
+        /// <summary>One step; true while steps are left after it.</summary>
+        public bool Step()
+        {
+            if (_next == HandlingModel.DesignDone)
+            {
+                return false;
+            }
+            Steps++;
+            _next = HandlingModel.DesignStep(this, _next);
+            return _next != HandlingModel.DesignDone;
+        }
+
+        /// <summary>The design dropped where it stands: what it wrote so far is not to be read.</summary>
+        public void Cancel()
+        {
+            _next = HandlingModel.DesignDone;
+            Car = null;
+            Setup = null;
+        }
+    }
+
+    /// <summary>
     /// The driven car's handling as the game's vehicle physics (NWH Vehicle Physics 2) works it, game-free, built on the
     /// car's own game values. <see cref="HandlingTurn"/> holds the car in a turn. Runs once per car and change of an
-    /// option, a few milliseconds at most, never per frame.
+    /// option, spread over frames by <see cref="HandlingDesign"/>'s steps, never per frame.
     /// </summary>
     public static class HandlingModel
     {
@@ -155,14 +213,91 @@ namespace RealLifeOverhaul
         private static readonly TurnCar Game = new TurnCar();     // the game's own car, as a turn sees it
         private static readonly TurnCar Own = new TurnCar();      // and the car with the handling on
 
-        /// <summary>One car's handling for a target, all written into <paramref name="s"/>; why the car cannot have it, or null.</summary>
+        private static readonly HandlingDesign Whole = new HandlingDesign();   // Design's own: a design under way in steps keeps its own
+
+        /// <summary>
+        /// One car's handling for a target, all written into <paramref name="s"/>; why the car cannot have it, or null. The
+        /// steps of <see cref="HandlingDesign"/> all at once: in play the driven car's design is spread over frames instead
+        /// (Driving/CarTuning).
+        /// </summary>
         public static string Design(CarChassis car, in HandlingTarget t, HandlingSetup s)
+        {
+            Whole.Begin(car, t, s);
+            while (Whole.Step())
+            {
+            }
+            return Whole.Why;
+        }
+
+        // The steps of a design, in order; DesignCity is taken once for each speed of the search for the game's hardest turn.
+        internal const int DesignStart = 0;    // the checks, the weight, the springs, what the axles carry, the centre of mass
+        internal const int DesignFront = 1;   // the front's dampers for the ride
+        internal const int DesignRear = 2;    // the rear's, and the overshoot of a sudden turn
+        internal const int DesignGame = 3;    // the game's own car in a turn, the roll and the steering
+        internal const int DesignCity = 4;    // one speed of the search for the game's own hardest turn
+        internal const int DesignKnee = 5;    // the tyres' knee
+        internal const int DesignTip = 6;     // rolling over
+        internal const int DesignBrakes = 7;  // the pitch and the brakes
+        internal const int DesignDone = -1;
+
+        // One step of a design; the step after it, or DesignDone. A step reads nothing an earlier one left in the shared
+        // scratch (Game, Own, Felt, Shares): each fills what it reads, so a whole Design between two steps changes nothing.
+        internal static int DesignStep(HandlingDesign d, int step)
+        {
+            CarChassis car = d.Car;
+            HandlingSetup s = d.Setup;
+            switch (step)
+            {
+                case DesignStart:
+                    d.Why = Start(car, d.Target, s, out d.A, out d.B, out d.Wheelbase, out d.Ratio);
+                    return d.Why == null ? DesignFront : DesignDone;
+                case DesignFront:
+                    Ride(car.Front, d.Target, d.Ratio, s.Front);
+                    return DesignRear;
+                case DesignRear:
+                    Ride(car.Rear, d.Target, d.Ratio, s.Rear);
+                    float zeta = s.Front.Zeta < s.Rear.Zeta ? s.Front.Zeta : s.Rear.Zeta;
+                    s.Overshoot = zeta < 0.99f ? 1f + (float)System.Math.Exp(-System.Math.PI * zeta / System.Math.Sqrt(1f - zeta * zeta)) : 1f;
+                    return DesignGame;
+                case DesignGame:
+                    GameTurn(car, Game);
+                    s.GameRollPerG = HandlingTurn.RollPerG(Game);
+                    s.GameRollCentre = s.ComHeight - HandlingTurn.Arm(Game);
+                    s.GameHold = HandlingTurn.Hold(Game);
+                    s.GameTipG = HandlingTurn.Rollover(Game, 1f);
+                    Roll(car, d.Target, s, d.A, d.B, d.Wheelbase);
+                    Steering(car, d.Target, s);
+                    s.CityKmh = CityTop(car);
+                    return DesignCity;
+                case DesignCity:
+                    GameTurn(car, Game);
+                    return CityLower(s) ? DesignCity : DesignKnee;
+                case DesignKnee:
+                    GameTurn(car, Game);
+                    TyresKnee(car, d.Target, s);
+                    return DesignTip;
+                case DesignTip:
+                    Tipping(car, d.Target, s);
+                    return DesignBrakes;
+                case DesignBrakes:
+                    Pitch(car, d.Target, s, d.A, d.B);
+                    Brakes(car, d.Target, s, d.Wheelbase);
+                    return DesignDone;
+                default:
+                    return DesignDone;
+            }
+        }
+
+        // The checks, the weight, the springs, what the axles carry and the centre of mass's height; why the car cannot
+        // have the handling, or null.
+        private static string Start(CarChassis car, in HandlingTarget t, HandlingSetup s, out float a, out float b, out float wheelbase, out float ratio)
         {
             AxleData f = car.Front;
             AxleData r = car.Rear;
-            float wheelbase = f.Z - r.Z;
-            float a = f.Z - car.ComZ;   // centre of mass to the front axle
-            float b = car.ComZ - r.Z;   // and to the rear
+            wheelbase = f.Z - r.Z;
+            a = f.Z - car.ComZ;   // centre of mass to the front axle
+            b = car.ComZ - r.Z;   // and to the rear
+            ratio = 1f;
             if (!(car.Mass > 100f) || !(wheelbase > 1f) || !(a > 0.1f) || !(b > 0.1f) || !(f.Track > 0.8f) || !(r.Track > 0.8f))
             {
                 return "its axles are not where a car's are";
@@ -179,7 +314,7 @@ namespace RealLifeOverhaul
             // A share of the way to the kind's weight, never lighter than the game made the car; springs, bars and tyre
             // ratings carry it as the game's carry the game's weight.
             float mass = car.Mass + t.MassShare * (t.Mass > car.Mass ? t.Mass - car.Mass : 0f);
-            float ratio = mass / car.Mass;
+            ratio = mass / car.Mass;
             s.Mass = mass;
             float gameFront = car.Mass * G * b / (2f * wheelbase);   // N per wheel at rest
             float gameRear = car.Mass * G * a / (2f * wheelbase);
@@ -193,23 +328,6 @@ namespace RealLifeOverhaul
             // The centre of mass: the game's own, standing as high as the game had it (the springs keep the ride height).
             float ground = 0.5f * (f.Top - s.Front.RestLength - f.Radius + r.Top - s.Rear.RestLength - r.Radius);
             s.ComHeight = car.ComY - ground;
-
-            Ride(f, t, ratio, s.Front);
-            Ride(r, t, ratio, s.Rear);
-            float zeta = s.Front.Zeta < s.Rear.Zeta ? s.Front.Zeta : s.Rear.Zeta;
-            s.Overshoot = zeta < 0.99f ? 1f + (float)System.Math.Exp(-System.Math.PI * zeta / System.Math.Sqrt(1f - zeta * zeta)) : 1f;
-
-            GameTurn(car, Game);
-            s.GameRollPerG = HandlingTurn.RollPerG(Game);
-            s.GameRollCentre = s.ComHeight - HandlingTurn.Arm(Game);
-            s.GameHold = HandlingTurn.Hold(Game);
-            s.GameTipG = HandlingTurn.Rollover(Game, 1f);
-            Roll(car, t, s, a, b, wheelbase);
-            Steering(car, t, s);
-            Tyres(car, t, s);
-            Tipping(car, t, s);
-            Pitch(car, t, s, a, b);
-            Brakes(car, t, s, wheelbase);
             return null;
         }
 
@@ -642,18 +760,31 @@ namespace RealLifeOverhaul
 
         // The game's tyre curve (times the grip slider) to its knee, flat past it. The knee lies CityMargin past the furthest
         // a tyre goes in the game's own car's hardest turn at its top speed, and at least at the level's slip angle: every
-        // corner the game's car takes, this one takes too, and past the very limit it gives.
-        private static void Tyres(CarChassis car, in HandlingTarget t, HandlingSetup s)
+        // corner the game's car takes, this one takes too, and past the very limit it gives. In steps (DesignStep): the
+        // game's top speed (CityTop), then the speeds below it a step each (CityLower), then the knee (TyresKnee), with
+        // the game's own car in Game.
+
+        // The game's top speed for the search: the fastest at which its car is asked to hold the road with the key held.
+        private static float CityTop(CarChassis car)
         {
-            // The game's top speed, or the fastest below it at which its car still holds the road with the key held: all
-            // four wheels down and the fronts short of sliding.
-            float top = car.TopKmh > 0f ? (car.TopKmh < CityLeast ? CityLeast : car.TopKmh > CityMost ? CityMost : car.TopKmh) : 60f;
-            s.CityKmh = top;
-            while (s.CityKmh > CityLeast
-                   && (!HandlingTurn.Steady(Game, s.CityKmh / 3.6f, out TurnState gameCity) || gameCity.Least < CityLift || gameCity.SlipF > CitySlip))
+            return car.TopKmh > 0f ? (car.TopKmh < CityLeast ? CityLeast : car.TopKmh > CityMost ? CityMost : car.TopKmh) : 60f;
+        }
+
+        // One speed of the search: true (and 5 km/h less) while the game's car does not hold the road there with all four
+        // wheels down and the fronts short of sliding, and the speed is above the least.
+        private static bool CityLower(HandlingSetup s)
+        {
+            if (s.CityKmh > CityLeast
+                && (!HandlingTurn.Steady(Game, s.CityKmh / 3.6f, out TurnState gameCity) || gameCity.Least < CityLift || gameCity.SlipF > CitySlip))
             {
                 s.CityKmh -= 5f;
+                return true;
             }
+            return false;
+        }
+
+        private static void TyresKnee(CarChassis car, in HandlingTarget t, HandlingSetup s)
+        {
             // How far along their curve the game's car's tyres go in that turn; the handling's car needs a little more as
             // its weight moves out a little more, which CityMargin covers.
             Game.TyreScale = t.Grip;

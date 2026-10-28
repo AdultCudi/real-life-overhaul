@@ -65,6 +65,7 @@ internal static partial class Program
         MultiplayerChecks();
         TestingChecks();
         TextChecks();
+        GuideChecks();
         CommentChecks();
         LoggerChecks();
         GitChecks();

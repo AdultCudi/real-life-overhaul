@@ -28,6 +28,14 @@ namespace RealLifeOverhaul
         private static string _started;
         private bool _second;
 
+        /// <summary>
+        /// True once a second copy was told to stand down, in the game's start or in a city. The copy that runs is the first one the game
+        /// discovered: the Workshop items come before ModsLocal, so a beta from the Workshop runs over a public copy in ModsLocal.
+        /// (Two Workshop items with this assembly's name never get this far: the game refuses both, "Duplicate mod assembly name".)
+        /// The beta's welcome notice tells the player to switch the public copy off (Meta/Welcome).
+        /// </summary>
+        public static bool TwoCopies;
+
         public string[] RelativeAssetBundlePaths => Array.Empty<string>();
 
         public Task OnLoadAsync(ModContext context)
@@ -35,6 +43,7 @@ namespace RealLifeOverhaul
             if (_started != null && _started != context.ModId)
             {
                 _second = true;
+                TwoCopies = true;
                 context.Logger.Warn("Real Life Overhaul is switched on twice (the Workshop item and a copy in the ModsLocal folder?). This copy does nothing; "
                                     + "switch one of them off under Mods in the main menu.");
                 return Task.CompletedTask;
@@ -1275,7 +1284,7 @@ namespace RealLifeOverhaul
             // Meta puts the finished page in order (sections, presets, guide, test tools). Under the mod's own id, so the game's own
             // controls save where the mod reads, whatever the game calls this copy.
             OptionsService.Register(OptionKeysRules.FixedId, Guard.Rows(Guard.Organised(context, options)));   // the page as added, if putting it in order fails
-            log.Info("Real Life Overhaul " + Meta.Changelog.Version + " initialised.");
+            log.Info("Real Life Overhaul " + Meta.Changelog.Shown + " initialised.");
             return Task.CompletedTask;
         }
 
@@ -1321,6 +1330,7 @@ namespace RealLifeOverhaul
             if (_running != context.ModId && GameObject.Find(RootName) != null)
             {
                 _second = true;
+                RealLifeOverhaulInit.TwoCopies = true;
                 context.Logger.Warn("Real Life Overhaul is already running in this city (two copies of the mod are switched on). This copy does nothing; "
                                     + "switch one of them off under Mods in the main menu.");
                 return Task.CompletedTask;
@@ -1424,13 +1434,16 @@ namespace RealLifeOverhaul
             Guard.Step("SessionWatch", () => Guard.Add<SessionWatch>(_root));   // disabled unless Developer diagnostics is on
             Guard.Step("DayWarm", () => DayWarm.Logger = context.Logger);
             Guard.Step("DayWarm", () => Guard.Add<DayWarm>(_root));   // a slice a frame for some seconds after a load, then disabled
+            Guard.Step("DayPump", () => DayPump.Logger = context.Logger);
+            Guard.Step("DayPump", () => Guard.Add<DayPump>(_root));   // plays the midnight's later steps and held lines; disabled while nothing waits
             Guard.Step("GoingPublicWatch", () => Guard.Add<GoingPublicWatch>(_root));   // once a second of real time
             Guard.Step("ScenePrewarm", () => Guard.Add<ScenePrewarm>(_root));   // disabled unless a piece is waiting
             Guard.Step("LoadHold", () => Guard.Add<LoadHold>(_root));   // disabled unless a piece is waiting
             Guard.Step("NewGround.GroundDirector", () => NewGround.GroundDirector.Logger = context.Logger);
             Guard.Step("NewGround.GroundDirector", () => Guard.Add<NewGround.GroundDirector>(_root));   // before the traffic starts: a test road is appended here; disabled while idle
-            // Pieces run last added first: this one after the road data below.
-            Guard.Step("the lane grid's prewarm", () => ScenePrewarm.Add("roads: the lane points put in a grid for the nearest lane point", TrafficTools.PrewarmLaneGrid));
+            // In the game's late call, after the road data below and once its traffic system is up (3.8 ms that waited for the
+            // first black screen; RLO-PERF-024).
+            Guard.Step("the lane grid's prewarm", () => ScenePrewarm.AddLate("roads: the lane points put in a grid for the nearest lane point", TrafficTools.PrewarmLaneGrid));
             Guard.Step("the roads' prewarm", () => ScenePrewarm.Add("roads: the traffic system's road data being found for the city", RoadData.Prewarm));
             Guard.Step("the smoke's prewarm", () => ScenePrewarm.Add("traffic: the game's smoke effect being found for accidents and fires", TrafficEffects.Prewarm));
             Guard.Step("the sirens' prewarm", () => ScenePrewarm.Add("traffic: the sirens' sounds being made", TrafficEffects.PrewarmSirens));
@@ -1447,6 +1460,7 @@ namespace RealLifeOverhaul
             Guard.Step("OverlayGuard", () => Guard.Add<OverlayGuard>(_root));   // two null tests a frame
             Guard.Step("MapTreeGuard", () => MapTreeGuard.Logger = context.Logger);
             Guard.Step("MapTreeGuard", () => Guard.Add<MapTreeGuard>(_root));   // a reference comparison a frame; the tree list pruned when the map opens
+            Guard.Step("SceneryCulling", () => SceneryCulling.Logger = context.Logger);   // the culling check's line as the city unloads
             Guard.Step("GameUi.TextBox", () => GameUi.TextBox.Logger = context.Logger);
             // A conversation ended another way: the text box closed and the dialogue panel's handle given back; one time
             // comparison a frame.
@@ -1634,6 +1648,7 @@ namespace RealLifeOverhaul
             Guard.Step("Districts.DistrictView", () => Guard.Add<Districts.DistrictView>(_root));
             Guard.Step("Interiors.InteriorDirector", () => Interiors.InteriorDirector.Logger = context.Logger);
             Guard.Step("CustomerDraw", () => CustomerDraw.Logger = context.Logger);
+            Guard.Step("BizPace", () => BizPace.BizPaceWatch.Logger = context.Logger);   // what the mod adds to BizMan's open, switch and tab change, timed with Developer diagnostics on
             // With Developer diagnostics on, the installation firms' lists checked against the designs written.
             Guard.Step("Designs.DesignsDirector", () => Designs.DesignsDirector.CityLoaded());
             Guard.Step("Interiors.InteriorDirector", () => Guard.Add<Interiors.InteriorDirector>(_root));
@@ -1688,6 +1703,7 @@ namespace RealLifeOverhaul
             GameUi.NoticeLook.WantPictures();
             Meta.GuideApp.WantPictures();
             Meta.SettingsApp.WantPictures();
+            Meta.StaffApp.WantPictures();
             Ledger.NewsstandApp.WantPictures();
             SpeedReading.WantPictures();
             CarDash.WantPictures();
@@ -1711,6 +1727,7 @@ namespace RealLifeOverhaul
             Guard.Step("the options page in the city", () => Meta.MetaCity.End());
             Guard.Step("the wiring", () => Wiring.Disconnect());
             Guard.Step("the guide marks", () => GameUi.GuideMark.HideAll("the city is unloading"));   // while the game's destination guider is still there
+            Guard.Step("the culling check", SceneryCulling.WatchUnload);   // the game's culling lists counted once the menu's scene is in, the city's still there
             if (_root != null)
             {
                 _root.name = RootName + " (closing)";   // gone at the end of the frame: a city loaded before then must not take it for a second copy

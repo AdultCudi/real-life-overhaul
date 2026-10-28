@@ -377,7 +377,7 @@ namespace RealLifeOverhaul
             }
             try
             {
-                GameManager.ChangeMoneySafe(-Price, new TransactionInfo("reallife_transaction_coffee"), null, null, force: true);
+                RealLifeOverhaul.Economy.BizBooks.Book(-Price, new TransactionInfo("reallife_transaction_coffee"), null, null, force: true);
                 EnergyHelper.GenerateEnergy(Energy);
             }
             catch (System.Exception e)

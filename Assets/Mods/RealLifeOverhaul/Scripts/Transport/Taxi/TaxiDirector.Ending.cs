@@ -152,7 +152,7 @@ namespace RealLifeOverhaul
         {
             GameInstance save = SaveGameManager.Current;
             float take = save != null ? TaxiRules.Payable(due, save.Money) : 0f;
-            if (take > 0f && !GameManager.ChangeMoneySafe(-take, new TransactionInfo(transaction), null, null, force: false, showNotification: false))
+            if (take > 0f && !RealLifeOverhaul.Economy.BizBooks.Book(-take, new TransactionInfo(transaction), null, null, force: false, showNotification: false))
             {
                 take = 0f;
             }

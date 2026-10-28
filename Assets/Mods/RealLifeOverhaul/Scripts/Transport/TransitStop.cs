@@ -68,6 +68,7 @@ namespace RealLifeOverhaul
         public int Seed;          // its place in its timetable (TransitPlan.Offset)
         public float[] Minutes;   // game minutes of a ride from its first stop to each of its stops (TransitTrips)
         public float[] Wanted;    // a district's own route: metres along its path each of its stops is wanted at (-1 where it does not pass); null for a paired line
+        public TransitPlan.Route Route;   // ... and the route it was laid from, for the log's word on a stop not laid; null for a paired line
 
         public string To => ToKey.GetLocalization();
 

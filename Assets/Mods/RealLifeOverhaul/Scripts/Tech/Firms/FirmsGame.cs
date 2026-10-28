@@ -336,7 +336,7 @@ namespace RealLifeOverhaul.Tech
         {
             if (cents > 0 && Save != null && at != null)
             {
-                GameManager.ChangeMoneySafe(cents / 100f, Info(TakingsKey, name, null), day, at.Address, true);
+                RealLifeOverhaul.Economy.BizBooks.Book(cents / 100f, Info(TakingsKey, name, null), day, at.Address, true);
             }
         }
 
@@ -349,7 +349,7 @@ namespace RealLifeOverhaul.Tech
             }
             TransactionInfo info = Info(key, name, key == MarketingKey ? Marketing : null);
             info.SetTaxDeductibleName(DeductKey.GetLocalization());
-            GameManager.ChangeMoneySafe(-cents / 100f, info, day, at != null ? at.Address : null, true);
+            RealLifeOverhaul.Economy.BizBooks.Book(-cents / 100f, info, day, at != null ? at.Address : null, true);
         }
 
         /// <summary>A charge the player chose to pay now (the register's fee), cents; refused if the cash does not cover it.</summary>
@@ -361,7 +361,7 @@ namespace RealLifeOverhaul.Tech
             }
             TransactionInfo info = Info(key, name, null);
             info.SetTaxDeductibleName(DeductKey.GetLocalization());
-            return Save != null && GameManager.ChangeMoneySafe(-cents / 100f, info, null, at != null ? at.Address : null, false);
+            return Save != null && RealLifeOverhaul.Economy.BizBooks.Book(-cents / 100f, info, null, at != null ? at.Address : null, false);
         }
 
         /// <summary>A fine, cents: charged at once, not deductible.</summary>
@@ -369,7 +369,7 @@ namespace RealLifeOverhaul.Tech
         {
             if (cents > 0 && Save != null)
             {
-                GameManager.ChangeMoneySafe(-cents / 100f, Info(FineKey, name, null), null, at != null ? at.Address : null, true);
+                RealLifeOverhaul.Economy.BizBooks.Book(-cents / 100f, Info(FineKey, name, null), null, at != null ? at.Address : null, true);
             }
         }
 

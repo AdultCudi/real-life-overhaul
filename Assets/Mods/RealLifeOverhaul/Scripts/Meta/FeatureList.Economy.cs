@@ -286,6 +286,12 @@ namespace RealLifeOverhaul.Meta
                 .About("reallife_guide_economy_banks_about").Help("reallife_guide_economy_banks")
                 .Owns(Settings.EconomyBanksId)
                 .Fact("bank_threshold", () => Whole(Economy.CreditCatalogue.LendingThreshold))
+                .Fact("bank_second_points", () => Whole(Economy.BankRules.Of(1).RatePoints))
+                .Fact("bank_second_limit", () => Whole(Economy.BankRules.Of(1).LimitPercent) + "%")
+                .Fact("bank_second_fee", () => Whole(Economy.BankRules.Of(1).FeePercent) + "%")
+                .Fact("bank_third_points", () => Whole(-Economy.BankRules.Of(2).RatePoints))
+                .Fact("bank_third_limit", () => Whole(Economy.BankRules.Of(2).LimitPercent) + "%")
+                .Fact("bank_third_fee", () => Whole(Economy.BankRules.Of(2).FeePercent) + "%")
                 .Test("reallife_bank_test_check", "reallife_bank_test_open");
 
             Economy.CompanyGuide.AddFacts(Features.Add("economy_company", "reallife_meta_title_economy_company")

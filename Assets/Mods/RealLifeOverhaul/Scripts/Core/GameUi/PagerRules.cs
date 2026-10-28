@@ -80,7 +80,7 @@ namespace RealLifeOverhaul.GameUi
             "RealLifeCompany", "RealLifeBrands", "RealLifeServices", "RealLifeVentures", "RealLifeOnline", "RealLifeEstate", "RealLifeDealer",
             "RealLifeBuilders",
             "RealLifeTechSector", "RealLifeOverhaulUtilities",
-            "RealLifeGuide", "RealLifeSettings"
+            "RealLifeGuide", "RealLifeSettings", "RealLifeStaff"
         };
 
         private const int RankStep = 100;   // places kept under each name, room to put a name between two without moving the rest

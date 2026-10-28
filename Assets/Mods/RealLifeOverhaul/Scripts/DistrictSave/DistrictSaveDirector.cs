@@ -110,6 +110,7 @@ namespace RealLifeOverhaul.DistrictSave
             if (DistrictSaveRules.Idle(places, KeptRecords.Count + _restored))
             {
                 Clean(save);
+                CompanionGame.End(save);   // the report's text, written on a worker since the save hook began it (Core/CompanionGame)
                 return;   // nothing of the mod's can be in this save: nothing to do
             }
             long began = Stopwatch.GetTimestamp();
@@ -126,6 +127,7 @@ namespace RealLifeOverhaul.DistrictSave
             bool failed = hits.Count > 0 || fault != null || s.Faults.Count > 0;
             LastCheck = CheckLine(places, s, records, bytes, hits, fault, Parts(Ms(began, done), Ms(began, taken), Ms(taken, written), checkMs, Ms(written, done)));
             Say(LastCheck, failed);
+            CompanionGame.End(save);   // the report's text, done on a worker beside the section and the check: set into the save here, nothing waited for
         }
 
         private static double Ms(long from, long to)

@@ -12,6 +12,7 @@ namespace RealLifeOverhaul
         Starved = 3,       // it waited for the last frame to be shown while other programs held the processor
         OtherProgram = 4,  // it did not run, and other programs held the processor
         Outside = 5,       // the time was outside the engine's steps, with the processor free
+        Waited = 6,        // the main thread hardly ran inside the engine's steps and nothing else held the processor: blocked, not working
     }
 
     /// <summary>What the game showed during a frame, as the session record tells a stutter the player saw from one they did not.</summary>
@@ -59,6 +60,7 @@ namespace RealLifeOverhaul
         public const double ThreadWorked = 0.6;   // share of the frame the main thread must have run for the frame to be its own work
         public const double MostOf = 0.5;          // share of the frame the wait, or the time outside the steps, must be to be the cause
         public const double OthersHeld = 0.6;      // share of the machine's processors other programs must have held to be the cause
+        public const double Idle = 0.2;            // share of the frame under which the main thread's own time says it was blocked, not working (its clock ticks every 15.6 ms)
         public const long Paging = 20000;          // page faults in one frame from which the line says memory was being brought in (some 80 MB of 4 KB pages)
 
         /// <summary>The cause the figures point to. Unknown figures are left out of the reasoning, never guessed.</summary>
@@ -87,6 +89,10 @@ namespace RealLifeOverhaul
             {
                 return FrameCause.Outside;
             }
+            if (f.ThreadMs >= 0.0 && f.StepsMs >= 0.0 && f.ThreadMs < Idle * span)
+            {
+                return FrameCause.Waited;   // a script's time in such a frame is the wait it was caught in, not its own work
+            }
             return FrameCause.Spread;
         }
 
@@ -100,6 +106,7 @@ namespace RealLifeOverhaul
                 case FrameCause.Starved: return "such waits while other programs held the processor";
                 case FrameCause.OtherProgram: return "other programs holding the processor";
                 case FrameCause.Outside: return "time outside the engine's steps";
+                case FrameCause.Waited: return "the main thread blocked inside the engine's steps";
                 default: return "spread over the engine's steps";
             }
         }
@@ -175,6 +182,10 @@ namespace RealLifeOverhaul
                     break;
                 case FrameCause.Outside:
                     line.Append("the time was outside the engine's steps with the processor free (the window's messages, the system or the graphics driver held the game)");
+                    break;
+                case FrameCause.Waited:
+                    line.Append("the main thread was blocked, not working: it hardly ran inside the steps above and no other program held the processor "
+                                + "(a wait on the graphics driver, the disk or another thread), so the time a script is given in this frame is the wait it was caught in, not its work");
                     break;
                 default:
                     line.Append("it was spread over the engine's steps above");

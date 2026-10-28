@@ -160,6 +160,7 @@ namespace RealLifeOverhaul.Texts
             _frameTime = frames > 0 && since > 0f ? since * 1000f / frames : 0f;   // the mean frame since the last look
             SignInLook();
             SignOutLook();
+            PlayerTwoLook();
             string locale = TextsGame.Locale;
             if (!ReferenceEquals(locale, _locale))
             {

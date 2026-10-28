@@ -150,7 +150,7 @@ namespace RealLifeOverhaul.Careers
             }
             KeepShifts(day, false);   // after the days gone by are settled on the week they were worked on
             Applications(day);
-            Vacancies(day);
+            VacanciesLater(day);   // the job board's renewal: nothing the game reads, made in the frames after (Core/DaySpread)
             LadderDay(day);   // before the review, which reads the performance score
             WorkDayMore(day);
             if (OwnOn)

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 
 namespace RealLifeOverhaul
 {
@@ -116,6 +117,39 @@ namespace RealLifeOverhaul
                 }
             }
             return found;
+        }
+
+        /// <summary>Why a stop wanted on a district's route was not laid.</summary>
+        public enum Miss
+        {
+            OffTheWay = 1,      // the way laid through the road graph passes no lane point within <see cref="WantedReach"/> of it
+            NoPlace = 2,        // the way passes it, but no lane point round it takes a stop and no place another line laid there could be shared
+        }
+
+        /// <summary>How near a path comes to a point, in metres (anywhere along it); float.MaxValue for a path of no points.</summary>
+        public static float Approach(IList<float> x, IList<float> z, int count, float atX, float atZ)
+        {
+            float nearest = float.MaxValue;
+            for (int i = 0; i < count; i++)
+            {
+                float d = Distance(x[i], z[i], atX, atZ);
+                nearest = d < nearest ? d : nearest;
+            }
+            return nearest;
+        }
+
+        /// <summary>
+        /// The check line's words for one stop of a district's route that was not laid: which route, which stop of how many,
+        /// where it was wanted, and why. <paramref name="metres"/> is how near the way came (<see cref="Miss.OffTheWay"/>);
+        /// <paramref name="tried"/> how many lane points were tried round it and <paramref name="far"/> how far from it (<see cref="Miss.NoPlace"/>).
+        /// </summary>
+        public static string MissWords(string route, int stop, int stops, float x, float z, Miss why, float metres, int tried, float far)
+        {
+            CultureInfo inv = CultureInfo.InvariantCulture;
+            string at = route + " stop " + stop + " of " + stops + " at (" + x.ToString("F1", inv) + ", " + z.ToString("F1", inv) + ")";
+            return why == Miss.OffTheWay
+                ? at + ": the way passes no nearer than " + metres.ToString("F0", inv) + " m (it must pass within " + WantedReach.ToString("F0", inv) + ")"
+                : at + ": the way passes it, but none of " + tried + " lane point(s) within " + far.ToString("F0", inv) + " m takes a stop, and no place another line laid there can be shared";
         }
 
         /// <summary>The order the lane points round a wanted place are tried in: nearest first, alternately on and back, within a reach.</summary>

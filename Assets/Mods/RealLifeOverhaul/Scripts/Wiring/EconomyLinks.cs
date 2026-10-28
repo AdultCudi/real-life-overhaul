@@ -22,6 +22,7 @@ namespace RealLifeOverhaul
             {
                 Prices.Factor = () => Economy.CityEconomy.CostFactor;   // every price of the mod's follows the city's
                 EconomyBridges.GivenBack = GivenBack;
+                BizBooks.Warn = text => Logger?.Warn(text);   // a key booked at a business that BizBooks' table does not know
                 // a tech firm's takings are its products', contracts' and cloud's
                 EconomyBridges.Takings = type => type == Utilities.BroadbandCatalogue.TakingsKey || OwnBankCatalogue.IsTakings(type) || Tech.FirmsGame.IsTakings(type);
                 EconomyBridges.CostRow = type => type == Utilities.BroadbandCatalogue.NetworkKey || type == Utilities.BroadbandCatalogue.InstallsKey
@@ -69,6 +70,8 @@ namespace RealLifeOverhaul
             internal static void Disconnect()
             {
                 Prices.Factor = null;
+                BizBooks.Warn = null;
+                BizBooks.Reset();
                 DayWarm.FeatureDays = null;
                 LifeAccounts.Card = null;
                 LifeAccounts.Accountant = null;

@@ -25,7 +25,7 @@ namespace RealLifeOverhaul.Hustles
         private const string ItemSold = "ba:transaction_itemsold";
         private const string VehicleBought = "ba:transaction_vehiclebought";
         private const string SalaryCategory = "ba:transactioncategory_salaryincome";
-        private const float EnergyFloor = 12f;              // work never takes the player below this (the game faints them at zero)
+        internal const float EnergyFloor = 12f;              // work never takes the player below this (the game faints them at zero)
         private const float WorstEnergyMultiplier = 1.9f;   // the most the game multiplies energy spent by (low mood, hunger)
 
         private static GameInstance Save => SaveGameManager.Current;
@@ -242,7 +242,7 @@ namespace RealLifeOverhaul.Hustles
         {
             if (amount > 0 && Save != null)
             {
-                GameManager.ChangeMoneySafe(amount, new TransactionInfo(transaction), null, null, true);
+                RealLifeOverhaul.Economy.BizBooks.Book(amount, new TransactionInfo(transaction), null, null, true);
             }
         }
 
@@ -314,7 +314,7 @@ namespace RealLifeOverhaul.Hustles
         /// <summary>Money out under one of the mod's transactions; false and nothing taken when the cash does not cover it.</summary>
         public static bool Pay(int amount, string transaction)
         {
-            return amount <= 0 || (Save != null && GameManager.ChangeMoneySafe(-amount, new TransactionInfo(transaction), null, null, false, true));
+            return amount <= 0 || (Save != null && RealLifeOverhaul.Economy.BizBooks.Book(-amount, new TransactionInfo(transaction), null, null, false, true));
         }
 
         /// <summary>A car bought, as the game books one: under its name.</summary>
@@ -325,7 +325,7 @@ namespace RealLifeOverhaul.Hustles
                 return true;
             }
             var data = new Dictionary<string, string>(1) { { "vehicleName", CarName(type) } };
-            return Save != null && GameManager.ChangeMoneySafe(-amount, new TransactionInfo(VehicleBought, data), null, null, false, true);
+            return Save != null && RealLifeOverhaul.Economy.BizBooks.Book(-amount, new TransactionInfo(VehicleBought, data), null, null, false, true);
         }
 
         /// <summary>A thing sold, as the game books what it sells: what was sold, by name.</summary>
@@ -334,7 +334,7 @@ namespace RealLifeOverhaul.Hustles
             if (amount > 0 && Save != null)
             {
                 var data = new Dictionary<string, string>(1) { { "itemSoldInfo", what } };
-                GameManager.ChangeMoneySafe(amount, new TransactionInfo(ItemSold, data), null, null, true);
+                RealLifeOverhaul.Economy.BizBooks.Book(amount, new TransactionInfo(ItemSold, data), null, null, true);
             }
         }
 
@@ -343,7 +343,7 @@ namespace RealLifeOverhaul.Hustles
         {
             if (amount > 0 && Save != null)
             {
-                GameManager.ChangeMoneySafe(amount, new TransactionInfo(transaction, SalaryCategory), null, null, true);
+                RealLifeOverhaul.Economy.BizBooks.Book(amount, new TransactionInfo(transaction, SalaryCategory), null, null, true);
             }
         }
 

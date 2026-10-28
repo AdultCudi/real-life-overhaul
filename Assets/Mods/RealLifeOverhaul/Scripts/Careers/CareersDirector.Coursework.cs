@@ -1,4 +1,5 @@
 using System;
+using PlayerActivity;
 using UI.Notification;
 
 namespace RealLifeOverhaul.Careers
@@ -117,8 +118,54 @@ namespace RealLifeOverhaul.Careers
         {
             CourseDef c = e.Def;
             bool revision = e.Homework >= StudyRules.HomeworkSet(e) || e.Homework >= c.Homework;
-            return new Sitting(this, SittingKind.Homework, c.Id, StudyCatalogue.HomeworkHours * 60, CareersText.Course(c.Id), true,
+            var sitting = new Sitting(this, SittingKind.Homework, c.Id, StudyRules.HomeworkLeft(e), CareersText.Course(c.Id), true,
                 CareersText.T(revision ? "reallife_study_skip_revision" : "reallife_study_skip_homework", "number", (e.Homework + 1).ToString(), "of", c.Homework.ToString()));
+            sitting.Carried = StudyRules.HomeworkFull - StudyRules.HomeworkLeft(e);   // it asks only for the rest of the piece
+            return sitting;
+        }
+
+        private bool _homeworkHinted;   // the hint on where homework is started has been shown this session
+
+        /// <summary>
+        /// Once a second: if the player is using the computer through the game's own activity (entertaining, study or work) while a piece of
+        /// homework is due, say once where homework is started. Cost: one type test a second; once told, a flag test.
+        /// </summary>
+        private void HomeworkHint()
+        {
+            if (_homeworkHinted)
+            {
+                return;
+            }
+            PlayerActivityUI ui = ActivityUi();
+            IPlayerActivity now = ui != null ? ui.GetCurrentActivity : null;
+            if (!(now is EntertainActivity || now is WorkActivity || now is StudyActivity) || now.GetState() != PlayerActivityState.Running)
+            {
+                return;
+            }
+            for (int i = 0; i < _study.Courses.Count; i++)
+            {
+                Enrolment e = _study.Courses[i];
+                if (e != null && e.Def != null && StudyRules.HomeworkOpen(e) && !_book.Has(SittingKind.Homework, e.Course))
+                {
+                    _homeworkHinted = true;
+                    Tell(NotificationType.Info, "reallife_study_hint_homework", Data("course", CareersText.Course(e.Def.Id)), TabStudying, CampusApp.CourseRow + e.Def.Id);
+                    Logger?.Info("Careers: homework of " + e.Def.Key + " is due and the player is using the game's own " + now.GetType().Name + "; told once where homework is started.");
+                    return;
+                }
+            }
+        }
+
+        /// <summary>
+        /// A homework sitting has sat <paramref name="sat"/> minutes so far (the game's panel performs them): written to the enrolment as
+        /// they pass, so a save in the middle keeps them and the next sitting finishes the rest. Cost: a short loop, once a game minute.
+        /// </summary>
+        internal void HomeworkWorked(Sitting s, int sat)
+        {
+            Enrolment e = _studyOn && _book.Holds(s.Record) ? _study.Live(s.Of) : null;
+            if (e != null)
+            {
+                e.HomeworkMinutes = StudyRules.HomeworkRunning(s.Carried, sat);
+            }
         }
 
         /// <summary>An exam (or its retake) as one of the game's activities; its fee is the caller's to charge.</summary>
@@ -238,10 +285,16 @@ namespace RealLifeOverhaul.Careers
                     }
                     break;
                 case SittingKind.Homework:
-                    if (!whole)
+                    if (!StudyRules.HomeworkSat(s.Carried, minutes, whole, out int kept))
                     {
+                        e.HomeworkMinutes = kept;   // carried: the next sitting asks only for the rest
+                        Tell(NotificationType.Warning, "reallife_study_note_homework_early",
+                            Data("course", CareersText.Course(c.Id), "done", kept.ToString(), "total", StudyRules.HomeworkFull.ToString()), TabStudying, CampusApp.CourseRow + c.Id);
+                        Logger?.Info("Careers: homework of " + c.Key + " stopped early after " + minutes + " minutes in this sitting, " + kept + " of " + StudyRules.HomeworkFull
+                                     + " kept on the piece; ended by " + (s.Why ?? "the game's panel or the player, not said") + ".");
                         return;
                     }
+                    e.HomeworkMinutes = 0;
                     e.Homework++;
                     Teach(c.SkillA, StudyRules.HomeworkGain(c, true, StudyRules.Points(_study, c.SkillA), learning), day);
                     Teach(c.SkillB, StudyRules.HomeworkGain(c, false, StudyRules.Points(_study, c.SkillB), learning), day);

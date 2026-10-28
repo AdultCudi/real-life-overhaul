@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using RealLifeOverhaul.Construction;
+using RealLifeOverhaul.Landmarks;
 using RealLifeOverhaul.NewBuildings;
 using RealLifeOverhaul.Uptown;
 using UnityEngine;
@@ -28,6 +29,9 @@ namespace RealLifeOverhaul
                 BuildModeBridges.GhostGone = GhostGone;
                 BuildModeBridges.CompleteNow = DistrictBuildings.CompleteNow;
                 BuildModeBridges.CompleteAll = DistrictBuildings.CompleteAll;
+                BuildModeBridges.Held = HeldInto;           // the ground no square covers, each piece named (Uptown's HeldGroundRules)
+                BuildModeBridges.Blocks = BlocksInto;
+                BuildModeBridges.LandmarkOf = LandmarksDirector.SiteIdOfLot;
                 BuildModeBridges.CornerGhost = CornerLinks.Ghost;   // a corner building's model as the ghost, and the corner buildings' check (Wiring.CornerLinks)
                 BuildModeBridges.CornerGhostGone = CornerLinks.GhostGone;
                 BuildModeBridges.CornerCheck = CornerLinks.Check;
@@ -42,9 +46,63 @@ namespace RealLifeOverhaul
                 BuildModeBridges.GhostGone = null;
                 BuildModeBridges.CompleteNow = null;
                 BuildModeBridges.CompleteAll = null;
+                BuildModeBridges.Held = null;
+                BuildModeBridges.Blocks = null;
+                BuildModeBridges.LandmarkOf = null;
                 BuildModeBridges.CornerGhost = null;
                 BuildModeBridges.CornerGhostGone = null;
                 BuildModeBridges.CornerCheck = null;
+            }
+
+            // Every piece of the band's ground that no lot covers, as build mode's held grounds: a place's carries whether its building stands.
+            private static void HeldInto(List<HeldView> into)
+            {
+                into.Clear();
+                try
+                {
+                    IReadOnlyList<HeldGround> all = HeldGroundRules.All;
+                    for (int i = 0; i < all.Count; i++)
+                    {
+                        HeldGround h = all[i];
+                        into.Add(new HeldView
+                        {
+                            Kind = (HeldWhat)(int)h.Kind, Block = h.Block, District = DistrictSplit.OfBlock(h.Block), Lot = h.Lot, Street = h.Street, Number = h.Number, Name = h.Name,
+                            NameKey = h.NameKey, Stands = h.Kind != HeldGroundKind.Place || DistrictBuildings.Finished(h.Lot), X1 = h.X1, Z1 = h.Z1, X2 = h.X2, Z2 = h.Z2
+                        });
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("BuildModeLinks.Held", e);
+                    into.Clear();
+                }
+            }
+
+            // The band's blocks (the ring's too) as rectangles.
+            private static void BlocksInto(List<BlockView> into)
+            {
+                into.Clear();
+                try
+                {
+                    for (int row = 1; row <= LayoutRules.Rows + 1; row++)
+                    {
+                        for (int column = 0; column <= LayoutRules.Columns + 1; column++)
+                        {
+                            bool band = row <= LayoutRules.Rows && column >= 1 && column <= LayoutRules.Columns;
+                            if (!band && !LayoutRules.IsRing(row, column))
+                            {
+                                continue;
+                            }
+                            LayoutRules.Block(row, column, out float x0, out float z0, out float x1, out float z1);
+                            into.Add(new BlockView { Block = row * 100 + column, X1 = x0, Z1 = z0, X2 = x1, Z2 = z1 });
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("BuildModeLinks.Blocks", e);
+                    into.Clear();
+                }
             }
 
             private static int Demand(int use, int district)

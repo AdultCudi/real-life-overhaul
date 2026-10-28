@@ -162,6 +162,9 @@ namespace RealLifeOverhaul
             _laneChanges = 0;
             _lineCursor = 0;
             _lineBegun = false;
+            _tryStage = 0;
+            _tryBay = null;
+            _tryPlain = null;
             _shared = 0;
             Bays = 0;
             ResetOwn();
@@ -258,7 +261,7 @@ namespace RealLifeOverhaul
                     WorkSlice slice = sliced ? WorkSlice.Of(StopsSliceMs, 1) : WorkSlice.Whole;
                     while (_lineCursor < Lines.Count && slice.More())
                     {
-                        if (PlaceStop(Lines[_lineCursor]))
+                        if (PlaceStop(Lines[_lineCursor], ref slice))
                         {
                             _lineCursor++;
                         }

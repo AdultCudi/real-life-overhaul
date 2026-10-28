@@ -26,6 +26,10 @@ namespace RealLifeOverhaul.Flare
 
         private readonly List<FlarePerson> _people = new List<FlarePerson>(12);
         private readonly FlareHourSteps _hourSteps = new FlareHourSteps();
+        private int _dayStep = -1;        // the next of the day's steps (DayStep), or -1 when none is owed
+        private int _dayFor;               // the day they are for
+        private FlareDayReport _dayReport; // what the first step worked out, for the last
+        private bool _dayStepping;         // the day's steps' coroutine is running
         private bool _stepping;   // the hour's steps' coroutine is running
         private FlareFile _file;
         private FlareApp _view;
@@ -189,8 +193,10 @@ namespace RealLifeOverhaul.Flare
             if (keep && _running && Save != null && _file != null)
             {
                 FinishHours();
+                FinishDay();
                 FlareStore.Save(Save.modData, _file);
             }
+            _dayStep = -1;
             _hourSteps.Clear();
             ShareStop();
             PhotosStop();
@@ -428,7 +434,8 @@ namespace RealLifeOverhaul.Flare
         }
 
         private static readonly int HotOnDay = HotSpots.Slot("Social: FlareDirector.OnDay");
-        // After the game's daily run, so yesterday's statement of every business is there.
+        // After the game's daily run, so yesterday's statement of every business is there. The day's round is queued and played a step a
+        // frame from the next frame on (DaySteps): it took 32 to 46 ms in one frame at each midnight in a player's log (28 Oct 2026).
         private void OnDay()
         {
             using var hotSpot = HotSpots.Time(HotOnDay);
@@ -439,10 +446,17 @@ namespace RealLifeOverhaul.Flare
             try
             {
                 FinishHours();   // the day's run follows the hour's, as it did
+                FinishDay();     // a day still owed its steps is played now, before this one
                 int day = Save.Day;
                 if (day != _file.SettledDay)
                 {
-                    PlayDay(day);
+                    _dayFor = day;
+                    _dayStep = 0;
+                    if (!_dayStepping)
+                    {
+                        _dayStepping = true;
+                        StartCoroutine(Guard.Routine(DaySteps()));
+                    }
                 }
             }
             catch (Exception e)
@@ -451,34 +465,108 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
-        private void PlayDay(int day)
+        private static readonly int HotDayStep = HotSpots.Slot("Social: FlareDirector.DaySteps");
+
+        // The day's round a step a frame, once the hour's steps are done (the day follows the hour's, as it did).
+        private IEnumerator DaySteps()
         {
-            ReadPeople();
-            Talked(_talked);
-            FlareDayReport r = FlareRules.Day(_file, day, FlareBridges.Standing(), _people);
-            Rewrite(_talked, true);
-            CastDay(day);
-            CityDay(day);
-            LiveDay(day);
-            FacesAhead(day);   // the day's likely faces, drawn behind the next black screens
-            List<BuildingRegistration> shops = FlareGame.Businesses();
-            for (int i = 0; i < shops.Count; i++)
+            while (_dayStep >= 0)
             {
-                string place = FlareGame.Place(shops[i]);
-                FlareSource news = FlareRules.ShopDay(_file, place, FlareGame.Takings(shops[i]), day);
-                if (news != FlareSource.None)
+                yield return null;
+                if (!Running || Save == null || _file == null)
                 {
-                    Made(FlareRules.Draft(_file, news, day, 8, -1, place, FlareGame.Name(shops[i]), 0));
+                    _dayStep = -1;
+                    break;
+                }
+                if (_hourSteps.Busy)
+                {
+                    continue;
+                }
+                using var hotSpot = HotSpots.Time(HotDayStep);
+                try
+                {
+                    if (_dayStep >= 0)
+                    {
+                        using var piece = SessionWatch.Piece("flare: a step of the day's round");
+                        DayStep();
+                    }
+                }
+                catch (Exception e)
+                {
+                    _dayStep = -1;
+                    Fault("the day", e);
                 }
             }
-            if (r.FollowersAfter != r.FollowersBefore || r.ReputationAfter != r.ReputationBefore)
+            _dayStepping = false;
+        }
+
+        // What is left of the day's steps, at once: the save, the next day and standing down need the day played first.
+        private void FinishDay()
+        {
+            while (_file != null && _dayStep >= 0)
             {
-                Logger?.Info("Flare: day " + day + ": followers " + r.FollowersBefore + " to " + r.FollowersAfter
-                             + (r.Lost > 0 ? " (" + r.Lost + " drifted away after " + r.Silent + " days without a post)" : string.Empty)
-                             + ", reputation " + r.ReputationBefore + " to " + r.ReputationAfter + " (the city's opinion " + FlareBridges.Standing() + "), " + r.Following + " friend(s) follow, "
-                             + r.FriendPosts + " posted, " + r.DraftsGone + " draft(s) lapsed.");
+                DayStep();
             }
-            Changed();
+        }
+
+        // One step of the day's round, in the order it ran in one frame.
+        private void DayStep()
+        {
+            int day = _dayFor;
+            int step = _dayStep++;
+            switch (step)
+            {
+                case 0:
+                    ReadPeople();
+                    Talked(_talked);
+                    _dayReport = FlareRules.Day(_file, day, FlareBridges.Standing(), _people);
+                    Rewrite(_talked, true);
+                    break;
+                case 1:
+                    CastDay(day);
+                    break;
+                case 2:
+                    CityDay(day);
+                    break;
+                case 3:
+                    LiveDay(day);
+                    break;
+                case 4:
+                    FacesAhead(day);   // the day's likely faces, drawn behind the next black screens
+                    break;
+                case 5:
+                    List<BuildingRegistration> shops = FlareGame.Businesses();
+                    for (int i = 0; i < shops.Count; i++)
+                    {
+                        string place = FlareGame.Place(shops[i]);
+                        FlareSource news = FlareRules.ShopDay(_file, place, FlareGame.Takings(shops[i]), day);
+                        if (news != FlareSource.None)
+                        {
+                            Made(FlareRules.Draft(_file, news, day, 8, -1, place, FlareGame.Name(shops[i]), 0));
+                        }
+                    }
+                    break;
+                default:
+                    _dayStep = -1;
+                    FlareDayReport r = _dayReport;
+                    if (r.FollowersAfter != r.FollowersBefore || r.ReputationAfter != r.ReputationBefore)
+                    {
+                        Logger?.Info("Flare: day " + day + ": followers " + r.FollowersBefore + " to " + r.FollowersAfter
+                                     + (r.Lost > 0 ? " (" + r.Lost + " drifted away after " + r.Silent + " days without a post)" : string.Empty)
+                                     + ", reputation " + r.ReputationBefore + " to " + r.ReputationAfter + " (the city's opinion " + FlareBridges.Standing() + "), "
+                                     + r.Following + " friend(s) follow, " + r.FriendPosts + " posted, " + r.DraftsGone + " draft(s) lapsed.");
+                    }
+                    Changed();
+                    break;
+            }
+        }
+
+        // The whole day's round at once: a test button, and nothing else.
+        private void PlayDay(int day)
+        {
+            _dayFor = day;
+            _dayStep = 0;
+            FinishDay();
         }
 
         private void ReadPeople()
@@ -631,6 +719,7 @@ namespace RealLifeOverhaul.Flare
                 if (_running && Save != null && _file != null)
                 {
                     FinishHours();   // the save holds every hour that has begun, done
+                    FinishDay();     // and the day that has turned
                     FlareStore.Save(Save.modData, _file);
                 }
             }

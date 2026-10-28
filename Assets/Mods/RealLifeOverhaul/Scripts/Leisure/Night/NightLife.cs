@@ -19,7 +19,9 @@ namespace RealLifeOverhaul.Leisure
 
         public bool Out => _first != null || _second != null;
 
-        private static bool Evening => TimeHelper.CurrentHour >= 20 || TimeHelper.CurrentHour < 3;
+        internal const int EveningFrom = 20, EveningTo = 3;   // the hours two people stand outside an open venue
+
+        private static bool Evening => TimeHelper.CurrentHour >= EveningFrom || TimeHelper.CurrentHour < EveningTo;
 
         public void Tick(Vector3 player, float now)
         {

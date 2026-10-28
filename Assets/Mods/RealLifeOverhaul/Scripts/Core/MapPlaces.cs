@@ -128,7 +128,11 @@ namespace RealLifeOverhaul
                 }
             }
 
-            public void Add(MapPlace place)
+            /// <summary>
+            /// Puts a place on the map. <paramref name="apply"/> false leaves every marker of the row as it was until <see cref="Show"/>: a batch
+            /// of places is added and shown once, not once a place (the row's markers were gone over for each, 68 bus stops two thousand times).
+            /// </summary>
+            public void Add(MapPlace place, bool apply = true)
             {
                 if (place == null || _places.Contains(place))
                 {
@@ -146,6 +150,15 @@ namespace RealLifeOverhaul
                 place.Owner = this;
                 _places.Add(place);
                 Mark(place);
+                if (apply)
+                {
+                    Apply(this);
+                }
+            }
+
+            /// <summary>Every marker of the row as it should be now: after a batch added with <c>apply: false</c>.</summary>
+            public void Show()
+            {
                 Apply(this);
             }
 
@@ -598,6 +611,10 @@ namespace RealLifeOverhaul
                         Choices[i].ShowTicks(Choices[i].Picked);   // as remembered, whatever was swept last time
                     }
                     Offer(Choices[i]);
+                }
+                if (!open)
+                {
+                    Shut();   // a building of the mod's the game left lit
                 }
                 if (open && _driver != null)
                 {

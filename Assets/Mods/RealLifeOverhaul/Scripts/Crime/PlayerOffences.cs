@@ -22,7 +22,7 @@ namespace RealLifeOverhaul
         private const float PavementSeconds = 2.5f;   // seconds on the pavement at speed
         private const float WrongSideSeconds = 3f;    // seconds against the traffic
         private const float OnRoadSeconds = 1.2f;     // seconds walking in the road
-        private const float OfficerSight = 30f;       // metres
+        internal const float OfficerSight = 30f;       // metres
 
         private static readonly Collider[] Hits = new Collider[12];
 

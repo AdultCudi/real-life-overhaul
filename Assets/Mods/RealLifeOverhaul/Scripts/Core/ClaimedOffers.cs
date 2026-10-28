@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Helpers;
 using Localizor;
 using Localizor.LanguageChangeEvent;
+using RealLifeOverhaul.BizPace;
 using Streets;
 using UI;
 using UI.Smartphone.Apps.BizMan.StartBusiness;
@@ -216,8 +217,11 @@ namespace RealLifeOverhaul
             }
         }
 
+        private static readonly int BizLook = HotSpots.Slot("Core: ClaimedPresentation.Look");
+
         private void Look(BuildingRegistration registration, bool same)
         {
+            using var timed = BizPaceWatch.Time(BizLook);   // a step of BizMan's open, switch or tab change (BizPace)
             string taken = SpecialBuildings.TakenBy(registration);
             bool was = _taken != null;
             _taken = taken;

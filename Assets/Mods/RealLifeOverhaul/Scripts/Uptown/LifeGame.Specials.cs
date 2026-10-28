@@ -65,12 +65,61 @@ namespace RealLifeOverhaul.Uptown
             {
                 return "it has no spot at the kerb for a car bought on its floor";
             }
-            return place.Staff == SpecialStaff.Showroom ? Stock(made) : null;
+            if (place.Staff != SpecialStaff.Showroom)
+            {
+                return null;
+            }
+            FloorLine(made, place);
+            return Stock(made, place);
+        }
+
+        // The dealership's floor and its dealer's desk, one self-check line each a load (PASS, or FAIL with the first seat a person standing up from could not
+        // walk away from, or the first thing wrong at the desk): what MadeGame measured of the dealership's own copy of the layout before any interior was
+        // built from it, what it took out and what it moved.
+        private static void FloorLine(MadeBuilding made, SpecialPlace place)
+        {
+            try
+            {
+                string head = SpecialName(made, place, out string kind) + " at " + made.Address + ": ";
+                FloorVerdict v = MadeGame.FloorVerdictOf(made.Spec.Id);
+                ClearVerdict d = MadeGame.DeskVerdictOf(made.Spec.Id);
+                string failed = MadeGame.FloorFailedOf(made.Spec.Id);
+                if (v == null || d == null)
+                {
+                    LifeDirector.Logger?.Warn("Uptown check (dealership floor): " + head + (failed ?? "its layout is not one the floor's rules cover")
+                                           + ", so its seats and its dealer's desk were not measured: FAIL");
+                    return;
+                }
+                string wide = (FloorMeasure.Corridor * 2f).ToString("F1", System.Globalization.CultureInfo.InvariantCulture);
+                Say(v.Pass, "Uptown check (dealership floor): " + head + "its own copy of the layout's " + FloorMeasure.Words(v)
+                            + ", every way kept at least " + wide + " m wide: " + (v.Pass ? "PASS" : "FAIL"));
+                string desk = d.Desks == 0
+                    ? "no dealer's desk in its layout (no car mod has made one), " + d.Removed + " chair(s) removed, nothing to keep clear"
+                    : d.Removed + " chair(s) removed near the dealer's desk (" + FloorMeasure.Words(d) + "), the player can "
+                      + (d.Pass ? string.Empty : "NOT ") + "walk away from the desk on every side";
+                Say(d.Pass, "Uptown check (dealership desk): " + head + desk + ": " + (d.Pass ? "PASS" : "FAIL"));
+            }
+            catch (System.Exception e)
+            {
+                LifeDirector.Logger?.Warn("Uptown check (dealership floor): the floor could not be read (" + e.GetType().Name + "): FAIL");
+            }
+        }
+
+        private static void Say(bool pass, string words)
+        {
+            if (pass)
+            {
+                LifeDirector.Logger?.Info(words);
+            }
+            else
+            {
+                LifeDirector.Logger?.Warn(words);
+            }
         }
 
         // A dealership's cars in the game's list of a vehicle store's (the panel of its desk asks that list first), from the showcases of
         // its layout, by its address and its contact's key. Null when listed, else why not.
-        private static string Stock(MadeBuilding made)
+        private static string Stock(MadeBuilding made, SpecialPlace place)
         {
             try
             {
@@ -83,11 +132,41 @@ namespace RealLifeOverhaul.Uptown
                 {
                     return "its layout has no showcase of a car the game has, so its purchase panel would list none";
                 }
+                MadeGame.ModdedCars(place.Service, cars);   // and the cars the car mods listed for the dealership it copies, as the game's own shows them
                 return MadeGame.Stock(record.Address, reg.BusinessName, cars) ? null : "the game's list of a vehicle store's cars did not take its cars";
             }
             catch (System.Exception e)
             {
                 return "the game's list of a vehicle store's cars could not be reached (" + e.GetType().Name + ")";
+            }
+        }
+
+        /// <summary>
+        /// The dealership's list read again against the car mods': the cars they have listed for the dealership it copies since the load
+        /// (a car mod may list late) are added to its own list. A line for Player.log when the list grew, else null.
+        /// </summary>
+        public static string Restock(MadeBuilding made, SpecialPlace place)
+        {
+            try
+            {
+                Building record = made != null ? made.Building : null;
+                BuildingRegistration reg = made != null ? made.Registration : null;
+                if (record == null || reg == null)
+                {
+                    return null;
+                }
+                int had = MadeGame.Listed(record.Address);
+                string why = Stock(made, place);
+                int now = MadeGame.Listed(record.Address);
+                if (why != null)
+                {
+                    return "Uptown: the dealership's list of cars could not be read again (" + why + ")";
+                }
+                return now > had ? "Uptown: the dealership's list took " + (now - had) + " more car(s) the car mods have listed for " + place.Service + ", " + now + " in all" : null;
+            }
+            catch (System.Exception e)
+            {
+                return "Uptown: the dealership's list of cars could not be read again (" + e.GetType().Name + ")";
             }
         }
 
@@ -194,6 +273,11 @@ namespace RealLifeOverhaul.Uptown
                 {
                     return store;
                 }
+                string floor = FloorWhy(made, service);
+                if (floor != null)
+                {
+                    return floor;
+                }
             }
             if (place.ServiceType == "ba:businesstype_clinic" && !service.hasRecoverySpawnPoint)
             {
@@ -221,6 +305,26 @@ namespace RealLifeOverhaul.Uptown
                 }
             }
             return null;
+        }
+
+        // Null when every seat of the dealership's floor can be walked away from and the player can walk away from the dealer's desk on every side (measured again
+        // now, nothing moved), else why not.
+        private static string FloorWhy(MadeBuilding made, SpecialService service)
+        {
+            try
+            {
+                FloorVerdict v = MadeGame.FloorNow(service, made.Spec, out ClearVerdict d);
+                if (v == null || d == null)
+                {
+                    return "its layout is not its own copy the floor's rules were read for, so its seats and its dealer's desk were not measured";
+                }
+                string boxed = v.Boxed + " seat(s) a person standing up from could not walk away from (first: " + v.First + ")";
+                return !v.Pass ? "its floor has " + (v.DoorsOpen ? boxed : "a door of its own blocked") : d.Pass ? null : "its dealer's desk is not clear: " + FloorMeasure.Words(d);
+            }
+            catch (System.Exception e)
+            {
+                return "the floor of the dealership could not be measured (" + e.GetType().Name + ")";
+            }
         }
 
         // Null when a dealership has all its vehicle store's panel reads: the store's dialog, its settings, its contact under the category

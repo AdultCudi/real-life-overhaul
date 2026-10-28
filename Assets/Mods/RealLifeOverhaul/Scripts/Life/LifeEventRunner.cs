@@ -101,7 +101,7 @@ namespace RealLifeOverhaul
                 new LanguageChangeEventDataHolder { Key = lifeEvent.BodyKey, Arguments = figures },
                 () => Guarded(() =>
                 {
-                    if (cost > 0 && !GameManager.ChangeMoneySafe(-cost,
+                    if (cost > 0 && !RealLifeOverhaul.Economy.BizBooks.Book(-cost,
                             new TransactionInfo(LifeEvent.TransactionPrefix + lifeEvent.CostTxn), null, null, force: false, showNotification: true))
                     {
                         return;

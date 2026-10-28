@@ -36,79 +36,136 @@ namespace RealLifeOverhaul
             return likely;
         }
 
-        // The next stop of a line, or the finding that the next stretch has none. True once the line has all its stops.
-        private static bool PlaceStop(TransitLine line)
+        // Where the look for one stop has got to, between slices: each lane point tried (Try: the kerb, a bay, the boarding strip, the shelter; about 2 ms
+        // of the engine's queries) is one item, so that a window of them is never one frame (TransitMap.Step was 16 ms at worst in a player's log, 27 Oct 2026).
+        private static int _tryStage;               // 0 not begun, 1 the stop's window, 2 beyond it, 3 before it, 4 the line's last stop near its station
+        private static int _tryAt;                  // the lane point the stage goes on from
+        private static int _tryFirst;               // the first lane point of the window
+        private static int _tryWindowEnd;           // and the one the window ended at
+        private static TransitStop _tryPlain;       // the first stop without a bay found in the window
+        private static TransitStop _tryBay;         // a stop with a bay
+        private static bool _terminusBegun;         // stage 4 has settled whether the line needs a last stop and whether it shares one
+
+        // The next stop of a line, or the finding that the next stretch has none. True once the line has all its stops. Goes on from where the last
+        // slice stopped: False, with the line not done, when the slice ran out.
+        private static bool PlaceStop(TransitLine line, ref WorkSlice slice)
         {
             if (line.Wanted != null)
             {
                 return PlaceWanted(line);   // a district's own route: its stops where they are wanted (TransitMap.Routes)
             }
-            if (!_lineBegun)
+            if (_tryStage == 0)
             {
-                _lineBegun = true;
-                _stopWanted = FirstStopAt;
-                _stopFrom = 0;
+                if (!_lineBegun)
+                {
+                    _lineBegun = true;
+                    _stopWanted = FirstStopAt;
+                    _stopFrom = 0;
+                }
+                float total = line.Metres[line.Metres.Length - 1];
+                float asked = _stopWanted;
+                int from = _stopFrom;
+                if (from >= line.Path.Length || asked >= total - 40f)
+                {
+                    _tryStage = 4;
+                    _terminusBegun = false;
+                }
+                else
+                {
+                    // A stop another line has already laid on this stretch: this line stops there too.
+                    int hostId = TransitPlan.HostAlong(line.Path, line.Metres, Mathf.Max(asked - BayBack, FirstStopAt), asked + StopWindow + BayOn, asked, 3,
+                        _hostAt ?? (_hostAt = HostAt), out int hostIndex);
+                    if (hostId >= 0)
+                    {
+                        TransitStop shared = Share(line, hostIndex, Hosts[hostId]);
+                        if (shared != null)
+                        {
+                            line.Stops.Add(shared);
+                            _shared++;
+                            CallsAt(Hosts[hostId]);
+                            _stopWanted = shared.Metres + StopSpacing;
+                            _stopFrom = shared.PathIndex;
+                            return false;
+                        }
+                    }
+                    while (from < line.Path.Length && line.Metres[from] < asked)
+                    {
+                        from++;
+                    }
+                    _tryFirst = from;
+                    _tryAt = from;
+                    _tryPlain = null;
+                    _tryBay = null;
+                    _tryStage = 1;
+                }
             }
-            float total = line.Metres[line.Metres.Length - 1];
-            float wanted = _stopWanted;
-            int i = _stopFrom;
-            if (i >= line.Path.Length || wanted >= total - 40f)
+            if (_tryStage == 4)
             {
-                Terminus(line);
+                if (!Terminus(line, ref slice))
+                {
+                    return false;
+                }
                 for (int s = 0; s < line.Stops.Count; s++)
                 {
                     line.Stops[s].Name = line.Stops[s].IsHost ? NameOf(line.Stops[s].Wait) : line.Stops[s].At.Name;
                 }
                 _lineBegun = false;
+                _tryStage = 0;
                 return true;
             }
-            // A stop another line has already laid on this stretch: this line stops there too.
-            int hostId = TransitPlan.HostAlong(line.Path, line.Metres, Mathf.Max(wanted - BayBack, FirstStopAt), wanted + StopWindow + BayOn, wanted, 3,
-                _hostAt ?? (_hostAt = HostAt), out int hostIndex);
-            if (hostId >= 0)
+            float wanted = _stopWanted;
+            if (_tryStage == 1)
             {
-                TransitStop shared = Share(line, hostIndex, Hosts[hostId]);
-                if (shared != null)
+                for (; _tryBay == null && _tryAt < line.Path.Length && line.Metres[_tryAt] <= wanted + StopWindow; _tryAt++)
                 {
-                    line.Stops.Add(shared);
-                    _shared++;
-                    CallsAt(Hosts[hostId]);
-                    _stopWanted = shared.Metres + StopSpacing;
-                    _stopFrom = shared.PathIndex;
-                    return false;
+                    if (!slice.More())
+                    {
+                        return false;
+                    }
+                    TransitStop stop = Try(line, _tryAt, _tryPlain != null);
+                    if (stop != null && stop.HasBay)
+                    {
+                        _tryBay = stop;
+                    }
+                    else if (stop != null && _tryPlain == null)
+                    {
+                        _tryPlain = stop;
+                    }
                 }
+                _tryWindowEnd = _tryAt;
+                _tryStage = 2;
             }
-            while (i < line.Path.Length && line.Metres[i] < wanted)
-            {
-                i++;
-            }
-            TransitStop plain = null;
-            TransitStop bay = null;
-            int j = i;
-            for (; bay == null && j < line.Path.Length && line.Metres[j] <= wanted + StopWindow; j++)
-            {
-                TransitStop stop = Try(line, j, plain != null);
-                if (stop != null && stop.HasBay)
-                {
-                    bay = stop;
-                }
-                else if (stop != null && plain == null)
-                {
-                    plain = stop;
-                }
-            }
-            int windowEnd = j;
             // None in the window: a little further on, then a little before, nearest first.
-            for (; bay == null && j < line.Path.Length && line.Metres[j] <= wanted + StopWindow + BayOn; j++)
+            if (_tryStage == 2)
             {
-                bay = Try(line, j, true);
+                for (; _tryBay == null && _tryAt < line.Path.Length && line.Metres[_tryAt] <= wanted + StopWindow + BayOn; _tryAt++)
+                {
+                    if (!slice.More())
+                    {
+                        return false;
+                    }
+                    _tryBay = Try(line, _tryAt, true);
+                }
+                _tryAt = _tryFirst - 1;
+                _tryStage = 3;
             }
             // Never nearer the start of the line than a first stop: a bus has to be put on the road before it.
-            for (int k = i - 1; bay == null && k >= 0 && line.Metres[k] >= Mathf.Max(wanted - BayBack, FirstStopAt); k--)
+            if (_tryStage == 3)
             {
-                bay = Try(line, k, true);
+                for (; _tryBay == null && _tryAt >= 0 && line.Metres[_tryAt] >= Mathf.Max(wanted - BayBack, FirstStopAt); _tryAt--)
+                {
+                    if (!slice.More())
+                    {
+                        return false;
+                    }
+                    _tryBay = Try(line, _tryAt, true);
+                }
             }
-            TransitStop placed = bay ?? plain;
+            _tryStage = 0;
+            TransitStop placed = _tryBay ?? _tryPlain;
+            int windowEnd = _tryWindowEnd;
+            _tryBay = null;
+            _tryPlain = null;
             if (placed != null)
             {
                 placed.LanePoint = line.Path[placed.PathIndex];
@@ -130,32 +187,44 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        // The line's last stop as near its station as the street allows, where its riders change.
+        // The line's last stop as near its station as the street allows, where its riders change. True once it is settled (a stop or none);
+        // false when the slice ran out, to go on from the lane point it stopped at.
         private const float TerminusGap = 120f;     // metres
 
-        private static void Terminus(TransitLine line)
+        private static bool Terminus(TransitLine line, ref WorkSlice slice)
         {
             float total = line.Metres[line.Metres.Length - 1];
             float last = line.Stops.Count > 0 ? line.Stops[line.Stops.Count - 1].Metres : FirstStopAt - TerminusGap;
-            if (total - last <= TerminusGap)
+            if (!_terminusBegun)
             {
-                return;
-            }
-            int hostId = TransitPlan.HostAlong(line.Path, line.Metres, last + TerminusGap, total, total, 3, _hostAt ?? (_hostAt = HostAt), out int hostIndex);
-            if (hostId >= 0)
-            {
-                TransitStop shared = Share(line, hostIndex, Hosts[hostId]);
-                if (shared != null)
+                _terminusBegun = true;
+                _tryAt = line.Path.Length - 4;
+                if (total - last <= TerminusGap)
                 {
-                    line.Stops.Add(shared);
-                    _shared++;
-                    CallsAt(Hosts[hostId]);
-                    return;
+                    _tryAt = -1;
+                    return true;
+                }
+                int hostId = TransitPlan.HostAlong(line.Path, line.Metres, last + TerminusGap, total, total, 3, _hostAt ?? (_hostAt = HostAt), out int hostIndex);
+                if (hostId >= 0)
+                {
+                    TransitStop shared = Share(line, hostIndex, Hosts[hostId]);
+                    if (shared != null)
+                    {
+                        line.Stops.Add(shared);
+                        _shared++;
+                        CallsAt(Hosts[hostId]);
+                        _tryAt = -1;
+                        return true;
+                    }
                 }
             }
-            for (int j = line.Path.Length - 4; j >= 3 && line.Metres[j] >= last + TerminusGap; j--)
+            for (; _tryAt >= 3 && line.Metres[_tryAt] >= last + TerminusGap; _tryAt--)
             {
-                TransitStop stop = Try(line, j, false);
+                if (!slice.More())
+                {
+                    return false;
+                }
+                TransitStop stop = Try(line, _tryAt, false);
                 if (stop == null)
                 {
                     continue;
@@ -168,8 +237,10 @@ namespace RealLifeOverhaul
                     Hosts.Add(stop);
                 }
                 line.Stops.Add(stop);
-                return;
+                break;
             }
+            _tryAt = -1;
+            return true;
         }
 
         public const int MostLinesAt = 8;           // lines that may stop at one place, the host's own counted

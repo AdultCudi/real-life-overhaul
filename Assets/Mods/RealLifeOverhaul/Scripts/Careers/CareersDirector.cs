@@ -24,6 +24,9 @@ namespace RealLifeOverhaul.Careers
         public static CareersDirector Instance { get; private set; }
 
         private Action _onSave, _onHour, _onDay, _hourSeen, _daySeen;
+        private Func<bool> _vacanciesStep;               // the job board's renewal, a stage a frame (Core/DaySpread)
+        private int _vacanciesDay, _vacanciesStage;
+        private bool _vacanciesReferrals;                // whether the second stage drew by referrals, for the third
         private bool _broken;
         private ShiftSkip _skip;
         private Sitting _sitting;                            // the sitting handed out last, for the busy checks; what counts is the book
@@ -44,6 +47,7 @@ namespace RealLifeOverhaul.Careers
             _onSave = OnSave;
             _onHour = Guard.Wrap(OnHour);
             _onDay = Guard.Wrap(OnDay);
+            _vacanciesStep = VacanciesStep;
             StartCoroutine(Guard.Routine(Tick()));
         }
 
@@ -52,6 +56,7 @@ namespace RealLifeOverhaul.Careers
             SaveHook.Drop(_onSave);
             GlobalEvents.onNewHour -= _onHour;
             GlobalEvents.onNewDay -= _onDay;
+            DaySpread.Shared.Drop(this);   // the board's renewal in hand is left: the game's current save may be another one by now
             try
             {
                 ClassPromptGone();
@@ -153,6 +158,7 @@ namespace RealLifeOverhaul.Careers
                 return;
             }
             ClassPrompt();
+            HomeworkHint();
             if (!ComputerButtons.Installed)
             {
                 ComputerButtons.Install();   // once a city; a flag test after
@@ -181,6 +187,7 @@ namespace RealLifeOverhaul.Careers
             }
             try
             {
+                DaySpread.Shared.Flush(this);   // the hour reads what the day made: the board is renewed first
                 if (_studyOn)
                 {
                     StudyHour(Save.Day, Save.Hour);
@@ -197,6 +204,9 @@ namespace RealLifeOverhaul.Careers
         }
 
         private static readonly int HotOnDay = HotSpots.Slot("Careers: CareersDirector.OnDay");
+        private static readonly int HotDayStudy = HotSpots.Slot("Careers: day, the course fees and classes");
+        private static readonly int HotDayWork = HotSpots.Slot("Careers: day, the working life");
+        private static readonly int HotDayApps = HotSpots.Slot("Careers: day, apps redrawn");
         private void OnDay()
         {
             using var hotSpot = HotSpots.Time(HotOnDay);
@@ -206,16 +216,22 @@ namespace RealLifeOverhaul.Careers
             }
             try
             {
+                DaySpread.Shared.Flush(this);   // a board still owed its renewal for the day before gets it first
                 float started = Time.realtimeSinceStartup;
                 if (_studyOn)
                 {
+                    using var study = HotSpots.Time(HotDayStudy);   // an instalment is taken from the player's money at midnight, as the game's own are
                     StudyDay(Save.Day);
                 }
                 if (_workOn)
                 {
+                    using var work = HotSpots.Time(HotDayWork);   // days settled, pay and benefits paid; the job board's renewal is queued (Core/DaySpread)
                     WorkDayRun(Save.Day);
                 }
-                Changed();
+                using (HotSpots.Time(HotDayApps))
+                {
+                    Changed();
+                }
                 if (Verbose)
                 {
                     Logger?.Info("Careers check (day " + Save.Day + "): " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " ms: PASS");
@@ -237,6 +253,7 @@ namespace RealLifeOverhaul.Careers
                 {
                     return;
                 }
+                DaySpread.Shared.Flush(this);
                 if (Save.modData == null)
                 {
                     Save.modData = new Dictionary<string, string>();
@@ -511,6 +528,7 @@ namespace RealLifeOverhaul.Careers
         private void StandDown(string why)
         {
             _broken = true;
+            DaySpread.Shared.Drop(this);
             try
             {
                 CloseSitting();

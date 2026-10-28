@@ -141,6 +141,17 @@ namespace RealLifeOverhaul.Economy
         }
 
         private static readonly int HotOnDay = HotSpots.Slot("Economy: CompanyDirector.OnDay");
+        // The day's parts each under a name of their own in the session record (the midnight line names every part over a tenth of a millisecond),
+        // so the next player's log says which of them the ten milliseconds of the company's day are.
+        private static readonly int[] HotPartDay =
+        {
+            HotSpots.Slot("Economy: Company day, staff"), HotSpots.Slot("Economy: Company day, insurance"), HotSpots.Slot("Economy: Company day, marketing"),
+            HotSpots.Slot("Economy: Company day, tax"), HotSpots.Slot("Economy: Company day, licences")
+        };
+        private static readonly int HotManagersDay = HotSpots.Slot("Economy: Company day, managers");
+        private static readonly int HotBooksDay = HotSpots.Slot("Economy: Company day, the books read again");
+        private static readonly int HotHierarchyDay = HotSpots.Slot("Economy: Company day, the hierarchy");
+        private static readonly int HotWriteDay = HotSpots.Slot("Economy: Company day, footfall and rows");
         // The game's day event comes after its daily run; the credit side and the city's economy have done their day.
         private void OnDay()
         {
@@ -173,6 +184,7 @@ namespace RealLifeOverhaul.Economy
                     }
                     try
                     {
+                        using var partSpot = HotSpots.Time(HotPartDay[p]);
                         PartDay(part, day);
                     }
                     catch (Exception e)
@@ -180,13 +192,26 @@ namespace RealLifeOverhaul.Economy
                         PartFault(part, "the day", e);
                     }
                 }
-                ManagerDay(day);   // the allowances are yesterday's costs: in the books read next
-                Books(day, next);
-                HierarchyDay(day);   // after the managers' day and the books: a place's targets are judged on yesterday's profit after its costs
+                using (HotSpots.Time(HotManagersDay))
+                {
+                    ManagerDay(day);   // the allowances are yesterday's costs: in the books read next
+                }
+                using (HotSpots.Time(HotBooksDay))
+                {
+                    Books(day, next);
+                }
+                using (HotSpots.Time(HotHierarchyDay))
+                {
+                    HierarchyDay(day);   // after the managers' day and the books: a place's targets are judged on yesterday's profit after its costs
+                }
                 float ruled = Time.realtimeSinceStartup;
-                int written = WriteAll(day, true, true);
-                RotaRead();
-                Changed();
+                int written;
+                using (HotSpots.Time(HotWriteDay))
+                {
+                    written = WriteAll(day, true, true);
+                    RotaRead();
+                    Changed();
+                }
                 if (Verbose)
                 {
                     float done = Time.realtimeSinceStartup;

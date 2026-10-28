@@ -278,9 +278,9 @@ internal static partial class Program
         Check(PlotRules.Unfit(24, 20, 5) == null && PlotRules.Unfit(24, 15, 5) != null && PlotRules.Unfit(24, 20, 0) != null
               && PlotRules.Unfit(70, 20, 5) != null && PlotRules.Unfit(24, 20, 11) != null,
             "plot: ground of 21 by 16 m to 60 m each way, 1 to 10 storeys");
-        Check(PlotRules.Unfit(11, 24, 6) == null && PlotRules.Unfit(20, 20, 5) == null && PlotRules.Unfit(9, 24, 3) != null && PlotRules.Unfit(11, 19, 3) != null
+        Check(PlotRules.Unfit(11, 24, 6) == null && PlotRules.Unfit(20, 20, 5) == null && PlotRules.Unfit(6, 24, 3) != null && PlotRules.Unfit(7, 24, 3) == null && PlotRules.Unfit(11, 19, 3) != null
               && PlotRules.Unfit(11, 24, 7) != null && PlotRules.Narrow(11) && PlotRules.Narrow(20) && !PlotRules.Narrow(21),
-            "plot: narrower ground, 10 to 20 m wide and 20 m deep at least, takes a narrow plot of up to 6 storeys (a city lot of a small shop or home)");
+            "plot: narrower ground, 7 to 20 m wide (the district's one space and more) and 20 m deep at least, takes a narrow plot of up to 6 storeys");
         Check(PlotRules.TryRead(PlotRules.Encode(11, 24, 180, 4), out int nw, out int nd, out _, out int ns) && nw == 11 && nd == 24 && ns == 4
               && !PlotRules.TryRead(PlotRules.Encode(11, 24, 180, 8), out _, out _, out _, out _),
             "plot: a narrow plot's record reads back as written, and one of more storeys than it takes is refused");

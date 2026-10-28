@@ -403,6 +403,7 @@ namespace RealLifeOverhaul.Uptown
         {
             DropArt();
             UncutFog();
+            DropEdges();
             if (_ground != null)
             {
                 SceneryTrees.Destroy(_ground);

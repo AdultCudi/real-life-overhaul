@@ -551,13 +551,13 @@ namespace RealLifeOverhaul
             }
             if (Shared)
             {
-                why = "the host of the Going Public session runs the city's sites";
+                why = SiteRefusals.Host;
                 return null;
             }
             float clear = Mathf.Max(width, depth) * 0.5f + PlotClear;   // the plot's own ground: a district's lots stand side by side
             if (Nearest(middle, clear) != null)
             {
-                why = "another site is already within " + clear + " m";
+                why = SiteRefusals.NearPrefix + clear + " m";
                 return null;
             }
             var random = new CivicRandom(CivicRandom.Mix(SaveSeed(), State.NextId, day + 1931));
@@ -597,13 +597,13 @@ namespace RealLifeOverhaul
             }
             if (Shared)
             {
-                why = "the host of the Going Public session runs the city's sites";
+                why = SiteRefusals.Host;
                 return null;
             }
             float clear = Mathf.Max(width, depth) * 0.5f + PlotClear;
             if (Nearest(middle, clear) != null)
             {
-                why = "another site is already within " + clear + " m";
+                why = SiteRefusals.NearPrefix + clear + " m";
                 return null;
             }
             var random = new CivicRandom(CivicRandom.Mix(SaveSeed(), State.NextId, day + 2087));

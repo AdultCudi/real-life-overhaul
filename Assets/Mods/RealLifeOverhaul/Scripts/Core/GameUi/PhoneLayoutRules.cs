@@ -36,7 +36,7 @@ namespace RealLifeOverhaul.GameUi
             Business, Business, Business, Business, Business, Business, Business,
             Business,
             Business, Money,
-            Setup, Setup
+            Setup, Setup, Setup
         };
 
         /// <summary>Where a mod app stands while the player has not moved it; the home screen for a name not in the table.</summary>

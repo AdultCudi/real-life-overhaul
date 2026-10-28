@@ -113,8 +113,9 @@ namespace RealLifeOverhaul
             // The reckless car (Traffic/Reckless): a collision with it is its driver's fault, and the player owes nothing for it.
             bool theirFault = hitTraffic && RecklessDrivers.AtFault(struck);
             News.Report(NewsKind.PlayerCrash, Helpers.PlayerHelper.GetPosition());
-            Logger?.Info(System.FormattableString.Invariant(
-                $"Crash: impact {speed:F1} m/s, hitTraffic={hitTraffic}{(theirFault ? ", with the reckless car: not the player's fault, no liability" : string.Empty)}"));
+            string fault = theirFault ? ", with the reckless car: not the player's fault, no liability" : string.Empty;
+            string hit = CarContacts.Describe(collision, contact);   // (what was hit, so a report says which solid it was)
+            Logger?.Info(System.FormattableString.Invariant($"Crash: impact {speed:F1} m/s, hitTraffic={hitTraffic}{fault}; hit {hit}"));
 
             if (theirFault)
             {
@@ -166,7 +167,7 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            GameManager.ChangeMoneySafe(-liability, new TransactionInfo("reallife_transaction_accident_liability"), null, null, force: true);
+            RealLifeOverhaul.Economy.BizBooks.Book(-liability, new TransactionInfo("reallife_transaction_accident_liability"), null, null, force: true);
             Justice.CrashVictim(liability, 0, 0);   // now and then the other driver sues (Scripts/Justice)
             var data = new Dictionary<string, string> { { "amount", ((float)liability).ToCurrencyFormat() } };
             Notifications.Show(NotificationType.Error, notificationKey, data, 8f);

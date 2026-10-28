@@ -1,0 +1,62 @@
+# Every page of docs/features, and the Guide texts that explain it to players (RLO-TXT-014).
+# One line: the page's name (no .md), the en.json keys of the Guide texts separated by commas (or "-" for a page that is not for players), and a reason (a few words).
+# A page that is not listed fails the check, and so does a key that is not in en.json.
+business-pressure	reallife_guide_business	business events
+calendar	reallife_guide_calendar	the Calendar app
+careers	reallife_guide_careers,reallife_guide_careers_life	careers
+character	reallife_guide_character	the player's look
+city-events	reallife_guide_events	fires, weather, street events
+city-life	reallife_guide_citylife	people on the pavements
+civic	reallife_guide_civic	the council and building sites
+construction	reallife_guide_construction	the construction company
+crime	reallife_guide_crime	crime and police stops
+designs	reallife_guide_designs	ready-made designs
+district-save	-	how the save keeps the mod's places: nothing a player sees
+districts	reallife_guide_districtview	the district view
+driving	reallife_guide_driving	driving
+economy-app	reallife_guide_economy_app	the Economy app
+economy-banks	reallife_guide_economy_banks	the Banks app
+economy-city	reallife_guide_economy_city	the city's economy
+economy-company	reallife_guide_economy_company	running a business
+economy-credit-products	reallife_guide_economy	credit products
+economy-credit	reallife_guide_economy	credit
+economy-hierarchy	reallife_guide_economy_hierarchy	the company hierarchy
+economy-investors	reallife_guide_ventures	investors
+economy-managers	reallife_guide_economy_managers	managers
+economy-markets	reallife_guide_markets	the stock market
+economy-rota	reallife_guide_economy_rota	the staff rota planner
+family	reallife_guide_family	family
+floors	-	how the mod's places share a building's floors: nothing a player sees
+garage	reallife_guide_garage	the custom shop
+home	reallife_guide_home	home life and health
+household	reallife_guide_household	household staff
+hustles	reallife_guide_hustles	the Marketplace
+interiors	reallife_guide_interiors	interiors and decor
+jobs	reallife_guide_jobs	jobs
+justice	reallife_guide_justice	courts and prison
+landlord	reallife_guide_economy_estate_duties	a landlord's duties
+landmarks	reallife_guide_landmarks	Uptown's landmarks
+law	reallife_guide_law	police stations and custody
+leisure	reallife_guide_leisure	leisure
+licences	reallife_guide_licences	driving licences
+meta	reallife_guide_start	the Guide, presets and options
+navigation	reallife_guide_nav	the minimap and GPS
+networking	reallife_guide_networking	networking
+new-buildings	reallife_guide_tech_sites	the mod's own buildings (the page for the tech buildings; the rest is internal)
+new-ground	reallife_guide_newground_about	new ground
+permadeath	reallife_guide_permadeath	permadeath
+phone	reallife_guide_phone	the phone
+planner	reallife_guide_planner	the Planner
+schools	reallife_guide_schools	Birchwood School
+seasons	reallife_guide_seasons	seasons
+shops	reallife_guide_shops	new kinds of shop
+social	reallife_guide_social	social life
+staffing	reallife_staff_guide	Staff and roles
+street-scenes	reallife_guide_traffic	traffic accidents
+taxi	reallife_guide_taxi	taxis
+trades	reallife_guide_trades	building trades
+transport	reallife_guide_transport	buses and the subway
+travel	reallife_guide_travel	hotels and holidays
+uptown	reallife_guide_uptown,reallife_guide_uptown_about	Uptown and Cedar Heights
+utilities	reallife_guide_utilities	power, water and internet
+walking	reallife_guide_walking	walking

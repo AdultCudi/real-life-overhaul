@@ -148,7 +148,7 @@ namespace RealLifeOverhaul.Tech
             {
                 FirmPlace firm = _firms[f];
                 var c = new Crew();
-                int security = 200, reliability = 150, seniors = 0, hours = 0;
+                int security = FirmsCatalogue.SecurityBase, reliability = FirmsCatalogue.ReliabilityBase, seniors = 0, hours = 0;
                 long faultWeighted = 0;
                 firm.People = 0;
                 for (int i = 0; i < _people.Count; i++)
@@ -171,6 +171,10 @@ namespace RealLifeOverhaul.Tech
                         case Family.Data:
                         case Family.Security:
                         case Family.Infrastructure:
+                            if (r.Id == TalentCatalogue.Technician)
+                            {
+                                break;   // keeps racks running (InfraRules), builds no product: paid, but no points and no relief (FirmsRules.Builds)
+                            }
                             if (r.Id == TalentCatalogue.QaTester)
                             {
                                 c.Testing += points;
@@ -201,16 +205,16 @@ namespace RealLifeOverhaul.Tech
                     }
                     if (r.Family == Family.Security && h > 0)
                     {
-                        security += r.Id == TalentCatalogue.DataProtection ? 150 : Math.Min(250, p.A / 1000 * 3);
-                        security += p.Has(2) || p.Has(9) ? 50 : 0;   // security practitioner, privacy professional
+                        security += r.Id == TalentCatalogue.DataProtection ? FirmsCatalogue.SecurityOfficer : Math.Min(FirmsCatalogue.SecurityEach, p.A / 1000 * FirmsCatalogue.SecurityPerPoint);
+                        security += p.Has(2) || p.Has(9) ? FirmsCatalogue.SecurityCert : 0;   // security practitioner, privacy professional
                     }
                     if ((r.Id == TalentCatalogue.Sre || r.Id == TalentCatalogue.DevOps) && h > 0)
                     {
-                        reliability += Math.Min(250, (p.A + p.B) / 2000 * 3);
+                        reliability += Math.Min(FirmsCatalogue.ReliabilityEach, (p.A + p.B) / 2000 * FirmsCatalogue.ReliabilityPerPoint);
                     }
                 }
-                c.Security = Math.Min(950, security);
-                c.Reliability = Math.Min(950, reliability);
+                c.Security = Math.Min(FirmsCatalogue.SecurityMost, security);
+                c.Reliability = Math.Min(FirmsCatalogue.ReliabilityMost, reliability);
                 c.SeniorShare = c.Engineering > 0 ? seniors * 1000 / c.Engineering : 0;
                 c.Faults = c.Engineering > 0 ? (int)(faultWeighted / Math.Max(1, c.Engineering)) : 150;
                 firm.Hours = hours;

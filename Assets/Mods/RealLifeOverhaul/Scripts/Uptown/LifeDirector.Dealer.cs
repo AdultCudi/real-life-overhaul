@@ -27,6 +27,7 @@ namespace RealLifeOverhaul.Uptown
 
         // Once a second, from OnUpdate, while the district lives: the desk's dialog gone wrong closed, a player left seated stood up.
         private static bool _watchOff;   // a game member the look reads is missing in this build: the look stands down, the district goes on
+        private static bool _restocked;  // the dealership's list read against the car mods' for this visit
 
         private static void WatchDesk(float now)
         {
@@ -39,6 +40,7 @@ namespace RealLifeOverhaul.Uptown
                 if (!LifeGame.Indoors || !LifeGame.PlayerInside(Standing))
                 {
                     LifeGame.WatchReset();
+                    _restocked = false;
                     return;
                 }
                 string did = LifeGame.Watch(now);
@@ -46,11 +48,32 @@ namespace RealLifeOverhaul.Uptown
                 {
                     Logger?.Warn("Uptown: a desk went wrong, and " + did + ".");
                 }
+                RestockDealer();
             }
             catch (Exception e)
             {
                 _watchOff = true;
                 Logger?.Warn("Uptown: the look at a desk gone wrong stands down for this run (" + e.GetType().Name + "); the district goes on.");
+            }
+        }
+
+        // Once a visit, as the player walks into the dealership: its list of cars read against the car mods' (a car mod may list late).
+        private static void RestockDealer()
+        {
+            if (_restocked)
+            {
+                return;
+            }
+            int at = DealerStanding();
+            if (at < 0 || !LifeGame.PlayerIn(SpecialUp[at]))
+            {
+                return;
+            }
+            _restocked = true;
+            string said = LifeGame.Restock(SpecialUp[at], SpecialsRules.All[at]);
+            if (said != null)
+            {
+                Logger?.Info(said + ".");
             }
         }
 

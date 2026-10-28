@@ -12,6 +12,8 @@ namespace RealLifeOverhaul.Leisure
     /// </summary>
     public sealed partial class LeisureDirector
     {
+        internal const float VerdictMinutes = 45f;   // game minutes of a show that earn a verdict
+
         private static readonly string[] Films =
         {
             "reallife_leisure_film_1", "reallife_leisure_film_2", "reallife_leisure_film_3", "reallife_leisure_film_4",
@@ -68,7 +70,7 @@ namespace RealLifeOverhaul.Leisure
             {
                 float watched = minutes - _watchedFrom;
                 _watchedFrom = -1f;
-                if (watched >= 45f && _film >= 0)
+                if (watched >= VerdictMinutes && _film >= 0)
                 {
                     int stars = FilmStars[_film];
                     LeisureState.Record("cinema", LeisureState.PlaysOf("cinema") + 1);

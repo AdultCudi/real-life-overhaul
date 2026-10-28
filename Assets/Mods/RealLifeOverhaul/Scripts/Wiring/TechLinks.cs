@@ -259,6 +259,11 @@ namespace RealLifeOverhaul
                 try
                 {
                     Economy.GameBooks.Refresh(day);
+                    string verdict = Economy.GameBooks.BizVerdict();   // BizMan check (income): said once a day, and again if the result changes
+                    if (verdict != null && (Meta.Dev.Verbose || verdict.Contains("FAIL")))
+                    {
+                        Logger?.Info(verdict);
+                    }
                 }
                 catch (Exception e)
                 {

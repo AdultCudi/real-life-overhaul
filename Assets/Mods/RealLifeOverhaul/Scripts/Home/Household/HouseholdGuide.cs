@@ -38,6 +38,9 @@ namespace RealLifeOverhaul.Household
                 .Fact("hh_reach", () => HouseholdRules.HomeReach.ToString("0", Inv))
                 .Fact("hh_quit", () => HouseholdRules.QuitAfter.ToString(Inv))
                 .Fact("hh_note", () => HouseholdText.Hour(HouseholdRules.NoteHour))
+                .Fact("hh_homes", () => HouseholdRules.HomesMost.ToString(Inv))
+                .Fact("hh_clean_least", () => HouseholdRules.CleanPoints(HouseholdRules.SkillLeast).ToString("0", Inv))
+                .Fact("hh_clean_most", () => HouseholdRules.CleanPoints(HouseholdRules.SkillMost).ToString("0", Inv))
                 .Cleanup(() => HouseholdDirector.Instance?.StopAll())
                 .ResetData(() => HouseholdDirector.Instance?.Forget())
                 .Repair(HouseholdPhone.Setup);

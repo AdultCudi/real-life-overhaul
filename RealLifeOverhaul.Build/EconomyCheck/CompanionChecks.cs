@@ -59,6 +59,7 @@ internal static partial class Program
     private static void CompanionChecks(string output)
     {
         CompanionPlanningChecks(output);
+        CompanionSaveChecks();
         string root = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, "../../../../.."));
         foreach (string language in new[] { "en", "pt", "zh-cn" })
         {

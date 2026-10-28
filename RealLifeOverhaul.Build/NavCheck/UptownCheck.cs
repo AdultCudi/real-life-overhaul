@@ -36,6 +36,8 @@ internal static partial class Program
         UptownGameSourceChecks(scripts);
         UptownTextChecks(scripts);
         UptownFogChecks(scripts);   // the city map's fog cut away over the band (UptownFogCheck.cs)
+        UptownSolidChecks(scripts);   // what a car can run into where nothing is drawn (UptownSolidCheck.cs)
+        UptownEdgeChecks(scripts);   // the fog behind the districts' edges and the barricades across their street ends (UptownEdgeCheck.cs)
         UptownSurfaceChecks(scripts);   // no two road or ground surfaces at one height over one place (UptownSurfaceCheck.cs)
     }
 
@@ -1528,7 +1530,7 @@ internal static partial class Program
         string folder = Path.Combine(scripts, "Uptown");
         string locales = Path.GetFullPath(Path.Combine(scripts, @"..\Locales"));
         var named = Directory.GetFiles(folder, "Ground*.cs").SelectMany(f => Regex.Matches(File.ReadAllText(f), "\"(reallife_[a-z_]+)\"").Select(m => m.Groups[1].Value))
-                             .Concat(new[] { "reallife_opt_sec_uptown", "reallife_opt_tip_uptown" }).Concat(LayoutStreets.All.Select(s => s.NameKey)).Distinct().ToList();
+                             .Where(k => !k.StartsWith("reallife_guide_", StringComparison.Ordinal)).Concat(new[] { "reallife_opt_sec_uptown", "reallife_opt_tip_uptown" }).Concat(LayoutStreets.All.Select(s => s.NameKey)).Distinct().ToList();
         Check(named.Count >= 35, "uptown texts: its texts are found: " + named.Count);
         foreach (string language in new[] { "en", "pt", "zh-cn" })
         {

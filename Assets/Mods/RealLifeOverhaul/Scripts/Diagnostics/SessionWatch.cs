@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using BAModAPI;
+using RealLifeOverhaul.BizPace;
 using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.Profiling;
@@ -99,7 +100,7 @@ namespace RealLifeOverhaul
         private double _threadSum, _threadSpan, _othersSum, _othersWorst;
         private long _faultsSum, _faultsWorst;
         private int _faultFrames;
-        private readonly int[] _causes = new int[6];   // the frames over 33 ms, by FrameCause
+        private readonly int[] _causes = new int[7];   // the frames over 33 ms, by FrameCause
         private bool _timing;                  // the engine offers its own frame timing (FrameTimingManager)
         private readonly FrameTiming[] _timings = new FrameTiming[4];
         private double _gpuWorst;
@@ -193,6 +194,7 @@ namespace RealLifeOverhaul
         {
             _since = Time.unscaledTime;
             _resumed = true;
+            _map = MapStage.Shut;   // the city map's part starts again with the record (SessionWatch.Map)
             if (_started <= 0f)
             {
                 _started = Time.unscaledTime;
@@ -203,6 +205,7 @@ namespace RealLifeOverhaul
             HotSpots.SampleEvery = _exact ? 1 : HotSpots.AllocEvery;
             HotSpots.Reset();
             HotSpots.On = true;   // the mod's own scripts are timed from now on (Core/HotSpots)
+            BizPaceWatch.Arm(true);   // and what they add to BizMan's open, switch and tab change, step by step (BizPace)
             _collections = GC.CollectionCount(0);
             _collectionsLastFrame = _collections;
             _heapLastFrame = GC.GetTotalMemory(false);
@@ -253,6 +256,7 @@ namespace RealLifeOverhaul
         {
             LetGoOfDay();
             HotSpots.On = false;
+            BizPaceWatch.Arm(false);
             FrameSteps.Want(false);
             if (_collector.Valid)
             {
@@ -331,6 +335,7 @@ namespace RealLifeOverhaul
         private void OnUpdate()
         {
             HotSpots.Settle(Time.frameCount);   // the mod's own scripts' figures for the frame before this one are complete
+            BizPaceWatch.Frame(Time.frameCount);   // a BizMan step whose window is over is closed (BizPace)
             // The time the frame before this one took, loading screens and pauses left out: they are not stutter.
             float took = Time.unscaledDeltaTime;
             Midnight(took);
@@ -366,7 +371,19 @@ namespace RealLifeOverhaul
             _coveredLastFrame = covered;
             _loadingLastFrame = loading;
             _savingLastFrame = saving;
-            if (UI.Load.LoadScene.isLoading || Time.timeScale <= 0f || !Application.isFocused)
+            bool running = !UI.Load.LoadScene.isLoading && Time.timeScale > 0f && Application.isFocused;
+            if (MapFrame(took, running))
+            {
+                try
+                {
+                    Long(took, collectionsBefore, collections, heapBefore, heap, collectorNanos, screen, saved);   // a long frame of the city map (paused: none of the minute's)
+                }
+                catch (Exception e)
+                {
+                    MapFault(e);
+                }
+            }
+            if (!running)
             {
                 _since += took;   // the minute is a minute of play
                 _resumed = true;
@@ -457,7 +474,7 @@ namespace RealLifeOverhaul
             // The time is that of the frame before this one: work named in this very frame is not what made it long.
             int frame = Time.frameCount - 1;
             float began = Time.unscaledTime - took;
-            int pick = Marks.Costliest(frame);   // the costliest piece closed in that frame, else the newest (Core/WorkRings)
+            int pick = Marks.Costliest(frame);   // the costliest piece closed in that frame, else the newest begun by its end, never a later one (Core/WorkRings)
             bool marked = Marks.Get(pick, out string mark, out int markFrame, out _, out long markSpent) && frame - markFrame >= 0 && frame - markFrame < MarkLastsFrames;
             _line.Length = 0;
             _line.Append("Session: a frame of ").Append((took * 1000f).ToString("F0")).Append(" ms; ");
@@ -473,7 +490,8 @@ namespace RealLifeOverhaul
                 {
                     _line.Append(" (not timed)");
                 }
-                if (pick > 0 && Marks.Get(0, out string newest, out _, out _, out _))
+                int newestBy = Marks.NewestBy(frame, 0);
+                if (newestBy != pick && Marks.Get(newestBy, out string newest, out _, out _, out _))
                 {
                     _line.Append(" (the newest piece of work then: ").Append(newest).Append(')');   // so both are seen
                 }
@@ -582,34 +600,22 @@ namespace RealLifeOverhaul
                     .Append(" s before; the engine cuts about half a second after)");
             }
 
-            // What the mod last did, whether or not it explains the frame.
-            _line.Append("; the mod's last pieces of work: ");
-            for (int back = 0; back < Marks.Count; back++)
-            {
-                Marks.Get(back, out string text, out int textFrame, out float at, out long spent);
-                _line.Append(back > 0 ? ", \"" : "\"").Append(text).Append("\" (");
-                if (spent >= 0)
-                {
-                    _line.Append(Ms(spent).ToString("F1", CultureInfo.InvariantCulture)).Append(" ms) ");
-                }
-                else
-                {
-                    _line.Append("not timed) ");
-                }
-                Ago(textFrame, at, frame, began);
-            }
-            if (Marks.Count == 0)
-            {
-                _line.Append("none yet");
-            }
+            // What the mod last did up to the frame's end, whether or not it explains the frame.
+            int after = LastPieces(frame, began, true);
             _line.Append("; ").Append(Where()).Append('.');
             Logger?.Info(_line.ToString());
+            PiecesCheck(frame, took, after);
         }
 
         private void Minute(int collections)
         {
             float seconds = Time.unscaledTime - _since;
             _since = Time.unscaledTime;
+            if (_frames > 0)
+            {
+                _minuteFrameMs = seconds * 1000.0 / _frames;   // what a city map opened early in the next minute is set against (SessionWatch.Map)
+                _minuteOwnMs = HotSpots.Frames > 0 ? HotSpots.TotalMs / HotSpots.Frames : 0.0;
+            }
             int minute = Mathf.RoundToInt((Time.unscaledTime - _started) / 60f);
             int objects = 0, shown = 0, roots = 0;
             CountObjects(ref objects, ref shown, ref roots, minute);

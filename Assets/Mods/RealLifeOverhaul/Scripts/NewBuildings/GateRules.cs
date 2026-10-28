@@ -48,6 +48,10 @@ namespace RealLifeOverhaul.NewBuildings
         public const float FacingNear = 20f;      // degrees: a door's facing this near its design's front looks out on the street
         public const float FrontBehind = 4f;      // m a door may stand behind its design's front and still be reached from the street (the game's stand 1.7 m before it)
         public const float FrontAhead = 3f;       // m before it
+        public const float EnterBack = 1.3f;      // m: a door's entrance trigger box is centred this far door-ward of its object, at the tunnel's inner end (Build 3682, all 62 doors)
+        public const float EnterHalf = 0.33f;     // m: and is this deep either side of its centre (0.35 on the 10 doors of 4.9 m); a vehicle that touches it is taken in
+        public const float ExitClear = 0.3f;      // m the body of a car put out at the door's spawn point is kept clear of that trigger, else the trigger takes it straight back in
+        public const float ExitMost = 3f;         // m the most a car put out is moved along the door's way, to be clear of the trigger
         public const int ParkFrom = 1000000;      // the lowest number a copy's car park is given: the game's own are 1 to 5
         public const int ParkSpan = 1000000000;   // numbers in the range a copy's car park is drawn from, so two never share one in practice
 
@@ -170,6 +174,29 @@ namespace RealLifeOverhaul.NewBuildings
         public static int ParkNumber(string madeId)
         {
             return ParkFrom + (int)(NewBuildingsRules.Hash((madeId ?? string.Empty) + "|car park") % (uint)ParkSpan);
+        }
+
+        /// <summary>
+        /// The metres a car put out of a warehouse must be moved out along the door's way so that its body stands <see cref="ExitClear"/> clear of the
+        /// door's entrance trigger, whatever the body's shape. <paramref name="bodyNear"/> is where its inner end stands and <paramref name="triggerFar"/> where the
+        /// trigger's door-ward edge stands, both in metres along the way out from the door (the trigger lies inside the building, the car's body
+        /// is put to stand in front of it). Zero when it is clear already; never more than <see cref="ExitMost"/>.
+        /// The game puts a car out with its mesh's centre half a length from the spawn point, so a body whose centre is behind its origin stands
+        /// into the trigger and is taken straight back in: "can enter warehouses in a car but can't leave".
+        /// </summary>
+        public static float PushOut(float bodyNear, float triggerFar)
+        {
+            float push = triggerFar + ExitClear - bodyNear;
+            return push <= 0f ? 0f : Math.Min(push, ExitMost);
+        }
+
+        /// <summary>
+        /// How far, along the way out, the door-ward edge of a door's entrance trigger stands from the door: the object's distance in, less the
+        /// box's set-back and half depth (negative: inside).
+        /// </summary>
+        public static float TriggerEdge(float enterIn)
+        {
+            return -(enterIn - EnterBack - EnterHalf);
         }
 
         /// <summary>True for a number a copy's car park is given (the game's own are below <see cref="ParkFrom"/>).</summary>

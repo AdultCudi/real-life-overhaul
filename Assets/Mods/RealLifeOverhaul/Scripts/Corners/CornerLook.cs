@@ -648,6 +648,9 @@ namespace RealLifeOverhaul.Corners
             h.Root = null;
         }
 
+        /// <summary>True while a corner building stands: the registration change handler has nothing to look up before one does (no key is made).</summary>
+        internal static bool Any => ByAddress.Count > 0;
+
         /// <summary>The corner building whose registration changed (the game's event), or null.</summary>
         internal static CornerHandle AtAddress(string street, int number) => ByAddress.TryGetValue(Key(street, number), out CornerHandle h) ? h : null;
 

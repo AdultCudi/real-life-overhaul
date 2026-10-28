@@ -304,7 +304,7 @@ namespace RealLifeOverhaul
             }
             _paidDay = TimeHelper.CurrentDay;
             _paidAmount += due;
-            GameManager.ChangeMoneySafe(-due, new TransactionInfo(FeeTransaction, FeeCategory), null, null, force: true);
+            RealLifeOverhaul.Economy.BizBooks.Book(-due, new TransactionInfo(FeeTransaction, FeeCategory), null, null, force: true);
             JobText.Toast(NotificationType.Info, heavy ? "reallife_job_heavy_hired" : "reallife_job_rental_hired", "amount", JobText.Money(due), 9f);
             return true;
         }

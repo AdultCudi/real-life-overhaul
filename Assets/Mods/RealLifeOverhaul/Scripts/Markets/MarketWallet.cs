@@ -51,7 +51,7 @@ namespace RealLifeOverhaul.Markets
         {
             for (long left = amount; left > 0;)
             {
-                GameManager.ChangeMoneySafe(sign * InvestRules.Piece(ref left), Info(why, name), null, null, true);
+                RealLifeOverhaul.Economy.BizBooks.Book(sign * InvestRules.Piece(ref left), Info(why, name), null, null, true);
             }
         }
 

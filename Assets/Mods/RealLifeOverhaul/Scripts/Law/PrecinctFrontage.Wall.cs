@@ -130,41 +130,77 @@ namespace RealLifeOverhaul.Law
             _patches.Add(new Vector4(aside - halfWide, aside + halfWide, height - halfHigh, height + halfHigh));
         }
 
-        private void PlaceStatics()
+        // The wall and kerb pieces go up a piece a frame (Frame), out of sight: all nine at once took 16 ms in a player's log (27 Oct 2026),
+        // with the choosing of the precincts in the same frame. Under a dark screen (force) the rest goes up at once.
+        private const int StaticSteps = 9;   // fascia, sign, canopy, lamps, shield, notice board, door lettering, kerb, then the lights and the cull
+
+        private void PlaceStatics(bool whole)
+        {
+            if (_step < 0)
+            {
+                if (!Shapes.Available)
+                {
+                    _statics = true;
+                    for (int i = 0; i < _why.Length; i++)
+                    {
+                        _why[i] = "the game's lit shader was not found";
+                    }
+                    return;
+                }
+                if (!_built)
+                {
+                    _built = true;
+                    _builtModelled = PropLibrary.Ready;
+                }
+                _patches.Clear();
+                _step = 0;
+            }
+            do
+            {
+                PlaceStep();
+            }
+            while (whole && _step >= 0);
+        }
+
+        /// <summary>True while the wall and kerb pieces are being put out a piece a frame.</summary>
+        public bool Placing => _step >= 0;
+
+        /// <summary>Once a frame while <see cref="Placing"/>: the next piece. Nothing otherwise.</summary>
+        public void Frame()
+        {
+            if (_step >= 0 && _dressed != null)
+            {
+                PlaceStep();
+            }
+        }
+
+        private void PlaceStep()
         {
             using var piece = SessionWatch.Piece("law: a precinct's front being put out");
-            if (!Shapes.Available)
-            {
-                _statics = true;
-                for (int i = 0; i < _why.Length; i++)
-                {
-                    _why[i] = "the game's lit shader was not found";
-                }
-                return;
-            }
-            if (!_built)
-            {
-                _built = true;
-                _builtModelled = PropLibrary.Ready;
-            }
-            _statics = true;
-            _patches.Clear();
             Quaternion facing = Quaternion.LookRotation(_out, Vector3.up);
-            PlaceFascia(facing);
-            PlaceSign();
-            PlaceAwning(facing);
-            PlaceLamps(facing);
-            PlaceWallPiece(Piece.Emblem, ref _emblem, EmblemPlaces, 0.42f, 0.42f, 0.07f, facing);
-            PlaceWallPiece(Piece.Board, ref _board, BoardPlaces, 0.64f, 0.50f, 0.08f, facing);
-            PlaceDoorText();
-            PlaceKerb();
-            _nightKnown = false;
-            Light();
-            if (_cull == null)
+            switch (_step)
             {
-                _cull = ModCulling.Add(CullRules.Kind.StationFront, _root, _dressed.Door, CullRadius);
+                case 0: PlaceFascia(facing); break;
+                case 1: PlaceSign(); break;
+                case 2: PlaceAwning(facing); break;
+                case 3: PlaceLamps(facing); break;
+                case 4: PlaceWallPiece(Piece.Emblem, ref _emblem, EmblemPlaces, 0.42f, 0.42f, 0.07f, facing); break;
+                case 5: PlaceWallPiece(Piece.Board, ref _board, BoardPlaces, 0.64f, 0.50f, 0.08f, facing); break;
+                case 6: PlaceDoorText(); break;
+                case 7: PlaceKerb(); break;
+                default:
+                    _statics = true;
+                    _step = -1;
+                    _nightKnown = false;
+                    Light();
+                    if (_cull == null)
+                    {
+                        _cull = ModCulling.Add(CullRules.Kind.StationFront, _root, _dressed.Door, CullRadius);
+                    }
+                    _logger?.Info("Law: frontage: " + Report() + ".");
+                    return;
             }
-            _logger?.Info("Law: frontage: " + Report() + ".");
+            _step++;
         }
 
         private void PlaceFascia(Quaternion facing)

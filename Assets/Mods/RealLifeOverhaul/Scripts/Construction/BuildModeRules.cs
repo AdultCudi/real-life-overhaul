@@ -120,7 +120,9 @@ namespace RealLifeOverhaul.Construction
         public const int LinePicked = 31;
         public const int Rival = 32;         // a rival's building in the city's own districts (build mode's plots, BuildModeCityRules): a fill after the lines
         public const int RunDownFill = 33;   // occupancy: a building run down after standing mostly empty (GrowRules)
-        public const int PaletteSize = 34;
+        public const int HeldFill = 34;      // ground held by something that is not for sale: a landmark's lots, ground kept clear, a special place's, a park's, the campus's, the district's edge
+        public const int LineHeld = 35;      // its edge: a cool blue, so held ground reads apart from land for sale (white) and the plain grid
+        public const int PaletteSize = 36;
 
         /// <summary>
         /// The palette (red, green, blue, alpha, 0 to 255). The four uses, for sale and the player's colour are the game's own
@@ -162,7 +164,9 @@ namespace RealLifeOverhaul.Construction
             new byte[] { 240, 190, 90, 255 },   // waits on the council
             new byte[] { 255, 255, 255, 255 },  // picked
             new byte[] { 225, 75, 95, 170 },    // a rival's building
-            new byte[] { 150, 95, 60, 190 }     // run down
+            new byte[] { 150, 95, 60, 190 },    // run down
+            new byte[] { 70, 120, 170, 120 },   // held: slate blue, light enough to leave the ground and its trees showing
+            new byte[] { 120, 200, 255, 255 }   // held: its edge
         };
 
         /// <summary>Colours the mixed zoning may take: the first far from every colour the game gives its types and the player.</summary>
@@ -366,6 +370,9 @@ namespace RealLifeOverhaul.Construction
             public string Council;   // free land: the council's digit a row for this column (ZoneRules), null for the plan's use on every row
             public int CouncilUse;   // ... the plan's use for it (BuildUse), -1 for none
             public bool RunDown;     // a building in poor condition after standing mostly empty (GrowRules.RunDown)
+            public bool Held;        // held, not for sale: a landmark's lot (its site, whatever its works) or ground kept clear; never the player's
+            public bool Kept;        // ... kept clear because something of the city's own stands there, not a landmark's
+            public bool Stands;      // a building of the district stands on it at this load (the lot's own, a grown one or a car park)
         }
 
         /// <summary>The paint a square of the player's land carries (0 none, else BuildUse + 1): its own digit, else its site's.</summary>
@@ -425,6 +432,12 @@ namespace RealLifeOverhaul.Construction
         {
             line = LinePlain;
             bool behind = c.Mine && row >= c.MineRows;   // behind the player's rows: theirs to buy deeper, nobody else's
+            if (c.Held && !c.Mine)
+            {
+                fill = HeldFill;   // a landmark's lot or ground kept clear reads the same in every view, so no square looks like a building that is not there
+                line = LineHeld;
+                return;
+            }
             switch (view)
             {
                 case BuildView.Zoning:
@@ -549,6 +562,7 @@ namespace RealLifeOverhaul.Construction
                     n = Key(fills, lines, keys, n, Warehouses, LinePlain, "reallife_bld_use_warehouses");
                     n = Key(fills, lines, keys, n, Mixed, LinePlain, "reallife_bld_mode_key_mixed");
                     n = Key(fills, lines, keys, n, NoZone, LinePlain, "reallife_bld_mode_key_nozone");
+                    n = Key(fills, lines, keys, n, HeldFill, LineHeld, "reallife_bld_mode_key_held");
                     n = Key(fills, lines, keys, n, -1, LineForSale, "reallife_bld_mode_key_forsale_edge");
                     n = Key(fills, lines, keys, n, -1, LineZoned, "reallife_bld_mode_key_zoned");
                     n = Key(fills, lines, keys, n, -1, LineWaits, "reallife_bld_mode_key_waits");
@@ -576,6 +590,7 @@ namespace RealLifeOverhaul.Construction
                     n = Key(fills, lines, keys, n, YourLand, LineYours, "reallife_bld_mode_key_yourland");
                     n = Key(fills, lines, keys, n, YourBuilding, LineYours, "reallife_bld_mode_key_yourbuilding");
                     n = Key(fills, lines, keys, n, Taken, LinePlain, "reallife_bld_mode_key_taken");
+                    n = Key(fills, lines, keys, n, HeldFill, LineHeld, "reallife_bld_mode_key_held");
                     n = Key(fills, lines, keys, n, UnderWay, LinePlain, "reallife_bld_mode_key_underway");
                     n = Key(fills, lines, keys, n, Developer, LinePlain, "reallife_bld_mode_key_developer");
                     n = Key(fills, lines, keys, n, -1, LineZoned, "reallife_bld_mode_key_zoned");

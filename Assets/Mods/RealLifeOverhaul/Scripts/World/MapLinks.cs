@@ -154,8 +154,9 @@ namespace RealLifeOverhaul
             {
                 for (int made = 0; made < FeedAtOnce && link.Fed < link.Waiting.Count; made++)
                 {
-                    link.Category.Add(link.Waiting[link.Fed++]);
+                    link.Category.Add(link.Waiting[link.Fed++], apply: false);
                 }
+                link.Category.Show();   // the row's markers gone over once for the batch, not once for each place in it
                 if (link.Fed < link.Waiting.Count)
                 {
                     return true;

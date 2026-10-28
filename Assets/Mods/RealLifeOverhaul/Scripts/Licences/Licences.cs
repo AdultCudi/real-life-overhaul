@@ -125,7 +125,7 @@ namespace RealLifeOverhaul
         internal static bool Pay(int amount, string transactionKey)
         {
             return amount <= 0 || (SaveGameManager.Current != null
-                && GameManager.ChangeMoneySafe(-amount, new TransactionInfo(transactionKey, FeeCategory), null, null, force: false));
+                && RealLifeOverhaul.Economy.BizBooks.Book(-amount, new TransactionInfo(transactionKey, FeeCategory), null, null, force: false));
         }
 
         /// <summary>Takes a fine or fee whatever the balance: the game allows the red.</summary>
@@ -133,7 +133,7 @@ namespace RealLifeOverhaul
         {
             if (amount > 0 && SaveGameManager.Current != null)
             {
-                GameManager.ChangeMoneySafe(-amount, new TransactionInfo(transactionKey), null, null, force: true);
+                RealLifeOverhaul.Economy.BizBooks.Book(-amount, new TransactionInfo(transactionKey), null, null, force: true);
             }
         }
 
@@ -141,7 +141,7 @@ namespace RealLifeOverhaul
         {
             if (amount > 0 && SaveGameManager.Current != null)
             {
-                GameManager.ChangeMoneySafe(amount, new TransactionInfo(transactionKey), null, null, force: true);
+                RealLifeOverhaul.Economy.BizBooks.Book(amount, new TransactionInfo(transactionKey), null, null, force: true);
             }
         }
 

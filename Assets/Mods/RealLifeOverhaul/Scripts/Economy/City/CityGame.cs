@@ -635,7 +635,7 @@ namespace RealLifeOverhaul.Economy
             {
                 info.SetTaxDeductibleName(key);
             }
-            bool booked = GameManager.ChangeMoneySafe(amount, info, day, address, amount > 0);
+            bool booked = RealLifeOverhaul.Economy.BizBooks.Book(amount, info, day, address, amount > 0);
             if (booked && amount > 0 && !string.IsNullOrEmpty(deducted))
             {
                 LowerDeduction(deducted, amount);   // the game counts charges alone (TaxHelper.TrackTransaction)

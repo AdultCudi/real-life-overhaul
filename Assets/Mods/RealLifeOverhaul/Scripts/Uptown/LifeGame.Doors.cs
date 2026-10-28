@@ -17,6 +17,9 @@ namespace RealLifeOverhaul.Uptown
     internal static partial class LifeGame
     {
         private const float GateStep = 9f;      // m in front of a garage door the test puts the car, facing it
+        private const float CarLong = 4.5f;     // m, wide and high: the car the exit is read for, its mesh centred on its origin as the game's own are
+        private const float CarWide = 1.9f;
+        private const float CarHigh = 1.5f;
         private const float MouthTall = 1.2f;   // m above the ground a mouth is looked through
         private static int _mouthMask;
 
@@ -57,7 +60,117 @@ namespace RealLifeOverhaul.Uptown
                 return "a garage door of its look looks out on a wall, not on its street";
             }
             string blocker = Blocker(made);
-            return blocker != null ? "the mouth of a garage door is blocked by " + blocker : null;
+            if (blocker != null)
+            {
+                return "the mouth of a garage door is blocked by " + blocker;
+            }
+            return ExitWhy(made);
+        }
+
+        /// <summary>
+        /// The game's own reading of a car's way out of a made building, door by door, for a car of <see cref="CarLong"/> m with its mesh centred on its origin: where
+        /// the door puts it (inside the tunnel, or in front of the door when the building is shut), that nothing the game's own blocked test looks for stands there
+        /// (<c>Physics.CheckBox</c> with the game's mask), and that its body stands clear of the door's entrance trigger, which takes a car that touches it into the
+        /// building (<see cref="GateRules.ExitClear"/>). Null when every door is as the game's own; else why (English, for a check line).
+        /// </summary>
+        public static string ExitWhy(MadeBuilding made)
+        {
+            DriveInEntrance[] doors = made != null && made.Controller != null ? made.Controller.driveInEntrances : null;
+            if (doors == null || doors.Length == 0)
+            {
+                return null;
+            }
+            MeshCollider stand = null;
+            Mesh mesh = null;
+            string why = null;
+            try
+            {
+                mesh = BoxMesh(CarWide, CarHigh, CarLong);
+                var holder = new GameObject("RealLifeOverhaul exit probe");
+                holder.SetActive(false);
+                stand = holder.AddComponent<MeshCollider>();
+                stand.sharedMesh = mesh;
+                for (int i = 0; i < doors.Length && why == null; i++)
+                {
+                    if (doors[i] == null)
+                    {
+                        continue;
+                    }
+                    Transform t = doors[i].transform;
+                    Vector3 inside = doors[i].GetSpawnPositionInsideOfGarageDoor(stand), front = doors[i].GetSpawnPositionInFrontOfGarageDoor(stand);
+                    if (float.IsNaN(inside.x + inside.y + inside.z + front.x + front.y + front.z) || (inside - t.position).sqrMagnitude > 64f || Mathf.Abs(inside.y - t.position.y) > 1.5f)
+                    {
+                        why = "door " + doors[i].doorID + " puts a car " + (inside - t.position).magnitude.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + " m from itself";
+                        break;
+                    }
+                    Vector3 half = new Vector3(CarWide, CarHigh, CarLong) * 0.5f;
+                    if (Physics.CheckBox(inside, half, t.rotation, LayerHelper.VehiclesLayerIndex) || Physics.CheckBox(front, half, t.rotation, LayerHelper.VehiclesLayerIndex))
+                    {
+                        why = "something the game's own test for a blocked gate looks for stands where door " + doors[i].doorID + " puts a car";
+                        break;
+                    }
+                    Vector3 way = Vector3.ProjectOnPlane(t.forward, Vector3.up).normalized;
+                    if (Mathf.Abs(way.x) < 0.9998f && Mathf.Abs(way.z) < 0.9998f)
+                    {
+                        continue;
+                    }
+                    float near = Vector3.Dot(inside - t.position, way) - CarLong * 0.5f;
+                    var triggers = doors[i].GetComponentsInChildren<DriveInEntranceEnterTrigger>(true);
+                    for (int k = 0; k < triggers.Length && why == null; k++)
+                    {
+                        foreach (Collider box in triggers[k].GetComponents<Collider>())
+                        {
+                            if (!box.isTrigger)
+                            {
+                                continue;
+                            }
+                            float far = float.NegativeInfinity;
+                            for (int c = 0; c < 8; c++)
+                            {
+                                Bounds b = box.bounds;
+                                far = Mathf.Max(far, Vector3.Dot(new Vector3((c & 1) == 0 ? b.min.x : b.max.x, (c & 2) == 0 ? b.min.y : b.max.y, (c & 4) == 0 ? b.min.z : b.max.z) - t.position, way));
+                            }
+                            if (GateRules.PushOut(near, far) > 0f)
+                            {
+                                float into = GateRules.PushOut(near, far);
+                                why = "a car put out by door " + doors[i].doorID + " stands " + into.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)
+                                      + " m into the door's entrance trigger, which would take it back in";
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                why = "the game's own reading of the exit threw " + e.GetType().Name + " (" + e.Message + ")";
+            }
+            finally
+            {
+                if (stand != null)
+                {
+                    SceneryTrees.DestroyNow(stand.gameObject);
+                }
+                if (mesh != null)
+                {
+                    UnityEngine.Object.Destroy(mesh);
+                }
+            }
+            return why;
+        }
+
+        // A box of a car's size as a mesh (its bounds are what the game's door reads of a car).
+        private static Mesh BoxMesh(float wide, float high, float long_)
+        {
+            float x = wide * 0.5f, y = high * 0.5f, z = long_ * 0.5f;
+            var mesh = new Mesh { name = "RealLifeOverhaul exit probe" };
+            mesh.vertices = new[]
+            {
+                new Vector3(-x, -y, -z), new Vector3(x, -y, -z), new Vector3(x, y, -z), new Vector3(-x, y, -z),
+                new Vector3(-x, -y, z), new Vector3(x, -y, z), new Vector3(x, y, z), new Vector3(-x, y, z)
+            };
+            mesh.triangles = new[] { 0, 2, 1, 0, 3, 2, 4, 5, 6, 4, 6, 7, 0, 4, 7, 0, 7, 3, 1, 2, 6, 1, 6, 5, 3, 7, 6, 3, 6, 2, 0, 1, 5, 0, 5, 4 };
+            mesh.RecalculateBounds();
+            return mesh;
         }
 
         /// <summary>The name of the first thing that stands in the mouth of one of a made building's garage doors (a lamp post, a piece of furniture, a parked car), or null.</summary>

@@ -323,7 +323,7 @@ namespace RealLifeOverhaul.Construction
                 return true;
             }
             _hoverPlot = plot;
-            _hoverColumn = _hoverRow = -1;
+            _hoverColumn = _hoverRow = _hoverHeld = -1;
             PlotCard(plot, out string head, out string kind, out string owner, out string price, out string state);
             _hoverWords = head + "; " + kind + "; " + owner + "; " + price + "; " + state;
             BuildModeGame.ShowPlotHover(head, kind, owner, price, state);

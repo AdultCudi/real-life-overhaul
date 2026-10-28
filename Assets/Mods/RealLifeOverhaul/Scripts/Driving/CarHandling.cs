@@ -75,6 +75,13 @@ namespace RealLifeOverhaul
         private FrictionPreset _tyre;                   // the mod's own tyres, one preset for the car driven
         private GroundDetectionPreset _road;            // the mod's ground preset: the car's fallback surface, no surfaces of its own
 
+        // The design under way, a step a call (Begin, Step, Finish): the car it is for and the sliders it was begun with.
+        private readonly HandlingDesign _design = new HandlingDesign();
+        private CarController _designCar;
+        private NwhVehicle _designVehicle;
+        private HandlingTuning _designTuning;
+        private HandlingTuning _lineTuning;             // the sliders of the handling on the car, for its self-check line
+
         /// <summary>True while the handling is on a car.</summary>
         public bool On => _vehicle != null;
 
@@ -85,10 +92,13 @@ namespace RealLifeOverhaul
         public string Refusal { get; private set; }
 
         /// <summary>
-        /// Puts the handling on a car, the Garage's parts lifted first and laid back on top after. True if it is on; refused,
-        /// said once, for a car of a kind the mod does not tune or not the player's own; anything unexpected throws.
+        /// Begins putting the handling on a car: the checks and the reading of the car now, the Garage's parts lifted for the
+        /// reading and laid straight back, nothing of the car's changed. The design follows a step at a time
+        /// (<see cref="Step"/>, spread over frames by CarTuning), and <see cref="Finish"/> puts it on. True if a design is
+        /// under way; refused, said once, for a car of a kind the mod does not tune or not the player's own; anything
+        /// unexpected throws.
         /// </summary>
-        public bool Apply(CarController car, NwhVehicle vehicle, HandlingLevel level, in HandlingTuning tuning)
+        public bool Begin(CarController car, NwhVehicle vehicle, HandlingLevel level, in HandlingTuning tuning)
         {
             Restore();
             if (level == HandlingLevel.Off || car == null || vehicle == null || car.vehicleType == null || vehicle.vehicleRigidbody == null)
@@ -110,28 +120,80 @@ namespace RealLifeOverhaul
                 Refusal = "a scooter, a hand truck or a flatbed is left as the game made it";
                 return false;
             }
+            string why;
+            LiftParts(car);
+            try
+            {
+                why = Read(car, vehicle, body, type.maxSpeed);   // the car under the Garage's parts
+            }
+            finally
+            {
+                LayParts(car);   // the parts back on at once: the car is as it was until the design is put on
+            }
+            if (why != null)
+            {
+                Refused(type.vehicleTypeName, why);
+                return false;
+            }
+            _design.Begin(_chassis, HandlingRules.Target(spec.Kind, level, tuning), _setup);
+            _designCar = car;
+            _designVehicle = vehicle;
+            _designTuning = tuning;
+            _type = type.vehicleTypeName;
+            _kind = spec.Kind;
+            _level = level;
+            Refusal = "its handling is still being worked out";
+            return true;
+        }
+
+        /// <summary>True while a design is under way (begun, not yet put on or dropped).</summary>
+        public bool Designing => _designVehicle != null;
+
+        /// <summary>Steps the design under way, or the last, took.</summary>
+        public int DesignSteps => _design.Steps;
+
+        /// <summary>One step of the design under way (a tenth to half a millisecond offline); true while steps are left.</summary>
+        public bool Step()
+        {
+            return _designVehicle != null && _design.Step();
+        }
+
+        /// <summary>
+        /// The design made, put on the car it was begun for, the Garage's parts lifted first and laid back on top after. True
+        /// if it is on; false if the car cannot have it (said once) or is gone. Nothing if no design is under way.
+        /// </summary>
+        public bool Finish()
+        {
+            CarController car = _designCar;
+            NwhVehicle vehicle = _designVehicle;
+            HandlingTuning tuning = _designTuning;
+            _designCar = null;
+            _designVehicle = null;
+            while (vehicle != null && _design.Step())
+            {
+                // whatever steps were left (none when the frames took them all): the design is never put on half made
+            }
+            string why = _design.Why;
+            _design.Cancel();
+            if (car == null || vehicle == null || vehicle.vehicleRigidbody == null)
+            {
+                return false;   // the car went while its design was under way
+            }
+            if (why != null)
+            {
+                Refused(_type, why);
+                return false;
+            }
+            Rigidbody body = vehicle.vehicleRigidbody;
             LiftParts(car);
             float torqueUnder = 0f;
             float massUnder = 0f;
             float gripUnder = 0f;
             try
             {
-                string why = Read(car, vehicle, body, type.maxSpeed);
-                if (why == null)
-                {
-                    why = HandlingModel.Design(_chassis, HandlingRules.Target(spec.Kind, level, tuning), _setup);
-                }
-                if (why != null)
-                {
-                    Refused(type.vehicleTypeName, why);
-                    return false;
-                }
                 Build(vehicle);
                 Record(car, vehicle, body);
                 _vehicle = vehicle;
-                _type = type.vehicleTypeName;
-                _kind = spec.Kind;
-                _level = level;
                 Refusal = null;
                 PutOn(vehicle, body);
                 _took = Took(vehicle, body);   // what the handling wrote, read back before the Garage's parts lie on top of it
@@ -144,11 +206,17 @@ namespace RealLifeOverhaul
                 LayParts(car);   // the Garage's parts back on top of whatever is under them now
             }
             BrakesForParts(vehicle, body, torqueUnder, massUnder, gripUnder);
-            if (Meta.Dev.Verbose)
-            {
-                CarTuning.Logger?.Info(Line(tuning));
-            }
+            _lineTuning = tuning;
             return true;
+        }
+
+        /// <summary>With Developer diagnostics on, the self-check line of the handling just put on (Finish), in a frame of its own; once.</summary>
+        public void SayOn()
+        {
+            if (_vehicle != null && Meta.Dev.Verbose)
+            {
+                CarTuning.Logger?.Info(Line(_lineTuning));
+            }
         }
 
         // Reads the car into the chassis the model designs for. Changes nothing. Why the car cannot be done, or null.
@@ -480,9 +548,15 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The car exactly as it was before <see cref="Apply"/>, the Garage's parts lifted first and laid back after. Safe with nothing on.</summary>
+        /// <summary>
+        /// The car exactly as it was before <see cref="Finish"/>, the Garage's parts lifted first and laid back after; a design
+        /// under way dropped. Safe with nothing on.
+        /// </summary>
         public void Restore()
         {
+            _design.Cancel();
+            _designCar = null;
+            _designVehicle = null;
             NwhVehicle vehicle = _vehicle;
             CarController car = _car;
             _vehicle = null;

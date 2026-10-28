@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using System.Reflection;
 using System.Text;
 using Localizor;
 
@@ -247,6 +248,42 @@ namespace RealLifeOverhaul.Meta
                 return _version;
             }
         }
+
+        private static string _betaTag;
+        private static bool _betaRead;
+
+        /// <summary>
+        /// The tag of a beta build ("beta.1"), or null for a public one. A beta is built with -p:BetaTag=beta.1 (steam_beta.py), which
+        /// puts "0.61.0-beta.1" in the DLL's informational version; the numeric <see cref="Version"/> stays 0.61.0, so saves, the
+        /// version compare and the network see the number alone. Read once, from the assembly.
+        /// </summary>
+        public static string BetaTag
+        {
+            get
+            {
+                if (!_betaRead)
+                {
+                    _betaRead = true;
+                    try
+                    {
+                        object[] found = typeof(Changelog).Assembly.GetCustomAttributes(typeof(AssemblyInformationalVersionAttribute), false);
+                        string info = found.Length > 0 ? ((AssemblyInformationalVersionAttribute)found[0]).InformationalVersion : null;
+                        _betaTag = BetaRules.TagOf(info);
+                    }
+                    catch (Exception)
+                    {
+                        // No tag: a public build.
+                    }
+                }
+                return _betaTag;
+            }
+        }
+
+        /// <summary>True in the beta copy of the mod (the unlisted Workshop item for testers).</summary>
+        public static bool IsBeta => BetaTag != null;
+
+        /// <summary>The version as the player and a bug report read it: "0.61.0-beta.1" in a beta, <see cref="Version"/> otherwise.</summary>
+        public static string Shown => IsBeta ? Version + "-" + BetaTag : Version;
 
         /// <summary>Compares two versions number by number; a missing part counts as 0.</summary>
         public static int Compare(string a, string b)

@@ -21,6 +21,16 @@ namespace RealLifeOverhaul
         }
     }
 
+    /// <summary>How land of a size stands against what a plot's frame needs (<see cref="PlotRules.Fit"/>).</summary>
+    public enum PlotFit
+    {
+        Fits,
+        TooNarrow,
+        TooShallow,
+        TooWide,
+        TooDeep
+    }
+
     /// <summary>One straight run of the wire fence round a plot, in the land's axes.</summary>
     public struct FenceRun
     {
@@ -44,12 +54,12 @@ namespace RealLifeOverhaul
         public const float Span = 6.0f;           // metres between columns at most
         public const float Margin = 3.5f;         // metres of land kept round the frame on three sides: the game's scaffold is 3.04 m deep
         public const float Yard = 9.0f;           // metres of land on the +X side: the crane's 6 m pad, the stacks and the cabin
-        public const int MinFrame = 8;            // metres a frame is at least each way
+        public const int MinFrame = 5;            // metres a frame is at least each way: a narrow plot of one space, 7 m wide, with a metre kept each side
         public const int MinWidth = 21;           // metres of land along X at least: margin, frame and yard
         public const int MinDepth = 16;           // metres along Z at least: the yard's cabin, toilet and crane pad in a row
         public const int MostLand = 60;           // metres of land each way at most
         public const int MostStoreys = 10;
-        public const int NarrowMin = 10;          // metres of land along X: a narrow plot, a city lot of a small shop's or home's width
+        public const int NarrowMin = 7;           // metres of land along X: one space of the district (SpacesRules.SpaceWidth), the standard lowest lot; checked together
         public const int NarrowDepth = 20;        // metres along Z a narrow plot needs: the front's margin, the frame and the yard behind it
         public const int NarrowStoreys = 6;       // a narrow frame goes up without a tower crane
         public const float NarrowSide = 1.0f;     // metres kept each side of a narrow frame: the neighbours are close; 8 m of frame at the least
@@ -114,17 +124,50 @@ namespace RealLifeOverhaul
 
         private static int Clamp(int value, int min, int max) => value < min ? min : value > max ? max : value;
 
+        /// <summary>
+        /// Whether land of a size can take a frame, and if not, which way it falls short and the size it needs: the width or depth it
+        /// must have at least (too narrow or too shallow), or the most it can be (too wide or too deep). One answer for the player's
+        /// first step (the Land tab, the plans, the permit, the hire) and for every pick of the city's own, so a plot is never planned
+        /// on land that its site cannot be set out on.
+        /// </summary>
+        public static PlotFit Fit(int width, int depth, out int need)
+        {
+            need = 0;
+            if (width < NarrowMin)
+            {
+                need = NarrowMin;
+                return PlotFit.TooNarrow;
+            }
+            if (depth < (Narrow(width) ? NarrowDepth : MinDepth))
+            {
+                need = Narrow(width) ? NarrowDepth : MinDepth;
+                return PlotFit.TooShallow;
+            }
+            if (width > MostLand)
+            {
+                need = MostLand;
+                return PlotFit.TooWide;
+            }
+            if (depth > MostLand)
+            {
+                need = MostLand;
+                return PlotFit.TooDeep;
+            }
+            return PlotFit.Fits;
+        }
+
         /// <summary>Why land of a size cannot take a frame, or null if it can.</summary>
         public static string Unfit(int width, int depth, int storeys)
         {
-            if (width < NarrowMin || depth < (Narrow(width) ? NarrowDepth : MinDepth))
+            switch (Fit(width, depth, out _))
             {
-                return "the land is " + width + " by " + depth + " m; a plot needs " + MinWidth + " by " + MinDepth + " m at least, or " + NarrowMin + " by " + NarrowDepth
-                       + " m with its yard behind the frame";
-            }
-            if (width > MostLand || depth > MostLand)
-            {
-                return "the land is over " + MostLand + " m one way";
+                case PlotFit.TooNarrow:
+                case PlotFit.TooShallow:
+                    return "the land is " + width + " by " + depth + " m; a plot needs " + MinWidth + " by " + MinDepth + " m at least, or " + NarrowMin + " by " + NarrowDepth
+                           + " m with its yard behind the frame";
+                case PlotFit.TooWide:
+                case PlotFit.TooDeep:
+                    return "the land is over " + MostLand + " m one way";
             }
             int most = Narrow(width) ? NarrowStoreys : MostStoreys;
             return storeys < 1 || storeys > most ? "a plot of this land has 1 to " + most + " storeys" : null;

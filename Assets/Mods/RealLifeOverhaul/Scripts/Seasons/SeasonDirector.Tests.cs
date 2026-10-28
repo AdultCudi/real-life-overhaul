@@ -223,8 +223,8 @@ namespace RealLifeOverhaul.Seasons
             {
                 why.Append(" no leaves falling;");
             }
-            text.Append("; under the date: ").Append(SeasonBar.Shown ? "'" + SeasonBar.Line + "'" : "nothing");
-            if (Settings.SeasonBar && !SeasonBar.Shown)
+            text.Append("; under the date: ").Append(SeasonBar.Shown ? "'" + SeasonBar.Line + "'" : SeasonBar.Taken ? "another mod's season" : "nothing");
+            if (Settings.SeasonBar && !SeasonBar.Shown && !SeasonBar.Taken)
             {
                 why.Append(" nothing under the date;");
             }
