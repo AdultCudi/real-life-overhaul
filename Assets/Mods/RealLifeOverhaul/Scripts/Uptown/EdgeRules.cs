@@ -73,7 +73,8 @@ namespace RealLifeOverhaul.Uptown
         public float OutX;        // the way out of the districts, a unit vector
         public float OutZ;
         public float Half;        // m: half the way across, pavement to pavement
-        public PlanBox Wall;      // the box that closes it, its top the wall's height
+        public float Fence;       // m past (Cx, Cz) along the way out where the fencing's panels stand (their origin); below zero where an invisible wall stands at the edge
+        public PlanBox Wall;      // the box that closes it, its top the wall's height: its first face is the fencing's own face
     }
 
     /// <summary>One way out of a junction no lane takes, that runs into the edge within reach: a street end the mod must close.</summary>
@@ -95,8 +96,11 @@ namespace RealLifeOverhaul.Uptown
     /// and gone by 170 m, where the game's own fog is whole, so the map and the camera looking down see the same.
     /// Every street and avenue the plan's lanes do not take across the edge ends in a barricade just short of the wall: a row
     /// of construction fencing across its whole width, roadworks signs and cones before it, and a box (the walls' layer)
-    /// that stops a car and a person. Nothing here is drawn or built; the game's side does what it says. No Unity or game
-    /// types. COST: made once a load; nothing per frame.
+    /// that stops a car and a person. The box's first face is the fencing's own face (a car stops at what it can see, never
+    /// short of it: a player's "crashing into nothing", 28 Oct 2026), and where an invisible wall stands at the edge itself
+    /// (1st Avenue's two ends) the fencing stands in front of the wall, so the first solid thing a car meets is the fencing
+    /// there too. Nothing here is drawn or built; the game's side does what it says. No Unity or game types. COST: made once
+    /// a load; nothing per frame.
     /// </summary>
     public static class EdgeRules
     {
@@ -126,11 +130,13 @@ namespace RealLifeOverhaul.Uptown
         // ---- the barricades
 
         public const float WallTop = 3f;                // m: the barricade's box, over the 2.4 m of fencing
-        public const float WallGap = 0.1f;              // m: the box starts this far past the band's edge, clear of the walking ground that ends at it
-        public const float Depth = 3.3f;                // m: the box's depth, the fencing at its back
-        public const float HoardingAt = 3.0f;           // m past the band's edge the fencing stands
-        public const float SignAt = 1.3f;               // m: the roadworks signs
-        public const float ConeAt = 0.8f;               // m: the cones
+        public const float FenceFace = 0.04f;           // m: the fencing's painted face stands this far in front of its origin (the prop is 0.10 m deep, from 0.06 behind its origin to 0.04 before it)
+        public const float FenceBack = 0.06f;           // m: and its back this far behind
+        public const float BoxAhead = 0.01f;            // m: the box's first face stands this far before the fencing's face, so a car meets the box where it meets the drawn panel
+        public const float Depth = 3.3f;                // m: the box's depth, the fencing at its front and the rest behind it, out of every car's reach (a thin box is passed through at speed)
+        public const float HoardingAt = 3.0f;           // m past the band's edge the fencing stands, where no wall stands nearer
+        public const float SignBefore = 1.7f;           // m before the fencing: the roadworks signs
+        public const float ConeBefore = 2.2f;           // m before the fencing: the cones
         public const float PanelWidth = 2.4f;           // m: one panel of fencing, the prop's own
         public const float ConeStreet = 4f;             // m each side of a street's middle a cone stands
         public const float Reach = 60f;                 // m a way out of a junction is followed for the edge it runs into
@@ -235,30 +241,102 @@ namespace RealLifeOverhaul.Uptown
         {
             into.Clear();
             float north = LayoutPlans.North;
+            var walls = new List<PlanBox>(12);
+            LayoutPlans.NewWalls(walls);
             for (int k = LayoutStreets.WestMost; k <= LayoutStreets.EastMost; k++)
             {
-                float c = LayoutRules.StreetX(k), half = LayoutRules.StreetHalf, z0 = north + WallGap;
-                into.Add(new Barricade
-                {
-                    Name = "street " + k + " north", Avenue = false, Index = k, Cx = c, Cz = north, OutX = 0f, OutZ = 1f, Half = half,
-                    Wall = new PlanBox(c - half, z0, c + half, z0 + Depth, WallTop)
-                });
+                into.Add(Close("street " + k + " north", false, k, LayoutRules.StreetX(k), north, 0f, 1f, LayoutRules.StreetHalf, walls));
             }
             for (int row = 0; row <= LayoutRules.Rows; row++)
             {
                 float a = LayoutRules.AvenueZ(row), half = LayoutRules.AvenueHalf;
-                float west = LayoutPlans.West, east = LayoutPlans.East;
-                into.Add(new Barricade
-                {
-                    Name = "avenue " + row + " west", Avenue = true, Index = row, Cx = west, Cz = a, OutX = -1f, OutZ = 0f, Half = half,
-                    Wall = new PlanBox(west - WallGap - Depth, a - half, west - WallGap, a + half, WallTop)
-                });
-                into.Add(new Barricade
-                {
-                    Name = "avenue " + row + " east", Avenue = true, Index = row, Cx = east, Cz = a, OutX = 1f, OutZ = 0f, Half = half,
-                    Wall = new PlanBox(east + WallGap, a - half, east + WallGap + Depth, a + half, WallTop)
-                });
+                into.Add(Close("avenue " + row + " west", true, row, LayoutPlans.West, a, -1f, 0f, half, walls));
+                into.Add(Close("avenue " + row + " east", true, row, LayoutPlans.East, a, 1f, 0f, half, walls));
             }
+        }
+
+        // One closed end: the fencing where it stands (HoardingAt past the edge, or just in front of an invisible wall that stands
+        // nearer), and the box whose first face is the fencing's face and whose depth runs back behind it.
+        private static Barricade Close(string name, bool avenue, int index, float cx, float cz, float outX, float outZ, float half, List<PlanBox> walls)
+        {
+            float fence = HoardingAt;
+            float face = WallFace(cx, cz, outX, outZ, half, walls);
+            if (face < HoardingAt + FenceBack)
+            {
+                fence = face - FenceBack;   // the fencing's back against the wall's inner face: the first solid a car meets is the fencing
+            }
+            float front = fence - FenceFace - BoxAhead;   // m past the edge: the box's first face
+            float x0, z0, x1, z1;
+            if (avenue)
+            {
+                float first = cx + outX * front, last = cx + outX * (front + Depth);
+                x0 = Math.Min(first, last);
+                x1 = Math.Max(first, last);
+                z0 = cz - half;
+                z1 = cz + half;
+            }
+            else
+            {
+                x0 = cx - half;
+                x1 = cx + half;
+                z0 = cz + front;
+                z1 = cz + front + Depth;
+            }
+            return new Barricade { Name = name, Avenue = avenue, Index = index, Cx = cx, Cz = cz, OutX = outX, OutZ = outZ, Half = half, Fence = fence, Wall = new PlanBox(x0, z0, x1, z1, WallTop) };
+        }
+
+        /// <summary>
+        /// The metres from an end's edge, along the way out, to the first inner face of an invisible wall across the end's width
+        /// (looked for along its middle and 0.9 of its half-width to either side, from a metre inside the band); 0 where a wall
+        /// stands against the edge itself; a large number where none is in the way.
+        /// </summary>
+        public static float WallFace(float cx, float cz, float outX, float outZ, float half, List<PlanBox> walls)
+        {
+            float best = 1e6f;
+            float acrossX = -outZ, acrossZ = outX;   // along the end
+            for (int side = -1; side <= 1; side++)
+            {
+                float px = cx + acrossX * half * 0.9f * side - outX, pz = cz + acrossZ * half * 0.9f * side - outZ;   // a metre inside
+                for (int w = 0; w < walls.Count; w++)
+                {
+                    PlanBox b = walls[w];
+                    float t0 = float.NegativeInfinity, t1 = float.PositiveInfinity;
+                    if (!Slab(px, outX, b.X - b.HalfX, b.X + b.HalfX, ref t0, ref t1) || !Slab(pz, outZ, b.Z - b.HalfZ, b.Z + b.HalfZ, ref t0, ref t1) || t1 < 0f)
+                    {
+                        continue;
+                    }
+                    best = Math.Min(best, Math.Max(t0, 0f) - 1f);   // less the metre inside: from the edge
+                }
+            }
+            return Math.Max(best, 0f);
+        }
+
+        private static bool Slab(float p, float d, float lo, float hi, ref float t0, ref float t1)
+        {
+            if (Math.Abs(d) < 1e-6f)
+            {
+                return p >= lo && p <= hi;
+            }
+            float a = (lo - p) / d, b = (hi - p) / d;
+            t0 = Math.Max(t0, Math.Min(a, b));
+            t1 = Math.Min(t1, Math.Max(a, b));
+            return t0 <= t1;
+        }
+
+        /// <summary>
+        /// The part of a barricade's box that stands behind its fencing's back, out of every car's reach and never drawn: the part of the
+        /// box a car cannot meet. The box in front of that, the fencing's own thickness, is drawn.
+        /// </summary>
+        public static PlanBox Behind(Barricade end)
+        {
+            float from = end.Fence + FenceBack;   // m past the edge: the fencing's back
+            float to = end.Fence - FenceFace - BoxAhead + Depth;
+            if (end.Avenue)
+            {
+                float a = end.Cx + end.OutX * from, b = end.Cx + end.OutX * to;
+                return new PlanBox(Math.Min(a, b), end.Wall.Z - end.Wall.HalfZ, Math.Max(a, b), end.Wall.Z + end.Wall.HalfZ, end.Wall.Top);
+            }
+            return new PlanBox(end.Wall.X - end.Wall.HalfX, end.Cz + from, end.Wall.X + end.Wall.HalfX, end.Cz + to, end.Wall.Top);
         }
 
         /// <summary>The boxes of the barricades, for the walls' layer.</summary>
@@ -281,22 +359,22 @@ namespace RealLifeOverhaul.Uptown
             float pitch = span / panels;
             for (int i = 0; i < panels; i++)
             {
-                Put(into, PieceKind.Hoarding, end, ax, az, -span * 0.5f + pitch * (i + 0.5f), HoardingAt, yaw, pitch / PanelWidth);
+                Put(into, PieceKind.Hoarding, end, ax, az, -span * 0.5f + pitch * (i + 0.5f), end.Fence, yaw, pitch / PanelWidth);
             }
             if (end.Avenue)
             {
-                Put(into, PieceKind.Sign, end, ax, az, -span * 0.25f, SignAt, yaw, 1f);
-                Put(into, PieceKind.Sign, end, ax, az, span * 0.25f, SignAt, yaw, 1f);
-                Put(into, PieceKind.Cone, end, ax, az, -9f, ConeAt, yaw, 1f);
-                Put(into, PieceKind.Cone, end, ax, az, -3f, ConeAt, yaw, 1f);
-                Put(into, PieceKind.Cone, end, ax, az, 3f, ConeAt, yaw, 1f);
-                Put(into, PieceKind.Cone, end, ax, az, 9f, ConeAt, yaw, 1f);
+                Put(into, PieceKind.Sign, end, ax, az, -span * 0.25f, end.Fence - SignBefore, yaw, 1f);
+                Put(into, PieceKind.Sign, end, ax, az, span * 0.25f, end.Fence - SignBefore, yaw, 1f);
+                Put(into, PieceKind.Cone, end, ax, az, -9f, end.Fence - ConeBefore, yaw, 1f);
+                Put(into, PieceKind.Cone, end, ax, az, -3f, end.Fence - ConeBefore, yaw, 1f);
+                Put(into, PieceKind.Cone, end, ax, az, 3f, end.Fence - ConeBefore, yaw, 1f);
+                Put(into, PieceKind.Cone, end, ax, az, 9f, end.Fence - ConeBefore, yaw, 1f);
             }
             else
             {
-                Put(into, PieceKind.Sign, end, ax, az, 0f, SignAt, yaw, 1f);
-                Put(into, PieceKind.Cone, end, ax, az, -ConeStreet, ConeAt, yaw, 1f);
-                Put(into, PieceKind.Cone, end, ax, az, ConeStreet, ConeAt, yaw, 1f);
+                Put(into, PieceKind.Sign, end, ax, az, 0f, end.Fence - SignBefore, yaw, 1f);
+                Put(into, PieceKind.Cone, end, ax, az, -ConeStreet, end.Fence - ConeBefore, yaw, 1f);
+                Put(into, PieceKind.Cone, end, ax, az, ConeStreet, end.Fence - ConeBefore, yaw, 1f);
             }
         }
 
@@ -432,9 +510,15 @@ namespace RealLifeOverhaul.Uptown
         /// <summary>True when a lane's middle line (a road of the plan) comes within its own width and half a metre of the barricade's box.</summary>
         public static bool LaneTouches(PlanRoad road, Barricade end)
         {
+            return LaneTouches(road, end.Wall);
+        }
+
+        /// <summary>True when a lane's middle line comes within its own width and half a metre of any box on the ground.</summary>
+        public static bool LaneTouches(PlanRoad road, PlanBox box)
+        {
             float margin = (road.Ahead + road.Back) * road.LaneWidth * 0.5f + 0.5f;
-            float x0 = end.Wall.X - end.Wall.HalfX - margin, x1 = end.Wall.X + end.Wall.HalfX + margin;
-            float z0 = end.Wall.Z - end.Wall.HalfZ - margin, z1 = end.Wall.Z + end.Wall.HalfZ + margin;
+            float x0 = box.X - box.HalfX - margin, x1 = box.X + box.HalfX + margin;
+            float z0 = box.Z - box.HalfZ - margin, z1 = box.Z + box.HalfZ + margin;
             for (int i = 0; i + 1 < road.X.Count; i++)
             {
                 if (SegmentMeets(road.X[i], road.Z[i], road.X[i + 1], road.Z[i + 1], x0, z0, x1, z1))

@@ -213,12 +213,36 @@ namespace RealLifeOverhaul.Uptown
 
         // The fountain's basin is something solid the walking meshes are grown round and a walker stops at: the game's own blocker
         // stands in its copy, and one more of the mod's own on the default layer, in case the game's is on a layer the ground does not look at.
+        // It is never wider than the fountain drawn (a car or a person meets the basin where they see it, never short of it), and none
+        // stands where nothing of the fountain is drawn.
         private static void Basin(GameObject fountain)
         {
+            Bounds drawn = default;
+            bool any = false;
+            Renderer[] shown = fountain.GetComponentsInChildren<Renderer>(true);
+            for (int i = 0; i < shown.Length; i++)
+            {
+                if (shown[i] is MeshRenderer && shown[i].enabled && shown[i].shadowCastingMode != UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly)
+                {
+                    if (any)
+                    {
+                        drawn.Encapsulate(shown[i].bounds);
+                    }
+                    else
+                    {
+                        drawn = shown[i].bounds;
+                    }
+                    any = true;
+                }
+            }
+            if (!any)
+            {
+                return;
+            }
             var blocker = new GameObject(HolderName + " basin");
             blocker.transform.SetParent(fountain.transform, false);
             var capsule = blocker.AddComponent<CapsuleCollider>();
-            capsule.radius = FountainReach;
+            capsule.radius = Mathf.Min(FountainReach, Mathf.Max(drawn.extents.x, drawn.extents.z));
             capsule.height = FountainHeight;
             capsule.center = new Vector3(0f, FountainHeight * 0.5f, 0f);
         }

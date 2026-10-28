@@ -350,7 +350,8 @@ internal static partial class Program
             width &= Math.Abs(across - (b.Avenue ? LayoutRules.AvenueHalf : LayoutRules.StreetHalf)) < 1e-3 && Math.Abs(b.Half - across) < 1e-3;
             double inner = b.Avenue ? (b.OutX < 0 ? w.X + w.HalfX : w.X - w.HalfX) : w.Z - w.HalfZ;
             double edge = b.Avenue ? b.Cx : b.Cz;
-            shape &= Math.Abs(Math.Abs(inner - edge) - EdgeRules.WallGap) < 1e-3 && Math.Abs(deep * 2.0 - EdgeRules.Depth) < 1e-3 && Math.Abs(w.Top - EdgeRules.WallTop) < 1e-6;
+            double past = b.Avenue ? (b.OutX < 0 ? edge - inner : inner - edge) : inner - edge;   // m past the edge the box's first face stands
+            shape &= Math.Abs(past - (b.Fence - EdgeRules.FenceFace - EdgeRules.BoxAhead)) < 1e-3 && Math.Abs(deep * 2.0 - EdgeRules.Depth) < 1e-3 && Math.Abs(w.Top - EdgeRules.WallTop) < 1e-6;
             // short of the invisible wall behind it, and the corridor's sides: the ring's strips and the band's blocks
             double far = b.Avenue ? (b.OutX < 0 ? w.X - w.HalfX : w.X + w.HalfX) : w.Z + w.HalfZ;
             between &= b.Avenue ? (b.OutX < 0 ? far > LayoutPlans.RingWest : far < LayoutPlans.RingEast) : far < LayoutPlans.RingNorth;
@@ -359,7 +360,7 @@ internal static partial class Program
                 clear &= !(Math.Abs(w.X - (r.X1 + r.X2) / 2) < w.HalfX + (r.X2 - r.X1) / 2 - 1e-3 && Math.Abs(w.Z - (r.Z1 + r.Z2) / 2) < w.HalfZ + (r.Z2 - r.Z1) / 2 - 1e-3);
             }
         }
-        Check(width && shape, "uptown edges: each box is as wide as its street or avenue from pavement to pavement, starts " + EdgeRules.WallGap + " m past the band's edge, " + EdgeRules.Depth + " m deep and " + EdgeRules.WallTop + " m high");
+        Check(width && shape, "uptown edges: each box is as wide as its street or avenue from pavement to pavement, its first face the fencing's drawn face (" + (EdgeRules.FenceFace + EdgeRules.BoxAhead).ToString("0.00") + " m before its origin), " + EdgeRules.Depth + " m deep and " + EdgeRules.WallTop + " m high");
         Check(between && clear, "uptown edges: each box lies short of the invisible wall behind it and shares no ground with any ring strip or block of the districts");
         // The pieces.
         var pieces = new List<PiecePlace>(24);
@@ -378,7 +379,9 @@ internal static partial class Program
             {
                 double yaw = p.Yaw * Math.PI / 180.0;
                 facing &= Math.Abs(Math.Sin(yaw) + b.OutX) < 1e-4 && Math.Abs(Math.Cos(yaw) + b.OutZ) < 1e-4;
-                inside &= Math.Abs(p.X - b.Wall.X) < b.Wall.HalfX && Math.Abs(p.Z - b.Wall.Z) < b.Wall.HalfZ;
+                double along = (p.X - b.Cx) * b.OutX + (p.Z - b.Cz) * b.OutZ, across = Math.Abs((p.X - b.Cx) * -b.OutZ + (p.Z - b.Cz) * b.OutX);
+                inside &= across < b.Half && (p.Kind == PieceKind.Hoarding ? Math.Abs(p.X - b.Wall.X) < b.Wall.HalfX && Math.Abs(p.Z - b.Wall.Z) < b.Wall.HalfZ
+                                                                              : along < b.Fence - EdgeRules.FenceFace - EdgeRules.BoxAhead);
             }
             double behind = panels.Count > 0 ? (panels[0].X - b.Cx) * b.OutX + (panels[0].Z - b.Cz) * b.OutZ : 0.0;
             order &= pieces.Where(p => p.Kind != PieceKind.Hoarding).All(p => (p.X - b.Cx) * b.OutX + (p.Z - b.Cz) * b.OutZ < behind);
@@ -390,7 +393,7 @@ internal static partial class Program
         }
         Check(fenced && stretch, "uptown edges: a row of construction fencing across the whole width of every end, panels edge to edge (stretched at most a tenth)");
         Check(counts && order, "uptown edges: roadworks signs (one on a street, two on an avenue) and cones (two, four) before the fencing at every end");
-        Check(facing && inside, "uptown edges: every piece faces into the districts and stands inside its barricade's box");
+        Check(facing && inside, "uptown edges: every piece faces into the districts and stands within its end's width, the fencing in its barricade's box and the signs and cones short of the box's first face");
         Check(total == EdgeRules.PieceCount(ends) && total == 19 * 10 + 8 * 17, "uptown edges: " + total + " pieces in all, and the count the game's side is held to");
         // The props: the mod's own, in the bundle that is closed or open already; none new.
         string contents = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\PropAssets\contents"));
@@ -458,8 +461,8 @@ internal static partial class Program
         LayoutPlans.Colliders(grounds, roads);
         bool zonesClear = zones.All(z => ends.All(b => !EdgeRules.Overlap(b.Wall, z.X, z.Z, z.HalfX, z.HalfZ)));
         bool terminiClear = termini.All(t => ends.All(b => !b.Wall.Holds(t.X, t.Z, 1.0f)));
-        bool roadsClear = roads.All(r => ends.All(b => !EdgeRules.Overlap(b.Wall, r.X, r.Z, r.HalfX, r.HalfZ)));
-        Check(zonesClear && terminiClear && roadsClear, "uptown edges: no pedestrian zone, bus terminus or road collider lies at a barricade");
+        bool roadsClear = roads.All(r => ends.All(b => !EdgeRules.Overlap(EdgeRules.Behind(b), r.X, r.Z, r.HalfX, r.HalfZ)));   // (the fencing itself may stand on the end of a road, in front of a wall)
+        Check(zonesClear && terminiClear && roadsClear, "uptown edges: no pedestrian zone, bus terminus or road collider lies at a barricade (a road may end under the fencing where a wall stands at the edge, never under what stands behind it)");
         // The ground ends right at the barricade: the player stops at it and sees the street closed, not a gap of road.
         bool snug = true;
         GroundPlan player = LayoutPlans.PlayerGround();
@@ -481,9 +484,9 @@ internal static partial class Program
                     nearest = Math.Min(nearest, gap);
                 }
             }
-            snug &= nearest <= 0.7;
+            snug &= nearest <= EdgeRules.HoardingAt + 0.7;
         }
-        Check(snug, "uptown edges: the player's ground ends within 0.7 m of every barricade's box, so the street reads closed at the point the player stops");
+        Check(snug, "uptown edges: the player's ground ends within " + EdgeRules.HoardingAt + " m and 0.7 m of every barricade's box, so the fencing is in sight, not far off, at the point the player on foot stops");
     }
 
     // ---------------------------------------------------------------- the time it takes
@@ -567,7 +570,7 @@ internal static partial class Program
             "uptown edges sources: the edges laid once a load, behind the loading screen, once the walls stand");
         string layEdges = Body(director, "private void LayEdges()");
         string late = Body(director, "private bool LatePieces()");
-        Check(Order(layEdges, "GroundGame.LayEdges(_ends, EdgeRules.Fog(_edges))") >= 0 && Order(layEdges, "ScenePrewarm.AddLate(") > 0 && Order(late, "PropLibrary.Settled") >= 0 && Order(late, "return false;") > Order(late, "PropLibrary.Settled")
+        Check(Order(layEdges, "GroundGame.LayEdges(EdgeRules.Fog(_edges))") >= 0 && Order(layEdges, "ScenePrewarm.AddLate(") > 0 && Order(late, "PropLibrary.Settled") >= 0 && Order(late, "return false;") > Order(late, "PropLibrary.Settled")
               && Order(late, "GroundGame.LayPieces(_ends)") > Order(late, "return false;"),
             "uptown edges sources: the pieces wait for the props bundle (the game's late call, or as soon after as it has loaded)");
         Check(Order(late, "if (Meta.Dev.Verbose)") >= 0 && Order(late, "\"Uptown check (edges): \" + line") >= 0 && Order(director, "\" street ends closed, \"") >= 0 && Order(director, "\" fog segments\"") >= 0
@@ -575,7 +578,7 @@ internal static partial class Program
             "uptown edges sources: the load's line with Developer diagnostics on and the test's say \"Uptown check (edges): N street ends closed, N fog segments\" and PASS or FAIL");
         Check(guide.Contains(".Check(\"reallife_uptown_ground_test_edges\", GroundDirector.TestEdges, \"Uptown check (edges)\")"), "uptown edges sources: the test in the feature's list and the city expansion's run");
         string pieces = Body(game, "public static string LayPieces(");
-        Check(Order(pieces, "PropLibrary.Ready") >= 0 && Order(pieces, "PropLibrary.Has(EdgeRules.PropIds[k])") >= 0 && Order(pieces, "PropLibrary.TryGet(id, out Mesh mesh, out Material material)") >= 0 && !pieces.Contains("new Mesh") && !pieces.Contains("new Material"),
+        Check(Order(pieces, "PropLibrary.Ready") >= 0 && Order(pieces, "PropLibrary.Has(EdgeRules.PropIds[k])") >= 0 && Order(pieces, "PropLibrary.TryGet(id, out mesh, out material)") >= 0 && !pieces.Contains("new Mesh") && !pieces.Contains("new Material"),
             "uptown edges sources: the pieces are the bundle's shared meshes and materials, none made here, and each prop is asked for before it is used");
     }
 }

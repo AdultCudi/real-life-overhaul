@@ -43,6 +43,7 @@ namespace RealLifeOverhaul.NewBuildings
         private static readonly List<BoxCollider> BoxList = new List<BoxCollider>(4);
         private static readonly List<DriveInEntrance> Doors = new List<DriveInEntrance>(4);   // a copy's garage doors while its entrances are settled
         private static readonly List<DriveInEntrance> Kept = new List<DriveInEntrance>(4);
+        private static readonly List<DriveInEntrance> Ordered = new List<DriveInEntrance>(4);   // the kept doors in the game's own order
         private static readonly List<DriveInEntranceEnterTrigger> Triggers = new List<DriveInEntranceEnterTrigger>(4);
 
         private static Transform _asleep;      // switched off: what is under it never wakes
@@ -682,6 +683,8 @@ namespace RealLifeOverhaul.NewBuildings
             // triggers taken off, so no car is taken into an interior with no place for it. The controller's list keeps the doors that
             // stay: a car leaving by one finds it there (the game's exit reads the first).
             int slots = SlotsOf(building);
+            // The game's order: the exit takes the first when no door has its id, and the game's list does not run in door order (a design's door 1 may stand first).
+            DriveInEntrance[] listed = c.driveInEntrances;
             Doors.Clear();
             Kept.Clear();
             c.GetComponentsInChildren(true, Doors);
@@ -710,9 +713,25 @@ namespace RealLifeOverhaul.NewBuildings
                     UnityEngine.Object.DestroyImmediate(Triggers[t]);   // one no door is above (none in Build 3682: all 146 are children of their door's object) would call a door that is gone
                 }
             }
-            c.driveInEntrances = Kept.ToArray();
+            Ordered.Clear();
+            for (int i = 0; listed != null && i < listed.Length; i++)
+            {
+                if (listed[i] != null && Kept.Contains(listed[i]))
+                {
+                    Ordered.Add(listed[i]);
+                }
+            }
+            for (int i = 0; i < Kept.Count; i++)
+            {
+                if (!Ordered.Contains(Kept[i]))
+                {
+                    Ordered.Add(Kept[i]);
+                }
+            }
+            c.driveInEntrances = Ordered.ToArray();
             Doors.Clear();
             Kept.Clear();
+            Ordered.Clear();
             Triggers.Clear();
             // The game finds a car park by its number, and a second one of the original's would share its cars: a copy's has its own.
             UndergroundParkingEntrance park = c.undergroundParkingEntrance;
