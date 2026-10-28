@@ -121,6 +121,17 @@ namespace RealLifeOverhaul.Seasons
             return alcwareLoaded && !keptBeside;
         }
 
+        /// <summary>
+        /// Whether the season under the date's label is drawn: the seasons are on, its own option is on, and no other mod's season stands
+        /// there already. It asks whether another mod's season is SEEN under the date, never whether that mod is merely loaded: a mod that
+        /// is loaded and shows nothing (switched off in its own options, or left running after the Mods menu switched it off) takes no
+        /// place, and the picture is the calendar's whatever else is loaded (the bug report of 25 Oct 2026, Alcware Seasons switched off).
+        /// </summary>
+        public static bool BarShows(bool seasonsOn, bool barOn, bool otherSeasonUnderDate)
+        {
+            return seasonsOn && barOn && !otherSeasonUnderDate;
+        }
+
         /// <summary>The season of a day: CalendarRules.Winter, Spring, Summer or Autumn.</summary>
         public static int SeasonOf(int day, int year)
         {

@@ -204,6 +204,23 @@ namespace RealLifeOverhaul
             if (!features.Contains("Settings.PhoneContactGroupsId") || !features.Contains("\"reallife_contacts_test_groups\"") || !features.Contains("ContactGroupsGame.Install()")) Fail("contact groups: the phone feature does not own the option and its test, or does not put the groups back with its repair");
             if (!tree.Contains("\"phone_contact_groups\"")) Fail("contact groups: the option is not in the options tree under Phone");
             if (!life.Contains("ContactGroupsGame.Install();")) Fail("contact groups: the groups are not installed at each load");
+
+            // The first city of a session (Continue and Load are the same call of the game's, LoadGame.Load; what differs is that the Contacts app has not
+            // woken, so its two events, made in its Awake and set to null when the game starts, are not there: 25 and 27 Oct 2026, both logs). The install makes
+            // them itself, before it uses them, and never gives the groups up for their being null.
+            int installAt = game.IndexOf("public static void Install()", StringComparison.Ordinal), eventsAt = game.IndexOf("private static int Events()", StringComparison.Ordinal);
+            string install = installAt >= 0 && eventsAt > installAt ? game.Substring(installAt, eventsAt - installAt) : string.Empty;
+            if (install.Length == 0) Fail("contact groups: ContactGroupsGame.Install could not be found to be read");
+            if (!game.Contains("ContactsApp.onContactAdded = new UnityEvent();") || !game.Contains("ContactsApp.onContactRemoved = new UnityEvent();"))
+                Fail("contact groups: the install does not make the Contacts app's two events when the game has not (the app has not woken at the first city of a session)");
+            if (Regex.IsMatch(install, @"if\s*\([^)]*(onContactAdded|onContactRemoved)[^)]*==\s*null")) Fail("contact groups: the install gives the groups up when the app's events are null, as they are until it wakes");
+            int madeAt = install.IndexOf("Events();", StringComparison.Ordinal), listenAt = install.IndexOf("onContactAdded.RemoveListener(", StringComparison.Ordinal);
+            if (madeAt < 0 || listenAt < 0 || madeAt > listenAt) Fail("contact groups: the app's events are not made before the install puts its listeners on them");
+            if (!game.Contains("Contacts check (groups, load ") || !game.Contains("Report(made, list, app);")) Fail("contact groups: no self-check line says at each load what the row and the contacts came to");
+            foreach (string path in new[] { "TransitionToSave", "saveToLoadData", "LastSaveGameName" })
+            {
+                if (game.Contains(path) || life.Contains(path)) Fail("contact groups: the install reads '" + path + "', which tells one way of loading from another");
+            }
             if (!contract.Contains("\"UI.Smartphone.Apps.Contacts.ContactCategorySelection\", \"categories\"")) Fail("contact groups: the row's list of categories is not a line of the game contract");
             if (!search.Contains("_app.LoadContactsList(null, false);") || !search.Contains("_resume")) Fail("contact groups: the search no longer spans every group, or no longer gives back the category shown");
             if (!game.Contains("contactsLastCategoryName")) Fail("contact groups: moving a contact leaves the app's last category stale (it would open on an empty list)");

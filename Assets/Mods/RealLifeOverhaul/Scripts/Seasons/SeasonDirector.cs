@@ -178,6 +178,7 @@ namespace RealLifeOverhaul.Seasons
                 {
                     StopAll();
                 }
+                BarAlone();
                 return;
             }
             _on = true;

@@ -125,6 +125,19 @@ namespace RealLifeOverhaul.Seasons
             _nextFlash = now + SeasonLookRules.FlashGap(day, salt, _flashIndex++);
         }
 
+        // The season under the date does not stand down with the rest for Alcware Seasons (it is the calendar's, and shows unless another mod's
+        // season is really under the date: SeasonBar). Not while the seasons are off altogether. Called from the once-a-second look, so the
+        // season and its day are worked out from the calendar here, the way a look does.
+        private void BarAlone()
+        {
+            if (!Settings.Seasons)
+            {
+                return;
+            }
+            int day = SeasonGame.Today, year = GameCalendar.DaysPerYear;
+            Bar(day, year, SeasonRules.SeasonOf(day, year));
+        }
+
         // The season and its day under the date, written when the day or the season changes.
         private void Bar(int day, int year, int season)
         {
