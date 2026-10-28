@@ -176,7 +176,7 @@ namespace RealLifeOverhaul.Staffing
                         N("designer", StaffEffects.Points(TalentCatalogue.GraphicDesignerRole, TalentCatalogue.Mid, StaffEffects.MidSkill(TalentCatalogue.Mid))), N("builder", midPts)),
                     Note("reallife_staff_firm_design_lack")));
                 lines.Add(Line(Ids(KeyOf(TalentCatalogue.QaTester)), StaffNeed.Optional,
-                    Note("reallife_staff_firm_test_does", N("fix", FirmsCatalogue.PointsPerFix), P("lost", 700), N("halve_game", StaffEffects.BugsToHalve(0)), N("halve_service",
+                    Note("reallife_staff_firm_test_does", N("fix", FirmsCatalogue.PointsPerFix), P("lost", 700), N("halve_small", StaffEffects.BugsToHalveGame(0)), N("halve_mid", StaffEffects.BugsToHalveGame(1)), N("halve_big", StaffEffects.BugsToHalveGame(2)), N("halve_service",
                         StaffEffects.BugsToHalve(5))),
                     Note("reallife_staff_firm_test_count", N("per_features", StaffEffects.BuildersPerTester((int)Focus.Features, TalentCatalogue.Mid)),
                         N("tester", StaffEffects.Points(TalentCatalogue.QaTester, TalentCatalogue.Mid, StaffEffects.MidSkill(TalentCatalogue.Mid)))),

@@ -102,10 +102,23 @@ namespace RealLifeOverhaul.Staffing
         /// <summary>Builders per designer at which designers' lift reaches its cap (their points are this share of the builders').</summary>
         public static int BuildersPerDesigner => 1000 / FirmsCatalogue.DesignAppealMost;
 
-        /// <summary>The bugs a product of so many features can hold before its quality has fallen by half.</summary>
+        /// <summary>The bugs a service of so many features can hold before its quality has fallen by half.</summary>
         public static int BugsToHalve(int features)
         {
-            var product = new Product { Kind = (int)ProductKind.Saas, Features = features };
+            return Halving(new Product { Kind = (int)ProductKind.Saas, Features = features });
+        }
+
+        /// <summary>
+        /// The bugs a finished game of a size (0 small, 1 mid-sized, 2 big) can hold before its quality has fallen by half: its room for
+        /// bugs comes from the work built into it (<see cref="FirmsRules.Allowance"/>), so a big game holds more than a small one.
+        /// </summary>
+        public static int BugsToHalveGame(int scope)
+        {
+            return Halving(new Product { Kind = (int)ProductKind.Game, Scope = scope, Progress = FirmsCatalogue.GameScope[TalentCatalogue.Clamp(scope, 0, 2)] });
+        }
+
+        private static int Halving(Product product)
+        {
             int bugs = 0;
             while (bugs < 100000)
             {
