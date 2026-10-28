@@ -10,6 +10,8 @@ namespace RealLifeOverhaul.NewBuildings
         public float X, Z;             // m, in the interior's own coordinates
         public readonly float Yaw;     // degrees about the up axis, as Unity turns a piece
         public bool Fixed;             // attached to another piece (a layout's parent): never moved
+        public int Parent = -1;        // the index of the piece this one is set on (a chair on a desk's seat point), -1 for none
+        public int Slot = -1;          // which attachment point of that piece it is set on
 
         public FloorPiece(string name, float x, float z, float yaw)
         {
@@ -73,7 +75,7 @@ namespace RealLifeOverhaul.NewBuildings
     /// finds the nearest walkable point) is of it. A seat that fails is moved the smallest step that frees it and boxes in no other.
     /// COST: nothing per frame; a few milliseconds a measure, and a measure per step tried once a load, only when a seat is boxed in.
     /// </summary>
-    public sealed class FloorMeasure
+    public sealed partial class FloorMeasure
     {
         public const string Layout = "MurrayHillCarDealershipLuxury";   // the game's layout of Manhattan Luxury Cars (structure M1, Build 3682): the only one the footprints were read for
         public const float Corridor = 0.5f;   // m: half the narrowest gap between two boxes the floor must keep (a hole's 0.25 m of the agent's radius each side, and the agent's 0.5 m between)
@@ -158,6 +160,7 @@ namespace RealLifeOverhaul.NewBuildings
                 case "paperbin": return new[] { 0.000f, 0.000f, 0.260f, 0.260f };
                 case "petrollsfantonshowcase": return new[] { 0.000f, 0.000f, 1.079f, 2.882f };
                 case "regularchair": return new[] { 0.001f, -0.022f, 0.256f, 0.289f };
+                case "specialemployeedesk": return new[] { 0.000f, -0.500f, 1.500f, 0.500f };
                 case "umcnunavutshowcase": return new[] { 0.000f, 0.000f, 1.135f, 2.606f };
                 case "valenciachair": return new[] { 0.000f, 0.000f, 0.475f, 0.475f };
                 case "valenciaottoman": return new[] { 0.000f, 0.000f, 0.385f, 0.269f };
@@ -314,7 +317,12 @@ namespace RealLifeOverhaul.NewBuildings
         private bool Reaches(FloorPiece seat)
         {
             float yaw = seat.Yaw * (float)Math.PI / 180f, ahead = StandAhead(seat.Name);
-            float x = seat.X + ahead * (float)Math.Sin(yaw), z = seat.Z + ahead * (float)Math.Cos(yaw);
+            return ReachesFrom(seat.X + ahead * (float)Math.Sin(yaw), seat.Z + ahead * (float)Math.Cos(yaw));
+        }
+
+        // Whether a person put at a place on the floor reaches a door: the place itself if it is open ground, else the nearest open floor within the snap.
+        private bool ReachesFrom(float x, float z)
+        {
             int at = CellOf(x, z);
             if (at >= 0 && _cover[at] == 0)
             {

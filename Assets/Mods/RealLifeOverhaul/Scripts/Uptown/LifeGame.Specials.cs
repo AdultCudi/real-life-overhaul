@@ -73,33 +73,47 @@ namespace RealLifeOverhaul.Uptown
             return Stock(made, place);
         }
 
-        // The dealership's floor, one self-check line a load (PASS, or FAIL with the first seat a person standing up from could not walk away
-        // from): what MadeGame measured of the layout's seats before any interior was built from it, and what it moved.
+        // The dealership's floor and its dealer's desk, one self-check line each a load (PASS, or FAIL with the first seat a person standing up from could not
+        // walk away from, or the first thing wrong at the desk): what MadeGame measured of the dealership's own copy of the layout before any interior was
+        // built from it, what it took out and what it moved.
         private static void FloorLine(MadeBuilding made, SpecialPlace place)
         {
             try
             {
+                string head = SpecialName(made, place, out string kind) + " at " + made.Address + ": ";
                 FloorVerdict v = MadeGame.FloorVerdictOf(made.Spec.Id);
-                string head = "Uptown check (dealership floor): " + SpecialName(made, place, out string kind) + " at " + made.Address + ": ";
-                if (v == null)
+                ClearVerdict d = MadeGame.DeskVerdictOf(made.Spec.Id);
+                string failed = MadeGame.FloorFailedOf(made.Spec.Id);
+                if (v == null || d == null)
                 {
-                    LifeDirector.Logger?.Warn(head + "its layout is not one the floor's rules cover, so its seats were not measured: FAIL");
+                    LifeDirector.Logger?.Warn("Uptown check (dealership floor): " + head + (failed ?? "its layout is not one the floor's rules cover")
+                                           + ", so its seats and its dealer's desk were not measured: FAIL");
                     return;
                 }
                 string wide = (FloorMeasure.Corridor * 2f).ToString("F1", System.Globalization.CultureInfo.InvariantCulture);
-                string words = head + "the layout's " + FloorMeasure.Words(v) + ", every way kept at least " + wide + " m wide: " + (v.Pass ? "PASS" : "FAIL");
-                if (v.Pass)
-                {
-                    LifeDirector.Logger?.Info(words);
-                }
-                else
-                {
-                    LifeDirector.Logger?.Warn(words);
-                }
+                Say(v.Pass, "Uptown check (dealership floor): " + head + "its own copy of the layout's " + FloorMeasure.Words(v)
+                            + ", every way kept at least " + wide + " m wide: " + (v.Pass ? "PASS" : "FAIL"));
+                string desk = d.Desks == 0
+                    ? "no dealer's desk in its layout (no car mod has made one), " + d.Removed + " chair(s) removed, nothing to keep clear"
+                    : d.Removed + " chair(s) removed near the dealer's desk (" + FloorMeasure.Words(d) + "), the player can "
+                      + (d.Pass ? string.Empty : "NOT ") + "walk away from the desk on every side";
+                Say(d.Pass, "Uptown check (dealership desk): " + head + desk + ": " + (d.Pass ? "PASS" : "FAIL"));
             }
             catch (System.Exception e)
             {
                 LifeDirector.Logger?.Warn("Uptown check (dealership floor): the floor could not be read (" + e.GetType().Name + "): FAIL");
+            }
+        }
+
+        private static void Say(bool pass, string words)
+        {
+            if (pass)
+            {
+                LifeDirector.Logger?.Info(words);
+            }
+            else
+            {
+                LifeDirector.Logger?.Warn(words);
             }
         }
 
@@ -293,18 +307,19 @@ namespace RealLifeOverhaul.Uptown
             return null;
         }
 
-        // Null when every seat of the dealership's floor can be walked away from (measured again now, nothing moved), else why not.
+        // Null when every seat of the dealership's floor can be walked away from and the player can walk away from the dealer's desk on every side (measured again
+        // now, nothing moved), else why not.
         private static string FloorWhy(MadeBuilding made, SpecialService service)
         {
             try
             {
-                FloorVerdict v = MadeGame.FloorNow(service, made.Spec);
-                if (v == null)
+                FloorVerdict v = MadeGame.FloorNow(service, made.Spec, out ClearVerdict d);
+                if (v == null || d == null)
                 {
-                    return "its layout is not one the floor's rules cover, so its seats were not measured";
+                    return "its layout is not its own copy the floor's rules were read for, so its seats and its dealer's desk were not measured";
                 }
                 string boxed = v.Boxed + " seat(s) a person standing up from could not walk away from (first: " + v.First + ")";
-                return v.Pass ? null : "its floor has " + (v.DoorsOpen ? boxed : "a door of its own blocked");
+                return !v.Pass ? "its floor has " + (v.DoorsOpen ? boxed : "a door of its own blocked") : d.Pass ? null : "its dealer's desk is not clear: " + FloorMeasure.Words(d);
             }
             catch (System.Exception e)
             {
