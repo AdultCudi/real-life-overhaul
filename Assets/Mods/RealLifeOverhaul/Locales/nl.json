@@ -22429,7 +22429,7 @@
   "reallife_hire_test_orphan_fail": "Test mislukt: een ronde langs de bedrijven van de stad struikelde over een record zonder gebouw. Het logboek zegt welke.",
   "reallife_hire_test_orphan_off": "Laad eerst een savegame. Deze test draait niet in een sessie van Going Public.",
   "reallife_changes_next_title": "Volgende versie",
-  "reallife_changes_next": "Nog niets.",
+  "reallife_changes_next": "Opgelost: de stoelen voor de bureaus bij Crest Motors en in de lounge houden je niet meer vast als je opstaat, en de autolijst van de dealer toont nu de auto's die je automods toevoegen.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Opgelost: als alle gebouwen die het nutsbedrijf kunnen huisvesten van jou zijn, vraag je stroom- en wateraansluitingen aan en laat je ze weer aansluiten in de Nutsvoorzieningen-app, telefonisch, voor dezelfde prijzen, en de meldingen zeggen dat; zodra een gebouw vrij is, gaat het kantoor weer open en zegt de app waar. Opgelost: na het intrekken van een sollicitatie en opnieuw solliciteren op dezelfde functie opende de Carrière-app de ingetrokken sollicitatie en was het gesprek niet te bereiken. Elke sollicitatie heeft nu een eigen regel, en het gesprek, het aanbod en het intrekken gaan naar de lopende. Opgelost: een opslag met een bedrijfsrecord waarvan de stad het gebouw niet heeft (een andere mod kan er een achterlaten) zet de techsector niet meer bij elke keer laden uit. De mod slaat zo'n record nu over overal waar hij de bedrijven van de stad leest, noemt het adres één keer in het logboek en verandert er niets aan.",
   "reallife_co_mass_raise": "Een loonsverhoging geven",

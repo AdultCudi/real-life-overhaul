@@ -21,6 +21,7 @@ internal static partial class Program
     {
         UptownDealerRules();
         UptownDealerLayouts();
+        UptownDealerFloor();
         UptownDealerSources();
         UptownDealerTexts();
     }
@@ -191,7 +192,7 @@ internal static partial class Program
             "dealer: the cars go into the game's list of a vehicle store's cars by address and by contact, and are read back");
 
         string whole = MemberText(specials, "public static string Special(MadeBuilding made, SpecialPlace place)"), why = MemberText(specials, "public static string SpecialWhy(MadeBuilding made, SpecialPlace place)");
-        Check(whole.Contains("place.Staff == SpecialStaff.Showroom ? Stock(made) : null") && MemberText(specials, "private static string Stock(MadeBuilding made)").Contains("catch (System.Exception e)")
+        Check(whole.Contains("return Stock(made, place);") && MemberText(specials, "private static string Stock(MadeBuilding made, SpecialPlace place)").Contains("catch (System.Exception e)")
               && why.Contains("DesksWhy(layout, service)") && why.Contains("StoreWhy(made, service)"),
             "dealer: a dealership is made whole with its cars in the game's list, and the census asks every place's desks for their dialog and the dealership for its store");
         Check(MemberText(specials, "private static string DesksWhy(BusinessLayoutSet layout, SpecialService service)").Contains("ServiceDeskRules.Verdict(kind, dialog)")

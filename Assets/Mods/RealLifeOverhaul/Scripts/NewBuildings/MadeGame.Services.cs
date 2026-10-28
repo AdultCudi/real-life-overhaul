@@ -137,7 +137,7 @@ namespace RealLifeOverhaul.NewBuildings
             return copy;
         }
 
-        // The copy completed for its layout's desks and, for a vehicle store, its dialog and settings (MadeGame.Desks). A build without
+        // The copy completed for its layout's desks and, for a vehicle store, its dialog and settings (MadeGame.Desks) and its floor made walkable (MadeGame.Floor). A build without
         // one of the game members it reads leaves the copy as the game has it and says so; the place stands either way.
         private static void Complete(SpecialService copy, MadeSpec spec)
         {
@@ -152,6 +152,22 @@ namespace RealLifeOverhaul.NewBuildings
             catch (Exception e)
             {
                 Logger?.Warn("Made buildings: '" + spec.Id + "' copies " + spec.Service + " as the game has it: its desks and cars could not be completed (" + e.GetType().Name + ").");
+            }
+            if (!spec.ServiceStore)
+            {
+                return;
+            }
+            try
+            {
+                string floor = CompleteFloor(copy, spec);
+                if (floor != null)
+                {
+                    Logger?.Info("Made buildings: '" + spec.Id + "' copies " + spec.Service + " with its showroom floor measured: " + floor + ".");
+                }
+            }
+            catch (Exception e)
+            {
+                Logger?.Warn("Made buildings: '" + spec.Id + "' copies " + spec.Service + " with its floor as the game has it: its seats could not be measured (" + e.GetType().Name + ").");
             }
         }
 
