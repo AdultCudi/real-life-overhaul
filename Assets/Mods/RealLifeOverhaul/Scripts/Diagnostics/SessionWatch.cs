@@ -474,7 +474,7 @@ namespace RealLifeOverhaul
             // The time is that of the frame before this one: work named in this very frame is not what made it long.
             int frame = Time.frameCount - 1;
             float began = Time.unscaledTime - took;
-            int pick = Marks.Costliest(frame);   // the costliest piece closed in that frame, else the newest (Core/WorkRings)
+            int pick = Marks.Costliest(frame);   // the costliest piece closed in that frame, else the newest begun by its end, never a later one (Core/WorkRings)
             bool marked = Marks.Get(pick, out string mark, out int markFrame, out _, out long markSpent) && frame - markFrame >= 0 && frame - markFrame < MarkLastsFrames;
             _line.Length = 0;
             _line.Append("Session: a frame of ").Append((took * 1000f).ToString("F0")).Append(" ms; ");
@@ -490,7 +490,8 @@ namespace RealLifeOverhaul
                 {
                     _line.Append(" (not timed)");
                 }
-                if (pick > 0 && Marks.Get(0, out string newest, out _, out _, out _))
+                int newestBy = Marks.NewestBy(frame, 0);
+                if (newestBy != pick && Marks.Get(newestBy, out string newest, out _, out _, out _))
                 {
                     _line.Append(" (the newest piece of work then: ").Append(newest).Append(')');   // so both are seen
                 }
@@ -599,28 +600,11 @@ namespace RealLifeOverhaul
                     .Append(" s before; the engine cuts about half a second after)");
             }
 
-            // What the mod last did, whether or not it explains the frame.
-            _line.Append("; the mod's last pieces of work: ");
-            for (int back = 0; back < Marks.Count; back++)
-            {
-                Marks.Get(back, out string text, out int textFrame, out float at, out long spent);
-                _line.Append(back > 0 ? ", \"" : "\"").Append(text).Append("\" (");
-                if (spent >= 0)
-                {
-                    _line.Append(Ms(spent).ToString("F1", CultureInfo.InvariantCulture)).Append(" ms) ");
-                }
-                else
-                {
-                    _line.Append("not timed) ");
-                }
-                Ago(textFrame, at, frame, began);
-            }
-            if (Marks.Count == 0)
-            {
-                _line.Append("none yet");
-            }
+            // What the mod last did up to the frame's end, whether or not it explains the frame.
+            int after = LastPieces(frame, began, true);
             _line.Append("; ").Append(Where()).Append('.');
             Logger?.Info(_line.ToString());
+            PiecesCheck(frame, took, after);
         }
 
         private void Minute(int collections)

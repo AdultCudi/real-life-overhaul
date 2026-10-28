@@ -165,13 +165,22 @@ How to read it:
 
 - **the mod's own scripts in it** is the time all of the mod's Updates, LateUpdates, FixedUpdates and event handlers took in that frame (`Core/HotSpots`), with the three that took the most.
   Time under "scripts' Update" that is not here is the game's or another mod's.
+  So is "coroutines and timers" of hundreds of milliseconds with the screen clear and the mod's own scripts at a few.
+  Seen in a beta 6 log (28 Oct 2026): the first time each traffic car of the Koenigsegg Jesko car mod comes onto the road in a session, that mod reads the car's paint textures back from the graphics card and recolours them on the main thread.
+  That is a frame of 530 to 600 ms with 28 to 30 MB more on the heap, and its own "KoenigseggJesko lighting vehicle=..." lines come a few frames before it.
+  Frames of 150 to 175 ms in the same step with 4 to 6 MB more on the heap fit the same mod recolouring a car that comes back in another colour.
 - **the collector** says whether a collection finished between the record's two looks, how long the engine's collector worked in that frame, and the heap on both sides of it.
 - **the game** says whether its black screen was up ("black": drawn at full strength as the frame began, not seen; "fading, the picture showing through": its fade out or back in, 0.2 s each way at a door, seen, and counted as seen in the minute's line), whether the player had just gone through a door, whether it was saving (`SaveGameManager.SavingGameInProgress`) and whether a scene had just been loaded or unloaded.
-- **the mod's last pieces of work** are the last three named with `SessionWatch.Mark`, with how long each took where the place that named it also called `SessionWatch.Done`, and when it was, seen from the long frame.
+- **the mod's last pieces of work** are the last three named with `SessionWatch.Mark` up to the end of the long frame, with how long each took where the place that named it also called `SessionWatch.Done`, and when it was, seen from the long frame.
+  Pieces named after it, in the frame that follows before the line is written, never made it long: they are counted, "(3 begun after it left out)", not named.
+  After a long frame of more than a quarter of a second near bus stops there are nearly always some, because the bus stops' tick that fell due puts out up to six places at once.
+  The ring (`Core/WorkRings`, `MarkRing`) holds sixteen so that they do not push out what came before.
+  The first time it happens in a run a "Session check (work named for a long frame)" line says PASS, and it says FAIL every time they did push it out.
+  Until beta 6 the ring held three and named them "just after it", so the Koenigsegg Jesko's stalls above read as the bus stops'.
 
 The test "Test: write the session record's lines now" (Options, Tests, under Performance) writes both lines at once, so every part can be read without waiting for a stutter.
 
-"The mod was at" is the last piece of work named with `SessionWatch.Mark("...")` in the three frames before.
+"The mod was at" is the costliest piece of work named and closed in the long frame, else the last one named with `SessionWatch.Mark("...")` in it or the two frames before it; never one named after it.
 `Mark` is a handful of writes into a fixed ring with a constant text and one read of the clock (the same cost with diagnostics on or off).
 
 It is called where the mod does something large in one go: a character made or given a look (`ActorPool.Dress`, `CityPeople.Dress`, the casts), a living-city site set up, a bus stop, a precinct front or a two-wheeler stand put out, an accident, a crime, a fire or a street event starting, the game saving (the mod's own share of the save is timed and written as its own `Session:` line), the performance tweaks listing the loaded materials.
