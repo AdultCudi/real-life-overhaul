@@ -131,6 +131,7 @@ internal static partial class Program
             Check(measure.Measure(live, null).Boxed == before.Boxed && measure.Tidy(live).Pass, "dealer floor: the installed layout is boxed in and mended as its copy is");
         }
 
+        UptownDealerDesk();
         DealerCars();
         DealerFloorSources();
         DealerFloorTexts();
@@ -209,9 +210,9 @@ internal static partial class Program
         int store = complete.IndexOf("if (!spec.ServiceStore)", StringComparison.Ordinal), call = complete.IndexOf("CompleteFloor(copy, spec)", StringComparison.Ordinal);
         Check(store > 0 && call > store && Regex.Matches(complete, @"catch \(Exception e\)").Count == 2,
             "dealer floor: only a vehicle store's copy has its floor measured, at the load, in a try of its own that leaves the desks' completion alone");
-        string of = MemberText(floor, "private static FloorVerdict FloorOf(SpecialService service, MadeSpec spec, bool mend)");
-        Check(of.Contains("FloorMeasure.Layout") && of.Contains("measure.Tidy(pieces)") && of.Contains("items[i].position = at;") && !Regex.IsMatch(of, @"\.Items\.(Add|Remove|Insert|Clear)") && of.Contains("if (!mend)"),
-            "dealer floor: the layout's seats are moved in the game's own copy of it, only for the layout the rules were read for, and none is added or taken away (its valuation is as it was)");
+        string of = MemberText(floor, "private static string CompleteFloor(SpecialService copy, MadeSpec spec)");
+        Check(of.Contains("FloorMeasure.Layout") && of.Contains("measure.Tidy(pieces)") && of.Contains("items[i].position = at;") && !Regex.IsMatch(of, @"shipped\.Items\.(Add|Remove|Insert|Clear)") && of.Contains("Copy(shipped, name)"),
+            "dealer floor: the layout's seats are moved in the dealership's own copy of it, only for the layout the rules were read for, and the game's own layout is never changed");
         Check(MemberText(specials, "public static string Special(MadeBuilding made, SpecialPlace place)").Contains("FloorLine(made, place);")
               && MemberText(specials, "private static void FloorLine(MadeBuilding made, SpecialPlace place)").Contains("\"Uptown check (dealership floor): \"")
               && MemberText(specials, "private static void FloorLine(MadeBuilding made, SpecialPlace place)").Contains("(v.Pass ? \"PASS\" : \"FAIL\")")

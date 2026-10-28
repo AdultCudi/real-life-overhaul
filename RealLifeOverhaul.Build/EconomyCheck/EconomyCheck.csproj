@@ -209,6 +209,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\NewBuildings\GateRules.cs" Link="Mod\GateRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\NewBuildings\ServiceDeskRules.cs" Link="Mod\ServiceDeskRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\NewBuildings\FloorMeasure.cs" Link="Mod\FloorMeasure.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\NewBuildings\FloorMeasure.Desk.cs" Link="Mod\FloorMeasure.Desk.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\NewBuildings\NewBuildingsText.cs" Link="Mod\NewBuildingsText.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\NewBuildings\NewBuildingsTestPlot.cs" Link="Mod\NewBuildingsTestPlot.cs" />
     <!-- Uptown's streets, among the mod's own streets (NewBuildingsRules' MadeStreets). -->

@@ -130,6 +130,11 @@ namespace RealLifeOverhaul.NewBuildings
                 }
                 FillAsGame(registration, copy, spec);
             }
+            else if (!string.IsNullOrEmpty(copy.layout) && (string.Equals(registration.Layout, head.SpecialService.layout, StringComparison.OrdinalIgnoreCase)
+                     || string.Equals(registration.Layout, FloorName(spec), StringComparison.OrdinalIgnoreCase)))
+            {
+                registration.Layout = copy.layout;   // a registration the save kept names the layout it had: the game's, or the dealership's own of an earlier load, whichever this load stands in
+            }
             if (spec.ServiceName == null)
             {
                 Branches.Add(new Branch { Own = new Address(spec.Street, spec.Number), Head = head.Address, Name = copy.businessName, Type = copy.businessTypeName });
