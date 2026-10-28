@@ -49,6 +49,19 @@ internal static partial class Program
         RoleDef qa = TalentCatalogue.Role(TalentCatalogue.QaTester), web = TalentCatalogue.Role(TalentCatalogue.WebDesigner), graphic = TalentCatalogue.Role(TalentCatalogue.GraphicDesignerRole);
         RoleDef analyst = TalentCatalogue.Role(TalentCatalogue.SecurityAnalyst), support = TalentCatalogue.Role(TalentCatalogue.ItSupport), engineer = TalentCatalogue.Role(TalentCatalogue.SoftwareEngineer);
         Check(FirmsRules.Builds(engineer) && FirmsRules.Builds(analyst) && !FirmsRules.Builds(qa) && !FirmsRules.Builds(web) && !FirmsRules.Builds(support), "tech work: engineers and analysts build, testers, web designers and support do not");
+        // a data centre technician keeps racks running; the rest of the infrastructure family (DevOps, reliability, network) still builds
+        RoleDef technician = TalentCatalogue.Role(TalentCatalogue.Technician);
+        Check(technician.Family == Family.Infrastructure && !FirmsRules.Builds(technician) && !FirmsRules.CanDo(technician, WorkKind.Integration) && !FirmsRules.CanDo(technician, WorkKind.Managed)
+              && FirmsRules.Builds(TalentCatalogue.Role(TalentCatalogue.DevOps)) && FirmsRules.Builds(TalentCatalogue.Role(TalentCatalogue.Sre)) && FirmsRules.Builds(TalentCatalogue.Role(TalentCatalogue.NetworkEngineer)),
+            "tech work: a data centre technician builds no product and does no contract; DevOps, reliability and network engineers do");
+        bool worksAnywhere = false;
+        for (int k = 0; k < (int)FirmKind.Count; k++)
+        {
+            worksAnywhere |= FirmsRules.WorksFor(technician, (FirmKind)k);
+        }
+        string crews = ModSource(@"Tech\TechDirector.Firms.cs");
+        int tech = crews.IndexOf("r.Id == TalentCatalogue.Technician", StringComparison.Ordinal), qaAt = crews.IndexOf("r.Id == TalentCatalogue.QaTester", StringComparison.Ordinal);
+        Check(!worksAnywhere && tech > 0 && tech < qaAt, "tech work: no tech firm works a technician into its day's points (the crew count skips them as the rule does)");
         Check(FirmsRules.CanDo(web, WorkKind.Website) && !FirmsRules.CanDo(web, WorkKind.Integration), "tech work: a web designer works on a website only");
         Check(FirmsRules.CanDo(graphic, WorkKind.Branding) && !FirmsRules.CanDo(engineer, WorkKind.Branding) && FirmsRules.CanDo(analyst, WorkKind.Audit), "tech work: branding is the designers', an audit the analysts'");
         Check(FirmsRules.WorksFor(web, FirmKind.WebAgency) && FirmsRules.WorksFor(graphic, FirmKind.Design) && !FirmsRules.WorksFor(support, FirmKind.Security), "tech work: who works for which firm");

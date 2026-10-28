@@ -28,7 +28,7 @@ namespace RealLifeOverhaul.Tech
         /// <summary>True for a role whose points build products and contract work: engineering, data, security and infrastructure, but not testers.</summary>
         public static bool Builds(RoleDef r)
         {
-            return r != null && r.Id != TalentCatalogue.QaTester
+            return r != null && r.Id != TalentCatalogue.QaTester && r.Id != TalentCatalogue.Technician   // a technician keeps racks running (InfraRules), a firm's products are not theirs to build
                    && (r.Family == Family.Engineering || r.Family == Family.Data || r.Family == Family.Security || r.Family == Family.Infrastructure);
         }
 
@@ -159,8 +159,41 @@ namespace RealLifeOverhaul.Tech
         /// <summary>How a product's bugs weigh on it, thousandths of a sound one: 1000 bug-free, 300 at the worst.</summary>
         public static int Quality(Product p)
         {
-            int allowance = Math.Max(1, p.Features) * FirmsCatalogue.BugsPerFeature * 2 + 10;
-            return 1000 - Math.Min(700, (int)Math.Min(int.MaxValue, (long)p.Bugs * 1000 / allowance));
+            return 1000 - Math.Min(700, (int)Math.Min(int.MaxValue, (long)p.Bugs * 1000 / Allowance(p)));
+        }
+
+        /// <summary>
+        /// The bugs a product can hold before its quality falls far: its features' share, and a game's by the work built into it,
+        /// so a big game holds more than a small one (it had no features, and so ten to twenty-two bugs whatever its size).
+        /// </summary>
+        public static int Allowance(Product p)
+        {
+            if (p.K == ProductKind.Game)
+            {
+                return 10 + (int)(Built(p) * FirmsCatalogue.GameBugRoom / 1000);
+            }
+            return Math.Max(1, p.Features) * FirmsCatalogue.BugsPerFeature * 2 + 10;
+        }
+
+        /// <summary>The work points built into a game, no more than its size; none for other products.</summary>
+        public static long Built(Product p)
+        {
+            return p.K == ProductKind.Game ? Math.Max(0, Math.Min(p.Progress, FirmsCatalogue.GameScope[TalentCatalogue.Clamp(p.Scope, 0, 2)])) : 0;
+        }
+
+        /// <summary>
+        /// What a product counts for against its rival's, in thousandths of a feature: a service's built features, and a game's
+        /// built share of its size in features (<see cref="FirmsCatalogue.GameFeatures"/>), so a game that is more complete, or
+        /// bigger, appeals more. One rule for every product of every firm.
+        /// </summary>
+        public static long FeatureMille(Product p)
+        {
+            if (p.K != ProductKind.Game)
+            {
+                return 1000L * p.Features;
+            }
+            int scope = TalentCatalogue.Clamp(p.Scope, 0, 2);
+            return Built(p) * FirmsCatalogue.GameFeatures[scope] * 1000 / FirmsCatalogue.GameScope[scope];
         }
 
         /// <summary>
@@ -230,10 +263,10 @@ namespace RealLifeOverhaul.Tech
 
         public static bool CanLaunch(Product p) => p.Stage == 0 && (p.K == ProductKind.Game ? GameReady(p) : p.Features >= FirmsCatalogue.LaunchFeatures);
 
-        /// <summary>How a product appeals against its rival's, thousandths: features, quality, price tier, reputation and design.</summary>
+        /// <summary>How a product appeals against its rival's, thousandths: features (a game's by how much of it is built, and its size), quality, price tier, reputation and design.</summary>
         public static int Appeal(Product p, Firm firm, in Crew c)
         {
-            long a = 1000L * (p.Features + 1) / (p.RivalFeatures + 1);
+            long a = 1000L * (FeatureMille(p) + 1000) / (1000L * p.RivalFeatures + 1000);
             a = Math.Max(200, Math.Min(2000, a));
             a = a * Quality(p) / 1000;
             a = a * FirmsCatalogue.PriceAppeal[TalentCatalogue.Clamp(p.Tier, 0, 2)] / FirmsCatalogue.PriceAppeal[TalentCatalogue.Clamp(p.RivalTier, 0, 2)];
@@ -285,7 +318,7 @@ namespace RealLifeOverhaul.Tech
             {
                 int age = Math.Max(0, day - p.Launched);
                 double decay = Math.Pow(0.5, age / (double)FirmsCatalogue.GameHalfLife);
-                double units = FirmsCatalogue.GamePlayers * FirmsCatalogue.GameLaunchShare / 1e6 * appeal * (1000 + p.Hype) / 1000.0 * reach / 1000.0 * spend / 1000.0
+                double units = FirmsCatalogue.GamePlayers * FirmsCatalogue.GameLaunchShare / 1e9 * appeal * (1000 + p.Hype) / 1000.0 * reach / 1000.0 * spend / 1000.0
                                * decay;
                 long whole = (long)units;
                 p.Carry += (long)((units - whole) * 1e6);
