@@ -221,7 +221,7 @@ namespace RealLifeOverhaul.Economy
             }
             if (deposit > 0)
             {
-                GameManager.ChangeMoneySafe(deposit, new TransactionInfo(DepositKey, new Dictionary<string, string>(1) { { "address", address.ToFormattedString() } }), null, address);
+                RealLifeOverhaul.Economy.BizBooks.Book(deposit, new TransactionInfo(DepositKey, new Dictionary<string, string>(1) { { "address", address.ToFormattedString() } }), null, address);
             }
             Save.FurnitureDeliveryContracts.RemoveAll(x => x.toAddress == address);
             FoodDeliveryHelper.RemoveContractsForAddress(address);

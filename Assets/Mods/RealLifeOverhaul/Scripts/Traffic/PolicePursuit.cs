@@ -186,7 +186,7 @@ namespace RealLifeOverhaul
             }
             try
             {
-                GameManager.ChangeMoneySafe(-fine, new TransactionInfo("reallife_transaction_fine"), null, null, force: true);
+                RealLifeOverhaul.Economy.BizBooks.Book(-fine, new TransactionInfo("reallife_transaction_fine"), null, null, force: true);
                 Weigh(killed > 0);
                 var data = new Dictionary<string, string> { { "amount", ((float)fine).ToCurrencyFormat() } };
                 if (stopped)
@@ -495,9 +495,9 @@ namespace RealLifeOverhaul
             int total = _owed + fine;
             if (_owed > 0)
             {
-                GameManager.ChangeMoneySafe(-_owed, new TransactionInfo("reallife_transaction_accident_liability"), null, null, force: true);
+                RealLifeOverhaul.Economy.BizBooks.Book(-_owed, new TransactionInfo("reallife_transaction_accident_liability"), null, null, force: true);
             }
-            GameManager.ChangeMoneySafe(-fine, new TransactionInfo("reallife_transaction_fine"), null, null, force: true);
+            RealLifeOverhaul.Economy.BizBooks.Book(-fine, new TransactionInfo("reallife_transaction_fine"), null, null, force: true);
             var data = new Dictionary<string, string> { { "amount", ((float)total).ToCurrencyFormat() } };
             if (_killed > 0)
             {
@@ -648,7 +648,7 @@ namespace RealLifeOverhaul
             ModState.ClearPendingFine();
             try
             {
-                GameManager.ChangeMoneySafe(-amount, new TransactionInfo("reallife_transaction_fine"), null, null, force: true);
+                RealLifeOverhaul.Economy.BizBooks.Book(-amount, new TransactionInfo("reallife_transaction_fine"), null, null, force: true);
                 var data = new Dictionary<string, string> { { "amount", ((float)amount).ToCurrencyFormat() } };
                 Notifications.Show(NotificationType.Error, "reallife_pursuit_fine_later", data, 10f);
                 Logger?.Info($"Pursuit: fine of {amount} for an earlier hit-and-run charged.");

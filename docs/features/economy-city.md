@@ -202,6 +202,17 @@ The mod's own takings go there too: online orders less refunds (`OnlineGame` put
 
 Every sum is made afresh from what the save keeps and never from the statement itself, so that a second refresh counts nothing twice and loses nothing entered between the two.
 
+**BizMan's income, for every business the mod runs (`Economy/BizBooks.cs`, `Economy/BizLines.cs`).**
+BizMan's list shows each business's average daily income, and the Finance app its pages: both read this statement, which the game builds from its own tills.
+Every money line of the mod goes through the one call `BizBooks.Book` (the game's `GameManager.ChangeMoneySafe` is named nowhere else; EconomyCheck reads every source for it), so it is booked once: one bank line, one deduction for the tax, one balance.
+`BizLines` holds every transaction key of the businesses the mod runs on its own (the tech firms and data centres, the broadband company, the player's bank, the construction company, the academies, a fire's repair and a hold-up at a shop) in exactly one list: takings (sales in the statement), a running cost (a row among the goods, its own row if a feature gave it one, else the running costs row, and never twice when the game's salaries, rent, marketing or licences line holds it already), or capital (racks, startups' money, land, a property's sale, loans: no income and no running cost, so not in the statement and not taxed as sales).
+`GameBooks.Refresh` reads that table, and each business's order book for the day carries what the mod's lines took there as its revenue.
+The construction company's money is booked at its office. The sale of a built property or of land is capital: the game's tax would tax the gross sale with no cost of the land and the build against it.
+An academy's fees and a builder's contract pay count as sales for the game's tax from this version, as a shop's do.
+Older saves need no backfill: a day already past keeps its statement, and each new day is counted.
+The self-check, with Developer diagnostics: `BizMan check (income, day N): X of X businesses run by the mod add their takings and costs to BizMan: PASS`, or FAIL naming the business (no statement for the day, or a key in no list). A key of those features that no list holds is also said once, as it is booked.
+Rival firms in the Competitors pages book no money through the player's path (their figures are the sector model's); nothing there to feed.
+
 A rented home's rent as its daily rent and the city's line on it, and the day's own figures (loans, health insurance, the headhunter, parking, salary income, and the wages of no business with the city's line on them).
 So the game's taxes (sales of the period from the statements, deductions as booked), its bank (`PlayerHelper.CalculateDailyIncome`) and EconoView see the city's lines.
 

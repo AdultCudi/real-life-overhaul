@@ -588,7 +588,7 @@ internal static partial class Program
         {
             string text = System.IO.File.ReadAllText(file);
             string name = System.IO.Path.GetFileName(file);
-            if (name != "HustleGame.cs" && (text.Contains("ChangeMoneySafe") || text.Contains("CreateAndSpawnVehicle") || text.Contains("cityBuildingControllers")))
+            if (name != "HustleGame.cs" && (text.Contains("BizBooks.Book") || text.Contains("CreateAndSpawnVehicle") || text.Contains("cityBuildingControllers")))
             {
                 touching++;
             }

@@ -171,7 +171,7 @@ namespace RealLifeOverhaul.Economy
             {
                 info.SetTaxDeductibleName(DeductKey.GetLocalization());
             }
-            return GameManager.ChangeMoneySafe(cents / 100f, info, day, hq != null ? hq.Address : null, force && cents < 0, false);
+            return RealLifeOverhaul.Economy.BizBooks.Book(cents / 100f, info, day, hq != null ? hq.Address : null, force && cents < 0, false);
         }
     }
 }

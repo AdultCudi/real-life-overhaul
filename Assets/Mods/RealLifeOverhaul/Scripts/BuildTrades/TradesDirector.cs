@@ -203,7 +203,7 @@ namespace RealLifeOverhaul.BuildTrades
                 return;
             }
             int fine = amount * 2;
-            GameManager.ChangeMoneySafe(-fine, new TransactionInfo("reallife_transaction_trades_bribe_fine"), null, null, force: true);
+            RealLifeOverhaul.Economy.BizBooks.Book(-fine, new TransactionInfo("reallife_transaction_trades_bribe_fine"), null, null, force: true);
             bool dismissed = CareerLinks.EmployerId == CareerCatalogue.Inspection;
             if (dismissed)
             {

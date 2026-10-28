@@ -307,7 +307,7 @@ namespace RealLifeOverhaul
             {
                 return false;
             }
-            if (!GameManager.ChangeMoneySafe(-_serviceTotal, new TransactionInfo("reallife_transaction_car_service"), null, null, force: false, showNotification: true))
+            if (!RealLifeOverhaul.Economy.BizBooks.Book(-_serviceTotal, new TransactionInfo("reallife_transaction_car_service"), null, null, force: false, showNotification: true))
             {
                 Notifications.ShowInsufficientMoney();
                 return false;

@@ -181,7 +181,7 @@ namespace RealLifeOverhaul
 
         private static DialogEntry Treat()
         {
-            if (!GameManager.ChangeMoneySafe(-LifeEvents.DoctorFee, new TransactionInfo("reallife_transaction_doctor"), null, null, force: false, showNotification: true))
+            if (!RealLifeOverhaul.Economy.BizBooks.Book(-LifeEvents.DoctorFee, new TransactionInfo("reallife_transaction_doctor"), null, null, force: false, showNotification: true))
             {
                 // The game keeps the entry on a null (DialogController.ConfirmCurrentEntry): the call ends with a word instead.
                 return PhoneContacts.Closing("reallife_doctor_call_no_money", new { amount = ((float)LifeEvents.DoctorFee).ToCurrencyFormat() });

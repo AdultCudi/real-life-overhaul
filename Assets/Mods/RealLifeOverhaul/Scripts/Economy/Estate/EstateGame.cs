@@ -456,7 +456,7 @@ namespace RealLifeOverhaul.Economy
             {
                 return false;
             }
-            GameManager.ChangeMoneySafe(price, AtAddress(SoldKey, address), null, null, true);
+            RealLifeOverhaul.Economy.BizBooks.Book(price, AtAddress(SoldKey, address), null, null, true);
             Release(save, e, null);
             return true;
         }
@@ -586,14 +586,14 @@ namespace RealLifeOverhaul.Economy
             {
                 info.SetTaxDeductibleName(DeductKey.GetLocalization());
             }
-            return GameManager.ChangeMoneySafe(-amount, info, null, place != null ? AddressOf(place) : null, force);
+            return RealLifeOverhaul.Economy.BizBooks.Book(-amount, info, null, place != null ? AddressOf(place) : null, force);
         }
 
         public static void Give(int amount, string key, string name, string place)
         {
             if (amount > 0 && Save != null)
             {
-                GameManager.ChangeMoneySafe(amount, Info(key, name), null, place != null ? AddressOf(place) : null, true);
+                RealLifeOverhaul.Economy.BizBooks.Book(amount, Info(key, name), null, place != null ? AddressOf(place) : null, true);
             }
         }
 
@@ -606,7 +606,7 @@ namespace RealLifeOverhaul.Economy
             Address address = AddressOf(h.Place);
             if (amount != 0 && Save != null && address != null)
             {
-                GameManager.ChangeMoneySafe(amount, AtAddress(RentKey, address), null, address, true);
+                RealLifeOverhaul.Economy.BizBooks.Book(amount, AtAddress(RentKey, address), null, address, true);
             }
         }
 

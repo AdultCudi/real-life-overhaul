@@ -337,14 +337,14 @@ namespace RealLifeOverhaul.Economy.Brands
             {
                 info.SetTaxDeductibleName(DeductibleKey.GetLocalization());
             }
-            return GameManager.ChangeMoneySafe(-amount, info, null, null, force);
+            return RealLifeOverhaul.Economy.BizBooks.Book(-amount, info, null, null, force);
         }
 
         public static void Give(int amount, string key, string name)
         {
             if (amount > 0 && Save != null)
             {
-                GameManager.ChangeMoneySafe(amount, Info(key, name), null, null, true);
+                RealLifeOverhaul.Economy.BizBooks.Book(amount, Info(key, name), null, null, true);
             }
         }
 

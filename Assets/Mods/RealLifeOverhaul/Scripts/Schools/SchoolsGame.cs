@@ -119,7 +119,7 @@ namespace RealLifeOverhaul.Schools
         internal static bool Pay(long startPrices, string transaction)
         {
             int amount = Today(startPrices);
-            return amount <= 0 || GameManager.ChangeMoneySafe(-amount, new TransactionInfo(transaction), null, null, false, true);
+            return amount <= 0 || RealLifeOverhaul.Economy.BizBooks.Book(-amount, new TransactionInfo(transaction), null, null, false, true);
         }
 
         /// <summary>Money at today's prices into the player's account, or a cost that must be met (a week's loss): never refused.</summary>
@@ -128,7 +128,7 @@ namespace RealLifeOverhaul.Schools
             int amount = startPrices >= 0 ? Today(startPrices) : -Today(-startPrices);
             if (amount != 0)
             {
-                GameManager.ChangeMoneySafe(amount, new TransactionInfo(transaction), null, null, true);
+                RealLifeOverhaul.Economy.BizBooks.Book(amount, new TransactionInfo(transaction), null, null, true);
             }
         }
 

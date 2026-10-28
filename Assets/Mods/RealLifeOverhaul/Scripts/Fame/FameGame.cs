@@ -333,7 +333,7 @@ namespace RealLifeOverhaul.Fame
         /// <summary>The player pays for something of Standing's: false, after the game's own "not enough money" notice, if they cannot.</summary>
         public static bool Pay(int amount, string transaction)
         {
-            return amount <= 0 || GameManager.ChangeMoneySafe(-amount, new TransactionInfo(transaction), null, null, false, true);
+            return amount <= 0 || RealLifeOverhaul.Economy.BizBooks.Book(-amount, new TransactionInfo(transaction), null, null, false, true);
         }
 
         /// <summary>One of the game's own rivals by name, for the other side of a push on the council; null while the game's rivals are off.</summary>

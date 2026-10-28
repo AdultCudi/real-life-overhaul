@@ -188,7 +188,7 @@ namespace RealLifeOverhaul
                 entry.ConfirmTextOverride = "reallife_garage_insure".Localize(new { amount = TransitText.Money(premium) });
                 entry.OnConfirm = () =>
                 {
-                    if (!GameManager.ChangeMoneySafe(-premium, new TransactionInfo("reallife_transaction_car_insurance"), null, null, force: false, showNotification: true))
+                    if (!RealLifeOverhaul.Economy.BizBooks.Book(-premium, new TransactionInfo("reallife_transaction_car_insurance"), null, null, force: false, showNotification: true))
                     {
                         return PhoneContacts.Closing("reallife_garage_no_money");
                     }
@@ -276,7 +276,7 @@ namespace RealLifeOverhaul
                 {
                     return PhoneContacts.Closing("reallife_roadside_tow_none");
                 }
-                GameManager.ChangeMoneySafe(-CarRules.TowFee, new TransactionInfo("reallife_transaction_towing"), null, null, force: true);
+                RealLifeOverhaul.Economy.BizBooks.Book(-CarRules.TowFee, new TransactionInfo("reallife_transaction_towing"), null, null, force: true);
                 CarOwnership.Logger?.Info("Roadside: the car was towed to the repair shop at " + shop.ToFormattedString() + ".");
                 return PhoneContacts.Closing("reallife_roadside_towed", new { address = shop.ToFormattedString(), amount = TransitText.Money(CarRules.TowFee) });
             }

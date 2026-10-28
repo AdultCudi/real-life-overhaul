@@ -34,11 +34,11 @@ namespace RealLifeOverhaul
             {
                 // The game's charge, under its parking fees so the day's statement nets it out; city policy's part apart.
                 int lent = tickets - ticketsSeen;
-                GameManager.ChangeMoneySafe(Ticket * lent, new TransactionInfo(RefundKey, "ba:transactioncategory_parkingfees"), null, null, force: true);
+                RealLifeOverhaul.Economy.BizBooks.Book(Ticket * lent, new TransactionInfo(RefundKey, "ba:transactioncategory_parkingfees"), null, null, force: true);
                 int policy = CivicPolicy.TicketExtra;
                 if (policy != 0)
                 {
-                    GameManager.ChangeMoneySafe(policy * lent, new TransactionInfo(PolicyKey), null, null, force: true);
+                    RealLifeOverhaul.Economy.BizBooks.Book(policy * lent, new TransactionInfo(PolicyKey), null, null, force: true);
                 }
             }
             ticketsSeen = tickets;

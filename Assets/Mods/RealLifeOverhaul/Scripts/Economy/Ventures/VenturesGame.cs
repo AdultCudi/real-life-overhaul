@@ -22,14 +22,14 @@ namespace RealLifeOverhaul.Economy.Ventures
 
         public bool Take(int amount, string why, string name)
         {
-            return amount <= 0 || (SaveGameManager.Current != null && GameManager.ChangeMoneySafe(-amount, Info(why, name), BookDay, null, false));
+            return amount <= 0 || (SaveGameManager.Current != null && RealLifeOverhaul.Economy.BizBooks.Book(-amount, Info(why, name), BookDay, null, false));
         }
 
         public void Give(int amount, string why, string name)
         {
             if (amount > 0 && SaveGameManager.Current != null)
             {
-                GameManager.ChangeMoneySafe(amount, Info(why, name), BookDay, null, true);
+                RealLifeOverhaul.Economy.BizBooks.Book(amount, Info(why, name), BookDay, null, true);
             }
         }
 

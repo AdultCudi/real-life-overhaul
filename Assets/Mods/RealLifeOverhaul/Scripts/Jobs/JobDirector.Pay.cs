@@ -43,7 +43,7 @@ namespace RealLifeOverhaul
             int total = slip.Total;
             if (total > 0)
             {
-                GameManager.ChangeMoneySafe(total, new TransactionInfo(def.TransactionKey, SalaryCategory), null, null, force: true);
+                RealLifeOverhaul.Economy.BizBooks.Book(total, new TransactionInfo(def.TransactionKey, SalaryCategory), null, null, force: true);
             }
             if (slip.Units <= 0)
             {

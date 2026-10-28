@@ -347,7 +347,7 @@ namespace RealLifeOverhaul
             }
             if (needDeposit)
             {
-                if (!GameManager.ChangeMoneySafe(-price, new TransactionInfo("reallife_transaction_civic_office_deposit"), null, null, force: false, showNotification: true))
+                if (!RealLifeOverhaul.Economy.BizBooks.Book(-price, new TransactionInfo("reallife_transaction_civic_office_deposit"), null, null, force: false, showNotification: true))
                 {
                     return "reallife_civic_office_no_money";
                 }

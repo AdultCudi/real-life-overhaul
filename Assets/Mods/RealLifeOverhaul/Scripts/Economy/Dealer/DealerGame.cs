@@ -427,7 +427,7 @@ namespace RealLifeOverhaul.Economy.Dealership
         {
             if (amount > 0 && Save != null)
             {
-                GameManager.ChangeMoneySafe(amount, data != null ? new TransactionInfo(type, data) : new TransactionInfo(type), null, reg != null ? reg.Address : null, true);
+                RealLifeOverhaul.Economy.BizBooks.Book(amount, data != null ? new TransactionInfo(type, data) : new TransactionInfo(type), null, reg != null ? reg.Address : null, true);
             }
         }
 
@@ -444,7 +444,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
             TransactionInfo info = data != null ? new TransactionInfo(type, data) : new TransactionInfo(type);
             info.SetTaxDeductibleName(DeductKey.GetLocalization());
-            return GameManager.ChangeMoneySafe(-amount, info, null, reg != null ? reg.Address : null, force);
+            return RealLifeOverhaul.Economy.BizBooks.Book(-amount, info, null, reg != null ? reg.Address : null, force);
         }
 
         /// <summary>The data of a car bought, as the game writes a vehicle bought (its name), and of one sold (what was sold).</summary>

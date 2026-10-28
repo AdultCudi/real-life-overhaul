@@ -467,7 +467,7 @@ namespace RealLifeOverhaul.Ledger
             {
                 return false;
             }
-            GameManager.ChangeMoneySafe(-amount, new TransactionInfo(transaction), null, null, force: true);
+            RealLifeOverhaul.Economy.BizBooks.Book(-amount, new TransactionInfo(transaction), null, null, force: true);
             return true;
         }
 
