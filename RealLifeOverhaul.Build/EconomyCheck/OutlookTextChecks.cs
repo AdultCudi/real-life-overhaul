@@ -87,6 +87,47 @@ internal static partial class Program
         }
         Check(left.Count == 0, "outlook texts: Portuguese and Chinese are translated, none is the English left as it was (" + string.Join(", ", left.Take(6)) + ")");
 
+        // The player's report (jiwalanpa, 27 Oct): index numbers in the stock market with no names beside them. Every index row of the
+        // Economy app, the city's own and each of the market's sectors, has a label key whose text is there, not the key and not
+        // empty, in English, Portuguese and Chinese; no two sectors are called the same; and a row the market gives no name for
+        // reads "Sector 7", never a bare number or nothing.
+        var indexKeys = new List<string> { "reallife_mkt_index", "reallife_mkt_col_index", "reallife_econapp_chart_stocks", "reallife_econapp_sectors", "reallife_econapp_sector_n" };
+        indexKeys.Add(OutlookCatalogue.Tiles[OutlookCatalogue.TileStocks].LabelKey);
+        indexKeys.AddRange(RealLifeOverhaul.Markets.MarketCatalogue.SectorKeys);
+        var unnamed = new List<string>();
+        var sameName = new List<string>();
+        for (int l = 0; l < 3 && l < words.Length; l++)
+        {
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            foreach (string key in indexKeys)
+            {
+                string text = words[l].TryGetValue(key, out string t) ? t : null;
+                if (string.IsNullOrWhiteSpace(text) || text == key)
+                {
+                    unnamed.Add(key + " (" + codes[l] + ")");
+                }
+                else if (key.StartsWith("reallife_mkt_sector_", StringComparison.Ordinal) && !seen.Add(text))
+                {
+                    sameName.Add(text + " (" + codes[l] + ")");
+                }
+            }
+        }
+        Check(RealLifeOverhaul.Markets.MarketCatalogue.SectorKeys.Length == (int)RealLifeOverhaul.Markets.MarketSector.Count && indexKeys.Count > 28 && unnamed.Count == 0 && sameName.Count == 0,
+            "outlook texts: each of the " + indexKeys.Count + " index rows (the city's and " + RealLifeOverhaul.Markets.MarketCatalogue.SectorKeys.Length + " sectors) has a label key with a text in English, Portuguese and Chinese, no two sectors alike ("
+            + string.Join(", ", unnamed.Concat(sameName).Take(4)) + ")");
+        var labelled = new List<string>();
+        for (int l = 0; l < 3 && l < words.Length; l++)
+        {
+            OutlookWords sayer = OutlookEnglish(words[l]);
+            string none = sayer.SectorLabel(6, null), blank = sayer.SectorLabel(6, "  "), empty = sayer.SectorLabel(0, string.Empty), kept = sayer.SectorLabel(6, "Banks");
+            bool ok = kept == "Banks" && none.Contains("7") && blank == none && empty.Contains("1") && none != words[l]["reallife_econapp_sector_n"] && none.IndexOf('{') < 0 && none.Trim().Length > 2;
+            if (!ok)
+            {
+                labelled.Add(codes[l] + ": " + none);
+            }
+        }
+        Check(labelled.Count == 0, "outlook texts: a sector the market gives no name for reads Sector and its number in English, Portuguese and Chinese, a named one keeps its name (" + string.Join("; ", labelled) + ")");
+
         // Plain English: no dashes, no exclamation marks. The other languages are held to the same.
         var rough = new List<string>();
         for (int l = 0; l < words.Length; l++)
