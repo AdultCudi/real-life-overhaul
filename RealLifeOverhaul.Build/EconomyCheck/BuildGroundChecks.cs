@@ -321,8 +321,21 @@ internal static partial class Program
             "bare ground texts: every key is read by the code");
         for (int l = 0; l < words.Length; l++)
         {
-            Check(words[l].TryGetValue("reallife_changes_next", out string next) && WhatsNewFixed(codes[l], next, "bare") , "bare ground texts: the fix line is in What's new's next row in " + codes[l]);
+            Check(WhatsNewFixedAnywhere(words[l], codes[l]), "bare ground texts: the fix line is in What's new's next row in " + codes[l]);
         }
+    }
+
+    /// <summary>A What's new row with a fix line: the next row before a release, the version's own row after it (the version script moves the lines).</summary>
+    private static bool WhatsNewFixedAnywhere(Dictionary<string, string> words, string code)
+    {
+        foreach (KeyValuePair<string, string> row in words)
+        {
+            if (row.Key.StartsWith("reallife_changes_", StringComparison.Ordinal) && !row.Key.EndsWith("_title", StringComparison.Ordinal) && WhatsNewFixed(code, row.Value, "bare"))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     // The next row carries a fix line with its language's mark somewhere in it (features may come first; not the empty row).
