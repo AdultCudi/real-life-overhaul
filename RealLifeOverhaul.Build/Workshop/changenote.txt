@@ -1,23 +1,4 @@
-0.61.0
-
-New
-- Staff and roles, a new section of the Guide with a search as you type: which staff each business of the mod needs, how many of each role, what each does to the result, the point past which more people help nothing, and what happens without them. Every role has an entry on how to hire and train one.
-- Uptown and Cedar Heights now end in fog. Streets that run into the edge are closed with construction fencing, roadworks signs and cones, and a bank of fog hides the unfinished end, on the street, from above and on the city map.
-- Land market: sell land back to the city at a fair price, make offers to rival developers for land they hold, and answer their offers for yours, in the Land tab of the Construction app.
-- Player2 joins Your own AI: install the Player2 App, sign in and choose Player2 in the options, with no key to paste.
-- A new page of the Guide for Uptown and Cedar Heights, and every other page brought up to date with the game.
+0.61.1
 
 Fixed
-- BizMan and the start screen no longer redo their work for nothing, the Interior tab opens once, and a new test in Options measures what the mod adds to opening a business.
-- Fewer stutters: police stations, bike hire, buses and bus stops are set up a little at a time, saving writes the mod's report on another thread, Flare plays its midnight round over a few frames, and getting into a car or walking out of a door no longer holds up a frame.
-- Every business the mod runs now adds its takings and costs to BizMan: tech firms, data centres, academy fees, the construction company, fire repairs and hold-ups. Academy fees and builder contract pay count as sales for the game's tax.
-- A single space of Uptown or Cedar Heights takes a building site, the Construction app says when land is too small before any fee is taken, and a stuck project can be cancelled with its fees given back.
-- Build mode shows squares on the ground again, the wholesale store and filling station in Uptown and Cedar Heights stand again, and held ground is shaded.
-- After the city map closes, scenery beyond 1.3 km comes back only where the map shows it.
-- Homework stopped early keeps the minutes you sat, and says it stopped.
-- A car can no longer crash into a barrier nothing showed at the ends of Uptown's streets, and a car driven out of a warehouse is put clear of the door.
-- Crest Motors: the loose chairs round the dealer's desks are gone, and its car list shows the cars your car mods add.
-- The Contacts app's group buttons are there from the first load, and the season under the date shows with Alcware Seasons.
-- Office buildings on the map no longer offer shop businesses, and the Economy app's Markets tab names every sector.
-- Games sell by how big and how finished they are against their rival, not at the weakest appeal; data centre technicians no longer count as programmers.
-- Going back to the main menu no longer writes an error into the game's log in every frame.
+- While snow lay, the roads far ahead and the stretch in front of a moving car showed black, and the snow was laid on them a moment later. The snow on the ground now reaches as far as the camera shows the street and moves ahead of you before every frame is drawn, so the roads stay white as you drive or look into the distance.
