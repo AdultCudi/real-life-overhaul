@@ -253,7 +253,7 @@ internal static partial class Program
                         continue;
                     }
                     lines++;
-                    marked |= line.StartsWith(marks[i], StringComparison.Ordinal) && Regex.IsMatch(line, Regex.Escape(marks[i]) + "[^\\n]*Crest Motors") && lines >= 1;
+                    marked |= Regex.IsMatch(line, Regex.Escape(marks[i]) + "[^.。\\n]*Crest Motors");   // a fix sentence of its own, wherever the row puts it
                     tidy &= !line.Contains("  ") && !line.Contains("!") && !line.Contains("–") && !line.Contains("—");
                 }
             }
