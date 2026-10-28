@@ -24,6 +24,7 @@ internal static partial class Program
         HoldCost();
         Marks();
         MarksCostliest();
+        MarksAfterLongFrame();
         Counts();
         HotSpotChecks();
         Prewarms();
@@ -320,7 +321,7 @@ internal static partial class Program
         open.Add("unclosed", 30, 1f, 100);
         int other = open.Add("earlier frame", 29, 1f, 50);
         open.Close(other, 5000);
-        Check(open.Costliest(30) == 0 && open.Costliest(31) == 0, "marks: with nothing closed in that frame the newest piece is named, as before");
+        Check(open.Costliest(30) == 0 && open.Costliest(31) == 0, "marks: with nothing closed in that frame the newest piece begun by its end is named, as before");
 
         var ties = new MarkRing();
         int one = ties.Add("older", 40, 1f, 0);
@@ -336,6 +337,74 @@ internal static partial class Program
         long before = GC.GetAllocatedBytesForCurrentThread();
         int pick = CostliestMany(ring, 100000);
         Check(GC.GetAllocatedBytesForCurrentThread() - before == 0 && pick >= 0, "marks: choosing the piece to name allocates nothing");
+    }
+
+    // A long frame's line names what the mod did up to that frame's end, never the work it named after it, in the frames
+    // before the line was written. Beta 6 (28 Oct 2026): another mod's traffic car stalled a frame for 534 ms, the bus stops'
+    // tick that fell due put out three places in the next frame, and the line named only those, "just after it": a ring of
+    // three had lost what came before, and the bus stops were taken for the cause.
+    private static void MarksAfterLongFrame()
+    {
+        var ring = new MarkRing();
+        int zone = ring.Add("transit: a bus zone made", 98, 1f, 0);
+        ring.Close(zone, 4000);
+        int office = ring.Add("offices: a shop made an office", 100, 1.2f, 10000);
+        ring.Close(office, 10000 + 33000);
+        for (int i = 0; i < 6; i++)   // the frame after: as many places as one pass of the bus stops' tick puts out (TransitDirector.PutsATick)
+        {
+            int stop = ring.Add("transit: a bus stop being put out", 101, 1.8f, 50000 + i * 100);
+            ring.Close(stop, 50000 + i * 100 + 50);
+        }
+        Check(ring.Get(ring.Costliest(100), out string text, out int frame, out _, out _) && text == "offices: a shop made an office" && frame == 100,
+            "marks after a long frame: the frame is put down to the work in it, not to the six bus stops put out in the frame after it");
+        bool named = ring.Get(ring.NewestBy(100, 0), out text, out _, out _, out _) && text == "offices: a shop made an office"
+            && ring.Get(ring.NewestBy(100, 1), out text, out _, out _, out _) && text == "transit: a bus zone made" && ring.NewestBy(100, 2) == -1;
+        Check(named && ring.After(100) == 6 && ring.After(101) == 0 && !ring.LostBy(100),
+            "marks after a long frame: its line lists the two pieces begun by its end, newest first, and counts the six begun after it");
+
+        var unclosed = new MarkRing();
+        unclosed.Add("people: a character being made", 99, 1f, 0);
+        unclosed.Add("transit: a bus stop being put out", 101, 2f, 0);
+        Check(unclosed.Get(unclosed.Costliest(100), out text, out _, out _, out _) && text == "people: a character being made",
+            "marks after a long frame: with nothing closed in it, the newest piece begun by its end is named, not a newer one after it");
+
+        var full = new MarkRing();
+        full.Add("before", 100, 1f, 0);
+        for (int i = 0; i < MarkRing.Kept - 1; i++)
+        {
+            full.Add("after", 101, 2f, 0);
+        }
+        bool held = !full.LostBy(100) && full.NewestBy(100, 0) == MarkRing.Kept - 1;
+        full.Add("after", 101, 2f, 0);
+        Check(held && full.LostBy(100) && full.NewestBy(100, 0) == -1 && full.Costliest(100) == -1 && full.After(100) == MarkRing.Kept,
+            "marks after a long frame: the frame's own piece is held under " + (MarkRing.Kept - 1) + " named after it, and called lost, never replaced, under " + MarkRing.Kept);
+        Check(MarkRing.Kept >= MarkRing.Listed + 2 * 6,
+            "marks after a long frame: the ring holds the line's " + MarkRing.Listed + " under two passes of the bus stops' tick named after it (" + MarkRing.Kept + " kept)");
+
+        var later = new MarkRing();
+        for (int i = 0; i < MarkRing.Kept + 4; i++)
+        {
+            later.Add("after", 101, 2f, 0);
+        }
+        var empty = new MarkRing();
+        Check(!later.LostBy(100) && later.NewestBy(100, 0) == -1 && empty.NewestBy(5, 0) == -1 && empty.After(5) == 0 && !empty.LostBy(5),
+            "marks after a long frame: nothing named by its end is nothing lost; an empty ring has nothing by any frame");
+
+        ListMany(ring, 1000);
+        long before = GC.GetAllocatedBytesForCurrentThread();
+        int sum = ListMany(ring, 100000);
+        Check(GC.GetAllocatedBytesForCurrentThread() - before == 0 && sum != 0, "marks after a long frame: choosing what the line lists allocates nothing");
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.NoInlining)]
+    private static int ListMany(MarkRing ring, int n)
+    {
+        int sum = 0;
+        for (int i = 0; i < n; i++)
+        {
+            sum += ring.NewestBy(100, i % 3) + ring.After(100) + (ring.LostBy(100) ? 1 : 0);
+        }
+        return sum;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.NoInlining)]
@@ -374,9 +443,14 @@ internal static partial class Program
         Check(text == "inner" && spent == 50 && second == "outer" && secondSpent == 400, "marks: a piece inside another is closed by its own number");
         Check(ring.SpentIn(11) == 450 && ring.SpentIn(10) == 250 && ring.SpentIn(12) == 0, "marks: the time named in a frame is that of the pieces that began in it");
 
-        // The ring keeps three: the oldest goes, and its number closes nothing any more.
+        // The ring keeps sixteen: the oldest goes, and its number closes nothing any more.
+        for (int i = 0; i < MarkRing.Kept - 3; i++)
+        {
+            ring.Add("between", 12, 3f, 2500);
+        }
         int late = ring.Add("late", 12, 3f, 3000);
-        Check(ring.Count == MarkRing.Kept && ring.Get(2, out text, out _, out _, out _) && text == "outer" && !ring.Get(3, out _, out _, out _, out _), "marks: the ring keeps the last three");
+        Check(ring.Count == MarkRing.Kept && ring.Get(MarkRing.Kept - 1, out text, out _, out _, out _) && text == "outer" && !ring.Get(MarkRing.Kept, out _, out _, out _, out _),
+            "marks: the ring keeps the last " + MarkRing.Kept);
         ring.Close(a, 5000);
         ring.Get(0, out text, out _, out _, out spent);
         Check(text == "late" && spent < 0, "marks: the number of a piece that has left the ring closes nothing");
@@ -390,7 +464,7 @@ internal static partial class Program
         // A piece nobody closes stays "not timed" and adds nothing to its frame.
         Check(ring.SpentIn(12) == 0, "marks: a piece nobody closed adds no time to its frame");
 
-        // Many pieces: the numbers never collide and the ring stays three long.
+        // Many pieces: the numbers never collide and the ring stays sixteen long.
         var many = new MarkRing();
         bool right = true;
         for (int i = 1; i <= 10000; i++)

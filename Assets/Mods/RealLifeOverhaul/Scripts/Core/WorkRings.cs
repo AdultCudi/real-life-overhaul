@@ -1,13 +1,16 @@
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The last few large pieces of work the mod named (SessionWatch.Mark), with the frame and time each began in and,
-    /// once closed, how long it took. A fixed ring: naming is six writes, closing two; read only for a long frame's
-    /// line. Game-free.
+    /// The last large pieces of work the mod named (SessionWatch.Mark), with the frame and time each began in and, once
+    /// closed, how long it took. A fixed ring: naming is seven writes, closing two; read only for a long frame's line,
+    /// which names the pieces begun by that frame's end. The frame after a long one names more before the line is
+    /// written (the bus stops' tick that fell due puts out up to six), so the ring holds far more than the line lists.
+    /// Game-free.
     /// </summary>
     public sealed class MarkRing
     {
-        public const int Kept = 3;   // pieces of work remembered: what the long-frame line lists
+        public const int Kept = 16;    // pieces of work remembered: those named after a long frame, before its line, leave the frame's own held
+        public const int Listed = 3;   // pieces a long frame's line lists: the newest begun by its end
 
         private readonly string[] _text = new string[Kept];
         private readonly int[] _frame = new int[Kept];
@@ -15,7 +18,8 @@ namespace RealLifeOverhaul
         private readonly long[] _began = new long[Kept];
         private readonly long[] _spent = new long[Kept];
         private readonly int[] _serial = new int[Kept];
-        private int _last;   // the newest piece's number; 0 while there is none
+        private int _last;                    // the newest piece's number; 0 while there is none
+        private int _gone = int.MaxValue;     // the frame of the newest piece that has left the ring; none has yet
 
         /// <summary>How many pieces are remembered (at most <see cref="Kept"/>).</summary>
         public int Count => _last < Kept ? _last : Kept;
@@ -25,6 +29,10 @@ namespace RealLifeOverhaul
         {
             int serial = ++_last;
             int slot = serial % Kept;
+            if (serial > Kept)
+            {
+                _gone = _frame[slot];   // the oldest piece leaves the ring
+            }
             _text[slot] = text;
             _frame[slot] = frame;
             _at[slot] = at;
@@ -63,7 +71,10 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>The costliest closed piece begun in <paramref name="frame"/>, as a back; else 0; -1 when empty.</summary>
+        /// <summary>
+        /// The costliest closed piece begun in <paramref name="frame"/>, as a back; else the newest begun by its end
+        /// (<see cref="NewestBy"/>); -1 when there is none. A piece begun after the frame never made it long.
+        /// </summary>
         public int Costliest(int frame)
         {
             int pick = -1;
@@ -77,7 +88,44 @@ namespace RealLifeOverhaul
                     pick = back;
                 }
             }
-            return pick >= 0 ? pick : Count > 0 ? 0 : -1;
+            return pick >= 0 ? pick : NewestBy(frame, 0);
+        }
+
+        /// <summary>The <paramref name="nth"/> newest piece begun in <paramref name="frame"/> or before it (0 the newest of them), as a back; -1 when there is none.</summary>
+        public int NewestBy(int frame, int nth)
+        {
+            int seen = 0;
+            for (int back = 0; back < Count; back++)
+            {
+                if (_frame[(_last - back) % Kept] <= frame && seen++ == nth)
+                {
+                    return back;
+                }
+            }
+            return -1;
+        }
+
+        /// <summary>How many of the pieces held began after <paramref name="frame"/>: named in the frames after it, before its line.</summary>
+        public int After(int frame)
+        {
+            int after = 0;
+            for (int back = 0; back < Count; back++)
+            {
+                if (_frame[(_last - back) % Kept] > frame)
+                {
+                    after++;
+                }
+            }
+            return after;
+        }
+
+        /// <summary>
+        /// Whether the pieces begun by the end of <paramref name="frame"/> have all left the ring, pushed out by pieces named
+        /// after it: then what the mod did up to that frame is no longer known.
+        /// </summary>
+        public bool LostBy(int frame)
+        {
+            return _gone <= frame && NewestBy(frame, 0) < 0;
         }
 
         /// <summary>Ticks spent in the closed pieces that began in a frame: the mod's named share of that frame.</summary>
