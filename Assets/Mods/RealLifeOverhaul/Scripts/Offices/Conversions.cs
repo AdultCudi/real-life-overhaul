@@ -32,7 +32,9 @@ namespace RealLifeOverhaul.Offices
 
         private sealed class Made
         {
-            public Building B;      // the city's building asset: what is put back, whatever became of the scene's object
+            public Building B;      // the city scene's copy of the building: what the map card, the filters and the marker read
+            public Building G;      // the game's list's copy (BuildingHelper.GetBuilding), what BizMan and every lookup by address read;
+                                    // kept, so it is put back though the scene's is gone; null where it is the same object
             public CityBuildingController C;
             public string Was;      // the type as the game made it
             public string Holder;   // its claim with the held addresses (Core/HeldUnits), so the game's own letting leaves it to the player
@@ -40,12 +42,15 @@ namespace RealLifeOverhaul.Offices
 
         // Static, so another feature's choice can ask without a reference: the buildings that are offices because of this.
         private static readonly Dictionary<Building, Made> Converted = new Dictionary<Building, Made>(32);
+        // The game's list's copies of the same buildings, so a feature that walks that list asks the same question.
+        private static readonly HashSet<Building> GameCopies = new HashSet<Building>();
 
         private readonly List<CityBuildingController> _shops = new List<CityBuildingController>(128);
         private readonly List<CityBuildingController> _offices = new List<CityBuildingController>(96);
         private readonly HashSet<Address> _watched = new HashSet<Address>();
         private readonly HashSet<Address> _forSale = new HashSet<Address>();
         private readonly HashSet<string> _kept = new HashSet<string>(StringComparer.Ordinal);
+        private readonly HashSet<Building> _refused = new HashSet<Building>();   // shops the game's list would not read as offices
         private readonly List<ConversionRow> _rows = new List<ConversionRow>(224);
         private readonly List<CityBuildingController> _rowOf = new List<CityBuildingController>(224);
         private bool[] _want = new bool[0];
@@ -55,8 +60,11 @@ namespace RealLifeOverhaul.Offices
         private Action<Address> _onChange, _changeSeen;
         private Action _onSave;
 
-        /// <summary>True for a building that is an office because of this: other features' choices of an office leave it alone.</summary>
-        public static bool Holds(Building building) => building != null && Converted.ContainsKey(building);
+        /// <summary>
+        /// True for a building that is an office because of this, whichever copy of it is asked (the city scene's or the game's list's):
+        /// other features' choices of an office leave it alone.
+        /// </summary>
+        public static bool Holds(Building building) => building != null && (Converted.ContainsKey(building) || GameCopies.Contains(building));
 
         private void Awake()
         {
@@ -251,8 +259,11 @@ namespace RealLifeOverhaul.Offices
                 bool vacant = ConversionGame.Vacant(reg);
                 bool made = Converted.ContainsKey(c.building);
                 bool foreign = GoingPublic.Foreign(reg);
-                bool held = (made && !vacant)
-                            || (!foreign && reg != null && (ConversionGame.OfficeBusiness(reg) || (!vacant && _kept.Contains(ConversionRules.Key(c.building.StreetName, c.building.StreetNumber)))));
+                // A shop's business in it (a save made while the game still offered shop businesses in such an office) keeps it a shop.
+                string key = ConversionRules.Key(c.building.StreetName, c.building.StreetNumber);
+                bool held = !ConversionGame.OtherBusiness(reg)
+                            && ((made && !vacant)
+                                || (!foreign && reg != null && (ConversionGame.OfficeBusiness(reg) || (!vacant && _kept.Contains(key)))));
                 // A rival landlord stays one: the held addresses (Core/HeldUnits) keep the game's letting off without its ignore list.
                 bool free = picks && vacant && !foreign && !_forSale.Contains(c.building.Address) && !SpecialBuildings.Holds(c);
                 _rows.Add(new ConversionRow
@@ -281,13 +292,34 @@ namespace RealLifeOverhaul.Offices
                 bool made = Converted.TryGetValue(c.building, out Made m);
                 if (_want[i] && !made)
                 {
-                    m = new Made { B = c.building, C = c, Was = c.building.BuildingType, Holder = HeldUnitsRules.OfficesPrefix + ConversionRules.Key(c.building.StreetName, c.building.StreetNumber) };
+                    if (_refused.Contains(c.building))
+                    {
+                        continue;
+                    }
+                    m = new Made
+                    {
+                        B = c.building, G = ConversionGame.GameCopy(c.building), C = c, Was = c.building.BuildingType,
+                        Holder = HeldUnitsRules.OfficesPrefix + ConversionRules.Key(c.building.StreetName, c.building.StreetNumber)
+                    };
+                    ConversionGame.SetType(m.B, m.G, c, ConversionGame.Office);
+                    string why = ConversionGame.Disagreement(m.B, m.G, ConversionGame.Office);
+                    if (why != null)
+                    {
+                        // Never a shop the map calls an office and BizMan a shop: put back, and not tried again this session.
+                        ConversionGame.SetType(m.B, m.G, c, m.Was);
+                        _refused.Add(c.building);
+                        Logger?.Warn("Offices: " + c.building.Address.ToFormattedString() + " stays a shop: " + why + ".");
+                        continue;
+                    }
                     Converted[c.building] = m;
-                    ConversionGame.SetType(m.B, c, ConversionGame.Office);
+                    if (m.G != null)
+                    {
+                        GameCopies.Add(m.G);
+                    }
                     HeldUnits.Hold(m.Holder, c.building.StreetName, c.building.StreetNumber, HeldKind.Conversions);
                     added++;
                 }
-                else if (!_want[i] && made && (!picks || ConversionGame.Vacant(c.buildingRegistration)))
+                else if (!_want[i] && made && (!picks || ConversionGame.Vacant(c.buildingRegistration) || ConversionGame.OtherBusiness(c.buildingRegistration)))
                 {
                     if (!picks)
                     {
@@ -305,6 +337,10 @@ namespace RealLifeOverhaul.Offices
             if (added > 0 || removed > 0 || (picks && (toLet != _free || !_said)))
             {
                 Say(picks, added, removed, toLet);
+            }
+            if (picks && (added > 0 || removed > 0 || !_said))
+            {
+                TypeCheck(Meta.Dev.Verbose);
             }
             if (picks)
             {
@@ -335,10 +371,53 @@ namespace RealLifeOverhaul.Offices
             }
         }
 
+        // Every building of the city reads one type in each copy the game keeps (the map's and BizMan's), and every business the game
+        // offers in a building of a type is one made for that type: the office a player rents on the map offers offices. Once a change, a
+        // pass over the buildings the conversion looked at and over the game's list; a failure is always a warning, a pass said with
+        // Developer diagnostics (or the test button).
+        private void TypeCheck(bool say)
+        {
+            int looked = 0, apart = 0;
+            string first = null;
+            for (int i = 0; i < _rowOf.Count; i++)
+            {
+                CityBuildingController c = _rowOf[i];
+                if (c == null || c.building == null)
+                {
+                    continue;
+                }
+                looked++;
+                Converted.TryGetValue(c.building, out Made m);
+                string why = ConversionGame.Disagreement(c.building, m != null ? m.G : null, c.building.BuildingType);
+                if (why != null)
+                {
+                    apart++;
+                    first = first ?? c.building.Address.ToFormattedString() + ": " + why;
+                }
+            }
+            string wrong = ConversionGame.WrongOfferInCity(out int types);
+            string line = "Offices: type check (" + looked + " buildings, " + Converted.Count + " of them shops made offices; each reads one type on the map "
+                          + "and in BizMan, and the businesses offered in each of the city's " + types + " building types are made for it): ";
+            if (apart == 0 && wrong == null)
+            {
+                if (say)
+                {
+                    Logger?.Info(line + "PASS");
+                }
+                return;
+            }
+            Logger?.Warn(line + "FAIL (" + (apart > 0 ? apart + " read two types, first " + first : string.Empty) + (apart > 0 && wrong != null ? "; " : string.Empty)
+                         + (wrong != null ? "the game offers " + wrong : string.Empty) + ")");
+        }
+
         private static void Restore(Made m)
         {
             HeldUnits.Release(m.Holder);   // never throws: the game's letting may take the shop again at once
-            ConversionGame.SetType(m.B, m.C, m.Was);
+            ConversionGame.SetType(m.B, m.G, m.C, m.Was);   // the game's list's copy outlives the scene's, so it goes back even when the scene's is gone
+            if (m.G != null)
+            {
+                GameCopies.Remove(m.G);
+            }
         }
 
         private void ReadStore(GameInstance save)
@@ -415,6 +494,7 @@ namespace RealLifeOverhaul.Offices
                 Notifications.Show(NotificationType.Warning, Settings.OfficeConversion ? "reallife_offices_test_none" : "reallife_offices_test_off", null, 8f, trackOnSaveGame: false);
                 return;
             }
+            TypeCheck(true);
             PlayerController player = Helpers.PlayerHelper.PlayerController;
             Made nearest = null;
             float best = float.MaxValue;
@@ -467,6 +547,8 @@ namespace RealLifeOverhaul.Offices
                 }
             }
             Converted.Clear();
+            GameCopies.Clear();
+            _refused.Clear();
             if (any)
             {
                 try

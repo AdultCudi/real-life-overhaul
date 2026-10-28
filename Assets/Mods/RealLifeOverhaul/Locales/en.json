@@ -22429,7 +22429,7 @@
   "reallife_hire_test_orphan_fail": "Test failed: a walk of the city's businesses tripped on a record with no building. The log says which.",
   "reallife_hire_test_orphan_off": "Load a save first. This test does not run in a Going Public session.",
   "reallife_changes_next_title": "Next version",
-  "reallife_changes_next": "Nothing yet.",
+  "reallife_changes_next": "Fixed: some office buildings on the map, such as 20 and 22 4th Avenue in Hell's Kitchen, offered shop businesses (a florist, a cafeteria, a supermarket) when you started a business in them. A shop turned into an office to rent was an office on the map but a shop to BizMan, because the game keeps two copies of each building and only the map's was changed. Both now change together and go back together, a shop that already has a shop business in it stays a shop, and a check confirms that the map and BizMan agree on every building. Fixed: in the Economy app's Markets tab, a sector could show its index with no name beside it. Every sector now carries its name there, and where the stock market gives none it reads Sector and its number.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Fixed: when every building that could hold the utilities office is yours, power and water accounts are applied for and reconnected in the Utilities app, by phone, at the same prices, and the notices say so; once a building is free the office opens again and the app says where. Fixed: after withdrawing an application and applying to the same post again, the Career app opened the withdrawn one and the interview could not be reached. Each application now has its own row, and the interview, offer and withdrawal go to the live one. Fixed: a save holding a business record whose building the city does not have (another mod can leave one behind) no longer switches the tech sector off at every load. The mod now leaves such a record out wherever it reads the city's businesses, names its address once in the log and changes nothing of it.",
   "reallife_co_mass_raise": "Give a raise",
@@ -25913,5 +25913,6 @@
   "reallife_fame_join_subway": "You cannot join while you are on the subway.",
   "reallife_fame_join_boat": "You cannot join while you are on the casino boat.",
   "reallife_changes_060_2_title": "0.60.2",
-  "reallife_changes_060_2": "Fixed: the late night show and the other video calls could not be joined from the Standing page, because having the phone open counted as busy. They can be joined now, and when something does stop you, the message says what."
+  "reallife_changes_060_2": "Fixed: the late night show and the other video calls could not be joined from the Standing page, because having the phone open counted as busy. They can be joined now, and when something does stop you, the message says what.",
+  "reallife_econapp_sector_n": "Sector {n}"
 }

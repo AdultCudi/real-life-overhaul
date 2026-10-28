@@ -48,6 +48,43 @@ namespace RealLifeOverhaul.Offices
             return h;
         }
 
+        /// <summary>
+        /// Whether a building's type reads the same in every copy of the building the game keeps: the city scene's (what the map card,
+        /// the filters and the marker read) and the game's own list (what BizMan, the rent, the businesses that may start and the
+        /// customers read by address). Null when every copy reads <paramref name="wanted"/>; otherwise what differs. A missing copy
+        /// (null) is not a copy: a building the game's list does not hold has one place to read.
+        /// </summary>
+        public static string Disagreement(string wanted, string sceneType, string gameType)
+        {
+            if (!string.Equals(sceneType, wanted, StringComparison.Ordinal))
+            {
+                return "the city's copy reads " + (sceneType ?? "(none)") + ", not " + wanted;
+            }
+            if (gameType != null && !string.Equals(gameType, wanted, StringComparison.Ordinal))
+            {
+                return "the game's list reads " + gameType + ", not " + wanted + " (the map says one thing and BizMan another)";
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// The first business type a building type offers whose own suitable building type is another, or a type the game does not
+        /// know: null when every offered business suits the type. <paramref name="suitableOf"/> gives a business type's suitable
+        /// building type, null for none.
+        /// </summary>
+        public static string WrongOffer(string buildingType, IList<string> offered, Func<string, string> suitableOf)
+        {
+            for (int i = 0; offered != null && i < offered.Count; i++)
+            {
+                string suits = suitableOf != null ? suitableOf(offered[i]) : null;
+                if (!string.Equals(suits, buildingType, StringComparison.Ordinal))
+                {
+                    return offered[i] + " (suits " + (suits ?? "nothing") + ")";
+                }
+            }
+            return null;
+        }
+
         /// <summary>The districts with offices, most offices first (ties by name): the order the city's floor is filled in.</summary>
         public static List<string> Districts(IList<ConversionRow> rows)
         {

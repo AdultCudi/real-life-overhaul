@@ -22429,7 +22429,7 @@
   "reallife_hire_test_orphan_fail": "Teste falhou: uma leitura dos negócios da cidade tropeçou num registro sem prédio. O log diz qual.",
   "reallife_hire_test_orphan_off": "Carregue um save primeiro. Este teste não roda numa sessão do Going Public.",
   "reallife_changes_next_title": "Próxima versão",
-  "reallife_changes_next": "Nada ainda.",
+  "reallife_changes_next": "Corrigido: alguns prédios de escritórios no mapa, como 20 e 22 4th Avenue em Hell's Kitchen, ofereciam negócios de loja (uma floricultura, uma lanchonete, um supermercado) quando você abria um negócio neles. Uma loja transformada em escritório para alugar era um escritório no mapa, mas uma loja para o BizMan, porque o jogo guarda duas cópias de cada prédio e só a do mapa era alterada. Agora as duas mudam juntas e voltam juntas, uma loja que já tem um negócio de loja dentro continua sendo uma loja, e uma verificação confirma que o mapa e o BizMan concordam em todos os prédios. Corrigido: na aba Mercados do app Economia, um setor podia mostrar seu índice sem nenhum nome ao lado. Agora todo setor mostra seu nome ali, e quando a bolsa não informa nenhum, aparece Setor e o número dele.",
   "reallife_changes_053_1_title": "0.53.1",
   "reallife_changes_053_1": "Corrigido: quando todos os prédios que poderiam abrigar o escritório de serviços públicos são seus, as contas de luz e água são pedidas e religadas no app Contas, por telefone, pelos mesmos preços, e os avisos dizem isso; quando um prédio fica livre o escritório volta a abrir e o app diz onde. Corrigido: depois de retirar uma candidatura e se candidatar de novo à mesma vaga, o app Carreira abria a retirada e não dava para chegar à entrevista. Cada candidatura agora tem sua própria linha, e a entrevista, a oferta e a retirada vão para a ativa. Corrigido: um save com um registro de negócio cujo prédio a cidade não tem (outro mod pode deixar um para trás) não desliga mais o setor de tecnologia a cada carregamento. O mod agora deixa esse registro de fora sempre que lê os negócios da cidade, cita o endereço dele uma vez no log e não muda nada nele.",
   "reallife_co_mass_raise": "Dar aumento",
@@ -25913,5 +25913,6 @@
   "reallife_fame_join_subway": "Você não pode entrar enquanto está no metrô.",
   "reallife_fame_join_boat": "Você não pode entrar enquanto está no barco-cassino.",
   "reallife_changes_060_2_title": "0.60.2",
-  "reallife_changes_060_2": "Corrigido: não era possível entrar no programa da madrugada e nas outras chamadas de vídeo pela página de Prestígio, porque o celular aberto contava como ocupado. Agora dá para entrar e, quando algo impede, a mensagem diz o quê."
+  "reallife_changes_060_2": "Corrigido: não era possível entrar no programa da madrugada e nas outras chamadas de vídeo pela página de Prestígio, porque o celular aberto contava como ocupado. Agora dá para entrar e, quando algo impede, a mensagem diz o quê.",
+  "reallife_econapp_sector_n": "Setor {n}"
 }
