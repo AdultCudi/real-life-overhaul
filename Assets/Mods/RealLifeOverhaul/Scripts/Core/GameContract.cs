@@ -244,6 +244,20 @@ namespace RealLifeOverhaul
         public static readonly GameMember LampIsOn = Field(StreetLamps, Game, "StreetLamp", "_isOn", "Boolean");
         public static readonly GameMember CullList = Field(StreetLamps, Game, "Culling.CullingGroupController", "_cullables", "List<ICullable>");   // the lamps, from the game's culling list
 
+        // Core/SceneryCulling (the culling list above too): what the mod destroys taken out of the game's culling lists at once, the
+        // culling group's spheres and count kept in step; optional: else the game's own UnregisterCullable, never while a city unloads
+        public static readonly GameMember CullSpheres = Optional(Field(StreetLamps, Game, "Culling.CullingGroupController", "_spheres", "BoundingSphere[]"));
+        public static readonly GameMember CullGroup = Optional(Field(StreetLamps, Game, "Culling.CullingGroupController", "_cullingGroup", "CullingGroup"));
+        public static readonly GameMember CullReady = Optional(Field(StreetLamps, Game, "Culling.CullingGroupController", "_isInitialized", "Boolean"));
+        public static readonly GameMember CullPending = Optional(Field(StreetLamps, Game, "Culling.CullingGroupController", "_pendingBands", "Dictionary<ICullable,Int32>"));
+        public static readonly GameMember CullRebuild = Optional(Field(StreetLamps, Game, "Culling.CullingGroupController", "_recreateCullingGroup", "Boolean"));
+        public static readonly GameMember BuildingMusic = Optional(Field(StreetLamps, Game, "CityBuildingController", "_buildingOutsideMusicController", "BuildingOutsideMusicController"));
+        public static readonly GameMember BuildingHangout = Optional(Field(StreetLamps, Game, "CityBuildingController", "_buildingOutsideHangoutZoneController",
+            "BuildingOutsideHangoutZoneController"));
+        public static readonly GameMember MusicOwner = Optional(Field(StreetLamps, Game, "Buildings.Outdoors.BuildingOutsideMusicController", "_cityBuildingController", "CityBuildingController"));
+        public static readonly GameMember HangoutOwner = Optional(Field(StreetLamps, Game, "Buildings.Outdoors.BuildingOutsideHangoutZoneController", "_cityBuildingController",
+            "CityBuildingController"));
+
         // Faults/FaultWorld: a lamp gone dark is given empty lists of lights to switch, and put back after
         public static readonly GameMember LampOutLights = Field(LampsOut, Game, "StreetLamp", "lights", "Light[]");
         public static readonly GameMember LampOutData = Field(LampsOut, Game, "StreetLamp", "additionalLightDatas", "HDAdditionalLightData[]");

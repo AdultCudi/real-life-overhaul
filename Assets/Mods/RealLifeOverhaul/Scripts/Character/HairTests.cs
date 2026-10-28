@@ -112,7 +112,7 @@ namespace RealLifeOverhaul
                 data.SetIntensity(LampLumens, LightUnit.Lumen);
                 data.range = LampRange;
                 data.affectsVolumetric = false;
-                UnityEngine.Object.Destroy(_lamp, LampSeconds);   // the engine's own timer: nothing of ours runs meanwhile
+                UnityEngine.Object.Destroy(_lamp, LampSeconds);   // the engine's own timer: nothing of ours runs meanwhile (RLO-PERF-023 no cullables: a plain light)
 
                 HairLook.Logger?.Warn("Hair test: a lamp of " + LampLumens.ToString("F0") + " lm stands " + LampDistance.ToString("F0") + " m beyond the player's head for "
                                       + LampSeconds.ToString("F0") + " s. " + HairLook.Describe(character));
@@ -187,7 +187,7 @@ namespace RealLifeOverhaul
                     said = "no street lamp of the game's is near, so a point light of " + StreetLampLumens.ToString("F0") + " lm";
                 }
                 data.affectsVolumetric = false;
-                UnityEngine.Object.Destroy(_lamp, LampSeconds);
+                UnityEngine.Object.Destroy(_lamp, LampSeconds);   // RLO-PERF-023 no cullables: a plain light, never a copy of the game's lamp
                 HairLook.Logger?.Warn("Hair test: " + said + " stands " + height.ToString("F1", CultureInfo.InvariantCulture) + " m above the player's feet, " + StreetLampOffset.ToString("F0")
                                       + " m beyond the head, for " + LampSeconds.ToString("F0") + " s. " + HairLook.Describe(character));
                 Notifications.Show(NotificationType.Info, "reallife_hair_test_streetlamp", null, NoticeSeconds, null, null, true, false);
@@ -355,7 +355,7 @@ namespace RealLifeOverhaul
         {
             if (_lamp != null)
             {
-                UnityEngine.Object.Destroy(_lamp);
+                UnityEngine.Object.Destroy(_lamp);   // RLO-PERF-023 no cullables: a plain light
             }
             _lamp = null;
         }

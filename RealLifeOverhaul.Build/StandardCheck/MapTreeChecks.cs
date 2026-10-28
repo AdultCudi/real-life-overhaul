@@ -40,36 +40,9 @@ internal static partial class Program
                 continue;
             }
             Examine(TreeRule, f.Rel);
-            var objects = new HashSet<string>(StringComparer.Ordinal);
-            foreach (string line in f.Code)
+            foreach (int i in PlainDestroys(f, "RLO-PERF-018 no trees", "SceneryTrees.Forget"))
             {
-                foreach (Match m in GameObjectName.Matches(line))
-                {
-                    objects.Add(m.Groups[1].Value);
-                }
-            }
-            for (int i = 0; i < f.Code.Length; i++)
-            {
-                Match m = RawDestroy.Match(f.Code[i]);
-                if (!m.Success || f.Code[i].IndexOf("SceneryTrees", StringComparison.Ordinal) >= 0)
-                {
-                    continue;
-                }
-                string arg = m.Groups[2].Value.Trim();
-                string head = Regex.Match(arg, @"^[\w.]+").Value;
-                int dot = head.LastIndexOf('.');
-                string last = dot >= 0 ? head.Substring(dot + 1) : head;
-                bool gameObject = arg.EndsWith(".gameObject", StringComparison.Ordinal) || objects.Contains(arg) || objects.Contains(head)
-                    || objects.Contains(Regex.Replace(arg, @"\[.*$", string.Empty)) || (dot >= 0 && objects.Contains(last) && !arg.Contains("("));
-                if (!gameObject || f.Lines[i].IndexOf("RLO-PERF-018 no trees", StringComparison.Ordinal) >= 0)
-                {
-                    continue;
-                }
-                bool forgotten = i > 0 && f.Code[i - 1].IndexOf("SceneryTrees.Forget", StringComparison.Ordinal) >= 0;
-                if (!forgotten)
-                {
-                    Hit(TreeRule, f.Rel, i + 1, "a game object destroyed without SceneryTrees: " + f.Code[i].Trim());
-                }
+                Hit(TreeRule, f.Rel, i + 1, "a game object destroyed without SceneryTrees: " + f.Code[i].Trim());
             }
         }
         // The guard itself.
@@ -107,5 +80,49 @@ internal static partial class Program
         {
             Hit(TreeRule, modFile, 0, "the mod no longer starts MapTreeGuard");
         }
+    }
+
+    // The lines (0-based) of a file that destroy a game object the plain way (Object.Destroy or DestroyImmediate), not
+    // through SceneryTrees, with none of the given forgets on the line before and not marked with the given words in their
+    // comment. Shared by RLO-PERF-018 (trees) and RLO-PERF-023 (CullingChecks.cs, the game's culling lists).
+    private static List<int> PlainDestroys(SourceFile f, string exempt, params string[] forgets)
+    {
+        var found = new List<int>();
+        var objects = new HashSet<string>(StringComparer.Ordinal);
+        foreach (string line in f.Code)
+        {
+            foreach (Match m in GameObjectName.Matches(line))
+            {
+                objects.Add(m.Groups[1].Value);
+            }
+        }
+        for (int i = 0; i < f.Code.Length; i++)
+        {
+            Match m = RawDestroy.Match(f.Code[i]);
+            if (!m.Success || f.Code[i].IndexOf("SceneryTrees", StringComparison.Ordinal) >= 0)
+            {
+                continue;
+            }
+            string arg = m.Groups[2].Value.Trim();
+            string head = Regex.Match(arg, @"^[\w.]+").Value;
+            int dot = head.LastIndexOf('.');
+            string last = dot >= 0 ? head.Substring(dot + 1) : head;
+            bool gameObject = arg.EndsWith(".gameObject", StringComparison.Ordinal) || objects.Contains(arg) || objects.Contains(head)
+                || objects.Contains(Regex.Replace(arg, @"\[.*$", string.Empty)) || (dot >= 0 && objects.Contains(last) && !arg.Contains("("));
+            if (!gameObject || f.Lines[i].IndexOf(exempt, StringComparison.Ordinal) >= 0)
+            {
+                continue;
+            }
+            bool forgotten = false;
+            foreach (string forget in forgets)
+            {
+                forgotten |= i > 0 && f.Code[i - 1].IndexOf(forget, StringComparison.Ordinal) >= 0;
+            }
+            if (!forgotten)
+            {
+                found.Add(i);
+            }
+        }
+        return found;
     }
 }

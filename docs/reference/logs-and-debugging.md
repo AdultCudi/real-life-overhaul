@@ -245,10 +245,12 @@ opened), 36 of the 36 out before it out again, in 14 frame(s) after its camera w
 street, ...; draw distances: the options' again on the player's camera; ...; the player's camera as before the map (its
 layers, far plane and draw distances); every part back 0.21 s (14 frames) after play came back; frames of play 10.4 ms on
 average in the 120 after it, 10.6 ms in the minute before; the mod's own scripts 0.32 ms a frame after it, 0.30 before
-(wanted: every part back within 2 s, nothing left): restored, 0 lingering: PASS
+(wanted: every part back within 2 s, nothing left, the player's camera as before): restored, 0 lingering: PASS
 ```
 
-A FAIL names the part still holding something and what it holds. The parts and their looks are listed in StandardCheck/MapChecks.cs; the looks are in `Core/MapParts`.
+A FAIL names the part still holding something and what it holds, or says the player's camera is not as before the map (its layers, far plane or draw distances). A map opened again before the last one's camera was back down is set against the camera before the first opening (the game stops its shutting coroutine, so the draw distances are still the ones set for the way down). The parts and their looks are listed in StandardCheck/MapChecks.cs; the looks are in `Core/MapParts`.
+
+As a city's part of the mod unloads, one more check is written once the menu's scene comes in (RLO-PERF-023): `Culling check (unload): 0 dead cullables in the game's culling lists (N listed) ...: PASS`. A dead entry there is a lamp, tree, bench, sign or people's zone the mod destroyed and left in the game's culling lists, which makes the game throw every frame the moment it builds its culling group again.
 
 What the lines cannot say: which of the game's scripts, or another mod's, a long frame was spent in; how long the mod's own coroutines took (they run under "coroutines and timers" and are not timed one by one); what the graphics card spent its time on (which pass, which shader); and anything about the card at all on a build without the engine's frame timing.
 
