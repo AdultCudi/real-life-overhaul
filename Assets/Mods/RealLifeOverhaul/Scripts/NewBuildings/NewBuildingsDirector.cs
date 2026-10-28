@@ -46,6 +46,7 @@ namespace RealLifeOverhaul.NewBuildings
         private readonly StringBuilder _why = new StringBuilder(256);
         private int _tookOther;   // made at this load with another of their structures, no design of their own size fitting their lot
         private Action _onSave;
+        private Action<Address> _onExit, _exitSeen;   // the game has left a building: a car put out of a made warehouse is settled clear of its door's trigger (WarehouseExit)
         private UnityAction _contactAdded;   // a branch's contact put back to its head office's address, on the game's own contact event
         private bool _contactsHooked;
         private float _nextLook, _nextSlow, _loadedAt;
@@ -68,6 +69,8 @@ namespace RealLifeOverhaul.NewBuildings
             CopyGame.Begin(transform);
             _onSave = OnSave;
             _onProbe = Guard.Wrap(FrameGuard, OnProbe);
+            _onExit = Guard.Wrap<Address>(FrameGuard, WarehouseExit.Left);
+            WarehouseExit.Logger = Logger;
             _contactAdded = Guard.Listener(OnContactAdded);
             _optionWas = Settings.NewBuildings;
             _agreedWas = true;
@@ -92,6 +95,7 @@ namespace RealLifeOverhaul.NewBuildings
             }
             SaveHook.Drop(_onSave);
             GlobalEvents.onNewHour -= _onProbe;
+            GlobalEvents.onExitBuilding -= _onExit;
             UnhookContacts();
             BuildingCopies.RemoveAll(stays ? "the save tools stopped the mod" : "the city is unloading");
             MadeGame.Unload(!stays);
@@ -185,6 +189,10 @@ namespace RealLifeOverhaul.NewBuildings
             if (_probeArmed)
             {
                 EventHold.Keep(ref GlobalEvents.onNewHour, _onProbe, ref _probeSeen);   // the game empties its events at every load
+            }
+            if (MadeBuildings.Count > 0 && Settings.NewBuildings)
+            {
+                EventHold.Keep(ref GlobalEvents.onExitBuilding, _onExit, ref _exitSeen);   // (kept on once a made building stands; a hidden one's car is not settled, for it stands no more)
             }
             if (MadeGame.Loading)
             {

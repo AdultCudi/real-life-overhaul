@@ -6,9 +6,9 @@ using RealLifeOverhaul.NewGround;
 namespace RealLifeOverhaul.Uptown
 {
     /// <summary>
-    /// The districts' edges (<see cref="EdgeRules"/>, GroundGame.Edges): the boxes that close every street end and the fog behind every
-    /// stretch of edge laid at the load, behind the loading screen, once the walls stand; the fencing, signs and cones once the props
-    /// bundle has loaded (the game's late call, or when it has); the load's check line with Developer diagnostics on; and a test under
+    /// The districts' edges (<see cref="EdgeRules"/>, GroundGame.Edges): the fog behind every stretch of edge laid at the load, behind the
+    /// loading screen, once the walls stand; the fencing, signs and cones once the props bundle has loaded (the game's late call, or when it
+    /// has), each end's box with its fencing, never before it (<see cref="SolidRules"/>: a car stops at a drawn face); the load's check line with Developer diagnostics on; and a test under
     /// Options > Tests, which the city expansion's run presses too. The test reads and counts; it changes nothing, so it runs in a
     /// Going Public session too. COST: nothing per frame; the check reads the lanes and the ground's boxes once at the load with Developer
     /// diagnostics on, and when the test is pressed.
@@ -27,7 +27,7 @@ namespace RealLifeOverhaul.Uptown
         {
             EdgeRules.Edges(_edges);
             EdgeRules.Ends(_ends);
-            _edgesWhy = GroundGame.LayEdges(_ends, EdgeRules.Fog(_edges));
+            _edgesWhy = GroundGame.LayEdges(EdgeRules.Fog(_edges));
             if (_edgesWhy != null)
             {
                 Logger?.Warn("Uptown: the fog behind the districts' edges does not stand at this load: " + _edgesWhy + ". The street ends are closed all the same.");
@@ -49,7 +49,8 @@ namespace RealLifeOverhaul.Uptown
             _piecesWhy = GroundGame.LayPieces(_ends);
             if (_piecesWhy != null)
             {
-                Logger?.Warn("Uptown: the street ends' fencing, signs and cones do not stand at this load: " + _piecesWhy + ". The boxes close the ends all the same.");
+                Logger?.Warn("Uptown: the street ends' fencing, signs and cones do not stand at this load: " + _piecesWhy
+                             + ". The fencing panels are drawn plain where the bundle cannot give them, and a box stands only behind a drawn panel.");
             }
             Logger?.Info("Uptown: the street ends are closed with " + GroundGame.EdgeWalls + " boxes and " + GroundGame.EdgePieces + " pieces of fencing, signs and cones, the edges' fog is "
                          + GroundGame.EdgeFogCurtains + " layers and a lid in " + GroundGame.EdgeFogVertices + " vertices and one draw call.");
@@ -111,18 +112,30 @@ namespace RealLifeOverhaul.Uptown
             EdgeFogData fog = EdgeRules.Fog(_edges);
             int wantedPieces = EdgeRules.PieceCount(_ends);
             string crossed = Crossed();
+            string fenced = GroundGame.FenceMeetsBox(_ends, SolidRules.FenceMost, out float gap);
+            var walls = new List<PlanBox>(12);
+            LayoutPlans.NewWalls(walls);
+            var grounds = new List<PlanBox>(4);
+            var roads = new List<PlanBox>(80);
+            LayoutPlans.Colliders(grounds, roads);
+            string firstSolid = SolidRules.FirstIsFencing(_ends, walls);
+            string hidden = SolidRules.OnTheRoad(_ends, walls, roads, LayoutPlans.Streets());
             bool ends = GroundGame.EdgeWalls == _ends.Count && arms.Count == _ends.Count && _ends.Count > 0;
             bool pieces = GroundGame.EdgePieces == wantedPieces && _piecesWhy == null;
             bool fogged = GroundGame.EdgeFogSegments == _edges.Count && GroundGame.EdgeFogCurtains == fog.Curtains && GroundGame.EdgeFogVertices == fog.Vertices
                           && GroundGame.EdgeFogTriangles * 3 == fog.Triangles.Count && _edgesWhy == null;
-            pass = ends && pieces && fogged && crossed == null;
+            pass = ends && pieces && fogged && crossed == null && fenced == null && firstSolid == null && hidden == null;
             var words = new StringBuilder(320);
             words.Append(_ends.Count.ToString(Inv)).Append(" street ends wanted, ").Append(arms.Count.ToString(Inv)).Append(" left open into an edge by the lanes, ");
             words.Append(GroundGame.EdgeWalls.ToString(Inv)).Append(" boxes stand; ").Append(GroundGame.EdgePieces.ToString(Inv)).Append(" of ").Append(wantedPieces.ToString(Inv));
-            words.Append(" pieces").Append(_piecesWhy != null ? " (" + _piecesWhy + ")" : string.Empty).Append("; ").Append(_edges.Count.ToString(Inv));
+            words.Append(" pieces").Append(GroundGame.EdgePlain > 0 ? ", " + GroundGame.EdgePlain.ToString(Inv) + " of them drawn plain" : string.Empty);
+            words.Append(_piecesWhy != null ? " (" + _piecesWhy + ")" : string.Empty).Append("; ").Append(_edges.Count.ToString(Inv));
             words.Append(" fog segments wanted in ").Append(fog.Curtains.ToString(Inv)).Append(" layers and ").Append(fog.Vertices.ToString(Inv)).Append(" vertices, ");
             words.Append(GroundGame.EdgeFogCurtains.ToString(Inv)).Append(" layers and ").Append(GroundGame.EdgeFogVertices.ToString(Inv)).Append(" vertices stand");
             words.Append(_edgesWhy != null ? " (no fog: " + _edgesWhy + ")" : string.Empty).Append("; ").Append(crossed ?? "no lane and no walking ground crosses a barricade");
+            words.Append("; ").Append(fenced ?? "every box's first face is its fencing's drawn face (at most " + gap.ToString("0.00", Inv) + " m before it)");
+            words.Append("; ").Append(firstSolid ?? "a car out of the band meets fencing first at every end");
+            words.Append("; ").Append(hidden ?? "no invisible solid on a road surface or lane, none touching one but behind fencing");
             detail = words.ToString();
             return GroundGame.EdgeWalls.ToString(Inv) + " street ends closed, " + GroundGame.EdgeFogSegments.ToString(Inv) + " fog segments";
         }
