@@ -106,7 +106,7 @@ namespace RealLifeOverhaul.Construction
         /// <summary>Takes an amount if the cash is there, as the game's own purchases do; a business cost is marked deductible by its label's words.</summary>
         internal static bool Take(long amount, string key, string name, bool deductible)
         {
-            return amount <= 0 || (SaveGameManager.Current != null && GameManager.ChangeMoneySafe(-(float)amount, Info(key, name, deductible), null, null, false, true));
+            return amount <= 0 || (SaveGameManager.Current != null && RealLifeOverhaul.Economy.BizBooks.Book(-(float)amount, Info(key, name, deductible), null, At(key), false, true));
         }
 
         /// <summary>Takes an amount whether or not it is there: wages, interest and hire run on as the game's own loan interest does.</summary>
@@ -114,7 +114,7 @@ namespace RealLifeOverhaul.Construction
         {
             if (amount > 0 && SaveGameManager.Current != null)
             {
-                GameManager.ChangeMoneySafe(-(float)amount, Info(key, name, deductible), null, null, true);
+                RealLifeOverhaul.Economy.BizBooks.Book(-(float)amount, Info(key, name, deductible), null, At(key), true);
             }
         }
 
@@ -122,8 +122,29 @@ namespace RealLifeOverhaul.Construction
         {
             if (amount > 0 && SaveGameManager.Current != null)
             {
-                GameManager.ChangeMoneySafe(amount, Info(key, name, false), null, null, true);
+                RealLifeOverhaul.Economy.BizBooks.Book(amount, Info(key, name, false), null, At(key), true);
             }
+        }
+
+        /// <summary>The address of the player's construction company's office (the first, in the save's order), or null: where its money is booked, so the game's
+        /// statement and BizMan have it (BizLines says which keys count). No allocation.</summary>
+        internal static Address At(string key)
+        {
+            return RealLifeOverhaul.Economy.BizLines.InDomain(key) ? OfficeAddress() : null;   // the company's own lines only: parking lots and the rest are not its books
+        }
+
+        internal static Address OfficeAddress()
+        {
+            List<BuildingRegistration> all = SaveGameManager.Current != null ? SaveGameManager.Current.BuildingRegistrations : null;
+            for (int i = 0; all != null && i < all.Count; i++)
+            {
+                BuildingRegistration reg = all[i];
+                if (reg != null && ConstructionType.Is(reg) && reg.RentedByPlayer && GoingPublic.Mine(reg) && reg.Address != null)
+                {
+                    return reg.Address;
+                }
+            }
+            return null;
         }
 
         // A dictionary each: the game keeps a transaction's data for as long as it lists the transaction.

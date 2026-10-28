@@ -59,6 +59,16 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
+        // The self-check of BizMan's income: said once a day (GameBooks.BizVerdict), whoever refreshed the day's statement last.
+        private static void LogBizman()
+        {
+            string verdict = GameBooks.BizVerdict();
+            if (verdict != null && (Verbose || verdict.Contains("FAIL")))
+            {
+                Logger?.Info(verdict);
+            }
+        }
+
         // GlobalEvents.onNewDay: after the game's daily run (GameManager.NewDay; LoanHelper.RunDaily is in BusinessHelper.RunDaily before it).
         private void OnDay()
         {
@@ -95,6 +105,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     Logger?.Info("Economy check (books): the game's statement of day " + (Save.Day - 1) + " brought up to date with the mod's costs booked for it after it was made: PASS.");
                 }
+                LogBizman();
                 // another author's dealerships (Core/EmpireMotors): what they spent is deducted by the game's tax, once a day
                 float deducted = GameBooks.Deduct(Save.Day - 1);
                 if (Verbose && (deducted > 0f || GameBooks.DealerTakings != 0f || GameBooks.DealerCosts != 0f))

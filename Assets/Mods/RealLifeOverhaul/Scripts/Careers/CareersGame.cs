@@ -196,7 +196,7 @@ namespace RealLifeOverhaul.Careers
                 return false;
             }
             var info = new TransactionInfo(key, new Dictionary<string, string>(1) { { "name", name ?? string.Empty } });
-            return GameManager.ChangeMoneySafe(-whole, info, null, null, force: false);
+            return RealLifeOverhaul.Economy.BizBooks.Book(-whole, info, null, null, force: false);
         }
 
         /// <summary>Money paid in, whole, with its line of the bank history.</summary>
@@ -209,7 +209,7 @@ namespace RealLifeOverhaul.Careers
             var info = category != null
                 ? new TransactionInfo(key, category, new Dictionary<string, string>(1) { { "name", name ?? string.Empty } })
                 : new TransactionInfo(key, new Dictionary<string, string>(1) { { "name", name ?? string.Empty } });
-            GameManager.ChangeMoneySafe(whole, info, null, null, force: true);
+            RealLifeOverhaul.Economy.BizBooks.Book(whole, info, null, null, force: true);
         }
 
         /// <summary>A charge that is taken whatever the cash (a loan's repayment, a fine): the game lets money go below zero.</summary>
@@ -219,7 +219,7 @@ namespace RealLifeOverhaul.Careers
             {
                 return;
             }
-            GameManager.ChangeMoneySafe(-whole, new TransactionInfo(key, new Dictionary<string, string>(1) { { "name", name ?? string.Empty } }), null, null, force: true);
+            RealLifeOverhaul.Economy.BizBooks.Book(-whole, new TransactionInfo(key, new Dictionary<string, string>(1) { { "name", name ?? string.Empty } }), null, null, force: true);
         }
 
         public static void Tiring(bool on)

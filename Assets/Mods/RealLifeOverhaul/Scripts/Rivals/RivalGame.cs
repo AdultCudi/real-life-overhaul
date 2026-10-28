@@ -118,7 +118,7 @@ namespace RealLifeOverhaul.Rivals
                 return false;
             }
             var info = new TransactionInfo(RentKey, new Dictionary<string, string>(1) { { "name", rival ?? string.Empty } });
-            return GameManager.ChangeMoneySafe(-(float)Math.Min(amount, 1000000000L), info, null, reg.Address, force: false);
+            return Economy.BizBooks.Book(-(float)Math.Min(amount, 1000000000L), info, null, reg.Address, force: false);
         }
 
         /// <summary>A counter's cost, taken in pieces if the cash is there for all of it; false, with nothing taken, if not.</summary>
@@ -148,7 +148,7 @@ namespace RealLifeOverhaul.Rivals
         {
             for (long left = amount; left > 0;)
             {
-                GameManager.ChangeMoneySafe(sign * InvestRules.Piece(ref left), new TransactionInfo(key, new Dictionary<string, string>(1) { { "name", name ?? string.Empty } }), null, null, true);
+                Economy.BizBooks.Book(sign * InvestRules.Piece(ref left), new TransactionInfo(key, new Dictionary<string, string>(1) { { "name", name ?? string.Empty } }), null, null, true);
             }
         }
 

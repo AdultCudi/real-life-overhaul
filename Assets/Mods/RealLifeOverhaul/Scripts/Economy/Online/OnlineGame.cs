@@ -397,7 +397,7 @@ namespace RealLifeOverhaul.Economy
         {
             if (cents > 0 && Save != null)
             {
-                GameManager.ChangeMoneySafe(cents / 100f, Info(key, place), day, place != null ? place.Address : null, true);
+                RealLifeOverhaul.Economy.BizBooks.Book(cents / 100f, Info(key, place), day, place != null ? place.Address : null, true);
             }
         }
 
@@ -417,7 +417,7 @@ namespace RealLifeOverhaul.Economy
             {
                 info.SetTaxDeductibleName(DeductKey.GetLocalization());
             }
-            bool taken = GameManager.ChangeMoneySafe(-cents / 100f, info, day, place != null ? place.Address : null, force);
+            bool taken = RealLifeOverhaul.Economy.BizBooks.Book(-cents / 100f, info, day, place != null ? place.Address : null, force);
             if (taken && deductible && OnlineBridges.Cost != null)
             {
                 OnlineBridges.Cost(cents);

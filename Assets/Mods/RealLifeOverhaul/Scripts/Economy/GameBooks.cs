@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Entities;
 using Helpers;
 using Localizor;
+using Streets;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Economy
@@ -33,7 +34,7 @@ namespace RealLifeOverhaul.Economy
 
         // A business's figures of the day by address: its four lines, the game's takings, the city's takings, whether the game
         // booked takings at all, the city's rent line there as spent (for a home), and the mod's own takings there.
-        private const int Salary = 0, RentLine = 1, MarketingLine = 2, LicensingLine = 3, Sales = 4, CitySales = 5, Sold = 6, CityRent = 7, OwnSales = 8, Width = 9;
+        private const int Salary = 0, RentLine = 1, MarketingLine = 2, LicensingLine = 3, Sales = 4, CitySales = 5, Sold = 6, CityRent = 7, OwnSales = 8, Run = 9, Unlisted = 10, Width = 11;
 
         private const string OurKeys = "reallife" + "_";   // every key of the mod's begins so (split: it is no key itself)
 
@@ -146,23 +147,42 @@ namespace RealLifeOverhaul.Economy
                     line = Line();
                     byAddress[t.address] = line;
                 }
+                bool inLine = false;   // counted in one of the game's four lines already: not a row among the goods as well
                 if (categories != null)
                 {
                     if (categories.Contains(Salaries))
                     {
                         line[Salary] += amount;
+                        inLine = true;
                     }
                     if (categories.Contains(Rent))
                     {
                         line[RentLine] += amount;
+                        inLine = true;
                     }
                     if (categories.Contains(Marketing))
                     {
                         line[MarketingLine] += amount;
+                        inLine = true;
                     }
                     if (categories.Contains(Licensing))
                     {
                         line[LicensingLine] += amount;
+                        inLine = true;
+                    }
+                }
+                // a business the mod runs: its keys are each in one list of BizLines (takings, a running cost, or capital)
+                BizLine kind = Ours(t) ? BizLines.Of(t.transactionType) : BizLine.Foreign;
+                if (kind != BizLine.Foreign)
+                {
+                    line[Run] = 1f;
+                    if (kind == BizLine.Unlisted)
+                    {
+                        line[Unlisted] = 1f;
+                        if (!UnlistedKeys.Contains(t.transactionType))
+                        {
+                            UnlistedKeys.Add(t.transactionType);
+                        }
                     }
                 }
                 if (t.transactionType == RevenueType)
@@ -179,9 +199,16 @@ namespace RealLifeOverhaul.Economy
                     line[CityRent] -= amount;
                 }
                 else if (t.transactionType == OnlineGame.TakingsKey || t.transactionType == OnlineGame.RefundsKey || t.transactionType == EstateGame.CommissionKey
-                         || (takings != null && Ours(t) && takings(t.transactionType)))
+                         || kind == BizLine.Takings || (takings != null && Ours(t) && takings(t.transactionType)))
                 {
                     line[OwnSales] += amount;   // a refund is negative
+                    Took(t.address, amount);
+                }
+                else if (kind == BizLine.Cost && !inLine)
+                {
+                    // a running cost of a business the mod runs: a row of its own if a feature gave it one, else the running costs row; a refund of it counts against it
+                    string costed = (costRow != null ? costRow(t.transactionType) : null) ?? BizLines.RunningRow;
+                    AddGood(ref goods, t.address, costed, -amount);
                 }
                 else if (costRow != null && Ours(t) && amount < 0f)
                 {
@@ -230,6 +257,7 @@ namespace RealLifeOverhaul.Economy
                 businesses += statement.TotalProfit;
             }
             DealerOrders(day);
+            Verify(day, summary, byAddress);
 
             float homes = 0f;
             for (int r = 0; summary.residentialStatements != null && r < summary.residentialStatements.Count; r++)
@@ -344,8 +372,84 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // Each dealership's order book for the day: what it took and a customer for each car sold, beside what the game booked
-        // there. Set, never added to, so a second refresh changes nothing.
+        // What a business took on the day beyond the game's tills, for its order book's revenue (set again by DealerOrders, never added to).
+        private static void Took(Address at, float amount)
+        {
+            if (!DealerDay.TryGetValue(at, out float[] took))
+            {
+                took = new float[2];
+                DealerDay[at] = took;
+            }
+            took[0] += amount;
+        }
+
+        private static readonly List<string> UnlistedKeys = new List<string>(4);   // keys of the mod's businesses that no list of BizLines holds
+        private static int _checkDay = int.MinValue, _checkBusinesses, _checkGood, _toldDay = int.MinValue, _toldBusinesses = -1, _toldGood = -1;
+        private static string _checkFailures = string.Empty;
+
+        // The self-check of the day: each business the mod runs that was booked on the day (its address has a line of the table's features) has a statement,
+        // and every key booked at it is in a list. Counted here, written by BizVerdict; the names are built only when one fails.
+        private static void Verify(int day, FinancialSummary summary, Dictionary<Address, float[]> byAddress)
+        {
+            int businesses = 0, good = 0;
+            System.Text.StringBuilder failures = null;
+            foreach (KeyValuePair<Address, float[]> pair in byAddress)
+            {
+                if (pair.Value[Run] <= 0f)
+                {
+                    continue;
+                }
+                businesses++;
+                bool statement = false;
+                for (int b = 0; summary.businessIncomeStatements != null && b < summary.businessIncomeStatements.Count && !statement; b++)
+                {
+                    statement = summary.businessIncomeStatements[b] != null && summary.businessIncomeStatements[b].Address == pair.Key;
+                }
+                if (statement && pair.Value[Unlisted] <= 0f)
+                {
+                    good++;
+                    continue;
+                }
+                failures = failures ?? new System.Text.StringBuilder(96);
+                if (failures.Length > 0)
+                {
+                    failures.Append("; ");
+                }
+                BuildingRegistration reg = BuildingHelper.GetBuildingRegistration(pair.Key);
+                failures.Append(reg != null && !string.IsNullOrEmpty(reg.BusinessName) ? reg.BusinessName : pair.Key.ToFormattedString())
+                        .Append(statement ? ": a key in no list of BizLines" : ": the game made it no statement for the day");
+            }
+            if (UnlistedKeys.Count > 0)
+            {
+                failures = failures ?? new System.Text.StringBuilder(96);
+                failures.Append(failures.Length > 0 ? "; keys " : "keys ").Append(string.Join(", ", UnlistedKeys));
+                UnlistedKeys.Clear();
+            }
+            _checkDay = day;
+            _checkBusinesses = businesses;
+            _checkGood = good;
+            _checkFailures = failures != null ? failures.ToString() : string.Empty;
+        }
+
+        /// <summary>
+        /// The log line of "BizMan check (income)" for the last refreshed day, or null if there is nothing to say (no business of the mod's was booked
+        /// that day) or it was said already with the same result.
+        /// </summary>
+        public static string BizVerdict()
+        {
+            if (_checkDay == int.MinValue || (_checkBusinesses == 0 && _checkFailures.Length == 0)
+                || (_checkDay == _toldDay && _checkBusinesses == _toldBusinesses && _checkGood == _toldGood))
+            {
+                return null;
+            }
+            _toldDay = _checkDay;
+            _toldBusinesses = _checkBusinesses;
+            _toldGood = _checkGood;
+            return BizLines.Verdict(_checkDay, _checkBusinesses, _checkGood, _checkFailures);
+        }
+
+        // Each business's order book for the day: what the mod's lines took there (a dealership's cars sold as customers served) beside what the game
+        // booked. This is BizMan's revenue history. Set, never added to, so a second refresh changes nothing.
         private static void DealerOrders(int day)
         {
             foreach (KeyValuePair<Address, float[]> took in DealerDay)

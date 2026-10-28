@@ -167,7 +167,7 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            GameManager.ChangeMoneySafe(-liability, new TransactionInfo("reallife_transaction_accident_liability"), null, null, force: true);
+            RealLifeOverhaul.Economy.BizBooks.Book(-liability, new TransactionInfo("reallife_transaction_accident_liability"), null, null, force: true);
             Justice.CrashVictim(liability, 0, 0);   // now and then the other driver sues (Scripts/Justice)
             var data = new Dictionary<string, string> { { "amount", ((float)liability).ToCurrencyFormat() } };
             Notifications.Show(NotificationType.Error, notificationKey, data, 8f);

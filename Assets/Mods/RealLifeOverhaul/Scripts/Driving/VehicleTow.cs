@@ -273,7 +273,7 @@ namespace RealLifeOverhaul
 
         private static void Charge(int fee, string transactionKey)
         {
-            GameManager.ChangeMoneySafe(-fee, new TransactionInfo(transactionKey), null, null, force: true);
+            RealLifeOverhaul.Economy.BizBooks.Book(-fee, new TransactionInfo(transactionKey), null, null, force: true);
         }
 
         private static void Notify(string key, string address, int fee)

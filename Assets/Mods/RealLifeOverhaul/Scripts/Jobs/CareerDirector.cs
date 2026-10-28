@@ -492,7 +492,7 @@ namespace RealLifeOverhaul
             {
                 return false;
             }
-            if (rentDue && GameManager.ChangeMoneySafe(-CareerCatalogue.CartRent, new TransactionInfo("reallife_transaction_cart_rent"), null, null, force: false))
+            if (rentDue && RealLifeOverhaul.Economy.BizBooks.Book(-CareerCatalogue.CartRent, new TransactionInfo("reallife_transaction_cart_rent"), null, null, force: false))
             {
                 CareerState.CartPaidDay = day;
                 JobText.Toast(NotificationType.Info, "reallife_career_cart_rented", "amount", JobText.Money(CareerCatalogue.CartRent), 8f);
@@ -530,7 +530,7 @@ namespace RealLifeOverhaul
                 int wage = CareerCatalogue.Wage(hours, shift.Hourly);
                 if (wage > 0)
                 {
-                    GameManager.ChangeMoneySafe(wage, new TransactionInfo(WageKey, SalaryCategory), null, null, force: true);
+                    RealLifeOverhaul.Economy.BizBooks.Book(wage, new TransactionInfo(WageKey, SalaryCategory), null, null, force: true);
                     if (shift.Counts)
                     {
                         JobState.Worked(job.Def, 0, wage);
@@ -571,7 +571,7 @@ namespace RealLifeOverhaul
         {
             if (sum.Wage > 0)
             {
-                GameManager.ChangeMoneySafe(sum.Wage, new TransactionInfo(WageKey, SalaryCategory), null, null, force: true);
+                RealLifeOverhaul.Economy.BizBooks.Book(sum.Wage, new TransactionInfo(WageKey, SalaryCategory), null, null, force: true);
                 JobState.Worked(def, 0, sum.Wage);
             }
             if (sum.Worked && CareerState.Employed && CareerState.Employer.Id == saved.Employer)

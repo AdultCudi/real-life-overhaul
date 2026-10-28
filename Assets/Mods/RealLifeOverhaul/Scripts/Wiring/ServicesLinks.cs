@@ -209,7 +209,7 @@ namespace RealLifeOverhaul
                         Loan loan = Loans[i];
                         float amount = loan.remainingAmount;
                         var info = new TransactionInfo(PayOffKey, new Dictionary<string, string>(1) { { "businessName", GameLoans.BankName(loan) } });
-                        if (!GameManager.ChangeMoneySafe(-amount, info, null, null, false, false))
+                        if (!RealLifeOverhaul.Economy.BizBooks.Book(-amount, info, null, null, false, false))
                         {
                             all = false;
                             continue;

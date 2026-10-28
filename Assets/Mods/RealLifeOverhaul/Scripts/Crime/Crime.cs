@@ -40,7 +40,7 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            GameManager.ChangeMoneySafe(-amount, new TransactionInfo("reallife_transaction_fine"), null, null, force: true);
+            RealLifeOverhaul.Economy.BizBooks.Book(-amount, new TransactionInfo("reallife_transaction_fine"), null, null, force: true);
             ShowAmount(NotificationType.Error, messageKey, amount, 10f);
         }
 
@@ -58,7 +58,7 @@ namespace RealLifeOverhaul
             {
                 return 0;
             }
-            GameManager.ChangeMoneySafe(-amount, new TransactionInfo(transactionKey), null, null, force: true);
+            RealLifeOverhaul.Economy.BizBooks.Book(-amount, new TransactionInfo(transactionKey), null, null, force: true);
             return amount;
         }
 
@@ -78,7 +78,7 @@ namespace RealLifeOverhaul
             {
                 return 0;
             }
-            GameManager.ChangeMoneySafe(-amount, new TransactionInfo("reallife_transaction_holdup_till"), null, shop.Address, force: true);
+            RealLifeOverhaul.Economy.BizBooks.Book(-amount, new TransactionInfo("reallife_transaction_holdup_till"), null, shop.Address, force: true);
             BusinessGame.BookTheft(shop, amount);
             Logger?.Info("Crime: a hold-up emptied the till of " + shop.BusinessName + ": " + amount + " (a day's takings " + BusinessGame.DailyRevenue(shop).ToString("F0") + ").");
             return amount;
@@ -92,7 +92,7 @@ namespace RealLifeOverhaul
         {
             if (amount > 0 && SaveGameManager.Current != null)
             {
-                GameManager.ChangeMoneySafe(-amount, new TransactionInfo(transactionKey), null, null, force: true);
+                RealLifeOverhaul.Economy.BizBooks.Book(-amount, new TransactionInfo(transactionKey), null, null, force: true);
             }
         }
 
@@ -100,14 +100,14 @@ namespace RealLifeOverhaul
         public static bool Pay(int amount, string transactionKey)
         {
             return amount > 0 && SaveGameManager.Current != null
-                   && GameManager.ChangeMoneySafe(-amount, new TransactionInfo(transactionKey), null, null, force: false);
+                   && RealLifeOverhaul.Economy.BizBooks.Book(-amount, new TransactionInfo(transactionKey), null, null, force: false);
         }
 
         public static void Give(int amount, string transactionKey)
         {
             if (amount > 0 && SaveGameManager.Current != null)
             {
-                GameManager.ChangeMoneySafe(amount, new TransactionInfo(transactionKey), null, null, force: true);
+                RealLifeOverhaul.Economy.BizBooks.Book(amount, new TransactionInfo(transactionKey), null, null, force: true);
             }
         }
 

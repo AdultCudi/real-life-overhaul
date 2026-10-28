@@ -37,7 +37,7 @@ internal static partial class Program
         string crime = TextsSource("Crime/Crime.cs"), scene = TextsSource("Crime/Scenes/ShopIncidentScene.cs");
         string robTill = Between(crime, "public static int RobTill(", "/// <summary>");
         Check(Regex.IsMatch(robTill, @"CrimeRules\.TillTake\(BusinessGame\.DailyRevenue\(shop\), Cash, Prices\.Level\)")
-              && Regex.IsMatch(robTill, @"ChangeMoneySafe\(-amount, new TransactionInfo\(""reallife_transaction_holdup_till""\), null, shop\.Address, force: true\)")
+              && Regex.IsMatch(robTill, @"BizBooks\.Book\(-amount, new TransactionInfo\(""reallife_transaction_holdup_till""\), null, shop\.Address, force: true\)")
               && robTill.Contains("BusinessGame.BookTheft(shop, amount)"),
             "crime till: the till's money is booked at the shop's address under its own label and in the shop's day as theft");
         Check(scene.Contains("Crime.RobTill(ShopFloor.OwnRegistration)") && !scene.Contains("Crime.Rob("), "crime till: the hold-up in the player's own shop takes from the till, not a share of the cash in hand");
@@ -145,7 +145,7 @@ internal static partial class Program
         string making = TextsSource("Garage/TwoWheelers.Making.cs");
         Check(making.Contains("Crime.Charge(BikeCatalogue.LateFee, \"reallife_transaction_bike\")"), "charges taken: a hired bicycle's late fee is charged in full, as the notice says, as a tow is");
         string crime = TextsSource("Crime/Crime.cs");
-        Check(Regex.IsMatch(Between(crime, "public static void Charge(", "/// <summary>"), @"ChangeMoneySafe\(-amount, new TransactionInfo\(transactionKey\), null, null, force: true\)"),
+        Check(Regex.IsMatch(Between(crime, "public static void Charge(", "/// <summary>"), @"BizBooks\.Book\(-amount, new TransactionInfo\(transactionKey\), null, null, force: true\)"),
             "charges taken: a charge that cannot be refused is taken even into the red, as the game allows");
         Check(AnyChangesRow(LoadWords(System.IO.Path.Combine(LocalesFolder(), "en.json")), "late fee for a hired bicycle"), "charges taken: What's new says so");
     }

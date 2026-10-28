@@ -667,14 +667,14 @@ namespace RealLifeOverhaul.Economy
                 // Words, not a key, as the game names its own: the tax notice reads the same in a save the mod has left.
                 info.SetTaxDeductibleName(CompanyText.CostKeys[deductible].GetLocalization());
             }
-            return GameManager.ChangeMoneySafe(-amount, info, day, shop != null ? shop.Address : null, force);
+            return RealLifeOverhaul.Economy.BizBooks.Book(-amount, info, day, shop != null ? shop.Address : null, force);
         }
 
         public static void Give(int amount, string key, string name, CompanyShop shop, int? day)
         {
             if (amount > 0 && Save != null)
             {
-                GameManager.ChangeMoneySafe(amount, Info(key, name), day, shop != null ? shop.Address : null, true);
+                RealLifeOverhaul.Economy.BizBooks.Book(amount, Info(key, name), day, shop != null ? shop.Address : null, true);
             }
         }
 

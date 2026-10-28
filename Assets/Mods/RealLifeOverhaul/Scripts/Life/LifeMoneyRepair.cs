@@ -51,7 +51,7 @@ namespace RealLifeOverhaul
             {
                 return 0;
             }
-            GameManager.ChangeMoneySafe(LifeMoneyRules.RefundEach * due, new TransactionInfo(RefundKey), null, null, force: true);
+            RealLifeOverhaul.Economy.BizBooks.Book(LifeMoneyRules.RefundEach * due, new TransactionInfo(RefundKey), null, null, force: true);
             save.modData[Key] = (refunded + due).ToString(CultureInfo.InvariantCulture);
             Logger?.Info("Life events: " + due + " charge(s) of 2,147,483,648 that a purse past an int once made are in this save's history; each is paid back (" + found + " in the history, "
                          + refunded + " paid back before).");

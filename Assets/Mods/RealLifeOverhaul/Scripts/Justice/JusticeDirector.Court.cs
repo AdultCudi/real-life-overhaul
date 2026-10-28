@@ -158,7 +158,7 @@ namespace RealLifeOverhaul
             float cash = Crime.Cash;
             if (amount <= cash * JusticeLaw.PayNowShare && cash - amount >= JusticeLaw.CashFloor)
             {
-                GameManager.ChangeMoneySafe(-amount, new TransactionInfo("reallife_transaction_court_fine"), null, null, force: true);
+                RealLifeOverhaul.Economy.BizBooks.Book(-amount, new TransactionInfo("reallife_transaction_court_fine"), null, null, force: true);
             }
             else
             {
@@ -181,7 +181,7 @@ namespace RealLifeOverhaul
                 int due = Mathf.Min(debt.PerDay, debt.Left);
                 if (Crime.Cash - due >= JusticeLaw.CashFloor)
                 {
-                    GameManager.ChangeMoneySafe(-due, new TransactionInfo(TransactionKey(debt.Kind)), null, null, force: true);
+                    RealLifeOverhaul.Economy.BizBooks.Book(-due, new TransactionInfo(TransactionKey(debt.Kind)), null, null, force: true);
                     debt.Left -= due;
                     debt.Missed = 0;
                     paid += due;
@@ -240,7 +240,7 @@ namespace RealLifeOverhaul
             }
             for (int i = JusticeState.Debts.Count - 1; i >= 0; i--)
             {
-                GameManager.ChangeMoneySafe(-JusticeState.Debts[i].Left, new TransactionInfo(TransactionKey(JusticeState.Debts[i].Kind)), null, null, force: true);
+                RealLifeOverhaul.Economy.BizBooks.Book(-JusticeState.Debts[i].Left, new TransactionInfo(TransactionKey(JusticeState.Debts[i].Kind)), null, null, force: true);
             }
             JusticeState.Debts.Clear();
             Logger?.Info("Justice: everything owed (" + total + ") paid off at once.");

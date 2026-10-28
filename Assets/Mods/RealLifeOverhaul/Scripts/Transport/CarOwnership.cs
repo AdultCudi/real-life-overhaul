@@ -546,7 +546,7 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            GameManager.ChangeMoneySafe(payout, new TransactionInfo("reallife_transaction_insurance_payout"), null, null, force: true);
+            RealLifeOverhaul.Economy.BizBooks.Book(payout, new TransactionInfo("reallife_transaction_insurance_payout"), null, null, force: true);
             if (reported)
             {
                 CarGarage.Spend();
@@ -603,7 +603,7 @@ namespace RealLifeOverhaul
                     // One policy renews however many days have gone by (no back premiums).
                     float premium = Mathf.Round(CarRules.PremiumOf(instance.VehicleType.price, record.Claims, GarageBridges.InsuranceOf(instance.id)));
                     var data = new Dictionary<string, string>(2) { { "car", name }, { "amount", TransitText.Money(premium) } };
-                    if (GameManager.ChangeMoneySafe(-premium, new TransactionInfo("reallife_transaction_car_insurance"), null, null, force: false))
+                    if (RealLifeOverhaul.Economy.BizBooks.Book(-premium, new TransactionInfo("reallife_transaction_car_insurance"), null, null, force: false))
                     {
                         record.InsuredUntil = today + CarRules.PolicyDays - 1;
                         Notifications.Show(NotificationType.Info, "reallife_car_insurance_renewed", data, 9f);

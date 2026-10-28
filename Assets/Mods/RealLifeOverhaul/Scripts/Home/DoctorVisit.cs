@@ -32,7 +32,7 @@ namespace RealLifeOverhaul
 
         public static bool Pay(int amount, string transaction)
         {
-            return Free || GameManager.ChangeMoneySafe(-amount, new TransactionInfo(transaction), null, null, force: false, showNotification: true);
+            return Free || RealLifeOverhaul.Economy.BizBooks.Book(-amount, new TransactionInfo(transaction), null, null, force: false, showNotification: true);
         }
     }
 

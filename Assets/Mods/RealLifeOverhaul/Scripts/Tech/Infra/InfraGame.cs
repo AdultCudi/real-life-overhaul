@@ -73,7 +73,7 @@ namespace RealLifeOverhaul.Tech
             {
                 info.SetTaxDeductibleName("reallife_tech_deduct".GetLocalization());
             }
-            return Save != null && GameManager.ChangeMoneySafe(-cents / 100f, info, null, at != null ? at.Address : null, false);
+            return Save != null && RealLifeOverhaul.Economy.BizBooks.Book(-cents / 100f, info, null, at != null ? at.Address : null, false);
         }
 
         /// <summary>The racks' writing down for the game's tax: a deductible expense with no money moving.</summary>

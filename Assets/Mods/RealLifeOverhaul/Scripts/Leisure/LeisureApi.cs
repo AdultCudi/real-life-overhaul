@@ -132,7 +132,7 @@ namespace RealLifeOverhaul.Leisure
             }
             try
             {
-                if (!CanPay(amount) || !GameManager.ChangeMoneySafe(-amount, new TransactionInfo(transactionKey), null, null, force: false))
+                if (!CanPay(amount) || !RealLifeOverhaul.Economy.BizBooks.Book(-amount, new TransactionInfo(transactionKey), null, null, force: false))
                 {
                     return false;
                 }
@@ -154,7 +154,7 @@ namespace RealLifeOverhaul.Leisure
             }
             try
             {
-                GameManager.ChangeMoneySafe(amount, new TransactionInfo(transactionKey), null, null, force: true);
+                RealLifeOverhaul.Economy.BizBooks.Book(amount, new TransactionInfo(transactionKey), null, null, force: true);
             }
             catch (Exception e)
             {

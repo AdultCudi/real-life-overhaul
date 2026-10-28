@@ -214,7 +214,7 @@ namespace RealLifeOverhaul
 
         internal static void ChangeMoney(int amount, string transactionKey)
         {
-            GameManager.ChangeMoneySafe(amount, new TransactionInfo(transactionKey), null, null, force: true);
+            RealLifeOverhaul.Economy.BizBooks.Book(amount, new TransactionInfo(transactionKey), null, null, force: true);
         }
 
         /// <param name="notificationKey">Null when the caller says it itself (Home/HomeHealth names the illness).</param>

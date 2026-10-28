@@ -375,7 +375,7 @@ namespace RealLifeOverhaul.Tech
                 ? new TransactionInfo(key, Salaries, new Dictionary<string, string>(2) { { "name", name ?? string.Empty } })
                 : new TransactionInfo(key, new Dictionary<string, string>(2) { { "name", name ?? string.Empty } });
             info.SetTaxDeductibleName(DeductKey.GetLocalization());
-            return GameManager.ChangeMoneySafe(-cents / 100f, info, null, at != null ? at.Address : null, force);
+            return RealLifeOverhaul.Economy.BizBooks.Book(-cents / 100f, info, null, at != null ? at.Address : null, force);
         }
     }
 }

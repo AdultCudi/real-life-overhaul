@@ -446,9 +446,9 @@ namespace RealLifeOverhaul
             }
             if (owed > 0)
             {
-                GameManager.ChangeMoneySafe(-owed, new TransactionInfo("reallife_transaction_accident_liability"), null, null, force: true);
+                RealLifeOverhaul.Economy.BizBooks.Book(-owed, new TransactionInfo("reallife_transaction_accident_liability"), null, null, force: true);
             }
-            GameManager.ChangeMoneySafe(-(fine + people), new TransactionInfo("reallife_transaction_fine"), null, null, force: true);
+            RealLifeOverhaul.Economy.BizBooks.Book(-(fine + people), new TransactionInfo("reallife_transaction_fine"), null, null, force: true);
             if (people > 0)
             {
                 PolicePursuit.Weigh(killed);

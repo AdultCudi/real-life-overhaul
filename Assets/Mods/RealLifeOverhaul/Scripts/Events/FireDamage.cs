@@ -49,7 +49,7 @@ namespace RealLifeOverhaul.Events
                 float relief = 1f - Mathf.Clamp01(security) * 0.4f - (warned ? 0.15f : 0f) - (called ? 0.1f : 0f);
                 int hours = Mathf.Clamp(Mathf.RoundToInt(Mathf.Lerp(3f, 10f, slow) * relief), 2, 10);
                 int bill = Mathf.RoundToInt(Prices.At(Mathf.Lerp(RepairLeast, RepairMost, slow) * relief) / 10f) * 10;   // at today's prices
-                GameManager.ChangeMoneySafe(-bill, new TransactionInfo("reallife_transaction_fire_repair"), null, business.Address, force: true);
+                RealLifeOverhaul.Economy.BizBooks.Book(-bill, new TransactionInfo("reallife_transaction_fire_repair"), null, business.Address, force: true);
                 FireLosses.Raise(business, bill);   // for whoever insures it
                 bool closedByUs = false;
                 if (!business.temporarilyClosed && ClosedKey == null)
