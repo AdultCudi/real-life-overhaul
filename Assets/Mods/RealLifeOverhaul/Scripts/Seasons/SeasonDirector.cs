@@ -10,8 +10,8 @@ namespace RealLifeOverhaul.Seasons
     /// it snows. Everything comes of the day and the save's number (SeasonRules), so nothing is saved and every machine of
     /// a session has the same seasons and the same snow. Cost: a timer comparison a frame; once a second a few comparisons,
     /// the snow's two figures worked out and handed to the weather, the walkers and the look, and the seasons' other looks
-    /// every few seconds; while snow falls, the flakes moved after the camera four times a second; the goods written once
-    /// a season. Nothing of it allocates in its steady run (StandardCheck, RLO-PERF-014).
+    /// every few seconds; while snow falls, the flakes moved after the camera four times a second; while it lies, its
+    /// square kept round the player every frame by SnowCoverFollow (a few float operations); the goods written once a season. Nothing of it allocates in its steady run (StandardCheck, RLO-PERF-014).
     /// </summary>
     public sealed partial class SeasonDirector : MonoBehaviour
     {

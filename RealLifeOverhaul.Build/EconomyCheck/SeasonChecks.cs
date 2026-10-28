@@ -23,6 +23,7 @@ internal static partial class Program
         SnowLookSources();
         SeasonLooks();
         SnowFields();
+        SnowCovers();
         SeasonTexts();
     }
 
