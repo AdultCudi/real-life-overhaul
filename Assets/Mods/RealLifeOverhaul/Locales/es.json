@@ -25928,7 +25928,7 @@
   "reallife_bld_answer_land_big": "El terreno de {address} mide {width} por {depth} m, y una obra puede medir como máximo {need} m por lado. Divídelo antes en obras más pequeñas.",
   "reallife_bld_answer_unfit_narrow": "{builder} no puede replantear la obra de {address}: el terreno mide {width} m de ancho, y una obra necesita al menos {need} m. No se cobró nada. Puedes cancelar el proyecto y recuperar las tasas.",
   "reallife_bld_answer_unfit_shallow": "{builder} no puede replantear la obra de {address}: el terreno mide {depth} m de fondo, y una obra necesita al menos {need} m. No se cobró nada. Puedes cancelar el proyecto y recuperar las tasas.",
-  "reallife_bld_answer_unfit_big": "{builder} no puede replantear la obra de {address}: el terreno mide {width} por {depth} m, y una obra puede medir como máximo {need} m por lado. No se cobró nada. Puedes cancelar el proyecto y recuperar las tasas.",
+  "reallife_bld_answer_unfit_big": "{builder} no puede replantear la obra de {address}: el terreno mide {width} por {depth} m y una obra mide como máximo {need} m por lado. No se cobró nada. Cancela el proyecto para recuperar las tasas.",
   "reallife_bld_answer_site_off": "Las obras de la ciudad están desactivadas en las opciones del mod, así que no se pudo replantear ninguna. No se cobró nada.",
   "reallife_bld_answer_site_host": "En una sesión de Going Public el anfitrión replantea las obras de la ciudad, así que no se puede replantear ninguna por tu parte. No se cobró nada.",
   "reallife_bld_answer_site_there": "Ya hay una obra allí, o el edificio no tiene puerta a la calle desde la que trabajar. No se cobró nada.",
