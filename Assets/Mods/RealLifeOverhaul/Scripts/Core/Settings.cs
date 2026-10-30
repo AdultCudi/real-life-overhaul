@@ -152,6 +152,7 @@
         public const string HustlesId = "hustles";
         public const string EconomyId = "economy";
         public const string EconomyGradeUpNotesId = "economy_grade_up_notes";
+        public const string EconomyDayResultId = "economy_day_result";   // the day-end panel and the top bar show the game's figure with the mod's money
         public const string EconomyProductsId = "economy_products";
         public const string EconomySharkId = "economy_shark";
         public const string EconomyConsequencesId = "economy_consequences";
@@ -516,6 +517,7 @@
         public static bool PlannerMorning = true;        // ...and one line of the day on waking (off: none)
         public static bool Economy = true;               // the credit rating, the banks' terms by it, loans from the phone and the Finance app
         public static bool EconomyGradeUpNotes = true;   // ...a notification when the rating rises a grade
+        public static bool EconomyDayResult = true;      // ...the day's result with the mod's money on the day-end panel and the top bar
         public static bool EconomyProducts = true;       // more kinds of credit (off: nothing new is opened or drawn; what is owed stays owed)
         public static bool EconomyShark = true;          // the lender of last resort
         public static bool EconomyConsequences = true;   // what lenders do when payments are missed (off: only the rating is affected)
@@ -934,6 +936,7 @@
             Hustles = Bool(modId, HustlesId, Hustles);
             Economy = Bool(modId, EconomyId, Economy);
             EconomyGradeUpNotes = Bool(modId, EconomyGradeUpNotesId, EconomyGradeUpNotes);
+            EconomyDayResult = Bool(modId, EconomyDayResultId, EconomyDayResult);
             EconomyProducts = Bool(modId, EconomyProductsId, EconomyProducts);
             EconomyShark = Bool(modId, EconomySharkId, EconomyShark);
             EconomyConsequences = Bool(modId, EconomyConsequencesId, EconomyConsequences);

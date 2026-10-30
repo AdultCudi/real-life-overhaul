@@ -244,6 +244,7 @@ namespace RealLifeOverhaul.Economy
             {
                 return;   // LifeEvents makes the save's modData ready first
             }
+            KeepDayResult();
             if (!Settings.Economy)
             {
                 if (_running)
@@ -343,6 +344,7 @@ namespace RealLifeOverhaul.Economy
                              + (banks == 0 ? "looked for again for " + FindTries + " s" : ok ? "PASS" : "FAIL"));
             }
             Badge();
+            ShowDayResultAtStart();
         }
 
         // The banks get their own terms back and the app leaves the phone. Only 'keep' (a stop in the middle of play, when the

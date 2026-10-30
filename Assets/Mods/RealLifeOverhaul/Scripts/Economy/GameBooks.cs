@@ -16,7 +16,7 @@ namespace RealLifeOverhaul.Economy
     /// afresh from the save, so a second refresh counts nothing twice. Dealerships (Empire Motors and Economy/Dealer) are
     /// booked by their address too. Cost: one walk of the transaction history a day (<see cref="Day"/>).
     /// </summary>
-    public static class GameBooks
+    public static partial class GameBooks
     {
         /// <summary>Owner deduction labels whose mixed costs have no single portable recurrence rule.</summary>
         internal static string[] CompanionUnclassifiedTaxLabels() => new[] { "reallife_empire_deduct".GetLocalization() };
@@ -97,14 +97,7 @@ namespace RealLifeOverhaul.Economy
             Func<string, bool> takings = EconomyBridges.Takings;
             Func<string, string> costRow = EconomyBridges.CostRow;
             float unassigned = 0f;
-            EmpireMotors.Dealerships(Dealers);
-            Dealership.DealerGame.Dealerships(OwnRegs);
-            OwnDealers.Clear();
-            for (int i = 0; i < OwnRegs.Count; i++)
-            {
-                OwnDealers.Add(OwnRegs[i].Address);
-            }
-            OwnRegs.Clear();
+            ReadDealers();
             DealerDay.Clear();
             DealerTakings = DealerCosts = 0f;
             List<Transaction> ofDay = Day(day);
@@ -302,6 +295,19 @@ namespace RealLifeOverhaul.Economy
                 FinancialSummaryHelper.UpdateIncomeStatementTotalProfit(summary);
             }
             return changed;
+        }
+
+        // The player's dealerships, Empire Motors' and this mod's own, as the day's walks need them.
+        private static void ReadDealers()
+        {
+            EmpireMotors.Dealerships(Dealers);
+            Dealership.DealerGame.Dealerships(OwnRegs);
+            OwnDealers.Clear();
+            for (int i = 0; i < OwnRegs.Count; i++)
+            {
+                OwnDealers.Add(OwnRegs[i].Address);
+            }
+            OwnRegs.Clear();
         }
 
         private static float Sum(Dictionary<string, float> byCategory, string category)
