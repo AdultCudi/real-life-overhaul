@@ -50,7 +50,7 @@ The first five are game-free and compiled by EconomyCheck (`ListingChecks.cs`), 
 
 ### The rules in short (every figure is in the catalogue and printed by the Guide)
 
-- **To come to the market**: two years since the first business, four complete quarters of books, takings and profit over them above a least (at today's prices), a profit in three of them, and a clean audit (tax unpaid past its day, late returns, takings kept off the books, a bankruptcy or debt arrangement qualify it; a bribe that came out is disclosed).
+- **To come to the market**: two years since the first business (the oldest of yours still running, counted from the day it started, which the mod keeps in the save as `reallife:founding` because the game's moving company leaves a moved business without it: `Core/FoundingGame`; a business moved before the mod kept it counts from the first day of the game's statements for the building it left), four complete quarters of books, takings and profit over them above a least (at today's prices), a profit in three of them, and a clean audit (tax unpaid past its day, late returns, takings kept off the books, a bankruptcy or debt arrangement qualify it; a bribe that came out is disclosed).
 
   Advisers' retainer, the audit's fee, the underwriters and the exchange as the catalogue says.
 

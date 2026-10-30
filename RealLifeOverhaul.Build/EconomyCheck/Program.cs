@@ -588,6 +588,7 @@ internal static partial class Program
         Wages();        // wages the mod raises: the report's 30 days reproduced, the cap, one rise a period, the repair on load, every write bounded (WageChecks.cs)
         BrandRec();     // three gyms' recognition over 20 days, tenths shown, mornings missed, a quit influencer's paid posts, paid posts counted and saved (BrandRecChecks.cs)
         DayRoll();      // the game's night kept whole: the report's growing payroll and stuck brand reproduced, unknown goods taken out of the market, hours a stopped night left put right (DayRollChecks.cs)
+        Founding();     // the start days of the player's businesses kept across a moving company's move: the report's 0.3 years reproduced, a moved business keeping its age, an unknown one not day 0, estimates, the save line, every feature asking the one place (FoundingChecks.cs)
         Photos();       // the Camera and the Gallery: names, the cap, deleted saves, the order from a folder, the photo and its small copy to Flare, the camera's rules, the restore, the sources, the texts (PhotoChecks.cs)
         Gallery();      // the Gallery: the photo that would not open, one tap, albums, days, rows in view, before and after, favourites, texts (GalleryChecks.cs)
         GuideMarks();   // the mod's marks on the game's destination guider: whose a marker is, Hide whatever was believed, the watch by time, owner and scene, unloading, the accident's own end (GuideMarkChecks.cs)

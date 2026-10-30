@@ -46,6 +46,7 @@ Each feature keeps its state in the save's `modData` under keys that start `real
 | `reallife:flare_cast` | `Social/Flare/FlareStore.cs` |
 | `reallife:flare_net` | `Social/Flare/FlareLiveStore.cs` |
 | `reallife:flare_posts` | `Social/Flare/FlareStore.cs` |
+| `reallife:founding` | `Core/FoundingStore.cs` |
 | `reallife:friend_day` | `Core/ModState.cs`, `Meta/FeatureList.cs` |
 | `reallife:fuel` | `Meta/FeatureList.cs` |
 | `reallife:garage` | `Meta/FeatureList.cs`, `Transport/CarGarage.cs` |
