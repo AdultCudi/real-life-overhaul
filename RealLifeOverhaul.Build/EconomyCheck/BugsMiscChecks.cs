@@ -14,6 +14,7 @@ internal static partial class Program
     private static void BugsMisc()
     {
         MiscPoliceReport();
+        MiscTransactionLabels();
         MiscWardrobe();
         MiscPresetValues();
         MiscSaveReport();
@@ -34,6 +35,43 @@ internal static partial class Program
     }
 
     // The police report: the desk handed it to a bridge nobody set. Now it reaches the insurers.
+    // A transaction is booked as a key and the game shows its category through the key + "_label" (CashFlow, ConstructionGame): a key with no label
+    // shows as a raw code in BizMan's money pages. Every key a booking names in the Scripts has a label in every language.
+    private static void MiscTransactionLabels()
+    {
+        string scripts = System.IO.Path.GetFullPath(System.IO.Path.Combine(LocalesFolder(), @"..\Scripts"));
+        var keys = new SortedSet<string>();
+        foreach (string path in System.IO.Directory.GetFiles(scripts, "*.cs", System.IO.SearchOption.AllDirectories))
+        {
+            foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(System.IO.File.ReadAllText(path), "\"(reallife_transaction_[a-z0-9_]+)\""))
+            {
+                if (!m.Groups[1].Value.EndsWith("_label"))
+                {
+                    keys.Add(m.Groups[1].Value);
+                }
+            }
+        }
+        string[] codes = { "en", "de", "es", "fr", "ko", "nl", "pl", "pt", "ru", "tr", "zh-cn" };
+        foreach (string code in codes)
+        {
+            Dictionary<string, string> words = LoadWords(System.IO.Path.Combine(LocalesFolder(), code + ".json"));
+            var lacking = new List<string>();
+            foreach (string key in keys)
+            {
+                string label;
+                if (code != "en" && code != "pt" && code != "zh-cn" && !words.ContainsKey(key))
+                {
+                    continue;   // a language still behind on the key reads English for the key and its label
+                }
+                if (!words.TryGetValue(key + "_label", out label) || string.IsNullOrWhiteSpace(label))
+                {
+                    lacking.Add(key);
+                }
+            }
+            Check(keys.Count > 400 && lacking.Count == 0, "transaction labels: every booked reallife_transaction key has a _label in " + code + (lacking.Count > 0 ? " (lacking " + lacking.Count + ", first " + lacking[0] + ")" : ""));
+        }
+    }
+
     private static void MiscPoliceReport()
     {
         var claims = new List<Claim>
@@ -91,6 +129,8 @@ internal static partial class Program
         Check(ModSource(@"Events\Weather.cs").Contains("Weather.Wardrobe.WearingCoat ? 0f : 2f"), "wardrobe: a coat is what the cold's cost reads");
         string coats = ModSource(@"Seasons\SeasonGame.Coats.cs");
         Check(coats.Contains("WarmthRules.WarmTops") && !coats.Contains("private static readonly string[] WarmTops"), "wardrobe: the street's people and the player are dressed warm by one list");
+        Check(coats.Contains("LookIntact(look)") && coats.Contains("head.sharedMesh != null") && coats.Contains("look.data == null"),
+            "wardrobe: an outfit is put back only on a look whose head part and mesh the city unload has not destroyed (no NullReferenceException in UpdateHeadBlendshapes)");
     }
 
     // A preset's value as the options page shows it.

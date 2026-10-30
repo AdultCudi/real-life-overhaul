@@ -59,7 +59,7 @@ internal static partial class Program
             lastPush = push;
         }
         Check(just && ordered && capped && GateRules.PushOut(spawn - 0.5f, trigger) > 0.4f && GateRules.PushOut(spawn - 0.5f, trigger) < 0.5f && GateRules.PushOut(spawn - 20f, trigger) == GateRules.ExitMost,
-            "gate exit: a car whose mesh is centred 0.1 to 1.6 m behind its origin is moved out by just the distance its tail stands into the trigger plus " + GateRules.ExitClear + " m (0.48 m at 0.5 m), more the further behind it is, never more than " + GateRules.ExitMost + " m");
+            "gate exit: a car whose mesh is centred 0.1 to 1.6 m behind its origin is moved out by just the distance its tail stands into the trigger plus " + GateRules.ExitClear + " m (0.43 m at 0.5 m), more the further behind it is, never more than " + GateRules.ExitMost + " m");
         Check(GateRules.PushOut(spawn + 1f, trigger) == 0f && GateRules.PushOut(trigger + GateRules.ExitClear, trigger) == 0f && GateRules.PushOut(trigger + GateRules.ExitClear - 0.01f, trigger) > 0f && GateRules.EnterBack == 1.3f && GateRules.EnterHalf == 0.33f,
             "gate exit: a car already out beyond the trigger is never moved, and the edge of the clear margin is exact");
 

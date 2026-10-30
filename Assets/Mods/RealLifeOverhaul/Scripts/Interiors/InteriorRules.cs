@@ -161,6 +161,7 @@ namespace RealLifeOverhaul.Interiors
         public const int RedecorateShare = 500;       // thousandths of the wear a redecoration keeps
         public const int RefreshPerSqm = 2;           // dollars a square metre to refresh the finishes
         public const int RefreshLeast = 150, RefreshMost = 5000;   // dollars
+        public const int RefreshFrom = 50;            // thousandths of wear under which a refresh is refused: nothing to mend
         public const int WornFrom = 600;              // thousandths of wear an inspector notices
         public const int WornInspection = 5;          // points off the cleanliness they judge
         public const int InteriorShare = 600;         // thousandths of the overall figure that is the interior score
@@ -350,15 +351,20 @@ namespace RealLifeOverhaul.Interiors
 
         /// <summary>
         /// Why a refresh of the finishes cannot be done, as the notice's locale key, or null when it can: wear off in the options
-        /// first (nothing wears), then a business Interiors keeps no record of (not read yet, or its file list full).
+        /// first (nothing wears), then a business Interiors keeps no record of (not read yet, or its file list full), then finishes
+        /// worn less than <see cref="RefreshFrom"/> (thousandths), where there is nothing to mend.
         /// </summary>
-        public static string RefreshRefused(int wearScale, bool known, bool filed)
+        public static string RefreshRefused(int wearScale, bool known, bool filed, int wear)
         {
             if (wearScale <= 0)
             {
                 return "reallife_interior_wear_off";
             }
-            return known && filed ? null : "reallife_interior_refresh_unknown";
+            if (!known || !filed)
+            {
+                return "reallife_interior_refresh_unknown";
+            }
+            return wear < RefreshFrom ? "reallife_interior_refresh_fresh" : null;
         }
 
         /// <summary>The decor points a refit of a grade gives (0 plain, 1 good, 2 fine), kept inside the table.</summary>

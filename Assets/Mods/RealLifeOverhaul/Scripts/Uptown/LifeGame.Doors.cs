@@ -134,7 +134,7 @@ namespace RealLifeOverhaul.Uptown
                             {
                                 float into = GateRules.PushOut(near, far);
                                 why = "a car put out by door " + doors[i].doorID + " stands " + into.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)
-                                      + " m into the door's entrance trigger, which would take it back in";
+                                      + " m inside the door's " + GateRules.ExitClear.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + " m safety margin";
                             }
                         }
                     }

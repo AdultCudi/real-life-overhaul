@@ -42,6 +42,7 @@ namespace RealLifeOverhaul.Meals
         public const float SeatedAtLeast = 8f;      // the hunger bar's rise (of 100) that is a meal worth sitting down to
         public const float LeastSeconds = 8f;       // s: the shortest meal watched at the table
         public const float MostSeconds = 15f;       // s: the longest
+        public const float WindDownMost = 1.5f;     // s: the most the plate waits for the eating animation to end after the meal's time, then it goes anyway
         public const float SecondsPerFill = 0.125f; // s of eating per point the meal fills, on top of the shortest
         public const float WaitMost = 5f;           // s: the game's own bite and its panel are waited for at most this long
         public const float WalkMost = 20f;          // s: a walk to the seat that has not arrived by then is given up
