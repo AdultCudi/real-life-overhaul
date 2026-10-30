@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Markets
 {
@@ -80,6 +81,23 @@ namespace RealLifeOverhaul.Markets
             q.Days++;
             f.Books[at] = q;
             f.BooksDay = Math.Max(f.BooksDay, statementDay);
+        }
+
+        /// <summary>
+        /// The earliest start day among the days of the player's businesses still running (none known, 0 or less, are left out); 0 when there is none. The oldest
+        /// one decides the years on the page, whatever is founded after it.
+        /// </summary>
+        public static int EarliestDay(IList<int> days)
+        {
+            int first = 0;
+            for (int i = 0; days != null && i < days.Count; i++)
+            {
+                if (days[i] > 0 && (first == 0 || days[i] < first))
+                {
+                    first = days[i];
+                }
+            }
+            return first;
         }
 
         /// <summary>The last complete quarters before the day's, up to so many; how many made a profit.</summary>

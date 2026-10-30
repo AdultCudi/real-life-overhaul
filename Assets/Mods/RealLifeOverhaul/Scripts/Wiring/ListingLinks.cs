@@ -86,6 +86,7 @@ namespace RealLifeOverhaul
 
             private static readonly ListingSource Source = new ListingSource();
             private static readonly List<BuildingRegistration> Businesses = new List<BuildingRegistration>(16);
+            private static readonly List<int> FirstDays = new List<int>(16);
             private static readonly List<string> Keys = new List<string>(16);
 
             // The causes of a reputation move that came from what the press made of the player.
@@ -214,15 +215,20 @@ namespace RealLifeOverhaul
                 int day = save.Day, year = Math.Max(8, GameCalendar.DaysPerYear);
                 try
                 {
-                    Books.Businesses(Businesses);
-                    for (int i = 0; i < Businesses.Count; i++)
+                    // Every business of the player's still running counts for the years, whatever it sells: Books.Businesses leaves out one the game does not
+                    // tag as taking money (an older office, say), and the oldest then looked like the newest.
+                    FirstDays.Clear();
+                    for (int i = 0; save.BuildingRegistrations != null && i < save.BuildingRegistrations.Count; i++)
                     {
-                        int created = ServicesGame.Created(Businesses[i]);
-                        if (created > 0 && (f.FirstDay == 0 || created < f.FirstDay))
+                        BuildingRegistration reg = save.BuildingRegistrations[i];
+                        if (reg != null && GoingPublic.Mine(reg) && reg.RentedByPlayer && reg.HasEstablishedBusiness && reg.HasValidAddress && !string.IsNullOrEmpty(reg.businessTypeName)
+                            && GameRegistrations.Found(reg))
                         {
-                            f.FirstDay = created;
+                            FirstDays.Add(ServicesGame.Created(reg));
                         }
                     }
+                    f.FirstDay = ListingBook.EarliestDay(FirstDays);
+                    FirstDays.Clear();
                     f.BackTaxes = save.currentBackTaxes > 0.5f || (save.currentUnpaidTaxes != null && day > save.currentUnpaidTaxes.dueDay);
                     for (int i = 0; save.Loans != null && i < save.Loans.Count; i++)
                     {

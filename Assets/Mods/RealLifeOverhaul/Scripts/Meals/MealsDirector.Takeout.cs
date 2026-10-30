@@ -124,7 +124,7 @@ namespace RealLifeOverhaul.Meals
                 _testPlate = _testMeal && (_body.PlateOut || _shown != null);
                 return;
             }
-            if (Time.time >= _until)
+            if (Time.time >= _until && EatingFinished())
             {
                 End(true, "the meal was eaten", false);
             }

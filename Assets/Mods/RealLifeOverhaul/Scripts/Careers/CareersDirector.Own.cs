@@ -406,12 +406,22 @@ namespace RealLifeOverhaul.Careers
         /// <summary>A business of the player's own where a profession's desk work can be done (an office, or the practice's own kind), or null.</summary>
         internal BuildingRegistration OwnOffice(Profession p)
         {
+            return OwnOffice(p, false);
+        }
+
+        /// <summary>
+        /// An office business of the player's for a desk profession: one of a type it works in, the headquarters, or any business standing in an office building
+        /// (the mod's own too). With <paramref name="here"/> only the one the player is inside, so a second office or the headquarters counts as the first does.
+        /// </summary>
+        private BuildingRegistration OwnOffice(Profession p, bool here)
+        {
             ReadMine();
             for (int i = 0; i < _mine.Count; i++)
             {
                 BuildingRegistration reg = _mine[i];
                 string type = reg.businessTypeName ?? string.Empty;
-                if (ProCatalogue.EmploysKept(p, type) || type == "ba:businesstype_headquarters")
+                if ((ProCatalogue.EmploysKept(p, type) || type == "ba:businesstype_headquarters" || GameRegistrations.BuildingType(reg) == "ba:buildingtype_office")
+                    && (!here || CareersGame.InsideAt(reg.StreetName, reg.StreetNumber)))
                 {
                     return reg;
                 }
@@ -479,8 +489,7 @@ namespace RealLifeOverhaul.Careers
             {
                 return null;
             }
-            BuildingRegistration office = OwnOffice(p);
-            return office != null && CareersGame.InsideAt(office.StreetName, office.StreetNumber) ? null : "reallife_own_why_desk";
+            return OwnOffice(p, true) != null ? null : "reallife_own_why_desk";
         }
 
         public string WorkContract(int id)

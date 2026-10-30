@@ -18,6 +18,7 @@ internal static partial class Program
         MealTimeChecks();
         DanceRuleChecks();
         MealSourceChecks();
+        MealPlateStaysChecks();
         MealTextChecks();
         Takeout();   // takeout and plates: TakeoutChecks.cs
     }
@@ -257,6 +258,18 @@ internal static partial class Program
     private static string MealsSource(string name)
     {
         return ModSource(@"Meals\" + name);
+    }
+
+    // The plate stays on the table until the eating animation has ended (not until a bare timer), and goes at once when the meal is cancelled.
+    private static void MealPlateStaysChecks()
+    {
+        string director = MealsSource("MealsDirector.cs"), takeout = MealsSource("MealsDirector.Takeout.cs"), body = MealsSource("MealBody.cs");
+        Check(director.Contains("Time.time >= _until && EatingFinished()") && takeout.Contains("Time.time >= _until && EatingFinished()"),
+            "meals: at the meal's time both the walked meal and the rested one end the eating animation first, and the plate goes after it");
+        Check(director.Contains("_body.WoundDown || Time.time >= _windUntil") && body.Contains("OverWeight <= 0.02f") && body.Contains("public bool WindDown()"),
+            "meals: the plate waits for the clip to fade off the body, with a cap so it can never stay");
+        Check(MealsRules.WindDownMost > 0f && MealsRules.WindDownMost <= 3f, "meals: the wait for the animation is short and capped (" + MealsRules.WindDownMost + " s)");
+        Check(director.Contains("End(false, \"the player moved off\", true)") && director.Contains("_winding = false;"), "meals: a cancelled meal ends at once and takes the plate with it");
     }
 
     private static void MealSourceChecks()

@@ -163,6 +163,7 @@ internal static partial class Program
     {
         var watch = Stopwatch.StartNew();
         int before = _run, failedBefore = _failed;
+        ListingYearsChecks();
         ListingBooksChecks();
         ListingRequirementChecks();
         ListingFeeChecks();
@@ -191,6 +192,17 @@ internal static partial class Program
     }
 
     // ---------------------------------------------------------------- the books
+
+    private static void ListingYearsChecks()
+    {
+        // Two companies, the older still running: the years are the older's, whatever was founded after it.
+        Check(ListingBook.EarliestDay(new[] { 40, 600 }) == 40 && ListingBook.EarliestDay(new[] { 600, 40 }) == 40, "listing years: of two businesses the older day decides");
+        Check(ListingBook.EarliestDay(new[] { 0, -1, 600 }) == 600 && ListingBook.EarliestDay(new int[0]) == 0 && ListingBook.EarliestDay(null) == 0, "listing years: unknown days are left out, none gives 0");
+        var need = new Requirement[ListingBook.NeedCount];
+        var file = new ListingFile();
+        ListingBook.Requirements(file, new ListingFacts { FirstDay = ListingBook.EarliestDay(new[] { 40, 600 }), Standing = 50 }, 640, LYear, 1.0, need);
+        Check(need[ListingBook.NeedYears].Has == 600, "listing years: the page counts from the older business (" + need[ListingBook.NeedYears].Has + " days)");
+    }
 
     private static void ListingBooksChecks()
     {
