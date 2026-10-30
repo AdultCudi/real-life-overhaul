@@ -59,6 +59,10 @@ internal static partial class Program
             foreach (string key in keys)
             {
                 string label;
+                if (code != "en" && code != "pt" && code != "zh-cn" && !words.ContainsKey(key))
+                {
+                    continue;   // a language still behind on the key reads English for the key and its label
+                }
                 if (!words.TryGetValue(key + "_label", out label) || string.IsNullOrWhiteSpace(label))
                 {
                     lacking.Add(key);
