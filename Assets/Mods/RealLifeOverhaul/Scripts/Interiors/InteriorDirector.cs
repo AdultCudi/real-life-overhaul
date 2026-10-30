@@ -692,7 +692,7 @@ namespace RealLifeOverhaul.Interiors
         {
             InteriorShop s = At(reg);
             InteriorFile f = s != null ? _store.File(s.Place, true) : null;
-            string refused = InteriorRules.RefreshRefused(Parts.WearScale, s != null, f != null);
+            string refused = InteriorRules.RefreshRefused(Parts.WearScale, s != null, f != null, f != null ? f.Wear : 0);
             if (refused != null)
             {
                 var why = new Dictionary<string, string>(1) { { "business", s != null ? s.Name : BusinessGame.Name(reg) } };

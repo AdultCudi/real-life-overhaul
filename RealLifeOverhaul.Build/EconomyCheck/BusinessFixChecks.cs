@@ -70,21 +70,26 @@ internal static partial class Program
 
     private static void InteriorRefreshTold()
     {
-        Check(InteriorRules.RefreshRefused(0, true, true) == "reallife_interior_wear_off" && InteriorRules.RefreshRefused(0, false, false) == "reallife_interior_wear_off"
-              && InteriorRules.RefreshRefused(1000, false, false) == "reallife_interior_refresh_unknown" && InteriorRules.RefreshRefused(1000, true, false) == "reallife_interior_refresh_unknown"
-              && InteriorRules.RefreshRefused(1000, true, true) == null && InteriorRules.RefreshRefused(-5, true, true) == "reallife_interior_wear_off",
-            "interiors refresh: wear off is said first, then a business with no record; none when it can be done");
+        Check(InteriorRules.RefreshRefused(0, true, true, 500) == "reallife_interior_wear_off" && InteriorRules.RefreshRefused(0, false, false, 0) == "reallife_interior_wear_off"
+              && InteriorRules.RefreshRefused(1000, false, false, 500) == "reallife_interior_refresh_unknown" && InteriorRules.RefreshRefused(1000, true, false, 500) == "reallife_interior_refresh_unknown"
+              && InteriorRules.RefreshRefused(1000, true, true, 500) == null && InteriorRules.RefreshRefused(-5, true, true, 500) == "reallife_interior_wear_off"
+              && InteriorRules.RefreshRefused(1000, true, true, 0) == "reallife_interior_refresh_fresh" && InteriorRules.RefreshRefused(1000, true, true, InteriorRules.RefreshFrom - 1) == "reallife_interior_refresh_fresh"
+              && InteriorRules.RefreshRefused(1000, true, true, InteriorRules.RefreshFrom) == null && InteriorRules.RefreshRefused(1000, false, true, 0) == "reallife_interior_refresh_unknown",
+            "interiors refresh: wear off is said first, then a business with no record, then finishes under the wear floor (nothing to mend); none when it can be done");
         string director = ModSource(@"Interiors\InteriorDirector.cs");
         string refresh = MemberText(director, "public bool Refresh(BuildingRegistration reg)");
         int falses = Regex.Matches(refresh, @"return false;").Count;
         int told = Regex.Matches(refresh, @"Notifications\.Show\(NotificationType\.Warning, ").Count;
-        Check(refresh.Contains("InteriorRules.RefreshRefused(Parts.WearScale, s != null, f != null)") && falses == 2 && told == 2
+        Check(refresh.Contains("InteriorRules.RefreshRefused(Parts.WearScale, s != null, f != null, f != null ? f.Wear : 0)") && falses == 2 && told == 2
               && refresh.IndexOf("Notifications.Show(NotificationType.Warning, refused", StringComparison.Ordinal) < refresh.IndexOf("return false;", StringComparison.Ordinal),
             "interiors refresh: every way it does nothing tells the player why in a notice, as the money short does (" + told + " notices for " + falses + " refusals)");
+        Check(ModSource(@"Interiors\InteriorTab.Pages.cs").Contains("if (s.Wear >= InteriorRules.RefreshFrom)"),
+            "interiors refresh: the Interior tab shows the refresh button only from the wear floor up");
         foreach (string language in new[] { "en", "pt", "zh-cn" })
         {
             Dictionary<string, string> words = LoadWords(System.IO.Path.Combine(LocalesFolder(), language + ".json"));
             Check(words != null && words.TryGetValue("reallife_interior_wear_off", out string off) && !off.Contains("{")
+                  && words.TryGetValue("reallife_interior_refresh_fresh", out string fresh) && fresh.Contains("{business}") && fresh.Length <= 240
                   && words.TryGetValue("reallife_interior_refresh_unknown", out string unknown) && unknown.Contains("{business}") && (language != "en" || unknown.Length <= 240 && off.Length <= 240),
                 "interiors refresh (" + language + "): both refusals are written, the record's naming the business, within 240 characters");
         }

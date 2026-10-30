@@ -402,16 +402,19 @@ namespace RealLifeOverhaul.Interiors
                 {
                     b.Line("reallife_interior_next_worn".GetLocalization());
                 }
-                Transform row = b.ButtonRow();
-                InfoBox.Button(row, InfoBox.Positive, "reallife_interior_refresh_button", () =>
+                if (s.Wear >= InteriorRules.RefreshFrom)
                 {
-                    InteriorDirector d = InteriorDirector.Instance;
-                    if (d != null && d.Refresh(reg))
+                    Transform row = b.ButtonRow();
+                    InfoBox.Button(row, InfoBox.Positive, "reallife_interior_refresh_button", () =>
                     {
-                        UiClone.Safe(Rewrite);
-                    }
-                });
-                b.Line(InteriorText.T("reallife_interior_refresh_cost", "amount", Economy.FinanceText.Money(InteriorGame.RefreshCost(s.Sqm))));
+                        InteriorDirector d = InteriorDirector.Instance;
+                        if (d != null && d.Refresh(reg))
+                        {
+                            UiClone.Safe(Rewrite);
+                        }
+                    });
+                    b.Line(InteriorText.T("reallife_interior_refresh_cost", "amount", Economy.FinanceText.Money(InteriorGame.RefreshCost(s.Sqm))));
+                }
             }
             if (s.RefitNow > 0)
             {
