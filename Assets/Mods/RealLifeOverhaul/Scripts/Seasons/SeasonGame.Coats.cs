@@ -324,7 +324,9 @@ namespace RealLifeOverhaul.Seasons
                 {
                     Change.Add(worn.Legs);
                 }
-                if (look != null && Change.Count > 0)
+                // A city unloading has destroyed some people's head parts before this runs: the game's UpdateVisuals reads the head's mesh and
+                // throws on a dead one, so a look whose parts are gone is left alone (two Unity-null tests, once per outfit put back).
+                if (look != null && Change.Count > 0 && LookIntact(look))
                 {
                     int mark = SessionWatch.Mark(UndressWhat);
                     look.UpdateElements(Change);
@@ -335,6 +337,17 @@ namespace RealLifeOverhaul.Seasons
             int back = Undress.Count;
             Undress.Clear();
             return back;
+        }
+
+        // True while the person's look still has the head part and mesh the game's UpdateHeadBlendshapes reads.
+        internal static bool LookIntact(AppearanceSetter look)
+        {
+            if (look == null || look.data == null)
+            {
+                return false;
+            }
+            SkinnedMeshRenderer head = look.HeadMesh;
+            return head != null && head.sharedMesh != null;
         }
 
         /// <summary>Every outfit changed put back at once. Safe at any time.</summary>

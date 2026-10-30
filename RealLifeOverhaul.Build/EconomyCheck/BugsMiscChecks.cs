@@ -91,6 +91,8 @@ internal static partial class Program
         Check(ModSource(@"Events\Weather.cs").Contains("Weather.Wardrobe.WearingCoat ? 0f : 2f"), "wardrobe: a coat is what the cold's cost reads");
         string coats = ModSource(@"Seasons\SeasonGame.Coats.cs");
         Check(coats.Contains("WarmthRules.WarmTops") && !coats.Contains("private static readonly string[] WarmTops"), "wardrobe: the street's people and the player are dressed warm by one list");
+        Check(coats.Contains("LookIntact(look)") && coats.Contains("head.sharedMesh != null") && coats.Contains("look.data == null"),
+            "wardrobe: an outfit is put back only on a look whose head part and mesh the city unload has not destroyed (no NullReferenceException in UpdateHeadBlendshapes)");
     }
 
     // A preset's value as the options page shows it.
