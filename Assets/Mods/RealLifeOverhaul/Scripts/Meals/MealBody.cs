@@ -28,6 +28,7 @@ namespace RealLifeOverhaul.Meals
         private Transform _plate;        // the mod's plate: in the hands, or on the table
         private bool _over;              // a clip of ours on part of the body
         private bool _eating;            // the game's own seated eating is on
+        private bool _winding;          // the eating was ended and the plate stays until the arm is down
         private bool _gameEats = true;   // false once the player's animator was found without it
 
         public MealBody(JobProps props, IModLogger logger)
@@ -146,6 +147,25 @@ namespace RealLifeOverhaul.Meals
             return true;
         }
 
+        /// <summary>
+        /// The meal is eaten: the eating animation is ended and the plate stays on the table. True when there is an animation to see out
+        /// (see <see cref="WoundDown"/>); false when nothing was eating, and the plate may go at once.
+        /// </summary>
+        public bool WindDown()
+        {
+            _winding = _over || _eating;
+            StopEating();
+            if (_over && _animator != null)
+            {
+                _animator.StopOver(0.25f);
+            }
+            _over = false;
+            return _winding;
+        }
+
+        /// <summary>After <see cref="WindDown"/>: the mod's clip has faded off the body. (The game's own eating has no weight to read: the caller's cap ends that wait.)</summary>
+        public bool WoundDown => _animator != null && _animator.OverWeight <= 0.02f;
+
         /// <summary>What eats: the game's own animation, the mod's clip, or none.</summary>
         public string EatingBy => _eating ? "the game's own seated eating" : _over ? "the mod's eat_sit clip" : "nothing (no clip could be played)";
 
@@ -154,6 +174,7 @@ namespace RealLifeOverhaul.Meals
         {
             try
             {
+                _winding = false;
                 StopEating();
                 StopOver();
                 _hold.Detach(null);

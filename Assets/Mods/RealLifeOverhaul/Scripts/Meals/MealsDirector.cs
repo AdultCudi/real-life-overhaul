@@ -33,6 +33,8 @@ namespace RealLifeOverhaul.Meals
         private Step _step;
         private MealSeat _seat;
         private bool _cooked;            // a plate from the home's cooker, carried over
+        private bool _winding;           // the meal's time is up and the plate waits for the eating animation to end
+        private float _windUntil;
         private bool _here;              // at the seat the game's own rest has the player on: no walk, and no sitting down or getting up of ours
         private bool _own;               // a dish of the player's own (packed at home): a plate, never the place's tray
         private float _fill;             // what the meal filled, of the game's 100: how long it is eaten
@@ -335,7 +337,7 @@ namespace RealLifeOverhaul.Meals
                     {
                         End(false, "a screen came up", true);
                     }
-                    else if (Time.time >= _until)
+                    else if (Time.time >= _until && EatingFinished())
                     {
                         End(true, "the meal was eaten", true);
                     }
@@ -429,6 +431,22 @@ namespace RealLifeOverhaul.Meals
             Say("seated at " + _seat.Kind + " with " + _food + "; eating by " + _body.EatingBy + " for " + MealsRules.EatSeconds(_fill).ToString("0", Inv) + " s", eats && (_here || _body.Seated));
         }
 
+        // The meal's time is up: the eating animation is ended first and the plate stays until the arm is down (or the cap, WindDownMost). A move, a screen
+        // or a click ends the meal at once and the plate with it. One cheap test a frame while the plate is out.
+        private bool EatingFinished()
+        {
+            if (!_winding)
+            {
+                _winding = true;
+                _windUntil = Time.time + MealsRules.WindDownMost;
+                if (!_body.WindDown())
+                {
+                    return true;
+                }
+            }
+            return _body.WoundDown || Time.time >= _windUntil;
+        }
+
         // The game's own event for a new walk order or a movement key: on the way, the player has gone elsewhere.
         private void Moved()
         {
@@ -464,6 +482,7 @@ namespace RealLifeOverhaul.Meals
             }
             Step was = _step;
             _step = Step.None;
+            _winding = false;
             bool here = _here;
             _here = false;
             PlayerController player = _player;
