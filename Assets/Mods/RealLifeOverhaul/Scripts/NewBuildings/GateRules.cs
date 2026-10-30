@@ -50,7 +50,7 @@ namespace RealLifeOverhaul.NewBuildings
         public const float FrontAhead = 3f;       // m before it
         public const float EnterBack = 1.3f;      // m: a door's entrance trigger box is centred this far door-ward of its object, at the tunnel's inner end (Build 3682, all 62 doors)
         public const float EnterHalf = 0.33f;     // m: and is this deep either side of its centre (0.35 on the 10 doors of 4.9 m); a vehicle that touches it is taken in
-        public const float ExitClear = 0.25f;     // m the body of a car put out at the door's spawn point is kept clear of that trigger (a touch takes it back in; 1001 2nd Street and 4 Park Street stand 0.28 m clear, so 0.3 failed them by 0.02)
+        public const float ExitClear = 0.25f;     // m a car put out stays clear of that trigger (a touch takes it back in; two doors give 0.28 m)
         public const float ExitMost = 3f;         // m the most a car put out is moved along the door's way, to be clear of the trigger
         public const int ParkFrom = 1000000;      // the lowest number a copy's car park is given: the game's own are 1 to 5
         public const int ParkSpan = 1000000000;   // numbers in the range a copy's car park is drawn from, so two never share one in practice
