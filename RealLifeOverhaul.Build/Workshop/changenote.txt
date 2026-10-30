@@ -1,9 +1,4 @@
-0.61.2
+0.61.3
 
 Fixed
-- The Refresh the finishes button charged the full price even when nothing was worn. It now hides until the finishes are worn 5% or more, and the game says so if you ask earlier.
-- A car put out of two warehouses (1001 2nd Street and 4 Park Street) stood 2 cm into the door's trigger. It is now kept 25 cm clear.
-- Your own contracts could not be worked at your headquarters or at a second office business of yours. Any office business of yours counts now.
-- Going public counted the years from your newest business, so a second company set them back to 0.2. It now counts from the oldest business of yours that still runs.
-- The plate vanished while your character was still eating. It now stays until the eating animation ends.
-- Many bills and takings showed a raw code such as reallife_transaction_util_power_label on BizMan's money pages. They now show a name such as Electricity or Water.
+- Going public counted the years from the wrong business when the oldest one had been moved by a moving company, so a business over a year old could show 0.3 years. A business now keeps its start day when it moves, and investors, Flare and the paper read the same day. One moved before this fix counts from the first day the game still holds figures for the building it left.
