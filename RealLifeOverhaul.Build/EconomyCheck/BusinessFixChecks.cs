@@ -16,6 +16,7 @@ internal static partial class Program
         BusinessFootfallRoom();
         InteriorStations();
         InteriorRefreshTold();
+        OwnContractOffice();
         InteriorWearTest();
         Check(FixLineEverywhere("a smear campaign against your business can come", "uma campanha de difamação contra sua empresa", "针对你企业的抹黑行动", "Eine Rufmordkampagne gegen dein Geschäft",
                                 "une campagne de dénigrement contre votre entreprise", "una campaña de difamación contra tu negocio", "кампания очернения против вашего бизнеса",
@@ -66,6 +67,17 @@ internal static partial class Program
         string requirements = ModSource(@"Interiors\InteriorGame.Requirements.cs");
         Check(bare.Count == 1 && requirements.Contains("if (reg.itemInstances != null)") && bare[0] == "InteriorGame.Requirements.cs: reg.itemInstances.Values",
             "interiors fix: the item list is read in one place without a local, behind its own test (" + string.Join(", ", bare) + ")");
+    }
+
+    // AvioreYT, 30 Oct 2026: own contracts could not be worked at an own office business or headquarters. The place test took only the first office found.
+    private static void OwnContractOffice()
+    {
+        string own = ModSource(@"Careers\CareersDirector.Own.cs");
+        string pick = MemberText(own, "private BuildingRegistration OwnOffice(Profession p, bool here)");
+        string can = MemberText(own, "public string CanWorkContract(Contract c)");
+        Check(pick.Contains("ba:businesstype_headquarters") && pick.Contains("ba:buildingtype_office") && pick.Contains("(!here || CareersGame.InsideAt(reg.StreetName, reg.StreetNumber))")
+              && pick.Contains("for (int i = 0; i < _mine.Count; i++)") && can.Contains("OwnOffice(p, true) != null ? null : \"reallife_own_why_desk\""),
+            "own contracts: desk work counts inside any office business of the player's, the headquarters and any business in an office building, not only the first one found");
     }
 
     private static void InteriorRefreshTold()
