@@ -54,6 +54,7 @@ namespace RealLifeOverhaul
             Step("property", EstateLinks.Connect);
             Step("online shops", OnlineLinks.Connect);
             Step("the tech sector", TechLinks.Connect);
+            Step("the start days of the player's businesses", FoundingLinks.Connect);   // wraps nothing: it only reads the moving companies' messages and the statements
             Step("education and careers", CareersLinks.Connect);
             Step("networking", NetworkLinks.Connect);   // after the careers and the investors: the favours are theirs
             Step("the cleaning service and selling a business", ServicesLinks.Connect);
@@ -136,6 +137,7 @@ namespace RealLifeOverhaul
             Step("networking", NetworkLinks.Disconnect);
             Step("education and careers", CareersLinks.Disconnect);
             Step("the tech sector", TechLinks.Disconnect);
+            Step("the start days of the player's businesses", FoundingLinks.Disconnect);
             Step("online shops", OnlineLinks.Disconnect);
             Step("the city's economy", CityLinks.Disconnect);
             Step("credit and debt", DebtLinks.Disconnect);

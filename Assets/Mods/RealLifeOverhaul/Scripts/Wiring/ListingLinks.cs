@@ -216,7 +216,8 @@ namespace RealLifeOverhaul
                 try
                 {
                     // Every business of the player's still running counts for the years, whatever it sells: Books.Businesses leaves out one the game does not
-                    // tag as taking money (an older office, say), and the oldest then looked like the newest.
+                    // tag as taking money (an older office, say), and the oldest then looked like the newest. Each counts from the day it started, which the
+                    // game forgets when the moving company moves the business (Core/FoundingGame keeps it).
                     FirstDays.Clear();
                     for (int i = 0; save.BuildingRegistrations != null && i < save.BuildingRegistrations.Count; i++)
                     {
@@ -224,7 +225,7 @@ namespace RealLifeOverhaul
                         if (reg != null && GoingPublic.Mine(reg) && reg.RentedByPlayer && reg.HasEstablishedBusiness && reg.HasValidAddress && !string.IsNullOrEmpty(reg.businessTypeName)
                             && GameRegistrations.Found(reg))
                         {
-                            FirstDays.Add(ServicesGame.Created(reg));
+                            FirstDays.Add(FoundingGame.Of(reg));
                         }
                     }
                     f.FirstDay = ListingBook.EarliestDay(FirstDays);

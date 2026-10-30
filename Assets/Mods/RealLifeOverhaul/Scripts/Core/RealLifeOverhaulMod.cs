@@ -1469,6 +1469,8 @@ namespace RealLifeOverhaul
             Guard.Step("GameUi.GuideMarkWatch", () => Guard.Add<GameUi.GuideMarkWatch>(_root));   // one time comparison a frame
             Guard.Step("DayRollGuard", () => DayRollGuard.Logger = context.Logger);
             Guard.Step("DayRollGuard", () => Guard.Add<DayRollGuard>(_root));   // no Update, one comparison a game hour
+            Guard.Step("FoundingWatch", () => FoundingWatch.Logger = context.Logger);
+            Guard.Step("FoundingWatch", () => Guard.Add<FoundingWatch>(_root));   // no Update; a one-second timer, a pass over the buildings once a game hour
             Guard.Step("RivalOfferGuard", () => RivalOfferGuard.Logger = context.Logger);
             Guard.Step("RivalOfferGuard", () => Guard.Add<RivalOfferGuard>(_root));   // no Update
             Guard.Step("StaffLeave", () => StaffLeave.Logger = context.Logger);

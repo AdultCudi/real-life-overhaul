@@ -109,7 +109,7 @@ internal static partial class Program
     {
         Check(FlareRules.OpenedOn(120, 400) == 120 && FlareRules.OpenedOn(-1, 400) == 400 && FlareRules.OpenedOn(0, 400) == 400,
             "Flare: a launch counts from the day the business opened, and from when Flare saw it only for a business with no opening day");
-        Check(BugsSource(@"Social\Flare\FlareGame.cs").Contains("FlareRules.OpenedOn(all[i].creationDay"), "Flare: the shops Flare lists carry the game's own creation day");
+        Check(BugsSource(@"Social\Flare\FlareGame.cs").Contains("FlareRules.OpenedOn(FoundingGame.Of(all[i])"), "Flare: the shops Flare lists carry the day the business started (the game's own creation day, kept across a move by Core/FoundingGame)");
     }
 
     private static void BugsFlareCap()

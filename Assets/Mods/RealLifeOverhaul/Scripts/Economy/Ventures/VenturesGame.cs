@@ -71,11 +71,14 @@ namespace RealLifeOverhaul.Economy.Ventures
             return r == null ? string.Empty : r.GetDisplayName();
         }
 
-        /// <summary>Days the player has had a business; one older than the game remembers counts from day one.</summary>
+        /// <summary>
+        /// Days the player has had a business, from the day it started whatever buildings it has moved through (Core/FoundingGame);
+        /// one older than anything remembered counts from day one.
+        /// </summary>
         private static int Age(BuildingRegistration r)
         {
             GameInstance save = Save;
-            return save == null || r == null ? 0 : Mathf.Max(0, save.Day - Mathf.Max(1, r.creationDay));
+            return save == null || r == null ? 0 : Mathf.Max(0, save.Day - Mathf.Max(1, FoundingGame.Of(r)));
         }
 
         /// <summary>A business's last fourteen days from its statements, means over the days on record; Exists false if the player does not run it.</summary>

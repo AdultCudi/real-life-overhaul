@@ -98,10 +98,11 @@ namespace RealLifeOverhaul
                     for (int i = 0; i < Regs.Count; i++)
                     {
                         BuildingRegistration reg = Regs[i];
-                        if (reg != null && reg.HasEstablishedBusiness && reg.creationDay > v.BusinessDay)
+                        int started = reg != null && reg.HasEstablishedBusiness ? FoundingGame.Of(reg) : 0;   // a business moved to another building did not start again
+                        if (started > v.BusinessDay)
                         {
                             v.Business = reg.BusinessName;
-                            v.BusinessDay = reg.creationDay;
+                            v.BusinessDay = started;
                         }
                     }
                     if (v.Hour == WorthHour)
