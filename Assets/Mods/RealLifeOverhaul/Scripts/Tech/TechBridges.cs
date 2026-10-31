@@ -35,6 +35,9 @@ namespace RealLifeOverhaul.Tech
         /// <summary>The player's standing as an employer, -10 to 10 (Standing's workers). Default: 0.</summary>
         public static Func<int> Esteem;
 
+        /// <summary>Thousandths of the anchor day's professions' jobseekers among the city's people (the living population); 0 for none, as before. Default: none.</summary>
+        public static Func<int> Seekers;
+
         /// <summary>A rival's name for an approach to one of the player's people at a business. Default: one of the city's tech companies.</summary>
         public static Func<BuildingRegistration, string> Rival;
 
@@ -328,6 +331,7 @@ namespace RealLifeOverhaul.Tech
 
         public static void Reset()
         {
+            Seekers = null;
             UtilitiesByPhone = null;
             Esteem = null;
             Comfort = null;

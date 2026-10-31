@@ -456,7 +456,7 @@ namespace RealLifeOverhaul.Districts
             {
                 MapDistrict d = _districts[i];
                 Bridges(d, today);
-                d.Crimes = _log.Count(d.Id, today, DistrictRules.CrimeDays);
+                d.Crimes = _log.Count(d.Id, today, DistrictRules.CrimeDays) + (DistrictBridges.Crime != null ? Math.Max(0, DistrictBridges.Crime(d.Id)) : 0);   // what was reported, and the residents' own crime where the living population runs
                 Set(d, DistrictLayer.Wealth, d.HasIncome, d.Income);
                 Set(d, DistrictLayer.Rent, d.CommercialRent > 0, d.CommercialRent);
                 Set(d, DistrictLayer.Property, d.Value > 0, d.Value);

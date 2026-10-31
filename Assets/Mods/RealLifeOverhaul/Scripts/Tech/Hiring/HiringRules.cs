@@ -29,8 +29,17 @@ namespace RealLifeOverhaul.Tech
         /// <summary>How many professionals look for work at once: more in a slump, and graduates in the summer.</summary>
         public static int Target(int cycle, bool summer)
         {
-            int t = 60 + Unemployment(cycle) * 9 / 10 + (summer ? HiringCatalogue.GraduatesSummer : 0);
-            return TalentCatalogue.Clamp(t, HiringCatalogue.SeekersLeast, HiringCatalogue.SeekersMost);
+            return Target(cycle, summer, 1000);
+        }
+
+        /// <summary>
+        /// The same moved by the professions' jobseekers among the city's people against the anchor day's (the living population: those out of work and those
+        /// looking while in work), within the list's bounds, which keep the market's records and the save small.
+        /// </summary>
+        public static int Target(int cycle, bool summer, int people)
+        {
+            long t = (60L + Unemployment(cycle) * 9 / 10 + (summer ? HiringCatalogue.GraduatesSummer : 0)) * (people > 0 ? people : 1000) / 1000;
+            return TalentCatalogue.Clamp((int)Math.Min(int.MaxValue, t), HiringCatalogue.SeekersLeast, HiringCatalogue.SeekersMost);
         }
 
         private static int Pick(int[] shares, int roll)
@@ -212,7 +221,7 @@ namespace RealLifeOverhaul.Tech
                     }
                 }
             }
-            int target = Target(cycle, summer);
+            int target = Target(cycle, summer, f.People);
             for (int k = 0; Open(f) < target && f.Seekers.Count < HiringCatalogue.SeekersMost && k < HiringCatalogue.SeekersMost; k++)
             {
                 int id = f.Next();

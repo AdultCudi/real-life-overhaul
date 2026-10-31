@@ -6,6 +6,8 @@ using RealLifeOverhaul.Economy;
 using RealLifeOverhaul.Economy.Dealership;
 using RealLifeOverhaul.Hustles;
 using RealLifeOverhaul.Population;
+using RealLifeOverhaul.Tech;
+using RealLifeOverhaul.Utilities;
 
 // The mod's own businesses on the city's people (the brief bizpop): each keeps its own mechanics and moves its old figure by the people's factor. For each:
 // with no population, or on the anchor day (every factor a thousand), its figures are exactly what they were (nothing jumps); a pool the business shares with
@@ -20,6 +22,71 @@ internal static partial class Program
         DemandEstate();
         DemandConstruction();
         DemandShops();
+        DemandCity();
+    }
+
+    // ---------------------------------------------------------------- broadband, the council, crime and the labour market
+
+    private static void DemandCity()
+    {
+        var n = new Network();
+        bool same = true;
+        for (int d = 0; d < Network.Districts; d++)
+        {
+            same &= BroadbandRules.MarketOf(n, d) == BroadbandCatalogue.Market[d] && BroadbandRules.PeopleOf(n, d) == 1000;
+            n.People[d] = 1000;
+            same &= BroadbandRules.MarketOf(n, d) == BroadbandCatalogue.Market[d];
+        }
+        n.People[4] = 1250;
+        n.People[0] = 800;
+        Check(same && BroadbandRules.MarketOf(n, 4) == BroadbandCatalogue.Market[4] * 1250 / 1000 && BroadbandRules.MarketOf(n, 0) == BroadbandCatalogue.Market[0] * 800 / 1000
+              && BroadbandRules.MarketOf(null, 2) == BroadbandCatalogue.Market[2],
+            "population demand, broadband: each district's connections are the catalogue's on the anchor day and with no population, then follow its homes and businesses");
+
+        int floor = 42000;
+        Check(OfficeRules.Revenue(floor, null) == (int)Math.Round(floor * 0.6) && OfficeRules.Revenue(floor * 1100 / 1000, null) == (int)Math.Round(floor * 1.1 * 0.6),
+            "population demand, council: the council's revenue stands on the floor space's electorate moved by the people's taxes: the same on the anchor day, a tenth more with a tenth more taxes");
+        float points = (950 - PopDemandCatalogue.Neutral) * PopDemandCatalogue.SatisfactionApproval / 1000f;
+        Check(Math.Abs(points + 2f) < 0.001f, "population demand, council: residents a twentieth less satisfied take two points off the mayor's approval");
+
+        PopDemandState m = _demandLast;
+        if (m != null)
+        {
+            long adults = 0, households = 0, crime = 0;
+            for (int d = 0; d < m.Districts; d++)
+            {
+                adults += m.Adults[d];
+                households += m.Households[d];
+                crime += (long)m.People[d] * m.Crime[d];
+            }
+            long people = 0;
+            for (int d = 0; d < m.Districts; d++)
+            {
+                people += m.People[d];
+            }
+            long mean = people > 0 ? crime / people : 1000;
+            Check(adults == m.Now[(int)PopSource.Adults] && adults > households && mean > 700 && mean < 1300,
+                "population demand, council and crime: each district's electorate is its adult residents, summing to the city's, and crime averages about the city's over its people (" + adults + " voters, crime " + mean + ")");
+            PopDemandState was = CityDemand.Live;
+            CityDemand.Live = m;
+            int midtown = CityDemand.Crime("ba:neighborhood_midtown"), reports = (midtown * PopDemandCatalogue.CrimeReports + 500) / 1000;
+            CityDemand.Live = was;
+            Check(reports >= 1 && reports <= PopDemandCatalogue.CrimeReports * PopDemandCatalogue.CrimeMost / 1000 + 1,
+                "population demand, crime: the district map's crime layer counts what a district's residents would report on top of what was reported (Midtown " + reports + ")");
+        }
+
+        bool labour = true;
+        for (int cycle = 0; cycle < 4; cycle++)
+        {
+            labour &= HiringRules.Target(cycle, false, 1000) == HiringRules.Target(cycle, false) && HiringRules.Target(cycle, true, 0) == HiringRules.Target(cycle, true)
+                      && RealLifeOverhaul.Careers.ProRules.OpeningsWanted(cycle, false, 1000) == RealLifeOverhaul.Careers.ProRules.OpeningsWanted(cycle, false) && RealLifeOverhaul.Careers.ProRules.OpeningsWanted(cycle, true, 0) == RealLifeOverhaul.Careers.ProRules.OpeningsWanted(cycle, true);
+        }
+        Check(labour && HiringRules.Target(1, false, 1500) > HiringRules.Target(1, false) && HiringRules.Target(3, true, 9000) == HiringCatalogue.SeekersMost
+              && RealLifeOverhaul.Careers.ProRules.OpeningsWanted(1, false, 2000) > RealLifeOverhaul.Careers.ProRules.OpeningsWanted(1, false) && RealLifeOverhaul.Careers.ProRules.OpeningsWanted(0, true, 99000) == RealLifeOverhaul.Careers.ProRules.OpeningsMost
+              && RealLifeOverhaul.Careers.ProRules.OpeningsWanted(3, false, 1) >= 4,
+            "population demand, labour: as before with no population; more of the professions out of work bring more seekers and more gaps at the city's employers more openings, each within its list's bounds");
+        Check(DemandsWithin(new[] { PopDemand.CouncilRevenue, PopDemand.Satisfaction, PopDemand.TechSeekers, PopDemand.Openings }, 500, 1800, out string worst),
+            "population demand, city: over ten years without the player the council's revenue, the residents' satisfaction, the seekers and the openings stay between half and 1.8 times their first day" + worst);
     }
 
     // The ten-year range of a set of demands, each within its bounds; the first that is not, named.

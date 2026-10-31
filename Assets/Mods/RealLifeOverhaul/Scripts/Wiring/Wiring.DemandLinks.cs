@@ -1,10 +1,12 @@
 using System;
 using RealLifeOverhaul.Careers;
 using RealLifeOverhaul.Construction;
+using RealLifeOverhaul.Districts;
 using RealLifeOverhaul.Economy;
 using RealLifeOverhaul.Economy.Dealership;
 using RealLifeOverhaul.Hustles;
 using RealLifeOverhaul.Population;
+using RealLifeOverhaul.Tech;
 
 namespace RealLifeOverhaul
 {
@@ -30,6 +32,14 @@ namespace RealLifeOverhaul
                 HustleBridges.Sellers = Sellers;
                 HustleBridges.Buyers = Bargains;
                 CareersBridges.Learners = Learners;
+                CareersBridges.Openings = Openings;
+                TechBridges.Seekers = TechSeekers;
+                Utilities.UtilitiesBridges.Connections = Connections;
+                CivicBridges.Adults = Adults;
+                CivicBridges.Taxes = Taxes;
+                CivicBridges.Residents = Residents;
+                CityWatch.Residents = CrimeHere;
+                DistrictBridges.Crime = CrimeIn;
             }
 
             internal static void Disconnect()
@@ -44,6 +54,14 @@ namespace RealLifeOverhaul
                 HustleBridges.Sellers = null;
                 HustleBridges.Buyers = null;
                 CareersBridges.Learners = null;
+                CareersBridges.Openings = null;
+                TechBridges.Seekers = null;
+                Utilities.UtilitiesBridges.Connections = null;
+                CivicBridges.Adults = null;
+                CivicBridges.Taxes = null;
+                CivicBridges.Residents = null;
+                CityWatch.Residents = null;
+                DistrictBridges.Crime = null;
             }
 
             // True while the people's figures stand for the mod's own businesses: the option on and a day measured (a guest's, the host's).
@@ -137,6 +155,10 @@ namespace RealLifeOverhaul
 
             private static int Learners() => Of(PopDemand.Students, "DemandLinks.Learners");
 
+            private static int Openings() => Of(PopDemand.Openings, "DemandLinks.Openings");
+
+            private static int TechSeekers() => Of(PopDemand.TechSeekers, "DemandLinks.TechSeekers");
+
             // The households' online spending of the kind a business type sells; 0 for none.
             private static int Online(string businessType)
             {
@@ -147,6 +169,78 @@ namespace RealLifeOverhaul
                 catch (Exception e)
                 {
                     Fault("DemandLinks.Online", e);
+                    return 0;
+                }
+            }
+
+            // A district's adult residents, its electorate; -1 for none.
+            private static int Adults(string district)
+            {
+                try
+                {
+                    return Live ? CityDemand.Adults(district) : -1;
+                }
+                catch (Exception e)
+                {
+                    Fault("DemandLinks.Adults", e);
+                    return -1;
+                }
+            }
+
+            private static int Taxes() => Of(PopDemand.CouncilRevenue, "DemandLinks.Taxes");
+
+            // The residents' satisfaction against the anchor day's as points of the mayor's approval; none before the anchor.
+            private static float Residents()
+            {
+                try
+                {
+                    return Live && CityDemand.Anchored ? (CityDemand.Factor(PopDemand.Satisfaction) - PopDemandCatalogue.Neutral) * PopDemandCatalogue.SatisfactionApproval / 1000f : 0f;
+                }
+                catch (Exception e)
+                {
+                    Fault("DemandLinks.Residents", e);
+                    return 0f;
+                }
+            }
+
+            // The district the player stands in against the city's crime; 1 with none.
+            private static float CrimeHere()
+            {
+                try
+                {
+                    return Live ? CityDemand.Crime(DistrictGame.PlayerDistrict()) / 1000f : 1f;
+                }
+                catch (Exception e)
+                {
+                    Fault("DemandLinks.CrimeHere", e);
+                    return 1f;
+                }
+            }
+
+            // The crimes a district's residents would report over the district map's days; 0 for none.
+            private static int CrimeIn(string district)
+            {
+                try
+                {
+                    return Live ? (CityDemand.Crime(district) * PopDemandCatalogue.CrimeReports + 500) / 1000 : 0;
+                }
+                catch (Exception e)
+                {
+                    Fault("DemandLinks.CrimeIn", e);
+                    return 0;
+                }
+            }
+
+            // A district's homes and businesses against the anchor day's: broadband's market there; 0 for none.
+            private static int Connections(string district)
+            {
+                try
+                {
+                    return Live ? Math.Max(1, CityDemand.Connections(district)) : 0;
+                }
+                catch (Exception e)
+                {
+                    Fault("DemandLinks.Connections", e);
                     return 0;
                 }
             }

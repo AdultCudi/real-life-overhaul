@@ -69,6 +69,7 @@ namespace RealLifeOverhaul.Tech
             }
             if (fresh)
             {
+                _hiring.People = HiringPeople();
                 HiringRules.Day(_hiring, save.Day, HiringGame.Cycle, HiringGame.Summer(save.Day), _rivals, _rate, _districts, null);
                 NameSeekers();
             }
@@ -99,6 +100,12 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
+        // The professions' jobseekers among the city's people against the anchor day's (the living population); 0 for none.
+        private static int HiringPeople()
+        {
+            return TechBridges.Seekers != null ? Math.Max(0, TechBridges.Seekers()) : 0;
+        }
+
         private void NameSeekers()
         {
             HashSet<string> names = null;
@@ -120,6 +127,7 @@ namespace RealLifeOverhaul.Tech
             float started = Time.realtimeSinceStartup;
             _notes.Clear();
             int esteem = TechBridges.HiringEsteem();   // as an employer, with their best office's
+            _hiring.People = HiringPeople();
             HiringRules.Day(_hiring, day, HiringGame.Cycle, HiringGame.Summer(day), _rivals, _rate, _districts, _notes);
             int delivered = 0;
             for (int i = 0; i < _hiring.Ads.Count; i++)

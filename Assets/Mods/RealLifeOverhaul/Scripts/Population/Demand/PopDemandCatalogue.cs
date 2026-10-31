@@ -142,6 +142,8 @@ namespace RealLifeOverhaul.Population
         public const int CrimeTermLeast = 250, CrimeTermMost = 4000;                      // thousandths a part keeps within against the city's
         public const int CrimeLeast = 400, CrimeMost = 2500;                              // thousandths of the city's rate a district keeps within
         public const int YouthFrom = 15, YouthTo = 24;                                    // years: the ages the youth share counts
+        public const int CrimeReports = 3;             // crimes the residents of a district of the city's average report over the district map's 28 days
+        public const int SatisfactionApproval = 40;    // points of the mayor's approval for the residents' satisfaction moving by its whole first-day figure (a tenth less satisfied, four points less)
 
         // ---- car hire: who could hire a car
 
