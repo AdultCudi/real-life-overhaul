@@ -75,7 +75,7 @@ internal static partial class Program
         PopulationState city = PopulationCity(out _);
         CityTable.Rebind(s, new List<CityBuilding>(city.Buildings), new List<PopDistrict>(city.Districts));
         LabourRules.Setup(s, seeds);
-        var sim = new PopulationSim { State = s, Measure = MeasureRules.Measure(s.Buildings, s.Districts.Count, null) };
+        var sim = new PopulationSim { State = s, Measure = MeasureRules.Measure(s.Buildings, s.Districts, null) };
         CityTable.Middles(s);
         for (int k = 0; k < s.Businesses.Count; k++)
         {
@@ -353,7 +353,7 @@ internal static partial class Program
         Check(FlareCityRules.Answer(c, b), "flare city attention: bad talk can be answered");
         FlareCityRules.Decay(c);
         int answered = c.Sour[b * c.Districts + db];
-        Check(unanswered < keep && answered < unanswered * FlareCityCatalogue.SourKeep / 1000, "flare city attention: unanswered bad talk lingers, answered it fades faster (" + keep + ", " + unanswered + ", " + answered + ")");
+        Check(unanswered < keep && answered < (long)unanswered * FlareCityCatalogue.SourKeep / 1000, "flare city attention: unanswered bad talk lingers, answered it fades faster (" + keep + ", " + unanswered + ", " + answered + ")");
         Check(FlareCityRules.AttentionOf(c, s, -1, rig.Pass.Weights) == 0 && FlareCityRules.AttentionOf(c, s, s.Businesses.Count + 5, rig.Pass.Weights) == 0, "flare city attention: no business, no attention");
     }
 
