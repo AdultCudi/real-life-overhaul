@@ -746,4 +746,19 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\CityPopulation.cs" Link="Mod\Population\CityPopulation.cs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Flare in the city (FlareResidentChecks.cs): residents who follow, hear and go where they heard good things; reviews, ads, the funnel, the save and the shared part, all game-free. -->
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityCatalogue.cs" Link="Mod\FlareCity\FlareCityCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityState.cs" Link="Mod\FlareCity\FlareCityState.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityRules.cs" Link="Mod\FlareCity\FlareCityRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityRules.Hear.cs" Link="Mod\FlareCity\FlareCityRules.Hear.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityRules.Attention.cs" Link="Mod\FlareCity\FlareCityRules.Attention.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityRules.Reviews.cs" Link="Mod\FlareCity\FlareCityRules.Reviews.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityRules.Voices.cs" Link="Mod\FlareCity\FlareCityRules.Voices.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityRules.Ads.cs" Link="Mod\FlareCity\FlareCityRules.Ads.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityRules.Player.cs" Link="Mod\FlareCity\FlareCityRules.Player.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityPass.cs" Link="Mod\FlareCity\FlareCityPass.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\City\FlareCityStore.cs" Link="Mod\FlareCity\FlareCityStore.cs" />
+  </ItemGroup>
+
 </Project>
