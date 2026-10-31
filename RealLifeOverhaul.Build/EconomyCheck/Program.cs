@@ -134,6 +134,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length >= 1 && args[0] == "--studio")
+        {
+            Studio();       // (the game studio alone, while working on it: StudioChecks.cs; "studio" after it prints the bands and the ten years)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length >= 1 && args[0] == "--living")
         {
             Sessions();     // (the desk sessions and the tech money scale alone, while working on them: SessionChecks.cs, TechScaleChecks.cs; "scale" after it prints the tables)
@@ -610,6 +616,7 @@ internal static partial class Program
         EndScale();     // the end game at scale: each venture's costs, upkeep, staff and income by size, the payback, old saves phased in, the option off (EndScaleChecks.cs)
         Sessions();     // the desk sessions: the registry, the schedule and furniture, managers' seeded choices, reminders, the save's line, the weekly team meeting and its week, the sources, the texts (SessionChecks.cs)
         TechScale();    // the tech money scale: budgets, audience to sales and the bands, costs, one market, a studio over ten years against the end game, the one month rule (TechScaleChecks.cs)
+        Studio();       // the game studio: the plan, building, the sessions, hype and reviews, the bands and no cap, ten years, the models, after launch, bonuses, rivals, old saves, the save, the screens, the texts (StudioChecks.cs)
         BugReports();   // "Report a bug": report.txt, the user folder taken out, a log's tail, the mod's lines, nothing sent (BugReportChecks.cs)
         Rivals();       // the rival tycoons: growth, pace, bounds, counters, a takeover, a seed, the save and the texts (RivalChecks.cs)
         Wages();        // wages the mod raises: the report's 30 days reproduced, the cap, one rise a period, the repair on load, every write bounded (WageChecks.cs)

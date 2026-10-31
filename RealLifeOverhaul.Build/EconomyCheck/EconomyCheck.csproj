@@ -455,6 +455,15 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\People\MeetingRules.cs" Link="Mod\MeetingRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Scale\ScaleCatalogue.cs" Link="Mod\ScaleCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Scale\ScaleRules.cs" Link="Mod\ScaleRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Studio\StudioCatalogue.cs" Link="Mod\StudioCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Studio\StudioFile.cs" Link="Mod\StudioFile.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Studio\StudioRules.cs" Link="Mod\StudioRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Studio\StudioRules.Sales.cs" Link="Mod\StudioRules.Sales.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Studio\StudioRules.Rivals.cs" Link="Mod\StudioRules.Rivals.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Studio\StudioStore.cs" Link="Mod\StudioStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Studio\StudioShare.cs" Link="Mod\StudioShare.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Studio\StudioBridges.cs" Link="Mod\StudioBridges.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Studio\StudioViews.cs" Link="Mod\StudioViews.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Sessions\SessionRules.cs" Link="Mod\SessionRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Sessions\SessionFile.cs" Link="Mod\SessionFile.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Sessions\SessionStore.cs" Link="Mod\SessionStore.cs" />
