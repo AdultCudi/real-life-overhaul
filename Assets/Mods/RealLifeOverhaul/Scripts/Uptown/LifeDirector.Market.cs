@@ -64,7 +64,8 @@ namespace RealLifeOverhaul.Uptown
             int[] now = DemandNow[district];
             for (int use = 0; use < DemandRules.Uses; use++)
             {
-                now[use] = DemandRules.Demand(m, use);
+                int pull = DemandBridges.PopulationPull != null ? DemandBridges.PopulationPull(DistrictSplit.IdOf(district), use) : -1000;
+                now[use] = DemandRules.Demand(m, use, pull);   // the people's pull where the living population runs, the ratios' own where not
             }
             int wanted = GoingPublic.InSession ? 1000 : DemandRules.DistrictLevel(m);
             int from = 1000;

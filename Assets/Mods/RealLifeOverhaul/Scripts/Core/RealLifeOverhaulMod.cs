@@ -71,6 +71,8 @@ namespace RealLifeOverhaul
             Guard.Step("the construction company's business type", () => Construction.ConstructionType.Register());   // before any save that holds one is loaded
             Shops.ShopsDirector.Logger = context.Logger;
             Guard.Step("the new kinds of shop", Shops.ShopsDirector.Start);   // before any save that holds one is loaded
+            Population.PopulationGame.Logger = context.Logger;
+            Guard.Step("the population's count in the game's customer calculators", Population.PopulationGame.InstallCalculators);   // before any customer is worked out
             Designs.DesignsDirector.Logger = context.Logger;
             // The installation firms' designs for the mod's business types, put in place or taken away on a worker.
             Guard.Step("the ready-made designs", () => Designs.DesignsDirector.Ask(Settings.Designs));
@@ -1012,6 +1014,7 @@ namespace RealLifeOverhaul
                     v => Settings.LivingDesks = v)
                 .AddButton("reallife_session_test_meeting", () => Sessions.SessionDirector.Instance?.TestMeeting())
                 .AddButton("reallife_session_test_managers", () => Sessions.SessionDirector.Instance?.TestManagers())
+                .Guarded(o => Population.PopulationOptions.AddPopulation(o))   // the population's tests (Scripts/Population)
                 .AddDropdown(Settings.EconomyCompanyLevelId, "reallife_co_level",
                     new[] { "reallife_meta_preset_relaxed", "reallife_meta_preset_standard", "reallife_meta_preset_realistic", "reallife_meta_preset_hardcore" }, Settings.EconomyCompanyLevel,
                     v => Settings.EconomyCompanyLevel = v)
@@ -1683,6 +1686,9 @@ namespace RealLifeOverhaul
             Guard.Step("Outlook.OutlookApp", () => Outlook.OutlookApp.Logger = context.Logger);
             // The Economy app: after the city's economy, the market and the council, whose figures it reads; its day follows the city's. No Update.
             Guard.Step("Outlook.OutlookDirector", () => Guard.Add<Outlook.OutlookDirector>(_root));
+            Guard.Step("Population.PopulationDirector", () => Population.PopulationDirector.Logger = context.Logger);
+            // The city's people: after the city's economy, the company, the estate and Uptown's buildings, whose figures it reads. No Update.
+            Guard.Step("Population.PopulationDirector", () => Guard.Add<Population.PopulationDirector>(_root));
             Guard.Step("NewBuildings.NewBuildingsDirector", () => NewBuildings.NewBuildingsDirector.Logger = context.Logger);
             // Its buildings are made behind the loading screen, once every director has declared its own.
             Guard.Step("NewBuildings.NewBuildingsDirector", () => Guard.Add<NewBuildings.NewBuildingsDirector>(_root));

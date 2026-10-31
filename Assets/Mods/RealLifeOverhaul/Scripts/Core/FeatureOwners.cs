@@ -49,6 +49,7 @@ namespace RealLifeOverhaul
             { "RealLifeOverhaul.Household", "home_household" },
             { "RealLifeOverhaul.Shops", "newshops" },
             { "RealLifeOverhaul.Outlook", "economy_app" },
+            { "RealLifeOverhaul.Population", "population" },
             { "RealLifeOverhaul.Sessions", "living" },
         };
 

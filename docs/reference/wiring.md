@@ -38,6 +38,7 @@ An adapter never throws into its caller: a fault is logged once per place (`Wiri
 | `MarketLinks.cs` | `MarketBridges`: the city on a market day, events that move prices, the game's rivals, the banks, the Planner's rows |
 | `ListingLinks.cs` | the player's listed company: their books, their businesses, a sale's hand-over |
 | `OwnBankLinks.cs` | the player's own bank: Standing's integrity, the council's levers, the courts, the market's quotes |
+| `Wiring.PopulationLinks.cs` | the living population: `CityBridges.DistrictIncome` (the city economy's districts follow the households), `DemandBridges.PopulationPull` (Uptown's and Cedar Heights' demand), `Core/CustomerScale` (the rota's, the dealership's, the branches' and a brand's copies of the customer arithmetic), `BusinessGame.Levers` and two `PopulationAttention` sources (the business levers and the game's promotion as attention), `PopulationBridges.People` and `UseOf` (the mod's own people as residents, the estate's change of use) |
 | `UtilityLinks.cs` | `UtilitiesBridges`: the credit grade, the household, closures, the home's taps and screens, the Finance app |
 | `CareersLinks.cs` | `CareersBridges`: home internet, a driving refresher, Standing, the economy's vacancies, the record, the student loan, the council's grants, restraint claims, the tech labour market |
 | `TechLinks.cs` | `TechBridges`: Standing as an employer, the game's rivals, the company's own offers and notices (`TechBridges.Held`); the tech sector's own for the others (`TechLinks.Holds`) |

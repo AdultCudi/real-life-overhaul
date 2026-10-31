@@ -271,7 +271,7 @@ namespace RealLifeOverhaul.Outlook
                 listed++;
                 OutlookPlace place = r.NextBusiness();
                 place.Name = string.IsNullOrEmpty(shop.Reg.BusinessName) ? shop.Reg.Address.ToFormattedString() : shop.Reg.BusinessName;
-                place.Customers = shop.Applied ? shop.Achieved(multiplier) : 0;
+                place.Customers = shop.Applied || CustomerScale.For(shop.Reg) != 1f ? shop.Achieved(multiplier) : 0;   // the living population moves it too
                 place.Known = shop.HasFigure || shop.Wanted == 0;
                 place.Prices = shop.Against <= 0 ? 0 : shop.Over ? 2 : 1;
                 if (shop.District != null)

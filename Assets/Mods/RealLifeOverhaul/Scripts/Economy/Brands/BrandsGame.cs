@@ -237,6 +237,7 @@ namespace RealLifeOverhaul.Economy.Brands
                     return 0;
                 }
                 float promotion = Save.gameVariables.baseCustomerPromotionMultiplier + 0.75f * (building.trafficIndex / 100f);
+                promotion *= reg != null ? CustomerScale.For(reg) : CustomerScale.ForSite(building.Neighbourhood, type);   // the living population's people, where it runs
                 int limit = reg != null && reg.customerCapacity > 0 ? reg.customerCapacity : capacity;
                 List<ScheduleDay> week = reg != null && reg.scheduleDays != null && reg.scheduleDays.Count > 0 ? reg.scheduleDays : null;
                 float total = 0f;
