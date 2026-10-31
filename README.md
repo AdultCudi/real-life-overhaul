@@ -13,7 +13,7 @@ This repository is the source. You only need it to read the code, report a probl
 
 ## Status
 
-Version 0.1.0 was the first public release; 0.61.3 is the current one. Much of it has had little play from start to finish. The in-game Guide has a "Known limits" page, and [the Workshop description](RealLifeOverhaul.Build/Workshop/description.txt) carries the short version.
+Version 0.1.0 was the first public release; 0.62.0 is the current one. Much of it has had little play from start to finish. The in-game Guide has a "Known limits" page, and [the Workshop description](RealLifeOverhaul.Build/Workshop/description.txt) carries the short version.
 
 Windows only. English, Brazilian Portuguese, Simplified Chinese, German, French, Spanish, Russian, Dutch, Turkish, Polish and Korean; it follows the language the game is set to, and a text not yet translated is in English. It is made for the current build of Big Ambitions on Steam's public branch: on an older build some of its apps and features do not work, and the mod says so in the main menu, with how to update the game.
 

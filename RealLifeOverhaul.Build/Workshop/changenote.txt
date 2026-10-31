@@ -1,4 +1,13 @@
-0.61.3
+0.62.0
+
+New
+- The day-end panel and the top bar now show a profit or loss that includes the mod's money too: home bills, loans and their payments, tuition, insurance and the rest of what EconoView lists. Loan payouts, shares bought or sold and other transfers are left out. It can be switched off under Money and credit.
 
 Fixed
-- Going public counted the years from the wrong business when the oldest one had been moved by a moving company, so a business over a year old could show 0.3 years. A business now keeps its start day when it moves, and investors, Flare and the paper read the same day. One moved before this fix counts from the first day the game still holds figures for the building it left.
+- Your own AI now says when the service does not know the model name, and where to change it (Model, in Your own AI), instead of a bare failure. OpenAI's own default model is now gpt-6-luna.
+- The minimap's own check could pair a building's door with another building's outline, kilometres away, because the game lists its buildings in a different order each time it loads. A building is now found by its address, and the check names the building and door it blames.
+- The developer log's furniture move check no longer judges a move that a loaded save cut short, where it could say a piece had no record that the load had made again.
+- In build mode, a plot left over beside a building read 0 designs and offered no way out, because a single space has designs for shops only. The Place panel now offers Join with the next plot, shows the joined plot on the map and says how many designs fit it, or why no join is possible. The city's own builders also no longer leave a single space beside a new building that no design of the city's fills.
+- Fewer stutters in the city. The bare ground check of build mode, the unseen markers that stop traffic for people, the hold lines for your car, the buses' spare bodies, the bus stops' street furniture, the tech towers and the far districts now do their work behind the loading screen or a little a frame.
+- The mod's phone apps were all put on the phone in the moment you first opened the phone's menu, which made that moment stutter. They now go on one at a time in the first moments after a load and appear together, so the phone opens smoothly with every app in place.
+- Fewer stutters from the mod's own work. Flare's city photos are taken over two frames, the contacts' pictures are read and saved in the background, the stock market's record is written at a save only when it has changed, the people of civic life, street events and fires and the hotel doorman are made behind the loading screen, and a street chess table is set up a piece at a time.
