@@ -248,6 +248,7 @@ namespace RealLifeOverhaul.Tech
                 .Fact("hire_rival_offer", () => Bp(HiringCatalogue.RivalOfferBp))
                 .Fact("hire_offer_days", () => Whole(HiringCatalogue.OfferDays))
                 .Fact("hire_lapse", () => Whole(HiringCatalogue.ApplicantDays))
+                .Fact("hire_buyout", () => Factor(HiringCatalogue.BuyoutBp))
                 .Fact("hire_search_fee", () => Bp(HiringCatalogue.SearchFeeBp))
                 .Fact("hire_search_retainer", () => Whole(HiringCatalogue.SearchRetainerShare / 10) + "%")
                 .Fact("hire_search_count", () => Whole(HiringCatalogue.SearchCandidates))
@@ -311,5 +312,8 @@ namespace RealLifeOverhaul.Tech
         internal static string Whole(int value) => value.ToString(Inv);
 
         internal static string Bp(int bp) => (bp / 100f).ToString("0.#", Inv) + "%";
+
+        /// <summary>Basis points as a multiple: "1.5".</summary>
+        internal static string Factor(int bp) => (bp / 10000f).ToString("0.#", Inv);
     }
 }

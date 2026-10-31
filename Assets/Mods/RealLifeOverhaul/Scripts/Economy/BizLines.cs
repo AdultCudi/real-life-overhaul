@@ -54,6 +54,7 @@ namespace RealLifeOverhaul.Economy
             P + "tech_wages", P + "tech_severance_wage", P + "tech_training", P + "tech_bonus_clause", P + "tech_crew_wages", P + "tech_upkeep",
             P + "tech_it_services", P + "tech_data_fine", P + "tech_register_fee", P + "tech_cloud_licence_fee",
             P + "tech_recruitment_ad", P + "tech_recruitment_checks", P + "tech_recruitment_search",
+            P + "tech_recruitment_buyout", P + "tech_recruitment_buyout_paid",   // the second is a rival's money in, counted against the recruiting costs as a refund is
             P + "broadband_network", P + "broadband_installs", P + "broadband_marketing", P + "broadband_wages", P + "broadband_licence",
             P + "ownbank_savers", P + "ownbank_losses", P + "ownbank_wages", P + "ownbank_systems", P + "ownbank_fine",
             P + "bld_crews", P + "bld_plant", P + "bld_fees", P + "bld_interest", P + "bld_land_tax", P + "bld_vacant_tax", P + "bld_cover",

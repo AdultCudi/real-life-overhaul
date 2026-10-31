@@ -105,10 +105,13 @@ namespace RealLifeOverhaul.Tech
             int honest = TechRandom.Mille(seed, n, 8);
             s.Claim = honest < 450 ? 0 : TechRandom.Range(seed, n, 9, 0, 1, HiringCatalogue.ClaimMost);
             s.Refs = TalentCatalogue.Clamp(1 + (s.Fit / 250) + (s.Claim > 8 ? -1 : 0) + TechRandom.Range(seed, n, 10, 0, 0, 1), 1, 5);
-            s.Notice = s.Employed ? 7 + level * 5 : 0;
+            s.Notice = s.Employed ? NoticeFor(level) : 0;
             s.Ask = AskOf(seed, s, rate, shortage);
             return s;
         }
+
+        /// <summary>The days of notice someone in work gives their employer at a level: a week, and five days more a level.</summary>
+        public static int NoticeFor(int level) => 7 + level * 5;
 
         /// <summary>What a seeker asks, cents an hour: the going rate, more in work, less out of it, and a little either side.</summary>
         public static int AskOf(int seed, Seeker s, RateOf rate, int shortage)
@@ -489,6 +492,81 @@ namespace RealLifeOverhaul.Tech
             return ApplyStage.Declined;
         }
 
+        public const int Buyable = 0, BuyoutNotAccepted = 1, BuyoutNotEmployed = 2, BuyoutTooSoon = 3;
+
+        /// <summary>The day a hire whose notice is bought out starts: tomorrow, the soonest any hire starts.</summary>
+        public static int BuyoutStart(int day) => day + HiringCatalogue.StartLeast;
+
+        /// <summary>The days a buy out saves: from the day the notice would have ended to the day they go instead; none if that is not sooner.</summary>
+        public static int BuyoutDays(int end, int instead) => Math.Max(0, end - instead);
+
+        /// <summary>The pay for so many days of notice at a rate, cents: a week's hours over its seven days, since notice runs in calendar days.</summary>
+        public static long NoticePay(int days, int centsHour)
+        {
+            long dayCents = Math.Min((long)Math.Max(0, days) * Math.Max(0, centsHour), long.MaxValue / TalentCatalogue.WeekHours);   // held so the hours cannot overflow
+            return dayCents * TalentCatalogue.WeekHours / 7;
+        }
+
+        /// <summary>What buying out so many days of notice costs, cents: their pay for those days by <see cref="HiringCatalogue.BuyoutBp"/>. The same rule for the player and the rivals.</summary>
+        public static int BuyoutPrice(int days, int centsHour)
+        {
+            long pay = Math.Min(NoticePay(days, centsHour), int.MaxValue);   // the price is at least the pay, so a pay past the cap is a price past it
+            return (int)Math.Min(int.MaxValue, pay * HiringCatalogue.BuyoutBp / 10000);
+        }
+
+        /// <summary>
+        /// Whether an applicant's notice can be bought out today: <see cref="Buyable"/>, or why not. Only someone who has accepted and is in
+        /// work has a notice, and only a start later than tomorrow leaves days to save.
+        /// </summary>
+        public static int CanBuyOut(Applicant a, Seeker s, int day)
+        {
+            if (a == null || s == null || a.Stage != (int)ApplyStage.Accepted)
+            {
+                return BuyoutNotAccepted;
+            }
+            if (!s.Employed)
+            {
+                return BuyoutNotEmployed;
+            }
+            return a.Start > BuyoutStart(day) ? Buyable : BuyoutTooSoon;
+        }
+
+        /// <summary>The price of buying out an applicant's notice today, cents, at the pay agreed; 0 when it cannot be bought out.</summary>
+        public static int BuyoutQuote(Applicant a, Seeker s, int day)
+        {
+            return CanBuyOut(a, s, day) == Buyable ? BuyoutPrice(BuyoutDays(a.Start, BuyoutStart(day)), a.Offer) : 0;
+        }
+
+        /// <summary>An applicant's notice bought out: they start tomorrow. Returns the days saved; 0, with nothing changed, when it cannot be.</summary>
+        public static int BuyOut(Applicant a, Seeker s, int day)
+        {
+            if (CanBuyOut(a, s, day) != Buyable)
+            {
+                return 0;
+            }
+            int saved = BuyoutDays(a.Start, BuyoutStart(day));
+            a.Start = BuyoutStart(day);
+            return saved;
+        }
+
+        /// <summary>The day a poached professional handed in their notice: their answer set the rest before the rival's next approach (TalentRules.Answer), so it needs no field of its own.</summary>
+        public static int NoticeServed(Profile p) => p.PoachDay - TalentCatalogue.PoachRestDays;
+
+        /// <summary>
+        /// Whether the rival a professional of the player's is leaving for buys out the rest of their notice today, as the player may for a
+        /// hire: once, the day after the notice was handed in, with days still to save, by a seeded roll that comes up more often the more
+        /// senior they are (<see cref="HiringCatalogue.RivalBuyoutChance"/>). The same answer on every machine and after a reload.
+        /// </summary>
+        public static bool RivalBuysOut(int seed, Profile p, int day)
+        {
+            if (p == null || p.Leaving != (int)LeaveKind.Poached || p.NoticeEnd <= day || day != NoticeServed(p) + 1)
+            {
+                return false;
+            }
+            int chance = HiringCatalogue.RivalBuyoutChance[TalentCatalogue.Clamp(p.Level, 0, HiringCatalogue.RivalBuyoutChance.Length - 1)];
+            return TechRandom.Mille(seed, TechRandom.Of(p.Id), day, 67) < chance;
+        }
+
         /// <summary>Offers waiting a day are answered; stale applications lapse, and a counter left unanswered is taken as a no.</summary>
         public static void Answers(HiringFile f, int day, int esteem, Func<Family, int> shortage, List<MarketNote> notes)
         {
@@ -583,7 +661,7 @@ namespace RealLifeOverhaul.Tech
                 s.Employed = true;
                 s.Passive = true;
                 s.Claim = 0;
-                s.Notice = 7 + level * 5;
+                s.Notice = NoticeFor(level);
                 s.Until = day + HiringCatalogue.ApplicantDays;
                 s.Ask = AskOf(f.Seed, s, rate, shortage);
                 f.Seekers.Add(s);

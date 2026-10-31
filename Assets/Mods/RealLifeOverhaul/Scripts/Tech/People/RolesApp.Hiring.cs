@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Localizor;
 using RealLifeOverhaul.GameUi;
 using UnityEngine;
 
@@ -288,8 +289,37 @@ namespace RealLifeOverhaul.Tech
                 InfoBox.Button(first, InfoBox.Positive, "reallife_hire_button_take_counter", () => Do(() => _director.TakeCounter(id)));
                 InfoBox.Button(first, InfoBox.Negative, "reallife_hire_button_walk_away", () => Do(() => _director.WalkAway(id)));
             }
+            else if (a.At == ApplyStage.Accepted)
+            {
+                WriteBuyout(box, a, s, day);
+            }
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "common_close", ClosePick);
             Meta.Guide.Point(box, JobsGuide);
+        }
+
+        // An accepted hire still working their notice elsewhere: the notice can be bought out so they start tomorrow, asked through the
+        // game's question box with the days saved, the price and the new start day. Someone out of work waiting a day or two is told
+        // there is no notice to buy; a start that is tomorrow already shows nothing.
+        private void WriteBuyout(InfoBox box, Applicant a, Seeker s, int day)
+        {
+            string refusal = _director.BuyoutRefusal(a, s);
+            int start = HiringRules.BuyoutStart(day);
+            if (refusal == "reallife_hire_buyout_not_employed" && a.Start > start)
+            {
+                box.Line(TechText.T(refusal, "name", s.P.Name));
+                return;
+            }
+            if (refusal != null)
+            {
+                return;
+            }
+            int id = a.Id;
+            string name = s.P.Name, amount = TechText.Cents(HiringRules.BuyoutQuote(a, s, day)), days = HiringRules.BuyoutDays(a.Start, start).ToString(), when = start.ToString();
+            box.Line(TechText.Fill("reallife_hire_buyout_line", "amount", amount, "day", when, "days", days));
+            InfoBox.Button(box.ButtonRow(), InfoBox.Positive, "reallife_hire_button_buyout", () => GameConfirm.Show(
+                "reallife_hire_buyout_title".Localize(new { name }),
+                "reallife_hire_buyout_body".Localize(new { amount, day = when, days, factor = TechGuide.Factor(HiringCatalogue.BuyoutBp) }),
+                () => UiClone.Safe(() => Do(() => _director.BuyOutNotice(id))), null, null, null, true, false));
         }
 
         private TableSpec WriteMarket(InfoBox box, int day)

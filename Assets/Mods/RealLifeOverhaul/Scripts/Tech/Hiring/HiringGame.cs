@@ -19,6 +19,8 @@ namespace RealLifeOverhaul.Tech
         public const string AdKey = "reallife_transaction_tech_recruitment_ad";
         public const string ChecksKey = "reallife_transaction_tech_recruitment_checks";
         public const string SearchKey = "reallife_transaction_tech_recruitment_search";
+        public const string BuyoutKey = "reallife_transaction_tech_recruitment_buyout";        // the player buys out a hire's notice
+        public const string BuyoutPaidKey = "reallife_transaction_tech_recruitment_buyout_paid";   // a rival buys out the notice of one of the player's staff
         private const string FullTime = "ba:jobdemand_fulltime";
 
         public static IModLogger Logger;
@@ -271,6 +273,20 @@ namespace RealLifeOverhaul.Tech
         public static bool Pay(int cents, string key, BuildingRegistration at, string name)
         {
             return TalentGame.Cost(cents, key, at, name, false, false);
+        }
+
+        /// <summary>
+        /// Money a rival pays the business to let one of its staff go early, cents. Booked under a recruiting cost's key, positive, so the game's
+        /// statement counts it against the business's recruiting costs as a refund is, not as takings: it is no sale.
+        /// </summary>
+        public static void Receive(int cents, string key, BuildingRegistration at, string name)
+        {
+            if (cents <= 0 || Save == null)
+            {
+                return;
+            }
+            var info = new TransactionInfo(key, new Dictionary<string, string>(2) { { "name", name ?? string.Empty } });
+            RealLifeOverhaul.Economy.BizBooks.Book(cents / 100f, info, null, at != null ? at.Address : null, true);
         }
     }
 }

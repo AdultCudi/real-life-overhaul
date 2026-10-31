@@ -568,6 +568,7 @@ internal static partial class Program
         LetGo();        // a building let go: the utilities' accounts and bills, business pressure's closures, an underground car park never supplied (LetGoChecks.cs)
         SoldBack();     // a building sold and put back as the player's for nothing goes back to its buyer, a purchase since stays the player's (SoldBackChecks.cs)
         Hiring();
+        Buyout();       // buying out a notice: the price, who can be bought out, the rival's seeded once-only choice, the sources and texts (BuyoutChecks.cs)
         Tech();
         Careers();
         WorkPace();     // place keys, the professions a type employs and the save's writer, as they were (WorkPaceChecks.cs)

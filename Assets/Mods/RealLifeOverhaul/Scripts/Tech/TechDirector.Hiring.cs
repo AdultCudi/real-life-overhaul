@@ -636,6 +636,72 @@ namespace RealLifeOverhaul.Tech
             Changed();
         }
 
+        /// <summary>Why an accepted applicant's notice cannot be bought out now, a text's key, or null when it can.</summary>
+        internal string BuyoutRefusal(Applicant a, Seeker s)
+        {
+            if (!_hiringOn || Save == null)
+            {
+                return "reallife_hire_buyout_off";
+            }
+            switch (HiringRules.CanBuyOut(a, s, Save.Day))
+            {
+                case HiringRules.Buyable: return null;
+                case HiringRules.BuyoutNotEmployed: return "reallife_hire_buyout_not_employed";
+                default: return "reallife_hire_buyout_soon";
+            }
+        }
+
+        /// <summary>
+        /// An accepted hire's notice bought out: their employer is paid by the business they join (refused whole if its cash does not cover
+        /// it) and they start tomorrow. The price is worked out again here, never taken from the page: a day that passed while the question
+        /// was open saves a day less and costs less, never more. False, with the reason told, when it cannot be done.
+        /// </summary>
+        internal bool BuyOutNotice(int id)
+        {
+            Applicant a = ApplicantOf(id);
+            Seeker s = a != null ? _hiring.SeekerOf(a.Seeker) : null;
+            string refusal = BuyoutRefusal(a, s);
+            if (refusal != null)
+            {
+                Notifications.Show(NotificationType.Error, refusal, Data("name", s != null ? s.P.Name : "-", "day", a != null ? a.Start.ToString() : "-"), 6f);
+                return false;
+            }
+            JobAd ad = _hiring.AdOf(a.Ad);
+            BuildingRegistration at = ad != null ? TalentGame.Find(ad.Place) : null;
+            if (at == null)
+            {
+                Notifications.Show(NotificationType.Error, "reallife_hire_buyout_gone", Data("name", s.P.Name), 6f);   // the business is no longer the player's: the start will say so
+                return false;
+            }
+            int day = Save.Day, before = a.Start;
+            int price = HiringRules.BuyoutQuote(a, s, day);
+            if (!HiringGame.Pay(price, HiringGame.BuyoutKey, at, s.P.Name))
+            {
+                Notifications.Show(NotificationType.Error, "reallife_hire_buyout_short", Data("name", s.P.Name, "amount", TechText.Cents(price), "business", TalentGame.NameOf(at)), 6f);
+                return false;
+            }
+            HiringRules.BuyOut(a, s, day);
+            Tell(NotificationType.Success, "reallife_hire_note_buyout", Data("name", s.P.Name, "amount", TechText.Cents(price), "day", a.Start.ToString()), TabApplicants,
+                RolesApp.ApplicantRow + a.Id);
+            BuyoutCheck(s.P.Name, day, before, a.Start, HiringRules.BuyoutStart(day), price, a.Offer);
+            Changed();
+            return true;
+        }
+
+        // One line a buy out, the player's or a rival's: the days the notice was cut by, the price booked against the rule's price for
+        // those days at the pay, and the day it now ends against the day wanted.
+        private void BuyoutCheck(string who, int day, int end, int now, int wanted, int price, int centsHour)
+        {
+            if (!Verbose)
+            {
+                return;
+            }
+            int saved = HiringRules.BuyoutDays(end, now), rule = HiringRules.BuyoutPrice(saved, centsHour);
+            bool ok = saved > 0 && now == wanted && price == rule;
+            Logger?.Info("Tech check (notice buy out, " + who + ", day " + day + "): " + saved + " day(s) saved, day " + end + " to day " + now + " (" + wanted + " wanted), "
+                         + price + " cents booked against " + rule + " by the rule at " + centsHour + " cents an hour: " + (ok ? "PASS" : "FAIL"));
+        }
+
         internal void WalkAway(int id)
         {
             Applicant a = ApplicantOf(id);
