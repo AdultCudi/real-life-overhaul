@@ -354,6 +354,7 @@ namespace RealLifeOverhaul.Economy
                 return;
             }
             bool office = calculator is CustomerEntriesCalculatorOffice, retail = calculator is CustomerEntriesCalculatorRetail;
+            float scale = CustomerScale.For(reg);   // the living population's people: the factory's own calculator carries it, the rota's two copies are given it
             shop.HasCustomers = true;
             if (retail)
             {
@@ -382,9 +383,9 @@ namespace RealLifeOverhaul.Economy
                     }
                     for (int h = 0; h < RotaCatalogue.Hours; h++)
                     {
-                        int customers = office ? Calculator.Office(reg, h, day, initial) : calculator.GetCustomersByHour(h, day, initial);
+                        int customers = office ? Calculator.Office(reg, h, day, initial * scale) : calculator.GetCustomersByHour(h, day, initial);
                         // A shop's figure stops at what its stations serve; the plain calculator's does not.
-                        int wanting = retail ? Plain.GetCustomersByHour(h, day, initial) : customers;
+                        int wanting = retail ? Plain.GetCustomersByHour(h, day, initial * scale) : customers;
                         shop.Customers[d * RotaCatalogue.Hours + h] = Mathf.Max(0, customers);
                         shop.Wanting[d * RotaCatalogue.Hours + h] = Mathf.Max(0, wanting);
                     }
@@ -437,11 +438,12 @@ namespace RealLifeOverhaul.Economy
             float initial = calculator.GetInitialCustomers();
             int sum = 0;
             bool office = calculator is CustomerEntriesCalculatorOffice;
+            float scale = CustomerScale.For(reg);   // the office copy is given the living population's people; the factory's own carries them
             for (int d = 1; initial > 0f && d <= RotaCatalogue.Days; d++)
             {
                 for (int h = 0; h < RotaCatalogue.Hours; h++)
                 {
-                    sum += Mathf.Max(0, office ? Calculator.Office(reg, h, (DayOfWeekOrdered)d, initial) : calculator.GetCustomersByHour(h, (DayOfWeekOrdered)d, initial));
+                    sum += Mathf.Max(0, office ? Calculator.Office(reg, h, (DayOfWeekOrdered)d, initial * scale) : calculator.GetCustomersByHour(h, (DayOfWeekOrdered)d, initial));
                 }
             }
             return sum;

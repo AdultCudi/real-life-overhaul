@@ -333,7 +333,7 @@ internal static partial class Program
               && mod.Contains("\"reallife_session_test_managers\", () => Sessions.SessionDirector.Instance?.TestManagers()") && guide.Contains(".Test(\"reallife_session_test_meeting\", \"reallife_session_test_managers\")"),
             "sessions sources: the tests open the meeting at the desk or mark the nearest firm and say why, and hold the managers' sessions; both in Options and on the feature's list");
         Check(mod.Contains("Settings.LivingPopulationId, \"reallife_living_enabled\"") && mod.Contains("Settings.LivingDesksId, \"reallife_session_enabled\"")
-              && tree.Contains("S(\"living\").For(\"living\").Main(\"living_population\").Opt(\"living_desks\", \"living_population\")") && links.Contains("SessionRegistry.Add(Meeting());")
+              && tree.Contains("S(\"living\").For(\"living\", \"population\").Main(\"living_population\").Opt(\"living_desks\", \"living_population\")") && links.Contains("SessionRegistry.Add(Meeting());")
               && links.Contains("SessionRegistry.Remove(MeetingRules.Id);") && links.Contains("DesksLeast = 2") && links.Contains("TechTypes.GameStudio") && links.Contains("FirmsGame.WebAgency"),
             "sessions sources: the master option and the sessions' switch in Options, the meeting added by the wiring at every tech firm and the game's office businesses, and taken out again");
     }

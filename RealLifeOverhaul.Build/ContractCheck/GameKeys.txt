@@ -2,15 +2,18 @@
 # districts, transactions, vehicles and a few texts. ContractCheck checks each against the game's en.json, and that
 # this list holds every one the code names and no other. One key a line, sorted.
 auto_tow_service_ny
+ba:buildingtype_cinema
 ba:buildingtype_office
 ba:buildingtype_residential
 ba:buildingtype_retail
 ba:buildingtype_special
+ba:buildingtype_theater
 ba:buildingtype_warehouse
 ba:businessproductsource_importer
 ba:businessproductsource_wholesaler
 ba:businesstype_appliancestore
 ba:businesstype_bank
+ba:businesstype_bookstore
 ba:businesstype_cardealership
 ba:businesstype_casino
 ba:businesstype_cinema
@@ -22,6 +25,7 @@ ba:businesstype_empty
 ba:businesstype_eventplanningagency
 ba:businesstype_factory
 ba:businesstype_fastfoodrestaurant
+ba:businesstype_florist
 ba:businesstype_fruitandvegetablestore
 ba:businesstype_furniturestore
 ba:businesstype_gasstation
@@ -34,12 +38,14 @@ ba:businesstype_hospital
 ba:businesstype_importexport
 ba:businesstype_interiorinstallationfirm
 ba:businesstype_irs
+ba:businesstype_jewelrystore
 ba:businesstype_lawfirm
 ba:businesstype_liquorstore
 ba:businesstype_marketingagency
 ba:businesstype_movingservice
 ba:businesstype_nightclub
 ba:businesstype_officesupplystore
+ba:businesstype_privatedriverservice
 ba:businesstype_recruitmentagency
 ba:businesstype_school
 ba:businesstype_supermarket

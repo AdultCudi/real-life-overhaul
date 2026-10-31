@@ -90,6 +90,7 @@ namespace RealLifeOverhaul
             Step("the landmarks", LandmarkLinks.Connect);   // after the construction game's: its piece of the paper goes on top of it
             Step("the schools", SchoolLinks.Connect);   // after the landmarks': its piece of the paper goes on top of theirs
             Step("Uptown's shops of the mod's own kinds", UptownShopsLinks.Connect);   // wraps nothing
+            Step("the living population", PopulationLinks.Connect);   // after the business features: their levers become what people hear of a business
             Step("the Economy app", OutlookLinks.Connect);   // wraps nothing: it only reads the economy, the market, the council and the districts
             Logger?.Info("Wiring: the features are connected.");
         }
@@ -102,6 +103,7 @@ namespace RealLifeOverhaul
             }
             Connected = false;
             Step("the Economy app", OutlookLinks.Disconnect);
+            Step("the living population", PopulationLinks.Disconnect);
             Step("Uptown's shops of the mod's own kinds", UptownShopsLinks.Disconnect);
             Step("the schools", SchoolLinks.Disconnect);   // first: what it wrapped of the paper goes back before the landmarks'
             Step("the landmarks", LandmarkLinks.Disconnect);   // first: what it wrapped of the paper goes back before the construction game's

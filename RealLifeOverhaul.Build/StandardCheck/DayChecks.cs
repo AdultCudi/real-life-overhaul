@@ -43,6 +43,8 @@ internal static partial class Program
             "the services' takings and costs are money booked into yesterday's statement"),
         ("Economy/Banking/BankApps/BanksDirector.cs", "Economy/Banking/BankApps/BanksDirector.cs", "Badges", "kept",
             "the banks' apps' badge counts: a few comparisons, drawn nothing"),
+        ("Population/PopulationDirector.cs", "Population/PopulationDirector.cs", "OnDay", "spread",
+            "the city's people live their day in slices of about a millisecond a frame from the next frame on (Core/DayPump), the businesses read in the first; only the queueing is in the frame"),
         ("Outlook/OutlookDirector.cs", "Outlook/OutlookDirector.cs", "OnDay", "kept",
             "writes one row of the city's figures into the Economy app's history (33 figures, well under a tenth of a millisecond)"),
         ("Tech/TechDirector.cs", "Tech/TechDirector.cs", "OnDay", "kept",

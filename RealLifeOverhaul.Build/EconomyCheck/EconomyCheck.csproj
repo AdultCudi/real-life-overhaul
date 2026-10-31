@@ -724,6 +724,26 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\TestRun\RunPlan.cs" Link="Mod\TestRun\RunPlan.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\TestRun\RunText.cs" Link="Mod\TestRun\RunText.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Licences\HeavyRules.cs" Link="Mod\HeavyRules.cs" />
+    <!-- The city's population (PopulationChecks.cs): the measure, generation, life, the labour market, money and the pools, housing, the run, all game-free. -->
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\PopulationCatalogue.cs" Link="Mod\Population\PopulationCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\MeasureRules.cs" Link="Mod\Population\MeasureRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\PopulationState.cs" Link="Mod\Population\PopulationState.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\PopDraw.cs" Link="Mod\Population\PopDraw.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\CityTable.cs" Link="Mod\Population\CityTable.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\GenerateRules.cs" Link="Mod\Population\GenerateRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\LabourRules.cs" Link="Mod\Population\LabourRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\SpendRules.cs" Link="Mod\Population\SpendRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\PoolRules.cs" Link="Mod\Population\PoolRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\HousingRules.cs" Link="Mod\Population\HousingRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\LifeRules.cs" Link="Mod\Population\LifeRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\RegionRules.cs" Link="Mod\Population\RegionRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\PopulationSim.cs" Link="Mod\Population\PopulationSim.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\PopulationStore.cs" Link="Mod\Population\PopulationStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\PopulationShare.cs" Link="Mod\Population\PopulationShare.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\CustomerRules.cs" Link="Mod\Population\CustomerRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\PopulationViews.cs" Link="Mod\Population\PopulationViews.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\PopulationLinks.cs" Link="Mod\Population\PopulationLinks.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\CityPopulation.cs" Link="Mod\Population\CityPopulation.cs" />
   </ItemGroup>
 
 </Project>

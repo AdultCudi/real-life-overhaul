@@ -78,7 +78,7 @@ namespace RealLifeOverhaul.Economy
             try
             {
                 CustomerEntriesCalculator calc = CustomerEntriesCalculatorFactory.GetCustomerEntriesCalculator(reg);
-                h.ShopCustomers = calc != null ? Mathf.Max(0f, calc.GetInitialCustomers()) : 0f;
+                h.ShopCustomers = calc != null ? Mathf.Max(0f, calc.GetInitialCustomers()) * CustomerScale.For(reg) : 0f;   // the living population's people, where it runs
             }
             catch (Exception)
             {

@@ -114,6 +114,21 @@ namespace RealLifeOverhaul.Uptown
             return all <= 0 ? 0 : (int)(100L * (serving - served) / all);
         }
 
+        /// <summary>
+        /// A use's demand, 0 to 100, with the living population's pull for it (-100 to 100: households forming and coming that find no flat, jobs growing,
+        /// spending a square metre of shop floor, goods a square metre of warehouse floor) in place of the fixed ratios of Manhattan's mix; the vacancies'
+        /// own pull stays. A pull of -1000 (none counted) gives the ratios' own demand.
+        /// </summary>
+        public static int Demand(DistrictMarket m, int use, int populationPull)
+        {
+            if (populationPull <= -1000 || use < 0 || use >= Uses)
+            {
+                return Demand(m, use);
+            }
+            int pull = Math.Max(-100, Math.Min(100, populationPull)) * 40 / 100;   // the ratios' pull reaches about forty points either way: the people's as far
+            return Math.Max(0, Math.Min(100, Base[use] + pull + VacancyPull(m, use)));
+        }
+
         /// <summary>A use's demand, 0 to 100.</summary>
         public static int Demand(DistrictMarket m, int use)
         {
