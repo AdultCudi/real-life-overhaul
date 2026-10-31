@@ -850,8 +850,10 @@ namespace RealLifeOverhaul.Construction
                     {
                         BeforeTest();
                         bool sold = FlatSale(p);
-                        Logger?.Info("Construction check (buyer test): project " + p.Id + ": " + (sold ? "a flat sold now, " + (p.Flats - p.FlatsSold)
-                            + " left: PASS" : "no price for its flats: FAIL") + ".");
+                        bool residents = _state.Lot(p.Lot) == null;
+                        Logger?.Info("Construction check (buyer test): project " + p.Id + ": " + (sold ? "a flat sold now, " + (p.Flats - p.FlatsSold) + " left, the building "
+                            + (residents ? "its residents'" : "still the player's") + ": " + (residents == LandRules.AllSold(p.Flats, p.FlatsSold) || !p.InDistrict ? "PASS" : "FAIL")
+                            : "no price for its flats: FAIL") + ".");
                         TestDone("a buyer for a flat at project " + p.Id, TabProjects, p.Id);
                         return;
                     }

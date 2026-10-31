@@ -99,6 +99,10 @@ namespace RealLifeOverhaul.Construction
             for (int i = 0; i < _state.Grows.Count; i++)
             {
                 GrowFile g = _state.Grows[i];
+                if (g.Owner == GrowOwner.Player)
+                {
+                    continue;   // the player's own: its deed and tenants are GrowDeedsDay's and GrowWeek's, never a tenant of the developer's put in
+                }
                 if ((g.UnderWay || g.Stage == GrowStage.Letting) && _state.WaitingOn(g.Lot) == null)   // plans wait on an offer for the land until it is answered
                 {
                     GrowStep(g, day, false);

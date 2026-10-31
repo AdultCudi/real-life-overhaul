@@ -8,7 +8,8 @@ namespace RealLifeOverhaul.Construction
     /// <summary>
     /// The construction game's reads and writes of the game for the city's growth (plans/growables.md): a Let it grow building's
     /// deed of the player's, its tenants' share of its floor (the game's own RealEstate.occupancy, which the game's nightly run
-    /// pays the player for: "Rent revenue" in the game's books) and its rent a square metre at its tier. Never another player's.
+    /// pays the player for: "Rent revenue" in the game's books) and its rent a square metre at its tier; and a block of the
+    /// player's whose flats are on sale held to its unsold flats' share of that letting. Never another player's.
     /// Nothing here keeps state. COST: nothing per frame; on a day's pass or a handover.
     /// </summary>
     internal static partial class ConstructionGame
@@ -37,6 +38,21 @@ namespace RealLifeOverhaul.Construction
             }
             deed.occupancy = Mathf.Min(deed.occupancy + Mathf.Max(0, points), deed.MaxOccupancy);
             return deed.OccupancyPercentage;
+        }
+
+        /// <summary>
+        /// A block of the player's whose flats are on sale: its deed's tenants (the game's own occupancy, paid each night as rent
+        /// revenue) held to <paramref name="share"/> of its floor, 0 to 100, as the flats sold are their buyers' homes. False with no deed.
+        /// </summary>
+        internal static bool DeedHeld(string street, int number, int share)
+        {
+            RealEstate deed = DeedOf(street, number);
+            if (deed == null)
+            {
+                return false;
+            }
+            deed.occupancy = Mathf.Min(deed.occupancy, Mathf.Clamp(share, 0, 100));
+            return true;
         }
 
         /// <summary>A building of the player's asking its tier's rent a square metre: a share of the market's, held where the game holds the player's own (0.8 to 1.2). False with no deed.</summary>

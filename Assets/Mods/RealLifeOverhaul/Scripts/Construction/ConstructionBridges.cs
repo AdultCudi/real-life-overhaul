@@ -136,6 +136,19 @@ namespace RealLifeOverhaul.Construction
         public delegate bool FinishOverCall(string lot, IList<string> over, string design, string size, int version, string type, int storeys, bool player, double price, string look,
                                             out string why);
 
+        /// <summary>
+        /// A block of the player's on a lot whose last flat is sold given to its residents: the district's record the city's, the player's
+        /// deed gone as the game's own sale leaves a building. Null when done, else why not (a session, not standing). Default: refused.
+        /// </summary>
+        public static Func<string, string> ToResidents;
+
+        /// <summary>
+        /// A block on a lot handed over on a day (the second) that an earlier version gave its residents though flats were unsold, the
+        /// player's again: the district's record theirs, their deed written at the price (the third), the landlord named for it gone.
+        /// Null when done, else why not (another building's record, a session, not standing). Default: refused.
+        /// </summary>
+        public static Func<string, int, double, string> GiveBack;
+
         // ------------------------------------------------------------------ the corner buildings (Scripts/Corners)
 
         /// <summary>
@@ -472,6 +485,8 @@ namespace RealLifeOverhaul.Construction
             LandPrice = null;
             Finish = null;
             FinishOver = null;
+            ToResidents = null;
+            GiveBack = null;
             StandingAt = null;
             StandingOn = null;
             Demolish = null;

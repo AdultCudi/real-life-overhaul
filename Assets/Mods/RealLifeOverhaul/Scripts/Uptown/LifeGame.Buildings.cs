@@ -653,6 +653,51 @@ namespace RealLifeOverhaul.Uptown
             return null;
         }
 
+        /// <summary>
+        /// A block of the player's whose last flat is sold given to its residents, as the game's own sale leaves a building
+        /// (RealEstateHelper.SimulateCompetitorBuyingPlayerBuildings): the player's deed gone and off the market, the market rent
+        /// on a flat the player still lives in, and its homes their buyers' (let, as the game's swap of homes lets one); its
+        /// landlord is the whole-building check's to give. Never another player's. Null when done, else why not.
+        /// </summary>
+        public static string ToResidents(MadeBuilding made, GameInstance save)
+        {
+            BuildingRegistration reg = made != null ? made.Registration : null;
+            Building record = made != null ? made.Building : null;
+            if (reg == null || record == null || save == null)
+            {
+                return "its records are not there";
+            }
+            if (GoingPublic.Foreign(reg))
+            {
+                return "it is another player's in this session";
+            }
+            Address address = record.Address;
+            for (int i = save.realEstate != null ? save.realEstate.Count - 1 : -1; i >= 0; i--)
+            {
+                if (save.realEstate[i] != null && save.realEstate[i].address == address)
+                {
+                    save.realEstate.RemoveAt(i);
+                }
+            }
+            for (int i = save.buildingsForSale != null ? save.buildingsForSale.Count - 1 : -1; i >= 0; i--)
+            {
+                if (save.buildingsForSale[i] != null && save.buildingsForSale[i].address == address)
+                {
+                    save.buildingsForSale.RemoveAt(i);
+                }
+            }
+            if (reg.RentedByPlayer)
+            {
+                reg.RentPerDay = record.GetBuildingDailyMarketRent();   // the player's own flat there now rented at the market's rent, as after the game's sale
+            }
+            else if (record.BuildingType == MixRules.HomeType)
+            {
+                reg.AvailableForRent = false;   // its homes are their buyers'
+            }
+            GlobalEvents.onBuildingRegistrationChange?.Invoke(address);
+            return null;
+        }
+
         /// <summary>The player's deed of a district building (the game's real estate at its address), or null.</summary>
         public static RealEstate Deed(MadeBuilding made)
         {

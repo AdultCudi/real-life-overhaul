@@ -241,6 +241,28 @@ namespace RealLifeOverhaul.Uptown
             return LifeDirector.StandNow(lotId, out why);
         }
 
+        /// <summary>
+        /// A block of the player's finished on a lot given to its residents once its last flat is sold: the record the city's, now and
+        /// from every load, and the player's deed gone as the game's own sale leaves a building (its landlord given as every city
+        /// building's is). Null when done or the city's already, else why not (a Going Public session, the district's line unreadable,
+        /// a block set up as the player's not standing at this load). The construction game asks again until it is done.
+        /// </summary>
+        public static string ToResidents(string lotId)
+        {
+            return LifeDirector.ToResidents(lotId);
+        }
+
+        /// <summary>
+        /// A block finished on a lot on a day (<paramref name="handed"/>) that an earlier version gave its residents though flats were
+        /// unsold, the player's again: its record theirs, now and from every load, their deed written at <paramref name="price"/> as a
+        /// handover writes it and the landlord named for it gone. Null when done or the player's already, else why not (the record is
+        /// not that handover's, a Going Public session, the district's line unreadable, not standing at this load).
+        /// </summary>
+        public static string GiveBack(string lotId, int handed, double price)
+        {
+            return LifeDirector.GiveBack(lotId, handed, price);
+        }
+
         /// <summary>How many finished buildings wait to stand until nobody sees their ground or the screen is black.</summary>
         public static int StandWaiting => LifeDirector.StandWaiting;
 

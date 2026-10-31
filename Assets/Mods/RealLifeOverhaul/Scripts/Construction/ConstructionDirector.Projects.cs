@@ -1206,9 +1206,10 @@ namespace RealLifeOverhaul.Construction
             return p.PaceDays > 0 ? BuildCatalogue.Clamp(40 + p.PaceSum / Math.Max(1, p.PaceDays) / 40, 30, 90) : 50;
         }
 
-        // A plot's building becomes one of the district's: the player's, or its residents' when flats are sold. The district stands it as the
-        // scaffolding comes down, or at the next black screen if its ground is in view (the bridge's Finish asks it to stand now);
-        // from the next load only where it cannot (a Going Public session, a make refused), and Uptown's line in Player.log says which.
+        // A plot's building becomes one of the district's: the player's, a block whose flats are on sale too until its last flat is sold
+        // (FlatsHeld then gives it to its residents), or the city's for a public building. The district stands it as the scaffolding
+        // comes down, or at the next black screen if its ground is in view (the bridge's Finish asks it to stand now); from the next
+        // load only where it cannot (a Going Public session, a make refused), and Uptown's line in Player.log says which.
         private void HandToDistrict(ProjectFile p)
         {
             if (p.InDistrict || string.IsNullOrEmpty(p.Lot))
@@ -1228,7 +1229,7 @@ namespace RealLifeOverhaul.Construction
                 Logger?.Info("Construction: project " + p.Id + " stands on a test's lot; the district is not told of it.");
                 return;
             }
-            bool player = p.Kind == ProjectKind.Plot && p.After == AfterUse.Keep && p.FlatsOffPlan == 0;   // a public building is the city's
+            bool player = LandRules.HandedToPlayer(p.Kind, p.After, p.Flats, p.FlatsSold);
             LotFile lot = _state.Lot(p.Lot);
             double paid = (lot != null ? lot.Paid : 0L) + p.Spent;
             OverOf(p.Lot, _over);
@@ -1246,12 +1247,87 @@ namespace RealLifeOverhaul.Construction
                 if (!player && lot != null)
                 {
                     _state.Lots.Remove(lot);   // the residents' now: no more land tax of the player's
+                    Tell(NotificationType.Info, "reallife_bld_notice_flats_residents", ProjectName(p), null, TabProjects, p.Id);   // every flat sold before the keys
                 }
                 Logger?.Info("Construction: project " + p.Id + "'s building is the district's, " + (player ? "the player's" : "its residents'")
                              + "; the district stands it now, or when nobody sees its ground (Uptown says which).");
+                FlatsHeld(p);
                 return;
             }
             Logger?.Info("Construction: project " + p.Id + "'s building is not the district's yet (" + why + "); asked again each day.");
+        }
+
+        // A block of the player's whose flats are on sale, once it is the district's: its deed lets only the unsold flats' share of its
+        // floor (a flat sold is its buyer's home), and with its last flat sold it is its residents', the player's land and deed with it.
+        // On the handover, the last sale and the day's pass, which asks again while the district cannot take it (a session, not standing).
+        private void FlatsHeld(ProjectFile p)
+        {
+            if (p.Kind != ProjectKind.Plot || p.After != AfterUse.SellFlats || !p.InDistrict || p.Stage != ProjectStage.Finished)
+            {
+                return;   // not a block on sale, or not the district's yet
+            }
+            LotFile land = _state.Lot(p.Lot);
+            if (land == null)
+            {
+                if (!LandRules.AllSold(p.Flats, p.FlatsSold))
+                {
+                    GiveBack(p);   // its residents' at the keys by an earlier version, though flats are unsold
+                }
+                return;   // its residents' already: the player's land went with it
+            }
+            if (!LandRules.AllSold(p.Flats, p.FlatsSold))
+            {
+                if (Space(p.Lot, out LotView site))
+                {
+                    ConstructionGame.DeedHeld(site.Street, site.Number, LandRules.UnsoldShare(p.Flats, p.FlatsSold));
+                }
+                return;
+            }
+            string why = ToResidentsLot(p.Lot);
+            if (why != null)
+            {
+                Logger?.Info("Construction: project " + p.Id + " has sold its last flat, but its building is not its residents' yet (" + why + "); asked again each day.");
+                return;
+            }
+            _state.Lots.Remove(land);   // no more land tax of the player's
+            Tell(NotificationType.Info, "reallife_bld_notice_flats_residents", ProjectName(p), null, TabProjects, p.Id);
+            Logger?.Info("Construction: project " + p.Id + " has sold all " + p.Flats + " flats: its building is its residents' now, no longer the player's.");
+            Changed();
+        }
+
+        // A block an earlier version gave its residents at the keys with flats still unsold (its land went with it, and the district named
+        // a landlord of the city's its owner): the player's again as a handover now leaves it, its ground a site of theirs once more.
+        // The district gives back only the record of this block's own handover, never a building the city has put up there since.
+        private void GiveBack(ProjectFile p)
+        {
+            if (GoingPublic.InSession || !Space(p.Lot, out LotView site))
+            {
+                return;
+            }
+            string why = GiveBackLot(p.Lot, p.Handed, p.Spent);
+            if (why != null)
+            {
+                if (Verbose)
+                {
+                    Logger?.Info("Construction check (a block given back): project " + p.Id + " on lot " + p.Lot + " is not the player's again: " + why + ".");
+                }
+                return;
+            }
+            int day = ConstructionGame.Day;
+            _state.Lots.Add(new LotFile { Id = p.Lot, Bought = p.Handed, Zones = LandRules.ZonesOf(site.Class), TaxedTo = day, EmptySince = day, Spaces = Math.Max(1, site.Spaces) });
+            Tell(NotificationType.Info, "reallife_bld_notice_flats_back", ProjectName(p), null, TabProjects, p.Id);
+            Logger?.Info("Construction: project " + p.Id + " on lot " + p.Lot + " was its residents' from its keys with " + (p.Flats - p.FlatsSold) + " of " + p.Flats
+                         + " flats unsold (an earlier version's handover): the player's again, its land a site of theirs.");
+            Changed();
+        }
+
+        // The day: each block of the player's whose flats are on sale held to its unsold share, or given to its residents.
+        private void FlatsHeldDay()
+        {
+            for (int i = 0; i < _state.Projects.Count; i++)
+            {
+                FlatsHeld(_state.Projects[i]);
+            }
         }
 
         /// <summary>Whether a finished plot's building is the player's (used, let or sold through BizMan once it stands) or its flats are sold. Before the handover only.</summary>

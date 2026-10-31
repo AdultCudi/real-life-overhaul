@@ -87,6 +87,8 @@ namespace RealLifeOverhaul
                 ConstructionBridges.LandPrice = lot => DistrictBuildings.LandPricePerSqm(lot);
                 ConstructionBridges.Finish = Finish;
                 ConstructionBridges.FinishOver = FinishOver;
+                ConstructionBridges.ToResidents = ToResidents;
+                ConstructionBridges.GiveBack = GiveBack;
                 ConstructionBridges.SpacesOf = SpacesRules.SpacesOf;
                 ConstructionBridges.CornerOffers = CornerLinks.Offers;   // the corner buildings that fit a corner site (Wiring.CornerLinks)
                 ConstructionBridges.CornerName = CornerLinks.Name;
@@ -213,6 +215,8 @@ namespace RealLifeOverhaul
                 ConstructionBridges.LandPrice = null;
                 ConstructionBridges.Finish = null;
                 ConstructionBridges.FinishOver = null;
+                ConstructionBridges.ToResidents = null;
+                ConstructionBridges.GiveBack = null;
                 ConstructionBridges.SpacesOf = null;
                 ConstructionBridges.CornerOffers = null;
                 ConstructionBridges.CornerName = null;
@@ -671,6 +675,32 @@ namespace RealLifeOverhaul
                     Fault("ConstructionLinks.Finish", e);
                     why = "a fault";
                     return false;
+                }
+            }
+
+            private static string ToResidents(string lot)
+            {
+                try
+                {
+                    return DistrictBuildings.ToResidents(lot);
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.ToResidents", e);
+                    return "a fault";
+                }
+            }
+
+            private static string GiveBack(string lot, int handed, double price)
+            {
+                try
+                {
+                    return DistrictBuildings.GiveBack(lot, handed, price);
+                }
+                catch (Exception e)
+                {
+                    Fault("ConstructionLinks.GiveBack", e);
+                    return "a fault";
                 }
             }
 
