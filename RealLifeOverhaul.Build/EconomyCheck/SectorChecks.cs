@@ -393,6 +393,16 @@ internal static partial class Program
         startups[0].State = (int)StartupState.Failed;
         SectorRules.Startups(f, startups, 211, notes);
         Check(f.StartupProduct(41) == null && f.StartupProduct(43) != null, "sector rivals: a startup's product goes with the startup");
+        SectorFile noted = SectorFresh(9);
+        var news = new List<RivalNote>();
+        var comers = new List<Startup> { new Startup { Id = 51, Name = "Old Oak", Sector = (int)Venture.Software, State = (int)StartupState.Running } };
+        SectorRules.Startups(noted, comers, 5, news);
+        comers[0].State = (int)StartupState.Failed;
+        comers.Add(new Startup { Id = 52, Name = "New Elm", Sector = (int)Venture.Software, State = (int)StartupState.Running });
+        SectorRules.Startups(noted, comers, 6, news);
+        Check(news.Count == 1 && news[0].Kind == SectorRules.NoteNew && news[0].Rival >= 0 && news[0].Rival < noted.Rivals.Count
+              && noted.Rivals[news[0].Rival].Startup == 52 && noted.StartupProduct(51) == null,
+            "sector rivals: a new startup's product is noted where it stands once the closed startups' products are gone, so its story names it");
         int pull;
         RivalProduct leader = f.RivalOf(6, (int)SectorMarket.Apps);
         leader.LastShip = 300;

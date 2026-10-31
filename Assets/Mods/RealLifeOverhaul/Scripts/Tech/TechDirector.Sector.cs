@@ -120,8 +120,11 @@ namespace RealLifeOverhaul.Tech
             {
                 ConvertSector(day, cycle, following);
             }
+            int fromRival = _sector.NextRival;
             if (!following)
             {
+                // a company a newer version adds gets its products here, settled at their share below
+                SectorRules.Companies(_sector, day, SectorRules.StartFeatures(_firmsFile));
                 VentureFile v = Ventures;
                 SectorRules.Startups(_sector, v != null ? v.Startups : null, day, _rivalNotes);
                 for (int i = 0; i < _rivalNotes.Count; i++)
@@ -140,13 +143,20 @@ namespace RealLifeOverhaul.Tech
             SectorPulls(day, cycle);
             if (!following)
             {
+                SectorRules.Settle(_sector, fromRival);
                 SectorRules.RivalDay(_sector, day, _rivalNotes);
                 RivalNews();
                 SharedCity.Changed(SectorShare.Part);
             }
             SectorRules.RivalCompute(_sector);
+            _sector.Prune(KeepsPlace, KeepsProduct);
             TechBridges.SectorSessionsNow(true, HasCentres());
         }
+
+        // A place the sector keeps a record for: one of the player's firms, or a data centre (where its sessions may be held).
+        private bool KeepsPlace(string place) => _firmsFile.FirmAt(place) != null || (_infra != null && _infra.CentreAt(place) != null);
+
+        private bool KeepsProduct(int id) => _firmsFile.ProductOf(id) != null;
 
         // The markets begun, every product of the player's counted, then each one's appeal and awareness worked out and its pull joined.
         private void SectorPulls(int day, int cycle)

@@ -144,7 +144,10 @@ namespace RealLifeOverhaul.Tech
             return world + world * growth / 1000 * (d % SectorCatalogue.MarketYear) / SectorCatalogue.MarketYear;
         }
 
-        /// <summary>What the economy does to a market's buyers today, thousandths: the households' mood for digital spending for people (the cycle while it is not read), the cycle for firms.</summary>
+        /// <summary>
+        /// What the economy does to a market's buyers today, thousandths: the households' mood for digital spending for
+        /// people (the cycle while it is not read), the cycle for firms.
+        /// </summary>
         public static int SpendOf(int market, SectorCityFigures city, int cycle)
         {
             int cyc = FirmsRules.CycleSpend[Clamp(cycle, 0, 3)];
@@ -388,7 +391,8 @@ namespace RealLifeOverhaul.Tech
             int needed = FirmsRules.SupportNeeded(p);
             if (needed > support)
             {
-                churn = churn * (1000 + Math.Min(FirmsCatalogue.SupportChurnMost, (needed - support) * 1000 / Math.Max(1, needed))) / 1000;   // the whole extra is reached only with nobody answering at all
+                // the whole extra is reached only with nobody answering at all
+                churn = churn * (1000 + Math.Min(FirmsCatalogue.SupportChurnMost, (needed - support) * 1000 / Math.Max(1, needed))) / 1000;
             }
             churn = churn * (p.Tier == 0 ? 900 : p.Tier == 2 ? 1150 : 1000) / 1000;
             int behind = m.Average - p.Features;

@@ -242,7 +242,8 @@ namespace RealLifeOverhaul.Tech
             if (makes)
             {
                 Line(sec, P + "team_testers", t.Testers == 0 && t.Builders >= 4 ? ViewTone.Warn : ViewTone.Plain, "count", fmt.Whole(t.Testers));
-                Line(sec, P + "team_designers", ViewTone.Plain, "count", fmt.Whole(t.Designers), "lift", fmt.Mille(SectorRules.Lift(s.Crew.Design, s.Crew.Engineering + 1, SectorCatalogue.DesignGain)));
+                int designLift = SectorRules.Lift(s.Crew.Design, s.Crew.Engineering + 1, SectorCatalogue.DesignGain);
+                Line(sec, P + "team_designers", ViewTone.Plain, "count", fmt.Whole(t.Designers), "lift", fmt.Mille(designLift));
                 Line(sec, P + "team_product", ViewTone.Plain, "count", fmt.Whole(t.Product), "boost", fmt.Mille(SectorRules.ProductBoost(s.Crew)));
                 Line(sec, P + "team_support", s.SupportNeeded > t.Support ? ViewTone.Warn : ViewTone.Plain, "count", fmt.Whole(t.Support), "need", fmt.Whole(s.SupportNeeded));
                 Line(sec, P + "team_reliability", t.Reliability == 0 && s.Customers > 0 ? ViewTone.Warn : ViewTone.Plain, "count", fmt.Whole(t.Reliability),

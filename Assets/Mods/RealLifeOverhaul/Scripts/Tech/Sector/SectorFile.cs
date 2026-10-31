@@ -180,6 +180,32 @@ namespace RealLifeOverhaul.Tech
             return p;
         }
 
+        /// <summary>
+        /// Records of firms and products no longer the player's let go, so the save keeps only what still stands; how
+        /// many went.
+        /// </summary>
+        public int Prune(System.Func<string, bool> keepPlace, System.Func<int, bool> keepProduct)
+        {
+            int n = 0;
+            for (int i = Firms.Count - 1; i >= 0; i--)
+            {
+                if (keepPlace != null && !keepPlace(Firms[i].Place))
+                {
+                    Firms.RemoveAt(i);
+                    n++;
+                }
+            }
+            for (int i = Products.Count - 1; i >= 0; i--)
+            {
+                if (keepProduct != null && !keepProduct(Products[i].Id))
+                {
+                    Products.RemoveAt(i);
+                    n++;
+                }
+            }
+            return n;
+        }
+
         public RivalProduct RivalOf(int company, int market)
         {
             for (int i = 0; i < Rivals.Count; i++)

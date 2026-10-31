@@ -82,7 +82,8 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // The city now from the population: its people, its employers as firms by size (the employers are not in the public reading, so the table is read here), its households' digital spending today.
+            // The city now from the population: its people, its employers as firms by size (the employers are not in
+            // the public reading, so the table is read here), its households' digital spending today.
             private static bool City(out int people, out int small, out int mid, out int large, out long digital)
             {
                 people = small = mid = large = 0;
@@ -121,7 +122,8 @@ namespace RealLifeOverhaul
             private const string Mod = "reallife", D = Mod + "_tech_desk_";   // the keys' start, written so the source holds no key prefix as a literal
 
             // a choice by its name within its kind (its trade-off is its key and "_trade"), and a step by its number
-            private static SessionChoice C(string kind, string choice, int minutes) => new SessionChoice { NameKey = D + kind + "_" + choice, TradeKey = D + kind + "_" + choice + "_trade", Minutes = minutes };
+            private static SessionChoice C(string kind, string choice, int minutes) =>
+                new SessionChoice { NameKey = D + kind + "_" + choice, TradeKey = D + kind + "_" + choice + "_trade", Minutes = minutes };
 
             private static SessionStep S(string kind, int step, params SessionChoice[] choices) => new SessionStep { TitleKey = D + kind + "_step" + step, Choices = choices };
 
@@ -145,7 +147,11 @@ namespace RealLifeOverhaul
                         def.Types = Software;
                         def.Hour = 9;
                         def.BaseMinutes = 20;
-                        def.Steps = new[] { S(name, 1, C(name, "rollback", 20), C(name, "hotfix", 30), C(name, "status", 10)), S(name, 2, C(name, "postmortem", 30), C(name, "credit", 10), C(name, "moveon", 0)) };
+                        def.Steps = new[]
+                        {
+                            S(name, 1, C(name, "rollback", 20), C(name, "hotfix", 30), C(name, "status", 10)),
+                            S(name, 2, C(name, "postmortem", 30), C(name, "credit", 10), C(name, "moveon", 0))
+                        };
                         break;
                     case SectorRules.DeskBigCustomer:
                         def.Types = Software;
@@ -167,7 +173,11 @@ namespace RealLifeOverhaul
                         def.Types = Lab;
                         def.Hour = 11;
                         def.BaseMinutes = 30;
-                        def.Steps = new[] { S(name, 1, C(name, "open", 15), C(name, "api", 15), C(name, "partners", 30)), S(name, 2, C(name, "undercut", 0), C(name, "match", 0), C(name, "premium", 0)) };
+                        def.Steps = new[]
+                        {
+                            S(name, 1, C(name, "open", 15), C(name, "api", 15), C(name, "partners", 30)),
+                            S(name, 2, C(name, "undercut", 0), C(name, "match", 0), C(name, "premium", 0))
+                        };
                         break;
                     case SectorRules.DeskPitch:
                         def.Types = Consultancy;
@@ -185,13 +195,21 @@ namespace RealLifeOverhaul
                         def.Types = Security;
                         def.Hour = 8;
                         def.BaseMinutes = 30;
-                        def.Steps = new[] { S(name, 1, C(name, "isolate", 15), C(name, "targeted", 30), C(name, "trace", 45)), S(name, 2, C(name, "now", 10), C(name, "later", 0), C(name, "little", 0)) };
+                        def.Steps = new[]
+                        {
+                            S(name, 1, C(name, "isolate", 15), C(name, "targeted", 30), C(name, "trace", 45)),
+                            S(name, 2, C(name, "now", 10), C(name, "later", 0), C(name, "little", 0))
+                        };
                         break;
                     case SectorRules.DeskCapacity:
                         def.Types = Operations;
                         def.Hour = 10;
                         def.BaseMinutes = 30;
-                        def.Steps = new[] { S(name, 1, C(name, "buy", 15), C(name, "asneeded", 0), C(name, "let", 10)), S(name, 2, C(name, "undercut", 0), C(name, "match", 0), C(name, "premium", 0)) };
+                        def.Steps = new[]
+                        {
+                            S(name, 1, C(name, "buy", 15), C(name, "asneeded", 0), C(name, "let", 10)),
+                            S(name, 2, C(name, "undercut", 0), C(name, "match", 0), C(name, "premium", 0))
+                        };
                         break;
                     case SectorRules.DeskPower:
                         def.Types = Operations;
@@ -203,7 +221,11 @@ namespace RealLifeOverhaul
                         def.Types = Operations;
                         def.Hour = 9;
                         def.BaseMinutes = 20;
-                        def.Steps = new[] { S(name, 1, C(name, "failover", 20), C(name, "restore", 30), C(name, "quiet", 0)), S(name, 2, C(name, "postmortem", 30), C(name, "credit", 10), C(name, "moveon", 0)) };
+                        def.Steps = new[]
+                        {
+                            S(name, 1, C(name, "failover", 20), C(name, "restore", 30), C(name, "quiet", 0)),
+                            S(name, 2, C(name, "postmortem", 30), C(name, "credit", 10), C(name, "moveon", 0))
+                        };
                         break;
                     case SectorRules.DeskClientPitch:
                         def.Types = Agency;

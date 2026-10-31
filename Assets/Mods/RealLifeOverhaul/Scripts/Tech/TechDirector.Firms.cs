@@ -223,7 +223,8 @@ namespace RealLifeOverhaul.Tech
                 if (_sectorOn)
                 {
                     c.Security = SectorRules.Posture(FirmsCatalogue.SecurityBase, securityBrought, SectorCatalogue.SecurityHalf);   // each analyst adds less than the last, with no top of 950
-                    c.Reliability = SectorRules.Reliable(_sector.FirmAt(firm.File.Place), SectorRules.Posture(FirmsCatalogue.ReliabilityBase, reliabilityBrought, SectorCatalogue.ReliabilityHalf), Save.Day);
+                    int reliable = SectorRules.Posture(FirmsCatalogue.ReliabilityBase, reliabilityBrought, SectorCatalogue.ReliabilityHalf);
+                    c.Reliability = SectorRules.Reliable(_sector.FirmAt(firm.File.Place), reliable, Save.Day);
                 }
                 else
                 {

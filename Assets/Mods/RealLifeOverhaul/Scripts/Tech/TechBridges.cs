@@ -109,7 +109,10 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        /// <summary>The other tech firms' desk sessions put in or taken out as the sector starts and stops: the firms' kinds, and the data centres' while the player has one. Default: nothing.</summary>
+        /// <summary>
+        /// The other tech firms' desk sessions put in or taken out as the sector starts and stops: the firms' kinds,
+        /// and the data centres' while the player has one. Default: nothing.
+        /// </summary>
         public static Action<bool, bool> SectorSessions;
 
         /// <summary><see cref="SectorSessions"/> told; a fault in the sessions changes nothing here.</summary>

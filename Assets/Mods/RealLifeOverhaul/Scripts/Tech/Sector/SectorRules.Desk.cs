@@ -38,7 +38,10 @@ namespace RealLifeOverhaul.Tech
         };
 
         /// <summary>Days after it was held that each kind is due again; an event's kind is held whenever its event waits (1).</summary>
-        public static readonly int[] DeskEvery = { SectorCatalogue.SprintDays, 1, SectorCatalogue.BigCustomerEvery, SectorCatalogue.TrainingEvery, 1, 1, 1, 1, 14, 1, 1, 1, 1, SectorCatalogue.PortfolioEvery };
+        public static readonly int[] DeskEvery =
+        {
+            SectorCatalogue.SprintDays, 1, SectorCatalogue.BigCustomerEvery, SectorCatalogue.TrainingEvery, 1, 1, 1, 1, 14, 1, 1, 1, 1, SectorCatalogue.PortfolioEvery
+        };
 
         public const int DeskStoryNone = 0, DeskStoryBenchmark = 1, DeskStoryAward = 2, DeskStoryIncident = 3, DeskStoryCaught = 4;
         public const int ScopedBit = 4, RevisedBit = 8;   // Contract.Told's marks: a scope creep and a revision round answered
@@ -106,7 +109,10 @@ namespace RealLifeOverhaul.Tech
             return (int)f;
         }
 
-        /// <summary>The sound sprint: debt and reliability first for a firm deep in debt or just down, customer requests for a product behind its market, else balanced; ship when ready while its bugs weigh.</summary>
+        /// <summary>
+        /// The sound sprint: debt and reliability first for a firm deep in debt or just down, customer requests for a
+        /// product behind its market, else balanced; ship when ready while its bugs weigh.
+        /// </summary>
         public static int PickSprint(int step, int debt, bool downLately, bool behind, int soundness)
         {
             if (step == 1)
@@ -669,7 +675,10 @@ namespace RealLifeOverhaul.Tech
         /// <summary>The sound answer: one round free for a client not yet happy, else charge for it.</summary>
         public static int PickRevision(Contract w) => w != null && w.Satisfaction < 800 ? RevisionFree : RevisionCharge;
 
-        /// <summary>A portfolio piece: polishing the best work earns a name and draws bigger clients for two months; an award entry costs a fee and may win a bigger name and a piece in the paper.</summary>
+        /// <summary>
+        /// A portfolio piece: polishing the best work earns a name and draws bigger clients for two months; an award
+        /// entry costs a fee and may win a bigger name and a piece in the paper.
+        /// </summary>
         public static DeskResult Portfolio(Firm firm, SectorFirm sf, int choice, int seed, int day, int strength = 1000)
         {
             var r = new DeskResult { Done = true };

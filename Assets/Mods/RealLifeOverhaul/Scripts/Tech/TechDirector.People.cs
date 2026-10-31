@@ -545,7 +545,8 @@ namespace RealLifeOverhaul.Tech
                     TalentRules.Answer(p, false, day, year);   // not answered in time: they take it
                     Tell(NotificationType.Warning, "reallife_talent_note_poach_gone", Data("name", person.Name, "rival", p.PoachBy, "day", p.NoticeEnd.ToString()), TabTeam, Row(p));
                 }
-                else if (TalentRules.Approached(Seed, p, day, Shortage(p.Def.Family), esteem, p.GameWage, p.Going, Math.Max(StudioPull(p.Place, day), SectorPull(p.Place, day))) && !Held(p) && !gameOffer)
+                else if (TalentRules.Approached(Seed, p, day, Shortage(p.Def.Family), esteem, p.GameWage, p.Going, Math.Max(StudioPull(p.Place, day), SectorPull(p.Place, day)))
+                    && !Held(p) && !gameOffer)
                 {
                     approached++;
                     // a game studio's people are a rival studio's to court

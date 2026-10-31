@@ -45,10 +45,19 @@ namespace RealLifeOverhaul.Tech
         /// <summary>
         /// The startups that run and sell software of these kinds each have a product in their market (made with a few features
         /// for its rounds, its team growing with them), and a startup's product goes when the startup does. The host's or a lone
-        /// player's (a guest applies the host's). Notes what came and went.
+        /// player's (a guest applies the host's). Notes the products that came, by where they stand once the closed ones are gone.
         /// </summary>
         public static void Startups(SectorFile f, IList<Startup> startups, int day, List<RivalNote> notes)
         {
+            notes?.Clear();
+            for (int i = f.Rivals.Count - 1; i >= 0; i--)
+            {
+                RivalProduct r = f.Rivals[i];
+                if (r.Startups && !Running(startups, r.Startup))
+                {
+                    f.Rivals.RemoveAt(i);
+                }
+            }
             for (int i = 0; startups != null && i < startups.Count; i++)
             {
                 Startup s = startups[i];
@@ -74,14 +83,6 @@ namespace RealLifeOverhaul.Tech
                 }
                 r.Stage = Math.Max(0, s.Stage);
             }
-            for (int i = f.Rivals.Count - 1; i >= 0; i--)
-            {
-                RivalProduct r = f.Rivals[i];
-                if (r.Startups && !Running(startups, r.Startup))
-                {
-                    f.Rivals.RemoveAt(i);
-                }
-            }
         }
 
         private static bool Running(IList<Startup> startups, int id)
@@ -96,13 +97,17 @@ namespace RealLifeOverhaul.Tech
             return false;
         }
 
-        /// <summary>On a rival product's first day its customers are those its share of the market gives it: the companies are long established.</summary>
-        public static void Settle(SectorFile f)
+        /// <summary>
+        /// On a company product's first day its customers are those its share of the market gives it: the companies are
+        /// long established. Only products from <paramref name="fromId"/> on, so one that has lost every customer stays
+        /// where it is.
+        /// </summary>
+        public static void Settle(SectorFile f, int fromId = 0)
         {
             for (int i = 0; i < f.Rivals.Count; i++)
             {
                 RivalProduct r = f.Rivals[i];
-                if (!r.Startups && r.Customers == 0 && r.Peak == 0)
+                if (!r.Startups && r.Id >= fromId && r.Customers == 0 && r.Peak == 0)
                 {
                     r.Customers = Target(f.Markets[Clamp(r.Market, 0, f.Markets.Length - 1)], r.Attraction);
                     r.Peak = r.Customers;

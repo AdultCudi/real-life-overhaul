@@ -522,7 +522,10 @@ namespace RealLifeOverhaul.Tech
 
         public const int RoomYes = 0, RoomFirmFull = 1, RoomAllFull = 2;
 
-        /// <summary>Whether a firm can start another product: RoomYes, or which limit stops it (the firm's own first); under Living population (<paramref name="living"/>) the sector's higher limits.</summary>
+        /// <summary>
+        /// Whether a firm can start another product: RoomYes, or which limit stops it (the firm's own first); under
+        /// Living population (<paramref name="living"/>) the sector's higher limits.
+        /// </summary>
         public static int Room(FirmsFile f, string place, bool living = false)
         {
             if (LiveCount(f, place) >= (living ? SectorCatalogue.ProductsPerFirm : FirmsCatalogue.ProductsPerFirm))

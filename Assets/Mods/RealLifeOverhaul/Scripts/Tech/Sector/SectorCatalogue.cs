@@ -153,7 +153,9 @@ namespace RealLifeOverhaul.Tech
         public const int ProjectsSmall = 300, ProjectsMid = 2000, ProjectsLarge = 6000;
         public const int ServicesWorld = 1000;       // thousandths: IT work is bought near at hand, so the city's own firms are its market
         public const int RivalServiceReputation = 700;   // what the city's rival IT firms weigh as, each, in the market for contracts
-        public const int RivalServiceWeight = 20000; // thousandths: the weight of all the rival IT firms together against one of the player's: some twenty of them, so an ordinary firm of the player's wins about one project in twenty
+        // thousandths: the weight of all the rival IT firms together against one of the player's: some twenty of them,
+        // so an ordinary firm of the player's wins about one project in twenty
+        public const int RivalServiceWeight = 20000;
         public const int ClientSmallWork = 700;      // thousandths of a kind's usual points a small client's project has...
         public const int ClientLargeWork = 1600;     // ...and a large one's
         public const int PortfolioReach = 400;       // thousandths more of the large clients' share a portfolio piece brings while it is fresh

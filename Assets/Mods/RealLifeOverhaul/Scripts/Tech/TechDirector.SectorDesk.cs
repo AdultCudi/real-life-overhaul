@@ -284,7 +284,8 @@ namespace RealLifeOverhaul.Tech
                 case SectorRules.DeskOutage:
                     Product down = LiveProduct(place, 0, false);
                     subject = down.Name;
-                    r = SectorRules.Outage(sf, down, firm.File, SectorRules.Answer(choices, 0, 3, SectorRules.OutageStatus), SectorRules.Answer(choices, 1, 3, SectorRules.AfterPostMortem), seed, day, strength);
+                    r = SectorRules.Outage(sf, down, firm.File, SectorRules.Answer(choices, 0, 3, SectorRules.OutageStatus),
+                        SectorRules.Answer(choices, 1, 3, SectorRules.AfterPostMortem), seed, day, strength);
                     break;
                 case SectorRules.DeskBigCustomer:
                     Product big = LiveProduct(place, (int)Segment.Business, false);
@@ -300,7 +301,8 @@ namespace RealLifeOverhaul.Tech
                 case SectorRules.DeskLaunch:
                     Product launch = LaunchModel(place);
                     subject = launch.Name;
-                    r = SectorRules.Launch(launch, _sector.ProductFor(launch.Id), firm.File, SectorRules.Answer(choices, 0, 3, SectorRules.ReleaseApi), SectorRules.Answer(choices, 1, 3, SectorRules.PriceFair), seed, day);
+                    r = SectorRules.Launch(launch, _sector.ProductFor(launch.Id), firm.File, SectorRules.Answer(choices, 0, 3, SectorRules.ReleaseApi),
+                        SectorRules.Answer(choices, 1, 3, SectorRules.PriceFair), seed, day);
                     if (r.Launched)
                     {
                         Story("reallife_tech_news_launch", "product", launch.Name, "firm", firm.File.Name);
@@ -310,7 +312,8 @@ namespace RealLifeOverhaul.Tech
                 case SectorRules.DeskPitch:
                     Contract pitch = PitchFor(firm, true);
                     subject = pitch.Client;
-                    r = SectorRules.Pitch(pitch, sf, place, SectorRules.Answer(choices, 0, 3, SectorRules.StaffMixed), SectorRules.Answer(choices, 1, 3, SectorRules.PriceFair), Seniors(place), seed, day, strength);
+                    r = SectorRules.Pitch(pitch, sf, place, SectorRules.Answer(choices, 0, 3, SectorRules.StaffMixed),
+                        SectorRules.Answer(choices, 1, 3, SectorRules.PriceFair), Seniors(place), seed, day, strength);
                     if (r.Income > 0)
                     {
                         ChargeClient(pitch, firm, r.Income * Prices.Level / 1000, null);
@@ -326,7 +329,8 @@ namespace RealLifeOverhaul.Tech
                 case SectorRules.DeskIncident:
                     Contract incident = ActiveWhere(place, OpenIncident);
                     subject = incident.Client;
-                    r = SectorRules.Incident(incident, firm.File, SectorRules.Answer(choices, 0, 3, SectorRules.ContainIsolate), SectorRules.Answer(choices, 1, 3, SectorRules.TellNow), Seniors(place), seed, day, strength);
+                    r = SectorRules.Incident(incident, firm.File, SectorRules.Answer(choices, 0, 3, SectorRules.ContainIsolate),
+                        SectorRules.Answer(choices, 1, 3, SectorRules.TellNow), Seniors(place), seed, day, strength);
                     break;
                 case SectorRules.DeskCapacity:
                     r = SectorRules.Capacity(_sector, _infra, SectorRules.Answer(choices, 0, 3, SectorRules.AheadAsNeeded), SectorRules.Answer(choices, 1, 3, SectorRules.PriceFair), BuyScale, day);

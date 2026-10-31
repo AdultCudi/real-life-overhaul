@@ -83,7 +83,10 @@ namespace RealLifeOverhaul.Tech
             return Math.Max(0L, EndScaleRules.Mix(before, scale, share));
         }
 
-        /// <summary>The player's cloud's share of the city's compute, thousandths: its price against the rivals' (the money scale's curve) and its name, against the rival clouds' and the firms running their own.</summary>
+        /// <summary>
+        /// The player's cloud's share of the city's compute, thousandths: its price against the rivals' (the money
+        /// scale's curve) and its name, against the rival clouds' and the firms running their own.
+        /// </summary>
         public static int CloudShare(Cloud c)
         {
             long mine = (long)ScaleRules.PriceAppeal(Math.Max(100, c.Price), Math.Max(100, c.RivalPrice)) * (500 + Clamp(c.Reputation, 0, 1000)) / 1000;

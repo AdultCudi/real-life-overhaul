@@ -185,7 +185,8 @@ namespace RealLifeOverhaul.Tech
             int points = kind == WorkKind.Managed ? 0 : SectorRules.PointsFor(kind, SectorRules.ClientMid, 500);
             _firmsFile.Contracts.Add(new Contract
             {
-                Id = _firmsFile.Next(), Place = firm.File.Place, Kind = (int)kind, Client = FirmsCatalogue.Clients[TechRandom.Range(_firmsFile.Seed, day, 75, 99, 0, FirmsCatalogue.Clients.Length - 1)],
+                Id = _firmsFile.Next(), Place = firm.File.Place, Kind = (int)kind,
+                Client = FirmsCatalogue.Clients[TechRandom.Range(_firmsFile.Seed, day, 75, 99, 0, FirmsCatalogue.Clients.Length - 1)],
                 Stage = (int)WorkStage.Offered, End = day + FirmsCatalogue.OfferDays, Points = points,
                 Value = kind == WorkKind.Managed ? FirmsCatalogue.ManagedMonth : FirmsRules.ValueOf(kind, points, false)
             });
@@ -254,7 +255,8 @@ namespace RealLifeOverhaul.Tech
                         {
                             continue;
                         }
-                        ProductDay r = SectorRules.SellDay(_firmsFile, firm.File, p, firm.Crew, firm.Crew.Support, day + k, _sector.Markets[SectorRules.MarketOf(p)], _appeals[i], _aware[i], HostingRate());
+                        ProductDay r = SectorRules.SellDay(_firmsFile, firm.File, p, firm.Crew, firm.Crew.Support, day + k, _sector.Markets[SectorRules.MarketOf(p)],
+                            _appeals[i], _aware[i], HostingRate());
                         takings.TryGetValue(p.Place, out long t);
                         takings[p.Place] = t + r.Takings - r.Hosting - r.Marketing;
                         sold += r.Won;

@@ -345,7 +345,8 @@ namespace RealLifeOverhaul.Tech
             _infra.LastDay = day;
             ReadInfra();
             int cycle = HiringGame.Cycle, level = Prices.Level, outages = 0, share = ScaleNow();
-            int wanted = _sectorOn ? SectorRules.RacksToLet(_sector, _infra, cycle, share) : InfraRules.ColoWanted(cycle, share), let = 0;   // the city's firms' racks at the centres' share, or the old 40
+            // the city's firms' racks at the centres' share, or the old 40
+            int wanted = _sectorOn ? SectorRules.RacksToLet(_sector, _infra, cycle, share) : InfraRules.ColoWanted(cycle, share), let = 0;
             int capacity = 0, gpu = 0;
             for (int i = 0; i < _infra.Centres.Count; i++)
             {
@@ -481,9 +482,11 @@ namespace RealLifeOverhaul.Tech
             int regions = share > 0 ? InfraRules.Regions(_infra.Centres) : 0;
             long market = _sectorOn ? SectorRules.CloudMarket(_sector, false, cycle, share, c.Hyper, InfraRules.Regions(_infra.Centres)) : 0;
             int city = _sectorOn ? SectorRules.CloudDemand(c, market, Math.Max(0, capacity - ownUnits)) : InfraRules.CityDemand(c, cycle, Math.Max(0, capacity - ownUnits), false, share, regions);
+            // the city's firms' and labs' compute at the cloud's price and name, or the old demand with the rivals'
+            // fixed half
             int cityGpu = _sectorOn
                 ? SectorRules.CloudDemand(c, SectorRules.CloudMarket(_sector, true, cycle, share, c.Hyper, InfraRules.Regions(_infra.Centres)), Math.Max(0, gpu))
-                : InfraRules.CityDemand(c, cycle, Math.Max(0, gpu), true, share, regions);   // the city's firms' and labs' compute at the cloud's price and name, or the old demand with the rivals' fixed half
+                : InfraRules.CityDemand(c, cycle, Math.Max(0, gpu), true, share, regions);
             long takings = InfraRules.Takings(c, city, cityGpu) * level / 1000 + _ownHosting;
             c.Sold = city + ownUnits;
             c.GpuSold = cityGpu;

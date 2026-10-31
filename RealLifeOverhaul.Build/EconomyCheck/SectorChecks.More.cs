@@ -241,6 +241,18 @@ internal static partial class Program
         rivalHeld = codeharbour.Customers;
         Check(rivalHeld == rivalBefore * 3 && g.Anchor[(int)SectorMarket.EnterpriseSoftware] == 3000 && g.AnchorDay == 1,
             "sector old save: a held up market holds its rivals up with it, so no share moves on the day of the change");
+        SectorFile later = SectorFresh(5);
+        RivalProduct added = later.Rivals[0], lost = later.Rivals[1];
+        later.Rivals.RemoveAt(0);
+        lost.Customers = 0;
+        lost.Peak = 0;
+        int addedFrom = later.NextRival, addedCount = SectorRules.Companies(later, 2, SectorRules.StartFeatures(null));
+        SectorRules.BeginDay(later, 2, 1);
+        SectorRules.Attract(later);
+        SectorRules.Settle(later, addedFrom);
+        RivalProduct back = later.RivalOf(added.Company, added.Market);
+        Check(addedCount == 1 && back != null && back.Id >= addedFrom && back.Customers > 0 && lost.Customers == 0,
+            "sector: a company product a newer version adds starts at its share on its first day, and one that has lost every customer is left as it stands");
     }
 
     // ---------------------------------------------------------------- the save's line and the shared city's part
@@ -303,6 +315,14 @@ internal static partial class Program
         Check(back.Rivals.Count == f.Rivals.Count && back.Rivals[2].Customers == 123456 && back.Rivals[2].Tier == 0 && startup != null && startup.Stage == 2 && startup.Carry == 999999
               && startup.Name.IndexOf('|') < 0 && SectorStore.Write(back) == SectorStore.Write(SectorStore.Read(SectorStore.Write(back), out _)),
             "sector save: the rivals come back as written, names cleaned, and a second round trip is the same line");
+        var kept = new SectorFile();
+        kept.FirmFor("open");
+        kept.FirmFor("closed");
+        kept.ProductFor(1);
+        kept.ProductFor(2);
+        Check(kept.Prune(p => p == "open", id => id == 2) == 2 && kept.FirmAt("open") != null && kept.FirmAt("closed") == null && kept.ProductAt(2) != null && kept.ProductAt(1) == null
+              && kept.Prune(null, null) == 0,
+            "sector save: records of firms and products no longer the player's are let go, so the save keeps only what still stands");
         var data = new Dictionary<string, string> { { SectorStore.Key, line.Substring(0, line.Length / 3) + "\u0001broken" } };
         SectorFile damaged = SectorStore.Load(data, out _);
         Check(SectorStore.Load(new Dictionary<string, string>(), out _) == null && (damaged == null || damaged.Rivals.Count <= SectorCatalogue.RivalProductsMost),
@@ -318,7 +338,7 @@ internal static partial class Program
         var newer = new TechWriter(SectorShare.Version + 1);
         newer.Part('h').Record().Add(1);
         int rivalsBefore = guest.Rivals.Count;
-        Check(!SectorShare.Apply(guest, newer.ToString()) && !SectorShare.Apply(guest, "broken") && !SectorShare.Apply(guest, null) && !SectorShare.Apply(null, part)
+        Check(!SectorShare.Apply(guest, newer.ToString()) && !SectorShare.Apply(guest, "\u0001broken") && !SectorShare.Apply(guest, null) && !SectorShare.Apply(null, part)
               && guest.Rivals.Count == rivalsBefore && SectorShare.Part == 'R',
             "sector share: a line of another version, a broken line or nothing changes nothing");
     }
