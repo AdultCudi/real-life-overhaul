@@ -130,8 +130,8 @@ namespace RealLifeOverhaul.Population
 
         // ---- the measure (step 1): homes and jobs from the game's buildings
 
-        public const int HomeNetShare = 800;             // thousandths of a residential building's floor that is flats: halls, stairs and walls take the rest (New York runs 75 to 85% net)
-        public const int FlatSqmDefault = 80;            // m2 of a flat where the game gives no unit size for a building's size
+        public const int HomeNetShare = 820;             // thousandths of a building's home floor that is flats: halls, stairs and walls take the rest (New York runs 75 to 85% net)
+        public const int FlatSqmDefault = 80;            // m2 of the game's own unit where it gives none for a building's size
         public const int OfficeNetShare = 800;           // thousandths of an office building's floor that is workspace
         public const int DeskSqm = 16;                   // m2 of office floor a desk (New York offices give 14 to 18 m2 a worker; the design's 15 to 20)
         public const int ShopSqmPerJob = 28;             // m2 of a shop's sales floor a job where its kind is not known (US retail: about 300 sq ft an employee)
@@ -139,7 +139,7 @@ namespace RealLifeOverhaul.Population
         public const int WarehouseSqmPerJob = 120;       // m2 of warehouse floor a job (US warehousing: 1,000 to 1,500 sq ft a worker)
         public const int CinemaJobs = 30;                // people working at a cinema (a multiplex's ushers, projection, concessions)
         public const int TheatreJobs = 60;               // ... at a theatre (a Broadway house's front of house, crew and cast)
-        public const int FlatsPerBuildingJob = 40;       // flats a residential building's staff job serves (doormen and superintendents)
+        public const int UnitsPerStaffJob = 40;          // the game's own units a residential building's staff job serves (doormen and superintendents)
         public const int SpecialJobsLeast = 4;           // a special service's people at the least
 
         /// <summary>The game's special services and the m2 of their floor a job, by their business type (a hospital is about 50 m2 a job, a school 60).</summary>
@@ -165,14 +165,38 @@ namespace RealLifeOverhaul.Population
 
         public const int SpecialSqmPerJobDefault = 45;   // m2 a job at a special service not in that table (a shop-like one)
 
+        /// <summary>
+        /// The homes of each of the game's districts (the owner, 1 Nov 2026: a city of 18,000 to 22,000 households and 50,000 to 65,000 people): the net m2
+        /// of its average flat, and the thousandths of a shop building's floor above its shop that is homes. New York's average rented flat is some 65 to 70
+        /// m2 net (700 to 750 sq ft: the NYC Housing and Vacancy Survey, the listing surveys), smaller in the old walk-up and industrial districts, larger in
+        /// prime Manhattan; most of its streets of shops have homes above them, fewer among Midtown's office towers. A residential building's first flat is
+        /// the game's own unit, at its size and rent. The Hamptons' houses are a household each, whatever their floor.
+        /// </summary>
+        public static readonly (string District, int FlatSqm, int HomesAboveShops)[] DistrictHomes =
+        {
+            ("ba:neighborhood_garmentdistrict", 52, 600),
+            ("ba:neighborhood_industrycity", 54, 500),
+            ("ba:neighborhood_lowermanhattan", 56, 650),
+            ("ba:neighborhood_hellskitchen", 66, 800),
+            ("ba:neighborhood_murrayhill", 78, 650),
+            ("ba:neighborhood_midtown", 88, 350),
+            ("ba:neighborhood_thehamptons", 0, 0),
+        };
+
+        /// <summary>Net m2 of a flat by class (working, middle, upper), for a district not in that table: Uptown's and Cedar Heights' by their mix of classes.</summary>
+        public static readonly int[] ClassFlatSqm = { 52, 68, 90 };
+
+        public const int HomesAboveShopsDefault = 500;   // thousandths of a shop building's floor above its shop that is homes, in a district not in the table
+        public const int FlatSqmLeast = 30;              // m2: no district's flat is smaller
+
         // ---- the city's districts
 
         public const int DistrictsMost = 32;             // districts the population keeps at most: New York has nine with the mod's two
         public const int TargetVacancy = 50;             // thousandths of a district's flats kept free when it is generated (the game's ideal share of residential buildings to let, 5%)
 
         /// <summary>
-        /// How a flat's size leans the class of who lives in it, thousandths on the district's own shares (working, middle, upper):
-        /// a studio is for the working and the young, a penthouse for the upper class. By the game's residential sizes.
+        /// How the game's own unit leans the class of who lives in it, thousandths on the district's own shares (working, middle, upper): a studio is
+        /// for the working and the young, a penthouse for the upper class. By the game's residential sizes; the other flats take the district's shares.
         /// </summary>
         public static readonly (int Sqm, int Working, int Middle, int Upper)[] ClassLean =
         {
@@ -185,23 +209,28 @@ namespace RealLifeOverhaul.Population
         public static readonly int[] VillaLean = { 0, 300, 3000 };   // a Hamptons villa
 
         /// <summary>
-        /// Household size by flat, per mille for 1 to 6 people (Manhattan has 2.0 people a household and nearly half live alone:
-        /// US Census 2020, New York County; leaned by the flat's size).
+        /// Household size by class (working, middle, upper), per mille for 1 to 6 people: the owner's city of about 2.8 a household (1 Nov 2026), with
+        /// couples with children, three generations and shared flats. The US Census Bureau's American Community Survey puts New York City at about 2.6
+        /// a household, Queens and Staten Island near 2.8, Manhattan at 2.0, with larger households among families on lower incomes.
         /// </summary>
-        public static readonly (int Sqm, int[] Sizes)[] HouseholdSizes =
+        public static readonly int[][] ClassSizes =
         {
-            (60, new[] { 620, 320, 60, 0, 0, 0 }),
-            (120, new[] { 300, 340, 180, 130, 50, 0 }),
-            (300, new[] { 140, 300, 220, 220, 90, 30 }),
-            (int.MaxValue, new[] { 180, 360, 200, 170, 90, 0 }),
+            new[] { 180, 210, 180, 190, 130, 110 },
+            new[] { 220, 270, 190, 180, 90, 50 },
+            new[] { 260, 310, 170, 170, 70, 20 },
         };
 
         public static readonly int[] VillaSizes = { 0, 200, 220, 300, 200, 80 };
 
-        // Households of two: a couple, a parent and child, or two sharing (per mille); of three or more: a couple with children, a lone parent with them, or
-        // others sharing (US Census household types, New York County, rounded).
-        public const int TwoCouple = 680, TwoParent = 120;            // the rest share
-        public const int MoreCouple = 760, MoreParent = 150;          // the rest share
+        public const int CrowdSqm = 9;                   // m2 of flat a person at the least when a household is drawn (one and a half people a room is New York's severe crowding)
+
+        // Households of two: a couple, a parent and child, or two sharing (per mille); of three or more: a couple with children, a lone parent with them,
+        // three generations, or others sharing (American Community Survey household types for New York City, rounded: about one household in fifteen there
+        // holds three generations, and the young share flats).
+        public const int TwoCouple = 640, TwoParent = 120;            // the rest share
+        public const int MoreCouple = 560, MoreParent = 130, MoreThree = 200;   // the rest share
+        public const int BothGrandparents = 400;        // per mille of three generations of five or more where the eldest is a couple
+        public const int GrandparentLeast = 62, GrandparentMost = 88;   // years of the eldest of three generations
 
         public const int AdultLeast = 18;               // years
         public const int SchoolFrom = 5;                // years: children start school
@@ -236,10 +265,10 @@ namespace RealLifeOverhaul.Population
         // ---- ages: the share of people by age band when a city is generated, to shape who lives in each household (US Census 2020, New York County)
 
         /// <summary>The age of a lone adult: per mille in each band from 18 (18-24, 25-34, 35-44, 45-54, 55-64, 65-74, 75-89).</summary>
-        public static readonly int[] SingleAges = { 90, 250, 140, 110, 120, 140, 150 };
+        public static readonly int[] SingleAges = { 80, 220, 120, 100, 120, 170, 190 };
 
         /// <summary>The age of the older adult of a couple without children at home (bands as above).</summary>
-        public static readonly int[] CoupleAges = { 20, 190, 130, 130, 160, 200, 170 };
+        public static readonly int[] CoupleAges = { 20, 160, 110, 120, 170, 230, 190 };
 
         public static readonly int[] AgeBands = { 18, 25, 35, 45, 55, 65, 75, 90 };
 
@@ -323,6 +352,67 @@ namespace RealLifeOverhaul.Population
         public const int EssentialsKinds = 3;            // Utilities, Groceries and Transport come first when money is short
 
         public const int TasteTilt = 300;                // thousandths a kind is spent more or less by a household that likes it or not
+
+        // ---- games (the game studio's audience): who plays on what, and which genres they like
+
+        /// <summary>
+        /// Thousandths of people of an age who play on each platform (PC, console, phone), by band: 6-12, 13-17, 18-34, 35-54, 55-64, 65 and over. The
+        /// Entertainment Software Association's yearly figures for the United States: some three in five people play, most of them on phones, about half
+        /// of players on consoles and fewer on PCs, the young most on consoles and the old most on phones.
+        /// </summary>
+        public static readonly int[][] GamePlatformShare =
+        {
+            new[] { 250, 480, 380 },
+            new[] { 400, 520, 700 },
+            new[] { 380, 380, 620 },
+            new[] { 260, 250, 480 },
+            new[] { 170, 100, 340 },
+            new[] { 100, 40, 200 },
+        };
+
+        /// <summary>Thousandths a class plays on each platform against the share (working, middle, upper): a console and a PC cost money, a phone is in every pocket.</summary>
+        public static readonly int[][] GameClassLean =
+        {
+            new[] { 850, 850, 1050 },
+            new[] { 1000, 1000, 1000 },
+            new[] { 1150, 1150, 950 },
+        };
+
+        /// <summary>Thousandths women play on each platform against the share, men the rest of the way to two thousand (about as many women as men play, more of them on phones).</summary>
+        public static readonly int[] GameWomen = { 900, 850, 1050 };
+
+        /// <summary>
+        /// Of each platform's players, thousandths who like each genre, by platform then genre: the game studio's own table (Tech/Studio/StudioCatalogue's
+        /// GenreShare, which EconomyCheck holds this equal to), so the city's players have the world's tastes and the studio's first day is the world's.
+        /// </summary>
+        public static readonly int[][] GameGenreShare =
+        {
+            new[] { 300, 200, 300, 280, 250, 120, 120, 150, 150, 350, 200, 100 },
+            new[] { 400, 300, 300, 80, 120, 300, 250, 80, 180, 380, 100, 220 },
+            new[] { 120, 80, 150, 180, 120, 80, 100, 450, 50, 100, 500, 150 }
+        };
+
+        /// <summary>
+        /// Thousandths each age band likes each genre against its platform's share (bands as above; genres Action, Adventure, RPG, Strategy, Simulation,
+        /// Sports, Racing, Puzzle, Horror, Shooter, Casual, Family): children family games and racing, the young shooters and horror, the old puzzles.
+        /// </summary>
+        public static readonly int[][] GameAgeLean =
+        {
+            new[] { 1100, 1100, 800, 700, 1000, 1100, 1200, 1100, 300, 600, 1300, 1600 },
+            new[] { 1150, 1000, 1150, 1000, 900, 1100, 1100, 800, 1200, 1200, 800, 700 },
+            new[] { 1150, 1000, 1150, 1000, 900, 1050, 1000, 800, 1200, 1200, 800, 600 },
+            new[] { 1000, 1000, 1000, 1100, 1000, 1000, 1000, 1100, 800, 900, 1100, 1000 },
+            new[] { 700, 900, 700, 1100, 1100, 900, 800, 1400, 500, 500, 1400, 1000 },
+            new[] { 700, 900, 700, 1100, 1100, 900, 800, 1400, 500, 500, 1400, 1000 },
+        };
+
+        /// <summary>Thousandths women like each genre against the share (genres as above), men the rest of the way to two thousand.</summary>
+        public static readonly int[] GameWomenLean = { 900, 1050, 1000, 900, 1150, 800, 850, 1200, 950, 750, 1200, 1100 };
+
+        public const int GameInherit = 350;              // per mille of a child's genres taken from a parent's likes when first drawn
+        public const int GameHome = 1300;                // thousandths a child plays on a platform a parent plays on (it is in the home)
+        public const int GameDrift = 80;                 // per mille of a person's bits drawn again for their new age at each birthday: tastes change slowly
+        public const int GameLikeMost = 950;             // per mille: no genre is a sure thing
 
         // ---- businesses: what a customer spends, by business type, whole money (the game's prices of its goods, a typical basket)
 
@@ -468,7 +558,7 @@ namespace RealLifeOverhaul.Population
         public const int BasePricePerSqm = 20554;        // whole money: the game's base building price a square metre (NeighborhoodData)
         public const int ResidentialPriceMultiplier = 1500;   // thousandths (BuildingTypeData buildingPriceMultiplier for residential)
         public const int AffordableShare = 350;          // thousandths of income a household is willing to pay in rent when it chooses a flat
-        public const int PersonsPerRoom = 40;            // m2 of flat a person wants at the least
+        public const int WantSqm = 13;                   // m2 of flat a person wants at the least before the household looks for more (about a room a person)
 
         // ---- the city's economy as other features read it (CityEconomy.DistrictIncome's 600 to 1400 scale)
 

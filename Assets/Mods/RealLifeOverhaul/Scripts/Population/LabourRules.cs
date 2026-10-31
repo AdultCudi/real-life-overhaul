@@ -40,6 +40,7 @@ namespace RealLifeOverhaul.Population
         public const int WageFollow = 100;       // thousandths of the gap to the going rate a worker's pay closes in a month
         public const int SkillPerYear = 3;       // points of skill a year of work brings, to the most
         public const int FindRate = 3800;        // per mille a year: how fast a jobseeker finds work while there is plenty (about three months out of work on average)
+        public const int CommuterFillLeast = 200;   // thousandths of the region's usual fill left while the city's own are out of work at twice the start rate
 
         /// <summary>
         /// The employers and businesses of the city: one for each registration with jobs or a kind of spending (its business), the other firms
@@ -418,11 +419,31 @@ namespace RealLifeOverhaul.Population
         }
 
         /// <summary>
-        /// The employers' day: commuters leave at the turnover's rate and the region fills a share of each one's vacancies while it has people
-        /// to send. The players' employers are the player's to staff.
+        /// Thousandths of the region's usual fill of the city's vacancies while so many thousandths of the city's own labour force are out of work: all
+        /// of it at the start rate or under, falling to <see cref="CommuterFillLeast"/> at twice it. Employers take those who live near first, so the
+        /// commuters are fewer while the city's own people are looking; a bigger city fills more of its own jobs.
         /// </summary>
-        public static void Commuters(PopulationState s, int day)
+        public static int LocalFill(int residentOut)
         {
+            int start = PopulationCatalogue.UnemploymentStart;
+            if (residentOut <= start)
+            {
+                return 1000;
+            }
+            if (residentOut >= start * 2)
+            {
+                return CommuterFillLeast;
+            }
+            return 1000 - (1000 - CommuterFillLeast) * (residentOut - start) / start;
+        }
+
+        /// <summary>
+        /// The employers' day: commuters leave at the turnover's rate and the region fills a share of each one's vacancies while it has people
+        /// to send, less while the city's own are out of work (<see cref="LocalFill"/>). The players' employers are the player's to staff.
+        /// </summary>
+        public static void Commuters(PopulationState s, int day, int residentOut)
+        {
+            int fill = (int)((long)PopulationCatalogue.CommuterFill * LocalFill(residentOut) / 1000);
             EmployerTable et = s.Employers;
             RegionState r = s.Region;
             int free = Math.Max(0, (int)((long)r.Pool * (1000 - PopulationCatalogue.RegionWorkersShare) / 1000) - r.Commuting);
@@ -439,8 +460,8 @@ namespace RealLifeOverhaul.Population
                 r.Commuting -= leaving;
                 free += leaving;
                 int vacancies = et.Vacancies(e);
-                int coming = Math.Min(free, (int)((long)vacancies * PopulationCatalogue.CommuterFill / 1000));
-                if (coming <= 0 && vacancies > 0 && free > 0 && PopDraw.Mille(s.Seed, PopDraw.Commuter, e, day + 1, (int)((long)vacancies * PopulationCatalogue.CommuterFill % 1000)))
+                int coming = Math.Min(free, (int)((long)vacancies * fill / 1000));
+                if (coming <= 0 && vacancies > 0 && free > 0 && PopDraw.Mille(s.Seed, PopDraw.Commuter, e, day + 1, (int)((long)vacancies * fill % 1000)))
                 {
                     coming = 1;
                 }

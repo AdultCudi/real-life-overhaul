@@ -43,6 +43,9 @@ namespace RealLifeOverhaul.Population
         private DemandInputs _inputs;
         private Phase _phase = Phase.Idle;
         private int _cursor, _day, _tightness;
+        private int _residentOut;   // thousandths of the city's own labour force out of work today, which slows the region's fill
+        private int[] _games = new int[GameRules.Cells], _gamesByDistrict = new int[0], _gamesByClass = new int[PopulationCatalogue.Classes * GameRules.Cells];   // the day's counts as made
+        private bool _gamesMade;   // the figures' pass of this job counted them
         private bool _generating;
 
         public bool Busy => _phase != Phase.Idle;
@@ -54,7 +57,7 @@ namespace RealLifeOverhaul.Population
         {
             State = s;
             GenerateRules.Begin(s, seed, day, yearDays);
-            Measure = MeasureRules.Measure(s.Buildings, s.Districts.Count, null);
+            Measure = MeasureRules.Measure(s.Buildings, s.Districts, null);
             _seeds = seeds;
             _day = day;
             _generating = true;
@@ -75,7 +78,7 @@ namespace RealLifeOverhaul.Population
             {
                 _seeds = seeds;
                 LabourRules.Setup(s, seeds);
-                Measure = MeasureRules.Measure(s.Buildings, s.Districts.Count, null);
+                Measure = MeasureRules.Measure(s.Buildings, s.Districts, null);
             }
             s.Day = day;
             _generating = false;
@@ -200,7 +203,7 @@ namespace RealLifeOverhaul.Population
                         break;
                     case Phase.LabourBegin:
                         LabourRules.Openings(s, _open);
-                        _tightness = Tightness(s);
+                        _tightness = Tightness(s, out _residentOut);
                         Next(Phase.Labour);
                         break;
                     case Phase.Labour:
@@ -214,7 +217,7 @@ namespace RealLifeOverhaul.Population
                         Through(s.People.Count, Phase.Commuters);
                         break;
                     case Phase.Commuters:
-                        LabourRules.Commuters(s, _day);
+                        LabourRules.Commuters(s, _day, _residentOut);
                         Next(Phase.MoneyBegin);
                         break;
 
@@ -260,6 +263,14 @@ namespace RealLifeOverhaul.Population
                         {
                             s.Figures[d].Clear();
                         }
+                        Array.Clear(_games, 0, _games.Length);
+                        if (_gamesByDistrict.Length != s.Districts.Count * GameRules.Cells)
+                        {
+                            _gamesByDistrict = new int[s.Districts.Count * GameRules.Cells];
+                        }
+                        Array.Clear(_gamesByDistrict, 0, _gamesByDistrict.Length);
+                        Array.Clear(_gamesByClass, 0, _gamesByClass.Length);
+                        _gamesMade = true;
                         Next(Phase.FiguresHouseholds);
                         break;
                     case Phase.FiguresHouseholds:
@@ -280,6 +291,11 @@ namespace RealLifeOverhaul.Population
                         break;
                     case Phase.Done:
                         s.Day = _day;
+                        if (_gamesMade)
+                        {
+                            _gamesMade = false;
+                            PublishGames(s);
+                        }
                         for (int d = 0; d < s.IncomeAnchor.Length && d < s.Figures.Length; d++)
                         {
                             if (s.IncomeAnchor[d] <= 0)
@@ -390,8 +406,16 @@ namespace RealLifeOverhaul.Population
             {
                 f.MeanRent += s.Households.Rent[h];
             }
+            int c = Math.Min((int)s.Households.Class[h], PopulationCatalogue.Classes - 1);
             for (int p = s.Households.First[h]; p >= 0; p = s.People.Next[p])
             {
+                ushort games = s.People.Games[p];
+                if (games != 0)
+                {
+                    GameRules.Add(games, _games, 0);
+                    GameRules.Add(games, _gamesByDistrict, d * GameRules.Cells);
+                    GameRules.Add(games, _gamesByClass, c * GameRules.Cells);
+                }
                 f.People++;
                 switch ((Status)s.People.Status[p])
                 {
@@ -404,6 +428,19 @@ namespace RealLifeOverhaul.Population
                     default: f.Home++; break;
                 }
             }
+        }
+
+        // The day's games counts in use: the city's, each district's and each class's; the population's start taken from the first.
+        private void PublishGames(PopulationState s)
+        {
+            Array.Copy(_games, s.GameCounts, GameRules.Cells);
+            if (s.GameByDistrict.Length != _gamesByDistrict.Length)
+            {
+                s.GameByDistrict = new int[_gamesByDistrict.Length];
+            }
+            Array.Copy(_gamesByDistrict, s.GameByDistrict, _gamesByDistrict.Length);
+            Array.Copy(_gamesByClass, s.GameByClass, _gamesByClass.Length);
+            GameRules.Start(s);
         }
 
         // The rest of the districts' figures: their flats and free flats, jobs, vacancies and commuters, and the means.
@@ -568,13 +605,19 @@ namespace RealLifeOverhaul.Population
         }
 
         // Thousandths of open vacancies over jobseekers in the city, a thousand at most: how easily the out of work find work today.
-        private static int Tightness(PopulationState s)
+        // Vacancies over the city's jobseekers, thousandths (at most a thousand), and the share of its labour force out of work.
+        private static int Tightness(PopulationState s, out int residentOut)
         {
-            int vacancies = VacanciesNow(s), seekers = 0;
+            int vacancies = VacanciesNow(s), seekers = 0, workers = 0;
             for (int p = 0; p < s.People.Count; p++)
             {
-                seekers += s.People.Id[p] != 0 && s.People.Status[p] == (byte)Status.Unemployed ? 1 : 0;
+                if (s.People.Id[p] != 0)
+                {
+                    seekers += s.People.Status[p] == (byte)Status.Unemployed ? 1 : 0;
+                    workers += s.People.Status[p] == (byte)Status.Worker ? 1 : 0;
+                }
             }
+            residentOut = (int)(1000L * seekers / Math.Max(1, seekers + workers));
             return seekers <= 0 ? 1000 : (int)Math.Min(1000L, 1000L * vacancies / seekers);
         }
 

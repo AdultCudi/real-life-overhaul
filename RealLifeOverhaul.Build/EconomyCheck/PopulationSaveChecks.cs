@@ -44,6 +44,24 @@ internal static partial class Program
         Check(line.Length < 2 * 1024 * 1024 && zipMs < 200 && decodeMs < 400,
             "population save: the base city's line under 2 MB, written under 200 ms and read under 400 ms here (" + line.Length / 1024 + " KB, " + zipMs.ToString("F0", CultureInfo.InvariantCulture) + " and "
             + decodeMs.ToString("F0", CultureInfo.InvariantCulture) + " ms)");
+        // A year of 365 days: months of thirty days make every ledger line bigger; a month closed and half the next lived, the line still under the budget.
+        PopulationState year = PopulationCity(out List<BusinessSeed> yearSeeds);
+        var yearSim = new PopulationSim();
+        yearSim.BeginGenerate(year, 555, 1, 365, yearSeeds);
+        yearSim.RunAll();
+        for (int day = 2; day <= 46; day++)
+        {
+            yearSim.BeginDay(day, Ordinary, null);
+            yearSim.RunAll();
+        }
+        string longYear = PopulationStore.Encode(year);
+        PopulationState longBack = PopulationStore.Decode(longYear, out _);
+        if (Environment.GetEnvironmentVariable("RLO_POPULATION_REPORT") == "1")
+        {
+            Console.WriteLine("  the save's line in a year of 365 days: " + longYear.Length / 1024 + " KB (" + year.Households.Live + " households)");
+        }
+        Check(longYear.Length < 2 * 1024 * 1024 && longBack != null && Fingerprint(longBack) == Fingerprint(year),
+            "population save: in a year of 365 days, a month closed and half the next lived, the line is under 2 MB too and reads back the same (" + longYear.Length / 1024 + " KB)");
         Check(PopulationStore.Decode(null, out _) == null && PopulationStore.Decode("v=1~not base64", out _) == null && PopulationStore.Decode("v=1~" + Convert.ToBase64String(new byte[] { 1, 2, 3 }), out _) == null
               && PopulationStore.Decode(line.Substring(0, line.Length / 2), out _) == null && PopulationStore.Decode("x=1~", out _) == null,
             "population save: a save with no line, or a damaged one, reads as none (and the city is generated again), never a fault");
@@ -58,7 +76,7 @@ internal static partial class Program
         int gone = -1, goneHouseholds = 0;
         for (int b = 0; b < fewer.Count; b++)
         {
-            if (fewer[b].Use == Use.Homes && !fewer[b].Villa && MeasureRules.Flats(fewer[b]) > 20)
+            if (fewer[b].Use == Use.Homes && !fewer[b].Villa && MeasureRules.Flats(fewer[b], city.Districts[fewer[b].District]) > 20)
             {
                 gone = b;
                 break;

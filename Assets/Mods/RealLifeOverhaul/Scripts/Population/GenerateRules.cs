@@ -4,11 +4,12 @@ namespace RealLifeOverhaul.Population
 {
     /// <summary>
     /// The city's people generated from its buildings with the city's seed (POPULATION.md sections 2 and 3; the brief's third step): each
-    /// free flat of each residential building, in the order of the addresses, drawn from a hash of the seed, the building and the flat, so the
+    /// free flat of each building with homes, in the order of the addresses, drawn from a hash of the seed, the building and the flat, so the
     /// same city gives the same people on every machine and in any order of the work. A flat is left free at the district's target share; its
-    /// household's class comes from the district's shares (the game's NeighborhoodData) leaned by the flat's size, its size and kind from the
-    /// city's (Manhattan's 2.0 a household, nearly half alone), its people's ages, schooling, work and tastes from the tables of the catalogue.
-    /// Jobs, pay, savings and rents follow once the employers are known (<see cref="LabourRules"/>, <see cref="Finish"/>).
+    /// household's class comes from the district's shares (the game's NeighborhoodData; the game's own unit leans them by its size), its size from
+    /// its class (the owner's city of about 2.8 a household, no more people than the flat holds) and its kind from the city's (couples with children,
+    /// three generations, shared flats), its people's ages, schooling, work and tastes from the tables of the catalogue. Jobs, pay, savings and
+    /// rents follow once the employers are known (<see cref="LabourRules"/>, <see cref="Finish"/>).
     /// Game-free. COST: nothing per frame; some ten microseconds a building, sliced by its caller.
     /// </summary>
     public static class GenerateRules
@@ -49,7 +50,7 @@ namespace RealLifeOverhaul.Population
         /// <summary>A building's free flats peopled; how many households came of it.</summary>
         public static int Building(PopulationState s, int b)
         {
-            if (b < 0 || b >= s.Buildings.Count || s.Buildings[b].Use != Use.Homes)
+            if (b < 0 || b >= s.Buildings.Count || s.FlatCount[b] <= 0)
             {
                 return 0;
             }
@@ -84,7 +85,7 @@ namespace RealLifeOverhaul.Population
         private static bool Flat(PopulationState s, int b, int unit)
         {
             int who = Who(s, b, unit);
-            if (!s.Buildings[b].Villa && PopDraw.Mille(s.Seed, PopDraw.Vacant, who, 0, PopulationCatalogue.TargetVacancy))
+            if (!MeasureRules.House(s.Buildings[b], s.Districts[s.Buildings[b].District]) && PopDraw.Mille(s.Seed, PopDraw.Vacant, who, 0, PopulationCatalogue.TargetVacancy))
             {
                 return false;
             }
@@ -111,9 +112,11 @@ namespace RealLifeOverhaul.Population
             CityBuilding cb = s.Buildings[b];
             PopDistrict d = s.Districts[cb.District];
             int seed = s.Seed;
-            int sqm = s.FlatSqm[b];
-            var cls = (PopClass)DrawClass(seed, who, d, sqm, cb.Villa);
-            int size = DrawSize(seed, who, sqm, cb.Villa);
+            int sqm = CityTable.FlatSqmOf(s, b, unit);
+            bool house = MeasureRules.House(cb, d);
+            bool gameUnit = unit == 0 && cb.Use == Use.Homes;
+            var cls = (PopClass)DrawClass(seed, who, d, gameUnit ? sqm : 0, house);
+            int size = DrawSize(seed, who, (int)cls, sqm, house);
             int h = s.Households.Add(s.NextHousehold++);
             HouseholdTable hh = s.Households;
             hh.Building[h] = b;
@@ -132,14 +135,16 @@ namespace RealLifeOverhaul.Population
             return person >= 0 ? s.Age(person, s.Day) : 30;
         }
 
-        /// <summary>A household's class: the district's shares, leaned by the flat's size.</summary>
+        /// <summary>A household's class: the district's shares, leaned by the size of the game's own unit (<paramref name="sqm"/>; 0 for any other flat).</summary>
         public static int DrawClass(int seed, int who, PopDistrict d, int sqm, bool villa)
         {
-            int[] lean = villa ? PopulationCatalogue.VillaLean : LeanOf(sqm);
+            int[] lean = villa ? PopulationCatalogue.VillaLean : sqm > 0 ? LeanOf(sqm) : Even;
             var w = new[] { d.Working * lean[0], d.Middle * lean[1], d.Upper * lean[2] };
             int c = PopDraw.Pick(seed, PopDraw.Class, who, 0, w);
             return c < 0 ? (int)PopClass.Middle : c;
         }
+
+        private static readonly int[] Even = { 1000, 1000, 1000 };
 
         private static int[] LeanOf(int sqm)
         {
@@ -154,27 +159,16 @@ namespace RealLifeOverhaul.Population
             return new[] { 1000, 1000, 1000 };
         }
 
-        /// <summary>A household's people, one to six, by the flat's size.</summary>
-        public static int DrawSize(int seed, int who, int sqm, bool villa)
+        /// <summary>A household's people, one to six, by its class, and no more than the flat holds at <see cref="PopulationCatalogue.CrowdSqm"/> a person.</summary>
+        public static int DrawSize(int seed, int who, int cls, int sqm, bool villa)
         {
-            int[] sizes = villa ? PopulationCatalogue.VillaSizes : SizesOf(sqm);
+            int[] sizes = villa ? PopulationCatalogue.VillaSizes : PopulationCatalogue.ClassSizes[PopulationCatalogue.Clamp(cls, 0, PopulationCatalogue.Classes - 1)];
             int i = PopDraw.Pick(seed, PopDraw.Size, who, 0, sizes);
-            return i < 0 ? 1 : i + 1;
+            int size = i < 0 ? 1 : i + 1;
+            return villa ? size : Math.Min(size, Math.Max(1, sqm / PopulationCatalogue.CrowdSqm));
         }
 
-        private static int[] SizesOf(int sqm)
-        {
-            for (int i = 0; i < PopulationCatalogue.HouseholdSizes.Length; i++)
-            {
-                if (sqm <= PopulationCatalogue.HouseholdSizes[i].Sqm)
-                {
-                    return PopulationCatalogue.HouseholdSizes[i].Sizes;
-                }
-            }
-            return PopulationCatalogue.HouseholdSizes[PopulationCatalogue.HouseholdSizes.Length - 1].Sizes;
-        }
-
-        // The household's members: its kind (alone, a couple, a parent with children, people sharing), their ages and sexes, then each one's schooling and work.
+        // The household's members: its kind (alone, a couple, a parent with children, people sharing, three generations), their ages and sexes, then each one's schooling and work.
         private static void People(PopulationState s, int h, int who, PopClass cls, int size)
         {
             int seed = s.Seed;
@@ -184,10 +178,7 @@ namespace RealLifeOverhaul.Population
                 Member(s, h, who, 0, age, PopDraw.Mille(seed, PopDraw.Sex, who, 0, 500), Role.Head, cls);
                 return;
             }
-            int kind = size == 2
-                ? PopDraw.Pick(seed, PopDraw.Kind, who, 0, new[] { PopulationCatalogue.TwoCouple, PopulationCatalogue.TwoParent, 1000 - PopulationCatalogue.TwoCouple - PopulationCatalogue.TwoParent })
-                : PopDraw.Pick(seed, PopDraw.Kind, who, 0,
-                    new[] { PopulationCatalogue.MoreCouple, PopulationCatalogue.MoreParent, 1000 - PopulationCatalogue.MoreCouple - PopulationCatalogue.MoreParent });
+            int kind = size == 2 ? PopDraw.Pick(seed, PopDraw.Kind, who, 0, TwoKinds) : PopDraw.Pick(seed, PopDraw.Kind, who, 0, MoreKinds);
             if (kind == 2)
             {
                 for (int m = 0; m < size; m++)
@@ -197,8 +188,10 @@ namespace RealLifeOverhaul.Population
                 }
                 return;
             }
-            bool couple = kind == 0;
-            int children = couple ? size - 2 : size - 1;
+            bool three = kind == 3 && size >= 3;   // three generations: the eldest, the head (with a partner when there is room) and children
+            bool couple = kind == 0 || (three && size >= 4 && PopDraw.Mille(seed, PopDraw.Kind, who, 1, 700));
+            bool elders = three && size >= 5 && PopDraw.Mille(seed, PopDraw.Kind, who, 2, PopulationCatalogue.BothGrandparents);
+            int children = size - (couple ? 2 : 1) - (three ? (elders ? 2 : 1) : 0);
             int headAge = couple && children == 0 ? BandAge(seed, who, 0, PopulationCatalogue.CoupleAges) : PopDraw.Between(seed, PopDraw.Age, who, 0, 24, 54);
             bool headFemale = couple ? PopDraw.Mille(seed, PopDraw.Sex, who, 0, 500) : PopDraw.Mille(seed, PopDraw.Sex, who, 0, 820);   // most lone parents are mothers
             int head = Member(s, h, who, 0, headAge, headFemale, Role.Head, cls);
@@ -209,6 +202,19 @@ namespace RealLifeOverhaul.Population
                 int partner = Member(s, h, who, 1, partnerAge, same ? headFemale : !headFemale, Role.Partner, cls);
                 s.People.Partner[head] = partner;
                 s.People.Partner[partner] = head;
+            }
+            if (three)
+            {
+                // The head's parent: at least a generation older, a pensioner or near it.
+                int eldest = PopulationCatalogue.Clamp(headAge + PopDraw.Between(seed, PopDraw.Age, who, 400, 22, 34), PopulationCatalogue.GrandparentLeast, PopulationCatalogue.GrandparentMost);
+                bool grandmother = PopDraw.Mille(seed, PopDraw.Sex, who, 8, 620);   // more grandmothers: women live longer
+                int elder = Member(s, h, who, 8, eldest, grandmother, Role.Other, cls);
+                if (elders)
+                {
+                    int other = Member(s, h, who, 9, Math.Min(PopulationCatalogue.OldestAge - 1, eldest + PopDraw.Between(seed, PopDraw.Partner, who, 2, -4, 4)), !grandmother, Role.Other, cls);
+                    s.People.Partner[elder] = other;
+                    s.People.Partner[other] = elder;
+                }
             }
             int mother = Math.Max(headAge, couple ? s.Age(s.People.Partner[head], s.Day) : headAge);
             for (int c = 0; c < children; c++)
@@ -229,6 +235,15 @@ namespace RealLifeOverhaul.Population
                 }
             }
         }
+
+        // The kinds of a household of two (a couple, a parent and child, two sharing) and of more (a couple with children, a lone parent, sharing, three generations).
+        private static readonly int[] TwoKinds = { PopulationCatalogue.TwoCouple, PopulationCatalogue.TwoParent, 1000 - PopulationCatalogue.TwoCouple - PopulationCatalogue.TwoParent };
+
+        private static readonly int[] MoreKinds =
+        {
+            PopulationCatalogue.MoreCouple, PopulationCatalogue.MoreParent, 1000 - PopulationCatalogue.MoreCouple - PopulationCatalogue.MoreParent - PopulationCatalogue.MoreThree,
+            PopulationCatalogue.MoreThree
+        };
 
         private static int YoungestChild(PopulationState s, int h)
         {
@@ -263,6 +278,9 @@ namespace RealLifeOverhaul.Population
             pt.Since[p] = s.Day;
             Join(s, h, p);
             Schooling(s, p, who * 31 + n, age, cls);
+            int head = s.Households.First[h];
+            ushort parent = role == Role.Child && head >= 0 && head != p ? pt.Games[head] : (ushort)0;
+            pt.Games[p] = GameRules.Draw(seed, pt.Id[p], s.Day, age, (int)cls, female, parent);   // the games they play, a child's leaning on the head's
             return p;
         }
 
