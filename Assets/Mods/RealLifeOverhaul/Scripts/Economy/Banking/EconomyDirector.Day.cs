@@ -106,6 +106,7 @@ namespace RealLifeOverhaul.Economy
                     Logger?.Info("Economy check (books): the game's statement of day " + (Save.Day - 1) + " brought up to date with the mod's costs booked for it after it was made: PASS.");
                 }
                 LogBizman();
+                ShowDayResult(Save.Day - 1);   // the day-end panel and the top bar: the game's figure with the mod's money, when the game has written its own
                 // another author's dealerships (Core/EmpireMotors): what they spent is deducted by the game's tax, once a day
                 float deducted = GameBooks.Deduct(Save.Day - 1);
                 if (Verbose && (deducted > 0f || GameBooks.DealerTakings != 0f || GameBooks.DealerCosts != 0f))

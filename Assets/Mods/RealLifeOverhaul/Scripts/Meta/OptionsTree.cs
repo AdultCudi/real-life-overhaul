@@ -341,7 +341,8 @@ namespace RealLifeOverhaul.Meta
                     .Also("marketplace market flip flipping second hand used goods sell buy haggle haggling repair fix clean freelance detailing junk removal moving handyman helper rating")),
 
             G("money",
-                S("credit").For("economy").Opts("economy").Opt("economy_grade_up_notes", "economy").Also("bank borrow score finance"),
+                S("credit").For("economy").Opts("economy").Opt("economy_grade_up_notes", "economy").Opt("economy_day_result", "economy")
+                    .Also("bank borrow score finance").Also("economy_day_result", "day end summary profit loss topbar top bar yesterday result income"),
                 S("debt").Guide("economy").Need("economy").Opts("economy_products", "economy_shark", "economy_consequences", "economy_level")
                     .Also("borrow overdraft card collections repossession").Also("economy_products", "mortgage rent overdraft card finance"),
                 S("banks").For("economy_banks").Need("economy").Opts("economy_banks").Also("bank app current account statement card loan apply"),

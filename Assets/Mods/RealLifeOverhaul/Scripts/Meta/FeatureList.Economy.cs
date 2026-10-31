@@ -13,7 +13,8 @@ namespace RealLifeOverhaul.Meta
             Features.Add("economy", "reallife_meta_title_economy")
                 .Group("reallife_econ_header")
                 .About("reallife_guide_economy_about").Help("reallife_guide_economy")
-                .Owns(Settings.EconomyId, Settings.EconomyProductsId, Settings.EconomySharkId, Settings.EconomyConsequencesId, Settings.EconomyLevelId, Settings.EconomyGradeUpNotesId)
+                .Owns(Settings.EconomyId, Settings.EconomyProductsId, Settings.EconomySharkId, Settings.EconomyConsequencesId, Settings.EconomyLevelId,
+                    Settings.EconomyGradeUpNotesId, Settings.EconomyDayResultId)
                 .Preset(Settings.EconomyLevelId, Economy.ProductCatalogue.Relaxed, Economy.ProductCatalogue.Realistic, Economy.ProductCatalogue.Hardcore)
                 .Data(Economy.CreditStore.Key)
                 .Contact(Economy.DebtPhone.ContactIds)
