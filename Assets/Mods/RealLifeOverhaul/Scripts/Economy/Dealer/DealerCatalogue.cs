@@ -87,6 +87,9 @@ namespace RealLifeOverhaul.Economy.Dealership
         public const int StockPullCar = 100;        // ...and each car more draws this much more, up to the whole
         public const int ServePerStaff = 2;         // visitors one salesperson looks after in an hour
         public const int OfferChance = 240;         // visitors looked after who make an offer, at a fair price and middling skill
+        // Of those, the share who still make one at a showroom with fixed prices: bargain hunters and most who hope for something
+        // off walk on. Sized so the full price on fewer sales makes about what careful haggling does (DealerFixedChecks: 92%).
+        public const int FixedOffers = 400;         // thousandths of the usual offers
         public const int SkillLeast = 800, SkillMost = 1200;   // the offer chance at a salesperson's skill of 0 and of 100
         public const int SatisfactionWeight = 300;  // how far the game's customer satisfaction of the building moves it (at 0 or 100)
 

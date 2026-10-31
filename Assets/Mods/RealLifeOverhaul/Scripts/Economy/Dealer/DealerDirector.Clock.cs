@@ -85,6 +85,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                 Worths(y, level);
                 DealerHour got = DealerRules.Hour(_state, y, h, now, day, _worths, financeLeast, _models, _colours, level);
                 offers += got.Offers;
+                y.FixedOffers += y.Fixed ? got.Offers : 0;
                 Heard(y, now, got, h);
                 if (h.Staff <= 0 || !h.Open)
                 {
@@ -106,7 +107,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                         drives++;
                         continue;
                     }
-                    if (DealerRules.StaffClose(deal, car, y.StaffFloor) && Close(y, reg, deal, deal.Offer, true))
+                    if (DealerRules.StaffClose(y, deal, car) && Close(y, reg, deal, DealerRules.Price(y, deal, car), true))
                     {
                         closed++;
                     }
@@ -188,6 +189,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                     claimed += cost;
                 }
                 EndEvents(day);
+                FixedCheck(day);
                 Changed();
                 if (Verbose)
                 {
@@ -200,6 +202,24 @@ namespace RealLifeOverhaul.Economy.Dealership
             catch (Exception e)
             {
                 Fault("the day", e);
+            }
+        }
+
+        // One line a day for each showroom with fixed prices: every sale there should have been at the asking price.
+        private void FixedCheck(int day)
+        {
+            for (int i = 0; i < _state.Yards.Count; i++)
+            {
+                DealerYard y = _state.Yards[i];
+                if (Verbose && (y.Fixed || y.FixedSold > 0))
+                {
+                    Logger?.Info("Dealership check (fixed prices, '" + y.Name + "', day " + day + "): " + y.FixedOffers + " offer(s) made, " + y.FixedSold + " sold, "
+                                 + y.FixedAtAsking + " of them at the asking price: "
+                                 + (y.FixedAtAsking == y.FixedSold ? "PASS" : "FAIL (a sale with fixed prices was not at the asking price)") + ".");
+                }
+                y.FixedOffers = 0;
+                y.FixedSold = 0;
+                y.FixedAtAsking = 0;
             }
         }
 

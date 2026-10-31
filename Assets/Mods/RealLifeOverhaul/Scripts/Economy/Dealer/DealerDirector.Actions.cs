@@ -6,7 +6,7 @@ namespace RealLifeOverhaul.Economy.Dealership
     /// <summary>Why something the player asked of the dealership could not be done; the text key says so.</summary>
     public enum DealerRefusal
     {
-        None, Off, NoLot, LotFull, Cash, Gone, Busy, NoBids, Leading, NotInside, Staff, InWorkshop, Bays, Nothing, EventOn, Rested
+        None, Off, NoLot, LotFull, Cash, Gone, Busy, NoBids, Leading, NotInside, Staff, InWorkshop, Bays, Nothing, EventOn, Rested, Fixed
     }
 
     /// <summary>What the player and the staff do; each refuses with the game's notice, or moves the money, the car and the state together.</summary>
@@ -16,7 +16,8 @@ namespace RealLifeOverhaul.Economy.Dealership
         {
             null, "reallife_dealer_refuse_off", "reallife_dealer_refuse_no_lot", "reallife_dealer_refuse_full", "reallife_dealer_refuse_cash", "reallife_dealer_refuse_gone",
             "reallife_dealer_refuse_busy", "reallife_dealer_refuse_no_bids", "reallife_dealer_refuse_leading", "reallife_dealer_refuse_inside", "reallife_dealer_refuse_staff",
-            "reallife_dealer_refuse_workshop", "reallife_dealer_refuse_bays", "reallife_dealer_refuse_nothing", "reallife_dealer_refuse_event_on", "reallife_dealer_refuse_rested"
+            "reallife_dealer_refuse_workshop", "reallife_dealer_refuse_bays", "reallife_dealer_refuse_nothing", "reallife_dealer_refuse_event_on", "reallife_dealer_refuse_rested",
+            "reallife_dealer_refuse_fixed"
         };
 
         private bool Refuse(DealerRefusal why)
@@ -371,6 +372,11 @@ namespace RealLifeOverhaul.Economy.Dealership
             Book(y, DealerRules.TakenIn(m, planKept, extrasIn), m.Allowance + extrasCost, 0, price - car.Cost + extrasIn - extrasCost);
             y.Today.Sold++;
             y.Today.Revenue += price;
+            if (y.Fixed)
+            {
+                y.FixedSold++;
+                y.FixedAtAsking += price == car.Asking ? 1 : 0;
+            }
             y.Today.Extras += extrasIn;
 
             // The showroom's reputation and its missions.
@@ -417,7 +423,8 @@ namespace RealLifeOverhaul.Economy.Dealership
             {
                 return Refuse(d == null ? DealerRefusal.Gone : DealerRefusal.Busy);
             }
-            return Close(y, RegOf(y), d, d.Offer, false);
+            StockCar car = y.Car(d.Car);
+            return Close(y, RegOf(y), d, car != null ? DealerRules.Price(y, d, car) : d.Offer, false);
         }
 
         /// <summary>The player counters a customer's offer: taken (and sold), or not; a second refused counter and they walk away.</summary>
@@ -428,6 +435,10 @@ namespace RealLifeOverhaul.Economy.Dealership
             if (d == null || d.Stage != OfferStage.Open)
             {
                 return Refuse(d == null ? DealerRefusal.Gone : DealerRefusal.Busy);
+            }
+            if (y.Fixed)
+            {
+                return Refuse(DealerRefusal.Fixed);   // the app shows no counter there; a counter from an older page is refused
             }
             bool taken = DealerRules.Counter(d, price, _state.Seed, out gone);
             if (taken)
@@ -582,6 +593,20 @@ namespace RealLifeOverhaul.Economy.Dealership
                 y.Warranty = on;
                 Changed();
             }
+        }
+
+        /// <summary>Fixed prices at a showroom on or off; switched on, the offers waiting below the asking price are withdrawn.</summary>
+        public void FixedPrices(string place, bool on)
+        {
+            DealerYard y = _state != null ? _state.Yard(place) : null;
+            if (y == null || y.Fixed == on)
+            {
+                return;
+            }
+            y.Fixed = on;
+            int gone = on ? DealerRules.Withdraw(y) : 0;
+            Logger?.Info("Dealership: fixed prices " + (on ? "on" : "off") + " at '" + y.Name + "'" + (gone > 0 ? "; " + gone + " offer(s) below the asking price withdrawn" : string.Empty) + ".");
+            Changed();
         }
 
         /// <summary>The lot of the showroom the player stands in laid out again from its floor as it is now, its cars moved to the new places.</summary>

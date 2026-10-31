@@ -105,15 +105,20 @@ namespace RealLifeOverhaul.Economy.Dealership
             box.Section("reallife_ibox_sec_this_week");
             box.Line(DealerText.Fill("reallife_dealer_yard_week", "sold", (w.Sold + y.Today.Sold).ToString(), "takings", DealerText.Money(w.Takings + y.Today.Takings),
                 "bought", DealerText.Money(w.Bought + y.Today.Bought), "margin", DealerText.Money(w.Margin + y.Today.Margin), "claims", DealerText.Money(w.Claims + y.Today.Claims)));
-            int steps = (DealerCatalogue.StaffFloorMost - DealerCatalogue.StaffFloorLeast) / DealerCatalogue.StaffFloorStep + 1;
-            int at = (y.StaffFloor - DealerCatalogue.StaffFloorLeast) / DealerCatalogue.StaffFloorStep;
-            Choose(box, steps, at, i => DealerText.T("reallife_dealer_yard_floor", "share", DealerText.Share(DealerCatalogue.StaffFloorLeast + i * DealerCatalogue.StaffFloorStep)),
-                i => _director.Floor(y.Place, DealerCatalogue.StaffFloorLeast + i * DealerCatalogue.StaffFloorStep));
+            box.Line(DealerText.T(y.Fixed ? "reallife_dealer_yard_fixed_on" : "reallife_dealer_yard_fixed_off"), y.Fixed ? CellTone.Green : CellTone.Plain);
+            if (!y.Fixed)   // with fixed prices the staff close every offer at the asking price: there is no floor to set
+            {
+                int steps = (DealerCatalogue.StaffFloorMost - DealerCatalogue.StaffFloorLeast) / DealerCatalogue.StaffFloorStep + 1;
+                int at = (y.StaffFloor - DealerCatalogue.StaffFloorLeast) / DealerCatalogue.StaffFloorStep;
+                Choose(box, steps, at, i => DealerText.T("reallife_dealer_yard_floor", "share", DealerText.Share(DealerCatalogue.StaffFloorLeast + i * DealerCatalogue.StaffFloorStep)),
+                    i => _director.Floor(y.Place, DealerCatalogue.StaffFloorLeast + i * DealerCatalogue.StaffFloorStep));
+            }
             Transform buttons = box.ButtonRow();
             InfoBox.Button(buttons, InfoBox.Positive, y.Finance ? "reallife_dealer_button_finance_off" : "reallife_dealer_button_finance_on", () => _director.OfferFinance(y.Place, !y.Finance));
             InfoBox.Button(buttons, InfoBox.Negative, y.Warranty ? "reallife_dealer_button_warranty_off" : "reallife_dealer_button_warranty_on", () => _director.OfferWarranty(y.Place, !y.Warranty));
             InfoBox.Button(buttons, InfoBox.Additional, y.Extras ? "reallife_dealer_button_extras_off" : "reallife_dealer_button_extras_on", () => _director.OfferExtras(y.Place, !y.Extras));
             Transform more = box.ButtonRow();
+            InfoBox.Button(more, InfoBox.Negative, y.Fixed ? "reallife_dealer_button_fixed_off" : "reallife_dealer_button_fixed_on", () => _director.FixedPrices(y.Place, !y.Fixed));
             if (reg != null && DealerGame.Inside(reg))
             {
                 InfoBox.Button(more, InfoBox.Positive, "reallife_dealer_button_relay",
