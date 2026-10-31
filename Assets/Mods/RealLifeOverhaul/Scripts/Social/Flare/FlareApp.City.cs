@@ -34,11 +34,13 @@ namespace RealLifeOverhaul.Flare
             b.Append(reviews > 0
                 ? FlareText.Fill("reallife_flare_city_shop_follow", "followers", FlareText.N((int)followers), "rating", Stars(rating), "reviews", FlareText.N((int)reviews))
                 : FlareText.Fill("reallife_flare_city_shop_follow_none", "followers", FlareText.N((int)followers)));
-            b.Append('\n').Append(FlareText.Fill("reallife_flare_city_shop_pull", "pull", FlareText.Signed((int)(pull / 10)) + "%", "came", FlareText.Signed((int)came), "spent", FlareText.Money((int)spent)));
+            b.Append('\n').Append(FlareText.Fill("reallife_flare_city_shop_pull", "pull", FlareText.Signed((int)(pull / 10)) + "%", "came", FlareText.Signed((int)came),
+                "spent", FlareText.Money((int)spent)));
             if (v.Rows.Count > 0)
             {
                 FlareViewRow r = v.Rows[0];
-                b.Append('\n').Append(FlareText.Fill("reallife_flare_city_shop_review", "name", _director.ResidentName(r.Person, r.Female), "stars", (r.Value / 10).ToString(CultureInfo.InvariantCulture)));
+                b.Append('\n').Append(FlareText.Fill("reallife_flare_city_shop_review", "name", _director.ResidentName(r.Person, r.Female),
+                    "stars", (r.Value / 10).ToString(CultureInfo.InvariantCulture)));
             }
             int ads = _director.AdsRunning(row.Key);
             if (ads > 0)
@@ -85,10 +87,12 @@ namespace RealLifeOverhaul.Flare
             b.Append(f.Reviews > 0
                 ? FlareText.Fill("reallife_flare_city_shop_follow", "followers", FlareText.N(f.Followers), "rating", Stars(f.Rating), "reviews", FlareText.N(f.Reviews))
                 : FlareText.Fill("reallife_flare_city_shop_follow_none", "followers", FlareText.N(f.Followers)));
-            b.Append('\n').Append(FlareText.Fill("reallife_flare_city_shop_pull", "pull", FlareText.Signed(f.Attention / 10) + "%", "came", FlareText.Signed(f.Came), "spent", FlareText.Money((int)(f.Spent / 100))));
+            b.Append('\n').Append(FlareText.Fill("reallife_flare_city_shop_pull", "pull", FlareText.Signed(f.Attention / 10) + "%", "came", FlareText.Signed(f.Came),
+                "spent", FlareText.Money((int)(f.Spent / 100))));
             if (f.Reviewer > 0)
             {
-                b.Append('\n').Append(FlareText.Fill("reallife_flare_city_shop_review", "name", _director.ResidentName(f.Reviewer, f.ReviewerFemale), "stars", f.Stars.ToString(CultureInfo.InvariantCulture)));
+                b.Append('\n').Append(FlareText.Fill("reallife_flare_city_shop_review", "name", _director.ResidentName(f.Reviewer, f.ReviewerFemale),
+                    "stars", f.Stars.ToString(CultureInfo.InvariantCulture)));
             }
             return b.ToString();
         }
@@ -130,7 +134,7 @@ namespace RealLifeOverhaul.Flare
             for (int k = 0; k < FlareCityCatalogue.AdTargets; k++)
             {
                 int n = k;
-                Chip(FlareText.T("reallife_flare_city_target_" + k.ToString(CultureInfo.InvariantCulture)), _adTarget == k, () =>
+                Chip(FlareText.T(FlareCityViews.TargetKey(k)), _adTarget == k, () =>
                 {
                     _adTarget = n;
                     WriteSheet();

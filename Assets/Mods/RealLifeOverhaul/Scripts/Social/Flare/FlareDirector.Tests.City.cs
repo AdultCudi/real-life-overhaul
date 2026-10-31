@@ -18,7 +18,8 @@ namespace RealLifeOverhaul.Flare
             if (!CityOn)
             {
                 Tell(NotificationType.Warning, "reallife_flare_city_test_off", null);
-                Logger?.Info("Flare check (" + test + "): the residents' side is not running (" + (!CityWanted ? "its options are off" : Residents == null ? "the population does not run here" : "starting") + "): not run.");
+                string why = !CityWanted ? "its options are off" : Residents == null ? "the population does not run here" : "starting";
+                Logger?.Info("Flare check (" + test + "): the residents' side is not running (" + why + "): not run.");
                 return false;
             }
             if (_cityPass.Busy || _city.Indexed < 0)

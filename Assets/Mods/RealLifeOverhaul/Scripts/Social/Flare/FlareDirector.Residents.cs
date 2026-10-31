@@ -190,7 +190,8 @@ namespace RealLifeOverhaul.Flare
             Logger?.Info("Flare in the city: day " + p.Day + (p.Placed >= 0 ? ", " + p.Placed + " residents' follows read back" : string.Empty)
                          + (p.Generated > 0 ? ", " + p.Generated + " residents' first follows made" : string.Empty) + ": " + _city.CityFollowers + " residents follow you"
                          + (p.Reconciled != 0 ? " (" + (p.Reconciled > 0 ? "+" : string.Empty) + p.Reconciled + " with the account)" : string.Empty) + ", " + p.Reviewed + " reviews by customers, "
-                         + p.Followed + " new followers of businesses from their visits, " + p.Advertised + " ad(s) shown, " + p.Heard + " post(s) heard, " + p.Changed + " voice(s) new; Flare's attention "
+                         + p.Followed + " new followers of businesses from their visits, " + p.Advertised + " ad(s) shown, " + p.Heard + " post(s) heard, " + p.Changed
+                         + " voice(s) new; Flare's attention "
                          + (p.Lifted >= 0 ? "brought " : "kept away ") + Math.Abs(p.Lifted) / 100 + " of takings yesterday.");
             if (Meta.Dev.Verbose)
             {
@@ -502,7 +503,8 @@ namespace RealLifeOverhaul.Flare
                 {
                     Logger?.Info("Flare in the city: post " + post.Id + " seen by " + r.Seen + " residents (" + r.Shared + " shared it, " + r.Discovered + " came across it), " + r.Interested
                                  + " interested" + (r.Followed > 0 ? ", " + r.Followed + " followed" : string.Empty)
-                                 + (post.Business >= 0 ? "; " + r.Impressions / 1000 + " now remember the business, its attention " + _city.Attention[post.Business] + " thousandths" : string.Empty) + ".");
+                                 + (post.Business >= 0
+                                     ? "; " + r.Impressions / 1000 + " now remember the business, its attention " + _city.Attention[post.Business] + " thousandths" : string.Empty) + ".");
                 }
             }
             catch (Exception e)

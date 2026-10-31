@@ -125,7 +125,11 @@ namespace RealLifeOverhaul.Flare
                 int n = FlareCityRules.NewestReviews(c, b, newest);
                 for (int i = 0; i < n; i++)
                 {
-                    v.Rows.Add(new FlareViewRow { Person = newest[i].Person, Female = FemaleOf(s, personSlot, newest[i].Person), Value = newest[i].Stars * 10, Format = FlareViewFormat.Stars, Subtitle = K + "row_review" });
+                    v.Rows.Add(new FlareViewRow
+                    {
+                        Person = newest[i].Person, Female = FemaleOf(s, personSlot, newest[i].Person), Value = newest[i].Stars * 10, Format = FlareViewFormat.Stars,
+                        Subtitle = K + "row_review"
+                    });
                 }
                 FlareCityRules.Talk(c, b, out long heard, out long sour);
                 v.Details.Add(FlareViewFigure.Of(K + "detail_heard", heard / 1000, FlareViewFormat.Count));
@@ -150,7 +154,7 @@ namespace RealLifeOverhaul.Flare
             v.Hero.Add(FlareViewFigure.Of(K + "fig_reach", ad.Reach, FlareViewFormat.Count));
             v.Hero.Add(FlareViewFigure.Of(K + "fig_days", ad.Days, FlareViewFormat.Count));
             v.Hero.Add(FlareViewFigure.Of(K + "fig_cost", cost / 100, FlareViewFormat.Money));
-            v.Details.Add(new FlareViewFigure { Label = K + "detail_target", Format = FlareViewFormat.Key, Text = K + "target_" + Math.Max(0, Math.Min(targetKind, FlareCityCatalogue.AdTargets - 1)) });
+            v.Details.Add(new FlareViewFigure { Label = K + "detail_target", Format = FlareViewFormat.Key, Text = TargetKey(targetKind) });
             v.Details.Add(FlareViewFigure.Of(K + "detail_holds", target, FlareViewFormat.Count));
             v.Primary = why == null ? K + "action_run" : null;
             v.PrimaryTarget = ad.Place;
@@ -175,6 +179,12 @@ namespace RealLifeOverhaul.Flare
         {
             int p = s != null ? FlareCityRules.Slot(personSlot, s, person) : -1;
             return p >= 0 && s.People.Female[p] != 0;
+        }
+
+        /// <summary>The words of an ad's target, by its number (FlareDirector.AdOf's targets).</summary>
+        public static string TargetKey(int target)
+        {
+            return K + "target_" + Math.Max(0, Math.Min(target, FlareCityCatalogue.AdTargets - 1)).ToString(System.Globalization.CultureInfo.InvariantCulture);
         }
 
         /// <summary>Every locale key the screens use (EconomyCheck checks each is in the three locales).</summary>

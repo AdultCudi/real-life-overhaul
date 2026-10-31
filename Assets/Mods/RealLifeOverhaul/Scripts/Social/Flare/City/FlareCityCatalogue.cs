@@ -28,7 +28,8 @@ namespace RealLifeOverhaul.Flare
         public const int VoiceTries = 2;                 // the city's voices of their own district a resident may follow
         public const int VoiceFollow = 180;              // per mille for each
         public const int InfluencerCityMost = 400;       // thousandths of the residents who share an influencer's niche who follow them at the most
-        public const int BusinessUnfollow = 3;           // per mille a day a follow of a business is dropped (people move on): with the follows its visits bring, a shop's following settles near its daily visits
+        public const int BusinessUnfollow = 3;           // per mille a day a follow of a business is dropped (people move on):
+                                                         // with the follows its visits bring, a shop's following settles near its daily visits
         public const int VisitsPerFollow = 400;          // a business's visits for each resident who starts to follow it (drawn from its real customers)
 
         // ---- a post's audience (FlareRules.Reach's own shares, resident by resident)
@@ -50,7 +51,8 @@ namespace RealLifeOverhaul.Flare
 
         // ---- what residents heard, and the attention it gives (PopulationAttention: a pool is only ever shared out)
 
-        public const int HeardKeep = 750;                // thousandths of yesterday's impressions of a business kept: talk fades in a few days (the pools' habit keeps the customers it won a while longer)
+        public const int HeardKeep = 750;                // thousandths of yesterday's impressions of a business kept: talk fades in a few days
+                                                         // (the pools' habit keeps the customers it won a while longer)
         public const int SourKeep = 880;                 // ...of what put people off, while nobody answered
         public const int SourAnswered = 500;             // ...once the business or its owner answered honestly
         public const int PositiveLift = 1500;            // thousandths more likely a resident who heard good things goes there: two and a half times

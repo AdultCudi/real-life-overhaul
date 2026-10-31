@@ -208,7 +208,8 @@ namespace RealLifeOverhaul.Flare
                 bool heard = CityTalk(h.Place, -1, "i:" + inf.Id.ToString(System.Globalization.CultureInfo.InvariantCulture), 3000000 + h.Id, FlareRules.Roll(_file.Seed, h.Id, 864));
                 int now = heard ? 0 : FlareRules.AddBuzz(_file, h.Place, FlareCast.TalkBackfire, day, FlareRules.BuzzDays);
                 FlareBridges.BrandScandal?.Invoke(h.Place);
-                Logger?.Info("Flare: " + h.Name + " hired " + inf.Handle + ": the talk turns against it (" + (heard ? "the influencer's followers in the city" : now + "%") + "), and its brand hears of it.");
+                Logger?.Info("Flare: " + h.Name + " hired " + inf.Handle + ": the talk turns against it (" + (heard ? "the influencer's followers in the city" : now + "%")
+                             + "), and its brand hears of it.");
                 Rewrite(h.Place, false);
                 if (FlareRules.MayNotify(_file, day, Settings.SocialMediaNotices))
                 {
@@ -227,7 +228,8 @@ namespace RealLifeOverhaul.Flare
             }
             if (h.Backfired)
             {
-                bool heard = CityTalk(h.Place, -1, h.Who.Count > 0 ? "i:" + h.Who[0].ToString(System.Globalization.CultureInfo.InvariantCulture) : null, 4000000 + h.Id, FlareRules.Roll(_file.Seed, h.Id, 865));
+                string who = h.Who.Count > 0 ? "i:" + h.Who[0].ToString(System.Globalization.CultureInfo.InvariantCulture) : null;
+                bool heard = CityTalk(h.Place, -1, who, 4000000 + h.Id, FlareRules.Roll(_file.Seed, h.Id, 865));
                 int now = heard ? 0 : FlareRules.AddBuzz(_file, h.Place, FlareCast.TalkBackfire, day, FlareRules.BuzzDays);
                 FlareBridges.BrandScandal?.Invoke(h.Place);
                 Logger?.Info("Flare: the hire at " + h.Name + " backfires: the post goes down badly (" + now + "%), and its brand hears of it.");
