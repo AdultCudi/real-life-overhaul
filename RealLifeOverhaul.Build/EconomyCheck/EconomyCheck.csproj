@@ -650,6 +650,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\CellRules.cs" Link="Mod\Construction\CellRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\ZoneRules.cs" Link="Mod\Construction\ZoneRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\GrowRules.cs" Link="Mod\Construction\GrowRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\PlotJoinRules.cs" Link="Mod\Construction\PlotJoinRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildState.Grow.cs" Link="Mod\Construction\BuildState.Grow.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\LandMarketRules.cs" Link="Mod\Construction\LandMarketRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildState.Market.cs" Link="Mod\Construction\BuildState.Market.cs" />

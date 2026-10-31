@@ -733,7 +733,7 @@ namespace RealLifeOverhaul.Construction
         /// owner's seven, Scripts/Corners), then the designs of the city's own that fill it, the best covering first; false while they
         /// are being looked through.
         /// </summary>
-        public bool FootprintDesigns(int firstColumn, int count, int rows, BuildUse use, List<DesignChoice> into)
+        public bool FootprintDesigns(int firstColumn, int count, int rows, BuildUse use, List<DesignChoice> into, bool quiet = false)
         {
             into.Clear();
             if (!FootprintSite(firstColumn, count, rows, out LotView site))
@@ -751,8 +751,11 @@ namespace RealLifeOverhaul.Construction
             KeepFitting(site, _cityDesigns);
             into.AddRange(_cityDesigns);
             _cityDesigns.Clear();
-            Logger?.Info("Construction: build mode's designs for " + count + " space(s) by " + rows + " row(s) from " + site.Id + ": " + corners + " corner building(s), "
-                         + (into.Count - corners) + " of the city's.");
+            if (!quiet)
+            {
+                Logger?.Info("Construction: build mode's designs for " + count + " space(s) by " + rows + " row(s) from " + site.Id + ": " + corners + " corner building(s), "
+                             + (into.Count - corners) + " of the city's.");
+            }
             return ready;
         }
 
