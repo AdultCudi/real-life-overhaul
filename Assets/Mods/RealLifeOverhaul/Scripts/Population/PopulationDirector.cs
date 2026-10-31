@@ -70,11 +70,13 @@ namespace RealLifeOverhaul.Population
             {
                 Id = PopulationShare.Part, Name = "population",
                 Ready = () => Running || _guest != null,
-                Write = () => _state != null && !SharedCity.Follows(PopulationShare.Part) ? PopulationShare.Write(_state) : null,
+                Write = () => _state != null && !SharedCity.Follows(PopulationShare.Part) ? PopulationShare.Write(_state, _demand) : null,
                 Apply = ApplyHost,
                 Left = () =>
                 {
                     _guest = null;
+                    _guestDemand = null;
+                    CityDemand.Live = null;
                     CityPopulation.Following = false;
                     Logger?.Info("Living population: the host's population is no longer followed; this player's own city lives again from its next day.");
                 }
@@ -252,6 +254,7 @@ namespace RealLifeOverhaul.Population
             CityPopulation.Live = s;
             CityPopulation.Pools = _sim.Demand;
             CityPopulation.Following = false;
+            BindDemand(s, generated);
             UseFigures();   // a load's day is lived already: its takings are in the line, its pools (a household's part) come with the next day's turn
         }
 
@@ -360,9 +363,9 @@ namespace RealLifeOverhaul.Population
                     return false;
                 }
                 WorkSlice slice = WorkSlice.Of(StepMs, 1);
-                if (!_sim.Step(ref slice))
+                if (!_sim.Step(ref slice) || !DemandStep(ref slice))
                 {
-                    return false;
+                    return false;   // the population's own day first, then what it brings the mod's own businesses
                 }
                 JobDone();
                 return true;
@@ -448,7 +451,7 @@ namespace RealLifeOverhaul.Population
                 {
                     _guest = new PopulationState();
                 }
-                if (!PopulationShare.Apply(_guest, text))
+                if (!PopulationShare.Apply(_guest, text, GuestDemand()))
                 {
                     return false;
                 }
@@ -460,6 +463,7 @@ namespace RealLifeOverhaul.Population
                 CityPopulation.Live = _guest;
                 CityPopulation.Pools = null;
                 CityPopulation.Following = true;
+                CityDemand.Live = _guestDemand;
                 PopulationCustomers.Use(_guest, Settings.LivingPopulation);
                 PopulationGame.RedrawMine();
                 return true;
@@ -493,6 +497,7 @@ namespace RealLifeOverhaul.Population
                 float started = Time.realtimeSinceStartup;
                 string line = PopulationStore.Line(_state, _zip) ?? PopulationStore.Encode(_state);
                 data[PopulationStore.Key] = line;
+                SaveDemand(data);
                 if (Verbose)
                 {
                     Logger?.Info("Population check (the save): " + line.Length / 1024 + " KB in " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0", CultureInfo.InvariantCulture)
@@ -524,6 +529,7 @@ namespace RealLifeOverhaul.Population
             CityPopulation.Pools = null;
             CityPopulation.PullTable = null;
             CityPopulation.Following = false;
+            DropDemand();
             PopulationCustomers.Stop();
             if (was && Settings.LivingPopulation)
             {
@@ -548,6 +554,7 @@ namespace RealLifeOverhaul.Population
                 Logger?.Error(second);
                 PopulationCustomers.Stop();
                 CityPopulation.Live = null;
+                CityDemand.Live = null;
             }
             Logger?.Warn("Living population: switched off for this session after an error in " + where + ". The game's own customers and the city economy's own figures stand.");
         }
