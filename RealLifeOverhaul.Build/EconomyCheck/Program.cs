@@ -153,6 +153,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--own-home")
+        {
+            OwnHomes();   // (a building of the player's own staying theirs alone, while working on it: OwnHomeChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--landmarks")
         {
             LandmarksChecks();   // (Uptown's landmarks alone, while working on them: LandmarksChecks.cs)
