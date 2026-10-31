@@ -223,6 +223,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--plotjoin")
+        {
+            PlotJoinChecks();   // (leftover plots alone, while working on them: PlotJoinChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--growth")
         {
             GrowChecks();   // (buildings that grow alone, while working on them: GrowChecks.cs)
@@ -667,6 +673,7 @@ internal static partial class Program
         BuildModeChecks();   // build mode: the zoning cells on the real plan, sites, prices, rows, the state machine, colours, warnings, demand and the market, whole buildings, the store, the sources, the texts (BuildModeChecks.cs)
         BuildGroundChecks();   // no ground of a block left unexplained: every spot a square, a held ground or the plan's margin, every column a building, for sale or held, each rule made to fail once (BuildGroundChecks.cs)
         GrowChecks();   // buildings that grow: zoning per square and its tools, the council's zoning, the developer's pick, the steady pace on the real plan, the tiers, tenants, condition, the store, the sources, the texts (GrowChecks.cs)
+        PlotJoinChecks();   // leftover plots: the fit rule that leaves a single space, the join the Place tool offers, the city's growth leaving no stretch nothing fills, the sources, the texts (PlotJoinChecks.cs)
         CornerChecks();   // the corner buildings: the corner site rule on the real plan, the four turns, the fit and the ground beneath, the signs, the bundle, the records, the sources, the texts (CornerChecks.cs)
         ParkChecks();   // car parks: the layout of bays on every size of site, the works and their cost, where one may stand, the price band, how full by the hour, leases, the city's builders, the store, the sources, the texts (ParkChecks.cs)
         LandMarketChecks();   // the land market: the city's price, a rival's ask and its answer, the limits, the rivals' own trading and its cadence, the save's part, the sources, the texts (LandMarketChecks.cs)

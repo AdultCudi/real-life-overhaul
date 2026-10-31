@@ -20,7 +20,7 @@ namespace RealLifeOverhaul.Construction
     {
         // The panel's buttons.
         private const int RowBuy = 1, RowClear = 2, RowChoose = 3, RowGoBuy = 4, RowPaint = 10, RowPaintNone = 14, RowParking = 20, RowBuild = 21, RowOther = 22, RowDemolish = 30,
-            RowJoin = 40, RowSplit = 41, RowRefit = 50, RowShape = 60, RowGrow = 70, RowTier = 80, RowGrowBack = 90;
+            RowJoin = 40, RowSplit = 41, RowJoinNext = 42, RowRefit = 50, RowShape = 60, RowGrow = 70, RowTier = 80, RowGrowBack = 90;
         private readonly string[] _shapeNames = new string[BuildModeSheet.ChoicesMost];
         private static readonly string[] ShapeKeys = { "reallife_grow_shape_fill", "reallife_grow_shape_rect", "reallife_grow_shape_brush", "reallife_grow_shape_unzone" };
         private const int RowMark = 300;
@@ -134,7 +134,7 @@ namespace RealLifeOverhaul.Construction
                 State = _state, Picked = _picked.Count > 0, SiteOk = _siteWhy == null && _picked.Count > 0, CanBuy = _canBuy,
                 PickedMine = _state.Tool == BuildTool.Place ? _pickMine : _targetSite != null, PickedForSale = PickedForSale,
                 PickedBuilding = _hasTarget, ZoneChosen = _zoneBrush >= 0, Designs = _designs.Count, MayBuild = BuildModeRules.MayBuild(_warnings), City = !_inUptown,
-                PlotPicked = _plot >= 0
+                PlotPicked = _plot >= 0, JoinOffered = _offer.Kind == PlotJoinRules.Offer
             };
         }
 
@@ -452,8 +452,7 @@ namespace RealLifeOverhaul.Construction
             }
             if (_designs.Count == 0)
             {
-                s.Line(T("reallife_bld_mode_place_none"), BuildModeBar.Red);
-                s.Buttons(parks ? RowCarPark : 0, parks ? T("reallife_park_button") : null, parks, RowClear, T("reallife_bld_sheet_clear"), true);
+                WriteNoDesign(s, parks);   // BuildMode.Join: the join that would give designs
                 return;
             }
             s.Line(ConstructionText.Fill("reallife_bld_sheet_place_fit", "count", ConstructionText.N(_designs.Count), "cells", ConstructionText.N(PickedCells), "use",
@@ -912,6 +911,9 @@ namespace RealLifeOverhaul.Construction
                     return;
                 case RowSplit:
                     Refresh(_targetSite != null ? _d.Split(_targetSite) : null);
+                    return;
+                case RowJoinNext:
+                    ActJoinNext();
                     return;
                 default:
                     if (id >= RowShape && id < RowShape + (int)ZoneShape.Count)

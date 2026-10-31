@@ -189,60 +189,122 @@ namespace RealLifeOverhaul.Construction
             {
                 return null;   // no use wanted enough, or none with land zoned for it: the city waits
             }
-            if (!GrowRules.Pick(grid, _growCols, _growDemand, _state.Seed, day, out int grow, out int first, out int run, out int want))
-            {
-                Logger?.Info("Construction: the city's growth wants " + (BuildUse)wanted + " (demand " + _growDemand[wanted] + ") on day " + day + ", but no block has room for a site of it now.");
-                return null;
-            }
             int id = _state.NewId();
             Holdings(_holdings);
             bool holding = GrowRules.ByHolding(_state.Seed, id, _holdings.Count > 0);
             GrowTier tier = holding ? GrowRules.HoldingTier(_state.Seed, id) : GrowTier.Standard;
-            for (int count = Math.Min(want, run); count >= 1; count--)
+            // A run no design of the city's fills is left out of the day's pass and the next run looked at: picked again every day it would
+            // stand still on it, and a site taken from it would leave a single space beside it that no design fills either.
+            for (int tried = 0; tried < GrowRules.RunsTried; tried++)
             {
+                if (!GrowRules.Pick(grid, _growCols, _growDemand, _state.Seed, day, out int grow, out int first, out int run, out int want))
+                {
+                    Logger?.Info("Construction: the city's growth wants " + (BuildUse)wanted + " (demand " + _growDemand[wanted] + ") on day " + day + ", but no block has room for a site of it now.");
+                    return null;
+                }
+                int count = GrowCount(grid, first, run, want, (BuildUse)grow, tier, holding, out string design, out bool ready);
+                if (!ready)
+                {
+                    return null;   // the city's designs are being looked through: the next day's pass
+                }
+                if (count > 0 && LotOfColumn(GrowRules.Take(grid, first, run, count), out LotView firstLot))
+                {
+                    var g = new GrowFile
+                    {
+                        Id = id, Stage = GrowStage.Plans, Owner = holding ? GrowOwner.Holding : GrowOwner.Builder, Lot = firstLot.Id, Spaces = count, Use = (BuildUse)grow, Tier = tier,
+                        Day = day, Design = design, Price = SitePrice(firstLot.Id, count)
+                    };
+                    g.Rival = DevelopmentRules.Rival(g.Lot, g.Use);
+                    g.Holding = holding ? _holdings[RedevelopRules.PickOf(_state.Seed, day, 0x67, _holdings.Count)] : string.Empty;
+                    g.Until = day + GrowRules.PlansDays(_state.Seed, g.Id);
+                    _state.Grows.Add(g);
+                    _state.CityLand += g.Price;
+                    TidyGrows();
+                    GrowsChanged();
+                    Paper("reallife_grow_paper_bought", GrowName(g), count);
+                    Logger?.Info("Construction: the city's growth: " + GrowDeveloper(g) + " (builder " + g.Rival + (holding ? ", tier " + tier : string.Empty) + ") bought " + count + " space(s) from "
+                                 + g.Lot + " for " + g.Price + " to build " + g.Use + " in " + design + " (demand " + _growDemand[grow] + "); plans until day " + g.Until + ".");
+                    Changed();
+                    return g;
+                }
+                Logger?.Info("Construction: the city's growth found " + run + " free space(s) for " + (BuildUse)grow + " from column " + first
+                             + ", but no design of the city's fills them: left out today.");
+                GrowRules.Leave(grid, _growCols, first, run);
+            }
+            return null;
+        }
+
+        private readonly int[] _growCounts = new int[BuildCatalogue.SiteSpacesMost * 2];
+        private readonly List<LotView> _growRest = new List<LotView>(8);
+
+        /// <summary>
+        /// How many spaces of a free run a grown site takes: the widths from the one wanted down to one, then the wider ones, and the first
+        /// that has a design and leaves no stretch beside it that no design of the city's fills (a single space beside a building would stay
+        /// empty for good, as the player's leftover plots did). When every width with a design leaves one, the first of those. 0 when
+        /// none has a design; <paramref name="ready"/> false while the designs are being read.
+        /// </summary>
+        private int GrowCount(CellGrid grid, int first, int run, int want, BuildUse use, GrowTier tier, bool holding, out string design, out bool ready)
+        {
+            design = null;
+            ready = true;
+            string fallbackDesign = null;
+            int fallback = 0;
+            int n = GrowRules.Counts(want, run, true, _growCounts);
+            for (int k = 0; k < n; k++)
+            {
+                int count = _growCounts[k];
                 int start = GrowRules.Take(grid, first, run, count);
                 if (!LotOfColumn(start, out LotView firstLot) || !SiteSpaces(firstLot.Id, count, _growSpaces))
                 {
                     continue;
                 }
                 bool free = true;
-                for (int k = 0; k < _growSpaces.Count; k++)
+                for (int i = 0; i < _growSpaces.Count; i++)
                 {
-                    free &= FreeSpace(_growSpaces[k]);
+                    free &= FreeSpace(_growSpaces[i]);
                 }
                 if (!free)
                 {
                     continue;
                 }
-                LotView site = Joined(_growSpaces);
-                if (!GrowDesign(site, (BuildUse)grow, tier, holding, out string design))
+                if (!GrowDesign(Joined(_growSpaces), use, tier, holding, out string name))
                 {
-                    return null;   // the city's designs are being looked through: the next day's pass
+                    ready = false;
+                    return 0;
                 }
-                if (design == NoDesign)
+                if (name == NoDesign)
                 {
-                    continue;   // nothing of the city's fills so many spaces: fewer
+                    continue;   // nothing of the city's fills so many spaces
                 }
-                var g = new GrowFile
+                GrowRules.Rest(grid, first, run, start, count, out int leftAt, out int left, out int rightAt, out int right);
+                bool leaves = false;
+                for (int side = 0; side < 2 && !leaves; side++)
                 {
-                    Id = id, Stage = GrowStage.Plans, Owner = holding ? GrowOwner.Holding : GrowOwner.Builder, Lot = firstLot.Id, Spaces = count, Use = (BuildUse)grow, Tier = tier,
-                    Day = day, Design = design, Price = SitePrice(firstLot.Id, count)
-                };
-                g.Rival = DevelopmentRules.Rival(g.Lot, g.Use);
-                g.Holding = holding ? _holdings[RedevelopRules.PickOf(_state.Seed, day, 0x67, _holdings.Count)] : string.Empty;
-                g.Until = day + GrowRules.PlansDays(_state.Seed, g.Id);
-                _state.Grows.Add(g);
-                _state.CityLand += g.Price;
-                TidyGrows();
-                GrowsChanged();
-                Paper("reallife_grow_paper_bought", GrowName(g), count);
-                Logger?.Info("Construction: the city's growth: " + GrowDeveloper(g) + " (builder " + g.Rival + (holding ? ", tier " + tier : string.Empty) + ") bought " + count + " space(s) from "
-                             + g.Lot + " for " + g.Price + " to build " + g.Use + " in " + design + " (demand " + _growDemand[grow] + "); plans until day " + g.Until + ".");
-                Changed();
-                return g;
+                    int at = side == 0 ? leftAt : rightAt, width = side == 0 ? left : right;
+                    if (width <= 0 || at < 0 || !LotOfColumn(at, out LotView restLot) || !SiteSpaces(restLot.Id, width, _growRest))
+                    {
+                        continue;
+                    }
+                    if (!GrowDesign(Joined(_growRest), use, tier, holding, out string restName))
+                    {
+                        ready = false;
+                        return 0;
+                    }
+                    leaves = restName == NoDesign;
+                }
+                if (!leaves)
+                {
+                    design = name;
+                    return count;
+                }
+                if (fallback == 0)
+                {
+                    fallback = count;
+                    fallbackDesign = name;
+                }
             }
-            Logger?.Info("Construction: the city's growth found " + run + " free space(s) for " + (BuildUse)grow + " from column " + first + ", but no design of the city's fills them.");
-            return null;
+            design = fallbackDesign;
+            return fallback;
         }
 
         // The oldest given up make room: standing ones are always kept.

@@ -707,6 +707,7 @@ namespace RealLifeOverhaul.Construction
             DropGhost();
             _design = -1;
             _designs.Clear();
+            OfferClear();
             if (_picked.Count == 0)
             {
                 return;
@@ -735,11 +736,12 @@ namespace RealLifeOverhaul.Construction
                     }
                     if (_siteWhy == null && _pickMine && _d.ParkOfColumn(column) == null)
                     {
-                        _d.FootprintDesigns(_site.FirstColumn, _site.Count, _site.MinRows, _use, _designs);
+                        _designsRead = _d.FootprintDesigns(_site.FirstColumn, _site.Count, _site.MinRows, _use, _designs);
                         if (_designs.Count > BuildModeCatalogue.Most)
                         {
                             _designs.RemoveRange(BuildModeCatalogue.Most, _designs.Count - BuildModeCatalogue.Most);
                         }
+                        OfferRead();
                     }
                     ParkRead();   // BuildMode.Park: a car park on the squares, or what one would be
                     break;
@@ -784,6 +786,7 @@ namespace RealLifeOverhaul.Construction
             _canBuy = _pickMine = false;
             _design = -1;
             _designs.Clear();
+            OfferClear();
             DropGhost();
         }
 
@@ -873,6 +876,7 @@ namespace RealLifeOverhaul.Construction
                     _lines[_cellStart[c] + r] = BuildModeRules.LinePicked;
                 }
             }
+            JoinPreview(grid);   // BuildMode.Join: the plot a join would add
             BuildModeGame.Colour(_layer, _fills, _lines);
         }
 

@@ -26,6 +26,7 @@ namespace RealLifeOverhaul.Construction
         public bool MayBuild;         // ... the design picked has nothing in red that stops it
         public bool City;             // the map looks over the rest of the city, not Uptown
         public bool PlotPicked;       // a building of the city's is picked: its tool panel is up
+        public bool JoinOffered;      // the Place tool: no design fits, but the plot beside it joined would have some
     }
 
     /// <summary>The tour's steps on build mode's first opening: each a tooltip pointing at one part.</summary>
@@ -234,7 +235,7 @@ namespace RealLifeOverhaul.Construction
                     {
                         return f.MayBuild ? "reallife_bld_hint_place_build" : "reallife_bld_hint_place_fix";
                     }
-                    return f.Designs > 0 ? "reallife_bld_hint_place_pick" : "reallife_bld_hint_place_none";
+                    return f.Designs > 0 ? "reallife_bld_hint_place_pick" : f.JoinOffered ? PlotJoinRules.HintKey : "reallife_bld_hint_place_none";
                 case BuildTool.Join:
                     if (dragging || !f.Picked)
                     {

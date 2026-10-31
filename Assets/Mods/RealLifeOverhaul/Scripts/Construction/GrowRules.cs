@@ -243,6 +243,72 @@ namespace RealLifeOverhaul.Construction
             return highCorner ? Back(grid, last, count) : first;
         }
 
+        public const int RunsTried = 6;   // free runs one day's pass looks at before it waits: a run nothing of the city's fills is left out, so the pass goes on to the next
+
+        /// <summary>
+        /// The widths to try for a site on a free run, best first, into <paramref name="into"/> (at least <see cref="BuildCatalogue.SiteSpacesMost"/> long):
+        /// from the width wanted (or the run, if shorter) down to one; with <paramref name="roomy"/> then the widths above the wanted one up to the whole
+        /// run, which leave less over beside the site. Returns how many.
+        /// </summary>
+        public static int Counts(int want, int run, bool roomy, int[] into)
+        {
+            int n = 0;
+            int most = Math.Min(Math.Min(run, BuildCatalogue.SiteSpacesMost), into.Length);
+            for (int count = Math.Min(Math.Max(1, want), most); count >= 1; count--)
+            {
+                into[n++] = count;
+            }
+            for (int count = Math.Max(1, want) + 1; roomy && count <= most; count++)
+            {
+                into[n++] = count;
+            }
+            return n;
+        }
+
+        /// <summary>
+        /// The free columns a site of <paramref name="count"/> columns from <paramref name="start"/> leaves in its run (at <paramref name="first"/>,
+        /// <paramref name="run"/> long): how many before it and where they start, how many after it and where they start (-1 where none).
+        /// </summary>
+        public static void Rest(CellGrid grid, int first, int run, int start, int count, out int leftAt, out int left, out int rightAt, out int right)
+        {
+            left = 0;
+            for (int at = first; at >= 0 && at != start && left < run; at = grid.Next(at))
+            {
+                left++;
+            }
+            right = Math.Max(0, run - left - count);
+            leftAt = left > 0 ? first : -1;
+            rightAt = -1;
+            int last = start;
+            for (int i = 1; i < count && last >= 0; i++)
+            {
+                last = grid.Next(last);
+            }
+            if (right > 0 && last >= 0)
+            {
+                rightAt = grid.Next(last);
+            }
+            right = rightAt >= 0 ? right : 0;
+        }
+
+        /// <summary>
+        /// Leaves a free run out of the day's pass (its columns no longer free for growth until the next read of the land): a run no design of
+        /// the city's fills for its use would be picked again and again, and the growth stood still on it. Returns the columns left out.
+        /// </summary>
+        public static int Leave(CellGrid grid, GrowColumn[] cols, int first, int run)
+        {
+            int n = 0;
+            for (int i = 0, at = first; i < run && at >= 0 && at < cols.Length; i++, at = grid.Next(at))
+            {
+                if (cols[at].Free)
+                {
+                    cols[at].Free = false;
+                    n++;
+                }
+            }
+            return n;
+        }
+
         /// <summary>The days the developer's architect takes to draw a grown site's plans: 3 to 5, by its id.</summary>
         public static int PlansDays(int seed, int id)
         {
