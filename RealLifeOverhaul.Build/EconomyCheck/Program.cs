@@ -549,6 +549,7 @@ internal static partial class Program
         JusticeSaveRoundTrip();   // Justice's save line: names with %XXXX escapes come back as written, one at the very end too (JusticeSaveChecks.cs)
         CameraBills();   // a getaway's camera bill taken by its court case: nothing beside a summons, nothing after a dismissal, damages with a conviction (CameraBillChecks.cs)
         TravelPrices();   // travel's extras, dinners, splurges, events and loyalty night at today's prices, and what the room shows is what it charges (TravelPriceChecks.cs)
+        InsureAll();   // Insure all in the Garage contact: one way to buy a policy, every uninsured car or none, the summary only with two cars and one uninsured, its words (InsureAllChecks.cs)
         MoneyBugs();   // finance minimums at today's prices, the taxi and franchise refusals, kiosk words by the option, one licence charge, a catch at today's prices (MoneyBugChecks.cs)
         Leftovers();   // every object a feature lists for clean-up is made, every text of leisure and photo mode is read (LeftoverChecks.cs)
         Endings();

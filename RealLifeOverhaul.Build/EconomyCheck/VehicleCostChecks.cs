@@ -146,7 +146,7 @@ internal static partial class Program
               && ModSource(@"Core\RealLifeOverhaulMod.cs").Contains("AddButton(\"reallife_test_vehicle_costs\", () => CarOwnership.Instance?.TestCosts())"),
             "vehicle costs: the Options test runs the car cost rules on the player's cars, logs PASS or FAIL for each and for the worst inputs, and is a button");
         string garage = ModSource(@"Transport\CarGarage.cs");
-        Check(garage.Contains("mended += Mend(record);") && garage.Contains("public static float PremiumOf(float price, int claims, float tuning)") && ModSource(@"Transport\CarOwnership.cs").Contains("CarRules.PremiumOf(")
+        Check(garage.Contains("mended += Mend(record);") && garage.Contains("public static float PremiumOf(float price, int claims, float tuning)") && ModSource(@"Transport\CarPhone.cs").Contains("CarRules.PremiumOf(") && ModSource(@"Transport\CarOwnership.cs").Contains("CarPhone.PremiumOf(")
               && ModSource(@"Transport\CarOwnership.cs").Contains("VehicleCostRules.Km(speed, DriveTick)") && ModSource(@"Traffic\CrashConsequences.cs").Contains("VehicleCostRules.Liability("),
             "vehicle costs: the premium, the kilometres, the crash damages and the saved car records go through the cost rules");
 

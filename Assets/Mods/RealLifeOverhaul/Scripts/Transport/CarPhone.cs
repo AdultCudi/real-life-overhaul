@@ -98,6 +98,112 @@ namespace RealLifeOverhaul
             return null;
         }
 
+        /// <summary>
+        /// A car's premium for a month's policy, rounded as it is charged. The Garage page, Insure all and the monthly renewal all
+        /// read it here, so what a page shows is what is charged.
+        /// </summary>
+        public static float PremiumOf(VehicleInstance car, CarRecord record)
+        {
+            return Mathf.Round(CarRules.PremiumOf(car.VehicleType.price, record.Claims, GarageBridges.InsuranceOf(car.id)));
+        }
+
+        /// <summary>
+        /// Insures one car from today: its premium booked as the policy's own line, then its paid period set. The one way a policy
+        /// is bought, from a car's page or from Insure all, so the premium and the dates cannot differ between them. Returns what
+        /// was charged, or -1 when the money did not go through (nothing changed).
+        /// </summary>
+        public static float Insure(VehicleInstance car, CarRecord record, bool notify)
+        {
+            float premium = PremiumOf(car, record);
+            if (!RealLifeOverhaul.Economy.BizBooks.Book(-premium, new TransactionInfo("reallife_transaction_car_insurance"), null, null, force: false, showNotification: notify))
+            {
+                return -1f;
+            }
+            record.InsuredUntil = TimeHelper.CurrentDay + CarRules.PolicyDays - 1;
+            return premium;
+        }
+
+        /// <summary>
+        /// The cars the Garage lists that have no policy today, and what insuring them all comes to. Exactly the cars of the Garage's
+        /// pages (<see cref="Runs"/> over the save's own list), so in a Going Public session never another player's. On a call, not per frame.
+        /// </summary>
+        public static int Uninsured(GameInstance save, int today, out int cars, out float total)
+        {
+            int uninsured = 0;
+            cars = 0;
+            total = 0f;
+            for (int i = 0; save != null && save.VehicleInstances != null && i < save.VehicleInstances.Count; i++)
+            {
+                VehicleInstance car = save.VehicleInstances[i];
+                if (!Runs(car))
+                {
+                    continue;
+                }
+                cars++;
+                CarRecord record = CarGarage.For(car.id, today);
+                if (record.InsuredUntil < today)
+                {
+                    uninsured++;
+                    total += PremiumOf(car, record);
+                }
+            }
+            return uninsured;
+        }
+
+        /// <summary>
+        /// Insure all: every car without a policy insured at its own premium, one line each as the renewals book them, or none
+        /// at all when the money does not cover every one. Writes its check line with Developer diagnostics on.
+        /// </summary>
+        public static DialogEntry InsureAll(GameInstance save)
+        {
+            int today = TimeHelper.CurrentDay;
+            int uninsured = Uninsured(save, today, out int _, out float total);
+            if (uninsured == 0)
+            {
+                return PhoneContacts.Closing("reallife_garage_all_none");
+            }
+            if (save.Money < total)
+            {
+                return PhoneContacts.Closing("reallife_garage_all_short", new
+                {
+                    amount = TransitText.Money(total), money = TransitText.Money(save.Money), more = TransitText.Money(total - save.Money)
+                });
+            }
+            int insured = 0;
+            float charged = 0f;
+            for (int i = 0; i < save.VehicleInstances.Count; i++)
+            {
+                VehicleInstance car = save.VehicleInstances[i];
+                if (!Runs(car))
+                {
+                    continue;
+                }
+                CarRecord record = CarGarage.For(car.id, today);
+                if (record.InsuredUntil >= today)
+                {
+                    continue;
+                }
+                float paid = Insure(car, record, false);
+                if (paid < 0f)
+                {
+                    break;   // the money moved since it was counted: the closing line says how many were insured
+                }
+                insured++;
+                charged += paid;
+            }
+            if (Meta.Dev.Verbose)
+            {
+                bool all = insured == uninsured && Mathf.Approximately(charged, total);
+                CarOwnership.Logger?.Info("Car check (insure all): " + insured + " of " + uninsured + " uninsured car(s) insured, " + charged.ToString("F0")
+                                         + " charged against their premiums of " + total.ToString("F0") + ": "
+                                         + (all ? "PASS" : "FAIL (the money moved while the cars were insured)") + ".");
+            }
+            return PhoneContacts.Closing(insured == uninsured ? "reallife_garage_all_done" : "reallife_garage_all_part", new
+            {
+                count = insured.ToString(), of = uninsured.ToString(), amount = TransitText.Money(charged)
+            });
+        }
+
         /// <summary>The player's own car nearest them in the street, within reach of a roadside call; null if none.</summary>
         public static VehicleController NearestOwned(GameInstance save)
         {
@@ -126,13 +232,39 @@ namespace RealLifeOverhaul
         }
     }
 
-    /// <summary>The Garage page: one car at a time, with what can be done about its insurance.</summary>
+    /// <summary>
+    /// The Garage page: one car at a time, with what can be done about its insurance. With two cars or more and one of them
+    /// uninsured, the call opens on a summary first that can insure them all at once.
+    /// </summary>
     public sealed class GarageDialog : Dialog
     {
         public GarageDialog()
         {
             npcNameKey = CarPhone.GarageId;
-            DialogController.current.ShowEntry(Guard.Entry(Settings.CarOwnership ? Page(0) : PhoneContacts.Closing("reallife_garage_off")));
+            DialogController.current.ShowEntry(Guard.Entry(Settings.CarOwnership ? First() : PhoneContacts.Closing("reallife_garage_off")));
+        }
+
+        // The game's dialogue entry has three buttons (confirm, a second option, cancel): Insure all, the cars one by one, hang up.
+        private static DialogEntry First()
+        {
+            GameInstance save = SaveGameManager.Current;
+            int uninsured = CarPhone.Uninsured(save, TimeHelper.CurrentDay, out int cars, out float total);
+            if (cars < 2 || uninsured == 0)
+            {
+                return Page(0);
+            }
+            return new DialogEntry
+            {
+                messageData = "reallife_garage_summary".Localize(new
+                {
+                    count = cars.ToString(), insured = (cars - uninsured).ToString(), uninsured = uninsured.ToString(), amount = TransitText.Money(total)
+                }),
+                ConfirmTextOverride = "reallife_garage_insure_all".Localize(new { amount = TransitText.Money(total) }),
+                OnConfirm = () => CarPhone.InsureAll(SaveGameManager.Current),
+                SecondOptionTextOverride = "reallife_garage_go_through",
+                OnSecondOption = () => Page(0),
+                OnCancel = PhoneContacts.HangUp
+            };
         }
 
         private static DialogEntry Page(int index)
@@ -145,12 +277,11 @@ namespace RealLifeOverhaul
             }
             int today = TimeHelper.CurrentDay;
             CarRecord record = CarGarage.For(car.id, today);
-            float price = car.VehicleType.price;
             var traits = new CarTraits(true, car.VehicleType.spawnInPlayerObject, car.VehicleType.maxSpeed, car.VehicleType.maxCargoCapacity, car.VehicleType.isLuxuryCar, 1400f);
             float every = CarRules.ServiceEvery(CarCatalogue.For(car.vehicleTypeName, traits).Kind);
             float untilService = every - (record.Km - record.ServicedKm);
             bool insured = record.InsuredUntil >= today;
-            float premium = Mathf.Round(CarRules.PremiumOf(price, record.Claims, GarageBridges.InsuranceOf(car.id)));   // as CarOwnership charges it
+            float premium = CarPhone.PremiumOf(car, record);   // as CarPhone.Insure and the renewal charge it
             int registration = CarOwnership.RegistrationLeft(record);
             int count = CarPhone.OwnedCars(save);
             var entry = new DialogEntry
@@ -186,15 +317,9 @@ namespace RealLifeOverhaul
             else
             {
                 entry.ConfirmTextOverride = "reallife_garage_insure".Localize(new { amount = TransitText.Money(premium) });
-                entry.OnConfirm = () =>
-                {
-                    if (!RealLifeOverhaul.Economy.BizBooks.Book(-premium, new TransactionInfo("reallife_transaction_car_insurance"), null, null, force: false, showNotification: true))
-                    {
-                        return PhoneContacts.Closing("reallife_garage_no_money");
-                    }
-                    record.InsuredUntil = TimeHelper.CurrentDay + CarRules.PolicyDays - 1;
-                    return PhoneContacts.Closing("reallife_garage_policy_bought");
-                };
+                entry.OnConfirm = () => CarPhone.Insure(car, record, true) < 0f
+                    ? PhoneContacts.Closing("reallife_garage_no_money")
+                    : PhoneContacts.Closing("reallife_garage_policy_bought");
             }
             if (count > 1)
             {
