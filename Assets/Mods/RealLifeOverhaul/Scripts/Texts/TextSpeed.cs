@@ -108,19 +108,31 @@ namespace RealLifeOverhaul.Texts
         public static bool OfferLarge(int rank, double estimate, bool cardFits, bool published) => published && rank == TextPacks.FullTier && cardFits && estimate <= LargeOffer;
     }
 
-    /// <summary>The budget that adapts: down a step when too many requests miss, back up after a good window. Game-free.</summary>
+    /// <summary>
+    /// The budget that adapts: down a step when too many requests miss, back up after a good window or a calm spell. Its
+    /// counts a minute are a share of this machine's own time (<see cref="Scaled"/>): the table's counts were set for two
+    /// processor threads, and held a graphics card writing a reply in 0.05 s to under one per cent of its time, so a burst
+    /// of the city's words left the player's own lines waiting in the queue, and their misses stepped the budget down to
+    /// its last step for good (a log of 30 Oct 2026: not one word of the model for four game days). Game-free.
+    /// COST: a few comparisons a look; a step's change a few more.
+    /// </summary>
     public sealed class TextBudget
     {
         public const int Window = 20;            // requests looked back over
         public const int Least = 10;             // ...at least this many before a step down
         public const int MissUp = 20;            // per cent missed: a step down
         public const int MissDown = 10;          // per cent missed over a whole window: a step back up
+        public const double BusyShare = 0.3;     // share of each real minute the model may spend writing at the first step: the table's 12
+                                                 // at the 1.5 s a reply takes on two processor threads
+        public const double CalmSeconds = 60.0;  // real seconds with no miss that bring the budget back up a step: at the last steps only
+                                                 // what the player looks at is asked, too seldom to fill a window
         public static readonly int[] PerMinute = { TextQueue.PerMinute, 8, 5, 3 };
         public static readonly int[] Background = { TextQueue.BackgroundPerMinute, 3, 0, 0 };
         public static readonly TextPriority[] Floor = { TextPriority.Background, TextPriority.Background, TextPriority.Soon, TextPriority.Now };
 
         private readonly Queue<bool> _last = new Queue<bool>(Window + 1);
-        private int _missed;
+        private int _missed, _misses, _missesSeen;
+        private double _calmSince = double.NaN;
 
         public int Step { get; private set; }
 
@@ -131,11 +143,16 @@ namespace RealLifeOverhaul.Texts
         /// <summary>Per cent that made it: the status row's hit rate.</summary>
         public int HitPercent => _last.Count == 0 ? 100 : 100 - MissPercent;
 
+        /// <summary>This session: steps down, and back up, for the hourly line.</summary>
+        public int Downs { get; private set; }
+        public int Ups { get; private set; }
+
         /// <summary>Counts a request ended in time or missed; true if the step changed.</summary>
         public bool Ended(bool missed)
         {
             _last.Enqueue(missed);
             _missed += missed ? 1 : 0;
+            _misses += missed ? 1 : 0;
             if (_last.Count > Window && _last.Dequeue())
             {
                 _missed--;
@@ -143,22 +160,73 @@ namespace RealLifeOverhaul.Texts
             if (_last.Count >= Least && MissPercent > MissUp && Step < PerMinute.Length - 1)
             {
                 Step++;
+                Downs++;
                 Reset();
                 return true;
             }
             if (_last.Count >= Window && MissPercent < MissDown && Step > 0)
             {
                 Step--;
+                Ups++;
                 Reset();
                 return true;
             }
             return false;
         }
 
+        /// <summary>
+        /// The look's: a step back up once <see cref="CalmSeconds"/> passed with no miss, the calm counted again from there;
+        /// true if the step changed. A step down takes ten requests, so the budget never stays down on silence alone.
+        /// </summary>
+        public bool Calm(double now)
+        {
+            if (_misses != _missesSeen || double.IsNaN(_calmSince))
+            {
+                _missesSeen = _misses;
+                _calmSince = now;
+                return false;
+            }
+            if (Step == 0 || now - _calmSince < CalmSeconds)
+            {
+                return false;
+            }
+            Step--;
+            Ups++;
+            Reset();
+            _calmSince = now;
+            return true;
+        }
+
+        /// <summary>Sets the queue's budget for the step, its counts scaled to the reply time the queue expects now.</summary>
         public void Apply(TextQueue queue)
         {
-            queue.SetBudget(PerMinute[Step], Background[Step]);
+            double expect = queue.Expect;
+            queue.SetBudget(Scaled(PerMinute[Step], expect), Scaled(Background[Step], expect));
             queue.Floor = Floor[Step];
+        }
+
+        /// <summary>
+        /// A count of the table as this machine's time allows: the step's part of <see cref="BusyShare"/> of a minute at the
+        /// reply time expected, never below the table (a slow machine keeps it), at most <see cref="TextQueue.PerMinuteMost"/>.
+        /// </summary>
+        public static int Scaled(int perMinute, double expect)
+        {
+            if (perMinute <= 0 || !(expect > 0.0) || double.IsInfinity(expect))
+            {
+                return Math.Max(0, perMinute);
+            }
+            double fits = BusyShare * 60.0 / expect * perMinute / PerMinute[0];
+            return fits >= TextQueue.PerMinuteMost ? TextQueue.PerMinuteMost : Math.Max(perMinute, (int)fits);
+        }
+
+        /// <summary>A step as the log says it: "step 2 of 3 (5 a minute, no background, nothing less urgent than what is due soon)".</summary>
+        public static string Describe(int step, TextQueue queue)
+        {
+            step = Math.Max(0, Math.Min(step, PerMinute.Length - 1));
+            string floor = Floor[step] == TextPriority.Background ? "every kind" : Floor[step] == TextPriority.Soon ? "nothing less urgent than what is due soon" : "only what the player looks at";
+            int back = queue.BackgroundBudget;
+            return "step " + step + " of " + (PerMinute.Length - 1) + " (" + queue.BudgetPerMinute + " a minute, " + (back > 0 ? back + " of them the background" : "no background")
+                   + ", " + floor + ")";
         }
 
         private void Reset()

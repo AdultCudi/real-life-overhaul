@@ -162,6 +162,26 @@ namespace RealLifeOverhaul.Texts
             Tally.Count(Pack, intent, Unwanted(use, shared));
         }
 
+        /// <summary>Counts a written line an asker that holds its line (<see cref="TextRequest.HoldsLine"/>) shows after all, with why.</summary>
+        public void CountWritten(string intent, TextShownWhy why)
+        {
+            Fallbacks++;
+            Tally.Count(Pack, intent, why == TextShownWhy.Model ? TextShownWhy.Failed : why);
+        }
+
+        /// <summary>Why a use cannot go to a model now (no pack, it failed, switched off, another language); Model when it can.</summary>
+        public TextShownWhy WhyNotWanted(TextUse use, bool shared) => Wants(use, shared) ? TextShownWhy.Model : Unwanted(use, shared);
+
+        // A request not asked: counted as its written line now, unless its asker holds the line and counts it itself.
+        private void Unasked(TextRequest r, TextShownWhy why)
+        {
+            r.Shown = why;
+            if (!r.HoldsLine)
+            {
+                Tally.Count(Pack, r.Intent, why);
+            }
+        }
+
         // Why Wants says no: no way to word it, else off, else the language.
         private TextShownWhy Unwanted(TextUse use, bool shared)
         {
@@ -185,6 +205,7 @@ namespace RealLifeOverhaul.Texts
             r.ByService = false;
             r.Source = TextSource.Written;
             r.ServiceMiss = null;
+            r.Shown = TextShownWhy.Model;
             r.Waits = r.Seconds;
             string service = ServiceWhy(r.Use, r.Shared, r.Intent, r.Branch);
             if (service == null && ToService(r, now))
@@ -206,7 +227,7 @@ namespace RealLifeOverhaul.Texts
                 {
                     r.Why += "; " + toService;
                 }
-                Tally.Count(Pack, r.Intent, _whyNot);
+                Unasked(r, _whyNot);
                 return false;
             }
             TextIntent intent = TextIntents.Find(r.Intent, r.Branch, _packData);   // the card of the pack's own data
@@ -214,7 +235,7 @@ namespace RealLifeOverhaul.Texts
             if (!TextIntents.Build(intent, r.Who, r.Slots, r.History, sheet))
             {
                 r.Why = "not asked: a value the card " + r.Intent + " needs is missing";
-                Tally.Count(Pack, r.Intent, TextShownWhy.NoCard);
+                Unasked(r, TextShownWhy.NoCard);
                 return false;
             }
             bool six = intent.Data >= TextIntents.DataV6;
@@ -231,7 +252,7 @@ namespace RealLifeOverhaul.Texts
             {
                 r.Why = "not asked: " + job.Why + " (a reply is expected to take " + _queue.Expect.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + " s, the line waits "
                         + r.Seconds.ToString("0.0#", System.Globalization.CultureInfo.InvariantCulture) + " s)";
-                Tally.Count(Pack, r.Intent, job.Why == "the queue was full" ? TextShownWhy.Busy : TextShownWhy.Slow);
+                Unasked(r, job.Why == "the queue was full" ? TextShownWhy.Busy : TextShownWhy.Slow);
                 return false;
             }
             w.Until = job.Deadline;

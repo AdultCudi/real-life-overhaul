@@ -33,6 +33,9 @@ namespace RealLifeOverhaul
                 FlareBridges.TextFriend = TextsPhone.FlareFriend;
                 FlareBridges.TextListed = Listed;
                 FlareBridges.TextReview = Review;
+                FlareBridges.TextMove = (from, to) => TextsDirector.Words.Store.Move(from, to);
+                FlareBridges.TextWritten = (intent, why) => TextsDirector.Words.CountWritten(intent, why);
+                FlareBridges.TextWhyNot = use => TextsDirector.Words.WhyNotWanted(use, false);
                 LedgerBridges.TextsEdition = Edition;
                 LedgerBridges.TextsBody = Body;
                 TextsDirector.StillThere = StillThere;
@@ -55,6 +58,9 @@ namespace RealLifeOverhaul
                 FlareBridges.TextFriend = null;
                 FlareBridges.TextListed = null;
                 FlareBridges.TextReview = null;
+                FlareBridges.TextMove = null;
+                FlareBridges.TextWritten = null;
+                FlareBridges.TextWhyNot = null;
                 LedgerBridges.TextsEdition = null;
                 LedgerBridges.TextsBody = null;
                 TextsDirector.StillThere = null;
