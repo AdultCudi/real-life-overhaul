@@ -65,12 +65,14 @@ namespace RealLifeOverhaul
         Lost = 3,           // the piece stands but the building has no record of it: it would be gone after a load, FAIL
         OtherRecord = 4,    // the building keeps another record than the piece's own: where the piece is would not be saved, FAIL
         WrongPlace = 5,     // the record is the piece's own but says another place, FAIL
+        NotJudged = 6,      // the room is not the one the move began in (a save was loaded in the move): the old room's pieces and records are gone, so nothing is judged, PASS
     }
 
     /// <summary>What the building's record says of a piece when a move has ended, read once, a frame after.</summary>
     public struct MoveEndSignals
     {
         public bool PieceGone, Listed, SameRecord, SamePlace;
+        public bool RoomChanged;    // the building's registration now is not the one the move began in
     }
 
     /// <summary>Whose a thing in the way is, by the script on it or above it.</summary>
@@ -241,6 +243,10 @@ namespace RealLifeOverhaul
         /// </summary>
         public static MoveEnd Ending(in MoveEndSignals s)
         {
+            if (s.RoomChanged)
+            {
+                return MoveEnd.NotJudged;   // a load made the registration anew: the id may be listed there again for a piece that is not the one moved
+            }
             if (s.PieceGone)
             {
                 return s.Listed ? MoveEnd.StillListed : MoveEnd.Taken;
@@ -256,10 +262,10 @@ namespace RealLifeOverhaul
             return s.SamePlace ? MoveEnd.Kept : MoveEnd.WrongPlace;
         }
 
-        /// <summary>True when the move ended well: the piece is kept with its own record, or taken out of the room with none left.</summary>
+        /// <summary>True when the move ended well: the piece is kept with its own record, taken out of the room with none left, or the room is another (nothing to judge).</summary>
         public static bool Passes(MoveEnd end)
         {
-            return end == MoveEnd.Kept || end == MoveEnd.Taken;
+            return end == MoveEnd.Kept || end == MoveEnd.Taken || end == MoveEnd.NotJudged;
         }
 
         /// <summary>The words for how a move ended, for the log; <paramref name="recordAt"/> is where the record says the piece is, for a wrong place.</summary>
@@ -273,6 +279,7 @@ namespace RealLifeOverhaul
                 case MoveEnd.Lost: return "none (it would be gone after a load): FAIL.";
                 case MoveEnd.OtherRecord: return "another record than the piece's own (where it is would not be saved): FAIL.";
                 case MoveEnd.WrongPlace: return "at " + recordAt + ", not where it stands: FAIL.";
+                case MoveEnd.NotJudged: return "a save was loaded in the move, so the building's records now are the load's own and there is nothing to judge: PASS.";
                 default: return "not known to this check: FAIL.";
             }
         }
