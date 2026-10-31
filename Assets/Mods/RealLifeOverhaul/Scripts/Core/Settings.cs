@@ -213,6 +213,8 @@
         public const string EconomyBankId = "economy_bank";
         public const string EconomyBranchId = "economy_bank_branch";
         public const string EndScaleId = "economy_endscale";
+        public const string LivingPopulationId = "living_population";
+        public const string LivingDesksId = "living_desks";
         public const string EconomyBrandsId = "economy_brands";
         public const string EconomyBanksId = "economy_banks";
         public const string MinimapId = "nav_minimap";
@@ -581,6 +583,8 @@
         public static bool EconomyBank = true;           // the player's own bank (off: it stands still, nothing is run, booked or charged)
         public static bool EconomyBranch = true;         // bank branches of the player's own bank (off: branches do nothing)
         public static bool EndScale = true;              // the end game at scale (off: every figure as before)
+        public static bool LivingPopulation = true;      // the living economy overhaul's master switch, on in the beta (off: the game and the mod exactly as before it)
+        public static bool LivingDesks = true;           // ...hands-on management sessions at a firm's own office desk, and managers who take them (Desks)
         public static bool EconomyBrands = true;         // brands and franchises (off: none of it runs, nothing is paid and footfall is without it)
         public static bool EconomyBanks = true;          // the Banks app
         public static bool Minimap = true;               // the minimap on the HUD while out in the city
@@ -1003,6 +1007,8 @@
             EconomyBank = Bool(modId, EconomyBankId, EconomyBank);
             EconomyBranch = Bool(modId, EconomyBranchId, EconomyBranch);
             EndScale = Bool(modId, EndScaleId, EndScale);
+            LivingPopulation = Bool(modId, LivingPopulationId, LivingPopulation);
+            LivingDesks = Bool(modId, LivingDesksId, LivingDesks);
             EconomyBrands = Bool(modId, EconomyBrandsId, EconomyBrands);
             EconomyBanks = Bool(modId, EconomyBanksId, EconomyBanks);
             Minimap = Bool(modId, MinimapId, Minimap);

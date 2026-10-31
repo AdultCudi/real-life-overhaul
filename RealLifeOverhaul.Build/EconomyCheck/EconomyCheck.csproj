@@ -34,7 +34,7 @@
        (CartQueueChecks.cs) the pavement drinks cart's queue: a customer who cannot get to the cart, or is no longer its own, leaves the queue at once, is no walk-off and is replaced, and (CartSoundChecks.cs) the drinks cart heard: the order cue, its one reminder and the till by their rules, the gig calling them where the order starts, waits and is paid, the option and the texts, and
        (TaxiComfortChecks.cs) ride fares' easier passengers: the two tables, a rough ride under each and the gig reading only the table, and (RivalFirstChecks.cs) when the first rival tycoon comes forward by the option, and
        (RivalChecks.cs, RivalReviewChecks.cs) the rival tycoons: their holdings, growth by the player's thresholds, the pace of their moves, each move's bounds, the counters and a takeover, the same moves from a seed, the save's line and the texts, and
-       (EndScaleChecks.cs) the end game at scale: each late venture's costs, upkeep, crews and income by size, its payback, an old save phased in, the option off and its texts, and (OfficeChecks.cs) running for office: who may stand and when, the law on donors, the vote model by district, the campaign's doings, the council's odds, the city's budget, approval, recall and the save's lines, and (PhotoChecks.cs) the Camera and the Gallery: a photo's name and folder, the cap,
+       (SessionChecks.cs) the desk sessions: the registry, the schedule, the furniture, managers' seeded choices, the save's line and the weekly team meeting through the people part's rules, and (TechScaleChecks.cs) the tech sector's money scale: budgets, the audience to sales relation and its bands, a studio over ten years against the end game, and the one month rule for monthly bills, and (EndScaleChecks.cs) the end game at scale: each late venture's costs, upkeep, crews and income by size, its payback, an old save phased in, the option off and its texts, and (OfficeChecks.cs) running for office: who may stand and when, the law on donors, the vote model by district, the campaign's doings, the council's odds, the city's budget, approval, recall and the save's lines, and (PhotoChecks.cs) the Camera and the Gallery: a photo's name and folder, the cap,
        deleted saves, the order from a folder, the photo and its small copy handed to Flare, the camera's rules and the restore of what it borrows, and (GalleryChecks.cs)
        the Gallery: why a photo would not open, one tap to see it whole, the albums, the days and their order, the rows built in view, the photo before
        and after, the favourites kept beside the photos and the texts
@@ -452,6 +452,12 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\People\TalentCatalogue.cs" Link="Mod\TalentCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\People\TalentModel.cs" Link="Mod\TalentModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\People\TalentRules.cs" Link="Mod\TalentRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\People\MeetingRules.cs" Link="Mod\MeetingRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Scale\ScaleCatalogue.cs" Link="Mod\ScaleCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Scale\ScaleRules.cs" Link="Mod\ScaleRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Sessions\SessionRules.cs" Link="Mod\SessionRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Sessions\SessionFile.cs" Link="Mod\SessionFile.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Sessions\SessionStore.cs" Link="Mod\SessionStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\People\TalentStore.cs" Link="Mod\TalentStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\People\PlaceRules.cs" Link="Mod\PlaceRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\People\StaffNameRules.cs" Link="Mod\StaffNameRules.cs" />

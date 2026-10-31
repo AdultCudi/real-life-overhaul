@@ -449,6 +449,7 @@ namespace RealLifeOverhaul.Utilities
         {
             float started = Time.realtimeSinceStartup;
             int monthDays = GameCalendar.MonthDays;
+            int billing = CalendarRules.BroadbandBillingDays(Settings.LivingPopulation, GameCalendar.DaysPerYear);   // the one month rule: a month's price over its days (off: the save's month)
             int level = Prices.Level;
             Sync(today, false);
             _company.Morning(today);
@@ -478,10 +479,10 @@ namespace RealLifeOverhaul.Utilities
                     Account a = _state.Accounts[i];
                     if (a.Service == Service.Internet)
                     {
-                        InternetRules.AddDay(a, monthDays, a.OutageUntil > a.OutageFrom && a.OutageFrom / 24 == d);   // a day the provider failed is not charged
+                        InternetRules.AddDay(a, billing, a.OutageUntil > a.OutageFrom && a.OutageFrom / 24 == d);   // a day the provider failed is not charged
                     }
                 }
-                _company.Day(d, level, monthDays);
+                _company.Day(d, level, billing);
                 if (d + 1 - _state.MonthStart >= monthDays)
                 {
                     NewMonth(d + 1, level);

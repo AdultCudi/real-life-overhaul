@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 // docs/standards/git-and-review.md: the branch's name, and the subject of every commit made on it since it left main.
 internal static partial class Program
 {
-    private static readonly Regex BranchName = new Regex(@"^(?:fix|feature|perf|release|integrate|test|build)/[a-z0-9]+(?:[-.][a-z0-9]+)*$", RegexOptions.Compiled);
+    private static readonly Regex BranchName = new Regex(@"^(?:fix|feature|perf|release|integrate|test|build|living)/[a-z0-9]+(?:[-.][a-z0-9]+)*$", RegexOptions.Compiled);
     private static readonly Regex TypePrefix = new Regex(@"^(?:feat|fix|chore|docs|refactor|test|style|perf|build|ci|wip)(?:\([^)]*\))?!?:", RegexOptions.Compiled | RegexOptions.IgnoreCase);
     private static readonly Regex Squash = new Regex(@"^(?:fixup!|squash!|amend!|WIP\b)", RegexOptions.Compiled);
     private static readonly Regex CodeWord = new Regex(@"^[\w./-]*[_./][\w./-]*", RegexOptions.Compiled);
