@@ -55,7 +55,7 @@ internal static partial class Program
         string[] bridges =
         {
             "OwnBankBridges.People = BankPeople", "OwnBankBridges.Branch = BranchPeople", "EstateBridges.People = EstatePeople", "EstateBridges.HousingIn = HousingIn",
-            "ConstructionBridges.People = BuildPeople", "DealerBridges.Buyers = CarBuyers", "OnlineBridges.People = Online", "HustleBridges.Sellers = Sellers", "HustleBridges.Buyers = Bargains",
+            "DealerBridges.Buyers = CarBuyers", "OnlineBridges.People = Online", "HustleBridges.Sellers = Sellers", "HustleBridges.Buyers = Bargains",
             "CareersBridges.Learners = Learners", "CareersBridges.Openings = Openings", "TechBridges.Seekers = TechSeekers", "Utilities.UtilitiesBridges.Connections = Connections",
             "CivicBridges.Adults = Adults", "CivicBridges.Taxes = Taxes", "CivicBridges.Residents = Residents", "CityWatch.Residents = CrimeHere", "DistrictBridges.Crime = CrimeIn",
             "Meta.Guide.PageExtra = Pointer"
@@ -71,6 +71,8 @@ internal static partial class Program
             }
             wired &= both;
         }
+        string building = File.ReadAllText(System.IO.Path.Combine(ModScripts(), "Wiring", "Wiring.ConstructionLinks.cs"));
+        wired &= building.Contains("ConstructionBridges.People = DemandLinks.Build;") && building.Contains("ConstructionBridges.People = null;") && links.Contains("internal static int Build(BuildDemand d)");
         Check(wired, "population demand sources: every business's bridge is wired to the population's demand and taken off again, each answering only with Living population on" + (unwired.Length > 0 ? " (" + unwired + ")" : string.Empty));
         string director = File.ReadAllText(System.IO.Path.Combine(ModScripts(), "Population", "PopulationDirector.cs"));
         Check(director.Contains("!_sim.Step(ref slice) || !DemandStep(ref slice)") && director.Contains("PopulationShare.Write(_state, _demand)") && director.Contains("SaveDemand(data);")

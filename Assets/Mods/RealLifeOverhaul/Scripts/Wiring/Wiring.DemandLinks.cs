@@ -27,7 +27,6 @@ namespace RealLifeOverhaul
                 OwnBankBridges.Branch = BranchPeople;
                 EstateBridges.People = EstatePeople;
                 EstateBridges.HousingIn = HousingIn;
-                ConstructionBridges.People = BuildPeople;
                 DealerBridges.Buyers = CarBuyers;
                 OnlineBridges.People = Online;
                 HustleBridges.Sellers = Sellers;
@@ -50,7 +49,6 @@ namespace RealLifeOverhaul
                 OwnBankBridges.Branch = null;
                 EstateBridges.People = null;
                 EstateBridges.HousingIn = null;
-                ConstructionBridges.People = null;
                 DealerBridges.Reset();
                 OnlineBridges.People = null;
                 HustleBridges.Sellers = null;
@@ -117,8 +115,11 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // The construction company: flat buyers, the city's businesses rebuilding and refitting, the council's own buildings; 0 for none.
-            private static int BuildPeople(BuildDemand d)
+            /// <summary>
+            /// The construction company: flat buyers, the city's businesses rebuilding and refitting, the council's own buildings; 0 for none. Handed to
+            /// ConstructionBridges.People by Wiring/ConstructionLinks, which fills every bridge of the construction game.
+            /// </summary>
+            internal static int Build(BuildDemand d)
             {
                 try
                 {
@@ -179,7 +180,15 @@ namespace RealLifeOverhaul
             // A business's Guide page ends with where its customers come from while Living population is on.
             private static string Pointer(string featureId)
             {
-                return Settings.LivingPopulation && PopDemandGuide.Points(featureId) ? "reallife_pop_dem_pointer".GetLocalization() : null;
+                try
+                {
+                    return Settings.LivingPopulation && PopDemandGuide.Points(featureId) ? "reallife_pop_dem_pointer".GetLocalization() : null;
+                }
+                catch (Exception e)
+                {
+                    Fault("DemandLinks.Pointer", e);
+                    return null;
+                }
             }
 
             // A district's adult residents, its electorate; -1 for none.
