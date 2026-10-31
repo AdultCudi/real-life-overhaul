@@ -576,6 +576,7 @@ internal static partial class Program
         Hiring();
         Buyout();       // buying out a notice: the price, who can be bought out, the rival's seeded once-only choice, the sources and texts (BuyoutChecks.cs)
         Tech();
+        OwnDesk();      // working at a desk of one's own tech firm: the minutes by the day, the crew's points, the professions, the save, the sources and texts (OwnDeskChecks.cs)
         Careers();
         WorkPace();     // place keys, the professions a type employs and the save's writer, as they were (WorkPaceChecks.cs)
         LifePace();     // utility accounts and Flare's shops seen from their indexes, as the passes found them (LifePaceChecks.cs)

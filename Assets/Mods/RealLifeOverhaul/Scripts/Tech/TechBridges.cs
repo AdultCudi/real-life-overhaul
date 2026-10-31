@@ -165,6 +165,38 @@ namespace RealLifeOverhaul.Tech
         /// <summary>A day's power (service 0, thousandths of a kWh) or water (1, of a cubic metre), cents at today's prices. Default: a plain tariff.</summary>
         public static Func<int, long, long> UtilityCents;
 
+        /// <summary>Asks Careers for the player as a professional at a business of a type (<see cref="Owner"/>).</summary>
+        public delegate bool OwnerAsk(string businessType, out OwnerStanding standing, out string why, out string professions);
+
+        /// <summary>
+        /// The player as a professional at a desk of their own firm of a type (Careers): true with their standing; false with
+        /// why (a key) and the professions the type employs, final words for its {professions}. Default: nobody works there.
+        /// </summary>
+        public static OwnerAsk Owner;
+
+        /// <summary>The player worked minutes at a desk of their own firm as a profession and rank (Careers: learning, burnout, a clause). Default: nothing.</summary>
+        public static Action<int, int, int> OwnerWorked;
+
+        /// <summary><see cref="Owner"/> asked: false with the switch-off key with no answer, or if Careers faults.</summary>
+        public static bool OwnerAt(string businessType, out OwnerStanding standing, out string why, out string professions)
+        {
+            try
+            {
+                if (Owner != null)
+                {
+                    return Owner(businessType, out standing, out why, out professions);
+                }
+            }
+            catch (Exception)
+            {
+                // Careers' fault: nobody works there, as with none
+            }
+            standing = new OwnerStanding { Prof = -1, Rank = -1, Role = -1 };
+            why = "reallife_tech_own_why_off";
+            professions = string.Empty;
+            return false;
+        }
+
         /// <summary>What the player's record as a founder adds to a pitch, thousandths (Careers). Default: nothing.</summary>
         public static Func<int> Founder;
 
@@ -292,6 +324,8 @@ namespace RealLifeOverhaul.Tech
             OpenRota = null;
             UtilityCents = null;
             Founder = null;
+            Owner = null;
+            OwnerWorked = null;
             CourseShareBp = null;
             DegreeFee = null;
             OthersPicked = null;

@@ -274,7 +274,13 @@ namespace RealLifeOverhaul.Tech
         /// <summary>What decides whether a firm's people can work on a kind of contract (-1: any of its work), read now.</summary>
         internal FirmFacts FactsOf(FirmPlace firm, int kind)
         {
-            return firm == null || Save == null ? default(FirmFacts) : FirmsGame.Facts(firm.Reg, firm.File.K, kind, _people, firm.File.Place, Save.Day);
+            if (firm == null || Save == null)
+            {
+                return default(FirmFacts);
+            }
+            FirmFacts facts = FirmsGame.Facts(firm.Reg, firm.File.K, kind, _people, firm.File.Place, Save.Day);
+            OwnDeskRules.Count(ref facts, firm.OwnMinutes, firm.OwnRole, kind, firm.File.K);   // the owner at a desk yesterday worked too
+            return facts;
         }
 
         /// <summary>The Utilities app on its internet page.</summary>

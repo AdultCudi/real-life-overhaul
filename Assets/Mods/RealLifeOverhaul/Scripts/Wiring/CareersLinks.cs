@@ -66,6 +66,8 @@ namespace RealLifeOverhaul
                 CareersBridges.JoinFirm = (place, role, level, count) => TechDirector.Instance != null && SaveGameManager.Current != null
                     ? TechDirector.Instance.JoinPayroll(place, role, level, count, SaveGameManager.Current.Day) : 0;
                 TechBridges.Founder = () => CareersDirector.Instance != null ? CareersDirector.Instance.FounderBonus() : 0;
+                TechBridges.Owner = Owner;
+                TechBridges.OwnerWorked = (prof, rank, minutes) => CareersDirector.Instance?.FirmWorked(prof, rank, minutes);
                 _paperBefore = News.Extra;
                 News.Extra = Paper;
                 FitOut.FitDesks.Wanted = CareersDirector.DeskWanted;
@@ -85,6 +87,8 @@ namespace RealLifeOverhaul
                 FitOut.FitDesks.Made = null;
                 FitOut.FitDesks.Gone = null;
                 TechBridges.Founder = null;
+                TechBridges.Owner = null;
+                TechBridges.OwnerWorked = null;
                 TechBridges.AcademyType = null;
                 TechBridges.Schools = null;
                 Economy.CreditLedger.Unregister(Loan);
@@ -308,6 +312,27 @@ namespace RealLifeOverhaul
                 {
                     Fault("CareersLinks.Obituary", e);
                 }
+            }
+
+            // The player as a professional at a desk of their own tech firm: none while the careers are not running.
+            private static bool Owner(string type, out OwnerStanding standing, out string why, out string professions)
+            {
+                try
+                {
+                    CareersDirector d = CareersDirector.Instance;
+                    if (d != null)
+                    {
+                        return d.FirmStanding(type, out standing, out why, out professions);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("CareersLinks.Owner", e);
+                }
+                standing = new OwnerStanding { Prof = -1, Rank = -1, Role = -1 };
+                why = "reallife_tech_own_why_off";
+                professions = string.Empty;
+                return false;
             }
 
             // The banking licence's qualified person: the player with a finance qualification, or a senior professional of theirs in finance.

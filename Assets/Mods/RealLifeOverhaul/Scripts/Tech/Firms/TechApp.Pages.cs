@@ -151,6 +151,7 @@ namespace RealLifeOverhaul.Tech
                 "product", c.Product.ToString(), "selling", c.Selling.ToString(), "support", c.Support.ToString(),
                 "spare", firm.Spare < 1000 ? TechText.T("reallife_tech_firm_spare", "share", TechText.Mille(firm.Spare)) : string.Empty));
             NetLine(box, firm);
+            _director.OwnDeskLine(box, firm);
             if (FirmsCatalogue.MakesProducts[m.Kind] != 0)
             {
                 box.Line(RoomLine(f, place));
@@ -201,6 +202,13 @@ namespace RealLifeOverhaul.Tech
             IReadOnlyList<Person> people = _director.People;
             var who = new StringBuilder(96);
             int shown = 0, more = 0, hours = 0;
+            int own = OwnDeskRules.HoursFor(firm.OwnMinutes, firm.OwnRole, kind, firm.File.K);
+            if (own > 0)
+            {
+                hours += own;   // the owner at a desk of theirs, first
+                who.Append(TechText.T("reallife_tech_work_person", "name", TechText.T("reallife_tech_work_you"), "hours", own.ToString()));
+                shown++;
+            }
             for (int i = 0; i < people.Count; i++)
             {
                 Person person = people[i];
