@@ -155,6 +155,34 @@ namespace RealLifeOverhaul.Construction
             }
         }
 
+        // A block of the player's whose last flat is sold given to its residents: null when done, else why not.
+        internal static string ToResidentsLot(string lot)
+        {
+            try
+            {
+                return Down("ToResidents") || ConstructionBridges.ToResidents == null ? "the district is not there to take it" : ConstructionBridges.ToResidents(lot);
+            }
+            catch (Exception e)
+            {
+                Faulty("ToResidents", e);
+                return "the district's call failed";
+            }
+        }
+
+        // A block an earlier version gave its residents at the keys with flats unsold, the player's again: null when done, else why not.
+        internal static string GiveBackLot(string lot, int handed, double price)
+        {
+            try
+            {
+                return Down("GiveBack") || ConstructionBridges.GiveBack == null ? "the district is not there to give it back" : ConstructionBridges.GiveBack(lot, handed, price);
+            }
+            catch (Exception e)
+            {
+                Faulty("GiveBack", e);
+                return "the district's call failed";
+            }
+        }
+
         internal static int SpacesOf(string size, int version)
         {
             try
