@@ -8,12 +8,14 @@ Builds the interface's font bundle (reallife_ui) from the pinned fonts in fonts\
 
     .\build.ps1                # everything
     .\build.ps1 -SkipBundle    # the metrics only
+    .\build.ps1 -Themes        # the theme study's bundle (build\bundles\reallife_ui_themes), for the previews alone
 
 Needs Python 3 with fontTools (pip install fonttools) and Unity 2022.3.62f2 (the game's version), signed in through
 Unity Hub. The game is not needed. Exit code 0 = built and verified.
 #>
 param(
     [switch]$SkipBundle,
+    [switch]$Themes,
     [string]$Unity = 'C:\Program Files\Unity\Hub\Editor\2022.3.62f2\Editor\Unity.exe',
     [string]$Python = ''
 )
@@ -25,7 +27,7 @@ if (-not $Python) {
 if (-not $Python) { Write-Host 'Python not found.'; exit 2 }
 
 Write-Host '== Fonts (static weights, characters, metrics)'
-& $Python -I (Join-Path $root 'scripts\fonts.py')
+& $Python -I (Join-Path $root 'scripts\fonts.py') $(if ($Themes) { '--themes' })
 if ($LASTEXITCODE -ne 0) { Write-Host 'FAILED: fonts.py'; exit 1 }
 if ($SkipBundle) { exit 0 }
 
@@ -56,6 +58,13 @@ if (-not (Test-Path $settings)) {
     Write-Host '== TextMeshPro essentials'
     & $Python -I (Join-Path $root 'scripts\tmp_essentials.py') $project
     if ($LASTEXITCODE -ne 0 -or -not (Test-Path $settings)) { Write-Host 'FAILED: TextMeshPro essential resources were not unpacked'; exit 1 }
+}
+if ($Themes) {
+    $study = Join-Path $root 'build\bundles'
+    Write-Host '== Unity: the faces of the theme study'
+    Invoke-Unity 'UiFontBuilder.BuildThemes' (Join-Path $logs 'themes.log') @('-fontsFolder', "`"$fonts`"", '-outFolder', "`"$study`"", '-licences', "`"$(Join-Path $root 'fonts\themes')`"")
+    Write-Host "OK: $(Join-Path $study 'reallife_ui_themes')"
+    exit 0
 }
 Write-Host '== Unity: font assets and the bundle'
 Invoke-Unity 'UiFontBuilder.Build' (Join-Path $logs 'build.log') @('-fontsFolder', "`"$fonts`"", '-outFolder', "`"$out`"", '-licences', "`"$licences`"")

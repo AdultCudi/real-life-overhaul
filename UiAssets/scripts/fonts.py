@@ -2,6 +2,7 @@
 
     python -I UiAssets/scripts/fonts.py            # build\\fonts and Scripts/Ui/UiFontMetrics.Data.cs
     python -I UiAssets/scripts/fonts.py --check    # fails if the committed metrics differ from the fonts
+    python -I UiAssets/scripts/fonts.py --themes   # the theme study's faces (UiAssets/fonts/themes), for the previews alone
 
 Sora and Manrope ship in UiAssets/fonts as Google Fonts publishes them (variable fonts, SIL Open Font License 1.1,
 OFL-*.txt beside them). TextMeshPro rasterises a variable font at its default weight only, so each weight the type
@@ -48,6 +49,37 @@ FAMILIES = [
     },
 ]
 
+# The theme study's faces (1 Nov 2026): three directions rendered for the owner to choose from, never shipped as they
+# stand. Their cuts and lists go to build\fonts with the rest, their metrics to the preview's own UiThemeMetrics.cs, and
+# themes.json tells the Unity builder which faces make the study's bundle. "pin" holds the axes a face is cut at besides
+# its weight (Source Serif's optical size: the display cut for headlines, the text cut for reading); "files" names the
+# static fonts of a family published without a variable font.
+THEMES_FROM = "google/fonts 6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec"
+THEME_SOURCES = os.path.join(SOURCES, "themes")
+THEME_METRICS = os.path.join(ROOT, "RealLifeOverhaul.Build", "UiPreview", "UiThemeMetrics.cs")
+THEME_FAMILIES = [
+    {"name": "SerifDisplay", "file": "SourceSerif4[opsz,wght].ttf", "licence": "OFL-SourceSerif4",
+     "sha256": "97b2d4da6e3cb494b5a1e66ae176914d852ccabef49e0c02c0df25f3e39aca0b", "pin": {"opsz": 48},
+     "weights": [(600, "SemiBold"), (700, "Bold")]},
+    {"name": "Serif", "file": "SourceSerif4[opsz,wght].ttf", "licence": "OFL-SourceSerif4",
+     "sha256": "97b2d4da6e3cb494b5a1e66ae176914d852ccabef49e0c02c0df25f3e39aca0b", "pin": {"opsz": 16},
+     "weights": [(500, "Medium"), (700, "Bold")]},
+    {"name": "Franklin", "file": "LibreFranklin[wght].ttf", "licence": "OFL-LibreFranklin",
+     "sha256": "2329f394b10ed1c71107df20fddc11e2bb1b68c1ecbb385f975b36fd64a971f8",
+     "weights": [(600, "SemiBold"), (700, "Bold"), (800, "ExtraBold")]},
+    {"name": "PlexMono", "licence": "OFL-IBMPlexMono",
+     "files": {500: ("IBMPlexMono-Medium.ttf", "a9b4c49bb299e05b5f6c481e7fb5e78943d2793249a0c8874ab574a2d1ea6755"),
+               600: ("IBMPlexMono-SemiBold.ttf", "d3c38e55c78f5b0f28009fddba4834ec503278936a5986032424c9bd2d23aa46"),
+               700: ("IBMPlexMono-Bold.ttf", "ac27abd6450a64dd94467580a02fe6235156d5b92f2926ebbc8e7489df64e0be")},
+     "weights": [(500, "Medium"), (600, "SemiBold"), (700, "Bold")]},
+    {"name": "PlexSans", "file": "IBMPlexSans[wdth,wght].ttf", "licence": "OFL-IBMPlexSans",
+     "sha256": "3b031aa4216174205bd8471f88a49b91f093169e9e87bd5262242bc5967fe2e3", "pin": {"wdth": 100},
+     "weights": [(500, "Medium"), (600, "SemiBold"), (700, "Bold")]},
+    {"name": "Rubik", "file": "Rubik[wght].ttf", "licence": "OFL-Rubik",
+     "sha256": "1b3a7437ba2af80e465e773ed60c5036d1ba6ace492d89046dbcf18fb31e4e88",
+     "weights": [(500, "Medium"), (600, "SemiBold"), (700, "Bold"), (800, "ExtraBold")]},
+]
+
 # The blocks an atlas takes what its face has of: the languages' letters, their punctuation, currency and the few
 # signs the interface writes (x, minus, arrows where a face draws them). Vietnamese (1E00 to 1EFF) is not one of them.
 RANGES = [
@@ -66,18 +98,26 @@ def wanted(code):
     return any(lo <= code <= hi for lo, hi in RANGES)
 
 
-def cut(family):
+def cut(family, sources=SOURCES):
     """Each weight as a static font in build\\fonts, and the face's characters; returns [(weight, path, font)]."""
-    source = os.path.join(SOURCES, family["file"])
-    got = sha256(source)
-    if got != family["sha256"]:
-        raise SystemExit("FONTS: %s is not the pinned file (%s, wanted %s)" % (family["file"], got, family["sha256"]))
     made = []
     for weight, style in family["weights"]:
-        font = TTFont(source)
-        static = instancer.instantiateVariableFont(font, {"wght": weight}, updateFontNames=True)
         path = os.path.join(BUILD, "%s-%s.ttf" % (family["name"], style))
-        static.save(path)
+        if "files" in family:
+            name, pinned = family["files"][weight]
+            source = os.path.join(sources, name)
+            if sha256(source) != pinned:
+                raise SystemExit("FONTS: %s is not the pinned file" % name)
+            TTFont(source).save(path)
+        else:
+            source = os.path.join(sources, family["file"])
+            got = sha256(source)
+            if got != family["sha256"]:
+                raise SystemExit("FONTS: %s is not the pinned file (%s, wanted %s)" % (family["file"], got, family["sha256"]))
+            axes = dict(family.get("pin", {}))
+            axes["wght"] = weight
+            static = instancer.instantiateVariableFont(TTFont(source), axes, updateFontNames=True)
+            static.save(path)
         made.append((weight, path, TTFont(path)))
     return made
 
@@ -130,7 +170,37 @@ def write_metrics(families):
     return out.getvalue().replace("\n", "\r\n")
 
 
+def themes():
+    """The theme study's faces: cuts and lists in build\\fonts, the Unity builder's themes.json, the preview's metrics."""
+    import json
+    os.makedirs(BUILD, exist_ok=True)
+    families, faces, licences = [], [], []
+    for family in THEME_FAMILIES:
+        made = cut(family, THEME_SOURCES)
+        codes = characters(made[0][2])
+        with open(os.path.join(BUILD, family["name"] + ".chars.txt"), "w", encoding="utf-8", newline="\n") as f:
+            f.write(" ".join("%04X" % c for c in codes) + "\n")
+        families.append({"name": family["name"], "codes": codes, "faces": [(w, face(font, codes)) for w, path, font in made]})
+        for (weight, style) in family["weights"]:
+            faces.append({"name": "%s-%s" % (family["name"], style), "family": family["name"], "weight": weight})
+        if family["licence"] not in licences:
+            licences.append(family["licence"])
+        print("theme font %s: %d characters, weights %s" % (family["name"], len(codes), ", ".join(str(w) for w, _, _ in made)))
+    spec = {"bundle": "reallife_ui_themes", "faces": faces, "licences": licences, "from": THEMES_FROM}
+    with open(os.path.join(BUILD, "themes.json"), "w", encoding="utf-8", newline="\n") as f:
+        json.dump(spec, f, indent=2)
+    text = write_metrics(families).replace("internal static partial class UiFontMetrics", "internal static class UiThemeMetrics")
+    text = text.replace("private static readonly UiFace[] Faces", "public static readonly UiFace[] Faces")
+    text = text.replace("namespace RealLifeOverhaul.Ui\r\n{", "using RealLifeOverhaul.Ui;\r\n\r\nnamespace RealLifeOverhaul.Preview\r\n{")
+    with open(THEME_METRICS, "w", encoding="utf-8", newline="") as f:
+        f.write(text)
+    print("theme metrics: " + os.path.relpath(THEME_METRICS, ROOT))
+
+
 def main():
+    if "--themes" in sys.argv:
+        themes()
+        return
     check = "--check" in sys.argv
     os.makedirs(BUILD, exist_ok=True)
     families = []

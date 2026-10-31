@@ -133,6 +133,86 @@ public static class UiFontBuilder
         }
     }
 
+    [Serializable]
+    public class ThemeFace
+    {
+        public string name;
+        public string family;
+        public int weight;
+    }
+
+    [Serializable]
+    public class ThemeSpec
+    {
+        public string bundle;
+        public ThemeFace[] faces;
+        public string[] licences;
+    }
+
+    /// <summary>
+    /// The theme study's bundle (UiAssets/scripts/fonts.py --themes writes its themes.json): the faces of the three
+    /// directions put to the owner, for the previews alone. Each face as Build makes one, with its licence beside it;
+    /// never written into the mod's Bundles folder.
+    /// </summary>
+    public static void BuildThemes()
+    {
+        try
+        {
+            string fonts = Argument("-fontsFolder", Path.GetFullPath("../build/fonts"));
+            string outFolder = Argument("-outFolder", Path.GetFullPath("../build/bundles"));
+            string licences = Argument("-licences", Path.GetFullPath("../fonts/themes"));
+            var spec = JsonUtility.FromJson<ThemeSpec>(File.ReadAllText(Path.Combine(fonts, "themes.json")));
+            if (spec == null || spec.faces == null || spec.faces.Length == 0 || string.IsNullOrEmpty(spec.bundle))
+            {
+                Fail("themes.json is empty: run UiAssets/scripts/fonts.py --themes first");
+            }
+            if (AssetDatabase.IsValidFolder(Generated))
+            {
+                AssetDatabase.DeleteAsset(Generated);
+            }
+            AssetDatabase.CreateFolder("Assets", "Generated");
+            var names = new List<string>();
+            var codesByFamily = new Dictionary<string, uint[]>();
+            foreach (ThemeFace f in spec.faces)
+            {
+                if (!codesByFamily.TryGetValue(f.family, out uint[] codes))
+                {
+                    codes = Characters(Path.Combine(fonts, f.family + ".chars.txt"));
+                    codesByFamily[f.family] = codes;
+                }
+                TMP_FontAsset asset = Face(Path.Combine(fonts, f.name + ".ttf"), f.name, codes, out Vector2Int size);
+                names.Add(Generated + "/" + f.name + " SDF.asset");
+                Debug.Log(Tag + f.name + ": " + asset.characterTable.Count + " characters on a " + size.x + " x " + size.y + " atlas");
+            }
+            foreach (string licence in spec.licences)
+            {
+                File.Copy(Path.Combine(licences, licence + ".txt"), Generated + "/" + licence + ".txt", true);
+                names.Add(Generated + "/" + licence + ".txt");
+            }
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            string staging = Path.GetFullPath("BundleOutput");
+            Directory.CreateDirectory(staging);
+            var bundle = new AssetBundleBuild { assetBundleName = spec.bundle, assetNames = names.ToArray() };
+            AssetBundleManifest manifest = BuildPipeline.BuildAssetBundles(staging, new[] { bundle },
+                BuildAssetBundleOptions.ChunkBasedCompression | BuildAssetBundleOptions.StrictMode | BuildAssetBundleOptions.ForceRebuildAssetBundle,
+                BuildTarget.StandaloneWindows64);
+            if (manifest == null)
+            {
+                Fail("BuildAssetBundles returned nothing");
+            }
+            Directory.CreateDirectory(outFolder);
+            File.Copy(Path.Combine(staging, spec.bundle), Path.Combine(outFolder, spec.bundle), true);
+            Debug.Log(Tag + "built " + Path.Combine(outFolder, spec.bundle) + " (" + new FileInfo(Path.Combine(outFolder, spec.bundle)).Length + " bytes)");
+            EditorApplication.Exit(0);
+        }
+        catch (Exception e)
+        {
+            Debug.LogError(Tag + e);
+            EditorApplication.Exit(1);
+        }
+    }
+
     // One weight: a dynamic asset filled with every listed character on the smallest atlas that takes them all, then made
     // static (no source font kept) and saved with its atlas and material inside it.
     private static TMP_FontAsset Face(string ttf, string name, uint[] codes, out Vector2Int size)

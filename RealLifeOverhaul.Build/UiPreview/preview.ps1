@@ -1,18 +1,19 @@
 <#
 Renders the interface kit offline into PNGs (not-in-repo/previews/ui by default): the mod's own Scripts/Ui files, game-free
 ones only, are copied with this folder's runner, stand-ins and samples into UiAssets/UnityProject/Assets/Preview, and
-Unity draws each sample screen with the real fonts from the built bundle, at 1920 x 1080 and 1280 x 720, dark and light.
+Unity draws each sample screen with the real fonts from the built bundle, at 1920 x 1080 and 1280 x 720, dark and light,
+in the full menu's frame painted flat as the kit paints it.
 
     .\preview.ps1
-    .\preview.ps1 -Out D:\somewhere -Backdrop D:\BigAmbitionsMod\not-in-repo\previews\ui\_reference\fullmenu_backdrop.png
+    .\preview.ps1 -Out D:\somewhere
+    .\preview.ps1 -Themes        # the theme study: Contacts and the weekly meeting in each direction, into themes\<name>
 
-Needs the font bundle built (UiAssets/build.ps1) and Unity 2022.3.62f2 with a graphics card: it renders with graphics,
-so no -nographics. The backdrop is the game's own full menu image, read locally and never committed. Exit code 0 = every
-shot written.
+Needs the font bundle built (UiAssets/build.ps1; for -Themes also build.ps1 -Themes) and Unity 2022.3.62f2 with a
+graphics card: it renders with graphics, so no -nographics. Exit code 0 = every shot written.
 #>
 param(
     [string]$Out = (Join-Path $PSScriptRoot '..\..\..\not-in-repo\previews\ui'),
-    [string]$Backdrop = (Join-Path $PSScriptRoot '..\..\..\not-in-repo\previews\ui\_reference\fullmenu_backdrop.png'),
+    [switch]$Themes,
     [string]$Unity = 'C:\Program Files\Unity\Hub\Editor\2022.3.62f2\Editor\Unity.exe'
 )
 $ErrorActionPreference = 'Stop'
@@ -35,14 +36,20 @@ Get-ChildItem (Join-Path $repo 'Assets\Mods\RealLifeOverhaul\Scripts\Ui') -Filte
 } | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Kit') }
 Copy-Item (Join-Path $PSScriptRoot 'PreviewStubs.cs') (Join-Path $preview 'Kit')
 Copy-Item (Join-Path $PSScriptRoot 'UiSamples.cs') (Join-Path $preview 'Kit')
+Copy-Item (Join-Path $PSScriptRoot 'UiThemeMetrics.cs') (Join-Path $preview 'Kit')
 Copy-Item (Join-Path $PSScriptRoot 'UiPreviewRunner.cs') (Join-Path $preview 'Editor')
 
 New-Item -ItemType Directory -Force $Out | Out-Null
 $Out = (Resolve-Path $Out).Path
 $log = Join-Path $project 'Logs\preview.log'
 New-Item -ItemType Directory -Force (Split-Path $log) | Out-Null
-$arguments = @('-batchmode', '-quit', '-projectPath', "`"$project`"", '-executeMethod', 'UiPreviewRunner.Render', '-bundle', "`"$bundle`"", '-out', "`"$Out`"", '-logFile', "`"$log`"")
-if (Test-Path $Backdrop) { $arguments += @('-backdrop', "`"$((Resolve-Path $Backdrop).Path)`"") }
+$method = if ($Themes) { 'UiPreviewRunner.Themes' } else { 'UiPreviewRunner.Render' }
+$arguments = @('-batchmode', '-quit', '-projectPath', "`"$project`"", '-executeMethod', $method, '-bundle', "`"$bundle`"", '-out', "`"$Out`"", '-logFile', "`"$log`"")
+if ($Themes) {
+    $study = Join-Path $repo 'UiAssets\build\bundles\reallife_ui_themes'
+    if (-not (Test-Path $study)) { Write-Host 'The theme study is not built: run UiAssets\build.ps1 -Themes first.'; exit 2 }
+    $arguments += @('-study', "`"$study`"")
+}
 $process = Start-Process -FilePath $Unity -ArgumentList $arguments -Wait -PassThru -NoNewWindow
 if (Test-Path $log) { Select-String -Path $log -Pattern '^\[UiPreview\]' | ForEach-Object { $_.Line } }
 if ($process.ExitCode -ne 0) {
