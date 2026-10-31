@@ -35,6 +35,7 @@ namespace RealLifeOverhaul.Construction
                 .Fact("bld_zone_fee", () => Money(BuildCatalogue.ZoneFee))
                 .Fact("bld_planning_fee", () => Money(BuildCatalogue.PlanningFee))
                 .Fact("bld_planning_share", () => Share(BuildCatalogue.PlanningFeePermille))
+                .Fact("bld_fast_fee_off", () => CivicCatalogue.PercentOff(CivicCatalogue.PlanningFeePermille(1)).ToString(Inv))
                 .Fact("bld_planning_days", () => BuildCatalogue.PlanningDays.ToString(Inv))
                 .Fact("bld_planning_most", () => BuildCatalogue.PlanningDaysMost.ToString(Inv))
                 .Fact("bld_appeal_fee", () => Money(BuildCatalogue.AppealFee))

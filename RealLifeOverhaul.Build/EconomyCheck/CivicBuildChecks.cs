@@ -424,7 +424,7 @@ internal static partial class Program
             }
         }
         Check(words[0]["reallife_civic_code_up"].Contains("{uptown}") && words[0]["reallife_civic_code_up"].Contains("{vacant}") && words[0]["reallife_guide_construction"].Contains("{bld_strict_storeys}")
-              && words[0]["reallife_guide_construction"].Contains("40%") && words[0]["reallife_guide_construction"].Contains("eight tabs"),
+              && words[0]["reallife_guide_construction"].Contains("{bld_fast_fee_off}%") && words[0]["reallife_guide_construction"].Contains("eight tabs"),
             "civic build texts: the code's words quote its figures, and the Guide's page has the city around the company");
         var starts = new Dictionary<string, string>(StringComparer.Ordinal)
         {
