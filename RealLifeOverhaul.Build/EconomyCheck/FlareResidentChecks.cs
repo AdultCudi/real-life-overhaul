@@ -22,6 +22,7 @@ internal static partial class Program
         FlareResidentAds();
         FlareResidentSave();
         FlareResidentCosts();
+        FlareResidentMore();
     }
 
     // ---------------------------------------------------------------- a city to work on: the population's, its first day lived, and Flare's first pass

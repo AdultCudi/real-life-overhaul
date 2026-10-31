@@ -83,13 +83,15 @@ namespace RealLifeOverhaul.Flare
         private void EnsureCitizens(FlareFile file)
         {
             int seed = FlareLiveRules.CitySeed(file);
-            if (seed == _citizensSeed && _citizens.Count > 0)
+            if (seed == _citizensSeed && _citizens.Count > 0 && _cityVoiced == _cityVoices)
             {
                 return;
             }
             FlareGame.Districts(_districts);
             FlareLiveRules.CitizensOf(seed, _districts, _citizens);
             _citizensSeed = seed;
+            _cityVoiced = _cityVoices;
+            CityVoices(seed);   // with the residents' side on, each of the city's people is a resident (FlareDirector.Residents)
         }
 
         /// <summary>True while this machine is a guest that follows the host's feed: its city posts and City Office are the host's.</summary>
@@ -124,6 +126,10 @@ namespace RealLifeOverhaul.Flare
             for (int i = 0; i < _made.Count; i++)
             {
                 CityMade(_made[i]);
+            }
+            if (newDay && made > 0)
+            {
+                BusinessPostsHeard(day);   // the city's businesses' own posts of the day, heard by their followers
             }
             if (newDay)
             {

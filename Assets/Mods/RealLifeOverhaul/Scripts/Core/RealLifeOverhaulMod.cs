@@ -712,6 +712,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_flare_test_invite", () => Flare.FlareDirector.Instance?.TestInvite())
                 .AddButton("reallife_flare_test_escalate", () => Flare.FlareDirector.Instance?.TestEscalate())
                 .AddButton("reallife_flare_test_back", () => Flare.FlareDirector.Instance?.TestBack())
+                .Guarded(o => Flare.FlareCityOptions.AddFlareCity(o))   // Flare in the city's option and tests (Scripts/Social/Flare/City)
                 .AddSplitter()
                 .AddHeader("reallife_fame_header")
                 .AddToggle(Settings.StandingId, "reallife_fame_enabled", Settings.Standing,

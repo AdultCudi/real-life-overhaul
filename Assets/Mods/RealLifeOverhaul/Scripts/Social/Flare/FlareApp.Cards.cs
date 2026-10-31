@@ -160,7 +160,7 @@ namespace RealLifeOverhaul.Flare
         {
             private readonly TextMeshProUGUI _name, _lines, _stars;
             private readonly Image[] _starIcons = new Image[5];
-            private readonly Pill _announce, _promote;
+            private readonly Pill _announce, _promote, _advertise;
 
             public ShopCell(FlareApp app) : base(app, "Business", false)
             {
@@ -174,6 +174,7 @@ namespace RealLifeOverhaul.Flare
                 _lines.overflowMode = TextOverflowModes.Overflow;
                 _announce = new Pill(Rect, "Announce", () => App.AnnounceClicked(Row));
                 _promote = new Pill(Rect, "Promote", () => App.PromoteClicked(Row));
+                _advertise = new Pill(Rect, "Advertise", () => App.AdClicked(Row));
             }
 
             protected override void Colours()
@@ -206,6 +207,15 @@ namespace RealLifeOverhaul.Flare
                 float y = pad + 100f + lh + 16f;
                 float x = pad + _announce.Show(Look, FlareText.T("reallife_flare_shop_announce"), true, pad, y) + 16f;
                 _promote.Show(Look, FlareText.T("reallife_flare_shop_hire"), false, x, y);
+                if (App.CityAds)
+                {
+                    y += 58f + 14f;
+                    _advertise.Show(Look, FlareText.T("reallife_flare_city_action_ad"), false, pad, y);   // Flare in the city: an ad to residents it targets
+                }
+                else
+                {
+                    _advertise.Hide();
+                }
                 return y + 58f + pad;
             }
         }

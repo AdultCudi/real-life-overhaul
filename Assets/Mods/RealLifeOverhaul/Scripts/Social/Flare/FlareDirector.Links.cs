@@ -14,7 +14,7 @@ namespace RealLifeOverhaul.Flare
         private void Influence(FlarePost p, FlareDraft d)
         {
             int day = p.Day;
-            int buzz = FlareRules.BuzzOf(p);
+            int buzz = CityOn ? 0 : FlareRules.BuzzOf(p);   // with the residents' side on, the post was heard by them (CityPlayerPost) and moves people itself
             if (buzz != 0 && FlareLiveRules.FirstToday(_file.Net, day, FlareLiveRules.TalkKey(p.Place)))   // a business is talked about once a day, however many posts
             {
                 int now = FlareRules.AddBuzz(_file, p.Place, buzz, day, FlareRules.BuzzDays);
@@ -131,7 +131,9 @@ namespace RealLifeOverhaul.Flare
             int day = SaveGameManager.Current.Day;
             string district = d._file.Net.Watches.Count > 0 ? GameRegistrations.District(reg) : null;
             int clean = district != null && d._file.Net.WatchIn(district, day, FlareOrder.Cleanup) != FlareOrder.None ? FlareLiveRules.CleanFootfall : 0;
-            return FlareRules.Footfall(d._file.Buzz.Count > 0 ? d._file.BuzzAt(FlareGame.Place(reg), day) : 0, clean);
+            int talk = d._file.Buzz.Count > 0 ? d._file.BuzzAt(FlareGame.Place(reg), day) : 0;
+            // With the residents' side on, Flare's talk is the population's attention (FlareDirector.Residents): only a clean street and a deal's late first day stay here.
+            return FlareRules.Footfall(d.CityOn ? Math.Min(0, talk) : talk, clean);
         }
 
         /// <summary>For brands: how a scandal at a shop spreads, thousandths of its loss, by the account's reputation.</summary>

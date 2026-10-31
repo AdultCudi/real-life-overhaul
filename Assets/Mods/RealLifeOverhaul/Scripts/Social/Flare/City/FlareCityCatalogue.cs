@@ -46,6 +46,7 @@ namespace RealLifeOverhaul.Flare
         public const int DiscoverViral = 40;             // ...a viral one
         public const int DiscoverMost = 4000;            // residents a post's discovery reaches at the most: a bound on the work, never reached by an ordinary post
         public const int BusinessFollowFromPost = 30;    // per mille an interested resident who does not follow a business starts to
+        public const int AnswerQuality = 500;            // thousandths: a polite answer to a poor review is heard as half a post
 
         // ---- what residents heard, and the attention it gives (PopulationAttention: a pool is only ever shared out)
 
@@ -61,6 +62,7 @@ namespace RealLifeOverhaul.Flare
 
         public const int FounderDaily = 25;              // per mille of the player's city followers who hear of the player's businesses each day by following the player (founder-led brands)
         public const int ScandalSour = 400;              // per mille of the player's followers who hear of a scandal of the player's, turned against the player's businesses until answered
+        public const int ScandalDays = 7;                // days an arrest that trended stays a scandal, unless an honest post answers it first
 
         // ---- reviews from residents who really shopped there (drawn from the day's pools)
 
@@ -83,6 +85,7 @@ namespace RealLifeOverhaul.Flare
         public const int AdInterest = 750;               // per mille a targeted resident who cares for the business's kind is interested
         public const int AdInterestOther = 200;          // ...one who does not
         public const int AdsMost = 24;                   // ads of the player's kept, running or over
+        public const int AdTargets = 5;                  // the targets the Business tab offers: its district's customers, the city's, its district's everybody, the young, the well off
         public static readonly int[] AgeFrom = { AdultAge, AdultAge, 30, 50 };   // the age bands an ad targets: anybody, under 30, 30 to 49, 50 and over
         public static readonly int[] AgeTo = { 200, 29, 49, 200 };
         public const int CityAdsDay = 6;                 // the city's and the rivals' businesses that run an ad a day (parity: the same rules as the player's)

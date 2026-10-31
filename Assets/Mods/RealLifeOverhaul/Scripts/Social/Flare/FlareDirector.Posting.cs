@@ -106,6 +106,10 @@ namespace RealLifeOverhaul.Flare
             bool counts = _testViral || FlareRules.Counts(_file, day);
             FlarePost p = FlareRules.Post(_file, d, tone, tag ? d.Person : -1, _people, day, Save.Hour, minute, _testViral);
             _testViral = false;
+            if (c.Kind != FlareSource.Review && c.Kind != FlareSource.Announce)
+            {
+                CityPlayerPost(p);   // heard by the city's residents, measured (a review or an announcement is heard as one, in BusinessEffect)
+            }
             if (!counts)
             {
                 Logger?.Info("Flare: post " + FlareRules.PostsToday(_file, day) + " of the day: past the first " + FlareRules.PostsCounted + ", seen and liked, the account as it was.");
@@ -197,8 +201,15 @@ namespace RealLifeOverhaul.Flare
                 && !_file.Net.Applied.Contains(-parent.Id))
             {
                 _file.Net.Applied.Add(-parent.Id);   // once for each review
-                Buzz(parent.Place, 1, FlareLiveRules.ReviewDays, day, FlareGame.Business(parent.Place));
-                Logger?.Info("Flare: the player answered a poor review of " + parent.Name + " politely: +1% customers for " + FlareLiveRules.ReviewDays + " days.");
+                if (CityAnswer(parent.Place, p))
+                {
+                    Logger?.Info("Flare: the player answered a poor review of " + parent.Name + " politely: what put the residents off fades faster now.");
+                }
+                else
+                {
+                    Buzz(parent.Place, 1, FlareLiveRules.ReviewDays, day, FlareGame.Business(parent.Place));
+                    Logger?.Info("Flare: the player answered a poor review of " + parent.Name + " politely: +1% customers for " + FlareLiveRules.ReviewDays + " days.");
+                }
             }
             return p;
         }
