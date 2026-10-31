@@ -123,6 +123,8 @@ namespace RealLifeOverhaul.Population
             w.Ints(s.RentIndex, s.RentIndex.Length);
             w.Ints(s.WantFlats, s.WantFlats.Length);
             w.Ints(s.FieldWage, s.FieldWage.Length);
+            w.Int(s.IncomeAnchor.Length);
+            w.Ints(s.IncomeAnchor, s.IncomeAnchor.Length);
 
             int nb = s.Buildings.Count;
             w.Int(nb);
@@ -327,6 +329,7 @@ namespace RealLifeOverhaul.Population
             s.RentIndex = r.Ints(nd);
             s.WantFlats = r.Ints(nd);
             s.FieldWage = r.Ints(PopulationCatalogue.Fields);
+            s.IncomeAnchor = r.Ints(Count(r, PopulationCatalogue.DistrictsMost));
 
             int nb = Count(r, 1 << 20);
             for (int i = 0; i < nb; i++)
@@ -499,7 +502,7 @@ namespace RealLifeOverhaul.Population
             int nl = Count(r, 1 << 20);
             for (int i = 0; i < nl; i++)
             {
-                s.Links.Add(new PersonLink { Kind = (LinkKind)r.Int(), Key = r.Text(), Person = r.Int() });
+                s.Links.Add(new PersonLink { Kind = (LinkKind)r.Int(), Key = r.Text(), Person = r.Int(), Slot = -1 });
             }
             s.IndexRecords();
             return s;

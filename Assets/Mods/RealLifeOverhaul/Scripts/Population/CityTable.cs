@@ -71,6 +71,10 @@ namespace RealLifeOverhaul.Population
             {
                 Array.Resize(ref s.WantFlats, d);
             }
+            if (s.IncomeAnchor.Length != d)
+            {
+                Array.Resize(ref s.IncomeAnchor, d);
+            }
             if (s.FieldWage.Length != PopulationCatalogue.Fields)
             {
                 var wage = new int[PopulationCatalogue.Fields];
@@ -134,9 +138,15 @@ namespace RealLifeOverhaul.Population
                 want[dMap[d]] = d < s.WantFlats.Length ? s.WantFlats[d] : 0;
                 figures[dMap[d]] = d < s.Figures.Length && s.Figures[d] != null ? s.Figures[d] : new DistrictFigures();
             }
+            var anchor = new int[nd];
+            for (int d = 0; d < oldDistricts.Count; d++)
+            {
+                anchor[dMap[d]] = d < s.IncomeAnchor.Length ? s.IncomeAnchor[d] : 0;
+            }
             s.RentIndex = rent;
             s.WantFlats = want;
             s.Figures = figures;
+            s.IncomeAnchor = anchor;
 
             var oldBuildings = new List<CityBuilding>(s.Buildings);
             s.Buildings.Clear();

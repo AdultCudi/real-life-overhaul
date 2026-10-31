@@ -81,6 +81,7 @@ namespace RealLifeOverhaul
         public static readonly GamePart TakeoutPlates = ContractBook.Part("takeout_plates", "meals", "Eat in the game's rest panel at a seat");
         public static readonly GamePart CustomersKept = ContractBook.Part("customers_kept", null, "the customers of the hour under way kept when the mod draws a day's customers again");
         public static readonly GamePart InteriorCustomers = ContractBook.Part("interior_customers", "interiors", "the basket and the day's customers on the Interior tab");
+        public static readonly GamePart PopulationCount = ContractBook.Part("population_customers", "population", "the population's count in the game's customer calculators");
         public static readonly GamePart InteriorTabPart = ContractBook.Part("interior_tab", "interiors", "the Interior tab in BizMan");
         public static readonly GamePart BizPacePart = ContractBook.Part("bizman_pace", "performance", "the timing of what the mod adds to BizMan's open, switch and tab change");
         public static readonly GamePart BusYield = ContractBook.Part("bus_yield", "transport", "a bus held behind a traffic car that waits for it");
@@ -368,6 +369,13 @@ namespace RealLifeOverhaul
 
         // Meals/TakeoutButton: the activity panel's button template, copied once per city for Eat at a seat
         public static readonly GameMember ActivityButtons = Field(TakeoutPlates, Game, "PlayerActivity.PlayerActivityUI", "buttonTemplate", "Button");
+
+        // Population/PopulationGame.Calculators: the five calculators of the factory, each given the mod's copy with the population's count at start (the game's own without)
+        public static readonly GameMember CalculatorPlain = Optional(StaticField(PopulationCount, Game, "AI.Customers.CustomerEntries.CustomerEntriesCalculatorFactory", "CustomerEntriesCalculator", "CustomerEntriesCalculator"));
+        public static readonly GameMember CalculatorRetail = Optional(StaticField(PopulationCount, Game, "AI.Customers.CustomerEntries.CustomerEntriesCalculatorFactory", "CustomerEntriesCalculatorRetail", "CustomerEntriesCalculatorRetail"));
+        public static readonly GameMember CalculatorOffice = Optional(StaticField(PopulationCount, Game, "AI.Customers.CustomerEntries.CustomerEntriesCalculatorFactory", "CustomerEntriesCalculatorOffice", "CustomerEntriesCalculatorOffice"));
+        public static readonly GameMember CalculatorCasino = Optional(StaticField(PopulationCount, Game, "AI.Customers.CustomerEntries.CustomerEntriesCalculatorFactory", "CustomerEntriesCalculatorCasino", "CustomerEntriesCalculatorCasino"));
+        public static readonly GameMember CalculatorCinema = Optional(StaticField(PopulationCount, Game, "AI.Customers.CustomerEntries.CustomerEntriesCalculatorFactory", "CustomerEntriesCalculatorCinemaTheater", "CustomerEntriesCalculatorCinemaTheater"));
 
         // Core/CustomerDraw: the game's list of a day's customers at each business
         public static readonly GameMember CustomerTable = StaticField(On(CustomersKept, InteriorCustomers), Game, "AI.Customers.CustomerEntries.CustomerEntriesHelper", "BusinessCustomerEntries", "Dictionary<Address,List<CustomerEntry>>");

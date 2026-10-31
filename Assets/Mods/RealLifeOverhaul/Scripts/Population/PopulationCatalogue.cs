@@ -365,6 +365,8 @@ namespace RealLifeOverhaul.Population
             ("ba:businesstype_graphicdesigner", Spend.Professional, 350, 0),
             ("ba:businesstype_webdevelopmentagency", Spend.Professional, 500, 0),
             ("ba:businesstype_movingservice", Spend.Professional, 300, 0),
+            ("reallife_businesstype_cardealership", Spend.Transport, 2400, 0),
+            ("reallife_bankbranch", Spend.Professional, 60, 0),
         };
 
         /// <summary>The kind of spending a business type sells, or -1 for one nobody comes to shop at.</summary>

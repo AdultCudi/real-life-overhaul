@@ -280,6 +280,13 @@ namespace RealLifeOverhaul.Population
                         break;
                     case Phase.Done:
                         s.Day = _day;
+                        for (int d = 0; d < s.IncomeAnchor.Length && d < s.Figures.Length; d++)
+                        {
+                            if (s.IncomeAnchor[d] <= 0)
+                            {
+                                s.IncomeAnchor[d] = s.Figures[d].MeanIncome;   // a district's first day with people: the city economy's income moves from here
+                            }
+                        }
                         _phase = Phase.Idle;
                         return true;
                 }

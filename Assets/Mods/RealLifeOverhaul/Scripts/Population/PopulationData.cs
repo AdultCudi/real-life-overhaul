@@ -586,7 +586,8 @@ namespace RealLifeOverhaul.Population
     {
         public LinkKind Kind;
         public string Key;       // that system's id
-        public int Person;       // the person's id (not the slot: ids are stable across saves)
+        public int Person;       // the person's id
+        public int Slot;         // the person's slot, checked against the id before use (slots are kept in the save, so it holds across one)
     }
 
     /// <summary>
@@ -627,6 +628,7 @@ namespace RealLifeOverhaul.Population
         public DistrictFigures[] Figures = new DistrictFigures[0];
         public int[] WantFlats = new int[0];     // households that looked for a flat in each district this month and found none
         public int[] FieldWage = new int[0];     // thousandths: each field's market pay against its start (wages follow how hard people are to find)
+        public int[] IncomeAnchor = new int[0];  // cents a day: each district's mean household income on the population's first day (CityEconomy's district income moves from its start by it)
 
         private readonly Dictionary<string, int> _buildingByKey = new Dictionary<string, int>(1024, StringComparer.Ordinal);
         private readonly Dictionary<string, int> _businessByKey = new Dictionary<string, int>(1024, StringComparer.Ordinal);

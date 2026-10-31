@@ -36,9 +36,16 @@ namespace RealLifeOverhaul.Economy
 
         public delegate bool FootfallWriter(BuildingRegistration reg, bool redraw, bool newDay, out int own, out int written);
 
+        /// <summary>
+        /// A district's income on the model's scale from the living population (tenths of a point, 600 to 1400), its start given; 0 for no figure.
+        /// Set by Wiring/PopulationLinks; while it gives figures the districts follow the people instead of the model's own walk.
+        /// </summary>
+        public static Func<string, int, int> DistrictIncome;
+
         public static void Reset()
         {
             Day = null;
+            DistrictIncome = null;
             Footfall = null;
             Copycat = null;
             Bears = null;

@@ -23,6 +23,8 @@ internal static partial class Program
         PopulationYears();
         PopulationCosts();
         PopulationSaveChecks();
+        PopulationLinkChecks();
+        PopulationTextChecks();
     }
 
     // ---------------------------------------------------------------- the city as the checks know it (EconomyCheck/PopulationCity.txt)

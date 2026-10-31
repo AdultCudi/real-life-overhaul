@@ -40,6 +40,7 @@ namespace RealLifeOverhaul.Meta
             Networking.NetworkGuide.Register();
             Shops.ShopsGuide.Register();
             Outlook.OutlookGuide.Register();
+            Population.PopulationGuide.Register();
             Sessions.SessionGuide.Register();
         }
 
