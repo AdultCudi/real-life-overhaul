@@ -23,8 +23,9 @@ namespace RealLifeOverhaul.Population
         }
 
         /// <summary>
-        /// The flats of every building laid out: their first place in the occupants' table, their count, size and rent; every flat free.
-        /// The districts' rents start at the game's own (1000), their figures empty, each field's pay at its start.
+        /// The flats of every building laid out: their first place in the occupants' table, their count, size and rent (the game's own rent a square
+        /// metre, so a flat of a real size pays for its size); every flat free. The districts' rents start at the game's own (1000), their figures
+        /// empty, each field's pay at its start.
         /// </summary>
         public static void Lay(PopulationState s)
         {
@@ -37,10 +38,11 @@ namespace RealLifeOverhaul.Population
             for (int i = 0; i < n; i++)
             {
                 CityBuilding b = s.Buildings[i];
+                PopDistrict district = b.District >= 0 && b.District < s.Districts.Count ? s.Districts[b.District] : null;
                 s.FlatFirst[i] = total;
-                s.FlatCount[i] = MeasureRules.Flats(b);
-                s.FlatSqm[i] = MeasureRules.FlatSqm(b);
-                s.FlatRent[i] = b.Use == Use.Homes ? (b.Rent > 0 ? b.Rent : Rent(b, s.Districts)) : 0;
+                s.FlatCount[i] = MeasureRules.Flats(b, district);
+                s.FlatSqm[i] = MeasureRules.FlatSqm(b, district);
+                s.FlatRent[i] = s.FlatCount[i] > 0 ? SizedRent(b, s.FlatSqm[i], s.Districts) : 0;
                 total += s.FlatCount[i];
             }
             s.Occupant = new int[total];
@@ -93,13 +95,46 @@ namespace RealLifeOverhaul.Population
         /// </summary>
         public static int Rent(in CityBuilding b, IList<PopDistrict> districts)
         {
+            return Rent(b, b.Villa ? Math.Max(b.UnitSqm, 1) : (b.UnitSqm > 0 ? b.UnitSqm : PopulationCatalogue.FlatSqmDefault), districts);
+        }
+
+        /// <summary>The game's market rent of so many m2 of homes in a building, cents a day, by the same arithmetic.</summary>
+        public static int Rent(in CityBuilding b, int sqm, IList<PopDistrict> districts)
+        {
             int estate = b.District >= 0 && districts != null && b.District < districts.Count ? districts[b.District].RealEstate : 1000;
             double price = PopulationCatalogue.BasePricePerSqm * (PopulationCatalogue.ResidentialPriceMultiplier / 1000.0) * (estate / 1000.0);
             int quiet = Math.Min(b.Traffic - 30, 0);   // lowerrentforhightraffic: a street under 30 costs more
             price -= price * quiet / 100.0;
-            int sqm = b.Villa ? Math.Max(b.UnitSqm, 1) : (b.UnitSqm > 0 ? b.UnitSqm : PopulationCatalogue.FlatSqmDefault);
-            double rent = Math.Ceiling(sqm * price * (PopulationCatalogue.RentPerPrice / 1000000.0) * (PopulationCatalogue.RentResidential / 1000.0));
+            double rent = Math.Ceiling(Math.Max(1, sqm) * price * (PopulationCatalogue.RentPerPrice / 1000000.0) * (PopulationCatalogue.RentResidential / 1000.0));
             return (int)Math.Min(int.MaxValue / 4, rent * 100.0);
+        }
+
+        /// <summary>The game's own unit's rent in a residential building, cents a day: the game's figure where it gave one, else its arithmetic.</summary>
+        public static int GameUnitRent(in CityBuilding b, IList<PopDistrict> districts)
+        {
+            return b.Rent > 0 ? b.Rent : Rent(b, districts);
+        }
+
+        // A flat of so many m2 in a building at the game's own rent a square metre: its unit's where the game gave a rent, else the game's arithmetic.
+        private static int SizedRent(in CityBuilding b, int sqm, IList<PopDistrict> districts)
+        {
+            int unit = MeasureRules.GameUnitSqm(b);
+            if (b.Use == Use.Homes && b.Rent > 0 && unit > 0)
+            {
+                return (int)Math.Min(int.MaxValue / 4, (long)b.Rent * sqm / unit);
+            }
+            return Rent(b, sqm, districts);
+        }
+
+        /// <summary>A flat's m2: a residential building's first flat is the game's own unit, the others the building's.</summary>
+        public static int FlatSqmOf(PopulationState s, int building, int unit)
+        {
+            if (building < 0 || building >= s.FlatSqm.Length)
+            {
+                return 0;
+            }
+            CityBuilding b = s.Buildings[building];
+            return unit == 0 && b.Use == Use.Homes ? MeasureRules.GameUnitSqm(b) : s.FlatSqm[building];
         }
 
         /// <summary>
@@ -200,12 +235,18 @@ namespace RealLifeOverhaul.Population
             return away;
         }
 
-        /// <summary>A flat's rent today, cents a day: the game's own times its district's index.</summary>
-        public static int FlatRentNow(PopulationState s, int building)
+        /// <summary>A flat's rent today, cents a day: the game's own times its district's index (the first flat of a residential building is the game's unit).</summary>
+        public static int FlatRentNow(PopulationState s, int building, int unit)
         {
-            int d = building >= 0 && building < s.Buildings.Count ? s.Buildings[building].District : -1;
+            if (building < 0 || building >= s.FlatRent.Length)
+            {
+                return 0;
+            }
+            CityBuilding b = s.Buildings[building];
+            int d = b.District;
             int index = d >= 0 && d < s.RentIndex.Length ? s.RentIndex[d] : 1000;
-            return building >= 0 && building < s.FlatRent.Length ? (int)Math.Min(int.MaxValue / 4, (long)s.FlatRent[building] * index / 1000) : 0;
+            long rent = unit == 0 && b.Use == Use.Homes ? GameUnitRent(b, s.Districts) : s.FlatRent[building];
+            return (int)Math.Min(int.MaxValue / 4, rent * index / 1000);
         }
 
         /// <summary>The metres between two districts' middles.</summary>

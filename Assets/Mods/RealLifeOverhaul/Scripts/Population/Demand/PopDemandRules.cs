@@ -60,7 +60,7 @@ namespace RealLifeOverhaul.Population
                 c += PopDemandCatalogue.ContentRentLeast - PopDemandCatalogue.ContentThin;   // nothing coming in: the rent and the savings both weigh at their worst
             }
             c -= Math.Min(PopDemandCatalogue.ContentOutOfWorkMost, Math.Max(0, outOfWork) * PopDemandCatalogue.ContentOutOfWork);
-            if (flatSqm > 0 && flatSqm < Math.Max(1, size) * PopulationCatalogue.PersonsPerRoom)
+            if (flatSqm > 0 && flatSqm < Math.Max(1, size) * PopulationCatalogue.WantSqm)
             {
                 c -= PopDemandCatalogue.ContentCrowded;
             }

@@ -230,6 +230,7 @@ namespace RealLifeOverhaul.Population
         public int[] Partner = new int[0];       // slot, -1 none
         public int[] Since = new int[0];         // the day of their last change of job or status
         public byte[] Flags = new byte[0];
+        public ushort[] Games = new ushort[0];   // the genres they like and the platforms they play on (GameRules: a bit each, genres first)
 
         private int[] _free = new int[0];
         private int _freeCount;
@@ -313,6 +314,7 @@ namespace RealLifeOverhaul.Population
             Partner[slot] = -1;
             Since[slot] = 0;
             Flags[slot] = 0;
+            Games[slot] = 0;
         }
 
         public void Grow(int capacity)
@@ -337,6 +339,7 @@ namespace RealLifeOverhaul.Population
             Array.Resize(ref Partner, capacity);
             Array.Resize(ref Since, capacity);
             Array.Resize(ref Flags, capacity);
+            Array.Resize(ref Games, capacity);
         }
     }
 
@@ -629,6 +632,10 @@ namespace RealLifeOverhaul.Population
         public int[] WantFlats = new int[0];     // households that looked for a flat in each district this month and found none
         public int[] FieldWage = new int[0];     // thousandths: each field's market pay against its start (wages follow how hard people are to find)
         public int[] IncomeAnchor = new int[0];  // cents a day: each district's mean household income on the population's first day (CityEconomy's district income moves from its start by it)
+        public int[] GameCounts = new int[GameRules.Cells];    // residents who like each genre on each platform they play on, at the last day's figures; not saved
+        public int[] GameByDistrict = new int[0];               // the same for each district, GameRules.Cells a district; not saved
+        public int[] GameByClass = new int[PopulationCatalogue.Classes * GameRules.Cells];   // ... for each class; not saved
+        public int[] GameStart = new int[GameRules.Cells];     // the counts at the population's start: the game studio's world factor is the world's then over these
 
         private readonly Dictionary<string, int> _buildingByKey = new Dictionary<string, int>(1024, StringComparer.Ordinal);
         private readonly Dictionary<string, int> _businessByKey = new Dictionary<string, int>(1024, StringComparer.Ordinal);

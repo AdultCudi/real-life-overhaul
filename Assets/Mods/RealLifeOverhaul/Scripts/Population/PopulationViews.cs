@@ -221,7 +221,7 @@ namespace RealLifeOverhaul.Population
             v.Hero.Add(ViewFigure.Of("reallife_pop_fig_flats", flats, ViewFormat.Count));
             v.Hero.Add(ViewFigure.Of("reallife_pop_fig_people", people, ViewFormat.Count));
             v.Hero.Add(ViewFigure.Of("reallife_pop_fig_free", free, ViewFormat.Count));
-            v.Details.Add(ViewFigure.Of("reallife_pop_fig_flat_rent", CityTable.FlatRentNow(s, b) / 100, ViewFormat.Money));
+            v.Details.Add(ViewFigure.Of("reallife_pop_fig_flat_rent", CityTable.FlatRentNow(s, b, 1) / 100, ViewFormat.Money));
             v.Details.Add(ViewFigure.Of("reallife_pop_fig_flat_size", b < s.FlatSqm.Length ? s.FlatSqm[b] : 0, ViewFormat.Count));
             return v;
         }

@@ -26,7 +26,7 @@ namespace RealLifeOverhaul.Population
                 hh.Rent[h] = 0;
                 return;
             }
-            long market = CityTable.FlatRentNow(s, b);
+            long market = CityTable.FlatRentNow(s, b, hh.Unit[h]);
             if (hh.Landlord[h] == Landlords.Own)
             {
                 long cost = market * PopulationCatalogue.OwnerCostShare / 1000;
@@ -100,7 +100,7 @@ namespace RealLifeOverhaul.Population
                 return false;   // owners stay; the player's household is the player's to move
             }
             int b = hh.Building[h];
-            bool crowded = b >= 0 && s.FlatSqm[b] < hh.Size[h] * PopulationCatalogue.PersonsPerRoom;
+            bool crowded = b >= 0 && CityTable.FlatSqmOf(s, b, hh.Unit[h]) < hh.Size[h] * PopulationCatalogue.WantSqm;
             bool dear = disposable > 0 && hh.Rent[h] * 1000L / disposable > PopulationCatalogue.RentBurdenMove;
             return crowded || dear;
         }
@@ -129,12 +129,13 @@ namespace RealLifeOverhaul.Population
                 {
                     continue;
                 }
-                long rent = CityTable.FlatRentNow(s, b);
+                int unit = flat - s.FlatFirst[b];
+                long rent = CityTable.FlatRentNow(s, b, unit);
                 if (disposable > 0 && rent * 1000 / disposable > PopulationCatalogue.AffordableShare + 150)
                 {
                     continue;   // beyond what it would ever pay
                 }
-                int score = Score(s, b, size, disposable, rent, cls, work);
+                int score = Score(s, b, CityTable.FlatSqmOf(s, b, unit), size, disposable, rent, cls, work);
                 if (score > bestScore)
                 {
                     bestScore = score;
@@ -154,11 +155,11 @@ namespace RealLifeOverhaul.Population
         }
 
         // How well a flat suits a household: room for its people, rent against what it would pay, a district of its class, near its work.
-        private static int Score(PopulationState s, int b, int size, long disposable, long rent, int cls, int work)
+        private static int Score(PopulationState s, int b, int sqm, int size, long disposable, long rent, int cls, int work)
         {
             int score = 0;
-            int room = s.FlatSqm[b] / Math.Max(1, size);
-            score += room >= PopulationCatalogue.PersonsPerRoom ? 300 : room * 300 / PopulationCatalogue.PersonsPerRoom;
+            int room = sqm / Math.Max(1, size);
+            score += room >= PopulationCatalogue.WantSqm ? 300 : room * 300 / PopulationCatalogue.WantSqm;
             if (disposable > 0)
             {
                 long share = rent * 1000 / disposable;

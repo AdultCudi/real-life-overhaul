@@ -204,14 +204,14 @@ namespace RealLifeOverhaul.Population
                 if (building >= 0 && disposable > 0)
                 {
                     _budget += disposable * PopulationCatalogue.AffordableShare / 1000;
-                    _rent += CityTable.FlatRentNow(s, building);
+                    _rent += CityTable.FlatRentNow(s, building, hh.Unit[h]);
                 }
             }
             _sellers += (recent ? 1000 : 0) + (hh.Landlord[h] == Landlords.Own ? 1000 / (PopDemandCatalogue.OwnerYears * 12) : 0);
             _starters += recent && headAge >= PopDemandCatalogue.StarterFrom && headAge <= PopDemandCatalogue.StarterTo ? 1 : 0;
             bool short_ = debt > 0 && (disposable <= 0 || savings * 100 < (long)PopDemandCatalogue.ShortSavingsDays * disposable);
             _listings += recent || short_ ? 1 : 0;
-            int flatSqm = building >= 0 && building < s.FlatSqm.Length ? s.FlatSqm[building] : 0;
+            int flatSqm = building >= 0 ? CityTable.FlatSqmOf(s, building, hh.Unit[h]) : 0;
             _content += PopDemandRules.Content(hh.Rent[h], disposable, savings, debt, outOfWork, flatSqm, hh.Size[h]);
             _contentCount++;
             _taxes += inc.IncomeTax + (long)hh.Rent[h] * PopulationCatalogue.PropertyTaxShare / 1000;

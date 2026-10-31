@@ -5,7 +5,7 @@ The city's population, the living economy overhaul's first part: real households
 ## Read first
 
 - `PopulationCatalogue.cs`: every figure and where it comes from (game-free).
-- `MeasureRules.cs`, `GenerateRules.cs`, `LifeRules.cs`, `LabourRules.cs`, `SpendRules.cs`, `PoolRules.cs`, `HousingRules.cs`, `RegionRules.cs`: the rules (game-free, checked by EconomyCheck's `PopulationChecks.cs`).
+- `MeasureRules.cs`, `GenerateRules.cs`, `LifeRules.cs`, `LabourRules.cs`, `SpendRules.cs`, `PoolRules.cs`, `HousingRules.cs`, `RegionRules.cs`, `GameRules.cs`: the rules (game-free, checked by EconomyCheck's `PopulationChecks.cs` and `PopulationGamesChecks.cs`).
 - `PopulationSim.cs`: the work in slices.
 - `PopulationDirector.cs`: the timer, the day, the save and Going Public; `PopulationGame.cs` and `PopulationGame.Calculators.cs`: the only files that touch the game.
 - `CityPopulation.cs` and `PopulationAttention.cs`: what other features read and feed.

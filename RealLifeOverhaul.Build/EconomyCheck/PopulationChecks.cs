@@ -24,6 +24,7 @@ internal static partial class Program
         PopulationCosts();
         PopulationSaveChecks();
         PopulationLinkChecks();
+        PopulationGamesChecks();
         PopulationTextChecks();
     }
 
@@ -172,29 +173,41 @@ internal static partial class Program
         PopulationState s = PopulationCity(out List<BusinessSeed> seeds);
         Check(s.Buildings.Count == 885 && s.Districts.Count == 7, "population measure: Build 3682's 885 buildings in seven districts read (" + s.Buildings.Count + ", " + s.Districts.Count + ")");
         var city = new DistrictMeasure();
-        DistrictMeasure[] rows = MeasureRules.Measure(s.Buildings, s.Districts.Count, city);
+        DistrictMeasure[] rows = MeasureRules.Measure(s.Buildings, s.Districts, city);
+        long average = city.FlatSqm / Math.Max(1, city.Flats - city.Villas);
         if (Environment.GetEnvironmentVariable("RLO_POPULATION_REPORT") == "1")
         {
             for (int d = 0; d < rows.Length; d++)
             {
                 DistrictMeasure r = rows[d];
-                Console.WriteLine("  " + s.Districts[d].Id.Replace("ba:neighborhood_", string.Empty) + ": " + r.HomeBuildings + " home buildings, " + r.Flats + " flats, " + r.Jobs + " jobs (offices "
-                                  + r.OfficeJobs + ", shops " + r.ShopJobs + ", warehouses " + r.WarehouseJobs + ", venues " + r.VenueJobs + ", special " + r.SpecialJobs + ", building staff " + r.BuildingJobs + ")");
+                Console.WriteLine("  " + s.Districts[d].Id.Replace("ba:neighborhood_", string.Empty) + ": " + r.HomeBuildings + " home buildings, " + r.Flats + " flats (" + r.FlatsAboveShops
+                                  + " above shops, " + r.FlatSqm / Math.Max(1, r.Flats) + " m2 on average), " + r.Jobs + " jobs (offices " + r.OfficeJobs + ", shops " + r.ShopJobs + ", warehouses "
+                                  + r.WarehouseJobs + ", venues " + r.VenueJobs + ", special " + r.SpecialJobs + ", building staff " + r.BuildingJobs + ")");
             }
-            Console.WriteLine("  city: " + city.Flats + " flats (" + city.Villas + " villas), " + city.Jobs + " jobs");
+            Console.WriteLine("  city: " + city.Flats + " flats (" + city.Villas + " houses, " + city.FlatsAboveShops + " above shops, " + average + " m2 net on average), " + city.Jobs + " jobs");
         }
-        Check(city.Villas == 28 && rows[s.DistrictOf("ba:neighborhood_thehamptons")].Flats == 28, "population measure: the Hamptons' 28 villas are a household each (" + city.Villas + ")");
-        Check(city.Flats >= 8200 && city.Flats <= 9100, "population measure: the base city has 8,658 flats by the rule (residential floor x 0.8 over the game's unit), in its band (" + city.Flats + ")");
-        Check(city.Jobs >= 55000 && city.Jobs <= 110000, "population measure: the base city's jobs are in a Manhattan band (" + city.Jobs + ")");
+        Check(city.Villas == 28 && rows[s.DistrictOf("ba:neighborhood_thehamptons")].Flats == 28, "population measure: the Hamptons' 28 houses are a household each (" + city.Villas + ")");
+        Check(city.Flats >= 19500 && city.Flats <= 22500 && average >= 64 && average <= 76,
+            "population measure: the base city has flats of about 70 m2 net, enough for the owner's 18,000 to 22,000 households (" + city.Flats + " flats, " + average + " m2)");
+        Check(city.FlatsAboveShops > city.Flats / 5 && city.FlatsAboveShops < city.Flats / 2, "population measure: a share of the floors above shops is homes, as on New York's streets (" + city.FlatsAboveShops + ")");
+        int garment = s.DistrictOf("ba:neighborhood_garmentdistrict"), murray = s.DistrictOf("ba:neighborhood_murrayhill");
+        Check(rows[garment].FlatSqm / Math.Max(1, rows[garment].Flats) < rows[murray].FlatSqm / Math.Max(1, rows[murray].Flats),
+            "population measure: the Garment District's flats are smaller than Murray Hill's");
+        Check(city.Jobs == 72663, "population measure: the base city's jobs are the measure's as before, the homes changing none of them (" + city.Jobs + ")");
         Check(city.OfficeJobs > city.ShopJobs * 4 && city.OfficeJobs >= 50000, "population measure: offices hold most jobs, a desk for every 16 m2 of their net floor (" + city.OfficeJobs + " against " + city.ShopJobs + " in shops)");
         int midtown = s.DistrictOf("ba:neighborhood_midtown"), industry = s.DistrictOf("ba:neighborhood_industrycity");
         Check(rows[midtown].Jobs > rows[industry].Jobs * 2 && rows[industry].WarehouseJobs > rows[midtown].WarehouseJobs, "population measure: Midtown is the office district, Industry City the warehouses' (" + rows[midtown].Jobs + ", " + rows[industry].WarehouseJobs + ")");
         var villa = new CityBuilding { Use = Use.Homes, Villa = true, UnitSqm = 8496, TotalSqm = 11000 };
-        var tower = new CityBuilding { Use = Use.Homes, UnitSqm = 54, TotalSqm = 760 };
+        var tower = new CityBuilding { Use = Use.Homes, UnitSqm = 96, TotalSqm = 2000 };
         var none = new CityBuilding { Use = Use.Homes, UnitSqm = 0, TotalSqm = 800 };
         var shop = new CityBuilding { Use = Use.Shop, UnitSqm = 225, TotalSqm = 1900, Business = "ba:businesstype_fastfoodrestaurant" };
-        Check(MeasureRules.Flats(villa) == 1 && MeasureRules.Flats(tower) == 11 && MeasureRules.Flats(none) == 8 && MeasureRules.Flats(shop) == 0,
-            "population measure: a villa one flat, 760 m2 of 54 m2 units eleven, a size with no unit 80 m2 flats, a shop none");
+        var office = new CityBuilding { Use = Use.Office, UnitSqm = 285, TotalSqm = 4000 };
+        PopDistrict hells = s.Districts[s.DistrictOf("ba:neighborhood_hellskitchen")], hamptons = s.Districts[s.DistrictOf("ba:neighborhood_thehamptons")];
+        var band = new PopDistrict { Id = "reallife_neighborhood_cedarheights", Working = 40, Middle = 50, Upper = 10 };
+        Check(MeasureRules.Flats(villa, hells) == 1 && MeasureRules.Flats(tower, hells) == 24 && MeasureRules.Flats(none, hells) == 9 && MeasureRules.Flats(shop, hells) == 16
+              && MeasureRules.Flats(office, hells) == 0 && MeasureRules.Flats(tower, hamptons) == 1 && MeasureRules.FlatNet(band) == 63 && MeasureRules.GameUnits(tower) == 16,
+            "population measure: a villa one flat; 2,000 m2 in Hell's Kitchen the game's 96 m2 unit and 23 flats of 66 m2; a size with no unit 80 m2 and 66 m2 flats; "
+            + "a shop's floor above it four fifths homes there; an office none; a Hamptons home one house; Cedar Heights' flats by its classes (63 m2); the staff by the game's units");
         Check(MeasureRules.Jobs(shop) == 18 && MeasureRules.ShopJobs(225, null) == 8 && MeasureRules.ShopJobs(10, null) == PopulationCatalogue.ShopJobsLeast,
             "population measure: a shop's jobs by its sales floor and kind (fast food 12 m2 a job), the average shop's where the kind is not known, two at least");
         Check(MeasureRules.UseOf("ba:buildingtype_retail", "ba:businesstype_bank") == Use.Special && MeasureRules.UseOf("ba:buildingtype_theater", null) == Use.Theatre
@@ -251,11 +264,13 @@ internal static partial class Program
                               + unemployed * 1000 / Math.Max(1, labour) / 10.0 + "%), " + jobs + " jobs, " + s.Region.Commuting + " commuters; " + degree * 100 / Math.Max(1, adults25) + "% of adults 25+ with a degree; median "
                               + s.Median / 100 + " a day after tax");
         }
-        Check(households >= 7800 && households <= 8800, "population people: the base city's households fill its flats less the 5% kept free (" + households + ")");
-        Check(people >= 15000 && people <= 21000, "population people: the base city's people at about two a household (" + people + ")");
-        Check(alone * 1000 / Math.Max(1, households) >= 380 && alone * 1000 / Math.Max(1, households) <= 560, "population people: nearly half of households live alone, as Manhattan's do (" + alone * 100 / Math.Max(1, households) + "%)");
-        Check(bands[0] * 1000 / people >= 90 && bands[0] * 1000 / people <= 220 && bands[4] * 1000 / people >= 90 && bands[4] * 1000 / people <= 250,
-            "population people: children and the over 65s in Manhattan's band (" + bands[0] * 100 / people + "% and " + bands[4] * 100 / people + "%)");
+        Check(households >= 18000 && households <= 22000, "population people: the base city's households in the owner's band of 18,000 to 22,000, its flats less the 5% kept free (" + households + ")");
+        Check(people >= 50000 && people <= 65000, "population people: the base city's people in the owner's band of 50,000 to 65,000 (" + people + ")");
+        Check(people * 100 / Math.Max(1, households) >= 260 && people * 100 / Math.Max(1, households) <= 300,
+            "population people: about 2.8 people a household, the owner's city (" + people * 100 / Math.Max(1, households) / 100.0 + ")");
+        Check(alone * 1000 / Math.Max(1, households) >= 150 && alone * 1000 / Math.Max(1, households) <= 300, "population people: a fifth to a quarter of households live alone (" + alone * 100 / Math.Max(1, households) + "%)");
+        Check(bands[0] * 1000 / people >= 180 && bands[0] * 1000 / people <= 300 && bands[4] * 1000 / people >= 80 && bands[4] * 1000 / people <= 200,
+            "population people: children and the over 65s in a city of families' band (" + bands[0] * 100 / people + "% and " + bands[4] * 100 / people + "%)");
         Check(degree * 1000 / Math.Max(1, adults25) >= 350 && degree * 1000 / Math.Max(1, adults25) <= 700, "population people: most adults have a degree, as in Manhattan (" + degree * 100 / Math.Max(1, adults25) + "%)");
         Check(jobs > workers && s.Region.Commuting > workers / 2, "population people: more jobs than residents in work, the rest filled by commuters (" + jobs + " jobs, " + workers + " residents, " + s.Region.Commuting + " commuters)");
         Check(unemployed * 1000 / Math.Max(1, labour) >= 30 && unemployed * 1000 / Math.Max(1, labour) <= 90, "population people: unemployment at the city's start rate (" + unemployed * 1000 / Math.Max(1, labour) / 10.0 + "%)");
@@ -292,6 +307,7 @@ internal static partial class Program
             Mix(s.People.Job[i]);
             Mix(s.People.Pay[i]);
             Mix(s.People.Education[i]);
+            Mix(s.People.Games[i]);
         }
         return h;
     }
