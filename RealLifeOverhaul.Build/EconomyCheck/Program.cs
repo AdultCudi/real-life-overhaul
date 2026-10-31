@@ -124,6 +124,7 @@ internal static partial class Program
             TextsBudget();
             TextsHubs();
             FlareCommentsAsked();
+            FlareWordsHolds();
             TextsSpoken();
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
@@ -548,6 +549,7 @@ internal static partial class Program
         StreetTextsV5();   // RLO Texts data v5 in street talk: v5's cards for a data 5 pack, v4's exact cards for a data 4 one, the moment, the name only when told, thanks, the packs' licences (StreetTextsV5Checks.cs)
         StreetConversation();   // street talk that feels alive: the order by the moment and the person, no repeats, follow-ups, patience, warmth, the panel and Esc, the turn's log line, the card's three lines, written lines once a day (StreetChatChecks.cs)
         FlareComments();   // the comments under posts that are not the player's: never more than the count, in time, the same after a save and on a guest, the cards, the texts, the cost (FlareCommentChecks.cs)
+        FlareWordsHolds();      // Flare with a model present: an item shows only with its words, held until they come; the written line only for a real failure, counted (FlareWordsHoldChecks.cs)
         FlareCommentsAsked();   // every comment the count promises written and shown: each asked again after a miss, the open thread first, the budget not locked by what the queue held back, the times, the post's own words (FlareCommentAskChecks.cs)
         FlareCrowd();    // Flare's city of four hundred and its influencers with no fixed most, Mom's and Alex's one look (FlareCrowdChecks.cs)
         StreetLook();   // somebody met in the street keeps the look the game gave them, through a save; a city person met on Flare their face; a card's age the face's (StreetLookChecks.cs)

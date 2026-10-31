@@ -358,6 +358,7 @@ namespace RealLifeOverhaul.Texts
             w.Request.Source = SourceOf(words, w);
             if (unseen)
             {
+                w.Request.Shown = why;
                 Fallbacks++;   // the tally counts only lines shown
                 ServiceFell += w.ViaService && !w.Request.ServiceOnly ? 1 : 0;
             }
@@ -394,13 +395,19 @@ namespace RealLifeOverhaul.Texts
             {
                 Shown++;
                 ServiceShown += w.ViaService ? 1 : 0;
+                w.Request.Shown = TextShownWhy.Model;
                 Tally.Count(w.ViaService ? ServiceTally : Pack, w.Request.Intent, TextShownWhy.Model);
                 return;
             }
-            Fallbacks++;
             ServiceFell += w.ViaService && !w.Request.ServiceOnly ? 1 : 0;   // a service request that ended in the written line without reaching the pack
             bool refused = why == TextShownWhy.Refused && _verdict != TextVerdict.Ok;
-            Tally.Count(Pack, w.Request.Intent, refused ? TextShownWhy.Refused : why == TextShownWhy.Refused ? TextShownWhy.Slow : why, refused ? _verdict : TextVerdict.Ok);
+            TextShownWhy shown = refused ? TextShownWhy.Refused : why == TextShownWhy.Refused ? TextShownWhy.Slow : why;
+            w.Request.Shown = shown;
+            if (!w.Request.HoldsLine)
+            {
+                Fallbacks++;   // a held line shows nothing yet: its asker asks again, or counts the written line it shows (CountWritten)
+                Tally.Count(Pack, w.Request.Intent, shown, refused ? _verdict : TextVerdict.Ok);
+            }
             _verdict = TextVerdict.Ok;
         }
     }
