@@ -59,6 +59,7 @@ namespace RealLifeOverhaul
         public static readonly GamePart ClickDesk = ContractBook.Part("click_desk", "careers_study", "clicking your desk at work");
         public static readonly GamePart ClickBuilderDesk = ContractBook.Part("click_builder_desk", "construction", "talking to the person at a builder's front desk");
         public static readonly GamePart ClickCarPark = ContractBook.Part("click_car_park", "construction", "using a car park's pay machine");
+        public static readonly GamePart ClickSession = ContractBook.Part("click_session", "living", "clicking your own desk at your firm's office for a session");
         public static readonly GamePart CarParks = ContractBook.Part("car_parks", "construction", "the game's parking lanes copied for a car park's bays");
         public static readonly GamePart Mop = ContractBook.Part("mop", "jobs", "the cleaner's mop");
         public static readonly GamePart SchoolCar = ContractBook.Part("school_car", "licences", "the driving school's car");
@@ -214,8 +215,8 @@ namespace RealLifeOverhaul
         public static readonly GameMember RainEnd = StaticField(SeasonRain, Sky, "BigAmbitions.DayNightCycle.RainHelper", "NextRainEndTime", "Timestamp");
         public static readonly GameMember RainFade = StaticField(SeasonRain, Sky, "BigAmbitions.DayNightCycle.RainHelper", "NextRainPostRainPeriodStartTime", "Timestamp");
 
-        // Home/HomeOffers, Ledger/LedgerPointer, Transport/TransitPointer, Careers/DeskGame, Construction/BuilderDeskGame: the game's list of what a click does
-        public static readonly GameMember CtaBehaviours = StaticField(On(ClickHome, ClickLedger, ClickBusStop, ClickDesk, ClickBuilderDesk, ClickCarPark), Game, "Player.HUD.ItemInfoOverlays.CtaManager", "CtaBehaviors", "List<ICtaBehavior>");
+        // Home/HomeOffers, Ledger/LedgerPointer, Transport/TransitPointer, Careers/DeskGame, Construction/BuilderDeskGame, Sessions/SessionGame: the game's list of what a click does
+        public static readonly GameMember CtaBehaviours = StaticField(On(ClickHome, ClickLedger, ClickBusStop, ClickSession, ClickDesk, ClickBuilderDesk, ClickCarPark), Game, "Player.HUD.ItemInfoOverlays.CtaManager", "CtaBehaviors", "List<ICtaBehavior>");
 
         // Jobs/JobMop
         public static readonly GameMember MopClick = Optional(Method(Mop, Game, "MopController", "OnFloorCellClick", "Void", "DirtSpotObject"));   // else the cell under the player

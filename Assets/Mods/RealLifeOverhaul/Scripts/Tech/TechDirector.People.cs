@@ -485,6 +485,8 @@ namespace RealLifeOverhaul.Tech
                     Esteem = esteem, OnCall = false, Wanted = TalentRules.Content(p, Seed), Comfort = TechBridges.ComfortAt(p.Place)
                 };
                 TalentRules.Mood(p, d);
+                TechBridges.TeamWeekAt(p.Place, day, out _, out int pushed);
+                p.Burnout = MeetingRules.Day(p.Burnout, hours, pushed);   // a week its team meeting pushed: burnout a day worked
                 if (person.Game != null)
                 {
                     TalentGame.Mood(person.Game, TalentRules.GameMood(p, person.Game.satisfaction));

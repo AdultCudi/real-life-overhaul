@@ -39,7 +39,7 @@ namespace RealLifeOverhaul.Tech
     /// <summary>The figures of tech firms: products, contracts, risks and the rivals. Game-free; cents at the start's prices.</summary>
     public static class FirmsCatalogue
     {
-        public const int MonthDays = 30;   // whatever the game's year: subscriptions run by the calendar, as wages and rents do
+        public const int MonthDays = CalendarRules.BillingMonthDays;   // whatever the game's year: subscriptions run by the calendar, as wages and rents do (the one month rule)
 
         /// <summary>The products each kind of firm can make, one bit per ProductKind.</summary>
         public static readonly int[] MakesProducts =
