@@ -425,7 +425,7 @@ namespace RealLifeOverhaul.Population
 
         public const int CommuterSpend = 1600;           // cents a day a commuter spends in the city on a working day (lunch, coffee, a shop near work)
         public const int CommuterFill = 120;             // thousandths of the vacancies the region fills a day while it has people to send
-        public const int RegionPool = 160000;            // the region's people who could take a job in the city
+        public const int RegionPool = 400000;            // the region's people who could take a job in the city (the boroughs and the suburbs round Manhattan hold millions)
         public const int RegionWorkersShare = 600;       // thousandths of them in work elsewhere: the city draws from the rest first
 
         /// <summary>Visitors a day for each unit of a district's pull (its shops' room for customers times the game's customer weight), and what each spends, cents, by kind.</summary>
@@ -434,8 +434,11 @@ namespace RealLifeOverhaul.Population
 
         // ---- life (POPULATION.md section 4): rates by the year, turned into days by the save's year
 
-        /// <summary>Births a year per mille of women of each age band from 15 (15-19 ... 45-49): Manhattan's low fertility, about 1.3 children a woman (CDC; NYC DOHMH).</summary>
-        public static readonly int[] Fertility = { 6, 30, 52, 70, 50, 16, 2 };
+        /// <summary>
+        /// Births a year per mille of women in a couple, by age band from 15 (15-19 ... 45-49): about half of Manhattan's women of those ages live with a
+        /// partner, so over all women it is Manhattan's low fertility, about 1.2 children a woman (CDC; NYC DOHMH).
+        /// </summary>
+        public static readonly int[] Fertility = { 12, 60, 104, 140, 100, 32, 4 };
 
         public const int MortalityA = 32;                // millionths: Gompertz's death rate at age 0 (US life tables: about 0.13% at 40, 0.9% at 60, 6% at 80)
         public const int MortalityB = 95;                // thousandths: how fast it doubles with age (every 7.3 years)
@@ -449,11 +452,12 @@ namespace RealLifeOverhaul.Population
         public const int RentBurdenLeave = 700;          // ... past which, with nothing cheaper free, it leaves the city
         public const int UnemployedLeaveDays = 365;      // game days out of work in a year of 365 (scaled) after which a household may leave
         public const int LeaveChance = 120;              // per mille a year such a household leaves
-        public const int MigrantsPerVacancy = 400;       // thousandths of a household a day that comes to the city for each hundred open vacancies with free flats
+        public const int MigrantsPerVacancy = 400;       // thousandths of a household a day that would come to the city for each hundred open vacancies (more when it has flats to spare)
+        public const int ArrivalShare = 300;             // thousandths a month of a district's free flats past its target share that households from the region take (Manhattan never lacks people who want to live there)
 
         // ---- housing (POPULATION.md section 8)
 
-        public const int RentStep = 15;                  // thousandths a month a district's rents move for each 10 thousandths its vacancy is off its target
+        public const int RentStep = 4;                   // thousandths a month a district's rents move for each 10 thousandths its vacancy is off its target: three points off moves them some 15% a year
         public const int RentLeast = 650;                // thousandths of the game's own rent a district's index goes down to
         public const int RentMost = 1800;                // ... and up to
         public const int RentResidential = 65;           // thousandths: the game's residential rent multiplier (BuildingTypeData buildingPriceMultiplierForRent)
