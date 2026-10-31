@@ -76,7 +76,8 @@ internal static partial class Program
             "population sources: the city economy's districts, Uptown's demand, the copies of the customer arithmetic and the business levers are wired to it");
         string outlook = File.ReadAllText(System.IO.Path.Combine(ModScripts(), "Wiring", "Wiring.OutlookLinks.cs"));
         Check(outlook.Contains("Population.CityPopulation.Running && cycle == (int)CityEconomy.State"), "population sources: the Economy app's jobs are the measured market's where the population runs");
-        foreach (string copy in new[] { "Economy/Company/RotaGame.Read.cs", "Economy/Dealer/DealerGame.cs", "Economy/OwnBank/Branch/BranchGame.cs", "Economy/Brands/BrandsGame.cs" })
+        foreach (string copy in new[] { "Economy/Company/RotaGame.Read.cs", "Economy/Dealer/DealerGame.cs", "Economy/OwnBank/Branch/BranchGame.cs", "Economy/Brands/BrandsGame.cs",
+                                        "Economy/City/CityGame.cs", "Outlook/OutlookGame.cs" })
         {
             Check(File.ReadAllText(System.IO.Path.Combine(ModScripts(), copy)).Contains("CustomerScale."), "population sources: " + copy + " reads the population's scale for its copy of the game's customers");
         }

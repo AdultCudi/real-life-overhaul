@@ -66,9 +66,17 @@ namespace RealLifeOverhaul.Economy
         public int Own, Written;        // that figure: the game's own and what stands now
         public bool Applied;            // something of the mod's is in the figure
 
-        /// <summary>The change in customers the figure written gives, per cent, by the game's formula (CustomerEntriesCalculator).</summary>
+        /// <summary>
+        /// The change in customers the figure written gives, per cent, by the game's formula (CustomerEntriesCalculator); while the living population
+        /// carries the business's count, the population's count against the game's own instead (Core/CustomerScale), as the written figure is then the game's.
+        /// </summary>
         public int Achieved(float baseMultiplier)
         {
+            float scale = CustomerScale.For(Reg);
+            if (scale != 1f)
+            {
+                return Mathf.RoundToInt((scale - 1f) * 100f);
+            }
             float own = baseMultiplier + 0.75f * Own / 100f;
             return !HasFigure || own <= 0f ? 0 : Mathf.RoundToInt(((baseMultiplier + 0.75f * Written / 100f) / own - 1f) * 100f);
         }
