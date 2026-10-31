@@ -66,6 +66,9 @@ namespace RealLifeOverhaul.Tech
 
         public static string Whole(long n) => n.ToString("N0", Inv);
 
+        /// <summary>Game minutes as hours and minutes, in the words the study's time uses ("3h 05m").</summary>
+        public static string Minutes(int minutes) => T("reallife_study_hours_minutes", "hours", (minutes / 60).ToString(Inv), "minutes", (minutes % 60).ToString("00", Inv));
+
         public static string Role(int role) => T(Mod + "_talent_role_" + TalentCatalogue.Role(role).Key);
 
         public static string Level(int level) => T(Mod + "_talent_level_" + TalentCatalogue.LevelKeys[TalentCatalogue.Clamp(level, 0, TalentCatalogue.Levels - 1)]);

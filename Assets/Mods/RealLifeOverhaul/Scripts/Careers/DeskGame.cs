@@ -141,8 +141,8 @@ namespace RealLifeOverhaul.Careers
             return target != Vector3.zero && FitReach.Walkable(from, target, DeskReach.SampleRadius, out _);
         }
 
-        // A station the game would let somebody work at: standing, not for sale, not at a receptionist's desk of the game's.
-        private static bool Usable(EmployeeStationController station)
+        /// <summary>A station the game would let somebody work at: standing, not for sale, not at a receptionist's desk of the game's.</summary>
+        public static bool Usable(EmployeeStationController station)
         {
             return station != null && station.gameObject.activeInHierarchy && !(station.playerItemPurchaserSettings != null && station.playerItemPurchaserSettings.enabled)
                    && station.Item != null && station.Item.assignable && !(station.parentItemController is BusinessEmployeeController);
@@ -197,6 +197,20 @@ namespace RealLifeOverhaul.Careers
                 return;
             }
             manager.AssignAiToEmployeeStation(station);
+        }
+
+        /// <summary>
+        /// The station's scheduled employee seated again at a business of the player's, as the game's WorkActivity does a frame
+        /// after the player stands up from one there; nothing while it is closed (the game seats nobody then either).
+        /// </summary>
+        public static void Restaff(EmployeeStationController station)
+        {
+            BuildingManager manager = InstanceBehavior<BuildingManager>.Instance;
+            if (station == null || manager == null || !BuildingManager.IsInsideBuilding || !manager.IsPlayerOwnedBusiness || !manager.isOpen || station.employee != null)
+            {
+                return;
+            }
+            station.UpdateEmployee();
         }
 
         /// <summary>True if somebody else is at the station now (the game seated one of its people there again).</summary>
@@ -371,7 +385,8 @@ namespace RealLifeOverhaul.Careers
 
         /// <summary>
         /// A second thing the player can click to work, owned by a feature other than the careers' (the bank branch's counter,
-        /// Economy/OwnBank/Branch), with what a click on it does. Set and cleared by its owner; asked about only while it is set.
+        /// Economy/OwnBank/Branch; a free desk of the player's own tech firm, Tech's OwnDesk), with what a click on it does. Set
+        /// by its owner, and cleared only by the owner whose <see cref="OtherClicked"/> it holds; asked about only while it is set.
         /// </summary>
         public static EntityController OtherTarget;
         public static Action<EntityController> OtherClicked;
