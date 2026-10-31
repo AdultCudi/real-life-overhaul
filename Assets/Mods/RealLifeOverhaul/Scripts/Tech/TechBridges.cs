@@ -50,6 +50,42 @@ namespace RealLifeOverhaul.Tech
         /// <summary>News of a listed company moves its share price: the stock market's id and the move in basis points. Default: nothing.</summary>
         public static Action<int, int> Stock;
 
+        /// <summary>The player's own listed company's id on the stock market while it trades, 0 while not listed (the studio's releases move it). Default: none.</summary>
+        public static Func<int> OwnStock;
+
+        public static int OwnStockNow() => Ask(OwnStock, 0, int.MaxValue, 0);
+
+        /// <summary>True while desk sessions run (the sessions' option and the master one): the studio's pitch is then held at the desk. Default: not running.</summary>
+        public static Func<bool> Desks;
+
+        public static bool DesksNow()
+        {
+            try
+            {
+                return Desks != null && Desks();
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>The game studio's desk sessions put in (true) or taken out of the sessions' registry as the studio starts and stops. Default: nothing.</summary>
+        public static Action<bool> StudioSessions;
+
+        /// <summary><see cref="StudioSessions"/> told; a fault in the sessions changes nothing here.</summary>
+        public static void StudioSessionsNow(bool on)
+        {
+            try
+            {
+                StudioSessions?.Invoke(on);
+            }
+            catch (Exception)
+            {
+                // the sessions' fault: the studio runs on, its sessions as they were
+            }
+        }
+
         /// <summary>Opens a case for a data protection offence against a firm (its name), on a summons; the case's number or 0. Default: none.</summary>
         public static Func<string, int> Prosecute;
 
@@ -302,6 +338,9 @@ namespace RealLifeOverhaul.Tech
             Held = null;
             Books = null;
             Stock = null;
+            OwnStock = null;
+            StudioSessions = null;
+            Desks = null;
             Prosecute = null;
             Claim = null;
             Fame = null;

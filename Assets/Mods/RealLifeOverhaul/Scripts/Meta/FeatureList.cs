@@ -42,6 +42,7 @@ namespace RealLifeOverhaul.Meta
             Outlook.OutlookGuide.Register();
             Population.PopulationGuide.Register();
             Sessions.SessionGuide.Register();
+            Tech.StudioGuide.Register();
         }
 
         private static void RegisterGameplay()

@@ -65,6 +65,7 @@ namespace RealLifeOverhaul.Tech
             {
                 return;
             }
+            StopStudio(keep);   // first: it leaves the games as the firms' own rules carry on with
             if (keep && Save != null && _firmsFile != null)
             {
                 WriteFirms(Save.modData);
@@ -279,6 +280,10 @@ namespace RealLifeOverhaul.Tech
                 }
             }
             int level = Prices.Level, outages = 0, breaches = 0;
+            if (_studioOn)
+            {
+                StudioMarketDay(day);   // the rival studios and the genres' markets, before the studios sell into them
+            }
             for (int f = 0; f < _firms.Count; f++)
             {
                 FirmPlace firm = _firms[f];
@@ -319,9 +324,9 @@ namespace RealLifeOverhaul.Tech
                 for (int i = 0; i < _firmsFile.Products.Count; i++)
                 {
                     Product p = _firmsFile.Products[i];
-                    if (p.Place != file.Place || p.Stage >= 2)
+                    if (p.Place != file.Place || p.Stage >= 2 || StudioRuns(file.K) && p.K == ProductKind.Game)
                     {
-                        continue;
+                        continue;   // a studio's games are the studio part's (StudioFirm, below)
                     }
                     int points = shares > 0 ? (int)((long)engineering * Math.Max(0, p.Share) / shares) : 0;
                     int testing = shares > 0 ? (int)((long)c.Testing * Math.Max(0, p.Share) / shares) : 0;
@@ -373,6 +378,10 @@ namespace RealLifeOverhaul.Tech
                                 TabProducts, TechApp.ProductRow + p.Id);
                         }
                     }
+                }
+                if (StudioRuns(file.K))
+                {
+                    StudioFirm(firm, day, cycle, ref hosting, ref marketing, ref rndPoints, ref quality, ref rated);
                 }
                 if (rated > 0)
                 {
