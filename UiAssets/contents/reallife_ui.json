@@ -1,0 +1,61 @@
+{
+    "version": 1,
+    "samplingSize": 48,
+    "faces": [
+        {
+            "asset": "Sora-SemiBold SDF",
+            "family": "Sora",
+            "weight": 600,
+            "characters": 343,
+            "atlasWidth": 1024,
+            "atlasHeight": 1024,
+            "bytes": 1049256
+        },
+        {
+            "asset": "Sora-Bold SDF",
+            "family": "Sora",
+            "weight": 700,
+            "characters": 343,
+            "atlasWidth": 1024,
+            "atlasHeight": 1024,
+            "bytes": 1049256
+        },
+        {
+            "asset": "Sora-ExtraBold SDF",
+            "family": "Sora",
+            "weight": 800,
+            "characters": 343,
+            "atlasWidth": 1024,
+            "atlasHeight": 1024,
+            "bytes": 1049256
+        },
+        {
+            "asset": "Manrope-SemiBold SDF",
+            "family": "Manrope",
+            "weight": 600,
+            "characters": 554,
+            "atlasWidth": 1024,
+            "atlasHeight": 1024,
+            "bytes": 1049256
+        },
+        {
+            "asset": "Manrope-Bold SDF",
+            "family": "Manrope",
+            "weight": 700,
+            "characters": 554,
+            "atlasWidth": 2048,
+            "atlasHeight": 1024,
+            "bytes": 2097832
+        },
+        {
+            "asset": "Manrope-ExtraBold SDF",
+            "family": "Manrope",
+            "weight": 800,
+            "characters": 554,
+            "atlasWidth": 2048,
+            "atlasHeight": 1024,
+            "bytes": 2097832
+        }
+    ],
+    "totalBytes": 8392688
+}
