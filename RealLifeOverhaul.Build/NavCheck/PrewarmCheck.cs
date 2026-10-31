@@ -140,8 +140,11 @@ internal static partial class Program
         // The contacts' pictures: no array per picture, logos kept as files, painted by a time budget.
         Check(!Body(Source(scripts, @"Phone\Contacts\ContactPictures.cs"), "internal static void Fill(").Contains("new Color32["), "contacts: a picture's colour is written into its own texture, no 256 KB array each");
         string painter = Source(scripts, @"Phone\Contacts\ContactPainter.cs");
-        Check(!painter.Contains("new Color32[") && painter.Contains("KeepLogo(p, ") && Body(painter, "private void OnUpdate()").Contains("slice.More(heavy)"),
-            "contacts: no picture array, logos kept as files, painting held to a slice of a frame");
+        string painterUpdate = Body(painter, "private void OnUpdate()");
+        Check(!painter.Contains("new Color32[") && painter.Contains("KeepLogo(p, ") && painterUpdate.Contains("_fetch = Ask(p);") && Body(painter, "private static Task<Fetch> Ask(").Contains("_io.ContinueWith(_ => Read(ask)") && !painterUpdate.Contains("File.")
+              && painterUpdate.IndexOf("Use(f);", StringComparison.Ordinal) is int used && used > 0 && painterUpdate.IndexOf("return;", used, StringComparison.Ordinal) > used
+              && painterUpdate.IndexOf("return;", used, StringComparison.Ordinal) < painterUpdate.IndexOf("Wanted.Count == 0", StringComparison.Ordinal),
+            "contacts: no picture array, logos kept as files, every file read on the worker, one picture a frame");
 
         // The performance tweaks: one switched a frame, what they look at taken behind the loading screen, never searched in play.
         string sync = Body(Source(scripts, @"Performance\PerfDirector.cs"), "private void Sync(");

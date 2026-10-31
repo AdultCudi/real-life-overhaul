@@ -455,8 +455,9 @@ namespace RealLifeOverhaul.Flare
             {
                 Logger?.Info("Flare check (city photo): " + shot.Kind.ToString().ToLowerInvariant() + (shot.Place != null ? " (" + shot.Place + ")" : string.Empty) + " in " + district + ", "
                              + light.ToString().ToLowerInvariant() + (wet ? ", in the rain" : ", dry") + (result.Written ? ", taken as photo " + id : ", not taken: " + result.Why)
-                             + "; the renders took " + result.RenderMs.ToString("0.0", CultureInfo.InvariantCulture) + " ms of the main thread (wanted under " + FlareCityPhotoRules.SlowMs
-                             + " ms), next in "
+                             + "; the renders took " + result.RenderMs.ToString("0.0", CultureInfo.InvariantCulture) + " ms of the main thread over " + result.Frames + " frame(s), "
+                             + result.WorstFrameMs.ToString("0.0", CultureInfo.InvariantCulture) + " ms in the slowest (wanted under " + FlareCityPhotoRules.SlowMs + " ms in all and "
+                             + FlareCityPhotoRules.FrameMs + " ms a frame, one render a frame: " + (result.WorstFrameMs < FlareCityPhotoRules.FrameMs ? "PASS" : "SLOW") + "), next in "
                              + _photoPace.ToString("0") + " s; " + _photoToday + " of " + FlareCityPhotoRules.DayMost + " today, " + _bank.Photos.Count + " in the bank: "
                              + (result.Written || result.Why != null ? "PASS" : "FAIL"));
             }

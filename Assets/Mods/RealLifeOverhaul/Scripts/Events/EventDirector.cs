@@ -90,6 +90,28 @@ namespace RealLifeOverhaul.Events
             return true;
         }
 
+        // Behind the loading screen, a person a step: none of the eight is made in play, where each was a prefab and a mesh
+        // merge of 2 to 4 ms with its garbage, two seconds apart, while an event was due or a fire burned.
+        private bool PrewarmPeople()
+        {
+            if (!Settings.StreetEvents && !Settings.CityFires)
+            {
+                return true;   // made in play as before if either is switched on later
+            }
+            PlayerController player = PlayerHelper.PlayerController;
+            if (People.Warm(player != null ? player.transform.position : Vector3.zero))
+            {
+                ScenePrewarm.NextFrame();
+                return false;
+            }
+            if (Meta.Dev.Verbose)
+            {
+                Logger?.Info("Events check (their people made ahead): " + People.Count + " of " + CityPeople.MaxPeople + " made behind the loading screen, none to be made in play (wanted "
+                             + CityPeople.MaxPeople + "): " + (People.Count >= CityPeople.MaxPeople ? "PASS" : "FAIL"));
+            }
+            return true;
+        }
+
         private void Awake()
         {
             Instance = this;
@@ -100,6 +122,7 @@ namespace RealLifeOverhaul.Events
             Effects = new FireEffects(transform);
             // The flames and smoke copy the game's smoke, found by a search of memory: behind the loading screen.
             ScenePrewarm.Add("events: the fire's flames and smoke being built", PrewarmEffects);
+            ScenePrewarm.Add("events: the people of fires and street events made", PrewarmPeople);
             Sky = new Fireworks(transform);
             Hose = new Hose(transform);
             Hold = gameObject.AddComponent<HoseHold>();
