@@ -782,7 +782,7 @@ internal static partial class Program
         string comments = TextsSource("Social/Flare/FlareDirector.Comments.cs");
         Check(Regex.IsMatch(app, @"private string WordsOf\(FlarePost p, string author\)\s*\{\s*return _director\.WordsFor\(p, author\);")
               && Regex.IsMatch(comments, @"public string WordsFor\(FlarePost p, string author\)\s*\{\s*string model = ModelWords\(p\);")
-              && app.Contains("_director.FriendWords(p.Id, index) ?? FlareText.Reply(") && flare.Contains("r.Wanted = () => _file != null && _file.Post(post.Id) == post && Now < post.At;"),
+              && app.Contains("string words = _director.FriendWords(p.Id, index);") && app.Contains("Text = words ?? FlareText.Reply(") && flare.Contains("r.Wanted = () => _file != null && _file.Post(post.Id) == post && Now < post.At;"),
             "texts, Flare: the model's words are shown in place of the written line, and never once the post is up (a post does not change its words in front of the player)");
         Check(Regex.Matches(live, @"TextsAhead\(\);").Count == 3 && !Regex.IsMatch(TextsSource("Social/Flare/FlareDirector.cs"), @"TextsAhead"),
             "texts, Flare: the words are asked on the events that make posts (the day, the hour, a post of the player's), never on a timer of their own");
@@ -950,7 +950,7 @@ internal static partial class Program
         string flare = TextsSource("Social/Flare/FlareDirector.Texts.cs"), flareMain = TextsSource("Social/Flare/FlareDirector.cs");
         string forget = FlareMethod(flareMain, "private void ForgetAsked()");
         Check(Regex.Matches(flareMain, @"ForgetAsked\(\);").Count == 3 && forget.Contains("_textAsked.Clear();") && forget.Contains("_textDms.Clear();")
-              && Regex.IsMatch(flare, @"if \(FlareBridges\.TextAsk\(r\)\)\s*\{\s*_textAsked\.Asked\(id\);") && Regex.IsMatch(flare, @"if \(FlareBridges\.TextAsk\(r\)\)\s*\{\s*_textDms\.Asked\(key\);"),
+              && Regex.IsMatch(flare, @"bool asked = FlareBridges\.TextAsk\(r\);\s*if \(asked\)\s*\{\s*_textAsked\.Asked\(id\);") && Regex.IsMatch(flare, @"bool asked = FlareBridges\.TextAsk\(r\);\s*if \(asked\)\s*\{\s*_textDms\.Asked\(key\);"),
             "texts, Flare: the posts and answers asked for are forgotten with the file, and one counts as asked only when it was");
         string phone = TextsSource("Wiring/TextsPhone.cs");
         Check(phone.Contains("if (ReferenceEquals(save, SaveGameManager.Current))"), "texts, the phone: a text held for its words is never sent into another save");
