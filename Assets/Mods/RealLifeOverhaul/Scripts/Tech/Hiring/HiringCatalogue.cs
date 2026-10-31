@@ -63,6 +63,14 @@ namespace RealLifeOverhaul.Tech
         public const int StartTries = 3;   // days past the first day that a start the game refuses is tried again before the applicant withdraws, and the player is told
         public const int ApplicantsMost = 120;
 
+        // Buying out a notice: the hiring firm pays the employer to let them go early, the player for a hire, a rival for one of the player's staff
+        public const int BuyoutBp = 15000;   // the price over the pay for the days saved: their pay in lieu of notice, and half as much again for the employer's cost of replacing them sooner
+        /// <summary>
+        /// The per mille chance, junior to principal, that the rival a professional of the player's leaves for buys out the rest of their notice,
+        /// the day after it is handed in. Rivals poach seniors and above only; the more senior, the more a rival wants them sooner.
+        /// </summary>
+        public static readonly int[] RivalBuyoutChance = { 0, 0, 250, 400, 550 };
+
         // The recruitment office
         public const string AgencyType = "ba:businesstype_recruitmentagency";
         public const int OfficeBonusLeast = 4;      // more candidates than asked for, at the least

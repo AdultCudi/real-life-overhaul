@@ -462,7 +462,7 @@ namespace RealLifeOverhaul.Tech
             int made = ReadPeople(day);
             Unseat(day, true);
             Mentors(day);
-            int reviews = 0, sick = 0, left = 0, approached = 0, courses = 0, payroll = 0;
+            int reviews = 0, sick = 0, left = 0, approached = 0, courses = 0, payroll = 0, boughtOut = 0;
             int esteem = TechBridges.EsteemNow(), year = Year;
             for (int i = 0; i < _people.Count; i++)
             {
@@ -552,6 +552,10 @@ namespace RealLifeOverhaul.Tech
                         Data("name", person.Name, "rival", p.PoachBy, "percent", (p.PoachBp / 100).ToString(), "days", TalentCatalogue.PoachAnswerDays.ToString()),
                         TabTeam, Row(p));
                 }
+                if (_hiringOn && HiringRules.RivalBuysOut(Seed, p, day))
+                {
+                    boughtOut += RivalBuyout(person, day) ? 1 : 0;   // they go today, below
+                }
                 if (p.NoticeEnd > 0 && day >= p.NoticeEnd)
                 {
                     Go(person, day);
@@ -564,7 +568,8 @@ namespace RealLifeOverhaul.Tech
             {
                 Logger?.Info("Tech check (professionals, day " + day + "): " + _people.Count + " professional(s)" + (made > 0 ? ", " + made + " new" : string.Empty)
                     + ", " + reviews + " review(s), " + sick + " off sick, "
-                             + approached + " approached by a rival, " + courses + " course(s) or exam(s) ended, " + left + " gone, " + payroll + " paid by the mod; "
+                             + approached + " approached by a rival, " + boughtOut + " notice(s) bought out by one, " + courses + " course(s) or exam(s) ended, "
+                             + left + " gone, " + payroll + " paid by the mod; "
                              + (renamed > 0 ? renamed + " name(s) shared and renamed, " : string.Empty)
                              + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " ms: PASS");
             }
@@ -634,6 +639,27 @@ namespace RealLifeOverhaul.Tech
             }
             _talent.People.Remove(p);
             Tell(NotificationType.Info, "reallife_talent_note_left", Data("name", person.Name), TabTeam, null);
+        }
+
+        /// <summary>
+        /// The rival a professional is leaving for buys out the rest of their notice, as the player may for a hire of theirs: by the same
+        /// price, at the pay they have now, paid to the business they leave, and they go today. Once, the day after the notice was handed
+        /// in (HiringRules.RivalBuysOut), and they are gone the same day, so never twice. False if there was nothing to pay.
+        /// </summary>
+        private bool RivalBuyout(Person person, int day)
+        {
+            Profile p = person.File;
+            int end = p.NoticeEnd;
+            int price = HiringRules.BuyoutPrice(HiringRules.BuyoutDays(end, day), p.GameWage);
+            if (price <= 0)
+            {
+                return false;
+            }
+            HiringGame.Receive(price, HiringGame.BuyoutPaidKey, person.At, person.Name);
+            p.NoticeEnd = day;
+            Tell(NotificationType.Info, "reallife_talent_note_buyout", Data("name", person.Name, "rival", p.PoachBy, "amount", TechText.Cents(price)), TabTeam, null);
+            BuyoutCheck(person.Name + " for " + p.PoachBy, day, end, p.NoticeEnd, day, price, p.GameWage);
+            return true;
         }
 
         /// <summary>A rise in basis points, settling any request; at most one rise or promotion in WageRules' period.</summary>

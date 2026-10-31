@@ -169,6 +169,76 @@ namespace RealLifeOverhaul.Tech
         }
 
         /// <summary>
+        /// Test: the newest accepted hire who has not started is made one whose notice can be bought out, in work with their level's notice
+        /// counted from today, as a search firm's candidate is. Their page on the Applicants tab, opened by the notice, then offers the buy
+        /// out at its price. Says why not when nobody has accepted.
+        /// </summary>
+        public void TestBuyout()
+        {
+            if (!_hiringOn || Save == null)
+            {
+                Notifications.ShowError("reallife_hire_test_off");
+                return;
+            }
+            Applicant a = null;
+            for (int i = _hiring.Applicants.Count - 1; i >= 0 && a == null; i--)
+            {
+                a = _hiring.Applicants[i].Stage == (int)ApplyStage.Accepted ? _hiring.Applicants[i] : null;
+            }
+            Seeker s = a != null ? _hiring.SeekerOf(a.Seeker) : null;
+            if (s == null)
+            {
+                Notifications.ShowError("reallife_hire_test_no_accepted");
+                return;
+            }
+            s.Employed = true;
+            s.Notice = Math.Max(s.Notice, HiringRules.NoticeFor(s.P.Level));
+            a.Start = Math.Max(a.Start, Save.Day + s.Notice);
+            int price = HiringRules.BuyoutQuote(a, s, Save.Day);
+            Logger?.Info("Tech check (notice buy out test, " + s.P.Name + "): starts on day " + a.Start + ", " + HiringRules.BuyoutDays(a.Start, HiringRules.BuyoutStart(Save.Day))
+                         + " day(s) to save for " + price + " cents: " + (price > 0 && BuyoutRefusal(a, s) == null ? "PASS" : "FAIL"));
+            Tell(NotificationType.Info, "reallife_hire_test_buyout_ready", Data("name", s.P.Name, "day", a.Start.ToString(), "amount", TechText.Cents(price)), TabApplicants,
+                RolesApp.ApplicantRow + a.Id);
+            Changed();
+        }
+
+        /// <summary>
+        /// Test: the most senior professional working their notice for a rival has it bought out by that rival now, by the day's own rule
+        /// and price: the player is paid and they go. Says how to get there when nobody is working such a notice.
+        /// </summary>
+        public void TestRivalBuyout()
+        {
+            if (!_hiringOn || !_peopleOn || Save == null)
+            {
+                Notifications.ShowError("reallife_hire_test_off");
+                return;
+            }
+            ReadPeople(Save.Day);
+            Person best = null;
+            for (int i = 0; i < _people.Count; i++)
+            {
+                Profile f = _people[i].File;
+                if (f.Leaving == (int)LeaveKind.Poached && f.NoticeEnd > Save.Day && (best == null || f.Level > best.File.Level))
+                {
+                    best = _people[i];
+                }
+            }
+            if (best == null)
+            {
+                Notifications.ShowError("reallife_talent_test_buyout_none");
+                return;
+            }
+            if (!RivalBuyout(best, Save.Day))
+            {
+                Notifications.ShowError("reallife_talent_test_buyout_unpaid");
+                return;
+            }
+            Go(best, Save.Day);
+            ReadPeople(Save.Day);
+            Changed();
+        }
+
+        /// <summary>
         /// Test: the oldest data centre crew search not yet delivered delivers now, by the day's own rule. PASS when it brings the
         /// candidates its brief asks for, of its role, junior to staff level, shortlisted for it, and nothing is charged.
         /// </summary>
