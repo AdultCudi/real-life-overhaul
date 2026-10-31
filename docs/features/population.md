@@ -7,6 +7,7 @@ Under the living economy's master option **Living population**, every flat in th
 ## Where the code is
 
 - Folder: [`Scripts/Population`](../../Assets/Mods/RealLifeOverhaul/Scripts/Population/); the wiring in `Scripts/Wiring/Wiring.PopulationLinks.cs`; the mod's copies of the game's customer arithmetic read `Scripts/Core/CustomerScale.cs`; Uptown's demand reads `Scripts/Uptown/DemandBridges.cs`.
+- What the people bring the mod's own businesses: [`Scripts/Population/Demand`](../../Assets/Mods/RealLifeOverhaul/Scripts/Population/Demand/), its timing in `PopulationDirector.Demand.cs`, each business's bridge wired in `Scripts/Wiring/Wiring.DemandLinks.cs`.
 - Option: "Living population" (`living_population`, the overhaul's master switch, on in the beta; the feature "living" owns it). Off, the population stands down: the game's own customers, the city economy's own district incomes, the Economy app's tables by cycle and Uptown's fixed ratios stand, exactly as before.
 - The design: `not-in-repo/plans/tech-overhaul/POPULATION.md` (with the owner's answers of 1 Nov 2026).
 
@@ -56,14 +57,36 @@ At start the game's five customer calculators are given the mod's own subclasses
 
 The city economy's district incomes follow the households' mean incomes from where they stood; the Economy app's unemployment and vacancies are the measured market's; Uptown's and Cedar Heights' demand for homes, shops, offices and warehouses comes from the people (households wanting a flat, the region wanting in, takings growing, spending per shop floor, goods per warehouse floor). The council's taxes (income, sales at 8.9% of prices, property at 15% of rents) are an account the civic work will read (`CityPopulation.TaxesMonth`).
 
+## The mod's own businesses
+
+The mod's own businesses keep their own rules and take the number of people they draw on from the population (`Population/Demand`; POPULATION.md section 10). Each day, after the population's own day and in the same slices, `PopDemandJob` measures some twenty sources from the households, people, employers and businesses: the households' savings; their incomes by credit band (the band from their income against the city's middle and their debt against their income, debt past a year's income being default; the population keeps debt only where a household spent past its income, so debt marks distress and income carries the rest); the businesses' takings and the private wage bill; the visitors the districts draw; residents' nights out; households without a car; households that took a flat in the last month or still look for one, and their budget for rent; owners selling; young households taking a home; the middle and upper class's savings; the day's taxes; the districts' pull for building; households ready to buy a car; online spending by kind (the US Census Bureau's e-commerce shares); households selling second hand and the working and middle class's spending on goods; people who want a course; the households' satisfaction (worked out from their rent, work, savings, debt and room, since no record keeps it); the professions' jobseekers and unfilled posts; adults and households. Each district gets its households, businesses, adults, people, work and income, and leans against the city's: income, saving, debt, the housing market, its borrowers' bands and its crime (income, unemployment and young people weighed).
+
+Each demand is a recipe of sources and weights (`PopDemandCatalogue.Recipes`), read as a factor on the business's old figure: its sources against what they were on the anchor day. A city is anchored on the first day after it has lived through a month's turn (its moves and arrivals in its figures), so every factor is a thousand that day and every business keeps today's figures; a city generated again is anchored again. Before the anchor, and with the option off, every factor is a thousand.
+
+- The own bank: the people's savings pool follows the households' savings, the firms' their takings and wage bills, each credit band's borrowing the households in it, shops' and companies' their takings and wage bills; the rival banks hold the rest of the same pools. A branch's visits (what they are for, their sums and who asks for a loan) lean by its district's residents.
+- Property: hotel guests (business travel, the visitors the city draws, residents' trips), car hire (visitors and residents without a car), a landlord's applicants (the housing market, leaned by the building's district) and their offers (their budget for rent), the agency's owners (households moving and owners selling).
+- The construction company: flat buyers (young households taking a home, the middle and upper class's savings); the days between private clients' and refits' tenders (the districts' pull and the businesses' takings) and council buildings' tenders (the taxes). Rival builders bid on the same tenders.
+- The car showroom's buyers, an online shop's orders (its kind's online spending), the Marketplace's sellers and buyers, the academy's students.
+- Broadband's market in each district (its homes and businesses against the anchor day's).
+- Civic: each district's electorate is its adult residents (the floor space's guess before the population measures it); the council's revenue stands on the floor space's electorate moved by the people's taxes, so it is what it was on the anchor day; the mayor's approval takes the residents' satisfaction (`PopDemandCatalogue.SatisfactionApproval` points for its whole first-day figure); street crime where the player stands and the district map's crime layer lean by each district's crime.
+- The labour market: the tech sector's jobseekers follow the professions' unemployed and those looking while in work, the player's openings the professions' vacancies at the city's employers, each within its list's bounds.
+
+The Economy app's screens are view models (`PopDemandViews`): the business types whose demand moved most since the first day, and each type's demands with each source's part. The Guide's page "Customers from the city's people" says where each business's customers come from, and each business's own page ends with a pointer to it while the option is on.
+
+Not yet on the people: the game's own job candidates (the recruitment agency's and the job board's, drawn by the game's code), and broadband in Uptown and Cedar Heights (the company's network has the base city's seven districts).
+
 ## The save and Going Public
 
 One line, `reallife:population`: binary columns compressed in pieces on the save's workers by the district save's zip; a save without it generates the city; a load binds it to the city as it stands (a household whose building is not standing is kept, away, and looks for a flat). In a session the host owns the people and shares part P (the day, the books, each district's figures, each business's takings by address); a guest anchors each business on the first figures it hears and lives no population of its own.
 
+The businesses' demand has a small line of its own, `reallife:population_demand` (the anchor and the last day's sources and district figures, so the factors stand the moment a save loads; a line of another population is forgotten). In a session the host adds two sections to part P, each with its own version (`m:` the factors, `n:` each district's homes, businesses, adults and leans); a reader from before them skips them, and a guest's own businesses read the host's figures.
+
 ## Tests
 
-Options, Tests: Generate the city's people again; A month passes for the city's people (the population lives ahead of the clock and waits for the game's days); Show a household at random.
+Options, Tests: Generate the city's people again; A month passes for the city's people (the population lives ahead of the clock and waits for the game's days); Show a household at random; Show what the city's people bring your businesses (the two business types that moved most in a notice, every type in the log).
 
 ## Checks
 
 EconomyCheck (`--population`): the measure, the generation (bands, the same seed the same city), a day with every cent placed and every household's part summing to each business's takings, ten years of life, the labour market, the costs a slice, the save's round trip and a damaged line, the rebind, the Going Public part, the factor, every screen's view model.
+
+EconomyCheck (`--demand`, PopDemandChecks.cs, PopDemandBusinessChecks.cs, PopDemandTextChecks.cs): the day's measure counts every household, person and cent once (the districts sum to the city, the takings and taxes are the pools'); nothing moves before the anchor and every demand reads a thousand on the anchor day; the same seed gives the same factors; ten years keep every factor sane; the save's line and part P carry it whole and an older reader skips it; every screen; the measure within the population's slice; and each business: as before with no population and on the anchor day, its shared pools conserving, its figures leaning the right way and within the money scale over ten years.

@@ -43,7 +43,8 @@ namespace RealLifeOverhaul.Population
             CityDemand.Live = _demand;
             if (Verbose)
             {
-                Logger?.Info("Population check (the businesses' demand, day " + _demand.Day + "): " + (_demand.AnchorDay >= 0 ? "anchored on day " + _demand.AnchorDay : "not anchored yet, every business keeps its own figures")
+                string anchor = _demand.AnchorDay >= 0 ? "anchored on day " + _demand.AnchorDay : "not anchored yet, every business keeps its own figures";
+                Logger?.Info("Population check (the businesses' demand, day " + _demand.Day + "): " + anchor
                              + "; hotels " + _demand.Factors[(int)PopDemand.HotelGuests] + ", savers " + _demand.Factors[(int)PopDemand.SaversPeople] + ", tenants "
                              + _demand.Factors[(int)PopDemand.Tenants] + ", council " + _demand.Factors[(int)PopDemand.CouncilRevenue] + " per mille of their first day: "
                              + (Within(_demand) ? "PASS" : "FAIL, a factor past its bounds"));
@@ -71,7 +72,9 @@ namespace RealLifeOverhaul.Population
             {
                 Dictionary<string, string> data = PopulationGame.Data();
                 PopDemandState read = data != null ? PopDemandStore.Load(data, out _) : null;
-                _demand = read != null && read.Seed == s.Seed && read.Generated == s.Generated ? read : _demand != null && _demand.Seed == s.Seed && _demand.Generated == s.Generated ? _demand : new PopDemandState();
+                bool readFits = read != null && read.Seed == s.Seed && read.Generated == s.Generated;
+                bool keptFits = _demand != null && _demand.Seed == s.Seed && _demand.Generated == s.Generated;
+                _demand = readFits ? read : keptFits ? _demand : new PopDemandState();
             }
             CityDemand.Live = _demand;
         }

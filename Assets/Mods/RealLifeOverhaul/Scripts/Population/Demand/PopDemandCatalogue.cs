@@ -93,7 +93,8 @@ namespace RealLifeOverhaul.Population
             new[] { (PopSource.BorrowGood, 1000) },                                             // so its debt sets the band and its income the size
             new[] { (PopSource.Turnover, 1000) },                                               // a shop borrows against its takings
             new[] { (PopSource.Wages, 1000) },                                                  // a company borrows by its size
-            new[] { (PopSource.Wages, 350), (PopSource.Visitors, 500), (PopSource.Leisure, 150) },   // NYC Tourism + Conventions: about a third of hotel nights business, the rest leisure; residents' own stays a small part
+            // NYC Tourism + Conventions: about a third of hotel nights business, the rest leisure; residents' own stays a small part.
+            new[] { (PopSource.Wages, 350), (PopSource.Visitors, 500), (PopSource.Leisure, 150) },
             new[] { (PopSource.Visitors, 500), (PopSource.Carless, 500) },                       // in Manhattan most hires are residents without a car going away, the rest visitors
             new[] { (PopSource.Housing, 1000) },
             new[] { (PopSource.Budget, 1000) },

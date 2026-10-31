@@ -124,7 +124,10 @@ namespace RealLifeOverhaul.Population
             return (int)Math.Max(LeanLeast, Math.Min(LeanMost, mine * 1000 / city));
         }
 
-        /// <summary>A district's saving against the city's, thousandths: the share of its income after tax it puts by (which may be less than nothing), offset by a whole so a district that draws on its savings leans below the city.</summary>
+        /// <summary>
+        /// A district's saving against the city's, thousandths: the share of its income after tax it puts by (which may be less than nothing), offset by a whole
+        /// so a district that draws on its savings leans below the city.
+        /// </summary>
         public static int SavingLean(long saved, long disposable, long citySaved, long cityDisposable)
         {
             if (disposable <= 0 || cityDisposable <= 0)

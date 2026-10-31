@@ -176,7 +176,6 @@ namespace RealLifeOverhaul.Construction
         SellFlats = 1    // homes sold flat by flat; the building is its residents'
     }
 
-    /// <summary>Who asked for works put out to tender. Saved as a number.</summary>
     /// <summary>What the city's people bring the player's construction company, as ConstructionBridges.People is asked for it.</summary>
     public enum BuildDemand
     {
@@ -185,6 +184,7 @@ namespace RealLifeOverhaul.Construction
         Public = 2       // the council's own buildings: its taxes
     }
 
+    /// <summary>Who asked for works put out to tender. Saved as a number.</summary>
     public enum TenderSource
     {
         CityWorks = 0,   // one of the city's construction programme's sites

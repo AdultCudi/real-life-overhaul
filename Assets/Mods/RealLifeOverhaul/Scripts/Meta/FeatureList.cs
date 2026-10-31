@@ -41,6 +41,7 @@ namespace RealLifeOverhaul.Meta
             Shops.ShopsGuide.Register();
             Outlook.OutlookGuide.Register();
             Population.PopulationGuide.Register();
+            Population.PopDemandGuide.Register();
             Sessions.SessionGuide.Register();
             Tech.StudioGuide.Register();
         }

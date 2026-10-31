@@ -29,6 +29,7 @@ internal static partial class Program
         PopDemandViewsChecks();
         PopDemandCosts();
         PopDemandBusinessChecks();   // each business on the people, after the ten years it reads (PopDemandBusinessChecks.cs)
+        PopDemandTextChecks();       // its words and sources (PopDemandTextChecks.cs)
     }
 
     // A city generated from a seed, its first day lived and measured.

@@ -1,4 +1,5 @@
 using System;
+using Localizor;
 using RealLifeOverhaul.Careers;
 using RealLifeOverhaul.Construction;
 using RealLifeOverhaul.Districts;
@@ -40,6 +41,7 @@ namespace RealLifeOverhaul
                 CivicBridges.Residents = Residents;
                 CityWatch.Residents = CrimeHere;
                 DistrictBridges.Crime = CrimeIn;
+                Meta.Guide.PageExtra = Pointer;
             }
 
             internal static void Disconnect()
@@ -62,6 +64,7 @@ namespace RealLifeOverhaul
                 CivicBridges.Residents = null;
                 CityWatch.Residents = null;
                 DistrictBridges.Crime = null;
+                Meta.Guide.PageExtra = null;
             }
 
             // True while the people's figures stand for the mod's own businesses: the option on and a day measured (a guest's, the host's).
@@ -171,6 +174,12 @@ namespace RealLifeOverhaul
                     Fault("DemandLinks.Online", e);
                     return 0;
                 }
+            }
+
+            // A business's Guide page ends with where its customers come from while Living population is on.
+            private static string Pointer(string featureId)
+            {
+                return Settings.LivingPopulation && PopDemandGuide.Points(featureId) ? "reallife_pop_dem_pointer".GetLocalization() : null;
             }
 
             // A district's adult residents, its electorate; -1 for none.
