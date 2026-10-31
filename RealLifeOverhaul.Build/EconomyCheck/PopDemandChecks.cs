@@ -28,6 +28,7 @@ internal static partial class Program
         PopDemandShareChecks();
         PopDemandViewsChecks();
         PopDemandCosts();
+        PopDemandBusinessChecks();   // each business on the people, after the ten years it reads (PopDemandBusinessChecks.cs)
     }
 
     // A city generated from a seed, its first day lived and measured.
@@ -343,7 +344,8 @@ internal static partial class Program
         for (int d = 0; same && d < m.Districts; d++)
         {
             same &= back.Ids[d] == m.Ids[d] && back.Crime[d] == m.Crime[d] && back.IncomeLean[d] == m.IncomeLean[d] && back.SavingLean[d] == m.SavingLean[d]
-                    && back.BorrowLean[d] == m.BorrowLean[d] && back.HousingLean[d] == m.HousingLean[d] && back.ConnectionFactor[d] == m.ConnectionFactor[d] && back.Adults[d] == m.Adults[d];
+                    && back.BorrowLean[d] == m.BorrowLean[d] && back.HousingLean[d] == m.HousingLean[d] && back.ConnectionFactor[d] == m.ConnectionFactor[d] && back.Adults[d] == m.Adults[d]
+                    && back.AskLean[d * 3] == m.AskLean[d * 3];
         }
         Check(same, "population demand: the save's line carries the anchor, the last day's figures and every district, and a load has every factor and lean at once (" + line.Length + " characters)");
         var broken = new Dictionary<string, string> { { PopDemandStore.Key, "v=1~a:x|y~n:1|2" } };
@@ -377,7 +379,7 @@ internal static partial class Program
         for (int d = 0; same && d < m.Districts; d++)
         {
             same &= mine.Ids[d] == m.Ids[d] && mine.Crime[d] == m.Crime[d] && mine.IncomeLean[d] == m.IncomeLean[d] && mine.Adults[d] == m.Adults[d] && mine.ConnectionFactor[d] == m.ConnectionFactor[d]
-                    && mine.Ask[d * 3] == m.Ask[d * 3] && mine.Ask[d * 3 + 2] == m.Ask[d * 3 + 2];
+                    && mine.Ask[d * 3] == m.Ask[d * 3] && mine.Ask[d * 3 + 2] == m.Ask[d * 3 + 2] && mine.AskLean[d * 3 + 1] == m.AskLean[d * 3 + 1];
         }
         Check(same, "population demand: a Going Public guest reads the host's factors and every district's leans from part P, so every player's businesses draw on the one city");
         var older = new PopulationState();

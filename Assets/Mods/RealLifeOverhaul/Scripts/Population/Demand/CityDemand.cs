@@ -72,6 +72,15 @@ namespace RealLifeOverhaul.Population
             return d >= 0 && band >= 0 && band < PopDemandCatalogue.Bands && d * PopDemandCatalogue.Bands + band < m.Ask.Length ? m.Ask[d * PopDemandCatalogue.Bands + band] : -1;
         }
 
+        /// <summary>A district's share of borrowing in a band against the city's, thousandths (a thousand for none).</summary>
+        public static int AskLean(string district, int band)
+        {
+            PopDemandState m = Live;
+            int d = m != null ? m.DistrictOf(district) : -1;
+            return d >= 0 && band >= 0 && band < PopDemandCatalogue.Bands && d * PopDemandCatalogue.Bands + band < m.AskLean.Length
+                ? m.AskLean[d * PopDemandCatalogue.Bands + band] : PopDemandCatalogue.Neutral;
+        }
+
         /// <summary>A district's adult residents (its electorate); -1 for none counted.</summary>
         public static int Adults(string district) => Count(district, m => m.Adults);
 

@@ -89,6 +89,7 @@ namespace RealLifeOverhaul.Economy
             h.Satisfaction = reg.satisfaction != null ? reg.satisfaction.overall : 50;
             Tellers(reg, out h.Tellers, out h.Skill);
             h.Player = player && h.Open;
+            h.People = OwnBankBridges.Branch != null ? OwnBankBridges.Branch(GameRegistrations.District(reg)) : default;   // the living population's residents round it, where it runs
             return h;
         }
 

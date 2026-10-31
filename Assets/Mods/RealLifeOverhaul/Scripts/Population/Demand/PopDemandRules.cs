@@ -175,6 +175,8 @@ namespace RealLifeOverhaul.Population
                     long part = mine > 0 ? m.Borrowing[d * PopDemandCatalogue.Bands + b] : b == Poor ? borrow0 : b == Fair ? borrow1 : borrow2;
                     long all = mine > 0 ? mine : cityBorrow;
                     m.Ask[d * PopDemandCatalogue.Bands + b] = all > 0 ? (int)(part * 1000 / all) : (b == Fair ? 1000 : 0);
+                    long city = cityBorrow > 0 ? (b == Poor ? borrow0 : b == Fair ? borrow1 : borrow2) * 1000 / cityBorrow : 0;
+                    m.AskLean[d * PopDemandCatalogue.Bands + b] = city > 0 ? (int)Math.Max(0, Math.Min(LeanMost, m.Ask[d * PopDemandCatalogue.Bands + b] * 1000L / city)) : PopDemandCatalogue.Neutral;
                 }
                 m.Crime[d] = CrimeIndex(m.Income[d], hh, m.Unemployed[d], m.Workers[d], m.Youth[d], m.People[d], income, households, unemployed, workers, youth, people);
                 long homes = (long)hh + m.Businesses[d];

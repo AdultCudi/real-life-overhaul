@@ -50,6 +50,10 @@ namespace RealLifeOverhaul.Population
                     Field(t, m.Ask[d * PopDemandCatalogue.Bands + b]);
                 }
                 Field(t, m.ConnectionFactor[d]);
+                for (int b = 0; b < PopDemandCatalogue.Bands; b++)
+                {
+                    Field(t, m.AskLean[d * PopDemandCatalogue.Bands + b]);
+                }
             }
         }
 
@@ -115,6 +119,10 @@ namespace RealLifeOverhaul.Population
                     mine.Ask[d * PopDemandCatalogue.Bands + b] = Next(x, ref i, b == PopDemandRules.Fair ? 1000 : 0);
                 }
                 mine.ConnectionFactor[d] = Next(x, ref i, PopDemandCatalogue.Neutral);
+                for (int b = 0; b < PopDemandCatalogue.Bands; b++)
+                {
+                    mine.AskLean[d * PopDemandCatalogue.Bands + b] = Next(x, ref i, PopDemandCatalogue.Neutral);
+                }
                 d++;
             }
             return true;

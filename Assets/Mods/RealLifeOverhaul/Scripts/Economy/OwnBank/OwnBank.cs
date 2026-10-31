@@ -214,6 +214,7 @@ namespace RealLifeOverhaul.Economy
         public bool Courts;             // the justice system takes a lender's claims
         public int Scale;               // the end game's share (Core/EndScale): 0 as before, 1000 at scale
         public int Reach;               // thousandths more of the city's people the bank's branches bring it (Economy/OwnBank/Branch): 0 with none
+        public int[] People;            // thousandths of its first day's figure the city's people now save and borrow, by pool (the savers, then the segments); null with none
 
         /// <summary>A quiet city at the start's prices: the bank rate as it begins, a steady cycle, the council as it came.</summary>
         public static BankCity Quiet(int yearDays)

@@ -37,6 +37,7 @@ namespace RealLifeOverhaul.Population
         public long[] Connections = new long[0];     // its homes and businesses on the anchor day (broadband's market moves from it); 0 for none
         public int[] IncomeLean = new int[0], SavingLean = new int[0], BorrowLean = new int[0], HousingLean = new int[0], Crime = new int[0];
         public int[] Ask = new int[0];               // thousandths of a district's borrowing in each band, Bands a district
+        public int[] AskLean = new int[0];           // thousandths: a district's share of borrowing in each band against the city's, Bands a district
         public int[] ConnectionFactor = new int[0];  // thousandths of the anchor day's homes and businesses; 1000 with no anchor
 
         public PopDemandState()
@@ -97,6 +98,7 @@ namespace RealLifeOverhaul.Population
             HousingLean = Filled(n, PopDemandCatalogue.Neutral);
             Crime = Filled(n, PopDemandCatalogue.Neutral);
             Ask = new int[n * PopDemandCatalogue.Bands];
+            AskLean = Filled(n * PopDemandCatalogue.Bands, PopDemandCatalogue.Neutral);
             ConnectionFactor = Filled(n, PopDemandCatalogue.Neutral);
         }
 
