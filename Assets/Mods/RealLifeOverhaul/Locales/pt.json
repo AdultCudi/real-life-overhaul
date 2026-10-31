@@ -26683,7 +26683,7 @@
   "reallife_changes_063_2_title": "0.63.2",
   "reallife_changes_063_2": "Corrigido: eventos aleatórios, mensagens e contas agora só aparecem quando aquilo de que falam é realmente seu: uma geladeira, uma pia, uma banheira, uma cama ou um computador na sua casa, um carro, um proprietário enquanto você aluga, os vizinhos de cima num apartamento. Chega de conta de conserto de uma geladeira que você não tem.",
   "reallife_desk_seat_refused": "Não foi possível sentar você nesta mesa, então o trabalho não começou. Você pode andar de novo. Tente outra mesa.",
-  "reallife_tech_test_desk_seat": "Mesas: sentar na mesa livre mais próxima da minha empresa por um minuto de jogo",
+  "reallife_tech_test_desk_seat": "Mesas: sentar um minuto de jogo na mesa livre mais próxima da minha empresa",
   "reallife_tech_test_desk_seat_none": "Teste não iniciado: fique dentro de uma empresa sua com uma mesa livre e a cadeira dela, depois aperte de novo.",
   "reallife_tech_test_desk_seat_pass": "Teste passou: você sentou à mesa por um minuto de jogo e levantou livre para andar.",
   "reallife_tech_test_desk_seat_fail": "Teste falhou: você não foi sentado à mesa, ou não conseguiu andar depois. A linha Desk check (seat) do log diz o que prendeu você."

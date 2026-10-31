@@ -32,7 +32,8 @@ namespace RealLifeOverhaul.Tech
             }
             if (_seatTesting || _stint != null || DeskGame.Busy || !isActiveAndEnabled)
             {
-                TestRefusals.Tell(Logger, "Desk seat", TestRefusal.ScreenBusy, 0, _seatTesting ? "the test is running" : _stint != null ? "a stint at a desk is on" : "the work panel is up or the player is in a vehicle");
+                string busy = _seatTesting ? "the test is running" : _stint != null ? "a stint at a desk is on" : "the work panel is up or the player is in a vehicle";
+                TestRefusals.Tell(Logger, "Desk seat", TestRefusal.ScreenBusy, 0, busy);
                 return;
             }
             EmployeeStationController desk = null;

@@ -26683,7 +26683,7 @@
   "reallife_changes_063_2_title": "0.63.2",
   "reallife_changes_063_2": "Fixed: random events, texts and bills now come only when what they speak of is really yours: a fridge, a sink, a bathtub, a bed or a computer in your home, a car, a landlord while you rent, the neighbours upstairs in a flat. No more repair bill for a fridge you do not own.",
   "reallife_desk_seat_refused": "You could not be seated at this desk, so the work did not start. You can walk again. Try another desk.",
-  "reallife_tech_test_desk_seat": "Desks: sit at the nearest free desk of my business for a game minute",
+  "reallife_tech_test_desk_seat": "Desks: sit a game minute at my business's nearest free desk",
   "reallife_tech_test_desk_seat_none": "Test not started: stand inside a business of yours with a free desk and its chair, then press again.",
   "reallife_tech_test_desk_seat_pass": "Test passed: you sat at the desk for a game minute and stood up free to walk.",
   "reallife_tech_test_desk_seat_fail": "Test failed: you were not seated at the desk, or could not walk afterwards. The log's Desk check (seat) line says what held you."

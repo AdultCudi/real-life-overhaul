@@ -50,7 +50,8 @@ internal static partial class Program
         string holds = MemberText(game, "private static bool Holds(EmployeeStationController station, PlayerController player)");
         Check(sitAtBack && sitOnBack && holds.Contains("IsPlayers(station)") && holds.Contains("station is DesktopWorkstationController") && holds.Contains("isSittingOn != null"),
             "desk seat: a seat the game would not give (not its employee, not on the desk's chair, a fault) gives the player back free to walk at once and says why; nothing is left held");
-        Check(MethodText(game, "private static void Refused()").Contains("Notifications.ShowError(SeatRefusedKey, SeatRefusedKey);") && game.Contains("public const string SeatRefusedKey = \"reallife_desk_seat_refused\";"),
+        Check(MethodText(game, "private static void Refused()").Contains("Notifications.ShowError(SeatRefusedKey, SeatRefusedKey);")
+              && game.Contains("public const string SeatRefusedKey = \"reallife_desk_seat_refused\";"),
             "desk seat: the refusal is the game's own notice, once on screen however often it comes");
 
         // The releases: each step in its own try, the hold off in a finally, safe twice.
@@ -100,7 +101,8 @@ internal static partial class Program
         callers.Sort(StringComparer.Ordinal);
         string known = "DeskWork.cs, OwnBankDirector.Branches.cs, TechDirector.DeskSeat.cs, TechDirector.OwnDesk.cs";
         Check(string.Join(", ", callers) == known,
-            "desk seat: the callers of a seat are the job's desk, the bank counter, the own firm's stint and its test; a new one is checked for its ends here first (" + string.Join(", ", callers) + ")");
+            "desk seat: the callers of a seat are the job's desk, the bank counter, the own firm's stint and its test; a new one is checked for its ends here first ("
+            + string.Join(", ", callers) + ")");
         Check(bare.Count == 0, "desk seat: no caller drops a seat's answer: a seat refused ends the work at once (" + string.Join(", ", bare) + ")");
         Check(unreleased.Count == 0, "desk seat: every file that seats the player also stands them up (" + string.Join(", ", unreleased) + ")");
     }
@@ -122,7 +124,8 @@ internal static partial class Program
         string watch = MethodText(own, "private void WatchStint(BuildingRegistration reg, string place)");
         Check(Occurs(watch, "EndStint(stint, false);") == 2 && MethodText(own, "private void DeskDown()").Contains("EndStint(stint, false);")
               && own.Contains("_director.EndStint(this, true);"),
-            "desk seat: every end of the stint goes through EndStint: Stop, the time up, the skip and fast forward (SkipEnded), the panel letting it go, leaving the firm, the desk's employee arriving, the firms standing down");
+            "desk seat: every end of the stint goes through EndStint: Stop, the time up, the skip and fast forward (SkipEnded), the panel letting it go,"
+            + " leaving the firm, the desk's employee arriving, the firms standing down");
 
         // The bank counter.
         string bank = ModSource(@"Economy\OwnBank\Branch\OwnBankDirector.Branches.cs");
@@ -187,13 +190,17 @@ internal static partial class Program
             "desk seat texts: the notices are 240 characters or fewer");
         Check(en.TryGetValue("reallife_tech_test_desk_seat_fail", out string fail) && fail.Contains("Desk check (seat)"), "desk seat texts: a failed test names the log line that says why");
         Check(FixLineEverywhere("working at a desk of your own tech firm now seats you on its chair", "trabalhar numa mesa da sua própria empresa de tecnologia agora faz você sentar",
-                                "在你自己的科技公司的办公桌前工作时，现在会坐到它的椅子上", "An einem Schreibtisch deiner eigenen Tech-Firma setzt du dich jetzt beim Arbeiten auf seinen Stuhl",
-                                "travailler à un bureau de votre propre société tech vous assoit maintenant sur sa chaise", "trabajar en un escritorio de tu propia empresa tecnológica ahora te sienta en su silla",
-                                "за столом в вашей собственной технологической фирме вы теперь садитесь на его стул", "werken aan een bureau van je eigen techbedrijf zet je nu op de stoel ervan",
+                                "在你自己的科技公司的办公桌前工作时，现在会坐到它的椅子上",
+                                "An einem Schreibtisch deiner eigenen Tech-Firma setzt du dich jetzt beim Arbeiten auf seinen Stuhl",
+                                "travailler à un bureau de votre propre société tech vous assoit maintenant sur sa chaise",
+                                "trabajar en un escritorio de tu propia empresa tecnológica ahora te sienta en su silla",
+                                "за столом в вашей собственной технологической фирме вы теперь садитесь на его стул",
+                                "werken aan een bureau van je eigen techbedrijf zet je nu op de stoel ervan",
                                 "kendi teknoloji firmanızdaki bir masada çalışmak artık sizi masanın sandalyesine oturtuyor"),
             "desk seat texts: What's new has the line, with its fix mark, in some row of every language");
         bool later = true;
-        foreach (KeyValuePair<string, string> lang in new Dictionary<string, string> { { "pl", "Naprawiono: praca przy biurku w twojej własnej firmie" }, { "ko", "수정: 내 테크 회사의 책상에서" } })
+        var later2 = new Dictionary<string, string> { { "pl", "Naprawiono: praca przy biurku w twojej własnej firmie" }, { "ko", "수정: 내 테크 회사의 책상에서" } };
+        foreach (KeyValuePair<string, string> lang in later2)
         {
             Dictionary<string, string> words = LoadWords(IoPath.Combine(LocalesFolder(), lang.Key + ".json"));
             later &= words != null && WhatsNewHas(words, lang.Value);
