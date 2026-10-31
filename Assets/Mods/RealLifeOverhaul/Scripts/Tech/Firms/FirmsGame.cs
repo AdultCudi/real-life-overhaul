@@ -398,6 +398,37 @@ namespace RealLifeOverhaul.Tech
             return GoingPublic.Mine(reg) && reg.HasEstablishedBusiness && KindOf(reg.businessTypeName) >= 0 ? reg : null;
         }
 
+        /// <summary>A business of the player's (any kind) they stand in (GoingPublic.Mine), or null: where Options > Tests seats them at a desk.</summary>
+        public static BuildingRegistration InsideOwn()
+        {
+            if (!Careers.DeskGame.Inside(out _, out BuildingRegistration reg))
+            {
+                return null;
+            }
+            return GoingPublic.Mine(reg) && reg.HasEstablishedBusiness ? reg : null;
+        }
+
+        /// <summary>Of a building's desks, the free one nearest the player, or null. On a button press only.</summary>
+        public static EmployeeStationController NearestFree(List<EmployeeStationController> desks)
+        {
+            Vector3 at = PlayerHelper.GetPosition();
+            EmployeeStationController best = null;
+            float near = float.MaxValue;
+            for (int i = 0; i < desks.Count; i++)
+            {
+                float d = Free(desks[i]) ? (desks[i].transform.position - at).sqrMagnitude : float.MaxValue;
+                if (d < near)
+                {
+                    near = d;
+                    best = desks[i];
+                }
+            }
+            return best;
+        }
+
+        /// <summary>The game's clock in whole minutes since its start, or 0 with no game loaded.</summary>
+        public static int Clock => Save != null ? (int)TimeHelper.NowInMinutes() : 0;
+
         /// <summary>The desks of the building the player stands in: the game's workstations with their chair that it would seat somebody at. One pass over its items.</summary>
         public static void Desks(List<EmployeeStationController> into)
         {

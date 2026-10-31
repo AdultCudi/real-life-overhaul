@@ -1106,6 +1106,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_infra_test_offer", () => Tech.TechDirector.Instance?.TestCentreOffer())
                 .AddButton("reallife_tech_test_net", () => Tech.TechDirector.Instance?.TestNet())
                 .AddButton("reallife_tech_test_own_desk", () => Tech.TechDirector.Instance?.TestOwnDesk())
+                .AddButton("reallife_tech_test_desk_seat", () => Tech.TechDirector.Instance?.TestDeskSeat())
                 .AddToggle(Settings.TechStartupsId, "reallife_vc_enabled", Settings.TechStartups,
                     v => Settings.TechStartups = v)
                 .AddButton("reallife_vc_test_pitch", () => Tech.TechDirector.Instance?.TestPitch())

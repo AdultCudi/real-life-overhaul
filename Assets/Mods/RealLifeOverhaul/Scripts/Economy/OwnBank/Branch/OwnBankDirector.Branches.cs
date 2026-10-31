@@ -346,8 +346,13 @@ namespace RealLifeOverhaul.Economy
                 return;
             }
             DeskGame.OtherTarget = null;
-            DeskGame.SitAt(_counterTill);
-            _counterPlace = BranchGame.Place(reg);
+            _counterPlace = BranchGame.Place(reg);   // first: from here every end of the stint stands the player up (EndCounter), whatever fails below
+            if (!DeskGame.SitAt(_counterTill))
+            {
+                _counter?.Close();   // the game would not take them at the till: given back free to walk and told why
+                EndCounter(false);
+                return;
+            }
             Logger?.Info("Bank branch: the player works the counter of '" + _counterName + "' from hour " + Save.Hour + " of day " + Save.Day + ".");
         }
 
@@ -372,10 +377,7 @@ namespace RealLifeOverhaul.Economy
             {
                 return;   // the stint never began
             }
-            if (BranchGame.PlayerAt(till))
-            {
-                DeskGame.StandFrom(till);
-            }
+            DeskGame.StandFrom(till);   // always: the till let go only while the player is at it, and the work hold off even when the game let the till go first
             if (told)
             {
                 Tell(NotificationType.Info, "reallife_branch_toast_counter", TabBranches, "branch", name ?? string.Empty,
