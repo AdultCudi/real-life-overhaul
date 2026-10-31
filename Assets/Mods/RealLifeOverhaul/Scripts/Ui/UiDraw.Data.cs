@@ -27,8 +27,9 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>
-        /// A dashboard's figure: its label in capitals, the number large, and its change with an arrow, green up or red
-        /// down, over an optional sparkline; returns the height.
+        /// A dashboard's figure: its label in capitals, the number large, and its change with an arrow that follows the
+        /// change's sign, green when the change is good for the player and red when bad (rent up: red, up), over an optional
+        /// sparkline in the same colour; returns the height.
         /// </summary>
         public static float Figure(UiScene s, UiAt at, float x, float y, float w, ref UiFigureModel figure, bool large)
         {
@@ -46,16 +47,16 @@ namespace RealLifeOverhaul.Ui
             float cy = ny + Snap(nh);
             if (!string.IsNullOrEmpty(figure.Change))
             {
-                UiRole ink = figure.Up ? UiRole.OkText : UiRole.DangerText;
+                UiRole ink = figure.Good ? UiRole.OkText : UiRole.DangerText;
                 float line = Math.Max(UiTextRules.LineHeight(UiStyle.SmallStrong), UiTokens.Icon);
-                Icon(s, at, x, cy, UiTokens.Icon, figure.Up ? UiIcon.TrendUp : UiIcon.TrendDown, ink);
+                Icon(s, at, x, cy, UiTokens.Icon, UiModels.Rises(ref figure) ? UiIcon.TrendUp : UiIcon.TrendDown, ink);
                 TextMiddle(s, at, x + UiTokens.Icon + UiTokens.S1, cy, line, w - UiTokens.Icon - UiTokens.S1, UiStyle.SmallStrong, ink, figure.Change, UiFlags.Truncate);
                 cy += Snap(line);
             }
             if (figure.Trend != null && figure.Trend.Length > 1)
             {
                 cy += UiTokens.S2;
-                Spark(s, at, x, cy, w, UiTokens.S12, figure.Trend, figure.Up ? UiRole.Ok : UiRole.Danger);
+                Spark(s, at, x, cy, w, UiTokens.S12, figure.Trend, figure.Good ? UiRole.Ok : UiRole.Danger);
                 cy += UiTokens.S12;
             }
             return cy - y;

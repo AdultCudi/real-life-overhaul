@@ -182,7 +182,13 @@ namespace RealLifeOverhaul.Ui
             }
             if (_state.Back)
             {
-                if (_screen.Back())
+                int cancel = UiFocusRules.Keyed(_scene, UiAction.Back);
+                if (cancel >= 0)
+                {
+                    _input.TakeBack();
+                    PressKeyed(cancel, now);   // the target that shows Back (a question's Keep, a form's Cancel) is what Back does
+                }
+                else if (_screen.Back())
                 {
                     _input.TakeBack();
                     _sound?.Play(UiCue.Back);
@@ -193,11 +199,27 @@ namespace RealLifeOverhaul.Ui
                 _screen.Tab(_state.TabPrev ? -1 : 1);
                 _sound?.Play(UiCue.Tab);
             }
-            if (_state.Alt || _state.Option)
+            UiAction key = _state.Alt ? UiAction.Alt : _state.Option ? UiAction.Option : _state.Pick > 0 && _state.Pick <= 9 ? (UiAction)((int)UiAction.Pick1 + _state.Pick - 1) : UiAction.Count;
+            if (key != UiAction.Count)
             {
-                bool done = _screen.Act(_state.Alt ? UiAction.Alt : UiAction.Option);
-                _sound?.Play(done ? UiCue.Confirm : UiCue.Error);
+                int keyed = UiFocusRules.Keyed(_scene, key);
+                if (keyed >= 0)
+                {
+                    PressKeyed(keyed, now);   // one key, one target: the cap drawn on it says so
+                }
+                else if (key == UiAction.Alt || key == UiAction.Option)
+                {
+                    bool done = _screen.Act(key);
+                    _sound?.Play(done ? UiCue.Confirm : UiCue.Error);
+                }
             }
+        }
+
+        // A target pressed by its own key: the focus goes to it first, so the press is seen where it lands.
+        private void PressKeyed(int node, float now)
+        {
+            FocusNode(node, now, true);
+            PressNode(node, now);
         }
 
         private void Move(int dx, int dy, float now)

@@ -6,21 +6,19 @@ namespace RealLifeOverhaul.Ui
     /// <summary>
     /// The kit's shapes, drawn once a session into small white textures and nine-sliced at any size, so an edge stays one
     /// pixel and a corner keeps its radius however large the box: a filled rounded box and its one-pixel edge for each
-    /// radius of the tokens, a circle, the focus ring's three-pixel stroke, a soft glow and the hero's wash. Sized in
+    /// radius of the tokens, a circle and the focus ring's three-pixel stroke: flat shapes only, no glow or gradient. Sized in
     /// canvas units (a texel is a canvas unit), so they draw at their own scale on the game's 3840 x 2160 canvas.
     /// Cost: about a dozen textures of at most 160 texels once; a dictionary read a lookup.
     /// </summary>
     public static class UiSprites
     {
-        private const int GlowTexels = 96, GlowCore = 16;   // a glow's texture and its solid middle, texels
-        private const int WashTexels = 128;
         private const float PixelsPerUnit = 100f;   // a canvas's reference pixels per unit, so a texel draws as one canvas unit
         private const int CircleRadius = 32;        // texels: the circle sprite's, scaled to each circle's own size
 
         private static readonly Dictionary<int, Sprite> Fills = new Dictionary<int, Sprite>(8);
         private static readonly Dictionary<int, Sprite> Edges = new Dictionary<int, Sprite>(8);
         private static readonly Dictionary<int, Sprite> Rings = new Dictionary<int, Sprite>(8);
-        private static Sprite _circle, _circleEdge, _glow, _wash;
+        private static Sprite _circle, _circleEdge;
 
         /// <summary>A filled box with corners of a radius in px (0 square).</summary>
         public static Sprite Fill(float radiusPx)
@@ -67,64 +65,15 @@ namespace RealLifeOverhaul.Ui
         /// <summary>A circle's one-pixel edge.</summary>
         public static Sprite CircleEdge => _circleEdge != null ? _circleEdge : (_circleEdge = Rounded(CircleRadius, Texels(UiTokens.Hairline), "UiCircleEdge"));
 
-        /// <summary>A soft glow: a solid middle fading out over its border, nine-sliced round any box.</summary>
-        public static Sprite Glow
-        {
-            get
-            {
-                if (_glow != null)
-                {
-                    return _glow;
-                }
-                var px = new Color32[GlowTexels * GlowTexels];
-                float spread = (GlowTexels - GlowCore) / 2f;
-                for (int y = 0; y < GlowTexels; y++)
-                {
-                    for (int x = 0; x < GlowTexels; x++)
-                    {
-                        float dx = Mathf.Max(0f, Mathf.Max(spread - x - 0.5f, x + 0.5f - (GlowTexels - spread)));
-                        float dy = Mathf.Max(0f, Mathf.Max(spread - y - 0.5f, y + 0.5f - (GlowTexels - spread)));
-                        float d = Mathf.Sqrt(dx * dx + dy * dy) / spread;
-                        float a = Mathf.Clamp01(1f - d);
-                        px[y * GlowTexels + x] = new Color32(255, 255, 255, (byte)Mathf.RoundToInt(a * a * (3f - 2f * a) * 255f));
-                    }
-                }
-                _glow = Make(px, GlowTexels, "UiGlow", spread);
-                return _glow;
-            }
-        }
-
-        /// <summary>The hero's wash: a soft radial light, full at its top left corner, gone by its far edges.</summary>
-        public static Sprite Wash
-        {
-            get
-            {
-                if (_wash != null)
-                {
-                    return _wash;
-                }
-                var px = new Color32[WashTexels * WashTexels];
-                for (int y = 0; y < WashTexels; y++)
-                {
-                    for (int x = 0; x < WashTexels; x++)
-                    {
-                        float u = x / (float)(WashTexels - 1), v = 1f - y / (float)(WashTexels - 1);   // texture rows run bottom up
-                        float d = Mathf.Sqrt(u * u + v * v);
-                        float a = Mathf.Clamp01(1f - d / 0.98f);
-                        px[y * WashTexels + x] = new Color32(255, 255, 255, (byte)Mathf.RoundToInt(a * a * 255f));
-                    }
-                }
-                _wash = Make(px, WashTexels, "UiWash", 0f);
-                return _wash;
-            }
-        }
-
         private static int Texels(float px) => Mathf.Max(0, Mathf.RoundToInt(px * UiTokens.CanvasPerPx));
 
         // A white rounded box (stroke 0) or its outline, with soft edges, as a sprite whose corners do not stretch.
         private static Sprite Rounded(int radius, int stroke, string name)
         {
-            int size = Mathf.Max(4, radius * 2 + 4);
+            // The slicing border holds the whole corner and the whole stroke, so a square box's edge stays an edge and
+            // its middle stays empty however large it is drawn.
+            int border = Mathf.Max(radius, stroke) + 1;
+            int size = Mathf.Max(4, border * 2 + 2);
             var px = new Color32[size * size];
             float r = Mathf.Max(0.5f, radius);
             for (int y = 0; y < size; y++)
@@ -147,7 +96,7 @@ namespace RealLifeOverhaul.Ui
                     px[y * size + x] = new Color32(255, 255, 255, (byte)Mathf.RoundToInt(a * 255f));
                 }
             }
-            return Make(px, size, name, radius + 1f);
+            return Make(px, size, name, border);
         }
 
         private static Sprite Make(Color32[] px, int size, string name, float border)

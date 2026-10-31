@@ -12,7 +12,16 @@ namespace RealLifeOverhaul.Ui
         TabPrev,      // the game's RotateLeft (Q) or LB: the tab or group before
         TabNext,      // the game's RotateRight (E) or RB: the tab or group after
         Alt,          // the game's Interact (F) or X: the screen's main action beside Confirm
-        Option,       // the game's SecondaryInteract (P) or Y: a second action (pin, the other look)
+        Option,       // the game's SecondaryInteract (P) or Y: the screen's second action (view on the map, the other look)
+        Pick1,        // the number keys 1 to 9: one of a list of choices (a session's), the keyboard's alone; a pad moves and presses
+        Pick2,
+        Pick3,
+        Pick4,
+        Pick5,
+        Pick6,
+        Pick7,
+        Pick8,
+        Pick9,
         Count
     }
 
@@ -69,7 +78,7 @@ namespace RealLifeOverhaul.Ui
                 case UiAction.TabNext: return "E";
                 case UiAction.Alt: return "F";
                 case UiAction.Option: return "P";
-                default: return null;
+                default: return UiKeyGlyphs.Number(action);
             }
         }
 
@@ -79,6 +88,14 @@ namespace RealLifeOverhaul.Ui
     /// <summary>Which glyph stands for an action on a pad, and the arrows on the keyboard.</summary>
     public static class UiKeyGlyphs
     {
+        private static readonly string[] Digits = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
+
+        /// <summary>A number key's name ("1" for Pick1), or null for any other action.</summary>
+        public static string Number(UiAction action) => action >= UiAction.Pick1 && action <= UiAction.Pick9 ? Digits[action - UiAction.Pick1] : null;
+
+        /// <summary>True for a key a screen may give one of its targets (not Move, not Confirm, which presses whatever has focus).</summary>
+        public static bool Ownable(UiAction action) => action != UiAction.Move && action != UiAction.Confirm && action != UiAction.Count;
+
         /// <summary>The icon for an action on a pad (or the keyboard's arrows), or None for a written key name.</summary>
         public static UiIcon For(UiAction action, UiPad pad)
         {

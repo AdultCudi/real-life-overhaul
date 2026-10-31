@@ -65,8 +65,21 @@ namespace RealLifeOverhaul.Ui
         public static float KeyValue(UiScene s, UiAt at, float x, float y, float w, string key, string value)
         {
             float h = UiTokens.PairRow;
-            float kw = Math.Min(w * 0.45f, UiTextRules.Width(key, UiStyle.Small) + UiTokens.S1);
-            TextMiddle(s, at, x, y, h, kw, UiStyle.Small, UiRole.Muted, key, UiFlags.Label | UiFlags.Truncate);
+            // The value is player data and may end in an ellipsis past half the row; the key is a label and takes the rest,
+            // on two lines when one is too few ("Wymagania dotyczące grafiku").
+            float vw = Math.Min(UiTextRules.Width(value, UiStyle.Small) + UiTokens.S1, w * 0.55f);
+            float kw = w - vw - UiTokens.S3;
+            float need = UiTextRules.Width(key, UiStyle.Small) + UiTokens.S1;
+            if (need <= kw)
+            {
+                kw = need;
+                TextMiddle(s, at, x, y, h, kw, UiStyle.Small, UiRole.Muted, key, UiFlags.Label | UiFlags.Truncate);
+            }
+            else
+            {
+                float kh = UiTextRules.WrappedHeight(key, UiStyle.Small, kw, 2);
+                Text(s, at, x, y + (h - kh) / 2f, kw, UiStyle.Small, UiRole.Muted, key, UiFlags.Label | UiFlags.Wrap | UiFlags.Middle, 2);
+            }
             TextMiddle(s, at, x + kw + UiTokens.S3, y, h, w - kw - UiTokens.S3, UiStyle.Small, UiRole.Text, value, UiFlags.Right | UiFlags.Truncate);
             Box(s, at, x, y + h - UiTokens.Hairline, w, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
             return h;
@@ -101,7 +114,7 @@ namespace RealLifeOverhaul.Ui
         public static int ChoiceCard(UiScene s, UiAt at, float x, float y, float w, ref UiChoiceModel choice, IUiKeys keys, int command, int arg, out float height)
         {
             bool sel = choice.Selected;
-            float capW = keys != null && choice.Key != UiAction.Count ? KeyCapWidth(choice.Key, keys) : 0f;
+            float capW = HasKey(choice.Key, keys) ? KeyCapWidth(choice.Key, keys) : 0f;
             float nw = string.IsNullOrEmpty(choice.Note) ? 0f : UiTextRules.Width(choice.Note, UiStyle.Small) + UiTokens.S1;
             float tx = x + UiTokens.S5 + (capW > 0f ? capW + UiTokens.S4 : 0f);
             float tw = x + w - UiTokens.S5 - (nw > 0f ? nw + UiTokens.S4 : 0f) - tx;
@@ -127,17 +140,33 @@ namespace RealLifeOverhaul.Ui
             {
                 TextMiddle(s, inside, x + w - UiTokens.S5 - nw, y, height, nw, UiStyle.Small, UiRole.Muted, choice.Note, UiFlags.Right);
             }
-            return Node(s, at, x, y, w, height, command, arg, face, choice.Disabled);
+            return Node(s, at, x, y, w, height, command, arg, face, choice.Disabled, -1, 0, choice.Key);
+        }
+
+        /// <summary>
+        /// The height a table takes in at most a height: its head and the rows that fit whole (all of them when they do), or
+        /// room for its empty state; so its frame fits its rows and never shows a sliver of one.
+        /// </summary>
+        public static float TableHeight(UiTableModel table, float most)
+        {
+            float headH = UiTokens.ControlSmall, rowH = UiTokens.TableRow;
+            int rows = table.Rows != null ? table.RowCount : 0;
+            if (rows == 0)
+            {
+                return Math.Min(most, headH + UiTokens.S16 * 3f);
+            }
+            int fit = Math.Max(1, (int)((most - headH) / rowH));
+            return headH + Math.Min(rows, fit) * rowH;
         }
 
         /// <summary>
         /// A table that stays readable: capitals over its columns, rows of a fixed height on alternate fills, figures to the
         /// right, the selected row marked; its rows scroll in their frame and only those in view are laid out. Each row is a
-        /// focus target of one list. Returns the list.
+        /// focus target of one list. Give it <see cref="TableHeight"/>. Returns the list.
         /// </summary>
         public static short Table(UiScene s, UiAt at, float x, float y, float w, float h, UiTableModel table, int command)
         {
-            float headH = UiTokens.ControlSmall, rowH = UiTokens.Control;
+            float headH = UiTokens.ControlSmall, rowH = UiTokens.TableRow;
             int cols = table.Columns.Length;
             float fixedW = 0f, shares = 0f;
             for (int c = 0; c < cols; c++)

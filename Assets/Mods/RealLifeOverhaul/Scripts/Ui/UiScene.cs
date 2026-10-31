@@ -9,8 +9,6 @@ namespace RealLifeOverhaul.Ui
         Text,
         Icon,         // a glyph of the one icon family, tinted
         Avatar,       // initials on a hue's circle (Value is the hue)
-        Wash,         // a soft accent wash in a panel's corner (the hero's glow), drawn from a pre-blurred sprite
-        Glow,         // a soft accent shadow under a primary button or a badge
         Spark,        // a sparkline: Points the values
         KeyCap,       // a prompt's key: Text is the key's name, or Icon the button's glyph
         Busy,         // three dots that beat while a loading state shows
@@ -30,12 +28,13 @@ namespace RealLifeOverhaul.Ui
         Circle = 32,       // a box drawn as a circle or a pill
         Disabled = 64,
         Selected = 128,
-        Decor = 256,       // drawn behind and outside the layout's own boxes (a glow, a wash, a rule): skipped by the layout checks
+        Decor = 256,       // a rule or a ring drawn over the layout's own boxes: skipped by the layout checks
         Overflow = 512,    // may sit across its parent's edge on purpose (a badge on an avatar)
         Middle = 1024,     // centred on its parent's height: its top is where centring puts it, not a grid step
         Share = 2048,      // placed by a share of its parent's width (a segment, a slider's knob): its left is not a grid step
         CountUp = 4096,    // a figure that ticks up from nothing as it arrives
-        Prompt = 8192      // part of the prompt bar, on the game's own bottom bar rather than a panel
+        Prompt = 8192,     // part of the prompt bar, on the game's own bottom bar rather than a panel
+        Panel = 16384      // a screen's framed panel: the theme may mark its head (the Ledger's column rule), drawn by the view alone
     }
 
     /// <summary>One thing drawn: its kind, its box in px and how it is painted, by role and style only.</summary>
@@ -43,7 +42,7 @@ namespace RealLifeOverhaul.Ui
     {
         public UiKind Kind;
         public UiFlags Flags;
-        public UiRole Fill;      // a box's, an icon's or a glow's colour
+        public UiRole Fill;      // a box's or an icon's colour
         public UiRole Edge;      // a box's clear edge (a hairline), or None
         public UiRole Ink;       // words' colour
         public UiStyle Style;
@@ -52,7 +51,7 @@ namespace RealLifeOverhaul.Ui
         public float X, Y, W, H; // px from the scene's top left, or from a scroll region's content top when Clip >= 0
         public string Text;
         public float Value;      // an avatar's hue, a share 0 to 1 of a bar, a text's most lines
-        public float Alpha;      // 0 to 1: a level's shade of a role (a weaker segment), a glow's strength
+        public float Alpha;      // 0 to 1: a level's shade of a role (a weaker segment, a key cap on the accent)
         public float[] Points;   // a sparkline's values
         public short Clip;       // the scroll region it moves with, or -1
         public short Node;       // the focus target it belongs to, or -1
@@ -72,6 +71,7 @@ namespace RealLifeOverhaul.Ui
         public int Arg;          // a row's index, a choice's number
         public int Face;         // the item that brightens under focus (its face), or -1
         public short List;       // the list it is a row of, or -1: up and down then step through the list's rows
+        public UiAction Key;     // the key that presses it from anywhere on its layer (its cap is drawn on it), or Count
         public int Index;        // its row in that list
         public bool Disabled;
         public int Up, Down, Left, Right;   // a node the d-pad goes to, or -1 to find the nearest that way
@@ -83,6 +83,7 @@ namespace RealLifeOverhaul.Ui
         public float X, Y, W, H;       // the viewport, px
         public float Offset;           // px scrolled
         public float ContentHeight;    // px of content laid out
+        public bool Fills;             // its whole room is its content's (a short thread under the line of its beginning)
         public short List;             // the list it shows, or -1
     }
 

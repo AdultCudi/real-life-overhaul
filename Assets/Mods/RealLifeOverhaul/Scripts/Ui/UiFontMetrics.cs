@@ -85,14 +85,22 @@ namespace RealLifeOverhaul.Ui
     /// <summary>The faces of the bundle, found by family and weight; the table itself is generated (UiFontMetrics.Data.cs).</summary>
     internal static partial class UiFontMetrics
     {
+        private static UiFace[] _more = new UiFace[0];
+
+        /// <summary>Faces beyond the bundle's (the theme study's, in the offline previews); the bundle's are always there.</summary>
+        public static void Register(UiFace[] more)
+        {
+            _more = more ?? new UiFace[0];
+        }
+
         /// <summary>The cut of a family nearest a weight (600, 700 or 800 are in the bundle).</summary>
         public static UiFace Face(UiFamily family, int weight)
         {
             UiFace best = null;
             int bestGap = int.MaxValue;
-            for (int i = 0; i < Faces.Length; i++)
+            for (int i = 0; i < Faces.Length + _more.Length; i++)
             {
-                UiFace f = Faces[i];
+                UiFace f = i < Faces.Length ? Faces[i] : _more[i - Faces.Length];
                 if (f.Family != family)
                 {
                     continue;

@@ -126,7 +126,6 @@ namespace RealLifeOverhaul.Ui
             }
             y += optionCount > 0 ? UiTokens.S4 : 0f;
             float ex = areaX + SnapDown((areaW - UiTokens.S16) / 2f);
-            Glow(s, at, ex, y + UiTokens.S1, UiTokens.S16, UiTokens.S16, UiRole.Danger, 0.45f);
             int endFace = Circle(s, at, ex, y, UiTokens.S16, UiTokens.S16, UiRole.Danger);
             TextMiddle(s, at.In(endFace), ex, y, UiTokens.S16, UiTokens.S16, UiStyle.Title, UiRole.PromptInk, end, UiFlags.Centre | UiFlags.Label);
             int n = Node(s, at, ex, y, UiTokens.S16, UiTokens.S16, endCommand, 0, endFace);

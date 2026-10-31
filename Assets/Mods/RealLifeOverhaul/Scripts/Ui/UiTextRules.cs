@@ -39,7 +39,7 @@ namespace RealLifeOverhaul.Ui
             }
             UiType t = UiTokens.Type(style);
             UiFace primary = UiFontMetrics.Face(t.Family, t.Weight);
-            UiFace backup = t.Family == UiFamily.Sora ? UiFontMetrics.Face(UiFamily.Manrope, t.Weight) : null;
+            UiFace backup = UiTokens.Backup(t.Family) != t.Family ? UiFontMetrics.Face(UiTokens.Backup(t.Family), t.Weight) : null;
             float em = 0f;
             int count = 0;
             for (int i = start; i < end; i++)
@@ -76,7 +76,7 @@ namespace RealLifeOverhaul.Ui
             }
             UiType t = UiTokens.Type(style);
             UiFace primary = UiFontMetrics.Face(t.Family, t.Weight);
-            UiFace backup = t.Family == UiFamily.Sora ? UiFontMetrics.Face(UiFamily.Manrope, t.Weight) : null;
+            UiFace backup = UiTokens.Backup(t.Family) != t.Family ? UiFontMetrics.Face(UiTokens.Backup(t.Family), t.Weight) : null;
             int lines = 0, i = 0, n = text.Length;
             while (i < n && (most <= 0 || lines < most))
             {

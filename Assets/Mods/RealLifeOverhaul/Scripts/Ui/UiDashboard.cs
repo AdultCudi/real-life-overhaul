@@ -25,10 +25,12 @@ namespace RealLifeOverhaul.Ui
 
     /// <summary>
     /// The dashboard template, for figures over time (the Economy app's city, district and population views): the title
-    /// and its tabs as bars over a row of framed figure panels (the number large, its change green up or red down, a
-    /// sparkline under it), then the table that stays readable at the left and a side panel of key figures and shares at
-    /// the right. Commands: <see cref="TabCommand"/> (the tab's index) and <see cref="RowCommand"/> (the row's). Game-free.
-    /// Cost: a layout a change.
+    /// and its tabs as bars over a row of framed figure panels (the number large, its change with an arrow that follows
+    /// its sign and a colour that says whether it is good for the player, a sparkline under it), then the table that stays
+    /// readable at the left and a side panel of key figures and shares at the right. Each frame fits what it holds: the
+    /// table's its whole rows (scrolling when they outnumber the room), the side's its lines, and the two share a foot
+    /// when they nearly do. Commands: <see cref="TabCommand"/> (the tab's index) and <see cref="RowCommand"/> (the row's).
+    /// Game-free. Cost: a layout a change.
     /// </summary>
     public static class UiDashboard
     {
@@ -66,7 +68,7 @@ namespace RealLifeOverhaul.Ui
                 for (int i = 0; i < count; i++)
                 {
                     float fx = cx + i * (fw + UiTokens.S4);
-                    int panel = UiDraw.Box(s, at, fx, y, fw, fh, UiRole.Panel, UiRole.PanelEdge, UiTokens.RadiusPanel);
+                    int panel = UiDraw.Box(s, at, fx, y, fw, fh, UiRole.Panel, UiRole.PanelEdge, UiTokens.RadiusPanel, UiFlags.Panel);
                     UiAt inside = at.In(panel).Arriving(i);
                     UiDraw.Figure(s, inside, fx + UiTokens.S5, y + UiTokens.S5, fw - UiTokens.S5 * 2f, ref m.Figures[i], true);
                 }
@@ -74,13 +76,20 @@ namespace RealLifeOverhaul.Ui
             }
             float bodyH = UiDraw.SnapDown(cy + ch - y);
             float tw = cw - SideWidth - UiTokens.S4;
-            int tablePanel = UiDraw.Box(s, at, cx, y, tw, bodyH, UiRole.Panel, UiRole.PanelEdge, UiTokens.RadiusPanel);
+            float tableTop = UiTokens.S5 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionTitle)) + UiTokens.S3;
+            float tableH = UiDraw.TableHeight(m.Table, bodyH - tableTop - UiTokens.S4);
+            float panelH = tableTop + tableH + UiTokens.S4;
+            float sideH = Math.Min(bodyH, SideHeight(m));
+            if (Math.Abs(panelH - sideH) <= UiTokens.MostSlack)
+            {
+                panelH = sideH = Math.Max(panelH, sideH);   // nearly level: one foot reads tidier than a step of a few px
+            }
+            int tablePanel = UiDraw.Box(s, at, cx, y, tw, panelH, UiRole.Panel, UiRole.PanelEdge, UiTokens.RadiusPanel, UiFlags.Panel);
             UiAt inTable = at.In(tablePanel);
-            float headH = UiDraw.PanelTitle(s, inTable, cx + UiTokens.S5, y + UiTokens.S5, tw - UiTokens.S5 * 2f, m.TableTitle, null);
-            float tableY = y + UiTokens.S5 + headH + UiTokens.S3;
-            UiDraw.Table(s, inTable, cx + UiTokens.S2, tableY, tw - UiTokens.S4, UiDraw.SnapDown(y + bodyH - UiTokens.S4 - tableY), m.Table, RowCommand);
+            UiDraw.PanelTitle(s, inTable, cx + UiTokens.S5, y + UiTokens.S5, tw - UiTokens.S5 * 2f, m.TableTitle, null);
+            UiDraw.Table(s, inTable, cx + UiTokens.S2, y + tableTop, tw - UiTokens.S4, tableH, m.Table, RowCommand);
             float sx = cx + tw + UiTokens.S4;
-            int side = UiDraw.Box(s, at, sx, y, SideWidth, bodyH, UiRole.Panel, UiRole.PanelEdge, UiTokens.RadiusPanel);
+            int side = UiDraw.Box(s, at, sx, y, SideWidth, sideH, UiRole.Panel, UiRole.PanelEdge, UiTokens.RadiusPanel, UiFlags.Panel);
             UiAt inSide = at.In(side);
             float iy = y + UiTokens.S5, iw = SideWidth - UiTokens.S5 * 2f;
             if (m.SideCount > 0)
@@ -97,7 +106,7 @@ namespace RealLifeOverhaul.Ui
             {
                 UiDraw.Text(s, inSide, sx + UiTokens.S5, iy, iw, UiStyle.SectionHeader, UiRole.Muted, m.StatsTitle, UiFlags.Label);
                 iy += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S3;
-                for (int i = 0; i < m.StatCount && iy < y + bodyH - UiTokens.S12; i++)
+                for (int i = 0; i < m.StatCount && iy < y + sideH - UiTokens.S12; i++)
                 {
                     iy += UiDraw.Snap(UiDraw.StatBar(s, inSide.Arriving(i), sx + UiTokens.S5, iy, iw, ref m.Stats[i])) + UiTokens.S4;
                 }
@@ -107,6 +116,25 @@ namespace RealLifeOverhaul.Ui
                 s.AddPrompt(m.Prompts[i].Action, m.Prompts[i].Label);
             }
             UiDraw.PromptBar(s, 0f, frame.Height, frame.Width, frame.Band, keys);
+        }
+
+        // The side panel's height for its lines, as Lay draws them: its padding, the shares, the feelings.
+        private static float SideHeight(UiDashboardModel m)
+        {
+            float head = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader));
+            float h = UiTokens.S5, trail = 0f;
+            if (m.SideCount > 0)
+            {
+                h += head + UiTokens.S2 + m.SideCount * UiTokens.PairRow + UiTokens.S6;
+                trail = UiTokens.S6;
+            }
+            if (m.StatCount > 0)
+            {
+                float bar = UiDraw.Snap(UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S2 + UiTokens.Segment);
+                h += head + UiTokens.S3 + m.StatCount * (bar + UiTokens.S4);
+                trail = UiTokens.S4;
+            }
+            return h - trail + UiTokens.S5;
         }
 
         private static float FigureHeight(UiDashboardModel m)

@@ -118,8 +118,37 @@ namespace RealLifeOverhaul.Ui
         public static TMP_FontAsset For(UiStyle style)
         {
             UiType t = UiTokens.Type(style);
-            int i = (t.Family == UiFamily.Sora ? 0 : 3) + (t.Weight >= 800 ? 2 : t.Weight >= 700 ? 1 : 0);
+            if (t.Family != UiFamily.Sora && t.Family != UiFamily.Manrope && Study.TryGetValue((int)t.Family * 1000 + t.Weight, out TMP_FontAsset studied))
+            {
+                return studied;
+            }
+            int i = (t.Family == UiFamily.Manrope || t.Family == UiFamily.Serif || t.Family == UiFamily.PlexSans ? 3 : 0) + (t.Weight >= 800 ? 2 : t.Weight >= 700 ? 1 : 0);
             return Assets[i] != null ? Assets[i] : _fallback;
+        }
+
+        private static readonly System.Collections.Generic.Dictionary<int, TMP_FontAsset> Study = new System.Collections.Generic.Dictionary<int, TMP_FontAsset>();
+
+        /// <summary>
+        /// The theme study's faces (an offline render alone, never in play): each named Family-Style SDF, found by family
+        /// and weight; a face the study lacks falls back to the bundle's.
+        /// </summary>
+        public static void LoadStudy(string bundlePath)
+        {
+            AssetBundle b = System.IO.File.Exists(bundlePath) ? AssetBundle.LoadFromFile(bundlePath) : null;
+            TMP_FontAsset[] found = b != null ? b.LoadAllAssets<TMP_FontAsset>() : new TMP_FontAsset[0];
+            foreach (TMP_FontAsset f in found)
+            {
+                string name = f.name.Replace(" SDF", string.Empty);
+                int dash = name.IndexOf('-');
+                if (dash < 0 || !Enum.TryParse(name.Substring(0, dash), out UiFamily family))
+                {
+                    continue;
+                }
+                string style = name.Substring(dash + 1);
+                int weight = style == "Medium" ? 500 : style == "SemiBold" ? 600 : style == "Bold" ? 700 : style == "ExtraBold" ? 800 : 400;
+                Study[(int)family * 1000 + weight] = f;
+                AddFallback(f);
+            }
         }
 
         private static void Take(UnityEngine.Object[] found)

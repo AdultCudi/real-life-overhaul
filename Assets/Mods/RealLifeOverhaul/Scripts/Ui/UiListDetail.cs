@@ -5,7 +5,7 @@ namespace RealLifeOverhaul.Ui
     /// <summary>What a list-and-detail screen shows: its groups, its list and the detail of the row selected, all words given.</summary>
     public sealed class UiListDetailModel
     {
-        public string AppName;                                  // lower case, beside the mark
+        public string AppName;                                  // the app's name, as the frame's top bar shows it
         public string GroupsLabel;                              // the capitals over the groups
         public UiNavModel[] Groups = new UiNavModel[0];
         public int GroupCount;
@@ -42,6 +42,7 @@ namespace RealLifeOverhaul.Ui
         public bool Typing;
         public string ThreadEmptyTitle;
         public string ThreadEmptyBody;
+        public string ThreadStart;                              // the line over the first message ("Start of your messages with Maya"), or null
         public string ClassicLabel;                             // the chip under a message only the game's own view can answer
         public string[] Replies = new string[0];
         public int ReplyCount;
@@ -140,8 +141,7 @@ namespace RealLifeOverhaul.Ui
 
         private static void Sidebar(UiScene s, UiAt at, UiListDetailModel m, float x, float y, float w, float h, IUiKeys keys)
         {
-            float top = y;
-            y += UiDraw.AppMark(s, at, x + UiTokens.S3, y, m.AppName) + UiTokens.S5;
+            float top = y;   // the app's name stands in the frame's top bar, so the column opens on its groups
             // The groups' capitals with the tab keys that step through them.
             float capW = keys != null ? UiDraw.KeyCapWidth(UiAction.TabPrev, keys) + UiTokens.S1 + UiDraw.KeyCapWidth(UiAction.TabNext, keys) : 0f;
             UiDraw.Text(s, at, x + UiTokens.S3, y + (UiTokens.KeyCap - UiTextRules.LineHeight(UiStyle.SectionHeader)) / 2f, w - capW - UiTokens.S6, UiStyle.SectionHeader,
@@ -258,7 +258,7 @@ namespace RealLifeOverhaul.Ui
 
         private static void Detail(UiScene s, UiAt at, UiListDetailModel m, float x, float y, float w, float h, IUiKeys keys)
         {
-            int panel = UiDraw.Box(s, at, x, y, w, h, UiRole.Panel, UiRole.PanelEdge, UiTokens.RadiusPanel);
+            int panel = UiDraw.Box(s, at, x, y, w, h, UiRole.Panel, UiRole.PanelEdge, UiTokens.RadiusPanel, UiFlags.Panel);
             UiAt inside = at.In(panel);
             if (!m.HasDetail)
             {
@@ -307,7 +307,8 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.Empty(s, at, x, vy, w, vh, m.ThreadEmptyTitle, m.ThreadEmptyBody);
                 return;
             }
-            float contentH = 0f;
+            float startH = string.IsNullOrEmpty(m.ThreadStart) ? 0f : UiTokens.S8 + UiTokens.S4;
+            float contentH = startH;
             for (int i = 0; i < m.MessageCount; i++)
             {
                 contentH += UiDraw.BubbleHeight(ref m.Messages[i], inner) + (m.Messages[i].HasChoices ? UiTokens.S2 + UiTokens.Chip : 0f) + UiTokens.S3;
@@ -318,9 +319,18 @@ namespace RealLifeOverhaul.Ui
             float offset = m.ThreadOffset < 0f ? most : Math.Min(m.ThreadOffset, most);
             short clip = s.AddClip(x, vy, w, vh, offset);
             s.Clips[clip].ContentHeight = contentH;
+            s.Clips[clip].Fills = true;   // a short thread sits at the foot under the line of its beginning: the room above is the thread's
             var inClip = new UiAt { Parent = -1, Clip = clip, Layer = at.Layer, Order = -1, Region = at.Region };
             float my = contentH < vh ? vh - contentH : 0f;   // a short thread sits at the bottom, by the composer
             my = UiDraw.SnapDown(my);
+            if (startH > 0f)
+            {
+                if (my + startH > offset && my < offset + vh)
+                {
+                    UiDraw.Divider(s, inClip, 0f, my, w, m.ThreadStart);
+                }
+                my += startH;
+            }
             for (int i = 0; i < m.MessageCount; i++)
             {
                 ref UiMessageModel msg = ref m.Messages[i];

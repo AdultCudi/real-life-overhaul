@@ -46,7 +46,26 @@ namespace RealLifeOverhaul.Ui
     public enum UiFamily : byte
     {
         Sora = 0,     // headings, names, buttons, numbers
-        Manrope = 1   // body
+        Manrope = 1,  // body
+        SerifDisplay, // the theme study's: Source Serif 4 at its display size (the Ledger's headlines)
+        Serif,        // Source Serif 4 at its text size (the Ledger's reading)
+        Franklin,     // Libre Franklin (the Ledger's labels, figures and buttons)
+        PlexMono,     // IBM Plex Mono (the Terminal's labels and figures)
+        PlexSans,     // IBM Plex Sans (the Terminal's names and messages)
+        Rubik         // the game's own face (the Phone's)
+    }
+
+    /// <summary>
+    /// The looks of the theme study (the owner, 1 Nov: "a proper themed thing"): the same screens in three directions
+    /// for the owner to choose from, the owner's wireframe standing until then. Every one is flat: solid surfaces, crisp
+    /// edges and rules, no gradient, glow or blur (RLO-UI-015).
+    /// </summary>
+    public enum UiTheme : byte
+    {
+        Wireframe = 0,   // the owner's Contacts wireframe (Sora, Manrope, the pink)
+        Ledger,          // the city's paper: the financial pages at night, ruled columns, serif heads, the salmon of a markets paper
+        Terminal,        // the trading floor's terminal: dense, monospaced figures, steel borders, one amber for state
+        Phone            // the player's phone: the game's own face, rounded device surfaces, the owner's pink as its tint
     }
 
     /// <summary>The named text styles: a screen picks one, never a size of its own.</summary>
@@ -154,10 +173,41 @@ namespace RealLifeOverhaul.Ui
 
         // ------------------------------------------------------------------------------------------------- radii
 
-        public const float RadiusSmall = 4f;    // px: segments, key caps, tags
-        public const float RadiusMedium = 8f;   // px: chips, fields, bars
-        public const float RadiusLarge = 12f;   // px: rows, buttons, cards
-        public const float RadiusPanel = 16f;   // px: panels and overlays: a clear edge, not a soft card
+        // The theme drawn now, and what it sets besides colour and type: its corners (small, medium, large, panel, px), whether
+        // a face is a circle or a square, and the rule a framed panel wears on its head (the Ledger's column rule, px).
+        public static UiTheme Theme = UiTheme.Wireframe;
+        private static readonly float[][] ThemeRadii =
+        {
+            new[] { 4f, 8f, 12f, 16f },   // Wireframe: a clear edge, not a soft card
+            new[] { 2f, 2f, 2f, 0f },     // Ledger: print is square; a key cap keeps a hair of a corner
+            new[] { 2f, 0f, 0f, 0f },     // Terminal: square, as a terminal's cells
+            new[] { 6f, 10f, 14f, 22f },  // Phone: a device's continuous corners
+        };
+        private static readonly bool[] ThemeRoundFaces = { true, true, false, true };
+        private static readonly float[] ThemeFrameRules = { 0f, 3f, 0f, 0f };
+
+        public static float RadiusSmall => ThemeRadii[(int)Theme][0];    // px: segments, key caps, tags
+        public static float RadiusMedium => ThemeRadii[(int)Theme][1];   // px: chips, fields, bars
+        public static float RadiusLarge => ThemeRadii[(int)Theme][2];    // px: rows, buttons, cards
+        public static float RadiusPanel => ThemeRadii[(int)Theme][3];    // px: panels and overlays
+
+        /// <summary>Whether faces (avatars) are circles in the theme drawn now; squares otherwise.</summary>
+        public static bool RoundFaces => ThemeRoundFaces[(int)Theme];
+
+        /// <summary>The rule a framed panel wears on its head in the theme drawn now, px (0 none).</summary>
+        public static float FrameRule => ThemeFrameRules[(int)Theme];
+
+        /// <summary>The family a face's missing letters are measured and drawn in, or the face itself when it has all the mod's.</summary>
+        public static UiFamily Backup(UiFamily family)
+        {
+            switch (family)
+            {
+                case UiFamily.Sora: return UiFamily.Manrope;
+                case UiFamily.PlexMono: return UiFamily.PlexSans;
+                case UiFamily.Rubik: return UiFamily.Manrope;
+                default: return family;
+            }
+        }
 
         // ------------------------------------------------------------------------------------------------- strokes
 
@@ -174,6 +224,8 @@ namespace RealLifeOverhaul.Ui
         public const float Chip = 36f;          // px: a quick reply, a filter
         public const float MinTarget = 36f;     // px: the least a focus or pointer target may be either way (a chip): over WCAG 2.2 AA's 24
         public const float PairRow = 44f;       // px: a key and its value with the rule under them
+        public const float TableRow = 44f;      // px: a table's row: dense as a management game's tables, still a full target
+        public const float MostSlack = 48f;     // px a frame may hold under its last line (two rows' gap and its padding): more reads as a hole
         public const float Row = 80f;           // px: a list row: a 48 avatar with 16 above and below
         public const float AvatarRow = 48f;     // px
         public const float AvatarHero = 96f;    // px
@@ -211,8 +263,78 @@ namespace RealLifeOverhaul.Ui
             new UiType(UiFamily.Sora, 700, 15f, 0f, 1.0f, UiCase.Upper),            // KeyCap
         };
 
+        // The theme study's type: each direction's faces on the same named styles, so a screen never knows the theme.
+        private static readonly UiType[] LedgerTypes =
+        {
+            new UiType(UiFamily.SerifDisplay, 700, 44f, -0.01f, 1.0f),                  // Display
+            new UiType(UiFamily.SerifDisplay, 700, 34f, -0.01f, 1.0f),                  // AppTitle: a masthead, as written
+            new UiType(UiFamily.SerifDisplay, 700, 36f, -0.01f, 1.0f),                  // Hero
+            new UiType(UiFamily.SerifDisplay, 600, 24f, 0f, 1.0f),                      // SectionTitle
+            new UiType(UiFamily.Serif, 700, 19f, 0f, 1.0f),                             // Title
+            new UiType(UiFamily.Franklin, 600, 17f, 0.02f, 1.0f),                       // Nav
+            new UiType(UiFamily.Franklin, 700, 16f, 0.08f, 1.0f, UiCase.Upper),         // Button
+            new UiType(UiFamily.Serif, 500, 18f, 0f, 1.12f),                            // Body
+            new UiType(UiFamily.Serif, 700, 18f, 0f, 1.12f),                            // BodyStrong
+            new UiType(UiFamily.Franklin, 600, 16f, 0f, 1.0f),                          // Small
+            new UiType(UiFamily.Franklin, 800, 16f, 0f, 1.0f),                          // SmallStrong
+            new UiType(UiFamily.Franklin, 800, 15f, 0.14f, 1.0f, UiCase.Upper),         // SectionHeader: the paper's kicker
+            new UiType(UiFamily.Franklin, 700, 16f, 0.08f, 1.0f, UiCase.Upper),         // Prompt
+            new UiType(UiFamily.Franklin, 800, 15f, 0f, 1.0f),                          // Badge
+            new UiType(UiFamily.Franklin, 800, 28f, -0.01f, 1.0f),                      // Number: the market table's figures
+            new UiType(UiFamily.Franklin, 700, 15f, 0f, 1.0f, UiCase.Upper),            // KeyCap
+        };
+
+        private static readonly UiType[] TerminalTypes =
+        {
+            new UiType(UiFamily.PlexMono, 600, 40f, -0.02f, 1.0f),                      // Display
+            new UiType(UiFamily.PlexMono, 700, 28f, 0.04f, 1.0f, UiCase.Upper),         // AppTitle: the terminal's function name
+            new UiType(UiFamily.PlexSans, 700, 34f, -0.01f, 1.0f),                      // Hero
+            new UiType(UiFamily.PlexMono, 600, 20f, 0.04f, 1.0f, UiCase.Upper),         // SectionTitle
+            new UiType(UiFamily.PlexSans, 600, 19f, 0f, 1.0f),                          // Title
+            new UiType(UiFamily.PlexMono, 500, 16f, 0.02f, 1.0f, UiCase.Upper),         // Nav
+            new UiType(UiFamily.PlexMono, 600, 16f, 0.04f, 1.0f, UiCase.Upper),         // Button
+            new UiType(UiFamily.PlexSans, 500, 18f, 0f, 1.08f),                         // Body
+            new UiType(UiFamily.PlexSans, 700, 18f, 0f, 1.08f),                         // BodyStrong
+            new UiType(UiFamily.PlexMono, 500, 15f, 0f, 1.0f),                          // Small
+            new UiType(UiFamily.PlexMono, 700, 15f, 0f, 1.0f),                          // SmallStrong
+            new UiType(UiFamily.PlexMono, 600, 15f, 0.1f, 1.0f, UiCase.Upper),          // SectionHeader
+            new UiType(UiFamily.PlexMono, 600, 16f, 0.04f, 1.0f, UiCase.Upper),         // Prompt
+            new UiType(UiFamily.PlexMono, 700, 15f, 0f, 1.0f),                          // Badge
+            new UiType(UiFamily.PlexMono, 600, 28f, 0f, 1.0f),                          // Number: every figure in one column width
+            new UiType(UiFamily.PlexMono, 600, 15f, 0f, 1.0f, UiCase.Upper),            // KeyCap
+        };
+
+        private static readonly UiType[] PhoneTypes =
+        {
+            new UiType(UiFamily.Rubik, 700, 44f, -0.02f, 1.0f),                         // Display
+            new UiType(UiFamily.Rubik, 700, 34f, -0.01f, 1.0f),                         // AppTitle: the app's large title
+            new UiType(UiFamily.Rubik, 700, 36f, -0.01f, 1.0f),                         // Hero
+            new UiType(UiFamily.Rubik, 600, 24f, 0f, 1.0f),                             // SectionTitle
+            new UiType(UiFamily.Rubik, 600, 19f, 0f, 1.0f),                             // Title
+            new UiType(UiFamily.Rubik, 500, 18f, 0f, 1.0f),                             // Nav
+            new UiType(UiFamily.Rubik, 600, 18f, 0f, 1.0f),                             // Button
+            new UiType(UiFamily.Rubik, 500, 18f, 0f, 1.08f),                            // Body
+            new UiType(UiFamily.Rubik, 700, 18f, 0f, 1.08f),                            // BodyStrong
+            new UiType(UiFamily.Rubik, 500, 16f, 0f, 1.0f),                             // Small
+            new UiType(UiFamily.Rubik, 700, 16f, 0f, 1.0f),                             // SmallStrong
+            new UiType(UiFamily.Rubik, 600, 15f, 0.1f, 1.0f, UiCase.Upper),             // SectionHeader
+            new UiType(UiFamily.Rubik, 600, 16f, 0.06f, 1.0f, UiCase.Upper),            // Prompt
+            new UiType(UiFamily.Rubik, 700, 15f, 0f, 1.0f),                             // Badge
+            new UiType(UiFamily.Rubik, 700, 28f, -0.01f, 1.0f),                         // Number
+            new UiType(UiFamily.Rubik, 600, 15f, 0f, 1.0f, UiCase.Upper),               // KeyCap
+        };
+
         /// <summary>A style's face and size. An index into a fixed table.</summary>
-        public static UiType Type(UiStyle style) => Types[(int)style];
+        public static UiType Type(UiStyle style)
+        {
+            switch (Theme)
+            {
+                case UiTheme.Ledger: return LedgerTypes[(int)style];
+                case UiTheme.Terminal: return TerminalTypes[(int)style];
+                case UiTheme.Phone: return PhoneTypes[(int)style];
+                default: return Types[(int)style];
+            }
+        }
 
         // ------------------------------------------------------------------------------------------------- motion
 
@@ -336,8 +458,35 @@ namespace RealLifeOverhaul.Ui
             0x0C0C0F99,   // PromptCap
         };
 
+        // The theme study's dark tables (the study is judged dark first; each takes the wireframe's light until one is chosen).
+        private static readonly uint[] LedgerDark =
+        {
+            0x00000000, 0x12110EFF, 0x191814FF, 0xEDE6D84D, 0x1E1D18FF, 0x191814FF, 0xEDE6D826, 0x22201BFF, 0x262420FF, 0x2B2924FF,
+            0x2B231EFF, 0xF2A58A73, 0xF1EBDDFF, 0xC7BFAFFF, 0x9B9384FF, 0xF2A58AFF, 0xF6B59EFF, 0xF2A58A26, 0x12110EFF, 0x7FC48CFF,
+            0x9AD4A5FF, 0x7FC48C24, 0xE5574BFF, 0xF28B80FF, 0xE5574B2E, 0xE3B341FF, 0xEDC76BFF, 0xE3B34129, 0x34312AFF, 0xE6DFD0FF,
+            0xEDE6D82E, 0xEDE6D81F, 0x12110ED9, 0xF2A58AFF, 0xF1EBDDFF, 0x12110E99,
+        };
+
+        private static readonly uint[] TerminalDark =
+        {
+            0x00000000, 0x07090BFF, 0x0C1013FF, 0x2A3843FF, 0x111820FF, 0x0C1013FF, 0x1B252DFF, 0x121A20FF, 0x15202AFF, 0x1A2631FF,
+            0x231C08FF, 0xFFB00080, 0xE4ECF1FF, 0xA6B6C2FF, 0x7D909DFF, 0xFFB000FF, 0xFFC24DFF, 0xFFB0001F, 0x07090BFF, 0x37D07AFF,
+            0x6BE39CFF, 0x37D07A1F, 0xFF5A4DFF, 0xFF8C82FF, 0xFF5A4D29, 0xFF9A3DFF, 0xFFB774FF, 0xFF9A3D24, 0x1B252DFF, 0xCFDDE6FF,
+            0x1B252DFF, 0x1B252DFF, 0x07090BD9, 0xFFB000FF, 0xE4ECF1FF, 0x07090B99,
+        };
+
+        private static readonly uint[] PhoneDark =
+        {
+            0x00000000, 0x0B0B0DFF, 0x1C1C1FFF, 0xFFFFFF14, 0x232327FF, 0x1C1C1FFF, 0xFFFFFF0D, 0x2A2A2FFF, 0x2C2C31FF, 0x313137FF,
+            0x3A2228FF, 0xFB71886B, 0xF2F2F5FF, 0xAEAEB4FF, 0x96969DFF, 0xFB7188FF, 0xFF8AA0FF, 0xFB718829, 0x1A0A0EFF, 0x4CD787FF,
+            0x7FE4A9FF, 0x4CD78724, 0xFF5A52FF, 0xFF9A94FF, 0xFF5A522E, 0xFFA95CFF, 0xFFC08AFF, 0xFFA95C29, 0x3A3A40FF, 0xE0E0E6FF,
+            0xFFFFFF14, 0xFFFFFF14, 0x0B0B0DD9, 0xFB7188FF, 0xFFFFFFFF, 0x0B0B0D99,
+        };
+
+        private static readonly uint[][] ThemeDark = { DarkColours, LedgerDark, TerminalDark, PhoneDark };
+
         /// <summary>A role's colour in a theme, as 0xRRGGBBAA. An index into a fixed table.</summary>
-        public static uint Colour(UiRole role, bool dark) => (dark ? DarkColours : LightColours)[(int)role];
+        public static uint Colour(UiRole role, bool dark) => (dark ? ThemeDark[(int)Theme] : LightColours)[(int)role];
 
         /// <summary>The number of roles each theme's table holds; EconomyCheck holds both tables to it.</summary>
         public static int ThemeLength(bool dark) => (dark ? DarkColours : LightColours).Length;

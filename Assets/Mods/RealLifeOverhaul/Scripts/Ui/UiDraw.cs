@@ -109,38 +109,12 @@ namespace RealLifeOverhaul.Ui
             return s.Add(ref item);
         }
 
-        /// <summary>A soft accent shadow under a box (a primary button, a badge): decoration the layout checks pass over.</summary>
-        public static int Glow(UiScene s, UiAt at, float x, float y, float w, float h, UiRole tint, float alpha)
-        {
-            var item = new UiItem
-            {
-                Kind = UiKind.Glow, Flags = UiFlags.Decor, Fill = tint, X = x, Y = y, W = w, H = h, Radius = UiTokens.RadiusLarge,
-                Clip = at.Clip, Node = -1, Layer = at.Layer, Order = at.Order, Parent = at.Parent, Alpha = alpha
-            };
-            return s.Add(ref item);
-        }
-
-        /// <summary>The soft accent wash in a panel's top left corner, as the wireframe lights its hero.</summary>
-        public static int Wash(UiScene s, UiAt at, float x, float y, float w, float h)
-        {
-            var item = new UiItem
-            {
-                Kind = UiKind.Wash, Flags = UiFlags.Decor, Fill = UiRole.Accent, X = x, Y = y, W = w, H = h,
-                Clip = at.Clip, Node = -1, Layer = at.Layer, Order = at.Order, Parent = at.Parent, Alpha = 0.13f
-            };
-            return s.Add(ref item);
-        }
-
         /// <summary>A count in a badge, at a box's right edge from x; returns its width.</summary>
         public static float Badge(UiScene s, UiAt at, float right, float y, int count, bool loud)
         {
             string words = count > 99 ? "99+" : count.ToString(System.Globalization.CultureInfo.InvariantCulture);
             float w = Math.Max(UiTokens.Badge, Snap(UiTextRules.Width(words, UiStyle.Badge) + UiTokens.S2 * 2f));
             float x = right - w;
-            if (loud)
-            {
-                Glow(s, at, x, y, w, UiTokens.Badge, UiRole.Accent, 0.5f);
-            }
             int b = Box(s, at, x, y, w, UiTokens.Badge, loud ? UiRole.Accent : UiRole.Notice, UiRole.None, UiTokens.Badge / 2f, UiFlags.Circle | UiFlags.Right);
             TextMiddle(s, at.In(b), x, y, UiTokens.Badge, w, UiStyle.Badge, loud ? UiRole.OnAccent : UiRole.NoticeText, words, UiFlags.Centre);
             return w;
@@ -157,10 +131,16 @@ namespace RealLifeOverhaul.Ui
             {
                 Kind = UiKind.KeyCap, Fill = face, Edge = ink, Ink = ink, Style = UiStyle.KeyCap, Icon = glyph, Text = name ?? string.Empty,
                 X = x, Y = y, W = w, H = h, Radius = UiTokens.RadiusSmall, Clip = at.Clip, Node = -1, Layer = at.Layer, Order = at.Order,
-                Parent = at.Parent, Alpha = 1f
+                Parent = at.Parent, Alpha = 1f, Value = (int)action
             };
             s.Add(ref item);
             return w;
+        }
+
+        /// <summary>Whether the keys bound now show anything for an action (a pad has no number keys).</summary>
+        public static bool HasKey(UiAction action, IUiKeys keys)
+        {
+            return keys != null && action != UiAction.Count && (keys.Glyph(action) != UiIcon.None || !string.IsNullOrEmpty(keys.Name(action)));
         }
 
         /// <summary>A key cap's width before it is drawn, for a layout that must know it first.</summary>
@@ -171,12 +151,13 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>A focus target over a box: what a press runs, the face that brightens and the list it is a row of.</summary>
-        public static int Node(UiScene s, UiAt at, float x, float y, float w, float h, int command, int arg, int face, bool disabled = false, short list = -1, int index = 0)
+        public static int Node(UiScene s, UiAt at, float x, float y, float w, float h, int command, int arg, int face, bool disabled = false, short list = -1, int index = 0,
+            UiAction key = UiAction.Count)
         {
             var node = new UiNode
             {
                 X = x, Y = y, W = w, H = h, Clip = at.Clip, Layer = at.Layer, Region = at.Region, Command = command, Arg = arg, Face = face, List = list,
-                Index = index, Disabled = disabled, Up = -1, Down = -1, Left = -1, Right = -1
+                Index = index, Disabled = disabled, Up = -1, Down = -1, Left = -1, Right = -1, Key = UiKeyGlyphs.Ownable(key) ? key : UiAction.Count
             };
             int n = s.AddNode(ref node);
             for (int i = face; i >= 0 && i < s.ItemCount; i++)
@@ -188,6 +169,54 @@ namespace RealLifeOverhaul.Ui
                 }
             }
             return n;
+        }
+
+        /// <summary>
+        /// Moves what was laid out since the given counts down by a height: items and targets outside a scroll region and the
+        /// regions themselves (what scrolls inside one keeps its own place). A card laid out from the top is set at the
+        /// middle once its height is known; a move of a grid step keeps everything on the grid.
+        /// </summary>
+        public static void Lift(UiScene s, int items, int nodes, int clips, float dy)
+        {
+            for (int i = items; i < s.ItemCount; i++)
+            {
+                s.Items[i].Y += s.Items[i].Clip < 0 ? dy : 0f;
+            }
+            for (int i = nodes; i < s.NodeCount; i++)
+            {
+                s.Nodes[i].Y += s.Nodes[i].Clip < 0 ? dy : 0f;
+            }
+            for (int i = clips; i < s.ClipCount; i++)
+            {
+                s.Clips[i].Y += dy;
+            }
+        }
+
+        /// <summary>The bottom of what lies inside a box (through its parents, decor left out), or the box's top when nothing does.</summary>
+        public static float Lowest(UiScene s, int box)
+        {
+            float lowest = s.Items[box].Y;
+            for (int i = box + 1; i < s.ItemCount; i++)
+            {
+                if ((s.Items[i].Flags & UiFlags.Decor) == 0 && s.Items[i].Clip < 0 && Inside(s, i, box))
+                {
+                    lowest = Math.Max(lowest, s.Items[i].Y + s.Items[i].H);
+                }
+            }
+            return lowest;
+        }
+
+        /// <summary>A rule across a width with words at its middle (the start of a thread, a day): returns the height it takes.</summary>
+        public static float Divider(UiScene s, UiAt at, float x, float y, float w, string words)
+        {
+            float h = UiTokens.S8;
+            float tw = Math.Min(UiTextRules.Width(words, UiStyle.Small) + UiTokens.S1, w - UiTokens.S16 * 2f);
+            float tx = x + (w - tw) / 2f;
+            float ry = y + Snap(h / 2f);
+            Box(s, at, x + UiTokens.S6, ry, Math.Max(0f, tx - UiTokens.S3 - x - UiTokens.S6), UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
+            Box(s, at, tx + tw + UiTokens.S3, ry, Math.Max(0f, x + w - UiTokens.S6 - tx - tw - UiTokens.S3), UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
+            Text(s, at, tx, y + (h - UiTextRules.LineHeight(UiStyle.Small)) / 2f, tw, UiStyle.Small, UiRole.Muted, words, UiFlags.Truncate | UiFlags.Centre | UiFlags.Middle);
+            return h;
         }
 
         /// <summary>Whether an item sits, through its parents, inside another.</summary>
@@ -252,6 +281,7 @@ namespace RealLifeOverhaul.Ui
         /// <summary>An empty state in words, centred in a box: never a blank panel.</summary>
         public static void Empty(UiScene s, UiAt at, float x, float y, float w, float h, string title, string body)
         {
+            at = at.In(Box(s, at, x, y, w, h, UiRole.None, UiRole.None, 0f));   // the room it is given is the state's own: no frame around it is a hole
             float bw = Math.Min(w - UiTokens.S10 * 2f, UiTokens.S16 * 6f);
             float th = UiTextRules.LineHeight(UiStyle.SectionTitle);
             float bh = UiTextRules.WrappedHeight(body, UiStyle.Body, bw, 4);

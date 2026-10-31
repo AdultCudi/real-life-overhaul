@@ -23,11 +23,11 @@ namespace RealLifeOverhaul.Ui
     }
 
     /// <summary>
-    /// The session steps template, for a desk session held at the owner's desk (Scripts/Sessions): one framed panel at the
-    /// screen's centre with the session's name and what it is, the step progress, the step's question and its choices as
+    /// The session steps template, for a desk session held at the owner's desk (Scripts/Sessions): one framed card at the
+    /// screen's middle with the session's name and what it is, the step progress, the step's question and its choices as
     /// cards (each with the key that picks it and the trade-off it makes), a summary at the side and the step's actions at
-    /// the foot. Commands: <see cref="ChoiceCommand"/> (the choice's index), <see cref="ActionCommand"/> (the action's).
-    /// Game-free. Cost: a layout a change.
+    /// the foot. The card is as tall as what it holds, so it never frames a hole. Commands: <see cref="ChoiceCommand"/>
+    /// (the choice's index), <see cref="ActionCommand"/> (the action's). Game-free. Cost: a layout a change.
     /// </summary>
     public static class UiSessionSteps
     {
@@ -45,9 +45,9 @@ namespace RealLifeOverhaul.Ui
             UiAt at = screen.In(bg);
             float pw = Math.Min(cw, PanelWidth);
             float px = cx + UiDraw.SnapDown((cw - pw) / 2f);
-            int panel = UiDraw.Box(s, at, px, cy, pw, ch, UiRole.Panel, UiRole.PanelEdge, UiTokens.RadiusPanel);
+            int items = s.ItemCount, nodes = s.NodeCount, clips = s.ClipCount;
+            int panel = UiDraw.Box(s, at, px, cy, pw, ch, UiRole.Panel, UiRole.PanelEdge, UiTokens.RadiusPanel, UiFlags.Panel);
             UiAt inside = at.In(panel);
-            UiDraw.Wash(s, inside, px, cy, pw * 0.5f, UiTokens.S16 * 3f);
             float x = px + UiTokens.S8, w = pw - UiTokens.S8 * 2f, y = cy + UiTokens.S8;
             UiDraw.Text(s, inside, x, y, w, UiStyle.Hero, UiRole.Text, m.Title, UiFlags.Label | UiFlags.Truncate);
             y += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Hero)) + UiTokens.S2;
@@ -65,16 +65,18 @@ namespace RealLifeOverhaul.Ui
                 qy += h + UiTokens.S3;
             }
             float sx = x + main + UiTokens.S8;
-            int summary = UiDraw.Box(s, inside, sx, y, SideWidth, UiDraw.SnapDown(qy - y - UiTokens.S3), UiRole.Field, UiRole.RowEdge, UiTokens.RadiusLarge);
+            int summary = UiDraw.Box(s, inside, sx, y, SideWidth, UiTokens.S16, UiRole.Field, UiRole.RowEdge, UiTokens.RadiusLarge);
             UiAt inSummary = inside.In(summary);
             float sy = y + UiTokens.S5, sw = SideWidth - UiTokens.S5 * 2f;
             UiDraw.Text(s, inSummary, sx + UiTokens.S5, sy, sw, UiStyle.SectionHeader, UiRole.Muted, m.SummaryTitle, UiFlags.Label);
             sy += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S2;
-            for (int i = 0; i < m.SummaryCount && sy + UiTokens.PairRow <= y + (qy - y - UiTokens.S3) - UiTokens.S4; i++)
+            for (int i = 0; i < m.SummaryCount; i++)
             {
                 sy += UiDraw.KeyValue(s, inSummary, sx + UiTokens.S5, sy, sw, m.Summary[i].Key, m.Summary[i].Value);
             }
-            float by = cy + ch - UiTokens.S8 - UiTokens.Control;
+            s.Items[summary].H = UiDraw.Snap(sy - y + UiTokens.S3);   // the frame fits its lines: the rule under the last and a little air
+            float foot = Math.Max(qy - UiTokens.S3, y + s.Items[summary].H);
+            float by = Math.Min(cy + ch - UiTokens.S8 - UiTokens.Control, foot + UiTokens.S8);
             float bx = px + pw - UiTokens.S8;
             for (int i = m.ActionCount - 1; i >= 0; i--)
             {
@@ -84,6 +86,9 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.Button(s, inside, bx, by, bw, UiTokens.Control, a.Kind, a.Label, a.Icon, a.Key, keys, ActionCommand, i, a.Disabled);
                 bx -= UiTokens.S3;
             }
+            float ph = UiDraw.Snap(by + UiTokens.Control + UiTokens.S8 - cy);
+            s.Items[panel].H = ph;
+            UiDraw.Lift(s, items, nodes, clips, UiDraw.SnapDown((ch - ph) / 2f));
             for (int i = 0; i < m.PromptCount; i++)
             {
                 s.AddPrompt(m.Prompts[i].Action, m.Prompts[i].Label);

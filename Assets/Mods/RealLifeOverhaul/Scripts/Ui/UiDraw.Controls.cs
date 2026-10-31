@@ -23,7 +23,7 @@ namespace RealLifeOverhaul.Ui
         public static int Button(UiScene s, UiAt at, float x, float y, float w, float h, UiButtonKind kind, string label, UiIcon icon, UiAction key,
             IUiKeys keys, int command, int arg, bool disabled = false)
         {
-            bool cap = key != UiAction.Move && key != UiAction.Count && keys != null;
+            bool cap = UiKeyGlyphs.Ownable(key) && HasKey(key, keys);
             float inner = UiTextRules.Width(label, UiStyle.Button);
             float capW = cap ? KeyCapWidth(key, keys) : 0f;
             float iconW = icon != UiIcon.None ? UiTokens.Icon : 0f;
@@ -55,10 +55,6 @@ namespace RealLifeOverhaul.Ui
                 case UiButtonKind.Quiet: fill = UiRole.None; edge = UiRole.None; ink = UiRole.Text2; break;
                 default: fill = UiRole.Field; edge = UiRole.PanelEdge; ink = UiRole.Text; break;
             }
-            if (kind == UiButtonKind.Primary && !disabled)
-            {
-                Glow(s, at, x, y + UiTokens.S1, w, h, UiRole.Accent, 0.4f);
-            }
             float radius = kind == UiButtonKind.Chip ? UiTokens.RadiusMedium : UiTokens.RadiusLarge;   // a chip's corners crisper: a game's tag, not a pill
             int face = Box(s, at, x, y, w, h, fill, edge, radius, disabled ? UiFlags.Disabled : UiFlags.None);
             UiAt inside = at.In(face);
@@ -85,7 +81,7 @@ namespace RealLifeOverhaul.Ui
             {
                 TextMiddle(s, inside, cx, y, h, inner + UiTokens.S1, UiStyle.Button, ink, label, UiFlags.Label | UiFlags.Centre | (disabled ? UiFlags.Disabled : UiFlags.None));
             }
-            return Node(s, at, x, y, w, h, command, arg, face, disabled);
+            return Node(s, at, x, y, w, h, command, arg, face, disabled, -1, 0, key);
         }
 
         /// <summary>The height a button of a fixed width needs: a control's, or two lines' when its words take two there.</summary>
@@ -136,8 +132,18 @@ namespace RealLifeOverhaul.Ui
                 }
             }
             float tx = x + UiTokens.S4 + UiTokens.StatusDot + UiTokens.S3;
-            TextMiddle(s, inside, tx, y, h, w - (tx - x) - cw - UiTokens.S6, UiStyle.Nav, selected ? UiRole.AccentText : UiRole.Text2, label,
-                UiFlags.Label | UiFlags.Truncate);
+            float lw = w - (tx - x) - cw - UiTokens.S6;
+            UiRole ink = selected ? UiRole.AccentText : UiRole.Text2;
+            if (UiTextRules.Width(label, UiStyle.Nav) <= lw)
+            {
+                TextMiddle(s, inside, tx, y, h, lw, UiStyle.Nav, ink, label, UiFlags.Label | UiFlags.Truncate);
+            }
+            else
+            {
+                // A long name of the game's ("Importations / Marchandises") on two smaller lines rather than cut short.
+                float lh = UiTextRules.WrappedHeight(label, UiStyle.SmallStrong, lw, 2);
+                Text(s, inside, tx, y + (h - lh) / 2f, lw, UiStyle.SmallStrong, ink, label, UiFlags.Label | UiFlags.Wrap | UiFlags.Middle, 2);
+            }
             return Node(s, at, x, y, w, h, command, arg, face);
         }
 

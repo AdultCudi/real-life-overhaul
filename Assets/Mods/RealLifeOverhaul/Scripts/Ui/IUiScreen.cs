@@ -1,5 +1,8 @@
 namespace RealLifeOverhaul.Ui
 {
+    /// <summary>A screen's text source: a key's words in the game's language; the English is what the offline checks read while a key is new.</summary>
+    public delegate string UiWords(string key, string english);
+
     /// <summary>
     /// A screen of the kit as its host runs it: it lays its view model out on request and answers what the player does.
     /// The screen owns its view model and the game's logic behind it; the host owns input, focus, sound and drawing.
@@ -42,6 +45,7 @@ namespace RealLifeOverhaul.Ui
     {
         public int MoveX, MoveY;   // -1, 0 or 1: held directions; the host repeats them as a game does
         public bool Confirm, Back, TabPrev, TabNext, Alt, Option;
+        public int Pick;           // the number key pressed, 1 to 9, or 0
         public UiPad Pad;          // the pad last used, None while the keyboard or mouse was
     }
 

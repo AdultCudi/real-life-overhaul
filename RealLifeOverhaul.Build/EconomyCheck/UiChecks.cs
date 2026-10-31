@@ -276,7 +276,7 @@ internal static partial class Program
     {
         public UiScreenDef Def;
         public string Name;
-        public Action<UiScene, UiFrame, bool, IUiKeys, UiSamples.Words> Lay;
+        public Action<UiScene, UiFrame, bool, IUiKeys, UiWords> Lay;
     }
 
     private static List<UiScreenCase> UiCases()
@@ -325,9 +325,29 @@ internal static partial class Program
         };
         foreach (UiScreenCase c in UiCases())
         {
+            if (c.Def.Runner != null)
+            {
+                // A screen the game runs labels only with keys its entry names, so the texts check sees each one translated.
+                var used = new List<string>();
+                UiWords en = UiWords("en");
+                c.Lay(s, UiFrame.FullMenu(16f / 9f), true, UiDefaultKeys.Keyboard, (key, english) =>
+                {
+                    used.Add(key);
+                    return en(key, english);
+                });
+                var unnamed = new List<string>();
+                foreach (string key in used)
+                {
+                    if (Array.IndexOf(c.Def.Keys, key) < 0 && !unnamed.Contains(key))
+                    {
+                        unnamed.Add(key);
+                    }
+                }
+                Check(unnamed.Count == 0, "ui screens: every key " + c.Name + " labels with is named in its entry (" + (unnamed.Count == 0 ? "all" : string.Join(", ", unnamed)) + ")");
+            }
             foreach (string lang in ModLanguages.All)
             {
-                UiSamples.Words t = UiWords(lang);
+                UiWords t = UiWords(lang);
                 foreach (float aspect in UiAspects)
                 {
                     UiFrame frame = UiFrame.FullMenu(aspect);
@@ -347,6 +367,9 @@ internal static partial class Program
                         Check(UiCheckRules.TooSmall(s, say) == 0, "ui screens: no text under the smallest size: " + where);
                         Check(UiCheckRules.Crowded(s, say) == 0, "ui screens: one primary action a layer, and no crowd: " + where);
                         Check(UiCheckRules.NoPrompts(s, say) == 0, "ui screens: a prompt bar that says how to go back: " + where);
+                        Check(UiCheckRules.Contradictions(s, say) == 0, "ui screens: no indicator contradicts its value: " + where);
+                        Check(UiCheckRules.DeadSpace(s, say) == 0, "ui screens: no frame holds dead space: " + where);
+                        Check(UiCheckRules.KeyClash(s, say) == 0, "ui screens: one key does one thing: " + where);
                         Check(UiFocusRules.Unreached(s, out string missed) == 0, "ui screens: the d-pad reaches every target: " + where + " (" + missed + ")");
                         Check(UiCheckRules.LowContrast(s, say) == 0, "ui screens: every text and icon stands out (dark): " + where);
                         if (lang == "en")
@@ -361,7 +384,7 @@ internal static partial class Program
     }
 
     // A text source for one language: the mod's locale, then the game's own (its keys are the game's), then English, then the sample's words.
-    private static UiSamples.Words UiWords(string lang)
+    private static UiWords UiWords(string lang)
     {
         Dictionary<string, string> mod = LocaleFile(lang), modEn = LocaleFile("en"), game = GameLocale(lang), gameEn = GameLocale("en");
         return (key, english) =>
@@ -464,6 +487,54 @@ internal static partial class Program
         UiDraw.Text(small, UiAt.Screen, 0f, 0f, 400f, UiStyle.Small, UiRole.Text, "Too small", UiFlags.None);
         Check(UiCheckRules.TooSmall(small, null) > 0, "ui rules: a text under the smallest size is found");
         types[(int)UiStyle.Small].Size = size;
+        // The review's own two faults (1 Nov): "+2.1%" by a falling arrow, and a frame with its bottom half empty.
+        var figure = new UiFigureModel { Label = "Average rent", Value = "$2,140", Change = "+2.1%", Rising = false, Good = false, Trend = new[] { 2f, 2.1f } };
+        var told = new UiScene();
+        told.Begin("told", 800f, 600f, true);
+        UiDraw.Figure(told, UiAt.Screen, 0f, 0f, 300f, ref figure, true);
+        Check(UiCheckRules.Contradictions(told, null) == 0, "ui rules: a figure's arrow follows the sign of its change, whatever the model says");
+        int arrow = -1;
+        for (int i = 0; i < told.ItemCount; i++)
+        {
+            arrow = told.Items[i].Kind == UiKind.Icon ? i : arrow;
+        }
+        Check(arrow >= 0 && told.Items[arrow].Icon == UiIcon.TrendUp && told.Items[arrow].Fill == UiRole.DangerText,
+            "ui rules: rent up reads as a red arrow up (the arrow by the sign, the colour by the player)");
+        told.Items[arrow].Icon = UiIcon.TrendDown;
+        Check(UiCheckRules.Contradictions(told, null) > 0, "ui rules: a falling arrow by \"+2.1%\" is found");
+        told.Items[arrow].Icon = UiIcon.TrendUp;
+        told.Items[arrow].Fill = UiRole.OkText;
+        Check(UiCheckRules.Contradictions(told, null) > 0, "ui rules: a green arrow by red words is found");
+        var hole = new UiScene();
+        hole.Begin("hole", 800f, 600f, true);
+        int frame = UiDraw.Box(hole, UiAt.Screen, 0f, 0f, 400f, 400f, UiRole.Panel, UiRole.PanelEdge, UiTokens.RadiusPanel);
+        UiDraw.Text(hole, UiAt.Screen.In(frame), 20f, 20f, 300f, UiStyle.Body, UiRole.Text, "Half a panel of words", UiFlags.None);
+        Check(UiCheckRules.DeadSpace(hole, null) > 0, "ui rules: a frame whose bottom half is empty is found");
+        hole.Items[frame].H = UiDraw.Snap(20f + UiTextRules.LineHeight(UiStyle.Body) + UiTokens.S5);
+        Check(UiCheckRules.DeadSpace(hole, null) == 0, "ui rules: the frame fitted to its words passes");
+        // The session's first draft: its choices far over its buttons, a hole between two lines rather than under the last.
+        hole.Items[frame].H = 400f;
+        UiDraw.Button(hole, UiAt.Screen.In(frame), 20f, 320f, 200f, UiTokens.Control, UiButtonKind.Secondary, "Begin", UiIcon.None, UiAction.Count, null, 1, 0);
+        Check(UiCheckRules.DeadSpace(hole, null) > 0, "ui rules: a frame with a hole between its lines is found");
+        // The session's keys (1 Nov): Enter on a choice and on Begin, and one key on two buttons.
+        var keyed = new UiScene();
+        keyed.Begin("keyed", 800f, 600f, true);
+        var choice = new UiChoiceModel { Key = UiAction.Confirm, Name = "Lift morale", Trade = "Burnout eases." };
+        UiDraw.ChoiceCard(keyed, UiAt.Screen, 0f, 0f, 400f, ref choice, UiDefaultKeys.Keyboard, 1, 0, out float _);
+        Check(UiCheckRules.KeyClash(keyed, null) > 0, "ui rules: a target showing Enter, which presses whatever has focus, is found");
+        var twice = new UiScene();
+        twice.Begin("twice", 800f, 600f, true);
+        UiDraw.Button(twice, UiAt.Screen, 0f, 0f, 0f, UiTokens.Control, UiButtonKind.Primary, "Call", UiIcon.None, UiAction.Alt, UiDefaultKeys.Keyboard, 1, 0);
+        UiDraw.Button(twice, UiAt.Screen, 0f, 100f, 0f, UiTokens.Control, UiButtonKind.Secondary, "Begin", UiIcon.None, UiAction.Alt, UiDefaultKeys.Keyboard, 2, 0);
+        Check(UiCheckRules.KeyClash(twice, null) > 0, "ui rules: one key on two targets is found");
+        var picks = new UiScene();
+        picks.Begin("picks", 800f, 600f, true);
+        for (int i = 0; i < 3; i++)
+        {
+            var c = new UiChoiceModel { Key = (UiAction)((int)UiAction.Pick1 + i), Name = "Choice", Trade = "What it does." };
+            UiDraw.ChoiceCard(picks, UiAt.Screen, 0f, i * 120f, 400f, ref c, UiDefaultKeys.Keyboard, 1, i, out float _);
+        }
+        Check(UiCheckRules.KeyClash(picks, null) == 0 && UiFocusRules.Keyed(picks, UiAction.Pick2) == 1, "ui rules: choices on 1, 2 and 3 pass, and 2 presses the second");
     }
 
     // ---------------------------------------------------------------- sources
@@ -496,6 +567,22 @@ internal static partial class Program
             }
         }
         Check(clean && gameFree.Count >= 30, "ui sources: the kit's files name only the engine, its interface and text, so the offline preview draws exactly what ships (" + dirty + ")");
+        // RLO-UI-015 (the owner, 1 Nov): flat surfaces, crisp edges; no gradient, glow, blur or soft shadow anywhere in the kit.
+        var soft = new System.Text.RegularExpressions.Regex(@"\b\w*(Glow|Wash|Gradient|Blur|Shadow)\w*\b");
+        string soften = "none";
+        foreach (string path in Directory.GetFiles(folder, "*.cs", SearchOption.AllDirectories))
+        {
+            foreach (string line in File.ReadAllLines(path))
+            {
+                int comment = line.IndexOf("//", StringComparison.Ordinal);
+                string code = comment >= 0 ? line.Substring(0, comment) : line;
+                if (soft.IsMatch(code))
+                {
+                    soften = System.IO.Path.GetFileName(path) + ": " + code.Trim();
+                }
+            }
+        }
+        Check(soften == "none", "ui sources: no gradient, glow, blur or soft shadow in the kit (" + soften + ")");
         string host = File.ReadAllText(System.IO.Path.Combine(folder, "UiHost.cs"));
         Check(host.Contains("[DefaultExecutionOrder(-31000)]") && host.Contains("enabled = false;") && host.Contains("HotSpots.Time(HotUpdate)") && host.Contains("Guard.Fail(FrameGuard, e, this)"),
             "ui sources: the host runs before the game's Escape, sleeps while hidden, is timed and guarded");
@@ -581,7 +668,7 @@ internal static partial class Program
 
     private static void UiTimings()
     {
-        UiSamples.Words t = UiWords("en");
+        UiWords t = UiWords("en");
         UiListDetailModel model = UiSamples.Contacts(t, true);
         UiFrame frame = UiFrame.FullMenu(16f / 9f);
         var s = new UiScene();

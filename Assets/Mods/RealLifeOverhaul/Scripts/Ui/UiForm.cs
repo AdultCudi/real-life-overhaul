@@ -37,9 +37,10 @@ namespace RealLifeOverhaul.Ui
     }
 
     /// <summary>
-    /// The form template, for settings and choices made before an action (an order, a campaign): one framed panel at the
-    /// centre, its title and line, its fields in sections in a frame that scrolls when they outnumber its room (toggles,
-    /// sliders, choices changed with left and right, key and value rows), its actions at the foot. Commands:
+    /// The form template, for settings and choices made before an action (an order, a campaign): one framed card at the
+    /// middle, its title and line, its fields in sections in a frame that scrolls when they outnumber its room (toggles,
+    /// sliders, choices changed with left and right, key and value rows), its actions at the foot; the card as tall as
+    /// what it holds. Commands:
     /// <see cref="FieldCommand"/> (the field's index) and <see cref="ActionCommand"/> (the action's). Game-free.
     /// Cost: a layout a change.
     /// </summary>
@@ -58,7 +59,8 @@ namespace RealLifeOverhaul.Ui
             UiAt at = screen.In(bg);
             float pw = Math.Min(cw, PanelWidth);
             float px = cx + UiDraw.SnapDown((cw - pw) / 2f);
-            int panel = UiDraw.Box(s, at, px, cy, pw, ch, UiRole.Panel, UiRole.PanelEdge, UiTokens.RadiusPanel);
+            int items = s.ItemCount, nodes = s.NodeCount, clips = s.ClipCount;
+            int panel = UiDraw.Box(s, at, px, cy, pw, ch, UiRole.Panel, UiRole.PanelEdge, UiTokens.RadiusPanel, UiFlags.Panel);
             UiAt inside = at.In(panel);
             float x = px + UiTokens.S8, w = pw - UiTokens.S8 * 2f, y = cy + UiTokens.S8;
             UiDraw.Text(s, inside, x, y, w, UiStyle.SectionTitle, UiRole.Text, m.Title, UiFlags.Label | UiFlags.Truncate);
@@ -69,13 +71,14 @@ namespace RealLifeOverhaul.Ui
                 y += UiDraw.Snap(UiTextRules.WrappedHeight(m.About, UiStyle.Body, w, 2));
             }
             y += UiTokens.S4;
-            float foot = cy + ch - UiTokens.S8 - UiTokens.Control;
-            float vh = UiDraw.SnapDown(foot - UiTokens.S6 - y);
             float contentH = 0f;
             for (int i = 0; i < m.FieldCount; i++)
             {
                 contentH += FieldHeight(ref m.Fields[i]);
             }
+            float room = UiDraw.SnapDown(cy + ch - UiTokens.S8 - UiTokens.Control - UiTokens.S6 - y);
+            float vh = Math.Min(room, UiDraw.Snap(contentH));
+            float foot = y + vh + UiTokens.S6;
             float offset = Math.Max(0f, Math.Min(m.Offset, contentH - vh));
             short clip = s.AddClip(x - UiTokens.S3, y, w + UiTokens.S6, vh, offset);
             s.Clips[clip].ContentHeight = contentH;
@@ -131,6 +134,9 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.Button(s, inside, bx, foot, bw, UiTokens.Control, a.Kind, a.Label, a.Icon, a.Key, keys, ActionCommand, i, a.Disabled);
                 bx -= UiTokens.S3;
             }
+            float ph = UiDraw.Snap(foot + UiTokens.Control + UiTokens.S8 - cy);
+            s.Items[panel].H = ph;
+            UiDraw.Lift(s, items, nodes, clips, UiDraw.SnapDown((ch - ph) / 2f));
             for (int i = 0; i < m.PromptCount; i++)
             {
                 s.AddPrompt(m.Prompts[i].Action, m.Prompts[i].Label);

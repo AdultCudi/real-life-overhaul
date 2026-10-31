@@ -7,7 +7,6 @@ namespace RealLifeOverhaul.Ui
     /// <summary>The objects each kind of item is drawn with, made once into a pool and bound to item after item.</summary>
     public sealed partial class UiView
     {
-        private const float GlowSpread = 12f;          // px a glow runs out beyond its box
         private const float InitialsShare = 0.36f;     // an avatar's initials, of its size
         private const float PadLetterShare = 0.5f;     // a pad button's letter, of its cap
 
@@ -24,6 +23,7 @@ namespace RealLifeOverhaul.Ui
         {
             public Image Fill;
             public Image Edge;
+            public Image Rule;       // a framed panel's head rule, made the first time a theme wears one
             public UiHit Hit;
             public UiRole Role;
             public float Alpha;
@@ -200,32 +200,18 @@ namespace RealLifeOverhaul.Ui
                 {
                     Place(slot.Rect, it.X, it.Y, it.W, it.H);
                     var a = (AvatarSlot)slot;
-                    a.Circle.pixelsPerUnitMultiplier = UiSprites.CircleScale(it.H * Scale);
+                    Sprite face = UiTokens.RoundFaces ? UiSprites.Circle : UiSprites.Fill(UiTokens.RadiusSmall);
+                    if (a.Circle.sprite != face)
+                    {
+                        a.Circle.sprite = face;
+                    }
+                    a.Circle.pixelsPerUnitMultiplier = UiTokens.RoundFaces ? UiSprites.CircleScale(it.H * Scale) : 1f;
                     a.Circle.color = ToColor(UiColour.AvatarFill(it.Value, _dark), it.Alpha);
                     a.Letters.font = UiFonts.For(UiStyle.Title);
                     a.Letters.fontSize = it.W * InitialsShare * Scale;
                     a.Letters.color = ToColor(UiColour.AvatarInk(it.Value, _dark), it.Alpha);
                     SetText(a.Letters, it.Text);
                     Show(a.Letters, !string.IsNullOrEmpty(it.Text));
-                    break;
-                }
-                case UiKind.Glow:
-                {
-                    Place(slot.Rect, it.X - GlowSpread, it.Y - GlowSpread, it.W + GlowSpread * 2f, it.H + GlowSpread * 2f);
-                    Image img = ((ImageSlot)slot).Image;
-                    img.sprite = UiSprites.Glow;
-                    img.type = Image.Type.Sliced;
-                    img.pixelsPerUnitMultiplier = UiSprites.Glow.border.x / (GlowSpread * 2f * Scale);
-                    img.color = Colour(it.Fill, it.Alpha);
-                    break;
-                }
-                case UiKind.Wash:
-                {
-                    Place(slot.Rect, it.X, it.Y, it.W, it.H);
-                    Image img = ((ImageSlot)slot).Image;
-                    img.sprite = UiSprites.Wash;
-                    img.type = Image.Type.Simple;
-                    img.color = Colour(it.Fill, it.Alpha);
                     break;
                 }
                 case UiKind.Spark:
@@ -287,6 +273,27 @@ namespace RealLifeOverhaul.Ui
             bool face = it.Node >= 0 && _scene.Nodes[it.Node].Face == index;
             b.Fill.raycastTarget = face;
             b.Hit.Face(face ? this : null, it.Node);
+            // A framed panel's head rule, where the theme wears one: the column rule of a printed page, solid and square.
+            bool rule = (it.Flags & UiFlags.Panel) != 0 && UiTokens.FrameRule > 0f;
+            if (rule && b.Rule == null)
+            {
+                RectTransform rr = NewRect(b.Rect, "Rule");
+                rr.anchorMin = new Vector2(0f, 1f);
+                rr.anchorMax = new Vector2(1f, 1f);
+                rr.pivot = new Vector2(0.5f, 1f);
+                b.Rule = rr.gameObject.AddComponent<Image>();
+                b.Rule.raycastTarget = false;
+            }
+            if (b.Rule != null)
+            {
+                Show(b.Rule, rule);
+                if (rule)
+                {
+                    b.Rule.rectTransform.sizeDelta = new Vector2(0f, UiTokens.FrameRule * Scale);
+                    b.Rule.rectTransform.anchoredPosition = Vector2.zero;
+                    b.Rule.color = Colour(UiRole.Text, 1f);
+                }
+            }
         }
 
         private void BindText(TextMeshProUGUI t, ref UiItem it)

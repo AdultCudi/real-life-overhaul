@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Ui
 {
@@ -265,6 +266,235 @@ namespace RealLifeOverhaul.Ui
                 }
             }
             return found;
+        }
+
+        /// <summary>
+        /// Indicators that contradict their value: a trend arrow pointing against the sign of the change written beside it
+        /// ("+2.1%" by a falling arrow), a sparkline running against that arrow, or an arrow, its words and its line not in
+        /// one colour (green and red say good and bad for the player, so a figure cannot say both).
+        /// </summary>
+        public static int Contradictions(UiScene s, Action<string> say)
+        {
+            int found = 0;
+            for (int i = 0; i + 1 < s.ItemCount; i++)
+            {
+                ref UiItem it = ref s.Items[i];
+                if (it.Kind != UiKind.Icon || (it.Icon != UiIcon.TrendUp && it.Icon != UiIcon.TrendDown))
+                {
+                    continue;
+                }
+                bool up = it.Icon == UiIcon.TrendUp;
+                ref UiItem words = ref s.Items[i + 1];
+                int sign = words.Kind == UiKind.Text ? UiModels.Sign(words.Text) : 0;
+                if (sign != 0 && (sign > 0) != up)
+                {
+                    found++;
+                    say?.Invoke(s.Name + ": a " + (up ? "rising" : "falling") + " arrow beside \"" + words.Text + "\"");
+                }
+                if (words.Kind == UiKind.Text && Tone(words.Ink) != Tone(it.Fill))
+                {
+                    found++;
+                    say?.Invoke(s.Name + ": an arrow in " + it.Fill + " beside its words in " + words.Ink);
+                }
+                if (i + 2 < s.ItemCount && s.Items[i + 2].Kind == UiKind.Spark && s.Items[i + 2].Points != null && s.Items[i + 2].Points.Length > 1)
+                {
+                    ref UiItem line = ref s.Items[i + 2];
+                    float run = line.Points[line.Points.Length - 1] - line.Points[0];
+                    if (run != 0f && (run > 0f) != up)
+                    {
+                        found++;
+                        say?.Invoke(s.Name + ": a sparkline running " + (run > 0f ? "up" : "down") + " under a " + (up ? "rising" : "falling") + " arrow");
+                    }
+                    if (Tone(line.Fill) != Tone(it.Fill))
+                    {
+                        found++;
+                        say?.Invoke(s.Name + ": a sparkline in " + line.Fill + " under an arrow in " + it.Fill);
+                    }
+                }
+            }
+            return found;
+        }
+
+        // Good or bad, whichever shade of the colour says it.
+        private static int Tone(UiRole role)
+        {
+            switch (role)
+            {
+                case UiRole.Ok:
+                case UiRole.OkText:
+                case UiRole.OkSoft:
+                    return 1;
+                case UiRole.Danger:
+                case UiRole.DangerText:
+                case UiRole.DangerSoft:
+                    return -1;
+                default:
+                    return 0;
+            }
+        }
+
+        /// <summary>
+        /// Frames holding dead space (a panel, a card, a row with its edge): a stretch of more than <see cref="MostDeadSpace"/>
+        /// that nothing inside covers, above its first line, between two of its lines (choices far over their buttons) or
+        /// under its last. A scroll region covers what its rows cover, all of its room when they run past it or when its
+        /// room is its content's own (a short thread under the line of its beginning); an empty state covers the room it
+        /// is given.
+        /// </summary>
+        public static int DeadSpace(UiScene s, Action<string> say)
+        {
+            int found = 0;
+            var spans = new List<float>(64);
+            for (int p = 0; p < s.ItemCount; p++)
+            {
+                ref UiItem frame = ref s.Items[p];
+                if (frame.Kind != UiKind.Box || (frame.Edge != UiRole.PanelEdge && frame.Edge != UiRole.RowEdge) || frame.Clip >= 0)
+                {
+                    continue;
+                }
+                spans.Clear();
+                float top = frame.Y, foot = frame.Y + frame.H;
+                for (int i = p + 1; i < s.ItemCount; i++)
+                {
+                    ref UiItem it = ref s.Items[i];
+                    if ((it.Flags & UiFlags.Decor) != 0 || it.Layer != frame.Layer)
+                    {
+                        continue;
+                    }
+                    if (it.Clip < 0)
+                    {
+                        if (UiDraw.Inside(s, i, p))
+                        {
+                            Span(spans, it.Y, it.Y + it.H, top, foot);
+                        }
+                    }
+                    else if (!Covers(s.Clips[it.Clip]) && ClipInside(s, it.Clip, ref frame))
+                    {
+                        ref UiClip c = ref s.Clips[it.Clip];
+                        float y = c.Y + it.Y - c.Offset;
+                        Span(spans, y, y + it.H, Math.Max(top, c.Y), Math.Min(foot, c.Y + c.H));
+                    }
+                }
+                for (int c = 0; c < s.ClipCount; c++)
+                {
+                    if (Covers(s.Clips[c]) && ClipInside(s, (short)c, ref frame))
+                    {
+                        Span(spans, s.Clips[c].Y, s.Clips[c].Y + s.Clips[c].H, top, foot);
+                    }
+                }
+                Gap(spans, top, foot, out float worst, out string where);
+                if (worst > MostDeadSpace + Tolerance)
+                {
+                    found++;
+                    say?.Invoke(s.Name + ": " + Describe(s, p) + " holds " + (int)worst + " px of nothing " + where);
+                }
+            }
+            return found;
+        }
+
+        // A scroll region whose whole room counts as filled: its rows run past it, or its room is its content's own.
+        private static bool Covers(UiClip c) => c.Fills || c.ContentHeight >= c.H - Tolerance;
+
+        private static void Span(List<float> spans, float from, float to, float top, float foot)
+        {
+            from = Math.Max(from, top);
+            to = Math.Min(to, foot);
+            if (to > from)
+            {
+                spans.Add(from);
+                spans.Add(to);
+            }
+        }
+
+        // The widest stretch between top and foot that no span covers, and where it lies.
+        private static void Gap(List<float> spans, float top, float foot, out float worst, out string where)
+        {
+            int n = spans.Count / 2;
+            var starts = new float[n];
+            var ends = new float[n];
+            for (int i = 0; i < n; i++)
+            {
+                starts[i] = spans[i * 2];
+                ends[i] = spans[i * 2 + 1];
+            }
+            Array.Sort(starts, ends);
+            float cursor = top;
+            worst = 0f;
+            where = "under its last line";
+            for (int i = 0; i < n; i++)
+            {
+                if (starts[i] - cursor > worst)
+                {
+                    worst = starts[i] - cursor;
+                    where = cursor == top ? "above its first line" : "between two of its lines";
+                }
+                cursor = Math.Max(cursor, ends[i]);
+            }
+            if (foot - cursor > worst)
+            {
+                worst = foot - cursor;
+                where = "under its last line";
+            }
+        }
+
+        /// <summary>
+        /// Keys that do two things on a screen: two targets of a layer owning one key, a target showing Confirm's key (it
+        /// presses whatever has focus, so on one target it would lie whenever another has focus), a target showing a key
+        /// it does not answer to, and an action named twice in the prompt bar.
+        /// </summary>
+        public static int KeyClash(UiScene s, Action<string> say)
+        {
+            int found = 0;
+            for (int i = 0; i < s.NodeCount; i++)
+            {
+                ref UiNode a = ref s.Nodes[i];
+                for (int j = i + 1; a.Key != UiAction.Count && j < s.NodeCount; j++)
+                {
+                    if (s.Nodes[j].Key == a.Key && s.Nodes[j].Layer == a.Layer)
+                    {
+                        found++;
+                        say?.Invoke(s.Name + ": " + a.Key + " presses two targets (" + a.Command + "/" + a.Arg + " and " + s.Nodes[j].Command + "/" + s.Nodes[j].Arg + ")");
+                    }
+                }
+            }
+            for (int i = 0; i < s.ItemCount; i++)
+            {
+                ref UiItem it = ref s.Items[i];
+                if (it.Kind != UiKind.KeyCap || (it.Flags & UiFlags.Prompt) != 0 || it.Node < 0)
+                {
+                    continue;
+                }
+                var shown = (UiAction)(int)it.Value;
+                if (!UiKeyGlyphs.Ownable(shown))
+                {
+                    found++;
+                    say?.Invoke(s.Name + ": a target shows " + shown + "'s key, which no one target may own");
+                }
+                else if (s.Nodes[it.Node].Key != shown)
+                {
+                    found++;
+                    say?.Invoke(s.Name + ": a target shows " + shown + "'s key but answers to " + s.Nodes[it.Node].Key);
+                }
+            }
+            for (int i = 0; i < s.PromptCount; i++)
+            {
+                for (int j = i + 1; j < s.PromptCount; j++)
+                {
+                    if (s.Prompts[i].Action == s.Prompts[j].Action)
+                    {
+                        found++;
+                        say?.Invoke(s.Name + ": the prompt bar names " + s.Prompts[i].Action + " twice");
+                    }
+                }
+            }
+            return found;
+        }
+
+        public const float MostDeadSpace = UiTokens.MostSlack;
+
+        private static bool ClipInside(UiScene s, short clip, ref UiItem panel)
+        {
+            ref UiClip c = ref s.Clips[clip];
+            return c.X >= panel.X - Tolerance && c.X + c.W <= panel.X + panel.W + Tolerance && c.Y >= panel.Y - Tolerance && c.Y + c.H <= panel.Y + panel.H + Tolerance;
         }
 
         /// <summary>A screen without its prompt bar, or one whose bar does not say how to go back.</summary>

@@ -28,17 +28,24 @@ namespace RealLifeOverhaul.Ui
     {
         /// <summary>
         /// A detail's hero: the avatar in its accent ring, the name, the role and the status chip, and the actions at the
-        /// right, the primary last; the soft accent wash behind it. Returns the hero's height.
+        /// right, the primary last, on the panel's own flat surface. Returns the hero's height.
         /// </summary>
         public static float Hero(UiScene s, UiAt at, float x, float y, float w, string name, float hue, string role, string status, UiTone tone,
             UiActionModel[] actions, int actionCount, IUiKeys keys)
         {
             const float pad = UiTokens.S8, size = UiTokens.AvatarHero;
             float h = pad + size + UiTokens.S6;
-            Wash(s, at, x, y, w * 0.6f, h * 1.2f);
             float ring = size + UiTokens.S2;
-            Circle(s, at, x + pad - UiTokens.S1, y + pad - UiTokens.S1, ring, ring, UiRole.Accent, UiFlags.Decor);
-            Circle(s, at, x + pad - UiTokens.Hairline * 2f, y + pad - UiTokens.Hairline * 2f, size + UiTokens.S1, size + UiTokens.S1, UiRole.Panel, UiFlags.Decor);
+            if (UiTokens.RoundFaces)
+            {
+                Circle(s, at, x + pad - UiTokens.S1, y + pad - UiTokens.S1, ring, ring, UiRole.Accent, UiFlags.Decor);
+                Circle(s, at, x + pad - UiTokens.Hairline * 2f, y + pad - UiTokens.Hairline * 2f, size + UiTokens.S1, size + UiTokens.S1, UiRole.Panel, UiFlags.Decor);
+            }
+            else
+            {
+                // A square face wears a square ring: the frame follows the face, never a circle round a square.
+                Box(s, at, x + pad - UiTokens.S1, y + pad - UiTokens.S1, ring, ring, UiRole.None, UiRole.Accent, UiTokens.RadiusSmall, UiFlags.Decor);
+            }
             Avatar(s, at, x + pad, y + pad, size, name, hue);
             // The actions first, from the right, so the name knows its room.
             float ax = x + w - pad;

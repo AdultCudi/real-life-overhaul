@@ -16,6 +16,20 @@ namespace RealLifeOverhaul.Ui
     {
         public const int ScrollAsked = -2;   // the next row is beyond those in view: the screen scrolls, then focus goes to it
 
+        /// <summary>The target of the top layer that a key presses from anywhere (its cap is drawn on it), or -1.</summary>
+        public static int Keyed(UiScene s, UiAction key)
+        {
+            int top = TopLayer(s);
+            for (int i = 0; i < s.NodeCount; i++)
+            {
+                if (s.Nodes[i].Key == key && s.Nodes[i].Layer == top && !s.Nodes[i].Disabled)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
         /// <summary>The highest layer with a target that can take focus.</summary>
         public static int TopLayer(UiScene s)
         {
