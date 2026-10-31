@@ -31,6 +31,10 @@ internal static partial class Program
             "the whole search for a car's power (24 drives of the model) is for the offline checks, never a frame of play"),
         ("Driving/CarHandling.cs", null, new[] { "_design.Begin(", "_design.Step()" }, new[] { "HandlingModel.Design(" },
             "the whole design of the handling is for the offline checks, never a frame of play"),
+        ("Core/GameUi/PhoneApps.cs", "Pump", new[] { "WorkSlice.Of(InstallQueue<PhoneApp>.SliceMs", "Waiting.Next(ref slice" }, new[] { "WorkSlice.Whole" },
+            "the mod's apps go on the phone one a frame, never all of them in the frame it can first take them (77 ms in the beta 6 log)"),
+        ("Core/GameUi/PhoneApps.cs", "Install", new[] { "app.Queue(menu)", "OnPhone(phone, menu, def.Id)" }, new[] { "Put()", "GetComponentsInChildren", "Instantiate(" },
+            "an install joins the line; its buttons are made when its turn comes, and the phones are searched for names once"),
         ("DistrictSave/DistrictSaveCodec.cs", "Write", new[] { "SerializationPolicy = Policy;" }, new[] { "new SaveGameSerializationPolicy" },
             "one serialization policy for the session, as the game keeps: a new one at every save makes Odin build every formatter again")
     };
