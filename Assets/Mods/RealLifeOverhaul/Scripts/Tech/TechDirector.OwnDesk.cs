@@ -195,9 +195,14 @@ namespace RealLifeOverhaul.Tech
                 DeskGame.OtherTarget = null;
                 DeskGame.OtherClicked = null;
             }
-            DeskGame.SitAt(stint.Desk);
+            stint.Begun = true;   // first: from here every end of the stint stands the player up (EndStint), whatever fails below
+            if (!DeskGame.SitAt(stint.Desk))
+            {
+                stint.Skip?.Close();   // the game would not seat them: given back free to walk and told why; the panel closes with nothing worked
+                EndStint(stint, false);
+                return;
+            }
             FirmsGame.Tiring(stint.Desk, true);
-            stint.Begun = true;
             Logger?.Info("Tech: the player works at a desk of '" + stint.Name + "' from hour " + Save.Hour + " of day " + Save.Day + " as "
                          + TalentCatalogue.Role(stint.Standing.Role).Key + " (level " + stint.Standing.Level + ").");
         }
@@ -227,7 +232,7 @@ namespace RealLifeOverhaul.Tech
             stint.Begun = false;
             FirmsGame.Tiring(null, false);
             EmployeeStationController desk = stint.Desk;
-            DeskGame.StandFrom(FirmsGame.PlayerAt(desk) ? desk : null);
+            DeskGame.StandFrom(desk);   // the desk let go only while the player is at it; the pose and the work hold always
             if (desk != null && isActiveAndEnabled)
             {
                 StartCoroutine(Guard.Routine(RestaffSoon(desk)));
@@ -271,6 +276,7 @@ namespace RealLifeOverhaul.Tech
         // The firms stand down: a stint is called off, the click taken back.
         private void DeskDown()
         {
+            SeatTestDown();
             if (_stint != null)
             {
                 OwnStint stint = _stint;

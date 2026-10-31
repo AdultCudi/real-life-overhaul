@@ -276,7 +276,7 @@ internal static partial class Program
         Check(MethodText(desk, "private void OpenStint(FirmPlace firm, EmployeeStationController desk, OwnerStanding standing)").Contains("ShiftSkip.Offer(this, stint)"),
             "own desk sources: the stint is the game's own work panel, with skip and fast forward (Jobs/ShiftSkip)");
         string started = MethodText(desk, "private void StintStarted(OwnStint stint)");
-        Check(started.Contains("DeskGame.SitAt(stint.Desk);") && started.Contains("FirmsGame.Tiring(stint.Desk, true);") && started.Contains("!FirmsGame.Free(stint.Desk)"),
+        Check(started.Contains("if (!DeskGame.SitAt(stint.Desk))") && started.Contains("FirmsGame.Tiring(stint.Desk, true);") && started.Contains("!FirmsGame.Free(stint.Desk)"),
             "own desk sources: the player sits at the desk as the game seats its own staff (WorkActivity) and spends the desk's energy");
         Check(MethodText(desk, "private void StintWorked(OwnStint stint, int minutes)").Contains("OwnDeskRules.Credit(_firmsFile.FirmAt(stint.Place), Save.Day, minutes - stint.Credited);"),
             "own desk sources: every minute goes on the firm as the clock moves, so a save in the middle keeps it");

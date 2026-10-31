@@ -112,17 +112,19 @@ namespace RealLifeOverhaul.Careers
             }
             try
             {
-                _state = PlayerActivityState.Started;   // the game's panel makes it Running on its next frame
                 Transform seat = _desk != null ? _desk.Seat : DeskGame.SeatOf(_station);
-                if (seat != null)
+                bool seated = seat != null;
+                _seated = seated;   // how End stands them up, once begun
+                // a till, a counter (no seat): on their feet at it, as the game's own job
+                if (!(seated ? DeskGame.SitOn(seat, _station, out _stood) : DeskGame.SitAt(_station)))
                 {
-                    _seated = true;
-                    DeskGame.SitOn(seat, _station, out _stood);
-                    _nextType = Time.time + UnityEngine.Random.Range(0f, 6f);
+                    End(true, false);   // never at work: DeskGame gave the player back free to walk and said why, and the day's sitting is let go
+                    return;
                 }
-                else
+                _state = PlayerActivityState.Started;   // at once: every way out from here stands the player up (End); the game's panel makes it Running on its next frame
+                if (seated)
                 {
-                    DeskGame.SitAt(_station);   // a till, a counter: on their feet at it, as the game's own job
+                    _nextType = Time.time + UnityEngine.Random.Range(0f, 6f);
                 }
                 _sitting.SkipStarted();
                 DeskGame.SetOffSeen("the work desk", true, _orderFrame);
@@ -130,6 +132,10 @@ namespace RealLifeOverhaul.Careers
             catch (Exception e)
             {
                 CareersDirector.Logger?.Error(e);
+                if (_state == PlayerActivityState.MovingTowardsActivity)
+                {
+                    End(true, false);   // a fault before the seat: nothing held, nothing left on its way
+                }
             }
         }
 
