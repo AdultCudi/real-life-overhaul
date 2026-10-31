@@ -152,6 +152,12 @@ namespace RealLifeOverhaul.Family
         public static int Children => Active ? FamilyState.AtHome() : 0;
         public static string PartnerName => Active && FamilyState.HasPartner ? Partner.Name : null;
 
+        /// <summary>Today's family dinner at Mom's by name ("Thanksgiving") while her table is set, else null: Mom's own call offers going over then.</summary>
+        public static string MomsDinner => Active ? Relatives.MomsDinnerName : null;
+
+        /// <summary>Going over to Mom's for today's dinner, from Mom's own call: the call's last line (on the phone it ends the call), or a polite close.</summary>
+        public static DialogEntry GoToMoms() => FamilyPageDialog.Guard(() => Relatives.CanGoToMoms ? Relatives.GoToMoms() : FamilyTalk.Close("reallife_family_menu_nothing"));
+
         /// <summary>True on the wedding day itself, for anything that should leave the player alone then.</summary>
         public static bool WeddingToday => Active && FamilyState.S.Wedding.Active && FamilyState.S.Wedding.Day == TimeHelper.CurrentDay;
 

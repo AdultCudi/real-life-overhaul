@@ -21,6 +21,7 @@ namespace RealLifeOverhaul
         /// Left at their defaults, the other side having nothing to answer with: FamilyBridges.Travel and Leisure (neither
         /// can be run for a named partner), television together and the health visit. Social's outings are planned with a
         /// venue and a time, so StartOuting answers false and Family runs its short evening.
+        /// Mom's own call, whichever dialog her contact opens (PhoneContacts), offers the family dinner at hers on its day.
         /// </summary>
         public static class FamilyLinks
         {
@@ -37,6 +38,8 @@ namespace RealLifeOverhaul
                 SocialPhone.FamilyMoveIn = MoveIn;
                 HomeFridgeButton.FamilyShown = () => FamilyPhone.BoardShown;
                 HomeFridgeButton.FamilyClicked = FamilyPhone.Board;
+                PhoneContacts.MomsDinner = () => FamilyApi.MomsDinner;   // Mom's own call offers today's dinner at hers
+                PhoneContacts.GoToMoms = FamilyApi.GoToMoms;
             }
 
             internal static void Disconnect()
@@ -49,6 +52,8 @@ namespace RealLifeOverhaul
                 SocialPhone.FamilyMoveIn = null;
                 HomeFridgeButton.FamilyShown = null;
                 HomeFridgeButton.FamilyClicked = null;
+                PhoneContacts.MomsDinner = null;
+                PhoneContacts.GoToMoms = null;
                 FamilyBridges.Reset();
             }
 

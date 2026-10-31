@@ -489,6 +489,7 @@ internal static partial class Program
         StaffReference();   // the Staff and roles reference: generated from the code's tables, its figures held to the code, its texts and its search (StaffChecks.cs)
         FontFix();   // What's new tells of the font stutter fix in all nine languages (FontFixChecks.cs)
         MapTreesFix();   // What's new tells of the city map fix in all eleven languages; the guard and its test are wired (MapTreeChecks.cs)
+        MomCall();   // the family dinner call: the ring answered from its notice and the phone, the dinner offered by Mom's call and Family, one table of dates (MomCallChecks.cs)
         Estate();
         Online();
         Services();
