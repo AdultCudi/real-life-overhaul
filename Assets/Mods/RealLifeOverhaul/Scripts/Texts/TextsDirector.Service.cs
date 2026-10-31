@@ -24,7 +24,7 @@ namespace RealLifeOverhaul.Texts
         private static TextKeys _keys;
         private static Dictionary<string, string> _config;
         private static int _serviceIndex = -1, _serviceVersion = -1, _version, _toldIndex;
-        private static bool _limitTold, _appTold;
+        private static bool _limitTold, _appTold, _modelTold;
         private static TextSignIn _signIn;
         private static Action<string> _keyTyped, _modelTyped, _addressTyped;
 
@@ -60,6 +60,7 @@ namespace RealLifeOverhaul.Texts
             _service = new TextService(ServiceQueue, start, Web, Log);
             Hub.Service = _service;
             _limitTold = false;
+            _modelTold = false;
             _appTold = false;
             _service.Start();
             Logger?.Info("Your own AI: cards go to " + p.Name + " (" + (start.Model ?? p.Model ?? "its first listed model") + ")"
@@ -91,6 +92,11 @@ namespace RealLifeOverhaul.Texts
             {
                 _limitTold = true;
                 TextsGame.Notice(s.Provider.Access == TextAccess.App ? "reallife_textsai_p2_joules" : "reallife_textsai_chatgpt_limit", null, 16f);
+            }
+            if (!_modelTold && s.ModelRefused && s.State == TextServerState.Failed && !s.Provider.NoModel)
+            {
+                _modelTold = true;   // once for each start: the model name the player chose, or the mod's own, is not known to the service
+                TextsGame.Notice(TextServiceRules.ModelUnknownKey, new Dictionary<string, string>(2) { { "service", s.Provider.Name }, { "model", s.Model ?? "?" } }, 20f);
             }
             if (!_appTold && s.Provider.Access == TextAccess.App && s.AppState != TextAppState.SignedIn)
             {
@@ -467,6 +473,11 @@ namespace RealLifeOverhaul.Texts
             if (p.Id == TextProvider.Off || s == null)
             {
                 key = "reallife_textsai_status_off";
+            }
+            else if (s.State == TextServerState.Failed && s.ModelRefused && !p.NoModel)
+            {
+                key = TextServiceRules.ModelUnknownKey;
+                data["model"] = s.Model ?? "?";
             }
             else if (s.State == TextServerState.Failed)
             {

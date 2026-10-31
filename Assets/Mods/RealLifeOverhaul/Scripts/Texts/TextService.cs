@@ -44,7 +44,7 @@ namespace RealLifeOverhaul.Texts
         private readonly List<Thread> _threads = new List<Thread>(Workers);
         private readonly object _lock = new object();
         private volatile TextServerState _state = TextServerState.Off;
-        private volatile bool _stop, _quiet = true, _noReasoning, _noTemperature;
+        private volatile bool _stop, _quiet = true, _noReasoning, _noTemperature, _modelRefused;
         private string _model;
         private double _restUntil;
         private TextFault _lastFault;
@@ -91,6 +91,9 @@ namespace RealLifeOverhaul.Texts
 
         /// <summary>The model asked; null until known.</summary>
         public string Model => _model;
+
+        /// <summary>True once the service answered that the model asked is not one it has (404 or "model not found"); the model is in <see cref="Model"/>.</summary>
+        public bool ModelRefused => _modelRefused;
 
         public TextProviderInfo Provider => _start.Provider;
 
@@ -334,6 +337,10 @@ namespace RealLifeOverhaul.Texts
                 return;
             }
             Interlocked.Increment(ref _missed);
+            if (result.Fault == TextFault.Model)
+            {
+                _modelRefused = true;
+            }
             string clean = Clean(result.Why);
             _queue.Done(job, null, took, clean);
             if (result.Fault == TextFault.BadRequest && Leave(result.Param))
