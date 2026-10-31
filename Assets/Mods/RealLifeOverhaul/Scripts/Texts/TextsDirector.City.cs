@@ -39,7 +39,8 @@ namespace RealLifeOverhaul.Texts
                 string line = Hub.Tally.Line("day " + save.Day.ToString(Inv) + ", " + save.Hour.ToString("00", Inv) + ":00");
                 if (line != null)
                 {
-                    Logger?.Info(line);
+                    Logger?.Info(line + " The budget: " + TextBudget.Describe(Hub.Budget.Step, Hub.Queue) + "; " + Hub.Budget.Downs.ToString(Inv) + " step(s) down and "
+                                 + Hub.Budget.Ups.ToString(Inv) + " up this session.");
                 }
             }
             if (Settings.TextsCity)

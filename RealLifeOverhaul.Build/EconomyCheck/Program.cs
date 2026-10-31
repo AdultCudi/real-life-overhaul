@@ -116,6 +116,18 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--texts-fallback")
+        {
+            TextsFallback();        // (RLO Texts' budget, queue and what was shown, while working on them: TextsFallbackChecks.cs)
+            TextsShownSix();
+            TextsQueue();
+            TextsBudget();
+            TextsHubs();
+            FlareCommentsAsked();
+            TextsSpoken();
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--derivatives")
         {
             Derivatives();   // (the raw materials exchange, futures and options alone, while working on them: DerivChecks.cs)
@@ -514,6 +526,7 @@ internal static partial class Program
         TextsSix();   // RLO Texts' contract of data v6: the fixtures are the mod's cards now, built by the mod and rendered from the spec alone, its shape, seven languages, older packs untouched (TextsSixChecks.cs)
         TextsLanguagesSix();   // RLO Texts in every language of the mod: the seven, a pack's languages, the length and tokens by script, the checker in each, the hub, Going Public's shared text (TextsLanguageChecks.cs)
         TextsDecodingSix();    // RLO Texts' requests of data v6: the grammars read and tried, the tokens, the name kept out, the bodies, the hub's job (TextsDecodingChecks.cs)
+        TextsFallback();       // the written lines for a whole session: the budget a share of the machine's time, spoken lines kept room, what the queue held never a miss, a calm minute back up, the session replayed (TextsFallbackChecks.cs)
         TextsShownSix();       // what RLO Texts showed: the model's words against the written lines and why, by pack and intent, the hourly line, the hub counting every way (TextsShownChecks.cs)
         TextsMemorySix();      // what people remember: the lines, a card's choice the same in any order, whose keys, the save, caps and pruning, the topics (TextsMemoryChecks.cs)
         TextsCitySix();        // the city's new talk: the staff, life events, who texts, gossip, reviews, every written line, the save, RLO Texts Large, the sources (TextsCityChecks.cs)

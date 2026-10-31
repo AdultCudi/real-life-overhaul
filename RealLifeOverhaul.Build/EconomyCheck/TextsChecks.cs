@@ -373,7 +373,8 @@ internal static partial class Program
         {
             started++;
         }
-        Check(started == TextQueue.PerMinute, "texts, the queue: a burst is held to the budget, " + TextQueue.PerMinute + " a minute (started " + started + ")");
+        Check(started == TextQueue.PerMinute - TextQueue.Kept(TextQueue.PerMinute),
+            "texts, the queue: a burst is held to the budget, " + TextQueue.PerMinute + " a minute less the starts kept for spoken lines (started " + started + ")");
         Check(q4.Take(now + 61.0, true) != null, "texts, the queue: the budget frees again after a minute");
         var q5 = new TextQueue();
         int back5 = 0;
