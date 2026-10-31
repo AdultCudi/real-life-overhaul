@@ -223,10 +223,14 @@ namespace RealLifeOverhaul.Seasons
             {
                 why.Append(" no leaves falling;");
             }
-            text.Append("; under the date: ").Append(SeasonBar.Shown ? "'" + SeasonBar.Line + "'" : SeasonBar.Taken ? "another mod's season" : "nothing");
+            text.Append("; under the date: ").Append(SeasonBar.Shown ? "'" + SeasonBar.Line + "' at size " + SeasonBar.Size : SeasonBar.Taken ? "another mod's season" : "nothing");
             if (Settings.SeasonBar && !SeasonBar.Shown && !SeasonBar.Taken)
             {
                 why.Append(" nothing under the date;");
+            }
+            if (SeasonBar.Shown && SeasonBar.Size != Settings.SeasonBarSize)
+            {
+                why.Append(" the season under the date not at its option's size;");
             }
             text.Append("; ").Append(SeasonGame.CoatsOn).Append(" person(s) dressed for the cold").Append(Settings.SeasonCoats ? string.Empty : " (option off)");
             text.Append(": ").Append(why.Length == 0 ? "PASS" : "FAIL:" + why.ToString().TrimEnd(';'));

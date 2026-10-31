@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using RealLifeOverhaul.GameUi;
 using TMPro;
 using UI;
@@ -13,19 +14,31 @@ namespace RealLifeOverhaul.Seasons
     /// <see cref="Show"/> once a second; the words are written only when the day changes. A fault removes it for the session.
     /// It is the calendar's season, so it does not stand down with the rest of the seasons for another mod's: it gives way only to
     /// another mod's season that is really under the date (<see cref="SeasonRules.BarShows"/>), one child lookup each time.
+    /// Its size follows the size option (<see cref="SeasonRules.BarScale"/>): the same once-a-second call compares the size laid out with
+    /// the option's, one int, and lays the three rects and the font again when they differ, without building anything. It grows down and
+    /// to the right from where it always stood, into the empty band under the bar beside the clock, never over the date or the clock.
     /// </summary>
     public static class SeasonBar
     {
-        private const float Below = 4f;          // from the date's lower edge
-        private const float Height = 34f;
-        private const float Width = 420f;
-        private const float Picture = 28f;
-        private const float Shrink = 0.8f;       // of the date's own size
+        // The piece's first size, in the top bar's units (3840 x 2160, matched to height): the size option multiplies all but Below.
+        private const float Below = 4f;          // from the date's lower edge; kept at every size, so the piece grows away from the date
+        private const float Height = 34f;        // the box's height
+        private const float Width = 420f;        // the box's width: the date's own width, short of the clock beside it
+        private const float Picture = 28f;       // the picture's side
+        private const float Gap = 8f;            // from the picture to the words
+        private const float Shrink = 0.8f;       // of the date's own font size
         private const string OtherPiece = "Alcware season indicator";   // what Alcware Seasons 0.4.1 puts under the date's label: its own season and day
 
         private static GameObject _piece;
         private static Component _words;
         private static Image _picture;
+        private static RectTransform _rect;      // the piece, its picture and its words, kept to lay them again at another size
+        private static RectTransform _pictureRect;
+        private static RectTransform _wordsRect;
+        private static TMP_Text _text;
+        private static RectTransform _bar;       // the top bar's left part, which the piece is checked to stay inside
+        private static float _dateSize;          // the date's own font size when the piece was built
+        private static int _size = -1;           // the size option's value laid out; -1 none yet
         private static string _shown;
         private static int _season = -1;
         private static bool _failed;
@@ -36,6 +49,9 @@ namespace RealLifeOverhaul.Seasons
         /// <summary>True while another mod's season is under the date, which this one gives its place to; false before the bar is built.</summary>
         public static bool Taken => _taken == 1;
         public static string Line => _shown;
+
+        /// <summary>The size option's value the piece is laid out at; -1 before it is.</summary>
+        public static int Size => _size;
 
         /// <summary>Shows <paramref name="line"/> with <paramref name="season"/>'s picture; pass the same string object while nothing changes.</summary>
         public static void Show(string line, int season)
@@ -55,6 +71,11 @@ namespace RealLifeOverhaul.Seasons
                 {
                     Hide();
                     return;
+                }
+                int size = Settings.SeasonBarSize;
+                if (size != _size)
+                {
+                    Lay(size);
                 }
                 if (!ReferenceEquals(line, _shown))
                 {
@@ -119,12 +140,55 @@ namespace RealLifeOverhaul.Seasons
             _piece = null;
             _words = null;
             _picture = null;
+            _rect = null;
+            _pictureRect = null;
+            _wordsRect = null;
+            _text = null;
+            _bar = null;
+            _size = -1;
             SeasonIcons.Drop();
             _shown = null;
             _season = -1;
             _taken = -1;
             _failed = false;
         }
+
+        // The piece at the size option's step: the box, the picture, the words' start and their font, from one scale, so Normal is the
+        // first look exactly. Called when the option differs from the size laid out (once, then on a change), never a frame.
+        private static void Lay(int size)
+        {
+            float scale = SeasonRules.BarScale(size);
+            float picture = Picture * scale;
+            _rect.sizeDelta = new Vector2(Width * scale, Height * scale);
+            _pictureRect.sizeDelta = new Vector2(picture, picture);
+            _wordsRect.offsetMin = new Vector2(picture + Gap * scale, 0f);
+            _text.fontSize = _dateSize * Shrink * scale;
+            _size = size;
+            if (Meta.Dev.Verbose)
+            {
+                Check(size, picture, _dateSize * Shrink * scale);
+            }
+        }
+
+        // One line when a size is laid out: the picture and the font as set against what the step asks, and the piece's right edge against
+        // the top bar's left part, which it must stay inside (beyond it the game's notifications begin).
+        private static void Check(int size, float picture, float font)
+        {
+            Rect own = _pictureRect.rect;
+            float right = _bar != null ? _bar.InverseTransformPoint(_rect.TransformPoint(new Vector3(_rect.rect.xMax, 0f, 0f))).x : 0f;
+            float room = _bar != null ? _bar.rect.xMax : right;
+            string says = Mathf.Abs(own.width - picture) > 0.01f || Mathf.Abs(own.height - picture) > 0.01f ? "the picture came out " + Units(own.width) + " x " + Units(own.height)
+                : Mathf.Abs(_text.fontSize - font) > 0.01f ? "the words came out at " + Font(_text.fontSize)
+                : right > room + 0.5f ? "it reaches " + Units(right - room) + " past the top bar's left part"
+                : "PASS";
+            SeasonDirector.Logger?.Info("Seasons check (top bar size): size " + SeasonRules.BarSizeOf(size).ToString(CultureInfo.InvariantCulture) + " asked (x"
+                                        + SeasonRules.BarScale(size).ToString("0.##", CultureInfo.InvariantCulture) + "): picture " + Units(picture) + ", words " + Font(font)
+                                        + " (the date's " + Font(_dateSize) + "), right edge " + Units(right) + " of the bar's " + Units(room) + ": " + says);
+        }
+
+        private static string Units(float value) => value.ToString("F0", CultureInfo.InvariantCulture);
+
+        private static string Font(float value) => value.ToString("F1", CultureInfo.InvariantCulture);
 
         private static bool Build()
         {
@@ -148,7 +212,6 @@ namespace RealLifeOverhaul.Seasons
                 rect.SetParent(date, false);
                 rect.anchorMin = rect.anchorMax = new Vector2(0f, 0f);
                 rect.pivot = new Vector2(0f, 1f);
-                rect.sizeDelta = new Vector2(Width, Height);
                 rect.anchoredPosition = new Vector2(0f, -Below);
 
                 var pictureObject = new GameObject("Picture", typeof(RectTransform));
@@ -156,7 +219,6 @@ namespace RealLifeOverhaul.Seasons
                 pictureRect.SetParent(rect, false);
                 pictureRect.anchorMin = pictureRect.anchorMax = new Vector2(0f, 0.5f);
                 pictureRect.pivot = new Vector2(0f, 0.5f);
-                pictureRect.sizeDelta = new Vector2(Picture, Picture);
                 pictureRect.anchoredPosition = Vector2.zero;
                 _picture = pictureObject.AddComponent<Image>();
                 _picture.raycastTarget = false;
@@ -174,10 +236,8 @@ namespace RealLifeOverhaul.Seasons
                 wordsRect.anchorMin = Vector2.zero;
                 wordsRect.anchorMax = Vector2.one;
                 wordsRect.pivot = new Vector2(0f, 0.5f);
-                wordsRect.offsetMin = new Vector2(Picture + 8f, 0f);
                 wordsRect.offsetMax = Vector2.zero;
                 var text = words.GetComponent<TMP_Text>();
-                text.fontSize = dateText.fontSize * Shrink;
                 text.enableAutoSizing = false;
                 text.alignment = TextAlignmentOptions.MidlineLeft;
                 text.textWrappingMode = TextWrappingModes.NoWrap;
@@ -185,6 +245,13 @@ namespace RealLifeOverhaul.Seasons
                 text.raycastTarget = false;
                 words.SetActive(true);
                 _words = text;
+                _text = text;
+                _rect = rect;
+                _pictureRect = pictureRect;
+                _wordsRect = wordsRect;
+                _bar = bar as RectTransform;
+                _dateSize = dateText.fontSize;
+                _size = -1;              // laid out at the option's size by the first Show
                 _piece = piece;
                 UnityEngine.Object.DestroyImmediate(holder.gameObject);
                 return true;

@@ -13,7 +13,7 @@ namespace RealLifeOverhaul.Seasons
                 .Group("reallife_season_header")
                 .About("reallife_guide_seasons_about").Help("reallife_guide_seasons")
                 .Owns(Settings.SeasonsId, Settings.SnowLookId, Settings.SeasonTreesId, Settings.SeasonSkyId, Settings.SeasonRainId, Settings.SeasonLeavesId,
-                    Settings.SeasonBarId, Settings.SeasonCoatsId, Settings.SeasonBesideAlcwareId)
+                    Settings.SeasonBarId, Settings.SeasonBarSizeId, Settings.SeasonCoatsId, Settings.SeasonBesideAlcwareId)
                 .Test("reallife_season_test_goods", "reallife_season_test_snow", "reallife_season_test_spring", "reallife_season_test_summer",
                     "reallife_season_test_autumn", "reallife_season_test_winter")
                 .Fact("season_snow_chance", () => (SeasonRules.SnowChance / 10).ToString(CultureInfo.InvariantCulture) + "%")
@@ -84,6 +84,9 @@ namespace RealLifeOverhaul.Seasons
                 .AddToggle(Settings.SeasonRainId, "reallife_season_rain", Settings.SeasonRain, v => Settings.SeasonRain = v)
                 .AddToggle(Settings.SeasonLeavesId, "reallife_season_leaves", Settings.SeasonLeaves, v => Settings.SeasonLeaves = v)
                 .AddToggle(Settings.SeasonBarId, "reallife_season_bar_option", Settings.SeasonBar, v => Settings.SeasonBar = v)
+                .AddDropdown(Settings.SeasonBarSizeId, "reallife_season_bar_size_option",
+                    new[] { "reallife_season_bar_size_normal", "reallife_season_bar_size_large", "reallife_season_bar_size_largest" },
+                    Settings.SeasonBarSize, v => Settings.SeasonBarSize = v)   // applied at the bar's next second (SeasonBar.Show), no restart
                 .AddToggle(Settings.SeasonCoatsId, "reallife_season_coats", Settings.SeasonCoats, v => Settings.SeasonCoats = v)
                 .AddToggle(Settings.SeasonBesideAlcwareId, "reallife_season_beside_alcware", Settings.SeasonBesideAlcware, v => Settings.SeasonBesideAlcware = v)
                 .AddButton("reallife_season_test_goods", () => SeasonDirector.Instance?.TestGoods())
