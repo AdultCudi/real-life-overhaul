@@ -265,7 +265,7 @@ They get in touch themselves (`SocialDirector.Hourly`: each waking hour a chance
 Texts are the game's own: a `TextMessage` in that contact's thread, with the game's "new message" notification.
 Never more than "Most texts in a day" (3) from everybody together, one a person a day, none from 22:00 to 08:00, none at all with the switch off (what must be said, such as a plan called off, is then a notification).
 
-Somebody close may ring instead: a prompt for 22 s, the interaction key answers, and the call opens in the contacts app with what they rang about.
+Somebody close may ring instead: a prompt for 22 s and a notice, and the call opens in the contacts app with what they rang about. The interaction key or the prompt's button answers, so does a click on the notice (unless a call or conversation is already open), and so does calling them from the phone while it rings (`SocialDirector.TakeRing`). While a screen hides the prompt (the phone open, a menu) the ring waits for it, two minutes at most, so opening the phone never lets it lapse unseen.
 An invitation or favour is answered by calling them.
 
 ### Calling back after a text (`PersonDialog.CallBack`)

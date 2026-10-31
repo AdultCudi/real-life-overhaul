@@ -188,7 +188,8 @@ internal static partial class Program
             "reallife_family_sms_new_home_small", "reallife_family_sms_new_home_yes",   // the answer to the player's own text, at once
             "reallife_family_work_text", "reallife_family_wish_text", "reallife_family_expect_home", "reallife_family_expect_second_home",
             "reallife_family_expect_dates", "reallife_family_expect_car", "reallife_family_expect_allowance",
-            "reallife_family_ask_remind_1", "reallife_family_ask_remind_2", "reallife_family_ask_lapsed"   // the partner's asks and wishes, talked over at home
+            "reallife_family_ask_remind_1", "reallife_family_ask_remind_2", "reallife_family_ask_lapsed",   // the partner's asks and wishes, talked over at home
+            "reallife_family_holiday_home_invite_1", "reallife_family_holiday_home_invite_2", "reallife_family_holiday_at_home"   // a dinner at home: begun at its door, nothing for Mom's call
         };
         var familyWrong = new List<string>();
         foreach (string key in family)
@@ -208,7 +209,7 @@ internal static partial class Program
         }
         Check(family.Count >= 50 && unread.Count == 0 && familyWrong.Count == 0,
             "call back: every text the family sends to Mom, the partner or the old friend (" + family.Count + ", read from its calls) has a subject, but the waters breaking, "
-            + "the answer to the player's own text and the partner's asks (wrong: " + string.Join("; ", familyWrong) + "; calls not read: " + string.Join("; ", unread) + ")");
+            + "the answer to the player's own text, the partner's asks and a dinner at home (wrong: " + string.Join("; ", familyWrong) + "; calls not read: " + string.Join("; ", unread) + ")");
 
         // Travel: the old friend's nudge to take a break, and a souvenir's thanks.
         var travelWrong = new List<string>();
@@ -504,7 +505,7 @@ internal static partial class Program
         string root = MemberText(dialog, "private DialogEntry Root()");
         int asked = dialog.IndexOf("else if (offer.Active && offer.Person == _p.Index)", StringComparison.Ordinal);
         int planned = dialog.IndexOf("else if (plan.Active && plan.Person == _p.Index)", StringComparison.Ordinal);
-        int rooted = dialog.IndexOf("Show(Root());", StringComparison.Ordinal);
+        int rooted = dialog.IndexOf("open = Root;", StringComparison.Ordinal);   // the first entry is chosen, then shown (behind Mom's dinner question on its day)
         Check(root.IndexOf("DialogEntry callBack = CallBack();", StringComparison.Ordinal) >= 0
               && root.IndexOf("DialogEntry callBack = CallBack();", StringComparison.Ordinal) < root.IndexOf("string[] pool =", StringComparison.Ordinal)
               && asked > 0 && planned > asked && rooted > planned,

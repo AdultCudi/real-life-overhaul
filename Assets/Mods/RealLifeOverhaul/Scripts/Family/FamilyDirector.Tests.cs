@@ -323,6 +323,31 @@ namespace RealLifeOverhaul.Family
             Guarded(() => FamilyTalk.Open(() => FamilyPage.Page(0)));
         }
 
+        /// <summary>
+        /// Today is a family dinner, ready now (Relatives.TestToday): at home with a household, the errand from this hour; else at
+        /// Mom's, her table set at once, so her own call and the Family contact offer going over. Mom's text for the day comes as
+        /// it would. Says why not: relatives switched off.
+        /// </summary>
+        public void TestDinner()
+        {
+            const string test = "Family dinner";
+            if (!TestReady(test, false, false))
+            {
+                return;
+            }
+            if (!Settings.FamilyRelatives)
+            {
+                Refuse(test, "reallife_family_no_relatives_off");
+                return;
+            }
+            Guarded(() =>
+            {
+                DinnerPlace place = Relatives.TestToday(out string name);
+                Logger?.Info(test + " test: today is the " + name + " dinner " + (place == DinnerPlace.Home ? "at home, the errand due from this hour" : "at Mom's, her table set now") + ".");
+                FamilyText.Toast(NotificationType.Info, place == DinnerPlace.Home ? "reallife_family_test_dinner_home" : "reallife_family_test_dinner_moms", Args.Us.With(name), 12f);
+            });
+        }
+
         /// <summary>Nothing of the family is left, in memory or (from the next save on) in the save.</summary>
         public void TestClear()
         {

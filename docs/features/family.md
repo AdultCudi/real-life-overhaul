@@ -289,7 +289,7 @@ A screenshot of the partner on a sofa and one of the two on a bench settle the l
 
 - Mom texts at every milestone, sends small presents (250 for a new grandchild, 40 a birthday), and drops by on some Sundays.
   The in-laws arrive with the engagement as a contact of their own: a chat, advice that reads the household as it is, and now and then a favour asked (a lift, a hand with a move, a loan of 300 repaid in a week).
-- Four family dinners a year on the game's own calendar (at 22, 47, 72 and 97 % of its year): Mom writes the day before; with a household it is at home (120 for the food, three hours), otherwise at Mom's (four hours, from the Family contact).
+- Four family dinners a year on the game's own calendar (at 22, 47, 72 and 97 % of its year, one table: `DinnerRules`): Mom writes the day before and on the day, saying where and how. With a household (a partner living in, or a child at home) it is at home, 15:00 to 23:00, begun at the prompt inside (120 for the food, three hours). Otherwise it is at Mom's, four hours: from midday her own call (either dialog, through `PhoneContacts.MomsDinner`, wired in `Wiring/FamilyLinks`) and the Family contact's call open on **Go to Mom's**, and it is first of Things to do. Options, Tests, **Family dinner today** sets today as a dinner day, ready at once.
   Missing one costs nothing but the dinner.
 - Next of kin is a line on the Family page (the partner once married, Mom otherwise; it can be changed) and nothing else.
 - **Difficult moments** are questions with two answers, ten of them, asked in the game's question box as they always were; which answer is the better one differs.
