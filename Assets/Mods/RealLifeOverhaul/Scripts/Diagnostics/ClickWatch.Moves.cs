@@ -37,6 +37,7 @@ namespace RealLifeOverhaul
         private Vector2 _pressedAt;         // where the left button went down, for the game's own limit on a place click
         private string _movingId;           // the record of the piece being placed, while a move is watched; null when none is
         private ItemController _moving;
+        private BuildingRegistration _movingRoom;   // the building's registration as the move began: a load makes it anew, and then its records are not the ones the move changed
         private string _movingName;
         private Vector3 _movingFrom;        // where it stood as its move began
         private int _endedFrame = -1;       // the frame the move was seen to end in, while its line waits a frame (FurnitureRules.Settled); -1 when none waits
@@ -64,6 +65,8 @@ namespace RealLifeOverhaul
                     _movingId = _moving != null && _moving.ItemInstance != null ? _moving.ItemInstance.id ?? string.Empty : string.Empty;
                     _movingName = _moving != null ? _moving.itemName : string.Empty;
                     _movingFrom = PlacementSystem.initialPlacementPosition;
+                    BuildingManager began = InstanceBehavior<BuildingManager>.Instance;
+                    _movingRoom = began != null && BuildingManager.IsInsideBuilding ? began.buildingRegistration : null;
                 }
                 return;
             }
@@ -78,8 +81,10 @@ namespace RealLifeOverhaul
         {
             string id = _movingId;
             ItemController piece = _moving;
+            BuildingRegistration room = _movingRoom;
             _movingId = null;
             _moving = null;
+            _movingRoom = null;
             _endedFrame = -1;
             BuildingManager manager = InstanceBehavior<BuildingManager>.Instance;
             BuildingRegistration reg = manager != null && BuildingManager.IsInsideBuilding ? manager.buildingRegistration : null;
@@ -95,11 +100,18 @@ namespace RealLifeOverhaul
             var signals = new MoveEndSignals
             {
                 PieceGone = gone,
+                RoomChanged = room != null && !ReferenceEquals(room, reg),
                 Listed = kept,
                 SameRecord = kept && !gone && ReferenceEquals(record, piece.ItemInstance),
                 SamePlace = kept && !gone && ((Vector3)record.position - at).sqrMagnitude <= 0.0001f,
             };
             MoveEnd end = FurnitureRules.Ending(signals);
+            if (end == MoveEnd.NotJudged)
+            {
+                _text.Append("ended in another room than it began in: ").Append(FurnitureRules.Words(end, null));
+                Logger?.Info(_text.ToString());
+                return;
+            }
             if (gone)
             {
                 _text.Append("is gone from the room (").Append(WentTo(id, _movingName)).Append("); the building ").Append(FurnitureRules.Words(end, null));

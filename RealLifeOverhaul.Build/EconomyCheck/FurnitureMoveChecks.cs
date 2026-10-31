@@ -172,10 +172,16 @@ internal static partial class Program
         {
             seen.Add(FurnitureRules.Ending(Ends((bits & 1) != 0, (bits & 2) != 0, (bits & 4) != 0, (bits & 8) != 0)));
         }
-        Check(seen.Count == Enum.GetValues(typeof(MoveEnd)).Length && Enum.GetValues(typeof(MoveEnd)).Length == 6, "furniture move ends: every state of the record comes to one of the six endings, and each ending is checked");
+        seen.Add(FurnitureRules.Ending(new MoveEndSignals { RoomChanged = true }));
+        Check(seen.Count == Enum.GetValues(typeof(MoveEnd)).Length && Enum.GetValues(typeof(MoveEnd)).Length == 7, "furniture move ends: every state of the record comes to one of the seven endings, and each ending is checked");
+        // A save loaded in the move makes the building's registration anew: its records are the load's, not the move's, so nothing is judged (a record listed there for a piece that is not the one moved must not read as a record with no piece).
+        Check(FurnitureRules.Ending(new MoveEndSignals { RoomChanged = true, PieceGone = true, Listed = true }) == MoveEnd.NotJudged
+              && FurnitureRules.Ending(new MoveEndSignals { RoomChanged = true, PieceGone = false, Listed = false }) == MoveEnd.NotJudged
+              && FurnitureRules.Ending(new MoveEndSignals { RoomChanged = false, PieceGone = true, Listed = true }) == MoveEnd.StillListed,
+            "furniture move ends: a move that ends in another registration than it began in is not judged, and in the same one it still is");
         Check(FurnitureRules.Passes(MoveEnd.Kept) && FurnitureRules.Passes(MoveEnd.Taken) && !FurnitureRules.Passes(MoveEnd.StillListed) && !FurnitureRules.Passes(MoveEnd.Lost)
-              && !FurnitureRules.Passes(MoveEnd.OtherRecord) && !FurnitureRules.Passes(MoveEnd.WrongPlace),
-            "furniture move ends: a kept piece and a taken one pass, the other four fail");
+              && !FurnitureRules.Passes(MoveEnd.OtherRecord) && !FurnitureRules.Passes(MoveEnd.WrongPlace) && FurnitureRules.Passes(MoveEnd.NotJudged),
+            "furniture move ends: a kept piece, a taken one and one not judged pass, the other four fail");
 
         // The frame it ended in, the grabbed piece still stands and its record is gone: only the frame after tells it from a loss.
         Check(!FurnitureRules.Settled(500, 500) && FurnitureRules.Settled(501, 500) && FurnitureRules.Settled(900, 500) && FurnitureRules.SettleFrames >= 1,
@@ -222,6 +228,8 @@ internal static partial class Program
         Check(InOrder(watchMove, "FurnitureRules.Settled(Time.frameCount, _endedFrame)", "WriteEnd();", "if (PlacementSystem.IsInPlacementMode)", "_endedFrame = Time.frameCount;")
               && stamped > 0 && !watchMove.Substring(stamped).Contains("WriteEnd();"),
             "furniture moves sources: a move's line is written a frame after it ended and never in the frame itself, as the game destroys a grabbed piece at the end of that frame");
+        Check(moves.Contains("_movingRoom = began != null && BuildingManager.IsInsideBuilding ? began.buildingRegistration : null;") && writeEnd.Contains("RoomChanged = room != null && !ReferenceEquals(room, reg)") && writeEnd.Contains("MoveEnd.NotJudged"),
+            "furniture moves sources: the registration a move began in is kept and compared when it ends, so a load in the move is not judged against the new one");
         Check(writeEnd.Contains("_endedFrame = -1;") && writeEnd.Contains("FurnitureRules.Ending(signals)") && writeEnd.Contains("FurnitureRules.Words(end,") && !Regex.IsMatch(writeEnd, "\"[^\"]*(?:PASS|FAIL)"),
             "furniture moves sources: how a move ended and its words come from FurnitureRules, and the line is written once per move");
     }

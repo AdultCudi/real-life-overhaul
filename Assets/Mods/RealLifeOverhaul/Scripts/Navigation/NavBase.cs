@@ -39,7 +39,7 @@ namespace RealLifeOverhaul.Nav
         private int _asked, _frames;
         private double _measureMilliseconds, _longestSlice;
         private readonly List<int> _hullStart = new List<int>(2048);
-        private readonly List<int> _hullOf = new List<int>(2048);
+        private readonly List<long> _hullKey = new List<long>(2048);   // each outline's building by its address (NavBaseMath.BuildingKey)
         private readonly List<float> _hullX = new List<float>(8192);
         private readonly List<float> _hullZ = new List<float>(8192);
         private readonly float[] _cornerX = new float[8], _cornerZ = new float[8];
@@ -202,7 +202,7 @@ namespace RealLifeOverhaul.Nav
             };
             _data.Cells = new byte[_data.Columns * _data.Rows];
             _hullStart.Clear();
-            _hullOf.Clear();
+            _hullKey.Clear();
             _hullX.Clear();
             _hullZ.Clear();
             _cursor = 0;
@@ -255,7 +255,7 @@ namespace RealLifeOverhaul.Nav
                 if (outline >= 3)
                 {
                     _hullStart.Add(_hullX.Count);
-                    _hullOf.Add(_cursor);
+                    _hullKey.Add(NavBaseGame.KeyOf(buildings[_cursor]));
                     for (int i = 0; i < outline; i++)
                     {
                         _hullX.Add(_outX[i]);
@@ -285,7 +285,7 @@ namespace RealLifeOverhaul.Nav
             _data.Hulls = _hullStart.Count;
             _hullStart.Add(_hullX.Count);
             _data.HullStart = _hullStart.ToArray();
-            _data.HullOf = _hullOf.ToArray();
+            _data.HullKey = _hullKey.ToArray();
             _data.HullX = _hullX.ToArray();
             _data.HullZ = _hullZ.ToArray();
             using var piece = SessionWatch.Piece("the minimap's buildings");

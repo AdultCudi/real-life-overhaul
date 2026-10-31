@@ -48,7 +48,7 @@ internal static partial class Program
         start[3] = corners;
         data.Hulls = 3;
         data.HullStart = start;
-        data.HullOf = new[] { 0, 5, 9 };
+        data.HullKey = new[] { NavBaseMath.BuildingKey("ba:street_a", 1), NavBaseMath.BuildingKey("ba:street_a", 2), NavBaseMath.BuildingKey("ba:street_b", 1) };
         data.HullX = x;
         data.HullZ = z;
         data.Cells = new byte[data.Columns * data.Rows];
@@ -321,7 +321,7 @@ internal static partial class Program
         // ---- the file
         byte[] bytes = island.Encode();
         NavBaseData read = NavBaseData.Decode(bytes, 4321, -100f, 50f, 400f, 240f);
-        bool whole = read != null && read.Hulls == 3 && read.HullOf[1] == 5 && read.Columns == 50 && read.Rows == 30 && read.Cell == island.Cell && read.HullStart[3] == island.HullStart[3];
+        bool whole = read != null && read.Hulls == 3 && read.HullKey[1] == island.HullKey[1] && read.HullKey[1] != 0L && read.Columns == 50 && read.Rows == 30 && read.Cell == island.Cell && read.HullStart[3] == island.HullStart[3];
         for (int i = 0; whole && i < island.HullStart[3]; i++)
         {
             whole &= read.HullX[i] == island.HullX[i] && read.HullZ[i] == island.HullZ[i];
@@ -349,7 +349,7 @@ internal static partial class Program
         city.Cells = new byte[city.Columns * city.Rows];
         city.Hulls = 1500;
         city.HullStart = new int[1501];
-        city.HullOf = new int[1500];
+        city.HullKey = new long[1500];
         city.HullX = new float[6000];
         city.HullZ = new float[6000];
         for (int i = 0; i < 1500; i++)
@@ -383,5 +383,7 @@ internal static partial class Program
         double took = watch.Elapsed.TotalMilliseconds;
         Check(cityDrawn == 1500 && took < 3000.0, "a city of the game's size is settled, drawn and written in under 3 s off the main thread (took " + took.ToString("F0") + " ms)");
         Check(cityFile.Length < 200 * 1024 && NavBaseData.Decode(cityFile, 1, 0f, 0f, 3625f, 2042f) != null, "and its file is under 200 KB");
+
+        BaseDoors();   // each outline's building found by its address, and the alignment check naming the door it blames (BaseDoorCheck.cs)
     }
 }
