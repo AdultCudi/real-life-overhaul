@@ -121,17 +121,19 @@ namespace RealLifeOverhaul.Nav
             {
                 return;
             }
+            // Each outline's building is found by its address: the game's list is in no order it keeps from one load to the next.
+            var found = new CityBuildingController[data.Hulls];
+            int matched = NavBaseGame.Find(buildings, data, found);
             var doorX = new float[data.Hulls];
             var doorZ = new float[data.Hulls];
+            var known = new bool[data.Hulls];
             for (int h = 0; h < data.Hulls; h++)
             {
-                int index = data.HullOf[h];
-                NavBaseGame.Door(index >= 0 && index < buildings.Length ? buildings[index] : null, out doorX[h], out doorZ[h]);
+                known[h] = NavBaseGame.Door(found[h], out doorX[h], out doorZ[h]);
             }
-            int picked = NavBaseMath.FarApart(doorX, doorZ, data.Hulls, _three);
+            int picked = NavBaseMath.FarApartKnown(doorX, doorZ, known, data.Hulls, _three);
             float metres = NavView.MetresAcross(Settings.MinimapZoom, 0f) * 1.5f;   // the turned square that holds the view
             float worstFit = NavBaseMath.Misfit(_px, _pz, _px, _pz, _base.OriginX, _base.OriginZ, _base.WorldWidth, _base.WorldHeight, metres);
-            float worstDoor = 0f;
             string names = string.Empty;
             for (int i = 0; i < picked; i++)
             {
@@ -139,16 +141,32 @@ namespace RealLifeOverhaul.Nav
                 // Seen by a player standing 60 m from the door: both are then in the view.
                 worstFit = Mathf.Max(worstFit, NavBaseMath.Misfit(doorX[h], doorZ[h], doorX[h] + 40f, doorZ[h] - 45f, _base.OriginX, _base.OriginZ,
                                                                  _base.WorldWidth, _base.WorldHeight, metres));
-                worstDoor = Mathf.Max(worstDoor, NavBaseMath.Outside(doorX[h], doorZ[h], data.HullX, data.HullZ, data.HullStart[h], data.HullStart[h + 1] - data.HullStart[h]));
-                int index = data.HullOf[h];
-                names += (i > 0 ? ", " : string.Empty) + "'" + NavBaseGame.NameOf(index >= 0 && index < buildings.Length ? buildings[index] : null) + "' at pixel "
+                names += (i > 0 ? ", " : string.Empty) + "'" + NavBaseGame.NameOf(found[h]) + "' at pixel "
                          + NavBaseMath.Texel(NavBaseMath.ToPixel(doorX[h], _base.OriginX, _base.PerMetre), _base.Width) + ", "
                          + NavBaseMath.Texel(NavBaseMath.ToPixel(doorZ[h], _base.OriginZ, _base.PerMetre), _base.Height);
             }
-            bool fits = picked > 0 && worstFit <= MisfitMost && worstDoor <= DoorMost;
+            float worstDoor = NavBaseMath.WorstOutside(doorX, doorZ, data, _three, picked, out int worst);
+            string offender = string.Empty;
+            if (worst >= 0)
+            {
+                // The building and its door that lie furthest from their outline: where the door is and where its outline's middle is.
+                int h = _three[worst];
+                float middleX = 0f, middleZ = 0f;
+                int count = data.HullStart[h + 1] - data.HullStart[h];
+                for (int k = data.HullStart[h]; k < data.HullStart[h + 1]; k++)
+                {
+                    middleX += data.HullX[k] / count;
+                    middleZ += data.HullZ[k] / count;
+                }
+                offender = ", that of '" + NavBaseGame.NameOf(found[h]) + "', its door at (" + doorX[h].ToString("F1", plain) + ", " + doorZ[h].ToString("F1", plain)
+                           + ") and its outline's middle at (" + middleX.ToString("F1", plain) + ", " + middleZ.ToString("F1", plain) + ")";
+            }
+            bool found3 = matched * 4 >= data.Hulls * 3;   // a few outlines may have lost their building (one the mod's own stands in its place, or an address shared); most may not
+            bool fits = picked > 0 && found3 && worstFit <= MisfitMost && worstDoor <= DoorMost;
             Logger?.Info("Minimap check (alignment): the player and the doors of " + picked + " buildings far apart (" + names + "): the picture and the markers agree to "
                          + worstFit.ToString("F4", plain) + " m at worst (wanted " + MisfitMost.ToString("F0", plain) + " m or less); the door furthest from its own building's outline is "
-                         + worstDoor.ToString("F1", plain) + " m outside it (wanted " + DoorMost.ToString("F0", plain) + " m or less): " + (fits ? "PASS" : "FAIL"));
+                         + worstDoor.ToString("F1", plain) + " m outside it" + offender + " (wanted " + DoorMost.ToString("F0", plain) + " m or less); " + matched + " of " + data.Hulls
+                         + " outlines found their building by its address" + (found3 ? string.Empty : " (wanted three in four)") + ": " + (fits ? "PASS" : "FAIL"));
         }
 
         private bool BaseRefused(string test, bool needsPicture)
@@ -224,14 +242,22 @@ namespace RealLifeOverhaul.Nav
                     TestRefusals.Tell(Logger, test, TestRefusal.NothingFits);
                     return;
                 }
+                var found = new CityBuildingController[data.Hulls];
+                NavBaseGame.Find(buildings, data, found);
                 var doorX = new float[data.Hulls];
                 var doorZ = new float[data.Hulls];
-                int nearest = 0;
+                var known = new bool[data.Hulls];
+                int nearest = -1;
+                int knownCount = 0;
                 float least = float.MaxValue;
                 for (int h = 0; h < data.Hulls; h++)
                 {
-                    int index = data.HullOf[h];
-                    NavBaseGame.Door(index >= 0 && index < buildings.Length ? buildings[index] : null, out doorX[h], out doorZ[h]);
+                    known[h] = NavBaseGame.Door(found[h], out doorX[h], out doorZ[h]);
+                    if (!known[h])
+                    {
+                        continue;
+                    }
+                    knownCount++;
                     float sqr = (doorX[h] - _px) * (doorX[h] - _px) + (doorZ[h] - _pz) * (doorZ[h] - _pz);
                     if (sqr < least)
                     {
@@ -239,7 +265,12 @@ namespace RealLifeOverhaul.Nav
                         nearest = h;
                     }
                 }
-                NavBaseMath.FarApart(doorX, doorZ, data.Hulls, _three);
+                if (knownCount < 3)
+                {
+                    TestRefusals.Tell(Logger, test, TestRefusal.NothingFits);
+                    return;
+                }
+                NavBaseMath.FarApartKnown(doorX, doorZ, known, data.Hulls, _three);
                 _three[2] = nearest;
                 GuidersManager guiders = InstanceBehavior<GuidersManager>.Instance;
                 DirectionGuider like = guiders != null ? guiders.destinationGuider : null;
@@ -250,9 +281,8 @@ namespace RealLifeOverhaul.Nav
                 for (int i = 2; i >= 0; i--)   // the nearest first
                 {
                     int h = _three[i];
-                    int index = data.HullOf[h];
                     NavMarks.Trial.Add(new NavMark { X = doorX[h], Z = doorZ[h], Icon = like != null ? like.poiICon : null, Colour = colour });
-                    names += (names.Length > 0 ? "; " : string.Empty) + NavBaseGame.NameOf(index >= 0 && index < buildings.Length ? buildings[index] : null);
+                    names += (names.Length > 0 ? "; " : string.Empty) + NavBaseGame.NameOf(found[h]);
                 }
                 _trialUntil = Time.unscaledTime + TrialSeconds;
                 _nextMarks = 0f;

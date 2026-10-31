@@ -201,6 +201,113 @@ namespace RealLifeOverhaul.Nav
         {
             return dx * dx + dz * dz;
         }
+
+        /// <summary>
+        /// A building's name in the kept file: 64-bit FNV-1a over its street's name and number, which the game keeps for a building
+        /// for good (its dictionary of the city's buildings is by address). Never its place in CityManager's list: the game fills that list
+        /// with FindObjectsByType(None), whose order it does not keep from one load to the next. 0 for no address; no real building gets 0.
+        /// </summary>
+        public static long BuildingKey(string street, int number)
+        {
+            if (string.IsNullOrEmpty(street))
+            {
+                return 0L;
+            }
+            unchecked
+            {
+                ulong hash = 14695981039346656037UL;
+                for (int i = 0; i < street.Length; i++)
+                {
+                    hash = (hash ^ street[i] & 0xFFu) * 1099511628211UL;
+                    hash = (hash ^ (uint)street[i] >> 8) * 1099511628211UL;
+                }
+                hash = (hash ^ 0x7Cu) * 1099511628211UL;
+                for (int shift = 0; shift < 32; shift += 8)
+                {
+                    hash = (hash ^ ((uint)number >> shift & 0xFFu)) * 1099511628211UL;
+                }
+                return hash == 0UL ? 1L : (long)hash;
+            }
+        }
+
+        /// <summary>
+        /// Finds each kept outline's building in the game's list as it stands now: <paramref name="found"/>[h] is the place in
+        /// <paramref name="liveKey"/> (the keys of the list, 0 for a building to leave out) of outline h's building, or -1 when there is
+        /// none or the address is not one building's alone (two outlines or two buildings with it). Returns how many outlines found theirs.
+        /// Run for a check or a test, never a frame.
+        /// </summary>
+        public static int Resolve(long[] hullKey, int hulls, long[] liveKey, int live, int[] found)
+        {
+            var at = new Dictionary<long, int>(live);
+            for (int i = 0; i < live; i++)
+            {
+                if (liveKey[i] != 0L)
+                {
+                    at[liveKey[i]] = at.ContainsKey(liveKey[i]) ? -1 : i;
+                }
+            }
+            var seen = new Dictionary<long, int>(hulls);
+            for (int h = 0; h < hulls; h++)
+            {
+                seen[hullKey[h]] = seen.TryGetValue(hullKey[h], out int times) ? times + 1 : 1;
+            }
+            int matched = 0;
+            for (int h = 0; h < hulls; h++)
+            {
+                found[h] = hullKey[h] != 0L && seen[hullKey[h]] == 1 && at.TryGetValue(hullKey[h], out int place) ? place : -1;
+                matched += found[h] >= 0 ? 1 : 0;
+            }
+            return matched;
+        }
+
+        /// <summary>
+        /// Three places far apart among those that <paramref name="known"/>, as <see cref="FarApart"/> picks among all; the picks are
+        /// places in the arrays given. Returns how many were picked (none when none is known).
+        /// </summary>
+        public static int FarApartKnown(float[] x, float[] z, bool[] known, int count, int[] picked)
+        {
+            var place = new int[count];
+            var kx = new float[count];
+            var kz = new float[count];
+            int n = 0;
+            for (int i = 0; i < count; i++)
+            {
+                if (known[i])
+                {
+                    place[n] = i;
+                    kx[n] = x[i];
+                    kz[n] = z[i];
+                    n++;
+                }
+            }
+            int got = FarApart(kx, kz, n, picked);
+            for (int i = 0; i < got; i++)
+            {
+                picked[i] = place[picked[i]];
+            }
+            return got;
+        }
+
+        /// <summary>
+        /// Of the picked outlines, how far outside its own outline the door furthest from it lies (metres), and which pick that is
+        /// (<paramref name="worst"/>, a place in <paramref name="picked"/>; -1 with none), so a check can name the building and its door.
+        /// </summary>
+        public static float WorstOutside(float[] doorX, float[] doorZ, NavBaseData data, int[] picked, int count, out int worst)
+        {
+            worst = -1;
+            float most = 0f;
+            for (int i = 0; i < count; i++)
+            {
+                int h = picked[i];
+                float outside = Outside(doorX[h], doorZ[h], data.HullX, data.HullZ, data.HullStart[h], data.HullStart[h + 1] - data.HullStart[h]);
+                if (worst < 0 || outside > most)
+                {
+                    most = outside;
+                    worst = i;
+                }
+            }
+            return most;
+        }
     }
 
     /// <summary>
@@ -210,7 +317,7 @@ namespace RealLifeOverhaul.Nav
     /// </summary>
     public sealed class NavBaseData
     {
-        public const int Format = 1;
+        public const int Format = 2;   // 2: each outline's building is named by its address, not by its place in the game's list (which the game does not keep from one load to the next)
         private const int Magic = 0x424D4C52;   // "RLMB"
 
         public int Build;                              // the game's build number
@@ -218,7 +325,7 @@ namespace RealLifeOverhaul.Nav
         public float WorldWidth, WorldHeight;          // metres, as the road graph gave them
         public int Hulls;
         public int[] HullStart = new int[1];           // Hulls + 1 entries into HullX and HullZ
-        public int[] HullOf = new int[0];              // each outline's building, by its place in the game's list
+        public long[] HullKey = new long[0];           // each outline's building, by its address (NavBaseMath.BuildingKey); 0 for none
         public float[] HullX = new float[0];
         public float[] HullZ = new float[0];
         public int Columns, Rows;
@@ -227,7 +334,7 @@ namespace RealLifeOverhaul.Nav
 
         /// <summary>
         /// This city with more outlines on top (the buildings the mod stands in it), for drawing only: the same squares of
-        /// water, the outlines appended with no building of the game's list (-1). Itself when there are none.
+        /// water, the outlines appended with no building of the game's list (key 0). Itself when there are none.
         /// </summary>
         public NavBaseData With(List<float> moreX, List<float> moreZ, List<int> moreStart)
         {
@@ -240,16 +347,16 @@ namespace RealLifeOverhaul.Nav
             var drawn = new NavBaseData
             {
                 Build = Build, OriginX = OriginX, OriginZ = OriginZ, WorldWidth = WorldWidth, WorldHeight = WorldHeight, Columns = Columns, Rows = Rows, Cell = Cell,
-                Cells = Cells, Hulls = Hulls + more, HullStart = new int[Hulls + more + 1], HullOf = new int[Hulls + more],
+                Cells = Cells, Hulls = Hulls + more, HullStart = new int[Hulls + more + 1], HullKey = new long[Hulls + more],
                 HullX = new float[corners + moreX.Count], HullZ = new float[corners + moreZ.Count]
             };
             Array.Copy(HullStart, drawn.HullStart, Hulls + 1);
-            Array.Copy(HullOf, drawn.HullOf, Hulls);
+            Array.Copy(HullKey, drawn.HullKey, Hulls);
             Array.Copy(HullX, drawn.HullX, corners);
             Array.Copy(HullZ, drawn.HullZ, corners);
             for (int i = 0; i < more; i++)
             {
-                drawn.HullOf[Hulls + i] = -1;
+                drawn.HullKey[Hulls + i] = 0;
                 drawn.HullStart[Hulls + i] = corners + moreStart[i];
             }
             drawn.HullStart[Hulls + more] = corners + moreX.Count;
@@ -271,7 +378,12 @@ namespace RealLifeOverhaul.Nav
             print.Add(WorldHeight);
             print.Add(Hulls);
             print.Add(HullStart);
-            print.Add(HullOf);
+            print.Add(HullKey.Length);
+            for (int i = 0; i < HullKey.Length; i++)
+            {
+                print.Add((int)HullKey[i]);
+                print.Add((int)(HullKey[i] >> 32));
+            }
             print.Add(HullX);
             print.Add(HullZ);
             print.Add(Columns);
@@ -302,7 +414,7 @@ namespace RealLifeOverhaul.Nav
                 }
                 for (int i = 0; i < Hulls; i++)
                 {
-                    writer.Write(HullOf[i]);
+                    writer.Write(HullKey[i]);
                 }
                 for (int i = 0; i < corners; i++)
                 {
@@ -360,7 +472,7 @@ namespace RealLifeOverhaul.Nav
                     int corners = reader.ReadInt32();
                     if (data.Build != build || Math.Abs(data.OriginX - originX) > 0.5f || Math.Abs(data.OriginZ - originZ) > 0.5f
                         || Math.Abs(data.WorldWidth - worldWidth) > 0.5f || Math.Abs(data.WorldHeight - worldHeight) > 0.5f
-                        || data.Hulls < 0 || corners < 0 || (long)data.Hulls * 8 + (long)corners * 8 > length)
+                        || data.Hulls < 0 || corners < 0 || (long)data.Hulls * 12 + (long)corners * 8 > length)
                     {
                         return null;
                     }
@@ -373,10 +485,10 @@ namespace RealLifeOverhaul.Nav
                             return null;
                         }
                     }
-                    data.HullOf = new int[data.Hulls];
+                    data.HullKey = new long[data.Hulls];
                     for (int i = 0; i < data.Hulls; i++)
                     {
-                        data.HullOf[i] = reader.ReadInt32();
+                        data.HullKey[i] = reader.ReadInt64();
                     }
                     data.HullX = new float[corners];
                     data.HullZ = new float[corners];

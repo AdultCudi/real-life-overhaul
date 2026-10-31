@@ -216,6 +216,43 @@ namespace RealLifeOverhaul.Nav
             return true;
         }
 
+        /// <summary>A building's name in the kept file (NavBaseMath.BuildingKey): its address, which the game keeps; 0 with none.</summary>
+        public static long KeyOf(CityBuildingController building)
+        {
+            try
+            {
+                Address address = building != null && building.building != null ? building.building.Address : null;
+                return address != null && !address.IsUndefined() ? NavBaseMath.BuildingKey(address.streetName, address.streetNumber) : 0L;
+            }
+            catch (Exception)
+            {
+                return 0L;   // a building with no address the game can read
+            }
+        }
+
+        /// <summary>
+        /// Each kept outline's building in the game's list as it stands now, found by address and never by place in the list (the game
+        /// fills it with FindObjectsByType(None) and the mod's own buildings join and leave it, so a place changes between loads and
+        /// within one): <paramref name="found"/>[h] is the building of outline h, or null. A building the mod made is left out, as
+        /// when the city was measured. Returns how many outlines found their building. A pass over the list: for a check or a test, never a frame.
+        /// </summary>
+        public static int Find(CityBuildingController[] buildings, NavBaseData data, CityBuildingController[] found)
+        {
+            var key = new long[buildings.Length];
+            for (int i = 0; i < buildings.Length; i++)
+            {
+                Func<CityBuildingController, bool> made = NavBridges.NotMeasured;
+                key[i] = buildings[i] != null && !(made != null && made(buildings[i])) ? KeyOf(buildings[i]) : 0L;
+            }
+            var place = new int[data.Hulls];
+            int matched = NavBaseMath.Resolve(data.HullKey, data.Hulls, key, key.Length, place);
+            for (int h = 0; h < data.Hulls; h++)
+            {
+                found[h] = place[h] >= 0 ? buildings[place[h]] : null;
+            }
+            return matched;
+        }
+
         /// <summary>What the game calls a building: its address as the game writes it, or the object's name.</summary>
         public static string NameOf(CityBuildingController building)
         {
