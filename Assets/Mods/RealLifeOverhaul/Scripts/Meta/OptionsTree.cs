@@ -385,6 +385,8 @@ namespace RealLifeOverhaul.Meta
                     .Also("living population economy overhaul desk desks session sessions meeting team morale output burnout office manager delegate mini screen")
                     .Also("living_population", "residents people households census births deaths migration commuters jobs unemployment vacancies")
                     .Also("living_population", "housing landlord landlords tax taxes spending customers demand district districts who contributes"),
+                S("studio").For("studio").Opt("living_studio", "living_population")
+                    .Also("game studio games genre platform console mobile pc hype trailer expo review score critics sales piracy drm patch update dlc sequel port publisher bonus royalty rival"),
                 S("endscale").For("economy_endscale").Opts("economy_endscale")
                     .Also("end game late scale billions hyperscaler cloud data centre racks broadband network fibre bank maintenance upkeep crews staff payback"),
                 S("brands").For("economy_brands").Need("economy").Opts("economy_brands").Also("chain franchise"),

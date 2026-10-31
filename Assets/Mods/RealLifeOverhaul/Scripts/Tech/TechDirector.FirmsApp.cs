@@ -89,9 +89,10 @@ namespace RealLifeOverhaul.Tech
             }
             for (int i = 0; i < _firmsFile.Products.Count; i++)
             {
-                n += FirmsRules.CanLaunch(_firmsFile.Products[i]) ? 1 : 0;
+                Product p = _firmsFile.Products[i];
+                n += FirmsRules.CanLaunch(p) && !(_studioOn && p.K == ProductKind.Game) ? 1 : 0;   // the studio counts its own games below
             }
-            return n;
+            return n + StudioWaiting();
         }
 
         private void TechBadge()
@@ -155,7 +156,17 @@ namespace RealLifeOverhaul.Tech
         {
             Product p = _firmsOn ? _firmsFile.ProductOf(id) : null;
             FirmPlace firm = p != null ? FirmOf(p.Place) : null;
-            if (p == null || firm == null || Save == null || !FirmsRules.CanLaunch(p))
+            if (p == null || firm == null || Save == null)
+            {
+                return false;
+            }
+            if (StudioRuns(firm.File.K) && p.K == ProductKind.Game)
+            {
+                LaunchNow(_studio.GameOf(id), Save.Day);   // the studio's own launch: the critics, the reach and the window
+                ChangedTech();
+                return p.Stage == 1;
+            }
+            if (!FirmsRules.CanLaunch(p))
             {
                 return false;
             }
@@ -173,6 +184,7 @@ namespace RealLifeOverhaul.Tech
             if (p != null && p.Stage < 2)
             {
                 p.Stage = 2;
+                WithdrawGame(id);
                 FirmsRules.TrimWithdrawn(_firmsFile, p);
                 ChangedTech();
             }
