@@ -316,7 +316,8 @@ namespace RealLifeOverhaul.Meta
                 S("travel").For("travel").Opts("travel_hotels", "travel_holidays", "travel_extras").Also("holiday trip hotel stay")),
 
             G("work",
-                S("jobs").For("jobs").Main("jobs").Opts("job_pay", "job_taxi_easy").Also("gig gigs shift wage employment ride hail taxi fare passenger passengers comfort easier"),
+                S("jobs").For("jobs").Main("jobs").Opts("job_pay", "job_taxi_easy", "job_cart_sounds")
+                    .Also("gig gigs shift wage employment ride hail taxi fare passenger passengers comfort easier drinks cart sound sounds customer till"),
                 S("careers").For("careers").Opt("careers", "jobs").Also("employer promotion rank review"),
                 S("buildtrades").For("buildtrades").Opt("build_trades", "jobs").Opt("build_trades_office", "build_trades")
                     .Also("construction building site mason labourer bricks architect architecture design inspector bribe surveyor crane")

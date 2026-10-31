@@ -152,6 +152,7 @@ namespace RealLifeOverhaul
                         _wants = Random.Range(0, JobKeys.Choices);
                         _orderedAt = now;
                         _orderEnds = now + Patience;
+                        OrderHeard(person);
                     }
                     else if (fate != CartGuest.Keep)
                     {
@@ -163,7 +164,11 @@ namespace RealLifeOverhaul
                     {
                         Withdraw(i, CartGuest.NotHeld, now);   // the mod's doing, never a walk-off
                     }
-                    else if (now >= _orderEnds)
+                    else if (now < _orderEnds)
+                    {
+                        OrderWaiting(person, now);
+                    }
+                    else
                     {
                         // Kept waiting: they go, and say so.
                         _misses++;

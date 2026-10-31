@@ -36,6 +36,7 @@ namespace RealLifeOverhaul
             _serveUntil = now + Mathf.Min(reach, 2.2f);
             // The shift's one difficult customer, if the offer drew one, sends back the first right drink.
             bool sendBack = choice == _wants && !_sentBack && Ctx.Offer.RedoAt > 0 && _served + 1 >= Ctx.Offer.RedoAt;
+            _tried = true;
             if (choice != _wants || sendBack)
             {
                 _orderEnds -= WrongCost;
@@ -72,6 +73,7 @@ namespace RealLifeOverhaul
                 tip = Mathf.RoundToInt(2.75f * Ctx.Rate);
             }
             _tips += tip;
+            TillHeard();
             if (Meta.Dev.Verbose)
             {
                 Ctx.Logger?.Info("Jobs: vendor: customer served by hand (" + ItemKeys[_wants] + ") in " + took.ToString("F1", CultureInfo.InvariantCulture) + " s, tip " + tip + " ("
