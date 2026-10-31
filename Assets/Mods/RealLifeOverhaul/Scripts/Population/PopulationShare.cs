@@ -8,7 +8,8 @@ namespace RealLifeOverhaul.Population
     /// The population in a Going Public session (Core/SharedCity, part P; POPULATION.md section 11): the host owns the people and works out every
     /// business's day, its own and the guests'; a guest follows the host's figures and lives none of its own. The part is a line of its own version
     /// (<c>v=1~</c>) that the shared city carries only between players of the same version of this mod (another version's message is never applied):
-    /// the day, the council's books and the region, each district's figures, and each business's takings, class mix and customers by its address.
+    /// the day, the council's books and the region, each district's figures, each business's takings, class mix and customers by its address, and the
+    /// residents of each genre on each platform (the game studio's audience).
     /// A guest anchors each business on the first takings it hears (so the game's own count on that machine stands that day, as the host's does for
     /// its own), and reads the drill-down to people as the host's alone. Game-free. COST: nothing per frame; the host writes a few tens of
     /// kilobytes once a game day, a guest reads them.
@@ -52,6 +53,10 @@ namespace RealLifeOverhaul.Population
                 JoinLongSep(t, ',', bt.Takings[b], bt.ByClass[b * 3], bt.ByClass[b * 3 + 1], bt.ByClass[b * 3 + 2], bt.Visits[b]);
                 first = false;
             }
+            t.Append("~g:");   // the residents of each genre on each platform, then at the population's start: the studio's audience on a guest is the host's
+            Join(t, s.GameCounts);
+            t.Append('|');
+            Join(t, s.GameStart);
             return t.ToString();
         }
 
@@ -101,6 +106,12 @@ namespace RealLifeOverhaul.Population
                 b.Wages = k[18]; b.WagesLast = k[19]; b.Rents = k[20]; b.RentsLast = k[21];
                 ApplyDistricts(mine, districts);
                 ApplyBusinesses(mine, businesses);
+                long[] g = Find(parts, "g:") is string games ? Numbers(games, '|', GameRules.Cells * 2) : null;
+                for (int i = 0; g != null && i < GameRules.Cells; i++)
+                {
+                    mine.GameCounts[i] = (int)g[i];
+                    mine.GameStart[i] = (int)g[GameRules.Cells + i];
+                }
                 return true;
             }
             catch (FormatException)

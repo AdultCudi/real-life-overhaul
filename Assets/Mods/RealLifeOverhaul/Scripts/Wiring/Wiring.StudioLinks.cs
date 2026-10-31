@@ -10,8 +10,8 @@ namespace RealLifeOverhaul
         /// The game studio's four desk sessions (the concept pitch, the milestone review, the playtest, the post-launch review),
         /// held at a game studio's desk or by its manager, put into the sessions' registry while the studio runs and taken out
         /// when it stops (TechBridges.StudioSessions). Their choices are the studio's rules (TechDirector.StudioDesk). The
-        /// population's audience and Flare's bridges (StudioBridges) are left at their defaults here: the documented world
-        /// and nothing posted, until those workstreams wire them.
+        /// population's audience (StudioBridges.Population) is wired with the population (Wiring.PopulationLinks); Flare's
+        /// bridges are left at their defaults here, nothing posted, until that workstream wires them.
         /// </summary>
         public static class StudioLinks
         {

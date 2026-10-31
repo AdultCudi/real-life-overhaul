@@ -118,6 +118,9 @@ namespace RealLifeOverhaul.Population
             int h = pt.Household[p];
             int cls = h >= 0 ? s.Households.Class[h] : 1;
             int id = pt.Id[p];
+            int head = h >= 0 ? s.Households.First[h] : -1;
+            ushort parent = pt.Role[p] == (byte)Role.Child && head >= 0 && head != p ? pt.Games[head] : (ushort)0;
+            pt.Games[p] = GameRules.Birthday(s.Seed, id, day, age, cls, pt.Female[p] == 1, pt.Games[p], parent);   // tastes change slowly with age
             var status = (Status)pt.Status[p];
             if (age == PopulationCatalogue.SchoolFrom && status == Status.Child)
             {
@@ -405,7 +408,7 @@ namespace RealLifeOverhaul.Population
             PersonTable pt = s.People;
             int ha = pt.Household[a], hb = pt.Household[b];
             int ba = s.Households.Building[ha], bb = s.Households.Building[hb];
-            int sqmA = ba >= 0 ? s.FlatSqm[ba] : 0, sqmB = bb >= 0 ? s.FlatSqm[bb] : 0;
+            int sqmA = ba >= 0 ? CityTable.FlatSqmOf(s, ba, s.Households.Unit[ha]) : 0, sqmB = bb >= 0 ? CityTable.FlatSqmOf(s, bb, s.Households.Unit[hb]) : 0;
             int stays = sqmA >= sqmB ? a : b, moves = stays == a ? b : a;
             int home = pt.Household[stays], left = pt.Household[moves];
             if ((s.Households.Flags[left] & HouseholdFlags.Players) != 0 && s.Households.Size[left] > 1)
