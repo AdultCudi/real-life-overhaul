@@ -34,7 +34,7 @@
        (CartQueueChecks.cs) the pavement drinks cart's queue: a customer who cannot get to the cart, or is no longer its own, leaves the queue at once, is no walk-off and is replaced, and (CartSoundChecks.cs) the drinks cart heard: the order cue, its one reminder and the till by their rules, the gig calling them where the order starts, waits and is paid, the option and the texts, and
        (TaxiComfortChecks.cs) ride fares' easier passengers: the two tables, a rough ride under each and the gig reading only the table, and (RivalFirstChecks.cs) when the first rival tycoon comes forward by the option, and
        (RivalChecks.cs, RivalReviewChecks.cs) the rival tycoons: their holdings, growth by the player's thresholds, the pace of their moves, each move's bounds, the counters and a takeover, the same moves from a seed, the save's line and the texts, and
-       (SessionChecks.cs) the desk sessions: the registry, the schedule, the furniture, managers' seeded choices, the save's line and the weekly team meeting through the people part's rules, and (TechScaleChecks.cs) the tech sector's money scale: budgets, the audience to sales relation and its bands, a studio over ten years against the end game, and the one month rule for monthly bills, and (EndScaleChecks.cs) the end game at scale: each late venture's costs, upkeep, crews and income by size, its payback, an old save phased in, the option off and its texts, and (OfficeChecks.cs) running for office: who may stand and when, the law on donors, the vote model by district, the campaign's doings, the council's odds, the city's budget, approval, recall and the save's lines, and (PhotoChecks.cs) the Camera and the Gallery: a photo's name and folder, the cap,
+       (UiChecks.cs) the interface kit: its tokens, fonts, text, motion, focus, every registered screen at every frame in every language and both looks, its sources and texts, and (SessionChecks.cs) the desk sessions: the registry, the schedule, the furniture, managers' seeded choices, the save's line and the weekly team meeting through the people part's rules, and (TechScaleChecks.cs) the tech sector's money scale: budgets, the audience to sales relation and its bands, a studio over ten years against the end game, and the one month rule for monthly bills, and (EndScaleChecks.cs) the end game at scale: each late venture's costs, upkeep, crews and income by size, its payback, an old save phased in, the option off and its texts, and (OfficeChecks.cs) running for office: who may stand and when, the law on donors, the vote model by district, the campaign's doings, the council's odds, the city's budget, approval, recall and the save's lines, and (PhotoChecks.cs) the Camera and the Gallery: a photo's name and folder, the cap,
        deleted saves, the order from a folder, the photo and its small copy handed to Flare, the camera's rules and the restore of what it borrows, and (GalleryChecks.cs)
        the Gallery: why a photo would not open, one tap to see it whole, the albums, the days and their order, the rows built in view, the photo before
        and after, the favourites kept beside the photos and the texts
@@ -599,6 +599,33 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Photos\CameraRules.cs" Link="Mod\CameraRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Photos\CameraHold.cs" Link="Mod\CameraHold.cs" />
     <Compile Include="..\Shared\ModLanguages.cs" Link="Shared\ModLanguages.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiTokens.cs" Link="Mod\UiTokens.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiColour.cs" Link="Mod\UiColour.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiFontMetrics.cs" Link="Mod\UiFontMetrics.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiFontMetrics.Data.cs" Link="Mod\UiFontMetrics.Data.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiTextRules.cs" Link="Mod\UiTextRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiScene.cs" Link="Mod\UiScene.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiAction.cs" Link="Mod\UiAction.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiIcon.cs" Link="Mod\UiIcon.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiModels.cs" Link="Mod\UiModels.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.cs" Link="Mod\UiDraw.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.Controls.cs" Link="Mod\UiDraw.Controls.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.Lists.cs" Link="Mod\UiDraw.Lists.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.Data.cs" Link="Mod\UiDraw.Data.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.Detail.cs" Link="Mod\UiDraw.Detail.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.Overlays.cs" Link="Mod\UiDraw.Overlays.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiFrame.cs" Link="Mod\UiFrame.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiListDetail.cs" Link="Mod\UiListDetail.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDashboard.cs" Link="Mod\UiDashboard.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiSessionSteps.cs" Link="Mod\UiSessionSteps.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiForm.cs" Link="Mod\UiForm.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiGallery.cs" Link="Mod\UiGallery.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiFocusRules.cs" Link="Mod\UiFocusRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiCheckRules.cs" Link="Mod\UiCheckRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiMotionRules.cs" Link="Mod\UiMotionRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiScreens.cs" Link="Mod\UiScreens.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\IUiScreen.cs" Link="Mod\IUiScreen.cs" />
+    <Compile Include="..\UiPreview\UiSamples.cs" Link="Shared\UiSamples.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meta\BugReportRules.cs" Link="Mod\BugReportRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meta\BetaRules.cs" Link="Mod\BetaRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Family\HardTimesRules.cs" Link="Mod\HardTimesRules.cs" />
