@@ -178,7 +178,10 @@ namespace RealLifeOverhaul.Population
             dd.WeightTotal[dd.TotalIndex(d, c, k)] = total;
         }
 
-        /// <summary>A business's own pull on a class: its room for customers and hours, its prices against what the class bears, its interior, its customers' satisfaction and what people hear of it.</summary>
+        /// <summary>
+        /// A business's own pull on a class: its room for customers and hours, its prices against what the class bears, its interior, its customers'
+        /// satisfaction and what people hear of it.
+        /// </summary>
         public static long OwnWeight(BusinessTable bt, int b, int c, int bears)
         {
             long v = (long)bt.Room[b] * 1000;

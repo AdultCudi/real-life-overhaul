@@ -61,16 +61,17 @@ internal static partial class Program
               && director.Contains("SharedCity.Follows(PopulationShare.Part)") && director.Contains("PopulationCustomers.Stop()"),
             "population sources: the director reads the master option, waits for its seat, spreads the day over frames, saves its line and follows a host");
         string calculators = File.ReadAllText(System.IO.Path.Combine(folder, "PopulationGame.Calculators.cs"));
-        Check(calculators.Contains("base.GetCustomersByHour(hour, day, Scaled(") && calculators.Contains("if (!PopulationCustomers.On || reg == null)") && calculators.Contains("return initial;")
+        Check(calculators.Contains("base.GetCustomersByHour(hour, day, Scaled(") && calculators.Contains("if (!PopulationCustomers.On || reg == null || CountGuard.Off)") && Regex.Matches(calculators, @"return Guard\.Failed\(CountGuard, fault, 0\);").Count == 5 && calculators.Contains("return initial;")
               && Regex.Matches(calculators, @"private sealed class \w+Calculator : CustomerEntriesCalculator\w*").Count == 5,
-            "population sources: the game's five calculators each ask the game's own hour with the population's scale, and stand down to the game's own");
+            "population sources: the game's five calculators each ask the game's own hour with the population's scale behind the guard, and stand down to the game's own");
         string contract = File.ReadAllText(System.IO.Path.Combine(ModScripts(), "Core", "GameContract.cs"));
-        Check(Regex.Matches(contract, "\"AI.Customers.CustomerEntries.CustomerEntriesCalculatorFactory\"").Count == 5, "population sources: the factory's five fields are lines of the game contract");
+        Check(Regex.Matches(contract, @"StaticField\(PopulationCount, Game, Factory,").Count == 5 && contract.Contains("Factory = \"AI.Customers.CustomerEntries.CustomerEntriesCalculatorFactory\""),
+            "population sources: the factory's five fields are lines of the game contract");
         string store = File.ReadAllText(System.IO.Path.Combine(folder, "PopulationStore.cs"));
         Check(store.Contains("public const string Key = \"reallife:population\"") && store.Contains("DistrictSaveZip") && store.Contains("zip.Finish(Head)"),
             "population sources: one line of the save, compressed in pieces on the save's workers as the district save's");
         string links = File.ReadAllText(System.IO.Path.Combine(ModScripts(), "Wiring", "Wiring.PopulationLinks.cs"));
-        Check(links.Contains("CityBridges.DistrictIncome = DistrictIncome") && links.Contains("MarketBridges.PopulationPull = Pull") && links.Contains("CustomerScale.Of = Scale")
+        Check(links.Contains("CityBridges.DistrictIncome = DistrictIncome") && links.Contains("DemandBridges.PopulationPull = Pull") && links.Contains("PopulationBridges.UseOf = UseOf") && links.Contains("CustomerScale.Of = Scale")
               && links.Contains("BusinessGame.Levers = Levers") && links.Contains("PopulationAttention.Register("),
             "population sources: the city economy's districts, Uptown's demand, the copies of the customer arithmetic and the business levers are wired to it");
         string outlook = File.ReadAllText(System.IO.Path.Combine(ModScripts(), "Wiring", "Wiring.OutlookLinks.cs"));

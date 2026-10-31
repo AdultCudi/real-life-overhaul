@@ -6,7 +6,7 @@ Under the living economy's master option **Living population**, every flat in th
 
 ## Where the code is
 
-- Folder: [`Scripts/Population`](../../Assets/Mods/RealLifeOverhaul/Scripts/Population/); the wiring in `Scripts/Wiring/Wiring.PopulationLinks.cs`; the mod's copies of the game's customer arithmetic read `Scripts/Core/CustomerScale.cs`; Uptown's demand reads `Scripts/Uptown/MarketBridges.cs`.
+- Folder: [`Scripts/Population`](../../Assets/Mods/RealLifeOverhaul/Scripts/Population/); the wiring in `Scripts/Wiring/Wiring.PopulationLinks.cs`; the mod's copies of the game's customer arithmetic read `Scripts/Core/CustomerScale.cs`; Uptown's demand reads `Scripts/Uptown/DemandBridges.cs`.
 - Option: "Living population" (`living_population`, the overhaul's master switch, on in the beta; the feature "living" owns it). Off, the population stands down: the game's own customers, the city economy's own district incomes, the Economy app's tables by cycle and Uptown's fixed ratios stand, exactly as before.
 - The design: `not-in-repo/plans/tech-overhaul/POPULATION.md` (with the owner's answers of 1 Nov 2026).
 
@@ -14,7 +14,7 @@ Under the living economy's master option **Living population**, every flat in th
 Population/                     the rules files are game-free and compiled by EconomyCheck (PopulationChecks.cs, PopulationYearsChecks.cs, PopulationSaveChecks.cs)
   PopulationCatalogue             every figure, each with its unit and its source (the game's own where it gives one)
   MeasureRules, CityTable         homes and jobs from each building; the city's table laid out, a saved population bound to the city at a load
-  PopulationData                  households, people, employers and businesses as plain arrays with stable ids; a household's monthly ledger
+  PopulationState                 households, people, employers and businesses as plain arrays with stable ids; a household's monthly ledger
   PopDraw                         the seeded draws (the same city from the same seed on every machine)
   GenerateRules                   the people generated from the buildings
   LifeRules, RegionRules          a day of life; the month's moves, the region's arrivals and departures

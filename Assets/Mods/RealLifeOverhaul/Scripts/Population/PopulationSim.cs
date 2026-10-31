@@ -518,7 +518,8 @@ namespace RealLifeOverhaul.Population
                 long output = et.Output[e];
                 if (et.Business[e] < 0)
                 {
-                    output = et.Kind[e] == (byte)EmployerKind.Public ? et.Bill[e] : et.Bill[e] * (1000 + PopulationCatalogue.FirmMarkup) / 1000;   // public output at its cost, as national accounts value it
+                    // public output at its cost, as national accounts value it
+                    output = et.Kind[e] == (byte)EmployerKind.Public ? et.Bill[e] : et.Bill[e] * (1000 + PopulationCatalogue.FirmMarkup) / 1000;
                 }
                 et.OutputLast[e] = output;
                 et.Bill[e] = 0;

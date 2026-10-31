@@ -29,19 +29,20 @@ namespace RealLifeOverhaul
             internal static void Connect()
             {
                 CityBridges.DistrictIncome = DistrictIncome;
-                MarketBridges.PopulationPull = Pull;
+                DemandBridges.PopulationPull = Pull;
                 CustomerScale.Of = Scale;
                 CustomerScale.Site = Site;
                 BusinessGame.Levers = Levers;
                 PopulationAttention.Register(LeversSource, LeversOf);
                 PopulationAttention.Register(PromotionSource, PromotionOf);
                 PopulationBridges.People = People;
+                PopulationBridges.UseOf = UseOf;
             }
 
             internal static void Disconnect()
             {
                 CityBridges.DistrictIncome = null;
-                MarketBridges.Reset();
+                DemandBridges.Reset();
                 CustomerScale.Of = null;
                 CustomerScale.Site = null;
                 BusinessGame.Levers = null;
@@ -144,6 +145,33 @@ namespace RealLifeOverhaul
                     return 0;
                 }
                 return CustomerRules.PromotionAttention(s.Businesses.AnchorPromotion[b], PopulationGame.PromotionNow(reg));
+            }
+
+            // A building of the player's whose use the estate changed (homes to offices, say: the redevelopment's Convert): its use in the mod's records, -1 for none.
+            private static int UseOf(string street, int number)
+            {
+                try
+                {
+                    EstateState estate = EstateDirector.Instance != null ? EstateDirector.Instance.State : null;
+                    EstateHolding h = estate != null ? estate.Holding(EstateGame.Place(street, number)) : null;
+                    if (h == null)
+                    {
+                        return -1;
+                    }
+                    switch ((EstateUse)h.Use)
+                    {
+                        case EstateUse.Homes: return (int)Use.Homes;
+                        case EstateUse.Shops: return (int)Use.Shop;
+                        case EstateUse.Offices: return (int)Use.Office;
+                        case EstateUse.Storage: return (int)Use.Warehouse;
+                        default: return -1;
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("PopulationLinks.UseOf", e);
+                    return -1;
+                }
             }
 
             // The mod's own people who are residents too, by their system's id.

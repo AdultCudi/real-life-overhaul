@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Threading;
@@ -36,14 +37,14 @@ namespace RealLifeOverhaul.Population
         private readonly List<LinkAsk> _asks = new List<LinkAsk>(32);
         private PopulationState _state;            // the population in use; null while not running
         private PopulationState _guest;            // a guest's copy of the host's figures
-        private Action _second, _onDay, _onSave;
+        private Action _onDay, _onSave;
         private Func<bool> _dayStep;
         private bool _broken;
         private bool _starting;                    // the save's line is being read on a worker
         private volatile PopulationState _read;    // what the worker read
         private volatile bool _readDone;
         private string _readWhy;
-        private int _attentionCursor = -1;         // the day's look at what people hear of each business, before the sim's turn
+        private int _attentionCursor = -1;         // the day's look at what people hear of each business, before the sim's turn (-2: the businesses read first; -1: none)
         private int _jobDay = -1;                  // the day the job under way lives
         private bool _generating;
         private DistrictSaveZip _zip;
@@ -55,17 +56,15 @@ namespace RealLifeOverhaul.Population
 
         private static GameInstance Save => SaveGameManager.Current;
         private static bool Verbose => Meta.Dev.Verbose;
-        private static readonly int HotSecond = HotSpots.Slot("Population: PopulationDirector.Second");
         private static readonly int HotDay = HotSpots.Slot("Population: the day's turn");
 
         private void Awake()
         {
             Instance = this;
-            _second = EachSecond;
             _onDay = OnDay;
             _onSave = OnSave;
             _dayStep = DayStep;
-            EconomyDirector.Follow(StartSeats.Population, _second);   // its first second after a load has a frame of its own (Core/StartLine)
+            StartCoroutine(Guard.Routine(Tick()));   // its first second after a load waits for its seat (Core/StartLine)
             EconomyDirector.AfterDay += _onDay;
             SharedCity.Register(new SharedCityPart
             {
@@ -84,7 +83,6 @@ namespace RealLifeOverhaul.Population
 
         private void OnDestroy()
         {
-            EconomyDirector.Unfollow(_second);
             EconomyDirector.AfterDay -= _onDay;
             SaveHook.Drop(_onSave);
             DaySpread.Shared.Drop(this);
@@ -97,25 +95,35 @@ namespace RealLifeOverhaul.Population
             Instance = null;
         }
 
-        private void EachSecond()
+        private IEnumerator Tick()
         {
-            using var hotSpot = HotSpots.Time(HotSecond);
-            if (_broken)
+            var wait = new WaitForSecondsRealtime(1f);
+            while (true)
             {
-                return;
-            }
-            try
-            {
-                Slow();
-            }
-            catch (Exception e)
-            {
-                Fault("the timer", e);
+                yield return wait;
+                if (_broken)
+                {
+                    continue;
+                }
+                while (StartLine.Holds(StartSeats.Population))
+                {
+                    yield return null;
+                }
+                try
+                {
+                    Slow();
+                }
+                catch (Exception e)
+                {
+                    Fault("the timer", e);
+                }
             }
         }
 
+        private static readonly int HotTick = HotSpots.Slot("Population: PopulationDirector.Tick");
         private void Slow()
         {
+            using var hotSpot = HotSpots.Time(HotTick);
             if (Save == null || LoadScene.isLoading || !ModState.Loaded)
             {
                 return;
@@ -138,7 +146,7 @@ namespace RealLifeOverhaul.Population
                 StartUp();
                 return;
             }
-            if (!_sim.Busy && _attentionCursor < 0 && Save.Day > _state.Day)
+            if (!_sim.Busy && _attentionCursor == -1 && Save.Day > _state.Day)
             {
                 BeginDay(Save.Day);   // a day the game's event did not bring (a load at midnight, a skip)
             }
@@ -326,13 +334,12 @@ namespace RealLifeOverhaul.Population
             {
                 return;
             }
-            PopulationGame.ReadSeeds(_seeds, Staff());
             _jobDay = day;
-            _attentionCursor = 0;
+            _attentionCursor = -2;   // the frame the day turns in only queues the turn: the businesses are read in its first step
             DaySpread.Shared.Add(this, "Population: the day's turn", _dayStep, Time.frameCount, HotDay);
         }
 
-        // A step of the job under way: what people hear of each business, then the staff linked, then the sim's slices; true when done.
+        // A step of the job under way: the businesses read, what people hear of each, then the staff linked, then the sim's slices; true when done.
         private bool DayStep()
         {
             if (_broken || Save == null)
@@ -341,6 +348,12 @@ namespace RealLifeOverhaul.Population
             }
             try
             {
+                if (_attentionCursor == -2)
+                {
+                    PopulationGame.ReadSeeds(_seeds, Staff());   // the businesses as they stand: one pass over the game's registrations
+                    _attentionCursor = 0;
+                    return false;
+                }
                 if (_attentionCursor >= 0)
                 {
                     Attention();
@@ -410,7 +423,8 @@ namespace RealLifeOverhaul.Population
             {
                 long spent = _sim.Demand.ResidentSpend + _sim.Demand.OutsiderSpend, taken = _sim.Demand.Takings + _sim.Demand.Outside;
                 Logger?.Info("Population check (the day " + _state.Day + "): " + _state.Households.Live + " households, " + _state.People.Live + " people, unemployment "
-                             + CityPopulation.Unemployment / 10.0f + "%; spent into the pools " + spent / 100 + ", taken and beyond " + taken / 100 + "; " + asked + " of the player's businesses drawn again: "
+                             + CityPopulation.Unemployment / 10.0f + "%; spent into the pools " + spent / 100 + ", taken and beyond " + taken / 100 + "; " + asked
+                             + " of the player's businesses drawn again: "
                              + (spent == taken ? "PASS" : "FAIL, the pools do not balance"));
             }
         }
@@ -495,11 +509,12 @@ namespace RealLifeOverhaul.Population
         private void StandDown(string why, bool tell)
         {
             bool was = _state != null || _guest != null;
-            DaySpread.Shared.Drop(this);
-            if (_state != null && tell && Save != null)
+            if (_state != null && tell && Save != null && !_broken)
             {
+                DaySpread.Shared.Flush(this);   // the day under way played to its end: the line holds whole days
                 OnSave();   // the line kept as it stands, so switching the option back on goes on from here
             }
+            DaySpread.Shared.Drop(this);
             _state = null;
             _guest = null;
             _starting = false;

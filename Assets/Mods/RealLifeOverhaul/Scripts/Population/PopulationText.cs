@@ -48,18 +48,30 @@ namespace RealLifeOverhaul.Population
             t.Append(v.Kind).Append(' ').Append(v.TitleKey ? v.Title : v.Title ?? v.NameSeed.ToString(Inv)).Append(':');
             foreach (ViewFigure f in v.Hero)
             {
-                t.Append(' ').Append(f.Label.Replace("reallife_pop_fig_", string.Empty)).Append(' ').Append(f.Format == ViewFormat.Key ? f.Text : f.Value.ToString(Inv)).Append(';');
+                t.Append(' ').Append(Short(f.Label)).Append(' ').Append(f.Format == ViewFormat.Key ? f.Text : f.Value.ToString(Inv)).Append(';');
             }
             t.Append(' ').Append(v.Rows.Count).Append(" row(s)");
             foreach (ViewFigure f in v.Details)
             {
-                t.Append("; ").Append(f.Label.Replace("reallife_pop_fig_", string.Empty)).Append(' ').Append(f.Format == ViewFormat.Key ? f.Text : f.Value.ToString(Inv));
+                t.Append("; ").Append(Short(f.Label)).Append(' ').Append(f.Format == ViewFormat.Key ? f.Text : f.Value.ToString(Inv));
             }
             if (v.Primary != null)
             {
-                t.Append("; action ").Append(v.Primary.Replace("reallife_pop_act_", string.Empty)).Append(" to ").Append(v.PrimaryTarget.Kind).Append(' ').Append(v.PrimaryTarget.Index);
+                t.Append("; action ").Append(Short(v.Primary)).Append(" to ").Append(v.PrimaryTarget.Kind).Append(' ').Append(v.PrimaryTarget.Index);
             }
             return t.ToString();
+        }
+
+        // A key without its first three parts (the mod's, the population's and the kind): "moved_in" of a figure's.
+        private static string Short(string key)
+        {
+            int at = 0;
+            for (int i = 0; i < 3 && key != null; i++)
+            {
+                int next = key.IndexOf('_', at);
+                at = next < 0 ? at : next + 1;
+            }
+            return key == null ? string.Empty : key.Substring(at);
         }
     }
 }

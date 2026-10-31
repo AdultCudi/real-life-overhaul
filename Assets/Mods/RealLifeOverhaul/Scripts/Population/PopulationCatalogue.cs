@@ -130,7 +130,7 @@ namespace RealLifeOverhaul.Population
 
         // ---- the measure (step 1): homes and jobs from the game's buildings
 
-        public const int HomeNetShare = 800;             // thousandths of a residential building's floor that is flats: halls, stairs, walls and services take the rest (New York apartment buildings run 75 to 85% net)
+        public const int HomeNetShare = 800;             // thousandths of a residential building's floor that is flats: halls, stairs and walls take the rest (New York runs 75 to 85% net)
         public const int FlatSqmDefault = 80;            // m2 of a flat where the game gives no unit size for a building's size
         public const int OfficeNetShare = 800;           // thousandths of an office building's floor that is workspace
         public const int DeskSqm = 16;                   // m2 of office floor a desk (New York offices give 14 to 18 m2 a worker; the design's 15 to 20)
@@ -421,7 +421,8 @@ namespace RealLifeOverhaul.Population
         public const int SatisfactionWeight = 600;       // thousandths of share each half of satisfaction's range is worth
         public const int AttentionLeast = -900;          // thousandths: attention takes a business's pull down to a tenth at worst
         public const int AttentionMost = 9000;           // thousandths: a sane bound for the arithmetic; a pool is only ever shared out, so it never runs away
-        public static readonly int[] Habit = { 0, 0, 650, 350, 600, 300, 250, 200, 300, 300, 300, 700, 250, 200, 300, 400, 550, 600, 500, 0, 0 };   // thousandths of yesterday's share kept by each kind (people go back where they went)
+        // Thousandths of yesterday's share kept by each kind: people go back where they went.
+        public static readonly int[] Habit = { 0, 0, 650, 350, 600, 300, 250, 200, 300, 300, 300, 700, 250, 200, 300, 400, 550, 600, 500, 0, 0 };
 
         // ---- the region round the city (POPULATION.md section 5): commuters and visitors, an aggregate
 
@@ -455,11 +456,11 @@ namespace RealLifeOverhaul.Population
         public const int UnemployedLeaveDays = 365;      // game days out of work in a year of 365 (scaled) after which a household may leave
         public const int LeaveChance = 120;              // per mille a year such a household leaves
         public const int MigrantsPerVacancy = 400;       // thousandths of a household a day that would come to the city for each hundred open vacancies (more when it has flats to spare)
-        public const int ArrivalShare = 300;             // thousandths a month of a district's free flats past its target share that households from the region take (Manhattan never lacks people who want to live there)
+        public const int ArrivalShare = 300;             // thousandths a month of a district's free flats past its target that the region's households take (Manhattan never lacks them)
 
         // ---- housing (POPULATION.md section 8)
 
-        public const int RentStep = 4;                   // thousandths a month a district's rents move for each 10 thousandths its vacancy is off its target: three points off moves them some 15% a year
+        public const int RentStep = 4;                   // thousandths a month rents move for each 10 thousandths vacancy is off its target: three points off is some 15% a year
         public const int RentLeast = 650;                // thousandths of the game's own rent a district's index goes down to
         public const int RentMost = 1800;                // ... and up to
         public const int RentResidential = 65;           // thousandths: the game's residential rent multiplier (BuildingTypeData buildingPriceMultiplierForRent)

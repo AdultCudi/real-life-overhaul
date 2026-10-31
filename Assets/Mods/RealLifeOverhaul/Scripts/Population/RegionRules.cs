@@ -192,7 +192,8 @@ namespace RealLifeOverhaul.Population
                     break;
                 }
                 List<int> free = d < ld.Free.Length ? ld.Free[d] : null;
-                int floor = Math.Max(1, (int)((long)(d < s.Figures.Length ? s.Figures[d].Flats : 0) * PopulationCatalogue.TargetVacancy / 1000));   // the free share a market keeps: flats changing hands, and room for the city's own households
+                // the free share a market keeps: flats changing hands, and room for the city's own households
+                int floor = Math.Max(1, (int)((long)(d < s.Figures.Length ? s.Figures[d].Flats : 0) * PopulationCatalogue.TargetVacancy / 1000));
                 if (free == null || free.Count <= floor)
                 {
                     if (d < s.Figures.Length)

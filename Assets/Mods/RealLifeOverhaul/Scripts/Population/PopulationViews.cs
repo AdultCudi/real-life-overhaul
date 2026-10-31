@@ -98,6 +98,7 @@ namespace RealLifeOverhaul.Population
     public static class PopulationViews
     {
         public const int RowsMost = 8;   // rows a list shows: a screen keeps to a few things
+        private const string Pop = "reallife" + "_pop_";   // the words' keys (split, so the locale check does not take a prefix for a key)
 
         /// <summary>The city: its people at a glance, its districts, and the way to who contributes.</summary>
         public static PopulationView City(PopulationState s)
@@ -360,7 +361,11 @@ namespace RealLifeOverhaul.Population
             long[] from = CustomersFrom(s, dd, b);
             foreach (int d in Top(from, RowsMost))
             {
-                v.Rows.Add(new ViewRow { Title = d < s.Districts.Count ? s.Districts[d].Id : "?", TitleKey = d < s.Districts.Count, Value = from[d] / 100, Format = ViewFormat.Money, Target = ViewTarget.To(ViewKind.District, d) });
+                v.Rows.Add(new ViewRow
+                {
+                    Title = d < s.Districts.Count ? s.Districts[d].Id : "?", TitleKey = d < s.Districts.Count, Value = from[d] / 100, Format = ViewFormat.Money,
+                    Target = ViewTarget.To(ViewKind.District, d)
+                });
             }
             long all = bt.ByClass[b * 3] + bt.ByClass[b * 3 + 1] + bt.ByClass[b * 3 + 2];
             v.Details.Add(ViewFigure.Of("reallife_pop_fig_working", Share(bt.ByClass[b * 3], all), ViewFormat.Permille));
@@ -572,7 +577,8 @@ namespace RealLifeOverhaul.Population
             return best;
         }
 
-        private static void Totals(PopulationState s, out int people, out int households, out int workers, out int unemployed, out int jobs, out int vacancies, out int commuters, out long rent, out int renters)
+        private static void Totals(PopulationState s, out int people, out int households, out int workers, out int unemployed, out int jobs, out int vacancies, out int commuters,
+                                   out long rent, out int renters)
         {
             people = households = workers = unemployed = jobs = vacancies = commuters = renters = 0;
             rent = 0;
@@ -656,14 +662,17 @@ namespace RealLifeOverhaul.Population
 
         public static string ClassKey(int cls) => cls == 0 ? "reallife_pop_class_working" : cls == 1 ? "reallife_pop_class_middle" : "reallife_pop_class_upper";
 
-        public static string StatusKey(int status) => "reallife_pop_status_" + ((Status)PopulationCatalogue.Clamp(status, 0, 6)).ToString().ToLowerInvariant();
+        public static string StatusKey(int status) => Pop + "status_" + ((Status)PopulationCatalogue.Clamp(status, 0, 6)).ToString().ToLowerInvariant();
 
-        public static string EducationKey(int education) => "reallife_pop_education_" + ((Education)PopulationCatalogue.Clamp(education, 0, 4)).ToString().ToLowerInvariant();
+        public static string EducationKey(int education) => Pop + "education_" + ((Education)PopulationCatalogue.Clamp(education, 0, 4)).ToString().ToLowerInvariant();
 
-        public static string FieldKey(int field) => "reallife_pop_field_" + ((Field)PopulationCatalogue.Clamp(field, 0, PopulationCatalogue.Fields - 1)).ToString().ToLowerInvariant();
+        public static string FieldKey(int field) => Pop + "field_" + ((Field)PopulationCatalogue.Clamp(field, 0, PopulationCatalogue.Fields - 1)).ToString().ToLowerInvariant();
 
-        public static string LandlordKey(int landlord) => landlord == Landlords.Own ? "reallife_pop_landlord_own" : landlord == Landlords.Player ? "reallife_pop_landlord_player" : "reallife_pop_landlord_city";
+        public static string LandlordKey(int landlord)
+        {
+            return landlord == Landlords.Own ? "reallife_pop_landlord_own" : landlord == Landlords.Player ? "reallife_pop_landlord_player" : "reallife_pop_landlord_city";
+        }
 
-        public static string EmployerKey(EmployerKind kind) => "reallife_pop_employer_" + kind.ToString().ToLowerInvariant();
+        public static string EmployerKey(EmployerKind kind) => Pop + "employer_" + kind.ToString().ToLowerInvariant();
     }
 }

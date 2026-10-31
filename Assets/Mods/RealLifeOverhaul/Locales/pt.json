@@ -26822,5 +26822,6 @@
   "reallife_pop_employer_public": "O setor público",
   "reallife_pop_employer_special": "Um serviço da cidade",
   "reallife_pop_employer_building": "Funcionários de um prédio",
-  "reallife_pop_employer_mod": "Uma empresa da cidade"
+  "reallife_pop_employer_mod": "Uma empresa da cidade",
+  "reallife_contract_part_population_customers": "os moradores da cidade na contagem do próprio jogo dos clientes de cada negócio"
 }

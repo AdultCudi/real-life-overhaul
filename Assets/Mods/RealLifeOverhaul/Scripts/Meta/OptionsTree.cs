@@ -381,9 +381,10 @@ namespace RealLifeOverhaul.Meta
                 S("ownbank").For("economy_ownbank").Need("economy").Opts("economy_bank").Also("bank licence deposits savers loans regulator capital fund"),
                 S("bankbranch").For("economy_bank_branch").Need("economy").Opt("economy_bank_branch", "economy_bank")
                     .Also("bank branch branches teller tellers counter customers accounts deposit withdraw loan high street"),
-                S("living").For("living").Main("living_population").Opt("living_desks", "living_population")
+                S("living").For("living", "population").Main("living_population").Opt("living_desks", "living_population")
                     .Also("living population economy overhaul desk desks session sessions meeting team morale output burnout office manager delegate mini screen")
-                    .Also("living_population", "residents people households census births deaths migration commuters jobs unemployment vacancies rent rents tax taxes spending customers demand district districts who contributes"),
+                    .Also("living_population", "residents people households census births deaths migration commuters jobs unemployment vacancies")
+                    .Also("living_population", "housing landlord landlords tax taxes spending customers demand district districts who contributes"),
                 S("endscale").For("economy_endscale").Opts("economy_endscale")
                     .Also("end game late scale billions hyperscaler cloud data centre racks broadband network fibre bank maintenance upkeep crews staff payback"),
                 S("brands").For("economy_brands").Need("economy").Opts("economy_brands").Also("chain franchise"),

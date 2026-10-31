@@ -22,6 +22,9 @@ namespace RealLifeOverhaul.Population
     /// </summary>
     internal static partial class PopulationGame
     {
+        // The guard of the game's calls into the copies (Core/Guard): faults past its limit switch the population's count off, and the game's own stands.
+        private static readonly FeatureGuard CountGuard = Guard.For("population", "PopulationGame", typeof(PopulationGame));
+
         /// <summary>True when every one of the game's calculators is the mod's copy (the population's factor reaches the game's own count).</summary>
         public static bool CalculatorsIn { get; private set; }
 
@@ -41,7 +44,8 @@ namespace RealLifeOverhaul.Population
             }
             else
             {
-                Logger?.Warn("Living population: " + replaced + " of the game's five customer calculators could be given the population's count (a newer game?); the game's own customers stand, and the population's other figures go on.");
+                Logger?.Warn("Living population: " + replaced + " of the game's five customer calculators could be given the population's count (a newer game?); "
+                             + "the game's own customers stand, and the population's other figures go on.");
             }
         }
 
@@ -89,9 +93,9 @@ namespace RealLifeOverhaul.Population
         // The initial customers of an hour as the population moves them: the game's own while it has no figure.
         private static float Scaled(BuildingRegistration reg, float initial, float promotionNow, bool usesPromotion)
         {
-            if (!PopulationCustomers.On || reg == null)
+            if (!PopulationCustomers.On || reg == null || CountGuard.Off)
             {
-                return initial;
+                return initial;   // the game's own count: no figure, or the guard switched the population's count off
             }
             try
             {
@@ -109,7 +113,14 @@ namespace RealLifeOverhaul.Population
         {
             public override int GetCustomersByHour(int hour, DayOfWeekOrdered day, float initialCustomers)
             {
-                return base.GetCustomersByHour(hour, day, Scaled(registration, initialCustomers, PromotionOrNone(this), true));
+                try
+                {
+                    return base.GetCustomersByHour(hour, day, Scaled(registration, initialCustomers, PromotionOrNone(this), true));
+                }
+                catch (Exception fault)
+                {
+                    return Guard.Failed(CountGuard, fault, 0);   // the game's own arithmetic failed: no customers this hour, not a fault in its loop
+                }
             }
 
             public float Promotion() => GetPromotionMultiplier();
@@ -119,7 +130,14 @@ namespace RealLifeOverhaul.Population
         {
             public override int GetCustomersByHour(int hour, DayOfWeekOrdered day, float initialCustomers)
             {
-                return base.GetCustomersByHour(hour, day, Scaled(registration, initialCustomers, PromotionOrNone(this), true));
+                try
+                {
+                    return base.GetCustomersByHour(hour, day, Scaled(registration, initialCustomers, PromotionOrNone(this), true));
+                }
+                catch (Exception fault)
+                {
+                    return Guard.Failed(CountGuard, fault, 0);   // the game's own arithmetic failed: no customers this hour, not a fault in its loop
+                }
             }
 
             public float Promotion() => GetPromotionMultiplier();
@@ -129,7 +147,14 @@ namespace RealLifeOverhaul.Population
         {
             public override int GetCustomersByHour(int hour, DayOfWeekOrdered day, float initialCustomers)
             {
-                return base.GetCustomersByHour(hour, day, Scaled(registration, initialCustomers, PromotionOrNone(this), true));
+                try
+                {
+                    return base.GetCustomersByHour(hour, day, Scaled(registration, initialCustomers, PromotionOrNone(this), true));
+                }
+                catch (Exception fault)
+                {
+                    return Guard.Failed(CountGuard, fault, 0);   // the game's own arithmetic failed: no customers this hour, not a fault in its loop
+                }
             }
 
             public float Promotion() => GetPromotionMultiplier();
@@ -139,7 +164,14 @@ namespace RealLifeOverhaul.Population
         {
             public override int GetCustomersByHour(int hour, DayOfWeekOrdered day, float initialCustomers)
             {
-                return base.GetCustomersByHour(hour, day, Scaled(registration, initialCustomers, 0f, false));   // the casino's count takes no promotion
+                try
+                {
+                    return base.GetCustomersByHour(hour, day, Scaled(registration, initialCustomers, 0f, false));   // the casino's count takes no promotion
+                }
+                catch (Exception fault)
+                {
+                    return Guard.Failed(CountGuard, fault, 0);   // as the others
+                }
             }
         }
 
@@ -147,7 +179,14 @@ namespace RealLifeOverhaul.Population
         {
             public override int GetCustomersByHour(int hour, DayOfWeekOrdered day, float initialCustomers)
             {
-                return base.GetCustomersByHour(hour, day, Scaled(registration, initialCustomers, PromotionOrNone(this), true));
+                try
+                {
+                    return base.GetCustomersByHour(hour, day, Scaled(registration, initialCustomers, PromotionOrNone(this), true));
+                }
+                catch (Exception fault)
+                {
+                    return Guard.Failed(CountGuard, fault, 0);   // the game's own arithmetic failed: no customers this hour, not a fault in its loop
+                }
             }
 
             public float Promotion() => GetPromotionMultiplier();

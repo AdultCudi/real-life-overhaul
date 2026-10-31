@@ -26822,5 +26822,6 @@
   "reallife_pop_employer_public": "The public sector",
   "reallife_pop_employer_special": "A city service",
   "reallife_pop_employer_building": "A building's staff",
-  "reallife_pop_employer_mod": "A firm of the city"
+  "reallife_pop_employer_mod": "A firm of the city",
+  "reallife_contract_part_population_customers": "the city's people in the game's own count of each business's customers"
 }

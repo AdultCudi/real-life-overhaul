@@ -1682,13 +1682,13 @@ namespace RealLifeOverhaul
             Guard.Step("Schools.SchoolsDirector", () => Schools.SchoolsDirector.Logger = context.Logger);
             // Birchwood School: its main school declared for the made buildings below, its other buildings asked of the copy engine.
             Guard.Step("Schools.SchoolsDirector", () => Guard.Add<Schools.SchoolsDirector>(_root));
-            Guard.Step("Population.PopulationDirector", () => Population.PopulationDirector.Logger = context.Logger);
-            // The city's people: after the city's economy, the company and Uptown's buildings, whose figures it reads; its day follows theirs. No Update.
-            Guard.Step("Population.PopulationDirector", () => Guard.Add<Population.PopulationDirector>(_root));
             Guard.Step("Outlook.OutlookDirector", () => Outlook.OutlookDirector.Logger = context.Logger);
             Guard.Step("Outlook.OutlookApp", () => Outlook.OutlookApp.Logger = context.Logger);
             // The Economy app: after the city's economy, the market and the council, whose figures it reads; its day follows the city's. No Update.
             Guard.Step("Outlook.OutlookDirector", () => Guard.Add<Outlook.OutlookDirector>(_root));
+            Guard.Step("Population.PopulationDirector", () => Population.PopulationDirector.Logger = context.Logger);
+            // The city's people: after the city's economy, the company, the estate and Uptown's buildings, whose figures it reads. No Update.
+            Guard.Step("Population.PopulationDirector", () => Guard.Add<Population.PopulationDirector>(_root));
             Guard.Step("NewBuildings.NewBuildingsDirector", () => NewBuildings.NewBuildingsDirector.Logger = context.Logger);
             // Its buildings are made behind the loading screen, once every director has declared its own.
             Guard.Step("NewBuildings.NewBuildingsDirector", () => Guard.Add<NewBuildings.NewBuildingsDirector>(_root));

@@ -31,7 +31,7 @@ namespace RealLifeOverhaul.Population
     {
         public const int StartVacancy = 30;      // thousandths of each employer's slots left open when a city is generated (US JOLTS openings run 3 to 7%)
         public const int Looks = 6;              // employers of a field a jobseeker looks at in a day
-        public const int Tight = 50;             // thousandths of a field's jobs open past which its pay rises (the region fills a city's openings quickly: two or three in a hundred are open as a rule)
+        public const int Tight = 50;             // thousandths of a field's jobs open past which its pay rises (the region fills openings quickly: two or three in a hundred as a rule)
         public const int Slack = 10;             // ... under which it falls, if its own people are out of work as well (pay is slow to fall: a quiet field holds)
         public const int SlackOutOfWork = 80;    // thousandths of a field's labour force out of work for its pay to fall
         public const int WageRise = 15;          // thousandths a month a tight field's pay rises

@@ -26822,5 +26822,6 @@
   "reallife_pop_employer_public": "公共部门",
   "reallife_pop_employer_special": "城市服务机构",
   "reallife_pop_employer_building": "楼宇员工",
-  "reallife_pop_employer_mod": "城市企业"
+  "reallife_pop_employer_mod": "城市企业",
+  "reallife_contract_part_population_customers": "城市居民计入游戏自身对每家企业顾客人数的计算"
 }

@@ -19,6 +19,7 @@ namespace RealLifeOverhaul
         private const string Steam = "Facepunch.Steamworks.Win64";
         private const string Navigation = "Unity.AI.Navigation";
         private const string Hg = "HGPlugins";
+        private const string Factory = "AI.Customers.CustomerEntries.CustomerEntriesCalculatorFactory";   // the customer calculators' factory (Population/PopulationGame.Calculators)
 
         static GameContract()
         {
@@ -371,11 +372,16 @@ namespace RealLifeOverhaul
         public static readonly GameMember ActivityButtons = Field(TakeoutPlates, Game, "PlayerActivity.PlayerActivityUI", "buttonTemplate", "Button");
 
         // Population/PopulationGame.Calculators: the five calculators of the factory, each given the mod's copy with the population's count at start (the game's own without)
-        public static readonly GameMember CalculatorPlain = Optional(StaticField(PopulationCount, Game, "AI.Customers.CustomerEntries.CustomerEntriesCalculatorFactory", "CustomerEntriesCalculator", "CustomerEntriesCalculator"));
-        public static readonly GameMember CalculatorRetail = Optional(StaticField(PopulationCount, Game, "AI.Customers.CustomerEntries.CustomerEntriesCalculatorFactory", "CustomerEntriesCalculatorRetail", "CustomerEntriesCalculatorRetail"));
-        public static readonly GameMember CalculatorOffice = Optional(StaticField(PopulationCount, Game, "AI.Customers.CustomerEntries.CustomerEntriesCalculatorFactory", "CustomerEntriesCalculatorOffice", "CustomerEntriesCalculatorOffice"));
-        public static readonly GameMember CalculatorCasino = Optional(StaticField(PopulationCount, Game, "AI.Customers.CustomerEntries.CustomerEntriesCalculatorFactory", "CustomerEntriesCalculatorCasino", "CustomerEntriesCalculatorCasino"));
-        public static readonly GameMember CalculatorCinema = Optional(StaticField(PopulationCount, Game, "AI.Customers.CustomerEntries.CustomerEntriesCalculatorFactory", "CustomerEntriesCalculatorCinemaTheater", "CustomerEntriesCalculatorCinemaTheater"));
+        public static readonly GameMember CalculatorPlain = Optional(StaticField(PopulationCount, Game, Factory,
+            "CustomerEntriesCalculator", "CustomerEntriesCalculator"));
+        public static readonly GameMember CalculatorRetail = Optional(StaticField(PopulationCount, Game, Factory,
+            "CustomerEntriesCalculatorRetail", "CustomerEntriesCalculatorRetail"));
+        public static readonly GameMember CalculatorOffice = Optional(StaticField(PopulationCount, Game, Factory,
+            "CustomerEntriesCalculatorOffice", "CustomerEntriesCalculatorOffice"));
+        public static readonly GameMember CalculatorCasino = Optional(StaticField(PopulationCount, Game, Factory,
+            "CustomerEntriesCalculatorCasino", "CustomerEntriesCalculatorCasino"));
+        public static readonly GameMember CalculatorCinema = Optional(StaticField(PopulationCount, Game, Factory,
+            "CustomerEntriesCalculatorCinemaTheater", "CustomerEntriesCalculatorCinemaTheater"));
 
         // Core/CustomerDraw: the game's list of a day's customers at each business
         public static readonly GameMember CustomerTable = StaticField(On(CustomersKept, InteriorCustomers), Game, "AI.Customers.CustomerEntries.CustomerEntriesHelper", "BusinessCustomerEntries", "Dictionary<Address,List<CustomerEntry>>");

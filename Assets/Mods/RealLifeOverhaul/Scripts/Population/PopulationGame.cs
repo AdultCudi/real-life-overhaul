@@ -80,6 +80,8 @@ namespace RealLifeOverhaul.Population
                 }
                 string special = b.SpecialService != null ? b.SpecialService.businessTypeName : null;
                 Use use = MeasureRules.UseOf(b.BuildingType, special);
+                int changed = PopulationBridges.UseOf != null && use != Use.Special ? PopulationBridges.UseOf(b.StreetName, b.StreetNumber) : -1;
+                use = changed > 0 ? (Use)changed : use;   // a change of use the mod's records hold (no new geometry)
                 string key = PopulationState.KeyOf(b.StreetName, b.StreetNumber);
                 places.TryGetValue(key, out Vector3 at);
                 var cb = new CityBuilding
@@ -172,7 +174,8 @@ namespace RealLifeOverhaul.Population
                 var content = reg.satisfaction;
                 into.Add(new BusinessSeed
                 {
-                    Street = reg.Address.streetName, Number = reg.Address.streetNumber, Type = reg.businessTypeName, Owner = owner, Room = Mathf.Max(1, reg.customerCapacity > 0 ? reg.customerCapacity : Room(b)),
+                    Street = reg.Address.streetName, Number = reg.Address.streetNumber, Type = reg.businessTypeName, Owner = owner,
+                    Room = Mathf.Max(1, reg.customerCapacity > 0 ? reg.customerCapacity : Room(b)),
                     Hours = HoursOpen(reg), Price = content != null ? 1000 + (50 - Mathf.Clamp(content.pricing, 0, 100)) * 6 : 1000, Quality = content != null ? content.facility : 50,
                     Content = content != null ? content.overall : 50, Staff = owner == Owner.Player ? (staffAt != null && staffAt.TryGetValue(key, out int n) ? n : 0) : -1,
                     Promotion = CustomerRules.PromotionMultiplier(baseMultiplier, promotion)

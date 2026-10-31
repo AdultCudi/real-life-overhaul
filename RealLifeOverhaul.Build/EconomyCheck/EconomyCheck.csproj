@@ -718,7 +718,7 @@
     <!-- The city's population (PopulationChecks.cs): the measure, generation, life, the labour market, money and the pools, housing, the run, all game-free. -->
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\PopulationCatalogue.cs" Link="Mod\Population\PopulationCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\MeasureRules.cs" Link="Mod\Population\MeasureRules.cs" />
-    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\PopulationData.cs" Link="Mod\Population\PopulationData.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\PopulationState.cs" Link="Mod\Population\PopulationState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\PopDraw.cs" Link="Mod\Population\PopDraw.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\CityTable.cs" Link="Mod\Population\CityTable.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\GenerateRules.cs" Link="Mod\Population\GenerateRules.cs" />

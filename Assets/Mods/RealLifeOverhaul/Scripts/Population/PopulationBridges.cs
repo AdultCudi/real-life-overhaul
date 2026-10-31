@@ -9,12 +9,22 @@ namespace RealLifeOverhaul.Population
     /// </summary>
     public static class PopulationBridges
     {
-        /// <summary>The mod's own people who are residents too (the partner, roommates, household staff, people met, the tech sector's professionals and jobseekers), each by its system's id.</summary>
+        /// <summary>
+        /// The mod's own people who are residents too (the partner, roommates, household staff, people met, the tech sector's professionals and
+        /// jobseekers), each by its system's id.
+        /// </summary>
         public static Action<List<LinkAsk>> People;
+
+        /// <summary>
+        /// A building's use in the mod's records where it differs from the game's (the estate's change of use of a building of the player's: the base
+        /// districts answer demand by a change of use, never new geometry, POPULATION.md section 14), as a Use; -1 for the game's own. Read at a load.
+        /// </summary>
+        public static Func<string, int, int> UseOf;
 
         public static void Reset()
         {
             People = null;
+            UseOf = null;
         }
     }
 }

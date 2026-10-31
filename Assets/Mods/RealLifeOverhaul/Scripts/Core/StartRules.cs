@@ -31,7 +31,7 @@ namespace RealLifeOverhaul
         public const int Law = 20;          // Law/LawDirector: the record, the precincts chosen and the nearest front put out (58 ms in the owner's session of 25 Oct 2026)
         public const int Garage = 21;       // Garage/GarageDirector: the builds and the two-wheelers' places found (40 ms)
         public const int Outlook = 22;      // Outlook/OutlookDirector: the Economy app, on a timer of its own (it reads the city's economy and the stock market, so it starts after them)
-        public const int Population = 23;   // Population/PopulationDirector: the city's people read from the save on a worker and bound to the city, or generated in slices
+        public const int Population = 23;   // Population/PopulationDirector: on a timer of its own; the city's people read from the save on a worker, or generated in slices
         public const int Count = 24;
 
         /// <summary>What each seat is, for the log's line (constant texts).</summary>
@@ -69,7 +69,7 @@ namespace RealLifeOverhaul
             new int[0],                                   // Law
             new int[0],                                   // Garage
             new[] { CityEconomy, Markets },               // Outlook
-            new[] { CityEconomy, Company },               // Population: the city economy's seed, the player's staff
+            new[] { CityEconomy, Company, Estate },       // Population: the city economy's seed, the player's staff, the estate's change of use
         };
     }
 

@@ -186,7 +186,8 @@ namespace RealLifeOverhaul.Population
             }
             int kind = size == 2
                 ? PopDraw.Pick(seed, PopDraw.Kind, who, 0, new[] { PopulationCatalogue.TwoCouple, PopulationCatalogue.TwoParent, 1000 - PopulationCatalogue.TwoCouple - PopulationCatalogue.TwoParent })
-                : PopDraw.Pick(seed, PopDraw.Kind, who, 0, new[] { PopulationCatalogue.MoreCouple, PopulationCatalogue.MoreParent, 1000 - PopulationCatalogue.MoreCouple - PopulationCatalogue.MoreParent });
+                : PopDraw.Pick(seed, PopDraw.Kind, who, 0,
+                    new[] { PopulationCatalogue.MoreCouple, PopulationCatalogue.MoreParent, 1000 - PopulationCatalogue.MoreCouple - PopulationCatalogue.MoreParent });
             if (kind == 2)
             {
                 for (int m = 0; m < size; m++)
@@ -362,7 +363,8 @@ namespace RealLifeOverhaul.Population
         /// <summary>The schooling a person finishes with, by class: no diploma, school, college, a degree or a postgraduate degree.</summary>
         public static Education FinalEducation(int seed, int who, int cls)
         {
-            int drop = PopulationCatalogue.DropOutShare[cls], uni = PopulationCatalogue.UniversityShare[cls], post = PopulationCatalogue.PostgraduateShare[cls], college = PopulationCatalogue.CollegeShare[cls];
+            int drop = PopulationCatalogue.DropOutShare[cls], uni = PopulationCatalogue.UniversityShare[cls];
+            int post = PopulationCatalogue.PostgraduateShare[cls], college = PopulationCatalogue.CollegeShare[cls];
             long rest = 1000 - drop;
             int degree = (int)(rest * uni / 1000 * (1000 - post) / 1000);
             int postgrad = (int)(rest * uni / 1000 * post / 1000);
@@ -442,7 +444,8 @@ namespace RealLifeOverhaul.Population
             long daily = SpendRules.GrossDaily(s, h) / 100;   // whole money
             var (least, most) = PopulationCatalogue.SavingsDays[cls];
             hh.Savings[h] = (int)Math.Min(int.MaxValue / 4, daily * PopDraw.Between(seed, PopDraw.Savings, who, 0, least, most));
-            hh.Debt[h] = PopDraw.Mille(seed, PopDraw.Debt, who, 0, 600) ? (int)Math.Min(int.MaxValue / 4, daily * PopDraw.Between(seed, PopDraw.Debt, who, 1, 0, PopulationCatalogue.DebtDays[cls])) : 0;
+            long debtDays = PopDraw.Between(seed, PopDraw.Debt, who, 1, 0, PopulationCatalogue.DebtDays[cls]);
+            hh.Debt[h] = PopDraw.Mille(seed, PopDraw.Debt, who, 0, 600) ? (int)Math.Min(int.MaxValue / 4, daily * debtDays) : 0;
             int b = hh.Building[h];
             bool villas = b >= 0 && s.Districts[s.Buildings[b].District].Villas;
             hh.Cars[h] = (byte)(PopDraw.Mille(seed, PopDraw.Car, who, 0, villas ? PopulationCatalogue.CarShareHamptons : PopulationCatalogue.CarShare[cls]) ? 1 : 0);
