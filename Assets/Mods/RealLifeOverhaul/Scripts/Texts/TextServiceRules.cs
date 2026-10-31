@@ -385,8 +385,27 @@ namespace RealLifeOverhaul.Texts
             {
                 fault = TextFault.Key;   // Google answers a key it does not know with 400 INVALID_ARGUMENT
             }
+            else if (fault == TextFault.BadRequest && NamesNoModel(message))
+            {
+                fault = TextFault.Model;   // some services refuse a model they do not know with 400 and a message, not 404
+            }
             return new TextServiceResult { Fault = fault, Why = why, Param = param ?? Named(message) };
         }
+
+        // A refusal's message saying the model named is not one the service has ("The model `x` does not exist", "Invalid model: x", "models/x is not found").
+        private static bool NamesNoModel(string message)
+        {
+            if (message == null || message.IndexOf("model", StringComparison.OrdinalIgnoreCase) < 0)
+            {
+                return false;
+            }
+            return message.IndexOf("not found", StringComparison.OrdinalIgnoreCase) >= 0 || message.IndexOf("does not exist", StringComparison.OrdinalIgnoreCase) >= 0
+                   || message.IndexOf("invalid model", StringComparison.OrdinalIgnoreCase) >= 0 || message.IndexOf("unknown model", StringComparison.OrdinalIgnoreCase) >= 0
+                   || message.IndexOf("no such model", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        /// <summary>The notice for a model name the service answered 404 or "model not found" to: it names the service and the model, and the Model option.</summary>
+        public const string ModelUnknownKey = "reallife_textsai_model_unknown";
 
         // The field a refusal's message names, when the service gives no param of its own: the two the mod may leave out.
         private static string Named(string message)

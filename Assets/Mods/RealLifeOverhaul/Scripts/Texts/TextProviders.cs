@@ -83,7 +83,7 @@ namespace RealLifeOverhaul.Texts
             },
             new TextProviderInfo
             {
-                Id = TextProvider.OpenAi, Name = "OpenAI", Api = TextApi.Chat, Access = TextAccess.Key, Base = OpenAiApi, Model = "gpt-5.6-luna",
+                Id = TextProvider.OpenAi, Name = "OpenAI", Api = TextApi.Chat, Access = TextAccess.Key, Base = OpenAiApi, Model = "gpt-6-luna",
                 TokensField = "max_completion_tokens", Temperature = false, Reasoning = "low", ReasoningFor = "gpt-"
             },
             new TextProviderInfo
