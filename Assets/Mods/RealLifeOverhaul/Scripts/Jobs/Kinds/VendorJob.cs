@@ -345,6 +345,7 @@ namespace RealLifeOverhaul
                 Ctx.Props.Return(_cart);
                 _cart = null;
             }
+            SoundCheck();
             Settle();   // also after a fault (last, so nothing above depends on it)
         }
     }

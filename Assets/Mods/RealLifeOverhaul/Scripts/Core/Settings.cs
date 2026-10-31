@@ -124,6 +124,7 @@
         public const string JobsId = "jobs";
         public const string JobPayId = "job_pay";
         public const string JobTaxiEasyId = "job_taxi_easy";
+        public const string JobCartSoundsId = "job_cart_sounds";
         public const string FamilyId = "family";
         public const string UtilitiesId = "utilities";
         public const string UtilitiesNetSpeedId = "utilities_net_speed";
@@ -489,6 +490,7 @@
         public static bool Jobs = true;                  // jobs the player can take themselves, from the Gig Line contact on the phone
         public static int JobPay = 100;                  // percent of what the job catalogue pays
         public static bool JobTaxiEasy = false;          // ride-hail passengers who mind braking, bumps and speeding less (TaxiComfortRules.Easier); off, the ride is judged as it always was
+        public static bool JobCartSounds = true;         // the drinks cart heard: a customer's voice at the counter, a reminder, the till (VendorJob.Sounds); off, the cart is silent as before
         public static bool Family = true;                // a partner who moves in, engagement and wedding, children, relatives
         public static bool Utilities = true;             // power, water and internet bills and plans, the utilities office and the Utilities app
         public static bool UtilitiesNetSpeed = true;     // ...a connection's speed sets how fast tech firms work and how many orders a shop takes; off, only having one counts
@@ -908,6 +910,7 @@
             Jobs = Bool(modId, JobsId, Jobs);
             JobPay = Int(modId, JobPayId, JobPay);
             JobTaxiEasy = Bool(modId, JobTaxiEasyId, JobTaxiEasy);
+            JobCartSounds = Bool(modId, JobCartSoundsId, JobCartSounds);
             Family = Bool(modId, FamilyId, Family);
             Utilities = Bool(modId, UtilitiesId, Utilities);
             UtilitiesNetSpeed = Bool(modId, UtilitiesNetSpeedId, UtilitiesNetSpeed);

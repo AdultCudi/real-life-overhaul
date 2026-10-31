@@ -171,7 +171,7 @@ namespace RealLifeOverhaul.Meta
                 .About("reallife_guide_jobs_about").Help("reallife_guide_jobs")
                 .Fact("preset_pay_hardcore", () => Features.RuleFor(Settings.JobPayId).Hardcore.ToString(CultureInfo.InvariantCulture) + "%")
                 .Fact("preset_pay_relaxed", () => Features.RuleFor(Settings.JobPayId).Relaxed.ToString(CultureInfo.InvariantCulture) + "%")
-                .Owns(Settings.JobsId, Settings.JobTaxiEasyId)
+                .Owns(Settings.JobsId, Settings.JobTaxiEasyId, Settings.JobCartSoundsId)
                 .Preset(Settings.JobPayId, 125, 100, 80)
                 .Data("reallife:jobs", "reallife:job_rental", "reallife:job_live")
                 .Contact(JobPhone.ContactId)

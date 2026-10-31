@@ -118,8 +118,8 @@ internal static partial class Program
         Check(settings.Contains("JobTaxiEasyId = \"job_taxi_easy\"") && settings.Contains("public static bool JobTaxiEasy = false;")
               && settings.Contains("JobTaxiEasy = Bool(modId, JobTaxiEasyId, JobTaxiEasy);")
               && mod.Contains("AddToggle(Settings.JobTaxiEasyId, \"reallife_jobs_taxi_easy\", Settings.JobTaxiEasy,")
-              && mod.Contains("AddButton(\"reallife_test_job_taxi_table\"") && tree.Contains("Opts(\"job_pay\", \"job_taxi_easy\")")
-              && list.Contains(".Owns(Settings.JobsId, Settings.JobTaxiEasyId)") && tests.Contains("public void TestTaxiTable()"),
+              && mod.Contains("AddButton(\"reallife_test_job_taxi_table\"") && tree.Contains("Opts(\"job_pay\", \"job_taxi_easy\"")
+              && list.Contains(".Owns(Settings.JobsId, Settings.JobTaxiEasyId") && tests.Contains("public void TestTaxiTable()"),
             "taxi comfort: the option is saved, off by default, on the jobs' section of the page with a test that prints the table");
     }
 

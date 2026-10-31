@@ -306,6 +306,8 @@ namespace RealLifeOverhaul
                     v => Settings.JobPay = v, Meta.SettingsTable.SliderPercent)
                 .AddToggle(Settings.JobTaxiEasyId, "reallife_jobs_taxi_easy", Settings.JobTaxiEasy,
                     v => Settings.JobTaxiEasy = v)
+                .AddToggle(Settings.JobCartSoundsId, "reallife_jobs_cart_sounds", Settings.JobCartSounds,
+                    v => Settings.JobCartSounds = v)
                 .AddButton("reallife_test_job_flyers", () => JobDirector.Instance?.TestStart(JobCatalogue.Flyers))
                 .AddButton("reallife_test_job_courier", () => JobDirector.Instance?.TestStart(JobCatalogue.Courier))
                 .AddButton("reallife_test_job_taxi",() => JobDirector.Instance?.TestStart(JobCatalogue.Taxi))
