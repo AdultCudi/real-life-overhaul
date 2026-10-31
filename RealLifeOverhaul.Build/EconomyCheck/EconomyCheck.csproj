@@ -729,6 +729,10 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\LifeRules.cs" Link="Mod\Population\LifeRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\RegionRules.cs" Link="Mod\Population\RegionRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\PopulationSim.cs" Link="Mod\Population\PopulationSim.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\PopulationStore.cs" Link="Mod\Population\PopulationStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\PopulationShare.cs" Link="Mod\Population\PopulationShare.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\CustomerRules.cs" Link="Mod\Population\CustomerRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\PopulationViews.cs" Link="Mod\Population\PopulationViews.cs" />
   </ItemGroup>
 
 </Project>

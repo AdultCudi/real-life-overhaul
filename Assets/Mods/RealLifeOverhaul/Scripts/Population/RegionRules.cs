@@ -39,6 +39,16 @@ namespace RealLifeOverhaul.Population
             }
             long disposable = Disposable(s, h);
             int id = hh.Id[h], month = s.MonthNumber;
+            if ((hh.Flags[h] & HouseholdFlags.Away) != 0)
+            {
+                // Its building is not standing at this load: it looks for a flat, and stays the city's while it finds none (its building may stand again).
+                int found = HousingRules.FindFlat(s, ld.Free, s.Seed, id, day, hh.Size[h], Math.Max(1, disposable), hh.Class[h], hh.District[h], PoolRules.WorkDistrict(s, h), out int into);
+                if (found >= 0)
+                {
+                    HousingRules.MoveInto(s, h, found, into, day);
+                }
+                return false;
+            }
             if (LongOutOfWork(s, h, day) && PopDraw.Mille(s.Seed, PopDraw.Migrate, id, month, PopulationCatalogue.LeaveChance / 12 + 1))
             {
                 Leave(s, h, day);

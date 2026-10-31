@@ -459,6 +459,20 @@ namespace RealLifeOverhaul.Population
                 }
             }
             HousingRules.SetRent(s, h);
+            if (hh.Landlord[h] == Landlords.City)
+            {
+                // A tenant the market's rent would drive out holds a regulated tenancy, as about half of New York's renters do: a rent it bears.
+                SpendRules.Income(s, h, s.Day, 0, out DayIncome inc);
+                long bearable = Math.Max(0, inc.Disposable) * RegulatedShare / 1000;
+                if (inc.Disposable > 0 && hh.Rent[h] > Math.Max(0, inc.Disposable) * PopulationCatalogue.RentBurdenMove / 1000)
+                {
+                    hh.Rent[h] = (int)Math.Max(hh.Rent[h] * RegulatedLeast / 1000, bearable);
+                    hh.Flags[h] |= HouseholdFlags.Regulated;
+                }
+            }
         }
+
+        public const int RegulatedShare = 350;   // thousandths of its income after tax a regulated tenancy's rent is set at when a city is generated
+        public const int RegulatedLeast = 250;   // ... but never under this share of the market's
     }
 }

@@ -195,6 +195,7 @@ namespace RealLifeOverhaul.Population
         public const byte Players = 4;        // the player's own household (the player, their partner, children and roommates)
         public const byte Away = 8;           // its building is not standing at this load (Uptown off, say): kept, and lives on, but has no flat to count
         public const byte Commuting = 16;     // one of its people works outside the city
+        public const byte Regulated = 32;     // its rent is regulated (New York's rent stabilisation, about half its rented flats): it keeps its rent, never past the market's, until it moves
     }
 
     /// <summary>A person's marks.</summary>
@@ -606,6 +607,7 @@ namespace RealLifeOverhaul.Population
         public int Births, Deaths;     // in the running month, the city's
         public int BirthsLast, DeathsLast;
         public long Median;            // cents a day: the city's middle household's income after tax at the last day, which spending levels are measured by
+        public int HostPeople, HostHouseholds;   // a Going Public guest: the host's city's people and households (the records are the host's to keep); not saved
 
         public readonly List<PopDistrict> Districts = new List<PopDistrict>(12);
         public readonly List<CityBuilding> Buildings = new List<CityBuilding>(1024);

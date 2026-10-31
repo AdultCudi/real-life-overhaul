@@ -359,8 +359,7 @@ namespace RealLifeOverhaul.Population
             {
                 if (et.Commuters[e] > 0)
                 {
-                    int pay = LabourRules.PayFor(s, et.Field[e], 40, 1);
-                    et.Bill[e] += (long)et.Commuters[e] * pay * PopulationCatalogue.FullTimeHours / PopulationCatalogue.DaysPerWeek;
+                    et.Bill[e] += (long)et.Commuters[e] * LabourRules.CommuterPay(s, e);
                 }
             }
         }

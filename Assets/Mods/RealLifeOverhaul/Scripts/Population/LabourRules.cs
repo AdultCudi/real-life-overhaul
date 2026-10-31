@@ -481,6 +481,12 @@ namespace RealLifeOverhaul.Population
             }
         }
 
+        /// <summary>A commuter's pay a day at an employer, cents: the going rate of its field at a middling skill, full time.</summary>
+        public static int CommuterPay(PopulationState s, int e)
+        {
+            return (int)((long)PayFor(s, s.Employers.Field[e], 40, 1) * PopulationCatalogue.FullTimeHours / PopulationCatalogue.DaysPerWeek);
+        }
+
         /// <summary>A person's pay a day, cents: their hourly pay for their hours, a week's spread over its seven days.</summary>
         public static int DailyPay(PopulationState s, int p)
         {

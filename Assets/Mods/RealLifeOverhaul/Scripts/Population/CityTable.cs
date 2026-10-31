@@ -98,6 +98,98 @@ namespace RealLifeOverhaul.Population
             return (int)Math.Min(int.MaxValue / 4, rent * 100.0);
         }
 
+        /// <summary>
+        /// A saved population bound to the city as it stands at this load: the districts matched by their ids (one the city no longer has kept at the
+        /// end, so nothing of its people is lost), the buildings by their addresses, the flats laid out again; a household whose building is gone or
+        /// whose flat the building no longer has, or whose flat is taken twice, is marked away (it keeps its people and money, and looks for a flat at
+        /// the next month's moves); the employers' and businesses' buildings and districts follow. Returns the households marked away.
+        /// </summary>
+        public static int Rebind(PopulationState s, List<CityBuilding> buildings, List<PopDistrict> districts)
+        {
+            var oldDistricts = new List<PopDistrict>(s.Districts);
+            s.Districts.Clear();
+            s.Districts.AddRange(districts);
+            var dMap = new int[oldDistricts.Count];
+            for (int d = 0; d < oldDistricts.Count; d++)
+            {
+                dMap[d] = s.DistrictOf(oldDistricts[d].Id);
+                if (dMap[d] < 0)
+                {
+                    s.Districts.Add(oldDistricts[d]);
+                    dMap[d] = s.Districts.Count - 1;
+                }
+            }
+            int nd = s.Districts.Count;
+            var rent = new int[nd];
+            var want = new int[nd];
+            var figures = new DistrictFigures[nd];
+            for (int d = 0; d < nd; d++)
+            {
+                rent[d] = 1000;
+                figures[d] = new DistrictFigures();
+            }
+            for (int d = 0; d < oldDistricts.Count; d++)
+            {
+                rent[dMap[d]] = d < s.RentIndex.Length && s.RentIndex[d] > 0 ? s.RentIndex[d] : 1000;
+                want[dMap[d]] = d < s.WantFlats.Length ? s.WantFlats[d] : 0;
+                figures[dMap[d]] = d < s.Figures.Length && s.Figures[d] != null ? s.Figures[d] : new DistrictFigures();
+            }
+            s.RentIndex = rent;
+            s.WantFlats = want;
+            s.Figures = figures;
+
+            var oldBuildings = new List<CityBuilding>(s.Buildings);
+            s.Buildings.Clear();
+            s.Buildings.AddRange(buildings);
+            Sort(s.Buildings);
+            s.IndexBuildings();
+            var bMap = new int[oldBuildings.Count];
+            for (int b = 0; b < oldBuildings.Count; b++)
+            {
+                bMap[b] = s.BuildingOfKey(PopulationState.KeyOf(oldBuildings[b].Street, oldBuildings[b].Number));
+            }
+            Lay(s);
+            int away = 0;
+            HouseholdTable hh = s.Households;
+            for (int h = 0; h < hh.Count; h++)
+            {
+                if (hh.Id[h] == 0)
+                {
+                    continue;
+                }
+                hh.District[h] = (byte)(hh.District[h] < dMap.Length ? dMap[hh.District[h]] : 0);
+                int old = hh.Building[h];
+                int now = old >= 0 && old < bMap.Length ? bMap[old] : -1;
+                int unit = hh.Unit[h];
+                if (now < 0 || unit < 0 || unit >= s.FlatCount[now] || s.Occupant[s.FlatFirst[now] + unit] != -1)
+                {
+                    hh.Building[h] = -1;
+                    hh.Unit[h] = -1;
+                    hh.Flags[h] |= HouseholdFlags.Away;
+                    away++;
+                    continue;
+                }
+                hh.Building[h] = now;
+                hh.District[h] = (byte)s.Buildings[now].District;
+                hh.Flags[h] = (byte)(hh.Flags[h] & ~HouseholdFlags.Away);
+                s.Occupant[s.FlatFirst[now] + unit] = h;
+            }
+            EmployerTable et = s.Employers;
+            for (int e = 0; e < et.Count; e++)
+            {
+                et.Building[e] = et.Building[e] >= 0 && et.Building[e] < bMap.Length ? bMap[et.Building[e]] : -1;
+            }
+            BusinessTable bt = s.Businesses;
+            for (int b = 0; b < bt.Count; b++)
+            {
+                int now = bt.Building[b] >= 0 && bt.Building[b] < bMap.Length ? bMap[bt.Building[b]] : -1;
+                bt.Building[b] = now;
+                bt.District[b] = (byte)(now >= 0 ? s.Buildings[now].District : bt.District[b] < dMap.Length ? dMap[bt.District[b]] : 0);
+                bt.Seen[b] = now >= 0;
+            }
+            return away;
+        }
+
         /// <summary>A flat's rent today, cents a day: the game's own times its district's index.</summary>
         public static int FlatRentNow(PopulationState s, int building)
         {

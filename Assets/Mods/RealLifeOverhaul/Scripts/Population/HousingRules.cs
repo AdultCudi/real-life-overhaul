@@ -41,6 +41,11 @@ namespace RealLifeOverhaul.Population
             {
                 return;   // the player sets that rent (the estate's let unit); the population leaves it as told
             }
+            if ((hh.Flags[h] & HouseholdFlags.Regulated) != 0 && hh.Rent[h] > 0)
+            {
+                hh.Rent[h] = (int)Math.Min(hh.Rent[h], market);   // a regulated tenancy keeps its rent, and never pays past the market's
+                return;
+            }
             hh.Rent[h] = (int)Math.Min(int.MaxValue / 4, market);
         }
 
@@ -230,7 +235,7 @@ namespace RealLifeOverhaul.Population
             hh.Unit[h] = flat - s.FlatFirst[building];
             hh.District[h] = (byte)s.Buildings[building].District;
             hh.Since[h] = day;
-            hh.Flags[h] = (byte)(hh.Flags[h] & ~HouseholdFlags.WantsMove & ~HouseholdFlags.Away);
+            hh.Flags[h] = (byte)(hh.Flags[h] & ~HouseholdFlags.WantsMove & ~HouseholdFlags.Away & ~HouseholdFlags.Regulated);   // a new tenancy is at the market's rent
             if (hh.Landlord[h] == Landlords.Own)
             {
                 hh.Landlord[h] = Landlords.City;   // an owner who moves sells and rents here
