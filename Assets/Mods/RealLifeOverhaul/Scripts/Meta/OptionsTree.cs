@@ -383,6 +383,8 @@ namespace RealLifeOverhaul.Meta
                     .Also("bank branch branches teller tellers counter customers accounts deposit withdraw loan high street"),
                 S("living").For("living").Main("living_population").Opt("living_desks", "living_population")
                     .Also("living population economy overhaul desk desks session sessions meeting team morale output burnout office manager delegate mini screen"),
+                S("studio").For("studio").Opt("living_studio", "living_population")
+                    .Also("game studio games genre platform console mobile pc hype trailer expo review score critics sales piracy drm patch update dlc sequel port publisher bonus royalty rival"),
                 S("endscale").For("economy_endscale").Opts("economy_endscale")
                     .Also("end game late scale billions hyperscaler cloud data centre racks broadband network fibre bank maintenance upkeep crews staff payback"),
                 S("brands").For("economy_brands").Need("economy").Opts("economy_brands").Also("chain franchise"),

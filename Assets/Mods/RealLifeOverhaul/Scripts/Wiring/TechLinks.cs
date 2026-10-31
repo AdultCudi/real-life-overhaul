@@ -27,6 +27,7 @@ namespace RealLifeOverhaul
                 TechBridges.Held = CompanyLinks.Holds;
                 TechBridges.Books = Books;
                 TechBridges.Stock = Stock;
+                TechBridges.OwnStock = OwnStock;
                 TechBridges.Prosecute = TaxCases.FileDataProtection;
                 TechBridges.Claim = Claim;
                 TechBridges.Fame = Fame;
@@ -280,6 +281,21 @@ namespace RealLifeOverhaul
                 catch (Exception e)
                 {
                     Fault("TechLinks.Stock", e);
+                }
+            }
+
+            // The player's own company on the stock market while it trades: a studio's release moves it as the rivals' move theirs.
+            private static int OwnStock()
+            {
+                try
+                {
+                    Markets.ListingFile l = Markets.MarketDirector.Instance != null ? Markets.MarketDirector.Instance.Listing : null;
+                    return l != null && l.Stage == Markets.ListingStage.Listed ? l.StockId : 0;
+                }
+                catch (Exception e)
+                {
+                    Fault("TechLinks.OwnStock", e);
+                    return 0;
                 }
             }
 

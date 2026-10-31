@@ -135,6 +135,15 @@ namespace RealLifeOverhaul.Tech
             {
                 StopFirms(true, false);
             }
+            bool studio = _firmsOn && StudioWanted;
+            if (studio && !_studioOn)
+            {
+                StartStudio();
+            }
+            else if (!studio && _studioOn)
+            {
+                StopStudio(true);
+            }
             bool startups = Settings.TechStartups && _firmsOn;
             if (startups && !_ventureOn)
             {
@@ -273,6 +282,10 @@ namespace RealLifeOverhaul.Tech
                     WriteFirms(Save.modData);
                     WriteInfra(Save.modData);
                 }
+                if (_studioOn)
+                {
+                    WriteStudio(Save.modData);
+                }
                 if (_ventureOn)
                 {
                     WriteVenture(Save.modData);
@@ -378,6 +391,7 @@ namespace RealLifeOverhaul.Tech
             _talent = null;
             _hiring = null;
             _firmsFile = null;
+            _studio = null;
             _venture = null;
             _infra = null;
             _news = new TechNews();

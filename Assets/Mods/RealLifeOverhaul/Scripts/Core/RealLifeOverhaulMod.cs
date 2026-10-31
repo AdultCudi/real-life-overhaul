@@ -1012,6 +1012,12 @@ namespace RealLifeOverhaul
                     v => Settings.LivingDesks = v)
                 .AddButton("reallife_session_test_meeting", () => Sessions.SessionDirector.Instance?.TestMeeting())
                 .AddButton("reallife_session_test_managers", () => Sessions.SessionDirector.Instance?.TestManagers())
+                .AddToggle(Settings.LivingStudioId, "reallife_studio_enabled", Settings.LivingStudio,
+                    v => Settings.LivingStudio = v)
+                .AddButton("reallife_studio_test_start", () => Tech.TechDirector.Instance?.TestStudioStart())
+                .AddButton("reallife_studio_test_finish", () => Tech.TechDirector.Instance?.TestStudioFinish())
+                .AddButton("reallife_studio_test_launch", () => Tech.TechDirector.Instance?.TestStudioLaunch())
+                .AddButton("reallife_studio_test_year", () => Tech.TechDirector.Instance?.TestStudioYear())
                 .AddDropdown(Settings.EconomyCompanyLevelId, "reallife_co_level",
                     new[] { "reallife_meta_preset_relaxed", "reallife_meta_preset_standard", "reallife_meta_preset_realistic", "reallife_meta_preset_hardcore" }, Settings.EconomyCompanyLevel,
                     v => Settings.EconomyCompanyLevel = v)

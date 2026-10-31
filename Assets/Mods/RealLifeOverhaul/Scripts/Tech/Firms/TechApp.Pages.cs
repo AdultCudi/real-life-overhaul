@@ -155,6 +155,10 @@ namespace RealLifeOverhaul.Tech
             {
                 box.Line(RoomLine(f, place));
             }
+            if (_director.StudioRuns(m.K))
+            {
+                WriteStudioPart(box, firm);
+            }
             box.Section("reallife_ibox_sec_risk");
             box.Line(TechText.Fill("reallife_tech_firm_risks", "security", TechText.Mille(c.Security), "reliability", TechText.Mille(c.Reliability), "debt", TechText.Mille(m.Debt),
                 "reputation", TechText.Mille(m.Reputation), "outages", m.Outages.ToString(), "breaches", m.Breaches.ToString()));
@@ -324,6 +328,10 @@ namespace RealLifeOverhaul.Tech
         {
             Firm m = firm.File;
             string place = m.Place;
+            if (FirmsRules.Makes(m.K, ProductKind.Game) && WriteConcept(box, firm))
+            {
+                return;   // a studio's game begins as a concept, pitched at the desk (Tech/Studio)
+            }
             var kinds = new List<int>(4);
             for (int k = 0; k < (int)ProductKind.Count; k++)
             {
@@ -411,7 +419,8 @@ namespace RealLifeOverhaul.Tech
                         p.Features < p.RivalFeatures ? TableRow.Yellow : TableRow.Plain);
                 row.Set(5, TechText.Whole(p.Users), p.Users);
                 Cents(row, 6, Level(FirmsRules.MonthlyRevenue(p)));
-                int q = FirmsRules.Quality(p);
+                int studio = p.K == ProductKind.Game ? _director.StudioQualityOf(p.Id) : -1;
+                int q = studio >= 0 ? studio * 10 : FirmsRules.Quality(p);   // a studio game's quality is its parts', 0 to 100
                 row.Set(7, TechText.Mille(q), q, q < 600 ? TableRow.Red : TableRow.Plain);
                 row.Set(8, p.Bugs.ToString(), p.Bugs);
                 row.Kind = p.Stage == 0 ? TechColumns.Building : p.Stage == 1 ? TechColumns.OnSale : TechColumns.Withdrawn;
@@ -470,6 +479,10 @@ namespace RealLifeOverhaul.Tech
 
         private void WriteProduct(InfoBox box, FirmsFile f, Product p, int day)
         {
+            if (p.K == ProductKind.Game && WriteGame(box, p))
+            {
+                return;   // the game studio's own page (Tech/Studio)
+            }
             FirmPlace firm = _director.FirmOf(p.Place);
             int id = p.Id;
             int rival = FirmsCatalogue.RivalStock(p.K, p.S);
