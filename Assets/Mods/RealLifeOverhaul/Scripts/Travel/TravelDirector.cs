@@ -73,6 +73,7 @@ namespace RealLifeOverhaul
             TravelState.Reset();
             TravelEffects.Register(Logger);   // before ModState reads the save
             Hotels = new Hotels(transform, Logger);
+            ScenePrewarm.Add("travel: the hotel doorman made", Hotels.PrewarmDoorman);
             Stay = new HotelStay(this);
             Holidays = new Holidays(this);
             Pressed = OnPressed;

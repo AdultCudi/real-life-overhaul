@@ -36,6 +36,8 @@ namespace RealLifeOverhaul.Markets
         private float _frontierAt;
         private int _startTries;
         private long _frontierWritten;
+        private long _tapeSaved = -1;   // the tape's Changes when it was last written whole; -1: not since the load
+        private const double TapeSaveMs = 1.0;   // milliseconds of the main thread the tape may take at a save: its lines handed over, written on the writer
         private Action _onSave;
         private Action<int, int, int> _say;
         private bool _following;                                    // a guest: the host's market is this one, and its tape the host's
@@ -356,6 +358,7 @@ namespace RealLifeOverhaul.Markets
             _engine.HoldAfterLoad();
             OwnStarted(save);   // who the player is, and their company back if a save as a guest set it aside
             _frontierWritten = tape.Frontier;
+            _tapeSaved = -1;   // the file as read may have lines added after its last whole
             _save = save;
             _running = true;
             BuilderMarket.Clear();   // news of builders heard before this save's market ran is no news of its
@@ -403,7 +406,7 @@ namespace RealLifeOverhaul.Markets
                     Logger?.Info("Stock market: stopping; " + back + " of worked orders' money with the broker is back in the cash.");
                 }
                 MarketStore.Save(Save.modData, _engine.State);
-                MarketTapeFile.Rewrite(_engine.Tape.Id, _engine.Tape.Whole());
+                MarketTapeFile.Rewrite(_engine.Tape.Id, _engine.Tape.Lines());
             }
             else if (_running)
             {
@@ -471,7 +474,7 @@ namespace RealLifeOverhaul.Markets
         private static readonly int HotSave = HotSpots.Slot("Markets: MarketDirector.OnSave");
         private void OnSave()
         {
-            using var hotSpot = HotSpots.Time(HotSave);   // the market and its tape written whole
+            using var hotSpot = HotSpots.Time(HotSave);   // the market, and its tape whole if it changed
             try
             {
                 if (_running && Save != null && ReferenceEquals(Save, _save))
@@ -479,13 +482,35 @@ namespace RealLifeOverhaul.Markets
                     _engine.Finish();
                     Flush();   // the lines on their way, to the file and the guests, before the tape is written whole
                     MarketStore.Save(Save.modData, _engine.State);
-                    MarketTapeFile.Rewrite(_engine.Tape.Id, _engine.Tape.Whole());
-                    _frontierWritten = _engine.Tape.Frontier;
+                    SaveTape();
                 }
             }
             catch (Exception e)
             {
                 Logger?.Error(e);
+            }
+        }
+
+        // The tape whole, from the lines it keeps, only if it changed since the file was last written whole: unchanged, the
+        // file is that whole to the byte already. The first save after a load writes it whole whatever: what was read may
+        // have lines added after its last whole.
+        private void SaveTape()
+        {
+            MarketTape tape = _engine.Tape;
+            long began = System.Diagnostics.Stopwatch.GetTimestamp();
+            bool written = tape.Changes != _tapeSaved;
+            if (written)
+            {
+                MarketTapeFile.Rewrite(tape.Id, tape.Lines());
+                _tapeSaved = tape.Changes;
+            }
+            _frontierWritten = tape.Frontier;
+            if (Meta.Dev.Verbose)
+            {
+                double ms = (System.Diagnostics.Stopwatch.GetTimestamp() - began) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+                Logger?.Info("Stock market check (the tape at a save): " + (written ? "written whole from its " + tape.Days + " day(s) of kept lines" : "unchanged since the last, not written")
+                             + ", " + ms.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + " ms of the main thread (wanted under " + TapeSaveMs + " ms): "
+                             + (ms < TapeSaveMs ? "PASS" : "SLOW"));
             }
         }
 

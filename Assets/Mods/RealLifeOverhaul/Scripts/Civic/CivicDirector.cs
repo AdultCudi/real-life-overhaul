@@ -68,6 +68,28 @@ namespace RealLifeOverhaul
 
         private bool Elections => Settings.Civic && Settings.CivicElections;
 
+        // Behind the loading screen, a person a step: none of the five is made in play, where each was a prefab and a mesh
+        // merge of 2 to 4 ms with its garbage, two seconds apart, as a site or a rally first wanted them.
+        private bool PrewarmCast()
+        {
+            if (!Settings.Civic)
+            {
+                return true;   // made in play as before if civic life is switched on later
+            }
+            PlayerController player = PlayerHelper.PlayerController;
+            if (!_cast.Prewarm(player != null ? player.transform.position : Vector3.zero))
+            {
+                ScenePrewarm.NextFrame();
+                return false;
+            }
+            if (Meta.Dev.Verbose)
+            {
+                Logger?.Info("Civic check (its people made ahead): " + _cast.Count + " of " + CivicCast.Most + " made behind the loading screen, none to be made in play (wanted "
+                             + CivicCast.Most + "): " + (_cast.Count >= CivicCast.Most ? "PASS" : "FAIL"));
+            }
+            return true;
+        }
+
         private void Awake()
         {
             Instance = this;
@@ -77,6 +99,7 @@ namespace RealLifeOverhaul
             _effects = new CivicEffects();
             _props = new CivicProps(transform);
             _cast = new CivicCast(gameObject);
+            ScenePrewarm.Add("civic: its five people made", PrewarmCast);
             _sites = new SiteDresser(_props, Works, _cast, transform);
             _looks = new SiteLooks(Works.State);
             Works.LookAdded = LookAdded;
