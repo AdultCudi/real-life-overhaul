@@ -19,7 +19,6 @@ namespace RealLifeOverhaul.Ui
         public const float LargeText = 24f;           // px
         public const float LargeBoldText = 18.66f;    // px at weight 700 and over
         public const int MostTargets = 48;            // focus targets a layer may hold before the screen should split (README's checklist)
-        public const uint GameBarBackdrop = 0x56636EFF;   // the game's blurred city behind its bottom bar, its darker side, where the prompts stand
 
         /// <summary>Siblings (items of one parent, layer and scroll region) whose boxes cross.</summary>
         public static int Overlaps(UiScene s, Action<string> say)
@@ -566,7 +565,7 @@ namespace RealLifeOverhaul.Ui
         {
             if ((s.Items[item].Flags & UiFlags.Prompt) != 0)
             {
-                return UiColour.FromRgba(GameBarBackdrop);
+                return UiColour.Of(UiRole.Bg, dark);   // the prompt band is painted flat in the background's colour, no blurred city behind it
             }
             var chain = new int[32];
             int n = 0;

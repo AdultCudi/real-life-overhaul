@@ -37,7 +37,7 @@ namespace RealLifeOverhaul.Ui
         Track,        // an empty segment, a slider's track
         Scrim,        // behind an overlay
         Focus,        // the focus ring
-        PromptInk,    // the prompt bar's words on the game's own bottom bar (the same in both themes)
+        PromptInk,    // the prompt bar's words on the band the kit paints flat under the screen
         PromptCap,    // a key cap's face on that bar
         Count
     }
@@ -414,7 +414,7 @@ namespace RealLifeOverhaul.Ui
             0xFFFFFF12,   // Track: white 7%
             0x0C0C0FD9,   // Scrim: the background at 85%, no blur
             0xFB7188FF,   // Focus
-            0xFFFFFFFF,   // PromptInk: white, as the game's own bottom bar
+            0xFFFFFFFF,   // PromptInk: white on the band the kit paints flat in the background's colour
             0x0C0C0F99,   // PromptCap: dark glass behind a key's name
         };
 
@@ -454,8 +454,8 @@ namespace RealLifeOverhaul.Ui
             0x00000012,   // Track
             0xF6F6F9D9,   // Scrim
             0xCF3159FF,   // Focus
-            0xFFFFFFFF,   // PromptInk
-            0x0C0C0F99,   // PromptCap
+            0x15151AFF,   // PromptInk: the band is the kit's own and flat, so its words take the look's ink
+            0xFFFFFFFF,   // PromptCap
         };
 
         // The theme study's dark tables (the study is judged dark first; each takes the wireframe's light until one is chosen).

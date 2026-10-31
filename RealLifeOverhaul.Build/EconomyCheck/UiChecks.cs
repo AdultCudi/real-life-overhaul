@@ -91,8 +91,8 @@ internal static partial class Program
                 float c = UiContrast(UiRole.Focus, surface, dark);
                 Check(c >= UiCheckRules.LargeContrast, "ui tokens (" + theme + "): the focus ring stands out 3:1 from " + surface + " (" + c.ToString("0.00") + ")");
             }
-            Check(UiColour.Contrast(UiColour.Of(UiRole.PromptInk, dark), UiColour.FromRgba(UiCheckRules.GameBarBackdrop)) >= UiCheckRules.NormalContrast,
-                "ui tokens (" + theme + "): the prompts' words stand out on the game's bottom bar");
+            Check(UiColour.Contrast(UiColour.Of(UiRole.PromptInk, dark), UiColour.Of(UiRole.Bg, dark)) >= UiCheckRules.NormalContrast,
+                "ui tokens (" + theme + "): the prompts' words stand out on the flat band the kit paints");
         }
         bool grid = true, rising = true;
         for (int i = 0; i < UiTokens.Steps.Length; i++)
